@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Satoshi Quote Archive — The Privacy Evolution</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --btc-gold: #FFD700;
+            --xmr-orange: #FF6600;
+            --dark-bg: #0a0a0a;
+            --card-bg: #121212;
+            --grey-18: #2E2E2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --font-display: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Sora', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--btc-orange);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 2px;
+            background: var(--text-primary);
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.98);
+            z-index: 999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .mobile-menu.active {
+            display: flex;
+        }
+
+        .mobile-menu a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-family: var(--font-display);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 8rem 2rem 3rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 100%);
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--btc-orange);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .hero-subtitle {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Controls */
+        .controls {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: center;
+            justify-content: center;
+            background: var(--card-bg);
+            position: sticky;
+            top: 60px;
+            z-index: 100;
+            border-bottom: 1px solid var(--grey-18);
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            padding: 0.8rem 1rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--grey-18);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .filter-btn {
+            padding: 0.6rem 1.2rem;
+            background: var(--grey-18);
+            border: none;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--btc-orange);
+        }
+
+        .filter-btn.highlight-btn.active {
+            background: var(--btc-gold);
+            color: var(--dark-bg);
+        }
+
+        .stats {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            width: 100%;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* Quote Grid */
+        .quote-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+
+        /* Quote Card */
+        .quote-card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-left: 4px solid var(--grey-18);
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .quote-card:hover {
+            transform: translateX(5px);
+            border-left-color: var(--btc-orange);
+        }
+
+        .quote-card.key-quote {
+            border-left-color: var(--btc-gold);
+            background: linear-gradient(90deg, rgba(255, 215, 0, 0.05), transparent);
+        }
+
+        .quote-card.privacy {
+            border-left-color: var(--xmr-orange);
+        }
+
+        .quote-card.hidden {
+            display: none;
+        }
+
+        .quote-text {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-style: italic;
+            line-height: 1.7;
+            flex: 1;
+            margin-bottom: 1rem;
+        }
+
+        .quote-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--grey-18);
+        }
+
+        .quote-source {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .quote-link {
+            color: var(--btc-orange);
+            text-decoration: none;
+        }
+
+        .quote-link:hover {
+            text-decoration: underline;
+        }
+
+        .quote-date {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .quote-tag {
+            padding: 0.2rem 0.6rem;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .quote-tag.privacy {
+            background: rgba(255, 102, 0, 0.2);
+            color: var(--xmr-orange);
+        }
+
+        .quote-tag.philosophy {
+            background: rgba(247, 147, 26, 0.2);
+            color: var(--btc-orange);
+        }
+
+        .quote-tag.technical {
+            background: rgba(100, 100, 255, 0.2);
+            color: #8888FF;
+        }
+
+        .quote-tag.economics {
+            background: rgba(0, 200, 100, 0.2);
+            color: #00D26A;
+        }
+
+        .quote-tag.security {
+            background: rgba(255, 71, 87, 0.2);
+            color: #FF4757;
+        }
+
+        .quote-tag.farewell {
+            background: rgba(255, 215, 0, 0.2);
+            color: var(--btc-gold);
+        }
+
+        .key-badge {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            padding: 0.2rem 0.5rem;
+            background: var(--btc-gold);
+            color: var(--dark-bg);
+        }
+
+        .quote-card {
+            position: relative;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--card-bg);
+            padding: 3rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--grey-18);
+            margin-top: 4rem;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-nav a:hover {
+            color: var(--btc-orange);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .quote-grid {
+                grid-template-columns: 1fr;
+                padding: 1rem;
+            }
+
+            .controls {
+                padding: 1rem;
+                top: 56px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="index.html" class="nav-logo">₿ → ɱ</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="quotes.html" style="color: var(--xmr-orange);">Quotes</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="bottom-line.html">The Bottom Line</a>
+            <a href="hold-monero.html">Hold Monero</a>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quotes</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">The Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()">Hold Monero</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-eyebrow">Complete Archive</div>
+        <h1 class="hero-title">Satoshi Quote Collection</h1>
+        <p class="hero-subtitle">
+            30+ quotes searchable by category. Weighted toward privacy discussions and Monero-predictive language.
+        </p>
+    </section>
+
+    <!-- Controls -->
+    <div class="controls">
+        <input type="text" class="search-input" id="searchInput" placeholder="Search quotes...">
+        <button class="filter-btn active" onclick="filterQuotes('all')">All</button>
+        <button class="filter-btn" onclick="filterQuotes('privacy')">Privacy</button>
+        <button class="filter-btn" onclick="filterQuotes('philosophy')">Philosophy</button>
+        <button class="filter-btn" onclick="filterQuotes('technical')">Technical</button>
+        <button class="filter-btn" onclick="filterQuotes('economics')">Economics</button>
+        <button class="filter-btn" onclick="filterQuotes('farewell')">Farewell</button>
+        <button class="filter-btn highlight-btn" id="keyQuotesBtn" onclick="toggleKeyQuotes()">★ Key Quotes</button>
+        <button class="filter-btn" onclick="randomQuote()">🎲 Random</button>
+        <div class="stats" id="stats">Showing 30 quotes</div>
+    </div>
+
+    <!-- Quote Grid -->
+    <div class="quote-grid" id="quoteGrid">
+        <!-- Quotes inserted by JavaScript -->
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <nav class="footer-nav">
+            <a href="index.html">Home</a>
+            <a href="secrets.html">Secret Threads</a>
+            <a href="timeline.html">Full Timeline</a>
+            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
+        </nav>
+    </footer>
+
+    <script>
+        const quotes = [
+            // PRIVACY - Most Important (Key Quotes)
+            {
+                text: "What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments. Others could not tell the blinded public keys belong to the owner of the original public key.",
+                source: "BitcoinTalk Thread #174",
+                date: "August 11, 2010",
+                tag: "privacy",
+                key: true,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "With group signatures, it is possible for something to be signed but not know who signed it.",
+                source: "BitcoinTalk Thread #174",
+                date: "August 11, 2010",
+                tag: "privacy",
+                key: true,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to. A private key could have a counter so you can derive any number of random variations of the public key.",
+                source: "BitcoinTalk Thread #174",
+                date: "August 11, 2010",
+                tag: "privacy",
+                key: true,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot.",
+                source: "BitcoinTalk Thread #174",
+                date: "August 10, 2010",
+                tag: "privacy",
+                key: true,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "If we have to hide transaction amounts, we'd need something like David Chaum's approach. Transactions would be split into standard denominations.",
+                source: "BitcoinTalk Thread #174",
+                date: "August 13, 2010",
+                tag: "privacy",
+                key: true,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "For privacy, it's best to use new addresses for each transaction. Your client creates new addresses automatically, but you need to remember to use them.",
+                source: "BitcoinTalk Thread #82",
+                date: "July 8, 2010",
+                tag: "privacy",
+                key: false,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"
+            },
+            {
+                text: "The possibility of a pseudo-anonymous currency is not on any regulatory radar at this point. When they notice Bitcoin, they'll focus on the normal KYC procedures at the exchange endpoints.",
+                source: "BitcoinTalk Thread #82",
+                date: "July 8, 2010",
+                tag: "privacy",
+                key: false,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"
+            },
+            // PHILOSOPHY
+            {
+                text: "The root problem with conventional currency is all the trust that's required to make it work. The central bank must be trusted not to debase the currency, but the history of fiat currencies is full of breaches of that trust.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "philosophy",
+                key: true
+            },
+            {
+                text: "With e-currency based on cryptographic proof, without the need to trust a third party middleman, money can be secure and transactions effortless.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "philosophy",
+                key: true
+            },
+            {
+                text: "A lot of people automatically dismiss e-currency as a lost cause because of all the companies that failed since the 1990s. I hope it's obvious it was only the centrally controlled nature of those systems that doomed them.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "philosophy",
+                key: false
+            },
+            {
+                text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.",
+                source: "BitcoinTalk",
+                date: "July 29, 2010",
+                tag: "philosophy",
+                key: false
+            },
+            {
+                text: "It's very attractive to the libertarian viewpoint if we can explain it properly. I'm better with code than with words though.",
+                source: "Email to Hal Finney",
+                date: "November 2008",
+                tag: "philosophy",
+                key: false
+            },
+            {
+                text: "I am not Dorian Nakamoto.",
+                source: "P2P Foundation (after 5 years of silence)",
+                date: "March 7, 2014",
+                tag: "philosophy",
+                key: false
+            },
+            {
+                text: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks",
+                source: "Genesis Block Coinbase",
+                date: "January 3, 2009",
+                tag: "philosophy",
+                key: true
+            },
+            // TECHNICAL
+            {
+                text: "We have proposed a system for electronic transactions without relying on trust.",
+                source: "Bitcoin Whitepaper",
+                date: "October 31, 2008",
+                tag: "technical",
+                key: true
+            },
+            {
+                text: "The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime.",
+                source: "BitcoinTalk",
+                date: "June 17, 2010",
+                tag: "technical",
+                key: false
+            },
+            {
+                text: "As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers.",
+                source: "Bitcoin Whitepaper",
+                date: "October 31, 2008",
+                tag: "technical",
+                key: false
+            },
+            {
+                text: "The Bitcoin network might actually reduce spam by diverting zombie farms to generating bitcoins instead.",
+                source: "Cryptography Mailing List",
+                date: "November 14, 2008",
+                tag: "technical",
+                key: false
+            },
+            {
+                text: "SHA-256 is very strong. It's not the same as the stepping from MD5 to SHA1. It can last several decades unless there's some massive breakthrough attack.",
+                source: "BitcoinTalk",
+                date: "June 14, 2010",
+                tag: "technical",
+                key: false
+            },
+            {
+                text: "I'm sure that in 20 years there will either be very large transaction volume or no volume.",
+                source: "BitcoinTalk",
+                date: "February 14, 2010",
+                tag: "technical",
+                key: false
+            },
+            // ECONOMICS
+            {
+                text: "Banks must be trusted to hold our money and transfer it electronically, but they lend it out in waves of credit bubbles with barely a fraction in reserve.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "economics",
+                key: true
+            },
+            {
+                text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.",
+                source: "BitcoinTalk",
+                date: "June 21, 2010",
+                tag: "economics",
+                key: false
+            },
+            {
+                text: "In a few decades when the reward gets too small, the transaction fee will become the main compensation for nodes.",
+                source: "BitcoinTalk",
+                date: "February 14, 2010",
+                tag: "economics",
+                key: false
+            },
+            {
+                text: "The price of any commodity tends to gravitate toward the production cost. If the price is below cost, then production slows down. If the price is above cost, profit can be made by generating and selling more.",
+                source: "BitcoinTalk",
+                date: "February 21, 2010",
+                tag: "economics",
+                key: false
+            },
+            {
+                text: "It might make sense just to get some in case it catches on. If enough people think the same way, that becomes a self fulfilling prophecy.",
+                source: "Cryptography Mailing List",
+                date: "January 17, 2009",
+                tag: "economics",
+                key: false
+            },
+            // SECURITY
+            {
+                text: "The software is not at all resistant to DoS attack. This is one improvement, but there are still more ways to attack than I can count.",
+                source: "BitcoinTalk",
+                date: "December 5, 2010",
+                tag: "security",
+                key: false
+            },
+            {
+                text: "Imagine someone stole something from you. You can't get it back, but if you could, if it had a kill switch that could be remote triggered, would you do it?",
+                source: "BitcoinTalk",
+                date: "August 2010",
+                tag: "security",
+                key: false
+            },
+            // FAREWELL
+            {
+                text: "WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.",
+                source: "BitcoinTalk — Final Public Post",
+                date: "December 5, 2010",
+                tag: "farewell",
+                key: true,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
+            },
+            {
+                text: "I've moved on to other things. It's in good hands with Gavin and everyone.",
+                source: "Email to Mike Hearn",
+                date: "April 23, 2011",
+                tag: "farewell",
+                key: true
+            },
+            {
+                text: "It would have been nice to get this attention in any other context.",
+                source: "BitcoinTalk",
+                date: "December 5, 2010",
+                tag: "farewell",
+                key: false,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
+            },
+            {
+                text: "I make this appeal to WikiLeaks not to try to use Bitcoin. Bitcoin is a small beta community in its infancy. You would not stand to get more than pocket change, and the heat you would bring would likely destroy us at this stage.",
+                source: "BitcoinTalk",
+                date: "December 5, 2010",
+                tag: "farewell",
+                key: false,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
+            }
+        ];
+
+        let currentFilter = 'all';
+        let showKeyOnly = false;
+
+        function renderQuotes() {
+            const grid = document.getElementById('quoteGrid');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let filtered = quotes.filter(q => {
+                const matchesFilter = currentFilter === 'all' || q.tag === currentFilter;
+                const matchesSearch = q.text.toLowerCase().includes(searchTerm) || 
+                                     q.source.toLowerCase().includes(searchTerm) ||
+                                     q.tag.toLowerCase().includes(searchTerm);
+                const matchesKey = !showKeyOnly || q.key;
+                return matchesFilter && matchesSearch && matchesKey;
+            });
+
+            // Sort: key quotes first, then privacy, then by date
+            filtered.sort((a, b) => {
+                if (a.key !== b.key) return b.key - a.key;
+                if (a.tag === 'privacy' && b.tag !== 'privacy') return -1;
+                if (b.tag === 'privacy' && a.tag !== 'privacy') return 1;
+                return 0;
+            });
+
+            grid.innerHTML = filtered.map(q => `
+                <div class="quote-card ${q.key ? 'key-quote' : ''} ${q.tag}">
+                    ${q.key ? '<span class="key-badge">★ KEY</span>' : ''}
+                    <p class="quote-text">"${q.text}"</p>
+                    <div class="quote-meta">
+                        <div>
+                            <span class="quote-source">
+                                ${q.link ? `<a href="${q.link}" target="_blank" class="quote-link">${q.source} →</a>` : q.source}
+                            </span>
+                            <span class="quote-date">${q.date}</span>
+                        </div>
+                        <span class="quote-tag ${q.tag}">${q.tag}</span>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('stats').textContent = `Showing ${filtered.length} of ${quotes.length} quotes`;
+        }
+
+        function filterQuotes(tag) {
+            currentFilter = tag;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (!btn.classList.contains('highlight-btn')) {
+                    btn.classList.remove('active');
+                }
+            });
+            event.target.classList.add('active');
+            renderQuotes();
+        }
+
+        function toggleKeyQuotes() {
+            showKeyOnly = !showKeyOnly;
+            document.getElementById('keyQuotesBtn').classList.toggle('active', showKeyOnly);
+            renderQuotes();
+        }
+
+        function randomQuote() {
+            const grid = document.getElementById('quoteGrid');
+            const cards = grid.querySelectorAll('.quote-card');
+            cards.forEach(c => c.style.opacity = '0.3');
+            
+            const randomIndex = Math.floor(Math.random() * cards.length);
+            cards[randomIndex].style.opacity = '1';
+            cards[randomIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            setTimeout(() => {
+                cards.forEach(c => c.style.opacity = '1');
+            }, 2000);
+        }
+
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        document.getElementById('searchInput').addEventListener('input', renderQuotes);
+
+        // Initial render
+        renderQuotes();
+    </script>
+</body>
+</html>

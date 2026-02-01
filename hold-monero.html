@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hold Monero | Acquire XMR Privately</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --btc-gold: #FFD700;
+            --xmr-orange: #FF6600;
+            --dark-bg: #0a0a0a;
+            --card-bg: #121212;
+            --card-hover: #1a1a1a;
+            --text-primary: #EAEAEA;
+            --text-secondary: #A0A0A0;
+            --grey-18: #2E2E2E;
+            --success-green: #00D395;
+            --danger-red: #FF4757;
+            --warning-yellow: #FFD93D;
+            --wagyu-pink: #FF69B4;
+            --changenow-green: #00C26F;
+            --tradfi-blue: #4A90D9;
+            --font-display: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Sora', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--btc-orange);
+        }
+
+        .nav-links a.active {
+            color: var(--xmr-orange);
+        }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 10, 0.98);
+            backdrop-filter: blur(20px);
+            padding: 1rem;
+            flex-direction: column;
+            gap: 1rem;
+            z-index: 999;
+            border-bottom: 1px solid var(--grey-18);
+        }
+
+        .mobile-menu.active {
+            display: flex;
+        }
+
+        .mobile-menu a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu a:hover {
+            background: var(--grey-18);
+            color: var(--btc-orange);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 10rem 2rem 4rem;
+            text-align: center;
+            background: radial-gradient(ellipse at top, rgba(255, 102, 0, 0.1) 0%, transparent 50%);
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--xmr-orange);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title .gradient {
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: 1.2rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            line-height: 1.8;
+        }
+
+        /* Warning Banner */
+        .warning-banner {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.15), rgba(255, 217, 61, 0.1));
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            max-width: 900px;
+            margin: 0 auto 3rem;
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        .warning-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .warning-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .warning-text strong {
+            color: var(--danger-red);
+        }
+
+        /* Portal Tabs */
+        .portal-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            padding: 0 1rem;
+        }
+
+        .portal-tab {
+            padding: 1rem 2rem;
+            background: var(--card-bg);
+            border: 2px solid var(--grey-18);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .portal-tab:hover {
+            border-color: var(--xmr-orange);
+            background: var(--card-hover);
+        }
+
+        .portal-tab.active {
+            border-color: var(--xmr-orange);
+            background: rgba(255, 102, 0, 0.1);
+            color: var(--text-primary);
+        }
+
+        .portal-tab .tab-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .portal-tab .changenow-icon {
+            background: var(--changenow-green);
+            color: white;
+        }
+
+        .portal-tab .wagyu-icon {
+            background: linear-gradient(135deg, var(--wagyu-pink), #FF1493);
+            color: white;
+        }
+
+        /* Portal Container */
+        .portal-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem;
+        }
+
+        .portal-section {
+            display: none;
+        }
+
+        .portal-section.active {
+            display: block;
+        }
+
+        /* Widget Container */
+        .widget-container {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .widget-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .widget-title {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .widget-title h2 {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .widget-badge {
+            background: rgba(0, 194, 111, 0.2);
+            color: var(--changenow-green);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .widget-badge.wagyu {
+            background: rgba(255, 105, 180, 0.2);
+            color: var(--wagyu-pink);
+        }
+
+        .widget-stats {
+            display: flex;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .widget-stat {
+            text-align: right;
+        }
+
+        .widget-stat-value {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            color: var(--text-primary);
+        }
+
+        .widget-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Iframe Container */
+        .iframe-wrapper {
+            background: #FFFFFF;
+            border-radius: 12px;
+            overflow: hidden;
+            min-height: 500px;
+        }
+
+        .iframe-wrapper iframe {
+            width: 100%;
+            height: 500px;
+            border: none;
+            display: block;
+        }
+
+        /* Wagyu Section */
+        .wagyu-portal {
+            text-align: center;
+        }
+
+        .geo-warning {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.2), rgba(255, 71, 87, 0.05));
+            border: 1px solid rgba(255, 71, 87, 0.4);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .geo-warning h3 {
+            color: var(--danger-red);
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .geo-warning p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .wagyu-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .wagyu-feature {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: left;
+        }
+
+        .wagyu-feature h4 {
+            color: var(--wagyu-pink);
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .wagyu-feature p {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            line-height: 1.6;
+        }
+
+        .portal-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .portal-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+        }
+
+        .portal-btn.primary {
+            background: linear-gradient(135deg, var(--wagyu-pink), #FF1493);
+            color: white;
+        }
+
+        .portal-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 105, 180, 0.3);
+        }
+
+        .portal-btn.secondary {
+            background: var(--card-bg);
+            border: 2px solid var(--wagyu-pink);
+            color: var(--wagyu-pink);
+        }
+
+        .portal-btn.secondary:hover {
+            background: rgba(255, 105, 180, 0.1);
+        }
+
+        /* Wagyu Iframe Toggle */
+        .iframe-toggle {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .iframe-toggle-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .iframe-toggle-header h3 {
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .iframe-toggle-btn {
+            background: var(--wagyu-pink);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .iframe-toggle-btn:hover {
+            background: #FF1493;
+        }
+
+        .wagyu-iframe-container {
+            display: none;
+            margin-top: 1.5rem;
+        }
+
+        .wagyu-iframe-container.active {
+            display: block;
+        }
+
+        .wagyu-iframe-container iframe {
+            width: 100%;
+            height: 700px;
+            border: none;
+            border-radius: 12px;
+            background: #0d0d0d;
+        }
+
+        /* Info Section */
+        .info-section {
+            max-width: 1000px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .info-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 16px;
+            padding: 2rem;
+        }
+
+        .info-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .info-card h3 .icon {
+            font-size: 1.5rem;
+        }
+
+        .info-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+            margin-bottom: 1rem;
+        }
+
+        .info-card ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-card li {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .info-card li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--xmr-orange);
+        }
+
+        /* Comparison Table */
+        .comparison-section {
+            max-width: 1000px;
+            margin: 0 auto 4rem;
+            padding: 0 2rem;
+        }
+
+        .comparison-section h2 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .comparison-table {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--grey-18);
+        }
+
+        .comparison-table th {
+            background: var(--grey-18);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .comparison-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .comparison-table td {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .comparison-table .feature-name {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .comparison-table .check {
+            color: var(--success-green);
+        }
+
+        .comparison-table .cross {
+            color: var(--danger-red);
+        }
+
+        /* Education Section */
+        .education-section {
+            max-width: 1200px;
+            margin: 4rem auto;
+            padding: 0 2rem;
+        }
+
+        .education-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .education-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--xmr-orange);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.75rem;
+        }
+
+        .education-header h2 {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .education-header p {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .infographic-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+        }
+
+        .infographic-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .infographic-card.full-width,
+        .infographic-card.highlight {
+            grid-column: 1 / -1;
+        }
+
+        .infographic-card.highlight {
+            border-color: var(--wagyu-pink);
+            background: linear-gradient(135deg, rgba(255, 105, 180, 0.05), transparent);
+        }
+
+        .infographic-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin-bottom: 1.25rem;
+            text-align: center;
+            color: var(--text-primary);
+        }
+
+        /* Options Comparison */
+        .options-comparison {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .option-box {
+            flex: 1;
+            background: var(--dark-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .option-header {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .option-header.danger {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--danger-red);
+        }
+
+        .option-header.success {
+            background: rgba(0, 211, 149, 0.2);
+            color: var(--success-green);
+        }
+
+        .option-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .option-risk {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .stat-highlight {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .stat-value.orange {
+            color: var(--xmr-orange);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .infographic-note {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        /* Flow Diagram */
+        .flow-diagram {
+            margin-bottom: 1.5rem;
+        }
+
+        .flow-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .flow-row.secondary {
+            opacity: 0.85;
+        }
+
+        .flow-box {
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-align: center;
+            min-width: 90px;
+        }
+
+        .flow-box.btc {
+            background: rgba(247, 147, 26, 0.2);
+            border: 1px solid var(--btc-orange);
+            color: var(--btc-orange);
+        }
+
+        .flow-box.xmr {
+            background: rgba(255, 102, 0, 0.2);
+            border: 1px solid var(--xmr-orange);
+            color: var(--xmr-orange);
+        }
+
+        .flow-box.swap {
+            background: rgba(74, 144, 217, 0.2);
+            border: 1px solid var(--tradfi-blue);
+            color: var(--tradfi-blue);
+        }
+
+        .flow-box.fee {
+            background: rgba(255, 102, 0, 0.15);
+            border: 1px solid var(--xmr-orange);
+            color: var(--xmr-orange);
+        }
+
+        .flow-box.stable {
+            background: var(--grey-18);
+            border: 1px solid var(--text-secondary);
+            color: var(--text-secondary);
+        }
+
+        .flow-box.fiat {
+            background: rgba(0, 211, 149, 0.15);
+            border: 1px solid var(--success-green);
+            color: var(--success-green);
+        }
+
+        .flow-arrow {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .flow-fee {
+            text-align: center;
+            margin: 0.75rem 0;
+        }
+
+        .fee-arrow {
+            color: var(--xmr-orange);
+            font-size: 1.25rem;
+        }
+
+        .fee-text {
+            font-size: 0.75rem;
+            color: var(--xmr-orange);
+        }
+
+        .impact-box {
+            background: rgba(255, 71, 87, 0.1);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+
+        .impact-title {
+            font-weight: 700;
+            color: var(--danger-red);
+            margin-bottom: 0.25rem;
+        }
+
+        .impact-text {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+
+        .impact-subtext {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* Spiral Visual */
+        .spiral-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+
+        .spiral-stage {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--dark-bg);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 180px;
+        }
+
+        .stage-number {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--xmr-orange), var(--danger-red));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .stage-content {
+            flex: 1;
+        }
+
+        .stage-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .stage-desc {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        .spiral-connector {
+            color: var(--xmr-orange);
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .cycle-note {
+            background: var(--grey-18);
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-align: center;
+        }
+
+        .cycle-note strong {
+            color: var(--text-primary);
+        }
+
+        /* Alternative Visual */
+        .alternative-visual {
+            margin-bottom: 1.5rem;
+        }
+
+        .alt-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            background: var(--dark-bg);
+            border-radius: 12px;
+            margin-bottom: 0.75rem;
+        }
+
+        .alt-label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            min-width: 140px;
+            color: var(--text-secondary);
+        }
+
+        .alt-flow {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            flex: 1;
+        }
+
+        .alt-item {
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            background: var(--grey-18);
+            font-weight: 500;
+        }
+
+        .alt-item.danger {
+            background: rgba(255, 71, 87, 0.2);
+            color: var(--danger-red);
+            font-weight: 600;
+        }
+
+        .alt-item.success {
+            background: rgba(0, 211, 149, 0.2);
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .alt-arrow {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .alt-divider {
+            text-align: center;
+            font-weight: 700;
+            color: var(--wagyu-pink);
+            font-size: 1rem;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            background: rgba(255, 105, 180, 0.1);
+            border-radius: 8px;
+        }
+
+        .alt-explanation {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.7;
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .alt-explanation p {
+            margin-bottom: 1rem;
+        }
+
+        .alt-explanation .caveat {
+            background: rgba(0, 211, 149, 0.1);
+            border: 1px solid rgba(0, 211, 149, 0.3);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .education-disclaimer {
+            margin-top: 2rem;
+            background: var(--grey-18);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .education-disclaimer p {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        .education-disclaimer strong {
+            color: var(--warning-yellow);
+        }
+
+        /* Footer */
+        footer {
+            background: var(--card-bg);
+            border-top: 1px solid var(--grey-18);
+            padding: 3rem 2rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--xmr-orange);
+        }
+
+        .footer-disclaimer {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .legal-notice {
+            max-width: 900px;
+            text-align: left;
+            background: rgba(255, 71, 87, 0.05);
+            border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .legal-notice h4 {
+            text-align: center;
+            color: var(--warning-yellow);
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+
+        .legal-notice p {
+            margin-bottom: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.7;
+        }
+
+        .legal-notice p:first-of-type {
+            text-align: center;
+            font-size: 1rem;
+            color: var(--danger-red);
+        }
+
+        .legal-notice strong {
+            color: var(--text-primary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .hero {
+                padding: 8rem 1.5rem 3rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .warning-banner {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .portal-tab {
+                padding: 0.75rem 1.25rem;
+                font-size: 0.9rem;
+            }
+
+            .widget-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .widget-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .comparison-table {
+                overflow-x: auto;
+            }
+
+            .comparison-table table {
+                min-width: 600px;
+            }
+
+            /* Infographic responsive */
+            .infographic-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .options-comparison {
+                flex-direction: column;
+            }
+
+            .flow-row {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .flow-arrow {
+                transform: rotate(90deg);
+            }
+
+            .spiral-visual {
+                flex-direction: column;
+            }
+
+            .spiral-connector {
+                transform: rotate(90deg);
+            }
+
+            .spiral-stage {
+                width: 100%;
+                min-width: unset;
+            }
+
+            .alt-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .alt-label {
+                margin-bottom: 0.5rem;
+            }
+
+            .alt-flow {
+                flex-wrap: wrap;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <a href="index.html" class="nav-logo">₿ → ɱ</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="quotes.html">Quotes</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="bottom-line.html">The Bottom Line</a>
+            <a href="hold-monero.html" class="active">Hold Monero</a>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quotes</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">The Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()">Hold Monero</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-eyebrow">Educational Demonstration</div>
+        <h1 class="hero-title">
+            <span class="gradient">Hold Monero</span>
+        </h1>
+        <p class="hero-subtitle">
+            An educational overview of non-custodial exchange options for acquiring Monero. 
+            This page demonstrates widget integration for informational purposes only.
+        </p>
+    </section>
+
+    <!-- Warning Banner -->
+    <div class="warning-banner" style="border-color: rgba(255, 217, 61, 0.5); background: linear-gradient(135deg, rgba(255, 217, 61, 0.15), rgba(255, 102, 0, 0.1));">
+        <div class="warning-icon">🎓</div>
+        <div class="warning-text">
+            <strong style="color: var(--warning-yellow);">EDUCATIONAL DEMONSTRATION ONLY</strong><br>
+            This page exists purely for educational and demonstration purposes. <strong>Use of the embedded widgets or linked services is not recommended.</strong> 
+            These integrations showcase technical capabilities only. This site does not custody funds, facilitate transactions, or endorse any service. 
+            Any interaction with third-party services is entirely at your own risk. Always consult local regulations and qualified professionals.
+        </div>
+    </div>
+
+    <!-- Portal Tabs -->
+    <div class="portal-tabs">
+        <button class="portal-tab active" onclick="switchPortal('changenow')">
+            <div class="tab-icon changenow-icon">CN</div>
+            <span>ChangeNOW</span>
+        </button>
+        <button class="portal-tab" onclick="switchPortal('wagyu')">
+            <div class="tab-icon wagyu-icon">W</div>
+            <span>Wagyu Swap</span>
+        </button>
+    </div>
+
+    <!-- Portal Container -->
+    <div class="portal-container">
+        <!-- ChangeNOW Section -->
+        <div class="portal-section active" id="changenow-section">
+            <div class="widget-container">
+                <div class="widget-header">
+                    <div class="widget-title">
+                        <h2>ChangeNOW Exchange</h2>
+                        <span class="widget-badge">No KYC Required</span>
+                    </div>
+                    <div class="widget-stats">
+                        <div class="widget-stat">
+                            <div class="widget-stat-value">1,200+</div>
+                            <div class="widget-stat-label">Currencies</div>
+                        </div>
+                        <div class="widget-stat">
+                            <div class="widget-stat-value">~2 min</div>
+                            <div class="widget-stat-label">Avg. Swap Time</div>
+                        </div>
+                        <div class="widget-stat">
+                            <div class="widget-stat-value">Since 2017</div>
+                            <div class="widget-stat-label">Operating</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="iframe-wrapper">
+                    <iframe 
+                        id="iframe-widget"
+                        src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=true&amount=0.1&amountFiat=&backgroundColor=0a0a0a&darkMode=true&from=btc&fromFiat=&horizontal=false&isFiat=false&lang=en-US&link_id=&locales=true&logo=true&primaryColor=FF6600&to=xmr&toFiat=&toTheMoon=false"
+                        style="height: 356px; width: 100%; border: none; border-radius: 12px;"
+                        allow="clipboard-read; clipboard-write">
+                    </iframe>
+                    <script defer type="text/javascript" src="https://changenow.io/embeds/exchange-widget/v2/stepper-connector.js"></script>
+                </div>
+            </div>
+
+            <div class="wagyu-features" style="margin-top: 2rem;">
+                <div class="wagyu-feature">
+                    <h4 style="color: var(--changenow-green);">🔒 Non-Custodial</h4>
+                    <p>Your keys, your coins. ChangeNOW never holds your funds - swaps happen directly between your wallets.</p>
+                </div>
+                <div class="wagyu-feature">
+                    <h4 style="color: var(--changenow-green);">⚡ Instant Swaps</h4>
+                    <p>Average exchange time is 2 minutes. Enter your Monero address, send BTC, receive XMR.</p>
+                </div>
+                <div class="wagyu-feature">
+                    <h4 style="color: var(--changenow-green);">🌐 No Registration</h4>
+                    <p>No account needed for most swaps. Just enter addresses and swap. Simple as that.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wagyu Section -->
+        <div class="portal-section" id="wagyu-section">
+            <div class="widget-container wagyu-portal">
+                <div class="widget-header">
+                    <div class="widget-title">
+                        <h2>Wagyu Private Bridge</h2>
+                        <span class="widget-badge wagyu">Cross-Chain XMR</span>
+                    </div>
+                    <div class="widget-stats">
+                        <div class="widget-stat">
+                            <div class="widget-stat-value">XMR ↔ EVM</div>
+                            <div class="widget-stat-label">Bridge Type</div>
+                        </div>
+                        <div class="widget-stat">
+                            <div class="widget-stat-value">$20</div>
+                            <div class="widget-stat-label">Minimum</div>
+                        </div>
+                        <div class="widget-stat">
+                            <div class="widget-stat-value">Decentralized</div>
+                            <div class="widget-stat-label">Infrastructure</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="geo-warning">
+                    <h3>🌍 Geographic Restrictions Apply</h3>
+                    <p>Wagyu services are <strong>not available to users in the United States</strong>. 
+                    Access is blocked for US IP addresses. Use of VPN to circumvent restrictions may violate their terms of service.</p>
+                </div>
+
+                <div class="wagyu-features">
+                    <div class="wagyu-feature">
+                        <h4>🥩 Private Cross-Chain</h4>
+                        <p>Swap between XMR and EVM tokens (ETH, USDC, etc.) using decentralized bridge aggregators and Hyperliquid's orderbook.</p>
+                    </div>
+                    <div class="wagyu-feature">
+                        <h4>📈 Best Rates via TWAP</h4>
+                        <p>Orders routed through orderbook using Time-Weighted Average Price for large orders, often beating CEX rates.</p>
+                    </div>
+                    <div class="wagyu-feature">
+                        <h4>🔐 Non-Custodial</h4>
+                        <p>Decentralized nature means your funds can never be held hostage at any point in the swap process.</p>
+                    </div>
+                    <div class="wagyu-feature">
+                        <h4>🔗 XMR1 on Hyperliquid</h4>
+                        <p>Bridge XMR to XMR1 token on Hyperliquid for DeFi access while maintaining privacy origins.</p>
+                    </div>
+                </div>
+
+                <div class="portal-buttons">
+                    <a href="https://www.wagyu.xyz/swap" target="_blank" rel="noopener noreferrer" class="portal-btn primary">
+                        🥩 Open Wagyu Swap
+                        <span style="font-size: 0.8rem; opacity: 0.8;">→ wagyu.xyz</span>
+                    </a>
+                    <a href="https://docs.wagyu.xyz/" target="_blank" rel="noopener noreferrer" class="portal-btn secondary">
+                        📚 API Documentation
+                    </a>
+                </div>
+
+                <div class="iframe-toggle">
+                    <div class="iframe-toggle-header" onclick="toggleWagyuIframe()">
+                        <h3>🖥️ Embedded Wagyu Interface</h3>
+                        <button class="iframe-toggle-btn" id="wagyu-toggle-btn">Show Embed</button>
+                    </div>
+                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
+                        Note: Embedded interface may be blocked based on your location. For best experience, visit wagyu.xyz directly.
+                    </p>
+                    <div class="wagyu-iframe-container" id="wagyu-iframe-container">
+                        <iframe 
+                            id="wagyu-iframe"
+                            src="about:blank"
+                            data-src="https://www.wagyu.xyz/swap"
+                            allow="clipboard-write"
+                            loading="lazy">
+                        </iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Dynamics Education Section -->
+    <section class="education-section">
+        <div class="education-header">
+            <div class="education-eyebrow">Understanding the Trade-offs</div>
+            <h2>How Instant Swaps Work</h2>
+            <p>Both methods are legitimate ways to acquire Monero. Here's what happens behind the scenes.</p>
+        </div>
+
+        <div class="infographic-grid">
+            <!-- Panel 1: Your Options -->
+            <div class="infographic-card">
+                <h3>Your Options for Trading XMR</h3>
+                <div class="options-comparison">
+                    <div class="option-box">
+                        <div class="option-header danger">Option 1</div>
+                        <div class="option-title">Sketchy Tier-3 CEX</div>
+                        <div class="option-risk">Risk: Deposit/Withdrawal Rug</div>
+                    </div>
+                    <div class="option-box">
+                        <div class="option-header success">Option 2</div>
+                        <div class="option-title">Instant Swap Services</div>
+                        <div class="option-risk">Risk: Fees + AML Freeze Risk</div>
+                    </div>
+                </div>
+                <div class="stat-highlight">
+                    <div class="stat-value orange">~60%</div>
+                    <div class="stat-label">choose Option 2</div>
+                </div>
+                <p class="infographic-note">After major exchange delistings (Binance, Kraken EEA), instant swaps became the primary on-ramp for Monero.</p>
+            </div>
+
+            <!-- Panel 2: The Flow Diagram -->
+            <div class="infographic-card">
+                <h3>Instant Swap Flow</h3>
+                <div class="flow-diagram">
+                    <div class="flow-row">
+                        <div class="flow-box btc">User sends BTC</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box swap">Instant Swap Service</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box xmr">User receives XMR</div>
+                    </div>
+                    <div class="flow-fee">
+                        <div class="fee-arrow">↓</div>
+                        <div class="fee-text">0.5-1% fee (in XMR)</div>
+                    </div>
+                    <div class="flow-row secondary">
+                        <div class="flow-box fee">XMR Fee Revenue</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box stable">Convert to Stables</div>
+                        <div class="flow-arrow">→</div>
+                        <div class="flow-box fiat">Cash Out to Fiat</div>
+                    </div>
+                </div>
+                <div class="impact-box">
+                    <div class="impact-title">Market Impact</div>
+                    <div class="impact-text">Daily: Millions in XMR sold</div>
+                    <div class="impact-subtext">Persistent Unidirectional Flow</div>
+                </div>
+            </div>
+
+            <!-- Panel 3: The Spiral Effect -->
+            <div class="infographic-card full-width">
+                <h3>The Market Dynamics Cycle</h3>
+                <div class="spiral-visual">
+                    <div class="spiral-stage">
+                        <div class="stage-number">1</div>
+                        <div class="stage-content">
+                            <div class="stage-title">XMR Demand</div>
+                            <div class="stage-desc">Users want privacy, buy XMR through swaps</div>
+                        </div>
+                    </div>
+                    <div class="spiral-connector">→</div>
+                    <div class="spiral-stage">
+                        <div class="stage-number">2</div>
+                        <div class="stage-content">
+                            <div class="stage-title">Fees Extracted</div>
+                            <div class="stage-desc">Service collects 0.5-1% in XMR</div>
+                        </div>
+                    </div>
+                    <div class="spiral-connector">→</div>
+                    <div class="spiral-stage">
+                        <div class="stage-number">3</div>
+                        <div class="stage-content">
+                            <div class="stage-title">Sell Pressure</div>
+                            <div class="stage-desc">Service sells XMR for fiat/stables</div>
+                        </div>
+                    </div>
+                    <div class="spiral-connector">→</div>
+                    <div class="spiral-stage">
+                        <div class="stage-number">4</div>
+                        <div class="stage-content">
+                            <div class="stage-title">Price Impact</div>
+                            <div class="stage-desc">Constant sell-side liquidity taking</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="cycle-note">
+                    <strong>Note:</strong> This is how <em>all</em> instant swap services operate — it's not unique to any single provider. 
+                    The fee extraction and conversion to fiat creates persistent sell pressure on XMR markets.
+                </div>
+            </div>
+
+            <!-- Panel 4: The Alternative -->
+            <div class="infographic-card highlight">
+                <h3>The Wagyu Difference</h3>
+                <div class="alternative-visual">
+                    <div class="alt-row">
+                        <div class="alt-label">Traditional Swaps</div>
+                        <div class="alt-flow">
+                            <span class="alt-item">Centralized</span>
+                            <span class="alt-arrow">→</span>
+                            <span class="alt-item">Fees → Fiat</span>
+                            <span class="alt-arrow">→</span>
+                            <span class="alt-item danger">Sell Pressure</span>
+                        </div>
+                    </div>
+                    <div class="alt-divider">vs</div>
+                    <div class="alt-row">
+                        <div class="alt-label">Wagyu (DEX-based)</div>
+                        <div class="alt-flow">
+                            <span class="alt-item">Decentralized</span>
+                            <span class="alt-arrow">→</span>
+                            <span class="alt-item">Orderbook TWAP</span>
+                            <span class="alt-arrow">→</span>
+                            <span class="alt-item success">Reduced Impact</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="alt-explanation">
+                    <p>Wagyu routes through Hyperliquid's decentralized orderbook rather than operating as a traditional swap service. 
+                    This means no centralized entity accumulating and selling XMR fees.</p>
+                    <p class="caveat"><strong>Both methods work.</strong> This is simply additional context for users who want to understand market dynamics.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="education-disclaimer">
+            <p>⚠️ <strong>Important:</strong> Both ChangeNOW and Wagyu are legitimate services for acquiring Monero. 
+            The information above is educational — illustrating market mechanics, not endorsing one over another. 
+            Choose based on your needs: availability, convenience, fees, and personal preferences.</p>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison-section">
+        <h2>Service Comparison</h2>
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>ChangeNOW</th>
+                        <th>Wagyu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="feature-name">KYC Required</td>
+                        <td><span class="check">✓ Usually No</span></td>
+                        <td><span class="check">✓ No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">US Available</td>
+                        <td><span class="check">✓ Yes</span></td>
+                        <td><span class="cross">✗ Blocked</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Supported Assets</td>
+                        <td>1,200+ cryptocurrencies</td>
+                        <td>XMR + EVM tokens</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Minimum Swap</td>
+                        <td>~$2 equivalent</td>
+                        <td>$20-25 depending on route</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Infrastructure</td>
+                        <td>Centralized aggregator</td>
+                        <td>Decentralized (Hyperliquid)</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Embeddable Widget</td>
+                        <td><span class="check">✓ Yes</span></td>
+                        <td><span class="cross">✗ API Only</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">XMR Confirmations</td>
+                        <td>10 blocks</td>
+                        <td>20 blocks</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Fiat On-Ramp</td>
+                        <td><span class="check">✓ Available</span></td>
+                        <td><span class="cross">✗ Crypto only</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Best For</td>
+                        <td>General swaps, beginners</td>
+                        <td>Privacy maximalists, DeFi</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Info Section -->
+    <section class="info-section">
+        <div class="info-grid">
+            <div class="info-card">
+                <h3><span class="icon">🛡️</span> Why Monero?</h3>
+                <p>
+                    Monero (XMR) is the only major cryptocurrency with privacy by default. 
+                    Ring signatures, stealth addresses, and RingCT ensure your transactions 
+                    are truly private.
+                </p>
+                <ul>
+                    <li>Untraceable transactions</li>
+                    <li>Unlinkable addresses</li>
+                    <li>Fungible currency</li>
+                    <li>ASIC-resistant mining</li>
+                </ul>
+            </div>
+            <div class="info-card">
+                <h3><span class="icon">📖</span> Best Practices</h3>
+                <p>
+                    When acquiring Monero, follow these guidelines to maximize your privacy:
+                </p>
+                <ul>
+                    <li>Use a fresh receiving address for each swap</li>
+                    <li>Wait for full confirmations before considering funds safe</li>
+                    <li>Consider using Tor or VPN for additional privacy</li>
+                    <li>Store XMR in your own wallet (Feather, CLI, or Cake)</li>
+                    <li>Never reuse addresses or share view keys unnecessarily</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="secrets.html">Secret Threads</a>
+            <a href="quotes.html">Quotes</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="bottom-line.html">The Bottom Line</a>
+            <a href="https://www.getmonero.org/" target="_blank">GetMonero.org</a>
+        </div>
+        <div class="footer-disclaimer legal-notice">
+            <h4>⚖️ Legal Disclaimer</h4>
+            <p><strong>FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY</strong></p>
+            <p>
+                This web application and all content herein is provided strictly for educational and demonstration purposes. 
+                <strong>No use of the exchange widgets, portals, or services linked on this page is recommended, endorsed, or encouraged.</strong> 
+                The embedded widgets and external links are included solely to demonstrate technical integration capabilities.
+            </p>
+            <p>
+                <strong>NOT FINANCIAL ADVICE:</strong> Nothing on this website constitutes financial, investment, legal, or tax advice. 
+                Cryptocurrency investments carry significant risk, including the potential loss of all invested capital. 
+                Always consult qualified professionals before making any financial decisions.
+            </p>
+            <p>
+                <strong>THIRD-PARTY SERVICES:</strong> This site does not operate, control, or endorse any exchange service. 
+                We do not custody funds, facilitate transactions, or bear any responsibility for third-party services. 
+                Any interaction with linked services is entirely at your own risk.
+            </p>
+            <p>
+                <strong>REGULATORY COMPLIANCE:</strong> Users are solely responsible for ensuring compliance with all applicable laws 
+                and regulations in their jurisdiction. Cryptocurrency regulations vary by country and region. 
+                Some services may be unavailable or restricted in certain locations.
+            </p>
+            <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">
+                © 2026 Satoshi's Vision Archive — Educational Project — All Rights Reserved
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        // Portal switching
+        function switchPortal(portal) {
+            // Update tabs
+            document.querySelectorAll('.portal-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+
+            // Update sections
+            document.querySelectorAll('.portal-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(portal + '-section').classList.add('active');
+        }
+
+        // Wagyu iframe toggle
+        let wagyuIframeLoaded = false;
+        function toggleWagyuIframe() {
+            const container = document.getElementById('wagyu-iframe-container');
+            const btn = document.getElementById('wagyu-toggle-btn');
+            const iframe = document.getElementById('wagyu-iframe');
+            
+            if (container.classList.contains('active')) {
+                container.classList.remove('active');
+                btn.textContent = 'Show Embed';
+            } else {
+                container.classList.add('active');
+                btn.textContent = 'Hide Embed';
+                
+                // Lazy load iframe
+                if (!wagyuIframeLoaded) {
+                    iframe.src = iframe.dataset.src;
+                    wagyuIframeLoaded = true;
+                }
+            }
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(e) {
+            const menu = document.getElementById('mobileMenu');
+            const hamburger = document.querySelector('.hamburger');
+            if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
+                menu.classList.remove('active');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+# Netlify Configuration for Satoshi's Vision Archive
+# https://docs.netlify.com/configure-builds/file-based-configuration/
+
+[build]
+  publish = "."
+  command = ""
+
+# Security Headers for all pages
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    X-XSS-Protection = "1; mode=block"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache static assets
+[[headers]]
+  for = "*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# Redirects
+[[redirects]]
+  from = "/home"
+  to = "/"
+  status = 301
+
+[[redirects]]
+  from = "/archive"
+  to = "/bottom-line"
+  status = 301
+
+# Pretty URLs (remove .html)
+[[redirects]]
+  from = "/bottom-line"
+  to = "/bottom-line.html"
+  status = 200
+
+[[redirects]]
+  from = "/hold-monero"
+  to = "/hold-monero.html"
+  status = 200
+
+[[redirects]]
+  from = "/quotes"
+  to = "/quotes.html"
+  status = 200
+
+[[redirects]]
+  from = "/secrets"
+  to = "/secrets.html"
+  status = 200
+
+[[redirects]]
+  from = "/timeline"
+  to = "/timeline.html"
+  status = 200
+
+[[redirects]]
+  from = "/education"
+  to = "/btc-xmr-education.html"
+  status = 200

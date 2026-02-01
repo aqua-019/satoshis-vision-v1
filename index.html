@@ -1,0 +1,2133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Privacy Evolution: Bitcoin → Monero</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --btc-gold: #FFD700;
+            --xmr-orange: #FF6600;
+            --dark-bg: #0a0a0a;
+            --card-bg: #121212;
+            --grey-18: #2E2E2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --font-display: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Sora', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--btc-orange);
+        }
+
+        .price-ticker {
+            display: flex;
+            gap: 1.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .price-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .price-label {
+            color: var(--text-secondary);
+        }
+
+        .price-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .price-change {
+            font-size: 0.75rem;
+        }
+
+        .price-change.up { color: #00D26A; }
+        .price-change.down { color: #FF4757; }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 2px;
+            background: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.98);
+            z-index: 999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .mobile-menu.active {
+            display: flex;
+        }
+
+        .mobile-menu a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-family: var(--font-display);
+        }
+
+        .mobile-prices {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 2rem;
+            font-family: var(--font-mono);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 4rem 1.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 102, 0, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--btc-orange);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title .highlight-btc {
+            background: linear-gradient(135deg, var(--btc-orange), var(--btc-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-title .highlight-xmr {
+            background: linear-gradient(135deg, var(--xmr-orange), #FF8533);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            line-height: 1.8;
+        }
+
+        .hero-cta {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            font-family: var(--font-body);
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            color: var(--text-primary);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(247, 147, 26, 0.3);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--grey-18);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--btc-orange);
+            color: var(--btc-orange);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(10px); }
+        }
+
+        /* Sections */
+        section {
+            padding: 2rem 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--btc-orange);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4vw, 3rem);
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .section-desc {
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Problem Section - Why This Matters */
+        .problem-section {
+            background: var(--card-bg);
+            padding: 3rem 2rem;
+            margin: 2rem auto;
+            max-width: 1200px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .problem-section .section-header {
+            max-width: 800px;
+            margin: 0 auto 2rem;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .problem-section .section-eyebrow,
+        .problem-section .section-title,
+        .problem-section .section-desc {
+            text-align: center;
+        }
+
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            text-align: left;
+            justify-content: center;
+        }
+
+        .problem-card {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+            border-left: 3px solid var(--btc-orange);
+            transition: transform 0.3s ease;
+        }
+
+        .problem-card:hover {
+            transform: translateX(5px);
+        }
+
+        .problem-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            margin-bottom: 0.75rem;
+            color: var(--btc-orange);
+        }
+
+        .problem-card p {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        @media (max-width: 700px) {
+            .problem-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Satoshi Quote Explorer */
+        .quote-explorer {
+            background: var(--card-bg);
+            padding: 3rem;
+            margin: 1.5rem 0;
+        }
+
+        .quote-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quote-search {
+            flex: 1;
+            min-width: 200px;
+            max-width: 400px;
+            padding: 0.8rem 1rem;
+            background: var(--dark-bg);
+            border: 1px solid var(--grey-18);
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        .quote-search::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .quote-btn {
+            padding: 0.8rem 1.5rem;
+            background: var(--grey-18);
+            border: none;
+            color: var(--text-primary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quote-btn:hover {
+            background: var(--btc-orange);
+        }
+
+        .quote-btn.active {
+            background: var(--btc-orange);
+        }
+
+        .quote-display {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+            border-left: 4px solid var(--btc-gold);
+            margin-bottom: 1.5rem;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .quote-text {
+            font-family: var(--font-display);
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            font-style: italic;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .quote-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .quote-source {
+            color: var(--btc-orange);
+        }
+
+        .quote-date {
+            color: var(--text-secondary);
+        }
+
+        .quote-tag {
+            padding: 0.3rem 0.8rem;
+            background: rgba(247, 147, 26, 0.2);
+            color: var(--btc-orange);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+
+        .quote-counter {
+            text-align: center;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        /* Vertical Timeline - Fully Responsive */
+        .timeline-section {
+            padding: 2rem 1.5rem;
+            background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 50%, var(--dark-bg) 100%);
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--btc-orange), var(--btc-gold), var(--xmr-orange));
+        }
+
+        .timeline-item {
+            position: relative;
+            width: 50%;
+            padding: 1.5rem;
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.6s ease;
+        }
+
+        .timeline-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .timeline-item:nth-child(odd) {
+            left: 0;
+            padding-right: 3rem;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) {
+            left: 50%;
+            padding-left: 3rem;
+            text-align: left;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            top: 2rem;
+            z-index: 1;
+        }
+
+        .timeline-item:nth-child(odd) .timeline-dot {
+            right: -8px;
+        }
+
+        .timeline-item:nth-child(even) .timeline-dot {
+            left: -8px;
+        }
+
+        .timeline-item.btc .timeline-dot {
+            background: var(--btc-orange);
+            box-shadow: 0 0 20px var(--btc-orange);
+        }
+
+        .timeline-item.xmr .timeline-dot {
+            background: var(--xmr-orange);
+            box-shadow: 0 0 20px var(--xmr-orange);
+        }
+
+        .timeline-item.both .timeline-dot {
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            box-shadow: 0 0 20px var(--btc-gold);
+        }
+
+        .timeline-year {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--btc-orange);
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .timeline-desc {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+
+        /* Statistics Section - CSS-Only Charts */
+        .stats-section {
+            padding: 2rem 1.5rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 4rem;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 3px solid var(--btc-orange);
+        }
+
+        .stat-value {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--btc-gold));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Advanced Analytics Dashboard */
+        .analytics-dashboard {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            margin: 2rem auto;
+            max-width: 1100px;
+        }
+
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .dashboard-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        /* Donut Chart */
+        .donut-container {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .donut-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .donut-chart {
+            position: relative;
+            width: 180px;
+            height: 180px;
+        }
+
+        .donut-chart svg {
+            transform: rotate(-90deg);
+        }
+
+        .donut-ring {
+            fill: none;
+            stroke: var(--grey-18);
+            stroke-width: 20;
+        }
+
+        .donut-segment {
+            fill: none;
+            stroke-width: 20;
+            stroke-linecap: butt;
+            transition: stroke-dasharray 1.5s ease;
+        }
+
+        .donut-segment.legitimate {
+            stroke: url(#orangeGradient);
+        }
+
+        .donut-segment.illicit {
+            stroke: #FF4757;
+        }
+
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .donut-value {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--btc-orange);
+        }
+
+        .donut-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        /* Stacked Area Chart */
+        .area-container {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+        }
+
+        .area-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .area-chart {
+            height: 160px;
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            padding: 0 0.5rem;
+        }
+
+        .area-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .area-bar-stack {
+            width: 100%;
+            display: flex;
+            flex-direction: column-reverse;
+            border-radius: 2px 2px 0 0;
+            overflow: hidden;
+        }
+
+        .area-bar-legit {
+            background: linear-gradient(180deg, var(--btc-orange), var(--btc-gold));
+            transition: height 1s ease;
+        }
+
+        .area-bar-illicit {
+            background: #FF4757;
+            transition: height 1s ease;
+        }
+
+        .area-bar-year {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+        }
+
+        /* Breakdown Cards */
+        .breakdown-container {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+        }
+
+        .breakdown-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        .breakdown-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .breakdown-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .breakdown-bar-track {
+            flex: 1;
+            height: 24px;
+            background: var(--grey-18);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .breakdown-bar-fill {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            padding-left: 0.5rem;
+            transition: width 1.2s ease;
+        }
+
+        .breakdown-bar-fill.scams {
+            background: linear-gradient(90deg, #FF6B6B, #FF4757);
+        }
+
+        .breakdown-bar-fill.darknet {
+            background: linear-gradient(90deg, #9B59B6, #8E44AD);
+        }
+
+        .breakdown-bar-fill.ransomware {
+            background: linear-gradient(90deg, #E74C3C, #C0392B);
+        }
+
+        .breakdown-bar-fill.fraud {
+            background: linear-gradient(90deg, #F39C12, #E67E22);
+        }
+
+        .breakdown-bar-fill.sanctions {
+            background: linear-gradient(90deg, #3498DB, #2980B9);
+        }
+
+        .breakdown-bar-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: white;
+            white-space: nowrap;
+        }
+
+        .breakdown-value {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-primary);
+            min-width: 50px;
+            text-align: right;
+        }
+
+        /* Comparison Gauge */
+        .gauge-container {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gauge-title {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .gauge-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+
+        .gauge-label {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            width: 80px;
+        }
+
+        .gauge-track {
+            flex: 1;
+            height: 12px;
+            background: var(--grey-18);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gauge-fill {
+            height: 100%;
+            transition: width 1.5s ease;
+        }
+
+        .gauge-fill.crypto {
+            background: linear-gradient(90deg, var(--btc-orange), var(--btc-gold));
+            width: 10%;
+        }
+
+        .gauge-fill.cash {
+            background: linear-gradient(90deg, #27AE60, #2ECC71);
+            width: 50%;
+        }
+
+        .gauge-fill.banks {
+            background: linear-gradient(90deg, #3498DB, #5DADE2);
+            width: 35%;
+        }
+
+        .gauge-percent {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            width: 50px;
+            text-align: right;
+            color: var(--text-secondary);
+        }
+
+        .gauge-note {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        /* Dashboard Legend & Source */
+        .dashboard-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--grey-18);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dashboard-legend {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+        }
+
+        .legend-dot.legitimate {
+            background: var(--btc-orange);
+        }
+
+        .legend-dot.illicit {
+            background: #FF4757;
+        }
+
+        .dashboard-source {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+        }
+
+        .dashboard-source a {
+            color: var(--btc-orange);
+            text-decoration: none;
+        }
+
+        /* Animated pulse for key metrics */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(247, 147, 26, 0); }
+            50% { box-shadow: 0 0 20px 5px rgba(247, 147, 26, 0.15); }
+        }
+
+        .donut-container {
+            animation: pulse-glow 4s infinite;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .analytics-dashboard {
+                padding: 1.5rem;
+            }
+
+            .donut-chart {
+                width: 150px;
+                height: 150px;
+            }
+
+            .area-chart {
+                height: 120px;
+            }
+        }
+
+        /* Comparison Section */
+        .comparison-section {
+            padding: 2rem 1.5rem;
+            background: var(--card-bg);
+        }
+
+        .comparison-table {
+            max-width: 1000px;
+            margin: 0 auto;
+            overflow-x: auto;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 1.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--grey-18);
+        }
+
+        .comparison-table th {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .comparison-table th:first-child {
+            color: var(--text-secondary);
+        }
+
+        .comparison-table th:nth-child(2) {
+            color: var(--btc-orange);
+        }
+
+        .comparison-table th:nth-child(3) {
+            color: var(--xmr-orange);
+        }
+
+        .comparison-table td {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+        }
+
+        .comparison-table td:first-child {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--text-primary);
+        }
+
+        .feature-yes {
+            color: #00D26A;
+        }
+
+        .feature-no {
+            color: #FF4757;
+        }
+
+        .feature-partial {
+            color: var(--btc-gold);
+        }
+
+        /* Deep Dive CTA */
+        .deep-dive {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            background: linear-gradient(180deg, var(--dark-bg), var(--card-bg));
+        }
+
+        .deep-dive-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1000px;
+            margin: 3rem auto 0;
+        }
+
+        .deep-dive-card {
+            background: var(--dark-bg);
+            padding: 1.5rem;
+            border: 1px solid var(--grey-18);
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .deep-dive-card:hover {
+            border-color: var(--btc-orange);
+            transform: translateY(-5px);
+        }
+
+        .deep-dive-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .deep-dive-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .deep-dive-card p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--card-bg);
+            padding: 4rem 2rem;
+            text-align: center;
+            border-top: 1px solid var(--grey-18);
+        }
+
+        .footer-quote {
+            font-family: var(--font-display);
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            font-style: italic;
+            max-width: 700px;
+            margin: 0 auto 1rem;
+            color: var(--text-secondary);
+        }
+
+        .footer-attribution {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--btc-orange);
+            margin-bottom: 2rem;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--btc-orange);
+        }
+
+        .footer-copy {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .price-ticker {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .timeline::before {
+                left: 20px;
+            }
+
+            .timeline-item {
+                width: 100%;
+                left: 0 !important;
+                padding-left: 50px !important;
+                padding-right: 1rem !important;
+                text-align: left !important;
+            }
+
+            .timeline-item .timeline-dot {
+                left: 12px !important;
+                right: auto !important;
+            }
+
+            .comparison-table th,
+            .comparison-table td {
+                padding: 1rem 0.5rem;
+                font-size: 0.85rem;
+            }
+
+            section {
+                padding: 4rem 1.5rem;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            opacity: 1;
+            transform: translateY(0);
+            transition: all 0.8s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Particle Background */
+        #particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            opacity: 0.4;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(50px, -50px) rotate(90deg); }
+            50% { transform: translate(100px, 0) rotate(180deg); }
+            75% { transform: translate(50px, 50px) rotate(270deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Particles -->
+    <div id="particles"></div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-logo">₿ → ɱ</div>
+        <div class="nav-links">
+            <a href="#timeline">Timeline</a>
+            <a href="#quotes">Quotes</a>
+            <a href="#stats">Statistics</a>
+            <a href="#compare">Compare</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="quotes.html">Quote Archive</a>
+            <a href="bottom-line.html">The Bottom Line</a>
+            <a href="hold-monero.html">Hold Monero</a>
+        </div>
+        <div class="price-ticker">
+            <div class="price-item">
+                <span class="price-label">BTC</span>
+                <span class="price-value" id="btc-price">—</span>
+                <span class="price-change" id="btc-change"></span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">XMR</span>
+                <span class="price-value" id="xmr-price">—</span>
+                <span class="price-change" id="xmr-change"></span>
+            </div>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="#timeline" onclick="toggleMenu()">Timeline</a>
+        <a href="#quotes" onclick="toggleMenu()">Quotes</a>
+        <a href="#stats" onclick="toggleMenu()">Statistics</a>
+        <a href="#compare" onclick="toggleMenu()">Compare</a>
+        <a href="secrets.html">Secrets</a>
+        <a href="quotes.html">The Bottom Line</a>
+        <div class="mobile-prices">
+            <div>BTC: <span id="btc-price-mobile">—</span></div>
+            <div>XMR: <span id="xmr-price-mobile">—</span></div>
+        </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-content">
+            <div class="hero-eyebrow">A Study in Privacy Evolution</div>
+            <h1 class="hero-title">
+                From <span class="highlight-btc">Bitcoin's</span> Vision<br>
+                to <span class="highlight-xmr">Monero's</span> Reality
+            </h1>
+            <p class="hero-subtitle">
+                In 2010, Satoshi Nakamoto described cryptographic privacy features that wouldn't exist for years. 
+                He envisioned key blinding, group signatures, and hidden transaction amounts—the exact technologies 
+                that Monero would implement four years later. This is the story of how one dream became another's foundation.
+            </p>
+            <div class="hero-cta">
+                <a href="#quotes" class="btn btn-primary">Explore Satoshi's Words</a>
+                <a href="secrets.html" class="btn btn-secondary">Uncover the Threads</a>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span>Scroll to explore</span>
+            <span>↓</span>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem-section">
+        <div class="section-header">
+            <div class="section-eyebrow">The Core Problem</div>
+            <h2 class="section-title">Bitcoin's Transparent Ledger</h2>
+            <p class="section-desc">Satoshi knew from the beginning: pseudonymity isn't privacy.</p>
+        </div>
+        <div class="problem-grid">
+            <div class="problem-card fade-in">
+                <h3>Permanent Public Record</h3>
+                <p>Every Bitcoin transaction is etched permanently into a public blockchain. Your financial history—every purchase, every transfer, every balance—becomes an immutable part of history that anyone can analyze forever.</p>
+            </div>
+            <div class="problem-card fade-in">
+                <h3>Chain Analysis</h3>
+                <p>Companies like Chainalysis have built billion-dollar businesses tracing Bitcoin transactions. They map wallet clusters, identify exchange deposits, and can trace funds across thousands of hops with near-certainty.</p>
+            </div>
+            <div class="problem-card fade-in">
+                <h3>Address Reuse Exposure</h3>
+                <p>Once a Bitcoin address is linked to your identity—through an exchange, a purchase, or metadata—your entire transaction history with that address becomes attributable to you.</p>
+            </div>
+            <div class="problem-card fade-in">
+                <h3>Satoshi Saw This Coming</h3>
+                <p>"It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot."<br><em>— Satoshi, Aug 2010</em></p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Satoshi Quote Explorer -->
+    <section id="quotes">
+        <div class="section-header">
+            <div class="section-eyebrow">In His Own Words</div>
+            <h2 class="section-title">The Satoshi Quote Explorer</h2>
+            <p class="section-desc">Curated quotes weighted toward privacy discussions and Monero-predictive language.</p>
+        </div>
+        <div class="quote-explorer">
+            <div class="quote-controls">
+                <input type="text" class="quote-search" id="quoteSearch" placeholder="Search quotes...">
+                <button class="quote-btn" onclick="randomQuote()">🎲 Random</button>
+                <button class="quote-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
+                <button class="quote-btn" onclick="filterByTag('privacy')">Privacy</button>
+                <button class="quote-btn" onclick="filterByTag('technical')">Technical</button>
+                <button class="quote-btn" onclick="filterByTag('all')">All</button>
+            </div>
+            <div class="quote-display">
+                <p class="quote-text" id="quoteText">"What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments."</p>
+                <div class="quote-meta">
+                    <span class="quote-source" id="quoteSource">BitcoinTalk Thread #174 — "Not a Suggestion"</span>
+                    <span class="quote-date" id="quoteDate">August 11, 2010</span>
+                    <span class="quote-tag" id="quoteTag">privacy</span>
+                </div>
+            </div>
+            <div class="quote-counter" id="quoteCounter">Quote 1 of 18</div>
+        </div>
+    </section>
+
+    <!-- Vertical Timeline -->
+    <section id="timeline" class="timeline-section">
+        <div class="section-header">
+            <div class="section-eyebrow">Historical Context</div>
+            <h2 class="section-title">The Privacy Evolution Timeline</h2>
+            <p class="section-desc">From Satoshi's whitepaper to Monero's full-chain privacy.</p>
+        </div>
+        <div class="timeline">
+            <div class="timeline-item btc fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">October 2008</div>
+                <div class="timeline-title">Bitcoin Whitepaper</div>
+                <div class="timeline-desc">Satoshi publishes "Bitcoin: A Peer-to-Peer Electronic Cash System." Privacy section warns about address reuse and recommends new addresses per transaction.</div>
+            </div>
+            <div class="timeline-item btc fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">January 2009</div>
+                <div class="timeline-title">Genesis Block</div>
+                <div class="timeline-desc">Block 0 mined with the embedded message: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks."</div>
+            </div>
+            <div class="timeline-item btc fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">July 2010</div>
+                <div class="timeline-title">"Anonymity" Thread</div>
+                <div class="timeline-desc">BitcoinTalk Thread #82. Community debates privacy limitations. Theymos proposes mixing services. Satoshi acknowledges transparent ledger concerns.</div>
+            </div>
+            <div class="timeline-item btc fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">August 2010</div>
+                <div class="timeline-title">"Not a Suggestion" Thread</div>
+                <div class="timeline-desc">Thread #174. Satoshi describes key blinding (stealth addresses), group signatures (ring signatures), and hidden amounts—Monero's future core features.</div>
+            </div>
+            <div class="timeline-item btc fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">December 2010</div>
+                <div class="timeline-title">Satoshi's Last Post</div>
+                <div class="timeline-desc">"WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us." Final public message on BitcoinTalk.</div>
+            </div>
+            <div class="timeline-item btc fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">April 2011</div>
+                <div class="timeline-title">Final Email</div>
+                <div class="timeline-desc">"I've moved on to other things. It's in good hands with Gavin and everyone." Satoshi's last known communication.</div>
+            </div>
+            <div class="timeline-item both fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">December 2012</div>
+                <div class="timeline-title">CryptoNote Whitepaper</div>
+                <div class="timeline-desc">Nicolas van Saberhagen publishes CryptoNote protocol describing ring signatures and one-time addresses—implementing Satoshi's 2010 privacy vision.</div>
+            </div>
+            <div class="timeline-item xmr fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">April 2014</div>
+                <div class="timeline-title">Monero Launch</div>
+                <div class="timeline-desc">Monero (XMR) launches as a fork of Bytecoin. Implements ring signatures for sender privacy and stealth addresses for receiver privacy.</div>
+            </div>
+            <div class="timeline-item xmr fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">January 2017</div>
+                <div class="timeline-title">RingCT Activation</div>
+                <div class="timeline-desc">Ring Confidential Transactions hide transaction amounts. Completes Satoshi's vision: "If we have to hide transaction amounts..."</div>
+            </div>
+            <div class="timeline-item xmr fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">September 2020</div>
+                <div class="timeline-title">IRS $625K Bounty</div>
+                <div class="timeline-desc">U.S. IRS offers $625,000 to anyone who can break Monero's privacy. As of 2025, the bounty remains unclaimed.</div>
+            </div>
+            <div class="timeline-item xmr fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">2024-2025</div>
+                <div class="timeline-title">Exchange Delistings</div>
+                <div class="timeline-desc">73+ exchanges delist Monero due to regulatory pressure. Yet XMR price rises 195% as peer-to-peer trading surges.</div>
+            </div>
+            <div class="timeline-item xmr fade-in">
+                <div class="timeline-dot"></div>
+                <div class="timeline-year">2025</div>
+                <div class="timeline-title">FCMP++ Development</div>
+                <div class="timeline-desc">Full Chain Membership Proofs in development. Will make every XMR transaction anonymous among ALL transactions ever made.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section id="stats" class="stats-section">
+        <div class="section-header">
+            <div class="section-eyebrow">By The Numbers</div>
+            <h2 class="section-title">Crypto Crime Statistics</h2>
+            <p class="section-desc">The data tells a different story than the headlines.</p>
+        </div>
+        <div class="stats-grid">
+            <div class="stat-card fade-in">
+                <div class="stat-value">&lt;1%</div>
+                <div class="stat-label">Crypto Illicit Activity</div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-value">$10.6T</div>
+                <div class="stat-label">Total Crypto Volume 2024</div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-value">2-5%</div>
+                <div class="stat-label">USD Cash Illicit Use</div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-value">$625K</div>
+                <div class="stat-label">Unclaimed IRS Bounty</div>
+            </div>
+        </div>
+
+        <!-- Advanced Analytics Dashboard -->
+        <div class="analytics-dashboard fade-in" id="analyticsDashboard">
+            <div class="dashboard-header">
+                <h3 class="dashboard-title">Cryptocurrency Crime Analytics</h3>
+                <p class="dashboard-subtitle">Real data dispels the myth — crypto is cleaner than cash</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <!-- Donut Chart: Overall Split -->
+                <div class="donut-container">
+                    <div class="donut-title">2024 Transaction Volume</div>
+                    <div class="donut-chart">
+                        <svg viewBox="0 0 180 180" width="180" height="180">
+                            <defs>
+                                <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" style="stop-color:#F7931A"/>
+                                    <stop offset="100%" style="stop-color:#FFD700"/>
+                                </linearGradient>
+                            </defs>
+                            <circle class="donut-ring" cx="90" cy="90" r="70"/>
+                            <circle class="donut-segment legitimate" cx="90" cy="90" r="70" 
+                                    stroke-dasharray="0 440" id="legitSegment"/>
+                            <circle class="donut-segment illicit" cx="90" cy="90" r="70" 
+                                    stroke-dasharray="0 440" id="illicitSegment"/>
+                        </svg>
+                        <div class="donut-center">
+                            <div class="donut-value">99.6%</div>
+                            <div class="donut-label">Legitimate</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Yearly Trend Bars -->
+                <div class="area-container">
+                    <div class="area-title">Volume by Year (Trillions USD)</div>
+                    <div class="area-chart" id="areaChart">
+                        <div class="area-bar">
+                            <div class="area-bar-stack" style="height: 60px;">
+                                <div class="area-bar-legit" style="height: 59px;"></div>
+                                <div class="area-bar-illicit" style="height: 1px;"></div>
+                            </div>
+                            <span class="area-bar-year">'19</span>
+                        </div>
+                        <div class="area-bar">
+                            <div class="area-bar-stack" style="height: 70px;">
+                                <div class="area-bar-legit" style="height: 69px;"></div>
+                                <div class="area-bar-illicit" style="height: 1px;"></div>
+                            </div>
+                            <span class="area-bar-year">'20</span>
+                        </div>
+                        <div class="area-bar">
+                            <div class="area-bar-stack" style="height: 130px;">
+                                <div class="area-bar-legit" style="height: 129px;"></div>
+                                <div class="area-bar-illicit" style="height: 1px;"></div>
+                            </div>
+                            <span class="area-bar-year">'21</span>
+                        </div>
+                        <div class="area-bar">
+                            <div class="area-bar-stack" style="height: 90px;">
+                                <div class="area-bar-legit" style="height: 89px;"></div>
+                                <div class="area-bar-illicit" style="height: 1px;"></div>
+                            </div>
+                            <span class="area-bar-year">'22</span>
+                        </div>
+                        <div class="area-bar">
+                            <div class="area-bar-stack" style="height: 100px;">
+                                <div class="area-bar-legit" style="height: 99px;"></div>
+                                <div class="area-bar-illicit" style="height: 1px;"></div>
+                            </div>
+                            <span class="area-bar-year">'23</span>
+                        </div>
+                        <div class="area-bar">
+                            <div class="area-bar-stack" style="height: 140px;">
+                                <div class="area-bar-legit" style="height: 139px;"></div>
+                                <div class="area-bar-illicit" style="height: 1px;"></div>
+                            </div>
+                            <span class="area-bar-year">'24</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Illicit Activity Breakdown -->
+                <div class="breakdown-container">
+                    <div class="breakdown-title">Illicit Activity Breakdown (2024)</div>
+                    <div class="breakdown-list">
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill scams" style="width: 0%;" data-width="45%">
+                                    <span class="breakdown-bar-label">Scams & Phishing</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-value">$9.9B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill sanctions" style="width: 0%;" data-width="35%">
+                                    <span class="breakdown-bar-label">Sanctioned Entities</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-value">$7.8B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill darknet" style="width: 0%;" data-width="18%">
+                                    <span class="breakdown-bar-label">Darknet Markets</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-value">$2.0B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill ransomware" style="width: 0%;" data-width="12%">
+                                    <span class="breakdown-bar-label">Ransomware</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-value">$1.1B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill fraud" style="width: 0%;" data-width="8%">
+                                    <span class="breakdown-bar-label">Stolen Funds</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-value">$0.5B</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison with Traditional Finance -->
+                <div class="gauge-container">
+                    <div class="gauge-title">Illicit Use by Payment Method</div>
+                    <div class="gauge-row">
+                        <span class="gauge-label" style="color: var(--btc-orange);">Crypto</span>
+                        <div class="gauge-track">
+                            <div class="gauge-fill crypto"></div>
+                        </div>
+                        <span class="gauge-percent">~0.4%</span>
+                    </div>
+                    <div class="gauge-row">
+                        <span class="gauge-label" style="color: #2ECC71;">USD Cash</span>
+                        <div class="gauge-track">
+                            <div class="gauge-fill cash"></div>
+                        </div>
+                        <span class="gauge-percent">2-5%</span>
+                    </div>
+                    <div class="gauge-row">
+                        <span class="gauge-label" style="color: #5DADE2;">Banks</span>
+                        <div class="gauge-track">
+                            <div class="gauge-fill banks"></div>
+                        </div>
+                        <span class="gauge-percent">~2%</span>
+                    </div>
+                    <p class="gauge-note">UN estimates $2T laundered annually through traditional banking</p>
+                </div>
+            </div>
+
+            <div class="dashboard-footer">
+                <div class="dashboard-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot legitimate"></span>
+                        <span>Legitimate Activity</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot illicit"></span>
+                        <span>Illicit Activity</span>
+                    </div>
+                </div>
+                <div class="dashboard-source">
+                    Source: <a href="https://www.chainalysis.com/blog/2025-crypto-crime-report-introduction/" target="_blank">Chainalysis Crypto Crime Report 2025</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section id="compare" class="comparison-section">
+        <div class="section-header">
+            <div class="section-eyebrow">Feature Analysis</div>
+            <h2 class="section-title">Bitcoin vs. Monero Privacy</h2>
+            <p class="section-desc">A technical comparison of privacy features.</p>
+        </div>
+        <div class="comparison-table fade-in">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Bitcoin (BTC)</th>
+                        <th>Monero (XMR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Sender Privacy</td>
+                        <td class="feature-no">Transparent (all addresses visible)</td>
+                        <td class="feature-yes">Ring Signatures (hidden among decoys)</td>
+                    </tr>
+                    <tr>
+                        <td>Receiver Privacy</td>
+                        <td class="feature-partial">New address per tx (optional)</td>
+                        <td class="feature-yes">Stealth Addresses (automatic)</td>
+                    </tr>
+                    <tr>
+                        <td>Amount Privacy</td>
+                        <td class="feature-no">All amounts public</td>
+                        <td class="feature-yes">RingCT (amounts hidden)</td>
+                    </tr>
+                    <tr>
+                        <td>Metadata Protection</td>
+                        <td class="feature-no">IP can be linked to broadcast</td>
+                        <td class="feature-yes">Dandelion++ (IP obfuscation)</td>
+                    </tr>
+                    <tr>
+                        <td>Privacy Default</td>
+                        <td class="feature-no">Opt-in (mixers, CoinJoin)</td>
+                        <td class="feature-yes">Mandatory for all transactions</td>
+                    </tr>
+                    <tr>
+                        <td>Rich List</td>
+                        <td class="feature-no">Exists (top wallets visible)</td>
+                        <td class="feature-yes">Impossible to create</td>
+                    </tr>
+                    <tr>
+                        <td>Chain Analysis</td>
+                        <td class="feature-no">Highly effective</td>
+                        <td class="feature-yes">IRS bounty unclaimed since 2020</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <!-- Deep Dive CTA -->
+    <section class="deep-dive">
+        <div class="section-header">
+            <div class="section-eyebrow">Go Deeper</div>
+            <h2 class="section-title">Explore the Hidden Pages</h2>
+            <p class="section-desc">Uncover the original forum threads and full quote archive.</p>
+        </div>
+        <div class="deep-dive-grid">
+            <a href="secrets.html" class="deep-dive-card">
+                <div class="deep-dive-icon">🔐</div>
+                <h3>The Secret Threads</h3>
+                <p>Deep dive into the "Not a Suggestion" thread where Satoshi described Monero's future features in 2010.</p>
+            </a>
+            <a href="quotes.html" class="deep-dive-card">
+                <div class="deep-dive-icon">📜</div>
+                <h3>Full Quote Archive</h3>
+                <p>30+ searchable Satoshi quotes with category filtering, highlighting, and source links.</p>
+            </a>
+            <a href="timeline.html" class="deep-dive-card">
+                <div class="deep-dive-icon">⏳</div>
+                <h3>Interactive Timeline</h3>
+                <p>Click-through timeline with detailed event descriptions and keyboard navigation.</p>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p class="footer-quote">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
+        <p class="footer-attribution">— Satoshi Nakamoto, Final Email, April 2011</p>
+        <div class="footer-links">
+            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto Institute</a>
+            <a href="https://getmonero.org" target="_blank">GetMonero.org</a>
+            <a href="https://bitcoin.org" target="_blank">Bitcoin.org</a>
+        </div>
+        <p class="footer-copy">Educational resource. Not financial advice. DYOR.</p>
+    </footer>
+
+    <script>
+        // Satoshi Quotes - Weighted toward privacy & Monero-predictive
+        const quotes = [
+            // TIER 1: Most Monero-predictive (shown more frequently)
+            {
+                text: "What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments.",
+                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
+                date: "August 11, 2010",
+                tag: "privacy",
+                weight: 5,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "With e-currency based on cryptographic proof, without the need to trust a third party middleman, money can be secure and transactions effortless. One of the fundamental building blocks for such a system is digital signatures.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "philosophy",
+                weight: 4
+            },
+            {
+                text: "With group signatures, it is possible for something to be signed but not know who signed it.",
+                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
+                date: "August 11, 2010",
+                tag: "privacy",
+                weight: 5,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to. A private key could have a counter so you can derive any number of random variations of the public key.",
+                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
+                date: "August 11, 2010",
+                tag: "privacy",
+                weight: 5,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            {
+                text: "It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot.",
+                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
+                date: "August 10, 2010",
+                tag: "technical",
+                weight: 4,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
+            },
+            // TIER 2: Important privacy/philosophy quotes
+            {
+                text: "The root problem with conventional currency is all the trust that's required to make it work. The central bank must be trusted not to debase the currency, but the history of fiat currencies is full of breaches of that trust.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "philosophy",
+                weight: 3
+            },
+            {
+                text: "A lot of people automatically dismiss e-currency as a lost cause because of all the companies that failed since the 1990s. I hope it's obvious it was only the centrally controlled nature of those systems that doomed them.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "philosophy",
+                weight: 3
+            },
+            {
+                text: "Banks must be trusted to hold our money and transfer it electronically, but they lend it out in waves of credit bubbles with barely a fraction in reserve.",
+                source: "P2P Foundation",
+                date: "February 11, 2009",
+                tag: "economics",
+                weight: 3
+            },
+            {
+                text: "WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.",
+                source: "BitcoinTalk — Final Public Post",
+                date: "December 5, 2010",
+                tag: "farewell",
+                weight: 4,
+                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
+            },
+            {
+                text: "I've moved on to other things. It's in good hands with Gavin and everyone.",
+                source: "Email to Mike Hearn",
+                date: "April 23, 2011",
+                tag: "farewell",
+                weight: 4
+            },
+            // TIER 3: Technical/general quotes
+            {
+                text: "The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime.",
+                source: "BitcoinTalk",
+                date: "June 17, 2010",
+                tag: "technical",
+                weight: 2
+            },
+            {
+                text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.",
+                source: "BitcoinTalk",
+                date: "July 29, 2010",
+                tag: "philosophy",
+                weight: 2
+            },
+            {
+                text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.",
+                source: "BitcoinTalk",
+                date: "June 21, 2010",
+                tag: "economics",
+                weight: 2
+            },
+            {
+                text: "The Bitcoin network might actually reduce spam by diverting zombie farms to generating bitcoins instead.",
+                source: "Cryptography Mailing List",
+                date: "November 14, 2008",
+                tag: "technical",
+                weight: 1
+            },
+            {
+                text: "In a few decades when the reward gets too small, the transaction fee will become the main compensation for nodes.",
+                source: "BitcoinTalk",
+                date: "February 14, 2010",
+                tag: "economics",
+                weight: 2
+            },
+            {
+                text: "It's very attractive to the libertarian viewpoint if we can explain it properly. I'm better with code than with words though.",
+                source: "Email to Hal Finney",
+                date: "November 2008",
+                tag: "philosophy",
+                weight: 3
+            },
+            {
+                text: "We have proposed a system for electronic transactions without relying on trust.",
+                source: "Bitcoin Whitepaper",
+                date: "October 31, 2008",
+                tag: "technical",
+                weight: 3
+            },
+            {
+                text: "As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers.",
+                source: "Bitcoin Whitepaper",
+                date: "October 31, 2008",
+                tag: "security",
+                weight: 2
+            }
+        ];
+
+        // Build weighted array for random selection
+        let weightedQuotes = [];
+        quotes.forEach((q, i) => {
+            for (let w = 0; w < q.weight; w++) {
+                weightedQuotes.push(i);
+            }
+        });
+
+        let currentQuoteIndex = 0;
+        let filteredQuotes = [...quotes];
+        let autoPlayInterval = null;
+
+        function displayQuote(index) {
+            const quote = filteredQuotes[index];
+            document.getElementById('quoteText').textContent = `"${quote.text}"`;
+            document.getElementById('quoteSource').textContent = quote.source;
+            document.getElementById('quoteDate').textContent = quote.date;
+            document.getElementById('quoteTag').textContent = quote.tag;
+            document.getElementById('quoteCounter').textContent = `Quote ${index + 1} of ${filteredQuotes.length}`;
+        }
+
+        function randomQuote() {
+            const randomWeightedIndex = weightedQuotes[Math.floor(Math.random() * weightedQuotes.length)];
+            const actualIndex = filteredQuotes.findIndex(q => q === quotes[randomWeightedIndex]);
+            if (actualIndex !== -1) {
+                currentQuoteIndex = actualIndex;
+            } else {
+                currentQuoteIndex = Math.floor(Math.random() * filteredQuotes.length);
+            }
+            displayQuote(currentQuoteIndex);
+        }
+
+        function nextQuote() {
+            currentQuoteIndex = (currentQuoteIndex + 1) % filteredQuotes.length;
+            displayQuote(currentQuoteIndex);
+        }
+
+        function toggleAutoPlay() {
+            const btn = document.getElementById('autoPlayBtn');
+            if (autoPlayInterval) {
+                clearInterval(autoPlayInterval);
+                autoPlayInterval = null;
+                btn.textContent = '▶ Auto-Play';
+                btn.classList.remove('active');
+            } else {
+                autoPlayInterval = setInterval(nextQuote, 4000);
+                btn.textContent = '⏸ Pause';
+                btn.classList.add('active');
+            }
+        }
+
+        function filterByTag(tag) {
+            if (tag === 'all') {
+                filteredQuotes = [...quotes];
+            } else {
+                filteredQuotes = quotes.filter(q => q.tag === tag);
+            }
+            currentQuoteIndex = 0;
+            displayQuote(0);
+        }
+
+        document.getElementById('quoteSearch').addEventListener('input', (e) => {
+            const search = e.target.value.toLowerCase();
+            if (search === '') {
+                filteredQuotes = [...quotes];
+            } else {
+                filteredQuotes = quotes.filter(q => 
+                    q.text.toLowerCase().includes(search) ||
+                    q.source.toLowerCase().includes(search) ||
+                    q.tag.toLowerCase().includes(search)
+                );
+            }
+            currentQuoteIndex = 0;
+            if (filteredQuotes.length > 0) {
+                displayQuote(0);
+            }
+        });
+
+        // Mobile menu
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        // Price ticker
+        async function fetchPrices() {
+            try {
+                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true');
+                const data = await response.json();
+                
+                const btcPrice = data.bitcoin.usd.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                const btcChange = data.bitcoin.usd_24h_change.toFixed(2);
+                const xmrPrice = data.monero.usd.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+                const xmrChange = data.monero.usd_24h_change.toFixed(2);
+                
+                document.getElementById('btc-price').textContent = btcPrice;
+                document.getElementById('btc-change').textContent = `${btcChange > 0 ? '+' : ''}${btcChange}%`;
+                document.getElementById('btc-change').className = `price-change ${btcChange >= 0 ? 'up' : 'down'}`;
+                
+                document.getElementById('xmr-price').textContent = xmrPrice;
+                document.getElementById('xmr-change').textContent = `${xmrChange > 0 ? '+' : ''}${xmrChange}%`;
+                document.getElementById('xmr-change').className = `price-change ${xmrChange >= 0 ? 'up' : 'down'}`;
+                
+                // Mobile prices
+                document.getElementById('btc-price-mobile').textContent = btcPrice;
+                document.getElementById('xmr-price-mobile').textContent = xmrPrice;
+            } catch (error) {
+                console.log('Price fetch error:', error);
+            }
+        }
+
+        // Particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const isMobile = window.innerWidth < 768;
+            const count = isMobile ? 20 : 40;
+            
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.top = Math.random() * 100 + '%';
+                particle.style.background = Math.random() > 0.5 ? '#F7931A' : '#FF6600';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // Scroll animations
+        function handleScroll() {
+            const fadeElements = document.querySelectorAll('.fade-in');
+            fadeElements.forEach(el => {
+                const rect = el.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.85) {
+                    el.classList.add('visible');
+                }
+            });
+
+            // Timeline items
+            const timelineItems = document.querySelectorAll('.timeline-item');
+            timelineItems.forEach((item, index) => {
+                const rect = item.getBoundingClientRect();
+                if (rect.top < window.innerHeight * 0.8) {
+                    setTimeout(() => {
+                        item.classList.add('visible');
+                    }, index * 100);
+                }
+            });
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            displayQuote(0);
+            fetchPrices();
+            setInterval(fetchPrices, 60000);
+            createParticles();
+            handleScroll();
+        });
+
+        window.addEventListener('scroll', handleScroll);
+
+        // Analytics Dashboard Animations
+        function animateDashboard() {
+            const dashboard = document.getElementById('analyticsDashboard');
+            if (!dashboard) return;
+
+            const rect = dashboard.getBoundingClientRect();
+            if (rect.top < window.innerHeight * 0.8 && !dashboard.classList.contains('animated')) {
+                dashboard.classList.add('animated');
+
+                // Animate donut chart
+                const circumference = 2 * Math.PI * 70;
+                const legitPercent = 99.6;
+                const illicitPercent = 0.4;
+
+                const legitSegment = document.getElementById('legitSegment');
+                const illicitSegment = document.getElementById('illicitSegment');
+
+                if (legitSegment && illicitSegment) {
+                    setTimeout(() => {
+                        legitSegment.style.strokeDasharray = `${(legitPercent / 100) * circumference} ${circumference}`;
+                    }, 200);
+
+                    setTimeout(() => {
+                        const illicitOffset = (legitPercent / 100) * circumference;
+                        illicitSegment.style.strokeDasharray = `${(illicitPercent / 100) * circumference} ${circumference}`;
+                        illicitSegment.style.strokeDashoffset = -illicitOffset;
+                    }, 600);
+                }
+
+                // Animate breakdown bars
+                const breakdownBars = document.querySelectorAll('.breakdown-bar-fill');
+                breakdownBars.forEach((bar, i) => {
+                    setTimeout(() => {
+                        bar.style.width = bar.dataset.width;
+                    }, 300 + (i * 150));
+                });
+
+                // Animate gauge bars
+                const gauges = document.querySelectorAll('.gauge-fill');
+                gauges.forEach((gauge, i) => {
+                    const originalWidth = gauge.style.width || getComputedStyle(gauge).width;
+                    gauge.style.width = '0';
+                    setTimeout(() => {
+                        gauge.style.width = originalWidth;
+                    }, 800 + (i * 200));
+                });
+            }
+        }
+
+        // Add to scroll handler
+        window.addEventListener('scroll', animateDashboard);
+        animateDashboard(); // Initial check
+    </script>
+</body>
+</html>
