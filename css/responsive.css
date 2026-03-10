@@ -1,0 +1,245 @@
+/* ============================================
+   Satoshi's Vision — Responsive & Mobile
+   iPhone & Android browser optimization
+   ============================================ */
+
+/* Viewport meta support — ensure viewport-fit=cover in HTML */
+/* env(safe-area-inset-*) usage throughout other CSS files */
+
+/* Prevent iOS text size adjustment */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+/* Prevent iOS zoom on input focus (must be >= 16px) */
+input,
+select,
+textarea {
+    font-size: 16px;
+}
+
+/* Smooth scrolling on iOS */
+.scroll-container {
+    -webkit-overflow-scrolling: touch;
+    overflow-y: auto;
+}
+
+/* ---- Breakpoint: Large Desktop (1440px+) ---- */
+@media (min-width: 1440px) {
+    :root {
+        --section-padding: 8rem;
+    }
+}
+
+/* ---- Breakpoint: Desktop (1024px - 1439px) ---- */
+@media (max-width: 1439px) {
+    :root {
+        --section-padding: 5rem;
+    }
+}
+
+/* ---- Breakpoint: Tablet (768px - 1023px) ---- */
+@media (max-width: 1023px) {
+    :root {
+        --section-padding: 3.5rem;
+    }
+
+    .hero-title {
+        font-size: clamp(2rem, 5vw, 3.5rem);
+    }
+}
+
+/* ---- Breakpoint: Mobile (481px - 767px) ---- */
+@media (max-width: 767px) {
+    :root {
+        --section-padding: 2.5rem;
+    }
+
+    .hero {
+        min-height: 85vh;
+    }
+
+    .hero-title {
+        font-size: clamp(1.8rem, 7vw, 2.8rem);
+    }
+
+    .hero-subtitle {
+        font-size: 0.95rem;
+    }
+
+    /* Prevent horizontal scroll */
+    body {
+        overflow-x: hidden;
+    }
+
+    /* Stack CTA buttons */
+    .hero-cta {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .hero-cta .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    /* Cards stack */
+    .grid-auto {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ---- Breakpoint: Small Mobile (320px - 480px) ---- */
+@media (max-width: 480px) {
+    :root {
+        --section-padding: 2rem;
+    }
+
+    body {
+        font-size: 0.95rem;
+    }
+
+    .hero {
+        min-height: 80vh;
+        padding-top: calc(var(--nav-height) + var(--space-xl));
+    }
+
+    .hero-eyebrow {
+        font-size: 0.75rem;
+        letter-spacing: 2px;
+    }
+
+    .hero-title {
+        font-size: clamp(1.6rem, 8vw, 2.2rem);
+    }
+
+    .section-title {
+        font-size: clamp(1.5rem, 6vw, 2rem);
+    }
+
+    .section-desc {
+        font-size: 0.9rem;
+    }
+
+    .btn {
+        padding: 0.8rem 1.4rem;
+        font-size: 0.85rem;
+    }
+
+    .card {
+        padding: var(--space-lg);
+    }
+
+    .quote-display {
+        padding: var(--space-lg);
+        min-height: 150px;
+    }
+
+    .quote-text {
+        font-size: 1rem;
+    }
+
+    .quote-meta {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
+
+/* ---- Breakpoint: iPhone SE / very narrow (< 375px) ---- */
+@media (max-width: 374px) {
+    .nav {
+        padding: 0 var(--space-sm);
+    }
+
+    .nav-logo {
+        font-size: 1.2rem;
+    }
+
+    .hero-title {
+        font-size: 1.5rem;
+    }
+
+    section {
+        padding-left: var(--space-sm);
+        padding-right: var(--space-sm);
+    }
+}
+
+/* ---- Touch-friendly targets ---- */
+@media (pointer: coarse) {
+    /* Ensure all interactive elements meet 44x44px minimum */
+    a,
+    button,
+    [role="button"],
+    input,
+    select,
+    textarea {
+        min-height: 44px;
+    }
+
+    /* Larger gaps between tappable items */
+    .nav-links {
+        gap: var(--space-md);
+    }
+
+    .nav-links a {
+        padding: var(--space-sm) var(--space-xs);
+    }
+
+    /* Better tap targets for filter buttons */
+    .quote-btn,
+    .filter-btn,
+    .portal-tab {
+        min-height: 44px;
+        min-width: 44px;
+        padding: var(--space-sm) var(--space-md);
+    }
+}
+
+/* ---- Landscape phone ---- */
+@media (max-height: 500px) and (orientation: landscape) {
+    .hero {
+        min-height: auto;
+        padding-top: calc(var(--nav-height) + var(--space-xl));
+        padding-bottom: var(--space-xl);
+    }
+
+    .scroll-indicator {
+        display: none;
+    }
+}
+
+/* ---- Print styles ---- */
+@media print {
+    .nav,
+    .hamburger,
+    .mobile-menu,
+    #particles,
+    .scroll-indicator,
+    .price-ticker {
+        display: none !important;
+    }
+
+    body {
+        background: white;
+        color: black;
+    }
+
+    .hero {
+        min-height: auto;
+        padding-top: var(--space-xl);
+    }
+
+    a {
+        color: inherit;
+        text-decoration: underline;
+    }
+
+    .card,
+    .stat-card,
+    .comparison-table th,
+    .comparison-table td {
+        border: 1px solid #ccc;
+    }
+}

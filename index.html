@@ -2,409 +2,48 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Privacy Evolution: Bitcoin → Monero</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Satoshi's Vision — The Privacy Evolution: Bitcoin → Monero</title>
+    <meta name="description" content="Explore how Satoshi Nakamoto's privacy vision for Bitcoin evolved into Monero. Original forum posts, quotes, timeline, and technical analysis.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Satoshi's Vision — The Privacy Evolution: Bitcoin → Monero">
+    <meta property="og:description" content="In 2010, Satoshi described stealth addresses, ring signatures, and hidden amounts. Monero built them. Explore the connection.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Satoshi's Vision">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Satoshi's Vision — Bitcoin → Monero">
+    <meta name="twitter:description" content="How Satoshi's 2010 privacy vision became Monero's reality.">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/nav.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/responsive.css">
+
+    <!-- Page-specific styles -->
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --grey-18: #2E2E2E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--btc-orange);
-        }
-
-        .price-ticker {
-            display: flex;
-            gap: 1.5rem;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-        }
-
-        .price-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .price-label {
-            color: var(--text-secondary);
-        }
-
-        .price-value {
-            color: var(--text-primary);
-            font-weight: 500;
-        }
-
-        .price-change {
-            font-size: 0.75rem;
-        }
-
-        .price-change.up { color: #00D26A; }
-        .price-change.down { color: #FF4757; }
-
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            padding: 10px;
-        }
-
-        .hamburger span {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-            transition: all 0.3s ease;
-        }
-
-        .mobile-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 10, 10, 0.98);
-            z-index: 999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .mobile-menu.active {
-            display: flex;
-        }
-
-        .mobile-menu a {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-family: var(--font-display);
-        }
-
-        .mobile-prices {
-            display: flex;
-            flex-direction: column;
-            gap: 1rem;
-            margin-top: 2rem;
-            font-family: var(--font-mono);
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 4rem 1.5rem 2rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(circle at 20% 30%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(255, 102, 0, 0.08) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 1;
-            max-width: 900px;
-        }
-
-        .hero-eyebrow {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--btc-orange);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-title {
-            font-family: var(--font-display);
-            font-size: clamp(2.5rem, 6vw, 4.5rem);
-            font-weight: 700;
-            line-height: 1.1;
-            margin-bottom: 1.5rem;
-        }
-
-        .hero-title .highlight-btc {
-            background: linear-gradient(135deg, var(--btc-orange), var(--btc-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-title .highlight-xmr {
-            background: linear-gradient(135deg, var(--xmr-orange), #FF8533);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-subtitle {
-            font-size: clamp(1rem, 2vw, 1.25rem);
-            color: var(--text-secondary);
-            max-width: 700px;
-            margin: 0 auto 2rem;
-            line-height: 1.8;
-        }
-
-        .hero-cta {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            padding: 1rem 2rem;
-            font-family: var(--font-body);
-            font-size: 0.9rem;
-            font-weight: 500;
-            text-decoration: none;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            color: var(--text-primary);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(247, 147, 26, 0.3);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-primary);
-            border: 1px solid var(--grey-18);
-        }
-
-        .btn-secondary:hover {
-            border-color: var(--btc-orange);
-            color: var(--btc-orange);
-        }
-
-        .scroll-indicator {
-            position: absolute;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.5rem;
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            animation: bounce 2s infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateX(-50%) translateY(0); }
-            50% { transform: translateX(-50%) translateY(10px); }
-        }
-
-        /* Sections */
-        section {
-            padding: 2rem 1.5rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .section-header {
-            text-align: center;
-            margin-bottom: 4rem;
-        }
-
-        .section-eyebrow {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--btc-orange);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 1rem;
-        }
-
-        .section-title {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 4vw, 3rem);
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-
-        .section-desc {
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* Problem Section - Why This Matters */
-        .problem-section {
-            background: var(--card-bg);
-            padding: 3rem 2rem;
-            margin: 2rem auto;
-            max-width: 1200px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .problem-section .section-header {
-            max-width: 800px;
-            margin: 0 auto 2rem;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .problem-section .section-eyebrow,
-        .problem-section .section-title,
-        .problem-section .section-desc {
-            text-align: center;
-        }
-
-        .problem-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 1.5rem;
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            text-align: left;
-            justify-content: center;
-        }
-
-        .problem-card {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-            border-left: 3px solid var(--btc-orange);
-            transition: transform 0.3s ease;
-        }
-
-        .problem-card:hover {
-            transform: translateX(5px);
-        }
-
-        .problem-card h3 {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            margin-bottom: 0.75rem;
-            color: var(--btc-orange);
-        }
-
-        .problem-card p {
-            color: var(--text-secondary);
-            line-height: 1.6;
-            font-size: 0.95rem;
-        }
-
-        @media (max-width: 700px) {
-            .problem-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Satoshi Quote Explorer */
+        /* Quote Explorer */
         .quote-explorer {
-            background: var(--card-bg);
-            padding: 3rem;
-            margin: 1.5rem 0;
+            background: var(--bg-secondary);
+            padding: var(--space-2xl);
+            margin: var(--space-lg) 0;
         }
 
         .quote-controls {
             display: flex;
-            gap: 1rem;
-            margin-bottom: 2rem;
+            gap: var(--space-md);
+            margin-bottom: var(--space-xl);
             flex-wrap: wrap;
             justify-content: center;
         }
@@ -414,8 +53,8 @@
             min-width: 200px;
             max-width: 400px;
             padding: 0.8rem 1rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--grey-18);
+            background: var(--bg-primary);
+            border: var(--border-subtle);
             color: var(--text-primary);
             font-family: var(--font-mono);
             font-size: 0.9rem;
@@ -433,60 +72,13 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
+            min-height: 44px;
         }
 
-        .quote-btn:hover {
-            background: var(--btc-orange);
-        }
-
+        .quote-btn:hover,
         .quote-btn.active {
             background: var(--btc-orange);
-        }
-
-        .quote-display {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-            border-left: 4px solid var(--btc-gold);
-            margin-bottom: 1.5rem;
-            min-height: 200px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .quote-text {
-            font-family: var(--font-display);
-            font-size: clamp(1.1rem, 2vw, 1.4rem);
-            font-style: italic;
-            line-height: 1.8;
-            margin-bottom: 1.5rem;
-        }
-
-        .quote-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-        }
-
-        .quote-source {
-            color: var(--btc-orange);
-        }
-
-        .quote-date {
-            color: var(--text-secondary);
-        }
-
-        .quote-tag {
-            padding: 0.3rem 0.8rem;
-            background: rgba(247, 147, 26, 0.2);
-            color: var(--btc-orange);
-            font-size: 0.7rem;
-            text-transform: uppercase;
         }
 
         .quote-counter {
@@ -496,17 +88,17 @@
             font-size: 0.85rem;
         }
 
-        /* Vertical Timeline - Fully Responsive */
+        /* Vertical Timeline */
         .timeline-section {
-            padding: 2rem 1.5rem;
-            background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 50%, var(--dark-bg) 100%);
+            padding: var(--space-2xl) var(--space-lg);
+            background: linear-gradient(180deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, var(--bg-primary) 100%);
         }
 
         .timeline {
             position: relative;
             max-width: 800px;
             margin: 0 auto;
-            padding: 2rem 0;
+            padding: var(--space-xl) 0;
         }
 
         .timeline::before {
@@ -523,26 +115,18 @@
         .timeline-item {
             position: relative;
             width: 50%;
-            padding: 1.5rem;
-            opacity: 1;
-            transform: translateY(0);
-            transition: all 0.6s ease;
-        }
-
-        .timeline-item.visible {
-            opacity: 1;
-            transform: translateY(0);
+            padding: var(--space-lg);
         }
 
         .timeline-item:nth-child(odd) {
             left: 0;
-            padding-right: 3rem;
+            padding-right: var(--space-2xl);
             text-align: right;
         }
 
         .timeline-item:nth-child(even) {
             left: 50%;
-            padding-left: 3rem;
+            padding-left: var(--space-2xl);
             text-align: left;
         }
 
@@ -551,17 +135,12 @@
             width: 16px;
             height: 16px;
             border-radius: 50%;
-            top: 2rem;
+            top: var(--space-xl);
             z-index: 1;
         }
 
-        .timeline-item:nth-child(odd) .timeline-dot {
-            right: -8px;
-        }
-
-        .timeline-item:nth-child(even) .timeline-dot {
-            left: -8px;
-        }
+        .timeline-item:nth-child(odd) .timeline-dot { right: -8px; }
+        .timeline-item:nth-child(even) .timeline-dot { left: -8px; }
 
         .timeline-item.btc .timeline-dot {
             background: var(--btc-orange);
@@ -574,7 +153,7 @@
         }
 
         .timeline-item.both .timeline-dot {
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            background: var(--gradient-btc-xmr);
             box-shadow: 0 0 20px var(--btc-gold);
         }
 
@@ -582,14 +161,14 @@
             font-family: var(--font-mono);
             font-size: 0.85rem;
             color: var(--btc-orange);
-            margin-bottom: 0.5rem;
+            margin-bottom: var(--space-sm);
         }
 
         .timeline-title {
             font-family: var(--font-display);
             font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
+            margin-bottom: var(--space-sm);
         }
 
         .timeline-desc {
@@ -598,61 +177,35 @@
             line-height: 1.6;
         }
 
-        /* Statistics Section - CSS-Only Charts */
+        /* Statistics Section */
         .stats-section {
-            padding: 2rem 1.5rem;
+            padding: var(--space-2xl) var(--space-lg);
         }
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: var(--space-xl);
+            margin-bottom: var(--space-3xl);
         }
 
-        .stat-card {
-            background: var(--card-bg);
-            padding: 2rem;
-            text-align: center;
-            border-bottom: 3px solid var(--btc-orange);
-        }
-
-        .stat-value {
-            font-family: var(--font-display);
-            font-size: clamp(2.5rem, 5vw, 3.5rem);
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--btc-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-label {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Advanced Analytics Dashboard */
+        /* Analytics Dashboard */
         .analytics-dashboard {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            margin: 2rem auto;
+            background: var(--bg-secondary);
+            padding: var(--space-lg);
+            margin: var(--space-xl) auto;
             max-width: 1100px;
         }
 
         .dashboard-header {
             text-align: center;
-            margin-bottom: 2.5rem;
+            margin-bottom: var(--space-xl);
         }
 
         .dashboard-title {
             font-family: var(--font-display);
             font-size: 1.5rem;
-            margin-bottom: 0.5rem;
+            margin-bottom: var(--space-sm);
         }
 
         .dashboard-subtitle {
@@ -664,25 +217,30 @@
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            gap: var(--space-xl);
         }
 
         /* Donut Chart */
         .donut-container {
-            background: var(--dark-bg);
-            padding: 1.5rem;
+            background: var(--bg-primary);
+            padding: var(--space-lg);
             display: flex;
             flex-direction: column;
             align-items: center;
+            animation: pulse-glow 4s infinite;
         }
 
-        .donut-title {
+        .donut-title,
+        .area-title,
+        .breakdown-title,
+        .gauge-title {
             font-family: var(--font-mono);
             font-size: 0.75rem;
             color: var(--text-secondary);
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 1rem;
+            margin-bottom: var(--space-md);
+            text-align: center;
         }
 
         .donut-chart {
@@ -691,30 +249,11 @@
             height: 180px;
         }
 
-        .donut-chart svg {
-            transform: rotate(-90deg);
-        }
-
-        .donut-ring {
-            fill: none;
-            stroke: var(--grey-18);
-            stroke-width: 20;
-        }
-
-        .donut-segment {
-            fill: none;
-            stroke-width: 20;
-            stroke-linecap: butt;
-            transition: stroke-dasharray 1.5s ease;
-        }
-
-        .donut-segment.legitimate {
-            stroke: url(#orangeGradient);
-        }
-
-        .donut-segment.illicit {
-            stroke: #FF4757;
-        }
+        .donut-chart svg { transform: rotate(-90deg); }
+        .donut-ring { fill: none; stroke: var(--grey-18); stroke-width: 20; }
+        .donut-segment { fill: none; stroke-width: 20; stroke-linecap: butt; transition: stroke-dasharray 1.5s ease; }
+        .donut-segment.legitimate { stroke: url(#orangeGradient); }
+        .donut-segment.illicit { stroke: var(--danger-red); }
 
         .donut-center {
             position: absolute;
@@ -737,20 +276,12 @@
             color: var(--text-secondary);
         }
 
-        /* Stacked Area Chart */
-        .area-container {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-        }
-
-        .area-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            text-align: center;
+        /* Area/Bar Chart */
+        .area-container,
+        .breakdown-container,
+        .gauge-container {
+            background: var(--bg-primary);
+            padding: var(--space-lg);
         }
 
         .area-chart {
@@ -758,7 +289,7 @@
             display: flex;
             align-items: flex-end;
             gap: 2px;
-            padding: 0 0.5rem;
+            padding: 0 var(--space-sm);
         }
 
         .area-bar {
@@ -777,39 +308,11 @@
             overflow: hidden;
         }
 
-        .area-bar-legit {
-            background: linear-gradient(180deg, var(--btc-orange), var(--btc-gold));
-            transition: height 1s ease;
-        }
+        .area-bar-legit { background: var(--gradient-btc); transition: height 1s ease; }
+        .area-bar-illicit { background: var(--danger-red); transition: height 1s ease; }
+        .area-bar-year { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-secondary); margin-top: var(--space-sm); }
 
-        .area-bar-illicit {
-            background: #FF4757;
-            transition: height 1s ease;
-        }
-
-        .area-bar-year {
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            margin-top: 0.5rem;
-        }
-
-        /* Breakdown Cards */
-        .breakdown-container {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-        }
-
-        .breakdown-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
+        /* Breakdown Bars */
         .breakdown-list {
             display: flex;
             flex-direction: column;
@@ -834,76 +337,31 @@
             height: 100%;
             display: flex;
             align-items: center;
-            padding-left: 0.5rem;
+            padding-left: var(--space-sm);
             transition: width 1.2s ease;
         }
 
-        .breakdown-bar-fill.scams {
-            background: linear-gradient(90deg, #FF6B6B, #FF4757);
-        }
+        .breakdown-bar-fill.scams { background: linear-gradient(90deg, #FF6B6B, #FF4757); }
+        .breakdown-bar-fill.darknet { background: linear-gradient(90deg, #9B59B6, #8E44AD); }
+        .breakdown-bar-fill.ransomware { background: linear-gradient(90deg, #E74C3C, #C0392B); }
+        .breakdown-bar-fill.fraud { background: linear-gradient(90deg, #F39C12, #E67E22); }
+        .breakdown-bar-fill.sanctions { background: linear-gradient(90deg, #3498DB, #2980B9); }
 
-        .breakdown-bar-fill.darknet {
-            background: linear-gradient(90deg, #9B59B6, #8E44AD);
-        }
+        .breakdown-bar-label { font-family: var(--font-mono); font-size: 0.7rem; color: white; white-space: nowrap; }
+        .breakdown-value { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary); min-width: 50px; text-align: right; }
 
-        .breakdown-bar-fill.ransomware {
-            background: linear-gradient(90deg, #E74C3C, #C0392B);
-        }
-
-        .breakdown-bar-fill.fraud {
-            background: linear-gradient(90deg, #F39C12, #E67E22);
-        }
-
-        .breakdown-bar-fill.sanctions {
-            background: linear-gradient(90deg, #3498DB, #2980B9);
-        }
-
-        .breakdown-bar-label {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: white;
-            white-space: nowrap;
-        }
-
-        .breakdown-value {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-primary);
-            min-width: 50px;
-            text-align: right;
-        }
-
-        /* Comparison Gauge */
-        .gauge-container {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        .gauge-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-        }
+        /* Gauge */
+        .gauge-container { display: flex; flex-direction: column; align-items: center; }
 
         .gauge-row {
             display: flex;
             align-items: center;
-            gap: 1rem;
+            gap: var(--space-md);
             width: 100%;
-            margin-bottom: 1rem;
+            margin-bottom: var(--space-md);
         }
 
-        .gauge-label {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            width: 80px;
-        }
+        .gauge-label { font-family: var(--font-mono); font-size: 0.8rem; width: 80px; }
 
         .gauge-track {
             flex: 1;
@@ -913,303 +371,159 @@
             overflow: hidden;
         }
 
-        .gauge-fill {
-            height: 100%;
-            transition: width 1.5s ease;
-        }
+        .gauge-fill { height: 100%; transition: width 1.5s ease; }
+        .gauge-fill.crypto { background: var(--gradient-btc); width: 10%; }
+        .gauge-fill.cash { background: linear-gradient(90deg, #27AE60, #2ECC71); width: 50%; }
+        .gauge-fill.banks { background: linear-gradient(90deg, #3498DB, #5DADE2); width: 35%; }
 
-        .gauge-fill.crypto {
-            background: linear-gradient(90deg, var(--btc-orange), var(--btc-gold));
-            width: 10%;
-        }
+        .gauge-percent { font-family: var(--font-mono); font-size: 0.8rem; width: 50px; text-align: right; color: var(--text-secondary); }
+        .gauge-note { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); text-align: center; margin-top: var(--space-sm); }
 
-        .gauge-fill.cash {
-            background: linear-gradient(90deg, #27AE60, #2ECC71);
-            width: 50%;
-        }
-
-        .gauge-fill.banks {
-            background: linear-gradient(90deg, #3498DB, #5DADE2);
-            width: 35%;
-        }
-
-        .gauge-percent {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            width: 50px;
-            text-align: right;
-            color: var(--text-secondary);
-        }
-
-        .gauge-note {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-            text-align: center;
-            margin-top: 0.5rem;
-        }
-
-        /* Dashboard Legend & Source */
+        /* Dashboard Footer */
         .dashboard-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 2rem;
-            padding-top: 1rem;
-            border-top: 1px solid var(--grey-18);
+            margin-top: var(--space-xl);
+            padding-top: var(--space-md);
+            border-top: var(--border-subtle);
             flex-wrap: wrap;
-            gap: 1rem;
+            gap: var(--space-md);
         }
 
-        .dashboard-legend {
-            display: flex;
-            gap: 1.5rem;
-            flex-wrap: wrap;
-        }
+        .dashboard-legend { display: flex; gap: var(--space-lg); flex-wrap: wrap; }
+        .legend-item { display: flex; align-items: center; gap: var(--space-sm); font-family: var(--font-mono); font-size: 0.75rem; }
+        .legend-dot { width: 10px; height: 10px; }
+        .legend-dot.legitimate { background: var(--btc-orange); }
+        .legend-dot.illicit { background: var(--danger-red); }
 
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-        }
-
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-        }
-
-        .legend-dot.legitimate {
-            background: var(--btc-orange);
-        }
-
-        .legend-dot.illicit {
-            background: #FF4757;
-        }
-
-        .dashboard-source {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
-        .dashboard-source a {
-            color: var(--btc-orange);
-            text-decoration: none;
-        }
-
-        /* Animated pulse for key metrics */
-        @keyframes pulse-glow {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(247, 147, 26, 0); }
-            50% { box-shadow: 0 0 20px 5px rgba(247, 147, 26, 0.15); }
-        }
-
-        .donut-container {
-            animation: pulse-glow 4s infinite;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .analytics-dashboard {
-                padding: 1.5rem;
-            }
-
-            .donut-chart {
-                width: 150px;
-                height: 150px;
-            }
-
-            .area-chart {
-                height: 120px;
-            }
-        }
+        .dashboard-source { font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary); }
+        .dashboard-source a { color: var(--btc-orange); text-decoration: none; }
+        .dashboard-source a:hover { text-decoration: underline; }
 
         /* Comparison Section */
         .comparison-section {
-            padding: 2rem 1.5rem;
-            background: var(--card-bg);
+            padding: var(--space-2xl) var(--space-lg);
+            background: var(--bg-secondary);
         }
 
-        .comparison-table {
-            max-width: 1000px;
-            margin: 0 auto;
-            overflow-x: auto;
-        }
-
-        .comparison-table table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        .comparison-table th,
-        .comparison-table td {
-            padding: 1.5rem;
-            text-align: left;
-            border-bottom: 1px solid var(--grey-18);
-        }
-
-        .comparison-table th {
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
-
-        .comparison-table th:first-child {
-            color: var(--text-secondary);
-        }
-
-        .comparison-table th:nth-child(2) {
-            color: var(--btc-orange);
-        }
-
-        .comparison-table th:nth-child(3) {
-            color: var(--xmr-orange);
-        }
-
-        .comparison-table td {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-        }
-
-        .comparison-table td:first-child {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--text-primary);
-        }
-
-        .feature-yes {
-            color: #00D26A;
-        }
-
-        .feature-no {
-            color: #FF4757;
-        }
-
-        .feature-partial {
-            color: var(--btc-gold);
-        }
-
-        /* Deep Dive CTA */
+        /* Deep Dive */
         .deep-dive {
-            padding: 2rem 1.5rem;
+            padding: var(--space-2xl) var(--space-lg);
             text-align: center;
-            background: linear-gradient(180deg, var(--dark-bg), var(--card-bg));
+            background: linear-gradient(180deg, var(--bg-primary), var(--bg-secondary));
         }
 
         .deep-dive-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
+            gap: var(--space-xl);
             max-width: 1000px;
-            margin: 3rem auto 0;
+            margin: var(--space-2xl) auto 0;
         }
 
-        .deep-dive-card {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-            border: 1px solid var(--grey-18);
-            transition: all 0.3s ease;
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .deep-dive-card:hover {
-            border-color: var(--btc-orange);
-            transform: translateY(-5px);
-        }
-
-        .deep-dive-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-        }
-
-        .deep-dive-card h3 {
-            font-family: var(--font-display);
-            font-size: 1.3rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .deep-dive-card p {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--card-bg);
-            padding: 4rem 2rem;
+        /* Problem Section */
+        .problem-section {
+            background: var(--bg-secondary);
+            padding: var(--space-2xl) var(--space-xl);
+            margin: var(--space-xl) auto;
+            max-width: var(--max-width);
             text-align: center;
-            border-top: 1px solid var(--grey-18);
-        }
-
-        .footer-quote {
-            font-family: var(--font-display);
-            font-size: clamp(1rem, 2vw, 1.3rem);
-            font-style: italic;
-            max-width: 700px;
-            margin: 0 auto 1rem;
-            color: var(--text-secondary);
-        }
-
-        .footer-attribution {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--btc-orange);
-            margin-bottom: 2rem;
-        }
-
-        .footer-links {
             display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-            margin-bottom: 2rem;
+            flex-direction: column;
+            align-items: center;
         }
 
-        .footer-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
+        .problem-section .section-header {
+            max-width: 800px;
+            margin: 0 auto var(--space-xl);
         }
 
-        .footer-links a:hover {
+        .problem-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--space-lg);
+            max-width: var(--max-width-narrow);
+            width: 100%;
+            text-align: left;
+        }
+
+        .problem-card {
+            background: var(--bg-primary);
+            padding: var(--space-lg);
+            border-left: 3px solid var(--btc-orange);
+            transition: transform var(--transition-base);
+        }
+
+        .problem-card:hover { transform: translateX(5px); }
+
+        .problem-card h3 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            margin-bottom: 0.75rem;
             color: var(--btc-orange);
         }
 
-        .footer-copy {
-            font-size: 0.8rem;
+        .problem-card p {
             color: var(--text-secondary);
+            line-height: 1.6;
+            font-size: 0.93rem;
+        }
+
+        /* Why Privacy Matters (new section) */
+        .why-privacy {
+            background: var(--bg-primary);
+            padding: var(--space-2xl) var(--space-lg);
+            max-width: var(--max-width);
+            margin: 0 auto;
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: var(--space-xl);
+            max-width: var(--max-width-narrow);
+            margin: 0 auto;
+        }
+
+        .why-item {
+            text-align: center;
+            padding: var(--space-lg);
+        }
+
+        .why-icon {
+            font-size: 2.5rem;
+            margin-bottom: var(--space-md);
+        }
+
+        .why-item h3 {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .why-item p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.6;
         }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .analytics-dashboard { padding: var(--space-md); }
+            .donut-chart { width: 150px; height: 150px; }
+            .area-chart { height: 120px; }
+            .problem-grid { grid-template-columns: 1fr; }
+            .why-grid { grid-template-columns: 1fr; }
 
-            .price-ticker {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
-            .timeline::before {
-                left: 20px;
-            }
+            .timeline::before { left: 20px; }
 
             .timeline-item {
                 width: 100%;
                 left: 0 !important;
                 padding-left: 50px !important;
-                padding-right: 1rem !important;
+                padding-right: var(--space-md) !important;
                 text-align: left !important;
             }
 
@@ -1217,55 +531,6 @@
                 left: 12px !important;
                 right: auto !important;
             }
-
-            .comparison-table th,
-            .comparison-table td {
-                padding: 1rem 0.5rem;
-                font-size: 0.85rem;
-            }
-
-            section {
-                padding: 4rem 1.5rem;
-            }
-        }
-
-        /* Animations */
-        .fade-in {
-            opacity: 1;
-            transform: translateY(0);
-            transition: all 0.8s ease;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Particle Background */
-        #particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-        }
-
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            opacity: 0.4;
-            animation: float 15s infinite ease-in-out;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translate(0, 0) rotate(0deg); }
-            25% { transform: translate(50px, -50px) rotate(90deg); }
-            50% { transform: translate(100px, 0) rotate(180deg); }
-            75% { transform: translate(50px, 50px) rotate(270deg); }
         }
     </style>
 </head>
@@ -1275,14 +540,15 @@
 
     <!-- Navigation -->
     <nav class="nav">
-        <div class="nav-logo">₿ → ɱ</div>
+        <a href="/" class="nav-logo">₿ → ɱ</a>
         <div class="nav-links">
+            <a href="/">Home</a>
             <a href="#timeline">Timeline</a>
             <a href="#quotes">Quotes</a>
             <a href="#stats">Statistics</a>
-            <a href="#compare">Compare</a>
             <a href="secrets.html">Secrets</a>
             <a href="quotes.html">Quote Archive</a>
+            <a href="btc-xmr-education.html">Education</a>
             <a href="bottom-line.html">The Bottom Line</a>
             <a href="hold-monero.html">Hold Monero</a>
         </div>
@@ -1298,7 +564,7 @@
                 <span class="price-change" id="xmr-change"></span>
             </div>
         </div>
-        <div class="hamburger" onclick="toggleMenu()">
+        <div class="hamburger" aria-label="Toggle navigation menu">
             <span></span>
             <span></span>
             <span></span>
@@ -1307,12 +573,15 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="#timeline" onclick="toggleMenu()">Timeline</a>
-        <a href="#quotes" onclick="toggleMenu()">Quotes</a>
-        <a href="#stats" onclick="toggleMenu()">Statistics</a>
-        <a href="#compare" onclick="toggleMenu()">Compare</a>
+        <a href="/">Home</a>
+        <a href="#timeline">Timeline</a>
+        <a href="#quotes">Quotes</a>
+        <a href="#stats">Statistics</a>
         <a href="secrets.html">Secrets</a>
-        <a href="quotes.html">The Bottom Line</a>
+        <a href="quotes.html">Quote Archive</a>
+        <a href="btc-xmr-education.html">Education</a>
+        <a href="bottom-line.html">The Bottom Line</a>
+        <a href="hold-monero.html">Hold Monero</a>
         <div class="mobile-prices">
             <div>BTC: <span id="btc-price-mobile">—</span></div>
             <div>XMR: <span id="xmr-price-mobile">—</span></div>
@@ -1328,8 +597,8 @@
                 to <span class="highlight-xmr">Monero's</span> Reality
             </h1>
             <p class="hero-subtitle">
-                In 2010, Satoshi Nakamoto described cryptographic privacy features that wouldn't exist for years. 
-                He envisioned key blinding, group signatures, and hidden transaction amounts—the exact technologies 
+                In 2010, Satoshi Nakamoto described cryptographic privacy features that wouldn't exist for years.
+                He envisioned key blinding, group signatures, and hidden transaction amounts—the exact technologies
                 that Monero would implement four years later. This is the story of how one dream became another's foundation.
             </p>
             <div class="hero-cta">
@@ -1343,6 +612,32 @@
         </div>
     </section>
 
+    <!-- Why Privacy Matters (NEW SECTION) -->
+    <section class="why-privacy">
+        <div class="section-header">
+            <div class="section-eyebrow">The Foundation</div>
+            <h2 class="section-title">Why Privacy Matters</h2>
+            <p class="section-desc">Privacy isn't about having something to hide. It's about having something to protect.</p>
+        </div>
+        <div class="why-grid stagger-children">
+            <div class="why-item fade-in">
+                <div class="why-icon">🛡️</div>
+                <h3>Financial Sovereignty</h3>
+                <p>Your spending habits reveal your beliefs, your health, your relationships. Financial privacy is the foundation of personal freedom.</p>
+            </div>
+            <div class="why-item fade-in">
+                <div class="why-icon">🔍</div>
+                <h3>Surveillance Resistance</h3>
+                <p>In a world of increasing financial surveillance, transparent blockchains become tools of control rather than liberation.</p>
+            </div>
+            <div class="why-item fade-in">
+                <div class="why-icon">⚖️</div>
+                <h3>Fungibility</h3>
+                <p>Money must be interchangeable. When every coin carries its history, some become "tainted" and worth less than others. Privacy ensures equal value.</p>
+            </div>
+        </div>
+    </section>
+
     <!-- Problem Section -->
     <section class="problem-section">
         <div class="section-header">
@@ -1350,7 +645,7 @@
             <h2 class="section-title">Bitcoin's Transparent Ledger</h2>
             <p class="section-desc">Satoshi knew from the beginning: pseudonymity isn't privacy.</p>
         </div>
-        <div class="problem-grid">
+        <div class="problem-grid stagger-children">
             <div class="problem-card fade-in">
                 <h3>Permanent Public Record</h3>
                 <p>Every Bitcoin transaction is etched permanently into a public blockchain. Your financial history—every purchase, every transfer, every balance—becomes an immutable part of history that anyone can analyze forever.</p>
@@ -1380,8 +675,8 @@
         <div class="quote-explorer">
             <div class="quote-controls">
                 <input type="text" class="quote-search" id="quoteSearch" placeholder="Search quotes...">
-                <button class="quote-btn" onclick="randomQuote()">🎲 Random</button>
-                <button class="quote-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
+                <button class="quote-btn" onclick="randomQuote()">Random</button>
+                <button class="quote-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">Auto-Play</button>
                 <button class="quote-btn" onclick="filterByTag('privacy')">Privacy</button>
                 <button class="quote-btn" onclick="filterByTag('technical')">Technical</button>
                 <button class="quote-btn" onclick="filterByTag('all')">All</button>
@@ -1391,7 +686,7 @@
                 <div class="quote-meta">
                     <span class="quote-source" id="quoteSource">BitcoinTalk Thread #174 — "Not a Suggestion"</span>
                     <span class="quote-date" id="quoteDate">August 11, 2010</span>
-                    <span class="quote-tag" id="quoteTag">privacy</span>
+                    <span class="tag" id="quoteTag">privacy</span>
                 </div>
             </div>
             <div class="quote-counter" id="quoteCounter">Quote 1 of 18</div>
@@ -1405,7 +700,7 @@
             <h2 class="section-title">The Privacy Evolution Timeline</h2>
             <p class="section-desc">From Satoshi's whitepaper to Monero's full-chain privacy.</p>
         </div>
-        <div class="timeline">
+        <div class="timeline stagger-children">
             <div class="timeline-item btc fade-in">
                 <div class="timeline-dot"></div>
                 <div class="timeline-year">October 2008</div>
@@ -1488,7 +783,7 @@
             <h2 class="section-title">Crypto Crime Statistics</h2>
             <p class="section-desc">The data tells a different story than the headlines.</p>
         </div>
-        <div class="stats-grid">
+        <div class="stats-grid stagger-children">
             <div class="stat-card fade-in">
                 <div class="stat-value">&lt;1%</div>
                 <div class="stat-label">Crypto Illicit Activity</div>
@@ -1507,7 +802,7 @@
             </div>
         </div>
 
-        <!-- Advanced Analytics Dashboard -->
+        <!-- Analytics Dashboard -->
         <div class="analytics-dashboard fade-in" id="analyticsDashboard">
             <div class="dashboard-header">
                 <h3 class="dashboard-title">Cryptocurrency Crime Analytics</h3>
@@ -1515,7 +810,7 @@
             </div>
 
             <div class="dashboard-grid">
-                <!-- Donut Chart: Overall Split -->
+                <!-- Donut Chart -->
                 <div class="donut-container">
                     <div class="donut-title">2024 Transaction Volume</div>
                     <div class="donut-chart">
@@ -1527,10 +822,8 @@
                                 </linearGradient>
                             </defs>
                             <circle class="donut-ring" cx="90" cy="90" r="70"/>
-                            <circle class="donut-segment legitimate" cx="90" cy="90" r="70" 
-                                    stroke-dasharray="0 440" id="legitSegment"/>
-                            <circle class="donut-segment illicit" cx="90" cy="90" r="70" 
-                                    stroke-dasharray="0 440" id="illicitSegment"/>
+                            <circle class="donut-segment legitimate" cx="90" cy="90" r="70" stroke-dasharray="0 440" id="legitSegment"/>
+                            <circle class="donut-segment illicit" cx="90" cy="90" r="70" stroke-dasharray="0 440" id="illicitSegment"/>
                         </svg>
                         <div class="donut-center">
                             <div class="donut-value">99.6%</div>
@@ -1544,45 +837,27 @@
                     <div class="area-title">Volume by Year (Trillions USD)</div>
                     <div class="area-chart" id="areaChart">
                         <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 60px;">
-                                <div class="area-bar-legit" style="height: 59px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
+                            <div class="area-bar-stack" style="height: 60px;"><div class="area-bar-legit" style="height: 59px;"></div><div class="area-bar-illicit" style="height: 1px;"></div></div>
                             <span class="area-bar-year">'19</span>
                         </div>
                         <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 70px;">
-                                <div class="area-bar-legit" style="height: 69px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
+                            <div class="area-bar-stack" style="height: 70px;"><div class="area-bar-legit" style="height: 69px;"></div><div class="area-bar-illicit" style="height: 1px;"></div></div>
                             <span class="area-bar-year">'20</span>
                         </div>
                         <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 130px;">
-                                <div class="area-bar-legit" style="height: 129px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
+                            <div class="area-bar-stack" style="height: 130px;"><div class="area-bar-legit" style="height: 129px;"></div><div class="area-bar-illicit" style="height: 1px;"></div></div>
                             <span class="area-bar-year">'21</span>
                         </div>
                         <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 90px;">
-                                <div class="area-bar-legit" style="height: 89px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
+                            <div class="area-bar-stack" style="height: 90px;"><div class="area-bar-legit" style="height: 89px;"></div><div class="area-bar-illicit" style="height: 1px;"></div></div>
                             <span class="area-bar-year">'22</span>
                         </div>
                         <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 100px;">
-                                <div class="area-bar-legit" style="height: 99px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
+                            <div class="area-bar-stack" style="height: 100px;"><div class="area-bar-legit" style="height: 99px;"></div><div class="area-bar-illicit" style="height: 1px;"></div></div>
                             <span class="area-bar-year">'23</span>
                         </div>
                         <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 140px;">
-                                <div class="area-bar-legit" style="height: 139px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
+                            <div class="area-bar-stack" style="height: 140px;"><div class="area-bar-legit" style="height: 139px;"></div><div class="area-bar-illicit" style="height: 1px;"></div></div>
                             <span class="area-bar-year">'24</span>
                         </div>
                     </div>
@@ -1593,43 +868,23 @@
                     <div class="breakdown-title">Illicit Activity Breakdown (2024)</div>
                     <div class="breakdown-list">
                         <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill scams" style="width: 0%;" data-width="45%">
-                                    <span class="breakdown-bar-label">Scams & Phishing</span>
-                                </div>
-                            </div>
+                            <div class="breakdown-bar-track"><div class="breakdown-bar-fill scams" style="width: 0%;" data-width="45%"><span class="breakdown-bar-label">Scams &amp; Phishing</span></div></div>
                             <span class="breakdown-value">$9.9B</span>
                         </div>
                         <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill sanctions" style="width: 0%;" data-width="35%">
-                                    <span class="breakdown-bar-label">Sanctioned Entities</span>
-                                </div>
-                            </div>
+                            <div class="breakdown-bar-track"><div class="breakdown-bar-fill sanctions" style="width: 0%;" data-width="35%"><span class="breakdown-bar-label">Sanctioned Entities</span></div></div>
                             <span class="breakdown-value">$7.8B</span>
                         </div>
                         <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill darknet" style="width: 0%;" data-width="18%">
-                                    <span class="breakdown-bar-label">Darknet Markets</span>
-                                </div>
-                            </div>
+                            <div class="breakdown-bar-track"><div class="breakdown-bar-fill darknet" style="width: 0%;" data-width="18%"><span class="breakdown-bar-label">Darknet Markets</span></div></div>
                             <span class="breakdown-value">$2.0B</span>
                         </div>
                         <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill ransomware" style="width: 0%;" data-width="12%">
-                                    <span class="breakdown-bar-label">Ransomware</span>
-                                </div>
-                            </div>
+                            <div class="breakdown-bar-track"><div class="breakdown-bar-fill ransomware" style="width: 0%;" data-width="12%"><span class="breakdown-bar-label">Ransomware</span></div></div>
                             <span class="breakdown-value">$1.1B</span>
                         </div>
                         <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill fraud" style="width: 0%;" data-width="8%">
-                                    <span class="breakdown-bar-label">Stolen Funds</span>
-                                </div>
-                            </div>
+                            <div class="breakdown-bar-track"><div class="breakdown-bar-fill fraud" style="width: 0%;" data-width="8%"><span class="breakdown-bar-label">Stolen Funds</span></div></div>
                             <span class="breakdown-value">$0.5B</span>
                         </div>
                     </div>
@@ -1640,23 +895,17 @@
                     <div class="gauge-title">Illicit Use by Payment Method</div>
                     <div class="gauge-row">
                         <span class="gauge-label" style="color: var(--btc-orange);">Crypto</span>
-                        <div class="gauge-track">
-                            <div class="gauge-fill crypto"></div>
-                        </div>
+                        <div class="gauge-track"><div class="gauge-fill crypto"></div></div>
                         <span class="gauge-percent">~0.4%</span>
                     </div>
                     <div class="gauge-row">
                         <span class="gauge-label" style="color: #2ECC71;">USD Cash</span>
-                        <div class="gauge-track">
-                            <div class="gauge-fill cash"></div>
-                        </div>
+                        <div class="gauge-track"><div class="gauge-fill cash"></div></div>
                         <span class="gauge-percent">2-5%</span>
                     </div>
                     <div class="gauge-row">
                         <span class="gauge-label" style="color: #5DADE2;">Banks</span>
-                        <div class="gauge-track">
-                            <div class="gauge-fill banks"></div>
-                        </div>
+                        <div class="gauge-track"><div class="gauge-fill banks"></div></div>
                         <span class="gauge-percent">~2%</span>
                     </div>
                     <p class="gauge-note">UN estimates $2T laundered annually through traditional banking</p>
@@ -1665,17 +914,11 @@
 
             <div class="dashboard-footer">
                 <div class="dashboard-legend">
-                    <div class="legend-item">
-                        <span class="legend-dot legitimate"></span>
-                        <span>Legitimate Activity</span>
-                    </div>
-                    <div class="legend-item">
-                        <span class="legend-dot illicit"></span>
-                        <span>Illicit Activity</span>
-                    </div>
+                    <div class="legend-item"><span class="legend-dot legitimate"></span><span>Legitimate Activity</span></div>
+                    <div class="legend-item"><span class="legend-dot illicit"></span><span>Illicit Activity</span></div>
                 </div>
                 <div class="dashboard-source">
-                    Source: <a href="https://www.chainalysis.com/blog/2025-crypto-crime-report-introduction/" target="_blank">Chainalysis Crypto Crime Report 2025</a>
+                    Source: <a href="https://www.chainalysis.com/blog/2025-crypto-crime-report-introduction/" target="_blank" rel="noopener noreferrer">Chainalysis Crypto Crime Report 2025</a>
                 </div>
             </div>
         </div>
@@ -1742,208 +985,133 @@
     <section class="deep-dive">
         <div class="section-header">
             <div class="section-eyebrow">Go Deeper</div>
-            <h2 class="section-title">Explore the Hidden Pages</h2>
-            <p class="section-desc">Uncover the original forum threads and full quote archive.</p>
+            <h2 class="section-title">Explore the Full Archive</h2>
+            <p class="section-desc">Dive into original forum threads, the full quote archive, and more.</p>
         </div>
-        <div class="deep-dive-grid">
-            <a href="secrets.html" class="deep-dive-card">
+        <div class="deep-dive-grid stagger-children">
+            <a href="secrets.html" class="deep-dive-card fade-in">
                 <div class="deep-dive-icon">🔐</div>
                 <h3>The Secret Threads</h3>
                 <p>Deep dive into the "Not a Suggestion" thread where Satoshi described Monero's future features in 2010.</p>
             </a>
-            <a href="quotes.html" class="deep-dive-card">
+            <a href="quotes.html" class="deep-dive-card fade-in">
                 <div class="deep-dive-icon">📜</div>
                 <h3>Full Quote Archive</h3>
                 <p>30+ searchable Satoshi quotes with category filtering, highlighting, and source links.</p>
             </a>
-            <a href="timeline.html" class="deep-dive-card">
+            <a href="timeline.html" class="deep-dive-card fade-in">
                 <div class="deep-dive-icon">⏳</div>
                 <h3>Interactive Timeline</h3>
                 <p>Click-through timeline with detailed event descriptions and keyboard navigation.</p>
+            </a>
+            <a href="btc-xmr-education.html" class="deep-dive-card fade-in">
+                <div class="deep-dive-icon">📚</div>
+                <h3>Privacy Education</h3>
+                <p>Comprehensive guide to Bitcoin and Monero privacy technologies, from basics to advanced cryptography.</p>
+            </a>
+            <a href="bottom-line.html" class="deep-dive-card fade-in">
+                <div class="deep-dive-icon">📊</div>
+                <h3>The Bottom Line</h3>
+                <p>BTC TradFi vs Monero privacy — complete analysis with regulatory landscape and evidence.</p>
+            </a>
+            <a href="hold-monero.html" class="deep-dive-card fade-in">
+                <div class="deep-dive-icon">💎</div>
+                <h3>Acquire Monero</h3>
+                <p>Educational guide to acquiring XMR through non-custodial instant swaps and decentralized exchanges.</p>
             </a>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer>
-        <p class="footer-quote">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
-        <p class="footer-attribution">— Satoshi Nakamoto, Final Email, April 2011</p>
-        <div class="footer-links">
-            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto Institute</a>
-            <a href="https://getmonero.org" target="_blank">GetMonero.org</a>
-            <a href="https://bitcoin.org" target="_blank">Bitcoin.org</a>
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="footer-logo">₿ → ɱ</div>
+                <p class="footer-tagline">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
+                <p class="footer-attribution">— Satoshi Nakamoto, April 2011</p>
+            </div>
+            <div class="footer-section">
+                <h4>Archive</h4>
+                <ul>
+                    <li><a href="secrets.html">Secret Threads</a></li>
+                    <li><a href="quotes.html">Quote Archive</a></li>
+                    <li><a href="timeline.html">Timeline</a></li>
+                    <li><a href="btc-xmr-education.html">Education</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Analysis</h4>
+                <ul>
+                    <li><a href="bottom-line.html">The Bottom Line</a></li>
+                    <li><a href="hold-monero.html">Hold Monero</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://satoshi.nakamotoinstitute.org" target="_blank" rel="noopener noreferrer">Satoshi Nakamoto Institute</a></li>
+                    <li><a href="https://getmonero.org" target="_blank" rel="noopener noreferrer">GetMonero.org</a></li>
+                    <li><a href="https://bitcoin.org" target="_blank" rel="noopener noreferrer">Bitcoin.org</a></li>
+                    <li><a href="https://www.chainalysis.com" target="_blank" rel="noopener noreferrer">Chainalysis Research</a></li>
+                </ul>
+            </div>
         </div>
-        <p class="footer-copy">Educational resource. Not financial advice. DYOR.</p>
+        <div class="footer-bottom">
+            <p class="footer-copy">Educational resource. Not financial advice. Do your own research.</p>
+            <p class="footer-legal">No cookies. No tracking. No JavaScript analytics.</p>
+        </div>
     </footer>
 
+    <!-- Shared JS -->
+    <script src="js/nav.js"></script>
+    <script src="js/particles.js"></script>
+    <script src="js/animations.js"></script>
+    <script src="js/ticker.js"></script>
+
+    <!-- Page-specific JS -->
     <script>
-        // Satoshi Quotes - Weighted toward privacy & Monero-predictive
-        const quotes = [
-            // TIER 1: Most Monero-predictive (shown more frequently)
-            {
-                text: "What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments.",
-                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
-                date: "August 11, 2010",
-                tag: "privacy",
-                weight: 5,
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
-            },
-            {
-                text: "With e-currency based on cryptographic proof, without the need to trust a third party middleman, money can be secure and transactions effortless. One of the fundamental building blocks for such a system is digital signatures.",
-                source: "P2P Foundation",
-                date: "February 11, 2009",
-                tag: "philosophy",
-                weight: 4
-            },
-            {
-                text: "With group signatures, it is possible for something to be signed but not know who signed it.",
-                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
-                date: "August 11, 2010",
-                tag: "privacy",
-                weight: 5,
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
-            },
-            {
-                text: "The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to. A private key could have a counter so you can derive any number of random variations of the public key.",
-                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
-                date: "August 11, 2010",
-                tag: "privacy",
-                weight: 5,
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
-            },
-            {
-                text: "It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot.",
-                source: "BitcoinTalk Thread #174 — 'Not a Suggestion'",
-                date: "August 10, 2010",
-                tag: "technical",
-                weight: 4,
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
-            },
-            // TIER 2: Important privacy/philosophy quotes
-            {
-                text: "The root problem with conventional currency is all the trust that's required to make it work. The central bank must be trusted not to debase the currency, but the history of fiat currencies is full of breaches of that trust.",
-                source: "P2P Foundation",
-                date: "February 11, 2009",
-                tag: "philosophy",
-                weight: 3
-            },
-            {
-                text: "A lot of people automatically dismiss e-currency as a lost cause because of all the companies that failed since the 1990s. I hope it's obvious it was only the centrally controlled nature of those systems that doomed them.",
-                source: "P2P Foundation",
-                date: "February 11, 2009",
-                tag: "philosophy",
-                weight: 3
-            },
-            {
-                text: "Banks must be trusted to hold our money and transfer it electronically, but they lend it out in waves of credit bubbles with barely a fraction in reserve.",
-                source: "P2P Foundation",
-                date: "February 11, 2009",
-                tag: "economics",
-                weight: 3
-            },
-            {
-                text: "WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.",
-                source: "BitcoinTalk — Final Public Post",
-                date: "December 5, 2010",
-                tag: "farewell",
-                weight: 4,
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
-            },
-            {
-                text: "I've moved on to other things. It's in good hands with Gavin and everyone.",
-                source: "Email to Mike Hearn",
-                date: "April 23, 2011",
-                tag: "farewell",
-                weight: 4
-            },
-            // TIER 3: Technical/general quotes
-            {
-                text: "The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime.",
-                source: "BitcoinTalk",
-                date: "June 17, 2010",
-                tag: "technical",
-                weight: 2
-            },
-            {
-                text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.",
-                source: "BitcoinTalk",
-                date: "July 29, 2010",
-                tag: "philosophy",
-                weight: 2
-            },
-            {
-                text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.",
-                source: "BitcoinTalk",
-                date: "June 21, 2010",
-                tag: "economics",
-                weight: 2
-            },
-            {
-                text: "The Bitcoin network might actually reduce spam by diverting zombie farms to generating bitcoins instead.",
-                source: "Cryptography Mailing List",
-                date: "November 14, 2008",
-                tag: "technical",
-                weight: 1
-            },
-            {
-                text: "In a few decades when the reward gets too small, the transaction fee will become the main compensation for nodes.",
-                source: "BitcoinTalk",
-                date: "February 14, 2010",
-                tag: "economics",
-                weight: 2
-            },
-            {
-                text: "It's very attractive to the libertarian viewpoint if we can explain it properly. I'm better with code than with words though.",
-                source: "Email to Hal Finney",
-                date: "November 2008",
-                tag: "philosophy",
-                weight: 3
-            },
-            {
-                text: "We have proposed a system for electronic transactions without relying on trust.",
-                source: "Bitcoin Whitepaper",
-                date: "October 31, 2008",
-                tag: "technical",
-                weight: 3
-            },
-            {
-                text: "As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers.",
-                source: "Bitcoin Whitepaper",
-                date: "October 31, 2008",
-                tag: "security",
-                weight: 2
-            }
+        // Satoshi Quotes
+        var quotes = [
+            { text: "What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments.", source: "BitcoinTalk Thread #174 — 'Not a Suggestion'", date: "August 11, 2010", tag: "privacy", weight: 5 },
+            { text: "With e-currency based on cryptographic proof, without the need to trust a third party middleman, money can be secure and transactions effortless. One of the fundamental building blocks for such a system is digital signatures.", source: "P2P Foundation", date: "February 11, 2009", tag: "philosophy", weight: 4 },
+            { text: "With group signatures, it is possible for something to be signed but not know who signed it.", source: "BitcoinTalk Thread #174 — 'Not a Suggestion'", date: "August 11, 2010", tag: "privacy", weight: 5 },
+            { text: "The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to. A private key could have a counter so you can derive any number of random variations of the public key.", source: "BitcoinTalk Thread #174 — 'Not a Suggestion'", date: "August 11, 2010", tag: "privacy", weight: 5 },
+            { text: "It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot.", source: "BitcoinTalk Thread #174 — 'Not a Suggestion'", date: "August 10, 2010", tag: "technical", weight: 4 },
+            { text: "The root problem with conventional currency is all the trust that's required to make it work. The central bank must be trusted not to debase the currency, but the history of fiat currencies is full of breaches of that trust.", source: "P2P Foundation", date: "February 11, 2009", tag: "philosophy", weight: 3 },
+            { text: "A lot of people automatically dismiss e-currency as a lost cause because of all the companies that failed since the 1990s. I hope it's obvious it was only the centrally controlled nature of those systems that doomed them.", source: "P2P Foundation", date: "February 11, 2009", tag: "philosophy", weight: 3 },
+            { text: "Banks must be trusted to hold our money and transfer it electronically, but they lend it out in waves of credit bubbles with barely a fraction in reserve.", source: "P2P Foundation", date: "February 11, 2009", tag: "economics", weight: 3 },
+            { text: "WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.", source: "BitcoinTalk — Final Public Post", date: "December 5, 2010", tag: "farewell", weight: 4 },
+            { text: "I've moved on to other things. It's in good hands with Gavin and everyone.", source: "Email to Mike Hearn", date: "April 23, 2011", tag: "farewell", weight: 4 },
+            { text: "The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime.", source: "BitcoinTalk", date: "June 17, 2010", tag: "technical", weight: 2 },
+            { text: "If you don't believe me or don't get it, I don't have time to try to convince you, sorry.", source: "BitcoinTalk", date: "July 29, 2010", tag: "philosophy", weight: 2 },
+            { text: "Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.", source: "BitcoinTalk", date: "June 21, 2010", tag: "economics", weight: 2 },
+            { text: "The Bitcoin network might actually reduce spam by diverting zombie farms to generating bitcoins instead.", source: "Cryptography Mailing List", date: "November 14, 2008", tag: "technical", weight: 1 },
+            { text: "In a few decades when the reward gets too small, the transaction fee will become the main compensation for nodes.", source: "BitcoinTalk", date: "February 14, 2010", tag: "economics", weight: 2 },
+            { text: "It's very attractive to the libertarian viewpoint if we can explain it properly. I'm better with code than with words though.", source: "Email to Hal Finney", date: "November 2008", tag: "philosophy", weight: 3 },
+            { text: "We have proposed a system for electronic transactions without relying on trust.", source: "Bitcoin Whitepaper", date: "October 31, 2008", tag: "technical", weight: 3 },
+            { text: "As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers.", source: "Bitcoin Whitepaper", date: "October 31, 2008", tag: "security", weight: 2 }
         ];
 
-        // Build weighted array for random selection
-        let weightedQuotes = [];
-        quotes.forEach((q, i) => {
-            for (let w = 0; w < q.weight; w++) {
-                weightedQuotes.push(i);
-            }
-        });
+        var weightedQuotes = [];
+        quotes.forEach(function (q, i) { for (var w = 0; w < q.weight; w++) weightedQuotes.push(i); });
 
-        let currentQuoteIndex = 0;
-        let filteredQuotes = [...quotes];
-        let autoPlayInterval = null;
+        var currentQuoteIndex = 0;
+        var filteredQuotes = quotes.slice();
+        var autoPlayInterval = null;
 
         function displayQuote(index) {
-            const quote = filteredQuotes[index];
-            document.getElementById('quoteText').textContent = `"${quote.text}"`;
-            document.getElementById('quoteSource').textContent = quote.source;
-            document.getElementById('quoteDate').textContent = quote.date;
-            document.getElementById('quoteTag').textContent = quote.tag;
-            document.getElementById('quoteCounter').textContent = `Quote ${index + 1} of ${filteredQuotes.length}`;
+            var q = filteredQuotes[index];
+            document.getElementById('quoteText').textContent = '"' + q.text + '"';
+            document.getElementById('quoteSource').textContent = q.source;
+            document.getElementById('quoteDate').textContent = q.date;
+            document.getElementById('quoteTag').textContent = q.tag;
+            document.getElementById('quoteCounter').textContent = 'Quote ' + (index + 1) + ' of ' + filteredQuotes.length;
         }
 
         function randomQuote() {
-            const randomWeightedIndex = weightedQuotes[Math.floor(Math.random() * weightedQuotes.length)];
-            const actualIndex = filteredQuotes.findIndex(q => q === quotes[randomWeightedIndex]);
-            if (actualIndex !== -1) {
-                currentQuoteIndex = actualIndex;
-            } else {
-                currentQuoteIndex = Math.floor(Math.random() * filteredQuotes.length);
-            }
+            var ri = weightedQuotes[Math.floor(Math.random() * weightedQuotes.length)];
+            var ai = filteredQuotes.indexOf(quotes[ri]);
+            currentQuoteIndex = ai !== -1 ? ai : Math.floor(Math.random() * filteredQuotes.length);
             displayQuote(currentQuoteIndex);
         }
 
@@ -1953,181 +1121,71 @@
         }
 
         function toggleAutoPlay() {
-            const btn = document.getElementById('autoPlayBtn');
+            var btn = document.getElementById('autoPlayBtn');
             if (autoPlayInterval) {
                 clearInterval(autoPlayInterval);
                 autoPlayInterval = null;
-                btn.textContent = '▶ Auto-Play';
+                btn.textContent = 'Auto-Play';
                 btn.classList.remove('active');
             } else {
                 autoPlayInterval = setInterval(nextQuote, 4000);
-                btn.textContent = '⏸ Pause';
+                btn.textContent = 'Pause';
                 btn.classList.add('active');
             }
         }
 
         function filterByTag(tag) {
-            if (tag === 'all') {
-                filteredQuotes = [...quotes];
-            } else {
-                filteredQuotes = quotes.filter(q => q.tag === tag);
-            }
+            filteredQuotes = tag === 'all' ? quotes.slice() : quotes.filter(function (q) { return q.tag === tag; });
             currentQuoteIndex = 0;
-            displayQuote(0);
+            if (filteredQuotes.length > 0) displayQuote(0);
         }
 
-        document.getElementById('quoteSearch').addEventListener('input', (e) => {
-            const search = e.target.value.toLowerCase();
-            if (search === '') {
-                filteredQuotes = [...quotes];
-            } else {
-                filteredQuotes = quotes.filter(q => 
-                    q.text.toLowerCase().includes(search) ||
-                    q.source.toLowerCase().includes(search) ||
-                    q.tag.toLowerCase().includes(search)
-                );
-            }
+        document.getElementById('quoteSearch').addEventListener('input', function (e) {
+            var s = e.target.value.toLowerCase();
+            filteredQuotes = s === '' ? quotes.slice() : quotes.filter(function (q) {
+                return q.text.toLowerCase().includes(s) || q.source.toLowerCase().includes(s) || q.tag.toLowerCase().includes(s);
+            });
             currentQuoteIndex = 0;
-            if (filteredQuotes.length > 0) {
-                displayQuote(0);
-            }
+            if (filteredQuotes.length > 0) displayQuote(0);
         });
 
-        // Mobile menu
-        function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
-        }
+        // Analytics Dashboard Animation
+        var dashboardAnimated = false;
+        var dashObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting && !dashboardAnimated) {
+                    dashboardAnimated = true;
+                    var circumference = 2 * Math.PI * 70;
+                    var legitSegment = document.getElementById('legitSegment');
+                    var illicitSegment = document.getElementById('illicitSegment');
 
-        // Price ticker
-        async function fetchPrices() {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true');
-                const data = await response.json();
-                
-                const btcPrice = data.bitcoin.usd.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-                const btcChange = data.bitcoin.usd_24h_change.toFixed(2);
-                const xmrPrice = data.monero.usd.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-                const xmrChange = data.monero.usd_24h_change.toFixed(2);
-                
-                document.getElementById('btc-price').textContent = btcPrice;
-                document.getElementById('btc-change').textContent = `${btcChange > 0 ? '+' : ''}${btcChange}%`;
-                document.getElementById('btc-change').className = `price-change ${btcChange >= 0 ? 'up' : 'down'}`;
-                
-                document.getElementById('xmr-price').textContent = xmrPrice;
-                document.getElementById('xmr-change').textContent = `${xmrChange > 0 ? '+' : ''}${xmrChange}%`;
-                document.getElementById('xmr-change').className = `price-change ${xmrChange >= 0 ? 'up' : 'down'}`;
-                
-                // Mobile prices
-                document.getElementById('btc-price-mobile').textContent = btcPrice;
-                document.getElementById('xmr-price-mobile').textContent = xmrPrice;
-            } catch (error) {
-                console.log('Price fetch error:', error);
-            }
-        }
+                    if (legitSegment && illicitSegment) {
+                        setTimeout(function () { legitSegment.style.strokeDasharray = (99.6 / 100) * circumference + ' ' + circumference; }, 200);
+                        setTimeout(function () {
+                            var offset = (99.6 / 100) * circumference;
+                            illicitSegment.style.strokeDasharray = (0.4 / 100) * circumference + ' ' + circumference;
+                            illicitSegment.style.strokeDashoffset = -offset;
+                        }, 600);
+                    }
 
-        // Particles
-        function createParticles() {
-            const container = document.getElementById('particles');
-            const isMobile = window.innerWidth < 768;
-            const count = isMobile ? 20 : 40;
-            
-            for (let i = 0; i < count; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                particle.style.left = Math.random() * 100 + '%';
-                particle.style.top = Math.random() * 100 + '%';
-                particle.style.background = Math.random() > 0.5 ? '#F7931A' : '#FF6600';
-                particle.style.animationDelay = Math.random() * 15 + 's';
-                particle.style.animationDuration = (10 + Math.random() * 10) + 's';
-                container.appendChild(particle);
-            }
-        }
+                    document.querySelectorAll('.breakdown-bar-fill').forEach(function (bar, i) {
+                        setTimeout(function () { bar.style.width = bar.dataset.width; }, 300 + i * 150);
+                    });
 
-        // Scroll animations
-        function handleScroll() {
-            const fadeElements = document.querySelectorAll('.fade-in');
-            fadeElements.forEach(el => {
-                const rect = el.getBoundingClientRect();
-                if (rect.top < window.innerHeight * 0.85) {
-                    el.classList.add('visible');
+                    document.querySelectorAll('.gauge-fill').forEach(function (gauge, i) {
+                        var w = gauge.style.width || getComputedStyle(gauge).width;
+                        gauge.style.width = '0';
+                        setTimeout(function () { gauge.style.width = w; }, 800 + i * 200);
+                    });
                 }
             });
+        }, { threshold: 0.2 });
 
-            // Timeline items
-            const timelineItems = document.querySelectorAll('.timeline-item');
-            timelineItems.forEach((item, index) => {
-                const rect = item.getBoundingClientRect();
-                if (rect.top < window.innerHeight * 0.8) {
-                    setTimeout(() => {
-                        item.classList.add('visible');
-                    }, index * 100);
-                }
-            });
-        }
+        var dashboard = document.getElementById('analyticsDashboard');
+        if (dashboard) dashObserver.observe(dashboard);
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
-            displayQuote(0);
-            fetchPrices();
-            setInterval(fetchPrices, 60000);
-            createParticles();
-            handleScroll();
-        });
-
-        window.addEventListener('scroll', handleScroll);
-
-        // Analytics Dashboard Animations
-        function animateDashboard() {
-            const dashboard = document.getElementById('analyticsDashboard');
-            if (!dashboard) return;
-
-            const rect = dashboard.getBoundingClientRect();
-            if (rect.top < window.innerHeight * 0.8 && !dashboard.classList.contains('animated')) {
-                dashboard.classList.add('animated');
-
-                // Animate donut chart
-                const circumference = 2 * Math.PI * 70;
-                const legitPercent = 99.6;
-                const illicitPercent = 0.4;
-
-                const legitSegment = document.getElementById('legitSegment');
-                const illicitSegment = document.getElementById('illicitSegment');
-
-                if (legitSegment && illicitSegment) {
-                    setTimeout(() => {
-                        legitSegment.style.strokeDasharray = `${(legitPercent / 100) * circumference} ${circumference}`;
-                    }, 200);
-
-                    setTimeout(() => {
-                        const illicitOffset = (legitPercent / 100) * circumference;
-                        illicitSegment.style.strokeDasharray = `${(illicitPercent / 100) * circumference} ${circumference}`;
-                        illicitSegment.style.strokeDashoffset = -illicitOffset;
-                    }, 600);
-                }
-
-                // Animate breakdown bars
-                const breakdownBars = document.querySelectorAll('.breakdown-bar-fill');
-                breakdownBars.forEach((bar, i) => {
-                    setTimeout(() => {
-                        bar.style.width = bar.dataset.width;
-                    }, 300 + (i * 150));
-                });
-
-                // Animate gauge bars
-                const gauges = document.querySelectorAll('.gauge-fill');
-                gauges.forEach((gauge, i) => {
-                    const originalWidth = gauge.style.width || getComputedStyle(gauge).width;
-                    gauge.style.width = '0';
-                    setTimeout(() => {
-                        gauge.style.width = originalWidth;
-                    }, 800 + (i * 200));
-                });
-            }
-        }
-
-        // Add to scroll handler
-        window.addEventListener('scroll', animateDashboard);
-        animateDashboard(); // Initial check
+        // Init
+        displayQuote(0);
     </script>
 </body>
 </html>

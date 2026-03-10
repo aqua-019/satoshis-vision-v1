@@ -2,170 +2,45 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Interactive Timeline — Bitcoin to Monero</title>
+    <meta name="description" content="Interactive timeline from Bitcoin's 2008 whitepaper through Satoshi's privacy vision to Monero's implementation. Click events for full details.">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="Interactive Timeline — Bitcoin to Monero">
+    <meta property="og:description" content="The privacy evolution from Bitcoin's genesis block to Monero's FCMP++. Interactive click-through timeline.">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Satoshi's Vision">
+
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Shared CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/nav.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/responsive.css">
+
+    <!-- Page-specific styles -->
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --grey-18: #2E2E2E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            min-height: 100vh;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--btc-orange);
-        }
-
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            padding: 10px;
-        }
-
-        .hamburger span {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-        }
-
-        .mobile-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 10, 10, 0.98);
-            z-index: 999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .mobile-menu.active {
-            display: flex;
-        }
-
-        .mobile-menu a {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-family: var(--font-display);
-        }
-
-        /* Hero */
-        .hero {
-            padding: 8rem 2rem 3rem;
-            text-align: center;
-            background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 100%);
-        }
-
-        .hero-eyebrow {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--btc-orange);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 1rem;
-        }
-
-        .hero-title {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 5vw, 3rem);
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .hero-subtitle {
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto 2rem;
-        }
-
         /* Legend */
         .legend {
             display: flex;
             justify-content: center;
-            gap: 2rem;
+            gap: var(--space-xl);
             flex-wrap: wrap;
+            margin-top: var(--space-lg);
         }
 
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: var(--space-sm);
             font-family: var(--font-mono);
             font-size: 0.85rem;
         }
@@ -176,31 +51,38 @@
             border-radius: 50%;
         }
 
-        .legend-dot.btc {
-            background: var(--btc-orange);
+        .legend-dot.btc { background: var(--btc-orange); }
+        .legend-dot.xmr { background: var(--xmr-orange); }
+        .legend-dot.both { background: var(--gradient-btc-xmr); }
+
+        /* Keyboard hint */
+        .keyboard-hint {
+            text-align: center;
+            margin-top: var(--space-md);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
         }
 
-        .legend-dot.xmr {
-            background: var(--xmr-orange);
+        .keyboard-hint kbd {
+            background: var(--grey-18);
+            padding: 0.2rem 0.5rem;
+            margin: 0 0.2rem;
+            border-radius: var(--border-radius-sm);
         }
 
-        .legend-dot.both {
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-        }
-
-        /* Timeline */
+        /* Timeline Container */
         .timeline-container {
-            max-width: 900px;
+            max-width: var(--max-width-narrow);
             margin: 0 auto;
-            padding: 3rem 2rem;
+            padding: var(--space-2xl) var(--space-xl);
         }
 
         .timeline {
             position: relative;
-            padding: 2rem 0;
+            padding: var(--space-xl) 0;
         }
 
-        /* Center line */
         .timeline::before {
             content: '';
             position: absolute;
@@ -209,132 +91,67 @@
             top: 0;
             bottom: 0;
             width: 4px;
-            background: linear-gradient(180deg, 
-                var(--btc-orange) 0%, 
-                var(--btc-gold) 30%,
-                var(--btc-gold) 50%,
-                var(--xmr-orange) 100%
-            );
+            background: linear-gradient(180deg, var(--btc-orange) 0%, var(--btc-gold) 30%, var(--btc-gold) 50%, var(--xmr-orange) 100%);
         }
 
         .timeline-item {
             position: relative;
             width: calc(50% - 30px);
-            padding: 1.5rem;
-            background: var(--card-bg);
+            padding: var(--space-lg);
+            background: var(--bg-secondary);
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
+            transition: all var(--transition-base);
+            margin-bottom: var(--space-xl);
         }
 
-        .timeline-item:hover {
-            transform: scale(1.02);
-        }
+        .timeline-item:hover { transform: scale(1.02); }
+        .timeline-item.active { background: var(--grey-18); }
 
-        .timeline-item.active {
-            background: var(--grey-18);
-        }
+        .timeline-item:nth-child(odd) { margin-left: 0; margin-right: auto; text-align: right; }
+        .timeline-item:nth-child(even) { margin-left: auto; margin-right: 0; text-align: left; }
 
-        /* Alternating sides */
-        .timeline-item:nth-child(odd) {
-            margin-left: 0;
-            margin-right: auto;
-            text-align: right;
-        }
-
-        .timeline-item:nth-child(even) {
-            margin-left: auto;
-            margin-right: 0;
-            text-align: left;
-        }
-
-        /* Connector dots */
+        /* Dots */
         .timeline-dot {
             position: absolute;
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            top: 1.5rem;
+            top: var(--space-lg);
             z-index: 2;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
         }
 
-        .timeline-item:nth-child(odd) .timeline-dot {
-            right: -40px;
-        }
+        .timeline-item:nth-child(odd) .timeline-dot { right: -40px; }
+        .timeline-item:nth-child(even) .timeline-dot { left: -40px; }
+        .timeline-item:hover .timeline-dot, .timeline-item.active .timeline-dot { transform: scale(1.3); }
 
-        .timeline-item:nth-child(even) .timeline-dot {
-            left: -40px;
-        }
+        .timeline-item.btc .timeline-dot { background: var(--btc-orange); box-shadow: 0 0 15px var(--btc-orange); }
+        .timeline-item.xmr .timeline-dot { background: var(--xmr-orange); box-shadow: 0 0 15px var(--xmr-orange); }
+        .timeline-item.both .timeline-dot { background: var(--gradient-btc-xmr); box-shadow: 0 0 15px var(--btc-gold); }
 
-        .timeline-item:hover .timeline-dot,
-        .timeline-item.active .timeline-dot {
-            transform: scale(1.3);
-        }
-
-        .timeline-item.btc .timeline-dot {
-            background: var(--btc-orange);
-            box-shadow: 0 0 15px var(--btc-orange);
-        }
-
-        .timeline-item.xmr .timeline-dot {
-            background: var(--xmr-orange);
-            box-shadow: 0 0 15px var(--xmr-orange);
-        }
-
-        .timeline-item.both .timeline-dot {
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            box-shadow: 0 0 15px var(--btc-gold);
-        }
-
-        /* Border accent */
-        .timeline-item.btc {
-            border-left: 3px solid var(--btc-orange);
-        }
-
-        .timeline-item:nth-child(odd).btc {
-            border-left: none;
-            border-right: 3px solid var(--btc-orange);
-        }
-
-        .timeline-item.xmr {
-            border-left: 3px solid var(--xmr-orange);
-        }
-
-        .timeline-item:nth-child(odd).xmr {
-            border-left: none;
-            border-right: 3px solid var(--xmr-orange);
-        }
-
-        .timeline-item.both {
-            border-left: 3px solid var(--btc-gold);
-        }
-
-        .timeline-item:nth-child(odd).both {
-            border-left: none;
-            border-right: 3px solid var(--btc-gold);
-        }
+        /* Border accents */
+        .timeline-item.btc { border-left: 3px solid var(--btc-orange); }
+        .timeline-item:nth-child(odd).btc { border-left: none; border-right: 3px solid var(--btc-orange); }
+        .timeline-item.xmr { border-left: 3px solid var(--xmr-orange); }
+        .timeline-item:nth-child(odd).xmr { border-left: none; border-right: 3px solid var(--xmr-orange); }
+        .timeline-item.both { border-left: 3px solid var(--btc-gold); }
+        .timeline-item:nth-child(odd).both { border-left: none; border-right: 3px solid var(--btc-gold); }
 
         .timeline-year {
             font-family: var(--font-mono);
             font-size: 0.85rem;
             color: var(--btc-orange);
-            margin-bottom: 0.5rem;
+            margin-bottom: var(--space-sm);
         }
 
-        .timeline-item.xmr .timeline-year {
-            color: var(--xmr-orange);
-        }
-
-        .timeline-item.both .timeline-year {
-            color: var(--btc-gold);
-        }
+        .timeline-item.xmr .timeline-year { color: var(--xmr-orange); }
+        .timeline-item.both .timeline-year { color: var(--btc-gold); }
 
         .timeline-title {
             font-family: var(--font-display);
             font-size: 1.2rem;
             font-weight: 600;
-            margin-bottom: 0.5rem;
+            margin-bottom: var(--space-sm);
         }
 
         .timeline-preview {
@@ -349,33 +166,27 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             border-top: 3px solid var(--btc-orange);
-            padding: 2rem;
+            padding: var(--space-xl);
             transform: translateY(100%);
             transition: transform 0.4s ease;
-            z-index: 100;
+            z-index: var(--z-dropdown);
             max-height: 50vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: max(var(--space-xl), env(safe-area-inset-bottom));
         }
 
-        .detail-panel.open {
-            transform: translateY(0);
-        }
-
-        .detail-panel.xmr {
-            border-top-color: var(--xmr-orange);
-        }
-
-        .detail-panel.both {
-            border-top-color: var(--btc-gold);
-        }
+        .detail-panel.open { transform: translateY(0); }
+        .detail-panel.xmr { border-top-color: var(--xmr-orange); }
+        .detail-panel.both { border-top-color: var(--btc-gold); }
 
         .detail-header {
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: var(--space-md);
         }
 
         .detail-title {
@@ -390,19 +201,22 @@
             color: var(--text-secondary);
             font-size: 1.5rem;
             cursor: pointer;
-            padding: 0.5rem;
+            padding: var(--space-sm);
             line-height: 1;
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
-        .detail-close:hover {
-            color: var(--text-primary);
-        }
+        .detail-close:hover { color: var(--text-primary); }
 
         .detail-date {
             font-family: var(--font-mono);
             font-size: 0.9rem;
             color: var(--btc-orange);
-            margin-bottom: 1rem;
+            margin-bottom: var(--space-md);
         }
 
         .detail-content {
@@ -413,56 +227,18 @@
 
         .detail-link {
             display: inline-block;
-            margin-top: 1rem;
+            margin-top: var(--space-md);
             color: var(--btc-orange);
             text-decoration: none;
             font-family: var(--font-mono);
             font-size: 0.9rem;
         }
 
-        .detail-link:hover {
-            text-decoration: underline;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--card-bg);
-            padding: 3rem 2rem;
-            text-align: center;
-            border-top: 1px solid var(--grey-18);
-        }
-
-        .footer-nav {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-nav a:hover {
-            color: var(--btc-orange);
-        }
+        .detail-link:hover { text-decoration: underline; }
 
         /* Mobile */
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
-            .timeline::before {
-                left: 15px;
-            }
+            .timeline::before { left: 15px; }
 
             .timeline-item {
                 width: calc(100% - 40px);
@@ -473,53 +249,36 @@
                 border-right: none !important;
             }
 
-            .timeline-item.xmr {
-                border-left-color: var(--xmr-orange) !important;
-            }
-
-            .timeline-item.both {
-                border-left-color: var(--btc-gold) !important;
-            }
+            .timeline-item.xmr { border-left-color: var(--xmr-orange) !important; }
+            .timeline-item.both { border-left-color: var(--btc-gold) !important; }
 
             .timeline-item .timeline-dot {
                 left: -32px !important;
                 right: auto !important;
             }
 
-            .detail-panel {
-                max-height: 60vh;
-            }
-        }
+            .detail-panel { max-height: 60vh; }
 
-        /* Keyboard hint */
-        .keyboard-hint {
-            text-align: center;
-            margin-top: 1rem;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
+            .keyboard-hint { display: none; }
 
-        .keyboard-hint kbd {
-            background: var(--grey-18);
-            padding: 0.2rem 0.5rem;
-            margin: 0 0.2rem;
+            .timeline-container { padding: var(--space-lg) var(--space-md); }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="nav">
-        <a href="index.html" class="nav-logo">₿ → ɱ</a>
+        <a href="/" class="nav-logo">₿ → ɱ</a>
         <div class="nav-links">
-            <a href="index.html">Home</a>
+            <a href="/">Home</a>
             <a href="secrets.html">Secrets</a>
             <a href="quotes.html">Quotes</a>
-            <a href="timeline.html" style="color: var(--xmr-orange);">Timeline</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="btc-xmr-education.html">Education</a>
             <a href="bottom-line.html">The Bottom Line</a>
             <a href="hold-monero.html">Hold Monero</a>
         </div>
-        <div class="hamburger" onclick="toggleMenu()">
+        <div class="hamburger" aria-label="Toggle navigation menu">
             <span></span>
             <span></span>
             <span></span>
@@ -528,235 +287,157 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quotes</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">The Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()">Hold Monero</a>
+        <a href="/">Home</a>
+        <a href="secrets.html">Secrets</a>
+        <a href="quotes.html">Quotes</a>
+        <a href="timeline.html">Timeline</a>
+        <a href="btc-xmr-education.html">Education</a>
+        <a href="bottom-line.html">The Bottom Line</a>
+        <a href="hold-monero.html">Hold Monero</a>
     </div>
 
     <!-- Hero -->
-    <section class="hero">
-        <div class="hero-eyebrow">Interactive History</div>
-        <h1 class="hero-title">The Privacy Evolution Timeline</h1>
-        <p class="hero-subtitle">
-            Click any event to reveal full details. Use keyboard arrows to navigate.
-        </p>
-        <div class="legend">
-            <div class="legend-item">
-                <span class="legend-dot btc"></span>
-                <span>Bitcoin</span>
+    <section class="hero hero--sub">
+        <div class="hero-content">
+            <div class="hero-eyebrow">Interactive History</div>
+            <h1 class="hero-title">The Privacy Evolution Timeline</h1>
+            <p class="hero-subtitle">
+                Click any event to reveal full details. Use keyboard arrows to navigate.
+            </p>
+            <div class="legend">
+                <div class="legend-item"><span class="legend-dot btc"></span><span>Bitcoin</span></div>
+                <div class="legend-item"><span class="legend-dot both"></span><span>Transition</span></div>
+                <div class="legend-item"><span class="legend-dot xmr"></span><span>Monero</span></div>
             </div>
-            <div class="legend-item">
-                <span class="legend-dot both"></span>
-                <span>Transition</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-dot xmr"></span>
-                <span>Monero</span>
-            </div>
+            <p class="keyboard-hint">
+                <kbd>↑</kbd> <kbd>↓</kbd> Navigate | <kbd>Enter</kbd> Select | <kbd>Esc</kbd> Close
+            </p>
         </div>
-        <p class="keyboard-hint">
-            <kbd>↑</kbd> <kbd>↓</kbd> Navigate &nbsp;|&nbsp; <kbd>Enter</kbd> Select &nbsp;|&nbsp; <kbd>Esc</kbd> Close
-        </p>
     </section>
 
     <!-- Timeline -->
     <div class="timeline-container">
-        <div class="timeline" id="timeline">
-            <!-- Items inserted by JS -->
-        </div>
+        <div class="timeline" id="timeline"></div>
     </div>
 
     <!-- Detail Panel -->
     <div class="detail-panel" id="detailPanel">
         <div class="detail-header">
             <h2 class="detail-title" id="detailTitle">Event Title</h2>
-            <button class="detail-close" onclick="closePanel()">×</button>
+            <button class="detail-close" onclick="closePanel()" aria-label="Close details">×</button>
         </div>
         <div class="detail-date" id="detailDate">Date</div>
         <div class="detail-content" id="detailContent">Content</div>
-        <a href="#" class="detail-link" id="detailLink" target="_blank" style="display: none;">View Source →</a>
+        <a href="#" class="detail-link" id="detailLink" target="_blank" rel="noopener noreferrer" style="display: none;">View Source →</a>
     </div>
 
     <!-- Footer -->
-    <footer>
-        <nav class="footer-nav">
-            <a href="index.html">Home</a>
-            <a href="secrets.html">Secret Threads</a>
-            <a href="quotes.html">Quote Archive</a>
-            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
-        </nav>
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="footer-logo">₿ → ɱ</div>
+                <p class="footer-tagline">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
+                <p class="footer-attribution">— Satoshi Nakamoto, April 2011</p>
+            </div>
+            <div class="footer-section">
+                <h4>Archive</h4>
+                <ul>
+                    <li><a href="secrets.html">Secret Threads</a></li>
+                    <li><a href="quotes.html">Quote Archive</a></li>
+                    <li><a href="timeline.html">Timeline</a></li>
+                    <li><a href="btc-xmr-education.html">Education</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Analysis</h4>
+                <ul>
+                    <li><a href="bottom-line.html">The Bottom Line</a></li>
+                    <li><a href="hold-monero.html">Hold Monero</a></li>
+                </ul>
+            </div>
+            <div class="footer-section">
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://satoshi.nakamotoinstitute.org" target="_blank" rel="noopener noreferrer">Satoshi Nakamoto Institute</a></li>
+                    <li><a href="https://getmonero.org" target="_blank" rel="noopener noreferrer">GetMonero.org</a></li>
+                    <li><a href="https://bitcoin.org" target="_blank" rel="noopener noreferrer">Bitcoin.org</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p class="footer-copy">Educational resource. Not financial advice. Do your own research.</p>
+            <p class="footer-legal">No cookies. No tracking. No JavaScript analytics.</p>
+        </div>
     </footer>
 
+    <!-- Shared JS -->
+    <script src="js/nav.js"></script>
+    <script src="js/animations.js"></script>
+
+    <!-- Page-specific JS -->
     <script>
-        const events = [
-            {
-                date: "October 31, 2008",
-                title: "Bitcoin Whitepaper Published",
-                preview: "Satoshi Nakamoto publishes 'Bitcoin: A Peer-to-Peer Electronic Cash System'",
-                content: "Satoshi Nakamoto publishes the Bitcoin whitepaper to the Cryptography Mailing List. Section 10 on privacy warns about the limitations of address-based pseudonymity: 'Some linking is still unavoidable with multi-input transactions, which necessarily reveal that their inputs were owned by the same owner.' Satoshi recommends using a new key pair for each transaction, but acknowledges this doesn't fully solve the privacy problem.",
-                type: "btc",
-                link: "https://bitcoin.org/bitcoin.pdf"
-            },
-            {
-                date: "January 3, 2009",
-                title: "Genesis Block Mined",
-                preview: "Block 0 contains hidden message about bank bailouts",
-                content: "Satoshi mines the Bitcoin genesis block, embedding the headline 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks' in the coinbase transaction. This timestamp serves dual purposes: proving the block wasn't pre-mined and making a philosophical statement about the traditional financial system that Bitcoin aims to disrupt.",
-                type: "btc"
-            },
-            {
-                date: "January 12, 2009",
-                title: "First Bitcoin Transaction",
-                preview: "Satoshi sends 10 BTC to Hal Finney in block 170",
-                content: "The first Bitcoin transaction between two parties occurs in block 170. Satoshi Nakamoto sends 10 BTC to cryptographer Hal Finney, who had been running one of the first Bitcoin nodes and helping Satoshi debug the software. Finney would later write: 'When Satoshi announced the first release of the software, I grabbed it right away.'",
-                type: "btc"
-            },
-            {
-                date: "July 7-8, 2010",
-                title: "Anonymity Thread (#82)",
-                preview: "Community debates Bitcoin's privacy limitations",
-                content: "BitcoinTalk thread #82 titled 'Anonymity' sees the community debating whether Bitcoin provides adequate privacy. User theymos (later a Bitcoin Core developer) writes: 'Bitcoin is not anonymous. If you want to be anonymous, you need to take extra steps like using Tor and mixing services.' Satoshi acknowledges the transparent ledger but notes regulatory attention hasn't arrived yet.",
-                type: "btc",
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"
-            },
-            {
-                date: "August 10-13, 2010",
-                title: "Not a Suggestion Thread (#174)",
-                preview: "Satoshi describes stealth addresses, ring signatures, hidden amounts",
-                content: "In response to privacy concerns, Satoshi outlines cryptographic solutions that wouldn't exist for years: 'What we need is a way to generate additional blinded variations of a public key' (stealth addresses), 'With group signatures, it is possible for something to be signed but not know who signed it' (ring signatures), and 'If we have to hide transaction amounts...' (confidential transactions). These exact features would become Monero's core privacy layer.",
-                type: "btc",
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"
-            },
-            {
-                date: "December 5, 2010",
-                title: "Satoshi's Last Public Post",
-                preview: "'WikiLeaks has kicked the hornet's nest'",
-                content: "When the community discusses WikiLeaks accepting Bitcoin donations, Satoshi makes his final public statement: 'It would have been nice to get this attention in any other context. WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.' He warns the project isn't ready for this level of scrutiny and asks WikiLeaks not to use Bitcoin. He never posts publicly again.",
-                type: "btc",
-                link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
-            },
-            {
-                date: "April 23, 2011",
-                title: "Satoshi's Final Email",
-                preview: "'I've moved on to other things'",
-                content: "In his last known communication, Satoshi writes to developer Mike Hearn: 'I've moved on to other things. It's in good hands with Gavin and everyone.' He disappears from all known communication channels. His estimated 1.1 million BTC holdings remain untouched to this day.",
-                type: "btc"
-            },
-            {
-                date: "December 12, 2012",
-                title: "CryptoNote Whitepaper",
-                preview: "Nicolas van Saberhagen describes ring signatures and one-time addresses",
-                content: "The CryptoNote whitepaper is published by the pseudonymous Nicolas van Saberhagen, describing a new protocol with built-in privacy features. It implements exactly what Satoshi had theorized: ring signatures (group signatures), one-time addresses (blinded public keys), and unlinkable transactions. This paper would become the foundation for Monero.",
-                type: "both",
-                link: "https://cryptonote.org/whitepaper.pdf"
-            },
-            {
-                date: "April 18, 2014",
-                title: "Monero Launch",
-                preview: "Fork of Bytecoin with fair distribution",
-                content: "Monero launches as a community fork of Bytecoin (which had a hidden premine). From day one, Monero implements ring signatures for sender privacy and stealth addresses for receiver privacy. Unlike Bitcoin where privacy is opt-in and often broken, Monero makes privacy mandatory and default for all transactions.",
-                type: "xmr",
-                link: "https://getmonero.org"
-            },
-            {
-                date: "January 5, 2017",
-                title: "RingCT Activation",
-                preview: "Transaction amounts now hidden by default",
-                content: "Ring Confidential Transactions (RingCT) activates on Monero, hiding transaction amounts using Pedersen commitments and range proofs. This completes the privacy trifecta Satoshi envisioned in 2010: hidden senders (ring signatures), hidden receivers (stealth addresses), and hidden amounts (RingCT). Monero becomes the first cryptocurrency with comprehensive privacy by default.",
-                type: "xmr"
-            },
-            {
-                date: "September 2020",
-                title: "IRS Offers $625,000 Bounty",
-                preview: "U.S. government seeks to break Monero privacy",
-                content: "The U.S. Internal Revenue Service offers $625,000 to any contractor who can develop tools to trace Monero transactions. Multiple firms claim partial success, but no definitive tracing capability has been demonstrated. The bounty remains effectively unclaimed as of 2025, with Chainalysis and others admitting they can only achieve 'probabilistic' analysis.",
-                type: "xmr"
-            },
-            {
-                date: "2024-2025",
-                title: "Mass Exchange Delistings",
-                preview: "73+ exchanges drop XMR, price rises 195%",
-                content: "Under regulatory pressure, over 73 cryptocurrency exchanges delist Monero, including major platforms like Binance, Kraken, and OKX. Paradoxically, XMR price increases 195% during this period as peer-to-peer trading surges. The delistings prove the project's decentralization: there's no company to sue, no CEO to arrest, and no way to stop the protocol.",
-                type: "xmr"
-            },
-            {
-                date: "2025",
-                title: "FCMP++ Development",
-                preview: "Full Chain Membership Proofs in progress",
-                content: "Development continues on Full Chain Membership Proofs (FCMP++), which will make every Monero transaction anonymous among ALL transactions ever made on the blockchain, not just a subset of decoys. This represents the final evolution of Satoshi's 2010 vision: 'The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to.'",
-                type: "xmr"
-            }
+        var events = [
+            { date: "October 31, 2008", title: "Bitcoin Whitepaper Published", preview: "Satoshi Nakamoto publishes 'Bitcoin: A Peer-to-Peer Electronic Cash System'", content: "Satoshi Nakamoto publishes the Bitcoin whitepaper to the Cryptography Mailing List. Section 10 on privacy warns about the limitations of address-based pseudonymity: 'Some linking is still unavoidable with multi-input transactions, which necessarily reveal that their inputs were owned by the same owner.' Satoshi recommends using a new key pair for each transaction, but acknowledges this doesn't fully solve the privacy problem.", type: "btc", link: "https://bitcoin.org/bitcoin.pdf" },
+            { date: "January 3, 2009", title: "Genesis Block Mined", preview: "Block 0 contains hidden message about bank bailouts", content: "Satoshi mines the Bitcoin genesis block, embedding the headline 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks' in the coinbase transaction. This timestamp serves dual purposes: proving the block wasn't pre-mined and making a philosophical statement about the traditional financial system that Bitcoin aims to disrupt.", type: "btc" },
+            { date: "January 12, 2009", title: "First Bitcoin Transaction", preview: "Satoshi sends 10 BTC to Hal Finney in block 170", content: "The first Bitcoin transaction between two parties occurs in block 170. Satoshi Nakamoto sends 10 BTC to cryptographer Hal Finney, who had been running one of the first Bitcoin nodes and helping Satoshi debug the software. Finney would later write: 'When Satoshi announced the first release of the software, I grabbed it right away.'", type: "btc" },
+            { date: "July 7-8, 2010", title: "Anonymity Thread (#82)", preview: "Community debates Bitcoin's privacy limitations", content: "BitcoinTalk thread #82 titled 'Anonymity' sees the community debating whether Bitcoin provides adequate privacy. User theymos writes: 'Bitcoin is not anonymous. If you want to be anonymous, you need to take extra steps like using Tor and mixing services.' Satoshi acknowledges the transparent ledger but notes regulatory attention hasn't arrived yet.", type: "btc", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/" },
+            { date: "August 10-13, 2010", title: "Not a Suggestion Thread (#174)", preview: "Satoshi describes stealth addresses, ring signatures, hidden amounts", content: "In response to privacy concerns, Satoshi outlines cryptographic solutions that wouldn't exist for years: 'What we need is a way to generate additional blinded variations of a public key' (stealth addresses), 'With group signatures, it is possible for something to be signed but not know who signed it' (ring signatures), and 'If we have to hide transaction amounts...' (confidential transactions). These exact features would become Monero's core privacy layer.", type: "btc", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" },
+            { date: "December 5, 2010", title: "Satoshi's Last Public Post", preview: "'WikiLeaks has kicked the hornet's nest'", content: "When the community discusses WikiLeaks accepting Bitcoin donations, Satoshi makes his final public statement: 'It would have been nice to get this attention in any other context. WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.' He warns the project isn't ready for this level of scrutiny and asks WikiLeaks not to use Bitcoin.", type: "btc", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" },
+            { date: "April 23, 2011", title: "Satoshi's Final Email", preview: "'I've moved on to other things'", content: "In his last known communication, Satoshi writes to developer Mike Hearn: 'I've moved on to other things. It's in good hands with Gavin and everyone.' He disappears from all known communication channels. His estimated 1.1 million BTC holdings remain untouched to this day.", type: "btc" },
+            { date: "December 12, 2012", title: "CryptoNote Whitepaper", preview: "Nicolas van Saberhagen describes ring signatures and one-time addresses", content: "The CryptoNote whitepaper is published by the pseudonymous Nicolas van Saberhagen, describing a new protocol with built-in privacy features. It implements exactly what Satoshi had theorized: ring signatures (group signatures), one-time addresses (blinded public keys), and unlinkable transactions. This paper would become the foundation for Monero.", type: "both", link: "https://cryptonote.org/whitepaper.pdf" },
+            { date: "April 18, 2014", title: "Monero Launch", preview: "Fork of Bytecoin with fair distribution", content: "Monero launches as a community fork of Bytecoin (which had a hidden premine). From day one, Monero implements ring signatures for sender privacy and stealth addresses for receiver privacy. Unlike Bitcoin where privacy is opt-in and often broken, Monero makes privacy mandatory and default for all transactions.", type: "xmr", link: "https://getmonero.org" },
+            { date: "January 5, 2017", title: "RingCT Activation", preview: "Transaction amounts now hidden by default", content: "Ring Confidential Transactions (RingCT) activates on Monero, hiding transaction amounts using Pedersen commitments and range proofs. This completes the privacy trifecta Satoshi envisioned in 2010: hidden senders (ring signatures), hidden receivers (stealth addresses), and hidden amounts (RingCT). Monero becomes the first cryptocurrency with comprehensive privacy by default.", type: "xmr" },
+            { date: "September 2020", title: "IRS Offers $625,000 Bounty", preview: "U.S. government seeks to break Monero privacy", content: "The U.S. Internal Revenue Service offers $625,000 to any contractor who can develop tools to trace Monero transactions. Multiple firms claim partial success, but no definitive tracing capability has been demonstrated. The bounty remains effectively unclaimed as of 2025.", type: "xmr" },
+            { date: "2024-2025", title: "Mass Exchange Delistings", preview: "73+ exchanges drop XMR, price rises 195%", content: "Under regulatory pressure, over 73 cryptocurrency exchanges delist Monero, including major platforms like Binance, Kraken, and OKX. Paradoxically, XMR price increases 195% during this period as peer-to-peer trading surges. The delistings prove the project's decentralization: there's no company to sue, no CEO to arrest, and no way to stop the protocol.", type: "xmr" },
+            { date: "2025", title: "FCMP++ Development", preview: "Full Chain Membership Proofs in progress", content: "Development continues on Full Chain Membership Proofs (FCMP++), which will make every Monero transaction anonymous among ALL transactions ever made on the blockchain. This represents the final evolution of Satoshi's 2010 vision: 'The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to.'", type: "xmr" }
         ];
 
-        let currentIndex = -1;
+        var currentIndex = -1;
 
         function renderTimeline() {
-            const timeline = document.getElementById('timeline');
-            timeline.innerHTML = events.map((event, i) => `
-                <div class="timeline-item ${event.type}" data-index="${i}" onclick="openPanel(${i})">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-year">${event.date}</div>
-                    <div class="timeline-title">${event.title}</div>
-                    <div class="timeline-preview">${event.preview}</div>
-                </div>
-            `).join('');
+            var tl = document.getElementById('timeline');
+            tl.innerHTML = events.map(function (ev, i) {
+                return '<div class="timeline-item ' + ev.type + '" data-index="' + i + '" onclick="openPanel(' + i + ')">' +
+                    '<div class="timeline-dot"></div>' +
+                    '<div class="timeline-year">' + ev.date + '</div>' +
+                    '<div class="timeline-title">' + ev.title + '</div>' +
+                    '<div class="timeline-preview">' + ev.preview + '</div></div>';
+            }).join('');
         }
 
         function openPanel(index) {
-            const event = events[index];
-            const panel = document.getElementById('detailPanel');
-            
-            // Remove active from all items
-            document.querySelectorAll('.timeline-item').forEach(item => item.classList.remove('active'));
-            document.querySelectorAll('.timeline-item')[index].classList.add('active');
-            
-            // Update panel
-            document.getElementById('detailTitle').textContent = event.title;
-            document.getElementById('detailDate').textContent = event.date;
-            document.getElementById('detailContent').textContent = event.content;
-            
-            const link = document.getElementById('detailLink');
-            if (event.link) {
-                link.href = event.link;
-                link.style.display = 'inline-block';
-            } else {
-                link.style.display = 'none';
-            }
-            
-            // Update panel color
-            panel.className = 'detail-panel open ' + event.type;
+            var ev = events[index];
+            var panel = document.getElementById('detailPanel');
+            var items = document.querySelectorAll('.timeline-item');
+            items.forEach(function (item) { item.classList.remove('active'); });
+            items[index].classList.add('active');
+
+            document.getElementById('detailTitle').textContent = ev.title;
+            document.getElementById('detailDate').textContent = ev.date;
+            document.getElementById('detailContent').textContent = ev.content;
+
+            var link = document.getElementById('detailLink');
+            if (ev.link) { link.href = ev.link; link.style.display = 'inline-block'; }
+            else { link.style.display = 'none'; }
+
+            panel.className = 'detail-panel open ' + ev.type;
             currentIndex = index;
-            
-            // Scroll item into view
-            document.querySelectorAll('.timeline-item')[index].scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
-            });
+            items[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
 
         function closePanel() {
             document.getElementById('detailPanel').classList.remove('open');
-            document.querySelectorAll('.timeline-item').forEach(item => item.classList.remove('active'));
+            document.querySelectorAll('.timeline-item').forEach(function (item) { item.classList.remove('active'); });
             currentIndex = -1;
         }
 
-        function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
-        }
-
-        // Keyboard navigation
-        document.addEventListener('keydown', (e) => {
+        document.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
                 e.preventDefault();
-                const next = currentIndex < events.length - 1 ? currentIndex + 1 : 0;
-                openPanel(next);
+                openPanel(currentIndex < events.length - 1 ? currentIndex + 1 : 0);
             } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
                 e.preventDefault();
-                const prev = currentIndex > 0 ? currentIndex - 1 : events.length - 1;
-                openPanel(prev);
+                openPanel(currentIndex > 0 ? currentIndex - 1 : events.length - 1);
             } else if (e.key === 'Escape') {
                 closePanel();
             } else if (e.key === 'Enter' && currentIndex === -1) {
@@ -764,7 +445,6 @@
             }
         });
 
-        // Initialize
         renderTimeline();
     </script>
 </body>

@@ -1,0 +1,131 @@
+/* ============================================
+   Satoshi's Vision — Unified Footer
+   ============================================ */
+
+.site-footer {
+    background: var(--bg-secondary);
+    border-top: var(--border-subtle);
+    padding: var(--space-3xl) var(--space-xl) var(--space-xl);
+    margin-top: var(--space-3xl);
+    /* iPhone safe area */
+    padding-bottom: max(var(--space-xl), env(safe-area-inset-bottom));
+}
+
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: var(--space-2xl);
+    max-width: var(--max-width);
+    margin: 0 auto var(--space-2xl);
+}
+
+/* Brand column */
+.footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.footer-logo {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    background: var(--gradient-btc-xmr);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.footer-tagline {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    font-style: italic;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 300px;
+}
+
+.footer-attribution {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--btc-orange);
+}
+
+/* Link columns */
+.footer-section h4 {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-primary);
+    margin-bottom: var(--space-lg);
+}
+
+.footer-section ul {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.footer-section a {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    transition: color var(--transition-base);
+    padding: var(--space-xs) 0;
+    display: inline-block;
+}
+
+.footer-section a:hover {
+    color: var(--btc-orange);
+}
+
+/* Bottom bar */
+.footer-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-md);
+    max-width: var(--max-width);
+    margin: 0 auto;
+    padding-top: var(--space-xl);
+    border-top: var(--border-subtle);
+}
+
+.footer-copy {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.footer-legal {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .footer-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: var(--space-xl);
+    }
+
+    .footer-brand {
+        grid-column: 1 / -1;
+    }
+
+    .footer-bottom {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .site-footer {
+        padding: var(--space-2xl) var(--space-md) var(--space-md);
+    }
+}
