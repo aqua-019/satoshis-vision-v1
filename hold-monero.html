@@ -1309,14 +1309,42 @@
                     </div>
                 </div>
                 
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; background: #1a1a1a; border-radius: 8px; font-family: var(--font-mono); font-size: 0.85rem;">
+                    <span style="color: var(--text-secondary);">Live Rate:</span>
+                    <span id="live-swap-rate" style="color: var(--changenow-green); font-weight: 500;">Loading...</span>
+                </div>
+
                 <div class="iframe-wrapper">
-                    <iframe 
+                    <iframe
                         id="iframe-widget"
-                        src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=true&amount=0.1&amountFiat=&backgroundColor=0a0a0a&darkMode=true&from=btc&fromFiat=&horizontal=false&isFiat=false&lang=en-US&link_id=&locales=true&logo=true&primaryColor=FF6600&to=xmr&toFiat=&toTheMoon=false"
+                        src="about:blank"
+                        data-src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=true&amount=0.1&amountFiat=&backgroundColor=0a0a0a&darkMode=true&from=btc&fromFiat=&horizontal=false&isFiat=false&lang=en-US&link_id=&locales=true&logo=true&primaryColor=FF6600&to=xmr&toFiat=&toTheMoon=false"
                         style="height: 356px; width: 100%; border: none; border-radius: 12px;"
-                        allow="clipboard-read; clipboard-write">
+                        allow="clipboard-read; clipboard-write"
+                        loading="lazy">
                     </iframe>
                     <script defer type="text/javascript" src="https://changenow.io/embeds/exchange-widget/v2/stepper-connector.js"></script>
+                </div>
+
+                <!-- Swap Status Tracker -->
+                <div style="margin-top: 1.5rem; padding: 1rem; background: #121212; border: 1px solid var(--grey-18); border-radius: 10px;">
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-primary); font-size: 0.95rem;">Track Your Swap</h4>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.75rem;">
+                        Paste your ChangeNOW transaction ID to check swap status.
+                    </p>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" id="swap-tx-id" placeholder="Enter transaction ID..."
+                            style="flex: 1; padding: 0.5rem 0.75rem; background: #0a0a0a; border: 1px solid var(--grey-18); border-radius: 6px; color: var(--text-primary); font-family: var(--font-mono); font-size: 0.85rem;"
+                        >
+                        <button onclick="SwapTracker.checkStatus(document.getElementById('swap-tx-id').value.trim())"
+                            style="padding: 0.5rem 1rem; background: var(--changenow-green); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                            Check
+                        </button>
+                    </div>
+                    <div id="swap-tracker-result" style="margin-top: 0.75rem; display: none;"></div>
+                    <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem; opacity: 0.7;">
+                        Swap operations are processed entirely by ChangeNOW. This site does not custody or control any funds.
+                    </p>
                 </div>
             </div>
 
@@ -1704,40 +1732,153 @@
 
         // Portal switching
         function switchPortal(portal) {
-            // Update tabs
             document.querySelectorAll('.portal-tab').forEach(tab => {
                 tab.classList.remove('active');
             });
             event.currentTarget.classList.add('active');
 
-            // Update sections
             document.querySelectorAll('.portal-section').forEach(section => {
                 section.classList.remove('active');
             });
             document.getElementById(portal + '-section').classList.add('active');
         }
 
+        // ── Optimized Widget Loader ──────────────────────────────
+        // Lazy-loads iframes only when their section becomes visible
+        const WidgetLoader = {
+            loaded: new Set(),
+
+            init() {
+                // Observe portal sections for visibility
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            this.activateWidgets(entry.target);
+                        }
+                    });
+                }, { rootMargin: '200px' });
+
+                document.querySelectorAll('.portal-section').forEach(section => {
+                    observer.observe(section);
+                });
+            },
+
+            activateWidgets(section) {
+                section.querySelectorAll('iframe[data-src]').forEach(iframe => {
+                    if (!this.loaded.has(iframe.id)) {
+                        iframe.src = iframe.dataset.src;
+                        this.loaded.add(iframe.id);
+                    }
+                });
+            }
+        };
+
         // Wagyu iframe toggle
-        let wagyuIframeLoaded = false;
         function toggleWagyuIframe() {
             const container = document.getElementById('wagyu-iframe-container');
             const btn = document.getElementById('wagyu-toggle-btn');
             const iframe = document.getElementById('wagyu-iframe');
-            
+
             if (container.classList.contains('active')) {
                 container.classList.remove('active');
                 btn.textContent = 'Show Embed';
             } else {
                 container.classList.add('active');
                 btn.textContent = 'Hide Embed';
-                
-                // Lazy load iframe
-                if (!wagyuIframeLoaded) {
+
+                if (!WidgetLoader.loaded.has('wagyu-iframe')) {
                     iframe.src = iframe.dataset.src;
-                    wagyuIframeLoaded = true;
+                    WidgetLoader.loaded.add('wagyu-iframe');
                 }
             }
         }
+
+        // ── ChangeNOW Swap Status Tracker ────────────────────────
+        // Users can paste a ChangeNOW transaction ID to check status
+        // Uses ChangeNOW public exchange status endpoint (no API key needed)
+        const SwapTracker = {
+            container: null,
+
+            init() {
+                this.container = document.getElementById('swap-tracker-result');
+            },
+
+            async checkStatus(txId) {
+                if (!txId || !this.container) return;
+                this.container.innerHTML = '<p style="color: var(--text-secondary);">Checking swap status...</p>';
+                this.container.style.display = 'block';
+
+                try {
+                    const resp = await fetch(`https://changenow.io/api/v1/transactions/${txId}/`);
+                    if (!resp.ok) throw new Error('Transaction not found');
+                    const tx = await resp.json();
+
+                    const statusColors = {
+                        waiting: '#FFD93D', confirming: '#FFD93D', exchanging: '#FF6600',
+                        sending: '#00D395', finished: '#00D395', failed: '#FF4757',
+                        refunded: '#4A90D9', expired: '#FF4757'
+                    };
+                    const color = statusColors[tx.status] || '#A0A0A0';
+
+                    this.container.innerHTML = `
+                        <div style="padding: 1rem; background: #1a1a1a; border-radius: 8px; border-left: 3px solid ${color};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                                <strong style="color: ${color}; text-transform: uppercase;">${tx.status}</strong>
+                                <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${tx.id}</span>
+                            </div>
+                            ${tx.amountFrom ? `<p style="font-size: 0.85rem;">Sending: ${tx.amountFrom} ${(tx.fromCurrency || '').toUpperCase()}</p>` : ''}
+                            ${tx.amountTo ? `<p style="font-size: 0.85rem;">Receiving: ~${tx.amountTo} ${(tx.toCurrency || '').toUpperCase()}</p>` : ''}
+                            <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-secondary);">
+                                Need help? <a href="https://support.changenow.io/" target="_blank" rel="noopener" style="color: var(--changenow-green);">ChangeNOW Support</a>
+                            </p>
+                        </div>`;
+                } catch (err) {
+                    this.container.innerHTML = `
+                        <p style="color: var(--danger-red); padding: 0.75rem; background: rgba(255,71,87,0.1); border-radius: 8px;">
+                            Could not find transaction. Double-check the ID or visit
+                            <a href="https://changenow.io/exchange/txs" target="_blank" rel="noopener" style="color: var(--changenow-green);">changenow.io/exchange/txs</a>
+                        </p>`;
+                }
+            }
+        };
+
+        // ── Live Rate Display ────────────────────────────────────
+        // Shows current BTC→XMR rate on the swap page (30-min refresh)
+        const LiveRate = {
+            INTERVAL: 1800000,
+
+            async fetch() {
+                try {
+                    const resp = await fetch(
+                        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true'
+                    );
+                    const data = await resp.json();
+                    const btcUsd = data.bitcoin.usd;
+                    const xmrUsd = data.monero.usd;
+                    const ratio = (btcUsd / xmrUsd).toFixed(1);
+
+                    const el = document.getElementById('live-swap-rate');
+                    if (el) {
+                        el.textContent = `1 BTC ≈ ${ratio} XMR`;
+                        el.title = `BTC: $${btcUsd.toLocaleString()} | XMR: $${xmrUsd.toLocaleString()}`;
+                    }
+                } catch (e) {
+                    // silently fail — rate display is supplementary
+                }
+            },
+
+            start() {
+                this.fetch();
+                setInterval(() => this.fetch(), this.INTERVAL);
+            }
+        };
+
+        // ── Init ─────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            WidgetLoader.init();
+            SwapTracker.init();
+            LiveRate.start();
+        });
 
         // Close mobile menu when clicking outside
         document.addEventListener('click', function(e) {

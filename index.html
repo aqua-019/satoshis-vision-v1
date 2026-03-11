@@ -1288,14 +1288,19 @@
         </div>
         <div class="price-ticker">
             <div class="price-item">
-                <span class="price-label">BTC</span>
+                <span class="price-label">BTC/USD</span>
                 <span class="price-value" id="btc-price">—</span>
                 <span class="price-change" id="btc-change"></span>
             </div>
             <div class="price-item">
-                <span class="price-label">XMR</span>
+                <span class="price-label">XMR/USD</span>
                 <span class="price-value" id="xmr-price">—</span>
                 <span class="price-change" id="xmr-change"></span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">BTC/XMR</span>
+                <span class="price-value" id="btc-xmr-ratio">—</span>
+                <span class="price-change" id="btc-xmr-change"></span>
             </div>
         </div>
         <div class="hamburger" onclick="toggleMenu()">
@@ -1314,8 +1319,9 @@
         <a href="secrets.html">Secrets</a>
         <a href="quotes.html">The Bottom Line</a>
         <div class="mobile-prices">
-            <div>BTC: <span id="btc-price-mobile">—</span></div>
-            <div>XMR: <span id="xmr-price-mobile">—</span></div>
+            <div>BTC/USD: <span id="btc-price-mobile">—</span></div>
+            <div>XMR/USD: <span id="xmr-price-mobile">—</span></div>
+            <div>BTC/XMR: <span id="btc-xmr-ratio-mobile">—</span></div>
         </div>
     </div>
 
@@ -1998,32 +2004,76 @@
             document.getElementById('mobileMenu').classList.toggle('active');
         }
 
-        // Price ticker
-        async function fetchPrices() {
-            try {
-                const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true');
-                const data = await response.json();
-                
-                const btcPrice = data.bitcoin.usd.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-                const btcChange = data.bitcoin.usd_24h_change.toFixed(2);
-                const xmrPrice = data.monero.usd.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
-                const xmrChange = data.monero.usd_24h_change.toFixed(2);
-                
-                document.getElementById('btc-price').textContent = btcPrice;
-                document.getElementById('btc-change').textContent = `${btcChange > 0 ? '+' : ''}${btcChange}%`;
-                document.getElementById('btc-change').className = `price-change ${btcChange >= 0 ? 'up' : 'down'}`;
-                
-                document.getElementById('xmr-price').textContent = xmrPrice;
-                document.getElementById('xmr-change').textContent = `${xmrChange > 0 ? '+' : ''}${xmrChange}%`;
-                document.getElementById('xmr-change').className = `price-change ${xmrChange >= 0 ? 'up' : 'down'}`;
-                
-                // Mobile prices
-                document.getElementById('btc-price-mobile').textContent = btcPrice;
-                document.getElementById('xmr-price-mobile').textContent = xmrPrice;
-            } catch (error) {
-                console.log('Price fetch error:', error);
+        // ── Dynamic Price Service ──────────────────────────────────
+        // Shared price state accessible by any component on the page
+        const PriceService = {
+            data: { btc: null, xmr: null, btcXmrRatio: null },
+            listeners: [],
+            INTERVAL: 1800000, // 30 minutes
+
+            subscribe(fn) { this.listeners.push(fn); },
+
+            notify() { this.listeners.forEach(fn => fn(this.data)); },
+
+            async fetch() {
+                try {
+                    const response = await fetch(
+                        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true'
+                    );
+                    const raw = await response.json();
+
+                    const btcUsd = raw.bitcoin.usd;
+                    const xmrUsd = raw.monero.usd;
+
+                    this.data = {
+                        btc: { usd: btcUsd, change24h: raw.bitcoin.usd_24h_change },
+                        xmr: { usd: xmrUsd, change24h: raw.monero.usd_24h_change },
+                        btcXmrRatio: btcUsd / xmrUsd
+                    };
+
+                    this.notify();
+                } catch (error) {
+                    console.log('Price fetch error:', error);
+                }
+            },
+
+            start() {
+                this.fetch();
+                setInterval(() => this.fetch(), this.INTERVAL);
             }
-        }
+        };
+
+        // ── Price Ticker UI (subscribes to PriceService) ─────────
+        PriceService.subscribe(function updateTicker(prices) {
+            if (!prices.btc) return;
+
+            const fmt = (v, digits) => v.toLocaleString('en-US', {
+                style: 'currency', currency: 'USD', maximumFractionDigits: digits
+            });
+            const pct = (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
+            const cls = (v) => `price-change ${v >= 0 ? 'up' : 'down'}`;
+
+            // BTC/USD
+            const btcPrice = fmt(prices.btc.usd, 0);
+            document.getElementById('btc-price').textContent = btcPrice;
+            document.getElementById('btc-change').textContent = pct(prices.btc.change24h);
+            document.getElementById('btc-change').className = cls(prices.btc.change24h);
+
+            // XMR/USD
+            const xmrPrice = fmt(prices.xmr.usd, 2);
+            document.getElementById('xmr-price').textContent = xmrPrice;
+            document.getElementById('xmr-change').textContent = pct(prices.xmr.change24h);
+            document.getElementById('xmr-change').className = cls(prices.xmr.change24h);
+
+            // BTC/XMR ratio
+            const ratio = prices.btcXmrRatio.toFixed(1);
+            document.getElementById('btc-xmr-ratio').textContent = `${ratio} XMR`;
+            document.getElementById('btc-xmr-ratio-mobile').textContent = `${ratio}`;
+
+            // Mobile
+            document.getElementById('btc-price-mobile').textContent = btcPrice;
+            document.getElementById('xmr-price-mobile').textContent = xmrPrice;
+        });
 
         // Particles
         function createParticles() {
@@ -2068,8 +2118,7 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             displayQuote(0);
-            fetchPrices();
-            setInterval(fetchPrices, 60000);
+            PriceService.start();
             createParticles();
             handleScroll();
         });
