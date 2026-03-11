@@ -2,193 +2,30 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="The Bottom Line: A comprehensive record of government attempts to break Monero, the billions spent in failure, and why XMR stands as humanity's last financial refuge in an age of total surveillance.">
+    <meta property="og:title" content="The Bottom Line | Bitcoin TradFi vs Monero Privacy">
+    <meta property="og:description" content="A comprehensive record of government attempts to break Monero, the billions spent in failure, and why XMR stands as humanity's last financial refuge.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://satoshis-vision.com/bottom-line.html">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="The Bottom Line | Bitcoin TradFi vs Monero Privacy">
+    <meta name="twitter:description" content="A comprehensive record of government attempts to break Monero, the billions spent in failure, and why XMR stands as humanity's last financial refuge.">
     <title>The Bottom Line | Bitcoin TradFi vs Monero Privacy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/reset.css">
+    <link rel="stylesheet" href="css/nav.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/footer.css">
+    <link rel="stylesheet" href="css/responsive.css">
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --text-primary: #EAEAEA;
-            --text-secondary: #A0A0A0;
-            --grey-18: #2E2E2E;
-            --success-green: #00D395;
-            --danger-red: #FF4757;
-            --warning-yellow: #FFD93D;
-            --tradfi-blue: #4A90D9;
-            --privacy-purple: #9B59B6;
-            --crossover-cyan: #00CED1;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background-color: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            list-style: none;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--xmr-orange);
-        }
-
-        /* Hero Section */
-        .hero {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            text-align: center;
-            padding: 4.5rem 1.5rem 1.5rem;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: 
-                radial-gradient(ellipse at 20% 20%, rgba(255, 102, 0, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 80%, rgba(247, 147, 26, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-        }
-
-        .hero-badge {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: var(--xmr-orange);
-            margin-bottom: 0.5rem;
-            padding: 0.35rem 1rem;
-            border: 1px solid var(--xmr-orange);
-            display: inline-block;
-        }
-
-        .hero h1 {
-            font-family: var(--font-display);
-            font-size: clamp(1.75rem, 4vw, 3rem);
-            font-weight: 700;
-            margin-bottom: 0.75rem;
-            line-height: 1.1;
-            max-width: 900px;
-        }
-
-        .hero h1 .highlight {
-            background: linear-gradient(135deg, var(--xmr-orange), var(--btc-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero-subtitle {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            max-width: 700px;
-            margin-bottom: 1rem;
-        }
-
-        .hero-stats {
-            display: flex;
-            gap: 2rem;
-            margin-top: 0.5rem;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .hero-stat {
-            text-align: center;
-        }
-
-        .hero-stat-value {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--xmr-orange);
-        }
-
-        .hero-stat-label {
-            font-family: var(--font-mono);
-            font-size: 0.65rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        /* Main Content */
-        main {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0.75rem 1.5rem;
-        }
+        /* ==========================================
+           PAGE-SPECIFIC: Bottom Line
+           ========================================== */
 
         /* Section Styling */
         .section {
@@ -209,13 +46,6 @@
             display: block;
         }
 
-        .section-title {
-            font-family: var(--font-display);
-            font-size: 1.75rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
         .section-intro {
             font-size: 0.9rem;
             color: var(--text-secondary);
@@ -223,10 +53,17 @@
             line-height: 1.5;
         }
 
+        /* Main Content */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0.75rem 1.5rem;
+        }
+
         /* ==========================================
            DUAL-TRACK TIMELINE - CORE STYLES
            ========================================== */
-        
+
         .timeline-section {
             position: relative;
             padding: 1rem 0;
@@ -239,7 +76,7 @@
             flex-wrap: wrap;
             margin-bottom: 1rem;
             padding: 0.75rem;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             border: 1px solid var(--grey-18);
         }
 
@@ -286,8 +123,8 @@
             top: 0;
             bottom: 0;
             width: 4px;
-            background: linear-gradient(180deg, 
-                var(--btc-orange) 0%, 
+            background: linear-gradient(180deg,
+                var(--btc-orange) 0%,
                 var(--crossover-cyan) 25%,
                 var(--tradfi-blue) 50%,
                 var(--danger-red) 75%,
@@ -300,7 +137,7 @@
         /* Year markers on spine */
         .year-marker {
             position: relative;
-            background: var(--dark-bg);
+            background: var(--bg-primary);
             padding: 0.5rem 0.75rem;
             font-family: var(--font-display);
             font-size: 1.25rem;
@@ -331,7 +168,7 @@
         .timeline-event {
             position: relative;
             max-width: 500px;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             padding: 1rem;
             border-left: 3px solid var(--btc-orange);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -346,9 +183,9 @@
         .timeline-event.xmr-event { border-left-color: var(--xmr-orange); }
         .timeline-event.tradfi-event { border-left-color: var(--tradfi-blue); }
         .timeline-event.regulation-event { border-left-color: var(--danger-red); }
-        .timeline-event.crossover-event { 
+        .timeline-event.crossover-event {
             border-left-color: var(--crossover-cyan);
-            background: linear-gradient(135deg, var(--card-bg), rgba(0, 206, 209, 0.05));
+            background: linear-gradient(135deg, var(--bg-secondary), rgba(0, 206, 209, 0.05));
         }
         .timeline-event.privacy-event { border-left-color: var(--privacy-purple); }
 
@@ -425,7 +262,7 @@
         /* ==========================================
            VERTICAL TIMELINE (MOBILE-FRIENDLY ALT)
            ========================================== */
-        
+
         .vertical-timeline {
             position: relative;
             padding-left: 50px;
@@ -438,8 +275,8 @@
             top: 0;
             bottom: 0;
             width: 4px;
-            background: linear-gradient(180deg, 
-                var(--btc-orange) 0%, 
+            background: linear-gradient(180deg,
+                var(--btc-orange) 0%,
                 var(--tradfi-blue) 30%,
                 var(--crossover-cyan) 50%,
                 var(--danger-red) 70%,
@@ -459,7 +296,7 @@
             color: var(--btc-gold);
             margin-bottom: 0.5rem;
             padding: 0.5rem;
-            background: var(--dark-bg);
+            background: var(--bg-primary);
             display: inline-block;
             z-index: 5;
         }
@@ -474,14 +311,14 @@
             height: 20px;
             background: var(--btc-gold);
             border-radius: 50%;
-            border: 3px solid var(--dark-bg);
+            border: 3px solid var(--bg-primary);
         }
 
         .v-timeline-event {
             position: relative;
             margin-bottom: 0.5rem;
             padding: 0.75rem;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             margin-left: 30px;
             border-left: 3px solid var(--btc-orange);
             transition: all 0.3s ease;
@@ -495,7 +332,7 @@
             width: 10px;
             height: 10px;
             border-radius: 50%;
-            border: 2px solid var(--dark-bg);
+            border: 2px solid var(--bg-primary);
         }
 
         .v-timeline-event.btc::before { background: var(--btc-orange); }
@@ -509,9 +346,9 @@
         .v-timeline-event.xmr { border-left-color: var(--xmr-orange); }
         .v-timeline-event.tradfi { border-left-color: var(--tradfi-blue); }
         .v-timeline-event.regulation { border-left-color: var(--danger-red); }
-        .v-timeline-event.crossover { 
+        .v-timeline-event.crossover {
             border-left-color: var(--crossover-cyan);
-            background: linear-gradient(135deg, var(--card-bg), rgba(0, 206, 209, 0.08));
+            background: linear-gradient(135deg, var(--bg-secondary), rgba(0, 206, 209, 0.08));
         }
         .v-timeline-event.privacy { border-left-color: var(--privacy-purple); }
 
@@ -535,7 +372,7 @@
         }
 
         .crossover-link::before {
-            content: '⟷';
+            content: '\27F7';
             font-size: 1rem;
         }
 
@@ -606,7 +443,7 @@
         }
 
         .evidence-card {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             padding: 1.25rem;
             border-left: 3px solid var(--xmr-orange);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -686,7 +523,7 @@
             position: relative;
             margin-bottom: 1.5rem;
             padding: 1.25rem;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
         }
 
         .bounty-item::before {
@@ -752,7 +589,7 @@
         }
 
         .legal-table th {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             padding: 1rem;
             text-align: left;
             color: var(--xmr-orange);
@@ -772,34 +609,6 @@
             background: rgba(255, 102, 0, 0.05);
         }
 
-        .status-badge {
-            display: inline-block;
-            padding: 0.25rem 0.75rem;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .status-badge.banned {
-            background: rgba(255, 71, 87, 0.2);
-            color: var(--danger-red);
-        }
-
-        .status-badge.restricted {
-            background: rgba(255, 217, 61, 0.2);
-            color: var(--warning-yellow);
-        }
-
-        .status-badge.legal {
-            background: rgba(0, 211, 149, 0.2);
-            color: var(--success-green);
-        }
-
-        .status-badge.delisted {
-            background: rgba(255, 102, 0, 0.2);
-            color: var(--xmr-orange);
-        }
-
         /* Cryptography Section */
         .crypto-grid {
             display: grid;
@@ -808,7 +617,7 @@
         }
 
         .crypto-card {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             padding: 1.25rem;
             text-align: center;
             border: 1px solid var(--grey-18);
@@ -843,7 +652,7 @@
             line-height: 1.5;
         }
 
-        /* Thesis Section - The Philosophy */
+        /* Thesis Section */
         .thesis-section {
             background: linear-gradient(135deg, rgba(255, 102, 0, 0.05), rgba(247, 147, 26, 0.03));
             padding: 2rem;
@@ -853,7 +662,7 @@
         }
 
         .thesis-section::before {
-            content: '"';
+            content: '\201C';
             position: absolute;
             top: -20px;
             left: 40px;
@@ -897,7 +706,7 @@
 
         /* Manifesto Callouts */
         .manifesto-callout {
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             padding: 1.25rem;
             margin: 1rem 0;
             border-left: 3px solid var(--xmr-orange);
@@ -927,7 +736,7 @@
             align-items: center;
             gap: 1.5rem;
             padding: 1.25rem 1rem;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             margin: 1rem 0;
         }
 
@@ -976,7 +785,7 @@
             align-items: flex-start;
             gap: 1rem;
             padding: 1rem;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
         }
 
         .key-point-number {
@@ -999,54 +808,112 @@
             line-height: 1.5;
         }
 
-        /* Footer */
-        footer {
-            background: var(--card-bg);
-            padding: 1rem 1.5rem;
-            margin-top: 1rem;
-            border-top: 1px solid var(--grey-18);
+        /* Pulse animation for key stats */
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
         }
 
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
+        .pulse {
+            animation: pulse 3s infinite;
         }
 
-        .footer-section h4 {
+        /* Special emphasis styles */
+        .tradfi-exclusion-box {
+            background: linear-gradient(135deg, rgba(74, 144, 217, 0.1), rgba(255, 71, 87, 0.05));
+            border: 2px solid var(--tradfi-blue);
+            padding: 2rem;
+            margin: 2rem 0;
+            position: relative;
+        }
+
+        .tradfi-exclusion-box h4 {
             font-family: var(--font-display);
+            font-size: 1.2rem;
+            color: var(--tradfi-blue);
+            margin-bottom: 1rem;
+        }
+
+        .tradfi-exclusion-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tradfi-exclusion-box li {
+            padding: 0.5rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+            color: var(--text-secondary);
             font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: var(--xmr-orange);
         }
 
-        .footer-section a {
-            display: block;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.8rem;
-            margin-bottom: 0.25rem;
-            transition: color 0.3s ease;
+        .tradfi-exclusion-box li::before {
+            content: '\2717';
+            position: absolute;
+            left: 0;
+            color: var(--danger-red);
+            font-weight: bold;
         }
 
-        .footer-section a:hover {
-            color: var(--xmr-orange);
+        /* Comparison table for BTC vs XMR TradFi */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2rem 0;
         }
 
-        .footer-bottom {
-            max-width: 1200px;
-            margin: 0.75rem auto 0;
-            padding-top: 0.75rem;
-            border-top: 1px solid var(--grey-18);
+        .comparison-table th {
+            background: var(--bg-secondary);
+            padding: 1.5rem;
             text-align: center;
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+        }
+
+        .comparison-table th:first-child {
+            text-align: left;
             font-family: var(--font-mono);
-            font-size: 0.7rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
         }
 
-        /* Responsive */
+        .comparison-table th.btc-col {
+            color: var(--btc-orange);
+            border-bottom: 3px solid var(--btc-orange);
+        }
+
+        .comparison-table th.xmr-col {
+            color: var(--xmr-orange);
+            border-bottom: 3px solid var(--xmr-orange);
+        }
+
+        .comparison-table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--grey-18);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .comparison-table td:first-child {
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .comparison-table .yes {
+            color: var(--success-green);
+            font-weight: 600;
+        }
+
+        .comparison-table .no {
+            color: var(--danger-red);
+            font-weight: 600;
+        }
+
+        .comparison-table .partial {
+            color: var(--warning-yellow);
+        }
+
+        /* Page-specific responsive */
         @media (max-width: 1200px) {
             .dual-timeline {
                 display: none;
@@ -1054,40 +921,12 @@
         }
 
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero {
-                padding: 4rem 1rem 1rem;
-            }
-
-            .hero h1 {
-                font-size: 1.5rem;
-            }
-
-            .hero-subtitle {
-                font-size: 0.85rem;
-            }
-
-            .hero-stats {
-                gap: 1rem;
-            }
-
-            .hero-stat-value {
-                font-size: 1.25rem;
-            }
-
             main {
                 padding: 0.5rem;
             }
 
             .section {
                 margin-bottom: 0.75rem;
-            }
-
-            .section-title {
-                font-size: 1.25rem;
             }
 
             .crypto-grid {
@@ -1149,178 +988,59 @@
                 flex-direction: column;
                 gap: 0.5rem;
             }
-
-            .footer-content {
-                grid-template-columns: 1fr 1fr;
-                gap: 1rem;
-            }
-        }
-
-        /* Animations */
-        .fade-in {
-            opacity: 1;
-            transform: translateY(0);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-
-        .fade-in.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Pulse animation for key stats */
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-
-        .pulse {
-            animation: pulse 3s infinite;
-        }
-
-        /* Special emphasis styles */
-        .tradfi-exclusion-box {
-            background: linear-gradient(135deg, rgba(74, 144, 217, 0.1), rgba(255, 71, 87, 0.05));
-            border: 2px solid var(--tradfi-blue);
-            padding: 2rem;
-            margin: 2rem 0;
-            position: relative;
-        }
-
-        .tradfi-exclusion-box::before {
-            content: '🚫';
-            position: absolute;
-            top: -15px;
-            left: 20px;
-            font-size: 1.5rem;
-            background: var(--dark-bg);
-            padding: 0 0.5rem;
-        }
-
-        .tradfi-exclusion-box h4 {
-            font-family: var(--font-display);
-            font-size: 1.2rem;
-            color: var(--tradfi-blue);
-            margin-bottom: 1rem;
-        }
-
-        .tradfi-exclusion-box ul {
-            list-style: none;
-            padding: 0;
-        }
-
-        .tradfi-exclusion-box li {
-            padding: 0.5rem 0;
-            padding-left: 1.5rem;
-            position: relative;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-        }
-
-        .tradfi-exclusion-box li::before {
-            content: '✗';
-            position: absolute;
-            left: 0;
-            color: var(--danger-red);
-            font-weight: bold;
-        }
-
-        /* Comparison table for BTC vs XMR TradFi */
-        .comparison-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2rem 0;
-        }
-
-        .comparison-table th {
-            background: var(--card-bg);
-            padding: 1.5rem;
-            text-align: center;
-            font-family: var(--font-display);
-            font-size: 1.1rem;
-        }
-
-        .comparison-table th:first-child {
-            text-align: left;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .comparison-table th.btc-col {
-            color: var(--btc-orange);
-            border-bottom: 3px solid var(--btc-orange);
-        }
-
-        .comparison-table th.xmr-col {
-            color: var(--xmr-orange);
-            border-bottom: 3px solid var(--xmr-orange);
-        }
-
-        .comparison-table td {
-            padding: 1rem 1.5rem;
-            border-bottom: 1px solid var(--grey-18);
-            text-align: center;
-            font-size: 0.9rem;
-        }
-
-        .comparison-table td:first-child {
-            text-align: left;
-            font-weight: 500;
-        }
-
-        .comparison-table .yes {
-            color: var(--success-green);
-            font-weight: 600;
-        }
-
-        .comparison-table .no {
-            color: var(--danger-red);
-            font-weight: 600;
-        }
-
-        .comparison-table .partial {
-            color: var(--warning-yellow);
         }
     </style>
 </head>
 <body>
-    <nav>
-        <div class="nav-container">
-            <a href="index.html" class="logo">Satoshi's Vision</a>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="secrets.html">The Secrets</a></li>
-                <li><a href="quotes.html">Quotes</a></li>
-                <li><a href="timeline.html">Timeline</a></li>
-                <li><a href="bottom-line.html" style="color: var(--xmr-orange);">The Bottom Line</a></li>
-                <li><a href="hold-monero.html">Hold Monero</a></li>
-            </ul>
+    <nav class="nav">
+        <a href="/" class="nav-logo">₿ → ɱ</a>
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="quotes.html">Quotes</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="btc-xmr-education.html">Education</a>
+            <a href="bottom-line.html">The Bottom Line</a>
+            <a href="hold-monero.html">Hold Monero</a>
+        </div>
+        <div class="hamburger" aria-label="Toggle navigation menu">
+            <span></span><span></span><span></span>
         </div>
     </nav>
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="/">Home</a>
+        <a href="secrets.html">Secrets</a>
+        <a href="quotes.html">Quotes</a>
+        <a href="timeline.html">Timeline</a>
+        <a href="btc-xmr-education.html">Education</a>
+        <a href="bottom-line.html">The Bottom Line</a>
+        <a href="hold-monero.html">Hold Monero</a>
+    </div>
 
     <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-badge">The Bottom Line</div>
-        <h1>The World's Most Powerful <span class="highlight">Untraceable</span> Currency</h1>
-        <p class="hero-subtitle">A comprehensive record of government attempts to break Monero, the billions spent in failure, and why XMR stands as humanity's last financial refuge in an age of total surveillance.</p>
-        
-        <div class="hero-stats">
-            <div class="hero-stat">
-                <div class="hero-stat-value pulse">$625K+</div>
-                <div class="hero-stat-label">IRS Bounty (2020)</div>
-            </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value pulse">0</div>
-                <div class="hero-stat-label">Successful Traces</div>
-            </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value pulse">73</div>
-                <div class="hero-stat-label">Exchange Delistings (2025)</div>
-            </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value pulse">+195%</div>
-                <div class="hero-stat-label">Price Growth YoY</div>
+    <section class="hero hero--sub">
+        <div class="hero-content">
+            <div class="hero-badge">The Bottom Line</div>
+            <h1 class="hero-title">The World's Most Powerful <span class="highlight-xmr">Untraceable</span> Currency</h1>
+            <p class="hero-subtitle">A comprehensive record of government attempts to break Monero, the billions spent in failure, and why XMR stands as humanity's last financial refuge in an age of total surveillance.</p>
+
+            <div class="hero-stats">
+                <div class="hero-stat">
+                    <div class="hero-stat-value pulse">$625K+</div>
+                    <div class="hero-stat-label">IRS Bounty (2020)</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value pulse">0</div>
+                    <div class="hero-stat-label">Successful Traces</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value pulse">73</div>
+                    <div class="hero-stat-label">Exchange Delistings (2025)</div>
+                </div>
+                <div class="hero-stat">
+                    <div class="hero-stat-value pulse">+195%</div>
+                    <div class="hero-stat-label">Price Growth YoY</div>
+                </div>
             </div>
         </div>
     </section>
@@ -1378,7 +1098,7 @@
                 <p class="section-intro">Bitcoin chose transparency and regulatory compliance — gaining Wall Street access but surrendering privacy. Monero chose cryptographic privacy — ensuring financial sovereignty but accepting institutional exclusion. <strong>Both paths were chosen deliberately.</strong></p>
             </div>
 
-            <table class="comparison-table">
+            <table class="comparison-table fade-in">
                 <thead>
                     <tr>
                         <th>TradFi Requirement</th>
@@ -1440,7 +1160,7 @@
                 </tbody>
             </table>
 
-            <div class="manifesto-callout">
+            <div class="manifesto-callout fade-in">
                 <h3>The Fundamental Trade-Off</h3>
                 <p>
                     <span class="highlight-text">Bitcoin gained $150+ billion in institutional investment by making itself traceable.</span> Every BTC transaction is permanently recorded on a public ledger. Chainalysis, TRM Labs, and government agencies can follow the flow of every satoshi. This is why the SEC approved Bitcoin ETFs — they can enforce surveillance-sharing agreements.
@@ -1496,31 +1216,31 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2008-2009</h3>
                     
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Genesis</span>
                         <div class="event-date">October 31, 2008</div>
                         <h4 class="event-title">Bitcoin Whitepaper Published</h4>
-                        <p class="event-description">Satoshi Nakamoto publishes "Bitcoin: A Peer-to-Peer Electronic Cash System" to the cryptography mailing list. The paper describes a transparent public ledger — a design choice that would later enable institutional adoption but preclude true financial privacy.</p>
+                        <p class="event-description">Satoshi Nakamoto publishes "Bitcoin: A Peer-to-Peer Electronic Cash System" to the cryptography mailing list. The paper describes a transparent public ledger &#x2014; a design choice that would later enable institutional adoption but preclude true financial privacy.</p>
                         <div class="data-callout">
                             <span class="metric">Key Quote:</span> "We need a system for electronic transactions without relying on trust."
                         </div>
                     </div>
 
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Network</span>
                         <div class="event-date">January 3, 2009</div>
                         <h4 class="event-title">Genesis Block Mined</h4>
                         <p class="event-description">Satoshi mines Bitcoin's first block, containing the message: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks." Block reward: 50 BTC. The first cryptocurrency network goes live.</p>
                         <div class="data-callout">
-                            <span class="metric">Block Height:</span> 0 • <span class="metric">Reward:</span> 50 BTC • <span class="metric">Total Supply:</span> 50 BTC
+                            <span class="metric">Block Height:</span> 0 &#x2022; <span class="metric">Reward:</span> 50 BTC &#x2022; <span class="metric">Total Supply:</span> 50 BTC
                         </div>
                     </div>
 
-                    <div class="v-timeline-event crossover">
+                    <div class="v-timeline-event crossover fade-in">
                         <span class="event-type-badge crossover">Satoshi's Privacy Warning</span>
                         <div class="event-date">2009-2010</div>
                         <h4 class="event-title">Satoshi Discusses Privacy Limitations</h4>
-                        <p class="event-description">In early communications, Satoshi acknowledges Bitcoin's privacy limitations and discusses potential solutions including "ring signatures" and "stealth addresses" — the exact technologies that would later form Monero's foundation.</p>
+                        <p class="event-description">In early communications, Satoshi acknowledges Bitcoin's privacy limitations and discusses potential solutions including "ring signatures" and "stealth addresses" &#x2014; the exact technologies that would later form Monero's foundation.</p>
                         <div class="crossover-link">Links to: CryptoNote (2013), Monero (2014)</div>
                     </div>
                 </div>
@@ -1529,13 +1249,13 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2012</h3>
                     
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Halving</span>
                         <div class="event-date">November 28, 2012</div>
                         <h4 class="event-title">First Bitcoin Halving</h4>
                         <p class="event-description">Block 210,000 mined. Block reward reduced from 50 BTC to 25 BTC. First test of Satoshi's deflationary monetary policy. BTC price at halving: ~$12.35. Within one year: ~$1,003.</p>
                         <div class="data-callout">
-                            <span class="metric">Block:</span> 210,000 • <span class="metric">New Reward:</span> 25 BTC • <span class="metric">Price:</span> $12.35 → $1,003 (1yr)
+                            <span class="metric">Block:</span> 210,000 &#x2022; <span class="metric">New Reward:</span> 25 BTC &#x2022; <span class="metric">Price:</span> $12.35 &#x2192; $1,003 (1yr)
                         </div>
                     </div>
                 </div>
@@ -1544,24 +1264,24 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2013</h3>
                     
-                    <div class="v-timeline-event privacy">
+                    <div class="v-timeline-event privacy fade-in">
                         <span class="event-type-badge privacy">Privacy Protocol</span>
                         <div class="event-date">October 2013</div>
                         <h4 class="event-title">CryptoNote Whitepaper Published</h4>
-                        <p class="event-description">Nicolas van Saberhagen (presumed pseudonym) publishes the CryptoNote v2 whitepaper, calling Bitcoin's traceability a "critical flaw." Introduces ring signatures and one-time addresses — the foundations of Monero's privacy.</p>
+                        <p class="event-description">Nicolas van Saberhagen (presumed pseudonym) publishes the CryptoNote v2 whitepaper, calling Bitcoin's traceability a "critical flaw." Introduces ring signatures and one-time addresses &#x2014; the foundations of Monero's privacy.</p>
                         <div class="data-callout xmr">
                             <span class="metric">Key Innovation:</span> Ring signatures provide sender anonymity by mixing real inputs with decoys
                         </div>
                         <div class="crossover-link">Links to: Satoshi's privacy discussions (2009-2010)</div>
                     </div>
 
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Network</span>
                         <div class="event-date">November 2013</div>
                         <h4 class="event-title">Bitcoin Reaches $1,000</h4>
                         <p class="event-description">First major bull run post-halving. Bitcoin gains mainstream media attention. The transparent nature of the blockchain begins attracting regulatory attention.</p>
                         <div class="data-callout">
-                            <span class="metric">Peak Price:</span> $1,163 • <span class="metric">Market Cap:</span> ~$14B
+                            <span class="metric">Peak Price:</span> $1,163 &#x2022; <span class="metric">Market Cap:</span> ~$14B
                         </div>
                     </div>
                 </div>
@@ -1570,17 +1290,17 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2014</h3>
                     
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Monero Launch</span>
                         <div class="event-date">April 18, 2014</div>
                         <h4 class="event-title">Monero Genesis Block</h4>
-                        <p class="event-description">Following a community fork from BitMonero (itself a fork of Bytecoin), Monero launches with zero premine, no ICO, and no corporate backing. Seven founding developers — five of whom remain anonymous to this day.</p>
+                        <p class="event-description">Following a community fork from BitMonero (itself a fork of Bytecoin), Monero launches with zero premine, no ICO, and no corporate backing. Seven founding developers &#x2014; five of whom remain anonymous to this day.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Premine:</span> 0% • <span class="metric">ICO:</span> None • <span class="metric">Corporate Backing:</span> None
+                            <span class="metric">Premine:</span> 0% &#x2022; <span class="metric">ICO:</span> None &#x2022; <span class="metric">Corporate Backing:</span> None
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Regulation</span>
                         <div class="event-date">March 2014</div>
                         <h4 class="event-title">IRS Classifies Bitcoin as Property</h4>
@@ -1593,13 +1313,13 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2016</h3>
                     
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Halving</span>
                         <div class="event-date">July 9, 2016</div>
                         <h4 class="event-title">Second Bitcoin Halving</h4>
-                        <p class="event-description">Block 420,000 mined. Reward reduced from 25 BTC to 12.5 BTC. Establishes halving as a catalyst for bull markets. BTC price: ~$650 at halving → $19,700 by December 2017.</p>
+                        <p class="event-description">Block 420,000 mined. Reward reduced from 25 BTC to 12.5 BTC. Establishes halving as a catalyst for bull markets. BTC price: ~$650 at halving &#x2192; $19,700 by December 2017.</p>
                         <div class="data-callout">
-                            <span class="metric">Block:</span> 420,000 • <span class="metric">New Reward:</span> 12.5 BTC • <span class="metric">Price:</span> $650 → $19,700 (18mo)
+                            <span class="metric">Block:</span> 420,000 &#x2022; <span class="metric">New Reward:</span> 12.5 BTC &#x2022; <span class="metric">Price:</span> $650 &#x2192; $19,700 (18mo)
                         </div>
                     </div>
                 </div>
@@ -1608,25 +1328,25 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2017</h3>
                     
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Privacy Upgrade</span>
                         <div class="event-date">January 10, 2017</div>
                         <h4 class="event-title">RingCT Enabled (Block 1,220,516)</h4>
                         <p class="event-description">Ring Confidential Transactions go live, hiding transaction amounts for the first time. Combined with ring signatures (sender) and stealth addresses (receiver), Monero achieves complete transaction privacy.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Privacy Layer Added:</span> Transaction amounts now hidden • <span class="metric">Adoption:</span> 50-60% within first month
+                            <span class="metric">Privacy Layer Added:</span> Transaction amounts now hidden &#x2022; <span class="metric">Adoption:</span> 50-60% within first month
                         </div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Protocol Upgrade</span>
                         <div class="event-date">September 2017</div>
                         <h4 class="event-title">Mandatory RingCT Hard Fork</h4>
-                        <p class="event-description">RingCT becomes mandatory for all transactions. Dynamic fee system introduced. Monero commits to privacy-by-default — a decision that will later make institutional adoption impossible.</p>
+                        <p class="event-description">RingCT becomes mandatory for all transactions. Dynamic fee system introduced. Monero commits to privacy-by-default &#x2014; a decision that will later make institutional adoption impossible.</p>
                         <div class="crossover-link">Links to: Exchange delistings (2020-2025)</div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">TradFi Rejection</span>
                         <div class="event-date">March 2017</div>
                         <h4 class="event-title">Winklevoss Bitcoin ETF Rejected</h4>
@@ -1639,24 +1359,24 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2018</h3>
                     
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Protocol Upgrade</span>
                         <div class="event-date">April 2018</div>
                         <h4 class="event-title">First Anti-ASIC Hard Fork</h4>
-                        <p class="event-description">Monero modifies its proof-of-work algorithm to resist ASIC mining centralization. Commitment to "one CPU, one vote" — Satoshi's original vision for democratic mining.</p>
+                        <p class="event-description">Monero modifies its proof-of-work algorithm to resist ASIC mining centralization. Commitment to "one CPU, one vote" &#x2014; Satoshi's original vision for democratic mining.</p>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Privacy Upgrade</span>
                         <div class="event-date">October 18, 2018</div>
                         <h4 class="event-title">Bulletproofs Activated ("Beryllium Bullet")</h4>
                         <p class="event-description">Zero-knowledge range proofs reduce transaction sizes by ~80% and fees by ~97%. Privacy becomes more efficient. Ring size standardized. Monero v0.13.0 released.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Size Reduction:</span> 80% • <span class="metric">Fee Reduction:</span> 97% • <span class="metric">No trusted setup required</span>
+                            <span class="metric">Size Reduction:</span> 80% &#x2022; <span class="metric">Fee Reduction:</span> 97% &#x2022; <span class="metric">No trusted setup required</span>
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Regulatory Pressure</span>
                         <div class="event-date">2018</div>
                         <h4 class="event-title">Japan Exchanges Delist Privacy Coins</h4>
@@ -1669,7 +1389,7 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2019</h3>
                     
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Mining Revolution</span>
                         <div class="event-date">November 30, 2019</div>
                         <h4 class="event-title">RandomX Activated</h4>
@@ -1679,7 +1399,7 @@
                         </div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Leadership Change</span>
                         <div class="event-date">December 2019</div>
                         <h4 class="event-title">Fluffypony Steps Back</h4>
@@ -1691,52 +1411,52 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2020</h3>
                     
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Halving</span>
                         <div class="event-date">May 11, 2020</div>
                         <h4 class="event-title">Third Bitcoin Halving</h4>
-                        <p class="event-description">Block 630,000 mined during COVID-19 pandemic. Reward reduced from 12.5 BTC to 6.25 BTC. BTC price: ~$8,500 at halving → $67,000 by November 2021.</p>
+                        <p class="event-description">Block 630,000 mined during COVID-19 pandemic. Reward reduced from 12.5 BTC to 6.25 BTC. BTC price: ~$8,500 at halving &#x2192; $67,000 by November 2021.</p>
                         <div class="data-callout">
-                            <span class="metric">Block:</span> 630,000 • <span class="metric">New Reward:</span> 6.25 BTC • <span class="metric">Daily Supply:</span> 900 BTC
+                            <span class="metric">Block:</span> 630,000 &#x2022; <span class="metric">New Reward:</span> 6.25 BTC &#x2022; <span class="metric">Daily Supply:</span> 900 BTC
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Corporate Adoption</span>
                         <div class="event-date">August 11, 2020</div>
                         <h4 class="event-title">MicroStrategy Adopts Bitcoin Treasury</h4>
                         <p class="event-description">Michael Saylor's MicroStrategy purchases 21,454 BTC for $250 million, becoming the first public company to adopt Bitcoin as primary treasury reserve. Cites inflation hedge, transparent ledger enables corporate compliance.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Initial Purchase:</span> 21,454 BTC @ $250M • <span class="metric">By 2025:</span> 632,457 BTC @ $46.5B
+                            <span class="metric">Initial Purchase:</span> 21,454 BTC @ $250M &#x2022; <span class="metric">By 2025:</span> 632,457 BTC @ $46.5B
                         </div>
                         <div class="crossover-link">Links to: Corporate treasury trend, Bitcoin ETFs</div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Privacy Upgrade</span>
                         <div class="event-date">October 17, 2020</div>
-                        <h4 class="event-title">CLSAG & Dandelion++ Activated</h4>
-                        <p class="event-description">CLSAG replaces MLSAG ring signatures — 25% smaller transactions, 10% faster verification. Dandelion++ obscures IP addresses of transaction broadcasters. Network-layer privacy enhanced.</p>
+                        <h4 class="event-title">CLSAG &amp; Dandelion++ Activated</h4>
+                        <p class="event-description">CLSAG replaces MLSAG ring signatures &#x2014; 25% smaller transactions, 10% faster verification. Dandelion++ obscures IP addresses of transaction broadcasters. Network-layer privacy enhanced.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">CLSAG:</span> 25% size reduction • <span class="metric">Dandelion++:</span> IP address obfuscation
+                            <span class="metric">CLSAG:</span> 25% size reduction &#x2022; <span class="metric">Dandelion++:</span> IP address obfuscation
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Government Bounty</span>
                         <div class="event-date">September 2020</div>
                         <h4 class="event-title">IRS Posts $625,000 Monero Bounty</h4>
                         <p class="event-description">IRS Criminal Investigation Division offers $625,000 to any contractor who can develop tools to trace Monero transactions. 22 companies apply. Chainalysis and Integra FEC selected. Given 8 months to deliver.</p>
                         <div class="data-callout">
-                            <span class="metric">Bounty:</span> $625,000 per contractor • <span class="metric">Applicants:</span> 22 companies
+                            <span class="metric">Bounty:</span> $625,000 per contractor &#x2022; <span class="metric">Applicants:</span> 22 companies
                         </div>
                         <div class="exclusion-callout" style="margin-top: 1rem;">
                             <h4>Why This Matters for TradFi</h4>
-                            <p>The IRS bounty proves that blockchain intelligence tools — required for ETF approval and institutional custody — <strong>do not work on Monero</strong>. This is why no Monero ETF is structurally possible.</p>
+                            <p>The IRS bounty proves that blockchain intelligence tools &#x2014; required for ETF approval and institutional custody &#x2014; <strong>do not work on Monero</strong>. This is why no Monero ETF is structurally possible.</p>
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Corporate Adoption</span>
                         <div class="event-date">October 2020</div>
                         <h4 class="event-title">Square Adds Bitcoin to Treasury</h4>
@@ -1748,31 +1468,31 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2021</h3>
                     
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Corporate Adoption</span>
                         <div class="event-date">February 2021</div>
                         <h4 class="event-title">Tesla Purchases $1.5B in Bitcoin</h4>
                         <p class="event-description">Tesla discloses $1.5 billion Bitcoin purchase in SEC filing. Briefly accepts BTC payments (suspended May 2021 citing energy concerns). Demonstrates corporate confidence in traceable cryptocurrency.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Purchase:</span> ~43,200 BTC • <span class="metric">Value:</span> $1.5B
+                            <span class="metric">Purchase:</span> ~43,200 BTC &#x2022; <span class="metric">Value:</span> $1.5B
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">TradFi Milestone</span>
                         <div class="event-date">April 14, 2021</div>
-                        <h4 class="event-title">Coinbase IPO — Nasdaq Listing</h4>
+                        <h4 class="event-title">Coinbase IPO &#x2014; Nasdaq Listing</h4>
                         <p class="event-description">Coinbase goes public via direct listing at $381/share, ~$86B valuation. First major crypto exchange on traditional stock market. Coinbase's compliance infrastructure enables institutional access to Bitcoin.</p>
                         <div class="crossover-link">Links to: Bitcoin ETF custody solutions (2024)</div>
                     </div>
 
-                    <div class="v-timeline-event crossover">
+                    <div class="v-timeline-event crossover fade-in">
                         <span class="event-type-badge crossover">Nation-State Adoption</span>
                         <div class="event-date">September 7, 2021</div>
                         <h4 class="event-title">El Salvador Makes Bitcoin Legal Tender</h4>
                         <p class="event-description">El Salvador becomes first country to adopt Bitcoin as legal tender. $30 Bitcoin distributed via Chivo wallet. All businesses required to accept BTC. IMF objects.</p>
                         <div class="data-callout">
-                            <span class="metric">Government Holdings:</span> Started with 400 BTC • <span class="metric">Status (2025):</span> Bitcoin mandate made optional per IMF loan conditions
+                            <span class="metric">Government Holdings:</span> Started with 400 BTC &#x2022; <span class="metric">Status (2025):</span> Bitcoin mandate made optional per IMF loan conditions
                         </div>
                         <div class="tradfi-exclusion-box" style="margin-top: 1rem;">
                             <h4>Why Bitcoin, Not Monero?</h4>
@@ -1785,7 +1505,7 @@
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Regulatory Development</span>
                         <div class="event-date">November 2021</div>
                         <h4 class="event-title">Infrastructure Bill Crypto Provisions</h4>
@@ -1797,27 +1517,27 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2022</h3>
                     
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Privacy Upgrade</span>
                         <div class="event-date">August 13, 2022</div>
-                        <h4 class="event-title">Bulletproofs+ & Ring Size 16 ("Fluorine Fermi")</h4>
+                        <h4 class="event-title">Bulletproofs+ &amp; Ring Size 16 ("Fluorine Fermi")</h4>
                         <p class="event-description">Bulletproofs+ further reduces transaction sizes by 25%+. Mandatory ring size increased to 16 (from 11). View tags added for 40% faster wallet sync. Stronger privacy, greater efficiency.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Ring Size:</span> 16 decoys • <span class="metric">Anonymity Set:</span> 1-in-16 per input
+                            <span class="metric">Ring Size:</span> 16 decoys &#x2022; <span class="metric">Anonymity Set:</span> 1-in-16 per input
                         </div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Economic Milestone</span>
                         <div class="event-date">June 2022</div>
                         <h4 class="event-title">Tail Emission Begins</h4>
                         <p class="event-description">Monero's main emission schedule ends. Perpetual tail emission of 0.6 XMR per block (~2 minutes) begins. Unlike Bitcoin's eventual zero-emission, Monero ensures permanent miner incentives and network security.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Tail Emission:</span> 0.6 XMR/block forever • <span class="metric">Annual Inflation:</span> ~0.8%
+                            <span class="metric">Tail Emission:</span> 0.6 XMR/block forever &#x2022; <span class="metric">Annual Inflation:</span> ~0.8%
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Privacy Coin Crackdown</span>
                         <div class="event-date">2022</div>
                         <h4 class="event-title">South Korea Bans Privacy Coins</h4>
@@ -1829,7 +1549,7 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2023</h3>
                     
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Legal Victory</span>
                         <div class="event-date">August 29, 2023</div>
                         <h4 class="event-title">Grayscale Wins Lawsuit Against SEC</h4>
@@ -1837,25 +1557,25 @@
                         <div class="crossover-link">Links to: Bitcoin ETF approval (January 2024)</div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">ETF Applications</span>
                         <div class="event-date">June-December 2023</div>
-                        <h4 class="event-title">BlackRock & Major Firms Apply for Bitcoin ETFs</h4>
-                        <p class="event-description">BlackRock files for iShares Bitcoin Trust. Fidelity, Invesco, WisdomTree, VanEck, Bitwise follow. All applications include surveillance-sharing agreements with regulated exchanges — requirement impossible for privacy coins.</p>
+                        <h4 class="event-title">BlackRock &amp; Major Firms Apply for Bitcoin ETFs</h4>
+                        <p class="event-description">BlackRock files for iShares Bitcoin Trust. Fidelity, Invesco, WisdomTree, VanEck, Bitwise follow. All applications include surveillance-sharing agreements with regulated exchanges &#x2014; requirement impossible for privacy coins.</p>
                         <div class="data-callout tradfi">
                             <span class="metric">Key Requirement:</span> Surveillance-sharing agreements with Coinbase, other regulated exchanges
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">EU Privacy Ban</span>
                         <div class="event-date">2023</div>
                         <h4 class="event-title">EU MiCA Framework Advances</h4>
-                        <p class="event-description">Markets in Crypto-Assets (MiCA) regulation takes shape. Privacy coin provisions emerge — CASPs (Crypto Asset Service Providers) will be prohibited from offering privacy-enhanced cryptocurrencies.</p>
+                        <p class="event-description">Markets in Crypto-Assets (MiCA) regulation takes shape. Privacy coin provisions emerge &#x2014; CASPs (Crypto Asset Service Providers) will be prohibited from offering privacy-enhanced cryptocurrencies.</p>
                         <div class="crossover-link">Links to: AMLR 2027 enforcement, Binance/Kraken EU delistings</div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Exchange Delistings</span>
                         <div class="event-date">2023</div>
                         <h4 class="event-title">Binance Begins Regional XMR Delistings</h4>
@@ -1867,7 +1587,7 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2024</h3>
                     
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Historic Milestone</span>
                         <div class="event-date">January 10, 2024</div>
                         <h4 class="event-title">SEC Approves 11 Spot Bitcoin ETFs</h4>
@@ -1879,25 +1599,25 @@
                             <h4>Why No Monero ETF is Possible</h4>
                             <p>SEC approval required:</p>
                             <ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: var(--text-secondary);">
-                                <li>Surveillance-sharing agreements — <strong>Impossible with XMR</strong></li>
-                                <li>Blockchain intelligence tool compatibility — <strong>Chainalysis doesn't work on XMR</strong></li>
-                                <li>AML/CFT compliance framework — <strong>Ring signatures prevent compliance</strong></li>
-                                <li>Source of funds documentation — <strong>Stealth addresses make this impossible</strong></li>
+                                <li>Surveillance-sharing agreements &#x2014; <strong>Impossible with XMR</strong></li>
+                                <li>Blockchain intelligence tool compatibility &#x2014; <strong>Chainalysis doesn't work on XMR</strong></li>
+                                <li>AML/CFT compliance framework &#x2014; <strong>Ring signatures prevent compliance</strong></li>
+                                <li>Source of funds documentation &#x2014; <strong>Stealth addresses make this impossible</strong></li>
                             </ul>
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Institutional Inflows</span>
                         <div class="event-date">January 11, 2024</div>
                         <h4 class="event-title">Bitcoin ETFs Begin Trading</h4>
-                        <p class="event-description">First day of trading sees massive volume. Bitcoin price: $42,582 at launch. Q1 2024 inflows reach $75 billion — 400% acceleration from pre-approval baseline.</p>
+                        <p class="event-description">First day of trading sees massive volume. Bitcoin price: $42,582 at launch. Q1 2024 inflows reach $75 billion &#x2014; 400% acceleration from pre-approval baseline.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Q1 2024 Inflows:</span> $75B • <span class="metric">YoY Acceleration:</span> 400%
+                            <span class="metric">Q1 2024 Inflows:</span> $75B &#x2022; <span class="metric">YoY Acceleration:</span> 400%
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Major Delisting</span>
                         <div class="event-date">February 20, 2024</div>
                         <h4 class="event-title">Binance Global Delists Monero</h4>
@@ -1905,41 +1625,41 @@
                         <div class="event-impact negative">IMPACT: XMR price drops initially, then recovers and exceeds pre-delisting levels</div>
                     </div>
 
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Halving</span>
                         <div class="event-date">April 20, 2024</div>
                         <h4 class="event-title">Fourth Bitcoin Halving</h4>
                         <p class="event-description">Block 840,000 mined. Reward reduced from 6.25 BTC to 3.125 BTC. Daily supply drops from 900 to 450 BTC. Combined with ETF demand, creates significant supply squeeze.</p>
                         <div class="data-callout">
-                            <span class="metric">Block:</span> 840,000 • <span class="metric">New Reward:</span> 3.125 BTC • <span class="metric">Daily Supply:</span> 450 BTC
+                            <span class="metric">Block:</span> 840,000 &#x2022; <span class="metric">New Reward:</span> 3.125 BTC &#x2022; <span class="metric">Daily Supply:</span> 450 BTC
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Supply Dynamics</span>
                         <div class="event-date">Q2-Q4 2024</div>
-                        <h4 class="event-title">ETFs Absorb Supply — BlackRock Dominates</h4>
+                        <h4 class="event-title">ETFs Absorb Supply &#x2014; BlackRock Dominates</h4>
                         <p class="event-description">Bitcoin ETFs purchase more BTC than miners produce. By Q4 2024, ETFs hold 851,499+ BTC. BlackRock IBIT reaches $50B AUM. Fastest-growing ETF product in history.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">ETF Holdings:</span> 851,499 BTC (Q2 2024) • <span class="metric">BlackRock AUM:</span> $50B • <span class="metric">Supply Absorbed:</span> 18% of circulating
+                            <span class="metric">ETF Holdings:</span> 851,499 BTC (Q2 2024) &#x2022; <span class="metric">BlackRock AUM:</span> $50B &#x2022; <span class="metric">Supply Absorbed:</span> 18% of circulating
                         </div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Research Milestone</span>
                         <div class="event-date">April 2024</div>
                         <h4 class="event-title">FCMP++ Research Published</h4>
                         <p class="event-description">Full-Chain Membership Proofs proposal released. Would replace ring signatures with proofs spanning entire blockchain. Anonymity set expands from 16 to 100+ million outputs.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Current Ring Size:</span> 16 • <span class="metric">FCMP++ Anonymity Set:</span> 100,000,000+
+                            <span class="metric">Current Ring Size:</span> 16 &#x2022; <span class="metric">FCMP++ Anonymity Set:</span> 100,000,000+
                         </div>
                     </div>
 
-                    <div class="v-timeline-event crossover">
+                    <div class="v-timeline-event crossover fade-in">
                         <span class="event-type-badge crossover">Intelligence Leak</span>
                         <div class="event-date">October 2024</div>
                         <h4 class="event-title">Chainalysis Training Video Leaked</h4>
-                        <p class="event-description">Internal IRS training video reveals Chainalysis Monero analysis relies on external exchange data, IP correlation, and user operational security failures — <strong>not cryptographic breaks</strong>. Monero Research Lab responds: nothing exceeds known, mitigated capabilities.</p>
+                        <p class="event-description">Internal IRS training video reveals Chainalysis Monero analysis relies on external exchange data, IP correlation, and user operational security failures &#x2014; <strong>not cryptographic breaks</strong>. Monero Research Lab responds: nothing exceeds known, mitigated capabilities.</p>
                         <div class="exclusion-callout" style="margin-top: 1rem;">
                             <h4>What the Leak Revealed</h4>
                             <p>Chainalysis, the company with the $22M IRS contract, admits their Monero analysis is:</p>
@@ -1952,30 +1672,30 @@
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">EU Delisting</span>
                         <div class="event-date">October 31, 2024</div>
                         <h4 class="event-title">Kraken Delists XMR in EEA</h4>
                         <p class="event-description">Kraken halts all Monero trading for European Economic Area users. Remaining balances forcibly converted to Bitcoin. Earlier 2024 delistings in Ireland and Belgium.</p>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Institutional Surge</span>
                         <div class="event-date">Q4 2024</div>
                         <h4 class="event-title">Professional Investors Surge 114%</h4>
                         <p class="event-description">13-F filings show institutional Bitcoin ETF holdings jump from $12.4B (Q3) to $27.4B (Q4). Hedge funds overtake advisors as largest holder category at 41% of 13-F holdings.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Institutional Holdings:</span> $27.4B • <span class="metric">QoQ Growth:</span> 114% • <span class="metric">Hedge Fund Share:</span> 41%
+                            <span class="metric">Institutional Holdings:</span> $27.4B &#x2022; <span class="metric">QoQ Growth:</span> 114% &#x2022; <span class="metric">Hedge Fund Share:</span> 41%
                         </div>
                     </div>
 
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Price Milestone</span>
                         <div class="event-date">December 2024</div>
                         <h4 class="event-title">Bitcoin Reaches $108,000</h4>
                         <p class="event-description">Institutional demand, supply squeeze from halving, and ETF absorption drive Bitcoin to new all-time high of $108,000. Bitcoin ETF total AUM reaches $104.1B.</p>
                         <div class="data-callout">
-                            <span class="metric">ATH:</span> $108,000 • <span class="metric">Total ETF AUM:</span> $104.1B • <span class="metric">2024 Return:</span> +135%
+                            <span class="metric">ATH:</span> $108,000 &#x2022; <span class="metric">Total ETF AUM:</span> $104.1B &#x2022; <span class="metric">2024 Return:</span> +135%
                         </div>
                     </div>
                 </div>
@@ -1984,25 +1704,25 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2025</h3>
                     
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">UAE Ban</span>
                         <div class="event-date">January 12, 2025</div>
                         <h4 class="event-title">Dubai VARA Bans Privacy Tokens</h4>
                         <p class="event-description">Dubai's Virtual Asset Regulatory Authority officially prohibits trading and custody of privacy-enhanced tokens throughout Dubai and its Free Zone. <strong>Monero hits all-time highs the next day.</strong></p>
-                        <div class="event-impact">IMPACT: XMR price rises — delistings validate that privacy actually works</div>
+                        <div class="event-impact">IMPACT: XMR price rises &#x2014; delistings validate that privacy actually works</div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Trump Administration</span>
                         <div class="event-date">January 23, 2025</div>
                         <h4 class="event-title">Executive Order on Digital Financial Technology</h4>
-                        <p class="event-description">President Trump signs comprehensive crypto executive order. Establishes President's Working Group on Digital Asset Markets. Prohibits CBDCs. Promotes USD-backed stablecoins. Protects crypto companies' banking access. David Sacks appointed Crypto & AI Czar.</p>
+                        <p class="event-description">President Trump signs comprehensive crypto executive order. Establishes President's Working Group on Digital Asset Markets. Prohibits CBDCs. Promotes USD-backed stablecoins. Protects crypto companies' banking access. David Sacks appointed Crypto &amp; AI Czar.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Key Points:</span> No CBDC • Bank access protected • 180-day regulatory framework deadline
+                            <span class="metric">Key Points:</span> No CBDC &#x2022; Bank access protected &#x2022; 180-day regulatory framework deadline
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Regulatory Personnel</span>
                         <div class="event-date">January 2025</div>
                         <h4 class="event-title">Gary Gensler Retires; Paul Atkins Nominated</h4>
@@ -2010,23 +1730,23 @@
                         <div class="crossover-link">Links to: CLARITY Act passage, faster ETF approvals</div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Price Milestone</span>
                         <div class="event-date">January 2025</div>
                         <h4 class="event-title">Monero Hits All-Time High Despite Delistings</h4>
                         <p class="event-description">Following Dubai ban and continued exchange delistings, XMR reaches new all-time highs. 73 exchange delistings in 2025 correlate with +195% price increase. The paradox of prohibition in action.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Delistings:</span> 73 • <span class="metric">Price Change:</span> +195% • <span class="metric">Daily Transactions:</span> 15,000-25,000
+                            <span class="metric">Delistings:</span> 73 &#x2022; <span class="metric">Price Change:</span> +195% &#x2022; <span class="metric">Daily Transactions:</span> 15,000-25,000
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Strategic Reserve</span>
                         <div class="event-date">March 6, 2025</div>
                         <h4 class="event-title">U.S. Strategic Bitcoin Reserve Established</h4>
-                        <p class="event-description">Executive order creates Strategic Bitcoin Reserve using ~200,000 BTC from criminal/civil forfeitures (~$17B). Bitcoin designated as reserve asset — cannot be sold. Treasury authorized to develop budget-neutral acquisition strategies.</p>
+                        <p class="event-description">Executive order creates Strategic Bitcoin Reserve using ~200,000 BTC from criminal/civil forfeitures (~$17B). Bitcoin designated as reserve asset &#x2014; cannot be sold. Treasury authorized to develop budget-neutral acquisition strategies.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Initial Holdings:</span> ~200,000 BTC • <span class="metric">Value:</span> ~$17B • <span class="metric">Status:</span> Reserve asset (no sales)
+                            <span class="metric">Initial Holdings:</span> ~200,000 BTC &#x2022; <span class="metric">Value:</span> ~$17B &#x2022; <span class="metric">Status:</span> Reserve asset (no sales)
                         </div>
                         <div class="tradfi-exclusion-box" style="margin-top: 1rem;">
                             <h4>Why Only Bitcoin for Strategic Reserve?</h4>
@@ -2034,25 +1754,25 @@
                                 <li>Government can verify holdings on public ledger</li>
                                 <li>Forfeited coins traceable to source</li>
                                 <li>Auditable by Congress and public</li>
-                                <li>Monero holdings would be unverifiable — no proof of reserves possible</li>
+                                <li>Monero holdings would be unverifiable &#x2014; no proof of reserves possible</li>
                             </ul>
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Legislation</span>
                         <div class="event-date">July 2025</div>
-                        <h4 class="event-title">GENIUS Act Passes — Stablecoin Framework</h4>
+                        <h4 class="event-title">GENIUS Act Passes &#x2014; Stablecoin Framework</h4>
                         <p class="event-description">First federal legislation on digital assets passes with bipartisan support. Establishes stablecoin regulatory framework. OCC, Fed, FDIC oversight. Prohibits yield-bearing stablecoins. Transparent, regulated stablecoins only.</p>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Legislation</span>
                         <div class="event-date">July 17, 2025</div>
                         <h4 class="event-title">CLARITY Act Passes House (294-134)</h4>
                         <p class="event-description">Digital Asset Market Clarity Act passes House with strong bipartisan support. Defines "digital commodity" vs securities. CFTC gets exclusive jurisdiction over digital commodity spot markets. Bank Secrecy Act AML/KYC requirements applied.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Vote:</span> 294-134 (bipartisan) • <span class="metric">Status:</span> Senate reconciliation pending
+                            <span class="metric">Vote:</span> 294-134 (bipartisan) &#x2022; <span class="metric">Status:</span> Senate reconciliation pending
                         </div>
                         <div class="exclusion-callout" style="margin-top: 1rem;">
                             <h4>CLARITY Act's AML Requirements</h4>
@@ -2066,45 +1786,45 @@
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">BlackRock Dominance</span>
                         <div class="event-date">October 2025</div>
                         <h4 class="event-title">BlackRock IBIT Holds 800,000+ BTC</h4>
-                        <p class="event-description">BlackRock's iShares Bitcoin Trust reaches $89+ billion AUM, holding over 800,000 BTC — 3.8% of total supply. Surpasses MicroStrategy as largest institutional holder. Single-day inflow capacity: $1.38B.</p>
+                        <p class="event-description">BlackRock's iShares Bitcoin Trust reaches $89+ billion AUM, holding over 800,000 BTC &#x2014; 3.8% of total supply. Surpasses MicroStrategy as largest institutional holder. Single-day inflow capacity: $1.38B.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Holdings:</span> 802,257 BTC • <span class="metric">AUM:</span> $89.17B • <span class="metric">Market Share:</span> 48.5%+
+                            <span class="metric">Holdings:</span> 802,257 BTC &#x2022; <span class="metric">AUM:</span> $89.17B &#x2022; <span class="metric">Market Share:</span> 48.5%+
                         </div>
                     </div>
 
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Price Milestone</span>
                         <div class="event-date">October 2025</div>
                         <h4 class="event-title">Bitcoin Reaches $126,200 All-Time High</h4>
                         <p class="event-description">Institutional accumulation, regulatory clarity, and Strategic Bitcoin Reserve announcement drive BTC to new peak. Total Bitcoin ETF market exceeds $150B. Bitcoin market cap surpasses $2.2 trillion.</p>
                         <div class="data-callout">
-                            <span class="metric">ATH:</span> $126,200 • <span class="metric">Market Cap:</span> $2.2T+ • <span class="metric">ETF Total:</span> $150B+
+                            <span class="metric">ATH:</span> $126,200 &#x2022; <span class="metric">Market Cap:</span> $2.2T+ &#x2022; <span class="metric">ETF Total:</span> $150B+
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">ETF Efficiency</span>
                         <div class="event-date">September 2025</div>
                         <h4 class="event-title">SEC Streamlines ETF Approvals</h4>
-                        <p class="event-description">SEC introduces generic listing standards for commodity-based trust shares. Approval timeline: 270 days → 75 days (72% faster). Eligibility requires 6+ months futures trading on regulated exchanges. Opens path for altcoin ETFs.</p>
+                        <p class="event-description">SEC introduces generic listing standards for commodity-based trust shares. Approval timeline: 270 days &#x2192; 75 days (72% faster). Eligibility requires 6+ months futures trading on regulated exchanges. Opens path for altcoin ETFs.</p>
                         <div class="crossover-link">Links to: Solana, XRP, Dogecoin ETF applications</div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Development</span>
                         <div class="event-date">2025</div>
                         <h4 class="event-title">FCMP++ Alpha Stressnet Testing</h4>
                         <p class="event-description">Full-Chain Membership Proofs enter alpha testing. When deployed, will replace ring signatures with proofs against entire blockchain history. Anonymity set: 100+ million outputs instead of 16.</p>
                         <div class="data-callout xmr">
-                            <span class="metric">Current:</span> 16-member ring • <span class="metric">FCMP++:</span> 100,000,000+ anonymity set
+                            <span class="metric">Current:</span> 16-member ring &#x2022; <span class="metric">FCMP++:</span> 100,000,000+ anonymity set
                         </div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">DEX Launch</span>
                         <div class="event-date">2025</div>
                         <h4 class="event-title">Haveno Reto DEX Launches</h4>
@@ -2116,7 +1836,7 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2026</h3>
                     
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Bank Entry</span>
                         <div class="event-date">January 6, 2026</div>
                         <h4 class="event-title">Morgan Stanley Files for Spot Bitcoin ETF</h4>
@@ -2126,42 +1846,42 @@
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Institutional Record</span>
                         <div class="event-date">January 2026</div>
                         <h4 class="event-title">Bitcoin ETFs Hold 1.3M+ BTC</h4>
-                        <p class="event-description">Total ETF holdings reach 1,309,895 BTC — more than Satoshi's estimated 1.1M BTC. ETFs hold approximately 6% of total Bitcoin supply. 53.8% increase in holdings since Q2 2024.</p>
+                        <p class="event-description">Total ETF holdings reach 1,309,895 BTC &#x2014; more than Satoshi's estimated 1.1M BTC. ETFs hold approximately 6% of total Bitcoin supply. 53.8% increase in holdings since Q2 2024.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Total Holdings:</span> 1,309,895 BTC • <span class="metric">Growth (18mo):</span> 53.8% • <span class="metric">Supply %:</span> ~6%
+                            <span class="metric">Total Holdings:</span> 1,309,895 BTC &#x2022; <span class="metric">Growth (18mo):</span> 53.8% &#x2022; <span class="metric">Supply %:</span> ~6%
                         </div>
                     </div>
 
-                    <div class="v-timeline-event tradfi">
+                    <div class="v-timeline-event tradfi fade-in">
                         <span class="event-type-badge tradfi">Corporate Treasury</span>
                         <div class="event-date">January 2026</div>
                         <h4 class="event-title">61 Public Companies Hold Bitcoin Treasury</h4>
-                        <p class="event-description">Public companies collectively hold 848,100 BTC — 4% of total supply. MicroStrategy (now "Strategy") leads with 632,457 BTC. Corporate treasuries outpace ETFs in acquisition for 3 consecutive quarters.</p>
+                        <p class="event-description">Public companies collectively hold 848,100 BTC &#x2014; 4% of total supply. MicroStrategy (now "Strategy") leads with 632,457 BTC. Corporate treasuries outpace ETFs in acquisition for 3 consecutive quarters.</p>
                         <div class="data-callout tradfi">
-                            <span class="metric">Corporate Holdings:</span> 848,100 BTC • <span class="metric">Supply %:</span> 4% • <span class="metric">Companies:</span> 61+
+                            <span class="metric">Corporate Holdings:</span> 848,100 BTC &#x2022; <span class="metric">Supply %:</span> 4% &#x2022; <span class="metric">Companies:</span> 61+
                         </div>
                     </div>
 
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Legislation Progress</span>
                         <div class="event-date">January 2026</div>
                         <h4 class="event-title">CLARITY Act Senate Draft Released</h4>
                         <p class="event-description">Senate Banking Committee releases 278-page discussion draft for CLARITY Act reconciliation. Comprehensive digital asset regulatory framework expected to pass in 2026. Will codify existing compliance requirements.</p>
                     </div>
 
-                    <div class="v-timeline-event crossover">
+                    <div class="v-timeline-event crossover fade-in">
                         <span class="event-type-badge crossover">The Great Divergence Complete</span>
                         <div class="event-date">January 30, 2026</div>
                         <h4 class="event-title">Two Monetary Paths Solidified</h4>
                         <p class="event-description">The divergence that began with Bitcoin's transparent ledger and Monero's privacy-by-default design reaches its logical conclusion. Bitcoin: $150B+ institutional investment, Strategic Reserve asset, regulatory clarity. Monero: 73 exchange delistings, zero institutional access, unbreakable privacy.</p>
                         <div class="manifesto-callout" style="margin-top: 1rem; border-left-color: var(--crossover-cyan);">
                             <h3>The Final Accounting</h3>
-                            <p><strong>Bitcoin chose traceability</strong> — gained Wall Street, ETFs, corporate treasuries, Strategic Reserve status, and $2+ trillion market cap.</p>
-                            <p style="margin-top: 1rem;"><strong>Monero chose privacy</strong> — gained cryptographic certainty that no government, no corporation, no surveillance state can see your transactions.</p>
+                            <p><strong>Bitcoin chose traceability</strong> &#x2014; gained Wall Street, ETFs, corporate treasuries, Strategic Reserve status, and $2+ trillion market cap.</p>
+                            <p style="margin-top: 1rem;"><strong>Monero chose privacy</strong> &#x2014; gained cryptographic certainty that no government, no corporation, no surveillance state can see your transactions.</p>
                             <p style="margin-top: 1rem;"><span class="highlight-text">Both made the right choice for their respective purposes. The world needs both.</span></p>
                         </div>
                     </div>
@@ -2171,7 +1891,7 @@
                 <div class="timeline-year-group">
                     <h3 class="timeline-year-header">2027+</h3>
                     
-                    <div class="v-timeline-event regulation">
+                    <div class="v-timeline-event regulation fade-in">
                         <span class="event-type-badge regulation">Upcoming</span>
                         <div class="event-date">July 2027 (Expected)</div>
                         <h4 class="event-title">EU AMLR Full Enforcement</h4>
@@ -2181,17 +1901,17 @@
                         </div>
                     </div>
 
-                    <div class="v-timeline-event btc">
+                    <div class="v-timeline-event btc fade-in">
                         <span class="event-type-badge btc">Bitcoin Halving</span>
                         <div class="event-date">April 2028 (Expected)</div>
                         <h4 class="event-title">Fifth Bitcoin Halving</h4>
                         <p class="event-description">Block 1,050,000 expected. Reward will reduce from 3.125 BTC to 1.5625 BTC. Daily supply drops to ~225 BTC. By then, 97%+ of all Bitcoin will have been mined.</p>
                         <div class="data-callout">
-                            <span class="metric">Projected Block:</span> 1,050,000 • <span class="metric">New Reward:</span> 1.5625 BTC • <span class="metric">Mined:</span> ~97%
+                            <span class="metric">Projected Block:</span> 1,050,000 &#x2022; <span class="metric">New Reward:</span> 1.5625 BTC &#x2022; <span class="metric">Mined:</span> ~97%
                         </div>
                     </div>
 
-                    <div class="v-timeline-event xmr">
+                    <div class="v-timeline-event xmr fade-in">
                         <span class="event-type-badge xmr">Protocol Upgrade</span>
                         <div class="event-date">TBD</div>
                         <h4 class="event-title">FCMP++ Mainnet Deployment</h4>
@@ -2209,36 +1929,36 @@
         <section class="section fade-in">
             <div class="section-header">
                 <span class="section-badge">Evidence Category I</span>
-                <h2 class="section-title">Government Bounties & Failed Attempts</h2>
-                <p class="section-intro">A documented history of state-sponsored efforts to break Monero's privacy — and their consistent failure to produce working traceability.</p>
+                <h2 class="section-title">Government Bounties &amp; Failed Attempts</h2>
+                <p class="section-intro">A documented history of state-sponsored efforts to break Monero's privacy &#x2014; and their consistent failure to produce working traceability.</p>
             </div>
 
             <div class="bounty-timeline">
-                <div class="bounty-item">
+                <div class="bounty-item fade-in">
                     <div class="bounty-amount">$625,000</div>
-                    <div class="bounty-agency">IRS Criminal Investigation Division • September 2020</div>
+                    <div class="bounty-agency">IRS Criminal Investigation Division &#x2022; September 2020</div>
                     <p class="evidence-text">The United States Internal Revenue Service posted a public bounty for contractors who could develop tools to trace Monero transactions. <strong>22 companies applied.</strong> Two were selected: Chainalysis and Integra FEC. They were given 8 months to deliver results.</p>
                     <p class="evidence-text">"You can't be as deterministic as Bitcoin. In tracing Monero, it's really more of a probabilistic game," admitted CipherTrace CEO Dave Jevans. "You can say: Well, I have 98% probability... or 78%... It takes a different approach."</p>
-                    <span class="bounty-outcome disputed">Outcome: Probabilistic Only — No Deterministic Tracing Achieved</span>
-                    <p class="evidence-source">Source: <a href="https://decrypt.co/43451/irs-1-million-contracts-data-firms-crack-monero" target="_blank">Decrypt, October 2020</a></p>
+                    <span class="bounty-outcome disputed">Outcome: Probabilistic Only &#x2014; No Deterministic Tracing Achieved</span>
+                    <p class="evidence-source">Source: <a href="https://decrypt.co/43451/irs-1-million-contracts-data-firms-crack-monero" target="_blank" rel="noopener noreferrer">Decrypt, October 2020</a></p>
                 </div>
 
-                <div class="bounty-item">
+                <div class="bounty-item fade-in">
                     <div class="bounty-amount">$22,000,000</div>
-                    <div class="bounty-agency">IRS → Chainalysis Contract • 2021-Present</div>
+                    <div class="bounty-agency">IRS &#x2192; Chainalysis Contract &#x2022; 2021-Present</div>
                     <p class="evidence-text">Following the bounty, Chainalysis secured a <strong>$22 million contract</strong> with the IRS, providing 620 yearly software licenses, API access, and training. A leaked 2024 training video revealed the limitations of their Monero analysis capabilities.</p>
-                    <p class="evidence-text">The leaked presentation showed investigators relying on <strong>external exchange data, IP correlation, and operational security failures</strong> — not cryptographic breaks. The Monero Research Lab responded, noting nothing in the presentation exceeded capabilities Monero developers had already identified and mitigated.</p>
-                    <span class="bounty-outcome failed">Outcome: No Cryptographic Break — Relies on External Data Only</span>
-                    <p class="evidence-source">Source: <a href="https://takebackourtech.org/irs-attempts-to-trace-monero-in-leaked-training-video-response-from-monero/" target="_blank">TakeBackOurTech, October 2024</a></p>
+                    <p class="evidence-text">The leaked presentation showed investigators relying on <strong>external exchange data, IP correlation, and operational security failures</strong> &#x2014; not cryptographic breaks. The Monero Research Lab responded, noting nothing in the presentation exceeded capabilities Monero developers had already identified and mitigated.</p>
+                    <span class="bounty-outcome failed">Outcome: No Cryptographic Break &#x2014; Relies on External Data Only</span>
+                    <p class="evidence-source">Source: <a href="https://takebackourtech.org/irs-attempts-to-trace-monero-in-leaked-training-video-response-from-monero/" target="_blank" rel="noopener noreferrer">TakeBackOurTech, October 2024</a></p>
                 </div>
 
-                <div class="bounty-item">
+                <div class="bounty-item fade-in">
                     <div class="bounty-amount">CipherTrace "Breakthrough"</div>
-                    <div class="bounty-agency">Department of Homeland Security • August 2020</div>
+                    <div class="bounty-agency">Department of Homeland Security &#x2022; August 2020</div>
                     <p class="evidence-text">Blockchain analytics firm CipherTrace claimed to have created the "world's first Monero-tracing toolkit" for DHS. The announcement generated headlines.</p>
                     <p class="evidence-text"><strong>Reality:</strong> CipherTrace themselves admitted the tool only "laid the groundwork" and lacked wallet identification or exchange attribution. Monero security researcher Seth Simmons stated "nothing in the CipherTrace solution is beyond the capabilities of Monero developers already." The Monero community widely disputed the claims.</p>
-                    <span class="bounty-outcome failed">Outcome: Claims Disputed — Tool Lacked Core Functionality</span>
-                    <p class="evidence-source">Source: <a href="https://beincrypto.com/irs-offers-625k-bounty-to-break-monero-or-lightning-network-privacy/" target="_blank">BeInCrypto, September 2020</a></p>
+                    <span class="bounty-outcome failed">Outcome: Claims Disputed &#x2014; Tool Lacked Core Functionality</span>
+                    <p class="evidence-source">Source: <a href="https://beincrypto.com/irs-offers-625k-bounty-to-break-monero-or-lightning-network-privacy/" target="_blank" rel="noopener noreferrer">BeInCrypto, September 2020</a></p>
                 </div>
             </div>
         </section>
@@ -2248,55 +1968,55 @@
             <div class="section-header">
                 <span class="section-badge">Evidence Category II</span>
                 <h2 class="section-title">Cryptographic Architecture</h2>
-                <p class="section-intro">The mathematical foundations that make Monero impervious to surveillance — not by policy, but by the laws of cryptography.</p>
+                <p class="section-intro">The mathematical foundations that make Monero impervious to surveillance &#x2014; not by policy, but by the laws of cryptography.</p>
             </div>
 
             <div class="crypto-grid">
-                <div class="crypto-card">
-                    <div class="crypto-icon">🔐</div>
+                <div class="crypto-card fade-in">
+                    <div class="crypto-icon">&#x1F510;</div>
                     <h3 class="crypto-name">Ring Signatures</h3>
                     <div class="crypto-subtitle">Sender Privacy</div>
                     <p class="crypto-desc">Every transaction is signed by a ring of 16 possible signers. It is <strong>computationally infeasible</strong> to determine which member actually signed. The sender is hidden in a crowd.</p>
                 </div>
 
-                <div class="crypto-card">
-                    <div class="crypto-icon">👤</div>
+                <div class="crypto-card fade-in">
+                    <div class="crypto-icon">&#x1F464;</div>
                     <h3 class="crypto-name">Stealth Addresses</h3>
                     <div class="crypto-subtitle">Receiver Privacy</div>
                     <p class="crypto-desc">Every transaction creates a <strong>one-time address</strong> derived from the recipient's public key. Even with the same recipient, addresses never repeat. Unlinkable by design.</p>
                 </div>
 
-                <div class="crypto-card">
-                    <div class="crypto-icon">💰</div>
+                <div class="crypto-card fade-in">
+                    <div class="crypto-icon">&#x1F4B0;</div>
                     <h3 class="crypto-name">RingCT</h3>
                     <div class="crypto-subtitle">Amount Privacy</div>
                     <p class="crypto-desc">Ring Confidential Transactions use <strong>Pedersen commitments</strong> and zero-knowledge range proofs to hide transaction amounts while proving no new coins were created.</p>
                 </div>
 
-                <div class="crypto-card">
-                    <div class="crypto-icon">📊</div>
+                <div class="crypto-card fade-in">
+                    <div class="crypto-icon">&#x1F4CA;</div>
                     <h3 class="crypto-name">Bulletproofs+</h3>
                     <div class="crypto-subtitle">Efficient Proofs</div>
                     <p class="crypto-desc">Zero-knowledge proofs that reduced transaction size by <strong>80%+</strong>. Guarantee transactions are valid without revealing values. No trusted setup required.</p>
                 </div>
 
-                <div class="crypto-card">
-                    <div class="crypto-icon">⚡</div>
+                <div class="crypto-card fade-in">
+                    <div class="crypto-icon">&#x26A1;</div>
                     <h3 class="crypto-name">RandomX</h3>
                     <div class="crypto-subtitle">Mining Decentralization</div>
-                    <p class="crypto-desc">CPU-optimized, <strong>ASIC-resistant</strong> proof-of-work algorithm. Prevents mining centralization. "One CPU, one vote" — as Satoshi intended.</p>
+                    <p class="crypto-desc">CPU-optimized, <strong>ASIC-resistant</strong> proof-of-work algorithm. Prevents mining centralization. "One CPU, one vote" &#x2014; as Satoshi intended.</p>
                 </div>
 
-                <div class="crypto-card">
-                    <div class="crypto-icon">🌐</div>
+                <div class="crypto-card fade-in">
+                    <div class="crypto-icon">&#x1F310;</div>
                     <h3 class="crypto-name">Dandelion++</h3>
                     <div class="crypto-subtitle">Network Privacy</div>
                     <p class="crypto-desc">Obscures the IP address of transaction broadcasters through probabilistic routing. Prevents network-level surveillance from linking users to transactions.</p>
                 </div>
             </div>
 
-            <div class="manifesto-callout" style="margin-top: 1rem;">
-                <h3>FCMP++ — The Coming Evolution (2026+)</h3>
+            <div class="manifesto-callout fade-in" style="margin-top: 1rem;">
+                <h3>FCMP++ &#x2014; The Coming Evolution (2026+)</h3>
                 <p>
                     <span class="highlight-text">Full-Chain Membership Proofs</span> will replace ring signatures with proofs spanning the entire blockchain. Instead of hiding among 16 outputs, each input will hide among <strong>100+ million outputs</strong>. The anonymity set expands from a crowd to the entire history of Monero. Currently in alpha stressnet testing, FCMP++ represents the next generation of cryptographic privacy.
                 </p>
@@ -2308,52 +2028,52 @@
             <div class="section-header">
                 <span class="section-badge">Evidence Category III</span>
                 <h2 class="section-title">The Delisting Paradox</h2>
-                <p class="section-intro">A record of exchanges that removed Monero under regulatory pressure — and why each delisting proves the technology works.</p>
+                <p class="section-intro">A record of exchanges that removed Monero under regulatory pressure &#x2014; and why each delisting proves the technology works.</p>
             </div>
 
             <div class="evidence-grid">
-                <div class="evidence-card danger">
-                    <div class="evidence-icon">🔴</div>
+                <div class="evidence-card danger fade-in">
+                    <div class="evidence-icon">&#x1F534;</div>
                     <h3 class="evidence-title">Binance Global Delisting</h3>
                     <div class="evidence-date">February 20, 2024</div>
                     <p class="evidence-text">The world's largest exchange delisted Monero globally, citing regulatory compliance. This followed partial delistings in Australia, France, Spain, Italy, and Poland throughout 2023.</p>
                     <p class="evidence-source">Source: Wikipedia, Binance Announcements</p>
                 </div>
 
-                <div class="evidence-card danger">
-                    <div class="evidence-icon">🔴</div>
+                <div class="evidence-card danger fade-in">
+                    <div class="evidence-icon">&#x1F534;</div>
                     <h3 class="evidence-title">Kraken EEA Delisting</h3>
                     <div class="evidence-date">October 31, 2024</div>
                     <p class="evidence-text">Kraken halted all XMR trading for European Economic Area users. Remaining balances were forcibly converted to Bitcoin. Earlier in 2024, Kraken had delisted XMR in Ireland and Belgium.</p>
                     <p class="evidence-source">Source: Kraken Support, CryptoBriefing</p>
                 </div>
 
-                <div class="evidence-card danger">
-                    <div class="evidence-icon">🔴</div>
+                <div class="evidence-card danger fade-in">
+                    <div class="evidence-icon">&#x1F534;</div>
                     <h3 class="evidence-title">OKX Global Removal</h3>
                     <div class="evidence-date">January 2024</div>
                     <p class="evidence-text">Major exchange OKX removed all privacy coin trading pairs, including Monero, citing new compliance guidelines.</p>
                     <p class="evidence-source">Source: Coinspeaker, OKX Announcements</p>
                 </div>
 
-                <div class="evidence-card warning">
-                    <div class="evidence-icon">🟡</div>
+                <div class="evidence-card warning fade-in">
+                    <div class="evidence-icon">&#x1F7E1;</div>
                     <h3 class="evidence-title">Dubai VARA Ban</h3>
                     <div class="evidence-date">January 12, 2025</div>
                     <p class="evidence-text">Dubai's Virtual Asset Regulatory Authority officially banned trading and custody of privacy tokens throughout Dubai and its Free Zone. Monero hit all-time highs the next day.</p>
                     <p class="evidence-source">Source: PANews, VARA Announcement</p>
                 </div>
 
-                <div class="evidence-card warning">
-                    <div class="evidence-icon">🟡</div>
+                <div class="evidence-card warning fade-in">
+                    <div class="evidence-icon">&#x1F7E1;</div>
                     <h3 class="evidence-title">EU MiCA/AMLR Framework</h3>
                     <div class="evidence-date">Effective 2027</div>
                     <p class="evidence-text">The EU's Anti-Money Laundering Regulation will prohibit crypto service providers from offering privacy coins. Full enforcement expected by July 2027. Preemptive delistings have already occurred.</p>
                     <p class="evidence-source">Source: CPO Magazine, IFC Review</p>
                 </div>
 
-                <div class="evidence-card success">
-                    <div class="evidence-icon">🟢</div>
+                <div class="evidence-card success fade-in">
+                    <div class="evidence-icon">&#x1F7E2;</div>
                     <h3 class="evidence-title">Haveno DEX Launch</h3>
                     <div class="evidence-date">2024-2025</div>
                     <p class="evidence-text">A Monero-first decentralized exchange entered production, providing regulatory-resistant XMR trading. When centralized exchanges delist, decentralized alternatives emerge.</p>
@@ -2361,10 +2081,10 @@
                 </div>
             </div>
 
-            <div class="manifesto-callout" style="margin-top: 1rem;">
+            <div class="manifesto-callout fade-in" style="margin-top: 1rem;">
                 <h3>The Paradox of Prohibition</h3>
                 <p>
-                    <span class="highlight-text">The more Monero is banned, the higher its value rises.</span> This is not coincidence — it is proof of concept. Every delisting validates that Monero's privacy actually works. If it could be traced, regulators would keep it on exchanges as a honeypot. <span class="highlight-text">They delist it because they cannot see inside.</span>
+                    <span class="highlight-text">The more Monero is banned, the higher its value rises.</span> This is not coincidence &#x2014; it is proof of concept. Every delisting validates that Monero's privacy actually works. If it could be traced, regulators would keep it on exchanges as a honeypot. <span class="highlight-text">They delist it because they cannot see inside.</span>
                 </p>
             </div>
         </section>
@@ -2379,10 +2099,10 @@
                 <strong>Why?</strong> Because the demand for financial privacy is not criminal. It is human.
             </p>
             <p class="thesis-text">
-                <strong>Bitcoin chose one path:</strong> transparency, compliance, institutional adoption, Wall Street integration, $150+ billion in ETF assets, Strategic Reserve status. It gained everything the traditional financial system could offer — by becoming traceable.
+                <strong>Bitcoin chose one path:</strong> transparency, compliance, institutional adoption, Wall Street integration, $150+ billion in ETF assets, Strategic Reserve status. It gained everything the traditional financial system could offer &#x2014; by becoming traceable.
             </p>
             <p class="thesis-text">
-                <strong>Monero chose another path:</strong> privacy by mathematics, exchange delistings, regulatory exclusion, decentralized trading. It gained something no amount of institutional money can buy — <em>the mathematical guarantee that your transactions are your own.</em>
+                <strong>Monero chose another path:</strong> privacy by mathematics, exchange delistings, regulatory exclusion, decentralized trading. It gained something no amount of institutional money can buy &#x2014; <em>the mathematical guarantee that your transactions are your own.</em>
             </p>
             <p class="thesis-text">
                 <strong>The world needs both.</strong> Bitcoin for when you want Wall Street's blessing. Monero for when you want freedom.
@@ -2395,60 +2115,52 @@
             </p>
             <div class="thesis-signature">
                 "Privacy is not a crime. It is a right."<br>
-                — The Monero Community
+                &#x2014; The Monero Community
             </div>
         </div>
     </main>
 
-    <footer>
-        <div class="footer-content">
+    <footer class="site-footer">
+        <div class="footer-grid">
+            <div class="footer-brand">
+                <div class="footer-logo">&#x20bf; &#x2192; &#x271;</div>
+                <p class="footer-tagline">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
+                <p class="footer-attribution">&#x2014; Satoshi Nakamoto, April 2011</p>
+            </div>
             <div class="footer-section">
                 <h4>Archive</h4>
-                <a href="index.html">Home</a>
-                <a href="secrets.html">Satoshi's Secrets</a>
-                <a href="quotes.html">Quote Explorer</a>
-                <a href="timeline.html">Timeline</a>
-                <a href="bottom-line.html">The Bottom Line</a>
-                <a href="hold-monero.html">Hold Monero</a>
+                <ul>
+                    <li><a href="secrets.html">Secret Threads</a></li>
+                    <li><a href="quotes.html">Quote Archive</a></li>
+                    <li><a href="timeline.html">Timeline</a></li>
+                    <li><a href="btc-xmr-education.html">Education</a></li>
+                </ul>
             </div>
             <div class="footer-section">
-                <h4>Official Resources</h4>
-                <a href="https://www.getmonero.org/" target="_blank">GetMonero.org</a>
-                <a href="https://www.getmonero.org/resources/moneropedia/" target="_blank">Moneropedia</a>
-                <a href="https://github.com/monero-project" target="_blank">GitHub</a>
-                <a href="https://www.reddit.com/r/Monero/" target="_blank">r/Monero</a>
+                <h4>Analysis</h4>
+                <ul>
+                    <li><a href="bottom-line.html">The Bottom Line</a></li>
+                    <li><a href="hold-monero.html">Hold Monero</a></li>
+                </ul>
             </div>
             <div class="footer-section">
-                <h4>Research</h4>
-                <a href="https://www.chainalysis.com/blog/2025-crypto-crime-report-introduction/" target="_blank">Chainalysis 2025 Report</a>
-                <a href="https://ccs.getmonero.org/" target="_blank">Community Crowdfunding</a>
-                <a href="https://www.getmonero.org/2024/04/27/fcmps.html" target="_blank">FCMP++ Proposal</a>
+                <h4>Resources</h4>
+                <ul>
+                    <li><a href="https://satoshi.nakamotoinstitute.org" target="_blank" rel="noopener noreferrer">Satoshi Nakamoto Institute</a></li>
+                    <li><a href="https://getmonero.org" target="_blank" rel="noopener noreferrer">GetMonero.org</a></li>
+                    <li><a href="https://bitcoin.org" target="_blank" rel="noopener noreferrer">Bitcoin.org</a></li>
+                </ul>
             </div>
         </div>
         <div class="footer-bottom">
-            <p>This archive documents publicly available information about Monero's technology, Bitcoin's institutional adoption, and regulatory developments.</p>
-            <p style="margin-top: 0.5rem;">Not financial advice. Do your own research. Privacy is a right, not a privilege.</p>
-            <p style="margin-top: 1rem; color: var(--xmr-orange);">Last Updated: January 30, 2026</p>
+            <p class="footer-copy">Educational resource. Not financial advice. Do your own research.</p>
+            <p class="footer-legal">No cookies. No tracking. No JavaScript analytics.</p>
         </div>
     </footer>
 
+    <script src="js/nav.js"></script>
+    <script src="js/animations.js"></script>
     <script>
-        // Scroll-triggered fade-in animations
-        const fadeElements = document.querySelectorAll('.fade-in');
-        
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, {
-            threshold: 0.1,
-            rootMargin: '0px 0px -50px 0px'
-        });
-
-        fadeElements.forEach(el => observer.observe(el));
-
         // Smooth scroll for anchor links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function(e) {
