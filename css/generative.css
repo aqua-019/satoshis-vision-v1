@@ -1,0 +1,395 @@
+/* ============================================
+   SATOSHI'S VISION — Generative UI Styles
+   Styles for dynamically generated components
+   ============================================ */
+
+/* === Price Cards === */
+.gen-price-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: var(--space-6);
+    transition: all var(--duration-normal) var(--ease-default);
+}
+
+.gen-price-card:hover {
+    border-color: var(--border-accent);
+}
+
+.gen-price-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.gen-price-card__info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.gen-price-card__name {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-semibold);
+}
+
+.gen-price-card__price-wrap {
+    text-align: right;
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+}
+
+.gen-price-card__price {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+}
+
+.gen-price-card__change {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.gen-price-card__chart {
+    margin: var(--space-4) calc(var(--space-6) * -1);
+    padding: 0 var(--space-2);
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.gen-price-card__chart canvas {
+    width: 100%;
+    display: block;
+}
+
+.gen-price-card__stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+    margin-top: var(--space-4);
+}
+
+.gen-price-card__stat {
+    text-align: center;
+}
+
+.gen-price-card__stat-label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-1);
+}
+
+.gen-price-card__stat-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-primary);
+    font-weight: var(--weight-medium);
+}
+
+@media (max-width: 640px) {
+    .gen-price-card__stats {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .gen-price-card__header {
+        flex-direction: column;
+    }
+    .gen-price-card__price-wrap {
+        text-align: left;
+    }
+}
+
+/* === Comparison Matrix === */
+.gen-matrix {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.gen-matrix__header {
+    display: grid;
+    grid-template-columns: 200px repeat(var(--matrix-cols, 3), 1fr);
+    gap: 1px;
+    background: var(--border-subtle);
+    margin-bottom: 1px;
+}
+
+.gen-matrix__col-header {
+    background: var(--bg-elevated);
+    padding: var(--space-4);
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.gen-matrix__icon {
+    font-size: 1.5rem;
+}
+
+.gen-matrix__row {
+    display: grid;
+    grid-template-columns: 200px repeat(var(--matrix-cols, 3), 1fr);
+    gap: 1px;
+    background: var(--border-subtle);
+    margin-bottom: 1px;
+}
+
+.gen-matrix__label {
+    background: var(--bg-secondary);
+    padding: var(--space-3) var(--space-4);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.gen-matrix__cat-name {
+    font-family: var(--font-body);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+}
+
+.gen-matrix__cat-desc {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-top: 2px;
+}
+
+.gen-matrix__cell {
+    background: var(--bg-secondary);
+    padding: var(--space-3) var(--space-4);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+}
+
+.gen-matrix__cell--good {
+    background: rgba(0, 211, 149, 0.05);
+}
+
+.gen-matrix__cell--bad {
+    background: rgba(255, 71, 87, 0.05);
+}
+
+.gen-matrix__cell--neutral {
+    background: rgba(255, 217, 61, 0.05);
+}
+
+.gen-matrix__cell-value {
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-medium);
+}
+
+.gen-matrix__cell--good .gen-matrix__cell-value { color: var(--success); }
+.gen-matrix__cell--bad .gen-matrix__cell-value { color: var(--danger); }
+.gen-matrix__cell--neutral .gen-matrix__cell-value { color: var(--warning); }
+
+.gen-matrix__cell-detail {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+}
+
+/* === Ecosystem Grid === */
+.gen-ecosystem__filters {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-6);
+}
+
+.gen-ecosystem__item {
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.gen-ecosystem__item:hover {
+    border-color: var(--xmr-orange);
+}
+
+.gen-ecosystem__item-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.gen-ecosystem__item-icon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.gen-ecosystem__item-name {
+    font-family: var(--font-display);
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    color: var(--text-primary);
+}
+
+.gen-ecosystem__item-desc {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    line-height: var(--leading-relaxed);
+    flex: 1;
+}
+
+.gen-ecosystem__item-tags {
+    display: flex;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+/* === Stats Dashboard === */
+.gen-stats__item {
+    text-align: center;
+    padding: var(--space-6);
+}
+
+.gen-stats__icon {
+    font-size: 1.75rem;
+    margin-bottom: var(--space-2);
+}
+
+.gen-stats__value {
+    font-family: var(--font-display);
+    font-size: var(--text-2xl);
+    font-weight: var(--weight-bold);
+    line-height: var(--leading-tight);
+    margin-bottom: var(--space-1);
+}
+
+.gen-stats__label {
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-secondary);
+}
+
+.gen-stats__sublabel {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-top: var(--space-1);
+}
+
+/* === Chart Widget === */
+.chart-widget {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+}
+
+.chart-widget__controls {
+    padding: var(--space-4) var(--space-6);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.chart-widget__timeframes {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.chart-widget__canvas-wrap {
+    padding: var(--space-2);
+}
+
+.chart-widget__canvas-wrap canvas {
+    display: block;
+}
+
+.chart-widget__tooltip {
+    position: absolute;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.chart-widget__volume-wrap {
+    border-top: 1px solid var(--border-subtle);
+    padding: var(--space-2);
+}
+
+.chart-widget__volume-wrap canvas {
+    display: block;
+}
+
+/* === Comparison Bars === */
+.chart-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.chart-bars__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.chart-bars__label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+}
+
+.chart-bars__track {
+    height: 8px;
+    background: var(--bg-elevated);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.chart-bars__fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 1s var(--ease-out);
+}
+
+/* === Particle Canvas === */
+.particles-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* === Page Transition Overlay === */
+.page-transition {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: var(--bg-primary);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--duration-normal) var(--ease-default);
+}
+
+.page-transition.active {
+    opacity: 1;
+}

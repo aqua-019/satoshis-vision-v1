@@ -15,14 +15,31 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" }
       ]
+    },
+    {
+      "source": "/css/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
     }
   ],
   "rewrites": [
     { "source": "/home", "destination": "/" },
     { "source": "/archive", "destination": "/bottom-line.html" },
-    { "source": "/education", "destination": "/btc-xmr-education.html" }
+    { "source": "/education", "destination": "/education.html" },
+    { "source": "/ecosystem", "destination": "/ecosystem.html" },
+    { "source": "/xmr-vs-btc", "destination": "/xmr-vs-btc.html" },
+    { "source": "/xmr-vs-stablecoins", "destination": "/xmr-vs-stablecoins.html" }
   ],
   "redirects": [
-    { "source": "/index.html", "destination": "/", "permanent": true }
+    { "source": "/index.html", "destination": "/", "permanent": true },
+    { "source": "/btc-xmr-education", "destination": "/education", "permanent": true },
+    { "source": "/btc-xmr-education.html", "destination": "/education", "permanent": true }
   ]
 }

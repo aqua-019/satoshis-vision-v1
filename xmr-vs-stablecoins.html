@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XMR vs Stablecoins — Sovereignty vs Surveillance | Satoshi's Vision</title>
+    <meta name="description" content="Why stablecoins are the antithesis of Satoshi's vision — centralized, censorable, and fully surveilled. Monero represents the alternative.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/generative.css">
+    <style>
+        .stablecoin-risk {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-8);
+            margin-bottom: var(--space-4);
+            border-left: 3px solid var(--danger);
+        }
+        .stablecoin-risk__title {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            color: var(--danger);
+            margin-bottom: var(--space-2);
+        }
+        .stablecoin-risk__desc {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+        .frozen-funds {
+            background: var(--danger-muted);
+            border: 1px solid rgba(255, 71, 87, 0.3);
+            padding: var(--space-6);
+            margin: var(--space-6) 0;
+        }
+        .frozen-funds__title {
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            color: var(--danger);
+            margin-bottom: var(--space-3);
+        }
+        .frozen-funds__grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-4);
+        }
+        .frozen-funds__item {
+            text-align: center;
+        }
+        .frozen-funds__value {
+            font-family: var(--font-display);
+            font-size: var(--text-xl);
+            font-weight: var(--weight-bold);
+            color: var(--danger);
+        }
+        .frozen-funds__label {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            margin-top: var(--space-1);
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles" class="particles-canvas"></canvas>
+
+    <nav class="nav">
+        <div class="nav__inner">
+            <a href="index.html" class="nav__logo">Satoshi's Vision</a>
+            <div class="nav__links">
+                <a href="index.html" class="nav__link">Home</a>
+                <a href="education.html" class="nav__link">Education</a>
+                <a href="xmr-vs-btc.html" class="nav__link">XMR vs BTC</a>
+                <a href="xmr-vs-stablecoins.html" class="nav__link">vs Stablecoins</a>
+                <a href="ecosystem.html" class="nav__link">Ecosystem</a>
+                <a href="timeline.html" class="nav__link">Timeline</a>
+                <a href="quotes.html" class="nav__link">Quotes</a>
+                <a href="secrets.html" class="nav__link">Secrets</a>
+                <a href="bottom-line.html" class="nav__link">Analysis</a>
+                <a href="hold-monero.html" class="nav__link nav__link--cta">Get XMR</a>
+            </div>
+            <button class="nav__hamburger" onclick="App.toggleMenu()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="nav__mobile" id="mobileMenu">
+        <a href="index.html" onclick="App.closeMenu()">Home</a>
+        <a href="education.html" onclick="App.closeMenu()">Education</a>
+        <a href="xmr-vs-btc.html" onclick="App.closeMenu()">XMR vs BTC</a>
+        <a href="xmr-vs-stablecoins.html" onclick="App.closeMenu()">vs Stablecoins</a>
+        <a href="ecosystem.html" onclick="App.closeMenu()">Ecosystem</a>
+        <a href="timeline.html" onclick="App.closeMenu()">Timeline</a>
+        <a href="quotes.html" onclick="App.closeMenu()">Quotes</a>
+        <a href="secrets.html" onclick="App.closeMenu()">Secrets</a>
+        <a href="bottom-line.html" onclick="App.closeMenu()">Analysis</a>
+        <a href="hold-monero.html" onclick="App.closeMenu()">Get XMR</a>
+    </div>
+
+    <div class="ticker"><div class="ticker__track"></div></div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <span class="hero__eyebrow">Sovereignty vs Surveillance</span>
+        <h1 class="hero__title">Monero <span class="text-gradient">vs</span> Stablecoins</h1>
+        <p class="hero__subtitle">
+            Stablecoins are the most surveilled financial instruments ever created. They represent
+            the exact opposite of what Satoshi envisioned. Here's why.
+        </p>
+    </section>
+
+    <!-- The Fundamental Problem -->
+    <section class="section">
+        <div class="container container--content">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">The Problem</span>
+                <h2 class="section-header__title">Stablecoins Are Not Cryptocurrency</h2>
+                <p class="section-header__subtitle">
+                    They use blockchain technology but violate every principle that made cryptocurrency revolutionary.
+                </p>
+            </div>
+
+            <div class="quote" data-animate data-delay="100">
+                <p class="quote__text">
+                    The root problem with conventional currency is all the trust that's required to make it work.
+                    The central bank must be trusted not to debase the currency.
+                </p>
+                <span class="quote__source">Satoshi Nakamoto, P2P Foundation, 2009</span>
+            </div>
+
+            <p style="color:var(--text-secondary);line-height:var(--leading-relaxed);margin:var(--space-6) 0" data-animate data-delay="200">
+                Stablecoins like USDT and USDC require <em>more</em> trust than traditional banking, not less.
+                You must trust the issuing company, their banking partners, their reserve audits, and the
+                legal jurisdictions they operate in. They can freeze your funds instantly, censor transactions,
+                and share your entire history with governments. They are digital dollars with extra steps.
+            </p>
+        </div>
+    </section>
+
+    <!-- Comparison Matrix -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Comparison</span>
+                <h2 class="section-header__title">XMR vs USDT vs USDC</h2>
+            </div>
+            <div id="stablecoinMatrix" data-animate data-delay="200" style="--matrix-cols:3"></div>
+        </div>
+    </section>
+
+    <!-- Censorship & Freezing -->
+    <section class="section">
+        <div class="container container--content">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Censorship</span>
+                <h2 class="section-header__title">The Freezing Problem</h2>
+                <p class="section-header__subtitle">
+                    Stablecoin issuers have frozen hundreds of millions in user funds with a single function call.
+                </p>
+            </div>
+
+            <div class="frozen-funds" data-animate data-delay="100">
+                <div class="frozen-funds__title">Known Stablecoin Freezes</div>
+                <div class="frozen-funds__grid">
+                    <div class="frozen-funds__item">
+                        <div class="frozen-funds__value">$1B+</div>
+                        <div class="frozen-funds__label">USDT frozen by Tether</div>
+                    </div>
+                    <div class="frozen-funds__item">
+                        <div class="frozen-funds__value">$75M+</div>
+                        <div class="frozen-funds__label">USDC frozen by Circle</div>
+                    </div>
+                    <div class="frozen-funds__item">
+                        <div class="frozen-funds__value">0</div>
+                        <div class="frozen-funds__label">XMR ever frozen or censored</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stablecoin-risk" data-animate data-delay="200">
+                <h3 class="stablecoin-risk__title">Blacklist Function</h3>
+                <p class="stablecoin-risk__desc">
+                    Both USDT and USDC smart contracts contain a blacklist function. The issuing company
+                    can add any address to this list, instantly making the funds at that address unmovable.
+                    No court order required. No appeal process. Your money is frozen with one transaction.
+                </p>
+            </div>
+
+            <div class="stablecoin-risk" data-animate data-delay="300">
+                <h3 class="stablecoin-risk__title">Counterparty Risk</h3>
+                <p class="stablecoin-risk__desc">
+                    If Tether or Circle goes bankrupt, faces legal action, or loses banking access, your
+                    stablecoins become worthless. You have no claim on reserves and no guaranteed redemption.
+                    Monero has no company behind it — it can't be bankrupt, sued, or shut down.
+                </p>
+            </div>
+
+            <div class="stablecoin-risk" data-animate data-delay="400">
+                <h3 class="stablecoin-risk__title">Total Surveillance</h3>
+                <p class="stablecoin-risk__desc">
+                    Every stablecoin transaction is on a public blockchain with your KYC'd identity attached
+                    at the on-ramp. Stablecoin issuers actively work with law enforcement and share transaction
+                    data. You have less privacy than a bank account and none of the consumer protections.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why People Use Stablecoins Anyway -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Honest Analysis</span>
+                <h2 class="section-header__title">Why Stablecoins Are Popular</h2>
+                <p class="section-header__subtitle" style="margin:0 auto">Understanding the trade-offs honestly.</p>
+            </div>
+            <div id="whyStablecoins" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- The Monero Alternative -->
+    <section class="section">
+        <div class="container container--content">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">The Alternative</span>
+                <h2 class="section-header__title">What Monero Offers Instead</h2>
+            </div>
+            <div id="moneroAdvantages" data-animate data-delay="200"></div>
+            <div style="text-align:center;margin-top:var(--space-8)" data-animate data-delay="300">
+                <a href="hold-monero.html" class="btn btn--primary btn--lg">Get XMR Privately &rarr;</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live Price Comparison -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Live Data</span>
+                <h2 class="section-header__title">Market Comparison</h2>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-6)" data-animate data-delay="100">
+                <div id="xmrCard"></div>
+                <div id="usdtCard"></div>
+                <div id="usdcCard"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__inner">
+            <div class="footer__grid">
+                <div class="footer__brand">
+                    <div class="footer__brand-name">Satoshi's Vision</div>
+                    <p class="footer__brand-desc">An educational archive exploring the evolution from Bitcoin to Monero.</p>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Learn</h4>
+                    <div class="footer__links">
+                        <a href="education.html" class="footer__link">Education</a>
+                        <a href="secrets.html" class="footer__link">Secret Threads</a>
+                        <a href="quotes.html" class="footer__link">Quotes</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Compare</h4>
+                    <div class="footer__links">
+                        <a href="xmr-vs-btc.html" class="footer__link">XMR vs BTC</a>
+                        <a href="xmr-vs-stablecoins.html" class="footer__link">XMR vs Stablecoins</a>
+                        <a href="bottom-line.html" class="footer__link">The Bottom Line</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Ecosystem</h4>
+                    <div class="footer__links">
+                        <a href="ecosystem.html" class="footer__link">Ecosystem Map</a>
+                        <a href="hold-monero.html" class="footer__link">Get XMR</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <span class="footer__copy">Educational purposes only. Not financial advice.</span>
+                <span class="footer__disclaimer">Data provided by CoinGecko. MIT License.</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/components/generative-ui.js"></script>
+    <script src="js/components/charts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            GenerativeUI.createParticles('particles', { count: 30, speed: 0.15 });
+
+            GenerativeUI.createComparisonMatrix('stablecoinMatrix', {
+                items: [
+                    { id: 'xmr', name: 'Monero', icon: '\u0271', color: 'var(--xmr-orange)' },
+                    { id: 'usdt', name: 'USDT', icon: '$', color: 'var(--success)' },
+                    { id: 'usdc', name: 'USDC', icon: '$', color: 'var(--info)' }
+                ],
+                categories: [
+                    {
+                        name: 'Issuer',
+                        description: 'Who controls it?',
+                        values: {
+                            xmr: { text: 'No One', detail: 'Decentralized protocol', status: 'good' },
+                            usdt: { text: 'Tether Ltd', detail: 'BVI-registered company', status: 'bad' },
+                            usdc: { text: 'Circle', detail: 'US-regulated company', status: 'bad' }
+                        }
+                    },
+                    {
+                        name: 'Can Freeze Funds',
+                        values: {
+                            xmr: { text: 'No', detail: 'Impossible by design', status: 'good' },
+                            usdt: { text: 'Yes', detail: '$1B+ frozen to date', status: 'bad' },
+                            usdc: { text: 'Yes', detail: '$75M+ frozen to date', status: 'bad' }
+                        }
+                    },
+                    {
+                        name: 'Transaction Privacy',
+                        values: {
+                            xmr: { text: 'Full', detail: 'Sender, receiver, amount hidden', status: 'good' },
+                            usdt: { text: 'None', detail: 'Public blockchain + KYC', status: 'bad' },
+                            usdc: { text: 'None', detail: 'Public blockchain + KYC', status: 'bad' }
+                        }
+                    },
+                    {
+                        name: 'Censorship Resistant',
+                        values: {
+                            xmr: { text: 'Yes', detail: 'No entity can block txns', status: 'good' },
+                            usdt: { text: 'No', detail: 'Blacklist smart contract', status: 'bad' },
+                            usdc: { text: 'No', detail: 'Blacklist smart contract', status: 'bad' }
+                        }
+                    },
+                    {
+                        name: 'Counterparty Risk',
+                        values: {
+                            xmr: { text: 'None', detail: 'No company to fail', status: 'good' },
+                            usdt: { text: 'High', detail: 'Depends on Tether solvency', status: 'bad' },
+                            usdc: { text: 'Medium', detail: 'Regulated but still custodial', status: 'neutral' }
+                        }
+                    },
+                    {
+                        name: 'Price Stability',
+                        values: {
+                            xmr: { text: 'Volatile', detail: 'Market-driven price', status: 'neutral' },
+                            usdt: { text: '~$1.00', detail: 'Pegged to USD', status: 'good' },
+                            usdc: { text: '~$1.00', detail: 'Pegged to USD', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Supply Transparency',
+                        values: {
+                            xmr: { text: 'Verifiable', detail: 'Cryptographic proof of supply', status: 'good' },
+                            usdt: { text: 'Questionable', detail: 'No full independent audit', status: 'bad' },
+                            usdc: { text: 'Audited', detail: 'Monthly attestations by Deloitte', status: 'neutral' }
+                        }
+                    },
+                    {
+                        name: 'Shutdown Risk',
+                        values: {
+                            xmr: { text: 'None', detail: 'Protocol runs on distributed nodes', status: 'good' },
+                            usdt: { text: 'High', detail: 'Government order could shut it down', status: 'bad' },
+                            usdc: { text: 'High', detail: 'US regulatory action could freeze all', status: 'bad' }
+                        }
+                    },
+                    {
+                        name: 'Satoshi Alignment',
+                        values: {
+                            xmr: { text: 'Complete', detail: 'Privacy, decentralization, sovereignty', status: 'good' },
+                            usdt: { text: 'None', detail: 'Centralized, surveilled, censorable', status: 'bad' },
+                            usdc: { text: 'None', detail: 'Centralized, surveilled, censorable', status: 'bad' }
+                        }
+                    }
+                ]
+            });
+
+            GenerativeUI.createInfoCards('whyStablecoins', [
+                {
+                    icon: '\uD83D\uDCB1',
+                    title: 'Price Stability',
+                    text: 'Stablecoins offer a 1:1 peg to the US dollar, making them useful for trading pairs, remittances, and as a unit of account. Monero\'s value fluctuates with the market.',
+                    highlight: 'Trade-off: You get price stability but lose financial sovereignty.'
+                },
+                {
+                    icon: '\u26A1',
+                    title: 'DeFi Integration',
+                    text: 'Stablecoins are deeply integrated into DeFi protocols for lending, borrowing, and yield. Monero\'s privacy makes it incompatible with most DeFi platforms by design.',
+                    highlight: 'Trade-off: DeFi access requires transparent, censorable tokens.'
+                },
+                {
+                    icon: '\uD83C\uDF0D',
+                    title: 'Dollarization',
+                    text: 'In countries with unstable currencies, stablecoins provide access to USD-denominated savings. This is a genuine use case, but comes with all the surveillance risks.',
+                    highlight: 'Alternative: Monero preserves purchasing power without the surveillance.'
+                }
+            ]);
+
+            GenerativeUI.createStatsDashboard('moneroAdvantages', [
+                { icon: '\uD83D\uDD12', value: 'Zero Frozen', label: 'Funds Ever Censored', color: 'var(--success)' },
+                { icon: '\uD83D\uDC64', value: 'No CEO', label: 'No Company to Sue', color: 'var(--xmr-orange)' },
+                { icon: '\uD83C\uDF10', value: 'Global', label: 'P2P Trading', sublabel: 'No KYC required', color: 'var(--info)' },
+                { icon: '\u2696', value: 'Fungible', label: 'Every Coin Equal', sublabel: 'Cannot be blacklisted', color: 'var(--btc-gold)' },
+            ]);
+
+            GenerativeUI.createPriceCard('xmrCard', 'monero', { theme: 'xmr', showChart: false });
+            GenerativeUI.createPriceCard('usdtCard', 'tether', { theme: 'btc', showChart: false });
+            GenerativeUI.createPriceCard('usdcCard', 'usd-coin', { theme: 'btc', showChart: false });
+        });
+    </script>
+</body>
+</html>

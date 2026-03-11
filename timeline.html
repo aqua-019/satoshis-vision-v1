@@ -3,201 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Timeline — Bitcoin to Monero</title>
+    <title>Interactive Timeline — Bitcoin to Monero | Satoshi's Vision</title>
+    <meta name="description" content="Explore the privacy evolution from Bitcoin to Monero through an interactive timeline of 13 key events from 2008 to 2025.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/generative.css">
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --grey-18: #2E2E2E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            min-height: 100vh;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--btc-orange);
-        }
-
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            padding: 10px;
-        }
-
-        .hamburger span {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-        }
-
-        .mobile-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 10, 10, 0.98);
-            z-index: 999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .mobile-menu.active {
-            display: flex;
-        }
-
-        .mobile-menu a {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-family: var(--font-display);
-        }
-
-        /* Hero */
-        .hero {
-            padding: 8rem 2rem 3rem;
-            text-align: center;
-            background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 100%);
-        }
-
-        .hero-eyebrow {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--btc-orange);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 1rem;
-        }
-
-        .hero-title {
-            font-family: var(--font-display);
-            font-size: clamp(2rem, 5vw, 3rem);
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .hero-subtitle {
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto 2rem;
-        }
+        /* === Timeline-specific styles using design system variables === */
 
         /* Legend */
         .legend {
             display: flex;
             justify-content: center;
-            gap: 2rem;
+            gap: var(--space-8);
             flex-wrap: wrap;
+            margin-top: var(--space-6);
         }
 
-        .legend-item {
+        .legend__item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: var(--space-2);
             font-family: var(--font-mono);
-            font-size: 0.85rem;
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            color: var(--text-secondary);
         }
 
-        .legend-dot {
+        .legend__dot {
             width: 14px;
             height: 14px;
-            border-radius: 50%;
+            border-radius: var(--radius-full);
+            flex-shrink: 0;
         }
 
-        .legend-dot.btc {
-            background: var(--btc-orange);
+        .legend__dot--btc { background: var(--btc-orange); }
+        .legend__dot--xmr { background: var(--xmr-orange); }
+        .legend__dot--both { background: var(--gradient-brand); }
+
+        /* Keyboard hint */
+        .keyboard-hint {
+            text-align: center;
+            margin-top: var(--space-4);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
         }
 
-        .legend-dot.xmr {
-            background: var(--xmr-orange);
+        .keyboard-hint kbd {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-default);
+            padding: var(--space-1) var(--space-2);
+            border-radius: var(--radius-sm);
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            margin: 0 2px;
         }
 
-        .legend-dot.both {
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-        }
-
-        /* Timeline */
+        /* Timeline Container */
         .timeline-container {
-            max-width: 900px;
+            max-width: var(--max-width-content);
             margin: 0 auto;
-            padding: 3rem 2rem;
+            padding: var(--space-12) var(--space-8);
         }
 
         .timeline {
             position: relative;
-            padding: 2rem 0;
+            padding: var(--space-8) 0;
         }
 
         /* Center line */
@@ -209,30 +86,41 @@
             top: 0;
             bottom: 0;
             width: 4px;
-            background: linear-gradient(180deg, 
-                var(--btc-orange) 0%, 
+            background: linear-gradient(180deg,
+                var(--btc-orange) 0%,
                 var(--btc-gold) 30%,
                 var(--btc-gold) 50%,
                 var(--xmr-orange) 100%
             );
+            border-radius: var(--radius-full);
         }
 
+        /* Timeline Item */
         .timeline-item {
             position: relative;
             width: calc(50% - 30px);
-            padding: 1.5rem;
-            background: var(--card-bg);
+            padding: var(--space-6);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 2rem;
+            transition: all var(--duration-normal) var(--ease-default);
+            margin-bottom: var(--space-8);
         }
 
         .timeline-item:hover {
             transform: scale(1.02);
+            border-color: var(--border-accent);
+            box-shadow: var(--shadow-md);
+        }
+
+        .timeline-item:focus-visible {
+            outline: 2px solid var(--xmr-orange);
+            outline-offset: 2px;
         }
 
         .timeline-item.active {
-            background: var(--grey-18);
+            background: var(--bg-elevated);
+            border-color: var(--border-accent);
         }
 
         /* Alternating sides */
@@ -253,10 +141,10 @@
             position: absolute;
             width: 20px;
             height: 20px;
-            border-radius: 50%;
-            top: 1.5rem;
-            z-index: 2;
-            transition: all 0.3s ease;
+            border-radius: var(--radius-full);
+            top: var(--space-6);
+            z-index: var(--z-above);
+            transition: all var(--duration-normal) var(--ease-default);
         }
 
         .timeline-item:nth-child(odd) .timeline-dot {
@@ -274,26 +162,26 @@
 
         .timeline-item.btc .timeline-dot {
             background: var(--btc-orange);
-            box-shadow: 0 0 15px var(--btc-orange);
+            box-shadow: var(--shadow-glow-btc);
         }
 
         .timeline-item.xmr .timeline-dot {
             background: var(--xmr-orange);
-            box-shadow: 0 0 15px var(--xmr-orange);
+            box-shadow: var(--shadow-glow-xmr);
         }
 
         .timeline-item.both .timeline-dot {
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            box-shadow: 0 0 15px var(--btc-gold);
+            background: var(--gradient-brand);
+            box-shadow: var(--shadow-glow-gold);
         }
 
-        /* Border accent */
+        /* Border accent per type */
         .timeline-item.btc {
             border-left: 3px solid var(--btc-orange);
         }
 
         .timeline-item:nth-child(odd).btc {
-            border-left: none;
+            border-left: 1px solid var(--border-subtle);
             border-right: 3px solid var(--btc-orange);
         }
 
@@ -302,7 +190,7 @@
         }
 
         .timeline-item:nth-child(odd).xmr {
-            border-left: none;
+            border-left: 1px solid var(--border-subtle);
             border-right: 3px solid var(--xmr-orange);
         }
 
@@ -311,36 +199,40 @@
         }
 
         .timeline-item:nth-child(odd).both {
-            border-left: none;
+            border-left: 1px solid var(--border-subtle);
             border-right: 3px solid var(--btc-gold);
         }
 
+        /* Timeline year / date */
         .timeline-year {
             font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--btc-orange);
-            margin-bottom: 0.5rem;
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: var(--space-2);
         }
 
-        .timeline-item.xmr .timeline-year {
-            color: var(--xmr-orange);
-        }
-
-        .timeline-item.both .timeline-year {
-            color: var(--btc-gold);
-        }
+        .timeline-item.btc .timeline-year { color: var(--btc-orange); }
+        .timeline-item.xmr .timeline-year { color: var(--xmr-orange); }
+        .timeline-item.both .timeline-year { color: var(--btc-gold); }
 
         .timeline-title {
             font-family: var(--font-display);
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
+            font-size: var(--text-lg);
+            font-weight: var(--weight-semibold);
+            margin-bottom: var(--space-2);
+            color: var(--text-primary);
+        }
+
+        .timeline-badge {
+            display: inline-block;
+            margin-bottom: var(--space-2);
         }
 
         .timeline-preview {
-            font-size: 0.9rem;
+            font-size: var(--text-sm);
             color: var(--text-secondary);
-            line-height: 1.5;
+            line-height: var(--leading-normal);
         }
 
         /* Detail Panel */
@@ -349,12 +241,12 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: var(--card-bg);
+            background: var(--bg-secondary);
             border-top: 3px solid var(--btc-orange);
-            padding: 2rem;
+            padding: var(--space-8);
             transform: translateY(100%);
-            transition: transform 0.4s ease;
-            z-index: 100;
+            transition: transform 0.4s var(--ease-out);
+            z-index: var(--z-dropdown);
             max-height: 50vh;
             overflow-y: auto;
         }
@@ -375,91 +267,80 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 1rem;
+            margin-bottom: var(--space-4);
+            max-width: var(--max-width-content);
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .detail-title {
             font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 600;
+            font-size: var(--text-xl);
+            font-weight: var(--weight-semibold);
         }
 
         .detail-close {
             background: none;
-            border: none;
+            border: 1px solid var(--border-default);
             color: var(--text-secondary);
-            font-size: 1.5rem;
+            font-size: var(--text-lg);
             cursor: pointer;
-            padding: 0.5rem;
+            padding: var(--space-1) var(--space-3);
             line-height: 1;
+            border-radius: var(--radius-sm);
+            transition: all var(--duration-fast) var(--ease-default);
+            flex-shrink: 0;
+            margin-left: var(--space-4);
         }
 
         .detail-close:hover {
             color: var(--text-primary);
+            border-color: var(--xmr-orange);
+        }
+
+        .detail-body {
+            max-width: var(--max-width-content);
+            margin: 0 auto;
         }
 
         .detail-date {
             font-family: var(--font-mono);
-            font-size: 0.9rem;
-            color: var(--btc-orange);
-            margin-bottom: 1rem;
+            font-size: var(--text-sm);
+            margin-bottom: var(--space-4);
         }
+
+        .detail-panel.btc .detail-date { color: var(--btc-orange); }
+        .detail-panel.xmr .detail-date { color: var(--xmr-orange); }
+        .detail-panel.both .detail-date { color: var(--btc-gold); }
 
         .detail-content {
             color: var(--text-secondary);
-            line-height: 1.8;
+            line-height: var(--leading-relaxed);
             max-width: 800px;
         }
 
         .detail-link {
-            display: inline-block;
-            margin-top: 1rem;
-            color: var(--btc-orange);
-            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-2);
+            margin-top: var(--space-4);
             font-family: var(--font-mono);
-            font-size: 0.9rem;
+            font-size: var(--text-sm);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            transition: opacity var(--duration-fast);
         }
+
+        .detail-panel.btc .detail-link { color: var(--btc-orange); }
+        .detail-panel.xmr .detail-link { color: var(--xmr-orange); }
+        .detail-panel.both .detail-link { color: var(--btc-gold); }
 
         .detail-link:hover {
-            text-decoration: underline;
+            opacity: 0.8;
         }
 
-        /* Footer */
-        footer {
-            background: var(--card-bg);
-            padding: 3rem 2rem;
-            text-align: center;
-            border-top: 1px solid var(--grey-18);
-        }
-
-        .footer-nav {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-nav a:hover {
-            color: var(--btc-orange);
-        }
-
-        /* Mobile */
+        /* === Mobile responsive === */
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
             .timeline::before {
                 left: 15px;
             }
@@ -469,16 +350,19 @@
                 margin-left: 40px !important;
                 margin-right: 0 !important;
                 text-align: left !important;
+                border-right: 1px solid var(--border-subtle) !important;
+            }
+
+            .timeline-item.btc {
                 border-left: 3px solid var(--btc-orange) !important;
-                border-right: none !important;
             }
 
             .timeline-item.xmr {
-                border-left-color: var(--xmr-orange) !important;
+                border-left: 3px solid var(--xmr-orange) !important;
             }
 
             .timeline-item.both {
-                border-left-color: var(--btc-gold) !important;
+                border-left: 3px solid var(--btc-gold) !important;
             }
 
             .timeline-item .timeline-dot {
@@ -488,83 +372,83 @@
 
             .detail-panel {
                 max-height: 60vh;
+                padding: var(--space-6);
             }
-        }
 
-        /* Keyboard hint */
-        .keyboard-hint {
-            text-align: center;
-            margin-top: 1rem;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-        }
-
-        .keyboard-hint kbd {
-            background: var(--grey-18);
-            padding: 0.2rem 0.5rem;
-            margin: 0 0.2rem;
+            .legend {
+                gap: var(--space-4);
+            }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
+    <canvas id="particles" class="particles-canvas"></canvas>
+
     <nav class="nav">
-        <a href="index.html" class="nav-logo">₿ → ɱ</a>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <a href="secrets.html">Secrets</a>
-            <a href="quotes.html">Quotes</a>
-            <a href="timeline.html" style="color: var(--xmr-orange);">Timeline</a>
-            <a href="bottom-line.html">The Bottom Line</a>
-            <a href="hold-monero.html">Hold Monero</a>
-        </div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
+        <div class="nav__inner">
+            <a href="index.html" class="nav__logo">Satoshi's Vision</a>
+            <div class="nav__links">
+                <a href="index.html" class="nav__link">Home</a>
+                <a href="education.html" class="nav__link">Education</a>
+                <a href="xmr-vs-btc.html" class="nav__link">XMR vs BTC</a>
+                <a href="xmr-vs-stablecoins.html" class="nav__link">vs Stablecoins</a>
+                <a href="ecosystem.html" class="nav__link">Ecosystem</a>
+                <a href="timeline.html" class="nav__link">Timeline</a>
+                <a href="quotes.html" class="nav__link">Quotes</a>
+                <a href="secrets.html" class="nav__link">Secrets</a>
+                <a href="bottom-line.html" class="nav__link">Analysis</a>
+                <a href="hold-monero.html" class="nav__link nav__link--cta">Get XMR</a>
+            </div>
+            <button class="nav__hamburger" onclick="App.toggleMenu()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
         </div>
     </nav>
 
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quotes</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">The Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()">Hold Monero</a>
+    <div class="nav__mobile" id="mobileMenu">
+        <a href="index.html" onclick="App.closeMenu()">Home</a>
+        <a href="education.html" onclick="App.closeMenu()">Education</a>
+        <a href="xmr-vs-btc.html" onclick="App.closeMenu()">XMR vs BTC</a>
+        <a href="xmr-vs-stablecoins.html" onclick="App.closeMenu()">vs Stablecoins</a>
+        <a href="ecosystem.html" onclick="App.closeMenu()">Ecosystem</a>
+        <a href="timeline.html" onclick="App.closeMenu()">Timeline</a>
+        <a href="quotes.html" onclick="App.closeMenu()">Quotes</a>
+        <a href="secrets.html" onclick="App.closeMenu()">Secrets</a>
+        <a href="bottom-line.html" onclick="App.closeMenu()">Analysis</a>
+        <a href="hold-monero.html" onclick="App.closeMenu()">Get XMR</a>
     </div>
+
+    <div class="ticker"><div class="ticker__track"></div></div>
 
     <!-- Hero -->
     <section class="hero">
-        <div class="hero-eyebrow">Interactive History</div>
-        <h1 class="hero-title">The Privacy Evolution Timeline</h1>
-        <p class="hero-subtitle">
+        <span class="hero__eyebrow">Interactive History</span>
+        <h1 class="hero__title"><span class="text-gradient">The Privacy Evolution Timeline</span></h1>
+        <p class="hero__subtitle">
             Click any event to reveal full details. Use keyboard arrows to navigate.
         </p>
-        <div class="legend">
-            <div class="legend-item">
-                <span class="legend-dot btc"></span>
+        <div class="legend" data-animate>
+            <div class="legend__item">
+                <span class="legend__dot legend__dot--btc"></span>
                 <span>Bitcoin</span>
             </div>
-            <div class="legend-item">
-                <span class="legend-dot both"></span>
+            <div class="legend__item">
+                <span class="legend__dot legend__dot--both"></span>
                 <span>Transition</span>
             </div>
-            <div class="legend-item">
-                <span class="legend-dot xmr"></span>
+            <div class="legend__item">
+                <span class="legend__dot legend__dot--xmr"></span>
                 <span>Monero</span>
             </div>
         </div>
-        <p class="keyboard-hint">
-            <kbd>↑</kbd> <kbd>↓</kbd> Navigate &nbsp;|&nbsp; <kbd>Enter</kbd> Select &nbsp;|&nbsp; <kbd>Esc</kbd> Close
+        <p class="keyboard-hint" data-animate>
+            <kbd>&#8593;</kbd> <kbd>&#8595;</kbd> Navigate &nbsp;|&nbsp; <kbd>Enter</kbd> Select &nbsp;|&nbsp; <kbd>Esc</kbd> Close
         </p>
     </section>
 
     <!-- Timeline -->
     <div class="timeline-container">
-        <div class="timeline" id="timeline">
+        <div class="timeline" id="timeline" data-animate>
             <!-- Items inserted by JS -->
         </div>
     </div>
@@ -573,23 +457,57 @@
     <div class="detail-panel" id="detailPanel">
         <div class="detail-header">
             <h2 class="detail-title" id="detailTitle">Event Title</h2>
-            <button class="detail-close" onclick="closePanel()">×</button>
+            <button class="detail-close" onclick="closePanel()" aria-label="Close detail panel">&times;</button>
         </div>
-        <div class="detail-date" id="detailDate">Date</div>
-        <div class="detail-content" id="detailContent">Content</div>
-        <a href="#" class="detail-link" id="detailLink" target="_blank" style="display: none;">View Source →</a>
+        <div class="detail-body">
+            <div class="detail-date" id="detailDate">Date</div>
+            <div class="detail-content" id="detailContent">Content</div>
+            <a href="#" class="detail-link" id="detailLink" target="_blank" rel="noopener noreferrer" style="display: none;">View Source &rarr;</a>
+        </div>
     </div>
 
     <!-- Footer -->
-    <footer>
-        <nav class="footer-nav">
-            <a href="index.html">Home</a>
-            <a href="secrets.html">Secret Threads</a>
-            <a href="quotes.html">Quote Archive</a>
-            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
-        </nav>
+    <footer class="footer">
+        <div class="footer__inner">
+            <div class="footer__grid">
+                <div class="footer__brand">
+                    <div class="footer__brand-name">Satoshi's Vision</div>
+                    <p class="footer__brand-desc">An educational archive exploring the evolution from Bitcoin to Monero.</p>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Learn</h4>
+                    <div class="footer__links">
+                        <a href="education.html" class="footer__link">Education</a>
+                        <a href="secrets.html" class="footer__link">Secret Threads</a>
+                        <a href="quotes.html" class="footer__link">Quotes</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Compare</h4>
+                    <div class="footer__links">
+                        <a href="xmr-vs-btc.html" class="footer__link">XMR vs BTC</a>
+                        <a href="xmr-vs-stablecoins.html" class="footer__link">XMR vs Stablecoins</a>
+                        <a href="bottom-line.html" class="footer__link">The Bottom Line</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Ecosystem</h4>
+                    <div class="footer__links">
+                        <a href="ecosystem.html" class="footer__link">Ecosystem Map</a>
+                        <a href="hold-monero.html" class="footer__link">Get XMR</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <span class="footer__copy">Educational purposes only. Not financial advice.</span>
+                <span class="footer__disclaimer">Data provided by CoinGecko. MIT License.</span>
+            </div>
+        </div>
     </footer>
 
+    <script src="js/app.js"></script>
+    <script src="js/components/generative-ui.js"></script>
+    <script src="js/components/charts.js"></script>
     <script>
         const events = [
             {
@@ -693,47 +611,57 @@
 
         let currentIndex = -1;
 
+        const badgeMap = {
+            btc: { cls: 'badge badge--btc', label: 'Bitcoin' },
+            xmr: { cls: 'badge badge--xmr', label: 'Monero' },
+            both: { cls: 'badge badge--gold', label: 'Transition' }
+        };
+
         function renderTimeline() {
             const timeline = document.getElementById('timeline');
-            timeline.innerHTML = events.map((event, i) => `
-                <div class="timeline-item ${event.type}" data-index="${i}" onclick="openPanel(${i})">
+            timeline.innerHTML = events.map((event, i) => {
+                const b = badgeMap[event.type];
+                return `
+                <div class="timeline-item ${event.type}" data-index="${i}" onclick="openPanel(${i})" tabindex="0" role="button" aria-label="${event.title} - ${event.date}">
                     <div class="timeline-dot"></div>
                     <div class="timeline-year">${event.date}</div>
+                    <span class="timeline-badge ${b.cls}">${b.label}</span>
                     <div class="timeline-title">${event.title}</div>
                     <div class="timeline-preview">${event.preview}</div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
         }
 
         function openPanel(index) {
             const event = events[index];
             const panel = document.getElementById('detailPanel');
-            
+
             // Remove active from all items
             document.querySelectorAll('.timeline-item').forEach(item => item.classList.remove('active'));
             document.querySelectorAll('.timeline-item')[index].classList.add('active');
-            
+
             // Update panel
             document.getElementById('detailTitle').textContent = event.title;
             document.getElementById('detailDate').textContent = event.date;
             document.getElementById('detailContent').textContent = event.content;
-            
+
             const link = document.getElementById('detailLink');
             if (event.link) {
                 link.href = event.link;
-                link.style.display = 'inline-block';
+                link.style.display = 'inline-flex';
             } else {
                 link.style.display = 'none';
             }
-            
+
             // Update panel color
             panel.className = 'detail-panel open ' + event.type;
             currentIndex = index;
-            
+
             // Scroll item into view
-            document.querySelectorAll('.timeline-item')[index].scrollIntoView({ 
-                behavior: 'smooth', 
-                block: 'center' 
+            document.querySelectorAll('.timeline-item')[index].scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
             });
         }
 
@@ -741,10 +669,6 @@
             document.getElementById('detailPanel').classList.remove('open');
             document.querySelectorAll('.timeline-item').forEach(item => item.classList.remove('active'));
             currentIndex = -1;
-        }
-
-        function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
         }
 
         // Keyboard navigation
@@ -765,7 +689,15 @@
         });
 
         // Initialize
-        renderTimeline();
+        document.addEventListener('DOMContentLoaded', () => {
+            App.init();
+            renderTimeline();
+
+            // Initialize particles if available
+            if (typeof GenerativeUI !== 'undefined' && GenerativeUI.createParticles) {
+                GenerativeUI.createParticles('particles', { count: 25, speed: 0.1 });
+            }
+        });
     </script>
 </body>
 </html>

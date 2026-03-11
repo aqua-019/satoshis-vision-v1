@@ -15,7 +15,18 @@
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
 
-# Cache static assets
+# Cache CSS and JS
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# HTML pages - always revalidate
 [[headers]]
   for = "*.html"
   [headers.values]
@@ -30,6 +41,12 @@
 [[redirects]]
   from = "/archive"
   to = "/bottom-line"
+  status = 301
+
+# Legacy redirect
+[[redirects]]
+  from = "/btc-xmr-education"
+  to = "/education"
   status = 301
 
 # Pretty URLs (remove .html)
@@ -60,5 +77,20 @@
 
 [[redirects]]
   from = "/education"
-  to = "/btc-xmr-education.html"
+  to = "/education.html"
+  status = 200
+
+[[redirects]]
+  from = "/ecosystem"
+  to = "/ecosystem.html"
+  status = 200
+
+[[redirects]]
+  from = "/xmr-vs-btc"
+  to = "/xmr-vs-btc.html"
+  status = 200
+
+[[redirects]]
+  from = "/xmr-vs-stablecoins"
+  to = "/xmr-vs-stablecoins.html"
   status = 200

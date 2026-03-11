@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XMR vs BTC — Privacy vs Transparency | Satoshi's Vision</title>
+    <meta name="description" content="Comprehensive comparison of Monero and Bitcoin — privacy, fungibility, mining, and the philosophical divide.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/generative.css">
+    <style>
+        .vs-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-8);
+            margin: var(--space-8) 0;
+        }
+        .vs-header__coin {
+            text-align: center;
+        }
+        .vs-header__symbol {
+            font-family: var(--font-display);
+            font-size: var(--text-4xl);
+            font-weight: var(--weight-bold);
+        }
+        .vs-header__name {
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wider);
+        }
+        .vs-header__divider {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            color: var(--text-tertiary);
+        }
+        .privacy-deep-dive { padding: var(--section-padding) 0; }
+        .privacy-layer {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-8);
+            margin-bottom: var(--space-6);
+            border-left: 3px solid var(--xmr-orange);
+        }
+        .privacy-layer__title {
+            font-family: var(--font-display);
+            font-size: var(--text-xl);
+            color: var(--xmr-orange);
+            margin-bottom: var(--space-2);
+        }
+        .privacy-layer__subtitle {
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: var(--space-4);
+        }
+        .privacy-layer__desc {
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+            margin-bottom: var(--space-4);
+        }
+        .privacy-layer__comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-4);
+        }
+        .privacy-layer__col h4 {
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            margin-bottom: var(--space-2);
+        }
+        .privacy-layer__col--btc h4 { color: var(--btc-orange); }
+        .privacy-layer__col--xmr h4 { color: var(--xmr-orange); }
+        .privacy-layer__col p {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+        @media (max-width: 640px) {
+            .privacy-layer__comparison { grid-template-columns: 1fr; }
+            .vs-header { flex-direction: column; gap: var(--space-4); }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles" class="particles-canvas"></canvas>
+
+    <nav class="nav">
+        <div class="nav__inner">
+            <a href="index.html" class="nav__logo">Satoshi's Vision</a>
+            <div class="nav__links">
+                <a href="index.html" class="nav__link">Home</a>
+                <a href="education.html" class="nav__link">Education</a>
+                <a href="xmr-vs-btc.html" class="nav__link">XMR vs BTC</a>
+                <a href="xmr-vs-stablecoins.html" class="nav__link">vs Stablecoins</a>
+                <a href="ecosystem.html" class="nav__link">Ecosystem</a>
+                <a href="timeline.html" class="nav__link">Timeline</a>
+                <a href="quotes.html" class="nav__link">Quotes</a>
+                <a href="secrets.html" class="nav__link">Secrets</a>
+                <a href="bottom-line.html" class="nav__link">Analysis</a>
+                <a href="hold-monero.html" class="nav__link nav__link--cta">Get XMR</a>
+            </div>
+            <button class="nav__hamburger" onclick="App.toggleMenu()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="nav__mobile" id="mobileMenu">
+        <a href="index.html" onclick="App.closeMenu()">Home</a>
+        <a href="education.html" onclick="App.closeMenu()">Education</a>
+        <a href="xmr-vs-btc.html" onclick="App.closeMenu()">XMR vs BTC</a>
+        <a href="xmr-vs-stablecoins.html" onclick="App.closeMenu()">vs Stablecoins</a>
+        <a href="ecosystem.html" onclick="App.closeMenu()">Ecosystem</a>
+        <a href="timeline.html" onclick="App.closeMenu()">Timeline</a>
+        <a href="quotes.html" onclick="App.closeMenu()">Quotes</a>
+        <a href="secrets.html" onclick="App.closeMenu()">Secrets</a>
+        <a href="bottom-line.html" onclick="App.closeMenu()">Analysis</a>
+        <a href="hold-monero.html" onclick="App.closeMenu()">Get XMR</a>
+    </div>
+
+    <div class="ticker"><div class="ticker__track"></div></div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <span class="hero__eyebrow">Deep Comparison</span>
+        <h1 class="hero__title">Monero <span class="text-gradient">vs</span> Bitcoin</h1>
+        <p class="hero__subtitle">
+            Two cryptocurrencies born from the same cypherpunk ethos. One chose transparency, the other completed Satoshi's privacy vision.
+        </p>
+    </section>
+
+    <!-- Live Price Comparison -->
+    <section class="section">
+        <div class="container">
+            <div class="vs-header" data-animate>
+                <div class="vs-header__coin">
+                    <div class="vs-header__symbol" style="color:var(--btc-orange)">\u20BF</div>
+                    <div class="vs-header__name">Bitcoin</div>
+                </div>
+                <div class="vs-header__divider">vs</div>
+                <div class="vs-header__coin">
+                    <div class="vs-header__symbol" style="color:var(--xmr-orange)">\u0271</div>
+                    <div class="vs-header__name">Monero</div>
+                </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)">
+                <div id="btcPriceCard" data-animate data-delay="100"></div>
+                <div id="xmrPriceCard" data-animate data-delay="200"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Matrix -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Feature Matrix</span>
+                <h2 class="section-header__title">Head-to-Head Comparison</h2>
+                <p class="section-header__subtitle" style="margin:0 auto">How Bitcoin and Monero compare across key technical and philosophical dimensions.</p>
+            </div>
+            <div id="comparisonMatrix" data-animate data-delay="200" style="--matrix-cols:2"></div>
+        </div>
+    </section>
+
+    <!-- Privacy Deep Dive -->
+    <section class="privacy-deep-dive">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Privacy Technology</span>
+                <h2 class="section-header__title">Monero's Three Privacy Layers</h2>
+                <p class="section-header__subtitle">Each layer addresses a specific privacy leak that exists in Bitcoin.</p>
+            </div>
+
+            <div class="privacy-layer" data-animate data-delay="100">
+                <h3 class="privacy-layer__title">Ring Signatures</h3>
+                <div class="privacy-layer__subtitle">Sender Privacy &mdash; Who sent it?</div>
+                <p class="privacy-layer__desc">
+                    Ring signatures mix the sender's transaction with decoy outputs from the blockchain,
+                    making it mathematically impossible to determine which input is the real one. This is
+                    exactly what Satoshi described as "group signatures" in 2010.
+                </p>
+                <div class="privacy-layer__comparison">
+                    <div class="privacy-layer__col privacy-layer__col--btc">
+                        <h4>Bitcoin</h4>
+                        <p>Every input is directly traceable. Chain analysis companies like Chainalysis can follow funds from address to address with high confidence.</p>
+                    </div>
+                    <div class="privacy-layer__col privacy-layer__col--xmr">
+                        <h4>Monero</h4>
+                        <p>Ring size of 16 means each transaction is mixed with 15 decoys. An observer cannot determine which input is real.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="privacy-layer" data-animate data-delay="200">
+                <h3 class="privacy-layer__title">Stealth Addresses</h3>
+                <div class="privacy-layer__subtitle">Receiver Privacy &mdash; Who received it?</div>
+                <p class="privacy-layer__desc">
+                    One-time addresses are generated for each transaction so the receiver's actual address
+                    never appears on the blockchain. Satoshi described this as "blinded variations of a public key."
+                </p>
+                <div class="privacy-layer__comparison">
+                    <div class="privacy-layer__col privacy-layer__col--btc">
+                        <h4>Bitcoin</h4>
+                        <p>Addresses are reused or linkable. Once an address is tied to an identity, all its transactions are exposed.</p>
+                    </div>
+                    <div class="privacy-layer__col privacy-layer__col--xmr">
+                        <h4>Monero</h4>
+                        <p>A unique one-time address is created for every transaction. Only the recipient can identify and spend the funds.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="privacy-layer" data-animate data-delay="300">
+                <h3 class="privacy-layer__title">RingCT (Confidential Transactions)</h3>
+                <div class="privacy-layer__subtitle">Amount Privacy &mdash; How much was sent?</div>
+                <p class="privacy-layer__desc">
+                    Pedersen commitments and range proofs hide transaction amounts while still allowing the
+                    network to verify that no coins were created from nothing. Satoshi's workaround was
+                    "standard denominations" — RingCT solved it cryptographically.
+                </p>
+                <div class="privacy-layer__comparison">
+                    <div class="privacy-layer__col privacy-layer__col--btc">
+                        <h4>Bitcoin</h4>
+                        <p>Every transaction amount is fully visible. Anyone can see exactly how much BTC moved and calculate wallet balances.</p>
+                    </div>
+                    <div class="privacy-layer__col privacy-layer__col--xmr">
+                        <h4>Monero</h4>
+                        <p>Amounts are hidden using Pedersen commitments. The network verifies conservation of value without revealing values.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Mining Comparison -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Mining &amp; Distribution</span>
+                <h2 class="section-header__title">Who Secures the Network?</h2>
+            </div>
+            <div id="miningComparison" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Price Charts -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Market Data</span>
+                <h2 class="section-header__title">Price History</h2>
+            </div>
+            <div style="display:grid;gap:var(--space-6)">
+                <div data-animate>
+                    <h3 style="font-family:var(--font-mono);font-size:var(--text-sm);color:var(--xmr-orange);margin-bottom:var(--space-3);text-transform:uppercase;letter-spacing:var(--tracking-wide)">Monero (XMR/USD)</h3>
+                    <div id="xmrFullChart"></div>
+                </div>
+                <div data-animate data-delay="200">
+                    <h3 style="font-family:var(--font-mono);font-size:var(--text-sm);color:var(--btc-orange);margin-bottom:var(--space-3);text-transform:uppercase;letter-spacing:var(--tracking-wide)">Bitcoin (BTC/USD)</h3>
+                    <div id="btcFullChart"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Philosophical Divide -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container container--content">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Philosophy</span>
+                <h2 class="section-header__title">Two Visions for Digital Money</h2>
+            </div>
+            <div data-animate data-delay="100">
+                <div class="quote">
+                    <p class="quote__text">Bitcoin chose to become digital gold — a transparent, institutional asset that trades in ETFs and sits on corporate balance sheets. Monero chose to become digital cash — private, fungible, and resistant to surveillance.</p>
+                    <span class="quote__source">The fundamental philosophical divergence</span>
+                </div>
+            </div>
+            <div class="grid grid--2" style="margin-top:var(--space-8)" data-animate data-delay="200">
+                <div class="card card--btc">
+                    <h3 style="color:var(--btc-orange);margin-bottom:var(--space-3)">Bitcoin's Path</h3>
+                    <p style="font-size:var(--text-sm);line-height:var(--leading-relaxed)">
+                        Bitcoin has been embraced by traditional finance. ETFs, institutional custody,
+                        government reserves, and corporate treasuries. Its transparent ledger makes it
+                        compatible with regulatory frameworks. Some argue this was always the path.
+                    </p>
+                </div>
+                <div class="card card--xmr">
+                    <h3 style="color:var(--xmr-orange);margin-bottom:var(--space-3)">Monero's Path</h3>
+                    <p style="font-size:var(--text-sm);line-height:var(--leading-relaxed)">
+                        Monero has been delisted from 73+ exchanges, targeted by government bounties,
+                        and declared unbreakable. It thrives on peer-to-peer trading and decentralized
+                        infrastructure. Satoshi's original cypherpunk vision, realized.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__inner">
+            <div class="footer__grid">
+                <div class="footer__brand">
+                    <div class="footer__brand-name">Satoshi's Vision</div>
+                    <p class="footer__brand-desc">An educational archive exploring the evolution from Bitcoin to Monero.</p>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Learn</h4>
+                    <div class="footer__links">
+                        <a href="education.html" class="footer__link">Education</a>
+                        <a href="secrets.html" class="footer__link">Secret Threads</a>
+                        <a href="quotes.html" class="footer__link">Quotes</a>
+                        <a href="timeline.html" class="footer__link">Timeline</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Compare</h4>
+                    <div class="footer__links">
+                        <a href="xmr-vs-btc.html" class="footer__link">XMR vs BTC</a>
+                        <a href="xmr-vs-stablecoins.html" class="footer__link">XMR vs Stablecoins</a>
+                        <a href="bottom-line.html" class="footer__link">The Bottom Line</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Ecosystem</h4>
+                    <div class="footer__links">
+                        <a href="ecosystem.html" class="footer__link">Ecosystem Map</a>
+                        <a href="hold-monero.html" class="footer__link">Get XMR</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <span class="footer__copy">Educational purposes only. Not financial advice.</span>
+                <span class="footer__disclaimer">Data provided by CoinGecko. MIT License.</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/components/generative-ui.js"></script>
+    <script src="js/components/charts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            GenerativeUI.createParticles('particles', { count: 30, speed: 0.15 });
+
+            GenerativeUI.createPriceCard('btcPriceCard', 'bitcoin', { theme: 'btc' });
+            GenerativeUI.createPriceCard('xmrPriceCard', 'monero', { theme: 'xmr' });
+
+            GenerativeUI.createComparisonMatrix('comparisonMatrix', {
+                items: [
+                    { id: 'btc', name: 'Bitcoin', icon: '\u20BF', color: 'var(--btc-orange)' },
+                    { id: 'xmr', name: 'Monero', icon: '\u0271', color: 'var(--xmr-orange)' }
+                ],
+                categories: [
+                    {
+                        name: 'Privacy Model',
+                        description: 'How transactions are protected',
+                        values: {
+                            btc: { text: 'Pseudonymous', detail: 'All transactions visible on-chain', status: 'bad' },
+                            xmr: { text: 'Private by Default', detail: 'Sender, receiver, amount all hidden', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Fungibility',
+                        description: 'Are all coins equal?',
+                        values: {
+                            btc: { text: 'Non-Fungible', detail: 'Coins can be blacklisted by history', status: 'bad' },
+                            xmr: { text: 'Fully Fungible', detail: 'Every XMR is identical and interchangeable', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Mining Algorithm',
+                        description: 'How blocks are produced',
+                        values: {
+                            btc: { text: 'SHA-256 (ASIC)', detail: 'Dominated by specialized hardware', status: 'neutral' },
+                            xmr: { text: 'RandomX (CPU)', detail: 'ASIC-resistant, anyone can mine', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Supply Policy',
+                        description: 'Monetary issuance model',
+                        values: {
+                            btc: { text: 'Hard Cap: 21M', detail: 'Eventually 0 block reward', status: 'neutral' },
+                            xmr: { text: 'Tail Emission', detail: '0.6 XMR/block forever', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Block Size',
+                        description: 'Transaction throughput',
+                        values: {
+                            btc: { text: 'Fixed ~4MB', detail: '~7 tx/sec, high fees during congestion', status: 'neutral' },
+                            xmr: { text: 'Dynamic', detail: 'Auto-adjusts to demand', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Chain Analysis Resistance',
+                        description: 'Can transactions be traced?',
+                        values: {
+                            btc: { text: 'Fully Traceable', detail: 'Chainalysis, Elliptic, CipherTrace', status: 'bad' },
+                            xmr: { text: 'Unbroken', detail: 'IRS $625K bounty unclaimed', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Regulatory Status',
+                        description: 'Government acceptance',
+                        values: {
+                            btc: { text: 'Fully Accepted', detail: 'ETFs, legal tender in El Salvador', status: 'good' },
+                            xmr: { text: 'Under Pressure', detail: '73+ exchange delistings', status: 'neutral' }
+                        }
+                    },
+                    {
+                        name: 'Decentralization',
+                        description: 'Network distribution',
+                        values: {
+                            btc: { text: 'Mining Pools', detail: '3-4 pools control >51%', status: 'neutral' },
+                            xmr: { text: 'CPU Mining', detail: 'No entity dominates hashrate', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'View Keys',
+                        description: 'Selective transparency',
+                        values: {
+                            btc: { text: 'N/A', detail: 'Everything public by default', status: 'neutral' },
+                            xmr: { text: 'Optional', detail: 'Share view key for audits/compliance', status: 'good' }
+                        }
+                    },
+                    {
+                        name: 'Satoshi Alignment',
+                        description: 'How closely does it match the original vision?',
+                        values: {
+                            btc: { text: 'Partial', detail: 'P2P cash evolved into digital gold', status: 'neutral' },
+                            xmr: { text: 'Direct', detail: 'Implements Satoshi\'s 2010 privacy specs', status: 'good' }
+                        }
+                    }
+                ]
+            });
+
+            // Mining comparison bars
+            GenerativeUI.createInfoCards('miningComparison', [
+                {
+                    icon: '\u26CF',
+                    title: 'Bitcoin Mining',
+                    text: 'Bitcoin uses SHA-256 proof-of-work, requiring specialized ASIC hardware costing $5,000-$15,000 per unit. Mining is concentrated in large farms and pools, with 3-4 pools controlling the majority of hashrate. Average home users cannot profitably mine.',
+                    highlight: 'Hardware barrier: $10,000+ minimum. Electricity is the primary cost driver.'
+                },
+                {
+                    icon: '\uD83D\uDCBB',
+                    title: 'Monero Mining',
+                    text: 'Monero uses RandomX, an algorithm specifically designed to be efficient on consumer CPUs and resistant to ASICs and GPUs. Anyone with a computer can mine XMR. This preserves decentralization and lowers the barrier to participation.',
+                    highlight: 'Hardware barrier: Any modern CPU. True democratized mining.'
+                },
+                {
+                    icon: '\u267E',
+                    title: 'Tail Emission',
+                    text: 'Bitcoin\'s block reward halves every 4 years and will eventually reach zero, making the network dependent on transaction fees alone. Monero has a tail emission of 0.6 XMR per block forever, ensuring miners always have incentive to secure the network.',
+                    highlight: 'Monero guarantees perpetual security. Bitcoin\'s long-term security model is unproven.'
+                }
+            ]);
+
+            Charts.createPriceChart('xmrFullChart', 'monero', { days: 365, height: 280, color: '255, 102, 0' });
+            Charts.createPriceChart('btcFullChart', 'bitcoin', { days: 365, height: 280, color: '247, 147, 26' });
+        });
+    </script>
+</body>
+</html>

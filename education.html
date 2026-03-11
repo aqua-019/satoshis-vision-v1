@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Education Center — Satoshi's Vision</title>
+    <meta name="description" content="Understanding Bitcoin's privacy problem and Monero's solution. From the cypherpunk origins to ring signatures, stealth addresses, and RingCT.">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+    <!-- Design System -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/generative.css">
+
+    <style>
+        /* === Page-specific: Education === */
+
+        /* Content prose styling */
+        .edu-content {
+            max-width: var(--max-width-content);
+            margin: 0 auto;
+        }
+
+        .edu-content p {
+            font-size: var(--text-base);
+            line-height: var(--leading-relaxed);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-6);
+        }
+
+        .edu-content h3 {
+            font-family: var(--font-display);
+            font-size: var(--text-xl);
+            color: var(--text-primary);
+            margin-top: var(--space-10);
+            margin-bottom: var(--space-4);
+        }
+
+        .edu-content h4 {
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            color: var(--xmr-orange);
+            margin-top: var(--space-8);
+            margin-bottom: var(--space-3);
+        }
+
+        /* Alternating section backgrounds */
+        .edu-section--alt {
+            background: var(--bg-secondary);
+        }
+
+        /* Genesis block code display */
+        .genesis-block {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-left: 3px solid var(--btc-gold);
+            padding: var(--space-6);
+            margin: var(--space-8) 0;
+            font-family: var(--font-mono);
+            font-size: var(--text-sm);
+            color: var(--btc-gold);
+            line-height: var(--leading-relaxed);
+            overflow-x: auto;
+        }
+
+        .genesis-block .label {
+            color: var(--text-tertiary);
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wide);
+            display: block;
+            margin-bottom: var(--space-2);
+        }
+
+        /* Key concept callout */
+        .concept-callout {
+            background: linear-gradient(135deg, rgba(255, 102, 0, 0.06) 0%, rgba(255, 102, 0, 0.02) 100%);
+            border: 1px solid rgba(255, 102, 0, 0.15);
+            border-left: 3px solid var(--xmr-orange);
+            padding: var(--space-6);
+            margin: var(--space-8) 0;
+        }
+
+        .concept-callout__title {
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wider);
+            color: var(--xmr-orange);
+            margin-bottom: var(--space-3);
+        }
+
+        .concept-callout__text {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+
+        /* Warning/danger callout */
+        .danger-callout {
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.06) 0%, rgba(255, 71, 87, 0.02) 100%);
+            border: 1px solid rgba(255, 71, 87, 0.15);
+            border-left: 3px solid var(--danger);
+            padding: var(--space-6);
+            margin: var(--space-8) 0;
+        }
+
+        .danger-callout__title {
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            text-transform: uppercase;
+            letter-spacing: var(--tracking-wider);
+            color: var(--danger);
+            margin-bottom: var(--space-3);
+        }
+
+        .danger-callout__text {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+
+        /* Upgrade list */
+        .upgrade-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-4);
+            margin: var(--space-6) 0;
+        }
+
+        .upgrade-item {
+            display: flex;
+            gap: var(--space-4);
+            padding: var(--space-4) var(--space-5);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            transition: border-color var(--duration-fast) var(--ease-default);
+        }
+
+        .upgrade-item:hover {
+            border-color: var(--border-accent);
+        }
+
+        .upgrade-item__icon {
+            font-size: 1.25rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .upgrade-item__content {
+            flex: 1;
+        }
+
+        .upgrade-item__name {
+            font-family: var(--font-display);
+            font-size: var(--text-base);
+            color: var(--text-primary);
+            margin-bottom: var(--space-1);
+        }
+
+        .upgrade-item__desc {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+
+        .upgrade-item__badge {
+            flex-shrink: 0;
+            align-self: center;
+        }
+
+        /* Self-custody principles grid */
+        .custody-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-6);
+            margin: var(--space-8) 0;
+        }
+
+        .custody-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-subtle);
+            padding: var(--space-6);
+            border-top: 3px solid var(--xmr-orange);
+            transition: all var(--duration-normal) var(--ease-default);
+        }
+
+        .custody-card:hover {
+            border-color: var(--border-accent);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .custody-card__number {
+            font-family: var(--font-mono);
+            font-size: var(--text-xs);
+            color: var(--xmr-orange);
+            letter-spacing: var(--tracking-wider);
+            margin-bottom: var(--space-3);
+        }
+
+        .custody-card__title {
+            font-family: var(--font-display);
+            font-size: var(--text-lg);
+            color: var(--text-primary);
+            margin-bottom: var(--space-3);
+        }
+
+        .custody-card__text {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: var(--leading-relaxed);
+        }
+
+        /* CTA banner */
+        .edu-cta {
+            text-align: center;
+            padding: var(--space-16) var(--space-8);
+            background: radial-gradient(ellipse at center, rgba(255, 102, 0, 0.06) 0%, transparent 70%);
+        }
+
+        .edu-cta__title {
+            font-family: var(--font-display);
+            font-size: var(--text-2xl);
+            margin-bottom: var(--space-4);
+        }
+
+        .edu-cta__text {
+            font-size: var(--text-lg);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto var(--space-8);
+            line-height: var(--leading-relaxed);
+        }
+
+        .edu-cta__actions {
+            display: flex;
+            gap: var(--space-4);
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- Particle Background -->
+    <canvas id="particles" class="particles-canvas"></canvas>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav__inner">
+            <a href="index.html" class="nav__logo">Satoshi's Vision</a>
+            <div class="nav__links">
+                <a href="index.html" class="nav__link">Home</a>
+                <a href="education.html" class="nav__link nav__link--active">Education</a>
+                <a href="xmr-vs-btc.html" class="nav__link">XMR vs BTC</a>
+                <a href="xmr-vs-stablecoins.html" class="nav__link">vs Stablecoins</a>
+                <a href="ecosystem.html" class="nav__link">Ecosystem</a>
+                <a href="timeline.html" class="nav__link">Timeline</a>
+                <a href="quotes.html" class="nav__link">Quotes</a>
+                <a href="secrets.html" class="nav__link">Secrets</a>
+                <a href="bottom-line.html" class="nav__link">Analysis</a>
+                <a href="hold-monero.html" class="nav__link nav__link--cta">Get XMR</a>
+            </div>
+            <button class="nav__hamburger" onclick="App.toggleMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="nav__mobile" id="mobileMenu">
+        <a href="index.html" onclick="App.closeMenu()">Home</a>
+        <a href="education.html" onclick="App.closeMenu()">Education</a>
+        <a href="xmr-vs-btc.html" onclick="App.closeMenu()">XMR vs BTC</a>
+        <a href="xmr-vs-stablecoins.html" onclick="App.closeMenu()">vs Stablecoins</a>
+        <a href="ecosystem.html" onclick="App.closeMenu()">Ecosystem</a>
+        <a href="timeline.html" onclick="App.closeMenu()">Timeline</a>
+        <a href="quotes.html" onclick="App.closeMenu()">Quotes</a>
+        <a href="secrets.html" onclick="App.closeMenu()">Secrets</a>
+        <a href="bottom-line.html" onclick="App.closeMenu()">Analysis</a>
+        <a href="hold-monero.html" onclick="App.closeMenu()">Get XMR</a>
+    </div>
+
+    <!-- Price Ticker -->
+    <div class="ticker">
+        <div class="ticker__track"></div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <span class="hero__eyebrow">Learn</span>
+        <h1 class="hero__title">
+            <span class="text-gradient">Education Center</span>
+        </h1>
+        <p class="hero__subtitle">
+            Understanding Bitcoin's privacy problem and Monero's solution. Trace the path from
+            Satoshi's original cypherpunk vision to the technology that finally realized it.
+        </p>
+        <div class="hero__actions">
+            <a href="#cypherpunk" class="btn btn--primary btn--lg">Start Learning</a>
+            <a href="#how-monero-works" class="btn btn--secondary btn--lg">How Monero Works</a>
+        </div>
+    </section>
+
+    <!-- Section 1: Bitcoin Origin Story -->
+    <section id="cypherpunk" class="section">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Origins</span>
+                <h2 class="section-header__title">Bitcoin: A Cypherpunk's Dream</h2>
+                <p class="section-header__subtitle">The whitepaper that launched a revolution — and the privacy features its creator envisioned but never built.</p>
+            </div>
+
+            <div class="edu-content" data-animate data-delay="100">
+                <p>
+                    On October 31, 2008, a pseudonymous figure named Satoshi Nakamoto published a nine-page paper
+                    titled "Bitcoin: A Peer-to-Peer Electronic Cash System." It was sent to the cypherpunks mailing
+                    list — a community that had spent decades trying to build digital money free from government control.
+                </p>
+
+                <p>
+                    Previous attempts had failed. David Chaum's DigiCash went bankrupt. Adam Back's Hashcash solved
+                    proof-of-work but not digital scarcity. Wei Dai's b-money and Nick Szabo's Bit Gold remained
+                    theoretical. Satoshi's breakthrough was combining these ideas into a single working system:
+                    a decentralized ledger secured by proof-of-work, with no trusted third party.
+                </p>
+
+                <h3>The Genesis Block</h3>
+                <p>
+                    On January 3, 2009, Satoshi mined the first Bitcoin block. Embedded in its coinbase transaction
+                    was a message — a timestamp proving the block wasn't pre-mined, and a statement of purpose:
+                </p>
+
+                <div class="genesis-block" data-animate>
+                    <span class="label">Block #0 — Coinbase Data</span>
+                    The Times 03/Jan/2009 Chancellor on brink of second bailout for banks
+                </div>
+
+                <p>
+                    This wasn't just a timestamp. It was a manifesto. The entire point of Bitcoin was to create
+                    money that couldn't be debased, seized, or censored by governments and banks. Satoshi was
+                    building a tool for financial sovereignty.
+                </p>
+
+                <h3>Satoshi's Privacy Concerns</h3>
+                <p>
+                    The whitepaper itself dedicates an entire section to privacy. Satoshi acknowledged that Bitcoin's
+                    transparent ledger was a trade-off, not an ideal. Section 10 of the whitepaper describes a privacy
+                    model based on keeping public keys anonymous — but Satoshi knew this wasn't enough.
+                </p>
+
+                <div class="quote" data-animate>
+                    <p class="quote__text">
+                        "The risk is that if the owner of a key is revealed, linking could reveal other
+                        transactions that belonged to the same owner."
+                    </p>
+                    <span class="quote__source">Satoshi Nakamoto — Bitcoin Whitepaper, Section 10</span>
+                </div>
+
+                <p>
+                    In August 2010, Satoshi went further on BitcoinTalk, describing a system of "blinded variations
+                    of a public key" that could receive payments without linkage — essentially describing what would
+                    later become stealth addresses. Four years before Monero existed, Satoshi had sketched the
+                    blueprint for its core privacy technology.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: The Privacy Problem -->
+    <section id="privacy-problem" class="section edu-section--alt">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">The Flaw</span>
+                <h2 class="section-header__title">The Privacy Problem</h2>
+                <p class="section-header__subtitle">Why Bitcoin's transparency became its greatest vulnerability — and a multi-billion dollar surveillance industry.</p>
+            </div>
+
+            <div class="edu-content" data-animate data-delay="100">
+                <p>
+                    Bitcoin's blockchain is a perfectly transparent record of every transaction ever made. Every send,
+                    every receive, every amount — permanently recorded and publicly visible. What was designed as a
+                    feature for auditability became the foundation of an entire surveillance industry.
+                </p>
+
+                <h3>Chain Analysis: The Surveillance Machine</h3>
+                <p>
+                    Companies like Chainalysis, Elliptic, and CipherTrace built billion-dollar businesses by mapping
+                    Bitcoin's transparent ledger to real-world identities. Their tools are used by governments,
+                    exchanges, and law enforcement to trace every satoshi.
+                </p>
+
+                <div class="danger-callout" data-animate>
+                    <div class="danger-callout__title">How You Lose Privacy on Bitcoin</div>
+                    <p class="danger-callout__text">
+                        When you buy BTC on an exchange with KYC, your identity is permanently linked to that address.
+                        Every subsequent transaction — who you pay, what you buy, how much you hold — is visible to
+                        anyone with access to a block explorer. Chain analysis firms connect the dots using address
+                        clustering, change detection, and transaction graph analysis. Once you're identified, your
+                        entire financial history is an open book.
+                    </p>
+                </div>
+
+                <h3>Real-World Consequences</h3>
+                <p>
+                    This isn't theoretical. Activists have had donations traced and their supporters identified.
+                    Businesses have had their entire customer payment histories exposed. Individuals have been
+                    targeted for theft based on publicly visible balances. The "pseudonymous" promise of Bitcoin
+                    evaporated the moment exchanges required identity verification.
+                </p>
+
+                <div id="privacyStats" data-animate data-delay="200"></div>
+
+                <div class="concept-callout" data-animate>
+                    <div class="concept-callout__title">Key Insight</div>
+                    <p class="concept-callout__text">
+                        Privacy is not about hiding criminal activity. It is a fundamental requirement for fungibility —
+                        the property that makes money work. If any coin can be traced, any coin can be blacklisted.
+                        If any coin can be blacklisted, not all coins are equal. And if not all coins are equal,
+                        it isn't money — it's a surveillance tool.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Bitcoin Protocol Upgrades -->
+    <section id="btc-upgrades" class="section">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Upgrades</span>
+                <h2 class="section-header__title">Bitcoin Protocol Upgrades</h2>
+                <p class="section-header__subtitle">What Taproot, Lightning, and other upgrades added to Bitcoin — and the privacy gaps they still didn't close.</p>
+            </div>
+
+            <div class="edu-content" data-animate data-delay="100">
+                <p>
+                    Bitcoin has evolved since 2009. Major protocol upgrades have improved scalability, scripting
+                    capabilities, and even some aspects of privacy. But none of them solve the fundamental problem:
+                    Bitcoin's base layer remains fully transparent.
+                </p>
+
+                <div class="upgrade-list">
+                    <div class="upgrade-item" data-animate data-delay="100">
+                        <span class="upgrade-item__icon">&#x1F332;</span>
+                        <div class="upgrade-item__content">
+                            <div class="upgrade-item__name">Taproot (2021)</div>
+                            <p class="upgrade-item__desc">
+                                Introduced Schnorr signatures and MAST (Merkelized Alternative Script Trees), making
+                                complex transactions (multisig, timelocks) look identical to simple ones on-chain.
+                                A meaningful improvement — but it only hides the type of spending condition, not the
+                                sender, receiver, or amount.
+                            </p>
+                        </div>
+                        <span class="upgrade-item__badge"><span class="badge badge--info">Partial</span></span>
+                    </div>
+
+                    <div class="upgrade-item" data-animate data-delay="200">
+                        <span class="upgrade-item__icon">&#x26A1;</span>
+                        <div class="upgrade-item__content">
+                            <div class="upgrade-item__name">Lightning Network</div>
+                            <p class="upgrade-item__desc">
+                                Moves transactions off-chain into payment channels, providing speed and some privacy
+                                for intermediate hops. But opening and closing channels are visible on-chain, routing
+                                nodes can observe payment flows, and channel balances can be probed by adversaries.
+                            </p>
+                        </div>
+                        <span class="upgrade-item__badge"><span class="badge badge--info">Partial</span></span>
+                    </div>
+
+                    <div class="upgrade-item" data-animate data-delay="300">
+                        <span class="upgrade-item__icon">&#x1F500;</span>
+                        <div class="upgrade-item__content">
+                            <div class="upgrade-item__name">CoinJoin / PayJoin</div>
+                            <p class="upgrade-item__desc">
+                                Collaborative transaction techniques that mix inputs from multiple users. Provides
+                                plausible deniability but requires active participation, can be identified on-chain
+                                by their distinctive patterns, and some exchanges flag CoinJoin outputs as suspicious.
+                            </p>
+                        </div>
+                        <span class="upgrade-item__badge"><span class="badge badge--danger">Opt-in</span></span>
+                    </div>
+
+                    <div class="upgrade-item" data-animate data-delay="400">
+                        <span class="upgrade-item__icon">&#x1F6E1;</span>
+                        <div class="upgrade-item__content">
+                            <div class="upgrade-item__name">SegWit (2017)</div>
+                            <p class="upgrade-item__desc">
+                                Segregated Witness fixed transaction malleability and increased effective block size.
+                                Important for enabling Lightning and future upgrades, but added no privacy features
+                                whatsoever.
+                            </p>
+                        </div>
+                        <span class="upgrade-item__badge"><span class="badge badge--danger">None</span></span>
+                    </div>
+                </div>
+
+                <div class="concept-callout" data-animate>
+                    <div class="concept-callout__title">The Core Issue</div>
+                    <p class="concept-callout__text">
+                        All of Bitcoin's privacy improvements are opt-in. Users must actively choose to use them, and
+                        the very act of opting in makes them stand out. When privacy is optional, the overwhelming
+                        majority don't use it — and those who do become suspicious by default. True privacy requires
+                        it to be the default for everyone.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Monero — Satoshi's Unfinished Work -->
+    <section id="monero-origin" class="section edu-section--alt">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">The Successor</span>
+                <h2 class="section-header__title">Monero: Satoshi's Unfinished Work</h2>
+                <p class="section-header__subtitle">How CryptoNote implemented the privacy features Satoshi described but never built.</p>
+            </div>
+
+            <div class="edu-content" data-animate data-delay="100">
+                <p>
+                    In December 2012, a pseudonymous author named Nicolas van Saberhagen published the CryptoNote
+                    whitepaper. It described a cryptocurrency protocol with built-in privacy: ring signatures to
+                    obscure senders, one-time stealth addresses to protect receivers, and unlinkable transactions
+                    by default. It was exactly what Satoshi had sketched on BitcoinTalk.
+                </p>
+
+                <p>
+                    On April 18, 2014, Monero launched as a fork of Bytecoin (the first CryptoNote implementation),
+                    after the community discovered that Bytecoin had been secretly pre-mined. Monero was a fair
+                    launch — no pre-mine, no ICO, no founder's reward. It was built by the community, for the
+                    community, following the same ethos that drove Bitcoin's creation.
+                </p>
+
+                <h3>The Direct Line from Satoshi</h3>
+                <p>
+                    Satoshi's 2010 description of "blinded variations of a public key" that could receive payments
+                    without being linked to each other is a near-perfect description of Monero's stealth addresses.
+                    The CryptoNote whitepaper even cites Bitcoin's privacy limitations as its primary motivation.
+                    Monero didn't diverge from Satoshi's vision — it completed it.
+                </p>
+
+                <div class="quote" data-animate>
+                    <p class="quote__text">
+                        "What we need is a way to generate additional blinded variations of a public key. The blinded
+                        variations would have the same properties as a public key and could be used to receive payments."
+                    </p>
+                    <span class="quote__source">Satoshi Nakamoto — BitcoinTalk, August 2010</span>
+                </div>
+
+                <h3>Fair Launch Philosophy</h3>
+                <p>
+                    Like Bitcoin, Monero had no pre-mine, no venture capital round, and no corporate entity behind it.
+                    Development is funded by the Community Crowdfunding System (CCS), where anyone can propose and
+                    fund work. The project has no CEO, no marketing budget, and no headquarters. It is the most
+                    community-driven major cryptocurrency since Bitcoin itself.
+                </p>
+
+                <div id="moneroOriginStats" data-animate data-delay="200"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: How Monero Works -->
+    <section id="how-monero-works" class="section">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Technology</span>
+                <h2 class="section-header__title">How Monero Works</h2>
+                <p class="section-header__subtitle">Three layers of privacy technology that make every transaction private by default.</p>
+            </div>
+
+            <div class="edu-content" data-animate data-delay="100">
+                <p>
+                    Monero's privacy is not a single feature bolted on after the fact. It is a system of three
+                    interlocking technologies, each protecting a different aspect of a transaction. Together, they
+                    ensure that senders, receivers, and amounts are all hidden by default — for every user, in
+                    every transaction.
+                </p>
+            </div>
+
+            <div id="privacyCards" data-animate data-delay="200"></div>
+
+            <div class="edu-content" style="margin-top: var(--space-12);" data-animate data-delay="300">
+                <h3>Beyond the Core: FCMP++</h3>
+                <p>
+                    Monero's next major upgrade — Full-Chain Membership Proofs (FCMP++) — will replace ring signatures
+                    with a system where the anonymity set includes every output ever created on the blockchain. Instead
+                    of hiding among 16 decoys, your transaction will be hidden among millions. This is the largest
+                    privacy upgrade in Monero's history and represents the cutting edge of cryptographic privacy.
+                </p>
+
+                <div class="concept-callout" data-animate>
+                    <div class="concept-callout__title">Default Privacy Matters</div>
+                    <p class="concept-callout__text">
+                        When privacy is default, there is no "opt-in" that flags you as suspicious. Every Monero
+                        transaction uses ring signatures, stealth addresses, and RingCT — there is no "transparent"
+                        mode. This means using privacy features doesn't make you stand out, because everyone uses them.
+                        The anonymity set is the entire network.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 6: Self-Custody Principles -->
+    <section id="self-custody" class="section edu-section--alt">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Sovereignty</span>
+                <h2 class="section-header__title">Self-Custody Principles</h2>
+                <p class="section-header__subtitle">Why holding your own keys is the foundation of financial sovereignty — and why it matters more with Monero.</p>
+            </div>
+
+            <div class="edu-content" data-animate data-delay="100">
+                <p>
+                    "Not your keys, not your coins" isn't just a slogan — it's the core principle that makes
+                    cryptocurrency different from traditional finance. When you hold your own private keys, no
+                    government, company, or exchange can freeze, seize, or censor your funds. Self-custody is
+                    the entire point.
+                </p>
+
+                <p>
+                    With Monero, self-custody is even more important. Exchanges that hold your XMR can see your
+                    deposit and withdrawal history. They can comply with subpoenas and share your data with chain
+                    analysis firms. The moment your coins leave your wallet and enter an exchange, you lose the
+                    privacy that Monero provides. Self-custody preserves the full privacy stack.
+                </p>
+            </div>
+
+            <div class="custody-grid">
+                <div class="custody-card" data-animate data-delay="100">
+                    <div class="custody-card__number">Principle 01</div>
+                    <h4 class="custody-card__title">Control Your Keys</h4>
+                    <p class="custody-card__text">
+                        Your seed phrase is your money. Write it down on paper, store it securely offline, and never
+                        share it with anyone. Hardware wallets and air-gapped devices provide the strongest protection.
+                    </p>
+                </div>
+
+                <div class="custody-card" data-animate data-delay="200">
+                    <div class="custody-card__number">Principle 02</div>
+                    <h4 class="custody-card__title">Minimize Exchange Exposure</h4>
+                    <p class="custody-card__text">
+                        Use exchanges only for acquisition. Withdraw to your own wallet immediately. The longer your
+                        coins sit on an exchange, the longer a third party has control — and visibility — over your funds.
+                    </p>
+                </div>
+
+                <div class="custody-card" data-animate data-delay="300">
+                    <div class="custody-card__number">Principle 03</div>
+                    <h4 class="custody-card__title">Run Your Own Node</h4>
+                    <p class="custody-card__text">
+                        Connecting to remote nodes exposes your IP and transaction patterns. Running your own Monero
+                        node ensures maximum privacy and helps strengthen the network's decentralization.
+                    </p>
+                </div>
+
+                <div class="custody-card" data-animate data-delay="400">
+                    <div class="custody-card__number">Principle 04</div>
+                    <h4 class="custody-card__title">Verify, Don't Trust</h4>
+                    <p class="custody-card__text">
+                        Use open-source wallets with reproducible builds. Verify software signatures before installing.
+                        The ethos of cryptocurrency is trustlessness — apply it to your tools as well as your money.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Continue Learning CTA -->
+    <section class="edu-cta" data-animate>
+        <div class="container">
+            <h2 class="edu-cta__title text-gradient">Continue Your Journey</h2>
+            <p class="edu-cta__text">
+                Now that you understand the foundations, dive deeper into the data, the history, and the ecosystem.
+            </p>
+            <div class="edu-cta__actions">
+                <a href="xmr-vs-btc.html" class="btn btn--primary btn--lg">Compare XMR vs BTC</a>
+                <a href="timeline.html" class="btn btn--secondary btn--lg">View Timeline</a>
+                <a href="secrets.html" class="btn btn--secondary btn--lg">Satoshi's Secret Threads</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__inner">
+            <div class="footer__grid">
+                <div class="footer__brand">
+                    <div class="footer__brand-name">Satoshi's Vision</div>
+                    <p class="footer__brand-desc">
+                        An educational archive exploring the evolution from Bitcoin to Monero.
+                        Documenting Satoshi's privacy vision and the technology that realized it.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Learn</h4>
+                    <div class="footer__links">
+                        <a href="education.html" class="footer__link">Education Center</a>
+                        <a href="secrets.html" class="footer__link">Secret Threads</a>
+                        <a href="quotes.html" class="footer__link">Quote Archive</a>
+                        <a href="timeline.html" class="footer__link">Timeline</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Compare</h4>
+                    <div class="footer__links">
+                        <a href="xmr-vs-btc.html" class="footer__link">XMR vs BTC</a>
+                        <a href="xmr-vs-stablecoins.html" class="footer__link">XMR vs Stablecoins</a>
+                        <a href="bottom-line.html" class="footer__link">The Bottom Line</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Ecosystem</h4>
+                    <div class="footer__links">
+                        <a href="ecosystem.html" class="footer__link">Ecosystem Map</a>
+                        <a href="hold-monero.html" class="footer__link">Get XMR</a>
+                        <a href="https://getmonero.org" target="_blank" rel="noopener" class="footer__link">GetMonero.org</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <span class="footer__copy">Educational purposes only. Not financial advice.</span>
+                <span class="footer__disclaimer">
+                    This project is independent and not affiliated with any cryptocurrency project.
+                    Data provided by CoinGecko. MIT License.
+                </span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/app.js"></script>
+    <script src="js/components/generative-ui.js"></script>
+    <script src="js/components/charts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Particle background
+            GenerativeUI.createParticles('particles', { count: 35, speed: 0.2 });
+
+            // Privacy problem stats
+            GenerativeUI.createStatsDashboard('privacyStats', [
+                { icon: '\uD83D\uDD0D', value: '$4.5B+', label: 'Chain Analysis Market', sublabel: 'Annual industry revenue', color: 'var(--danger)' },
+                { icon: '\uD83C\uDFDB', value: '100+', label: 'Government Contracts', sublabel: 'IRS, FBI, DEA, and more', color: 'var(--warning)' },
+                { icon: '\uD83D\uDCCA', value: '99.5%', label: 'BTC Traceable', sublabel: 'Transactions can be followed', color: 'var(--danger)' },
+                { icon: '\u26D3', value: '850M+', label: 'Addresses Clustered', sublabel: 'Linked to real identities', color: 'var(--info)' },
+            ]);
+
+            // Monero origin stats
+            GenerativeUI.createStatsDashboard('moneroOriginStats', [
+                { icon: '\uD83D\uDCC5', value: 'Apr 2014', label: 'Launch Date', sublabel: 'Fair launch, no pre-mine', color: 'var(--xmr-orange)' },
+                { icon: '\uD83D\uDCDC', value: 'CryptoNote', label: 'Protocol Base', sublabel: 'Nicolas van Saberhagen', color: 'var(--btc-gold)' },
+                { icon: '\uD83D\uDC65', value: '500+', label: 'Contributors', sublabel: 'Community-driven development', color: 'var(--success)' },
+                { icon: '\uD83D\uDCB0', value: '$0', label: 'ICO / Pre-mine', sublabel: 'No founder reward', color: 'var(--purple)' },
+            ]);
+
+            // How Monero Works — privacy technology cards
+            GenerativeUI.createInfoCards('privacyCards', [
+                {
+                    icon: '\uD83D\uDD10',
+                    title: 'Ring Signatures',
+                    text: 'When you send XMR, your transaction is grouped with decoy outputs from the blockchain. An observer sees a "ring" of possible signers but cannot determine which one actually authorized the transaction. This protects sender privacy.',
+                    highlight: 'Current ring size: 16 decoys per transaction. FCMP++ will expand this to the entire blockchain.'
+                },
+                {
+                    icon: '\uD83D\uDC7B',
+                    title: 'Stealth Addresses',
+                    text: 'Every time you receive Monero, the sender generates a unique one-time address on your behalf. Even if someone knows your public address, they cannot scan the blockchain to see incoming payments. This protects receiver privacy.',
+                    highlight: 'This is exactly the "blinded variation of a public key" that Satoshi described in 2010.'
+                },
+                {
+                    icon: '\uD83D\uDCB5',
+                    title: 'RingCT (Confidential Transactions)',
+                    text: 'Transaction amounts are hidden using Pedersen commitments and range proofs. The network can mathematically verify that inputs equal outputs (no inflation) without revealing the actual values. This protects amount privacy.',
+                    highlight: 'Enabled by default since January 2017. Every Monero transaction hides its amount.'
+                }
+            ]);
+        });
+    </script>
+</body>
+</html>

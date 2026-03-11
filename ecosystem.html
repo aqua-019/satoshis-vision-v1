@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monero Ecosystem — Wallets, Exchanges, Tools & Community | Satoshi's Vision</title>
+    <meta name="description" content="Navigate the complete Monero ecosystem — wallets, decentralized exchanges, mining tools, development resources, and community.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/generative.css">
+</head>
+<body>
+    <canvas id="particles" class="particles-canvas"></canvas>
+
+    <nav class="nav">
+        <div class="nav__inner">
+            <a href="index.html" class="nav__logo">Satoshi's Vision</a>
+            <div class="nav__links">
+                <a href="index.html" class="nav__link">Home</a>
+                <a href="education.html" class="nav__link">Education</a>
+                <a href="xmr-vs-btc.html" class="nav__link">XMR vs BTC</a>
+                <a href="xmr-vs-stablecoins.html" class="nav__link">vs Stablecoins</a>
+                <a href="ecosystem.html" class="nav__link">Ecosystem</a>
+                <a href="timeline.html" class="nav__link">Timeline</a>
+                <a href="quotes.html" class="nav__link">Quotes</a>
+                <a href="secrets.html" class="nav__link">Secrets</a>
+                <a href="bottom-line.html" class="nav__link">Analysis</a>
+                <a href="hold-monero.html" class="nav__link nav__link--cta">Get XMR</a>
+            </div>
+            <button class="nav__hamburger" onclick="App.toggleMenu()" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="nav__mobile" id="mobileMenu">
+        <a href="index.html" onclick="App.closeMenu()">Home</a>
+        <a href="education.html" onclick="App.closeMenu()">Education</a>
+        <a href="xmr-vs-btc.html" onclick="App.closeMenu()">XMR vs BTC</a>
+        <a href="xmr-vs-stablecoins.html" onclick="App.closeMenu()">vs Stablecoins</a>
+        <a href="ecosystem.html" onclick="App.closeMenu()">Ecosystem</a>
+        <a href="timeline.html" onclick="App.closeMenu()">Timeline</a>
+        <a href="quotes.html" onclick="App.closeMenu()">Quotes</a>
+        <a href="secrets.html" onclick="App.closeMenu()">Secrets</a>
+        <a href="bottom-line.html" onclick="App.closeMenu()">Analysis</a>
+        <a href="hold-monero.html" onclick="App.closeMenu()">Get XMR</a>
+    </div>
+
+    <div class="ticker"><div class="ticker__track"></div></div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <span class="hero__eyebrow">Explore the Network</span>
+        <h1 class="hero__title"><span class="text-gradient">Monero Ecosystem</span></h1>
+        <p class="hero__subtitle">
+            The complete map of Monero infrastructure — wallets, exchanges, mining, development,
+            and community resources. Everything you need to participate in private digital cash.
+        </p>
+    </section>
+
+    <!-- Network Stats -->
+    <section class="section">
+        <div class="container">
+            <div id="ecosystemStats" data-animate></div>
+        </div>
+    </section>
+
+    <!-- Wallets -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Store</span>
+                <h2 class="section-header__title">Wallets</h2>
+                <p class="section-header__subtitle">Self-custody is fundamental. These wallets give you full control of your XMR.</p>
+            </div>
+            <div id="wallets" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Exchanges & Acquiring -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Acquire</span>
+                <h2 class="section-header__title">Exchanges &amp; Swaps</h2>
+                <p class="section-header__subtitle">Get XMR through decentralized and non-KYC methods when possible.</p>
+            </div>
+            <div id="exchanges" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Mining -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Mine</span>
+                <h2 class="section-header__title">Mining Tools</h2>
+                <p class="section-header__subtitle">Monero's RandomX algorithm means you can mine with any CPU. No ASICs needed.</p>
+            </div>
+            <div id="mining" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Development -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Build</span>
+                <h2 class="section-header__title">Development &amp; Research</h2>
+                <p class="section-header__subtitle">Open-source tools, libraries, and resources for Monero developers.</p>
+            </div>
+            <div id="development" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Community -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Connect</span>
+                <h2 class="section-header__title">Community &amp; Education</h2>
+                <p class="section-header__subtitle">Join the community, learn, and contribute to the Monero ecosystem.</p>
+            </div>
+            <div id="community" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Payment Processors & Merchants -->
+    <section class="section">
+        <div class="container">
+            <div class="section-header" data-animate>
+                <span class="section-header__eyebrow">Spend</span>
+                <h2 class="section-header__title">Payments &amp; Merchants</h2>
+                <p class="section-header__subtitle">Accept and spend Monero. Private commerce is growing.</p>
+            </div>
+            <div id="merchants" data-animate data-delay="200"></div>
+        </div>
+    </section>
+
+    <!-- Live XMR Price -->
+    <section class="section" style="background:var(--bg-secondary)">
+        <div class="container">
+            <div class="section-header" style="text-align:center" data-animate>
+                <span class="section-header__eyebrow">Market</span>
+                <h2 class="section-header__title">XMR Price</h2>
+            </div>
+            <div style="max-width:600px;margin:0 auto" data-animate data-delay="100">
+                <div id="xmrPriceCard"></div>
+            </div>
+            <div style="margin-top:var(--space-6)" data-animate data-delay="200">
+                <div id="xmrChart"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer__inner">
+            <div class="footer__grid">
+                <div class="footer__brand">
+                    <div class="footer__brand-name">Satoshi's Vision</div>
+                    <p class="footer__brand-desc">An educational archive exploring the evolution from Bitcoin to Monero.</p>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Learn</h4>
+                    <div class="footer__links">
+                        <a href="education.html" class="footer__link">Education</a>
+                        <a href="secrets.html" class="footer__link">Secret Threads</a>
+                        <a href="quotes.html" class="footer__link">Quotes</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Compare</h4>
+                    <div class="footer__links">
+                        <a href="xmr-vs-btc.html" class="footer__link">XMR vs BTC</a>
+                        <a href="xmr-vs-stablecoins.html" class="footer__link">XMR vs Stablecoins</a>
+                        <a href="bottom-line.html" class="footer__link">The Bottom Line</a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="footer__col-title">Ecosystem</h4>
+                    <div class="footer__links">
+                        <a href="ecosystem.html" class="footer__link">Ecosystem Map</a>
+                        <a href="hold-monero.html" class="footer__link">Get XMR</a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer__bottom">
+                <span class="footer__copy">Educational purposes only. Not financial advice.</span>
+                <span class="footer__disclaimer">Data provided by CoinGecko. MIT License.</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/app.js"></script>
+    <script src="js/components/generative-ui.js"></script>
+    <script src="js/components/charts.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            GenerativeUI.createParticles('particles', { count: 30, speed: 0.15 });
+
+            // Ecosystem Stats
+            GenerativeUI.createStatsDashboard('ecosystemStats', [
+                { icon: '\uD83D\uDCBC', value: '10+', label: 'Wallets', sublabel: 'Desktop, mobile, hardware', color: 'var(--xmr-orange)' },
+                { icon: '\uD83D\uDD04', value: '20+', label: 'Exchanges & Swaps', sublabel: 'DEX, P2P, atomic swaps', color: 'var(--success)' },
+                { icon: '\u26CF', value: '5+', label: 'Mining Pools', sublabel: 'CPU mining with RandomX', color: 'var(--info)' },
+                { icon: '\uD83D\uDC65', value: '100K+', label: 'Community Members', sublabel: 'Reddit, Matrix, IRC', color: 'var(--purple)' },
+            ]);
+
+            // Wallets
+            GenerativeUI.createEcosystemGrid('wallets', [
+                { name: 'Monero GUI Wallet', icon: '\uD83D\uDDA5', description: 'Official desktop wallet with full node support. The reference implementation for Monero.', tags: ['Desktop', 'Official'], url: 'https://getmonero.org/downloads/' },
+                { name: 'Monero CLI Wallet', icon: '\u2328', description: 'Command-line wallet for advanced users. Full node, maximum control.', tags: ['Desktop', 'Official', 'Advanced'], url: 'https://getmonero.org/downloads/' },
+                { name: 'Feather Wallet', icon: '\uD83E\uDEB6', description: 'Lightweight desktop wallet with Tor support, coin control, and advanced privacy features.', tags: ['Desktop', 'Light'], url: 'https://featherwallet.org' },
+                { name: 'Cake Wallet', icon: '\uD83C\uDF70', description: 'Mobile wallet for iOS and Android. Supports XMR, BTC, LTC with built-in exchange.', tags: ['Mobile', 'Multi-coin'], url: 'https://cakewallet.com' },
+                { name: 'Monerujo', icon: '\uD83D\uDCF1', description: 'Android-only Monero wallet. Open source, supports multiple accounts and subaddresses.', tags: ['Mobile', 'Android'], url: 'https://monerujo.io' },
+                { name: 'MyMonero', icon: '\uD83C\uDF10', description: 'Web and mobile wallet. Quick setup, no node required. Convenient but less private than full node.', tags: ['Web', 'Mobile', 'Light'], url: 'https://mymonero.com' },
+                { name: 'Ledger (with Monero)', icon: '\uD83D\uDD10', description: 'Hardware wallet support via Ledger Nano S/X. Use with Monero GUI for cold storage.', tags: ['Hardware', 'Cold Storage'], url: 'https://ledger.com' },
+                { name: 'Trezor (with Monero)', icon: '\uD83D\uDD10', description: 'Hardware wallet support via Trezor Model T. Use with Monero GUI or CLI.', tags: ['Hardware', 'Cold Storage'], url: 'https://trezor.io' },
+            ]);
+
+            // Exchanges
+            GenerativeUI.createEcosystemGrid('exchanges', [
+                { name: 'Haveno', icon: '\uD83D\uDD04', description: 'Decentralized exchange (DEX) for Monero. P2P trading with no KYC. The successor to Bisq for XMR.', tags: ['DEX', 'No KYC', 'P2P'], url: 'https://haveno.exchange' },
+                { name: 'Atomic Swaps', icon: '\u269B', description: 'Trustless BTC-to-XMR swaps using atomic swap protocol. No intermediary needed.', tags: ['DEX', 'No KYC', 'Trustless'], url: 'https://github.com/comit-network/xmr-btc-swap' },
+                { name: 'LocalMonero (Legacy)', icon: '\uD83C\uDF0D', description: 'The legendary P2P marketplace shut down in 2024. Haveno carries the torch.', tags: ['P2P', 'Legacy'] },
+                { name: 'TradeOgre', icon: '\uD83E\uDD8D', description: 'Small exchange that still lists XMR. No KYC for small amounts. Limited pairs.', tags: ['CEX', 'Low KYC'], url: 'https://tradeogre.com' },
+                { name: 'ChangeNOW', icon: '\u26A1', description: 'Instant swap service. Exchange BTC, ETH, and 200+ coins to XMR with no account needed.', tags: ['Swap', 'No Account'], url: 'https://changenow.io' },
+                { name: 'Trocador', icon: '\uD83D\uDD00', description: 'Exchange aggregator that routes through multiple swap providers for best rates and privacy.', tags: ['Aggregator', 'Privacy'], url: 'https://trocador.app' },
+                { name: 'Majestic Bank', icon: '\uD83C\uDFE6', description: 'No-account crypto exchange focused on privacy. Supports XMR, BTC, LTC, and more.', tags: ['Swap', 'No Account', 'Privacy'], url: 'https://majesticbank.sc' },
+                { name: 'Bisq', icon: '\uD83D\uDD12', description: 'Decentralized exchange with XMR support. Desktop P2P trading with escrow.', tags: ['DEX', 'P2P'], url: 'https://bisq.network' },
+            ]);
+
+            // Mining
+            GenerativeUI.createEcosystemGrid('mining', [
+                { name: 'XMRig', icon: '\u26CF', description: 'The most popular Monero mining software. High-performance RandomX miner for CPU and GPU.', tags: ['Miner', 'CPU', 'GPU'], url: 'https://xmrig.com' },
+                { name: 'P2Pool', icon: '\uD83C\uDF10', description: 'Decentralized mining pool with 0% fees. Mine directly to your wallet with no central pool operator.', tags: ['Pool', 'Decentralized', 'Zero Fee'], url: 'https://p2pool.io' },
+                { name: 'MoneroOcean', icon: '\uD83C\uDF0A', description: 'Mining pool that auto-switches algorithms to maximize profitability, paying out in XMR.', tags: ['Pool', 'Auto-Switch'], url: 'https://moneroocean.stream' },
+                { name: 'Gupax', icon: '\uD83D\uDC1F', description: 'GUI for P2Pool + XMRig. Easy setup for decentralized mining on any OS.', tags: ['GUI', 'Easy Setup'], url: 'https://gupax.io' },
+            ]);
+
+            // Development
+            GenerativeUI.createEcosystemGrid('development', [
+                { name: 'Monero Source', icon: '\uD83D\uDCBB', description: 'The official Monero repository. Core protocol implementation in C++.', tags: ['Core', 'C++'], url: 'https://github.com/monero-project/monero' },
+                { name: 'Monero Research Lab', icon: '\uD83D\uDD2C', description: 'Academic research arm. Publishes papers on privacy, cryptography, and protocol improvements.', tags: ['Research', 'Academic'], url: 'https://github.com/monero-project/research-lab' },
+                { name: 'FCMP++ (In Progress)', icon: '\uD83D\uDE80', description: 'Full Chain Membership Proofs — the next major privacy upgrade making every output a potential decoy.', tags: ['Upcoming', 'Privacy'], url: 'https://github.com/monero-project/monero/issues' },
+                { name: 'Monero Ecosystem', icon: '\uD83C\uDF31', description: 'Collection of community-maintained tools, libraries, and resources for building on Monero.', tags: ['Tools', 'Libraries'], url: 'https://github.com/monero-ecosystem' },
+                { name: 'monero-python', icon: '\uD83D\uDC0D', description: 'Python library for interacting with the Monero wallet and daemon RPC.', tags: ['Library', 'Python'], url: 'https://github.com/monero-ecosystem/monero-python' },
+                { name: 'monero-javascript', icon: '\uD83D\uDFE8', description: 'JavaScript/TypeScript library for Monero wallet operations.', tags: ['Library', 'JavaScript'], url: 'https://github.com/monero-ecosystem/monero-javascript' },
+            ]);
+
+            // Community
+            GenerativeUI.createEcosystemGrid('community', [
+                { name: 'r/Monero', icon: '\uD83D\uDCAC', description: 'The main Monero subreddit. 300K+ members discussing privacy, technology, and adoption.', tags: ['Reddit', 'Discussion'], url: 'https://reddit.com/r/monero' },
+                { name: 'Monero Matrix/IRC', icon: '\uD83D\uDDE3', description: 'Real-time chat with developers and community. Multiple rooms for different topics.', tags: ['Chat', 'Real-time'], url: 'https://matrix.to/#/#monero:monero.social' },
+                { name: 'GetMonero.org', icon: '\uD83C\uDF10', description: 'The official Monero website. Downloads, documentation, and community resources.', tags: ['Official', 'Docs'], url: 'https://getmonero.org' },
+                { name: 'Monero Community Workgroup', icon: '\uD83D\uDC65', description: 'Weekly community meetings, events, and coordination for Monero initiatives.', tags: ['Governance', 'Meetings'] },
+                { name: 'Moneropedia', icon: '\uD83D\uDCD6', description: 'Comprehensive encyclopedia of Monero terms, concepts, and technical details.', tags: ['Education', 'Wiki'], url: 'https://getmonero.org/resources/moneropedia/' },
+                { name: 'Monero CCS', icon: '\uD83D\uDCB0', description: 'Community Crowdfunding System. Fund development proposals and community projects.', tags: ['Funding', 'Development'], url: 'https://ccs.getmonero.org' },
+            ]);
+
+            // Merchants
+            GenerativeUI.createEcosystemGrid('merchants', [
+                { name: 'BTCPay Server', icon: '\uD83D\uDED2', description: 'Self-hosted payment processor that supports Monero. Accept XMR in your online store.', tags: ['Payment', 'Self-hosted'], url: 'https://btcpayserver.org' },
+                { name: 'MoneroPay', icon: '\uD83D\uDCB3', description: 'Simple payment gateway for accepting Monero payments on any website.', tags: ['Payment', 'Gateway'] },
+                { name: 'Monero Merchants Directory', icon: '\uD83D\uDDFA', description: 'Directory of businesses and services that accept Monero payments globally.', tags: ['Directory', 'Commerce'], url: 'https://monerica.com' },
+                { name: 'Proxy Store', icon: '\uD83C\uDFEA', description: 'Buy gift cards and vouchers with Monero. Access mainstream retailers privately.', tags: ['Gift Cards', 'Privacy'], url: 'https://proxysto.re' },
+            ]);
+
+            // Price card & chart
+            GenerativeUI.createPriceCard('xmrPriceCard', 'monero', { theme: 'xmr' });
+            Charts.createPriceChart('xmrChart', 'monero', { days: 90, height: 280, color: '255, 102, 0' });
+        });
+    </script>
+</body>
+</html>
