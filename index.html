@@ -59,7 +59,15 @@
         .nav-dropdown-menu a { display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease; }
         .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
 
-        .price-ticker { display: flex; gap: 1.5rem; font-family: var(--font-mono); font-size: 0.8rem; }
+        .price-ticker { display: flex; gap: 1.5rem; font-family: var(--font-mono); font-size: 0.8rem; align-items: center; }
+        .price-ticker .live-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #00D26A;
+            animation: live-pulse 2s ease-in-out infinite; flex-shrink: 0;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(0,210,106,0); }
+            50% { opacity: 1; box-shadow: 0 0 8px 2px rgba(0,210,106,0.4); }
+        }
         .price-item { display: flex; align-items: center; gap: 0.5rem; }
         .price-label { color: var(--text-secondary); }
         .price-value { color: var(--text-primary); font-weight: 500; }
@@ -432,17 +440,19 @@
             <div class="nav-dropdown">
                 <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">▾</span></a>
                 <div class="nav-dropdown-menu">
-                    <a href="secrets.html">Secrets</a>
-                    <a href="quotes.html">Quote Archive</a>
-                    <a href="timeline.html">Timeline</a>
                     <a href="btc-xmr-education.html">Education</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
                 </div>
             </div>
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="dashboard.html">Dashboard</a>
             <a href="hold-monero.html">XMR</a>
+            <a href="future.html">2027+</a>
         </div>
         <div class="price-ticker">
+            <span class="live-dot"></span>
             <div class="price-item">
                 <span class="price-label">BTC</span>
                 <span class="price-value" id="btc-price">—</span>
@@ -469,13 +479,14 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
         <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
         <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
         <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
         <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
         <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
+        <a href="future.html" onclick="toggleMenu()">2027+</a>
         <div class="mobile-prices">
             <div>BTC: <span id="btc-price-mobile">—</span></div>
             <div>XMR: <span id="xmr-price-mobile">—</span></div>

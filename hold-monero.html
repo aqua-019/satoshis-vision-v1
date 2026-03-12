@@ -100,10 +100,18 @@
         .nav-dropdown-menu a { display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease; }
         .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
 
-        .price-ticker { display: flex; gap: 1.5rem; font-family: var(--font-mono); font-size: 0.8rem; }
+        .price-ticker { display: flex; gap: 1.5rem; font-family: var(--font-mono); font-size: 0.8rem; align-items: center; }
         .price-item { display: flex; align-items: center; gap: 0.5rem; }
         .price-label { color: var(--text-secondary); }
         .price-value { color: var(--text-primary); font-weight: 500; }
+        .price-ticker .live-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #00D26A;
+            animation: live-pulse 2s ease-in-out infinite; flex-shrink: 0;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(0,210,106,0); }
+            50% { opacity: 1; box-shadow: 0 0 8px 2px rgba(0,210,106,0.4); }
+        }
 
         .hamburger {
             display: none;
@@ -1231,17 +1239,19 @@
             <div class="nav-dropdown">
                 <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">▾</span></a>
                 <div class="nav-dropdown-menu">
-                    <a href="secrets.html">Secrets</a>
-                    <a href="quotes.html">Quote Archive</a>
-                    <a href="timeline.html">Timeline</a>
                     <a href="btc-xmr-education.html">Education</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
                 </div>
             </div>
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="dashboard.html">Dashboard</a>
             <a href="hold-monero.html" class="nav-active">XMR</a>
+            <a href="future.html">2027+</a>
         </div>
         <div class="price-ticker">
+            <span class="live-dot"></span>
             <div class="price-item"><span class="price-label">BTC</span><span class="price-value" id="btc-price">—</span></div>
             <div class="price-item"><span class="price-label">XMR</span><span class="price-value" id="xmr-price">—</span></div>
             <div class="price-item"><span class="price-label">BTC/XMR</span><span class="price-value" id="btc-xmr-ratio">—</span></div>
@@ -1255,13 +1265,14 @@
 
     <div class="mobile-menu" id="mobileMenu">
         <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
         <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
         <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
         <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
         <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
+        <a href="future.html" onclick="toggleMenu()">2027+</a>
         <div class="mobile-prices">
             <div>BTC: <span id="btc-price-mobile">—</span></div>
             <div>XMR: <span id="xmr-price-mobile">—</span></div>
@@ -1284,6 +1295,7 @@
             <a href="#ecosystem" style="padding: 0.5rem 1.25rem; background: rgba(255,102,0,0.08); border: 1px solid var(--grey-18); border-radius: 20px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: all 0.3s;">Ecosystem</a>
             <a href="#wallets" style="padding: 0.5rem 1.25rem; background: rgba(255,102,0,0.08); border: 1px solid var(--grey-18); border-radius: 20px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: all 0.3s;">Wallets</a>
             <a href="#community" style="padding: 0.5rem 1.25rem; background: rgba(255,102,0,0.08); border: 1px solid var(--grey-18); border-radius: 20px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: all 0.3s;">Community</a>
+            <a href="#privacy-compare" style="padding: 0.5rem 1.25rem; background: rgba(255,102,0,0.08); border: 1px solid var(--grey-18); border-radius: 20px; color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: all 0.3s;">Privacy Comparison</a>
         </div>
     </section>
 
@@ -1472,28 +1484,6 @@
                         🥩 Open Wagyu Swap
                         <span style="font-size: 0.8rem; opacity: 0.8;">→ wagyu.xyz</span>
                     </a>
-                    <a href="https://docs.wagyu.xyz/" target="_blank" rel="noopener noreferrer" class="portal-btn secondary">
-                        📚 API Documentation
-                    </a>
-                </div>
-
-                <div class="iframe-toggle">
-                    <div class="iframe-toggle-header" onclick="toggleWagyuIframe()">
-                        <h3>🖥️ Embedded Wagyu Interface</h3>
-                        <button class="iframe-toggle-btn" id="wagyu-toggle-btn">Show Embed</button>
-                    </div>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                        Note: Embedded interface may be blocked based on your location. For best experience, visit wagyu.xyz directly.
-                    </p>
-                    <div class="wagyu-iframe-container" id="wagyu-iframe-container">
-                        <iframe 
-                            id="wagyu-iframe"
-                            src="about:blank"
-                            data-src="https://www.wagyu.xyz/swap"
-                            allow="clipboard-write"
-                            loading="lazy">
-                        </iframe>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1707,7 +1697,7 @@
     </section>
 
     <!-- Multi-Coin Privacy Comparison -->
-    <section class="comparison-section" style="margin-top: 4rem;">
+    <section id="privacy-compare" class="comparison-section" style="margin-top: 4rem;">
         <h2>Privacy Comparison: Crypto Landscape</h2>
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto; font-size: 0.9rem;">
             How does Monero's privacy stack up against other major cryptocurrencies?
@@ -1808,6 +1798,93 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Use Case Comparison -->
+        <h2 style="margin-top: 3rem;">On-Chain Use Cases: Privacy vs. Traceability</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem; max-width: 700px; margin-left: auto; margin-right: auto; font-size: 0.9rem;">
+            Monero has fewer on-chain use cases today — but every transaction is truly private. Other chains offer more activity at the cost of full traceability.
+        </p>
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Use Case</th>
+                        <th style="color: var(--xmr-orange);">Monero</th>
+                        <th style="color: var(--btc-orange);">Bitcoin</th>
+                        <th style="color: #9945FF;">Solana</th>
+                        <th style="color: #627EEA;">Ethereum</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="feature-name">Private Payments</td>
+                        <td><span class="check">Native &amp; default</span></td>
+                        <td><span class="cross">Fully traced</span></td>
+                        <td><span class="cross">Fully traced</span></td>
+                        <td><span class="cross">Fully traced</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">DeFi Ecosystem</td>
+                        <td>Limited (Haveno, atomic swaps)</td>
+                        <td>Limited (Lightning, Stacks)</td>
+                        <td><span class="check">Massive (Jupiter, Raydium)</span></td>
+                        <td><span class="check">Largest (Uniswap, Aave)</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">NFTs / Tokens</td>
+                        <td><span class="cross">Not supported</span></td>
+                        <td>Ordinals (public)</td>
+                        <td><span class="check">Major hub</span></td>
+                        <td><span class="check">Dominant</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Store of Value</td>
+                        <td><span class="check">Private wealth storage</span></td>
+                        <td><span class="check">Digital gold (public)</span></td>
+                        <td>Speculative</td>
+                        <td>Gas utility token</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Censorship Resistance</td>
+                        <td><span class="check">Maximum — untraceable</span></td>
+                        <td>High but traceable</td>
+                        <td><span class="cross">Validator censorship risk</span></td>
+                        <td><span class="cross">OFAC compliance by validators</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Salary / Payroll</td>
+                        <td><span class="check">Employer can't see balance</span></td>
+                        <td><span class="cross">Employer sees all history</span></td>
+                        <td><span class="cross">Fully transparent</span></td>
+                        <td><span class="cross">Fully transparent</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Donations / Charity</td>
+                        <td><span class="check">Anonymous giving</span></td>
+                        <td><span class="cross">Donor identity linkable</span></td>
+                        <td><span class="cross">Donor identity linkable</span></td>
+                        <td><span class="cross">Donor identity linkable</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Governance Exposure</td>
+                        <td><span class="check">No rich list exists</span></td>
+                        <td><span class="cross">Top holders known</span></td>
+                        <td><span class="cross">Whale wallets tracked</span></td>
+                        <td><span class="cross">All holdings visible</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-name">Traceability Risk</td>
+                        <td><span class="check">None — IRS bounty unclaimed</span></td>
+                        <td><span class="cross">Chainalysis, Elliptic, CipherTrace</span></td>
+                        <td><span class="cross">Full on-chain forensics</span></td>
+                        <td><span class="cross">Full on-chain forensics</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <p style="text-align: center; color: var(--text-secondary); margin-top: 1.5rem; font-size: 0.8rem; font-family: var(--font-mono);">
+            Monero trades ecosystem breadth for uncompromised privacy. Other chains have more use cases — but every transaction is permanently recorded and traceable.
+        </p>
     </section>
 
     <!-- Info Section -->
