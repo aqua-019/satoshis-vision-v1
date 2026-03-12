@@ -68,11 +68,11 @@
 
         .nav-links {
             display: flex;
-            gap: 2rem;
+            gap: 1.5rem;
             align-items: center;
         }
 
-        .nav-links a {
+        .nav-links > a {
             color: var(--text-secondary);
             text-decoration: none;
             font-size: 0.9rem;
@@ -80,9 +80,20 @@
             transition: color 0.3s ease;
         }
 
-        .nav-links a:hover {
-            color: var(--btc-orange);
+        .nav-links > a:hover, .nav-links > a.nav-active {
+            color: var(--xmr-orange);
         }
+
+        /* Dropdown */
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block; }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px; padding: 0.5rem 0; min-width: 160px; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; margin-top: 0.75rem; }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a { display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease; }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
 
         .price-ticker {
             display: flex;
@@ -1188,18 +1199,17 @@
         }
 
         /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .price-ticker {
+        @media (max-width: 1024px) {
+            .nav-links, .price-ticker {
                 display: none;
             }
 
             .hamburger {
                 display: flex;
             }
+        }
+
+        @media (max-width: 768px) {
 
             .timeline::before {
                 left: 20px;
@@ -1275,25 +1285,30 @@
 
     <!-- Navigation -->
     <nav class="nav">
-        <div class="nav-logo">₿ → ɱ</div>
+        <a href="index.html" class="nav-logo">₿ → ɱ</a>
         <div class="nav-links">
-            <a href="#timeline">Timeline</a>
-            <a href="#quotes">Quotes</a>
-            <a href="#stats">Statistics</a>
-            <a href="#compare">Compare</a>
-            <a href="secrets.html">Secrets</a>
-            <a href="quotes.html">Quote Archive</a>
-            <a href="bottom-line.html">The Bottom Line</a>
-            <a href="hold-monero.html">Hold Monero</a>
+            <a href="index.html" class="nav-active">Home</a>
+            <div class="nav-dropdown">
+                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">▾</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="secrets.html">Secrets</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="btc-xmr-education.html">Education</a>
+                </div>
+            </div>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="hold-monero.html">XMR</a>
         </div>
         <div class="price-ticker">
             <div class="price-item">
-                <span class="price-label">BTC/USD</span>
+                <span class="price-label">BTC</span>
                 <span class="price-value" id="btc-price">—</span>
                 <span class="price-change" id="btc-change"></span>
             </div>
             <div class="price-item">
-                <span class="price-label">XMR/USD</span>
+                <span class="price-label">XMR</span>
                 <span class="price-value" id="xmr-price">—</span>
                 <span class="price-change" id="xmr-change"></span>
             </div>
@@ -1312,15 +1327,17 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="#timeline" onclick="toggleMenu()">Timeline</a>
-        <a href="#quotes" onclick="toggleMenu()">Quotes</a>
-        <a href="#stats" onclick="toggleMenu()">Statistics</a>
-        <a href="#compare" onclick="toggleMenu()">Compare</a>
-        <a href="secrets.html">Secrets</a>
-        <a href="quotes.html">The Bottom Line</a>
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
+        <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
         <div class="mobile-prices">
-            <div>BTC/USD: <span id="btc-price-mobile">—</span></div>
-            <div>XMR/USD: <span id="xmr-price-mobile">—</span></div>
+            <div>BTC: <span id="btc-price-mobile">—</span></div>
+            <div>XMR: <span id="xmr-price-mobile">—</span></div>
             <div>BTC/XMR: <span id="btc-xmr-ratio-mobile">—</span></div>
         </div>
     </div>
@@ -1775,9 +1792,11 @@
         <p class="footer-quote">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
         <p class="footer-attribution">— Satoshi Nakamoto, Final Email, April 2011</p>
         <div class="footer-links">
-            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto Institute</a>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="hold-monero.html">XMR</a>
+            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
             <a href="https://getmonero.org" target="_blank">GetMonero.org</a>
-            <a href="https://bitcoin.org" target="_blank">Bitcoin.org</a>
         </div>
         <p class="footer-copy">Educational resource. Not financial advice. DYOR.</p>
     </footer>

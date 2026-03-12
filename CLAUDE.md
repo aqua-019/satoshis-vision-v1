@@ -24,15 +24,16 @@ divergent paths of transparent vs. private cryptocurrency.
 
 ## Site Pages
 
-| File                    | Purpose                                      |
-|-------------------------|----------------------------------------------|
-| `index.html`            | Splash page — privacy evolution overview     |
-| `bottom-line.html`      | Full BTC/XMR analysis, timeline, bounties    |
-| `hold-monero.html`      | Exchange widget demo (Wagyu + ChangeNOW)     |
-| `btc-xmr-education.html` | Visual infographics comparing BTC vs XMR   |
-| `quotes.html`           | Interactive Satoshi quote explorer (18 quotes)|
-| `secrets.html`          | Deep dive into Satoshi's privacy writings    |
-| `timeline.html`         | Historical milestones visualization          |
+| File                    | Nav Name         | Purpose                                          |
+|-------------------------|------------------|--------------------------------------------------|
+| `index.html`            | Home             | Splash page — privacy evolution overview         |
+| `bottom-line.html`      | XMR Bottom Line  | Full BTC/XMR analysis, thesis, timeline, bounties|
+| `dashboard.html`        | Dashboard        | Multi-ticker, charts, analytics, crime stats     |
+| `hold-monero.html`      | XMR              | Ecosystem hub — swaps, wallets, community        |
+| `btc-xmr-education.html` | Education (Learn↓) | Visual infographics comparing BTC vs XMR      |
+| `quotes.html`           | Quote Archive (Learn↓) | Interactive Satoshi quote explorer (30 quotes)|
+| `secrets.html`          | Secrets (Learn↓)     | Deep dive into Satoshi's privacy writings    |
+| `timeline.html`         | Timeline (Learn↓)    | Historical milestones visualization          |
 
 ## Development Conventions
 
@@ -41,28 +42,51 @@ divergent paths of transparent vs. private cryptocurrency.
 - Security headers configured in `netlify.toml` and `vercel.json`
 - Keep pages consistent in styling and navigation
 
+## Navigation Structure
+
+Header: `₿ → ɱ | Home | Learn ▾ | XMR Bottom Line | Dashboard | XMR | [BTC] [XMR] [BTC/XMR]`
+
+- **Learn** dropdown: Secrets, Quote Archive, Timeline, Education
+- **Price tickers** in header on ALL pages (CoinGecko, 30-min refresh)
+- Responsive: collapses to hamburger at 1024px
+- Mobile menu: full-screen overlay with all links + prices
+
 ## Dynamic Features
 
-### PriceService (index.html)
-- Shared pub/sub price service: `PriceService.subscribe(fn)` pattern
-- Fetches BTC/USD, XMR/USD from CoinGecko, calculates BTC/XMR ratio
-- 30-minute refresh interval (was 60s — reduced to respect rate limits)
-- Any component can subscribe to price updates via `PriceService.subscribe()`
+### PriceService (all pages)
+- Live BTC/USD, XMR/USD, BTC/XMR ratio tickers in every page header
+- CoinGecko free API, 30-minute refresh interval
+- Full pub/sub pattern on index.html; lightweight fetch on other pages
 
-### WidgetLoader (hold-monero.html)
-- IntersectionObserver-based lazy loading for all exchange iframes
+### Dashboard Charts (dashboard.html)
+- TradingView Lightweight Charts (CDN, ~45KB)
+- XMR price chart: area chart with 7D/30D/90D/6M/1Y range buttons
+- BTC vs XMR comparison: normalized % change, dual line chart
+- Multi-ticker grid: 8 coins (BTC, XMR, ETH, LTC, SOL, DOGE, ADA, DOT)
+- Fiat comparisons: XMR in USD, EUR, JPY, GBP, CHF, AUD
+- localStorage caching (tickers: 5min, charts: 30min-24hr by range)
+- Charts lazy-loaded via IntersectionObserver
+
+### Crime & Privacy Statistics (dashboard.html)
+- Less than 1% of crypto crime involves Monero (Chainalysis)
+- $625K+ IRS bounty with 0 successful traces
+- 73 exchange delistings, +195% price growth
+- $3.1B ransomware used BTC not XMR (FinCEN)
+- XMR holdings, circulating supply, mining stats
+
+### WidgetLoader (hold-monero.html → XMR hub)
+- IntersectionObserver-based lazy loading for exchange iframes
 - ChangeNOW and Wagyu iframes only load when scrolled into view
-- Tracks loaded state to prevent duplicate loads
 
-### SwapTracker (hold-monero.html)
+### SwapTracker (hold-monero.html → XMR hub)
 - Users can check ChangeNOW swap status by pasting transaction ID
 - Uses ChangeNOW public API (`/api/v1/transactions/{id}/`)
 - Color-coded status display with support link
-- Clear disclaimer that ChangeNOW handles all swap operations
 
-### LiveRate (hold-monero.html)
-- Shows live BTC→XMR conversion rate on swap page
-- 30-minute refresh, same CoinGecko source
+### LiveRate (hold-monero.html → XMR hub)
+- Enhanced rate display: BTC→XMR ratio + individual prices + ratio bar
+- Visual breakdown: BTC/USD, XMR/USD, conversion rate, update timestamp
+- 30-minute refresh, CoinGecko source
 
 ## Key Decisions Log
 
@@ -78,21 +102,23 @@ divergent paths of transparent vs. private cryptocurrency.
 
 ## Current Status / Progress
 
-<!-- Update this section as work progresses -->
-- Memory system established (CLAUDE.md)
-- All 7 pages present and functional
-- PriceService dynamic layer added (index.html) — BTC/USD, XMR/USD, BTC/XMR
-- WidgetLoader + SwapTracker + LiveRate added (hold-monero.html)
-- Exchange iframes now lazy-loaded
+- All 8 pages present and functional (7 original + dashboard.html)
+- Unified header navigation across all pages with Learn dropdown
+- Price tickers on every page header
+- Dashboard page: live charts, multi-ticker, fiat comparisons, analytics
+- XMR hub page: ecosystem, wallets, community, improved swap widget
+- Crime statistics and XMR analytics integrated into Dashboard
+- ChangeNOW widget with enhanced visual ratio display
+- Cake Wallet deep-link integration: **ditched** (per user decision)
 
 ## Known Issues / TODOs
 
-<!-- Track open items here -->
-- **Cake Wallet integration**: Research deep-linking / URI schemes for direct wallet connection
-- **Backend evaluation**: Needed if adding charts/tickers, image/video hosting, multi-ticker dashboards
-- **Railway + PostgreSQL**: Evaluate for future dynamic data (historical prices, chart data)
-- **Custom ChangeNOW API swap**: Possible but creates regulatory risk — keep as widget for now
-- **Wagyu API**: Docs at docs.wagyu.xyz — evaluate for custom DEX UI if widget insufficient
+- **ChangeNOW 0.4% revenue setup**: Affiliate/revenue configuration pending
+- **Wagyu API integration**: Evaluate interactive widget (currently iframe-only)
+- **Backend evaluation**: Still needed for high-traffic chart caching
+- **Custom ChangeNOW API swap**: Possible but regulatory risk — keep as widget
+- **CoinGecko rate limits**: 10,000 calls/month on free tier; heavy traffic needs backend cache
+- **All-time charts**: Require paid CoinGecko plan (free tier max 365 days)
 
 ## Architecture Notes — Backend Evaluation
 
@@ -112,14 +138,22 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 ## Session Notes
 
-<!--
-  Use this section to leave notes for future sessions.
-  Format: **YYYY-MM-DD**: Note content
--->
+- **2026-03-12** (PR#3): Major UX overhaul and new pages.
+  - Header redesigned: 8 cluttered links → 5 cohesive items + Learn dropdown
+  - Price tickers now on ALL page headers (were only on index.html)
+  - "The Bottom Line" renamed to "XMR Bottom Line"
+  - "Hold Monero" renamed to "XMR" — transformed into ecosystem hub
+  - New dashboard.html: TradingView Lightweight Charts, multi-ticker grid,
+    BTC vs XMR comparison, fiat currencies, crime statistics, XMR analytics
+  - ChangeNOW widget UI improved: enhanced rate display with BTC/USD, XMR/USD,
+    ratio bar, and update timestamps
+  - XMR hub expanded: ecosystem links (GetMonero, Haveno, CCS, mining),
+    wallets (Feather, Cake, GUI/CLI, Monerujo), community (Reddit, Matrix, SE, GitHub)
+  - Cake Wallet deep-link integration ditched per user decision
+  - All footers updated with new nav structure
+  - Responsive breakpoint updated to 1024px for wider nav
 - **2026-03-11**: Added dynamic layers — PriceService, WidgetLoader, SwapTracker, LiveRate.
   ChangeNOW widget kept (not custom API) due to liability concerns. Iframes now lazy-loaded.
   Backend evaluation documented: Railway + PostgreSQL recommended if dynamic features expand.
-  Cake Wallet integration research started — open-source, uses ChangeNOW/SideShift internally.
-  Next steps: Cake Wallet deep-link integration, chart system if backend approved.
 - **2026-03-11**: Initial CLAUDE.md created. Repo is a static HTML site with 7 pages,
   deployed via Netlify/Vercel. No build tools or dependencies.

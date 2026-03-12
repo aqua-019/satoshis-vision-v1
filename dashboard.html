@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — Crypto Analytics & Market Data</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --btc-gold: #FFD700;
+            --xmr-orange: #FF6600;
+            --dark-bg: #0a0a0a;
+            --card-bg: #121212;
+            --grey-18: #2E2E2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --font-display: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Sora', sans-serif;
+            --green: #00C853;
+            --red: #FF1744;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* ── Navigation ── */
+        .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(10,10,10,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; }
+        .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .nav-links > a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; }
+        .nav-links > a:hover, .nav-links > a.nav-active { color: var(--xmr-orange); }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block; }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px; padding: 0.5rem 0; min-width: 160px; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; margin-top: 0.75rem; }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a { display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease; }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
+        .price-ticker { display: flex; gap: 1.5rem; font-family: var(--font-mono); font-size: 0.8rem; }
+        .price-item { display: flex; align-items: center; gap: 0.5rem; }
+        .price-label { color: var(--text-secondary); }
+        .price-value { color: var(--text-primary); font-weight: 500; }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 10px; }
+        .hamburger span { width: 25px; height: 2px; background: var(--text-primary); transition: all 0.3s ease; }
+        .mobile-menu { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10,10,10,0.98); z-index: 999; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; }
+        .mobile-menu.active { display: flex; }
+        .mobile-menu a { color: var(--text-primary); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); }
+        .mobile-prices { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; font-family: var(--font-mono); }
+        @media (max-width: 1024px) { .nav-links, .price-ticker { display: none; } .hamburger { display: flex; } }
+
+        /* ── Layout ── */
+        .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
+        section { padding: 4rem 0; }
+
+        /* ── Hero ── */
+        .hero {
+            padding-top: 8rem;
+            padding-bottom: 3rem;
+            text-align: center;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(255,102,0,0.08) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--xmr-orange);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+        .hero h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--text-primary), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .hero p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* ── Section Titles ── */
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .section-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 2rem;
+        }
+        .section-divider {
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--btc-orange), var(--xmr-orange));
+            border: none;
+            border-radius: 2px;
+            margin-bottom: 2rem;
+        }
+
+        /* ── Ticker Grid ── */
+        .ticker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.25rem;
+        }
+        .ticker-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: border-color 0.3s ease, transform 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .ticker-card:hover {
+            border-color: rgba(255,102,0,0.3);
+            transform: translateY(-2px);
+        }
+        .ticker-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .ticker-coin-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .ticker-coin-symbol {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            background: rgba(255,255,255,0.05);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+        }
+        .ticker-price {
+            font-family: var(--font-mono);
+            font-size: 1.6rem;
+            font-weight: 500;
+            margin-bottom: 0.75rem;
+        }
+        .ticker-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+        }
+        .ticker-change {
+            font-family: var(--font-mono);
+            font-weight: 500;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+        }
+        .ticker-change.positive { color: var(--green); background: rgba(0,200,83,0.1); }
+        .ticker-change.negative { color: var(--red); background: rgba(255,23,68,0.1); }
+        .ticker-mcap {
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+        .ticker-card.highlight {
+            border-color: rgba(255,102,0,0.4);
+            background: linear-gradient(135deg, var(--card-bg), rgba(255,102,0,0.03));
+        }
+        .ticker-loading {
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+        }
+
+        /* ── Charts ── */
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .chart-title {
+            font-family: var(--font-display);
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        .chart-range-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .chart-range-btn {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border: 1px solid var(--grey-18);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .chart-range-btn:hover { border-color: var(--xmr-orange); color: var(--xmr-orange); }
+        .chart-range-btn.active { background: var(--xmr-orange); color: #fff; border-color: var(--xmr-orange); }
+        .chart-area {
+            width: 100%;
+            height: 380px;
+            position: relative;
+        }
+        .chart-area-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+        }
+
+        /* ── Fiat Table ── */
+        .fiat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .fiat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            transition: border-color 0.3s ease;
+        }
+        .fiat-card:hover { border-color: rgba(255,102,0,0.3); }
+        .fiat-currency {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            letter-spacing: 0.1em;
+        }
+        .fiat-price {
+            font-family: var(--font-mono);
+            font-size: 1.4rem;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+        .fiat-change {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        .fiat-change.positive { color: var(--green); }
+        .fiat-change.negative { color: var(--red); }
+
+        /* ── Stats Cards ── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.25rem;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s ease, transform 0.2s ease;
+        }
+        .stat-card:hover {
+            border-color: rgba(255,102,0,0.3);
+            transform: translateY(-2px);
+        }
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0;
+            width: 4px; height: 100%;
+            border-radius: 4px 0 0 4px;
+        }
+        .stat-card.accent-orange::before { background: var(--xmr-orange); }
+        .stat-card.accent-gold::before { background: var(--btc-gold); }
+        .stat-card.accent-green::before { background: var(--green); }
+        .stat-card.accent-red::before { background: var(--red); }
+        .stat-card.accent-btc::before { background: var(--btc-orange); }
+        .stat-card.accent-blue::before { background: #448AFF; }
+        .stat-number {
+            font-family: var(--font-mono);
+            font-size: 2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 0.5rem;
+        }
+        .stat-label {
+            font-size: 0.95rem;
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+        .stat-source {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+        }
+
+        /* ── Holdings Section ── */
+        .holdings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.25rem;
+        }
+        .holding-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: border-color 0.3s ease;
+        }
+        .holding-card:hover { border-color: rgba(255,102,0,0.3); }
+        .holding-card-title {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--xmr-orange);
+        }
+        .holding-metric {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.04);
+            font-size: 0.9rem;
+        }
+        .holding-metric:last-child { border-bottom: none; }
+        .holding-metric-label { color: var(--text-secondary); }
+        .holding-metric-value { font-family: var(--font-mono); font-weight: 500; }
+
+        /* ── Footer ── */
+        .footer {
+            border-top: 1px solid var(--grey-18);
+            padding: 3rem 0;
+            text-align: center;
+            margin-top: 2rem;
+        }
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+        .footer-links a:hover { color: var(--xmr-orange); }
+        .footer-copy {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-family: var(--font-mono);
+        }
+
+        /* ── Utility ── */
+        .loading-shimmer {
+            background: linear-gradient(90deg, var(--card-bg) 25%, rgba(255,255,255,0.04) 50%, var(--card-bg) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease forwards; }
+
+        @media (max-width: 768px) {
+            .container { padding: 0 1rem; }
+            section { padding: 3rem 0; }
+            .hero { padding-top: 6rem; padding-bottom: 2rem; }
+            .hero h1 { font-size: 2rem; }
+            .chart-area { height: 280px; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .holdings-grid { grid-template-columns: 1fr; }
+            .ticker-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+            .fiat-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .chart-header { flex-direction: column; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+    <a href="index.html" class="nav-logo">₿ → ɱ</a>
+    <div class="nav-links">
+        <a href="index.html">Home</a>
+        <div class="nav-dropdown">
+            <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">▾</span></a>
+            <div class="nav-dropdown-menu">
+                <a href="secrets.html">Secrets</a>
+                <a href="quotes.html">Quote Archive</a>
+                <a href="timeline.html">Timeline</a>
+                <a href="btc-xmr-education.html">Education</a>
+            </div>
+        </div>
+        <a href="bottom-line.html">XMR Bottom Line</a>
+        <a href="dashboard.html" class="nav-active">Dashboard</a>
+        <a href="hold-monero.html">XMR</a>
+    </div>
+    <div class="price-ticker">
+        <div class="price-item">
+            <span class="price-label">BTC</span>
+            <span class="price-value" id="btc-price">—</span>
+        </div>
+        <div class="price-item">
+            <span class="price-label">XMR</span>
+            <span class="price-value" id="xmr-price">—</span>
+        </div>
+        <div class="price-item">
+            <span class="price-label">BTC/XMR</span>
+            <span class="price-value" id="btc-xmr-ratio">—</span>
+        </div>
+    </div>
+    <div class="hamburger" onclick="toggleMenu()">
+        <span></span>
+        <span></span>
+        <span></span>
+    </div>
+</nav>
+<div class="mobile-menu" id="mobileMenu">
+    <a href="index.html" onclick="toggleMenu()">Home</a>
+    <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+    <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+    <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+    <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+    <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+    <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
+    <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
+    <div class="mobile-prices">
+        <div>BTC: <span id="btc-price-mobile">—</span></div>
+        <div>XMR: <span id="xmr-price-mobile">—</span></div>
+        <div>BTC/XMR: <span id="btc-xmr-ratio-mobile">—</span></div>
+    </div>
+</div>
+
+<!-- Hero -->
+<header class="hero">
+    <div class="container">
+        <div class="hero-eyebrow">Analytics &amp; Market Data</div>
+        <h1>Dashboard</h1>
+        <p>Real-time cryptocurrency market analytics with a focus on Monero. Live prices, historical charts, fiat comparisons, and privacy statistics.</p>
+    </div>
+</header>
+
+<!-- Section 1: Multi-Ticker Grid -->
+<section id="tickers">
+    <div class="container">
+        <h2 class="section-title">Live Market Tickers</h2>
+        <p class="section-subtitle">Top cryptocurrencies by market cap, refreshed every 30 minutes</p>
+        <hr class="section-divider">
+        <div class="ticker-grid" id="tickerGrid">
+            <div class="ticker-card"><div class="ticker-loading">Loading market data...</div></div>
+        </div>
+        <div style="margin-top: 0.75rem; text-align: right;">
+            <span id="tickerLastUpdated" style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary);"></span>
+        </div>
+    </div>
+</section>
+
+<!-- Section 2: XMR Price Chart -->
+<section id="xmr-chart">
+    <div class="container">
+        <h2 class="section-title">XMR Price Chart</h2>
+        <p class="section-subtitle">Monero price history in USD</p>
+        <hr class="section-divider">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">XMR / USD</div>
+                <div class="chart-range-buttons" id="xmrRangeButtons">
+                    <button class="chart-range-btn" data-days="7">7D</button>
+                    <button class="chart-range-btn active" data-days="30">30D</button>
+                    <button class="chart-range-btn" data-days="90">90D</button>
+                    <button class="chart-range-btn" data-days="180">6M</button>
+                    <button class="chart-range-btn" data-days="365">1Y</button>
+                </div>
+            </div>
+            <div class="chart-area" id="xmrChartArea">
+                <div class="chart-area-placeholder">Loading chart...</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 3: BTC vs XMR Comparison Chart -->
+<section id="comparison-chart">
+    <div class="container">
+        <h2 class="section-title">BTC vs XMR Performance</h2>
+        <p class="section-subtitle">Normalized percentage change comparison over time</p>
+        <hr class="section-divider">
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <span style="color: var(--btc-orange);">BTC</span> vs <span style="color: var(--xmr-orange);">XMR</span> — % Change
+                </div>
+                <div class="chart-range-buttons" id="compRangeButtons">
+                    <button class="chart-range-btn" data-days="7">7D</button>
+                    <button class="chart-range-btn active" data-days="30">30D</button>
+                    <button class="chart-range-btn" data-days="90">90D</button>
+                    <button class="chart-range-btn" data-days="180">6M</button>
+                    <button class="chart-range-btn" data-days="365">1Y</button>
+                </div>
+            </div>
+            <div class="chart-area" id="compChartArea">
+                <div class="chart-area-placeholder">Loading chart...</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 4: Fiat Currency Comparisons -->
+<section id="fiat">
+    <div class="container">
+        <h2 class="section-title">XMR in Fiat Currencies</h2>
+        <p class="section-subtitle">Monero price across major world currencies</p>
+        <hr class="section-divider">
+        <div class="fiat-grid" id="fiatGrid">
+            <div class="fiat-card"><span class="ticker-loading">Loading...</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 5: Crime & Privacy Statistics -->
+<section id="privacy-stats">
+    <div class="container">
+        <h2 class="section-title">Privacy &amp; Crime Statistics</h2>
+        <p class="section-subtitle">Data-driven facts about Monero, privacy, and cryptocurrency crime</p>
+        <hr class="section-divider">
+        <div class="stats-grid">
+            <div class="stat-card accent-orange">
+                <div class="stat-number" style="color: var(--xmr-orange);">&lt; 1%</div>
+                <div class="stat-label">Of crypto crime involves Monero</div>
+                <div class="stat-source">Source: Chainalysis 2024 Crypto Crime Report</div>
+            </div>
+            <div class="stat-card accent-gold">
+                <div class="stat-number" style="color: var(--btc-gold);">$625,000+</div>
+                <div class="stat-label">IRS bounty offered for tracing Monero</div>
+                <div class="stat-source">0 successful traces to date — IRS-CI RFP 2020</div>
+            </div>
+            <div class="stat-card accent-green">
+                <div class="stat-number" style="color: var(--green);">73 delistings</div>
+                <div class="stat-label">Exchange removals, yet +195% price growth</div>
+                <div class="stat-source">Delistings 2020–2025 vs. price performance</div>
+            </div>
+            <div class="stat-card accent-red">
+                <div class="stat-number" style="color: var(--red);">$3.1 Billion</div>
+                <div class="stat-label">Ransomware payments used BTC, not XMR</div>
+                <div class="stat-source">Source: FinCEN SAR filings 2021–2024</div>
+            </div>
+            <div class="stat-card accent-btc">
+                <div class="stat-number" style="color: var(--btc-orange);" id="xmrDominance">~0.10%</div>
+                <div class="stat-label">Monero market dominance</div>
+                <div class="stat-source">Relative to total crypto market cap</div>
+            </div>
+            <div class="stat-card accent-blue">
+                <div class="stat-number" style="color: #448AFF;">~35,000</div>
+                <div class="stat-label">Daily active XMR transactions</div>
+                <div class="stat-source">Average daily on-chain transactions</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Section 6: XMR Holdings & Trading Behavior -->
+<section id="holdings">
+    <div class="container">
+        <h2 class="section-title">XMR Holdings &amp; Network</h2>
+        <p class="section-subtitle">Analytical insights into Monero's network and holder behavior</p>
+        <hr class="section-divider">
+        <div class="holdings-grid">
+            <div class="holding-card">
+                <div class="holding-card-title">Circulating Supply</div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Current Supply</span>
+                    <span class="holding-metric-value">~18.4M XMR</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Tail Emission</span>
+                    <span class="holding-metric-value">0.6 XMR / block</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Block Time</span>
+                    <span class="holding-metric-value">~2 minutes</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Annual Inflation</span>
+                    <span class="holding-metric-value">~0.86%</span>
+                </div>
+            </div>
+            <div class="holding-card">
+                <div class="holding-card-title">Mining &amp; Hashrate</div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Algorithm</span>
+                    <span class="holding-metric-value">RandomX</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Network Hashrate</span>
+                    <span class="holding-metric-value">~2.5 GH/s</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">ASIC Resistant</span>
+                    <span class="holding-metric-value" style="color: var(--green);">Yes</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">CPU Mineable</span>
+                    <span class="holding-metric-value" style="color: var(--green);">Yes</span>
+                </div>
+            </div>
+            <div class="holding-card">
+                <div class="holding-card-title">Holder Behavior (Estimates)</div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Avg Holding Period</span>
+                    <span class="holding-metric-value">~18 months</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Self-Custody Ratio</span>
+                    <span class="holding-metric-value">~85%</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Exchange Reserves</span>
+                    <span class="holding-metric-value">~15%</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Long-Term Holders</span>
+                    <span class="holding-metric-value">~70%</span>
+                </div>
+            </div>
+            <div class="holding-card">
+                <div class="holding-card-title">Exchange Volume Distribution</div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">DEX / Atomic Swaps</span>
+                    <span class="holding-metric-value">~12%</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">CEX (remaining)</span>
+                    <span class="holding-metric-value">~65%</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">P2P / OTC</span>
+                    <span class="holding-metric-value">~23%</span>
+                </div>
+                <div class="holding-metric">
+                    <span class="holding-metric-label">Top Pair</span>
+                    <span class="holding-metric-value">XMR/USDT</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+    <div class="container">
+        <div class="footer-links">
+            <a href="index.html">Home</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="quotes.html">Quotes</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="btc-xmr-education.html">Education</a>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="hold-monero.html">XMR</a>
+        </div>
+        <div class="footer-copy">&copy; 2026 Satoshi's Vision Archive. For educational purposes only. Not financial advice.</div>
+    </div>
+</footer>
+
+<script>
+(function() {
+    'use strict';
+
+    /* ── Helpers ── */
+    function formatUSD(n) {
+        if (n == null) return '—';
+        if (n >= 1) return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 6 });
+    }
+    function formatMcap(n) {
+        if (n == null) return '—';
+        if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + 'M';
+        return '$' + n.toLocaleString('en-US');
+    }
+    function formatPct(n) {
+        if (n == null) return '—';
+        var sign = n >= 0 ? '+' : '';
+        return sign + n.toFixed(2) + '%';
+    }
+
+    function cacheGet(key, maxAgeMs) {
+        try {
+            var raw = localStorage.getItem(key);
+            if (!raw) return null;
+            var obj = JSON.parse(raw);
+            if (Date.now() - obj.ts > maxAgeMs) return null;
+            return obj.data;
+        } catch(e) { return null; }
+    }
+    function cacheSet(key, data) {
+        try { localStorage.setItem(key, JSON.stringify({ ts: Date.now(), data: data })); } catch(e) {}
+    }
+
+    /* ── Mobile Menu ── */
+    window.toggleMenu = function() {
+        var menu = document.getElementById('mobileMenu');
+        menu.classList.toggle('active');
+    };
+
+    /* ── Nav Price Ticker ── */
+    var NAV_REFRESH = 30 * 60 * 1000; // 30 min
+
+    function fetchNavPrices() {
+        var cached = cacheGet('dash_nav_prices', NAV_REFRESH);
+        if (cached) { renderNavPrices(cached); return; }
+
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var btc = d.bitcoin && d.bitcoin.usd;
+                var xmr = d.monero && d.monero.usd;
+                var data = { btc: btc, xmr: xmr, ratio: (btc && xmr) ? (btc / xmr).toFixed(1) : null };
+                cacheSet('dash_nav_prices', data);
+                renderNavPrices(data);
+            })
+            .catch(function() {});
+    }
+
+    function renderNavPrices(d) {
+        var ids = ['btc-price', 'btc-price-mobile'];
+        ids.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = d.btc ? formatUSD(d.btc) : '—'; });
+        var xids = ['xmr-price', 'xmr-price-mobile'];
+        xids.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = d.xmr ? formatUSD(d.xmr) : '—'; });
+        var rids = ['btc-xmr-ratio', 'btc-xmr-ratio-mobile'];
+        rids.forEach(function(id) { var el = document.getElementById(id); if (el) el.textContent = d.ratio ? d.ratio : '—'; });
+    }
+
+    fetchNavPrices();
+    setInterval(fetchNavPrices, NAV_REFRESH);
+
+    /* ── Section 1: Multi-Ticker Grid ── */
+    var TICKER_CACHE_MS = 5 * 60 * 1000; // 5 min
+    var TICKER_REFRESH = 30 * 60 * 1000; // 30 min
+    var TICKER_API = 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,monero,ethereum,litecoin,solana,dogecoin,cardano,polkadot&order=market_cap_desc&sparkline=false&price_change_percentage=24h';
+
+    var HIGHLIGHT_COINS = ['bitcoin', 'monero'];
+
+    function fetchTickers() {
+        var cached = cacheGet('dash_tickers', TICKER_CACHE_MS);
+        if (cached) { renderTickers(cached); return; }
+
+        fetch(TICKER_API)
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (!Array.isArray(data)) throw new Error('bad response');
+                cacheSet('dash_tickers', data);
+                renderTickers(data);
+            })
+            .catch(function() {
+                var grid = document.getElementById('tickerGrid');
+                grid.innerHTML = '<div class="ticker-card"><div class="ticker-loading">Unable to load market data. Will retry automatically.</div></div>';
+            });
+    }
+
+    function renderTickers(coins) {
+        var grid = document.getElementById('tickerGrid');
+        grid.innerHTML = '';
+        coins.forEach(function(c) {
+            var pct = c.price_change_percentage_24h_in_currency || c.price_change_percentage_24h;
+            var cls = (pct != null && pct >= 0) ? 'positive' : 'negative';
+            var highlight = HIGHLIGHT_COINS.indexOf(c.id) >= 0 ? ' highlight' : '';
+            var card = document.createElement('div');
+            card.className = 'ticker-card fade-in' + highlight;
+            card.innerHTML =
+                '<div class="ticker-card-header">' +
+                    '<span class="ticker-coin-name">' + c.name + '</span>' +
+                    '<span class="ticker-coin-symbol">' + c.symbol.toUpperCase() + '</span>' +
+                '</div>' +
+                '<div class="ticker-price">' + formatUSD(c.current_price) + '</div>' +
+                '<div class="ticker-meta">' +
+                    '<span class="ticker-change ' + cls + '">' + formatPct(pct) + '</span>' +
+                    '<span class="ticker-mcap">MCap ' + formatMcap(c.market_cap) + '</span>' +
+                '</div>';
+            grid.appendChild(card);
+        });
+        var ts = document.getElementById('tickerLastUpdated');
+        if (ts) ts.textContent = 'Updated ' + new Date().toLocaleTimeString();
+    }
+
+    fetchTickers();
+    setInterval(fetchTickers, TICKER_REFRESH);
+
+    /* ── Section 2 & 3: Charts (Lazy-loaded) ── */
+    var xmrChartInstance = null;
+    var xmrAreaSeries = null;
+    var compChartInstance = null;
+    var compBtcSeries = null;
+    var compXmrSeries = null;
+    var chartsInitialized = { xmr: false, comp: false };
+
+    function chartCacheMs(days) {
+        return days <= 7 ? 30 * 60 * 1000 : 24 * 60 * 60 * 1000;
+    }
+
+    function initXmrChart() {
+        if (chartsInitialized.xmr) return;
+        chartsInitialized.xmr = true;
+        var container = document.getElementById('xmrChartArea');
+        container.innerHTML = '';
+
+        xmrChartInstance = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: container.clientHeight,
+            layout: { background: { color: '#121212' }, textColor: '#A0A0A0' },
+            grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            rightPriceScale: { borderColor: '#2E2E2E' },
+            timeScale: { borderColor: '#2E2E2E', timeVisible: true },
+        });
+
+        xmrAreaSeries = xmrChartInstance.addAreaSeries({
+            topColor: 'rgba(255,102,0,0.4)',
+            bottomColor: 'rgba(255,102,0,0.02)',
+            lineColor: '#FF6600',
+            lineWidth: 2,
+        });
+
+        loadXmrChart(30);
+        setupRangeButtons('xmrRangeButtons', loadXmrChart);
+
+        var ro = new ResizeObserver(function() {
+            xmrChartInstance.applyOptions({ width: container.clientWidth });
+        });
+        ro.observe(container);
+    }
+
+    function loadXmrChart(days) {
+        var cacheKey = 'dash_xmr_chart_' + days;
+        var cached = cacheGet(cacheKey, chartCacheMs(days));
+        if (cached) { xmrAreaSeries.setData(cached); xmrChartInstance.timeScale().fitContent(); return; }
+
+        fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days=' + days)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var prices = d.prices || [];
+                var seen = {};
+                var chartData = [];
+                prices.forEach(function(p) {
+                    var t = Math.floor(p[0] / 1000);
+                    var day = Math.floor(t / 86400) * 86400;
+                    if (!seen[day]) {
+                        seen[day] = true;
+                        chartData.push({ time: day, value: p[1] });
+                    }
+                });
+                chartData.sort(function(a, b) { return a.time - b.time; });
+                cacheSet(cacheKey, chartData);
+                xmrAreaSeries.setData(chartData);
+                xmrChartInstance.timeScale().fitContent();
+            })
+            .catch(function() {});
+    }
+
+    function initCompChart() {
+        if (chartsInitialized.comp) return;
+        chartsInitialized.comp = true;
+        var container = document.getElementById('compChartArea');
+        container.innerHTML = '';
+
+        compChartInstance = LightweightCharts.createChart(container, {
+            width: container.clientWidth,
+            height: container.clientHeight,
+            layout: { background: { color: '#121212' }, textColor: '#A0A0A0' },
+            grid: { vertLines: { color: 'rgba(255,255,255,0.03)' }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
+            rightPriceScale: { borderColor: '#2E2E2E' },
+            timeScale: { borderColor: '#2E2E2E', timeVisible: true },
+        });
+
+        compBtcSeries = compChartInstance.addLineSeries({
+            color: '#F7931A',
+            lineWidth: 2,
+            title: 'BTC %',
+        });
+        compXmrSeries = compChartInstance.addLineSeries({
+            color: '#FF6600',
+            lineWidth: 2,
+            title: 'XMR %',
+        });
+
+        loadCompChart(30);
+        setupRangeButtons('compRangeButtons', loadCompChart);
+
+        var ro = new ResizeObserver(function() {
+            compChartInstance.applyOptions({ width: container.clientWidth });
+        });
+        ro.observe(container);
+    }
+
+    function loadCompChart(days) {
+        var cacheKeyBtc = 'dash_btc_chart_' + days;
+        var cacheKeyXmr = 'dash_xmr_chart_' + days;
+        var maxAge = chartCacheMs(days);
+
+        var cachedBtc = cacheGet(cacheKeyBtc, maxAge);
+        var cachedXmr = cacheGet(cacheKeyXmr, maxAge);
+
+        if (cachedBtc && cachedXmr) {
+            renderCompData(cachedBtc, cachedXmr);
+            return;
+        }
+
+        Promise.all([
+            fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=' + days).then(function(r) { return r.json(); }),
+            fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days=' + days).then(function(r) { return r.json(); })
+        ]).then(function(results) {
+            var btcRaw = processPrices(results[0].prices || []);
+            var xmrRaw = processPrices(results[1].prices || []);
+            cacheSet(cacheKeyBtc, btcRaw);
+            cacheSet(cacheKeyXmr, xmrRaw);
+            renderCompData(btcRaw, xmrRaw);
+        }).catch(function() {});
+    }
+
+    function processPrices(prices) {
+        var seen = {};
+        var data = [];
+        prices.forEach(function(p) {
+            var t = Math.floor(p[0] / 1000);
+            var day = Math.floor(t / 86400) * 86400;
+            if (!seen[day]) {
+                seen[day] = true;
+                data.push({ time: day, value: p[1] });
+            }
+        });
+        data.sort(function(a, b) { return a.time - b.time; });
+        return data;
+    }
+
+    function renderCompData(btcData, xmrData) {
+        if (!btcData.length || !xmrData.length) return;
+        var btcBase = btcData[0].value;
+        var xmrBase = xmrData[0].value;
+
+        var btcNorm = btcData.map(function(d) { return { time: d.time, value: ((d.value - btcBase) / btcBase) * 100 }; });
+        var xmrNorm = xmrData.map(function(d) { return { time: d.time, value: ((d.value - xmrBase) / xmrBase) * 100 }; });
+
+        compBtcSeries.setData(btcNorm);
+        compXmrSeries.setData(xmrNorm);
+        compChartInstance.timeScale().fitContent();
+    }
+
+    function setupRangeButtons(containerId, loadFn) {
+        var container = document.getElementById(containerId);
+        var buttons = container.querySelectorAll('.chart-range-btn');
+        buttons.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                buttons.forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
+                loadFn(parseInt(btn.getAttribute('data-days'), 10));
+            });
+        });
+    }
+
+    /* ── Lazy-load charts via IntersectionObserver ── */
+    function observeChart(elementId, initFn) {
+        var el = document.getElementById(elementId);
+        if (!el) return;
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                if (entry.isIntersecting) {
+                    observer.unobserve(el);
+                    if (typeof LightweightCharts !== 'undefined') {
+                        initFn();
+                    } else {
+                        // Wait for library to load
+                        var check = setInterval(function() {
+                            if (typeof LightweightCharts !== 'undefined') {
+                                clearInterval(check);
+                                initFn();
+                            }
+                        }, 200);
+                    }
+                }
+            });
+        }, { rootMargin: '200px' });
+        observer.observe(el);
+    }
+
+    observeChart('xmrChartArea', initXmrChart);
+    observeChart('compChartArea', initCompChart);
+
+    /* ── Section 4: Fiat Prices ── */
+    var FIAT_API = 'https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=usd,eur,jpy,gbp,chf,aud&include_24hr_change=true';
+    var FIAT_SYMBOLS = {
+        usd: { symbol: '$', name: 'USD', decimals: 2 },
+        eur: { symbol: '\u20AC', name: 'EUR', decimals: 2 },
+        jpy: { symbol: '\u00A5', name: 'JPY', decimals: 0 },
+        gbp: { symbol: '\u00A3', name: 'GBP', decimals: 2 },
+        chf: { symbol: 'CHF ', name: 'CHF', decimals: 2 },
+        aud: { symbol: 'A$', name: 'AUD', decimals: 2 },
+    };
+
+    function fetchFiat() {
+        var cached = cacheGet('dash_fiat', TICKER_CACHE_MS);
+        if (cached) { renderFiat(cached); return; }
+
+        fetch(FIAT_API)
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var xmr = d.monero || {};
+                cacheSet('dash_fiat', xmr);
+                renderFiat(xmr);
+            })
+            .catch(function() {
+                var grid = document.getElementById('fiatGrid');
+                grid.innerHTML = '<div class="fiat-card"><span class="ticker-loading">Unable to load fiat prices.</span></div>';
+            });
+    }
+
+    function renderFiat(data) {
+        var grid = document.getElementById('fiatGrid');
+        grid.innerHTML = '';
+        var keys = ['usd', 'eur', 'gbp', 'chf', 'aud', 'jpy'];
+        keys.forEach(function(k) {
+            var info = FIAT_SYMBOLS[k];
+            var price = data[k];
+            var changeKey = k + '_24h_change';
+            var change = data[changeKey];
+            var cls = (change != null && change >= 0) ? 'positive' : 'negative';
+
+            var card = document.createElement('div');
+            card.className = 'fiat-card fade-in';
+            card.innerHTML =
+                '<div class="fiat-currency">XMR / ' + info.name + '</div>' +
+                '<div class="fiat-price">' + (price != null ? info.symbol + price.toLocaleString('en-US', { minimumFractionDigits: info.decimals, maximumFractionDigits: info.decimals }) : '—') + '</div>' +
+                '<div class="fiat-change ' + cls + '">' + (change != null ? formatPct(change) : '—') + '</div>';
+            grid.appendChild(card);
+        });
+    }
+
+    fetchFiat();
+    setInterval(fetchFiat, TICKER_REFRESH);
+
+})();
+</script>
+</body>
+</html>
