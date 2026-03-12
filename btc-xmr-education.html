@@ -43,6 +43,7 @@
         html {
             scroll-behavior: smooth;
             scroll-snap-type: y proximity;
+            -webkit-text-size-adjust: 100%;
         }
 
         body {
@@ -52,10 +53,12 @@
             line-height: 1.7;
             overflow-x: hidden;
             cursor: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Navigation */
-        .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(18,18,18,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+        .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 1000; background: rgba(18,18,18,0.95); backdrop-filter: blur(20px); border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem; padding-left: max(2rem, env(safe-area-inset-left)); padding-right: max(2rem, env(safe-area-inset-right)); display: flex; justify-content: space-between; align-items: center; }
         .nav-logo { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; cursor: pointer; }
         .nav-links { display: flex; gap: 1.5rem; align-items: center; }
         .nav-links > a { color: #A0A0A0; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; cursor: pointer; }
@@ -85,7 +88,7 @@
         .hamburger span { width: 25px; height: 2px; background: var(--btc-white); transition: all 0.3s ease; }
         .mobile-menu { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(18,18,18,0.98); z-index: 999; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; cursor: auto; }
         .mobile-menu.active { display: flex; }
-        .mobile-menu a { color: var(--btc-white); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); cursor: pointer; }
+        .mobile-menu a { color: var(--btc-white); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); cursor: pointer; padding: 0.5rem 1rem; min-height: 44px; display: flex; align-items: center; }
         .mobile-prices { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; font-family: var(--font-mono); }
         @media (max-width: 1024px) { .nav-links, .price-ticker { display: none; } .hamburger { display: flex; } }
 
@@ -129,7 +132,7 @@
         /* Section base */
         section {
             position: relative;
-            min-height: 100vh;
+            min-height: 100vh; min-height: 100svh;
             padding: var(--section-padding);
             scroll-snap-align: start;
             z-index: 1;
@@ -1023,6 +1026,13 @@
             body {
                 cursor: auto;
             }
+            section { min-height: auto; padding: 3rem 1rem; }
+        }
+        @media (max-width: 480px) {
+            .comparison-card { padding: 1.5rem; }
+        }
+        @supports (padding: env(safe-area-inset-bottom)) {
+            body { padding-bottom: env(safe-area-inset-bottom); }
         }
     </style>
 </head>

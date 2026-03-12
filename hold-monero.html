@@ -37,6 +37,7 @@
 
         html {
             scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
         }
 
         body {
@@ -45,6 +46,8 @@
             color: var(--text-primary);
             line-height: 1.7;
             overflow-x: hidden;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-overflow-scrolling: touch;
         }
 
         /* Navigation */
@@ -58,6 +61,8 @@
             backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--grey-18);
             padding: 1rem 2rem;
+            padding-left: max(2rem, env(safe-area-inset-left));
+            padding-right: max(2rem, env(safe-area-inset-right));
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -152,6 +157,10 @@
             text-decoration: none;
             font-size: 1.5rem;
             font-family: var(--font-display);
+            padding: 0.5rem 1rem;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
         }
 
         /* Hero Section */
@@ -1227,6 +1236,16 @@
             .alt-flow {
                 flex-wrap: wrap;
             }
+
+            .iframe-wrapper iframe { height: 380px; }
+            .wagyu-iframe-container iframe { height: 500px; }
+        }
+        @media (max-width: 480px) {
+            .portal-tab { padding: 0.6rem 1rem; font-size: 0.8rem; }
+            .hero { padding: 6rem 1rem 2rem; }
+        }
+        @supports (padding: env(safe-area-inset-bottom)) {
+            body { padding-bottom: env(safe-area-inset-bottom); }
         }
     </style>
 </head>
