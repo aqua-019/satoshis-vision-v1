@@ -7,7 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js" crossorigin="anonymous"
+        onerror="var s=document.createElement('script');s.src='https://unpkg.com/lightweight-charts@4.1.0/dist/lightweight-charts.standalone.production.js';s.crossOrigin='anonymous';document.head.appendChild(s);"></script>
     <style>
         :root {
             --btc-orange: #F7931A;
@@ -1141,7 +1142,7 @@
                 };
                 cacheSet('dash_xmr_detail', data);
                 renderXmrMarketData(data);
-            }).catch(function(){});
+            }).catch(function(e){ console.error('Dashboard API error:', e); });
     }
 
     function renderXmrMarketData(d) {
@@ -1178,7 +1179,7 @@
                 };
                 cacheSet('dash_comp_detail', data);
                 renderCompMarketData(data);
-            }).catch(function(){});
+            }).catch(function(e){ console.error('Dashboard API error:', e); });
     }
 
     function renderCompMarketData(d) {
@@ -1193,7 +1194,7 @@
             fetchWithRetry('https://api.coingecko.com/api/v3/global').then(function(r){return r.json();}).then(function(g){
                 var dom = g.data && g.data.market_cap_percentage && g.data.market_cap_percentage.btc;
                 setText('compBtcDom', dom ? dom.toFixed(1) + '%' : '—');
-            }).catch(function(){});
+            }).catch(function(e){ console.error('Dashboard API error:', e); });
         }
         setText('compXmrBtcRatio', (d.btcPrice && d.xmrPrice) ? (d.xmrPrice / d.btcPrice).toFixed(6) : '—');
         setText('compBtcMcap', d.btcMcap ? formatMcap(d.btcMcap) : '—');
@@ -1206,10 +1207,13 @@
     /* ── Section 2: XMR Chart + Volume ── */
     function createChart(containerId, height) {
         var c = document.getElementById(containerId);
+        if (!c) { console.error('Chart container not found:', containerId); return null; }
         c.innerHTML = '';
-        var opts = Object.assign({}, CHART_OPTS, { width: c.clientWidth, height: height || c.clientHeight });
+        var w = c.clientWidth || c.offsetWidth || c.getBoundingClientRect().width || 300;
+        var h = height || c.clientHeight || 300;
+        var opts = Object.assign({}, CHART_OPTS, { width: w, height: h, autoSize: true });
         var chart = LightweightCharts.createChart(c, opts);
-        new ResizeObserver(function() { chart.applyOptions({ width: c.clientWidth }); }).observe(c);
+        try { new ResizeObserver(function() { chart.applyOptions({ width: c.clientWidth || w }); }).observe(c); } catch(e) {}
         return chart;
     }
 
@@ -1254,7 +1258,7 @@
                 var volumes = processPrices(d.total_volumes || []);
                 cacheSet(cacheKey, { prices: prices, volumes: volumes });
                 applyXmrChartData(prices, volumes);
-            }).catch(function(){});
+            }).catch(function(e){ console.error('XMR chart data error:', e); });
     }
 
     function applyXmrChartData(prices, volumes) {
@@ -1337,7 +1341,7 @@
             cacheSet(cacheKeyBtc, { prices: btcPrices, volumes: btcVols });
             cacheSet(cacheKeyXmr, { prices: xmrPrices, volumes: xmrVols });
             renderCompData(btcPrices, xmrPrices);
-        }).catch(function(){});
+        }).catch(function(e){ console.error('Dashboard API error:', e); });
     }
 
     function processPrices(prices) {
@@ -1412,6 +1416,12 @@
     }
 
     /* ── Lazy-load charts via IntersectionObserver ── */
+    function showChartError(el) {
+        el.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-family:var(--font-mono);font-size:0.85rem;flex-direction:column;gap:0.5rem;">' +
+            '<span>Chart library failed to load.</span>' +
+            '<span style="font-size:0.75rem;">Try disabling shields/ad-blocker for this page.</span></div>';
+    }
+
     function observeChart(elementId, initFn) {
         var el = document.getElementById(elementId);
         if (!el) return;
@@ -1420,10 +1430,18 @@
                 if (entry.isIntersecting) {
                     observer.unobserve(el);
                     if (typeof LightweightCharts !== 'undefined') {
-                        initFn();
+                        try { initFn(); } catch(e) { console.error('Chart init error:', e); showChartError(el); }
                     } else {
+                        var attempts = 0;
                         var check = setInterval(function() {
-                            if (typeof LightweightCharts !== 'undefined') { clearInterval(check); initFn(); }
+                            attempts++;
+                            if (typeof LightweightCharts !== 'undefined') {
+                                clearInterval(check);
+                                try { initFn(); } catch(e) { console.error('Chart init error:', e); showChartError(el); }
+                            } else if (attempts > 25) { // 5 seconds max
+                                clearInterval(check);
+                                showChartError(el);
+                            }
                         }, 200);
                     }
                 }
