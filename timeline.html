@@ -12,11 +12,10 @@
             --btc-orange: #F7931A;
             --btc-gold: #FFD700;
             --xmr-orange: #FF6600;
-            --crossover-cyan: #00CED1;
-            --tradfi-blue: #4A90D9;
-            --regulation-red: #FF4757;
-            --privacy-purple: #9B59B6;
-            --success-green: #00D26A;
+            --crossover-cyan: #00D4AA;
+            --regulation-yellow: #FFD700;
+            --tradfi-green: #00C853;
+            --privacy-purple: #AA66FF;
             --dark-bg: #0a0a0a;
             --card-bg: #121212;
             --grey-18: #2E2E2E;
@@ -29,12 +28,11 @@
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         html { scroll-behavior: smooth; }
-
         body {
             font-family: var(--font-body);
             background: var(--dark-bg);
             color: var(--text-primary);
-            line-height: 1.6;
+            line-height: 1.5;
             min-height: 100vh;
         }
 
@@ -45,9 +43,17 @@
             border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem;
             display: flex; justify-content: space-between; align-items: center;
         }
-        .nav-logo { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; text-decoration: none; }
+        .nav-logo {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; text-decoration: none;
+        }
         .nav-links { display: flex; gap: 1.5rem; align-items: center; }
-        .nav-links > a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; }
+        .nav-links > a {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease;
+        }
         .nav-links > a:hover, .nav-links > a.nav-active { color: var(--xmr-orange); }
         .nav-dropdown { position: relative; }
         .nav-dropdown-toggle { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block; }
@@ -71,191 +77,216 @@
             0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(0,210,106,0); }
             50% { opacity: 1; box-shadow: 0 0 8px 2px rgba(0,210,106,0.4); }
         }
-
         .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 10px; }
         .hamburger span { width: 25px; height: 2px; background: var(--text-primary); }
-        .mobile-menu { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 10, 10, 0.98); z-index: 999; flex-direction: column; justify-content: center; align-items: center; gap: 2rem; }
+        .mobile-menu {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 10, 0.98); z-index: 999;
+            flex-direction: column; justify-content: center; align-items: center; gap: 2rem;
+        }
         .mobile-menu.active { display: flex; }
         .mobile-menu a { color: var(--text-primary); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); }
 
-        /* Hero */
+        /* Hero - compact */
         .hero {
-            padding: 7rem 2rem 2rem; text-align: center;
+            padding: 6rem 2rem 1.5rem; text-align: center;
             background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 100%);
         }
-        .hero-eyebrow { font-family: var(--font-mono); font-size: 0.8rem; color: var(--btc-orange); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0.75rem; }
-        .hero-title { font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; margin-bottom: 0.75rem; }
-        .hero-subtitle { color: var(--text-secondary); max-width: 700px; margin: 0 auto 1.5rem; font-size: 0.9rem; }
-
-        /* Filter Buttons */
-        .filter-bar {
-            display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;
-            margin-bottom: 1.5rem;
+        .hero-eyebrow {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--btc-orange);
+            text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0.5rem;
         }
-        .filter-btn {
-            padding: 0.4rem 1rem; border: 1px solid var(--grey-18); border-radius: 20px;
-            background: transparent; color: var(--text-secondary); cursor: pointer;
-            font-family: var(--font-mono); font-size: 0.75rem; transition: all 0.3s ease;
+        .hero-title {
+            font-family: var(--font-display); font-size: clamp(1.5rem, 4vw, 2.5rem);
+            font-weight: 700; margin-bottom: 0.5rem;
         }
-        .filter-btn:hover { border-color: var(--xmr-orange); color: var(--xmr-orange); }
-        .filter-btn.active { background: var(--xmr-orange); color: #000; border-color: var(--xmr-orange); }
-        .filter-btn[data-filter="btc"].active { background: var(--btc-orange); border-color: var(--btc-orange); }
-        .filter-btn[data-filter="crossover"].active { background: var(--crossover-cyan); border-color: var(--crossover-cyan); }
-        .filter-btn[data-filter="regulation"].active { background: var(--regulation-red); border-color: var(--regulation-red); }
-        .filter-btn[data-filter="tradfi"].active { background: var(--tradfi-blue); border-color: var(--tradfi-blue); }
-        .filter-btn[data-filter="privacy"].active { background: var(--privacy-purple); border-color: var(--privacy-purple); }
+        .hero-subtitle { color: var(--text-secondary); max-width: 600px; margin: 0 auto 1rem; font-size: 0.9rem; }
 
         /* Legend */
-        .legend { display: flex; justify-content: center; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 1rem; }
-        .legend-item { display: flex; align-items: center; gap: 0.4rem; font-family: var(--font-mono); font-size: 0.75rem; }
-        .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .legend { display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .legend-item { display: flex; align-items: center; gap: 0.35rem; font-family: var(--font-mono); font-size: 0.75rem; }
+        .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
         .legend-dot.btc { background: var(--btc-orange); }
         .legend-dot.xmr { background: var(--xmr-orange); }
         .legend-dot.crossover { background: var(--crossover-cyan); }
-        .legend-dot.tradfi { background: var(--tradfi-blue); }
-        .legend-dot.regulation { background: var(--regulation-red); }
+        .legend-dot.regulation { background: var(--regulation-yellow); }
+        .legend-dot.tradfi { background: var(--tradfi-green); }
         .legend-dot.privacy { background: var(--privacy-purple); }
 
-        /* Dual-Column Timeline */
-        .timeline-wrapper { max-width: 1200px; margin: 0 auto; padding: 0 1rem 3rem; }
-
-        .year-divider {
-            display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0 1rem;
-            padding: 0; width: 100%;
+        /* Filter Buttons */
+        .filters {
+            display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;
+            padding: 0 2rem 1rem;
         }
-        .year-divider::before, .year-divider::after {
+        .filter-btn {
+            padding: 0.35rem 1rem; border: 1px solid var(--grey-18); background: transparent;
+            color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem;
+            border-radius: 20px; cursor: pointer; transition: all 0.2s ease;
+        }
+        .filter-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+        .filter-btn.active { background: var(--xmr-orange); border-color: var(--xmr-orange); color: #000; font-weight: 600; }
+        .filter-btn.active[data-filter="btc"] { background: var(--btc-orange); border-color: var(--btc-orange); }
+        .filter-btn.active[data-filter="regulation"] { background: var(--regulation-yellow); border-color: var(--regulation-yellow); }
+        .filter-btn.active[data-filter="crossover"] { background: var(--crossover-cyan); border-color: var(--crossover-cyan); }
+        .filter-btn.active[data-filter="tradfi"] { background: var(--tradfi-green); border-color: var(--tradfi-green); }
+        .filter-btn.active[data-filter="privacy"] { background: var(--privacy-purple); border-color: var(--privacy-purple); }
+
+        /* Timeline Container */
+        .timeline-container { max-width: 1200px; margin: 0 auto; padding: 0 1rem 3rem; }
+
+        /* Year Header */
+        .year-header {
+            display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0 0.75rem;
+            position: relative;
+        }
+        .year-header::before, .year-header::after {
             content: ''; flex: 1; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--btc-gold), transparent);
+            background: linear-gradient(90deg, transparent, var(--btc-orange), var(--xmr-orange), transparent);
         }
         .year-label {
-            font-family: var(--font-display); font-size: 1.3rem; font-weight: 700;
-            color: var(--btc-gold); white-space: nowrap; padding: 0.25rem 1rem;
-            border: 1px solid rgba(255,215,0,0.3); background: var(--dark-bg);
+            font-family: var(--font-display); font-size: 1.4rem; font-weight: 700;
+            color: var(--text-primary); padding: 0.25rem 1.25rem;
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 6px;
+            white-space: nowrap;
         }
 
-        /* Grid row for side-by-side events */
-        .event-row {
+        /* Dual Column Grid */
+        .year-grid {
             display: grid; grid-template-columns: 1fr 4px 1fr; gap: 0;
-            margin-bottom: 0.5rem; min-height: 0;
+            position: relative;
         }
-        .event-row.hidden { display: none; }
-
-        /* Center spine */
-        .row-spine {
+        .col-left { display: flex; flex-direction: column; gap: 6px; padding-right: 12px; }
+        .col-right { display: flex; flex-direction: column; gap: 6px; padding-left: 12px; }
+        .center-line {
             background: linear-gradient(180deg, var(--btc-orange), var(--xmr-orange));
-            position: relative;
-        }
-        .row-spine .spine-dot {
-            position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-            width: 8px; height: 8px; border-radius: 50%; z-index: 2;
+            border-radius: 2px; position: relative;
         }
 
-        /* Event columns */
-        .col-left, .col-right { padding: 0.25rem 0.5rem; }
-        .col-left { text-align: right; }
-        .col-right { text-align: left; }
-
-        /* Event card */
-        .event-card {
-            display: inline-block; text-align: left; padding: 0.5rem 0.75rem;
-            background: var(--card-bg); border-left: 3px solid var(--btc-orange);
-            transition: all 0.2s ease; cursor: pointer; width: 100%; max-width: 100%;
+        /* Event Card */
+        .evt {
+            padding: 8px 10px; background: var(--card-bg); border-radius: 6px;
+            border-left: 3px solid var(--grey-18); cursor: pointer;
+            transition: all 0.15s ease; position: relative;
         }
-        .col-left .event-card { text-align: right; border-left: none; border-right: 3px solid var(--btc-orange); }
+        .evt:hover { background: #1a1a1a; transform: translateX(2px); }
+        .evt.expanded { background: #1a1a1a; }
 
-        .event-card:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(255,102,0,0.1); }
+        /* Card type borders */
+        .evt.btc { border-left-color: var(--btc-orange); }
+        .evt.xmr { border-left-color: var(--xmr-orange); }
+        .evt.crossover { border-left-color: var(--crossover-cyan); }
+        .evt.regulation { border-left-color: var(--regulation-yellow); }
+        .evt.tradfi { border-left-color: var(--tradfi-green); }
+        .evt.privacy { border-left-color: var(--privacy-purple); }
 
-        .event-card.btc { border-color: var(--btc-orange); }
-        .event-card.xmr { border-color: var(--xmr-orange); }
-        .event-card.crossover { border-color: var(--crossover-cyan); background: linear-gradient(135deg, var(--card-bg), rgba(0,206,209,0.05)); }
-        .event-card.tradfi { border-color: var(--tradfi-blue); }
-        .event-card.regulation { border-color: var(--regulation-red); }
-        .event-card.privacy { border-color: var(--privacy-purple); }
+        /* Right-column cards: border on right instead */
+        .col-right .evt { border-left: none; border-right: 3px solid var(--grey-18); }
+        .col-right .evt.btc { border-right-color: var(--btc-orange); }
+        .col-right .evt.xmr { border-right-color: var(--xmr-orange); }
+        .col-right .evt.crossover { border-right-color: var(--crossover-cyan); }
+        .col-right .evt.regulation { border-right-color: var(--regulation-yellow); }
+        .col-right .evt.tradfi { border-right-color: var(--tradfi-green); }
+        .col-right .evt.privacy { border-right-color: var(--privacy-purple); }
 
-        .event-badge {
-            display: inline-block; padding: 0.15rem 0.5rem; font-family: var(--font-mono);
-            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px;
-            margin-bottom: 0.3rem; border-radius: 2px;
-        }
-        .event-badge.btc { background: rgba(247,147,26,0.15); color: var(--btc-orange); }
-        .event-badge.xmr { background: rgba(255,102,0,0.15); color: var(--xmr-orange); }
-        .event-badge.crossover { background: rgba(0,206,209,0.15); color: var(--crossover-cyan); }
-        .event-badge.tradfi { background: rgba(74,144,217,0.15); color: var(--tradfi-blue); }
-        .event-badge.regulation { background: rgba(255,71,87,0.15); color: var(--regulation-red); }
-        .event-badge.privacy { background: rgba(155,89,182,0.15); color: var(--privacy-purple); }
-
-        .event-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 0.15rem; }
-        .event-title { font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; line-height: 1.2; margin-bottom: 0.2rem; }
-        .event-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
-        .event-metric { font-family: var(--font-mono); font-size: 0.65rem; color: var(--btc-gold); margin-top: 0.25rem; }
-        .event-card.xmr .event-metric { color: var(--xmr-orange); }
-        .event-card.crossover .event-metric { color: var(--crossover-cyan); }
-
-        /* Crossover spanning both columns */
-        .event-row.crossover-row {
-            grid-template-columns: 1fr;
-        }
-        .crossover-full {
-            text-align: center; padding: 0.25rem 2rem;
-        }
-        .crossover-full .event-card {
-            border-left: 3px solid var(--crossover-cyan); border-right: 3px solid var(--crossover-cyan);
-            max-width: 700px; margin: 0 auto; text-align: center;
+        /* Span events (crossover/regulation that span both) */
+        .evt.span-both {
+            grid-column: 1 / -1; border-left: 3px solid var(--crossover-cyan);
+            border-right: none; margin: 4px 0;
         }
 
-        /* Detail Modal */
-        .detail-overlay {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.8); z-index: 1001; justify-content: center; align-items: center;
-            padding: 2rem;
+        .evt-badge {
+            display: inline-block; font-family: var(--font-mono); font-size: 0.6rem;
+            text-transform: uppercase; letter-spacing: 0.5px; padding: 1px 6px;
+            border-radius: 3px; margin-bottom: 3px; font-weight: 600;
         }
-        .detail-overlay.open { display: flex; }
-        .detail-box {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 8px;
-            max-width: 650px; width: 100%; max-height: 80vh; overflow-y: auto; padding: 2rem;
-            position: relative;
+        .evt-badge.btc { background: rgba(247,147,26,0.15); color: var(--btc-orange); }
+        .evt-badge.xmr { background: rgba(255,102,0,0.15); color: var(--xmr-orange); }
+        .evt-badge.crossover { background: rgba(0,212,170,0.15); color: var(--crossover-cyan); }
+        .evt-badge.regulation { background: rgba(255,215,0,0.15); color: var(--regulation-yellow); }
+        .evt-badge.tradfi { background: rgba(0,200,83,0.15); color: var(--tradfi-green); }
+        .evt-badge.privacy { background: rgba(170,102,255,0.15); color: var(--privacy-purple); }
+
+        .evt-date { font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-secondary); margin-bottom: 2px; }
+        .evt-title { font-family: var(--font-display); font-size: 0.9rem; font-weight: 600; line-height: 1.2; margin-bottom: 2px; }
+        .evt-preview { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.3; }
+        .evt-detail {
+            display: none; font-size: 0.75rem; color: var(--text-secondary);
+            line-height: 1.4; margin-top: 6px; padding-top: 6px;
+            border-top: 1px solid var(--grey-18);
         }
-        .detail-box .close-btn {
-            position: absolute; top: 1rem; right: 1rem; background: none; border: none;
-            color: var(--text-secondary); font-size: 1.5rem; cursor: pointer;
+        .evt.expanded .evt-detail { display: block; }
+        .evt-metric {
+            font-family: var(--font-mono); font-size: 0.65rem; color: var(--btc-orange);
+            margin-top: 4px;
         }
-        .detail-box h2 { font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 0.5rem; }
-        .detail-box .detail-date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 1rem; }
-        .detail-box .detail-content { font-size: 0.9rem; line-height: 1.7; color: rgba(255,255,255,0.85); }
-        .detail-box .detail-link { display: inline-block; margin-top: 1rem; color: var(--xmr-orange); font-family: var(--font-mono); font-size: 0.8rem; }
+        .evt.xmr .evt-metric { color: var(--xmr-orange); }
+        .evt.crossover .evt-metric { color: var(--crossover-cyan); }
+        .evt.regulation .evt-metric { color: var(--regulation-yellow); }
+        .evt.tradfi .evt-metric { color: var(--tradfi-green); }
+        .evt.privacy .evt-metric { color: var(--privacy-purple); }
+
+        .evt-link {
+            display: inline-block; margin-top: 4px; font-family: var(--font-mono);
+            font-size: 0.65rem; color: var(--xmr-orange); text-decoration: none;
+        }
+        .evt-link:hover { text-decoration: underline; }
+
+        /* Hidden by filter */
+        .evt.filtered-out { display: none; }
+        .year-header.filtered-out { display: none; }
 
         /* Footer */
         footer {
-            background: var(--card-bg); border-top: 1px solid var(--grey-18);
-            padding: 2rem; text-align: center;
+            background: var(--card-bg); padding: 3rem 2rem; text-align: center;
+            border-top: 1px solid var(--grey-18);
         }
-        .footer-nav { display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-        .footer-nav a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; transition: color 0.3s; }
-        .footer-nav a:hover { color: var(--xmr-orange); }
-        .footer-copy { font-size: 0.8rem; color: var(--text-secondary); }
+        .footer-nav { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+        .footer-nav a { color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: color 0.3s ease; }
+        .footer-nav a:hover { color: var(--btc-orange); }
 
-        /* Responsive */
+        /* Mobile */
         @media (max-width: 1024px) {
             .nav-links, .price-ticker { display: none; }
             .hamburger { display: flex; }
         }
+
         @media (max-width: 768px) {
-            .event-row { grid-template-columns: 1fr; gap: 0; }
-            .row-spine { display: none; }
-            .col-left, .col-right { text-align: left; padding: 0.15rem 0.25rem; }
-            .col-left .event-card { text-align: left; border-left: 3px solid var(--btc-orange); border-right: none; }
-            .col-left .event-card.xmr { border-left-color: var(--xmr-orange); }
-            .col-left .event-card.crossover { border-left-color: var(--crossover-cyan); }
-            .col-left .event-card.tradfi { border-left-color: var(--tradfi-blue); }
-            .col-left .event-card.regulation { border-left-color: var(--regulation-red); }
-            .event-row.crossover-row { grid-template-columns: 1fr; }
-            .crossover-full { padding: 0.15rem 0.25rem; }
-            .crossover-full .event-card { border-left: 3px solid var(--crossover-cyan); border-right: none; text-align: left; }
-            .hero { padding: 6rem 1rem 1.5rem; }
+            .year-grid {
+                grid-template-columns: 1fr; gap: 6px;
+            }
+            .center-line { display: none; }
+            .col-left, .col-right { padding: 0; }
+            .col-right .evt { border-right: none; border-left: 3px solid var(--grey-18); }
+            .col-right .evt.btc { border-left-color: var(--btc-orange); }
+            .col-right .evt.xmr { border-left-color: var(--xmr-orange); }
+            .col-right .evt.crossover { border-left-color: var(--crossover-cyan); }
+            .col-right .evt.regulation { border-left-color: var(--regulation-yellow); }
+            .col-right .evt.tradfi { border-left-color: var(--tradfi-green); }
+            .col-right .evt.privacy { border-left-color: var(--privacy-purple); }
+            .evt.span-both { grid-column: auto; }
+            .hero { padding-top: 5rem; }
+            .filters { gap: 0.35rem; }
+            .filter-btn { padding: 0.25rem 0.75rem; font-size: 0.7rem; }
+        }
+
+        /* Column headers */
+        .col-headers {
+            display: grid; grid-template-columns: 1fr 4px 1fr; gap: 0;
+            max-width: 1200px; margin: 0 auto; padding: 0 1rem;
+        }
+        .col-header {
+            font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 1px; padding: 0.5rem 0; text-align: center;
+        }
+        .col-header.btc-side { color: var(--btc-orange); }
+        .col-header.xmr-side { color: var(--xmr-orange); }
+        @media (max-width: 768px) {
+            .col-headers { display: none; }
         }
     </style>
 </head>
 <body>
+    <!-- Navigation -->
     <nav class="nav">
         <a href="index.html" class="nav-logo">₿ → ɱ</a>
         <div class="nav-links">
@@ -304,242 +335,289 @@
 
     <!-- Hero -->
     <section class="hero">
-        <div class="hero-eyebrow">Comprehensive Historical Record</div>
-        <h1 class="hero-title">The Complete Timeline: 2008–2026</h1>
-        <p class="hero-subtitle">
-            Bitcoin's path to institutional adoption alongside Monero's evolution toward unbreakable privacy. Click any event for full details. Filter by category.
-        </p>
+        <div class="hero-eyebrow">Dual-Track History</div>
+        <h1 class="hero-title">The Privacy Evolution Timeline</h1>
+        <p class="hero-subtitle">Bitcoin on the left. Monero on the right. See how both paths evolved side by side. Click any event for details.</p>
         <div class="legend">
             <div class="legend-item"><span class="legend-dot btc"></span><span>Bitcoin</span></div>
             <div class="legend-item"><span class="legend-dot xmr"></span><span>Monero</span></div>
-            <div class="legend-item"><span class="legend-dot crossover"></span><span>Crossover</span></div>
             <div class="legend-item"><span class="legend-dot tradfi"></span><span>TradFi</span></div>
             <div class="legend-item"><span class="legend-dot regulation"></span><span>Regulation</span></div>
+            <div class="legend-item"><span class="legend-dot crossover"></span><span>Crossover</span></div>
             <div class="legend-item"><span class="legend-dot privacy"></span><span>Privacy</span></div>
-        </div>
-        <div class="filter-bar">
-            <button class="filter-btn active" data-filter="all">All</button>
-            <button class="filter-btn" data-filter="btc">Bitcoin</button>
-            <button class="filter-btn" data-filter="xmr">Monero</button>
-            <button class="filter-btn" data-filter="crossover">Crossover</button>
-            <button class="filter-btn" data-filter="tradfi">TradFi</button>
-            <button class="filter-btn" data-filter="regulation">Regulation</button>
         </div>
     </section>
 
-    <!-- Timeline Content -->
-    <div class="timeline-wrapper" id="timelineContainer">
-        <!-- Rendered by JavaScript -->
+    <!-- Filters -->
+    <div class="filters">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="btc">Bitcoin</button>
+        <button class="filter-btn" data-filter="xmr">Monero</button>
+        <button class="filter-btn" data-filter="tradfi">TradFi</button>
+        <button class="filter-btn" data-filter="regulation">Regulation</button>
+        <button class="filter-btn" data-filter="crossover">Crossover</button>
+        <button class="filter-btn" data-filter="privacy">Privacy</button>
     </div>
 
-    <!-- Detail Modal -->
-    <div class="detail-overlay" id="detailOverlay" onclick="if(event.target===this)closeDetail()">
-        <div class="detail-box">
-            <button class="close-btn" onclick="closeDetail()">&times;</button>
-            <h2 id="detailTitle"></h2>
-            <div class="detail-date" id="detailDate"></div>
-            <div class="detail-content" id="detailContent"></div>
-            <a href="#" class="detail-link" id="detailLink" target="_blank" rel="noopener noreferrer" style="display:none;">View Source &rarr;</a>
-        </div>
+    <!-- Column Headers -->
+    <div class="col-headers">
+        <div class="col-header btc-side">&#8592; Bitcoin / TradFi / Regulation</div>
+        <div></div>
+        <div class="col-header xmr-side">Monero / Privacy &#8594;</div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="timeline-container" id="timeline-container">
+        <!-- Rendered by JS -->
     </div>
 
     <!-- Footer -->
     <footer>
         <nav class="footer-nav">
             <a href="index.html">Home</a>
-            <a href="btc-xmr-education.html">Education</a>
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="dashboard.html">Dashboard</a>
             <a href="hold-monero.html">XMR</a>
             <a href="secrets.html">Secrets</a>
             <a href="quotes.html">Quote Archive</a>
-            <a href="future.html">2027+</a>
         </nav>
-        <p class="footer-copy">Privacy is not a crime. It is a right. &mdash; The Monero Community</p>
     </footer>
 
     <script>
-    // Complete timeline data — merged from comprehensive timeline
+    // All timeline events - comprehensive data from bottom-line.html
+    // side: "left" = BTC/TradFi/Regulation column, "right" = XMR/Privacy column, "span" = full width
     const events = [
         // 2008-2009
-        { year: "2008-2009", side: "left", type: "btc", badge: "Bitcoin Genesis", date: "October 31, 2008", title: "Bitcoin Whitepaper Published", desc: "Satoshi publishes 'A Peer-to-Peer Electronic Cash System' — transparent public ledger design.", detail: "Satoshi Nakamoto publishes the Bitcoin whitepaper to the Cryptography Mailing List. Section 10 on privacy warns about the limitations of address-based pseudonymity: 'Some linking is still unavoidable with multi-input transactions.' The transparent ledger would later enable institutional adoption but preclude true financial privacy.", metric: "Key Quote: 'We need a system for electronic transactions without relying on trust.'", link: "https://bitcoin.org/bitcoin.pdf" },
-        { year: "2008-2009", side: "left", type: "btc", badge: "Bitcoin Network", date: "January 3, 2009", title: "Genesis Block Mined", desc: "Block 0 with hidden message about bank bailouts. Reward: 50 BTC.", detail: "Satoshi mines Bitcoin's first block, embedding the headline 'The Times 03/Jan/2009 Chancellor on brink of second bailout for banks' in the coinbase transaction. This timestamp proves the block wasn't pre-mined and makes a philosophical statement about the traditional financial system.", metric: "Block: 0 · Reward: 50 BTC · Supply: 50 BTC" },
-        { year: "2008-2009", side: "right", type: "crossover", badge: "Satoshi's Privacy Warning", date: "2009-2010", title: "Satoshi Discusses Privacy Limitations", desc: "Describes ring signatures, stealth addresses — Monero's future tech.", detail: "In early communications, Satoshi acknowledges Bitcoin's privacy limitations and discusses potential solutions including 'ring signatures' and 'stealth addresses' — the exact technologies that would later form Monero's foundation.", metric: "Links to: CryptoNote (2013), Monero (2014)" },
-        { year: "2008-2009", side: "left", type: "btc", badge: "Bitcoin Network", date: "January 12, 2009", title: "First Bitcoin Transaction", desc: "Satoshi sends 10 BTC to Hal Finney in block 170.", detail: "The first Bitcoin transaction between two parties occurs in block 170. Satoshi Nakamoto sends 10 BTC to cryptographer Hal Finney, who had been running one of the first Bitcoin nodes and helping debug the software." },
+        { year: "2008-2009", type: "btc", side: "left", badge: "Bitcoin Genesis", date: "October 31, 2008", title: "Bitcoin Whitepaper Published", preview: "Satoshi publishes 'A Peer-to-Peer Electronic Cash System'", detail: "Satoshi Nakamoto publishes the Bitcoin whitepaper to the cryptography mailing list. The paper describes a transparent public ledger \u2014 a design choice that would later enable institutional adoption but preclude true financial privacy.", metric: "Key Quote: 'We need a system for electronic transactions without relying on trust.'", link: "https://bitcoin.org/bitcoin.pdf" },
+        { year: "2008-2009", type: "btc", side: "left", badge: "Bitcoin Network", date: "January 3, 2009", title: "Genesis Block Mined", preview: "Block 0 \u2014 'Chancellor on brink of second bailout for banks'", detail: "Satoshi mines Bitcoin's first block, embedding The Times headline. Block reward: 50 BTC. The first cryptocurrency network goes live.", metric: "Block: 0 | Reward: 50 BTC" },
+        { year: "2008-2009", type: "crossover", side: "span", badge: "Satoshi's Privacy Warning", date: "2009-2010", title: "Satoshi Discusses Privacy Limitations", preview: "Describes ring signatures, stealth addresses, hidden amounts \u2014 future Monero tech", detail: "In early communications, Satoshi acknowledges Bitcoin's privacy limitations and discusses potential solutions including 'ring signatures' and 'stealth addresses' \u2014 the exact technologies that would later form Monero's foundation.", metric: "Links to: CryptoNote (2013), Monero (2014)" },
 
-        // 2010-2011
-        { year: "2010-2011", side: "left", type: "btc", badge: "Bitcoin Culture", date: "May 22, 2010", title: "Bitcoin Pizza Day", desc: "10,000 BTC for two pizzas — first real-world BTC transaction.", detail: "Programmer Laszlo Hanyecz pays 10,000 BTC for two Papa John's pizzas, worth approximately $41 at the time. At peak Bitcoin prices, those pizzas would be worth hundreds of millions of dollars." },
-        { year: "2010-2011", side: "right", type: "crossover", badge: "Privacy Debate", date: "July 7-8, 2010", title: "Anonymity Thread (#82)", desc: "Community debates Bitcoin's privacy — 'Bitcoin is not anonymous.'", detail: "BitcoinTalk thread #82 titled 'Anonymity' sees the community debating whether Bitcoin provides adequate privacy. User theymos writes: 'Bitcoin is not anonymous. If you want to be anonymous, you need extra steps like Tor and mixing services.'", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/" },
-        { year: "2010-2011", side: "left", type: "btc", badge: "Bitcoin Exchange", date: "July 17, 2010", title: "Mt. Gox Launches", desc: "Would handle 70% of all BTC trades. Centralized + transparent = vulnerability.", detail: "Jed McCaleb launches Mt. Gox, which would grow to handle over 70% of all Bitcoin transactions worldwide. Its centralized nature and transparent blockchain would later combine catastrophically." },
-        { year: "2010-2011", side: "right", type: "crossover", badge: "Satoshi's Vision", date: "August 10-13, 2010", title: "Not a Suggestion Thread (#174)", desc: "Satoshi describes stealth addresses, ring signatures, hidden amounts.", detail: "Satoshi outlines cryptographic solutions that wouldn't exist for years: 'What we need is a way to generate additional blinded variations of a public key' (stealth addresses), 'With group signatures, it is possible for something to be signed but not know who signed it' (ring signatures), and 'If we have to hide transaction amounts...' (confidential transactions). These exact features would become Monero's core privacy layer.", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" },
-        { year: "2010-2011", side: "left", type: "btc", badge: "Satoshi Departs", date: "December 5, 2010", title: "Satoshi's Last Public Post", desc: "'WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.'", detail: "Satoshi makes his final public statement warning the project isn't ready for WikiLeaks-level scrutiny. He never posts publicly again.", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" },
-        { year: "2010-2011", side: "right", type: "btc", badge: "Dark Web", date: "February 2011", title: "Silk Road Launches", desc: "Tests Bitcoin's pseudonymity — blockchain later used to trace users.", detail: "Ross Ulbricht launches Silk Road on Tor using Bitcoin as sole currency. FBI investigators would later use blockchain analysis to trace transactions and identify participants, demonstrating Bitcoin's privacy weakness." },
-        { year: "2010-2011", side: "left", type: "btc", badge: "Final Communication", date: "April 23, 2011", title: "Satoshi's Final Email", desc: "'I've moved on to other things.' 1.1M BTC remain untouched.", detail: "Satoshi writes to developer Mike Hearn: 'I've moved on to other things. It's in good hands with Gavin and everyone.' He disappears from all known communication channels. His estimated 1.1 million BTC remain untouched." },
+        // 2010
+        { year: "2010", type: "btc", side: "left", badge: "Bitcoin Network", date: "May 22, 2010", title: "Bitcoin Pizza Day", preview: "10,000 BTC for two pizzas ($41)", detail: "Laszlo Hanyecz completes the first known real-world Bitcoin transaction by paying 10,000 BTC for two Papa John's pizzas, worth approximately $41. Celebrated annually as 'Bitcoin Pizza Day.'", metric: "" },
+        { year: "2010", type: "btc", side: "left", badge: "Privacy Discussion", date: "July 7-8, 2010", title: "Anonymity Thread (#82)", preview: "Community debates Bitcoin's privacy limitations", detail: "BitcoinTalk thread #82 sees the community debating whether Bitcoin provides adequate privacy. Theymos writes: 'Bitcoin is not anonymous. If you want to be anonymous, you need to take extra steps.'", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/" },
+        { year: "2010", type: "btc", side: "left", badge: "Bitcoin Network", date: "July 17, 2010", title: "Mt. Gox Launches", preview: "Dominant early exchange \u2014 would handle 70% of BTC trades", detail: "Jed McCaleb launches Mt. Gox. Originally a trading card exchange, it becomes the de facto Bitcoin exchange. Its centralized nature and transparent blockchain would later combine catastrophically." },
+        { year: "2010", type: "btc", side: "left", badge: "Satoshi's Vision", date: "August 10-13, 2010", title: "'Not a Suggestion' Thread (#174)", preview: "Satoshi describes stealth addresses, ring sigs, hidden amounts", detail: "Satoshi outlines cryptographic solutions: 'What we need is a way to generate additional blinded variations of a public key' (stealth addresses), group signatures (ring signatures), and hidden amounts. These exact features would become Monero's core privacy layer.", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" },
+        { year: "2010", type: "btc", side: "left", badge: "Bitcoin Network", date: "October 5, 2009", title: "First Exchange Rate", preview: "1,309 BTC = $1 ($0.000764/BTC)", detail: "New Liberty Standard publishes the first known Bitcoin exchange rate based on electricity cost." },
+        { year: "2010", type: "btc", side: "left", badge: "Satoshi Departure", date: "December 5, 2010", title: "Satoshi's Last Public Post", preview: "'WikiLeaks has kicked the hornet's nest'", detail: "Satoshi makes his final public statement about WikiLeaks accepting Bitcoin donations. He never posts publicly again.", link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" },
 
-        // 2012-2013
-        { year: "2012-2013", side: "left", type: "btc", badge: "Bitcoin Halving", date: "November 28, 2012", title: "First Bitcoin Halving", desc: "Block reward: 50 → 25 BTC. Programmed scarcity begins.", detail: "Bitcoin's first halving at block 210,000, reducing the block reward from 50 to 25 BTC. This programmed scarcity mechanism reinforces Bitcoin's deflationary monetary policy.", metric: "Block: 210,000 · Reward: 50→25 BTC" },
-        { year: "2012-2013", side: "right", type: "crossover", badge: "Privacy Foundation", date: "December 12, 2012", title: "CryptoNote Whitepaper", desc: "Nicolas van Saberhagen implements exactly what Satoshi theorized.", detail: "The CryptoNote whitepaper describes ring signatures, one-time addresses, and unlinkable transactions — exactly what Satoshi had theorized. It directly critiques Bitcoin's traceability: 'Bitcoin does not satisfy the untraceability requirement.' This paper becomes Monero's foundation.", link: "https://cryptonote.org/whitepaper.pdf" },
-        { year: "2012-2013", side: "left", type: "crossover", badge: "Privacy Attempt", date: "January 2013", title: "Greg Maxwell Proposes CoinJoin", desc: "Opt-in BTC mixing — later defeated by chain analysis firms.", detail: "Bitcoin Core developer Gregory Maxwell proposes CoinJoin to improve Bitcoin privacy by combining multiple users' transactions. However, CoinJoin is opt-in and requires coordination. Chain analysis firms would later develop techniques to unravel CoinJoin transactions." },
+        // 2011
+        { year: "2011", type: "btc", side: "left", badge: "Bitcoin Network", date: "February 2011", title: "Silk Road Launches", preview: "Dark web marketplace tests Bitcoin's pseudonymity", detail: "Ross Ulbricht launches Silk Road using Bitcoin as sole currency. The transparent blockchain creates a permanent, traceable record. FBI would later use blockchain analysis to trace transactions and arrest Ulbricht." },
+        { year: "2011", type: "btc", side: "left", badge: "Satoshi Departure", date: "April 23, 2011", title: "Satoshi's Final Email", preview: "'I've moved on to other things'", detail: "In his last known communication, Satoshi writes to Mike Hearn: 'I've moved on to other things. It's in good hands with Gavin and everyone.' His estimated 1.1M BTC remain untouched." },
+
+        // 2012
+        { year: "2012", type: "btc", side: "left", badge: "Bitcoin Halving", date: "November 28, 2012", title: "First Bitcoin Halving", preview: "50 BTC \u2192 25 BTC. Price: $12 \u2192 $1,003 (1yr)", detail: "Bitcoin's first halving at block 210,000. This programmed scarcity mechanism cuts new Bitcoin creation in half every ~4 years.", metric: "Block: 210,000 | New Reward: 25 BTC | Price: $12.35 \u2192 $1,003" },
+
+        // 2013
+        { year: "2013", type: "privacy", side: "right", badge: "Privacy Protocol", date: "October 2013", title: "CryptoNote Whitepaper Published", preview: "Ring signatures + one-time addresses \u2014 Monero's foundation", detail: "Nicolas van Saberhagen publishes the CryptoNote v2 whitepaper, calling Bitcoin's traceability a 'critical flaw.' Implements exactly what Satoshi theorized: ring signatures, one-time addresses, and unlinkable transactions.", metric: "Key Innovation: Ring signatures provide sender anonymity by mixing real inputs with decoys", link: "https://cryptonote.org/whitepaper.pdf" },
+        { year: "2013", type: "btc", side: "left", badge: "Bitcoin Network", date: "November 2013", title: "Bitcoin Reaches $1,000", preview: "First major bull run post-halving", detail: "First major bull run. Bitcoin gains mainstream media attention. The transparent nature of the blockchain begins attracting regulatory attention.", metric: "Peak: $1,163 | Market Cap: ~$14B" },
+        { year: "2013", type: "crossover", side: "span", badge: "Privacy Attempt", date: "January 2013", title: "Greg Maxwell Proposes CoinJoin", preview: "Collaborative transaction mixing for Bitcoin \u2014 opt-in, breakable", detail: "Bitcoin Core developer Gregory Maxwell publishes CoinJoin, a method to improve Bitcoin privacy by combining transactions. CoinJoin is opt-in and chain analysis firms would later develop techniques to unravel it." },
 
         // 2014
-        { year: "2014", side: "left", type: "btc", badge: "Exchange Collapse", date: "February 2014", title: "Mt. Gox Collapses", desc: "850,000 BTC lost. Transparent blockchain enables theft tracing.", detail: "Mt. Gox files for bankruptcy after revealing ~850,000 BTC stolen. The transparent blockchain allowed researchers to trace stolen funds, demonstrating both forensic power and privacy risks of a public ledger.", metric: "Lost: 850,000 BTC (~$450M)" },
-        { year: "2014", side: "right", type: "xmr", badge: "Monero Launch", date: "April 18, 2014", title: "Monero Launches", desc: "Fair launch fork of Bytecoin. Privacy mandatory from day one.", detail: "Monero launches as a community fork of Bytecoin (which had a hidden 80% premine). From day one, Monero implements ring signatures for sender privacy and stealth addresses for receiver privacy. Unlike Bitcoin, privacy is mandatory and default for all transactions.", link: "https://getmonero.org" },
-        { year: "2014", side: "right", type: "xmr", badge: "Research", date: "September 2014", title: "Monero Research Lab Founded", desc: "Dedicated cryptography research group — peer-reviewed mathematics.", detail: "MRL is established to provide academic-quality research into cryptocurrency privacy. Led by pseudonymous researchers, MRL publishes technical papers analyzing and improving Monero's privacy guarantees through formal mathematics." },
+        { year: "2014", type: "xmr", side: "right", badge: "Monero Launch", date: "April 18, 2014", title: "Monero Genesis Block", preview: "Fair launch: 0% premine, no ICO, no corporate backing", detail: "Monero launches as a community fork of Bytecoin (which had a hidden ~80% premine). From day one, Monero implements ring signatures for sender privacy and stealth addresses for receiver privacy. Privacy is mandatory and default.", metric: "Premine: 0% | ICO: None | Corporate Backing: None", link: "https://getmonero.org" },
+        { year: "2014", type: "btc", side: "left", badge: "Bitcoin Network", date: "February 2014", title: "Mt. Gox Collapses", preview: "850,000 BTC lost \u2014 transparent blockchain traces stolen funds", detail: "Mt. Gox suspends trading after revealing ~850,000 BTC stolen. The transparent blockchain allowed researchers to trace stolen funds, demonstrating both forensic power and privacy risks." },
+        { year: "2014", type: "regulation", side: "left", badge: "Regulation", date: "March 2014", title: "IRS Classifies Bitcoin as Property", preview: "Notice 2014-21 begins regulatory framework", detail: "IRS classifies virtual currencies as property for tax purposes. This begins the regulatory framework that would eventually require surveillance-sharing agreements for institutional adoption.", metric: "Links to: Bitcoin ETF approval requirements (2024)" },
+        { year: "2014", type: "xmr", side: "right", badge: "Monero Research", date: "September 2014", title: "Monero Research Lab Founded", preview: "Academic-quality crypto privacy research", detail: "MRL established to provide peer-reviewed research into cryptocurrency privacy. Led by Surae Noether and Sarang Noether, MRL publishes technical papers that lead to continuous protocol improvements." },
 
-        // 2015-2016
-        { year: "2015-2016", side: "left", type: "crossover", badge: "Surveillance Industry", date: "January 2015", title: "Chainalysis Founded", desc: "BTC surveillance firm — now serves 40+ countries.", detail: "Chainalysis becomes one of the first major blockchain analytics companies, developing tools to trace Bitcoin transactions for law enforcement and financial institutions. Would grow to serve government agencies in 40+ countries.", metric: "Serves: 40+ countries · $22M IRS contract" },
-        { year: "2015-2016", side: "right", type: "crossover", badge: "Dark Web Adoption", date: "September 2016", title: "AlphaBay Adds Monero", desc: "Real-world validation — XMR transactions prove untraceable.", detail: "AlphaBay, the largest dark web marketplace, adds Monero alongside Bitcoin. Unlike Bitcoin transactions on Silk Road that were traced by law enforcement, Monero transactions proved resistant to blockchain analysis." },
+        // 2015
+        { year: "2015", type: "crossover", side: "span", badge: "Surveillance Industry", date: "January 2015", title: "Chainalysis Founded", preview: "Blockchain surveillance emerges \u2014 serves 40+ countries", detail: "Chainalysis becomes one of the first major blockchain analytics companies, developing tools to trace Bitcoin transactions for law enforcement and financial institutions. Underscores the privacy gap Satoshi had warned about." },
+
+        // 2016
+        { year: "2016", type: "btc", side: "left", badge: "Bitcoin Halving", date: "July 9, 2016", title: "Second Bitcoin Halving", preview: "25 BTC \u2192 12.5 BTC. Price: $650 \u2192 $19,700 (18mo)", detail: "Block 420,000. Establishes halving as a catalyst for bull markets.", metric: "Block: 420,000 | New Reward: 12.5 BTC | Price: $650 \u2192 $19,700" },
+        { year: "2016", type: "crossover", side: "span", badge: "Dark Web Adoption", date: "September 2016", title: "AlphaBay Adds Monero", preview: "Largest dark web market validates XMR privacy", detail: "AlphaBay adds Monero alongside Bitcoin. Unlike Bitcoin transactions on Silk Road that were traced, Monero transactions proved far more resistant to blockchain analysis. By 2017, several markets would make Monero preferred currency." },
 
         // 2017
-        { year: "2017", side: "right", type: "xmr", badge: "Privacy Milestone", date: "January 5, 2017", title: "RingCT Activation", desc: "Hidden amounts complete the privacy trifecta Satoshi envisioned.", detail: "Ring Confidential Transactions activate, hiding transaction amounts using Pedersen commitments. This completes the privacy trifecta Satoshi envisioned in 2010: hidden senders (ring signatures), hidden receivers (stealth addresses), and hidden amounts (RingCT).", metric: "Completes: Sender + Receiver + Amount privacy" },
-        { year: "2017", side: "left", type: "btc", badge: "Bitcoin Scaling", date: "August 2017", title: "SegWit Activation", desc: "Scaling fix, but does nothing for Bitcoin's privacy.", detail: "Segregated Witness activates at block 481,824 after years of contentious debate. While it fixes transaction malleability and increases block capacity, SegWit does nothing to address Bitcoin's fundamental privacy limitations." },
-        { year: "2017", side: "right", type: "xmr", badge: "Usability", date: "March 2017", title: "GUI Wallet Released", desc: "Graphical wallet makes Monero accessible to non-technical users.", detail: "The official GUI wallet replaces the command-line-only interface, making Monero accessible to non-technical users for the first time." },
+        { year: "2017", type: "xmr", side: "right", badge: "Privacy Upgrade", date: "January 5, 2017", title: "RingCT Activation", preview: "Transaction amounts now hidden \u2014 privacy trifecta complete", detail: "Ring Confidential Transactions activate, hiding transaction amounts. Completes the privacy trifecta Satoshi envisioned: hidden senders (ring signatures), hidden receivers (stealth addresses), hidden amounts (RingCT).", metric: "Privacy Layer: Amounts now hidden | Adoption: 50-60% within first month" },
+        { year: "2017", type: "xmr", side: "right", badge: "Protocol Upgrade", date: "September 2017", title: "Mandatory RingCT Hard Fork", preview: "RingCT required for ALL transactions", detail: "RingCT becomes mandatory. Dynamic fee system introduced. Monero commits to privacy-by-default \u2014 a decision that will later make institutional adoption impossible.", metric: "Links to: Exchange delistings (2020-2025)" },
+        { year: "2017", type: "xmr", side: "right", badge: "Usability", date: "March 2017", title: "GUI Wallet Released", preview: "Graphical wallet makes Monero accessible to non-technical users", detail: "Official GUI wallet replaces command-line-only interface. Clean interface for sending/receiving XMR. Major step toward mainstream usability." },
+        { year: "2017", type: "xmr", side: "right", badge: "Community", date: "April 2017", title: "MoneroV Fork Rejected", preview: "Community rejects fork \u2014 privacy principles over profit", detail: "MoneroV announces a hard fork (10 MoneroV per 1 XMR). Community widely rejects it, warning that claiming forked coins could compromise privacy by linking key images across chains." },
+        { year: "2017", type: "btc", side: "left", badge: "Bitcoin Upgrade", date: "August 2017", title: "SegWit Activation", preview: "Scaling solution \u2014 but nothing for privacy", detail: "Segregated Witness activates after years of debate. Fixes transaction malleability and increases capacity, but does nothing to address Bitcoin's fundamental privacy limitations.", metric: "Block: 481,824" },
+        { year: "2017", type: "tradfi", side: "left", badge: "TradFi Rejection", date: "March 2017", title: "Winklevoss Bitcoin ETF Rejected", preview: "SEC cites lack of surveillance-sharing agreements", detail: "SEC rejects first Bitcoin ETF application, citing concerns over market manipulation and lack of surveillance-sharing agreements. Begins a 7-year regulatory battle.", metric: "Links to: Grayscale lawsuit (2023), ETF approval (2024)" },
 
         // 2018
-        { year: "2018", side: "right", type: "xmr", badge: "Decentralization", date: "April 6, 2018", title: "Anti-ASIC Hard Fork", desc: "Bricks Bitmain ASICs — maintains GPU/CPU mining accessibility.", detail: "Monero hard forks to change its PoW algorithm, bricking Bitmain's ASIC miners. This deliberate decision maintains GPU/CPU mining accessibility, reflecting the community's commitment to decentralization." },
-        { year: "2018", side: "right", type: "xmr", badge: "Efficiency", date: "October 18, 2018", title: "Bulletproofs Activation", desc: "Transaction sizes reduced ~80%. Privacy + efficiency.", detail: "Bulletproofs replace Borromean range proofs, reducing transaction sizes by ~80% and lowering fees proportionally. Demonstrates that privacy and efficiency are not at odds.", metric: "Size reduction: ~80% · Fees: proportionally lower" },
+        { year: "2018", type: "xmr", side: "right", badge: "Protocol Upgrade", date: "April 2018", title: "First Anti-ASIC Hard Fork", preview: "PoW change bricks Bitmain ASICs \u2014 defends decentralization", detail: "Monero changes PoW algorithm to resist ASIC mining centralization. Commitment to 'one CPU, one vote' \u2014 Satoshi's original vision for democratic mining." },
+        { year: "2018", type: "xmr", side: "right", badge: "Privacy Upgrade", date: "October 18, 2018", title: "Bulletproofs Activated", preview: "Transaction sizes -80%, fees -97%", detail: "Bulletproofs zero-knowledge proof system replaces Borromean range proofs. Privacy becomes dramatically more efficient.", metric: "Size: -80% | Fees: -97% | No trusted setup" },
+        { year: "2018", type: "regulation", side: "left", badge: "Regulatory Pressure", date: "2018", title: "Japan Exchanges Delist Privacy Coins", preview: "First wave of privacy coin delistings", detail: "Japanese FSA pressures exchanges to delist Monero, Zcash, and Dash. Coincheck, bitFlyer, and others comply. First major wave of privacy coin delistings.", metric: "Links to: Global delisting wave (2023-2025)" },
 
         // 2019
-        { year: "2019", side: "left", type: "btc", badge: "Layer 2", date: "January 2019", title: "Lightning Network Growth", desc: "L2 scaling — but routing still leaks privacy information.", detail: "Bitcoin Lightning Network surpasses 500 nodes. While Lightning transactions aren't on-chain, researchers demonstrate the network's routing structure and channel balances still leak significant privacy information." },
-        { year: "2019", side: "right", type: "xmr", badge: "Mining Revolution", date: "November 30, 2019", title: "RandomX Activation", desc: "CPU-optimized, ASIC-resistant PoW. 'One CPU, one vote.'", detail: "RandomX activates, an algorithm specifically designed for consumer CPUs while resisting ASIC optimization. Uses random code execution and memory-hard techniques to level the mining playing field.", metric: "'One CPU, one vote' — as Satoshi intended" },
+        { year: "2019", type: "xmr", side: "right", badge: "Mining Revolution", date: "November 30, 2019", title: "RandomX Activated", preview: "CPU-optimized, ASIC-resistant mining algorithm", detail: "RandomX uses random code execution and memory-hard techniques. Anyone with a standard computer can mine. Furthers Monero's decentralization goals.", metric: "Result: Broader mining participation, enhanced decentralization" },
+        { year: "2019", type: "xmr", side: "right", badge: "Leadership", date: "December 2019", title: "Fluffypony Steps Back", preview: "Lead maintainer reduces role \u2014 decentralization deepens", detail: "Riccardo 'fluffypony' Spagni reduces his role to decrease project dependency on individuals. Snipa becomes lead maintainer." },
+        { year: "2019", type: "btc", side: "left", badge: "Bitcoin Network", date: "January 2019", title: "Lightning Network Growth", preview: "Layer 2 grows but privacy concerns persist", detail: "Lightning Network surpasses 500 nodes. While transactions are off-chain, routing structure and channel balances still leak privacy information. Improves scalability but not privacy." },
+        { year: "2019", type: "xmr", side: "right", badge: "Privacy Research", date: "August 2019", title: "Kovri / I2P Research", preview: "Network-layer privacy via anonymous routing", detail: "Development on Kovri, a C++ I2P implementation to route Monero traffic through encrypted tunnels. Aims to close IP address visibility gap." },
 
         // 2020
-        { year: "2020", side: "right", type: "xmr", badge: "Network Privacy", date: "June 2020", title: "Dandelion++ Deployed", desc: "Obscures transaction origin IP addresses at the network layer.", detail: "Dandelion++ passes transactions through a random 'stem' of nodes before 'fluffing' to the broader network, making it significantly harder for adversaries to link transactions to IP addresses." },
-        { year: "2020", side: "left", type: "regulation", badge: "Government Bounty", date: "September 2020", title: "IRS Offers $625K to Break Monero", desc: "22 companies applied. No deterministic tracing achieved.", detail: "The IRS offers $625,000 to any contractor who can trace Monero. 22 companies applied, two selected (Chainalysis, Integra FEC). CipherTrace CEO admitted: 'You can't be as deterministic as Bitcoin. It's really more of a probabilistic game.'", metric: "$625K bounty · 22 applicants · 0 deterministic traces" },
-        { year: "2020", side: "right", type: "xmr", badge: "Cryptography", date: "October 2020", title: "CLSAG Activation", desc: "Compact ring signatures — 25% smaller, 20% faster verification.", detail: "CLSAG replaces MLSAG, reducing transaction sizes ~25% and improving verification speed ~20% while maintaining the same privacy guarantees. Developed through formal academic research.", metric: "Size: -25% · Speed: +20%" },
+        { year: "2020", type: "btc", side: "left", badge: "Bitcoin Halving", date: "May 11, 2020", title: "Third Bitcoin Halving", preview: "12.5 BTC \u2192 6.25 BTC during COVID-19", detail: "Block 630,000 mined during pandemic. Price: ~$8,500 at halving \u2192 $67,000 by November 2021.", metric: "Block: 630,000 | New Reward: 6.25 BTC | Daily Supply: 900 BTC" },
+        { year: "2020", type: "tradfi", side: "left", badge: "Corporate Adoption", date: "August 11, 2020", title: "MicroStrategy Adopts BTC Treasury", preview: "First public company: 21,454 BTC ($250M)", detail: "Michael Saylor's MicroStrategy purchases 21,454 BTC for $250 million. First public company to adopt Bitcoin as primary treasury reserve. Cites transparent ledger for corporate compliance.", metric: "Initial: 21,454 BTC @ $250M | By 2025: 632,457 BTC @ $46.5B" },
+        { year: "2020", type: "xmr", side: "right", badge: "Privacy Upgrade", date: "October 17, 2020", title: "CLSAG & Dandelion++ Activated", preview: "25% smaller sigs + IP obfuscation", detail: "CLSAG replaces MLSAG ring signatures \u2014 25% smaller, 10% faster verification. Dandelion++ obscures IP addresses of transaction broadcasters.", metric: "CLSAG: -25% size | Dandelion++: IP obfuscation" },
+        { year: "2020", type: "regulation", side: "left", badge: "Government Bounty", date: "September 2020", title: "IRS Posts $625K Monero Bounty", preview: "22 companies apply \u2014 no deterministic tracing achieved", detail: "IRS Criminal Investigation offers $625,000 to trace Monero. Chainalysis and Integra FEC selected. Given 8 months. Result: 'probabilistic' analysis only \u2014 falls far short of Bitcoin-level tracing.", metric: "Bounty: $625K/contractor | Applicants: 22 | Result: Probabilistic only" },
+        { year: "2020", type: "tradfi", side: "left", badge: "Corporate Adoption", date: "October 2020", title: "Square Adds BTC to Treasury", preview: "$50M (4,709 BTC) \u2014 cites transparency", detail: "Jack Dorsey's Square purchases $50 million in Bitcoin. Cites Bitcoin's transparency and auditability as enabling factor for corporate compliance." },
+        { year: "2020", type: "xmr", side: "right", badge: "Privacy Upgrade", date: "June 2020", title: "Dandelion++ Deployed", preview: "Network-layer privacy \u2014 obscures transaction origin IPs", detail: "Dandelion++ passes transactions through a random 'stem' of nodes before broadcasting, making it significantly harder to link transactions to IP addresses." },
 
-        // 2021-2022
-        { year: "2021-2022", side: "left", type: "btc", badge: "Bitcoin Upgrade", date: "November 2021", title: "Taproot Activation", desc: "Schnorr signatures — modest privacy gain, still fundamentally transparent.", detail: "Taproot introduces Schnorr signatures and MAST, making complex transactions look like simple payments. However, it's opt-in and doesn't hide amounts, addresses, or the transaction graph." },
-        { year: "2021-2022", side: "right", type: "crossover", badge: "Trustless Bridge", date: "March 2022", title: "Atomic Swaps: BTC ↔ XMR", desc: "Trustless cross-chain swaps — no intermediary, no KYC.", detail: "The COMIT network releases working BTC-to-XMR atomic swaps. Users can exchange BTC for XMR without any intermediary, effectively using Monero as a privacy layer for Bitcoin holders.", link: "https://github.com/comit-network/xmr-btc-swap" },
-        { year: "2021-2022", side: "right", type: "xmr", badge: "Protocol Upgrade", date: "July 2022", title: "Ring Size → 16 + Bulletproofs+", desc: "Anonymity set expanded. Each input mixed with 15 decoys.", detail: "Ring size increases from 11 to 16, and Bulletproofs+ further reduces transaction sizes. Statistical analysis of transaction origins becomes significantly more difficult.", metric: "Ring: 11→16 · Anonymity set: significantly larger" },
-        { year: "2021-2022", side: "right", type: "xmr", badge: "Usability", date: "August 2022", title: "View Tags Introduced", desc: "Wallet sync speed improved up to 40%.", detail: "One-byte tags on transaction outputs allow wallets to quickly eliminate non-matching outputs during scanning. Improves sync speed by up to 40%." },
-        { year: "2021-2022", side: "right", type: "xmr", badge: "Decentralization", date: "September 2022", title: "P2Pool Gains Traction", desc: "Decentralized mining pool — no single entity can censor transactions.", detail: "P2Pool uses a sidechain so each miner constructs their own blocks. Combined with RandomX's CPU-friendly algorithm, it represents the most decentralized mining infrastructure in cryptocurrency." },
-        { year: "2021-2022", side: "left", type: "tradfi", badge: "Surveillance Contract", date: "2021-Present", title: "$22M IRS → Chainalysis Contract", desc: "620 yearly licenses. Leaked video shows limitations.", detail: "Chainalysis secures a $22 million IRS contract for 620 yearly software licenses, API access, and training. A leaked 2024 training video revealed investigators rely on external exchange data and IP correlation — not cryptographic breaks.", metric: "$22M contract · 620 licenses · No crypto break" },
+        // 2021
+        { year: "2021", type: "tradfi", side: "left", badge: "Corporate Adoption", date: "February 2021", title: "Tesla Purchases $1.5B in Bitcoin", preview: "~43,200 BTC \u2014 briefly accepts BTC payments", detail: "Tesla discloses $1.5 billion Bitcoin purchase. Briefly accepts BTC payments (suspended May 2021 citing energy concerns).", metric: "Purchase: ~43,200 BTC | Value: $1.5B" },
+        { year: "2021", type: "tradfi", side: "left", badge: "TradFi Milestone", date: "April 14, 2021", title: "Coinbase IPO", preview: "Nasdaq listing at $381/share, ~$86B valuation", detail: "First major crypto exchange on traditional stock market. Coinbase's compliance infrastructure enables institutional Bitcoin access.", metric: "Valuation: ~$86B" },
+        { year: "2021", type: "crossover", side: "span", badge: "Nation-State", date: "September 7, 2021", title: "El Salvador Makes Bitcoin Legal Tender", preview: "First country to adopt BTC \u2014 transparent ledger enables oversight", detail: "First country to adopt Bitcoin as legal tender. All businesses required to accept BTC. Government holdings verifiable on public ledger. Monero's privacy would make international oversight impossible.", metric: "Initial holdings: 400 BTC | IMF oversight via public ledger" },
+        { year: "2021", type: "regulation", side: "left", badge: "Regulation", date: "November 2021", title: "Infrastructure Bill Crypto Provisions", preview: "Expands IRS surveillance \u2014 transparent chains comply; privacy coins cannot", detail: "US Infrastructure Investment and Jobs Act includes cryptocurrency broker reporting requirements. Expands IRS surveillance capabilities." },
+        { year: "2021", type: "btc", side: "left", badge: "Bitcoin Upgrade", date: "November 2021", title: "Taproot Activation", preview: "Schnorr signatures \u2014 modest privacy, still transparent", detail: "Taproot introduces Schnorr signatures and MAST. Complex transactions look like simple payments, but Taproot is opt-in and doesn't hide amounts or addresses.", metric: "Block: 709,632" },
+
+        // 2022
+        { year: "2022", type: "xmr", side: "right", badge: "Economic Milestone", date: "June 2022", title: "Tail Emission Begins", preview: "0.6 XMR/block forever \u2014 permanent miner incentives", detail: "Monero's main emission ends. Perpetual tail emission of 0.6 XMR per block (~2 min) begins. Unlike Bitcoin's eventual zero-emission, ensures permanent network security.", metric: "Tail: 0.6 XMR/block | Annual Inflation: ~0.8%" },
+        { year: "2022", type: "xmr", side: "right", badge: "Privacy Upgrade", date: "August 13, 2022", title: "Bulletproofs+ & Ring Size 16", preview: "Ring size 11\u219216, view tags for 40% faster sync", detail: "Bulletproofs+ reduces sizes by 25%+. Ring size increased to 16. View tags added for 40% faster wallet sync.", metric: "Ring: 16 decoys | View tags: +40% sync speed" },
+        { year: "2022", type: "xmr", side: "right", badge: "Decentralization", date: "September 2022", title: "P2Pool Gains Traction", preview: "Decentralized mining pool \u2014 no censorship possible", detail: "P2Pool uses a sidechain to let each miner construct their own blocks. Combined with RandomX, represents the most decentralized mining infrastructure in crypto." },
+        { year: "2022", type: "regulation", side: "left", badge: "Privacy Crackdown", date: "2022", title: "South Korea Bans Privacy Coins", preview: "Bithumb, Upbit delist XMR, ZEC, DASH", detail: "Under Travel Rule enforcement, South Korean exchanges forced to delist all privacy coins. Pattern spreads globally." },
+        { year: "2022", type: "crossover", side: "span", badge: "Infrastructure", date: "March 2022", title: "BTC-XMR Atomic Swaps Live", preview: "Trustless cross-chain swaps \u2014 no KYC, no intermediary", detail: "COMIT network releases working trustless atomic swaps between Bitcoin and Monero. Users can swap BTC for XMR without any exchange or KYC, using Monero as a privacy layer for Bitcoin.", link: "https://github.com/comit-network/xmr-btc-swap" },
+
+        // 2023
+        { year: "2023", type: "tradfi", side: "left", badge: "Legal Victory", date: "August 29, 2023", title: "Grayscale Wins vs SEC", preview: "Court: SEC was 'arbitrary and capricious'", detail: "DC Circuit Court rules SEC was arbitrary in rejecting Grayscale's Bitcoin ETF conversion. Closes SEC's path to continued rejection.", metric: "Links to: Bitcoin ETF approval (January 2024)" },
+        { year: "2023", type: "tradfi", side: "left", badge: "ETF Applications", date: "June-Dec 2023", title: "BlackRock & Majors Apply for BTC ETFs", preview: "All require surveillance-sharing \u2014 impossible for XMR", detail: "BlackRock, Fidelity, Invesco, WisdomTree, VanEck, Bitwise all file. All include surveillance-sharing agreements with regulated exchanges.", metric: "Key Requirement: Surveillance-sharing with Coinbase" },
+        { year: "2023", type: "regulation", side: "left", badge: "EU Privacy Ban", date: "2023", title: "EU MiCA Framework Advances", preview: "CASPs prohibited from offering privacy coins", detail: "Markets in Crypto-Assets regulation takes shape. CASPs will be prohibited from offering privacy-enhanced cryptocurrencies.", metric: "Links to: AMLR 2027 enforcement" },
+        { year: "2023", type: "regulation", side: "left", badge: "Exchange Delistings", date: "2023", title: "Binance Regional XMR Delistings", preview: "Delists in AU, FR, ES, IT, PL \u2014 preemptive EU compliance", detail: "Binance delists Monero in multiple European countries. Regulatory pressure from EU AMLR framework." },
 
         // 2024
-        { year: "2024", side: "left", type: "tradfi", badge: "Institutional Adoption", date: "January 2024", title: "Bitcoin Spot ETFs Approved", desc: "11 ETFs approved. $150B+ flows in. Surveillance integration deepens.", detail: "SEC approves 11 spot Bitcoin ETFs, bringing massive institutional investment. ETF providers must comply with AML/KYC, and the transparent blockchain allows authorities to trace coins flowing into and out of ETF-related addresses.", metric: "$150B+ in ETF assets" },
-        { year: "2024", side: "left", type: "btc", badge: "Bitcoin Halving", date: "April 2024", title: "Fourth Bitcoin Halving", desc: "Reward: 6.25 → 3.125 BTC. Now held by ETFs, sovereign funds, corporations.", detail: "Block 840,000 halves the reward amid a dramatically different landscape: Bitcoin is held by ETFs, sovereign wealth funds, and corporations. Its role has shifted from peer-to-peer cash to a surveilled store of value.", metric: "Block: 840,000 · Reward: 3.125 BTC" },
-        { year: "2024", side: "right", type: "xmr", badge: "Next Generation", date: "2024", title: "Seraphis & Jamtis Research Advances", desc: "Next-gen transaction protocol — larger anonymity sets, better multisig.", detail: "Seraphis would replace RingCT with a more flexible architecture supporting larger anonymity sets and better forward secrecy. Jamtis introduces tiered wallet permissions without compromising privacy." },
-        { year: "2024", side: "left", type: "regulation", badge: "Delisting Wave", date: "February 2024", title: "Binance Global Delists XMR", desc: "World's largest exchange drops Monero. Price surges.", detail: "Binance globally delists Monero citing regulatory compliance, following partial delistings across Europe in 2023. Paradoxically, XMR price increases as peer-to-peer trading surges." },
-        { year: "2024", side: "right", type: "regulation", badge: "Delisting Wave", date: "October 2024", title: "Kraken Delists XMR in EEA", desc: "Remaining XMR forcibly converted to BTC.", detail: "Kraken halts all XMR trading for European Economic Area users. Remaining balances forcibly converted to Bitcoin." },
+        { year: "2024", type: "tradfi", side: "left", badge: "Historic Milestone", date: "January 10, 2024", title: "SEC Approves 11 Spot Bitcoin ETFs", preview: "Surveillance-sharing agreements mandatory for approval", detail: "After a decade of rejections, SEC approves 11 spot Bitcoin ETFs. BlackRock, Fidelity, Grayscale, and others. Surveillance-sharing agreements with exchanges were mandatory.", metric: "Issuers: BlackRock, Fidelity, Grayscale, ARK, VanEck + 6 more" },
+        { year: "2024", type: "tradfi", side: "left", badge: "Institutional Inflows", date: "January 11, 2024", title: "Bitcoin ETFs Begin Trading", preview: "Q1 inflows: $75B \u2014 400% acceleration", detail: "Massive first-day volume. Q1 2024 inflows reach $75 billion.", metric: "Q1 Inflows: $75B | YoY Acceleration: 400%" },
+        { year: "2024", type: "regulation", side: "left", badge: "Major Delisting", date: "February 20, 2024", title: "Binance Global Delists Monero", preview: "World's largest exchange removes XMR globally", detail: "Binance removes Monero globally citing regulatory compliance. Sets precedent. XMR price drops initially, then recovers and exceeds pre-delisting levels." },
+        { year: "2024", type: "btc", side: "left", badge: "Bitcoin Halving", date: "April 20, 2024", title: "Fourth Bitcoin Halving", preview: "6.25 \u2192 3.125 BTC. Supply squeeze + ETF demand", detail: "Block 840,000. Combined with ETF demand, creates significant supply squeeze.", metric: "Block: 840,000 | Reward: 3.125 BTC | Daily: 450 BTC" },
+        { year: "2024", type: "tradfi", side: "left", badge: "Supply Dynamics", date: "Q2-Q4 2024", title: "ETFs Absorb More Than Miners Produce", preview: "BlackRock IBIT: $50B AUM \u2014 fastest-growing ETF ever", detail: "ETFs purchase more BTC than miners produce. By Q4, ETFs hold 851,499+ BTC. BlackRock IBIT reaches $50B AUM.", metric: "ETF Holdings: 851,499 BTC | BlackRock AUM: $50B" },
+        { year: "2024", type: "xmr", side: "right", badge: "Research Milestone", date: "April 2024", title: "FCMP++ Research Published", preview: "Anonymity set: 16 \u2192 100,000,000+ outputs", detail: "Full-Chain Membership Proofs proposal released. Would replace ring signatures with proofs spanning entire blockchain.", metric: "Current Ring: 16 | FCMP++ Set: 100,000,000+" },
+        { year: "2024", type: "crossover", side: "span", badge: "Intelligence Leak", date: "October 2024", title: "Chainalysis Training Video Leaked", preview: "IRS video: Monero tracing is 'probabilistic,' not cryptographic", detail: "Internal video reveals Chainalysis relies on exchange KYC data and IP correlation \u2014 not cryptographic breaks. MRL responds: nothing exceeds known, mitigated capabilities.", metric: "Chainalysis admits: 'Probabilistic' not deterministic" },
+        { year: "2024", type: "regulation", side: "left", badge: "EU Delisting", date: "October 31, 2024", title: "Kraken Delists XMR in EEA", preview: "Remaining balances forcibly converted to BTC", detail: "Kraken halts all Monero trading for European Economic Area users. Remaining balances forcibly converted to Bitcoin." },
+        { year: "2024", type: "tradfi", side: "left", badge: "Institutional Surge", date: "Q4 2024", title: "Professional Investors Surge 114%", preview: "13-F holdings: $12.4B \u2192 $27.4B, hedge funds 41%", detail: "13-F filings show institutional Bitcoin ETF holdings jump 114%. Hedge funds overtake advisors as largest holder category.", metric: "Holdings: $27.4B | QoQ Growth: 114% | Hedge Funds: 41%" },
+        { year: "2024", type: "btc", side: "left", badge: "Price Milestone", date: "December 2024", title: "Bitcoin Reaches $108,000", preview: "ETF AUM: $104.1B | 2024 Return: +135%", detail: "Institutional demand and supply squeeze drive Bitcoin to new ATH.", metric: "ATH: $108,000 | ETF AUM: $104.1B | Return: +135%" },
+        { year: "2024", type: "xmr", side: "right", badge: "Research", date: "2024", title: "Seraphis & Jamtis Research Advances", preview: "Next-gen transaction protocol with tiered wallet permissions", detail: "Seraphis would replace RingCT with flexible architecture supporting larger anonymity sets, efficient multisig, and better forward secrecy. Jamtis introduces tiered wallet permissions." },
+        { year: "2024", type: "xmr", side: "right", badge: "Resilience", date: "2024-2025", title: "73+ Exchange Delistings, +195% Price", preview: "Delistings prove decentralization \u2014 no company to sue, no CEO to arrest", detail: "Over 73 exchanges delist Monero. XMR price increases 195%. Atomic swaps, DEXs, and P2P platforms fill the gap.", metric: "Delistings: 73+ | Price: +195% | P2P volume surges" },
 
         // 2025
-        { year: "2025", side: "right", type: "xmr", badge: "Mass Delistings", date: "2024-2025", title: "73+ Exchange Delistings, +195% Price", desc: "Every delisting proves the privacy works.", detail: "Over 73 exchanges delist Monero under regulatory pressure, including Binance, Kraken, and OKX. Paradoxically, XMR price increases 195%. Atomic swaps, DEXs, and P2P platforms fill the gap. No company to sue, no CEO to arrest.", metric: "73+ delistings · +195% price · 15K-25K daily txns" },
-        { year: "2025", side: "left", type: "tradfi", badge: "Strategic Reserve", date: "March 6, 2025", title: "US Strategic Bitcoin Reserve EO", desc: "Executive order creates government Bitcoin stockpile.", detail: "Executive order establishes a US Strategic Bitcoin Reserve. Government now holds 200,000+ BTC from seizures. Bitcoin becomes an official reserve asset — fully surveilled, fully institutional.", metric: "200,000+ government BTC" },
-        { year: "2025", side: "right", type: "xmr", badge: "DEX Launch", date: "2024-2025", title: "Haveno DEX Enters Production", desc: "Monero-first decentralized exchange — regulatory-resistant trading.", detail: "Haveno provides regulatory-resistant XMR trading. When centralized exchanges delist, decentralized alternatives emerge. The network cannot be shut down." },
-        { year: "2025", side: "left", type: "regulation", badge: "Dubai Ban", date: "January 12, 2025", title: "Dubai VARA Bans Privacy Coins", desc: "Ban announced. XMR hits all-time highs the next day.", detail: "Dubai's Virtual Asset Regulatory Authority bans trading and custody of privacy tokens. Personal self-custody wallets unaffected. Monero hits all-time highs the next day." },
-        { year: "2025", side: "right", type: "xmr", badge: "Research", date: "2025", title: "Triptych & Next-Gen Ring Signatures", desc: "Logarithmic scaling enables massive ring sizes.", detail: "Triptych proof system demonstrates rings of 64-128 members with only modest size increases. Feeds directly into the FCMP++ effort pushing toward full anonymity sets." },
+        { year: "2025", type: "regulation", side: "left", badge: "UAE Ban", date: "January 12, 2025", title: "Dubai VARA Bans Privacy Tokens", preview: "XMR hits all-time highs the next day", detail: "Dubai's VARA prohibits trading/custody of privacy tokens. Monero hits all-time highs the next day." },
+        { year: "2025", type: "regulation", side: "left", badge: "Trump Administration", date: "January 23, 2025", title: "Executive Order: Digital Financial Tech", preview: "Prohibits CBDCs, promotes stablecoins, protects banking access", detail: "Comprehensive crypto executive order. Establishes Working Group on Digital Asset Markets. David Sacks appointed Crypto & AI Czar.", metric: "No CBDC | Bank access protected | 180-day framework deadline" },
+        { year: "2025", type: "tradfi", side: "left", badge: "Regulatory Personnel", date: "January 2025", title: "Gensler Retires; Atkins Nominated", preview: "SEC shifts from 'regulation by enforcement' to clear rules", detail: "SEC Chair Gensler retires. Crypto-friendly Paul Atkins nominated. SEC Crypto 2.0 task force established." },
+        { year: "2025", type: "xmr", side: "right", badge: "Price Milestone", date: "January 2025", title: "XMR All-Time High Despite Delistings", preview: "73 delistings = +195% price. Paradox of prohibition.", detail: "Following Dubai ban and continued delistings, XMR reaches new all-time highs.", metric: "Delistings: 73 | Price: +195% | Daily TX: 15K-25K" },
+        { year: "2025", type: "tradfi", side: "left", badge: "Strategic Reserve", date: "March 6, 2025", title: "U.S. Strategic Bitcoin Reserve", preview: "~200,000 BTC (~$17B) from forfeitures \u2014 cannot be sold", detail: "Executive order creates Strategic Bitcoin Reserve. Bitcoin designated as reserve asset. Monero holdings would be unverifiable.", metric: "Holdings: ~200,000 BTC | Value: ~$17B | Status: Reserve (no sales)" },
+        { year: "2025", type: "regulation", side: "left", badge: "Legislation", date: "July 2025", title: "GENIUS Act Passes", preview: "First federal stablecoin legislation", detail: "Establishes stablecoin regulatory framework. OCC, Fed, FDIC oversight. Transparent, regulated stablecoins only." },
+        { year: "2025", type: "regulation", side: "left", badge: "Legislation", date: "July 17, 2025", title: "CLARITY Act Passes House (294-134)", preview: "Defines digital commodities, CFTC jurisdiction, BSA/KYC required", detail: "Comprehensive digital asset framework. Requires Bank Secrecy Act compliance, KYC, source of funds documentation. Monero cannot comply by design.", metric: "Vote: 294-134 | Status: Senate pending" },
+        { year: "2025", type: "tradfi", side: "left", badge: "BlackRock Dominance", date: "October 2025", title: "BlackRock IBIT: 800,000+ BTC", preview: "AUM: $89B+ \u2014 3.8% of total BTC supply", detail: "BlackRock's iShares Bitcoin Trust surpasses MicroStrategy as largest institutional holder. Single-day inflow capacity: $1.38B.", metric: "Holdings: 802,257 BTC | AUM: $89.17B | Share: 48.5%+" },
+        { year: "2025", type: "btc", side: "left", badge: "Price Milestone", date: "October 2025", title: "Bitcoin Reaches $126,200 ATH", preview: "Market cap: $2.2T+ | Total ETF: $150B+", detail: "Institutional accumulation, regulatory clarity, and Strategic Reserve drive BTC to new peak.", metric: "ATH: $126,200 | Market Cap: $2.2T+ | ETF Total: $150B+" },
+        { year: "2025", type: "tradfi", side: "left", badge: "ETF Efficiency", date: "September 2025", title: "SEC Streamlines ETF Approvals", preview: "270 days \u2192 75 days (72% faster)", detail: "Generic listing standards for commodity-based trust shares. Opens path for altcoin ETFs.", metric: "Approval: 270d \u2192 75d | Requires 6+ months futures trading" },
+        { year: "2025", type: "xmr", side: "right", badge: "Development", date: "2025", title: "FCMP++ Alpha Stressnet Testing", preview: "Anonymity set: 100M+ outputs instead of 16", detail: "Full-Chain Membership Proofs enter alpha testing. Will replace ring signatures with proofs against entire blockchain history.", metric: "Current: 16-member ring | FCMP++: 100,000,000+ set" },
+        { year: "2025", type: "xmr", side: "right", badge: "DEX Launch", date: "2025", title: "Haveno Reto DEX Launches", preview: "Decentralized P2P XMR trading \u2014 regulation-resistant", detail: "Built on Bisq codebase. Enables regulatory-resistant peer-to-peer XMR trading. When centralized exchanges delist, decentralized alternatives emerge." },
+        { year: "2025", type: "xmr", side: "right", badge: "Research", date: "2025", title: "Triptych & Next-Gen Ring Signatures", preview: "Logarithmic scaling: rings of 64-128 with modest size increase", detail: "Triptych proof system demonstrates Monero can scale ring sizes logarithmically. Feeds into FCMP++ effort toward full anonymity sets." },
 
         // 2026
-        { year: "2026", side: "left", type: "tradfi", badge: "Corporate Treasury", date: "January 2026", title: "61 Public Companies Hold BTC Treasury", desc: "848,100 BTC — 4% of total supply in corporate hands.", detail: "Public companies collectively hold 848,100 BTC. MicroStrategy (now 'Strategy') leads with 632,457 BTC. Corporate treasuries outpace ETFs in acquisition for 3 consecutive quarters.", metric: "848,100 BTC · 4% supply · 61+ companies" },
-        { year: "2026", side: "right", type: "regulation", badge: "Legislation", date: "January 2026", title: "CLARITY Act Senate Draft Released", desc: "278-page framework to codify digital asset regulation.", detail: "Senate Banking Committee releases 278-page discussion draft for CLARITY Act reconciliation. Comprehensive digital asset regulatory framework expected to pass in 2026. Will codify existing compliance requirements." },
-        { year: "2026", side: "left", type: "crossover", badge: "The Great Divergence", date: "January 30, 2026", title: "Two Monetary Paths Solidified", desc: "BTC: $150B+ institutional. XMR: 73 delistings, unbreakable privacy.", detail: "Bitcoin: $150B+ institutional investment, Strategic Reserve asset, regulatory clarity. Monero: 73 exchange delistings, zero institutional access, unbreakable privacy. Both made the right choice for their respective purposes.", metric: "BTC chose traceability. XMR chose privacy." },
+        { year: "2026", type: "tradfi", side: "left", badge: "Bank Entry", date: "January 6, 2026", title: "Morgan Stanley Files Spot BTC ETF", preview: "First major US bank with own Bitcoin ETF filing", detail: "Also files for Solana ETF. Signals crypto becoming standard portfolio building block.", metric: "First major US bank own BTC ETF" },
+        { year: "2026", type: "tradfi", side: "left", badge: "Institutional Record", date: "January 2026", title: "Bitcoin ETFs Hold 1.3M+ BTC", preview: "More than Satoshi's estimated 1.1M BTC. ~6% of supply.", detail: "Total ETF holdings: 1,309,895 BTC. 53.8% increase in 18 months.", metric: "Holdings: 1,309,895 BTC | Growth: 53.8% | Supply: ~6%" },
+        { year: "2026", type: "tradfi", side: "left", badge: "Corporate Treasury", date: "January 2026", title: "61 Public Companies Hold BTC Treasury", preview: "848,100 BTC (4% supply). Strategy leads with 632,457 BTC.", detail: "Corporate treasuries outpace ETFs in acquisition for 3 consecutive quarters.", metric: "Corporate: 848,100 BTC | Supply: 4% | Companies: 61+" },
+        { year: "2026", type: "regulation", side: "left", badge: "Legislation", date: "January 2026", title: "CLARITY Act Senate Draft Released", preview: "278-page discussion draft \u2014 expected to pass 2026", detail: "Comprehensive digital asset regulatory framework. Will codify existing compliance requirements." },
+        { year: "2026", type: "crossover", side: "span", badge: "The Great Divergence", date: "January 30, 2026", title: "Two Monetary Paths Solidified", preview: "Bitcoin: $150B+ institutional, Strategic Reserve. Monero: 73 delistings, unbreakable privacy.", detail: "Bitcoin chose traceability \u2014 gained Wall Street, ETFs, corporate treasuries, Strategic Reserve, $2T+ market cap. Monero chose privacy \u2014 gained cryptographic certainty that no government can see your transactions. Both made the right choice.", metric: "The world needs both." },
 
         // 2027+
-        { year: "2027+", side: "left", type: "regulation", badge: "Upcoming", date: "July 2027 (Expected)", title: "EU AMLR Full Enforcement", desc: "CASPs prohibited from offering privacy coins. Self-custody unaffected.", detail: "EU Anti-Money Laundering Regulation fully effective. Crypto service providers prohibited from offering privacy coins. Personal self-custody wallets unaffected. Peer-to-peer trading remains accessible.", metric: "Regulations target providers, not the technology" },
-        { year: "2027+", side: "left", type: "btc", badge: "Bitcoin Halving", date: "April 2028 (Expected)", title: "Fifth Bitcoin Halving", desc: "Reward: 3.125 → 1.5625 BTC. ~97% of all BTC mined.", detail: "Block 1,050,000 expected. Reward reduces from 3.125 to 1.5625 BTC. Daily supply drops to ~225 BTC. By then, 97%+ of all Bitcoin will have been mined.", metric: "Block: 1,050,000 · Reward: 1.5625 BTC · Mined: ~97%" },
-        { year: "2027+", side: "right", type: "xmr", badge: "Protocol Upgrade", date: "TBD", title: "FCMP++ Mainnet Deployment", desc: "Anonymity set: entire blockchain history (~100M+ outputs).", detail: "Full-Chain Membership Proofs will provide anonymity sets of 100+ million outputs. Every transaction hides among the entire history of the Monero blockchain. The most private money ever created becomes even more private.", metric: "Anonymity Set: Entire blockchain history" }
+        { year: "2027+", type: "regulation", side: "left", badge: "Upcoming", date: "July 2027 (Expected)", title: "EU AMLR Full Enforcement", preview: "CASPs prohibited from offering privacy coins", detail: "EU Anti-Money Laundering Regulation fully effective. Personal self-custody wallets unaffected. Peer-to-peer trading remains accessible.", metric: "Targets service providers, not the technology itself" },
+        { year: "2027+", type: "btc", side: "left", badge: "Bitcoin Halving", date: "April 2028 (Expected)", title: "Fifth Bitcoin Halving", preview: "3.125 \u2192 1.5625 BTC. ~97% of all BTC mined.", detail: "Block 1,050,000 expected. Daily supply drops to ~225 BTC.", metric: "Block: 1,050,000 | Reward: 1.5625 BTC | Mined: ~97%" },
+        { year: "2027+", type: "xmr", side: "right", badge: "Protocol Upgrade", date: "TBD", title: "FCMP++ Mainnet Deployment", preview: "Anonymity set: entire blockchain history (100M+ outputs)", detail: "Full-Chain Membership Proofs will provide anonymity sets of 100+ million outputs. Every transaction hides among the entire history. The most private money becomes even more private.", metric: "Anonymity: Entire blockchain (~100M+ outputs)" }
     ];
 
-    let activeFilter = 'all';
-
-    function getYearGroups() {
-        const groups = {};
-        events.forEach(e => {
-            if (!groups[e.year]) groups[e.year] = [];
-            groups[e.year].push(e);
+    // Group events by year
+    function groupByYear(evts) {
+        const groups = [];
+        const yearMap = {};
+        evts.forEach(e => {
+            if (!yearMap[e.year]) {
+                yearMap[e.year] = { year: e.year, events: [] };
+                groups.push(yearMap[e.year]);
+            }
+            yearMap[e.year].events.push(e);
         });
         return groups;
     }
 
+    let activeFilter = 'all';
+
     function renderTimeline() {
-        const container = document.getElementById('timelineContainer');
-        const groups = getYearGroups();
+        const container = document.getElementById('timeline-container');
+        const groups = groupByYear(events);
         let html = '';
 
-        for (const [year, yearEvents] of Object.entries(groups)) {
-            html += `<div class="year-divider"><span class="year-label">${year}</span></div>`;
+        groups.forEach(group => {
+            const leftEvents = group.events.filter(e => e.side === 'left');
+            const rightEvents = group.events.filter(e => e.side === 'right');
+            const spanEvents = group.events.filter(e => e.side === 'span');
 
-            // Separate left and right events
-            const leftEvents = yearEvents.filter(e => e.side === 'left');
-            const rightEvents = yearEvents.filter(e => e.side === 'right');
-            const maxLen = Math.max(leftEvents.length, rightEvents.length);
+            // Check if year should be visible based on filter
+            const yearHasVisible = group.events.some(e => activeFilter === 'all' || e.type === activeFilter);
+            const yearHiddenClass = yearHasVisible ? '' : ' filtered-out';
 
-            for (let i = 0; i < maxLen; i++) {
-                const left = leftEvents[i];
-                const right = rightEvents[i];
-                const isFiltered = (e) => e && (activeFilter === 'all' || e.type === activeFilter);
-                const leftVisible = left && isFiltered(left);
-                const rightVisible = right && isFiltered(right);
-                const rowHidden = !leftVisible && !rightVisible;
+            html += '<div class="year-header' + yearHiddenClass + '" data-year="' + group.year + '"><span class="year-label">' + group.year + '</span></div>';
 
-                html += `<div class="event-row${rowHidden ? ' hidden' : ''}" data-types="${(left?left.type:'') + ',' + (right?right.type:'')}">`;
+            // Span events first (crossover events)
+            spanEvents.forEach(e => {
+                const hidden = (activeFilter !== 'all' && e.type !== activeFilter) ? ' filtered-out' : '';
+                html += renderSpanEvent(e, hidden);
+            });
 
-                // Left column
-                html += `<div class="col-left">`;
-                if (left) {
-                    const idx = events.indexOf(left);
-                    html += `<div class="event-card ${left.type}${!leftVisible ? ' hidden' : ''}" onclick="openDetail(${idx})" style="${!leftVisible ? 'display:none' : ''}">
-                        <span class="event-badge ${left.type}">${left.badge}</span>
-                        <div class="event-date">${left.date}</div>
-                        <div class="event-title">${left.title}</div>
-                        <div class="event-desc">${left.desc}</div>
-                        ${left.metric ? `<div class="event-metric">${left.metric}</div>` : ''}
-                    </div>`;
-                }
-                html += `</div>`;
+            // Dual column grid
+            const filteredLeft = leftEvents.filter(e => activeFilter === 'all' || e.type === activeFilter);
+            const filteredRight = rightEvents.filter(e => activeFilter === 'all' || e.type === activeFilter);
 
-                // Spine
-                const dotType = left ? left.type : (right ? right.type : 'btc');
-                const dotColors = { btc: 'var(--btc-orange)', xmr: 'var(--xmr-orange)', crossover: 'var(--crossover-cyan)', tradfi: 'var(--tradfi-blue)', regulation: 'var(--regulation-red)', privacy: 'var(--privacy-purple)' };
-                html += `<div class="row-spine"><span class="spine-dot" style="background:${dotColors[dotType] || 'var(--btc-gold)'}"></span></div>`;
-
-                // Right column
-                html += `<div class="col-right">`;
-                if (right) {
-                    const idx = events.indexOf(right);
-                    html += `<div class="event-card ${right.type}${!rightVisible ? ' hidden' : ''}" onclick="openDetail(${idx})" style="${!rightVisible ? 'display:none' : ''}">
-                        <span class="event-badge ${right.type}">${right.badge}</span>
-                        <div class="event-date">${right.date}</div>
-                        <div class="event-title">${right.title}</div>
-                        <div class="event-desc">${right.desc}</div>
-                        ${right.metric ? `<div class="event-metric">${right.metric}</div>` : ''}
-                    </div>`;
-                }
-                html += `</div>`;
-                html += `</div>`;
+            if (leftEvents.length > 0 || rightEvents.length > 0) {
+                html += '<div class="year-grid' + yearHiddenClass + '">';
+                html += '<div class="col-left">';
+                leftEvents.forEach(e => {
+                    const hidden = (activeFilter !== 'all' && e.type !== activeFilter) ? ' filtered-out' : '';
+                    html += renderCard(e, hidden);
+                });
+                if (leftEvents.length === 0) html += '<div style="min-height:1px"></div>';
+                html += '</div>';
+                html += '<div class="center-line"></div>';
+                html += '<div class="col-right">';
+                rightEvents.forEach(e => {
+                    const hidden = (activeFilter !== 'all' && e.type !== activeFilter) ? ' filtered-out' : '';
+                    html += renderCard(e, hidden);
+                });
+                if (rightEvents.length === 0) html += '<div style="min-height:1px"></div>';
+                html += '</div>';
+                html += '</div>';
             }
-        }
+        });
+
         container.innerHTML = html;
+
+        // Attach click handlers
+        container.querySelectorAll('.evt').forEach(card => {
+            card.addEventListener('click', function() { this.classList.toggle('expanded'); });
+        });
     }
 
-    function openDetail(idx) {
-        const e = events[idx];
-        document.getElementById('detailTitle').textContent = e.title;
-        document.getElementById('detailDate').textContent = e.date;
-        document.getElementById('detailContent').textContent = e.detail;
-        const link = document.getElementById('detailLink');
-        if (e.link) { link.href = e.link; link.style.display = 'inline-block'; }
-        else { link.style.display = 'none'; }
-        document.getElementById('detailOverlay').classList.add('open');
+    function renderCard(e, hiddenClass) {
+        var linkHtml = e.link ? '<a href="' + e.link + '" class="evt-link" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Source \u2192</a>' : '';
+        var metricHtml = e.metric ? '<div class="evt-metric">' + e.metric + '</div>' : '';
+        return '<div class="evt ' + e.type + hiddenClass + '" data-type="' + e.type + '">' +
+            '<span class="evt-badge ' + e.type + '">' + e.badge + '</span>' +
+            '<div class="evt-date">' + e.date + '</div>' +
+            '<div class="evt-title">' + e.title + '</div>' +
+            '<div class="evt-preview">' + e.preview + '</div>' +
+            '<div class="evt-detail">' + e.detail + metricHtml + linkHtml + '</div>' +
+        '</div>';
     }
 
-    function closeDetail() {
-        document.getElementById('detailOverlay').classList.remove('open');
+    function renderSpanEvent(e, hiddenClass) {
+        var linkHtml = e.link ? '<a href="' + e.link + '" class="evt-link" target="_blank" rel="noopener noreferrer" onclick="event.stopPropagation()">Source \u2192</a>' : '';
+        var metricHtml = e.metric ? '<div class="evt-metric">' + e.metric + '</div>' : '';
+        return '<div class="evt span-both ' + e.type + hiddenClass + '" data-type="' + e.type + '">' +
+            '<span class="evt-badge ' + e.type + '">' + e.badge + '</span>' +
+            '<div class="evt-date">' + e.date + '</div>' +
+            '<div class="evt-title">' + e.title + '</div>' +
+            '<div class="evt-preview">' + e.preview + '</div>' +
+            '<div class="evt-detail">' + e.detail + metricHtml + linkHtml + '</div>' +
+        '</div>';
     }
 
     // Filter buttons
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            activeFilter = this.dataset.filter;
+            document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+            btn.classList.add('active');
+            activeFilter = btn.dataset.filter;
             renderTimeline();
         });
     });
-
-    // Escape to close detail
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDetail(); });
 
     function toggleMenu() {
         document.getElementById('mobileMenu').classList.toggle('active');
@@ -552,12 +630,12 @@
     (async function() {
         async function fetchPrices() {
             try {
-                const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd');
-                const d = await r.json();
-                const btc = d.bitcoin.usd, xmr = d.monero.usd, ratio = (btc / xmr).toFixed(1);
-                document.querySelectorAll('#btc-price, #btc-price-mobile').forEach(e => e.textContent = '$' + btc.toLocaleString());
-                document.querySelectorAll('#xmr-price, #xmr-price-mobile').forEach(e => e.textContent = '$' + xmr.toLocaleString());
-                document.querySelectorAll('#btc-xmr-ratio, #btc-xmr-ratio-mobile').forEach(e => e.textContent = ratio);
+                var r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd');
+                var d = await r.json();
+                var btc = d.bitcoin.usd, xmr = d.monero.usd, ratio = (btc / xmr).toFixed(1);
+                document.querySelectorAll('#btc-price, #btc-price-mobile').forEach(function(e) { e.textContent = '$' + btc.toLocaleString(); });
+                document.querySelectorAll('#xmr-price, #xmr-price-mobile').forEach(function(e) { e.textContent = '$' + xmr.toLocaleString(); });
+                document.querySelectorAll('#btc-xmr-ratio, #btc-xmr-ratio-mobile').forEach(function(e) { e.textContent = ratio; });
             } catch(e) {}
         }
         fetchPrices();
