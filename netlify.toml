@@ -14,6 +14,7 @@
     X-XSS-Protection = "1; mode=block"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://changenow.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://api.coingecko.com https://changenow.io https://api.wagyu.xyz; frame-src https://changenow.io https://www.wagyu.xyz; img-src 'self' data: https:; object-src 'none'"
 
 # Cache static assets
 [[headers]]
@@ -56,6 +57,11 @@
 [[redirects]]
   from = "/timeline"
   to = "/timeline.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/dashboard.html"
   status = 200
 
 [[redirects]]

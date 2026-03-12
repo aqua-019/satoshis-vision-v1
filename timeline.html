@@ -609,7 +609,7 @@
         </div>
         <div class="detail-date" id="detailDate">Date</div>
         <div class="detail-content" id="detailContent">Content</div>
-        <a href="#" class="detail-link" id="detailLink" target="_blank" style="display: none;">View Source →</a>
+        <a href="#" class="detail-link" id="detailLink" target="_blank" rel="noopener noreferrer" style="display: none;">View Source →</a>
     </div>
 
     <!-- Footer -->
@@ -649,12 +649,33 @@
                 type: "btc"
             },
             {
+                date: "October 5, 2009",
+                title: "First Bitcoin Exchange Rate",
+                preview: "New Liberty Standard publishes first BTC/USD rate: $0.000764",
+                content: "The New Liberty Standard website publishes the first known Bitcoin exchange rate, calculating BTC value based on the cost of electricity to mine it. The rate is set at 1,309.03 BTC per US dollar, or roughly $0.000764 per bitcoin. This marks the first attempt to assign a dollar value to Bitcoin, establishing it as something with measurable economic worth outside of pure ideology.",
+                type: "btc"
+            },
+            {
+                date: "May 22, 2010",
+                title: "Bitcoin Pizza Day",
+                preview: "Laszlo Hanyecz pays 10,000 BTC for two pizzas",
+                content: "Programmer Laszlo Hanyecz completes the first known real-world Bitcoin transaction by paying 10,000 BTC for two Papa John's pizzas, worth approximately $41 at the time. This transaction is celebrated annually as 'Bitcoin Pizza Day' and is considered a landmark moment proving Bitcoin could function as a medium of exchange. At peak Bitcoin prices, those pizzas would be worth hundreds of millions of dollars.",
+                type: "btc"
+            },
+            {
                 date: "July 7-8, 2010",
                 title: "Anonymity Thread (#82)",
                 preview: "Community debates Bitcoin's privacy limitations",
                 content: "BitcoinTalk thread #82 titled 'Anonymity' sees the community debating whether Bitcoin provides adequate privacy. User theymos (later a Bitcoin Core developer) writes: 'Bitcoin is not anonymous. If you want to be anonymous, you need to take extra steps like using Tor and mixing services.' Satoshi acknowledges the transparent ledger but notes regulatory attention hasn't arrived yet.",
                 type: "btc",
                 link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"
+            },
+            {
+                date: "July 17, 2010",
+                title: "Mt. Gox Exchange Launches",
+                preview: "The dominant early Bitcoin exchange opens for trading",
+                content: "Jed McCaleb launches Mt. Gox, which would grow to handle over 70% of all Bitcoin transactions worldwide. Originally created as a trading card exchange (Magic: The Gathering Online eXchange), it becomes the de facto Bitcoin exchange. Its centralized nature and transparent blockchain would later combine catastrophically, as on-chain analysis made it possible to trace the flow of stolen funds after its eventual collapse.",
+                type: "btc"
             },
             {
                 date: "August 10-13, 2010",
@@ -673,6 +694,13 @@
                 link: "https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"
             },
             {
+                date: "February 2011",
+                title: "Silk Road Launches",
+                preview: "Dark web marketplace tests Bitcoin's pseudonymity limits",
+                content: "Ross Ulbricht launches the Silk Road, an anonymous online marketplace operating on Tor that uses Bitcoin as its sole currency. The site demonstrates both Bitcoin's utility as censorship-resistant money and its critical privacy weakness: the transparent blockchain creates a permanent, traceable record. FBI investigators would later use blockchain analysis to trace transactions and identify participants, ultimately leading to Ulbricht's arrest in 2013.",
+                type: "btc"
+            },
+            {
                 date: "April 23, 2011",
                 title: "Satoshi's Final Email",
                 preview: "'I've moved on to other things'",
@@ -680,20 +708,62 @@
                 type: "btc"
             },
             {
+                date: "November 28, 2012",
+                title: "First Bitcoin Halving",
+                preview: "Block reward drops from 50 BTC to 25 BTC",
+                content: "Bitcoin experiences its first halving at block 210,000, reducing the block reward from 50 BTC to 25 BTC. This programmed scarcity mechanism, hardcoded by Satoshi, cuts the rate of new Bitcoin creation in half approximately every four years. The halving reinforces Bitcoin's deflationary monetary policy and would become a major market narrative in subsequent cycles.",
+                type: "btc"
+            },
+            {
                 date: "December 12, 2012",
                 title: "CryptoNote Whitepaper",
                 preview: "Nicolas van Saberhagen describes ring signatures and one-time addresses",
-                content: "The CryptoNote whitepaper is published by the pseudonymous Nicolas van Saberhagen, describing a new protocol with built-in privacy features. It implements exactly what Satoshi had theorized: ring signatures (group signatures), one-time addresses (blinded public keys), and unlinkable transactions. This paper would become the foundation for Monero.",
+                content: "The CryptoNote whitepaper is published by the pseudonymous Nicolas van Saberhagen, describing a new protocol with built-in privacy features. It implements exactly what Satoshi had theorized: ring signatures (group signatures), one-time addresses (blinded public keys), and unlinkable transactions. The paper directly critiques Bitcoin's traceability, stating that 'Bitcoin does not satisfy the untraceability requirement.' This paper would become the foundation for Monero.",
                 type: "both",
                 link: "https://cryptonote.org/whitepaper.pdf"
             },
             {
+                date: "January 2013",
+                title: "Greg Maxwell Proposes CoinJoin",
+                preview: "Bitcoin developer introduces collaborative transaction mixing",
+                content: "Bitcoin Core developer Gregory Maxwell publishes a proposal for CoinJoin, a method to improve Bitcoin privacy by combining multiple users' transactions into a single transaction. While innovative, CoinJoin is opt-in and requires coordination between participants. Chain analysis firms would later develop techniques to unravel CoinJoin transactions, highlighting the fundamental limitation of adding privacy as an optional layer rather than building it into the protocol.",
+                type: "both"
+            },
+            {
+                date: "February 2014",
+                title: "Mt. Gox Collapses",
+                preview: "850,000 BTC lost in largest exchange hack",
+                content: "Mt. Gox, handling 70% of global Bitcoin trades, suspends trading and files for bankruptcy after revealing that approximately 850,000 BTC (worth ~$450 million at the time) had been stolen over several years. The transparent blockchain allowed researchers to trace the movement of stolen funds, demonstrating both the forensic power of a public ledger and the privacy risks inherent in Bitcoin's design. The collapse accelerated interest in privacy-focused alternatives.",
+                type: "btc"
+            },
+            {
                 date: "April 18, 2014",
                 title: "Monero Launch",
-                preview: "Fork of Bytecoin with fair distribution",
-                content: "Monero launches as a community fork of Bytecoin (which had a hidden premine). From day one, Monero implements ring signatures for sender privacy and stealth addresses for receiver privacy. Unlike Bitcoin where privacy is opt-in and often broken, Monero makes privacy mandatory and default for all transactions.",
+                preview: "Fork of Bytecoin with fair distribution and no premine",
+                content: "Monero launches as a community fork of Bytecoin (which had a hidden premine of roughly 80% of its supply). A group of developers led by thankful_for_today, later succeeded by the community, restarts the CryptoNote protocol with a fair launch. From day one, Monero implements ring signatures for sender privacy and stealth addresses for receiver privacy. Unlike Bitcoin where privacy is opt-in and often broken, Monero makes privacy mandatory and default for all transactions.",
                 type: "xmr",
                 link: "https://getmonero.org"
+            },
+            {
+                date: "September 2014",
+                title: "Monero Research Lab Founded",
+                preview: "Dedicated cryptography research group formed",
+                content: "The Monero Research Lab (MRL) is established to provide academic-quality research into cryptocurrency privacy and cryptography. Led by pseudonymous researchers like Surae Noether and Sarang Noether, MRL publishes a series of technical papers analyzing and improving Monero's privacy guarantees. This formalized research approach sets Monero apart from most cryptocurrency projects and leads to continuous protocol improvements grounded in peer-reviewed mathematics.",
+                type: "xmr"
+            },
+            {
+                date: "January 2015",
+                title: "Chainalysis Founded",
+                preview: "Blockchain surveillance industry emerges to trace Bitcoin",
+                content: "Chainalysis is founded, becoming one of the first major blockchain analytics companies. The firm develops tools to trace Bitcoin transactions for law enforcement and financial institutions, demonstrating that Bitcoin's transparent ledger is a surveillance tool as much as a financial innovation. Chainalysis would grow to serve government agencies in over 40 countries, underscoring the privacy gap Satoshi had warned about in his early writings.",
+                type: "both"
+            },
+            {
+                date: "September 2016",
+                title: "Monero Adopted on Dark Web Markets",
+                preview: "AlphaBay adds Monero as payment option alongside Bitcoin",
+                content: "AlphaBay, then the largest dark web marketplace, adds Monero as an accepted payment method alongside Bitcoin. This marks a significant real-world validation of Monero's privacy properties. Unlike Bitcoin transactions on Silk Road that were later traced by law enforcement, Monero transactions on these platforms proved far more resistant to blockchain analysis. By 2017, several markets would make Monero their preferred or exclusive currency.",
+                type: "both"
             },
             {
                 date: "January 5, 2017",
@@ -703,24 +773,158 @@
                 type: "xmr"
             },
             {
+                date: "March 2017",
+                title: "Monero GUI Wallet Released",
+                preview: "Graphical wallet lowers barrier to entry for non-technical users",
+                content: "The Monero community releases the official GUI (Graphical User Interface) wallet, replacing the command-line-only interface that had been the primary way to use Monero. The GUI wallet makes Monero accessible to non-technical users for the first time, featuring a clean interface for sending and receiving XMR, viewing transaction history, and managing multiple accounts. This marks a major step toward mainstream usability.",
+                type: "xmr"
+            },
+            {
+                date: "April 2017",
+                title: "MoneroV Fork Attempt",
+                preview: "Attempted hard fork fails to gain traction, highlights community resilience",
+                content: "MoneroV announces a planned hard fork of Monero that would create a new coin with a capped supply, distributing 10 MoneroV for every 1 XMR held. The Monero community widely rejects the fork, warning that claiming forked coins could compromise privacy by linking Monero key images across chains. The failed fork attempt demonstrates the community's commitment to privacy principles over short-term financial gain and highlights the unique risks of forking a privacy coin.",
+                type: "xmr"
+            },
+            {
+                date: "August 2017",
+                title: "Bitcoin SegWit Activation",
+                preview: "Segregated Witness activates after years of debate",
+                content: "Segregated Witness (SegWit) activates on Bitcoin at block 481,824 after years of contentious debate. While primarily a scaling solution that fixes transaction malleability and increases effective block capacity, SegWit also lays the groundwork for future upgrades like the Lightning Network and Taproot. However, it does nothing to address Bitcoin's fundamental privacy limitations, as all transaction data remains fully transparent on the public blockchain.",
+                type: "btc"
+            },
+            {
+                date: "April 6, 2018",
+                title: "Monero Adopts Anti-ASIC Policy",
+                preview: "Hard fork changes PoW algorithm to resist mining centralization",
+                content: "Monero executes a hard fork specifically to change its proof-of-work algorithm from the original CryptoNight to a modified variant, bricking Bitmain's newly released ASIC miners. This deliberate decision to maintain GPU/CPU mining accessibility reflects the community's commitment to decentralization. Monero would continue this anti-ASIC stance through multiple algorithm changes before adopting RandomX in 2019, which was purpose-built to be ASIC-resistant.",
+                type: "xmr"
+            },
+            {
+                date: "October 18, 2018",
+                title: "Bulletproofs Activation",
+                preview: "Transaction sizes reduced by ~80% with new range proofs",
+                content: "Monero activates Bulletproofs, a zero-knowledge proof system that replaces the original Borromean range proofs used in RingCT. Bulletproofs reduce transaction sizes by approximately 80% and lower fees proportionally, making private transactions dramatically more efficient. This upgrade demonstrates that privacy and efficiency are not necessarily at odds, contrary to the common criticism that privacy features bloat blockchains.",
+                type: "xmr"
+            },
+            {
+                date: "January 2019",
+                title: "Lightning Network Growth on Bitcoin",
+                preview: "Layer 2 payment channels expand but privacy concerns persist",
+                content: "The Bitcoin Lightning Network surpasses 500 nodes and grows rapidly as a Layer 2 scaling solution. While Lightning transactions are not recorded on the main blockchain, researchers demonstrate that the network's routing structure, channel balances, and opening/closing transactions on-chain still leak significant privacy information. The Lightning Network improves Bitcoin's scalability but does not solve its fundamental on-chain transparency problem.",
+                type: "btc"
+            },
+            {
+                date: "August 2019",
+                title: "Kovri / I2P Integration Research",
+                preview: "Monero pursues network-layer privacy via I2P routing",
+                content: "Development continues on Kovri, a C++ implementation of the I2P anonymous network layer intended to be integrated with Monero. While Monero's protocol hides transaction details on-chain, the IP addresses of nodes broadcasting transactions remain potentially visible. Kovri aims to close this gap by routing all Monero traffic through encrypted, anonymous tunnels. Though Kovri development would later stall, the goals were partially realized through alternative approaches.",
+                type: "xmr"
+            },
+            {
+                date: "November 30, 2019",
+                title: "RandomX Activation",
+                preview: "New PoW algorithm optimized for CPU mining",
+                content: "Monero activates RandomX, a proof-of-work algorithm specifically designed to be efficiently mineable on consumer CPUs while resisting ASIC and GPU optimization. Developed by Monero contributors tevador, hyc, and SChernykh, RandomX uses random code execution and memory-hard techniques to level the mining playing field. This furthers Monero's decentralization goals by allowing anyone with a standard computer to participate in mining.",
+                type: "xmr"
+            },
+            {
+                date: "June 2020",
+                title: "Dandelion++ Deployed",
+                preview: "Network-layer privacy upgrade obscures transaction origin IPs",
+                content: "Monero implements Dandelion++, a protocol-level network privacy upgrade that obscures the IP address origin of transactions. Instead of broadcasting a new transaction to all peers immediately (which allows observers to pinpoint the originating node), Dandelion++ first passes the transaction through a random 'stem' of nodes before 'fluffing' it to the broader network. This makes it significantly harder for network-level adversaries to link transactions to IP addresses.",
+                type: "xmr"
+            },
+            {
                 date: "September 2020",
                 title: "IRS Offers $625,000 Bounty",
                 preview: "U.S. government seeks to break Monero privacy",
-                content: "The U.S. Internal Revenue Service offers $625,000 to any contractor who can develop tools to trace Monero transactions. Multiple firms claim partial success, but no definitive tracing capability has been demonstrated. The bounty remains effectively unclaimed as of 2025, with Chainalysis and others admitting they can only achieve 'probabilistic' analysis.",
+                content: "The U.S. Internal Revenue Service offers $625,000 to any contractor who can develop tools to trace Monero transactions. Multiple firms claim partial success, but no definitive tracing capability has been demonstrated. The bounty remains effectively unclaimed as of 2025, with Chainalysis and others admitting they can only achieve 'probabilistic' analysis that falls far short of the deterministic tracing possible with Bitcoin.",
+                type: "xmr"
+            },
+            {
+                date: "October 2020",
+                title: "CLSAG Activation",
+                preview: "Compact ring signatures reduce transaction size and verification time",
+                content: "Monero activates CLSAG (Compact Linkable Spontaneous Anonymous Group) signatures, replacing the older MLSAG scheme. CLSAG reduces transaction sizes by approximately 25% and improves verification speed by around 20%, all while maintaining the same privacy guarantees. The upgrade was developed through formal academic research and peer review, exemplifying Monero's approach of rigorous cryptographic improvement.",
+                type: "xmr"
+            },
+            {
+                date: "November 2021",
+                title: "Bitcoin Taproot Activation",
+                preview: "Schnorr signatures and MAST promise modest privacy improvements",
+                content: "Bitcoin activates the Taproot upgrade at block 709,632, introducing Schnorr signatures and Merkelized Abstract Syntax Trees (MAST). Taproot makes complex multi-signature and smart contract transactions look identical to simple payments on-chain, offering a modest privacy improvement. However, Taproot is opt-in and does not hide transaction amounts, sender/receiver addresses, or the transaction graph. Critics note it addresses a narrow privacy gap while leaving Bitcoin's fundamental transparency intact.",
+                type: "btc"
+            },
+            {
+                date: "March 2022",
+                title: "Monero Atomic Swaps with Bitcoin",
+                preview: "Trustless cross-chain BTC-to-XMR swaps become possible",
+                content: "The COMIT network team releases a working implementation of trustless atomic swaps between Bitcoin and Monero. This allows users to exchange BTC for XMR without any intermediary, exchange, or KYC process. The tool represents a critical piece of infrastructure: users can acquire Monero privately by swapping from Bitcoin through a decentralized protocol, effectively using Monero as a privacy layer for Bitcoin holders who want to break the chain of surveillance.",
+                type: "both",
+                link: "https://github.com/comit-network/xmr-btc-swap"
+            },
+            {
+                date: "July 2022",
+                title: "Monero Ring Size Increased to 16",
+                preview: "Hard fork expands anonymity set for all transactions",
+                content: "Monero's August 2022 hard fork increases the mandatory ring size from 11 to 16, meaning each transaction input is now mixed with 15 decoys instead of 10. This significantly increases the anonymity set and makes statistical analysis of transaction origins more difficult. The same hard fork also introduces Bulletproofs+, an optimized version of Bulletproofs that further reduces transaction sizes and fees.",
+                type: "xmr"
+            },
+            {
+                date: "August 2022",
+                title: "View Tags Introduced",
+                preview: "Wallet sync speed improved by up to 40%",
+                content: "The August 2022 hard fork also introduces view tags, a one-byte tag added to each transaction output that allows wallets to quickly eliminate non-matching outputs during scanning. This simple but effective optimization improves wallet sync speed by up to 40%, addressing one of the practical usability complaints about Monero. View tags demonstrate the project's ongoing focus on making privacy practical and efficient.",
+                type: "xmr"
+            },
+            {
+                date: "September 2022",
+                title: "P2Pool Gains Traction",
+                preview: "Decentralized mining pool reaches significant hashrate share",
+                content: "P2Pool, a decentralized mining pool for Monero, gains significant traction and hashrate share. Unlike traditional mining pools where a central operator controls block construction and could censor transactions, P2Pool uses a sidechain to let each miner construct their own blocks. Combined with RandomX's CPU-friendly algorithm, P2Pool represents the most decentralized mining infrastructure in cryptocurrency, ensuring no single entity can censor Monero transactions.",
+                type: "xmr"
+            },
+            {
+                date: "January 2024",
+                title: "Bitcoin Spot ETFs Approved",
+                preview: "SEC approves Bitcoin ETFs, deepening institutional surveillance ties",
+                content: "The U.S. Securities and Exchange Commission approves 11 spot Bitcoin ETFs, bringing massive institutional investment into Bitcoin. While celebrated as mainstream adoption, the ETFs deepen Bitcoin's integration with the traditional financial surveillance apparatus. ETF providers must comply with AML/KYC regulations, and the transparent blockchain allows authorities to trace coins flowing into and out of ETF-related addresses. Bitcoin's evolution toward a surveilled institutional asset diverges further from Satoshi's cypherpunk origins.",
+                type: "btc"
+            },
+            {
+                date: "April 2024",
+                title: "Fourth Bitcoin Halving",
+                preview: "Block reward drops to 3.125 BTC amid institutional adoption",
+                content: "Bitcoin's fourth halving occurs at block 840,000, reducing the block reward from 6.25 to 3.125 BTC. This halving takes place in a dramatically different landscape than previous ones: Bitcoin is now held by publicly traded ETFs, sovereign wealth funds, and corporations. The halving's scarcity narrative drives price appreciation, but Bitcoin's role has shifted from peer-to-peer electronic cash to a surveilled store of value, far from the private transaction system Satoshi envisioned.",
+                type: "btc"
+            },
+            {
+                date: "2024",
+                title: "Seraphis and Jamtis Research Advances",
+                preview: "Next-generation transaction protocol nears completion",
+                content: "Research into Seraphis, a next-generation transaction protocol for Monero, and its companion addressing scheme Jamtis, reaches advanced stages. Seraphis would replace Monero's current RingCT framework with a more flexible architecture that supports larger anonymity sets, more efficient multisig, and better forward secrecy. Jamtis introduces tiered wallet permissions (view-only, generate addresses, spend) without compromising privacy. Together, they represent the most significant protocol redesign since Monero's launch.",
                 type: "xmr"
             },
             {
                 date: "2024-2025",
                 title: "Mass Exchange Delistings",
                 preview: "73+ exchanges drop XMR, price rises 195%",
-                content: "Under regulatory pressure, over 73 cryptocurrency exchanges delist Monero, including major platforms like Binance, Kraken, and OKX. Paradoxically, XMR price increases 195% during this period as peer-to-peer trading surges. The delistings prove the project's decentralization: there's no company to sue, no CEO to arrest, and no way to stop the protocol.",
+                content: "Under regulatory pressure, over 73 cryptocurrency exchanges delist Monero, including major platforms like Binance, Kraken, and OKX. Paradoxically, XMR price increases 195% during this period as peer-to-peer trading surges. The delistings prove the project's decentralization: there's no company to sue, no CEO to arrest, and no way to stop the protocol. Atomic swaps, decentralized exchanges, and peer-to-peer platforms fill the gap left by centralized exchanges.",
+                type: "xmr"
+            },
+            {
+                date: "2025",
+                title: "Triptych and Next-Gen Ring Signatures",
+                preview: "Research enables much larger ring sizes without proportional size increases",
+                content: "Building on years of MRL research, the Triptych proof system demonstrates that Monero can scale ring sizes logarithmically rather than linearly. Traditional ring signatures grow in size proportional to the ring size, but Triptych-style constructions allow rings of 64 or 128 members with only modest size increases. This research directly feeds into the FCMP++ effort, pushing toward the ultimate goal of full anonymity sets encompassing every transaction on the blockchain.",
                 type: "xmr"
             },
             {
                 date: "2025",
                 title: "FCMP++ Development",
                 preview: "Full Chain Membership Proofs in progress",
-                content: "Development continues on Full Chain Membership Proofs (FCMP++), which will make every Monero transaction anonymous among ALL transactions ever made on the blockchain, not just a subset of decoys. This represents the final evolution of Satoshi's 2010 vision: 'The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to.'",
+                content: "Development continues on Full Chain Membership Proofs (FCMP++), which will make every Monero transaction anonymous among ALL transactions ever made on the blockchain, not just a subset of decoys. This represents the final evolution of Satoshi's 2010 vision: 'The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to.' With FCMP++, the anonymity set becomes the entire blockchain, making statistical tracing analysis effectively impossible.",
                 type: "xmr"
             }
         ];

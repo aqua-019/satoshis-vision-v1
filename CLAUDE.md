@@ -138,6 +138,18 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 ## Session Notes
 
+- **2026-03-12** (PR#4): Home page overhaul, timeline expansion, security hardening.
+  - Home splash: Rewritten with Monero-centric cypherpunk theme, "Satoshi Built the Vision.
+    Monero Is the Reality." hero, removed vague opener
+  - Home layout: BTC vs XMR comparison moved above crime stats, timeline + quote explorer removed
+  - Crime stats: 8 stat cards (was 4), new data sources (UNODC, Nasdaq, Chainalysis 2025),
+    added pie chart, bar chart, gauge comparison. Sources cited with links.
+  - ChangeNOW widget: fixed white space issue (removed min-height, darkened background)
+  - XMR page: added 5-coin privacy comparison (BTC vs XMR vs ZCash vs LTC vs SOL)
+  - Timeline: expanded from 13 to ~40 events spanning 2008-2026
+  - Footer: "AQUATIC" allusion added to home page footer
+  - Security: Added CSP headers (netlify.toml + vercel.json), SRI hash for CDN scripts,
+    standardized rel="noopener noreferrer" across all external links
 - **2026-03-12** (PR#3): Major UX overhaul and new pages.
   - Header redesigned: 8 cluttered links → 5 cohesive items + Learn dropdown
   - Price tickers now on ALL page headers (were only on index.html)
