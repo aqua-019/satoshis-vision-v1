@@ -325,6 +325,282 @@
             margin: 0 auto;
         }
 
+        /* ── Market Dashboard ─────────────────────────────── */
+        .market-dashboard {
+            padding: 2rem 1.5rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            overflow: hidden;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 1.25rem 0.5rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .chart-title-area {
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .chart-title {
+            font-family: var(--font-display);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .chart-live-price {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .chart-live-change {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+        }
+
+        .chart-timeframes {
+            display: flex;
+            gap: 0.25rem;
+        }
+
+        .tf-btn {
+            padding: 0.3rem 0.6rem;
+            background: transparent;
+            border: 1px solid var(--grey-18);
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tf-btn:hover { border-color: var(--text-secondary); color: var(--text-primary); }
+        .tf-btn.active { background: var(--btc-orange); border-color: var(--btc-orange); color: #000; }
+
+        .chart-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0;
+            padding: 0 1.25rem 0.75rem;
+        }
+
+        .chart-metric {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            padding: 0.35rem 0;
+        }
+
+        .chart-metric-label {
+            color: var(--text-secondary);
+        }
+
+        .chart-metric-value {
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .chart-canvas-wrap {
+            padding: 0 0.5rem 0.75rem;
+            height: 280px;
+        }
+
+        .chart-canvas-wrap canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Live Market Tickers */
+        .live-tickers {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .ticker-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            text-decoration: none;
+            color: inherit;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+
+        .ticker-card:hover {
+            border-color: var(--btc-orange);
+            transform: translateY(-2px);
+        }
+
+        .ticker-card-label {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .ticker-card-value {
+            font-family: var(--font-mono);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .ticker-card-change {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+        }
+
+        .ticker-card-change.up { color: #00D26A; }
+        .ticker-card-change.down { color: #FF4757; }
+
+        /* XMR Fiat Grid */
+        .fiat-section {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .fiat-section-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .fiat-section-sub {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .fiat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .fiat-card {
+            background: var(--dark-bg);
+            border: 1px solid var(--grey-18);
+            padding: 0.75rem;
+            text-align: center;
+        }
+
+        .fiat-pair {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.25rem;
+        }
+
+        .fiat-value {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .fiat-change {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            margin-top: 0.15rem;
+        }
+
+        .fiat-change.up { color: #00D26A; }
+        .fiat-change.down { color: #FF4757; }
+
+        /* XMR Holdings & Network */
+        .network-section {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .network-section-title {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .network-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .network-card {
+            background: var(--dark-bg);
+            border: 1px solid var(--grey-18);
+            padding: 0.85rem;
+            text-align: center;
+        }
+
+        .network-card-label {
+            font-family: var(--font-mono);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .network-card-value {
+            font-family: var(--font-mono);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 768px) {
+            .charts-row {
+                grid-template-columns: 1fr;
+            }
+            .chart-canvas-wrap {
+                height: 220px;
+            }
+            .chart-metrics {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .fiat-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .fiat-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .live-tickers {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         /* Problem Section - Why This Matters */
         .problem-section {
             background: var(--card-bg);
@@ -1277,6 +1553,7 @@
     <nav class="nav">
         <div class="nav-logo">₿ → ɱ</div>
         <div class="nav-links">
+            <a href="#market">Market</a>
             <a href="#timeline">Timeline</a>
             <a href="#quotes">Quotes</a>
             <a href="#stats">Statistics</a>
@@ -1312,6 +1589,7 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
+        <a href="#market" onclick="toggleMenu()">Market</a>
         <a href="#timeline" onclick="toggleMenu()">Timeline</a>
         <a href="#quotes" onclick="toggleMenu()">Quotes</a>
         <a href="#stats" onclick="toggleMenu()">Statistics</a>
@@ -1346,6 +1624,151 @@
         <div class="scroll-indicator">
             <span>Scroll to explore</span>
             <span>↓</span>
+        </div>
+    </section>
+
+    <!-- Market Dashboard -->
+    <section class="market-dashboard" id="market">
+        <!-- 1. Charts Row (top) -->
+        <div class="charts-row">
+            <!-- XMR/USD Chart -->
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <div class="chart-title-area">
+                        <span class="chart-title" style="color:var(--xmr-orange);">XMR / USD</span>
+                        <span class="chart-live-price" id="chart-xmr-price">—</span>
+                        <span class="chart-live-change" id="chart-xmr-change"></span>
+                    </div>
+                    <div class="chart-timeframes" id="xmr-timeframes">
+                        <button class="tf-btn" data-days="7">7D</button>
+                        <button class="tf-btn active" data-days="30">30D</button>
+                        <button class="tf-btn" data-days="90">90D</button>
+                        <button class="tf-btn" data-days="180">6M</button>
+                        <button class="tf-btn" data-days="365">1Y</button>
+                        <button class="tf-btn" data-days="max">ALL</button>
+                    </div>
+                </div>
+                <div class="chart-metrics" id="xmr-metrics">
+                    <div class="chart-metric"><span class="chart-metric-label">High: </span><span class="chart-metric-value" id="xmr-high">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">Low: </span><span class="chart-metric-value" id="xmr-low">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">Avg: </span><span class="chart-metric-value" id="xmr-avg">—</span></div>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="xmr-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- BTC/XMR Chart -->
+            <div class="chart-panel">
+                <div class="chart-header">
+                    <div class="chart-title-area">
+                        <span class="chart-title" style="color:var(--btc-orange);">BTC / XMR Ratio</span>
+                        <span class="chart-live-price" id="chart-btcxmr-price">—</span>
+                        <span class="chart-live-change" id="chart-btcxmr-change"></span>
+                    </div>
+                    <div class="chart-timeframes" id="btcxmr-timeframes">
+                        <button class="tf-btn" data-days="7">7D</button>
+                        <button class="tf-btn active" data-days="30">30D</button>
+                        <button class="tf-btn" data-days="90">90D</button>
+                        <button class="tf-btn" data-days="180">6M</button>
+                        <button class="tf-btn" data-days="365">1Y</button>
+                        <button class="tf-btn" data-days="max">ALL</button>
+                    </div>
+                </div>
+                <div class="chart-metrics" id="btcxmr-metrics">
+                    <div class="chart-metric"><span class="chart-metric-label">BTC Price: </span><span class="chart-metric-value" id="btcxmr-btc-price">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">XMR Price: </span><span class="chart-metric-value" id="btcxmr-xmr-price">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">Ratio: </span><span class="chart-metric-value" id="btcxmr-ratio">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">BTC 24h: </span><span class="chart-metric-value" id="btcxmr-btc-24h">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">XMR 24h: </span><span class="chart-metric-value" id="btcxmr-xmr-24h">—</span></div>
+                    <div class="chart-metric"><span class="chart-metric-label">BTC Dom: </span><span class="chart-metric-value" id="btcxmr-dominance">—</span></div>
+                </div>
+                <div class="chart-canvas-wrap">
+                    <canvas id="btcxmr-chart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Live Market Tickers -->
+        <div class="live-tickers" id="live-tickers">
+            <a href="https://www.coingecko.com/en/coins/bitcoin" target="_blank" rel="noopener" class="ticker-card">
+                <span class="ticker-card-label">BTC / USD</span>
+                <span class="ticker-card-value" id="tk-btc-price">—</span>
+                <span class="ticker-card-change" id="tk-btc-change"></span>
+            </a>
+            <a href="https://www.coingecko.com/en/coins/monero" target="_blank" rel="noopener" class="ticker-card">
+                <span class="ticker-card-label">XMR / USD</span>
+                <span class="ticker-card-value" id="tk-xmr-price">—</span>
+                <span class="ticker-card-change" id="tk-xmr-change"></span>
+            </a>
+            <a href="https://www.coingecko.com/en/coins/monero" target="_blank" rel="noopener" class="ticker-card">
+                <span class="ticker-card-label">BTC / XMR</span>
+                <span class="ticker-card-value" id="tk-btcxmr-ratio">—</span>
+                <span class="ticker-card-change" id="tk-btcxmr-change"></span>
+            </a>
+            <a href="https://www.coingecko.com/en/coins/monero" target="_blank" rel="noopener" class="ticker-card">
+                <span class="ticker-card-label">XMR Mkt Cap</span>
+                <span class="ticker-card-value" id="tk-xmr-mcap">—</span>
+                <span class="ticker-card-change" id="tk-xmr-mcap-change"></span>
+            </a>
+            <a href="https://www.coingecko.com/en/coins/bitcoin" target="_blank" rel="noopener" class="ticker-card">
+                <span class="ticker-card-label">BTC Mkt Cap</span>
+                <span class="ticker-card-value" id="tk-btc-mcap">—</span>
+                <span class="ticker-card-change" id="tk-btc-mcap-change"></span>
+            </a>
+            <a href="https://www.coingecko.com/en/coins/bitcoin" target="_blank" rel="noopener" class="ticker-card">
+                <span class="ticker-card-label">BTC Dominance</span>
+                <span class="ticker-card-value" id="tk-btc-dom">—</span>
+                <span class="ticker-card-change" id="tk-btc-dom-change"></span>
+            </a>
+        </div>
+
+        <!-- 3. XMR in Fiat Currencies -->
+        <div class="fiat-section">
+            <div class="fiat-section-title">XMR in Fiat Currencies</div>
+            <div class="fiat-section-sub">Monero price across major world currencies</div>
+            <div class="fiat-grid" id="fiat-grid">
+                <!-- filled by JS -->
+            </div>
+        </div>
+
+        <!-- 4. XMR Holdings & Network -->
+        <div class="network-section">
+            <div class="network-section-title">XMR Holdings & Network</div>
+            <div class="network-grid" id="network-grid">
+                <div class="network-card">
+                    <div class="network-card-label">Circulating Supply</div>
+                    <div class="network-card-value" id="net-supply">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">Market Cap</div>
+                    <div class="network-card-value" id="net-mcap">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">24h Volume</div>
+                    <div class="network-card-value" id="net-volume">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">All-Time High</div>
+                    <div class="network-card-value" id="net-ath">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">ATH Date</div>
+                    <div class="network-card-value" id="net-ath-date">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">From ATH</div>
+                    <div class="network-card-value" id="net-ath-change">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">Block Height</div>
+                    <div class="network-card-value" id="net-block-height">—</div>
+                </div>
+                <div class="network-card">
+                    <div class="network-card-label">Hashrate</div>
+                    <div class="network-card-value" id="net-hashrate">—</div>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -2186,6 +2609,374 @@
         // Add to scroll handler
         window.addEventListener('scroll', animateDashboard);
         animateDashboard(); // Initial check
+
+        // ══════════════════════════════════════════════════════════
+        // ── Market Dashboard: Charts, Tickers, Fiat, Network ────
+        // ══════════════════════════════════════════════════════════
+
+        const FIAT_LIST = [
+            { code: 'usd', symbol: '$',   label: 'USD' },
+            { code: 'eur', symbol: '€',   label: 'EUR' },
+            { code: 'gbp', symbol: '£',   label: 'GBP' },
+            { code: 'chf', symbol: 'CHF ', label: 'CHF' },
+            { code: 'aud', symbol: 'A$',  label: 'AUD' },
+            { code: 'jpy', symbol: '¥',   label: 'JPY' },
+            { code: 'cad', symbol: 'C$',  label: 'CAD' },
+            { code: 'krw', symbol: '₩',   label: 'KRW' },
+            { code: 'inr', symbol: '₹',   label: 'INR' }
+        ];
+
+        // ── Candlestick chart renderer ──────────────────────────
+        function drawCandlestick(canvas, ohlcData, color) {
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+            const W = rect.width;
+            const H = rect.height;
+            ctx.clearRect(0, 0, W, H);
+
+            if (!ohlcData || ohlcData.length === 0) {
+                ctx.fillStyle = '#555';
+                ctx.font = '13px JetBrains Mono, monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('Loading chart data...', W / 2, H / 2);
+                return;
+            }
+
+            const pad = { top: 10, bottom: 25, left: 5, right: 55 };
+            const cw = W - pad.left - pad.right;
+            const ch = H - pad.top - pad.bottom;
+
+            // Price range
+            let hi = -Infinity, lo = Infinity;
+            ohlcData.forEach(c => {
+                if (c.high > hi) hi = c.high;
+                if (c.low < lo) lo = c.low;
+            });
+            const range = hi - lo || 1;
+            const yScale = ch / range;
+            const toY = v => pad.top + ch - (v - lo) * yScale;
+
+            const n = ohlcData.length;
+            const barW = Math.max(1, (cw / n) * 0.65);
+            const gap = cw / n;
+
+            // Draw grid lines
+            ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+            ctx.lineWidth = 1;
+            const gridSteps = 5;
+            for (let i = 0; i <= gridSteps; i++) {
+                const y = pad.top + (ch / gridSteps) * i;
+                ctx.beginPath();
+                ctx.moveTo(pad.left, y);
+                ctx.lineTo(W - pad.right, y);
+                ctx.stroke();
+                // Price label
+                const price = hi - (range / gridSteps) * i;
+                ctx.fillStyle = '#666';
+                ctx.font = '10px JetBrains Mono, monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(price >= 1000 ? price.toFixed(0) : price.toFixed(price >= 1 ? 2 : 4), W - pad.right + 5, y + 4);
+            }
+
+            // Draw candles
+            ohlcData.forEach((c, i) => {
+                const x = pad.left + gap * i + gap / 2;
+                const bull = c.close >= c.open;
+                const bodyColor = bull ? '#00D26A' : '#FF4757';
+                const wickColor = bull ? 'rgba(0,210,106,0.5)' : 'rgba(255,71,87,0.5)';
+
+                // Wick
+                ctx.strokeStyle = wickColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(x, toY(c.high));
+                ctx.lineTo(x, toY(c.low));
+                ctx.stroke();
+
+                // Body
+                const openY = toY(c.open);
+                const closeY = toY(c.close);
+                const bodyH = Math.max(1, Math.abs(closeY - openY));
+                ctx.fillStyle = bodyColor;
+                ctx.fillRect(x - barW / 2, Math.min(openY, closeY), barW, bodyH);
+            });
+
+            // Date labels
+            ctx.fillStyle = '#666';
+            ctx.font = '9px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            const labelCount = Math.min(6, n);
+            for (let i = 0; i < labelCount; i++) {
+                const idx = Math.floor((n - 1) * i / (labelCount - 1));
+                const x = pad.left + gap * idx + gap / 2;
+                const d = new Date(ohlcData[idx].time);
+                const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                ctx.fillText(label, x, H - 5);
+            }
+        }
+
+        // ── Build OHLC from CoinGecko price data ────────────────
+        function priceDataToOHLC(prices, numCandles) {
+            if (!prices || prices.length < 2) return [];
+            const chunkSize = Math.max(1, Math.floor(prices.length / numCandles));
+            const candles = [];
+            for (let i = 0; i < prices.length; i += chunkSize) {
+                const chunk = prices.slice(i, i + chunkSize);
+                if (chunk.length === 0) continue;
+                const opens = chunk[0][1];
+                const closes = chunk[chunk.length - 1][1];
+                let high = -Infinity, low = Infinity;
+                chunk.forEach(p => {
+                    if (p[1] > high) high = p[1];
+                    if (p[1] < low) low = p[1];
+                });
+                candles.push({ time: chunk[0][0], open: opens, high, low, close: closes });
+            }
+            return candles;
+        }
+
+        // ── Compute BTC/XMR ratio OHLC from two price arrays ────
+        function ratioOHLC(btcPrices, xmrPrices, numCandles) {
+            // Align timestamps: for each BTC price point, find nearest XMR
+            if (!btcPrices.length || !xmrPrices.length) return [];
+            const ratioPrices = [];
+            let xi = 0;
+            btcPrices.forEach(bp => {
+                while (xi < xmrPrices.length - 1 && xmrPrices[xi + 1][0] <= bp[0]) xi++;
+                const xmrVal = xmrPrices[xi][1];
+                if (xmrVal > 0) ratioPrices.push([bp[0], bp[1] / xmrVal]);
+            });
+            return priceDataToOHLC(ratioPrices, numCandles);
+        }
+
+        // ── Chart state ──────────────────────────────────────────
+        const chartState = {
+            xmrDays: '30',
+            btcxmrDays: '30',
+            cache: {}
+        };
+
+        async function fetchChartData(coinId, days) {
+            const key = `${coinId}_${days}`;
+            if (chartState.cache[key]) return chartState.cache[key];
+            const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+            chartState.cache[key] = data.prices;
+            return data.prices;
+        }
+
+        async function renderXmrChart() {
+            const canvas = document.getElementById('xmr-chart');
+            if (!canvas) return;
+            try {
+                const prices = await fetchChartData('monero', chartState.xmrDays);
+                const numCandles = chartState.xmrDays === '7' ? 28 : chartState.xmrDays === 'max' ? 120 : 60;
+                const ohlc = priceDataToOHLC(prices, numCandles);
+                drawCandlestick(canvas, ohlc, '#FF6600');
+
+                // Update metrics
+                if (prices.length > 0) {
+                    const vals = prices.map(p => p[1]);
+                    const high = Math.max(...vals);
+                    const low = Math.min(...vals);
+                    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
+                    document.getElementById('xmr-high').textContent = '$' + high.toFixed(2);
+                    document.getElementById('xmr-low').textContent = '$' + low.toFixed(2);
+                    document.getElementById('xmr-avg').textContent = '$' + avg.toFixed(2);
+                }
+            } catch (e) {
+                console.log('XMR chart error:', e);
+            }
+        }
+
+        async function renderBtcXmrChart() {
+            const canvas = document.getElementById('btcxmr-chart');
+            if (!canvas) return;
+            try {
+                const [btcPrices, xmrPrices] = await Promise.all([
+                    fetchChartData('bitcoin', chartState.btcxmrDays),
+                    fetchChartData('monero', chartState.btcxmrDays)
+                ]);
+                const numCandles = chartState.btcxmrDays === '7' ? 28 : chartState.btcxmrDays === 'max' ? 120 : 60;
+                const ohlc = ratioOHLC(btcPrices, xmrPrices, numCandles);
+                drawCandlestick(canvas, ohlc, '#F7931A');
+
+                // Update ratio metrics from latest prices
+                if (btcPrices.length && xmrPrices.length) {
+                    const btcNow = btcPrices[btcPrices.length - 1][1];
+                    const xmrNow = xmrPrices[xmrPrices.length - 1][1];
+                    const ratioNow = btcNow / xmrNow;
+                    document.getElementById('btcxmr-ratio').textContent = ratioNow.toFixed(1) + ' XMR';
+                }
+            } catch (e) {
+                console.log('BTC/XMR chart error:', e);
+            }
+        }
+
+        // Timeframe buttons
+        document.getElementById('xmr-timeframes').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('tf-btn')) return;
+            document.querySelectorAll('#xmr-timeframes .tf-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            chartState.xmrDays = e.target.dataset.days;
+            renderXmrChart();
+        });
+
+        document.getElementById('btcxmr-timeframes').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('tf-btn')) return;
+            document.querySelectorAll('#btcxmr-timeframes .tf-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            chartState.btcxmrDays = e.target.dataset.days;
+            renderBtcXmrChart();
+        });
+
+        // ── Dashboard data fetch (extended) ─────────────────────
+        async function fetchDashboardData() {
+            try {
+                const fiatCodes = FIAT_LIST.map(f => f.code).join(',');
+                const [coinData, globalData] = await Promise.all([
+                    fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=bitcoin,monero&sparkline=false&price_change_percentage=24h`)
+                        .then(r => r.json()),
+                    fetch('https://api.coingecko.com/api/v3/global')
+                        .then(r => r.json())
+                ]);
+
+                const btc = coinData.find(c => c.id === 'bitcoin');
+                const xmr = coinData.find(c => c.id === 'monero');
+                const glob = globalData.data;
+
+                if (!btc || !xmr) return;
+
+                const fmtUsd = (v, d) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: d });
+                const fmtPct = (v) => (v != null) ? `${v > 0 ? '+' : ''}${v.toFixed(2)}%` : '';
+                const pctCls = (v) => (v != null && v >= 0) ? 'up' : 'down';
+                const fmtBig = (v) => {
+                    if (v >= 1e12) return '$' + (v / 1e12).toFixed(2) + 'T';
+                    if (v >= 1e9) return '$' + (v / 1e9).toFixed(2) + 'B';
+                    if (v >= 1e6) return '$' + (v / 1e6).toFixed(1) + 'M';
+                    return '$' + v.toLocaleString();
+                };
+
+                // Chart header live prices
+                const setEl = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+                const setClass = (id, cls) => { const el = document.getElementById(id); if (el) el.className = cls; };
+
+                setEl('chart-xmr-price', fmtUsd(xmr.current_price, 2));
+                setEl('chart-xmr-change', fmtPct(xmr.price_change_percentage_24h));
+                setClass('chart-xmr-change', 'chart-live-change ' + pctCls(xmr.price_change_percentage_24h));
+
+                const ratio = btc.current_price / xmr.current_price;
+                setEl('chart-btcxmr-price', ratio.toFixed(1) + ' XMR');
+                const ratioChange = (btc.price_change_percentage_24h || 0) - (xmr.price_change_percentage_24h || 0);
+                setEl('chart-btcxmr-change', fmtPct(ratioChange));
+                setClass('chart-btcxmr-change', 'chart-live-change ' + pctCls(ratioChange));
+
+                // BTC/XMR metrics panel
+                setEl('btcxmr-btc-price', fmtUsd(btc.current_price, 0));
+                setEl('btcxmr-xmr-price', fmtUsd(xmr.current_price, 2));
+                setEl('btcxmr-ratio', ratio.toFixed(1) + ' XMR');
+                const btc24 = fmtPct(btc.price_change_percentage_24h);
+                const xmr24 = fmtPct(xmr.price_change_percentage_24h);
+                setEl('btcxmr-btc-24h', btc24);
+                document.getElementById('btcxmr-btc-24h').style.color = (btc.price_change_percentage_24h >= 0) ? '#00D26A' : '#FF4757';
+                setEl('btcxmr-xmr-24h', xmr24);
+                document.getElementById('btcxmr-xmr-24h').style.color = (xmr.price_change_percentage_24h >= 0) ? '#00D26A' : '#FF4757';
+                const btcDom = glob.market_cap_percentage && glob.market_cap_percentage.btc;
+                setEl('btcxmr-dominance', btcDom ? btcDom.toFixed(1) + '%' : '—');
+
+                // Ticker cards
+                setEl('tk-btc-price', fmtUsd(btc.current_price, 0));
+                setEl('tk-btc-change', fmtPct(btc.price_change_percentage_24h));
+                setClass('tk-btc-change', 'ticker-card-change ' + pctCls(btc.price_change_percentage_24h));
+
+                setEl('tk-xmr-price', fmtUsd(xmr.current_price, 2));
+                setEl('tk-xmr-change', fmtPct(xmr.price_change_percentage_24h));
+                setClass('tk-xmr-change', 'ticker-card-change ' + pctCls(xmr.price_change_percentage_24h));
+
+                setEl('tk-btcxmr-ratio', ratio.toFixed(1) + ' XMR');
+                setEl('tk-btcxmr-change', fmtPct(ratioChange));
+                setClass('tk-btcxmr-change', 'ticker-card-change ' + pctCls(ratioChange));
+
+                setEl('tk-xmr-mcap', fmtBig(xmr.market_cap));
+                setEl('tk-btc-mcap', fmtBig(btc.market_cap));
+                setEl('tk-btc-dom', btcDom ? btcDom.toFixed(1) + '%' : '—');
+
+                // Also update nav tickers
+                setEl('btc-price', fmtUsd(btc.current_price, 0));
+                setEl('xmr-price', fmtUsd(xmr.current_price, 2));
+                setEl('btc-xmr-ratio', ratio.toFixed(1) + ' XMR');
+
+                // Network section
+                setEl('net-supply', (xmr.circulating_supply / 1e6).toFixed(2) + 'M');
+                setEl('net-mcap', fmtBig(xmr.market_cap));
+                setEl('net-volume', fmtBig(xmr.total_volume));
+                setEl('net-ath', fmtUsd(xmr.ath, 2));
+                setEl('net-ath-date', new Date(xmr.ath_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }));
+                setEl('net-ath-change', (xmr.ath_change_percentage || 0).toFixed(1) + '%');
+
+                // Fiat prices
+                const fiatResp = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=${fiatCodes}&include_24hr_change=true`);
+                const fiatData = await fiatResp.json();
+                const fiatGrid = document.getElementById('fiat-grid');
+                if (fiatGrid && fiatData.monero) {
+                    fiatGrid.innerHTML = '';
+                    FIAT_LIST.forEach(f => {
+                        const val = fiatData.monero[f.code];
+                        const chg = fiatData.monero[f.code + '_24h_change'];
+                        if (val == null) return;
+                        const card = document.createElement('div');
+                        card.className = 'fiat-card';
+                        const decimals = (f.code === 'jpy' || f.code === 'krw' || f.code === 'inr') ? 0 : 2;
+                        card.innerHTML = `
+                            <div class="fiat-pair">XMR / ${f.label}</div>
+                            <div class="fiat-value">${f.symbol}${val.toLocaleString('en-US', { maximumFractionDigits: decimals })}</div>
+                            <div class="fiat-change ${chg != null && chg >= 0 ? 'up' : 'down'}">${chg != null ? (chg > 0 ? '+' : '') + chg.toFixed(2) + '%' : ''}</div>
+                        `;
+                        fiatGrid.appendChild(card);
+                    });
+                }
+
+                // Network extras (block height, hashrate) - from XMR-specific data
+                try {
+                    const xmrDetail = await fetch('https://api.coingecko.com/api/v3/coins/monero?localization=false&tickers=false&market_data=false&community_data=false&developer_data=true').then(r => r.json());
+                    if (xmrDetail.block_time_in_minutes) {
+                        // Estimate block height from genesis (April 18, 2014)
+                        const genesis = new Date('2014-04-18').getTime();
+                        const now = Date.now();
+                        const minutesSinceGenesis = (now - genesis) / 60000;
+                        const estimatedHeight = Math.floor(minutesSinceGenesis / (xmrDetail.block_time_in_minutes || 2));
+                        setEl('net-block-height', estimatedHeight.toLocaleString());
+                    }
+                    if (xmrDetail.hashing_algorithm) {
+                        setEl('net-hashrate', xmrDetail.hashing_algorithm);
+                    }
+                } catch (e) {
+                    // Non-critical, leave defaults
+                }
+            } catch (err) {
+                console.log('Dashboard data error:', err);
+            }
+        }
+
+        // ── Init dashboard ──────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            // Render charts
+            renderXmrChart();
+            renderBtcXmrChart();
+            // Fetch dashboard data
+            fetchDashboardData();
+        });
+
+        // Resize handler for charts
+        window.addEventListener('resize', () => {
+            renderXmrChart();
+            renderBtcXmrChart();
+        });
     </script>
 </body>
 </html>
