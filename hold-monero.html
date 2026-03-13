@@ -1360,8 +1360,33 @@
             }
         }
 
+        /* ── Price Ticker ── */
+        .price-ticker {
+            display: flex; align-items: center; gap: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .live-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #00D26A; box-shadow: 0 0 6px #00D26A;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+        .price-item { display: flex; align-items: center; gap: 0.4rem; }
+        .price-label {
+            font-size: 0.65rem; color: rgba(255,255,255,0.4);
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
+        .price-change { font-size: 0.7rem; font-weight: 500; }
+        .price-change.up { color: #00D26A; }
+        .price-change.down { color: #FF4757; }
+
         /* Responsive */
         @media (max-width: 768px) {
+            .price-ticker { display: none; }
+
             .nav-links {
                 display: none;
             }
@@ -1472,6 +1497,23 @@
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="future-outlook.html">2027+</a>
             <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
+        </div>
+        <div class="price-ticker">
+            <span class="live-dot"></span>
+            <div class="price-item">
+                <span class="price-label">BTC</span>
+                <span class="price-value" id="btc-price">—</span>
+                <span class="price-change" id="btc-change"></span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">XMR</span>
+                <span class="price-value" id="xmr-price">—</span>
+                <span class="price-change" id="xmr-change"></span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">BTC/XMR</span>
+                <span class="price-value" id="btc-xmr-ratio">—</span>
+            </div>
         </div>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span>
@@ -2720,5 +2762,36 @@
             }
         });
     </script>
+<script>
+(function() {
+    function fetchPrices() {
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var btc = d.bitcoin || {};
+                var xmr = d.monero || {};
+
+                var fmt = function(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 }); };
+                var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
+
+                if (btc.usd) {
+                    document.getElementById('btc-price').textContent = fmt(btc.usd);
+                    var btcChg = document.getElementById('btc-change');
+                    if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
+                }
+                if (xmr.usd) {
+                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
+                    var xmrChg = document.getElementById('xmr-change');
+                    if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
+                }
+                if (btc.usd && xmr.usd) {
+                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
+                }
+            }).catch(function(e) { console.log('Price fetch error:', e); });
+    }
+    fetchPrices();
+    setInterval(fetchPrices, 1800000);
+})();
+</script>
 </body>
 </html>

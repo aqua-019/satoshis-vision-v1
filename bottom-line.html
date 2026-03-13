@@ -1540,6 +1540,32 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* ── Price Ticker ── */
+        .price-ticker {
+            display: flex; align-items: center; gap: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .live-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #00D26A; box-shadow: 0 0 6px #00D26A;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+        .price-item { display: flex; align-items: center; gap: 0.4rem; }
+        .price-label {
+            font-size: 0.65rem; color: rgba(255,255,255,0.4);
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
+        .price-change { font-size: 0.7rem; font-weight: 500; }
+        .price-change.up { color: #00D26A; }
+        .price-change.down { color: #FF4757; }
+        @media (max-width: 768px) {
+            .price-ticker { display: none; }
+        }
     </style>
 </head>
 <body>
@@ -1562,6 +1588,23 @@
                 <a href="bottom-line.html" style="color: var(--xmr-orange);">XMR Bottom Line</a>
             <a href="future-outlook.html">2027+</a>
                 <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
+            </div>
+            <div class="price-ticker">
+                <span class="live-dot"></span>
+                <div class="price-item">
+                    <span class="price-label">BTC</span>
+                    <span class="price-value" id="btc-price">—</span>
+                    <span class="price-change" id="btc-change"></span>
+                </div>
+                <div class="price-item">
+                    <span class="price-label">XMR</span>
+                    <span class="price-value" id="xmr-price">—</span>
+                    <span class="price-change" id="xmr-change"></span>
+                </div>
+                <div class="price-item">
+                    <span class="price-label">BTC/XMR</span>
+                    <span class="price-value" id="btc-xmr-ratio">—</span>
+                </div>
             </div>
         </div>
     </nav>
