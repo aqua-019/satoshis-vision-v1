@@ -1301,9 +1301,10 @@
         compBtcSeries = compChartInstance.addLineSeries({ color: '#F7931A', lineWidth: 2, title: 'BTC %' });
         compXmrSeries = compChartInstance.addLineSeries({ color: '#FF6600', lineWidth: 2, title: 'XMR %' });
 
-        // Zero line
+        // Zero line — use day-aligned timestamps to match processPrices format
+        var nowDay = Math.floor(Date.now() / 86400000) * 86400;
         compChartInstance.addLineSeries({ color: 'rgba(255,255,255,0.1)', lineWidth: 1, lineStyle: 2, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false })
-            .setData([{ time: Math.floor(Date.now()/1000) - 400*86400, value: 0 }, { time: Math.floor(Date.now()/1000), value: 0 }]);
+            .setData([{ time: nowDay - 400*86400, value: 0 }, { time: nowDay, value: 0 }]);
 
         // Ratio chart
         ratioChartInstance = createChart('ratioChartArea', 200);
@@ -1330,18 +1331,34 @@
             return;
         }
 
-        Promise.all([
-            fetchWithRetry('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=' + days).then(function(r){return r.json();}),
-            fetchWithRetry('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days=' + days).then(function(r){return r.json();})
-        ]).then(function(results) {
-            var btcPrices = processPrices(results[0].prices || []);
-            var xmrPrices = processPrices(results[1].prices || []);
-            var btcVols = processPrices(results[0].total_volumes || []);
-            var xmrVols = processPrices(results[1].total_volumes || []);
-            cacheSet(cacheKeyBtc, { prices: btcPrices, volumes: btcVols });
-            cacheSet(cacheKeyXmr, { prices: xmrPrices, volumes: xmrVols });
-            renderCompData(btcPrices, xmrPrices);
-        }).catch(function(e){ console.error('Dashboard API error:', e); });
+        // Build fetch promises — reuse cached data where available
+        var btcPromise = cachedBtc
+            ? Promise.resolve(cachedBtc)
+            : fetchWithRetry('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=' + days)
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    var p = processPrices(d.prices || []);
+                    var v = processPrices(d.total_volumes || []);
+                    var obj = { prices: p, volumes: v };
+                    cacheSet(cacheKeyBtc, obj);
+                    return obj;
+                });
+
+        var xmrPromise = cachedXmr
+            ? Promise.resolve(cachedXmr)
+            : fetchWithRetry('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days=' + days)
+                .then(function(r){ return r.json(); })
+                .then(function(d){
+                    var p = processPrices(d.prices || []);
+                    var v = processPrices(d.total_volumes || []);
+                    var obj = { prices: p, volumes: v };
+                    cacheSet(cacheKeyXmr, obj);
+                    return obj;
+                });
+
+        Promise.all([btcPromise, xmrPromise]).then(function(results) {
+            renderCompData(results[0].prices || results[0], results[1].prices || results[1]);
+        }).catch(function(e){ console.error('Comparison chart error:', e); });
     }
 
     function processPrices(prices) {
