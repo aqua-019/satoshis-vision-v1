@@ -2045,13 +2045,13 @@
 
         // ── Price Ticker UI (subscribes to PriceService) ─────────
         PriceService.subscribe(function updateTicker(prices) {
-            if (!prices.btc) return;
+            if (!prices.btc || !prices.xmr) return;
 
             const fmt = (v, digits) => v.toLocaleString('en-US', {
                 style: 'currency', currency: 'USD', maximumFractionDigits: digits
             });
-            const pct = (v) => `${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
-            const cls = (v) => `price-change ${v >= 0 ? 'up' : 'down'}`;
+            const pct = (v) => (v != null) ? `${v > 0 ? '+' : ''}${v.toFixed(2)}%` : '';
+            const cls = (v) => `price-change ${(v != null && v >= 0) ? 'up' : 'down'}`;
 
             // BTC/USD
             const btcPrice = fmt(prices.btc.usd, 0);
@@ -2066,9 +2066,18 @@
             document.getElementById('xmr-change').className = cls(prices.xmr.change24h);
 
             // BTC/XMR ratio
-            const ratio = prices.btcXmrRatio.toFixed(1);
-            document.getElementById('btc-xmr-ratio').textContent = `${ratio} XMR`;
-            document.getElementById('btc-xmr-ratio-mobile').textContent = `${ratio}`;
+            if (prices.btcXmrRatio != null && isFinite(prices.btcXmrRatio)) {
+                const ratio = prices.btcXmrRatio.toFixed(1);
+                document.getElementById('btc-xmr-ratio').textContent = `${ratio} XMR`;
+                document.getElementById('btc-xmr-ratio-mobile').textContent = `${ratio}`;
+
+                // BTC/XMR 24h change (derived from individual changes)
+                if (prices.btc.change24h != null && prices.xmr.change24h != null) {
+                    const btcXmrChange = prices.btc.change24h - prices.xmr.change24h;
+                    document.getElementById('btc-xmr-change').textContent = pct(btcXmrChange);
+                    document.getElementById('btc-xmr-change').className = cls(btcXmrChange);
+                }
+            }
 
             // Mobile
             document.getElementById('btc-price-mobile').textContent = btcPrice;
