@@ -1321,6 +1321,7 @@
                 </div>
             </div>
             <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="future-outlook.html">2027+</a>
             <a href="hold-monero.html">XMR</a>
         </div>
         <div class="price-ticker">
@@ -1416,117 +1417,6 @@
             <div class="problem-card fade-in">
                 <h3>Satoshi Saw This Coming</h3>
                 <p>"It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot."<br><em>— Satoshi, Aug 2010</em></p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Satoshi Quote Explorer -->
-    <section id="quotes">
-        <div class="section-header">
-            <div class="section-eyebrow">In His Own Words</div>
-            <h2 class="section-title">The Satoshi Quote Explorer</h2>
-            <p class="section-desc">Curated quotes weighted toward privacy discussions and Monero-predictive language.</p>
-        </div>
-        <div class="quote-explorer">
-            <div class="quote-controls">
-                <input type="text" class="quote-search" id="quoteSearch" placeholder="Search quotes...">
-                <button class="quote-btn" onclick="randomQuote()">🎲 Random</button>
-                <button class="quote-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
-                <button class="quote-btn" onclick="filterByTag('privacy')">Privacy</button>
-                <button class="quote-btn" onclick="filterByTag('technical')">Technical</button>
-                <button class="quote-btn" onclick="filterByTag('all')">All</button>
-            </div>
-            <div class="quote-display">
-                <p class="quote-text" id="quoteText">"What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments."</p>
-                <div class="quote-meta">
-                    <span class="quote-source" id="quoteSource">BitcoinTalk Thread #174 — "Not a Suggestion"</span>
-                    <span class="quote-date" id="quoteDate">August 11, 2010</span>
-                    <span class="quote-tag" id="quoteTag">privacy</span>
-                </div>
-            </div>
-            <div class="quote-counter" id="quoteCounter">Quote 1 of 18</div>
-        </div>
-    </section>
-
-    <!-- Vertical Timeline -->
-    <section id="timeline" class="timeline-section">
-        <div class="section-header">
-            <div class="section-eyebrow">Historical Context</div>
-            <h2 class="section-title">The Privacy Evolution Timeline</h2>
-            <p class="section-desc">From Satoshi's whitepaper to Monero's full-chain privacy.</p>
-        </div>
-        <div class="timeline">
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">October 2008</div>
-                <div class="timeline-title">Bitcoin Whitepaper</div>
-                <div class="timeline-desc">Satoshi publishes "Bitcoin: A Peer-to-Peer Electronic Cash System." Privacy section warns about address reuse and recommends new addresses per transaction.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">January 2009</div>
-                <div class="timeline-title">Genesis Block</div>
-                <div class="timeline-desc">Block 0 mined with the embedded message: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks."</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">July 2010</div>
-                <div class="timeline-title">"Anonymity" Thread</div>
-                <div class="timeline-desc">BitcoinTalk Thread #82. Community debates privacy limitations. Theymos proposes mixing services. Satoshi acknowledges transparent ledger concerns.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">August 2010</div>
-                <div class="timeline-title">"Not a Suggestion" Thread</div>
-                <div class="timeline-desc">Thread #174. Satoshi describes key blinding (stealth addresses), group signatures (ring signatures), and hidden amounts—Monero's future core features.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">December 2010</div>
-                <div class="timeline-title">Satoshi's Last Post</div>
-                <div class="timeline-desc">"WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us." Final public message on BitcoinTalk.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">April 2011</div>
-                <div class="timeline-title">Final Email</div>
-                <div class="timeline-desc">"I've moved on to other things. It's in good hands with Gavin and everyone." Satoshi's last known communication.</div>
-            </div>
-            <div class="timeline-item both fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">December 2012</div>
-                <div class="timeline-title">CryptoNote Whitepaper</div>
-                <div class="timeline-desc">Nicolas van Saberhagen publishes CryptoNote protocol describing ring signatures and one-time addresses—implementing Satoshi's 2010 privacy vision.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">April 2014</div>
-                <div class="timeline-title">Monero Launch</div>
-                <div class="timeline-desc">Monero (XMR) launches as a fork of Bytecoin. Implements ring signatures for sender privacy and stealth addresses for receiver privacy.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">January 2017</div>
-                <div class="timeline-title">RingCT Activation</div>
-                <div class="timeline-desc">Ring Confidential Transactions hide transaction amounts. Completes Satoshi's vision: "If we have to hide transaction amounts..."</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">September 2020</div>
-                <div class="timeline-title">IRS $625K Bounty</div>
-                <div class="timeline-desc">U.S. IRS offers $625,000 to anyone who can break Monero's privacy. As of 2025, the bounty remains unclaimed.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">2024-2025</div>
-                <div class="timeline-title">Exchange Delistings</div>
-                <div class="timeline-desc">73+ exchanges delist Monero due to regulatory pressure. Yet XMR price rises 195% as peer-to-peer trading surges.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">2025</div>
-                <div class="timeline-title">FCMP++ Development</div>
-                <div class="timeline-desc">Full Chain Membership Proofs in development. Will make every XMR transaction anonymous among ALL transactions ever made.</div>
             </div>
         </div>
     </section>
@@ -1810,6 +1700,11 @@
                 <div class="deep-dive-icon">⏳</div>
                 <h3>Interactive Timeline</h3>
                 <p>Click-through timeline with detailed event descriptions and keyboard navigation.</p>
+            </a>
+            <a href="future-outlook.html" class="deep-dive-card">
+                <div class="deep-dive-icon">🔮</div>
+                <h3>2027+ Future Outlook</h3>
+                <p>The Demand Thesis: 6 structural drivers pushing Monero toward inevitability through 2030.</p>
             </a>
         </div>
     </section>
