@@ -11,7 +11,7 @@
         :root {
             /* Core palette */
             --bg-dark: #121212;
-            --bg-light: #F5F5F5;
+            --bg-light: #1a1a1a;
             --grey-18: #2E2E2E;
             --grey-light: #E8E8E8;
             
@@ -51,33 +51,112 @@
             color: var(--btc-white);
             line-height: 1.7;
             overflow-x: hidden;
-            cursor: none;
         }
 
-        /* Custom cursor spotlight */
-        .cursor-spotlight {
+        /* Navigation */
+        .edu-nav {
             position: fixed;
-            width: 400px;
-            height: 400px;
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 9999;
-            mix-blend-mode: soft-light;
-            background: radial-gradient(circle, rgba(247, 147, 26, 0.4) 0%, transparent 70%);
-            transform: translate(-50%, -50%);
-            transition: opacity 0.3s ease;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(18, 18, 18, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
+        .edu-nav .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+        .edu-nav .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+        .edu-nav .nav-links a {
+            color: #A0A0A0;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+        .edu-nav .nav-links a:hover { color: var(--btc-orange); }
+        .edu-nav .nav-links a.nav-active { color: var(--xmr-orange); }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle {
+            color: #A0A0A0; text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
+        }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
+            padding: 0.5rem 0; min-width: 160px;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            margin-top: 0.75rem;
+        }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a {
+            display: block; padding: 0.5rem 1.25rem; color: #A0A0A0;
+            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
+        }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
+        .hamburger {
+            display: none; flex-direction: column; gap: 5px; cursor: pointer; z-index: 1001;
+        }
+        .hamburger span {
+            width: 25px; height: 2px; background: #A0A0A0; transition: all 0.3s ease;
+        }
+        .mobile-menu {
+            display: none; position: fixed; top: 60px; left: 0; right: 0;
+            background: rgba(18,18,18,0.98); border-bottom: 1px solid var(--grey-18);
+            padding: 1rem 2rem; z-index: 999; flex-direction: column; gap: 1rem;
+        }
+        .mobile-menu.active { display: flex; }
+        .mobile-menu a {
+            color: #A0A0A0; text-decoration: none; font-size: 0.95rem;
+            font-weight: 500; transition: color 0.3s ease;
+        }
+        .mobile-menu a:hover { color: var(--xmr-orange); }
+        /* ── Price Ticker ── */
+        .price-ticker {
+            display: flex; align-items: center; gap: 1.25rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .live-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #00D26A; box-shadow: 0 0 6px #00D26A;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+        }
+        .price-item { display: flex; align-items: center; gap: 0.4rem; }
+        .price-label {
+            font-size: 0.65rem; color: rgba(255,255,255,0.4);
+            text-transform: uppercase; letter-spacing: 0.05em;
+        }
+        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
+        .price-change { font-size: 0.7rem; font-weight: 500; }
+        .price-change.up { color: #00D26A; }
+        .price-change.down { color: #FF4757; }
 
-        .cursor-dot {
-            position: fixed;
-            width: 8px;
-            height: 8px;
-            background: var(--btc-orange);
-            border-radius: 50%;
-            pointer-events: none;
-            z-index: 10000;
-            transform: translate(-50%, -50%);
-            transition: transform 0.1s ease;
+        @media (max-width: 768px) {
+            .price-ticker { display: none; }
+            .edu-nav .nav-links { display: none; }
+            .hamburger { display: flex; }
         }
 
         /* Particle canvas */
@@ -110,6 +189,7 @@
             background: linear-gradient(180deg, var(--bg-dark) 0%, var(--grey-18) 100%);
             position: relative;
             overflow: hidden;
+            padding-top: calc(var(--section-padding) + 60px);
         }
 
         .hero::before {
@@ -572,10 +652,10 @@
             top: -8px;
             width: 24px;
             height: 24px;
-            background: var(--btc-white);
+            background: var(--btc-orange);
             border-radius: 50%;
             transform: translateX(-50%);
-            box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 20px rgba(247, 147, 26, 0.5);
             transition: left 0.5s ease;
         }
 
@@ -613,7 +693,7 @@
 
         .stat-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(2, 1fr);
             gap: 2rem;
             margin: 3rem 0;
         }
@@ -925,28 +1005,28 @@
             margin: 0 auto;
         }
 
-        /* Light section variant */
+        /* Light section variant — now dark-themed to match site */
         .light-section {
-            background: var(--bg-light);
-            color: var(--grey-18);
+            background: #1a1a1a;
+            color: rgba(255, 255, 255, 0.85);
         }
 
         .light-section .section-title {
-            color: var(--bg-dark);
+            color: #FFFFFF;
         }
 
         .light-section .section-subtitle {
-            color: rgba(0, 0, 0, 0.6);
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .light-section .glass-card {
-            background: rgba(0, 0, 0, 0.03);
-            border-color: rgba(0, 0, 0, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.08);
         }
 
         .light-section .timeline-content,
         .light-section .accordion-body {
-            color: rgba(0, 0, 0, 0.7);
+            color: rgba(255, 255, 255, 0.7);
         }
 
         /* Responsive */
@@ -979,22 +1059,73 @@
                 gap: 0.5rem;
             }
 
-            .cursor-spotlight,
-            .cursor-dot {
-                display: none;
-            }
-
-            body {
-                cursor: auto;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- Custom cursor -->
-    <div class="cursor-spotlight"></div>
-    <div class="cursor-dot"></div>
-    
+    <!-- Navigation -->
+    <nav class="edu-nav">
+        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <div class="nav-dropdown">
+                <span class="nav-dropdown-toggle">Learn <span class="dropdown-arrow">▼</span></span>
+                <div class="nav-dropdown-menu">
+                    <a href="btc-xmr-education.html" style="color: var(--xmr-orange);">Education</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
+                    <a href="future-outlook.html">2027+</a>
+                </div>
+            </div>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="future-outlook.html">2027+</a>
+            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
+        </div>
+        <div class="price-ticker">
+            <span class="live-dot"></span>
+            <div class="price-item">
+                <span class="price-label">BTC</span>
+                <span class="price-value" id="btc-price">—</span>
+                <span class="price-change" id="btc-change"></span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">XMR</span>
+                <span class="price-value" id="xmr-price">—</span>
+                <span class="price-change" id="xmr-change"></span>
+            </div>
+            <div class="price-item">
+                <span class="price-label">BTC/XMR</span>
+                <span class="price-value" id="btc-xmr-ratio">—</span>
+            </div>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="btc-xmr-education.html" onclick="toggleMenu()" style="color: var(--xmr-orange);">Education</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
+        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
+    </div>
+
+    <script>
+    function toggleMenu() {
+        document.getElementById('mobileMenu').classList.toggle('active');
+    }
+    </script>
+
     <!-- Particle canvas -->
     <canvas id="particles-canvas"></canvas>
 
@@ -1101,8 +1232,8 @@
             </div>
 
             <div class="glass-card" style="margin-bottom: 2rem;">
-                <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem; color: var(--bg-dark);">The "Not a Suggestion" Thread — August 10-13, 2010</h3>
-                <p style="color: rgba(0,0,0,0.7); margin-bottom: 1.5rem;">
+                <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem; color: #FFFFFF;">The "Not a Suggestion" Thread — August 10-13, 2010</h3>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">
                     A BitcoinTalk user named "Red" opened a thread expressing concerns about Bitcoin's completely public transaction history. What followed was one of the most important—and overlooked—conversations in cryptocurrency history.
                 </p>
             </div>
@@ -1117,7 +1248,7 @@
                         <div class="accordion-body">
                             <p>When the discussion turned to hiding transaction details while still proving validity, Satoshi responded directly:</p>
                             <div class="quote-block" style="margin: 1rem 0;">
-                                <p class="quote-text" style="color: var(--bg-dark);">
+                                <p class="quote-text" style="color: rgba(255,255,255,0.9);">
                                     "This is a very interesting topic. If a solution was found, a much better, easier, more convenient implementation of Bitcoin would be possible... It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing about all and checking that the something isn't included."
                                 </p>
                                 <span class="quote-source">— Satoshi Nakamoto, August 11, 2010</span>
@@ -1136,7 +1267,7 @@
                         <div class="accordion-body">
                             <p>Perhaps most remarkably, Satoshi outlined concepts that would become the foundation of Monero years later:</p>
                             <div class="quote-block" style="margin: 1rem 0;">
-                                <p class="quote-text" style="color: var(--bg-dark);">
+                                <p class="quote-text" style="color: rgba(255,255,255,0.9);">
                                     "What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as the root public key, such that the private key could generate a signature for any one of them. Others could not tell if a blinded key is related to the root key, or other blinded keys from the same root key."
                                 </p>
                                 <span class="quote-source">— Satoshi Nakamoto, August 13, 2010</span>
@@ -1145,7 +1276,7 @@
                             <br>
                             <p>Satoshi continued:</p>
                             <div class="quote-block" style="margin: 1rem 0;">
-                                <p class="quote-text" style="color: var(--bg-dark);">
+                                <p class="quote-text" style="color: rgba(255,255,255,0.9);">
                                     "With group signatures, it is possible for something to be signed but not know who signed it."
                                 </p>
                                 <span class="quote-source">— Satoshi Nakamoto, August 13, 2010</span>
@@ -1164,7 +1295,7 @@
                         <div class="accordion-body">
                             <p>Section 10 of the Bitcoin whitepaper addresses privacy directly—and reveals its limitations:</p>
                             <div class="quote-block" style="margin: 1rem 0;">
-                                <p class="quote-text" style="color: var(--bg-dark);">
+                                <p class="quote-text" style="color: rgba(255,255,255,0.9);">
                                     "The traditional banking model achieves a level of privacy by limiting access to information to the parties involved and the trusted third party. The necessity to announce all transactions publicly precludes this method, but privacy can still be maintained by breaking the flow of information in another place: by keeping public keys anonymous."
                                 </p>
                                 <span class="quote-source">— Bitcoin Whitepaper, Section 10: Privacy</span>
@@ -1176,7 +1307,7 @@
             </div>
 
             <div class="glass-card" style="margin-top: 3rem; text-align: center;">
-                <p style="font-family: var(--font-display); font-size: 1.5rem; font-style: italic; color: var(--bg-dark);">
+                <p style="font-family: var(--font-display); font-size: 1.5rem; font-style: italic; color: rgba(255,255,255,0.9);">
                     The creator of Bitcoin knew its privacy was incomplete.<br>
                     The question was: who would finish the work?
                 </p>
@@ -1438,59 +1569,142 @@
                 <span class="section-number" style="color: var(--xmr-orange);">07 — THE CONTROVERSY</span>
                 <h2 class="section-title">Why Monero Is Under Attack</h2>
                 <p class="section-subtitle">
-                    Let's not pretend. Monero is stigmatized. Delisted. Targeted. Here's why—and what it means.
+                    Monero is stigmatized. Delisted. Targeted by governments, banned on exchanges, and hunted by intelligence agencies. This isn't happening because Monero is weak. It's happening because <strong>Monero works</strong>.
                 </p>
             </div>
 
             <div class="stat-grid">
                 <div class="stat-card glass-card">
-                    <div class="stat-number">73</div>
-                    <div class="stat-label">Exchange Delistings in 2025</div>
+                    <div class="stat-number">73+</div>
+                    <div class="stat-label">Exchange Delistings Since 2018</div>
                 </div>
                 <div class="stat-card glass-card">
                     <div class="stat-number">$625K</div>
-                    <div class="stat-label">IRS Bounty to Crack Monero</div>
+                    <div class="stat-label">IRS Bounty — Still Unfilled</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">$22M</div>
+                    <div class="stat-label">Chainalysis Contract — Still Failed</div>
                 </div>
                 <div class="stat-card glass-card">
                     <div class="stat-number">0</div>
-                    <div class="stat-label">Successful Traces (Verified)</div>
+                    <div class="stat-label">Verified Successful Traces</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">6+</div>
+                    <div class="stat-label">Countries With Trading Bans</div>
                 </div>
                 <div class="stat-card glass-card">
                     <div class="stat-number">$8.2B</div>
-                    <div class="stat-label">Market Cap Despite Pressure</div>
+                    <div class="stat-label">Market Cap — Despite Everything</div>
                 </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">Transactions Are Private By Default</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">14+</div>
+                    <div class="stat-label">Failed Tracing Tools Exposed</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">Privacy Layers — RingCT, Stealth, Dandelion++</div>
+                </div>
+                <div class="stat-card glass-card">
+                    <div class="stat-number">10+</div>
+                    <div class="stat-label">Years Running — Zero Proven Exploits</div>
+                </div>
+            </div>
+
+            <!-- Why Monero Threatens the System -->
+            <div class="glass-card" style="margin-bottom: 2rem; border-left: 3px solid var(--xmr-orange); padding: 1.5rem;">
+                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--xmr-orange);">Monero Breaks the Surveillance-Finance Model</h3>
+                <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">
+                    The modern financial system operates on a single assumption: <strong>every transaction can be watched</strong>. Banks report to governments. Payment processors log everything. Bitcoin—despite its reputation—is a transparent ledger where every transaction is permanently visible to anyone. Chain analysis firms like Chainalysis built a billion-dollar industry on this transparency.
+                </p>
+                <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">
+                    Monero <strong>obliterates</strong> this model. Ring signatures obscure the sender. Stealth addresses hide the receiver. RingCT encrypts the amount. There is no "transparent mode." There is no opt-in privacy that 95% of users skip. <strong>Every single Monero transaction is private by default, by protocol, by mathematical guarantee.</strong>
+                </p>
+                <p style="color: rgba(255,255,255,0.8);">
+                    This is why governments, regulators, and the compliance-industrial complex treat Monero differently than any other cryptocurrency. It's not about crime. It's about <strong>control</strong>—and Monero removes it.
+                </p>
             </div>
 
             <div class="accordion">
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <h4>The IRS Bounty Program</h4>
+                        <h4>The IRS Bounty: $625K They Still Can't Collect</h4>
                         <div class="accordion-icon"></div>
                     </div>
                     <div class="accordion-content">
                         <div class="accordion-body">
-                            <p>In September 2020, the IRS Criminal Investigation division posted a $625,000 bounty for contractors who could develop tools to trace Monero. Chainalysis and Integra FEC were awarded contracts. Despite claims of partial success, no verifiable evidence of Monero's privacy being broken has ever been produced. The Monero community disputes these claims entirely.</p>
+                            <p>In <strong>September 2020</strong>, the IRS Criminal Investigation division posted a <strong>$625,000 bounty</strong> for contractors who could develop tools to trace Monero transactions. Chainalysis and Integra FEC were awarded initial contracts.</p>
                             <br>
-                            <p>As of 2026, despite millions in government funding and years of effort, there is no public evidence that Monero's core privacy mechanisms have been compromised.</p>
+                            <p style="color: var(--xmr-orange); font-weight: 600;">Put this in context. September 2020:</p>
+                            <ul style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 1rem 1.5rem;">
+                                <li>Bitcoin was ~$10,000. Total crypto market cap ~$350 billion.</li>
+                                <li>Global crypto users: ~100 million.</li>
+                                <li>Most governments barely understood what cryptocurrency was.</li>
+                                <li>DeFi was in its infancy. NFTs hadn't gone mainstream.</li>
+                            </ul>
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">
+                                <strong>Today (2026):</strong> Bitcoin trades above $80,000. Crypto market cap exceeds $3 trillion. Over 500 million users globally. Entire government agencies are dedicated to crypto regulation.
+                            </p>
+                            <p style="background: rgba(255,102,0,0.1); border: 1px solid rgba(255,102,0,0.3); padding: 1rem; border-radius: 8px; color: #fff; font-weight: 500;">
+                                <span style="text-decoration: underline; font-weight: 700;">Even back then</span>—when crypto was a fraction of today's size, when most of the world had never heard of DeFi, when regulators were still figuring out Bitcoin—<span style="text-decoration: underline; font-weight: 700;">the IRS specifically identified Monero as the singular privacy threat worth issuing a bounty for.</span> They saw it for what it was. And <strong>six years later, the bounty remains unfilled.</strong> No one has cracked it.
+                            </p>
                         </div>
                     </div>
                 </div>
 
                 <div class="accordion-item">
                     <div class="accordion-header">
-                        <h4>Exchange Delistings: The Full Picture</h4>
+                        <h4>The $22 Million Chainalysis Failure</h4>
                         <div class="accordion-icon"></div>
                     </div>
                     <div class="accordion-content">
                         <div class="accordion-body">
-                            <p><strong>2018:</strong> Japan bans privacy coin trading on regulated exchanges</p>
-                            <p><strong>2020:</strong> South Korea and Australia follow with similar restrictions</p>
-                            <p><strong>2024:</strong> EU MiCA regulations explicitly prohibit crypto-asset service providers from supporting privacy coins</p>
-                            <p><strong>February 2024:</strong> Binance delists Monero globally, citing regulatory compliance</p>
-                            <p><strong>April 2024:</strong> Kraken delists Monero in Ireland and Belgium</p>
-                            <p><strong>2025:</strong> 73 total delistings recorded across platforms</p>
+                            <p>When the $625K bounty produced nothing, the government escalated. The IRS awarded Chainalysis a <strong>$22,000,000 contract</strong> specifically targeting Monero tracing capabilities. This wasn't a research grant—it was a desperate, multi-million dollar bet that enough money could break mathematical privacy.</p>
                             <br>
-                            <p>And yet—Monero's price rose 195% in 2025. The delistings pushed trading to decentralized platforms, atomic swaps, and peer-to-peer markets. Centralized exchanges are just one on-ramp. Monero found others.</p>
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;"><strong>Why Chainalysis fails against Monero:</strong></p>
+                            <ul style="color: rgba(255,255,255,0.8); margin: 0 0 1rem 1.5rem;">
+                                <li><strong>Ring signatures</strong> — Every transaction includes decoy inputs. Chainalysis cannot distinguish the real spend from 15 decoys with certainty.</li>
+                                <li><strong>Stealth addresses</strong> — One-time addresses generated per transaction. No address reuse means no clustering analysis.</li>
+                                <li><strong>RingCT</strong> — Transaction amounts are cryptographically hidden. No amount-based heuristics possible.</li>
+                                <li><strong>Dandelion++</strong> — Transaction propagation is randomized, defeating IP-based correlation.</li>
+                            </ul>
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">Chainalysis traces Bitcoin trivially—it's a transparent ledger. Their entire business model depends on blockchain surveillance. Against Monero, a <strong>leaked Chainalysis training video</strong> revealed they rely on external data (exchange KYC leaks, user mistakes, metadata) rather than breaking the protocol itself. When users practice basic operational security, Chainalysis has <strong>nothing</strong>.</p>
+                            <p style="background: rgba(231,76,60,0.15); border: 1px solid rgba(231,76,60,0.3); padding: 1rem; border-radius: 8px; color: #fff;">
+                                <strong>$22 million spent. Zero cryptographic breaks. Zero protocol vulnerabilities found.</strong> The contract represents the government's admission that Monero works exactly as designed.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item">
+                    <div class="accordion-header">
+                        <h4>Why Monero Is Delisted: The Real Reason</h4>
+                        <div class="accordion-icon"></div>
+                    </div>
+                    <div class="accordion-content">
+                        <div class="accordion-body">
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">Exchanges don't delist Monero because it's "dangerous." They delist it because <strong>they literally cannot comply with surveillance regulations while supporting it</strong>. The FATF Travel Rule requires exchanges to share sender/receiver information for transactions over $1,000. With Monero, that information doesn't exist.</p>
+                            <br>
+                            <p style="font-weight: 600; margin-bottom: 0.5rem;">The global delisting timeline:</p>
+                            <ul style="color: rgba(255,255,255,0.8); margin: 0 0 1rem 1.5rem;">
+                                <li><strong>2018 — Japan:</strong> First country to ban privacy coins on regulated exchanges after the Coincheck hack. JFSA mandated full transaction transparency.</li>
+                                <li><strong>2020 — South Korea:</strong> Amended Act on Reporting and Using Specific Financial Transaction Information. All five major exchanges dropped XMR.</li>
+                                <li><strong>2021 — Australia:</strong> AUSTRAC pressure forced exchanges to delist. Bitcoin.com.au, Swyftx, and others complied.</li>
+                                <li><strong>2022 — Dubai/UAE:</strong> VARA regulations explicitly excluded privacy-enhancing cryptocurrencies from licensed platforms.</li>
+                                <li><strong>2023 — Huobi/HTX:</strong> Top-10 exchange delisted Monero globally. No major CEX could justify offering it.</li>
+                                <li><strong>2024 — EU MiCA:</strong> Markets in Crypto-Assets regulation made it illegal for EU-licensed CASPs to support privacy coins. Binance, Kraken EU, Bitstamp EU all followed.</li>
+                                <li><strong>February 2024 — Binance:</strong> Global delisting. The world's largest exchange removed Monero entirely.</li>
+                                <li><strong>2025:</strong> 73+ total delistings recorded. Only Kraken (limited jurisdictions) remains among major CEXs.</li>
+                            </ul>
+                            <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;"><strong>Important distinction:</strong> Most jurisdictions ban <em>exchange trading</em>, not possession. Holding, mining, and using Monero peer-to-peer remains legal in most of the world. The bans target intermediaries—because intermediaries are the surveillance chokepoints, and Monero makes surveillance at those chokepoints impossible.</p>
+                            <p style="background: rgba(255,102,0,0.1); border: 1px solid rgba(255,102,0,0.3); padding: 1rem; border-radius: 8px; color: #fff;">
+                                And yet—Monero's price rose <strong>195% in 2025</strong>. Every delisting pushed trading to Haveno, atomic swaps, and P2P markets. Centralized exchanges were just one on-ramp. Monero found others. The delistings didn't kill Monero—they <strong>proved it works</strong>.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1620,24 +1834,25 @@
                     <h3 style="font-family: var(--font-display); color: var(--btc-orange); font-size: 1.5rem; margin-bottom: 1.5rem;">Bitcoin Wallets</h3>
                     
                     <div style="margin-bottom: 1.5rem;">
-                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--bg-dark);">Hardware Wallets (Recommended)</h4>
-                        <ul style="color: rgba(0,0,0,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Hardware Wallets (Recommended)</h4>
+                        <ul style="color: rgba(255,255,255,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
                             <li><strong>Coldcard</strong> — Bitcoin-only, air-gapped, open source</li>
                             <li><strong>Trezor</strong> — Multi-coin, open source hardware</li>
                             <li><strong>Ledger</strong> — Multi-coin, closed source secure element</li>
+                            <li><strong>Keystone</strong> — Air-gapped, QR-code signing, open source</li>
                         </ul>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--bg-dark);">Software Wallets</h4>
-                        <ul style="color: rgba(0,0,0,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Software Wallets</h4>
+                        <ul style="color: rgba(255,255,255,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
                             <li><strong>Sparrow</strong> — Privacy-focused, UTXO control</li>
                             <li><strong>Electrum</strong> — Lightweight, time-tested</li>
                             <li><strong>Bitcoin Core</strong> — Full node, maximum sovereignty</li>
                         </ul>
                     </div>
 
-                    <p style="color: rgba(0,0,0,0.5); font-size: 0.85rem; font-style: italic;">
+                    <p style="color: rgba(255,255,255,0.4); font-size: 0.85rem; font-style: italic;">
                         For maximum privacy, consider CoinJoin implementations like Wasabi or JoinMarket.
                     </p>
                 </div>
@@ -1646,8 +1861,8 @@
                     <h3 style="font-family: var(--font-display); color: var(--xmr-orange); font-size: 1.5rem; margin-bottom: 1.5rem;">Monero Wallets</h3>
                     
                     <div style="margin-bottom: 1.5rem;">
-                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--bg-dark);">Official Wallets</h4>
-                        <ul style="color: rgba(0,0,0,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Official Wallets</h4>
+                        <ul style="color: rgba(255,255,255,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
                             <li><strong>Monero GUI</strong> — Official desktop wallet, full-featured</li>
                             <li><strong>Monero CLI</strong> — Command line, maximum control</li>
                             <li><strong>Feather Wallet</strong> — Lightweight, Tor built-in</li>
@@ -1655,46 +1870,57 @@
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--bg-dark);">Mobile Wallets</h4>
-                        <ul style="color: rgba(0,0,0,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
-                            <li><strong>Cake Wallet</strong> — iOS/Android, exchange built-in</li>
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.75rem; color: #FFFFFF;">Mobile &amp; Wallet Ecosystem</h4>
+
+                        <!-- Cake Wallet Ecosystem - Featured -->
+                        <div style="background: linear-gradient(135deg, rgba(255,102,0,0.12), rgba(255,102,0,0.04)); border: 2px solid rgba(255,102,0,0.4); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
+                            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--xmr-orange); margin-bottom: 0.6rem;">Recommended Wallet Ecosystem</div>
+                            <ul style="color: rgba(255,255,255,0.8); font-size: 0.95rem; padding-left: 1.5rem; margin: 0;">
+                                <li style="margin-bottom: 0.4rem;"><strong style="color: var(--xmr-orange);">Cake Wallet</strong> — The premier mobile Monero wallet. iOS &amp; Android, built-in exchange, multi-coin support. The easiest way to hold and swap XMR.</li>
+                                <li style="margin-bottom: 0.4rem;"><strong style="color: var(--xmr-orange);">monero.com</strong> — By the Cake Wallet team. A streamlined, Monero-only wallet experience for users who want simplicity.</li>
+                                <li><strong style="color: var(--xmr-orange);">Cupcake</strong> — Cake Wallet's cold storage / hardware wallet solution. Air-gapped signing for secure long-term XMR storage.</li>
+                            </ul>
+                        </div>
+
+                        <ul style="color: rgba(255,255,255,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
                             <li><strong>Monerujo</strong> — Android, open source</li>
                         </ul>
                     </div>
 
                     <div style="margin-bottom: 1.5rem;">
-                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--bg-dark);">Hardware Support</h4>
-                        <ul style="color: rgba(0,0,0,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
+                        <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Hardware Support</h4>
+                        <ul style="color: rgba(255,255,255,0.7); font-size: 0.95rem; padding-left: 1.5rem;">
                             <li><strong>Ledger</strong> — Supported via Monero GUI</li>
                             <li><strong>Trezor</strong> — Supported via Monero GUI</li>
+                            <li><strong>Keystone</strong> — Air-gapped, QR-code signing, open source</li>
                         </ul>
                     </div>
 
-                    <p style="color: rgba(0,0,0,0.5); font-size: 0.85rem; font-style: italic;">
+                    <p style="color: rgba(255,255,255,0.4); font-size: 0.85rem; font-style: italic;">
                         Privacy is default. No mixing required. Just send.
                     </p>
                 </div>
             </div>
 
             <div class="glass-card" style="margin-top: 3rem; text-align: center;">
-                <h3 style="font-family: var(--font-display); color: var(--bg-dark); font-size: 1.5rem; margin-bottom: 1rem;">Acquiring Monero</h3>
-                <p style="color: rgba(0,0,0,0.7); margin-bottom: 1.5rem;">With centralized exchanges increasingly hostile, alternatives matter:</p>
+                <h3 style="font-family: var(--font-display); color: #FFFFFF; font-size: 1.5rem; margin-bottom: 1rem;">Acquiring Monero</h3>
+                <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">With centralized exchanges increasingly hostile, alternatives matter:</p>
                 <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
                     <div>
                         <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">Wagyu</h4>
-                        <p style="color: rgba(0,0,0,0.6); font-size: 0.9rem;">Exchange-level pricing, no KYC</p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Exchange-level pricing, no KYC</p>
                     </div>
                     <div>
                         <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">Haveno</h4>
-                        <p style="color: rgba(0,0,0,0.6); font-size: 0.9rem;">Decentralized P2P trading</p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Decentralized P2P trading</p>
                     </div>
                     <div>
                         <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">Atomic Swaps</h4>
-                        <p style="color: rgba(0,0,0,0.6); font-size: 0.9rem;">BTC↔XMR trustlessly</p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">BTC↔XMR trustlessly</p>
                     </div>
                     <div>
                         <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">LocalMonero (RIP)</h4>
-                        <p style="color: rgba(0,0,0,0.6); font-size: 0.9rem;">Closed 2024. Alternatives emerging.</p>
+                        <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Closed 2024. Alternatives emerging.</p>
                     </div>
                 </div>
             </div>
@@ -1740,52 +1966,6 @@
     </footer>
 
     <script>
-        // Cursor spotlight effect
-        const spotlight = document.querySelector('.cursor-spotlight');
-        const dot = document.querySelector('.cursor-dot');
-        
-        let mouseX = 0, mouseY = 0;
-        let spotlightX = 0, spotlightY = 0;
-        
-        document.addEventListener('mousemove', (e) => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-            
-            // Immediate dot movement
-            dot.style.left = mouseX + 'px';
-            dot.style.top = mouseY + 'px';
-        });
-        
-        // Smooth spotlight follow
-        function animateSpotlight() {
-            spotlightX += (mouseX - spotlightX) * 0.1;
-            spotlightY += (mouseY - spotlightY) * 0.1;
-            
-            spotlight.style.left = spotlightX + 'px';
-            spotlight.style.top = spotlightY + 'px';
-            
-            requestAnimationFrame(animateSpotlight);
-        }
-        animateSpotlight();
-
-        // Change spotlight color based on section
-        const sections = document.querySelectorAll('section');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    if (entry.target.classList.contains('light-section')) {
-                        spotlight.style.background = 'radial-gradient(circle, rgba(255, 102, 0, 0.3) 0%, transparent 70%)';
-                    } else if (entry.target.id === 'monero' || entry.target.id === 'controversy' || entry.target.id === 'wagyu') {
-                        spotlight.style.background = 'radial-gradient(circle, rgba(255, 102, 0, 0.4) 0%, transparent 70%)';
-                    } else {
-                        spotlight.style.background = 'radial-gradient(circle, rgba(247, 147, 26, 0.4) 0%, transparent 70%)';
-                    }
-                }
-            });
-        }, { threshold: 0.3 });
-        
-        sections.forEach(section => observer.observe(section));
-
         // Particle system
         const canvas = document.getElementById('particles-canvas');
         const ctx = canvas.getContext('2d');
@@ -1937,5 +2117,36 @@
             });
         });
     </script>
+<script>
+(function() {
+    function fetchPrices() {
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
+            .then(function(r) { return r.json(); })
+            .then(function(d) {
+                var btc = d.bitcoin || {};
+                var xmr = d.monero || {};
+
+                var fmt = function(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 }); };
+                var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
+
+                if (btc.usd) {
+                    document.getElementById('btc-price').textContent = fmt(btc.usd);
+                    var btcChg = document.getElementById('btc-change');
+                    if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
+                }
+                if (xmr.usd) {
+                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
+                    var xmrChg = document.getElementById('xmr-change');
+                    if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
+                }
+                if (btc.usd && xmr.usd) {
+                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
+                }
+            }).catch(function(e) { console.log('Price fetch error:', e); });
+    }
+    fetchPrices();
+    setInterval(fetchPrices, 1800000);
+})();
+</script>
 </body>
 </html>

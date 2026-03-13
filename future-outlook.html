@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Looking Forward — Why Monero Is the Only Future | XMR.IRISH</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --btc-gold: #FFD700;
+            --xmr-orange: #FF6600;
+            --dark-bg: #0a0a0a;
+            --card-bg: #121212;
+            --grey-18: #2E2E2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --success-green: #00D395;
+            --danger-red: #FF4757;
+            --privacy-purple: #9B59B6;
+            --crossover-cyan: #00CED1;
+            --reg-green: #00D395;
+            --reg-blue: #3498DB;
+            --reg-red: #FF4757;
+            --reg-purple: #9B59B6;
+            --font-display: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Sora', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .nav-logo {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; text-decoration: none;
+        }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease;
+        }
+        .nav-links a:hover { color: var(--btc-orange); }
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
+        }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
+            padding: 0.5rem 0; min-width: 160px;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            margin-top: 0.75rem;
+        }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a {
+            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
+            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
+        }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
+
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 10px; }
+        .hamburger span { width: 25px; height: 2px; background: var(--text-primary); }
+
+        .mobile-menu {
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 10, 0.98); z-index: 999;
+            flex-direction: column; justify-content: center; align-items: center; gap: 2rem;
+        }
+        .mobile-menu.active { display: flex; }
+        .mobile-menu a { color: var(--text-primary); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); }
+
+        /* Hero */
+        .hero {
+            padding: 8rem 2rem 4rem; text-align: center; position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(255, 102, 0, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+        .hero-eyebrow {
+            font-family: var(--font-mono); font-size: 0.85rem; color: var(--xmr-orange);
+            text-transform: uppercase; letter-spacing: 3px; margin-bottom: 1rem; position: relative;
+        }
+        .hero-title {
+            font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700;
+            margin-bottom: 1rem; position: relative;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--btc-gold) 50%, var(--xmr-orange) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .hero-subtitle {
+            color: var(--text-secondary); max-width: 700px; margin: 0 auto 1.5rem;
+            font-size: 1.15rem; position: relative;
+        }
+        .hero-tagline {
+            font-family: var(--font-mono); font-size: 0.85rem; color: var(--danger-red);
+            max-width: 700px; margin: 0 auto; position: relative; letter-spacing: 0.5px;
+        }
+
+        /* Sections */
+        .section {
+            max-width: 1200px; margin: 0 auto; padding: 4rem 2rem;
+        }
+        .section-label {
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--xmr-orange);
+            text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0.75rem;
+        }
+        .section-title {
+            font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700; margin-bottom: 1rem;
+        }
+        .section-intro {
+            color: var(--text-secondary); max-width: 700px; margin-bottom: 3rem; font-size: 1rem;
+        }
+
+        /* Fade-in animation */
+        .fade-in {
+            opacity: 0; transform: translateY(30px);
+        }
+        .fade-in.visible {
+            opacity: 1; transform: translateY(0);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+        .scale-in {
+            opacity: 0; transform: scale(0.97);
+        }
+        .scale-in.visible {
+            opacity: 1; transform: scale(1);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        /* ===== SECTION 1: Regulatory Timeline ===== */
+        .reg-timeline {
+            position: relative; padding-left: 2rem;
+        }
+        .reg-timeline::before {
+            content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(180deg, var(--reg-green), var(--reg-blue), var(--reg-red), var(--reg-purple));
+        }
+        .reg-item {
+            position: relative; margin-bottom: 2rem; padding-left: 1.5rem;
+        }
+        .reg-item::before {
+            content: ''; position: absolute; left: -1.55rem; top: 0.6rem;
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid var(--grey-18); background: var(--dark-bg);
+        }
+        .reg-item[data-type="pro-crypto"]::before { border-color: var(--reg-green); background: var(--reg-green); }
+        .reg-item[data-type="stablecoin"]::before { border-color: var(--reg-blue); background: var(--reg-blue); }
+        .reg-item[data-type="government"]::before { border-color: var(--reg-red); background: var(--reg-red); }
+        .reg-item[data-type="surveillance"]::before { border-color: var(--reg-purple); background: var(--reg-purple); }
+
+        .reg-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.5rem 1.75rem; transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .reg-card:hover {
+            border-color: rgba(255, 102, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.06);
+        }
+        .reg-date {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .reg-title-row {
+            display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+        }
+        .reg-name {
+            font-family: var(--font-display); font-size: 1.15rem; font-weight: 600;
+        }
+        .reg-badge {
+            font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 1.5px; padding: 0.25rem 0.65rem; border-radius: 4px; font-weight: 500;
+        }
+        .reg-badge.pro-crypto { color: var(--reg-green); background: rgba(0,211,149,0.12); border: 1px solid rgba(0,211,149,0.3); }
+        .reg-badge.stablecoin { color: var(--reg-blue); background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.3); }
+        .reg-badge.government { color: var(--reg-red); background: rgba(255,71,87,0.12); border: 1px solid rgba(255,71,87,0.3); }
+        .reg-badge.surveillance { color: var(--reg-purple); background: rgba(155,89,182,0.12); border: 1px solid rgba(155,89,182,0.3); }
+
+        .reg-desc {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+
+        /* ===== SECTION 2: Freedom Paradox ===== */
+        .paradox-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;
+        }
+        .paradox-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+        }
+        .paradox-card.surveillance-card { border-color: rgba(255, 71, 87, 0.3); }
+        .paradox-card.surveillance-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--danger-red), var(--reg-purple));
+        }
+        .paradox-card.monero-card { border-color: rgba(255, 102, 0, 0.3); }
+        .paradox-card.monero-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--xmr-orange), var(--success-green));
+        }
+        .paradox-card-title {
+            font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;
+        }
+        .paradox-card-text {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1rem;
+        }
+        .paradox-chain {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0;
+        }
+        .chain-link {
+            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.35rem 0.65rem;
+            background: rgba(255, 71, 87, 0.08); border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 6px; color: var(--danger-red);
+        }
+        .chain-arrow { color: var(--text-secondary); font-size: 0.8rem; }
+        .monero-shield {
+            display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem;
+        }
+        .shield-item {
+            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.75rem;
+            background: rgba(255, 102, 0, 0.08); border: 1px solid rgba(255, 102, 0, 0.25);
+            border-radius: 6px; color: var(--xmr-orange);
+        }
+        .bounty-callout {
+            margin-top: 1.5rem; padding: 1rem 1.25rem; background: rgba(255, 102, 0, 0.06);
+            border-left: 3px solid var(--xmr-orange); border-radius: 0 8px 8px 0;
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--btc-gold);
+        }
+
+        /* ===== SECTION 3: Institutional Bitcoin ===== */
+        .stat-boxes-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2.5rem;
+        }
+        .stat-box {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.5rem; text-align: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-box:hover {
+            border-color: rgba(255, 71, 87, 0.4);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.08);
+        }
+        .stat-box-value {
+            font-family: var(--font-mono); font-size: 1.6rem; font-weight: 500;
+            color: var(--danger-red); margin-bottom: 0.25rem;
+        }
+        .stat-box-label {
+            font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .institutional-text {
+            color: var(--text-secondary); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
+        }
+        .institutional-text strong { color: var(--text-primary); }
+
+        /* ===== SECTION 4: ZCash Fallacy ===== */
+        .zcash-intro {
+            color: var(--text-secondary); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
+            margin-bottom: 2.5rem;
+        }
+        .zcash-intro strong { color: var(--text-primary); }
+
+        .shielded-stat {
+            display: flex; gap: 1.5rem; margin-bottom: 2.5rem; flex-wrap: wrap;
+        }
+        .shielded-box {
+            flex: 1; min-width: 250px; background: var(--card-bg); border-radius: 16px;
+            padding: 2rem; text-align: center; border: 1px solid var(--grey-18); position: relative; overflow: hidden;
+        }
+        .shielded-box::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .shielded-box.zcash-box::before { background: var(--danger-red); }
+        .shielded-box.monero-box::before { background: var(--xmr-orange); }
+        .shielded-pct {
+            font-family: var(--font-mono); font-size: 3rem; font-weight: 500;
+        }
+        .shielded-box.zcash-box .shielded-pct { color: var(--danger-red); }
+        .shielded-box.monero-box .shielded-pct { color: var(--xmr-orange); }
+        .shielded-label {
+            font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;
+        }
+
+        .comparison-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+        }
+        .comparison-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+        }
+        .comparison-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .comparison-card.xmr-card::before {
+            background: linear-gradient(90deg, var(--xmr-orange), var(--success-green));
+        }
+        .comparison-card.zec-card::before {
+            background: linear-gradient(90deg, var(--danger-red), #666);
+        }
+        .comparison-card-title {
+            font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; margin-bottom: 1.25rem;
+        }
+        .comparison-card.xmr-card .comparison-card-title { color: var(--xmr-orange); }
+        .comparison-card.zec-card .comparison-card-title { color: var(--danger-red); }
+
+        .feature-list { list-style: none; }
+        .feature-list li {
+            padding: 0.5rem 0; font-size: 0.88rem; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(46, 46, 46, 0.5); display: flex; align-items: flex-start; gap: 0.6rem;
+        }
+        .feature-list li:last-child { border-bottom: none; }
+        .check { color: var(--success-green); font-weight: 700; flex-shrink: 0; }
+        .cross { color: var(--danger-red); font-weight: 700; flex-shrink: 0; }
+
+        /* ZCash Deep Dive Subsections */
+        .zcash-subsection {
+            margin-top: 3rem; padding-top: 2rem;
+            border-top: 1px solid rgba(46, 46, 46, 0.6);
+        }
+        .zcash-subsection-label {
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--danger-red);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
+        }
+        .zcash-subsection-title {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 600;
+            margin-bottom: 1.25rem; color: var(--text-primary);
+        }
+        .zcash-prose {
+            color: var(--text-secondary); font-size: 0.93rem; line-height: 1.9;
+            max-width: 900px; margin-bottom: 1.5rem;
+        }
+        .zcash-prose strong { color: var(--text-primary); }
+        .zcash-prose em { color: var(--danger-red); font-style: italic; }
+
+        .zcash-timeline {
+            position: relative; padding-left: 2rem; margin: 2rem 0;
+            border-left: 2px solid var(--danger-red);
+        }
+        .zcash-timeline-item {
+            position: relative; margin-bottom: 2rem; padding-left: 1rem;
+        }
+        .zcash-timeline-item::before {
+            content: ''; position: absolute; left: -2.65rem; top: 0.35rem;
+            width: 10px; height: 10px; border-radius: 50%; background: var(--danger-red);
+            border: 2px solid var(--dark-bg);
+        }
+        .zcash-timeline-year {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--danger-red);
+            font-weight: 500; margin-bottom: 0.25rem;
+        }
+        .zcash-timeline-text {
+            color: var(--text-secondary); font-size: 0.88rem; line-height: 1.7;
+        }
+        .zcash-timeline-text strong { color: var(--text-primary); }
+
+        .zcash-callout {
+            background: rgba(255, 71, 87, 0.06); border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0;
+            border-left: 4px solid var(--danger-red);
+        }
+        .zcash-callout-title {
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--danger-red);
+            text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem;
+        }
+        .zcash-callout p {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+        .zcash-callout p strong { color: var(--text-primary); }
+
+        .zcash-callout-green {
+            background: rgba(0, 211, 149, 0.06); border: 1px solid rgba(0, 211, 149, 0.2);
+            border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0;
+            border-left: 4px solid var(--success-green);
+        }
+        .zcash-callout-green .zcash-callout-title { color: var(--success-green); }
+        .zcash-callout-green p {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+        .zcash-callout-green p strong { color: var(--text-primary); }
+
+        .zcash-funding-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0;
+        }
+        .zcash-funding-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.75rem; position: relative; overflow: hidden;
+        }
+        .zcash-funding-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .zcash-funding-card.zec-funding::before { background: linear-gradient(90deg, var(--danger-red), #666); }
+        .zcash-funding-card.xmr-funding::before { background: linear-gradient(90deg, var(--xmr-orange), var(--success-green)); }
+        .zcash-funding-card-title {
+            font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem;
+        }
+        .zcash-funding-card.zec-funding .zcash-funding-card-title { color: var(--danger-red); }
+        .zcash-funding-card.xmr-funding .zcash-funding-card-title { color: var(--xmr-orange); }
+        .zcash-funding-list {
+            list-style: none; padding: 0;
+        }
+        .zcash-funding-list li {
+            padding: 0.45rem 0; font-size: 0.85rem; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(46, 46, 46, 0.4);
+            display: flex; align-items: flex-start; gap: 0.5rem;
+        }
+        .zcash-funding-list li:last-child { border-bottom: none; }
+
+        .zcash-stat-row {
+            display: flex; gap: 1rem; flex-wrap: wrap; margin: 2rem 0;
+        }
+        .zcash-stat-box {
+            flex: 1; min-width: 180px; background: var(--card-bg); border: 1px solid var(--grey-18);
+            border-radius: 12px; padding: 1.25rem; text-align: center;
+        }
+        .zcash-stat-num {
+            font-family: var(--font-mono); font-size: 2rem; font-weight: 500; color: var(--danger-red);
+        }
+        .zcash-stat-num.green { color: var(--success-green); }
+        .zcash-stat-num.orange { color: var(--xmr-orange); }
+        .zcash-stat-desc {
+            font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem;
+        }
+
+        .zcash-quote-box {
+            background: rgba(155, 89, 182, 0.06); border-left: 3px solid var(--privacy-purple);
+            padding: 1.25rem 1.75rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0;
+        }
+        .zcash-quote-box p {
+            font-style: italic; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+        .zcash-quote-box .quote-attr {
+            font-style: normal; font-family: var(--font-mono); font-size: 0.75rem;
+            color: var(--privacy-purple); margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .zcash-funding-grid { grid-template-columns: 1fr; }
+            .zcash-stat-row { flex-direction: column; }
+        }
+
+        /* ===== SECTION 5: Demand Drivers (preserved from original) ===== */
+        .drivers-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;
+        }
+        .driver-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .driver-card:hover {
+            transform: translateY(-4px); border-color: var(--xmr-orange);
+            box-shadow: 0 0 30px rgba(255, 102, 0, 0.1);
+        }
+        .driver-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+        .driver-card[data-driver="catalyst"]::before { background: linear-gradient(90deg, var(--btc-gold), var(--xmr-orange)); }
+        .driver-card[data-driver="regulation"]::before { background: linear-gradient(90deg, var(--danger-red), var(--btc-orange)); }
+        .driver-card[data-driver="geopolitical"]::before { background: linear-gradient(90deg, var(--privacy-purple), var(--danger-red)); }
+        .driver-card[data-driver="darknet"]::before { background: linear-gradient(90deg, #1a1a2e, var(--xmr-orange)); }
+        .driver-card[data-driver="cbdc"]::before { background: linear-gradient(90deg, var(--crossover-cyan), var(--success-green)); }
+        .driver-card[data-driver="technical"]::before { background: linear-gradient(90deg, var(--success-green), var(--crossover-cyan)); }
+
+        .driver-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
+        .driver-number {
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--xmr-orange);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
+        }
+        .driver-title {
+            font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; margin-bottom: 0.75rem;
+        }
+        .driver-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1.25rem; }
+        .driver-stats { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+        .stat-chip {
+            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.8rem;
+            border-radius: 6px; border: 1px solid var(--grey-18);
+            background: rgba(255, 102, 0, 0.06); color: var(--btc-gold); white-space: nowrap;
+        }
+        .stat-chip.green { color: var(--success-green); background: rgba(0,211,149,0.08); border-color: rgba(0,211,149,0.2); }
+        .stat-chip.red { color: var(--danger-red); background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.2); }
+        .stat-chip.purple { color: var(--privacy-purple); background: rgba(155,89,182,0.08); border-color: rgba(155,89,182,0.2); }
+        .stat-chip.cyan { color: var(--crossover-cyan); background: rgba(0,206,209,0.08); border-color: rgba(0,206,209,0.2); }
+
+        /* ===== SECTION 6: Why Monero Threatens ===== */
+        .threat-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;
+            margin-top: 2rem;
+        }
+        .threat-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.5rem; text-align: center;
+            transition: border-color 0.3s ease;
+        }
+        .threat-card:hover { border-color: rgba(155, 89, 182, 0.4); }
+        .threat-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+        .threat-title {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;
+        }
+        .threat-desc { color: var(--text-secondary); font-size: 0.8rem; line-height: 1.6; }
+
+        .threat-text {
+            color: var(--text-secondary); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
+            margin-bottom: 2rem;
+        }
+        .threat-text strong { color: var(--text-primary); }
+
+        /* ===== SECTION 7: What 2027+ Looks Like ===== */
+        .future-cols {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;
+        }
+        .future-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+        }
+        .future-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .future-card.surveilled::before { background: linear-gradient(90deg, var(--danger-red), #666); }
+        .future-card.theater::before { background: linear-gradient(90deg, #666, var(--reg-purple)); }
+        .future-card.free::before { background: linear-gradient(90deg, var(--xmr-orange), var(--success-green)); }
+
+        .future-card-label {
+            font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 0.75rem;
+        }
+        .future-card.surveilled .future-card-label { color: var(--danger-red); }
+        .future-card.theater .future-card-label { color: var(--reg-purple); }
+        .future-card.free .future-card-label { color: var(--xmr-orange); }
+
+        .future-card-title {
+            font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem;
+        }
+        .future-card-text { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.8; }
+
+        .closing-quote {
+            background: linear-gradient(135deg, rgba(255,102,0,0.06) 0%, rgba(155,89,182,0.04) 100%);
+            border: 1px solid rgba(255, 102, 0, 0.2); border-radius: 16px;
+            padding: 2.5rem; text-align: center; max-width: 800px; margin: 0 auto;
+        }
+        .closing-quote blockquote {
+            font-family: var(--font-display); font-size: clamp(1.2rem, 3vw, 1.6rem);
+            font-weight: 600; font-style: italic; line-height: 1.6;
+            background: linear-gradient(135deg, var(--text-primary), var(--btc-gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+
+        /* ===== Meta Thesis ===== */
+        .meta-thesis {
+            max-width: 1200px; margin: 0 auto; padding: 4rem 2rem 5rem;
+        }
+        .thesis-box {
+            background: linear-gradient(135deg, rgba(255,102,0,0.08) 0%, rgba(155,89,182,0.06) 50%, rgba(0,206,209,0.04) 100%);
+            border: 1px solid rgba(255,102,0,0.25); border-radius: 20px;
+            padding: 3rem; position: relative; overflow: hidden;
+        }
+        .thesis-box::before {
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(255,102,0,0.04) 0%, transparent 50%);
+            animation: thesis-glow 8s ease-in-out infinite; pointer-events: none;
+        }
+        @keyframes thesis-glow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(5%, 5%); }
+        }
+        .thesis-label {
+            font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+            letter-spacing: 3px; color: var(--xmr-orange); margin-bottom: 1rem; position: relative;
+        }
+        .thesis-headline {
+            font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700;
+            margin-bottom: 1.5rem; position: relative;
+            background: linear-gradient(135deg, var(--btc-gold), var(--xmr-orange));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        }
+        .thesis-body {
+            color: var(--text-secondary); font-size: 1.05rem; line-height: 1.9;
+            max-width: 800px; position: relative; margin-bottom: 2rem;
+        }
+        .thesis-body strong { color: var(--text-primary); }
+        .thesis-pillars {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; margin-top: 2rem; position: relative;
+        }
+        .pillar {
+            background: rgba(10,10,10,0.6); border: 1px solid var(--grey-18);
+            border-radius: 12px; padding: 1.25rem; text-align: center;
+        }
+        .pillar-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        .pillar-value {
+            font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; color: var(--xmr-orange);
+        }
+        .pillar-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
+
+        /* ===== SECTION 8: Technical Deep Dive Table ===== */
+        .tech-table-wrap {
+            overflow-x: auto; margin-top: 2rem; border-radius: 12px;
+            border: 1px solid var(--grey-18);
+        }
+        .tech-table {
+            width: 100%; border-collapse: collapse; min-width: 600px;
+        }
+        .tech-table thead th {
+            background: rgba(255,102,0,0.08); font-family: var(--font-mono); font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 1.5px; padding: 1rem 1.25rem;
+            text-align: left; border-bottom: 1px solid var(--grey-18);
+        }
+        .tech-table thead th:first-child { color: var(--text-secondary); }
+        .tech-table thead th:nth-child(2) { color: var(--xmr-orange); }
+        .tech-table thead th:nth-child(3) { color: var(--danger-red); }
+
+        .tech-table tbody td {
+            padding: 0.85rem 1.25rem; font-size: 0.88rem; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(46,46,46,0.5); vertical-align: top;
+        }
+        .tech-table tbody td:first-child {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary);
+            font-weight: 500; white-space: nowrap;
+        }
+        .tech-table tbody tr:hover td { background: rgba(255,102,0,0.03); }
+        .tech-table .positive { color: var(--success-green); }
+        .tech-table .negative { color: var(--danger-red); }
+        .tech-table .neutral { color: var(--text-secondary); }
+
+        /* ===== Sources ===== */
+        .sources-list {
+            list-style: none; columns: 2; column-gap: 2rem;
+        }
+        .sources-list li {
+            font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;
+            break-inside: avoid;
+        }
+        .sources-list a {
+            color: var(--xmr-orange); text-decoration: none; transition: color 0.3s ease;
+        }
+        .sources-list a:hover { color: var(--btc-gold); text-decoration: underline; }
+
+        /* ===== CTA ===== */
+        .cta-section { text-align: center; padding: 2rem 2rem 5rem; }
+        .cta-link {
+            display: inline-block; font-family: var(--font-mono); font-size: 1rem;
+            color: var(--dark-bg); background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            padding: 1rem 2.5rem; border-radius: 8px; text-decoration: none; font-weight: 500;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .cta-link:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,102,0,0.3); }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--grey-18); padding: 2rem;
+            text-align: center; color: var(--text-secondary); font-size: 0.85rem;
+        }
+        .footer-nav { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
+        .footer-nav a {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+        .footer-nav a:hover { color: var(--btc-orange); }
+
+        /* Divider */
+        .section-divider {
+            max-width: 1200px; margin: 0 auto; padding: 0 2rem;
+        }
+        .section-divider hr {
+            border: none; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--grey-18), transparent);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .drivers-grid { grid-template-columns: 1fr; }
+            .paradox-grid { grid-template-columns: 1fr; }
+            .stat-boxes-grid { grid-template-columns: 1fr 1fr; }
+            .comparison-grid { grid-template-columns: 1fr; }
+            .future-cols { grid-template-columns: 1fr; }
+            .sources-list { columns: 1; }
+            .thesis-box { padding: 2rem 1.5rem; }
+            .thesis-pillars { grid-template-columns: 1fr 1fr; }
+            .driver-card { padding: 1.5rem; }
+            .threat-grid { grid-template-columns: 1fr 1fr; }
+        }
+
+        @media (max-width: 480px) {
+            .stat-boxes-grid { grid-template-columns: 1fr; }
+            .thesis-pillars { grid-template-columns: 1fr; }
+            .threat-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <div class="nav-dropdown">
+                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="btc-xmr-education.html">Education</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
+                    <a href="future-outlook.html" style="color: var(--xmr-orange);">2027+ Outlook</a>
+                </div>
+            </div>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="future-outlook.html">2027+</a>
+            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="future-outlook.html" onclick="toggleMenu()">2027+ Outlook</a>
+        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-eyebrow">The Flagship Analysis</div>
+        <h1 class="hero-title">Looking Forward</h1>
+        <p class="hero-subtitle">
+            Why Monero Is the Only Future for True Privacy
+        </p>
+        <p class="hero-tagline">
+            Legislation is evolving. Surveillance is expanding. Bitcoin is transparent. ZCash is compromised.
+        </p>
+    </section>
+
+    <!-- ============================== -->
+    <!-- SECTION 1: Regulatory Landscape -->
+    <!-- ============================== -->
+    <section class="section" id="regulatory">
+        <div class="section-label">Section 01 &mdash; The Regulatory Landscape</div>
+        <h2 class="section-title">Legislation Timeline: 2024&ndash;2027</h2>
+        <p class="section-intro">
+            A new legal architecture is being built around cryptocurrency. Some of it grants genuine freedoms. All of it builds surveillance infrastructure.
+        </p>
+
+        <div class="reg-timeline">
+            <!-- FIT21 -->
+            <div class="reg-item fade-in" data-type="pro-crypto">
+                <div class="reg-card">
+                    <div class="reg-date">May 2024</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">FIT21 &mdash; Financial Innovation and Technology for the 21st Century Act</span>
+                        <span class="reg-badge pro-crypto">Pro-Crypto</span>
+                    </div>
+                    <p class="reg-desc">
+                        Passed the House 279&ndash;136. Establishes the CFTC as the primary crypto regulator. Creates three classifications: <strong>digital commodities</strong>, <strong>restricted digital assets</strong>, and <strong>payment stablecoins</strong>. The most significant pro-crypto legislation in U.S. history &mdash; but every classification comes with a reporting obligation.
+                    </p>
+                </div>
+            </div>
+
+            <!-- GENIUS Act -->
+            <div class="reg-item fade-in" data-type="stablecoin">
+                <div class="reg-card">
+                    <div class="reg-date">January 2025</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">GENIUS Act</span>
+                        <span class="reg-badge stablecoin">Stablecoin</span>
+                    </div>
+                    <p class="reg-desc">
+                        Federal licensing framework for stablecoin issuers. Requires 1:1 reserves, monthly attestations, and full AML/BSA compliance. Passed the Senate Banking Committee in March 2025. Establishes stablecoins as the regulated on-ramp &mdash; and every on-ramp is a surveillance checkpoint.
+                    </p>
+                </div>
+            </div>
+
+            <!-- CLARITY Act -->
+            <div class="reg-item fade-in" data-type="pro-crypto">
+                <div class="reg-card">
+                    <div class="reg-date">February 2025</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">CLARITY Act</span>
+                        <span class="reg-badge pro-crypto">Pro-Crypto</span>
+                    </div>
+                    <p class="reg-desc">
+                        Exempts certain digital assets from securities classification if sufficiently decentralized. Provides safe harbor protections for developers. Genuine freedom &mdash; but "decentralized" is defined by the regulators, and the exemption requires ongoing compliance reporting.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Strategic Bitcoin Reserve -->
+            <div class="reg-item fade-in" data-type="government">
+                <div class="reg-card">
+                    <div class="reg-date">March 2025</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">Executive Order: Strategic Bitcoin Reserve</span>
+                        <span class="reg-badge government">Government</span>
+                    </div>
+                    <p class="reg-desc">
+                        ~200,000 BTC held by the U.S. government from seizures and forfeitures. Permanent institutional adoption <strong>and</strong> permanent on-chain government surveillance capability. The government now has a direct financial interest in Bitcoin's traceability.
+                    </p>
+                </div>
+            </div>
+
+            <!-- IRS Digital Asset Reporting -->
+            <div class="reg-item fade-in" data-type="surveillance">
+                <div class="reg-card">
+                    <div class="reg-date">2025&ndash;2026</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">IRS Digital Asset Reporting Rules</span>
+                        <span class="reg-badge surveillance">Surveillance</span>
+                    </div>
+                    <p class="reg-desc">
+                        Exchanges and DeFi front-ends must report all transactions. Cost basis, capital gains/losses, and wallet addresses are tracked and reported to the IRS. Effective for the 2025 tax year. Form 1099-DA creates a permanent paper trail for every on-chain movement.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Travel Rule -->
+            <div class="reg-item fade-in" data-type="surveillance">
+                <div class="reg-card">
+                    <div class="reg-date">2025&ndash;2027</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">Travel Rule Expansion (FATF)</span>
+                        <span class="reg-badge surveillance">Surveillance</span>
+                    </div>
+                    <p class="reg-desc">
+                        Sender and receiver identity must be transmitted for all transfers above $1,000. Global enforcement via FATF member nations. Turns every compliant exchange into a financial surveillance relay. Combined with chain analysis, this creates a complete graph of Bitcoin ownership.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 2: The Freedom Paradox  -->
+    <!-- ============================== -->
+    <section class="section" id="paradox">
+        <div class="section-label">Section 02 &mdash; The Freedom Paradox</div>
+        <h2 class="section-title">Freedom and Surveillance Are the Same Law</h2>
+        <p class="section-intro">
+            CLARITY and FIT21 grant Americans genuine freedoms to build, trade, and hold digital assets. But these same laws codify the surveillance infrastructure that makes those freedoms conditional.
+        </p>
+
+        <div class="paradox-grid">
+            <div class="paradox-card surveillance-card fade-in">
+                <div class="paradox-card-title">The Bitcoin Surveillance Chain</div>
+                <p class="paradox-card-text">
+                    When your Bitcoin wallet is linked to an exchange, the chain is complete. Every hop, every UTXO, every counterparty &mdash; visible.
+                </p>
+                <div class="paradox-chain">
+                    <span class="chain-link">KYC Exchange</span>
+                    <span class="chain-arrow">&rarr;</span>
+                    <span class="chain-link">IRS 1099-DA</span>
+                    <span class="chain-arrow">&rarr;</span>
+                    <span class="chain-link">Travel Rule</span>
+                    <span class="chain-arrow">&rarr;</span>
+                    <span class="chain-link">Chainalysis</span>
+                    <span class="chain-arrow">=</span>
+                    <span class="chain-link" style="color: var(--text-primary); background: rgba(255,71,87,0.2); border-color: var(--danger-red);">Fully Surveilled Asset</span>
+                </div>
+                <p class="paradox-card-text">
+                    Bitcoin is not private. It never was. Satoshi knew this &mdash; and said so. The transparency that makes Bitcoin auditable is the same transparency that makes it a surveillance tool.
+                </p>
+            </div>
+
+            <div class="paradox-card monero-card fade-in">
+                <div class="paradox-card-title">The Monero Shield</div>
+                <p class="paradox-card-text">
+                    Monero is the only cryptocurrency where IRS reporting, the Travel Rule, and chain analysis have <strong>zero effect</strong> on transaction privacy. Every layer is protected by default:
+                </p>
+                <div class="monero-shield">
+                    <span class="shield-item">RingCT &mdash; No Amounts</span>
+                    <span class="shield-item">Stealth Addresses &mdash; No Linking</span>
+                    <span class="shield-item">Ring Signatures &mdash; No Sender ID</span>
+                    <span class="shield-item">Dandelion++ &mdash; No IP Leak</span>
+                </div>
+                <div class="bounty-callout">
+                    IRS bounty for breaking Monero: $625,000 &mdash; unclaimed since September 2020.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 3: Institutional Bitcoin -->
+    <!-- ============================== -->
+    <section class="section" id="institutional">
+        <div class="section-label">Section 03 &mdash; Institutional Bitcoin</div>
+        <h2 class="section-title">Ownership Without Freedom</h2>
+        <p class="section-intro">
+            Bitcoin is now a regulated, surveilled, institutionally captured asset. Ownership is permitted. Privacy is not.
+        </p>
+
+        <div class="stat-boxes-grid">
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">~$60B+</div>
+                <div class="stat-box-label">BlackRock IBIT Holdings</div>
+            </div>
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">200K+</div>
+                <div class="stat-box-label">U.S. Gov Seized BTC</div>
+            </div>
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">$2.2B</div>
+                <div class="stat-box-label">Biden-Era BTC Sales</div>
+            </div>
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">100%</div>
+                <div class="stat-box-label">BTC On-Chain Traceable</div>
+            </div>
+        </div>
+
+        <div class="institutional-text fade-in">
+            <p style="margin-bottom: 1.25rem;">
+                <strong>Government sell pressure is structural.</strong> The U.S. government is the single largest Bitcoin holder after Satoshi. Every seizure adds to the supply overhang. The Biden administration sold $2.2B in seized BTC. The Strategic Bitcoin Reserve executive order signals permanent government participation in the Bitcoin market &mdash; as both holder and surveillor.
+            </p>
+            <p style="margin-bottom: 1.25rem;">
+                <strong>Institutional capture is complete.</strong> BlackRock's IBIT ETF alone holds over $60B in Bitcoin. Every share is KYC'd, reported, and linked to a brokerage account. Bitcoin held through ETFs is not self-custodied &mdash; it is custodied by Coinbase, reported to the IRS, and subject to seizure via legal process.
+            </p>
+            <p>
+                <strong>The result:</strong> Bitcoin has become a transparent, regulated, institutionally captured store of value. It serves the existing financial system. It does not challenge it. For anyone who needs actual financial privacy &mdash; journalists, dissidents, activists, abuse survivors, or simply individuals who believe their finances are their own business &mdash; Bitcoin is no longer an option.
+            </p>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 4: The ZCash Fallacy   -->
+    <!-- ============================== -->
+    <section class="section" id="zcash">
+        <div class="section-label">Section 04 &mdash; The ZCash Fallacy</div>
+        <h2 class="section-title">Privacy Theater vs. Privacy by Default</h2>
+        <p class="section-intro">
+            ZCash is often cited as a Monero alternative. A comprehensive investigation of its history, governance, cryptography, and on-chain data reveals a privacy coin that fails at its one job: providing privacy.
+        </p>
+
+        <!-- ======== 4.1 History of ZCash ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-history">
+            <div class="zcash-subsection-label">4.1 &mdash; Origin Story</div>
+            <div class="zcash-subsection-title">The Corporate Genesis of ZCash</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash did not emerge from a cypherpunk mailing list, an anonymous whitepaper, or a grassroots community. It was born in a boardroom. In 2016, the <strong>Electric Coin Company (ECC)</strong> &mdash; originally called the Zerocoin Electric Coin Company &mdash; was founded by <strong>Zooko Wilcox-O'Hearn</strong>, a computer scientist with deep ties to Silicon Valley venture capital. Before a single block was mined, ZCash had already raised institutional funding from <strong>Pantera Capital, Digital Currency Group (Barry Silbert), Naval Ravikant, Roger Ver, Erik Voorhees</strong>, and several other prominent crypto investors.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    This is not incidental. The funding structure determined everything that followed: the governance model, the economic incentives, the regulatory posture, and ultimately, the decision to make privacy <em>optional</em>. When your investors include some of the most compliance-friendly names in crypto, building a coin that actually threatens the surveillance state was never on the roadmap.
+                </p>
+                <p>
+                    The underlying cryptography &mdash; zk-SNARKs (Zero-Knowledge Succinct Non-Interactive Arguments of Knowledge) &mdash; originated from academic research by Eli Ben-Sasson, Alessandro Chiesa, Christina Garman, Matthew Green, Ian Miers, Eran Tromer, and Madars Virza. The science was real. The implementation choices were political.
+                </p>
+            </div>
+
+            <div class="zcash-timeline fade-in">
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">January 2016</div>
+                    <div class="zcash-timeline-text"><strong>Electric Coin Company (ECC) founded</strong> by Zooko Wilcox-O'Hearn. VC funding secured from Pantera Capital, Digital Currency Group, and individual investors. The company structure means ZCash development has a single corporate locus of control from day one.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">October 28, 2016</div>
+                    <div class="zcash-timeline-text"><strong>ZCash launches (Sprout)</strong> with the first trusted setup ceremony. Six participants generate cryptographic parameters in a multi-party computation. The security assumption: at least one participant must have destroyed their toxic waste (secret parameters). If all six were compromised, unlimited ZEC could be counterfeited undetectably. ZEC briefly trades above <strong>$4,000</strong> in speculative mania before crashing.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">2016 &ndash; 2020</div>
+                    <div class="zcash-timeline-text"><strong>Founders' Reward active:</strong> 20% of all block rewards (2.5 ZEC of every 12.5 ZEC block) flow to the ECC, Zcash Foundation, employees, and investors. Over four years, approximately <strong>2.1 million ZEC</strong> (of a 21M max supply) are extracted before a single community governance vote occurs.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">October 2018</div>
+                    <div class="zcash-timeline-text"><strong>Sapling upgrade activates.</strong> A new trusted setup ceremony (Powers of Tau) involves 87 participants. Shielded transactions become faster and lighter. However, adoption remains minimal &mdash; most users and exchanges continue using transparent addresses because they are simpler and required for compliance.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">February 2019</div>
+                    <div class="zcash-timeline-text"><strong>Sprout counterfeiting vulnerability disclosed.</strong> The ECC reveals that a bug in the original Sprout circuit could have allowed undetectable inflation. They claim it was never exploited &mdash; but because shielded balances are hidden by design, <em>there is no way to independently verify this claim</em>. The fix was quietly deployed in the Sapling upgrade.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">November 2020</div>
+                    <div class="zcash-timeline-text"><strong>First halving &amp; Dev Fund activation.</strong> The Founders' Reward expires, but is immediately replaced by a new "Dev Fund" (ZIP 1014) that continues the 20% allocation: 8% to ECC, 7% to the Zcash Foundation, 5% to community grants. The tax persists &mdash; the recipients simply reshuffled.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">May 2022</div>
+                    <div class="zcash-timeline-text"><strong>Orchard upgrade (NU5) activates.</strong> Introduces Halo 2 proving system, which finally eliminates the need for a trusted setup in new shielded pools. However, the legacy Sprout and Sapling pools &mdash; and the trust assumptions baked into them &mdash; remain part of the protocol. Old coins carry old trust debt.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">2023 &ndash; 2025</div>
+                    <div class="zcash-timeline-text"><strong>ZEC price collapses</strong> from an all-time high of ~$880 (2018) to under $25. Market cap falls below $400M. The ECC announces layoffs. Governance tensions between the ECC and Zcash Foundation escalate publicly. Zooko Wilcox steps down as CEO in 2024. The project enters what critics call a "zombie chain" phase.</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">Key Takeaway</div>
+                <p>
+                    ZCash's history is a case study in how <strong>corporate structure determines protocol outcomes</strong>. Every major decision &mdash; optional privacy, the dev tax, the trusted setup, the regulatory posture &mdash; traces back to the VC-funded, company-controlled genesis. Monero, by contrast, was launched anonymously in 2014 with no premine, no company, and no investors. Its privacy was mandatory from block zero.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== 4.2 The 20% Dev Tax ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-devtax">
+            <div class="zcash-subsection-label">4.2 &mdash; Follow the Money</div>
+            <div class="zcash-subsection-title">The 20% Dev Tax Problem</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    From its first block, ZCash imposed a <strong>20% tax on all mining rewards</strong>. For every 12.5 ZEC mined, 2.5 ZEC went not to the miner who secured the network, but to the Electric Coin Company, investors, and affiliated entities. This was called the "Founders' Reward" &mdash; a euphemism for what is, in practice, a perpetual corporate subsidy paid by the network's own security providers.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    When the original Founders' Reward expired in November 2020, the community was presented with a governance vote: end the tax, or continue it. The result was <strong>ZIP 1014</strong>, which restructured but preserved the 20% allocation. The new "Dev Fund" split proceeds three ways: 8% to ECC, 7% to the Zcash Foundation, and 5% to a Major Grants Fund. The tax was set to continue through the next halving cycle.
+                </p>
+                <p>
+                    Over ZCash's lifetime, the 20% allocation has directed approximately <strong>3.5 million ZEC</strong> to the ECC, Foundation, and grant recipients &mdash; out of a total ~16 million ZEC mined. That means roughly <strong>one in five coins ever created went to insiders</strong>, not to the miners who actually secure the chain.
+                </p>
+            </div>
+
+            <div class="zcash-funding-grid">
+                <div class="zcash-funding-card zec-funding fade-in">
+                    <div class="zcash-funding-card-title">ZCash Funding Model</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="cross">&#10007;</span> 20% of all block rewards taxed since genesis</li>
+                        <li><span class="cross">&#10007;</span> ~3.5M ZEC to insiders (~22% of total supply mined)</li>
+                        <li><span class="cross">&#10007;</span> VC investors received ZEC allocations pre-launch</li>
+                        <li><span class="cross">&#10007;</span> "Founders' Reward" rebranded to "Dev Fund" &mdash; same tax</li>
+                        <li><span class="cross">&#10007;</span> ECC is a for-profit company with a CEO and board</li>
+                        <li><span class="cross">&#10007;</span> Miners subsidize the company that controls the protocol</li>
+                        <li><span class="cross">&#10007;</span> No mechanism to defund ECC if community disagrees</li>
+                        <li><span class="cross">&#10007;</span> Governance captured by funded entities</li>
+                    </ul>
+                </div>
+                <div class="zcash-funding-card xmr-funding fade-in">
+                    <div class="zcash-funding-card-title">Monero Funding Model (CCS)</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="check">&#10003;</span> Zero tax on mining rewards &mdash; 100% to miners</li>
+                        <li><span class="check">&#10003;</span> Community Crowdfunding System (CCS) for all development</li>
+                        <li><span class="check">&#10003;</span> Anyone can propose work; community decides what to fund</li>
+                        <li><span class="check">&#10003;</span> Milestones verified before payouts are released</li>
+                        <li><span class="check">&#10003;</span> No company, no CEO, no board of directors</li>
+                        <li><span class="check">&#10003;</span> No premine &mdash; every XMR was mined fairly</li>
+                        <li><span class="check">&#10003;</span> Contributors can be defunded at any time by community</li>
+                        <li><span class="check">&#10003;</span> Truly decentralized governance</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">The Incentive Problem</div>
+                <p>
+                    When a protocol's core developers are funded by an automatic tax, their incentive is to <strong>perpetuate the tax</strong>, not to ship the best technology. The ECC has every reason to avoid rocking the regulatory boat &mdash; because regulatory hostility threatens exchange listings, which threatens ZEC price, which threatens the Dev Fund revenue. This is why ZCash adopted a "regulatory friendly" posture: <strong>the company's survival depends on compliance, not on privacy</strong>.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== 4.3 The Trusted Setup ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-trustedsetup">
+            <div class="zcash-subsection-label">4.3 &mdash; Cryptographic Trust Debt</div>
+            <div class="zcash-subsection-title">The Trusted Setup: "Trust Us, We Deleted the Keys"</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash's original privacy system (zk-SNARKs using the Groth16 proving system) required a <strong>trusted setup ceremony</strong>. This is a one-time cryptographic event where secret parameters &mdash; called "toxic waste" &mdash; are generated and then must be destroyed. If anyone retains this toxic waste, they gain the ability to create counterfeit ZEC out of thin air, completely undetectable by the network.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The Sprout ceremony (2016) involved <strong>six participants</strong> who each contributed randomness via a multi-party computation protocol. The security guarantee: as long as at least one participant honestly destroyed their share of the toxic waste, the system is secure. The participants included Zooko Wilcox himself, along with five others who performed their computations in various locations using various hardware.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The fundamental problem is not whether the participants were honest. <strong>The problem is that the claim is unfalsifiable.</strong> There is no mathematical proof, no on-chain evidence, and no cryptographic verification that can demonstrate the toxic waste was destroyed. You must simply trust that six humans &mdash; including the CEO of the company that profits from ZCash &mdash; acted correctly. This is the exact opposite of the "don't trust, verify" ethos that cryptocurrency was built to embody.
+                </p>
+                <p>
+                    The Sapling ceremony (2018) scaled this to 87 participants via the "Powers of Tau" protocol, which improved the trust assumption but did not eliminate it. You still must trust that at least one of those 87 individuals was honest and not compromised. The Orchard upgrade (2022) finally adopted Halo 2, which requires no trusted setup for the new shielded pool &mdash; but the old Sprout and Sapling pools, and the coins minted under their trust assumptions, remain part of the protocol forever.
+                </p>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">6</div>
+                    <div class="zcash-stat-desc">Participants in Sprout ceremony (2016)</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">87</div>
+                    <div class="zcash-stat-desc">Participants in Sapling ceremony (2018)</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">0</div>
+                    <div class="zcash-stat-desc">Ways to verify toxic waste was destroyed</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num green">0</div>
+                    <div class="zcash-stat-desc">Trusted setup ceremonies Monero has ever needed</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout-green fade-in">
+                <div class="zcash-callout-title">Monero's Approach: Trustless by Design</div>
+                <p>
+                    Monero uses <strong>Ring Signatures, RingCT, and Stealth Addresses</strong> &mdash; none of which require a trusted setup. Every privacy guarantee is derived from standard cryptographic assumptions (discrete logarithm problem) that can be independently verified by anyone running a node. With the upcoming <strong>FCMP++</strong> upgrade, Monero will use full-chain membership proofs based on Curve Trees &mdash; still with zero trusted setup. The anonymity set becomes the entire blockchain, and the trust assumption is: math works.
+                </p>
+            </div>
+
+            <div class="zcash-quote-box fade-in">
+                <p>"If you have to trust someone to not counterfeit the money, you have rebuilt the Federal Reserve with extra steps."</p>
+                <div class="quote-attr">&mdash; Common criticism in Monero community forums</div>
+            </div>
+        </div>
+
+        <!-- ======== 4.4 Shielded vs Transparent ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-shielded">
+            <div class="zcash-subsection-label">4.4 &mdash; The Killer Statistic</div>
+            <div class="zcash-subsection-title">Shielded vs. Transparent: ~10% Privacy in a "Privacy Coin"</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    This is the single most damning fact about ZCash: <strong>approximately 90% of all ZCash transactions are fully transparent.</strong> They use t-addresses (transparent addresses) that work exactly like Bitcoin &mdash; sender, receiver, and amount are all visible on the public blockchain. Only transactions between z-addresses (shielded addresses) enjoy full privacy, and these represent a small minority of on-chain activity.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The reasons for this are structural, not accidental. Exchanges default to transparent addresses because regulators require it. Wallets default to transparent because shielded transactions are computationally heavier and take longer to process. Most ZCash users have never sent a shielded transaction in their lives. The "privacy coin" label is marketing, not reality.
+                </p>
+                <p>
+                    Even worse: <strong>transactions that move between transparent and shielded pools (t-to-z or z-to-t) leak metadata.</strong> When you shield 10 ZEC from a transparent address, observers know that the t-address owner has 10 ZEC in the shielded pool. When you unshield later, they can correlate amounts and timing. The only fully private flow is z-to-z (shielded-to-shielded), which represents the smallest fraction of all ZCash activity.
+                </p>
+            </div>
+
+            <!-- The killer stat boxes - expanded -->
+            <div class="shielded-stat">
+                <div class="shielded-box zcash-box fade-in">
+                    <div class="shielded-pct">~10%</div>
+                    <div class="shielded-label">ZCash transactions fully shielded (z-to-z)</div>
+                </div>
+                <div class="shielded-box monero-box fade-in">
+                    <div class="shielded-pct">100%</div>
+                    <div class="shielded-label">Monero transactions that are private by default</div>
+                </div>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~85%</div>
+                    <div class="zcash-stat-desc">ZEC value sitting in transparent pool</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~5%</div>
+                    <div class="zcash-stat-desc">Fully shielded z-to-z transaction share (some estimates)</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num orange">100%</div>
+                    <div class="zcash-stat-desc">Monero value that is always shielded</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">Why Optional Privacy Is No Privacy</div>
+                <p>
+                    When privacy is optional, using it becomes a signal. If 90% of transactions are transparent and you choose to shield yours, <strong>you have flagged yourself as someone with something to hide.</strong> This is the fundamental paradox: optional privacy is worse than no privacy at all, because it creates a two-tier system where the "private" tier is a smaller, more conspicuous anonymity set. In Monero, every transaction looks the same &mdash; there is no "suspicious" behavior because privacy is the only option.
+                </p>
+            </div>
+
+            <div class="zcash-prose">
+                <p>
+                    Cryptographer <strong>Ian Miers</strong> &mdash; one of ZCash's own co-creators &mdash; has acknowledged this dynamic. The academic literature on anonymity sets is clear: privacy systems are only as strong as the number of users who use them identically. A shielded pool used by 10% of participants provides fundamentally weaker privacy guarantees than a system where 100% of transactions are indistinguishable. This is not a matter of opinion. It is information theory.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== 4.5 Regulatory Capture ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-regulation">
+            <div class="zcash-subsection-label">4.5 &mdash; Regulatory Capture</div>
+            <div class="zcash-subsection-title">The "Regulatory Friendly" Privacy Coin Paradox</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash has actively courted regulatory acceptance. Zooko Wilcox testified before Congress, the ECC hired compliance-focused lobbyists, and ZCash was listed on regulated exchanges like <strong>Gemini</strong> (the Winklevoss exchange, which is NYDFS-licensed). Gemini even offered a ZCash "shielded withdrawal" feature &mdash; but all deposits and internal accounting remain transparent and KYC'd.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The reason ZCash can exist on regulated exchanges is precisely because <strong>regulators do not consider it a threat</strong>. The transparent default means exchanges can enforce full KYC/AML on ZEC transactions. The shielded pool is small enough to be irrelevant from a compliance perspective. Law enforcement can trace the vast majority of ZCash flows using standard blockchain analysis tools.
+                </p>
+                <p>
+                    Compare this with Monero: <strong>delisted from 73+ exchanges</strong> specifically because regulators and compliance teams cannot trace it. Binance, OKX, Kraken (in some jurisdictions), Huobi, and others have all removed XMR. The delistings are not a weakness &mdash; they are proof of concept. If your "privacy coin" is welcome on every regulated exchange, it is not providing meaningful privacy.
+                </p>
+            </div>
+
+            <div class="zcash-funding-grid">
+                <div class="zcash-funding-card zec-funding fade-in">
+                    <div class="zcash-funding-card-title">ZCash: Regulatory Welcome Mat</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="cross">&#10007;</span> Listed on Gemini, Coinbase, Kraken (all jurisdictions)</li>
+                        <li><span class="cross">&#10007;</span> ECC testified before Congress to demonstrate compliance</li>
+                        <li><span class="cross">&#10007;</span> Transparent by default = exchanges enforce KYC on all ZEC</li>
+                        <li><span class="cross">&#10007;</span> FinCEN, FATF do not classify ZCash as a compliance risk</li>
+                        <li><span class="cross">&#10007;</span> Chainalysis fully supports transparent ZCash tracing</li>
+                        <li><span class="cross">&#10007;</span> No government has attempted to ban ZCash</li>
+                    </ul>
+                </div>
+                <div class="zcash-funding-card xmr-funding fade-in">
+                    <div class="zcash-funding-card-title">Monero: Proof of Threat</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="check">&#10003;</span> Delisted from 73+ exchanges worldwide</li>
+                        <li><span class="check">&#10003;</span> IRS offered $625,000 bounty to break Monero &mdash; unclaimed</li>
+                        <li><span class="check">&#10003;</span> Banned or restricted in Japan, South Korea, Australia, UAE</li>
+                        <li><span class="check">&#10003;</span> Chainalysis admitted Monero tracing is "probabilistic" at best</li>
+                        <li><span class="check">&#10003;</span> 89% of darknet vendors prefer or mandate XMR</li>
+                        <li><span class="check">&#10003;</span> Still thriving despite every institutional attack</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="zcash-quote-box fade-in">
+                <p>"A privacy tool that governments are comfortable with is not a privacy tool. It is a compliance tool with privacy branding."</p>
+                <div class="quote-attr">&mdash; Observed across cypherpunk discourse</div>
+            </div>
+        </div>
+
+        <!-- ======== 4.6 Chainalysis & ZCash ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-chainalysis">
+            <div class="zcash-subsection-label">4.6 &mdash; Surveillance Compatibility</div>
+            <div class="zcash-subsection-title">Chainalysis and ZCash: Already Traced</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    <strong>Chainalysis, Elliptic, and CipherTrace</strong> all support ZCash transparent address tracing. Since approximately 85-90% of ZCash value sits in transparent pools, blockchain surveillance firms can trace the vast majority of ZEC flows with the same fidelity they trace Bitcoin. This is not speculation &mdash; Chainalysis lists ZCash as a supported asset in its compliance products marketed to exchanges, banks, and law enforcement agencies.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The shielded pool presents a harder target, but its small size creates a different vulnerability: <strong>statistical deanonymization</strong>. When only ~10% of transactions use shielding, the anonymity set is small enough that timing analysis, amount correlation, and intersection attacks can narrow down participants. If you shield 47.3 ZEC at 3:14 PM and someone unshields 47.3 ZEC at 3:22 PM, the correlation is trivially observable. In a system where everyone shields, this analysis fails because there are millions of possible matches. In ZCash's small shielded pool, the math works against the user.
+                </p>
+                <p>
+                    Academic research has repeatedly demonstrated these attacks. A 2018 study by researchers at University College London found that <strong>the vast majority of ZCash shielded transactions could be linked to transparent addresses</strong> using basic heuristics &mdash; because users shield from transparent addresses and then unshield back to transparent addresses, creating a "U-turn" pattern that reveals the entire flow.
+                </p>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">3+</div>
+                    <div class="zcash-stat-desc">Major chain analysis firms that trace ZCash</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~90%</div>
+                    <div class="zcash-stat-desc">ZEC flows visible to surveillance tools</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num green">$625K</div>
+                    <div class="zcash-stat-desc">IRS bounty to trace Monero (still unclaimed)</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">The "U-Turn" Attack</div>
+                <p>
+                    A user sends 10 ZEC from a transparent address (t1ABC) to a shielded address (zXYZ). Later, 10 ZEC is unshielded from the shielded pool to transparent address (t1DEF). <strong>Blockchain analysts match the amount, timing, and pool entry/exit to link t1ABC to t1DEF.</strong> The shielding provided zero effective privacy. This pattern accounts for a large percentage of ZCash "shielded" activity. In Monero, there are no transparent addresses, no pools to enter or exit, and no amounts visible to correlate. The attack surface simply does not exist.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== 4.7 Governance Split ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-governance">
+            <div class="zcash-subsection-label">4.7 &mdash; Governance Fracture</div>
+            <div class="zcash-subsection-title">The Zcash Foundation vs. ECC Split</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash's governance has been defined by a persistent tension between its two funded entities: the <strong>Electric Coin Company (ECC)</strong>, the for-profit company that builds the reference implementation (zcashd), and the <strong>Zcash Foundation</strong>, a 501(c)(3) nonprofit that was established to provide a counterbalance to ECC's corporate control.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    In theory, this dual structure provides checks and balances. In practice, it has produced <strong>public disagreements, competing roadmaps, and governance paralysis</strong>. The two organizations have clashed over the Dev Fund allocation, protocol priorities, the transition to proof-of-stake, and the fundamental question of whether ZCash should prioritize regulatory compliance or privacy.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The Foundation developed its own node implementation (<strong>Zebra</strong>, written in Rust) partly to reduce dependence on ECC's zcashd. This created a situation where the two funded entities were building competing infrastructure for the same chain, duplicating effort rather than collaborating. The Foundation pushed for community governance reforms while the ECC resisted changes that might reduce its funding or control.
+                </p>
+                <p>
+                    When <strong>Zooko Wilcox stepped down as ECC CEO in 2024</strong>, the leadership vacuum deepened the crisis. The new ECC leadership faced declining ZEC price, shrinking Dev Fund revenue (because the tax is denominated in ZEC), and a demoralized community. Proposals for a new funding mechanism for the next halving cycle generated fierce debate, with some community members advocating for ending the Dev Fund entirely.
+                </p>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">Single Point of Failure</div>
+                <p>
+                    The fundamental problem is that ZCash <strong>depends on funded institutions for its survival</strong>. If the ECC runs out of money or the Foundation dissolves, who maintains the protocol? Monero has no such dependency. Its development is distributed across dozens of independent contributors funded ad-hoc through the CCS. No single entity can shut down Monero development because no single entity controls it. ZCash's governance is a corporate org chart. Monero's governance is an open-source bazaar.
+                </p>
+            </div>
+
+            <div class="zcash-quote-box fade-in">
+                <p>"Decentralization is not two organizations arguing over a shared treasury. Decentralization is no treasury, no organizations, and no arguments &mdash; just code, contributors, and consensus."</p>
+                <div class="quote-attr">&mdash; Monero community perspective on ZCash governance</div>
+            </div>
+        </div>
+
+        <!-- ======== 4.8 Supply Audit Problem ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-supply">
+            <div class="zcash-subsection-label">4.8 &mdash; The Unauditable Supply</div>
+            <div class="zcash-subsection-title">The Counterfeiting Problem: Can You Prove Nobody Printed Free Money?</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    In February 2019, the Zcash team disclosed a <strong>critical vulnerability in the original Sprout shielded pool</strong> that had existed since launch. The bug, present in the cryptographic circuit used by the Sprout zk-SNARK proofs, could have allowed an attacker to <strong>create counterfeit ZEC from nothing</strong> &mdash; minting coins that never existed, completely invisibly. Because shielded balances are hidden by design, the forged coins would have been indistinguishable from legitimately mined ZEC.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The ECC stated that they found no evidence of exploitation. But this claim contains a logical contradiction: <strong>the entire point of the shielded pool is that balances are hidden.</strong> If counterfeit coins were created, they would look identical to real coins. There is no mechanism &mdash; none &mdash; to audit the total supply of ZEC in the shielded pool and verify it matches expected issuance. The ECC's assurance requires trusting them, which is exactly what cryptocurrency was designed to eliminate.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The fix was deployed quietly as part of the Sapling upgrade, before the vulnerability was publicly disclosed. This meant the ZCash network was running with a known-broken cryptographic circuit for approximately <strong>two years</strong> while the ECC prepared the fix in private. Responsible disclosure is standard practice in security, but the two-year window leaves an uncomfortable question: who else knew?
+                </p>
+                <p>
+                    This vulnerability is not merely historical. It reveals a <strong>structural risk inherent to ZCash's design</strong>: any bug in the shielded pool's cryptographic proofs could silently inflate the supply, and there is no way for external auditors, node operators, or users to detect it. The shielded pool is a black box by construction.
+                </p>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~2 yrs</div>
+                    <div class="zcash-stat-desc">Sprout counterfeiting bug existed before disclosure</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">0</div>
+                    <div class="zcash-stat-desc">Ways to independently audit shielded ZEC supply</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num green">Yes</div>
+                    <div class="zcash-stat-desc">Monero supply is fully auditable via key images</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout-green fade-in">
+                <div class="zcash-callout-title">Monero's Supply Auditability</div>
+                <p>
+                    Monero solves this problem elegantly. While transaction amounts are hidden using <strong>RingCT (Ring Confidential Transactions)</strong>, every Monero transaction includes a cryptographic proof (Pedersen commitments) that the inputs and outputs balance &mdash; meaning no new coins are created. Additionally, <strong>key images</strong> prevent double-spending and allow anyone to verify that no coin has been spent twice. The total supply can be verified by summing coinbase (mining) rewards, which are transparent. Monero achieves the seemingly impossible: <strong>hidden amounts with provable supply integrity</strong>. ZCash chose hidden amounts with unverifiable supply integrity.
+                </p>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">The Fundamental Question</div>
+                <p>
+                    <strong>Would you store your wealth in a currency where someone might have already printed unlimited free money, and there is no way to check?</strong> This is not a theoretical concern. The Sprout bug proved the attack vector exists. The shielded pool's opacity means exploitation is undetectable. ZCash asks you to trust that it did not happen. Sound money requires verification, not trust.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== Final Comprehensive Comparison ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-verdict">
+            <div class="zcash-subsection-label">4.9 &mdash; The Verdict</div>
+            <div class="zcash-subsection-title">Comprehensive Comparison: ZCash vs. Monero</div>
+
+            <div class="zcash-prose">
+                <p>
+                    When you examine every dimension &mdash; history, funding, cryptography, on-chain data, governance, regulatory posture, and supply integrity &mdash; the conclusion is inescapable. ZCash is not a privacy coin. It is a transparent coin with an optional, underused privacy feature and a corporate entity that profits from the ambiguity. Monero is the real thing.
+                </p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-card xmr-card fade-in">
+                    <div class="comparison-card-title">Monero (XMR)</div>
+                    <ul class="feature-list">
+                        <li><span class="check">&#10003;</span> No company, no CEO, no investors, no board</li>
+                        <li><span class="check">&#10003;</span> No premine, no founders' reward, no dev tax</li>
+                        <li><span class="check">&#10003;</span> 100% private by default &mdash; every transaction, always</li>
+                        <li><span class="check">&#10003;</span> No trusted setup &mdash; never has, never will</li>
+                        <li><span class="check">&#10003;</span> Community-funded via CCS (milestone-based)</li>
+                        <li><span class="check">&#10003;</span> ASIC-resistant (RandomX) &mdash; CPU-minable</li>
+                        <li><span class="check">&#10003;</span> Tail emission (0.6 XMR/block) &mdash; permanent security</li>
+                        <li><span class="check">&#10003;</span> IRS $625K bounty &mdash; still unclaimed</li>
+                        <li><span class="check">&#10003;</span> Delisted from 73+ exchanges &mdash; still thriving</li>
+                        <li><span class="check">&#10003;</span> Truly fungible &mdash; no tainted coins possible</li>
+                        <li><span class="check">&#10003;</span> Supply auditable via Pedersen commitments &amp; key images</li>
+                        <li><span class="check">&#10003;</span> FCMP++ will make anonymity set = entire chain</li>
+                        <li><span class="check">&#10003;</span> Decentralized governance &mdash; no single point of failure</li>
+                        <li><span class="check">&#10003;</span> 89% darknet vendor preference &mdash; real-world validation</li>
+                    </ul>
+                </div>
+                <div class="comparison-card zec-card fade-in">
+                    <div class="comparison-card-title">ZCash (ZEC)</div>
+                    <ul class="feature-list">
+                        <li><span class="cross">&#10007;</span> ECC (for-profit company) controls development</li>
+                        <li><span class="cross">&#10007;</span> 20% dev tax since genesis (~3.5M ZEC to insiders)</li>
+                        <li><span class="cross">&#10007;</span> ~90% of transactions are fully transparent</li>
+                        <li><span class="cross">&#10007;</span> Required trusted setup (Sprout &amp; Sapling pools)</li>
+                        <li><span class="cross">&#10007;</span> VC-funded (Pantera, DCG, Naval, Voorhees)</li>
+                        <li><span class="cross">&#10007;</span> ASIC-dominated mining &mdash; centralized hashrate</li>
+                        <li><span class="cross">&#10007;</span> Halving schedule, no tail emission</li>
+                        <li><span class="cross">&#10007;</span> Listed on Gemini, Coinbase &mdash; regulators unconcerned</li>
+                        <li><span class="cross">&#10007;</span> ECC vs Foundation governance split</li>
+                        <li><span class="cross">&#10007;</span> Transparent coins fully traceable by Chainalysis</li>
+                        <li><span class="cross">&#10007;</span> Supply in shielded pool is unauditable</li>
+                        <li><span class="cross">&#10007;</span> Sprout counterfeiting bug existed for ~2 years</li>
+                        <li><span class="cross">&#10007;</span> "Regulatory friendly" = privacy is not the priority</li>
+                        <li><span class="cross">&#10007;</span> ZEC price down ~97% from ATH &mdash; market has spoken</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in" style="margin-top: 2rem;">
+                <div class="zcash-callout-title">Final Assessment</div>
+                <p>
+                    ZCash is privacy theater: the appearance of privacy for marketing purposes, without the substance. Its optional model ensures the shielded pool is a conspicuous minority. Its corporate structure ensures regulatory compliance takes priority over user privacy. Its trusted setup history and supply auditability gap introduce trust requirements that contradict the foundational promise of cryptocurrency. <strong>Monero is privacy by default, privacy by design, and privacy without compromise.</strong> There is no comparison.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 5: Demand Thesis       -->
+    <!-- ============================== -->
+    <section class="section" id="demand">
+        <div class="section-label">Section 05 &mdash; Demand Thesis 2026&ndash;2030</div>
+        <h2 class="section-title">Six Demand Drivers</h2>
+        <p class="section-intro">
+            Each driver is independent. Together, they form a compounding demand loop that no delisting, no regulation, and no competitor can break.
+        </p>
+
+        <div class="drivers-grid">
+            <!-- Driver 1 -->
+            <div class="driver-card fade-in" data-driver="catalyst">
+                <span class="driver-icon">&#9889;</span>
+                <div class="driver-number">Driver 01</div>
+                <div class="driver-title">The Catalyst</div>
+                <p class="driver-text">
+                    January 2026: XMR hit ~$800 -- a 195% surge driven by a perfect storm of political shift, technical breakout, Zcash collapse, and the privacy paradox vindicated. Retraced 57% on exchange delistings, but the pattern holds: higher lows every cycle.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip">~$800 ATH</span>
+                    <span class="stat-chip green">+195%</span>
+                    <span class="stat-chip red">-57% retrace</span>
+                    <span class="stat-chip">Higher lows</span>
+                </div>
+            </div>
+
+            <!-- Driver 2 -->
+            <div class="driver-card fade-in" data-driver="regulation">
+                <span class="driver-icon">&#128220;</span>
+                <div class="driver-number">Driver 02</div>
+                <div class="driver-title">CLARITY &amp; GENIUS Acts</div>
+                <p class="driver-text">
+                    Form 1099-DA. Expanded broker reporting from 2026. EU DAC8 went live January 2026. Every new reporting mandate is free marketing for Monero -- the one asset that makes surveillance moot.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip red">1099-DA</span>
+                    <span class="stat-chip">2026+ reporting</span>
+                    <span class="stat-chip purple">EU DAC8 live</span>
+                    <span class="stat-chip">Free XMR marketing</span>
+                </div>
+            </div>
+
+            <!-- Driver 3 -->
+            <div class="driver-card fade-in" data-driver="geopolitical">
+                <span class="driver-icon">&#127758;</span>
+                <div class="driver-number">Driver 03</div>
+                <div class="driver-title">Geopolitical Pressure</div>
+                <p class="driver-text">
+                    Iran's IRGC holds $3B+ in crypto. Mining arbitrage makes XMR cost $1,320 vs BTC's $68K. Sanctions evasion surged 694%. $154B in illicit flows. As BTC gets traced, state actors migrate to untraceable assets.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip">IRGC $3B+</span>
+                    <span class="stat-chip green">$1,320 mining cost</span>
+                    <span class="stat-chip red">694% evasion surge</span>
+                    <span class="stat-chip">$154B illicit</span>
+                </div>
+            </div>
+
+            <!-- Driver 4 -->
+            <div class="driver-card fade-in" data-driver="darknet">
+                <span class="driver-icon">&#128375;</span>
+                <div class="driver-number">Driver 04</div>
+                <div class="driver-title">Darknet Dominance</div>
+                <p class="driver-text">
+                    48% of new darknet markets launch XMR-exclusive. 89% of vendors prefer or mandate Monero. $450M+ monthly volume. BTC is being actively phased out -- the market voted with its wallet.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip">48% XMR-exclusive</span>
+                    <span class="stat-chip green">89% prefer XMR</span>
+                    <span class="stat-chip">$450M+ / month</span>
+                    <span class="stat-chip red">BTC phased out</span>
+                </div>
+            </div>
+
+            <!-- Driver 5 -->
+            <div class="driver-card fade-in" data-driver="cbdc">
+                <span class="driver-icon">&#127974;</span>
+                <div class="driver-number">Driver 05</div>
+                <div class="driver-title">CBDC Surveillance Wave</div>
+                <p class="driver-text">
+                    91% of 93 central banks are investigating or piloting CBDCs. 41% of ECB public comments raised privacy concerns. Every government digital currency launched is a new advertisement for Monero.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip cyan">91% of central banks</span>
+                    <span class="stat-chip">93 CBDCs investigated</span>
+                    <span class="stat-chip purple">41% ECB privacy fear</span>
+                    <span class="stat-chip green">Each CBDC = XMR demand</span>
+                </div>
+            </div>
+
+            <!-- Driver 6 -->
+            <div class="driver-card fade-in" data-driver="technical">
+                <span class="driver-icon">&#9881;</span>
+                <div class="driver-number">Driver 06</div>
+                <div class="driver-title">Technical Upgrades</div>
+                <p class="driver-text">
+                    FCMP++ (targeting Q2-Q3 2026) makes the anonymity set the entire blockchain -- not a ring, the whole chain. Cuprate brings a Rust full-node. Seraphis &amp; Jamtis redesign the address and transaction layer from scratch.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip green">FCMP++</span>
+                    <span class="stat-chip cyan">Full-chain anonymity</span>
+                    <span class="stat-chip">Cuprate (Rust)</span>
+                    <span class="stat-chip purple">Seraphis &amp; Jamtis</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 6: Why XMR Threatens   -->
+    <!-- ============================== -->
+    <section class="section" id="threatens">
+        <div class="section-label">Section 06 &mdash; Why Monero Threatens the System</div>
+        <h2 class="section-title">The Surveillance Economy Cannot Coexist with Monero</h2>
+        <p class="section-intro">
+            The entire modern financial enforcement apparatus &mdash; BSA, FATF, FinCEN &mdash; rests on one assumption: that money can be traced. Monero makes that assumption mathematically false.
+        </p>
+
+        <div class="threat-text fade-in">
+            <p>
+                Every pillar of state financial control depends on transaction visibility. <strong>Monetary policy enforcement</strong> requires knowing who holds what. <strong>Tax collection</strong> requires knowing who earned what. <strong>Sanctions enforcement</strong> requires knowing who sent what to whom. <strong>Credit scoring</strong> requires knowing spending patterns. <strong>Petrodollar maintenance</strong> requires controlling the channels of international settlement. Monero breaks every single one of these by making the fundamental data &mdash; sender, receiver, amount &mdash; cryptographically invisible.
+            </p>
+        </div>
+
+        <div class="threat-grid">
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#127974;</span>
+                <div class="threat-title">Monetary Policy</div>
+                <div class="threat-desc">Cannot track money supply distribution or enforce capital controls</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#128176;</span>
+                <div class="threat-title">Tax Collection</div>
+                <div class="threat-desc">Cannot identify taxable events or link wallets to identities</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#127760;</span>
+                <div class="threat-title">Sanctions</div>
+                <div class="threat-desc">Cannot block or trace cross-border payments to embargoed entities</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#128202;</span>
+                <div class="threat-title">Credit Scoring</div>
+                <div class="threat-desc">Cannot profile spending behavior or build financial dossiers</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#9981;</span>
+                <div class="threat-title">Petrodollar</div>
+                <div class="threat-desc">Cannot enforce USD settlement requirements on international trade</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 7: What 2027+ Looks Like -->
+    <!-- ============================== -->
+    <section class="section" id="future">
+        <div class="section-label">Section 07 &mdash; What 2027+ Looks Like</div>
+        <h2 class="section-title">Three Paths Diverge</h2>
+        <p class="section-intro">
+            The crypto ecosystem is splitting into three categories. Only one preserves the original cypherpunk promise.
+        </p>
+
+        <div class="future-cols">
+            <div class="future-card surveilled fade-in">
+                <div class="future-card-label">The Compliant Path</div>
+                <div class="future-card-title">BTC / ETH / SOL</div>
+                <div class="future-card-text">
+                    Fully integrated into the surveillance-banking complex. ETF custody, IRS reporting, Travel Rule compliance, chain analysis partnerships. Ownership is permitted and encouraged. Privacy is structurally impossible. These assets serve the existing financial system &mdash; they do not challenge it.
+                </div>
+            </div>
+            <div class="future-card theater fade-in">
+                <div class="future-card-label">Privacy Theater</div>
+                <div class="future-card-title">ZCash</div>
+                <div class="future-card-text">
+                    Optional privacy that ~90% of users never enable. VC-backed, company-controlled, trusted-setup-dependent. Listed on compliant exchanges precisely because regulators do not consider it a threat. The transparent default makes the "shielded" option a flag, not a shield.
+                </div>
+            </div>
+            <div class="future-card free fade-in">
+                <div class="future-card-label">Actual Privacy</div>
+                <div class="future-card-title">Monero</div>
+                <div class="future-card-text">
+                    Default, mandatory, mathematically unbreakable privacy for every transaction. No company controls it. No trusted setup. No opt-in. Delisted from 73+ exchanges and thriving. The only cryptocurrency that forces privacy &mdash; because optional privacy is no privacy at all.
+                </div>
+            </div>
+        </div>
+
+        <div class="closing-quote fade-in">
+            <blockquote>
+                "The question isn't whether you have something to hide. The question is whether you have the right to decide what you reveal."
+            </blockquote>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- Meta Thesis                    -->
+    <!-- ============================== -->
+    <section class="meta-thesis">
+        <div class="thesis-box scale-in">
+            <div class="thesis-label">Meta-Thesis</div>
+            <h2 class="thesis-headline">Structural Inevitability</h2>
+            <p class="thesis-body">
+                Transparent crypto is becoming the regulated norm. Surveillance is expanding at every layer -- exchanges, tax reporting, on-chain analytics, CBDCs. The logical endpoint is not hard to see: <strong>organic, structural demand for the one asset that opts out.</strong>
+            </p>
+            <p class="thesis-body">
+                73 exchanges delisted Monero in 2025. On-chain activity stayed flat or grew. Tail emission sits at ~0.6 XMR per block -- barely a trickle. <strong>Shrinking accessible supply meets growing structural demand.</strong> That is not a trade. That is a thesis.
+            </p>
+            <div class="thesis-pillars">
+                <div class="pillar">
+                    <div class="pillar-icon">&#128683;</div>
+                    <div class="pillar-value">73</div>
+                    <div class="pillar-label">Exchanges delisted (2025)</div>
+                </div>
+                <div class="pillar">
+                    <div class="pillar-icon">&#128200;</div>
+                    <div class="pillar-value">Flat/Grew</div>
+                    <div class="pillar-label">On-chain activity</div>
+                </div>
+                <div class="pillar">
+                    <div class="pillar-icon">&#9935;</div>
+                    <div class="pillar-value">~0.6 XMR</div>
+                    <div class="pillar-label">Tail emission / block</div>
+                </div>
+                <div class="pillar">
+                    <div class="pillar-icon">&#128201;</div>
+                    <div class="pillar-value">6 Drivers</div>
+                    <div class="pillar-label">Compounding demand</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 8: Technical Deep Dive -->
+    <!-- ============================== -->
+    <section class="section" id="tech-compare">
+        <div class="section-label">Section 08 &mdash; Technical Deep Dive</div>
+        <h2 class="section-title">Monero vs. ZCash: Feature Comparison</h2>
+        <p class="section-intro">
+            A side-by-side technical analysis of the two most-cited privacy cryptocurrencies.
+        </p>
+
+        <div class="tech-table-wrap fade-in">
+            <table class="tech-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Monero (XMR)</th>
+                        <th>ZCash (ZEC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Privacy Model</td>
+                        <td class="positive">Default &mdash; mandatory on all txns</td>
+                        <td class="negative">Optional &mdash; ~10% use shielded</td>
+                    </tr>
+                    <tr>
+                        <td>Sender Privacy</td>
+                        <td class="positive">Ring signatures (16 decoys)</td>
+                        <td class="negative">Only in shielded-to-shielded txns</td>
+                    </tr>
+                    <tr>
+                        <td>Receiver Privacy</td>
+                        <td class="positive">Stealth addresses (every txn)</td>
+                        <td class="negative">Only in shielded pool</td>
+                    </tr>
+                    <tr>
+                        <td>Amount Privacy</td>
+                        <td class="positive">RingCT (always hidden)</td>
+                        <td class="negative">Only in shielded txns</td>
+                    </tr>
+                    <tr>
+                        <td>IP Privacy</td>
+                        <td class="positive">Dandelion++ (built-in)</td>
+                        <td class="negative">None (requires external Tor)</td>
+                    </tr>
+                    <tr>
+                        <td>Trusted Setup</td>
+                        <td class="positive">None required</td>
+                        <td class="negative">Required &mdash; unverifiable</td>
+                    </tr>
+                    <tr>
+                        <td>Governance</td>
+                        <td class="positive">Decentralized community</td>
+                        <td class="negative">ECC + Zcash Foundation</td>
+                    </tr>
+                    <tr>
+                        <td>Funding</td>
+                        <td class="positive">Community Crowdfunding (CCS)</td>
+                        <td class="negative">20% dev tax on mining</td>
+                    </tr>
+                    <tr>
+                        <td>Mining</td>
+                        <td class="positive">ASIC-resistant (RandomX / CPU)</td>
+                        <td class="negative">ASIC-dominated</td>
+                    </tr>
+                    <tr>
+                        <td>Supply Audit</td>
+                        <td class="positive">Verifiable via math (Pedersen)</td>
+                        <td class="negative">Must trust setup ceremony</td>
+                    </tr>
+                    <tr>
+                        <td>Rich List</td>
+                        <td class="positive">Impossible &mdash; no data exists</td>
+                        <td class="negative">Available for ~90% of supply</td>
+                    </tr>
+                    <tr>
+                        <td>Chain Analysis</td>
+                        <td class="positive">IRS bounty unclaimed since 2020</td>
+                        <td class="negative">Transparent txns fully traceable</td>
+                    </tr>
+                    <tr>
+                        <td>Next Upgrade</td>
+                        <td class="positive">FCMP++ &mdash; full-chain anonymity set</td>
+                        <td class="neutral">Zcash Posterity Fund discussions</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- Sources                        -->
+    <!-- ============================== -->
+    <section class="section" id="sources">
+        <div class="section-label">Sources &amp; References</div>
+        <h2 class="section-title">Further Reading</h2>
+        <ul class="sources-list" style="margin-top: 1.5rem;">
+            <li><a href="https://www.congress.gov/bill/118th-congress/house-bill/4763" target="_blank" rel="noopener">FIT21 &mdash; H.R.4763 (Congress.gov)</a></li>
+            <li><a href="https://www.congress.gov/bill/119th-congress/senate-bill/394" target="_blank" rel="noopener">GENIUS Act &mdash; S.394 (Congress.gov)</a></li>
+            <li><a href="https://www.congress.gov/bill/119th-congress/house-bill/1072" target="_blank" rel="noopener">CLARITY Act &mdash; H.R.1072 (Congress.gov)</a></li>
+            <li><a href="https://www.whitehouse.gov/presidential-actions/" target="_blank" rel="noopener">Executive Order: Strategic Bitcoin Reserve</a></li>
+            <li><a href="https://www.irs.gov/businesses/digital-assets" target="_blank" rel="noopener">IRS Digital Asset Reporting Rules</a></li>
+            <li><a href="https://www.fatf-gafi.org/en/topics/virtual-assets.html" target="_blank" rel="noopener">FATF Travel Rule &mdash; Virtual Assets</a></li>
+            <li><a href="https://www.getmonero.org/resources/research-lab/" target="_blank" rel="noopener">Monero Research Lab</a></li>
+            <li><a href="https://www.getmonero.org/2024/04/27/fcmp++.html" target="_blank" rel="noopener">FCMP++ Announcement</a></li>
+            <li><a href="https://electriccoin.co/" target="_blank" rel="noopener">Electric Coin Company (ZCash)</a></li>
+            <li><a href="https://sam.gov/opp/3b7875d5236b47f6a77f64c19251af60/view" target="_blank" rel="noopener">IRS Monero Tracing Bounty (SAM.gov)</a></li>
+            <li><a href="https://www.bis.org/publ/bppdf/bisbull86.htm" target="_blank" rel="noopener">BIS CBDC Survey &mdash; 93 Central Banks</a></li>
+            <li><a href="https://www.chainalysis.com/" target="_blank" rel="noopener">Chainalysis &mdash; Blockchain Analytics</a></li>
+            <li><a href="https://ccs.getmonero.org/" target="_blank" rel="noopener">Monero Community Crowdfunding System</a></li>
+            <li><a href="https://www.ishares.com/us/products/333011/ishares-bitcoin-trust" target="_blank" rel="noopener">BlackRock IBIT Bitcoin ETF</a></li>
+        </ul>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <a href="bottom-line.html" class="cta-link">Read the Full Bottom Line Analysis &rarr;</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <nav class="footer-nav">
+            <a href="index.html">Home</a>
+            <a href="bottom-line.html">Bottom Line</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
+        </nav>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        // Scroll-triggered fade-in animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach((entry, index) => {
+                if (entry.isIntersecting) {
+                    // Stagger animations for sibling elements
+                    const siblings = entry.target.parentElement.querySelectorAll('.fade-in, .scale-in');
+                    let delay = 0;
+                    siblings.forEach((sib, i) => {
+                        if (sib === entry.target) {
+                            delay = i * 100;
+                        }
+                    });
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, Math.min(delay, 400));
+                }
+            });
+        }, {
+            threshold: 0.12,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        document.querySelectorAll('.fade-in, .scale-in').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

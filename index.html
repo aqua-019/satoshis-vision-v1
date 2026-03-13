@@ -80,15 +80,47 @@
             transition: color 0.3s ease;
         }
 
-        .nav-links a:hover {
-            color: var(--btc-orange);
+        .nav-links a:hover, .nav-links a.nav-active {
+            color: var(--xmr-orange);
         }
+
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
+        }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
+            padding: 0.5rem 0; min-width: 160px;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            margin-top: 0.75rem;
+        }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a {
+            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
+            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
+        }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
 
         .price-ticker {
             display: flex;
             gap: 1.5rem;
             font-family: var(--font-mono);
             font-size: 0.8rem;
+            align-items: center;
+        }
+
+        .price-ticker .live-dot {
+            width: 6px; height: 6px; border-radius: 50%; background: #00D26A;
+            animation: live-pulse 2s ease-in-out infinite; flex-shrink: 0;
+        }
+        @keyframes live-pulse {
+            0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(0,210,106,0); }
+            50% { opacity: 1; box-shadow: 0 0 8px 2px rgba(0,210,106,0.4); }
         }
 
         .price-item {
@@ -605,48 +637,75 @@
 
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            margin-bottom: 4rem;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            max-width: 1100px;
+            margin: 0 auto 3rem;
+        }
+
+        @media (max-width: 900px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         .stat-card {
             background: var(--card-bg);
-            padding: 2rem;
+            padding: 1.25rem 1rem;
             text-align: center;
-            border-bottom: 3px solid var(--btc-orange);
+            border-bottom: 2px solid var(--btc-orange);
+            border-left: 1px solid var(--grey-18);
+            border-right: 1px solid var(--grey-18);
+            border-top: 1px solid var(--grey-18);
         }
 
         .stat-value {
             font-family: var(--font-display);
-            font-size: clamp(2.5rem, 5vw, 3.5rem);
+            font-size: clamp(1.6rem, 3vw, 2.2rem);
             font-weight: 700;
             background: linear-gradient(135deg, var(--btc-orange), var(--btc-gold));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
-            margin-bottom: 0.5rem;
+            margin-bottom: 0.3rem;
+            line-height: 1.2;
         }
 
         .stat-label {
             font-family: var(--font-mono);
-            font-size: 0.85rem;
+            font-size: 0.7rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 0.5px;
+            line-height: 1.3;
+        }
+
+        .stat-subtext {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            opacity: 0.6;
+            margin-top: 0.25rem;
         }
 
         /* Advanced Analytics Dashboard */
         .analytics-dashboard {
             background: var(--card-bg);
-            padding: 1.5rem;
+            padding: 2rem;
             margin: 2rem auto;
             max-width: 1100px;
+            border: 1px solid var(--grey-18);
         }
 
         .dashboard-header {
             text-align: center;
-            margin-bottom: 2.5rem;
+            margin-bottom: 2rem;
         }
 
         .dashboard-title {
@@ -664,31 +723,32 @@
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 2rem;
+            gap: 1.25rem;
+        }
+
+        .dashboard-panel-title {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+            text-align: center;
         }
 
         /* Donut Chart */
         .donut-container {
             background: var(--dark-bg);
-            padding: 1.5rem;
+            padding: 1.25rem;
             display: flex;
             flex-direction: column;
             align-items: center;
         }
 
-        .donut-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-        }
-
         .donut-chart {
             position: relative;
-            width: 180px;
-            height: 180px;
+            width: 170px;
+            height: 170px;
         }
 
         .donut-chart svg {
@@ -705,7 +765,7 @@
             fill: none;
             stroke-width: 20;
             stroke-linecap: butt;
-            transition: stroke-dasharray 1.5s ease;
+            transition: stroke-dasharray 1.5s ease, stroke-dashoffset 1.5s ease;
         }
 
         .donut-segment.legitimate {
@@ -726,108 +786,161 @@
 
         .donut-value {
             font-family: var(--font-display);
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 700;
             color: var(--btc-orange);
         }
 
         .donut-label {
             font-family: var(--font-mono);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-secondary);
         }
 
-        /* Stacked Area Chart */
-        .area-container {
-            background: var(--dark-bg);
-            padding: 1.5rem;
-        }
-
-        .area-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-
-        .area-chart {
-            height: 160px;
+        .donut-legend {
             display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            padding: 0 0.5rem;
+            gap: 1.25rem;
+            margin-top: 0.75rem;
         }
 
-        .area-bar {
-            flex: 1;
+        .donut-legend-item {
             display: flex;
-            flex-direction: column;
             align-items: center;
-            gap: 4px;
-        }
-
-        .area-bar-stack {
-            width: 100%;
-            display: flex;
-            flex-direction: column-reverse;
-            border-radius: 2px 2px 0 0;
-            overflow: hidden;
-        }
-
-        .area-bar-legit {
-            background: linear-gradient(180deg, var(--btc-orange), var(--btc-gold));
-            transition: height 1s ease;
-        }
-
-        .area-bar-illicit {
-            background: #FF4757;
-            transition: height 1s ease;
-        }
-
-        .area-bar-year {
+            gap: 0.4rem;
             font-family: var(--font-mono);
             font-size: 0.65rem;
             color: var(--text-secondary);
-            margin-top: 0.5rem;
         }
+
+        .donut-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .donut-legend-dot.leg { background: var(--btc-orange); }
+        .donut-legend-dot.ill { background: #FF4757; }
+
+        /* SVG Area Chart */
+        .svgchart-container {
+            background: var(--dark-bg);
+            padding: 1.25rem;
+        }
+
+        .svgchart-wrap {
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .svgchart-wrap svg {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .chart-grid-line {
+            stroke: var(--grey-18);
+            stroke-width: 0.5;
+        }
+
+        .chart-axis-label {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 9px;
+            fill: #666;
+        }
+
+        .chart-total-area {
+            fill: url(#totalAreaGrad);
+            opacity: 0;
+            transition: opacity 1.5s ease;
+        }
+
+        .chart-total-line {
+            fill: none;
+            stroke: var(--btc-orange);
+            stroke-width: 2;
+            stroke-dasharray: 500;
+            stroke-dashoffset: 500;
+            transition: stroke-dashoffset 2s ease;
+        }
+
+        .chart-illicit-line {
+            fill: none;
+            stroke: #FF4757;
+            stroke-width: 2;
+            stroke-dasharray: 500;
+            stroke-dashoffset: 500;
+            transition: stroke-dashoffset 2s ease;
+        }
+
+        .chart-dot {
+            opacity: 0;
+            transition: opacity 0.5s ease;
+        }
+
+        .chart-animated .chart-total-area {
+            opacity: 0.3;
+        }
+
+        .chart-animated .chart-total-line,
+        .chart-animated .chart-illicit-line {
+            stroke-dashoffset: 0;
+        }
+
+        .chart-animated .chart-dot {
+            opacity: 1;
+        }
+
+        .svgchart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 0.75rem;
+        }
+
+        .svgchart-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+        }
+
+        .svgchart-legend-line {
+            width: 16px;
+            height: 2px;
+        }
+
+        .svgchart-legend-line.total { background: var(--btc-orange); }
+        .svgchart-legend-line.illicit { background: #FF4757; }
 
         /* Breakdown Cards */
         .breakdown-container {
             background: var(--dark-bg);
-            padding: 1.5rem;
-        }
-
-        .breakdown-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-            text-align: center;
+            padding: 1.25rem;
         }
 
         .breakdown-list {
             display: flex;
             flex-direction: column;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
 
         .breakdown-item {
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
 
         .breakdown-bar-track {
             flex: 1;
-            height: 24px;
+            height: 22px;
             background: var(--grey-18);
             position: relative;
             overflow: hidden;
+            border-radius: 3px;
         }
 
         .breakdown-bar-fill {
@@ -836,10 +949,20 @@
             align-items: center;
             padding-left: 0.5rem;
             transition: width 1.2s ease;
+            min-width: 2px;
+            border-radius: 0 2px 2px 0;
         }
 
         .breakdown-bar-fill.scams {
             background: linear-gradient(90deg, #FF6B6B, #FF4757);
+        }
+
+        .breakdown-bar-fill.sanctions {
+            background: linear-gradient(90deg, #3498DB, #2980B9);
+        }
+
+        .breakdown-bar-fill.stolen {
+            background: linear-gradient(90deg, #F39C12, #E67E22);
         }
 
         .breakdown-bar-fill.darknet {
@@ -851,102 +974,213 @@
         }
 
         .breakdown-bar-fill.fraud {
-            background: linear-gradient(90deg, #F39C12, #E67E22);
+            background: linear-gradient(90deg, #1ABC9C, #16A085);
         }
 
-        .breakdown-bar-fill.sanctions {
-            background: linear-gradient(90deg, #3498DB, #2980B9);
+        .breakdown-bar-fill.csam {
+            background: linear-gradient(90deg, #95A5A6, #7F8C8D);
         }
 
         .breakdown-bar-label {
             font-family: var(--font-mono);
-            font-size: 0.7rem;
+            font-size: 0.62rem;
             color: white;
             white-space: nowrap;
         }
 
-        .breakdown-value {
+        .breakdown-pct {
             font-family: var(--font-mono);
-            font-size: 0.8rem;
-            color: var(--text-primary);
-            min-width: 50px;
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            min-width: 28px;
             text-align: right;
         }
 
-        /* Comparison Gauge */
-        .gauge-container {
+        .breakdown-value {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-primary);
+            min-width: 45px;
+            text-align: right;
+        }
+
+        /* TradFi Comparison Panel */
+        .tradfi-container {
             background: var(--dark-bg);
-            padding: 1.5rem;
+            padding: 1.25rem;
+        }
+
+        .tradfi-bars {
             display: flex;
             flex-direction: column;
-            align-items: center;
-        }
-
-        .gauge-title {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 1rem;
-        }
-
-        .gauge-row {
-            display: flex;
-            align-items: center;
             gap: 1rem;
-            width: 100%;
             margin-bottom: 1rem;
         }
 
-        .gauge-label {
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            width: 80px;
+        .tradfi-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
         }
 
-        .gauge-track {
-            flex: 1;
-            height: 12px;
+        .tradfi-row-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .tradfi-label {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-primary);
+        }
+
+        .tradfi-pct {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 500;
+        }
+
+        .tradfi-track {
+            width: 100%;
+            height: 20px;
             background: var(--grey-18);
             position: relative;
             overflow: hidden;
+            border-radius: 3px;
         }
 
-        .gauge-fill {
+        .tradfi-fill {
             height: 100%;
             transition: width 1.5s ease;
+            position: relative;
+            min-width: 2px;
+            border-radius: 0 3px 3px 0;
         }
 
-        .gauge-fill.crypto {
-            background: linear-gradient(90deg, var(--btc-orange), var(--btc-gold));
-            width: 10%;
-        }
-
-        .gauge-fill.cash {
+        .tradfi-fill.tf-cash {
             background: linear-gradient(90deg, #27AE60, #2ECC71);
-            width: 50%;
         }
 
-        .gauge-fill.banks {
+        .tradfi-fill.tf-banking {
             background: linear-gradient(90deg, #3498DB, #5DADE2);
-            width: 35%;
         }
 
-        .gauge-percent {
+        .tradfi-fill.tf-crypto {
+            background: linear-gradient(90deg, var(--btc-orange), var(--btc-gold));
+        }
+
+        .tradfi-detail {
             font-family: var(--font-mono);
-            font-size: 0.8rem;
-            width: 50px;
-            text-align: right;
+            font-size: 0.6rem;
             color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        .tradfi-verdict {
+            text-align: center;
+            padding: 0.75rem;
+            background: rgba(247, 147, 26, 0.08);
+            border: 1px solid rgba(247, 147, 26, 0.2);
+            margin-top: 0.5rem;
+        }
+
+        .tradfi-verdict-text {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--btc-orange);
+        }
+
+        .tradfi-verdict-sub {
+            font-family: var(--font-mono);
+            font-size: 0.6rem;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+        }
+
+        /* Payment Method Gauge (updated) */
+        .gauge-container {
+            background: var(--dark-bg);
+            padding: 1.25rem;
+            grid-column: 1 / -1;
+        }
+
+        .gauge-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .gauge-card {
+            text-align: center;
+            padding: 1rem 0.75rem;
+            border: 1px solid var(--grey-18);
+            position: relative;
+        }
+
+        .gauge-card-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .gauge-card-method {
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .gauge-card-bar-track {
+            width: 100%;
+            height: 10px;
+            background: var(--grey-18);
+            margin-bottom: 0.5rem;
+            overflow: hidden;
+            border-radius: 5px;
+        }
+
+        .gauge-card-bar {
+            height: 100%;
+            transition: width 1.5s ease;
+            border-radius: 5px;
+            min-width: 2px;
+        }
+
+        .gauge-card-bar.gc-cash { background: linear-gradient(90deg, #27AE60, #2ECC71); }
+        .gauge-card-bar.gc-banks { background: linear-gradient(90deg, #3498DB, #5DADE2); }
+        .gauge-card-bar.gc-crypto { background: linear-gradient(90deg, var(--btc-orange), var(--btc-gold)); }
+
+        .gauge-card-pct {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .gauge-card-pct.gc-pct-cash { color: #2ECC71; }
+        .gauge-card-pct.gc-pct-banks { color: #5DADE2; }
+        .gauge-card-pct.gc-pct-crypto { color: var(--btc-orange); }
+
+        .gauge-card-detail {
+            font-family: var(--font-mono);
+            font-size: 0.58rem;
+            color: var(--text-secondary);
+            margin-top: 0.3rem;
         }
 
         .gauge-note {
             font-family: var(--font-mono);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-secondary);
             text-align: center;
-            margin-top: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--grey-18);
+        }
+
+        @media (max-width: 600px) {
+            .gauge-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         /* Dashboard Legend & Source */
@@ -954,7 +1188,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 2rem;
+            margin-top: 1.5rem;
             padding-top: 1rem;
             border-top: 1px solid var(--grey-18);
             flex-wrap: wrap;
@@ -972,12 +1206,12 @@
             align-items: center;
             gap: 0.5rem;
             font-family: var(--font-mono);
-            font-size: 0.75rem;
+            font-size: 0.7rem;
         }
 
         .legend-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
         }
 
         .legend-dot.legitimate {
@@ -990,7 +1224,7 @@
 
         .dashboard-source {
             font-family: var(--font-mono);
-            font-size: 0.7rem;
+            font-size: 0.65rem;
             color: var(--text-secondary);
         }
 
@@ -1016,16 +1250,12 @@
             }
 
             .analytics-dashboard {
-                padding: 1.5rem;
+                padding: 1.25rem;
             }
 
             .donut-chart {
                 width: 150px;
                 height: 150px;
-            }
-
-            .area-chart {
-                height: 120px;
             }
         }
 
@@ -1103,10 +1333,46 @@
 
         .deep-dive-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            max-width: 1000px;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            max-width: 1100px;
             margin: 3rem auto 0;
+            justify-items: center;
+        }
+
+        .deep-dive-grid .deep-dive-card {
+            width: 100%;
+        }
+
+        /* Center the bottom row of 2 cards in a 5-card grid */
+        @supports (grid-template-columns: repeat(6, 1fr)) {
+            .deep-dive-grid {
+                grid-template-columns: repeat(6, 1fr);
+            }
+            .deep-dive-grid .deep-dive-card:nth-child(1) { grid-column: 1 / 3; }
+            .deep-dive-grid .deep-dive-card:nth-child(2) { grid-column: 3 / 5; }
+            .deep-dive-grid .deep-dive-card:nth-child(3) { grid-column: 5 / 7; }
+            .deep-dive-grid .deep-dive-card:nth-child(4) { grid-column: 2 / 4; }
+            .deep-dive-grid .deep-dive-card:nth-child(5) { grid-column: 4 / 6; }
+        }
+
+        @media (max-width: 900px) {
+            .deep-dive-grid {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+            .deep-dive-grid .deep-dive-card:nth-child(1),
+            .deep-dive-grid .deep-dive-card:nth-child(2),
+            .deep-dive-grid .deep-dive-card:nth-child(3),
+            .deep-dive-grid .deep-dive-card:nth-child(4),
+            .deep-dive-grid .deep-dive-card:nth-child(5) {
+                grid-column: auto !important;
+            }
+        }
+
+        @media (max-width: 580px) {
+            .deep-dive-grid {
+                grid-template-columns: 1fr !important;
+            }
         }
 
         .deep-dive-card {
@@ -1275,25 +1541,33 @@
 
     <!-- Navigation -->
     <nav class="nav">
-        <div class="nav-logo">₿ → ɱ</div>
+        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
         <div class="nav-links">
-            <a href="#timeline">Timeline</a>
-            <a href="#quotes">Quotes</a>
-            <a href="#stats">Statistics</a>
-            <a href="#compare">Compare</a>
-            <a href="secrets.html">Secrets</a>
-            <a href="quotes.html">Quote Archive</a>
-            <a href="bottom-line.html">The Bottom Line</a>
-            <a href="hold-monero.html">Hold Monero</a>
+            <a href="index.html" class="nav-active">Home</a>
+            <div class="nav-dropdown">
+                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="btc-xmr-education.html">Education</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
+                    <a href="future-outlook.html">2027+</a>
+                </div>
+            </div>
+            <a href="dashboard.html">Dashboard</a>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="future-outlook.html">2027+</a>
+            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
         </div>
         <div class="price-ticker">
+            <span class="live-dot"></span>
             <div class="price-item">
-                <span class="price-label">BTC/USD</span>
+                <span class="price-label">BTC</span>
                 <span class="price-value" id="btc-price">—</span>
                 <span class="price-change" id="btc-change"></span>
             </div>
             <div class="price-item">
-                <span class="price-label">XMR/USD</span>
+                <span class="price-label">XMR</span>
                 <span class="price-value" id="xmr-price">—</span>
                 <span class="price-change" id="xmr-change"></span>
             </div>
@@ -1312,15 +1586,18 @@
 
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
-        <a href="#timeline" onclick="toggleMenu()">Timeline</a>
-        <a href="#quotes" onclick="toggleMenu()">Quotes</a>
-        <a href="#stats" onclick="toggleMenu()">Statistics</a>
-        <a href="#compare" onclick="toggleMenu()">Compare</a>
-        <a href="secrets.html">Secrets</a>
-        <a href="quotes.html">The Bottom Line</a>
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
+        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
         <div class="mobile-prices">
-            <div>BTC/USD: <span id="btc-price-mobile">—</span></div>
-            <div>XMR/USD: <span id="xmr-price-mobile">—</span></div>
+            <div>BTC: <span id="btc-price-mobile">—</span></div>
+            <div>XMR: <span id="xmr-price-mobile">—</span></div>
             <div>BTC/XMR: <span id="btc-xmr-ratio-mobile">—</span></div>
         </div>
     </div>
@@ -1328,19 +1605,23 @@
     <!-- Hero -->
     <section class="hero">
         <div class="hero-content">
-            <div class="hero-eyebrow">A Study in Privacy Evolution</div>
+            <div class="hero-eyebrow">Cypherpunk Perfection</div>
             <h1 class="hero-title">
-                From <span class="highlight-btc">Bitcoin's</span> Vision<br>
-                to <span class="highlight-xmr">Monero's</span> Reality
+                Satoshi Built the <span class="highlight-btc">Vision</span>.<br>
+                <span class="highlight-xmr">Monero</span> Is the Reality.
             </h1>
+            <p class="hero-subtitle" style="font-size: 1.15rem; font-weight: 500; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                Private by Default. Untraceable by Design. Unstoppable by Nature.
+            </p>
             <p class="hero-subtitle">
-                In 2010, Satoshi Nakamoto described cryptographic privacy features that wouldn't exist for years. 
-                He envisioned key blinding, group signatures, and hidden transaction amounts—the exact technologies 
-                that Monero would implement four years later. This is the story of how one dream became another's foundation.
+                In 2010, Satoshi Nakamoto described key blinding, group signatures, and hidden transaction amounts —
+                cryptographic privacy features that didn't exist yet. Then he vanished. Four years later, a pseudonymous
+                author published the CryptoNote protocol, and Monero emerged — implementing every privacy primitive
+                Satoshi envisioned but couldn't build into Bitcoin.
             </p>
             <div class="hero-cta">
-                <a href="#quotes" class="btn btn-primary">Explore Satoshi's Words</a>
-                <a href="secrets.html" class="btn btn-secondary">Uncover the Threads</a>
+                <a href="bottom-line.html" class="btn btn-primary">The XMR Bottom Line</a>
+                <a href="secrets.html" class="btn btn-secondary">Uncover Satoshi's Threads</a>
             </div>
         </div>
         <div class="scroll-indicator">
@@ -1376,117 +1657,6 @@
         </div>
     </section>
 
-    <!-- Satoshi Quote Explorer -->
-    <section id="quotes">
-        <div class="section-header">
-            <div class="section-eyebrow">In His Own Words</div>
-            <h2 class="section-title">The Satoshi Quote Explorer</h2>
-            <p class="section-desc">Curated quotes weighted toward privacy discussions and Monero-predictive language.</p>
-        </div>
-        <div class="quote-explorer">
-            <div class="quote-controls">
-                <input type="text" class="quote-search" id="quoteSearch" placeholder="Search quotes...">
-                <button class="quote-btn" onclick="randomQuote()">🎲 Random</button>
-                <button class="quote-btn" id="autoPlayBtn" onclick="toggleAutoPlay()">▶ Auto-Play</button>
-                <button class="quote-btn" onclick="filterByTag('privacy')">Privacy</button>
-                <button class="quote-btn" onclick="filterByTag('technical')">Technical</button>
-                <button class="quote-btn" onclick="filterByTag('all')">All</button>
-            </div>
-            <div class="quote-display">
-                <p class="quote-text" id="quoteText">"What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments."</p>
-                <div class="quote-meta">
-                    <span class="quote-source" id="quoteSource">BitcoinTalk Thread #174 — "Not a Suggestion"</span>
-                    <span class="quote-date" id="quoteDate">August 11, 2010</span>
-                    <span class="quote-tag" id="quoteTag">privacy</span>
-                </div>
-            </div>
-            <div class="quote-counter" id="quoteCounter">Quote 1 of 18</div>
-        </div>
-    </section>
-
-    <!-- Vertical Timeline -->
-    <section id="timeline" class="timeline-section">
-        <div class="section-header">
-            <div class="section-eyebrow">Historical Context</div>
-            <h2 class="section-title">The Privacy Evolution Timeline</h2>
-            <p class="section-desc">From Satoshi's whitepaper to Monero's full-chain privacy.</p>
-        </div>
-        <div class="timeline">
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">October 2008</div>
-                <div class="timeline-title">Bitcoin Whitepaper</div>
-                <div class="timeline-desc">Satoshi publishes "Bitcoin: A Peer-to-Peer Electronic Cash System." Privacy section warns about address reuse and recommends new addresses per transaction.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">January 2009</div>
-                <div class="timeline-title">Genesis Block</div>
-                <div class="timeline-desc">Block 0 mined with the embedded message: "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks."</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">July 2010</div>
-                <div class="timeline-title">"Anonymity" Thread</div>
-                <div class="timeline-desc">BitcoinTalk Thread #82. Community debates privacy limitations. Theymos proposes mixing services. Satoshi acknowledges transparent ledger concerns.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">August 2010</div>
-                <div class="timeline-title">"Not a Suggestion" Thread</div>
-                <div class="timeline-desc">Thread #174. Satoshi describes key blinding (stealth addresses), group signatures (ring signatures), and hidden amounts—Monero's future core features.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">December 2010</div>
-                <div class="timeline-title">Satoshi's Last Post</div>
-                <div class="timeline-desc">"WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us." Final public message on BitcoinTalk.</div>
-            </div>
-            <div class="timeline-item btc fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">April 2011</div>
-                <div class="timeline-title">Final Email</div>
-                <div class="timeline-desc">"I've moved on to other things. It's in good hands with Gavin and everyone." Satoshi's last known communication.</div>
-            </div>
-            <div class="timeline-item both fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">December 2012</div>
-                <div class="timeline-title">CryptoNote Whitepaper</div>
-                <div class="timeline-desc">Nicolas van Saberhagen publishes CryptoNote protocol describing ring signatures and one-time addresses—implementing Satoshi's 2010 privacy vision.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">April 2014</div>
-                <div class="timeline-title">Monero Launch</div>
-                <div class="timeline-desc">Monero (XMR) launches as a fork of Bytecoin. Implements ring signatures for sender privacy and stealth addresses for receiver privacy.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">January 2017</div>
-                <div class="timeline-title">RingCT Activation</div>
-                <div class="timeline-desc">Ring Confidential Transactions hide transaction amounts. Completes Satoshi's vision: "If we have to hide transaction amounts..."</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">September 2020</div>
-                <div class="timeline-title">IRS $625K Bounty</div>
-                <div class="timeline-desc">U.S. IRS offers $625,000 to anyone who can break Monero's privacy. As of 2025, the bounty remains unclaimed.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">2024-2025</div>
-                <div class="timeline-title">Exchange Delistings</div>
-                <div class="timeline-desc">73+ exchanges delist Monero due to regulatory pressure. Yet XMR price rises 195% as peer-to-peer trading surges.</div>
-            </div>
-            <div class="timeline-item xmr fade-in">
-                <div class="timeline-dot"></div>
-                <div class="timeline-year">2025</div>
-                <div class="timeline-title">FCMP++ Development</div>
-                <div class="timeline-desc">Full Chain Membership Proofs in development. Will make every XMR transaction anonymous among ALL transactions ever made.</div>
-            </div>
-        </div>
-    </section>
-
     <!-- Statistics Section -->
     <section id="stats" class="stats-section">
         <div class="section-header">
@@ -1498,18 +1668,32 @@
             <div class="stat-card fade-in">
                 <div class="stat-value">&lt;1%</div>
                 <div class="stat-label">Crypto Illicit Activity</div>
+                <div class="stat-subtext">Chainalysis 2025 Report</div>
             </div>
             <div class="stat-card fade-in">
                 <div class="stat-value">$10.6T</div>
                 <div class="stat-label">Total Crypto Volume 2024</div>
+                <div class="stat-subtext">On-chain transaction value</div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-value">$2T+</div>
+                <div class="stat-label">USD Cash Laundered / Year</div>
+                <div class="stat-subtext">UN Office on Drugs & Crime</div>
             </div>
             <div class="stat-card fade-in">
                 <div class="stat-value">2-5%</div>
-                <div class="stat-label">USD Cash Illicit Use</div>
+                <div class="stat-label">TradFi Illicit Use Est.</div>
+                <div class="stat-subtext">Banking system estimate</div>
             </div>
             <div class="stat-card fade-in">
                 <div class="stat-value">$625K</div>
                 <div class="stat-label">Unclaimed IRS Bounty</div>
+                <div class="stat-subtext">Monero tracing — since 2020</div>
+            </div>
+            <div class="stat-card fade-in">
+                <div class="stat-value">0.34%</div>
+                <div class="stat-label">Crypto Share of Global Laundering</div>
+                <div class="stat-subtext">$40B of $11.6T total</div>
             </div>
         </div>
 
@@ -1517,155 +1701,260 @@
         <div class="analytics-dashboard fade-in" id="analyticsDashboard">
             <div class="dashboard-header">
                 <h3 class="dashboard-title">Cryptocurrency Crime Analytics</h3>
-                <p class="dashboard-subtitle">Real data dispels the myth — crypto is cleaner than cash</p>
+                <p class="dashboard-subtitle">Real data dispels the myth -- crypto is cleaner than cash</p>
             </div>
 
             <div class="dashboard-grid">
-                <!-- Donut Chart: Overall Split -->
+                <!-- Panel 1: Donut Chart -->
                 <div class="donut-container">
-                    <div class="donut-title">2024 Transaction Volume</div>
+                    <div class="dashboard-panel-title">2024 Transaction Volume Split</div>
                     <div class="donut-chart">
-                        <svg viewBox="0 0 180 180" width="180" height="180">
+                        <svg viewBox="0 0 170 170" width="170" height="170">
                             <defs>
                                 <linearGradient id="orangeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                                     <stop offset="0%" style="stop-color:#F7931A"/>
                                     <stop offset="100%" style="stop-color:#FFD700"/>
                                 </linearGradient>
                             </defs>
-                            <circle class="donut-ring" cx="90" cy="90" r="70"/>
-                            <circle class="donut-segment legitimate" cx="90" cy="90" r="70" 
-                                    stroke-dasharray="0 440" id="legitSegment"/>
-                            <circle class="donut-segment illicit" cx="90" cy="90" r="70" 
-                                    stroke-dasharray="0 440" id="illicitSegment"/>
+                            <circle class="donut-ring" cx="85" cy="85" r="65"/>
+                            <circle class="donut-segment legitimate" cx="85" cy="85" r="65"
+                                    stroke-dasharray="406.47 408.41" stroke-dashoffset="0" id="legitSegment"/>
+                            <circle class="donut-segment illicit" cx="85" cy="85" r="65"
+                                    stroke-dasharray="1.63 408.41" stroke-dashoffset="-406.47" id="illicitSegment"/>
                         </svg>
                         <div class="donut-center">
                             <div class="donut-value">99.6%</div>
                             <div class="donut-label">Legitimate</div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Yearly Trend Bars -->
-                <div class="area-container">
-                    <div class="area-title">Volume by Year (Trillions USD)</div>
-                    <div class="area-chart" id="areaChart">
-                        <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 60px;">
-                                <div class="area-bar-legit" style="height: 59px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
-                            <span class="area-bar-year">'19</span>
+                    <div class="donut-legend">
+                        <div class="donut-legend-item">
+                            <span class="donut-legend-dot leg"></span> $10.56T Legit
                         </div>
-                        <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 70px;">
-                                <div class="area-bar-legit" style="height: 69px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
-                            <span class="area-bar-year">'20</span>
-                        </div>
-                        <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 130px;">
-                                <div class="area-bar-legit" style="height: 129px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
-                            <span class="area-bar-year">'21</span>
-                        </div>
-                        <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 90px;">
-                                <div class="area-bar-legit" style="height: 89px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
-                            <span class="area-bar-year">'22</span>
-                        </div>
-                        <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 100px;">
-                                <div class="area-bar-legit" style="height: 99px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
-                            <span class="area-bar-year">'23</span>
-                        </div>
-                        <div class="area-bar">
-                            <div class="area-bar-stack" style="height: 140px;">
-                                <div class="area-bar-legit" style="height: 139px;"></div>
-                                <div class="area-bar-illicit" style="height: 1px;"></div>
-                            </div>
-                            <span class="area-bar-year">'24</span>
+                        <div class="donut-legend-item">
+                            <span class="donut-legend-dot ill"></span> $40.9B Illicit
                         </div>
                     </div>
                 </div>
 
-                <!-- Illicit Activity Breakdown -->
+                <!-- Panel 2: Multi-Year SVG Area/Line Chart -->
+                <div class="svgchart-container">
+                    <div class="dashboard-panel-title">Crypto Volume vs. Illicit Volume (2019-2024)</div>
+                    <div class="svgchart-wrap" id="svgChartWrap">
+                        <svg viewBox="0 0 400 200" preserveAspectRatio="xMidYMid meet">
+                            <defs>
+                                <linearGradient id="totalAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#F7931A" stop-opacity="0.5"/>
+                                    <stop offset="100%" stop-color="#F7931A" stop-opacity="0.02"/>
+                                </linearGradient>
+                            </defs>
+                            <!-- Grid lines -->
+                            <line class="chart-grid-line" x1="50" y1="20" x2="380" y2="20"/>
+                            <line class="chart-grid-line" x1="50" y1="55" x2="380" y2="55"/>
+                            <line class="chart-grid-line" x1="50" y1="90" x2="380" y2="90"/>
+                            <line class="chart-grid-line" x1="50" y1="125" x2="380" y2="125"/>
+                            <line class="chart-grid-line" x1="50" y1="160" x2="380" y2="160"/>
+                            <!-- Y-axis labels -->
+                            <text class="chart-axis-label" x="45" y="23" text-anchor="end">$12T</text>
+                            <text class="chart-axis-label" x="45" y="58" text-anchor="end">$9T</text>
+                            <text class="chart-axis-label" x="45" y="93" text-anchor="end">$6T</text>
+                            <text class="chart-axis-label" x="45" y="128" text-anchor="end">$3T</text>
+                            <text class="chart-axis-label" x="45" y="163" text-anchor="end">$0</text>
+                            <!-- X-axis labels: 2019=105, 2020=160, 2021=215, 2022=270, 2023=325, 2024=380 -->
+                            <text class="chart-axis-label" x="105" y="178" text-anchor="middle">2019</text>
+                            <text class="chart-axis-label" x="160" y="178" text-anchor="middle">2020</text>
+                            <text class="chart-axis-label" x="215" y="178" text-anchor="middle">2021</text>
+                            <text class="chart-axis-label" x="270" y="178" text-anchor="middle">2022</text>
+                            <text class="chart-axis-label" x="325" y="178" text-anchor="middle">2023</text>
+                            <text class="chart-axis-label" x="380" y="178" text-anchor="middle">2024</text>
+                            <!-- Total volume area fill: points mapped from data
+                                 2019: $4.6T -> y=106.7, 2020: $5.5T -> y=96.3, 2021: $11.1T -> y=31.3
+                                 2022: $7.5T -> y=72.5, 2023: $8.0T -> y=66.7, 2024: $10.6T -> y=37.0 -->
+                            <polygon class="chart-total-area"
+                                     points="105,160 105,107 160,96 215,31 270,73 325,67 380,37 380,160"/>
+                            <!-- Total volume line -->
+                            <polyline class="chart-total-line"
+                                      points="105,107 160,96 215,31 270,73 325,67 380,37"/>
+                            <!-- Illicit volume line (scaled x1000 for visibility on same chart, shown as separate track)
+                                 2019: $10B -> y=159, 2020: $7.8B -> y=159, 2021: $14B -> y=158
+                                 2022: $20.6B -> y=158, 2023: $24.2B -> y=157, 2024: $40.9B -> y=156
+                                 Rescaled: illicit is so small we show it near the bottom with its own implied scale -->
+                            <polyline class="chart-illicit-line"
+                                      points="105,155 160,156 215,152 270,150 325,148 380,142"/>
+                            <!-- Data dots - total -->
+                            <circle class="chart-dot" cx="105" cy="107" r="3" fill="#F7931A"/>
+                            <circle class="chart-dot" cx="160" cy="96" r="3" fill="#F7931A"/>
+                            <circle class="chart-dot" cx="215" cy="31" r="3" fill="#F7931A"/>
+                            <circle class="chart-dot" cx="270" cy="73" r="3" fill="#F7931A"/>
+                            <circle class="chart-dot" cx="325" cy="67" r="3" fill="#F7931A"/>
+                            <circle class="chart-dot" cx="380" cy="37" r="3" fill="#F7931A"/>
+                            <!-- Data dots - illicit -->
+                            <circle class="chart-dot" cx="105" cy="155" r="2.5" fill="#FF4757"/>
+                            <circle class="chart-dot" cx="160" cy="156" r="2.5" fill="#FF4757"/>
+                            <circle class="chart-dot" cx="215" cy="152" r="2.5" fill="#FF4757"/>
+                            <circle class="chart-dot" cx="270" cy="150" r="2.5" fill="#FF4757"/>
+                            <circle class="chart-dot" cx="325" cy="148" r="2.5" fill="#FF4757"/>
+                            <circle class="chart-dot" cx="380" cy="142" r="2.5" fill="#FF4757"/>
+                            <!-- Illicit value annotations -->
+                            <text class="chart-axis-label" x="105" y="152" text-anchor="middle" fill="#FF4757" font-size="7">$10B</text>
+                            <text class="chart-axis-label" x="215" y="149" text-anchor="middle" fill="#FF4757" font-size="7">$14B</text>
+                            <text class="chart-axis-label" x="380" y="139" text-anchor="middle" fill="#FF4757" font-size="7">$41B</text>
+                        </svg>
+                    </div>
+                    <div class="svgchart-legend">
+                        <div class="svgchart-legend-item">
+                            <span class="svgchart-legend-line total"></span> Total Volume
+                        </div>
+                        <div class="svgchart-legend-item">
+                            <span class="svgchart-legend-line illicit"></span> Illicit Volume (exaggerated scale)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Panel 3: Illicit Activity Breakdown (expanded) -->
                 <div class="breakdown-container">
-                    <div class="breakdown-title">Illicit Activity Breakdown (2024)</div>
+                    <div class="dashboard-panel-title">Illicit Activity Breakdown (2024)</div>
                     <div class="breakdown-list">
                         <div class="breakdown-item">
                             <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill scams" style="width: 0%;" data-width="45%">
+                                <div class="breakdown-bar-fill scams" style="width: 100%;" data-width="100%">
                                     <span class="breakdown-bar-label">Scams & Phishing</span>
                                 </div>
                             </div>
+                            <span class="breakdown-pct">46.1%</span>
                             <span class="breakdown-value">$9.9B</span>
                         </div>
                         <div class="breakdown-item">
                             <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill sanctions" style="width: 0%;" data-width="35%">
+                                <div class="breakdown-bar-fill sanctions" style="width: 79%;" data-width="79%">
                                     <span class="breakdown-bar-label">Sanctioned Entities</span>
                                 </div>
                             </div>
+                            <span class="breakdown-pct">36.3%</span>
                             <span class="breakdown-value">$7.8B</span>
                         </div>
                         <div class="breakdown-item">
                             <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill darknet" style="width: 0%;" data-width="18%">
-                                    <span class="breakdown-bar-label">Darknet Markets</span>
-                                </div>
-                            </div>
-                            <span class="breakdown-value">$2.0B</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill ransomware" style="width: 0%;" data-width="12%">
-                                    <span class="breakdown-bar-label">Ransomware</span>
-                                </div>
-                            </div>
-                            <span class="breakdown-value">$1.1B</span>
-                        </div>
-                        <div class="breakdown-item">
-                            <div class="breakdown-bar-track">
-                                <div class="breakdown-bar-fill fraud" style="width: 0%;" data-width="8%">
+                                <div class="breakdown-bar-fill stolen" style="width: 23%;" data-width="23%">
                                     <span class="breakdown-bar-label">Stolen Funds</span>
                                 </div>
                             </div>
-                            <span class="breakdown-value">$0.5B</span>
+                            <span class="breakdown-pct">10.7%</span>
+                            <span class="breakdown-value">$2.3B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill darknet" style="width: 8%;" data-width="8%">
+                                    <span class="breakdown-bar-label">Darknet Markets</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-pct">3.7%</span>
+                            <span class="breakdown-value">$0.8B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill ransomware" style="width: 6%;" data-width="6%">
+                                    <span class="breakdown-bar-label">Ransomware</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-pct">2.7%</span>
+                            <span class="breakdown-value">$0.6B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill fraud" style="width: 2%;" data-width="2%">
+                                    <span class="breakdown-bar-label">Fraud Shops</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-pct">0.4%</span>
+                            <span class="breakdown-value">$0.1B</span>
+                        </div>
+                        <div class="breakdown-item">
+                            <div class="breakdown-bar-track">
+                                <div class="breakdown-bar-fill csam" style="width: 1%;" data-width="1%">
+                                    <span class="breakdown-bar-label">CSAM</span>
+                                </div>
+                            </div>
+                            <span class="breakdown-pct">0.1%</span>
+                            <span class="breakdown-value">&lt;$0.1B</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Comparison with Traditional Finance -->
+                <!-- Panel 4: TradFi vs Crypto Comparison -->
+                <div class="tradfi-container">
+                    <div class="dashboard-panel-title">Traditional Finance vs. Crypto Illicit Use</div>
+                    <div class="tradfi-bars">
+                        <div class="tradfi-row">
+                            <div class="tradfi-row-header">
+                                <span class="tradfi-label">USD Cash</span>
+                                <span class="tradfi-pct" style="color: #2ECC71;">~5%</span>
+                            </div>
+                            <div class="tradfi-track">
+                                <div class="tradfi-fill tf-cash" style="width: 100%;" data-width="100%"></div>
+                            </div>
+                            <span class="tradfi-detail">~$2T laundered annually via cash (UNODC)</span>
+                        </div>
+                        <div class="tradfi-row">
+                            <div class="tradfi-row-header">
+                                <span class="tradfi-label">Banking System</span>
+                                <span class="tradfi-pct" style="color: #5DADE2;">~2-4%</span>
+                            </div>
+                            <div class="tradfi-track">
+                                <div class="tradfi-fill tf-banking" style="width: 60%;" data-width="60%"></div>
+                            </div>
+                            <span class="tradfi-detail">HSBC, Danske Bank, Wachovia -- billions in fines</span>
+                        </div>
+                        <div class="tradfi-row">
+                            <div class="tradfi-row-header">
+                                <span class="tradfi-label">Cryptocurrency</span>
+                                <span class="tradfi-pct" style="color: var(--btc-orange);">&lt;0.4%</span>
+                            </div>
+                            <div class="tradfi-track">
+                                <div class="tradfi-fill tf-crypto" style="width: 8%;" data-width="8%"></div>
+                            </div>
+                            <span class="tradfi-detail">$40.9B of $10.6T total on-chain volume</span>
+                        </div>
+                    </div>
+                    <div class="tradfi-verdict">
+                        <div class="tradfi-verdict-text">Crypto is 5-12x cleaner than traditional finance</div>
+                        <div class="tradfi-verdict-sub">By every available metric, crypto has lower illicit use rates</div>
+                    </div>
+                </div>
+
+                <!-- Panel 5: Payment Method Comparison (full-width) -->
                 <div class="gauge-container">
-                    <div class="gauge-title">Illicit Use by Payment Method</div>
-                    <div class="gauge-row">
-                        <span class="gauge-label" style="color: var(--btc-orange);">Crypto</span>
-                        <div class="gauge-track">
-                            <div class="gauge-fill crypto"></div>
+                    <div class="dashboard-panel-title">Illicit Use by Payment Method</div>
+                    <div class="gauge-grid">
+                        <div class="gauge-card">
+                            <div class="gauge-card-icon">💵</div>
+                            <div class="gauge-card-method">USD Cash</div>
+                            <div class="gauge-card-bar-track">
+                                <div class="gauge-card-bar gc-cash" style="width: 100%;" data-width="100%"></div>
+                            </div>
+                            <div class="gauge-card-pct gc-pct-cash">~5%</div>
+                            <div class="gauge-card-detail">$2T+ laundered / year<br>Primary money laundering vehicle</div>
                         </div>
-                        <span class="gauge-percent">~0.4%</span>
-                    </div>
-                    <div class="gauge-row">
-                        <span class="gauge-label" style="color: #2ECC71;">USD Cash</span>
-                        <div class="gauge-track">
-                            <div class="gauge-fill cash"></div>
+                        <div class="gauge-card">
+                            <div class="gauge-card-icon">🏦</div>
+                            <div class="gauge-card-method">Banking System</div>
+                            <div class="gauge-card-bar-track">
+                                <div class="gauge-card-bar gc-banks" style="width: 60%;" data-width="60%"></div>
+                            </div>
+                            <div class="gauge-card-pct gc-pct-banks">~2-4%</div>
+                            <div class="gauge-card-detail">$300B+ in AML fines since 2008<br>Systemic compliance failures</div>
                         </div>
-                        <span class="gauge-percent">2-5%</span>
-                    </div>
-                    <div class="gauge-row">
-                        <span class="gauge-label" style="color: #5DADE2;">Banks</span>
-                        <div class="gauge-track">
-                            <div class="gauge-fill banks"></div>
+                        <div class="gauge-card">
+                            <div class="gauge-card-icon">₿</div>
+                            <div class="gauge-card-method">Cryptocurrency</div>
+                            <div class="gauge-card-bar-track">
+                                <div class="gauge-card-bar gc-crypto" style="width: 8%;" data-width="8%"></div>
+                            </div>
+                            <div class="gauge-card-pct gc-pct-crypto">&lt;0.4%</div>
+                            <div class="gauge-card-detail">Fully auditable on-chain<br>Transparent and traceable by default</div>
                         </div>
-                        <span class="gauge-percent">~2%</span>
                     </div>
-                    <p class="gauge-note">UN estimates $2T laundered annually through traditional banking</p>
+                    <p class="gauge-note">Sources: UN Office on Drugs & Crime, Chainalysis 2025, US Treasury FinCEN</p>
                 </div>
             </div>
 
@@ -1681,7 +1970,9 @@
                     </div>
                 </div>
                 <div class="dashboard-source">
-                    Source: <a href="https://www.chainalysis.com/blog/2025-crypto-crime-report-introduction/" target="_blank">Chainalysis Crypto Crime Report 2025</a>
+                    Sources: <a href="https://www.chainalysis.com/blog/2025-crypto-crime-report-introduction/" target="_blank">Chainalysis 2025</a> &middot;
+                    <a href="https://www.unodc.org/unodc/en/money-laundering/overview.html" target="_blank">UNODC</a> &middot;
+                    <a href="https://www.fincen.gov/" target="_blank">FinCEN</a>
                 </div>
             </div>
         </div>
@@ -1766,6 +2057,16 @@
                 <div class="deep-dive-icon">⏳</div>
                 <h3>Interactive Timeline</h3>
                 <p>Click-through timeline with detailed event descriptions and keyboard navigation.</p>
+            </a>
+            <a href="btc-xmr-education.html" class="deep-dive-card">
+                <div class="deep-dive-icon">📊</div>
+                <h3>BTC vs XMR Education</h3>
+                <p>Visual infographics breaking down the technical and philosophical differences between Bitcoin and Monero.</p>
+            </a>
+            <a href="future-outlook.html" class="deep-dive-card">
+                <div class="deep-dive-icon">🔮</div>
+                <h3>2027+ Future Outlook</h3>
+                <p>The Demand Thesis: 6 structural drivers pushing Monero toward inevitability through 2030.</p>
             </a>
         </div>
     </section>
@@ -2126,32 +2427,28 @@
         window.addEventListener('scroll', handleScroll);
 
         // Analytics Dashboard Animations
+        // Collect all animated bars and collapse them to 0% for the grow animation
+        // (HTML has them at full width as a no-JS fallback)
+        const allAnimatedBars = document.querySelectorAll('.breakdown-bar-fill, .tradfi-fill, .gauge-card-bar');
+        allAnimatedBars.forEach(bar => { bar.style.width = '0%'; });
+
         function animateDashboard() {
             const dashboard = document.getElementById('analyticsDashboard');
             if (!dashboard) return;
 
             const rect = dashboard.getBoundingClientRect();
-            if (rect.top < window.innerHeight * 0.8 && !dashboard.classList.contains('animated')) {
+            if (rect.top < window.innerHeight * 0.85 && !dashboard.classList.contains('animated')) {
                 dashboard.classList.add('animated');
 
-                // Animate donut chart
-                const circumference = 2 * Math.PI * 70;
-                const legitPercent = 99.6;
-                const illicitPercent = 0.4;
+                // Donut chart is pre-rendered with correct values — no animation needed for initial display
+                // The SVG already has the correct stroke-dasharray values baked in
 
-                const legitSegment = document.getElementById('legitSegment');
-                const illicitSegment = document.getElementById('illicitSegment');
-
-                if (legitSegment && illicitSegment) {
+                // Animate SVG line chart
+                const svgChartWrap = document.getElementById('svgChartWrap');
+                if (svgChartWrap) {
                     setTimeout(() => {
-                        legitSegment.style.strokeDasharray = `${(legitPercent / 100) * circumference} ${circumference}`;
-                    }, 200);
-
-                    setTimeout(() => {
-                        const illicitOffset = (legitPercent / 100) * circumference;
-                        illicitSegment.style.strokeDasharray = `${(illicitPercent / 100) * circumference} ${circumference}`;
-                        illicitSegment.style.strokeDashoffset = -illicitOffset;
-                    }, 600);
+                        svgChartWrap.classList.add('chart-animated');
+                    }, 300);
                 }
 
                 // Animate breakdown bars
@@ -2159,17 +2456,23 @@
                 breakdownBars.forEach((bar, i) => {
                     setTimeout(() => {
                         bar.style.width = bar.dataset.width;
-                    }, 300 + (i * 150));
+                    }, 400 + (i * 100));
                 });
 
-                // Animate gauge bars
-                const gauges = document.querySelectorAll('.gauge-fill');
-                gauges.forEach((gauge, i) => {
-                    const originalWidth = gauge.style.width || getComputedStyle(gauge).width;
-                    gauge.style.width = '0';
+                // Animate TradFi comparison bars
+                const tradfiBars = document.querySelectorAll('.tradfi-fill');
+                tradfiBars.forEach((bar, i) => {
                     setTimeout(() => {
-                        gauge.style.width = originalWidth;
-                    }, 800 + (i * 200));
+                        bar.style.width = bar.dataset.width;
+                    }, 600 + (i * 200));
+                });
+
+                // Animate gauge cards
+                const gaugeCardBars = document.querySelectorAll('.gauge-card-bar');
+                gaugeCardBars.forEach((bar, i) => {
+                    setTimeout(() => {
+                        bar.style.width = bar.dataset.width;
+                    }, 900 + (i * 200));
                 });
             }
         }
@@ -2177,6 +2480,9 @@
         // Add to scroll handler
         window.addEventListener('scroll', animateDashboard);
         animateDashboard(); // Initial check
+
+        // Fallback: ensure bars animate even if scroll detection missed
+        setTimeout(animateDashboard, 1500);
     </script>
 </body>
 </html>
