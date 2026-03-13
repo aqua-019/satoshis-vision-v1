@@ -145,7 +145,7 @@
 
         /* ── Live Price Ticker Cards ── */
         .live-ticker-grid {
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
         }
         .live-ticker-card {
             background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
@@ -168,6 +168,23 @@
         }
         .ltc-change.positive { color: var(--green); background: rgba(0,210,106,0.1); }
         .ltc-change.negative { color: var(--red); background: rgba(255,71,87,0.1); }
+        .ltc-pct-row {
+            display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; margin-top: 0.5rem;
+        }
+        .ltc-pct-item {
+            font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
+        }
+        .ltc-pct-item .ltc-pct-label {
+            color: var(--text-secondary); margin-right: 0.2rem;
+        }
+        .ltc-pct-item .ltc-pct-val.positive { color: var(--green); }
+        .ltc-pct-item .ltc-pct-val.negative { color: var(--red); }
+        .ltc-metrics-row {
+            display: flex; justify-content: space-between; font-family: var(--font-mono);
+            font-size: 0.72rem; margin-bottom: 0.25rem;
+        }
+        .ltc-metrics-row .ltc-met-label { color: var(--text-secondary); }
+        .ltc-metrics-row .ltc-met-val { color: var(--text-primary); font-weight: 500; }
 
         /* ── Charts (TradingView) ── */
         .tv-chart-wrap {
@@ -264,6 +281,35 @@
         }
         .stat-note { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem; }
 
+        /* ── XMR Legality Grid ── */
+        .legality-grid {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;
+        }
+        .legality-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.25rem; transition: border-color 0.3s ease, transform 0.2s ease;
+        }
+        .legality-card:hover { border-color: rgba(255,102,0,0.3); transform: translateY(-2px); }
+        .legality-country { font-weight: 600; font-size: 1rem; margin-bottom: 0.75rem; }
+        .legality-statuses { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+        .legality-badge {
+            font-family: var(--font-mono); font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px;
+        }
+        .legality-badge.legal { background: rgba(0,210,106,0.15); color: #00D26A; }
+        .legality-badge.restricted { background: rgba(255,165,0,0.15); color: #FFA500; }
+        .legality-badge.banned { background: rgba(255,71,87,0.15); color: #FF4757; }
+        .legality-badge.unclear { background: rgba(160,160,160,0.15); color: #A0A0A0; }
+        .legality-note { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+        .legality-subsection {
+            font-family: var(--font-display); font-size: 1.3rem; font-weight: 600;
+            margin-top: 2.5rem; margin-bottom: 1.25rem; color: var(--text-primary);
+        }
+        .legality-disclaimer {
+            margin-top: 2rem; padding: 1.25rem; border-radius: 12px;
+            background: rgba(255,165,0,0.08); border: 1px solid rgba(255,165,0,0.2);
+            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
+        }
+
         /* ── Footer ── */
         footer {
             background: var(--card-bg); padding: 4rem 2rem; text-align: center;
@@ -302,7 +348,7 @@
             .hero h1 { font-size: 2rem; }
             .tv-chart-wrap { height: 350px; }
             .stats-grid { grid-template-columns: 1fr; }
-            .live-ticker-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+            .live-ticker-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
             .ticker-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
             .fiat-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
         }
@@ -519,6 +565,315 @@
     </div>
 </section>
 
+<!-- Section 8: XMR Legal Status -->
+<section id="xmr-legality">
+    <div class="container">
+        <h2 class="section-title">XMR Legal Status</h2>
+        <p class="section-subtitle">Monero legality by region &mdash; buying, selling, trading, and mining</p>
+        <hr class="section-divider">
+
+        <h3 class="legality-subsection" style="margin-top:0;">Global Regions</h3>
+        <div class="legality-grid">
+
+            <div class="legality-card">
+                <div class="legality-country">&#127482;&#127480; United States</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Legal but delisted from major exchanges. DEX/P2P only</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127466;&#127482; European Union</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">MiCA regulations tightening. Some exchanges delisted</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127468;&#127463; United Kingdom</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">FCA oversight. Limited exchange availability</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127471;&#127477; Japan</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge banned">&#10060; Buy</span>
+                    <span class="legality-badge banned">&#10060; Sell</span>
+                    <span class="legality-badge banned">&#10060; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Delisted from all Japanese exchanges since 2018</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127472;&#127479; South Korea</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge banned">&#10060; Buy</span>
+                    <span class="legality-badge banned">&#10060; Sell</span>
+                    <span class="legality-badge banned">&#10060; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Banned on regulated exchanges. Mining legal</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127462;&#127482; Australia</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">AUSTRAC regulated. Some exchanges delisted XMR</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127464;&#127462; Canada</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Legal. Available on some exchanges</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127470;&#127475; India</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">No specific ban but regulatory uncertainty. 30% tax</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127462;&#127466; UAE / Dubai</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge banned">&#10060; Buy</span>
+                    <span class="legality-badge banned">&#10060; Sell</span>
+                    <span class="legality-badge banned">&#10060; Trade</span>
+                    <span class="legality-badge unclear">&#10067; Mine</span>
+                </div>
+                <div class="legality-note">Privacy coins banned on regulated platforms</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127480;&#127468; Singapore</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">MAS regulated. Limited availability</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127464;&#127469; Switzerland</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Crypto-friendly jurisdiction</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127463;&#127479; Brazil</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Legal. No specific privacy coin restrictions</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127479;&#127482; Russia</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge banned">&#10060; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Crypto trading banned but mining legal</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127464;&#127475; China</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge banned">&#10060; Buy</span>
+                    <span class="legality-badge banned">&#10060; Sell</span>
+                    <span class="legality-badge banned">&#10060; Trade</span>
+                    <span class="legality-badge banned">&#10060; Mine</span>
+                </div>
+                <div class="legality-note">All crypto activities banned</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127475;&#127468; Nigeria</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">P2P active despite CBN restrictions</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127481;&#127479; Turkey</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Crypto payments banned but holding/trading allowed</div>
+            </div>
+
+        </div>
+
+        <h3 class="legality-subsection">United States — By State</h3>
+        <div class="legality-grid">
+
+            <div class="legality-card">
+                <div class="legality-country">&#127987;&#65039; New York</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">BitLicense required. Most restrictive</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#9728;&#65039; California</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">No specific restrictions</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#11088; Texas</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Crypto-friendly. Mining hub</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127796; Florida</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Crypto-friendly legislation</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127956;&#65039; Wyoming</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Most crypto-friendly state. DAO laws</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#9968;&#65039; Montana</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Mining-friendly. Low energy costs</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127965;&#65039; Hawaii</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Restrictive. Limited exchange access</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127961;&#65039; Illinois</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">No specific restrictions</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127967;&#65039; Colorado</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge legal">&#9989; Buy</span>
+                    <span class="legality-badge legal">&#9989; Sell</span>
+                    <span class="legality-badge legal">&#9989; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Accepts crypto for taxes</div>
+            </div>
+
+            <div class="legality-card">
+                <div class="legality-country">&#127794; Washington</div>
+                <div class="legality-statuses">
+                    <span class="legality-badge restricted">&#9888;&#65039; Buy</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Sell</span>
+                    <span class="legality-badge restricted">&#9888;&#65039; Trade</span>
+                    <span class="legality-badge legal">&#9989; Mine</span>
+                </div>
+                <div class="legality-note">Money transmitter license required</div>
+            </div>
+
+        </div>
+
+        <div class="legality-disclaimer">
+            &#9888;&#65039; <strong>Disclaimer:</strong> This information is for educational purposes only and may not reflect current regulations. Laws change frequently. Always verify local regulations before transacting. This is not legal advice.
+        </div>
+    </div>
+</section>
+
 <!-- Footer -->
 <footer>
     <p class="footer-quote">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
@@ -669,9 +1024,10 @@
         var cached = cacheGet('dash_live_tickers', CACHE_MS);
         if (cached) { renderLiveTickers(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=' + LIVE_TICKER_IDS + '&vs_currencies=usd&include_24hr_change=true')
+        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + LIVE_TICKER_IDS + '&order=market_cap_desc&sparkline=false&price_change_percentage=1h,24h,7d')
             .then(function(r) { return r.json(); })
             .then(function(d) {
+                if (!Array.isArray(d)) throw new Error('bad response');
                 cacheSet('dash_live_tickers', d);
                 renderLiveTickers(d);
             }).catch(function() {
@@ -684,34 +1040,70 @@
         var grid = document.getElementById('liveTickerGrid');
         grid.innerHTML = '';
 
-        var coins = [
-            { id: 'bitcoin', name: 'Bitcoin', sym: 'BTC' },
-            { id: 'monero', name: 'Monero', sym: 'XMR' },
-            { id: 'ethereum', name: 'Ethereum', sym: 'ETH' },
-            { id: 'solana', name: 'Solana', sym: 'SOL' }
-        ];
+        // Build a lookup by id for easy access
+        var coinMap = {};
+        data.forEach(function(c) { coinMap[c.id] = c; });
 
-        coins.forEach(function(c) {
-            var d = data[c.id] || {};
-            var price = d.usd;
-            var chg = d.usd_24h_change;
+        var coinOrder = ['bitcoin', 'monero', 'ethereum', 'solana'];
+
+        coinOrder.forEach(function(id) {
+            var c = coinMap[id];
+            if (!c) return;
+            var price = c.current_price;
+            var chg1h = c.price_change_percentage_1h_in_currency;
+            var chg24h = c.price_change_percentage_24h_in_currency;
+            var chg7d = c.price_change_percentage_7d_in_currency;
             var card = document.createElement('div');
-            card.className = 'live-ticker-card' + (LIVE_HIGHLIGHTS[c.id] ? ' highlight' : '');
+            card.className = 'live-ticker-card' + (LIVE_HIGHLIGHTS[id] ? ' highlight' : '');
             card.innerHTML =
                 '<div class="ltc-header">' +
                     '<span class="ltc-name">' + c.name + '</span>' +
-                    '<span class="ltc-symbol">' + c.sym + '</span>' +
+                    '<span class="ltc-symbol">' + c.symbol.toUpperCase() + '</span>' +
                 '</div>' +
                 '<div class="ltc-price">' + (price != null ? formatUSD(price) : '\u2014') + '</div>' +
-                '<span class="ltc-change ' + pctClass(chg) + '">' + formatPct(chg) + ' 24h</span>';
+                '<div class="ltc-pct-row">' +
+                    '<span class="ltc-pct-item"><span class="ltc-pct-label">1h:</span><span class="ltc-pct-val ' + pctClass(chg1h) + '">' + formatPct(chg1h) + '</span></span>' +
+                    '<span class="ltc-pct-item"><span class="ltc-pct-label">24h:</span><span class="ltc-pct-val ' + pctClass(chg24h) + '">' + formatPct(chg24h) + '</span></span>' +
+                    '<span class="ltc-pct-item"><span class="ltc-pct-label">7d:</span><span class="ltc-pct-val ' + pctClass(chg7d) + '">' + formatPct(chg7d) + '</span></span>' +
+                '</div>' +
+                '<div class="ltc-metrics-row">' +
+                    '<span class="ltc-met-label">MCap</span>' +
+                    '<span class="ltc-met-val">' + formatMcap(c.market_cap) + '</span>' +
+                '</div>' +
+                '<div class="ltc-metrics-row">' +
+                    '<span class="ltc-met-label">Vol</span>' +
+                    '<span class="ltc-met-val">' + formatMcap(c.total_volume) + '</span>' +
+                '</div>' +
+                '<div class="ltc-metrics-row">' +
+                    '<span class="ltc-met-label">High</span>' +
+                    '<span class="ltc-met-val">' + formatUSD(c.high_24h) + '</span>' +
+                '</div>' +
+                '<div class="ltc-metrics-row">' +
+                    '<span class="ltc-met-label">Low</span>' +
+                    '<span class="ltc-met-val">' + formatUSD(c.low_24h) + '</span>' +
+                '</div>' +
+                '<div class="ltc-metrics-row">' +
+                    '<span class="ltc-met-label">Supply</span>' +
+                    '<span class="ltc-met-val">' + formatSupply(c.circulating_supply) + '</span>' +
+                '</div>';
             grid.appendChild(card);
             observeFadeIn(card);
         });
 
         // BTC/XMR ratio card
-        var btcP = data.bitcoin ? data.bitcoin.usd : null;
-        var xmrP = data.monero ? data.monero.usd : null;
+        var btc = coinMap['bitcoin'];
+        var xmr = coinMap['monero'];
+        var btcP = btc ? btc.current_price : null;
+        var xmrP = xmr ? xmr.current_price : null;
         var ratio = (btcP && xmrP) ? btcP / xmrP : null;
+        // Calculate 24h change in the ratio
+        var ratioChg24h = null;
+        if (btc && xmr && btc.price_change_percentage_24h_in_currency != null && xmr.price_change_percentage_24h_in_currency != null) {
+            // ratio_change ≈ btc_change - xmr_change (for small percentages)
+            var btcFactor = 1 + (btc.price_change_percentage_24h_in_currency / 100);
+            var xmrFactor = 1 + (xmr.price_change_percentage_24h_in_currency / 100);
+            ratioChg24h = ((btcFactor / xmrFactor) - 1) * 100;
+        }
         var ratioCard = document.createElement('div');
         ratioCard.className = 'live-ticker-card highlight';
         ratioCard.innerHTML =
@@ -720,6 +1112,9 @@
                 '<span class="ltc-symbol">RATIO</span>' +
             '</div>' +
             '<div class="ltc-price">' + (ratio ? ratio.toFixed(1) : '\u2014') + '</div>' +
+            '<div class="ltc-pct-row">' +
+                '<span class="ltc-pct-item"><span class="ltc-pct-label">24h:</span><span class="ltc-pct-val ' + (ratioChg24h != null ? pctClass(ratioChg24h) : '') + '">' + (ratioChg24h != null ? formatPct(ratioChg24h) : '\u2014') + '</span></span>' +
+            '</div>' +
             '<span class="ltc-change" style="color: var(--text-secondary);">XMR per BTC</span>';
         grid.appendChild(ratioCard);
         observeFadeIn(ratioCard);
