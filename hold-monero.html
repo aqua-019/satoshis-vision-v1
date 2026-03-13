@@ -1362,6 +1362,7 @@
                     <a href="future-outlook.html">2027+</a>
                 </div>
             </div>
+            <a href="dashboard.html">Dashboard</a>
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="future-outlook.html">2027+</a>
             <a href="hold-monero.html" style="color: var(--xmr-orange);">XMR</a>
@@ -1381,6 +1382,7 @@
         <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
         <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
         <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
+        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
         <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
         <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
     </div>
@@ -1397,6 +1399,14 @@
         </p>
     </section>
 
+    <!-- Hero Navigation Pills -->
+    <div style="display: flex; justify-content: center; gap: 0.75rem; flex-wrap: wrap; padding: 0 2rem 1.5rem; margin-top: -1rem;">
+        <a href="#swap" style="display: inline-block; padding: 0.5rem 1.25rem; border-radius: 50px; border: 1px solid var(--grey-18); background: var(--card-bg); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-family: var(--font-body); font-weight: 500; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--xmr-orange)';this.style.color='var(--xmr-orange)';this.style.background='rgba(255,102,0,0.08)'" onmouseout="this.style.borderColor='var(--grey-18)';this.style.color='var(--text-secondary)';this.style.background='var(--card-bg)'">Swap</a>
+        <a href="#ecosystem" style="display: inline-block; padding: 0.5rem 1.25rem; border-radius: 50px; border: 1px solid var(--grey-18); background: var(--card-bg); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-family: var(--font-body); font-weight: 500; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--xmr-orange)';this.style.color='var(--xmr-orange)';this.style.background='rgba(255,102,0,0.08)'" onmouseout="this.style.borderColor='var(--grey-18)';this.style.color='var(--text-secondary)';this.style.background='var(--card-bg)'">Ecosystem</a>
+        <a href="#wallets" style="display: inline-block; padding: 0.5rem 1.25rem; border-radius: 50px; border: 1px solid var(--grey-18); background: var(--card-bg); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-family: var(--font-body); font-weight: 500; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--xmr-orange)';this.style.color='var(--xmr-orange)';this.style.background='rgba(255,102,0,0.08)'" onmouseout="this.style.borderColor='var(--grey-18)';this.style.color='var(--text-secondary)';this.style.background='var(--card-bg)'">Wallets</a>
+        <a href="#community" style="display: inline-block; padding: 0.5rem 1.25rem; border-radius: 50px; border: 1px solid var(--grey-18); background: var(--card-bg); color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; font-family: var(--font-body); font-weight: 500; transition: all 0.3s ease;" onmouseover="this.style.borderColor='var(--xmr-orange)';this.style.color='var(--xmr-orange)';this.style.background='rgba(255,102,0,0.08)'" onmouseout="this.style.borderColor='var(--grey-18)';this.style.color='var(--text-secondary)';this.style.background='var(--card-bg)'">Community</a>
+    </div>
+
     <!-- Warning Banner -->
     <div class="warning-banner" style="border-color: rgba(255, 217, 61, 0.5); background: linear-gradient(135deg, rgba(255, 217, 61, 0.15), rgba(255, 102, 0, 0.1));">
         <div class="warning-icon">🎓</div>
@@ -1409,7 +1419,7 @@
     </div>
 
     <!-- Portal Tabs -->
-    <div class="portal-tabs">
+    <div id="swap" class="portal-tabs">
         <button class="portal-tab active" onclick="switchPortal('changenow')">
             <div class="tab-icon changenow-icon">CN</div>
             <span>ChangeNOW</span>
@@ -1873,6 +1883,104 @@
                     <li>Store XMR in your own wallet (Feather, CLI, or Cake)</li>
                     <li>Never reuse addresses or share view keys unnecessarily</li>
                 </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section -->
+    <section id="ecosystem" class="info-section" style="padding: 4rem 2rem;">
+        <h2 style="text-align: center; font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem;">Monero Ecosystem</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Services, tools, and platforms built on and supporting the Monero network.</p>
+        <div class="info-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+            <div class="info-card" style="border-left: 3px solid var(--xmr-orange);">
+                <h3>GetMonero.org</h3>
+                <p>The official Monero project site. Download the official wallet, read documentation, and join the community.</p>
+                <a href="https://www.getmonero.org/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Visit &rarr;</a>
+            </div>
+            <div class="info-card" style="border-left: 3px solid var(--btc-orange);">
+                <h3>Monero Research Lab</h3>
+                <p>Academic research driving Monero's privacy technology. Ring signatures, Bulletproofs, FCMP++ and more.</p>
+                <a href="https://www.getmonero.org/resources/research-lab/" target="_blank" rel="noopener" style="color: var(--btc-orange); text-decoration: none; font-size: 0.85rem;">Explore &rarr;</a>
+            </div>
+            <div class="info-card" style="border-left: 3px solid var(--success-green);">
+                <h3>LocalMonero (Archive)</h3>
+                <p>The former peer-to-peer Monero marketplace. Shut down May 2024 after serving the community since 2017.</p>
+                <span style="color: var(--text-secondary); font-size: 0.85rem;">Archived</span>
+            </div>
+            <div class="info-card" style="border-left: 3px solid #9B59B6;">
+                <h3>Haveno DEX</h3>
+                <p>Decentralized exchange for Monero. Peer-to-peer trading with fiat currencies. Successor to Bisq for XMR.</p>
+                <a href="https://haveno.exchange/" target="_blank" rel="noopener" style="color: #9B59B6; text-decoration: none; font-size: 0.85rem;">Visit &rarr;</a>
+            </div>
+            <div class="info-card" style="border-left: 3px solid #E91E63;">
+                <h3>Monero Community Workgroup</h3>
+                <p>Community funding for Monero development. Proposals, bounties, and the CCS (Community Crowdfunding System).</p>
+                <a href="https://ccs.getmonero.org/" target="_blank" rel="noopener" style="color: #E91E63; text-decoration: none; font-size: 0.85rem;">View CCS &rarr;</a>
+            </div>
+            <div class="info-card" style="border-left: 3px solid #00BCD4;">
+                <h3>P2Pool Mining</h3>
+                <p>Mine Monero with consumer CPUs via RandomX. ASIC-resistant by design. Support decentralization by running a node.</p>
+                <a href="https://www.getmonero.org/get-started/mining/" target="_blank" rel="noopener" style="color: #00BCD4; text-decoration: none; font-size: 0.85rem;">Start Mining &rarr;</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Wallets Section -->
+    <section id="wallets" class="info-section" style="padding: 4rem 2rem; background: rgba(255,102,0,0.02);">
+        <h2 style="text-align: center; font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem;">Wallets</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Self-custody is fundamental to Monero's privacy. Choose a wallet that fits your needs.</p>
+        <div class="info-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
+            <div class="info-card">
+                <h3>Feather Wallet</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Desktop &bull; Advanced</p>
+                <p>Feature-rich desktop wallet for power users. Tor support, coin control, hardware wallet integration.</p>
+                <a href="https://featherwallet.org/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Cake Wallet</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Mobile &bull; User-friendly</p>
+                <p>Open-source mobile wallet for iOS and Android. Built-in exchange via ChangeNOW and SideShift.</p>
+                <a href="https://cakewallet.com/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Monero GUI / CLI</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Desktop &bull; Official</p>
+                <p>The official Monero wallets. GUI for visual interface, CLI for command-line. Run your own node for maximum privacy.</p>
+                <a href="https://www.getmonero.org/downloads/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
+            </div>
+            <div class="info-card">
+                <h3>Monerujo</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Android &bull; Open Source</p>
+                <p>Lightweight Android wallet with Tor support. Connect to your own node or use public remote nodes.</p>
+                <a href="https://www.monerujo.io/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Community Section -->
+    <section id="community" class="info-section" style="padding: 4rem 2rem;">
+        <h2 style="text-align: center; font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem;">Community</h2>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Join the global Monero community across platforms.</p>
+        <div class="info-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
+            <div class="info-card" style="text-align: center; padding: 2rem;">
+                <h3 style="font-size: 1.1rem;">r/Monero</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Reddit community with 400K+ members</p>
+                <a href="https://www.reddit.com/r/Monero/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Join &rarr;</a>
+            </div>
+            <div class="info-card" style="text-align: center; padding: 2rem;">
+                <h3 style="font-size: 1.1rem;">Monero Matrix/IRC</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Real-time developer and user chat</p>
+                <a href="https://www.getmonero.org/community/hangouts/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Connect &rarr;</a>
+            </div>
+            <div class="info-card" style="text-align: center; padding: 2rem;">
+                <h3 style="font-size: 1.1rem;">Monero Stack Exchange</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Q&amp;A for technical questions</p>
+                <a href="https://monero.stackexchange.com/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Ask &rarr;</a>
+            </div>
+            <div class="info-card" style="text-align: center; padding: 2rem;">
+                <h3 style="font-size: 1.1rem;">GitHub</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Open source development</p>
+                <a href="https://github.com/monero-project/monero" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Contribute &rarr;</a>
             </div>
         </div>
     </section>

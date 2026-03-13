@@ -339,6 +339,132 @@
         .check { color: var(--success-green); font-weight: 700; flex-shrink: 0; }
         .cross { color: var(--danger-red); font-weight: 700; flex-shrink: 0; }
 
+        /* ZCash Deep Dive Subsections */
+        .zcash-subsection {
+            margin-top: 3rem; padding-top: 2rem;
+            border-top: 1px solid rgba(46, 46, 46, 0.6);
+        }
+        .zcash-subsection-label {
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--danger-red);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
+        }
+        .zcash-subsection-title {
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 600;
+            margin-bottom: 1.25rem; color: var(--text-primary);
+        }
+        .zcash-prose {
+            color: var(--text-secondary); font-size: 0.93rem; line-height: 1.9;
+            max-width: 900px; margin-bottom: 1.5rem;
+        }
+        .zcash-prose strong { color: var(--text-primary); }
+        .zcash-prose em { color: var(--danger-red); font-style: italic; }
+
+        .zcash-timeline {
+            position: relative; padding-left: 2rem; margin: 2rem 0;
+            border-left: 2px solid var(--danger-red);
+        }
+        .zcash-timeline-item {
+            position: relative; margin-bottom: 2rem; padding-left: 1rem;
+        }
+        .zcash-timeline-item::before {
+            content: ''; position: absolute; left: -2.65rem; top: 0.35rem;
+            width: 10px; height: 10px; border-radius: 50%; background: var(--danger-red);
+            border: 2px solid var(--dark-bg);
+        }
+        .zcash-timeline-year {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--danger-red);
+            font-weight: 500; margin-bottom: 0.25rem;
+        }
+        .zcash-timeline-text {
+            color: var(--text-secondary); font-size: 0.88rem; line-height: 1.7;
+        }
+        .zcash-timeline-text strong { color: var(--text-primary); }
+
+        .zcash-callout {
+            background: rgba(255, 71, 87, 0.06); border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0;
+            border-left: 4px solid var(--danger-red);
+        }
+        .zcash-callout-title {
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--danger-red);
+            text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem;
+        }
+        .zcash-callout p {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+        .zcash-callout p strong { color: var(--text-primary); }
+
+        .zcash-callout-green {
+            background: rgba(0, 211, 149, 0.06); border: 1px solid rgba(0, 211, 149, 0.2);
+            border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0;
+            border-left: 4px solid var(--success-green);
+        }
+        .zcash-callout-green .zcash-callout-title { color: var(--success-green); }
+        .zcash-callout-green p {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+        .zcash-callout-green p strong { color: var(--text-primary); }
+
+        .zcash-funding-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0;
+        }
+        .zcash-funding-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.75rem; position: relative; overflow: hidden;
+        }
+        .zcash-funding-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .zcash-funding-card.zec-funding::before { background: linear-gradient(90deg, var(--danger-red), #666); }
+        .zcash-funding-card.xmr-funding::before { background: linear-gradient(90deg, var(--xmr-orange), var(--success-green)); }
+        .zcash-funding-card-title {
+            font-family: var(--font-display); font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem;
+        }
+        .zcash-funding-card.zec-funding .zcash-funding-card-title { color: var(--danger-red); }
+        .zcash-funding-card.xmr-funding .zcash-funding-card-title { color: var(--xmr-orange); }
+        .zcash-funding-list {
+            list-style: none; padding: 0;
+        }
+        .zcash-funding-list li {
+            padding: 0.45rem 0; font-size: 0.85rem; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(46, 46, 46, 0.4);
+            display: flex; align-items: flex-start; gap: 0.5rem;
+        }
+        .zcash-funding-list li:last-child { border-bottom: none; }
+
+        .zcash-stat-row {
+            display: flex; gap: 1rem; flex-wrap: wrap; margin: 2rem 0;
+        }
+        .zcash-stat-box {
+            flex: 1; min-width: 180px; background: var(--card-bg); border: 1px solid var(--grey-18);
+            border-radius: 12px; padding: 1.25rem; text-align: center;
+        }
+        .zcash-stat-num {
+            font-family: var(--font-mono); font-size: 2rem; font-weight: 500; color: var(--danger-red);
+        }
+        .zcash-stat-num.green { color: var(--success-green); }
+        .zcash-stat-num.orange { color: var(--xmr-orange); }
+        .zcash-stat-desc {
+            font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem;
+        }
+
+        .zcash-quote-box {
+            background: rgba(155, 89, 182, 0.06); border-left: 3px solid var(--privacy-purple);
+            padding: 1.25rem 1.75rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0;
+        }
+        .zcash-quote-box p {
+            font-style: italic; color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+        .zcash-quote-box .quote-attr {
+            font-style: normal; font-family: var(--font-mono); font-size: 0.75rem;
+            color: var(--privacy-purple); margin-top: 0.5rem;
+        }
+
+        @media (max-width: 768px) {
+            .zcash-funding-grid { grid-template-columns: 1fr; }
+            .zcash-stat-row { flex-direction: column; }
+        }
+
         /* ===== SECTION 5: Demand Drivers (preserved from original) ===== */
         .drivers-grid {
             display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;
@@ -607,6 +733,7 @@
                     <a href="future-outlook.html" style="color: var(--xmr-orange);">2027+ Outlook</a>
                 </div>
             </div>
+            <a href="dashboard.html">Dashboard</a>
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="future-outlook.html">2027+</a>
             <a href="hold-monero.html">XMR</a>
@@ -626,6 +753,7 @@
         <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
         <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
         <a href="future-outlook.html" onclick="toggleMenu()">2027+ Outlook</a>
+        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
         <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
         <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
     </div>
@@ -844,64 +972,461 @@
         <div class="section-label">Section 04 &mdash; The ZCash Fallacy</div>
         <h2 class="section-title">Privacy Theater vs. Privacy by Default</h2>
         <p class="section-intro">
-            ZCash is often cited as a Monero alternative. The data tells a different story.
+            ZCash is often cited as a Monero alternative. A comprehensive investigation of its history, governance, cryptography, and on-chain data reveals a privacy coin that fails at its one job: providing privacy.
         </p>
 
-        <div class="zcash-intro fade-in">
-            <p style="margin-bottom: 1.25rem;">
-                <strong>ZCash was created by the Electric Coin Company (ECC)</strong>, led by CEO Zooko Wilcox. It was VC-funded from inception &mdash; investors include Pantera Capital, Digital Currency Group (Barry Silbert), Naval Ravikant, and Roger Ver. This is not a community project. This is a venture-backed company with a product.
-            </p>
-            <p style="margin-bottom: 1.25rem;">
-                <strong>The Founders' Reward:</strong> For the first four years, 20% of all ZCash mining rewards went directly to founders, investors, and the ECC. After the initial reward expired, the "Dev Fund" continued the 20% allocation. Miners and users fund the company that controls the protocol.
-            </p>
-            <p>
-                <strong>The trusted setup problem:</strong> ZCash's zk-SNARKs required a trusted setup ceremony. If any participant in that ceremony retained their secret parameters, they could mint unlimited ZCash undetectably. This is <em>unverifiable</em> &mdash; you must trust that everyone involved destroyed their keys. Monero has no trusted setup. Its privacy is mathematical, not ceremonial.
-            </p>
+        <!-- ======== 4.1 History of ZCash ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-history">
+            <div class="zcash-subsection-label">4.1 &mdash; Origin Story</div>
+            <div class="zcash-subsection-title">The Corporate Genesis of ZCash</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash did not emerge from a cypherpunk mailing list, an anonymous whitepaper, or a grassroots community. It was born in a boardroom. In 2016, the <strong>Electric Coin Company (ECC)</strong> &mdash; originally called the Zerocoin Electric Coin Company &mdash; was founded by <strong>Zooko Wilcox-O'Hearn</strong>, a computer scientist with deep ties to Silicon Valley venture capital. Before a single block was mined, ZCash had already raised institutional funding from <strong>Pantera Capital, Digital Currency Group (Barry Silbert), Naval Ravikant, Roger Ver, Erik Voorhees</strong>, and several other prominent crypto investors.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    This is not incidental. The funding structure determined everything that followed: the governance model, the economic incentives, the regulatory posture, and ultimately, the decision to make privacy <em>optional</em>. When your investors include some of the most compliance-friendly names in crypto, building a coin that actually threatens the surveillance state was never on the roadmap.
+                </p>
+                <p>
+                    The underlying cryptography &mdash; zk-SNARKs (Zero-Knowledge Succinct Non-Interactive Arguments of Knowledge) &mdash; originated from academic research by Eli Ben-Sasson, Alessandro Chiesa, Christina Garman, Matthew Green, Ian Miers, Eran Tromer, and Madars Virza. The science was real. The implementation choices were political.
+                </p>
+            </div>
+
+            <div class="zcash-timeline fade-in">
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">January 2016</div>
+                    <div class="zcash-timeline-text"><strong>Electric Coin Company (ECC) founded</strong> by Zooko Wilcox-O'Hearn. VC funding secured from Pantera Capital, Digital Currency Group, and individual investors. The company structure means ZCash development has a single corporate locus of control from day one.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">October 28, 2016</div>
+                    <div class="zcash-timeline-text"><strong>ZCash launches (Sprout)</strong> with the first trusted setup ceremony. Six participants generate cryptographic parameters in a multi-party computation. The security assumption: at least one participant must have destroyed their toxic waste (secret parameters). If all six were compromised, unlimited ZEC could be counterfeited undetectably. ZEC briefly trades above <strong>$4,000</strong> in speculative mania before crashing.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">2016 &ndash; 2020</div>
+                    <div class="zcash-timeline-text"><strong>Founders' Reward active:</strong> 20% of all block rewards (2.5 ZEC of every 12.5 ZEC block) flow to the ECC, Zcash Foundation, employees, and investors. Over four years, approximately <strong>2.1 million ZEC</strong> (of a 21M max supply) are extracted before a single community governance vote occurs.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">October 2018</div>
+                    <div class="zcash-timeline-text"><strong>Sapling upgrade activates.</strong> A new trusted setup ceremony (Powers of Tau) involves 87 participants. Shielded transactions become faster and lighter. However, adoption remains minimal &mdash; most users and exchanges continue using transparent addresses because they are simpler and required for compliance.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">February 2019</div>
+                    <div class="zcash-timeline-text"><strong>Sprout counterfeiting vulnerability disclosed.</strong> The ECC reveals that a bug in the original Sprout circuit could have allowed undetectable inflation. They claim it was never exploited &mdash; but because shielded balances are hidden by design, <em>there is no way to independently verify this claim</em>. The fix was quietly deployed in the Sapling upgrade.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">November 2020</div>
+                    <div class="zcash-timeline-text"><strong>First halving &amp; Dev Fund activation.</strong> The Founders' Reward expires, but is immediately replaced by a new "Dev Fund" (ZIP 1014) that continues the 20% allocation: 8% to ECC, 7% to the Zcash Foundation, 5% to community grants. The tax persists &mdash; the recipients simply reshuffled.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">May 2022</div>
+                    <div class="zcash-timeline-text"><strong>Orchard upgrade (NU5) activates.</strong> Introduces Halo 2 proving system, which finally eliminates the need for a trusted setup in new shielded pools. However, the legacy Sprout and Sapling pools &mdash; and the trust assumptions baked into them &mdash; remain part of the protocol. Old coins carry old trust debt.</div>
+                </div>
+                <div class="zcash-timeline-item">
+                    <div class="zcash-timeline-year">2023 &ndash; 2025</div>
+                    <div class="zcash-timeline-text"><strong>ZEC price collapses</strong> from an all-time high of ~$880 (2018) to under $25. Market cap falls below $400M. The ECC announces layoffs. Governance tensions between the ECC and Zcash Foundation escalate publicly. Zooko Wilcox steps down as CEO in 2024. The project enters what critics call a "zombie chain" phase.</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">Key Takeaway</div>
+                <p>
+                    ZCash's history is a case study in how <strong>corporate structure determines protocol outcomes</strong>. Every major decision &mdash; optional privacy, the dev tax, the trusted setup, the regulatory posture &mdash; traces back to the VC-funded, company-controlled genesis. Monero, by contrast, was launched anonymously in 2014 with no premine, no company, and no investors. Its privacy was mandatory from block zero.
+                </p>
+            </div>
         </div>
 
-        <!-- The killer stat -->
-        <div class="shielded-stat">
-            <div class="shielded-box zcash-box fade-in">
-                <div class="shielded-pct">~10%</div>
-                <div class="shielded-label">ZCash transactions using shielded pools</div>
+        <!-- ======== 4.2 The 20% Dev Tax ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-devtax">
+            <div class="zcash-subsection-label">4.2 &mdash; Follow the Money</div>
+            <div class="zcash-subsection-title">The 20% Dev Tax Problem</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    From its first block, ZCash imposed a <strong>20% tax on all mining rewards</strong>. For every 12.5 ZEC mined, 2.5 ZEC went not to the miner who secured the network, but to the Electric Coin Company, investors, and affiliated entities. This was called the "Founders' Reward" &mdash; a euphemism for what is, in practice, a perpetual corporate subsidy paid by the network's own security providers.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    When the original Founders' Reward expired in November 2020, the community was presented with a governance vote: end the tax, or continue it. The result was <strong>ZIP 1014</strong>, which restructured but preserved the 20% allocation. The new "Dev Fund" split proceeds three ways: 8% to ECC, 7% to the Zcash Foundation, and 5% to a Major Grants Fund. The tax was set to continue through the next halving cycle.
+                </p>
+                <p>
+                    Over ZCash's lifetime, the 20% allocation has directed approximately <strong>3.5 million ZEC</strong> to the ECC, Foundation, and grant recipients &mdash; out of a total ~16 million ZEC mined. That means roughly <strong>one in five coins ever created went to insiders</strong>, not to the miners who actually secure the chain.
+                </p>
             </div>
-            <div class="shielded-box monero-box fade-in">
-                <div class="shielded-pct">100%</div>
-                <div class="shielded-label">Monero transactions that are private</div>
+
+            <div class="zcash-funding-grid">
+                <div class="zcash-funding-card zec-funding fade-in">
+                    <div class="zcash-funding-card-title">ZCash Funding Model</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="cross">&#10007;</span> 20% of all block rewards taxed since genesis</li>
+                        <li><span class="cross">&#10007;</span> ~3.5M ZEC to insiders (~22% of total supply mined)</li>
+                        <li><span class="cross">&#10007;</span> VC investors received ZEC allocations pre-launch</li>
+                        <li><span class="cross">&#10007;</span> "Founders' Reward" rebranded to "Dev Fund" &mdash; same tax</li>
+                        <li><span class="cross">&#10007;</span> ECC is a for-profit company with a CEO and board</li>
+                        <li><span class="cross">&#10007;</span> Miners subsidize the company that controls the protocol</li>
+                        <li><span class="cross">&#10007;</span> No mechanism to defund ECC if community disagrees</li>
+                        <li><span class="cross">&#10007;</span> Governance captured by funded entities</li>
+                    </ul>
+                </div>
+                <div class="zcash-funding-card xmr-funding fade-in">
+                    <div class="zcash-funding-card-title">Monero Funding Model (CCS)</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="check">&#10003;</span> Zero tax on mining rewards &mdash; 100% to miners</li>
+                        <li><span class="check">&#10003;</span> Community Crowdfunding System (CCS) for all development</li>
+                        <li><span class="check">&#10003;</span> Anyone can propose work; community decides what to fund</li>
+                        <li><span class="check">&#10003;</span> Milestones verified before payouts are released</li>
+                        <li><span class="check">&#10003;</span> No company, no CEO, no board of directors</li>
+                        <li><span class="check">&#10003;</span> No premine &mdash; every XMR was mined fairly</li>
+                        <li><span class="check">&#10003;</span> Contributors can be defunded at any time by community</li>
+                        <li><span class="check">&#10003;</span> Truly decentralized governance</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">The Incentive Problem</div>
+                <p>
+                    When a protocol's core developers are funded by an automatic tax, their incentive is to <strong>perpetuate the tax</strong>, not to ship the best technology. The ECC has every reason to avoid rocking the regulatory boat &mdash; because regulatory hostility threatens exchange listings, which threatens ZEC price, which threatens the Dev Fund revenue. This is why ZCash adopted a "regulatory friendly" posture: <strong>the company's survival depends on compliance, not on privacy</strong>.
+                </p>
             </div>
         </div>
 
-        <!-- Feature comparison cards -->
-        <div class="comparison-grid">
-            <div class="comparison-card xmr-card fade-in">
-                <div class="comparison-card-title">Monero (XMR)</div>
-                <ul class="feature-list">
-                    <li><span class="check">&#10003;</span> No company, no CEO, no investors</li>
-                    <li><span class="check">&#10003;</span> No premine, no founders' reward</li>
-                    <li><span class="check">&#10003;</span> 100% private by default &mdash; always</li>
-                    <li><span class="check">&#10003;</span> No trusted setup required</li>
-                    <li><span class="check">&#10003;</span> Community-funded via CCS</li>
-                    <li><span class="check">&#10003;</span> ASIC-resistant (RandomX)</li>
-                    <li><span class="check">&#10003;</span> Tail emission &mdash; permanent security</li>
-                    <li><span class="check">&#10003;</span> IRS $625K bounty &mdash; unclaimed</li>
-                    <li><span class="check">&#10003;</span> 73+ delistings &mdash; still thriving</li>
-                    <li><span class="check">&#10003;</span> Truly fungible</li>
-                </ul>
+        <!-- ======== 4.3 The Trusted Setup ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-trustedsetup">
+            <div class="zcash-subsection-label">4.3 &mdash; Cryptographic Trust Debt</div>
+            <div class="zcash-subsection-title">The Trusted Setup: "Trust Us, We Deleted the Keys"</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash's original privacy system (zk-SNARKs using the Groth16 proving system) required a <strong>trusted setup ceremony</strong>. This is a one-time cryptographic event where secret parameters &mdash; called "toxic waste" &mdash; are generated and then must be destroyed. If anyone retains this toxic waste, they gain the ability to create counterfeit ZEC out of thin air, completely undetectable by the network.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The Sprout ceremony (2016) involved <strong>six participants</strong> who each contributed randomness via a multi-party computation protocol. The security guarantee: as long as at least one participant honestly destroyed their share of the toxic waste, the system is secure. The participants included Zooko Wilcox himself, along with five others who performed their computations in various locations using various hardware.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The fundamental problem is not whether the participants were honest. <strong>The problem is that the claim is unfalsifiable.</strong> There is no mathematical proof, no on-chain evidence, and no cryptographic verification that can demonstrate the toxic waste was destroyed. You must simply trust that six humans &mdash; including the CEO of the company that profits from ZCash &mdash; acted correctly. This is the exact opposite of the "don't trust, verify" ethos that cryptocurrency was built to embody.
+                </p>
+                <p>
+                    The Sapling ceremony (2018) scaled this to 87 participants via the "Powers of Tau" protocol, which improved the trust assumption but did not eliminate it. You still must trust that at least one of those 87 individuals was honest and not compromised. The Orchard upgrade (2022) finally adopted Halo 2, which requires no trusted setup for the new shielded pool &mdash; but the old Sprout and Sapling pools, and the coins minted under their trust assumptions, remain part of the protocol forever.
+                </p>
             </div>
-            <div class="comparison-card zec-card fade-in">
-                <div class="comparison-card-title">ZCash (ZEC)</div>
-                <ul class="feature-list">
-                    <li><span class="cross">&#10007;</span> ECC controls development</li>
-                    <li><span class="cross">&#10007;</span> 20% dev tax on mining rewards</li>
-                    <li><span class="cross">&#10007;</span> ~90% of transactions are transparent</li>
-                    <li><span class="cross">&#10007;</span> Trusted setup &mdash; unverifiable</li>
-                    <li><span class="cross">&#10007;</span> VC-funded (Pantera, DCG, Naval)</li>
-                    <li><span class="cross">&#10007;</span> ASIC-dominated mining</li>
-                    <li><span class="cross">&#10007;</span> Halving schedule &mdash; no tail emission</li>
-                    <li><span class="cross">&#10007;</span> Listed on Gemini &mdash; compliant</li>
-                    <li><span class="cross">&#10007;</span> Promoted by insiders &amp; VCs</li>
-                    <li><span class="cross">&#10007;</span> Transparent coins fully traceable</li>
-                </ul>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">6</div>
+                    <div class="zcash-stat-desc">Participants in Sprout ceremony (2016)</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">87</div>
+                    <div class="zcash-stat-desc">Participants in Sapling ceremony (2018)</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">0</div>
+                    <div class="zcash-stat-desc">Ways to verify toxic waste was destroyed</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num green">0</div>
+                    <div class="zcash-stat-desc">Trusted setup ceremonies Monero has ever needed</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout-green fade-in">
+                <div class="zcash-callout-title">Monero's Approach: Trustless by Design</div>
+                <p>
+                    Monero uses <strong>Ring Signatures, RingCT, and Stealth Addresses</strong> &mdash; none of which require a trusted setup. Every privacy guarantee is derived from standard cryptographic assumptions (discrete logarithm problem) that can be independently verified by anyone running a node. With the upcoming <strong>FCMP++</strong> upgrade, Monero will use full-chain membership proofs based on Curve Trees &mdash; still with zero trusted setup. The anonymity set becomes the entire blockchain, and the trust assumption is: math works.
+                </p>
+            </div>
+
+            <div class="zcash-quote-box fade-in">
+                <p>"If you have to trust someone to not counterfeit the money, you have rebuilt the Federal Reserve with extra steps."</p>
+                <div class="quote-attr">&mdash; Common criticism in Monero community forums</div>
+            </div>
+        </div>
+
+        <!-- ======== 4.4 Shielded vs Transparent ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-shielded">
+            <div class="zcash-subsection-label">4.4 &mdash; The Killer Statistic</div>
+            <div class="zcash-subsection-title">Shielded vs. Transparent: ~10% Privacy in a "Privacy Coin"</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    This is the single most damning fact about ZCash: <strong>approximately 90% of all ZCash transactions are fully transparent.</strong> They use t-addresses (transparent addresses) that work exactly like Bitcoin &mdash; sender, receiver, and amount are all visible on the public blockchain. Only transactions between z-addresses (shielded addresses) enjoy full privacy, and these represent a small minority of on-chain activity.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The reasons for this are structural, not accidental. Exchanges default to transparent addresses because regulators require it. Wallets default to transparent because shielded transactions are computationally heavier and take longer to process. Most ZCash users have never sent a shielded transaction in their lives. The "privacy coin" label is marketing, not reality.
+                </p>
+                <p>
+                    Even worse: <strong>transactions that move between transparent and shielded pools (t-to-z or z-to-t) leak metadata.</strong> When you shield 10 ZEC from a transparent address, observers know that the t-address owner has 10 ZEC in the shielded pool. When you unshield later, they can correlate amounts and timing. The only fully private flow is z-to-z (shielded-to-shielded), which represents the smallest fraction of all ZCash activity.
+                </p>
+            </div>
+
+            <!-- The killer stat boxes - expanded -->
+            <div class="shielded-stat">
+                <div class="shielded-box zcash-box fade-in">
+                    <div class="shielded-pct">~10%</div>
+                    <div class="shielded-label">ZCash transactions fully shielded (z-to-z)</div>
+                </div>
+                <div class="shielded-box monero-box fade-in">
+                    <div class="shielded-pct">100%</div>
+                    <div class="shielded-label">Monero transactions that are private by default</div>
+                </div>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~85%</div>
+                    <div class="zcash-stat-desc">ZEC value sitting in transparent pool</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~5%</div>
+                    <div class="zcash-stat-desc">Fully shielded z-to-z transaction share (some estimates)</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num orange">100%</div>
+                    <div class="zcash-stat-desc">Monero value that is always shielded</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">Why Optional Privacy Is No Privacy</div>
+                <p>
+                    When privacy is optional, using it becomes a signal. If 90% of transactions are transparent and you choose to shield yours, <strong>you have flagged yourself as someone with something to hide.</strong> This is the fundamental paradox: optional privacy is worse than no privacy at all, because it creates a two-tier system where the "private" tier is a smaller, more conspicuous anonymity set. In Monero, every transaction looks the same &mdash; there is no "suspicious" behavior because privacy is the only option.
+                </p>
+            </div>
+
+            <div class="zcash-prose">
+                <p>
+                    Cryptographer <strong>Ian Miers</strong> &mdash; one of ZCash's own co-creators &mdash; has acknowledged this dynamic. The academic literature on anonymity sets is clear: privacy systems are only as strong as the number of users who use them identically. A shielded pool used by 10% of participants provides fundamentally weaker privacy guarantees than a system where 100% of transactions are indistinguishable. This is not a matter of opinion. It is information theory.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== 4.5 Regulatory Capture ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-regulation">
+            <div class="zcash-subsection-label">4.5 &mdash; Regulatory Capture</div>
+            <div class="zcash-subsection-title">The "Regulatory Friendly" Privacy Coin Paradox</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash has actively courted regulatory acceptance. Zooko Wilcox testified before Congress, the ECC hired compliance-focused lobbyists, and ZCash was listed on regulated exchanges like <strong>Gemini</strong> (the Winklevoss exchange, which is NYDFS-licensed). Gemini even offered a ZCash "shielded withdrawal" feature &mdash; but all deposits and internal accounting remain transparent and KYC'd.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The reason ZCash can exist on regulated exchanges is precisely because <strong>regulators do not consider it a threat</strong>. The transparent default means exchanges can enforce full KYC/AML on ZEC transactions. The shielded pool is small enough to be irrelevant from a compliance perspective. Law enforcement can trace the vast majority of ZCash flows using standard blockchain analysis tools.
+                </p>
+                <p>
+                    Compare this with Monero: <strong>delisted from 73+ exchanges</strong> specifically because regulators and compliance teams cannot trace it. Binance, OKX, Kraken (in some jurisdictions), Huobi, and others have all removed XMR. The delistings are not a weakness &mdash; they are proof of concept. If your "privacy coin" is welcome on every regulated exchange, it is not providing meaningful privacy.
+                </p>
+            </div>
+
+            <div class="zcash-funding-grid">
+                <div class="zcash-funding-card zec-funding fade-in">
+                    <div class="zcash-funding-card-title">ZCash: Regulatory Welcome Mat</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="cross">&#10007;</span> Listed on Gemini, Coinbase, Kraken (all jurisdictions)</li>
+                        <li><span class="cross">&#10007;</span> ECC testified before Congress to demonstrate compliance</li>
+                        <li><span class="cross">&#10007;</span> Transparent by default = exchanges enforce KYC on all ZEC</li>
+                        <li><span class="cross">&#10007;</span> FinCEN, FATF do not classify ZCash as a compliance risk</li>
+                        <li><span class="cross">&#10007;</span> Chainalysis fully supports transparent ZCash tracing</li>
+                        <li><span class="cross">&#10007;</span> No government has attempted to ban ZCash</li>
+                    </ul>
+                </div>
+                <div class="zcash-funding-card xmr-funding fade-in">
+                    <div class="zcash-funding-card-title">Monero: Proof of Threat</div>
+                    <ul class="zcash-funding-list">
+                        <li><span class="check">&#10003;</span> Delisted from 73+ exchanges worldwide</li>
+                        <li><span class="check">&#10003;</span> IRS offered $625,000 bounty to break Monero &mdash; unclaimed</li>
+                        <li><span class="check">&#10003;</span> Banned or restricted in Japan, South Korea, Australia, UAE</li>
+                        <li><span class="check">&#10003;</span> Chainalysis admitted Monero tracing is "probabilistic" at best</li>
+                        <li><span class="check">&#10003;</span> 89% of darknet vendors prefer or mandate XMR</li>
+                        <li><span class="check">&#10003;</span> Still thriving despite every institutional attack</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="zcash-quote-box fade-in">
+                <p>"A privacy tool that governments are comfortable with is not a privacy tool. It is a compliance tool with privacy branding."</p>
+                <div class="quote-attr">&mdash; Observed across cypherpunk discourse</div>
+            </div>
+        </div>
+
+        <!-- ======== 4.6 Chainalysis & ZCash ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-chainalysis">
+            <div class="zcash-subsection-label">4.6 &mdash; Surveillance Compatibility</div>
+            <div class="zcash-subsection-title">Chainalysis and ZCash: Already Traced</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    <strong>Chainalysis, Elliptic, and CipherTrace</strong> all support ZCash transparent address tracing. Since approximately 85-90% of ZCash value sits in transparent pools, blockchain surveillance firms can trace the vast majority of ZEC flows with the same fidelity they trace Bitcoin. This is not speculation &mdash; Chainalysis lists ZCash as a supported asset in its compliance products marketed to exchanges, banks, and law enforcement agencies.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The shielded pool presents a harder target, but its small size creates a different vulnerability: <strong>statistical deanonymization</strong>. When only ~10% of transactions use shielding, the anonymity set is small enough that timing analysis, amount correlation, and intersection attacks can narrow down participants. If you shield 47.3 ZEC at 3:14 PM and someone unshields 47.3 ZEC at 3:22 PM, the correlation is trivially observable. In a system where everyone shields, this analysis fails because there are millions of possible matches. In ZCash's small shielded pool, the math works against the user.
+                </p>
+                <p>
+                    Academic research has repeatedly demonstrated these attacks. A 2018 study by researchers at University College London found that <strong>the vast majority of ZCash shielded transactions could be linked to transparent addresses</strong> using basic heuristics &mdash; because users shield from transparent addresses and then unshield back to transparent addresses, creating a "U-turn" pattern that reveals the entire flow.
+                </p>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">3+</div>
+                    <div class="zcash-stat-desc">Major chain analysis firms that trace ZCash</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~90%</div>
+                    <div class="zcash-stat-desc">ZEC flows visible to surveillance tools</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num green">$625K</div>
+                    <div class="zcash-stat-desc">IRS bounty to trace Monero (still unclaimed)</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">The "U-Turn" Attack</div>
+                <p>
+                    A user sends 10 ZEC from a transparent address (t1ABC) to a shielded address (zXYZ). Later, 10 ZEC is unshielded from the shielded pool to transparent address (t1DEF). <strong>Blockchain analysts match the amount, timing, and pool entry/exit to link t1ABC to t1DEF.</strong> The shielding provided zero effective privacy. This pattern accounts for a large percentage of ZCash "shielded" activity. In Monero, there are no transparent addresses, no pools to enter or exit, and no amounts visible to correlate. The attack surface simply does not exist.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== 4.7 Governance Split ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-governance">
+            <div class="zcash-subsection-label">4.7 &mdash; Governance Fracture</div>
+            <div class="zcash-subsection-title">The Zcash Foundation vs. ECC Split</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    ZCash's governance has been defined by a persistent tension between its two funded entities: the <strong>Electric Coin Company (ECC)</strong>, the for-profit company that builds the reference implementation (zcashd), and the <strong>Zcash Foundation</strong>, a 501(c)(3) nonprofit that was established to provide a counterbalance to ECC's corporate control.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    In theory, this dual structure provides checks and balances. In practice, it has produced <strong>public disagreements, competing roadmaps, and governance paralysis</strong>. The two organizations have clashed over the Dev Fund allocation, protocol priorities, the transition to proof-of-stake, and the fundamental question of whether ZCash should prioritize regulatory compliance or privacy.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The Foundation developed its own node implementation (<strong>Zebra</strong>, written in Rust) partly to reduce dependence on ECC's zcashd. This created a situation where the two funded entities were building competing infrastructure for the same chain, duplicating effort rather than collaborating. The Foundation pushed for community governance reforms while the ECC resisted changes that might reduce its funding or control.
+                </p>
+                <p>
+                    When <strong>Zooko Wilcox stepped down as ECC CEO in 2024</strong>, the leadership vacuum deepened the crisis. The new ECC leadership faced declining ZEC price, shrinking Dev Fund revenue (because the tax is denominated in ZEC), and a demoralized community. Proposals for a new funding mechanism for the next halving cycle generated fierce debate, with some community members advocating for ending the Dev Fund entirely.
+                </p>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">Single Point of Failure</div>
+                <p>
+                    The fundamental problem is that ZCash <strong>depends on funded institutions for its survival</strong>. If the ECC runs out of money or the Foundation dissolves, who maintains the protocol? Monero has no such dependency. Its development is distributed across dozens of independent contributors funded ad-hoc through the CCS. No single entity can shut down Monero development because no single entity controls it. ZCash's governance is a corporate org chart. Monero's governance is an open-source bazaar.
+                </p>
+            </div>
+
+            <div class="zcash-quote-box fade-in">
+                <p>"Decentralization is not two organizations arguing over a shared treasury. Decentralization is no treasury, no organizations, and no arguments &mdash; just code, contributors, and consensus."</p>
+                <div class="quote-attr">&mdash; Monero community perspective on ZCash governance</div>
+            </div>
+        </div>
+
+        <!-- ======== 4.8 Supply Audit Problem ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-supply">
+            <div class="zcash-subsection-label">4.8 &mdash; The Unauditable Supply</div>
+            <div class="zcash-subsection-title">The Counterfeiting Problem: Can You Prove Nobody Printed Free Money?</div>
+
+            <div class="zcash-prose">
+                <p style="margin-bottom: 1.25rem;">
+                    In February 2019, the Zcash team disclosed a <strong>critical vulnerability in the original Sprout shielded pool</strong> that had existed since launch. The bug, present in the cryptographic circuit used by the Sprout zk-SNARK proofs, could have allowed an attacker to <strong>create counterfeit ZEC from nothing</strong> &mdash; minting coins that never existed, completely invisibly. Because shielded balances are hidden by design, the forged coins would have been indistinguishable from legitimately mined ZEC.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The ECC stated that they found no evidence of exploitation. But this claim contains a logical contradiction: <strong>the entire point of the shielded pool is that balances are hidden.</strong> If counterfeit coins were created, they would look identical to real coins. There is no mechanism &mdash; none &mdash; to audit the total supply of ZEC in the shielded pool and verify it matches expected issuance. The ECC's assurance requires trusting them, which is exactly what cryptocurrency was designed to eliminate.
+                </p>
+                <p style="margin-bottom: 1.25rem;">
+                    The fix was deployed quietly as part of the Sapling upgrade, before the vulnerability was publicly disclosed. This meant the ZCash network was running with a known-broken cryptographic circuit for approximately <strong>two years</strong> while the ECC prepared the fix in private. Responsible disclosure is standard practice in security, but the two-year window leaves an uncomfortable question: who else knew?
+                </p>
+                <p>
+                    This vulnerability is not merely historical. It reveals a <strong>structural risk inherent to ZCash's design</strong>: any bug in the shielded pool's cryptographic proofs could silently inflate the supply, and there is no way for external auditors, node operators, or users to detect it. The shielded pool is a black box by construction.
+                </p>
+            </div>
+
+            <div class="zcash-stat-row">
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">~2 yrs</div>
+                    <div class="zcash-stat-desc">Sprout counterfeiting bug existed before disclosure</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num">0</div>
+                    <div class="zcash-stat-desc">Ways to independently audit shielded ZEC supply</div>
+                </div>
+                <div class="zcash-stat-box fade-in">
+                    <div class="zcash-stat-num green">Yes</div>
+                    <div class="zcash-stat-desc">Monero supply is fully auditable via key images</div>
+                </div>
+            </div>
+
+            <div class="zcash-callout-green fade-in">
+                <div class="zcash-callout-title">Monero's Supply Auditability</div>
+                <p>
+                    Monero solves this problem elegantly. While transaction amounts are hidden using <strong>RingCT (Ring Confidential Transactions)</strong>, every Monero transaction includes a cryptographic proof (Pedersen commitments) that the inputs and outputs balance &mdash; meaning no new coins are created. Additionally, <strong>key images</strong> prevent double-spending and allow anyone to verify that no coin has been spent twice. The total supply can be verified by summing coinbase (mining) rewards, which are transparent. Monero achieves the seemingly impossible: <strong>hidden amounts with provable supply integrity</strong>. ZCash chose hidden amounts with unverifiable supply integrity.
+                </p>
+            </div>
+
+            <div class="zcash-callout fade-in">
+                <div class="zcash-callout-title">The Fundamental Question</div>
+                <p>
+                    <strong>Would you store your wealth in a currency where someone might have already printed unlimited free money, and there is no way to check?</strong> This is not a theoretical concern. The Sprout bug proved the attack vector exists. The shielded pool's opacity means exploitation is undetectable. ZCash asks you to trust that it did not happen. Sound money requires verification, not trust.
+                </p>
+            </div>
+        </div>
+
+        <!-- ======== Final Comprehensive Comparison ======== -->
+        <div class="zcash-subsection fade-in" id="zcash-verdict">
+            <div class="zcash-subsection-label">4.9 &mdash; The Verdict</div>
+            <div class="zcash-subsection-title">Comprehensive Comparison: ZCash vs. Monero</div>
+
+            <div class="zcash-prose">
+                <p>
+                    When you examine every dimension &mdash; history, funding, cryptography, on-chain data, governance, regulatory posture, and supply integrity &mdash; the conclusion is inescapable. ZCash is not a privacy coin. It is a transparent coin with an optional, underused privacy feature and a corporate entity that profits from the ambiguity. Monero is the real thing.
+                </p>
+            </div>
+
+            <div class="comparison-grid">
+                <div class="comparison-card xmr-card fade-in">
+                    <div class="comparison-card-title">Monero (XMR)</div>
+                    <ul class="feature-list">
+                        <li><span class="check">&#10003;</span> No company, no CEO, no investors, no board</li>
+                        <li><span class="check">&#10003;</span> No premine, no founders' reward, no dev tax</li>
+                        <li><span class="check">&#10003;</span> 100% private by default &mdash; every transaction, always</li>
+                        <li><span class="check">&#10003;</span> No trusted setup &mdash; never has, never will</li>
+                        <li><span class="check">&#10003;</span> Community-funded via CCS (milestone-based)</li>
+                        <li><span class="check">&#10003;</span> ASIC-resistant (RandomX) &mdash; CPU-minable</li>
+                        <li><span class="check">&#10003;</span> Tail emission (0.6 XMR/block) &mdash; permanent security</li>
+                        <li><span class="check">&#10003;</span> IRS $625K bounty &mdash; still unclaimed</li>
+                        <li><span class="check">&#10003;</span> Delisted from 73+ exchanges &mdash; still thriving</li>
+                        <li><span class="check">&#10003;</span> Truly fungible &mdash; no tainted coins possible</li>
+                        <li><span class="check">&#10003;</span> Supply auditable via Pedersen commitments &amp; key images</li>
+                        <li><span class="check">&#10003;</span> FCMP++ will make anonymity set = entire chain</li>
+                        <li><span class="check">&#10003;</span> Decentralized governance &mdash; no single point of failure</li>
+                        <li><span class="check">&#10003;</span> 89% darknet vendor preference &mdash; real-world validation</li>
+                    </ul>
+                </div>
+                <div class="comparison-card zec-card fade-in">
+                    <div class="comparison-card-title">ZCash (ZEC)</div>
+                    <ul class="feature-list">
+                        <li><span class="cross">&#10007;</span> ECC (for-profit company) controls development</li>
+                        <li><span class="cross">&#10007;</span> 20% dev tax since genesis (~3.5M ZEC to insiders)</li>
+                        <li><span class="cross">&#10007;</span> ~90% of transactions are fully transparent</li>
+                        <li><span class="cross">&#10007;</span> Required trusted setup (Sprout &amp; Sapling pools)</li>
+                        <li><span class="cross">&#10007;</span> VC-funded (Pantera, DCG, Naval, Voorhees)</li>
+                        <li><span class="cross">&#10007;</span> ASIC-dominated mining &mdash; centralized hashrate</li>
+                        <li><span class="cross">&#10007;</span> Halving schedule, no tail emission</li>
+                        <li><span class="cross">&#10007;</span> Listed on Gemini, Coinbase &mdash; regulators unconcerned</li>
+                        <li><span class="cross">&#10007;</span> ECC vs Foundation governance split</li>
+                        <li><span class="cross">&#10007;</span> Transparent coins fully traceable by Chainalysis</li>
+                        <li><span class="cross">&#10007;</span> Supply in shielded pool is unauditable</li>
+                        <li><span class="cross">&#10007;</span> Sprout counterfeiting bug existed for ~2 years</li>
+                        <li><span class="cross">&#10007;</span> "Regulatory friendly" = privacy is not the priority</li>
+                        <li><span class="cross">&#10007;</span> ZEC price down ~97% from ATH &mdash; market has spoken</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="zcash-callout fade-in" style="margin-top: 2rem;">
+                <div class="zcash-callout-title">Final Assessment</div>
+                <p>
+                    ZCash is privacy theater: the appearance of privacy for marketing purposes, without the substance. Its optional model ensures the shielded pool is a conspicuous minority. Its corporate structure ensures regulatory compliance takes priority over user privacy. Its trusted setup history and supply auditability gap introduce trust requirements that contradict the foundational promise of cryptocurrency. <strong>Monero is privacy by default, privacy by design, and privacy without compromise.</strong> There is no comparison.
+                </p>
             </div>
         </div>
     </section>
