@@ -487,61 +487,6 @@
             background: rgba(255, 105, 180, 0.1);
         }
 
-        /* Wagyu Iframe Toggle */
-        .iframe-toggle {
-            background: var(--card-bg);
-            border: 1px solid var(--grey-18);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-top: 2rem;
-        }
-
-        .iframe-toggle-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            cursor: pointer;
-        }
-
-        .iframe-toggle-header h3 {
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .iframe-toggle-btn {
-            background: var(--wagyu-pink);
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            transition: all 0.3s ease;
-        }
-
-        .iframe-toggle-btn:hover {
-            background: #FF1493;
-        }
-
-        .wagyu-iframe-container {
-            display: none;
-            margin-top: 1.5rem;
-        }
-
-        .wagyu-iframe-container.active {
-            display: block;
-        }
-
-        .wagyu-iframe-container iframe {
-            width: 100%;
-            height: 700px;
-            border: none;
-            border-radius: 12px;
-            background: #0d0d0d;
-        }
-
         /* Info Section */
         .info-section {
             max-width: 1000px;
@@ -1510,7 +1455,7 @@
 <body>
     <!-- Navigation -->
     <nav>
-        <a href="index.html" class="nav-logo" style="text-decoration:none;">₿ → ɱ</a>
+        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
         <div class="nav-links">
             <a href="index.html">Home</a>
             <div class="nav-dropdown">
@@ -1786,24 +1731,6 @@
                     </a>
                 </div>
 
-                <div class="iframe-toggle">
-                    <div class="iframe-toggle-header" onclick="toggleWagyuIframe()">
-                        <h3>🖥️ Embedded Wagyu Interface</h3>
-                        <button class="iframe-toggle-btn" id="wagyu-toggle-btn">Show Embed</button>
-                    </div>
-                    <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem;">
-                        Note: Embedded interface may be blocked based on your location. For best experience, visit wagyu.xyz directly.
-                    </p>
-                    <div class="wagyu-iframe-container" id="wagyu-iframe-container">
-                        <iframe 
-                            id="wagyu-iframe"
-                            src="about:blank"
-                            data-src="https://www.wagyu.xyz/swap"
-                            allow="clipboard-write"
-                            loading="lazy">
-                        </iframe>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -2571,7 +2498,7 @@
                 Some services may be unavailable or restricted in certain locations.
             </p>
             <p style="margin-top: 1rem; font-size: 0.8rem; opacity: 0.7;">
-                © 2026 Satoshi's Vision Archive — Educational Project — All Rights Reserved
+                © 2026 XMR.IRISH — Educational Project — All Rights Reserved
             </p>
         </div>
     </footer>
@@ -2624,26 +2551,6 @@
                 });
             }
         };
-
-        // Wagyu iframe toggle
-        function toggleWagyuIframe() {
-            const container = document.getElementById('wagyu-iframe-container');
-            const btn = document.getElementById('wagyu-toggle-btn');
-            const iframe = document.getElementById('wagyu-iframe');
-
-            if (container.classList.contains('active')) {
-                container.classList.remove('active');
-                btn.textContent = 'Show Embed';
-            } else {
-                container.classList.add('active');
-                btn.textContent = 'Hide Embed';
-
-                if (!WidgetLoader.loaded.has('wagyu-iframe')) {
-                    iframe.src = iframe.dataset.src;
-                    WidgetLoader.loaded.add('wagyu-iframe');
-                }
-            }
-        }
 
         // ── ChangeNOW Swap Status Tracker ────────────────────────
         // Users can paste a ChangeNOW transaction ID to check status
