@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2027+ Future Outlook | Satoshi's Vision Archive</title>
+    <title>Looking Forward — Why Monero Is the Only Future | Satoshi's Vision Archive</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -21,20 +21,17 @@
             --danger-red: #FF4757;
             --privacy-purple: #9B59B6;
             --crossover-cyan: #00CED1;
+            --reg-green: #00D395;
+            --reg-blue: #3498DB;
+            --reg-red: #FF4757;
+            --reg-purple: #9B59B6;
             --font-display: 'Playfair Display', serif;
             --font-mono: 'JetBrains Mono', monospace;
             --font-body: 'Sora', sans-serif;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
             font-family: var(--font-body);
@@ -46,49 +43,23 @@
 
         /* Navigation */
         .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
         }
-
         .nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
+            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
             background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; text-decoration: none;
         }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
         .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.3s ease;
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease;
         }
-
-        .nav-links a:hover {
-            color: var(--btc-orange);
-        }
-
+        .nav-links a:hover { color: var(--btc-orange); }
         .nav-dropdown { position: relative; }
         .nav-dropdown-toggle {
             color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
@@ -111,201 +82,280 @@
         }
         .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
 
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            padding: 10px;
-        }
-
-        .hamburger span {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-        }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 10px; }
+        .hamburger span { width: 25px; height: 2px; background: var(--text-primary); }
 
         .mobile-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 10, 10, 0.98);
-            z-index: 999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 2rem;
+            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(10, 10, 10, 0.98); z-index: 999;
+            flex-direction: column; justify-content: center; align-items: center; gap: 2rem;
         }
-
-        .mobile-menu.active {
-            display: flex;
-        }
-
-        .mobile-menu a {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-family: var(--font-display);
-        }
+        .mobile-menu.active { display: flex; }
+        .mobile-menu a { color: var(--text-primary); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); }
 
         /* Hero */
         .hero {
-            padding: 8rem 2rem 4rem;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
+            padding: 8rem 2rem 4rem; text-align: center; position: relative; overflow: hidden;
         }
-
         .hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
             background:
                 radial-gradient(ellipse at 30% 20%, rgba(255, 102, 0, 0.12) 0%, transparent 50%),
                 radial-gradient(ellipse at 70% 80%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
                 radial-gradient(ellipse at 50% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 60%);
             pointer-events: none;
         }
-
         .hero-eyebrow {
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            color: var(--xmr-orange);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 1rem;
-            position: relative;
+            font-family: var(--font-mono); font-size: 0.85rem; color: var(--xmr-orange);
+            text-transform: uppercase; letter-spacing: 3px; margin-bottom: 1rem; position: relative;
         }
-
         .hero-title {
-            font-family: var(--font-display);
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            font-weight: 700;
-            margin-bottom: 1rem;
-            position: relative;
+            font-family: var(--font-display); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700;
+            margin-bottom: 1rem; position: relative;
             background: linear-gradient(135deg, var(--text-primary) 0%, var(--btc-gold) 50%, var(--xmr-orange) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-
         .hero-subtitle {
-            color: var(--text-secondary);
-            max-width: 700px;
-            margin: 0 auto 2rem;
-            font-size: 1.1rem;
-            position: relative;
+            color: var(--text-secondary); max-width: 700px; margin: 0 auto 1.5rem;
+            font-size: 1.15rem; position: relative;
+        }
+        .hero-tagline {
+            font-family: var(--font-mono); font-size: 0.85rem; color: var(--danger-red);
+            max-width: 700px; margin: 0 auto; position: relative; letter-spacing: 0.5px;
         }
 
-        .hero-stat-row {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-            position: relative;
-        }
-
-        .hero-stat {
-            background: rgba(18, 18, 18, 0.8);
-            border: 1px solid var(--grey-18);
-            border-radius: 12px;
-            padding: 1.25rem 2rem;
-            text-align: center;
-            min-width: 160px;
-        }
-
-        .hero-stat-value {
-            font-family: var(--font-mono);
-            font-size: 1.8rem;
-            font-weight: 500;
-            color: var(--xmr-orange);
-        }
-
-        .hero-stat-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 0.25rem;
-        }
-
-        /* Section */
+        /* Sections */
         .section {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
+            max-width: 1200px; margin: 0 auto; padding: 4rem 2rem;
         }
-
         .section-label {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--xmr-orange);
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            margin-bottom: 0.75rem;
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--xmr-orange);
+            text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0.75rem;
         }
-
         .section-title {
-            font-family: var(--font-display);
-            font-size: clamp(1.8rem, 4vw, 2.5rem);
-            font-weight: 700;
-            margin-bottom: 1rem;
+            font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700; margin-bottom: 1rem;
         }
-
         .section-intro {
-            color: var(--text-secondary);
-            max-width: 700px;
-            margin-bottom: 3rem;
-            font-size: 1rem;
+            color: var(--text-secondary); max-width: 700px; margin-bottom: 3rem; font-size: 1rem;
         }
 
-        /* Driver Cards */
-        .drivers-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 1.5rem;
+        /* Fade-in animation */
+        .fade-in {
+            opacity: 0; transform: translateY(30px);
         }
-
-        .driver-card {
-            background: var(--card-bg);
-            border: 1px solid var(--grey-18);
-            border-radius: 16px;
-            padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-            opacity: 0;
-            transform: translateY(30px);
-        }
-
-        .driver-card.visible {
-            opacity: 1;
-            transform: translateY(0);
+        .fade-in.visible {
+            opacity: 1; transform: translateY(0);
             transition: opacity 0.6s ease, transform 0.6s ease;
         }
+        .scale-in {
+            opacity: 0; transform: scale(0.97);
+        }
+        .scale-in.visible {
+            opacity: 1; transform: scale(1);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
 
+        /* ===== SECTION 1: Regulatory Timeline ===== */
+        .reg-timeline {
+            position: relative; padding-left: 2rem;
+        }
+        .reg-timeline::before {
+            content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
+            width: 2px; background: linear-gradient(180deg, var(--reg-green), var(--reg-blue), var(--reg-red), var(--reg-purple));
+        }
+        .reg-item {
+            position: relative; margin-bottom: 2rem; padding-left: 1.5rem;
+        }
+        .reg-item::before {
+            content: ''; position: absolute; left: -1.55rem; top: 0.6rem;
+            width: 12px; height: 12px; border-radius: 50%;
+            border: 2px solid var(--grey-18); background: var(--dark-bg);
+        }
+        .reg-item[data-type="pro-crypto"]::before { border-color: var(--reg-green); background: var(--reg-green); }
+        .reg-item[data-type="stablecoin"]::before { border-color: var(--reg-blue); background: var(--reg-blue); }
+        .reg-item[data-type="government"]::before { border-color: var(--reg-red); background: var(--reg-red); }
+        .reg-item[data-type="surveillance"]::before { border-color: var(--reg-purple); background: var(--reg-purple); }
+
+        .reg-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.5rem 1.75rem; transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .reg-card:hover {
+            border-color: rgba(255, 102, 0, 0.4);
+            box-shadow: 0 0 20px rgba(255, 102, 0, 0.06);
+        }
+        .reg-date {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);
+            margin-bottom: 0.4rem;
+        }
+        .reg-title-row {
+            display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem;
+        }
+        .reg-name {
+            font-family: var(--font-display); font-size: 1.15rem; font-weight: 600;
+        }
+        .reg-badge {
+            font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase;
+            letter-spacing: 1.5px; padding: 0.25rem 0.65rem; border-radius: 4px; font-weight: 500;
+        }
+        .reg-badge.pro-crypto { color: var(--reg-green); background: rgba(0,211,149,0.12); border: 1px solid rgba(0,211,149,0.3); }
+        .reg-badge.stablecoin { color: var(--reg-blue); background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.3); }
+        .reg-badge.government { color: var(--reg-red); background: rgba(255,71,87,0.12); border: 1px solid rgba(255,71,87,0.3); }
+        .reg-badge.surveillance { color: var(--reg-purple); background: rgba(155,89,182,0.12); border: 1px solid rgba(155,89,182,0.3); }
+
+        .reg-desc {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8;
+        }
+
+        /* ===== SECTION 2: Freedom Paradox ===== */
+        .paradox-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;
+        }
+        .paradox-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+        }
+        .paradox-card.surveillance-card { border-color: rgba(255, 71, 87, 0.3); }
+        .paradox-card.surveillance-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--danger-red), var(--reg-purple));
+        }
+        .paradox-card.monero-card { border-color: rgba(255, 102, 0, 0.3); }
+        .paradox-card.monero-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, var(--xmr-orange), var(--success-green));
+        }
+        .paradox-card-title {
+            font-family: var(--font-display); font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;
+        }
+        .paradox-card-text {
+            color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1rem;
+        }
+        .paradox-chain {
+            display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0;
+        }
+        .chain-link {
+            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.35rem 0.65rem;
+            background: rgba(255, 71, 87, 0.08); border: 1px solid rgba(255, 71, 87, 0.2);
+            border-radius: 6px; color: var(--danger-red);
+        }
+        .chain-arrow { color: var(--text-secondary); font-size: 0.8rem; }
+        .monero-shield {
+            display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem;
+        }
+        .shield-item {
+            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.75rem;
+            background: rgba(255, 102, 0, 0.08); border: 1px solid rgba(255, 102, 0, 0.25);
+            border-radius: 6px; color: var(--xmr-orange);
+        }
+        .bounty-callout {
+            margin-top: 1.5rem; padding: 1rem 1.25rem; background: rgba(255, 102, 0, 0.06);
+            border-left: 3px solid var(--xmr-orange); border-radius: 0 8px 8px 0;
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--btc-gold);
+        }
+
+        /* ===== SECTION 3: Institutional Bitcoin ===== */
+        .stat-boxes-grid {
+            display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2.5rem;
+        }
+        .stat-box {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.5rem; text-align: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-box:hover {
+            border-color: rgba(255, 71, 87, 0.4);
+            box-shadow: 0 0 20px rgba(255, 71, 87, 0.08);
+        }
+        .stat-box-value {
+            font-family: var(--font-mono); font-size: 1.6rem; font-weight: 500;
+            color: var(--danger-red); margin-bottom: 0.25rem;
+        }
+        .stat-box-label {
+            font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .institutional-text {
+            color: var(--text-secondary); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
+        }
+        .institutional-text strong { color: var(--text-primary); }
+
+        /* ===== SECTION 4: ZCash Fallacy ===== */
+        .zcash-intro {
+            color: var(--text-secondary); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
+            margin-bottom: 2.5rem;
+        }
+        .zcash-intro strong { color: var(--text-primary); }
+
+        .shielded-stat {
+            display: flex; gap: 1.5rem; margin-bottom: 2.5rem; flex-wrap: wrap;
+        }
+        .shielded-box {
+            flex: 1; min-width: 250px; background: var(--card-bg); border-radius: 16px;
+            padding: 2rem; text-align: center; border: 1px solid var(--grey-18); position: relative; overflow: hidden;
+        }
+        .shielded-box::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .shielded-box.zcash-box::before { background: var(--danger-red); }
+        .shielded-box.monero-box::before { background: var(--xmr-orange); }
+        .shielded-pct {
+            font-family: var(--font-mono); font-size: 3rem; font-weight: 500;
+        }
+        .shielded-box.zcash-box .shielded-pct { color: var(--danger-red); }
+        .shielded-box.monero-box .shielded-pct { color: var(--xmr-orange); }
+        .shielded-label {
+            font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.25rem;
+        }
+
+        .comparison-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+        }
+        .comparison-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+        }
+        .comparison-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .comparison-card.xmr-card::before {
+            background: linear-gradient(90deg, var(--xmr-orange), var(--success-green));
+        }
+        .comparison-card.zec-card::before {
+            background: linear-gradient(90deg, var(--danger-red), #666);
+        }
+        .comparison-card-title {
+            font-family: var(--font-display); font-size: 1.3rem; font-weight: 600; margin-bottom: 1.25rem;
+        }
+        .comparison-card.xmr-card .comparison-card-title { color: var(--xmr-orange); }
+        .comparison-card.zec-card .comparison-card-title { color: var(--danger-red); }
+
+        .feature-list { list-style: none; }
+        .feature-list li {
+            padding: 0.5rem 0; font-size: 0.88rem; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(46, 46, 46, 0.5); display: flex; align-items: flex-start; gap: 0.6rem;
+        }
+        .feature-list li:last-child { border-bottom: none; }
+        .check { color: var(--success-green); font-weight: 700; flex-shrink: 0; }
+        .cross { color: var(--danger-red); font-weight: 700; flex-shrink: 0; }
+
+        /* ===== SECTION 5: Demand Drivers (preserved from original) ===== */
+        .drivers-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;
+        }
+        .driver-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
         .driver-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--xmr-orange);
+            transform: translateY(-4px); border-color: var(--xmr-orange);
             box-shadow: 0 0 30px rgba(255, 102, 0, 0.1);
         }
-
         .driver-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
             border-radius: 16px 16px 0 0;
         }
-
         .driver-card[data-driver="catalyst"]::before { background: linear-gradient(90deg, var(--btc-gold), var(--xmr-orange)); }
         .driver-card[data-driver="regulation"]::before { background: linear-gradient(90deg, var(--danger-red), var(--btc-orange)); }
         .driver-card[data-driver="geopolitical"]::before { background: linear-gradient(90deg, var(--privacy-purple), var(--danger-red)); }
@@ -313,267 +363,231 @@
         .driver-card[data-driver="cbdc"]::before { background: linear-gradient(90deg, var(--crossover-cyan), var(--success-green)); }
         .driver-card[data-driver="technical"]::before { background: linear-gradient(90deg, var(--success-green), var(--crossover-cyan)); }
 
-        .driver-icon {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            display: block;
-        }
-
+        .driver-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
         .driver-number {
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--xmr-orange);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            margin-bottom: 0.5rem;
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--xmr-orange);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
         }
-
         .driver-title {
-            font-family: var(--font-display);
-            font-size: 1.4rem;
-            font-weight: 600;
-            margin-bottom: 0.75rem;
+            font-family: var(--font-display); font-size: 1.4rem; font-weight: 600; margin-bottom: 0.75rem;
         }
-
-        .driver-text {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.8;
-            margin-bottom: 1.25rem;
-        }
-
-        .driver-stats {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.75rem;
-        }
-
+        .driver-text { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1.25rem; }
+        .driver-stats { display: flex; flex-wrap: wrap; gap: 0.75rem; }
         .stat-chip {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            border: 1px solid var(--grey-18);
-            background: rgba(255, 102, 0, 0.06);
-            color: var(--btc-gold);
-            white-space: nowrap;
+            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.8rem;
+            border-radius: 6px; border: 1px solid var(--grey-18);
+            background: rgba(255, 102, 0, 0.06); color: var(--btc-gold); white-space: nowrap;
+        }
+        .stat-chip.green { color: var(--success-green); background: rgba(0,211,149,0.08); border-color: rgba(0,211,149,0.2); }
+        .stat-chip.red { color: var(--danger-red); background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.2); }
+        .stat-chip.purple { color: var(--privacy-purple); background: rgba(155,89,182,0.08); border-color: rgba(155,89,182,0.2); }
+        .stat-chip.cyan { color: var(--crossover-cyan); background: rgba(0,206,209,0.08); border-color: rgba(0,206,209,0.2); }
+
+        /* ===== SECTION 6: Why Monero Threatens ===== */
+        .threat-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;
+            margin-top: 2rem;
+        }
+        .threat-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            padding: 1.5rem; text-align: center;
+            transition: border-color 0.3s ease;
+        }
+        .threat-card:hover { border-color: rgba(155, 89, 182, 0.4); }
+        .threat-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+        .threat-title {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary);
+            text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;
+        }
+        .threat-desc { color: var(--text-secondary); font-size: 0.8rem; line-height: 1.6; }
+
+        .threat-text {
+            color: var(--text-secondary); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
+            margin-bottom: 2rem;
+        }
+        .threat-text strong { color: var(--text-primary); }
+
+        /* ===== SECTION 7: What 2027+ Looks Like ===== */
+        .future-cols {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;
+        }
+        .future-card {
+            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 16px;
+            padding: 2rem; position: relative; overflow: hidden;
+        }
+        .future-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+        }
+        .future-card.surveilled::before { background: linear-gradient(90deg, var(--danger-red), #666); }
+        .future-card.theater::before { background: linear-gradient(90deg, #666, var(--reg-purple)); }
+        .future-card.free::before { background: linear-gradient(90deg, var(--xmr-orange), var(--success-green)); }
+
+        .future-card-label {
+            font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
+            letter-spacing: 2px; margin-bottom: 0.75rem;
+        }
+        .future-card.surveilled .future-card-label { color: var(--danger-red); }
+        .future-card.theater .future-card-label { color: var(--reg-purple); }
+        .future-card.free .future-card-label { color: var(--xmr-orange); }
+
+        .future-card-title {
+            font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem;
+        }
+        .future-card-text { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.8; }
+
+        .closing-quote {
+            background: linear-gradient(135deg, rgba(255,102,0,0.06) 0%, rgba(155,89,182,0.04) 100%);
+            border: 1px solid rgba(255, 102, 0, 0.2); border-radius: 16px;
+            padding: 2.5rem; text-align: center; max-width: 800px; margin: 0 auto;
+        }
+        .closing-quote blockquote {
+            font-family: var(--font-display); font-size: clamp(1.2rem, 3vw, 1.6rem);
+            font-weight: 600; font-style: italic; line-height: 1.6;
+            background: linear-gradient(135deg, var(--text-primary), var(--btc-gold));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
 
-        .stat-chip.green { color: var(--success-green); background: rgba(0, 211, 149, 0.08); border-color: rgba(0, 211, 149, 0.2); }
-        .stat-chip.red { color: var(--danger-red); background: rgba(255, 71, 87, 0.08); border-color: rgba(255, 71, 87, 0.2); }
-        .stat-chip.purple { color: var(--privacy-purple); background: rgba(155, 89, 182, 0.08); border-color: rgba(155, 89, 182, 0.2); }
-        .stat-chip.cyan { color: var(--crossover-cyan); background: rgba(0, 206, 209, 0.08); border-color: rgba(0, 206, 209, 0.2); }
-
-        /* Meta Thesis */
+        /* ===== Meta Thesis ===== */
         .meta-thesis {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 4rem 2rem 5rem;
+            max-width: 1200px; margin: 0 auto; padding: 4rem 2rem 5rem;
         }
-
         .thesis-box {
-            background: linear-gradient(135deg, rgba(255, 102, 0, 0.08) 0%, rgba(155, 89, 182, 0.06) 50%, rgba(0, 206, 209, 0.04) 100%);
-            border: 1px solid rgba(255, 102, 0, 0.25);
-            border-radius: 20px;
-            padding: 3rem;
-            position: relative;
-            overflow: hidden;
-            opacity: 0;
-            transform: scale(0.97);
+            background: linear-gradient(135deg, rgba(255,102,0,0.08) 0%, rgba(155,89,182,0.06) 50%, rgba(0,206,209,0.04) 100%);
+            border: 1px solid rgba(255,102,0,0.25); border-radius: 20px;
+            padding: 3rem; position: relative; overflow: hidden;
         }
-
-        .thesis-box.visible {
-            opacity: 1;
-            transform: scale(1);
-            transition: opacity 0.8s ease, transform 0.8s ease;
-        }
-
         .thesis-box::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle at center, rgba(255, 102, 0, 0.04) 0%, transparent 50%);
-            animation: thesis-glow 8s ease-in-out infinite;
-            pointer-events: none;
+            content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle at center, rgba(255,102,0,0.04) 0%, transparent 50%);
+            animation: thesis-glow 8s ease-in-out infinite; pointer-events: none;
         }
-
         @keyframes thesis-glow {
             0%, 100% { transform: translate(0, 0); }
             50% { transform: translate(5%, 5%); }
         }
-
         .thesis-label {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            color: var(--xmr-orange);
-            margin-bottom: 1rem;
-            position: relative;
+            font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
+            letter-spacing: 3px; color: var(--xmr-orange); margin-bottom: 1rem; position: relative;
         }
-
         .thesis-headline {
-            font-family: var(--font-display);
-            font-size: clamp(1.8rem, 4vw, 2.5rem);
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            position: relative;
+            font-family: var(--font-display); font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700;
+            margin-bottom: 1.5rem; position: relative;
             background: linear-gradient(135deg, var(--btc-gold), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-
         .thesis-body {
-            color: var(--text-secondary);
-            font-size: 1.05rem;
-            line-height: 1.9;
-            max-width: 800px;
-            position: relative;
-            margin-bottom: 2rem;
+            color: var(--text-secondary); font-size: 1.05rem; line-height: 1.9;
+            max-width: 800px; position: relative; margin-bottom: 2rem;
         }
-
-        .thesis-body strong {
-            color: var(--text-primary);
-        }
-
+        .thesis-body strong { color: var(--text-primary); }
         .thesis-pillars {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-            position: relative;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem; margin-top: 2rem; position: relative;
         }
-
         .pillar {
-            background: rgba(10, 10, 10, 0.6);
-            border: 1px solid var(--grey-18);
-            border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
+            background: rgba(10,10,10,0.6); border: 1px solid var(--grey-18);
+            border-radius: 12px; padding: 1.25rem; text-align: center;
         }
-
-        .pillar-icon {
-            font-size: 1.5rem;
-            margin-bottom: 0.5rem;
-        }
-
+        .pillar-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
         .pillar-value {
-            font-family: var(--font-mono);
-            font-size: 1.3rem;
-            font-weight: 500;
-            color: var(--xmr-orange);
+            font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; color: var(--xmr-orange);
         }
+        .pillar-label { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; }
 
-        .pillar-label {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
+        /* ===== SECTION 8: Technical Deep Dive Table ===== */
+        .tech-table-wrap {
+            overflow-x: auto; margin-top: 2rem; border-radius: 12px;
+            border: 1px solid var(--grey-18);
         }
-
-        /* CTA */
-        .cta-section {
-            text-align: center;
-            padding: 2rem 2rem 5rem;
+        .tech-table {
+            width: 100%; border-collapse: collapse; min-width: 600px;
         }
+        .tech-table thead th {
+            background: rgba(255,102,0,0.08); font-family: var(--font-mono); font-size: 0.8rem;
+            text-transform: uppercase; letter-spacing: 1.5px; padding: 1rem 1.25rem;
+            text-align: left; border-bottom: 1px solid var(--grey-18);
+        }
+        .tech-table thead th:first-child { color: var(--text-secondary); }
+        .tech-table thead th:nth-child(2) { color: var(--xmr-orange); }
+        .tech-table thead th:nth-child(3) { color: var(--danger-red); }
 
+        .tech-table tbody td {
+            padding: 0.85rem 1.25rem; font-size: 0.88rem; color: var(--text-secondary);
+            border-bottom: 1px solid rgba(46,46,46,0.5); vertical-align: top;
+        }
+        .tech-table tbody td:first-child {
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-primary);
+            font-weight: 500; white-space: nowrap;
+        }
+        .tech-table tbody tr:hover td { background: rgba(255,102,0,0.03); }
+        .tech-table .positive { color: var(--success-green); }
+        .tech-table .negative { color: var(--danger-red); }
+        .tech-table .neutral { color: var(--text-secondary); }
+
+        /* ===== Sources ===== */
+        .sources-list {
+            list-style: none; columns: 2; column-gap: 2rem;
+        }
+        .sources-list li {
+            font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.5rem;
+            break-inside: avoid;
+        }
+        .sources-list a {
+            color: var(--xmr-orange); text-decoration: none; transition: color 0.3s ease;
+        }
+        .sources-list a:hover { color: var(--btc-gold); text-decoration: underline; }
+
+        /* ===== CTA ===== */
+        .cta-section { text-align: center; padding: 2rem 2rem 5rem; }
         .cta-link {
-            display: inline-block;
-            font-family: var(--font-mono);
-            font-size: 1rem;
-            color: var(--dark-bg);
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            padding: 1rem 2.5rem;
-            border-radius: 8px;
-            text-decoration: none;
-            font-weight: 500;
+            display: inline-block; font-family: var(--font-mono); font-size: 1rem;
+            color: var(--dark-bg); background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            padding: 1rem 2.5rem; border-radius: 8px; text-decoration: none; font-weight: 500;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-
-        .cta-link:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(255, 102, 0, 0.3);
-        }
+        .cta-link:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,102,0,0.3); }
 
         /* Footer */
         footer {
-            border-top: 1px solid var(--grey-18);
-            padding: 2rem;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.85rem;
+            border-top: 1px solid var(--grey-18); padding: 2rem;
+            text-align: center; color: var(--text-secondary); font-size: 0.85rem;
         }
-
-        .footer-nav {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
+        .footer-nav { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
         .footer-nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.85rem;
+            color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;
             transition: color 0.3s ease;
         }
+        .footer-nav a:hover { color: var(--btc-orange); }
 
-        .footer-nav a:hover {
-            color: var(--btc-orange);
+        /* Divider */
+        .section-divider {
+            max-width: 1200px; margin: 0 auto; padding: 0 2rem;
+        }
+        .section-divider hr {
+            border: none; height: 1px;
+            background: linear-gradient(90deg, transparent, var(--grey-18), transparent);
         }
 
-        /* Responsive */
+        /* ===== Responsive ===== */
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
-            .drivers-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .hero-stat-row {
-                gap: 1rem;
-            }
-
-            .hero-stat {
-                min-width: 120px;
-                padding: 1rem 1.25rem;
-            }
-
-            .hero-stat-value {
-                font-size: 1.4rem;
-            }
-
-            .thesis-box {
-                padding: 2rem 1.5rem;
-            }
-
-            .thesis-pillars {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .driver-card {
-                padding: 1.5rem;
-            }
+            .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .drivers-grid { grid-template-columns: 1fr; }
+            .paradox-grid { grid-template-columns: 1fr; }
+            .stat-boxes-grid { grid-template-columns: 1fr 1fr; }
+            .comparison-grid { grid-template-columns: 1fr; }
+            .future-cols { grid-template-columns: 1fr; }
+            .sources-list { columns: 1; }
+            .thesis-box { padding: 2rem 1.5rem; }
+            .thesis-pillars { grid-template-columns: 1fr 1fr; }
+            .driver-card { padding: 1.5rem; }
+            .threat-grid { grid-template-columns: 1fr 1fr; }
         }
 
         @media (max-width: 480px) {
-            .hero-stat-row {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .thesis-pillars {
-                grid-template-columns: 1fr;
-            }
+            .stat-boxes-grid { grid-template-columns: 1fr; }
+            .thesis-pillars { grid-template-columns: 1fr; }
+            .threat-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -618,34 +632,287 @@
 
     <!-- Hero -->
     <section class="hero">
-        <div class="hero-eyebrow">Demand Thesis Summary</div>
-        <h1 class="hero-title">2027+ Future Outlook</h1>
+        <div class="hero-eyebrow">The Flagship Analysis</div>
+        <h1 class="hero-title">Looking Forward</h1>
         <p class="hero-subtitle">
-            Six structural forces are converging to make Monero demand not just likely, but inevitable. Regulation tightens, surveillance expands, and the only asset built for this world keeps growing.
+            Why Monero Is the Only Future for True Privacy
         </p>
-        <div class="hero-stat-row">
-            <div class="hero-stat">
-                <div class="hero-stat-value">6</div>
-                <div class="hero-stat-label">Demand Drivers</div>
+        <p class="hero-tagline">
+            Legislation is evolving. Surveillance is expanding. Bitcoin is transparent. ZCash is compromised.
+        </p>
+    </section>
+
+    <!-- ============================== -->
+    <!-- SECTION 1: Regulatory Landscape -->
+    <!-- ============================== -->
+    <section class="section" id="regulatory">
+        <div class="section-label">Section 01 &mdash; The Regulatory Landscape</div>
+        <h2 class="section-title">Legislation Timeline: 2024&ndash;2027</h2>
+        <p class="section-intro">
+            A new legal architecture is being built around cryptocurrency. Some of it grants genuine freedoms. All of it builds surveillance infrastructure.
+        </p>
+
+        <div class="reg-timeline">
+            <!-- FIT21 -->
+            <div class="reg-item fade-in" data-type="pro-crypto">
+                <div class="reg-card">
+                    <div class="reg-date">May 2024</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">FIT21 &mdash; Financial Innovation and Technology for the 21st Century Act</span>
+                        <span class="reg-badge pro-crypto">Pro-Crypto</span>
+                    </div>
+                    <p class="reg-desc">
+                        Passed the House 279&ndash;136. Establishes the CFTC as the primary crypto regulator. Creates three classifications: <strong>digital commodities</strong>, <strong>restricted digital assets</strong>, and <strong>payment stablecoins</strong>. The most significant pro-crypto legislation in U.S. history &mdash; but every classification comes with a reporting obligation.
+                    </p>
+                </div>
             </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value">~$800</div>
-                <div class="hero-stat-label">Jan 2026 ATH</div>
+
+            <!-- GENIUS Act -->
+            <div class="reg-item fade-in" data-type="stablecoin">
+                <div class="reg-card">
+                    <div class="reg-date">January 2025</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">GENIUS Act</span>
+                        <span class="reg-badge stablecoin">Stablecoin</span>
+                    </div>
+                    <p class="reg-desc">
+                        Federal licensing framework for stablecoin issuers. Requires 1:1 reserves, monthly attestations, and full AML/BSA compliance. Passed the Senate Banking Committee in March 2025. Establishes stablecoins as the regulated on-ramp &mdash; and every on-ramp is a surveillance checkpoint.
+                    </p>
+                </div>
             </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value">195%</div>
-                <div class="hero-stat-label">ATH Increase</div>
+
+            <!-- CLARITY Act -->
+            <div class="reg-item fade-in" data-type="pro-crypto">
+                <div class="reg-card">
+                    <div class="reg-date">February 2025</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">CLARITY Act</span>
+                        <span class="reg-badge pro-crypto">Pro-Crypto</span>
+                    </div>
+                    <p class="reg-desc">
+                        Exempts certain digital assets from securities classification if sufficiently decentralized. Provides safe harbor protections for developers. Genuine freedom &mdash; but "decentralized" is defined by the regulators, and the exemption requires ongoing compliance reporting.
+                    </p>
+                </div>
             </div>
-            <div class="hero-stat">
-                <div class="hero-stat-value">0.6 XMR</div>
-                <div class="hero-stat-label">Tail Emission / Block</div>
+
+            <!-- Strategic Bitcoin Reserve -->
+            <div class="reg-item fade-in" data-type="government">
+                <div class="reg-card">
+                    <div class="reg-date">March 2025</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">Executive Order: Strategic Bitcoin Reserve</span>
+                        <span class="reg-badge government">Government</span>
+                    </div>
+                    <p class="reg-desc">
+                        ~200,000 BTC held by the U.S. government from seizures and forfeitures. Permanent institutional adoption <strong>and</strong> permanent on-chain government surveillance capability. The government now has a direct financial interest in Bitcoin's traceability.
+                    </p>
+                </div>
+            </div>
+
+            <!-- IRS Digital Asset Reporting -->
+            <div class="reg-item fade-in" data-type="surveillance">
+                <div class="reg-card">
+                    <div class="reg-date">2025&ndash;2026</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">IRS Digital Asset Reporting Rules</span>
+                        <span class="reg-badge surveillance">Surveillance</span>
+                    </div>
+                    <p class="reg-desc">
+                        Exchanges and DeFi front-ends must report all transactions. Cost basis, capital gains/losses, and wallet addresses are tracked and reported to the IRS. Effective for the 2025 tax year. Form 1099-DA creates a permanent paper trail for every on-chain movement.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Travel Rule -->
+            <div class="reg-item fade-in" data-type="surveillance">
+                <div class="reg-card">
+                    <div class="reg-date">2025&ndash;2027</div>
+                    <div class="reg-title-row">
+                        <span class="reg-name">Travel Rule Expansion (FATF)</span>
+                        <span class="reg-badge surveillance">Surveillance</span>
+                    </div>
+                    <p class="reg-desc">
+                        Sender and receiver identity must be transmitted for all transfers above $1,000. Global enforcement via FATF member nations. Turns every compliant exchange into a financial surveillance relay. Combined with chain analysis, this creates a complete graph of Bitcoin ownership.
+                    </p>
+                </div>
             </div>
         </div>
     </section>
 
-    <!-- Demand Drivers -->
-    <section class="section">
-        <div class="section-label">The Forces at Work</div>
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 2: The Freedom Paradox  -->
+    <!-- ============================== -->
+    <section class="section" id="paradox">
+        <div class="section-label">Section 02 &mdash; The Freedom Paradox</div>
+        <h2 class="section-title">Freedom and Surveillance Are the Same Law</h2>
+        <p class="section-intro">
+            CLARITY and FIT21 grant Americans genuine freedoms to build, trade, and hold digital assets. But these same laws codify the surveillance infrastructure that makes those freedoms conditional.
+        </p>
+
+        <div class="paradox-grid">
+            <div class="paradox-card surveillance-card fade-in">
+                <div class="paradox-card-title">The Bitcoin Surveillance Chain</div>
+                <p class="paradox-card-text">
+                    When your Bitcoin wallet is linked to an exchange, the chain is complete. Every hop, every UTXO, every counterparty &mdash; visible.
+                </p>
+                <div class="paradox-chain">
+                    <span class="chain-link">KYC Exchange</span>
+                    <span class="chain-arrow">&rarr;</span>
+                    <span class="chain-link">IRS 1099-DA</span>
+                    <span class="chain-arrow">&rarr;</span>
+                    <span class="chain-link">Travel Rule</span>
+                    <span class="chain-arrow">&rarr;</span>
+                    <span class="chain-link">Chainalysis</span>
+                    <span class="chain-arrow">=</span>
+                    <span class="chain-link" style="color: var(--text-primary); background: rgba(255,71,87,0.2); border-color: var(--danger-red);">Fully Surveilled Asset</span>
+                </div>
+                <p class="paradox-card-text">
+                    Bitcoin is not private. It never was. Satoshi knew this &mdash; and said so. The transparency that makes Bitcoin auditable is the same transparency that makes it a surveillance tool.
+                </p>
+            </div>
+
+            <div class="paradox-card monero-card fade-in">
+                <div class="paradox-card-title">The Monero Shield</div>
+                <p class="paradox-card-text">
+                    Monero is the only cryptocurrency where IRS reporting, the Travel Rule, and chain analysis have <strong>zero effect</strong> on transaction privacy. Every layer is protected by default:
+                </p>
+                <div class="monero-shield">
+                    <span class="shield-item">RingCT &mdash; No Amounts</span>
+                    <span class="shield-item">Stealth Addresses &mdash; No Linking</span>
+                    <span class="shield-item">Ring Signatures &mdash; No Sender ID</span>
+                    <span class="shield-item">Dandelion++ &mdash; No IP Leak</span>
+                </div>
+                <div class="bounty-callout">
+                    IRS bounty for breaking Monero: $625,000 &mdash; unclaimed since September 2020.
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 3: Institutional Bitcoin -->
+    <!-- ============================== -->
+    <section class="section" id="institutional">
+        <div class="section-label">Section 03 &mdash; Institutional Bitcoin</div>
+        <h2 class="section-title">Ownership Without Freedom</h2>
+        <p class="section-intro">
+            Bitcoin is now a regulated, surveilled, institutionally captured asset. Ownership is permitted. Privacy is not.
+        </p>
+
+        <div class="stat-boxes-grid">
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">~$60B+</div>
+                <div class="stat-box-label">BlackRock IBIT Holdings</div>
+            </div>
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">200K+</div>
+                <div class="stat-box-label">U.S. Gov Seized BTC</div>
+            </div>
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">$2.2B</div>
+                <div class="stat-box-label">Biden-Era BTC Sales</div>
+            </div>
+            <div class="stat-box fade-in">
+                <div class="stat-box-value">100%</div>
+                <div class="stat-box-label">BTC On-Chain Traceable</div>
+            </div>
+        </div>
+
+        <div class="institutional-text fade-in">
+            <p style="margin-bottom: 1.25rem;">
+                <strong>Government sell pressure is structural.</strong> The U.S. government is the single largest Bitcoin holder after Satoshi. Every seizure adds to the supply overhang. The Biden administration sold $2.2B in seized BTC. The Strategic Bitcoin Reserve executive order signals permanent government participation in the Bitcoin market &mdash; as both holder and surveillor.
+            </p>
+            <p style="margin-bottom: 1.25rem;">
+                <strong>Institutional capture is complete.</strong> BlackRock's IBIT ETF alone holds over $60B in Bitcoin. Every share is KYC'd, reported, and linked to a brokerage account. Bitcoin held through ETFs is not self-custodied &mdash; it is custodied by Coinbase, reported to the IRS, and subject to seizure via legal process.
+            </p>
+            <p>
+                <strong>The result:</strong> Bitcoin has become a transparent, regulated, institutionally captured store of value. It serves the existing financial system. It does not challenge it. For anyone who needs actual financial privacy &mdash; journalists, dissidents, activists, abuse survivors, or simply individuals who believe their finances are their own business &mdash; Bitcoin is no longer an option.
+            </p>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 4: The ZCash Fallacy   -->
+    <!-- ============================== -->
+    <section class="section" id="zcash">
+        <div class="section-label">Section 04 &mdash; The ZCash Fallacy</div>
+        <h2 class="section-title">Privacy Theater vs. Privacy by Default</h2>
+        <p class="section-intro">
+            ZCash is often cited as a Monero alternative. The data tells a different story.
+        </p>
+
+        <div class="zcash-intro fade-in">
+            <p style="margin-bottom: 1.25rem;">
+                <strong>ZCash was created by the Electric Coin Company (ECC)</strong>, led by CEO Zooko Wilcox. It was VC-funded from inception &mdash; investors include Pantera Capital, Digital Currency Group (Barry Silbert), Naval Ravikant, and Roger Ver. This is not a community project. This is a venture-backed company with a product.
+            </p>
+            <p style="margin-bottom: 1.25rem;">
+                <strong>The Founders' Reward:</strong> For the first four years, 20% of all ZCash mining rewards went directly to founders, investors, and the ECC. After the initial reward expired, the "Dev Fund" continued the 20% allocation. Miners and users fund the company that controls the protocol.
+            </p>
+            <p>
+                <strong>The trusted setup problem:</strong> ZCash's zk-SNARKs required a trusted setup ceremony. If any participant in that ceremony retained their secret parameters, they could mint unlimited ZCash undetectably. This is <em>unverifiable</em> &mdash; you must trust that everyone involved destroyed their keys. Monero has no trusted setup. Its privacy is mathematical, not ceremonial.
+            </p>
+        </div>
+
+        <!-- The killer stat -->
+        <div class="shielded-stat">
+            <div class="shielded-box zcash-box fade-in">
+                <div class="shielded-pct">~10%</div>
+                <div class="shielded-label">ZCash transactions using shielded pools</div>
+            </div>
+            <div class="shielded-box monero-box fade-in">
+                <div class="shielded-pct">100%</div>
+                <div class="shielded-label">Monero transactions that are private</div>
+            </div>
+        </div>
+
+        <!-- Feature comparison cards -->
+        <div class="comparison-grid">
+            <div class="comparison-card xmr-card fade-in">
+                <div class="comparison-card-title">Monero (XMR)</div>
+                <ul class="feature-list">
+                    <li><span class="check">&#10003;</span> No company, no CEO, no investors</li>
+                    <li><span class="check">&#10003;</span> No premine, no founders' reward</li>
+                    <li><span class="check">&#10003;</span> 100% private by default &mdash; always</li>
+                    <li><span class="check">&#10003;</span> No trusted setup required</li>
+                    <li><span class="check">&#10003;</span> Community-funded via CCS</li>
+                    <li><span class="check">&#10003;</span> ASIC-resistant (RandomX)</li>
+                    <li><span class="check">&#10003;</span> Tail emission &mdash; permanent security</li>
+                    <li><span class="check">&#10003;</span> IRS $625K bounty &mdash; unclaimed</li>
+                    <li><span class="check">&#10003;</span> 73+ delistings &mdash; still thriving</li>
+                    <li><span class="check">&#10003;</span> Truly fungible</li>
+                </ul>
+            </div>
+            <div class="comparison-card zec-card fade-in">
+                <div class="comparison-card-title">ZCash (ZEC)</div>
+                <ul class="feature-list">
+                    <li><span class="cross">&#10007;</span> ECC controls development</li>
+                    <li><span class="cross">&#10007;</span> 20% dev tax on mining rewards</li>
+                    <li><span class="cross">&#10007;</span> ~90% of transactions are transparent</li>
+                    <li><span class="cross">&#10007;</span> Trusted setup &mdash; unverifiable</li>
+                    <li><span class="cross">&#10007;</span> VC-funded (Pantera, DCG, Naval)</li>
+                    <li><span class="cross">&#10007;</span> ASIC-dominated mining</li>
+                    <li><span class="cross">&#10007;</span> Halving schedule &mdash; no tail emission</li>
+                    <li><span class="cross">&#10007;</span> Listed on Gemini &mdash; compliant</li>
+                    <li><span class="cross">&#10007;</span> Promoted by insiders &amp; VCs</li>
+                    <li><span class="cross">&#10007;</span> Transparent coins fully traceable</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 5: Demand Thesis       -->
+    <!-- ============================== -->
+    <section class="section" id="demand">
+        <div class="section-label">Section 05 &mdash; Demand Thesis 2026&ndash;2030</div>
         <h2 class="section-title">Six Demand Drivers</h2>
         <p class="section-intro">
             Each driver is independent. Together, they form a compounding demand loop that no delisting, no regulation, and no competitor can break.
@@ -653,7 +920,7 @@
 
         <div class="drivers-grid">
             <!-- Driver 1 -->
-            <div class="driver-card" data-driver="catalyst">
+            <div class="driver-card fade-in" data-driver="catalyst">
                 <span class="driver-icon">&#9889;</span>
                 <div class="driver-number">Driver 01</div>
                 <div class="driver-title">The Catalyst</div>
@@ -669,10 +936,10 @@
             </div>
 
             <!-- Driver 2 -->
-            <div class="driver-card" data-driver="regulation">
+            <div class="driver-card fade-in" data-driver="regulation">
                 <span class="driver-icon">&#128220;</span>
                 <div class="driver-number">Driver 02</div>
-                <div class="driver-title">CLARITY & GENIUS Acts</div>
+                <div class="driver-title">CLARITY &amp; GENIUS Acts</div>
                 <p class="driver-text">
                     Form 1099-DA. Expanded broker reporting from 2026. EU DAC8 went live January 2026. Every new reporting mandate is free marketing for Monero -- the one asset that makes surveillance moot.
                 </p>
@@ -685,7 +952,7 @@
             </div>
 
             <!-- Driver 3 -->
-            <div class="driver-card" data-driver="geopolitical">
+            <div class="driver-card fade-in" data-driver="geopolitical">
                 <span class="driver-icon">&#127758;</span>
                 <div class="driver-number">Driver 03</div>
                 <div class="driver-title">Geopolitical Pressure</div>
@@ -701,7 +968,7 @@
             </div>
 
             <!-- Driver 4 -->
-            <div class="driver-card" data-driver="darknet">
+            <div class="driver-card fade-in" data-driver="darknet">
                 <span class="driver-icon">&#128375;</span>
                 <div class="driver-number">Driver 04</div>
                 <div class="driver-title">Darknet Dominance</div>
@@ -717,7 +984,7 @@
             </div>
 
             <!-- Driver 5 -->
-            <div class="driver-card" data-driver="cbdc">
+            <div class="driver-card fade-in" data-driver="cbdc">
                 <span class="driver-icon">&#127974;</span>
                 <div class="driver-number">Driver 05</div>
                 <div class="driver-title">CBDC Surveillance Wave</div>
@@ -733,26 +1000,120 @@
             </div>
 
             <!-- Driver 6 -->
-            <div class="driver-card" data-driver="technical">
+            <div class="driver-card fade-in" data-driver="technical">
                 <span class="driver-icon">&#9881;</span>
                 <div class="driver-number">Driver 06</div>
                 <div class="driver-title">Technical Upgrades</div>
                 <p class="driver-text">
-                    FCMP++ (targeting Q2-Q3 2026) makes the anonymity set the entire blockchain -- not a ring, the whole chain. Cuprate brings a Rust full-node. Seraphis & Jamtis redesign the address and transaction layer from scratch.
+                    FCMP++ (targeting Q2-Q3 2026) makes the anonymity set the entire blockchain -- not a ring, the whole chain. Cuprate brings a Rust full-node. Seraphis &amp; Jamtis redesign the address and transaction layer from scratch.
                 </p>
                 <div class="driver-stats">
                     <span class="stat-chip green">FCMP++</span>
                     <span class="stat-chip cyan">Full-chain anonymity</span>
                     <span class="stat-chip">Cuprate (Rust)</span>
-                    <span class="stat-chip purple">Seraphis & Jamtis</span>
+                    <span class="stat-chip purple">Seraphis &amp; Jamtis</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Meta Thesis -->
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 6: Why XMR Threatens   -->
+    <!-- ============================== -->
+    <section class="section" id="threatens">
+        <div class="section-label">Section 06 &mdash; Why Monero Threatens the System</div>
+        <h2 class="section-title">The Surveillance Economy Cannot Coexist with Monero</h2>
+        <p class="section-intro">
+            The entire modern financial enforcement apparatus &mdash; BSA, FATF, FinCEN &mdash; rests on one assumption: that money can be traced. Monero makes that assumption mathematically false.
+        </p>
+
+        <div class="threat-text fade-in">
+            <p>
+                Every pillar of state financial control depends on transaction visibility. <strong>Monetary policy enforcement</strong> requires knowing who holds what. <strong>Tax collection</strong> requires knowing who earned what. <strong>Sanctions enforcement</strong> requires knowing who sent what to whom. <strong>Credit scoring</strong> requires knowing spending patterns. <strong>Petrodollar maintenance</strong> requires controlling the channels of international settlement. Monero breaks every single one of these by making the fundamental data &mdash; sender, receiver, amount &mdash; cryptographically invisible.
+            </p>
+        </div>
+
+        <div class="threat-grid">
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#127974;</span>
+                <div class="threat-title">Monetary Policy</div>
+                <div class="threat-desc">Cannot track money supply distribution or enforce capital controls</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#128176;</span>
+                <div class="threat-title">Tax Collection</div>
+                <div class="threat-desc">Cannot identify taxable events or link wallets to identities</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#127760;</span>
+                <div class="threat-title">Sanctions</div>
+                <div class="threat-desc">Cannot block or trace cross-border payments to embargoed entities</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#128202;</span>
+                <div class="threat-title">Credit Scoring</div>
+                <div class="threat-desc">Cannot profile spending behavior or build financial dossiers</div>
+            </div>
+            <div class="threat-card fade-in">
+                <span class="threat-icon">&#9981;</span>
+                <div class="threat-title">Petrodollar</div>
+                <div class="threat-desc">Cannot enforce USD settlement requirements on international trade</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 7: What 2027+ Looks Like -->
+    <!-- ============================== -->
+    <section class="section" id="future">
+        <div class="section-label">Section 07 &mdash; What 2027+ Looks Like</div>
+        <h2 class="section-title">Three Paths Diverge</h2>
+        <p class="section-intro">
+            The crypto ecosystem is splitting into three categories. Only one preserves the original cypherpunk promise.
+        </p>
+
+        <div class="future-cols">
+            <div class="future-card surveilled fade-in">
+                <div class="future-card-label">The Compliant Path</div>
+                <div class="future-card-title">BTC / ETH / SOL</div>
+                <div class="future-card-text">
+                    Fully integrated into the surveillance-banking complex. ETF custody, IRS reporting, Travel Rule compliance, chain analysis partnerships. Ownership is permitted and encouraged. Privacy is structurally impossible. These assets serve the existing financial system &mdash; they do not challenge it.
+                </div>
+            </div>
+            <div class="future-card theater fade-in">
+                <div class="future-card-label">Privacy Theater</div>
+                <div class="future-card-title">ZCash</div>
+                <div class="future-card-text">
+                    Optional privacy that ~90% of users never enable. VC-backed, company-controlled, trusted-setup-dependent. Listed on compliant exchanges precisely because regulators do not consider it a threat. The transparent default makes the "shielded" option a flag, not a shield.
+                </div>
+            </div>
+            <div class="future-card free fade-in">
+                <div class="future-card-label">Actual Privacy</div>
+                <div class="future-card-title">Monero</div>
+                <div class="future-card-text">
+                    Default, mandatory, mathematically unbreakable privacy for every transaction. No company controls it. No trusted setup. No opt-in. Delisted from 73+ exchanges and thriving. The only cryptocurrency that forces privacy &mdash; because optional privacy is no privacy at all.
+                </div>
+            </div>
+        </div>
+
+        <div class="closing-quote fade-in">
+            <blockquote>
+                "The question isn't whether you have something to hide. The question is whether you have the right to decide what you reveal."
+            </blockquote>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- Meta Thesis                    -->
+    <!-- ============================== -->
     <section class="meta-thesis">
-        <div class="thesis-box">
+        <div class="thesis-box scale-in">
             <div class="thesis-label">Meta-Thesis</div>
             <h2 class="thesis-headline">Structural Inevitability</h2>
             <p class="thesis-body">
@@ -786,6 +1147,124 @@
         </div>
     </section>
 
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- SECTION 8: Technical Deep Dive -->
+    <!-- ============================== -->
+    <section class="section" id="tech-compare">
+        <div class="section-label">Section 08 &mdash; Technical Deep Dive</div>
+        <h2 class="section-title">Monero vs. ZCash: Feature Comparison</h2>
+        <p class="section-intro">
+            A side-by-side technical analysis of the two most-cited privacy cryptocurrencies.
+        </p>
+
+        <div class="tech-table-wrap fade-in">
+            <table class="tech-table">
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Monero (XMR)</th>
+                        <th>ZCash (ZEC)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Privacy Model</td>
+                        <td class="positive">Default &mdash; mandatory on all txns</td>
+                        <td class="negative">Optional &mdash; ~10% use shielded</td>
+                    </tr>
+                    <tr>
+                        <td>Sender Privacy</td>
+                        <td class="positive">Ring signatures (16 decoys)</td>
+                        <td class="negative">Only in shielded-to-shielded txns</td>
+                    </tr>
+                    <tr>
+                        <td>Receiver Privacy</td>
+                        <td class="positive">Stealth addresses (every txn)</td>
+                        <td class="negative">Only in shielded pool</td>
+                    </tr>
+                    <tr>
+                        <td>Amount Privacy</td>
+                        <td class="positive">RingCT (always hidden)</td>
+                        <td class="negative">Only in shielded txns</td>
+                    </tr>
+                    <tr>
+                        <td>IP Privacy</td>
+                        <td class="positive">Dandelion++ (built-in)</td>
+                        <td class="negative">None (requires external Tor)</td>
+                    </tr>
+                    <tr>
+                        <td>Trusted Setup</td>
+                        <td class="positive">None required</td>
+                        <td class="negative">Required &mdash; unverifiable</td>
+                    </tr>
+                    <tr>
+                        <td>Governance</td>
+                        <td class="positive">Decentralized community</td>
+                        <td class="negative">ECC + Zcash Foundation</td>
+                    </tr>
+                    <tr>
+                        <td>Funding</td>
+                        <td class="positive">Community Crowdfunding (CCS)</td>
+                        <td class="negative">20% dev tax on mining</td>
+                    </tr>
+                    <tr>
+                        <td>Mining</td>
+                        <td class="positive">ASIC-resistant (RandomX / CPU)</td>
+                        <td class="negative">ASIC-dominated</td>
+                    </tr>
+                    <tr>
+                        <td>Supply Audit</td>
+                        <td class="positive">Verifiable via math (Pedersen)</td>
+                        <td class="negative">Must trust setup ceremony</td>
+                    </tr>
+                    <tr>
+                        <td>Rich List</td>
+                        <td class="positive">Impossible &mdash; no data exists</td>
+                        <td class="negative">Available for ~90% of supply</td>
+                    </tr>
+                    <tr>
+                        <td>Chain Analysis</td>
+                        <td class="positive">IRS bounty unclaimed since 2020</td>
+                        <td class="negative">Transparent txns fully traceable</td>
+                    </tr>
+                    <tr>
+                        <td>Next Upgrade</td>
+                        <td class="positive">FCMP++ &mdash; full-chain anonymity set</td>
+                        <td class="neutral">Zcash Posterity Fund discussions</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="section-divider"><hr></div>
+
+    <!-- ============================== -->
+    <!-- Sources                        -->
+    <!-- ============================== -->
+    <section class="section" id="sources">
+        <div class="section-label">Sources &amp; References</div>
+        <h2 class="section-title">Further Reading</h2>
+        <ul class="sources-list" style="margin-top: 1.5rem;">
+            <li><a href="https://www.congress.gov/bill/118th-congress/house-bill/4763" target="_blank" rel="noopener">FIT21 &mdash; H.R.4763 (Congress.gov)</a></li>
+            <li><a href="https://www.congress.gov/bill/119th-congress/senate-bill/394" target="_blank" rel="noopener">GENIUS Act &mdash; S.394 (Congress.gov)</a></li>
+            <li><a href="https://www.congress.gov/bill/119th-congress/house-bill/1072" target="_blank" rel="noopener">CLARITY Act &mdash; H.R.1072 (Congress.gov)</a></li>
+            <li><a href="https://www.whitehouse.gov/presidential-actions/" target="_blank" rel="noopener">Executive Order: Strategic Bitcoin Reserve</a></li>
+            <li><a href="https://www.irs.gov/businesses/digital-assets" target="_blank" rel="noopener">IRS Digital Asset Reporting Rules</a></li>
+            <li><a href="https://www.fatf-gafi.org/en/topics/virtual-assets.html" target="_blank" rel="noopener">FATF Travel Rule &mdash; Virtual Assets</a></li>
+            <li><a href="https://www.getmonero.org/resources/research-lab/" target="_blank" rel="noopener">Monero Research Lab</a></li>
+            <li><a href="https://www.getmonero.org/2024/04/27/fcmp++.html" target="_blank" rel="noopener">FCMP++ Announcement</a></li>
+            <li><a href="https://electriccoin.co/" target="_blank" rel="noopener">Electric Coin Company (ZCash)</a></li>
+            <li><a href="https://sam.gov/opp/3b7875d5236b47f6a77f64c19251af60/view" target="_blank" rel="noopener">IRS Monero Tracing Bounty (SAM.gov)</a></li>
+            <li><a href="https://www.bis.org/publ/bppdf/bisbull86.htm" target="_blank" rel="noopener">BIS CBDC Survey &mdash; 93 Central Banks</a></li>
+            <li><a href="https://www.chainalysis.com/" target="_blank" rel="noopener">Chainalysis &mdash; Blockchain Analytics</a></li>
+            <li><a href="https://ccs.getmonero.org/" target="_blank" rel="noopener">Monero Community Crowdfunding System</a></li>
+            <li><a href="https://www.ishares.com/us/products/333011/ishares-bitcoin-trust" target="_blank" rel="noopener">BlackRock IBIT Bitcoin ETF</a></li>
+        </ul>
+    </section>
+
     <!-- CTA -->
     <section class="cta-section">
         <a href="bottom-line.html" class="cta-link">Read the Full Bottom Line Analysis &rarr;</a>
@@ -807,19 +1286,29 @@
             document.getElementById('mobileMenu').classList.toggle('active');
         }
 
-        // Scroll-triggered animations
+        // Scroll-triggered fade-in animations
         const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
+            entries.forEach((entry, index) => {
                 if (entry.isIntersecting) {
-                    entry.target.classList.add('visible');
+                    // Stagger animations for sibling elements
+                    const siblings = entry.target.parentElement.querySelectorAll('.fade-in, .scale-in');
+                    let delay = 0;
+                    siblings.forEach((sib, i) => {
+                        if (sib === entry.target) {
+                            delay = i * 100;
+                        }
+                    });
+                    setTimeout(() => {
+                        entry.target.classList.add('visible');
+                    }, Math.min(delay, 400));
                 }
             });
         }, {
-            threshold: 0.15,
+            threshold: 0.12,
             rootMargin: '0px 0px -50px 0px'
         });
 
-        document.querySelectorAll('.driver-card, .thesis-box').forEach(el => {
+        document.querySelectorAll('.fade-in, .scale-in').forEach(el => {
             observer.observe(el);
         });
     </script>
