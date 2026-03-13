@@ -85,6 +85,28 @@
             color: var(--btc-orange);
         }
 
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
+        }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
+            padding: 0.5rem 0; min-width: 160px;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            margin-top: 0.75rem;
+        }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a {
+            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
+            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
+        }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
+
         .hamburger {
             display: none;
             flex-direction: column;
@@ -510,14 +532,20 @@
 <body>
     <!-- Navigation -->
     <nav class="nav">
-        <a href="index.html" class="nav-logo">₿ → ɱ</a>
+        <a href="index.html" class="nav-logo" style="text-decoration:none;">₿ → ɱ</a>
         <div class="nav-links">
             <a href="index.html">Home</a>
-            <a href="secrets.html">Secrets</a>
-            <a href="quotes.html">Quotes</a>
-            <a href="timeline.html" style="color: var(--xmr-orange);">Timeline</a>
-            <a href="bottom-line.html">The Bottom Line</a>
-            <a href="hold-monero.html">Hold Monero</a>
+            <div class="nav-dropdown">
+                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="btc-xmr-education.html">Education</a>
+                    <a href="timeline.html" style="color: var(--xmr-orange);">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
+                </div>
+            </div>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="hold-monero.html">XMR</a>
         </div>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span>
@@ -529,11 +557,12 @@
     <!-- Mobile Menu -->
     <div class="mobile-menu" id="mobileMenu">
         <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quotes</a>
+        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
         <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">The Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()">Hold Monero</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
     </div>
 
     <!-- Hero -->
