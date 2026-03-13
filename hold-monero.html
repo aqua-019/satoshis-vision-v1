@@ -373,15 +373,18 @@
 
         /* Iframe Container */
         .iframe-wrapper {
-            background: #FFFFFF;
+            background: #0a0a0a;
             border-radius: 12px;
             overflow: hidden;
-            min-height: 500px;
+            min-height: 370px;
+            max-width: 480px;
+            margin: 0 auto;
+            border: 1px solid var(--grey-18);
         }
 
         .iframe-wrapper iframe {
             width: 100%;
-            height: 500px;
+            height: 370px;
             border: none;
             display: block;
         }
@@ -1082,6 +1085,108 @@
             color: var(--warning-yellow);
         }
 
+        /* Market Dashboard */
+        .market-dashboard {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 10px;
+        }
+
+        .market-dashboard h4 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .metric-card {
+            background: var(--dark-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 8px;
+            padding: 0.85rem;
+            text-align: center;
+        }
+
+        .metric-card .metric-value {
+            font-family: var(--font-mono);
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.25rem;
+        }
+
+        .metric-card .metric-label {
+            font-family: var(--font-body);
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-card .metric-value.positive {
+            color: var(--success-green);
+        }
+
+        .metric-card .metric-value.negative {
+            color: var(--danger-red);
+        }
+
+        .network-stats-title {
+            margin-top: 1rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .network-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.75rem;
+        }
+
+        .network-card {
+            background: var(--dark-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 8px;
+            padding: 0.75rem 0.5rem;
+            text-align: center;
+        }
+
+        .network-card .metric-value {
+            font-family: var(--font-mono);
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--xmr-orange);
+            margin-bottom: 0.2rem;
+        }
+
+        .network-card .metric-label {
+            font-family: var(--font-body);
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .network-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
         /* Footer */
         footer {
             background: var(--card-bg);
@@ -1254,6 +1359,7 @@
                     <a href="timeline.html">Timeline</a>
                     <a href="quotes.html">Quote Archive</a>
                     <a href="secrets.html">Secrets</a>
+                    <a href="future-outlook.html">2027+</a>
                 </div>
             </div>
             <a href="bottom-line.html">XMR Bottom Line</a>
@@ -1273,6 +1379,7 @@
         <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
         <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
         <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
         <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
         <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
     </div>
@@ -1348,7 +1455,7 @@
                         id="iframe-widget"
                         src="about:blank"
                         data-src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=true&amount=0.1&amountFiat=&backgroundColor=0a0a0a&darkMode=true&from=btc&fromFiat=&horizontal=false&isFiat=false&lang=en-US&link_id=&locales=true&logo=true&primaryColor=FF6600&to=xmr&toFiat=&toTheMoon=false"
-                        style="height: 356px; width: 100%; border: none; border-radius: 12px;"
+                        style="height: 370px; width: 100%; border: none; border-radius: 12px;"
                         allow="clipboard-read; clipboard-write"
                         loading="lazy">
                     </iframe>
@@ -1373,6 +1480,61 @@
                     <div id="swap-tracker-result" style="margin-top: 0.75rem; display: none;"></div>
                     <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem; opacity: 0.7;">
                         Swap operations are processed entirely by ChangeNOW. This site does not custody or control any funds.
+                    </p>
+                </div>
+
+                <!-- Market Dashboard -->
+                <div class="market-dashboard">
+                    <h4>Market Dashboard</h4>
+                    <div class="dashboard-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="dash-btc-usd">--</div>
+                            <div class="metric-label">BTC / USD</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="dash-xmr-usd">--</div>
+                            <div class="metric-label">XMR / USD</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="dash-btc-xmr">--</div>
+                            <div class="metric-label">BTC / XMR Ratio</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="dash-xmr-24h">--</div>
+                            <div class="metric-label">XMR 24h Change</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="dash-xmr-mcap">--</div>
+                            <div class="metric-label">XMR Market Cap</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="dash-xmr-supply">--</div>
+                            <div class="metric-label">XMR Circulating Supply</div>
+                        </div>
+                    </div>
+
+                    <div class="network-stats-title">Monero Network Stats</div>
+                    <div class="network-grid">
+                        <div class="network-card">
+                            <div class="metric-value">0.6 XMR</div>
+                            <div class="metric-label">Tail Emission / Block</div>
+                        </div>
+                        <div class="network-card">
+                            <div class="metric-value">~2 min</div>
+                            <div class="metric-label">Block Time</div>
+                        </div>
+                        <div class="network-card">
+                            <div class="metric-value">RandomX</div>
+                            <div class="metric-label">Mining Algorithm</div>
+                        </div>
+                        <div class="network-card">
+                            <div class="metric-value" style="font-size: 0.75rem;">RingCT + Stealth</div>
+                            <div class="metric-label">Privacy Tech</div>
+                        </div>
+                    </div>
+
+                    <p style="font-size: 0.65rem; color: var(--text-secondary); margin-top: 0.75rem; text-align: center; opacity: 0.7;">
+                        Market data from CoinGecko. Refreshes every 30 minutes.
                     </p>
                 </div>
             </div>
@@ -1871,6 +2033,77 @@
             }
         };
 
+        // ── Market Dashboard ──────────────────────────────────────
+        // Shows live market metrics: prices, 24h change, market cap, supply
+        const MarketDashboard = {
+            INTERVAL: 1800000, // 30 minutes
+
+            formatUsd(n) {
+                if (n >= 1e12) return '$' + (n / 1e12).toFixed(2) + 'T';
+                if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + 'B';
+                if (n >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+                return '$' + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+            },
+
+            formatSupply(n) {
+                if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+                return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+            },
+
+            setText(id, text) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = text;
+            },
+
+            setClass(id, cls) {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.classList.remove('positive', 'negative');
+                    if (cls) el.classList.add(cls);
+                }
+            },
+
+            async fetch() {
+                try {
+                    const [priceResp, coinResp] = await Promise.all([
+                        fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true&include_market_cap=true'),
+                        fetch('https://api.coingecko.com/api/v3/coins/monero?localization=false&tickers=false&community_data=false&developer_data=false')
+                    ]);
+                    const priceData = await priceResp.json();
+                    const coinData = await coinResp.json();
+
+                    const btcUsd = priceData.bitcoin.usd;
+                    const xmrUsd = priceData.monero.usd;
+                    const xmr24h = priceData.monero.usd_24h_change;
+                    const xmrMcap = priceData.monero.usd_market_cap;
+                    const ratio = (btcUsd / xmrUsd).toFixed(1);
+                    const supply = coinData.market_data && coinData.market_data.circulating_supply;
+
+                    this.setText('dash-btc-usd', this.formatUsd(btcUsd));
+                    this.setText('dash-xmr-usd', this.formatUsd(xmrUsd));
+                    this.setText('dash-btc-xmr', ratio);
+                    this.setText('dash-xmr-mcap', this.formatUsd(xmrMcap));
+
+                    if (typeof xmr24h === 'number') {
+                        const sign = xmr24h >= 0 ? '+' : '';
+                        this.setText('dash-xmr-24h', sign + xmr24h.toFixed(2) + '%');
+                        this.setClass('dash-xmr-24h', xmr24h >= 0 ? 'positive' : 'negative');
+                    }
+
+                    if (supply) {
+                        this.setText('dash-xmr-supply', this.formatSupply(supply));
+                    }
+                } catch (e) {
+                    // silently fail — dashboard is supplementary
+                }
+            },
+
+            start() {
+                this.fetch();
+                setInterval(() => this.fetch(), this.INTERVAL);
+            }
+        };
+
         // ── Live Rate Display ────────────────────────────────────
         // Shows current BTC→XMR rate on the swap page (30-min refresh)
         const LiveRate = {
@@ -1907,6 +2140,7 @@
             WidgetLoader.init();
             SwapTracker.init();
             LiveRate.start();
+            MarketDashboard.start();
         });
 
         // Close mobile menu when clicking outside

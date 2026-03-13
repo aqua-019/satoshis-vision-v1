@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2027+ Future Outlook | Satoshi's Vision Archive</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --btc-orange: #F7931A;
+            --btc-gold: #FFD700;
+            --xmr-orange: #FF6600;
+            --dark-bg: #0a0a0a;
+            --card-bg: #121212;
+            --grey-18: #2E2E2E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0A0A0;
+            --success-green: #00D395;
+            --danger-red: #FF4757;
+            --privacy-purple: #9B59B6;
+            --crossover-cyan: #00CED1;
+            --font-display: 'Playfair Display', serif;
+            --font-mono: 'JetBrains Mono', monospace;
+            --font-body: 'Sora', sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: var(--dark-bg);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--grey-18);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--btc-orange);
+        }
+
+        .nav-dropdown { position: relative; }
+        .nav-dropdown-toggle {
+            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
+            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
+        }
+        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
+        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
+        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
+        .nav-dropdown-menu {
+            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
+            padding: 0.5rem 0; min-width: 160px;
+            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
+            margin-top: 0.75rem;
+        }
+        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
+        .nav-dropdown-menu a {
+            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
+            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
+        }
+        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
+
+        .hamburger {
+            display: none;
+            flex-direction: column;
+            gap: 5px;
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .hamburger span {
+            width: 25px;
+            height: 2px;
+            background: var(--text-primary);
+        }
+
+        .mobile-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(10, 10, 10, 0.98);
+            z-index: 999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .mobile-menu.active {
+            display: flex;
+        }
+
+        .mobile-menu a {
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-family: var(--font-display);
+        }
+
+        /* Hero */
+        .hero {
+            padding: 8rem 2rem 4rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 30% 20%, rgba(255, 102, 0, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+        }
+
+        .hero-eyebrow {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            color: var(--xmr-orange);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .hero-title {
+            font-family: var(--font-display);
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+            position: relative;
+            background: linear-gradient(135deg, var(--text-primary) 0%, var(--btc-gold) 50%, var(--xmr-orange) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 auto 2rem;
+            font-size: 1.1rem;
+            position: relative;
+        }
+
+        .hero-stat-row {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            position: relative;
+        }
+
+        .hero-stat {
+            background: rgba(18, 18, 18, 0.8);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.25rem 2rem;
+            text-align: center;
+            min-width: 160px;
+        }
+
+        .hero-stat-value {
+            font-family: var(--font-mono);
+            font-size: 1.8rem;
+            font-weight: 500;
+            color: var(--xmr-orange);
+        }
+
+        .hero-stat-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 0.25rem;
+        }
+
+        /* Section */
+        .section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .section-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--xmr-orange);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 0.75rem;
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .section-intro {
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin-bottom: 3rem;
+            font-size: 1rem;
+        }
+
+        /* Driver Cards */
+        .drivers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .driver-card {
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 16px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+            opacity: 0;
+            transform: translateY(30px);
+        }
+
+        .driver-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .driver-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--xmr-orange);
+            box-shadow: 0 0 30px rgba(255, 102, 0, 0.1);
+        }
+
+        .driver-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .driver-card[data-driver="catalyst"]::before { background: linear-gradient(90deg, var(--btc-gold), var(--xmr-orange)); }
+        .driver-card[data-driver="regulation"]::before { background: linear-gradient(90deg, var(--danger-red), var(--btc-orange)); }
+        .driver-card[data-driver="geopolitical"]::before { background: linear-gradient(90deg, var(--privacy-purple), var(--danger-red)); }
+        .driver-card[data-driver="darknet"]::before { background: linear-gradient(90deg, #1a1a2e, var(--xmr-orange)); }
+        .driver-card[data-driver="cbdc"]::before { background: linear-gradient(90deg, var(--crossover-cyan), var(--success-green)); }
+        .driver-card[data-driver="technical"]::before { background: linear-gradient(90deg, var(--success-green), var(--crossover-cyan)); }
+
+        .driver-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .driver-number {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--xmr-orange);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 0.5rem;
+        }
+
+        .driver-title {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        .driver-text {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            line-height: 1.8;
+            margin-bottom: 1.25rem;
+        }
+
+        .driver-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .stat-chip {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            padding: 0.4rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid var(--grey-18);
+            background: rgba(255, 102, 0, 0.06);
+            color: var(--btc-gold);
+            white-space: nowrap;
+        }
+
+        .stat-chip.green { color: var(--success-green); background: rgba(0, 211, 149, 0.08); border-color: rgba(0, 211, 149, 0.2); }
+        .stat-chip.red { color: var(--danger-red); background: rgba(255, 71, 87, 0.08); border-color: rgba(255, 71, 87, 0.2); }
+        .stat-chip.purple { color: var(--privacy-purple); background: rgba(155, 89, 182, 0.08); border-color: rgba(155, 89, 182, 0.2); }
+        .stat-chip.cyan { color: var(--crossover-cyan); background: rgba(0, 206, 209, 0.08); border-color: rgba(0, 206, 209, 0.2); }
+
+        /* Meta Thesis */
+        .meta-thesis {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem 5rem;
+        }
+
+        .thesis-box {
+            background: linear-gradient(135deg, rgba(255, 102, 0, 0.08) 0%, rgba(155, 89, 182, 0.06) 50%, rgba(0, 206, 209, 0.04) 100%);
+            border: 1px solid rgba(255, 102, 0, 0.25);
+            border-radius: 20px;
+            padding: 3rem;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            transform: scale(0.97);
+        }
+
+        .thesis-box.visible {
+            opacity: 1;
+            transform: scale(1);
+            transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+
+        .thesis-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at center, rgba(255, 102, 0, 0.04) 0%, transparent 50%);
+            animation: thesis-glow 8s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        @keyframes thesis-glow {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(5%, 5%); }
+        }
+
+        .thesis-label {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: var(--xmr-orange);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .thesis-headline {
+            font-family: var(--font-display);
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            position: relative;
+            background: linear-gradient(135deg, var(--btc-gold), var(--xmr-orange));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .thesis-body {
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+            line-height: 1.9;
+            max-width: 800px;
+            position: relative;
+            margin-bottom: 2rem;
+        }
+
+        .thesis-body strong {
+            color: var(--text-primary);
+        }
+
+        .thesis-pillars {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+            position: relative;
+        }
+
+        .pillar {
+            background: rgba(10, 10, 10, 0.6);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+
+        .pillar-icon {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pillar-value {
+            font-family: var(--font-mono);
+            font-size: 1.3rem;
+            font-weight: 500;
+            color: var(--xmr-orange);
+        }
+
+        .pillar-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        /* CTA */
+        .cta-section {
+            text-align: center;
+            padding: 2rem 2rem 5rem;
+        }
+
+        .cta-link {
+            display: inline-block;
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            color: var(--dark-bg);
+            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .cta-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(255, 102, 0, 0.3);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--grey-18);
+            padding: 2rem;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .footer-nav {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-nav a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-nav a:hover {
+            color: var(--btc-orange);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hamburger {
+                display: flex;
+            }
+
+            .drivers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-stat-row {
+                gap: 1rem;
+            }
+
+            .hero-stat {
+                min-width: 120px;
+                padding: 1rem 1.25rem;
+            }
+
+            .hero-stat-value {
+                font-size: 1.4rem;
+            }
+
+            .thesis-box {
+                padding: 2rem 1.5rem;
+            }
+
+            .thesis-pillars {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .driver-card {
+                padding: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .hero-stat-row {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .thesis-pillars {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="index.html" class="nav-logo" style="text-decoration:none;">Satoshi's Vision</a>
+        <div class="nav-links">
+            <a href="index.html">Home</a>
+            <div class="nav-dropdown">
+                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
+                <div class="nav-dropdown-menu">
+                    <a href="btc-xmr-education.html">Education</a>
+                    <a href="timeline.html">Timeline</a>
+                    <a href="quotes.html">Quote Archive</a>
+                    <a href="secrets.html">Secrets</a>
+                    <a href="future-outlook.html" style="color: var(--xmr-orange);">2027+ Outlook</a>
+                </div>
+            </div>
+            <a href="bottom-line.html">XMR Bottom Line</a>
+            <a href="hold-monero.html">XMR</a>
+        </div>
+        <div class="hamburger" onclick="toggleMenu()">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <a href="index.html" onclick="toggleMenu()">Home</a>
+        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
+        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
+        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
+        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
+        <a href="future-outlook.html" onclick="toggleMenu()">2027+ Outlook</a>
+        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
+        <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-eyebrow">Demand Thesis Summary</div>
+        <h1 class="hero-title">2027+ Future Outlook</h1>
+        <p class="hero-subtitle">
+            Six structural forces are converging to make Monero demand not just likely, but inevitable. Regulation tightens, surveillance expands, and the only asset built for this world keeps growing.
+        </p>
+        <div class="hero-stat-row">
+            <div class="hero-stat">
+                <div class="hero-stat-value">6</div>
+                <div class="hero-stat-label">Demand Drivers</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">~$800</div>
+                <div class="hero-stat-label">Jan 2026 ATH</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">195%</div>
+                <div class="hero-stat-label">ATH Increase</div>
+            </div>
+            <div class="hero-stat">
+                <div class="hero-stat-value">0.6 XMR</div>
+                <div class="hero-stat-label">Tail Emission / Block</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demand Drivers -->
+    <section class="section">
+        <div class="section-label">The Forces at Work</div>
+        <h2 class="section-title">Six Demand Drivers</h2>
+        <p class="section-intro">
+            Each driver is independent. Together, they form a compounding demand loop that no delisting, no regulation, and no competitor can break.
+        </p>
+
+        <div class="drivers-grid">
+            <!-- Driver 1 -->
+            <div class="driver-card" data-driver="catalyst">
+                <span class="driver-icon">&#9889;</span>
+                <div class="driver-number">Driver 01</div>
+                <div class="driver-title">The Catalyst</div>
+                <p class="driver-text">
+                    January 2026: XMR hit ~$800 -- a 195% surge driven by a perfect storm of political shift, technical breakout, Zcash collapse, and the privacy paradox vindicated. Retraced 57% on exchange delistings, but the pattern holds: higher lows every cycle.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip">~$800 ATH</span>
+                    <span class="stat-chip green">+195%</span>
+                    <span class="stat-chip red">-57% retrace</span>
+                    <span class="stat-chip">Higher lows</span>
+                </div>
+            </div>
+
+            <!-- Driver 2 -->
+            <div class="driver-card" data-driver="regulation">
+                <span class="driver-icon">&#128220;</span>
+                <div class="driver-number">Driver 02</div>
+                <div class="driver-title">CLARITY & GENIUS Acts</div>
+                <p class="driver-text">
+                    Form 1099-DA. Expanded broker reporting from 2026. EU DAC8 went live January 2026. Every new reporting mandate is free marketing for Monero -- the one asset that makes surveillance moot.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip red">1099-DA</span>
+                    <span class="stat-chip">2026+ reporting</span>
+                    <span class="stat-chip purple">EU DAC8 live</span>
+                    <span class="stat-chip">Free XMR marketing</span>
+                </div>
+            </div>
+
+            <!-- Driver 3 -->
+            <div class="driver-card" data-driver="geopolitical">
+                <span class="driver-icon">&#127758;</span>
+                <div class="driver-number">Driver 03</div>
+                <div class="driver-title">Geopolitical Pressure</div>
+                <p class="driver-text">
+                    Iran's IRGC holds $3B+ in crypto. Mining arbitrage makes XMR cost $1,320 vs BTC's $68K. Sanctions evasion surged 694%. $154B in illicit flows. As BTC gets traced, state actors migrate to untraceable assets.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip">IRGC $3B+</span>
+                    <span class="stat-chip green">$1,320 mining cost</span>
+                    <span class="stat-chip red">694% evasion surge</span>
+                    <span class="stat-chip">$154B illicit</span>
+                </div>
+            </div>
+
+            <!-- Driver 4 -->
+            <div class="driver-card" data-driver="darknet">
+                <span class="driver-icon">&#128375;</span>
+                <div class="driver-number">Driver 04</div>
+                <div class="driver-title">Darknet Dominance</div>
+                <p class="driver-text">
+                    48% of new darknet markets launch XMR-exclusive. 89% of vendors prefer or mandate Monero. $450M+ monthly volume. BTC is being actively phased out -- the market voted with its wallet.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip">48% XMR-exclusive</span>
+                    <span class="stat-chip green">89% prefer XMR</span>
+                    <span class="stat-chip">$450M+ / month</span>
+                    <span class="stat-chip red">BTC phased out</span>
+                </div>
+            </div>
+
+            <!-- Driver 5 -->
+            <div class="driver-card" data-driver="cbdc">
+                <span class="driver-icon">&#127974;</span>
+                <div class="driver-number">Driver 05</div>
+                <div class="driver-title">CBDC Surveillance Wave</div>
+                <p class="driver-text">
+                    91% of 93 central banks are investigating or piloting CBDCs. 41% of ECB public comments raised privacy concerns. Every government digital currency launched is a new advertisement for Monero.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip cyan">91% of central banks</span>
+                    <span class="stat-chip">93 CBDCs investigated</span>
+                    <span class="stat-chip purple">41% ECB privacy fear</span>
+                    <span class="stat-chip green">Each CBDC = XMR demand</span>
+                </div>
+            </div>
+
+            <!-- Driver 6 -->
+            <div class="driver-card" data-driver="technical">
+                <span class="driver-icon">&#9881;</span>
+                <div class="driver-number">Driver 06</div>
+                <div class="driver-title">Technical Upgrades</div>
+                <p class="driver-text">
+                    FCMP++ (targeting Q2-Q3 2026) makes the anonymity set the entire blockchain -- not a ring, the whole chain. Cuprate brings a Rust full-node. Seraphis & Jamtis redesign the address and transaction layer from scratch.
+                </p>
+                <div class="driver-stats">
+                    <span class="stat-chip green">FCMP++</span>
+                    <span class="stat-chip cyan">Full-chain anonymity</span>
+                    <span class="stat-chip">Cuprate (Rust)</span>
+                    <span class="stat-chip purple">Seraphis & Jamtis</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Meta Thesis -->
+    <section class="meta-thesis">
+        <div class="thesis-box">
+            <div class="thesis-label">Meta-Thesis</div>
+            <h2 class="thesis-headline">Structural Inevitability</h2>
+            <p class="thesis-body">
+                Transparent crypto is becoming the regulated norm. Surveillance is expanding at every layer -- exchanges, tax reporting, on-chain analytics, CBDCs. The logical endpoint is not hard to see: <strong>organic, structural demand for the one asset that opts out.</strong>
+            </p>
+            <p class="thesis-body">
+                73 exchanges delisted Monero in 2025. On-chain activity stayed flat or grew. Tail emission sits at ~0.6 XMR per block -- barely a trickle. <strong>Shrinking accessible supply meets growing structural demand.</strong> That is not a trade. That is a thesis.
+            </p>
+            <div class="thesis-pillars">
+                <div class="pillar">
+                    <div class="pillar-icon">&#128683;</div>
+                    <div class="pillar-value">73</div>
+                    <div class="pillar-label">Exchanges delisted (2025)</div>
+                </div>
+                <div class="pillar">
+                    <div class="pillar-icon">&#128200;</div>
+                    <div class="pillar-value">Flat/Grew</div>
+                    <div class="pillar-label">On-chain activity</div>
+                </div>
+                <div class="pillar">
+                    <div class="pillar-icon">&#9935;</div>
+                    <div class="pillar-value">~0.6 XMR</div>
+                    <div class="pillar-label">Tail emission / block</div>
+                </div>
+                <div class="pillar">
+                    <div class="pillar-icon">&#128201;</div>
+                    <div class="pillar-value">6 Drivers</div>
+                    <div class="pillar-label">Compounding demand</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta-section">
+        <a href="bottom-line.html" class="cta-link">Read the Full Bottom Line Analysis &rarr;</a>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <nav class="footer-nav">
+            <a href="index.html">Home</a>
+            <a href="bottom-line.html">Bottom Line</a>
+            <a href="timeline.html">Timeline</a>
+            <a href="secrets.html">Secrets</a>
+            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
+        </nav>
+    </footer>
+
+    <script>
+        function toggleMenu() {
+            document.getElementById('mobileMenu').classList.toggle('active');
+        }
+
+        // Scroll-triggered animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        document.querySelectorAll('.driver-card, .thesis-box').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
