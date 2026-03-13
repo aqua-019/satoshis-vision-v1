@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — Crypto Market Analytics | Satoshi's Vision</title>
+    <title>Dashboard — Crypto Market Analytics | XMR.IRISH</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -169,35 +169,12 @@
         .ltc-change.positive { color: var(--green); background: rgba(0,210,106,0.1); }
         .ltc-change.negative { color: var(--red); background: rgba(255,71,87,0.1); }
 
-        /* ── Charts ── */
-        .chart-container {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
-            padding: 1.5rem; margin-bottom: 1.5rem;
-            opacity: 0; transform: translateY(12px);
+        /* ── Charts (TradingView) ── */
+        .tv-chart-wrap {
+            border: 1px solid var(--grey-18); border-radius: 12px;
+            overflow: hidden; margin-bottom: 1.5rem;
+            height: 500px;
         }
-        .chart-container.visible { opacity: 1; transform: translateY(0); transition: opacity 0.5s ease, transform 0.5s ease; }
-        .chart-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;
-        }
-        .chart-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 600; }
-        .chart-range-buttons { display: flex; gap: 0.5rem; }
-        .chart-range-btn {
-            font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.8rem;
-            border: 1px solid var(--grey-18); background: transparent; color: var(--text-secondary);
-            border-radius: 6px; cursor: pointer; transition: all 0.2s ease;
-        }
-        .chart-range-btn:hover { border-color: var(--xmr-orange); color: var(--xmr-orange); }
-        .chart-range-btn.active { background: var(--xmr-orange); color: #fff; border-color: var(--xmr-orange); }
-        .chart-canvas-wrap { position: relative; width: 100%; height: 380px; }
-        .chart-canvas-wrap canvas { width: 100%; height: 100%; }
-        .chart-tooltip {
-            display: none; position: absolute; background: rgba(18,18,18,0.95); border: 1px solid var(--grey-18);
-            border-radius: 6px; padding: 0.5rem 0.75rem; font-family: var(--font-mono); font-size: 0.75rem;
-            pointer-events: none; z-index: 10; white-space: nowrap;
-        }
-        .chart-tooltip .tt-date { color: var(--text-secondary); margin-bottom: 0.25rem; }
-        .chart-tooltip .tt-price { color: var(--text-primary); font-weight: 500; }
         .chart-loading {
             display: flex; align-items: center; justify-content: center; height: 100%;
             color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.85rem;
@@ -249,6 +226,15 @@
         .fiat-change { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; }
         .fiat-change.positive { color: var(--green); }
         .fiat-change.negative { color: var(--red); }
+        a.fiat-card {
+            text-decoration: none; color: inherit; display: block; cursor: pointer;
+        }
+        a.fiat-card:hover { border-color: rgba(255,102,0,0.5); transform: translateY(-2px); }
+        .fiat-chart-link {
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--xmr-orange);
+            margin-top: 0.5rem; opacity: 0.7; transition: opacity 0.2s ease;
+        }
+        a.fiat-card:hover .fiat-chart-link { opacity: 1; }
 
         /* ── XMR Network Stats ── */
         .stats-grid {
@@ -314,12 +300,11 @@
             section { padding: 2rem 0; }
             .hero { padding-top: 5.5rem; padding-bottom: 1.5rem; }
             .hero h1 { font-size: 2rem; }
-            .chart-canvas-wrap { height: 260px; }
+            .tv-chart-wrap { height: 350px; }
             .stats-grid { grid-template-columns: 1fr; }
             .live-ticker-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
             .ticker-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
             .fiat-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
-            .chart-header { flex-direction: column; align-items: flex-start; }
         }
     </style>
 </head>
@@ -327,7 +312,7 @@
 
 <!-- Navigation -->
 <nav class="nav">
-    <a href="index.html" class="nav-logo" style="text-decoration:none;">&#8383; &rarr; &#625;</a>
+    <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
     <div class="nav-links">
         <a href="index.html">Home</a>
         <div class="nav-dropdown">
@@ -408,87 +393,91 @@
     </div>
 </section>
 
-<!-- Section 2: BTC Price Chart -->
+<!-- Section 2: BTC Price Chart (TradingView) -->
 <section id="btc-chart-section">
     <div class="container">
         <h2 class="section-title">BTC / USD Chart</h2>
-        <p class="section-subtitle">Bitcoin price history</p>
+        <p class="section-subtitle">Bitcoin price history — interactive candlestick chart</p>
         <hr class="section-divider">
-        <div class="chart-container" id="btcChartContainer">
-            <div class="chart-header">
-                <div class="chart-title" style="color: var(--btc-orange);">BTC / USD</div>
-                <div class="chart-range-buttons" id="btcRangeButtons">
-                    <button class="chart-range-btn" data-days="7">7D</button>
-                    <button class="chart-range-btn active" data-days="30">30D</button>
-                    <button class="chart-range-btn" data-days="90">90D</button>
-                    <button class="chart-range-btn" data-days="365">1Y</button>
-                </div>
-            </div>
-            <div class="chart-canvas-wrap" id="btcChartWrap">
-                <canvas id="btcChart"></canvas>
-                <div class="chart-tooltip" id="btcTooltip">
-                    <div class="tt-date"></div>
-                    <div class="tt-price"></div>
-                </div>
-                <div class="chart-loading" id="btcChartLoading">Loading chart...</div>
+        <div class="tv-chart-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+                <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                {
+                    "autosize": true,
+                    "symbol": "BINANCE:BTCUSDT",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "backgroundColor": "rgba(10, 10, 10, 1)",
+                    "gridColor": "rgba(255, 255, 255, 0.04)",
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com"
+                }
+                </script>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Section 3: XMR Price Chart -->
+<!-- Section 3: XMR Price Chart (TradingView) -->
 <section id="xmr-chart-section">
     <div class="container">
         <h2 class="section-title">XMR / USD Chart</h2>
-        <p class="section-subtitle">Monero price history</p>
+        <p class="section-subtitle">Monero price history — interactive candlestick chart</p>
         <hr class="section-divider">
-        <div class="chart-container" id="xmrChartContainer">
-            <div class="chart-header">
-                <div class="chart-title" style="color: var(--xmr-orange);">XMR / USD</div>
-                <div class="chart-range-buttons" id="xmrRangeButtons">
-                    <button class="chart-range-btn" data-days="7">7D</button>
-                    <button class="chart-range-btn active" data-days="30">30D</button>
-                    <button class="chart-range-btn" data-days="90">90D</button>
-                    <button class="chart-range-btn" data-days="365">1Y</button>
-                </div>
-            </div>
-            <div class="chart-canvas-wrap" id="xmrChartWrap">
-                <canvas id="xmrChart"></canvas>
-                <div class="chart-tooltip" id="xmrTooltip">
-                    <div class="tt-date"></div>
-                    <div class="tt-price"></div>
-                </div>
-                <div class="chart-loading" id="xmrChartLoading">Loading chart...</div>
+        <div class="tv-chart-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+                <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                {
+                    "autosize": true,
+                    "symbol": "BINANCE:XMRUSDT",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "backgroundColor": "rgba(10, 10, 10, 1)",
+                    "gridColor": "rgba(255, 255, 255, 0.04)",
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com"
+                }
+                </script>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Section 4: BTC/XMR Ratio Chart -->
+<!-- Section 4: BTC/XMR Ratio Chart (TradingView) -->
 <section id="ratio-chart-section">
     <div class="container">
         <h2 class="section-title">BTC / XMR Ratio</h2>
-        <p class="section-subtitle">How many XMR per BTC over time</p>
+        <p class="section-subtitle">How many XMR per BTC — via KRAKEN:XMRBTC (inverted)</p>
         <hr class="section-divider">
-        <div class="chart-container" id="ratioChartContainer">
-            <div class="chart-header">
-                <div class="chart-title">
-                    <span style="color: var(--btc-orange);">BTC</span> / <span style="color: var(--xmr-orange);">XMR</span> Ratio
-                </div>
-                <div class="chart-range-buttons" id="ratioRangeButtons">
-                    <button class="chart-range-btn" data-days="7">7D</button>
-                    <button class="chart-range-btn active" data-days="30">30D</button>
-                    <button class="chart-range-btn" data-days="90">90D</button>
-                    <button class="chart-range-btn" data-days="365">1Y</button>
-                </div>
-            </div>
-            <div class="chart-canvas-wrap" id="ratioChartWrap">
-                <canvas id="ratioChart"></canvas>
-                <div class="chart-tooltip" id="ratioTooltip">
-                    <div class="tt-date"></div>
-                    <div class="tt-price"></div>
-                </div>
-                <div class="chart-loading" id="ratioChartLoading">Loading chart...</div>
+        <div class="tv-chart-wrap">
+            <div class="tradingview-widget-container" style="height:100%;width:100%">
+                <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
+                <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
+                {
+                    "autosize": true,
+                    "symbol": "KRAKEN:XMRBTC",
+                    "interval": "D",
+                    "timezone": "Etc/UTC",
+                    "theme": "dark",
+                    "style": "1",
+                    "locale": "en",
+                    "backgroundColor": "rgba(10, 10, 10, 1)",
+                    "gridColor": "rgba(255, 255, 255, 0.04)",
+                    "allow_symbol_change": true,
+                    "calendar": false,
+                    "support_host": "https://www.tradingview.com"
+                }
+                </script>
             </div>
         </div>
     </div>
@@ -575,6 +564,14 @@
         return n.toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 });
     }
     function pctClass(n) { return (n != null && n >= 0) ? 'positive' : 'negative'; }
+
+    function formatSupply(n) {
+        if (n == null) return '\u2014';
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+        return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+    }
 
     function cacheGet(key, maxAge) {
         try {
@@ -731,343 +728,7 @@
     fetchLiveTickers();
     setInterval(fetchLiveTickers, REFRESH_MS);
 
-    /* ═══════════════════════════════════════
-       PURE CANVAS CHART ENGINE
-       ═══════════════════════════════════════ */
-
-    function CanvasChart(canvasId, tooltipId, loadingId, color, gradientTop, gradientBot) {
-        this.canvas = document.getElementById(canvasId);
-        this.ctx = this.canvas.getContext('2d');
-        this.tooltip = document.getElementById(tooltipId);
-        this.loadingEl = document.getElementById(loadingId);
-        this.color = color;
-        this.gradientTop = gradientTop;
-        this.gradientBot = gradientBot;
-        this.data = [];
-        this.padding = { top: 20, right: 60, bottom: 30, left: 10 };
-        this._bound = this._onMouse.bind(this);
-        this._boundLeave = this._onLeave.bind(this);
-        this.canvas.addEventListener('mousemove', this._bound);
-        this.canvas.addEventListener('mouseleave', this._boundLeave);
-        this.canvas.addEventListener('touchmove', this._bound);
-        this.canvas.addEventListener('touchend', this._boundLeave);
-    }
-
-    CanvasChart.prototype.setData = function(data) {
-        this.data = data;
-        if (this.loadingEl) this.loadingEl.style.display = 'none';
-        this.draw();
-    };
-
-    CanvasChart.prototype.draw = function() {
-        var canvas = this.canvas;
-        var ctx = this.ctx;
-        var dpr = window.devicePixelRatio || 1;
-        var rect = canvas.parentElement.getBoundingClientRect();
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
-        canvas.style.width = rect.width + 'px';
-        canvas.style.height = rect.height + 'px';
-        ctx.scale(dpr, dpr);
-
-        var w = rect.width;
-        var h = rect.height;
-        var p = this.padding;
-        var data = this.data;
-
-        ctx.clearRect(0, 0, w, h);
-
-        if (!data || data.length < 2) {
-            ctx.fillStyle = '#A0A0A0';
-            ctx.font = '13px "JetBrains Mono", monospace';
-            ctx.textAlign = 'center';
-            ctx.fillText('No data available', w / 2, h / 2);
-            return;
-        }
-
-        var plotW = w - p.left - p.right;
-        var plotH = h - p.top - p.bottom;
-
-        var vals = data.map(function(d) { return d.value; });
-        var minV = Math.min.apply(null, vals);
-        var maxV = Math.max.apply(null, vals);
-        var range = maxV - minV || 1;
-        // Add 5% padding
-        minV -= range * 0.05;
-        maxV += range * 0.05;
-        range = maxV - minV;
-
-        function xPos(i) { return p.left + (i / (data.length - 1)) * plotW; }
-        function yPos(v) { return p.top + plotH - ((v - minV) / range) * plotH; }
-
-        // Grid lines
-        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
-        ctx.lineWidth = 1;
-        var gridLines = 5;
-        for (var g = 0; g <= gridLines; g++) {
-            var gy = p.top + (g / gridLines) * plotH;
-            ctx.beginPath();
-            ctx.moveTo(p.left, gy);
-            ctx.lineTo(w - p.right, gy);
-            ctx.stroke();
-
-            // Price labels
-            var gVal = maxV - (g / gridLines) * range;
-            ctx.fillStyle = '#A0A0A0';
-            ctx.font = '10px "JetBrains Mono", monospace';
-            ctx.textAlign = 'right';
-            if (gVal >= 1000) {
-                ctx.fillText('$' + Math.round(gVal).toLocaleString('en-US'), w - 5, gy + 3);
-            } else if (gVal >= 1) {
-                ctx.fillText('$' + gVal.toFixed(2), w - 5, gy + 3);
-            } else {
-                ctx.fillText(gVal.toFixed(4), w - 5, gy + 3);
-            }
-        }
-
-        // Date labels
-        ctx.fillStyle = '#A0A0A0';
-        ctx.font = '10px "JetBrains Mono", monospace';
-        ctx.textAlign = 'center';
-        var dateCount = Math.min(6, data.length);
-        for (var di = 0; di < dateCount; di++) {
-            var idx = Math.round(di * (data.length - 1) / (dateCount - 1));
-            var dx = xPos(idx);
-            var dt = new Date(data[idx].time * 1000);
-            var label = (dt.getMonth() + 1) + '/' + dt.getDate();
-            ctx.fillText(label, dx, h - 5);
-        }
-
-        // Area fill
-        var grad = ctx.createLinearGradient(0, p.top, 0, p.top + plotH);
-        grad.addColorStop(0, this.gradientTop);
-        grad.addColorStop(1, this.gradientBot);
-        ctx.beginPath();
-        ctx.moveTo(xPos(0), yPos(data[0].value));
-        for (var i = 1; i < data.length; i++) {
-            ctx.lineTo(xPos(i), yPos(data[i].value));
-        }
-        ctx.lineTo(xPos(data.length - 1), p.top + plotH);
-        ctx.lineTo(xPos(0), p.top + plotH);
-        ctx.closePath();
-        ctx.fillStyle = grad;
-        ctx.fill();
-
-        // Line
-        ctx.beginPath();
-        ctx.moveTo(xPos(0), yPos(data[0].value));
-        for (var j = 1; j < data.length; j++) {
-            ctx.lineTo(xPos(j), yPos(data[j].value));
-        }
-        ctx.strokeStyle = this.color;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Store for tooltip
-        this._plotInfo = { w: w, h: h, p: p, plotW: plotW, plotH: plotH, minV: minV, maxV: maxV, range: range, xPos: xPos, yPos: yPos };
-    };
-
-    CanvasChart.prototype._onMouse = function(e) {
-        if (!this.data || this.data.length < 2 || !this._plotInfo) return;
-        var rect = this.canvas.getBoundingClientRect();
-        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
-        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        var mx = clientX - rect.left;
-        var info = this._plotInfo;
-        var idx = Math.round(((mx - info.p.left) / info.plotW) * (this.data.length - 1));
-        idx = Math.max(0, Math.min(this.data.length - 1, idx));
-        var d = this.data[idx];
-        var dt = new Date(d.time * 1000);
-
-        this.tooltip.style.display = 'block';
-        this.tooltip.querySelector('.tt-date').textContent = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-        var valStr = d.value >= 1 ? '$' + d.value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : d.value.toFixed(4);
-        this.tooltip.querySelector('.tt-price').textContent = valStr;
-
-        var tx = info.xPos(idx);
-        var ty = info.yPos(d.value);
-        var tipW = 140;
-        var left = tx + 12;
-        if (left + tipW > info.w) left = tx - tipW - 12;
-        this.tooltip.style.left = left + 'px';
-        this.tooltip.style.top = (ty - 20) + 'px';
-
-        // Redraw with crosshair
-        this.draw();
-        var ctx = this.ctx;
-        ctx.setLineDash([4, 4]);
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(tx, info.p.top);
-        ctx.lineTo(tx, info.p.top + info.plotH);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(info.p.left, ty);
-        ctx.lineTo(info.w - info.p.right, ty);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Dot
-        ctx.beginPath();
-        ctx.arc(tx, ty, 4, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-        ctx.strokeStyle = '#fff';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-    };
-
-    CanvasChart.prototype._onLeave = function() {
-        this.tooltip.style.display = 'none';
-        if (this.data && this.data.length >= 2) this.draw();
-    };
-
-    /* ═══════════════════════════════════════
-       CHART INSTANCES
-       ═══════════════════════════════════════ */
-
-    var btcChart = new CanvasChart('btcChart', 'btcTooltip', 'btcChartLoading', '#F7931A', 'rgba(247,147,26,0.35)', 'rgba(247,147,26,0.02)');
-    var xmrChart = new CanvasChart('xmrChart', 'xmrTooltip', 'xmrChartLoading', '#FF6600', 'rgba(255,102,0,0.35)', 'rgba(255,102,0,0.02)');
-    var ratioChart = new CanvasChart('ratioChart', 'ratioTooltip', 'ratioChartLoading', '#FFD700', 'rgba(255,215,0,0.3)', 'rgba(255,215,0,0.02)');
-
-    function chartCacheMs(days) { return days <= 7 ? 30 * 60 * 1000 : 60 * 60 * 1000; }
-
-    function processPrices(prices) {
-        var seen = {};
-        var data = [];
-        (prices || []).forEach(function(p) {
-            var t = Math.floor(p[0] / 1000);
-            var day = Math.floor(t / 86400) * 86400;
-            if (!seen[day]) { seen[day] = true; data.push({ time: day, value: p[1] }); }
-        });
-        data.sort(function(a, b) { return a.time - b.time; });
-        return data;
-    }
-
-    /* BTC Chart */
-    function loadBtcChart(days) {
-        var key = 'dash_btc_ohlc_' + days;
-        var cached = cacheGet(key, chartCacheMs(days));
-        if (cached) { btcChart.setData(cached); return; }
-
-        fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=' + days)
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                var chartData = processPrices(d.prices);
-                cacheSet(key, chartData);
-                btcChart.setData(chartData);
-            }).catch(function() {
-                document.getElementById('btcChartLoading').textContent = 'Failed to load chart data.';
-            });
-    }
-
-    /* XMR Chart */
-    function loadXmrChart(days) {
-        var key = 'dash_xmr_ohlc_' + days;
-        var cached = cacheGet(key, chartCacheMs(days));
-        if (cached) { xmrChart.setData(cached); return; }
-
-        fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days=' + days)
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                var chartData = processPrices(d.prices);
-                cacheSet(key, chartData);
-                xmrChart.setData(chartData);
-            }).catch(function() {
-                document.getElementById('xmrChartLoading').textContent = 'Failed to load chart data.';
-            });
-    }
-
-    /* BTC/XMR Ratio Chart */
-    function loadRatioChart(days) {
-        var key = 'dash_ratio_chart_' + days;
-        var cached = cacheGet(key, chartCacheMs(days));
-        if (cached) { ratioChart.setData(cached); return; }
-
-        Promise.all([
-            fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=' + days).then(function(r) { return r.json(); }),
-            fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days=' + days).then(function(r) { return r.json(); })
-        ]).then(function(results) {
-            var btcPrices = results[0].prices || [];
-            var xmrPrices = results[1].prices || [];
-
-            // Build XMR price map by day
-            var xmrMap = {};
-            xmrPrices.forEach(function(p) {
-                var day = Math.floor(p[0] / 86400000) * 86400;
-                if (!xmrMap[day]) xmrMap[day] = p[1];
-            });
-
-            var seen = {};
-            var ratioData = [];
-            btcPrices.forEach(function(p) {
-                var day = Math.floor(p[0] / 86400000) * 86400;
-                if (!seen[day] && xmrMap[day] && xmrMap[day] > 0) {
-                    seen[day] = true;
-                    ratioData.push({ time: day, value: p[1] / xmrMap[day] });
-                }
-            });
-            ratioData.sort(function(a, b) { return a.time - b.time; });
-            cacheSet(key, ratioData);
-            ratioChart.setData(ratioData);
-        }).catch(function() {
-            document.getElementById('ratioChartLoading').textContent = 'Failed to load chart data.';
-        });
-    }
-
-    /* Range button wiring */
-    function setupRangeButtons(containerId, loadFn) {
-        var container = document.getElementById(containerId);
-        var buttons = container.querySelectorAll('.chart-range-btn');
-        buttons.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                buttons.forEach(function(b) { b.classList.remove('active'); });
-                btn.classList.add('active');
-                loadFn(parseInt(btn.getAttribute('data-days'), 10));
-            });
-        });
-    }
-
-    setupRangeButtons('btcRangeButtons', loadBtcChart);
-    setupRangeButtons('xmrRangeButtons', loadXmrChart);
-    setupRangeButtons('ratioRangeButtons', loadRatioChart);
-
-    /* Lazy-load charts via IntersectionObserver */
-    var chartLoaded = { btc: false, xmr: false, ratio: false };
-
-    function observeChartSection(sectionId, chartKey, loadFn, defaultDays) {
-        var section = document.getElementById(sectionId);
-        if (!section) return;
-        var observer = new IntersectionObserver(function(entries) {
-            entries.forEach(function(entry) {
-                if (entry.isIntersecting && !chartLoaded[chartKey]) {
-                    chartLoaded[chartKey] = true;
-                    observer.unobserve(section);
-                    // Also add visible class to chart container
-                    var cont = section.querySelector('.chart-container');
-                    if (cont) cont.classList.add('visible');
-                    loadFn(defaultDays);
-                }
-            });
-        }, { rootMargin: '200px' });
-        observer.observe(section);
-    }
-
-    observeChartSection('btc-chart-section', 'btc', loadBtcChart, 30);
-    observeChartSection('xmr-chart-section', 'xmr', loadXmrChart, 30);
-    observeChartSection('ratio-chart-section', 'ratio', loadRatioChart, 30);
-
-    /* Handle resize */
-    var resizeTimer;
-    window.addEventListener('resize', function() {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-            if (btcChart.data.length) btcChart.draw();
-            if (xmrChart.data.length) xmrChart.draw();
-            if (ratioChart.data.length) ratioChart.draw();
-        }, 150);
-    });
+    /* Charts are now TradingView embedded widgets — no custom JS needed */
 
     /* ═══════════════════════════════════════
        SECTION 5: TOP 10 TOKENS
@@ -1092,7 +753,7 @@
         var cached = cacheGet('dash_top10', CACHE_MS);
         if (cached) { renderTop10(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + TOP10_IDS + '&order=market_cap_desc&sparkline=false&price_change_percentage=24h,7d')
+        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + TOP10_IDS + '&order=market_cap_desc&sparkline=true&price_change_percentage=24h,7d')
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!Array.isArray(data)) throw new Error('bad response');
@@ -1132,7 +793,42 @@
                     '<span class="tc-label">7d</span>' +
                     '<span class="tc-val ' + pctClass(pct7d) + '">' + formatPct(pct7d) + '</span>' +
                 '</div>' +
-                '<div class="tc-mcap">MCap ' + formatMcap(c.market_cap) + '</div>';
+                '<div class="tc-row">' +
+                    '<span class="tc-label">Rank</span>' +
+                    '<span class="tc-val">#' + (c.market_cap_rank || '\u2014') + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">MCap</span>' +
+                    '<span class="tc-val">' + formatMcap(c.market_cap) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">24h Vol</span>' +
+                    '<span class="tc-val">' + formatMcap(c.total_volume) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">24h High</span>' +
+                    '<span class="tc-val">' + formatUSD(c.high_24h) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">24h Low</span>' +
+                    '<span class="tc-val">' + formatUSD(c.low_24h) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">ATH</span>' +
+                    '<span class="tc-val">' + formatUSD(c.ath) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">ATH Change</span>' +
+                    '<span class="tc-val ' + pctClass(c.ath_change_percentage) + '">' + formatPct(c.ath_change_percentage) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">Circ. Supply</span>' +
+                    '<span class="tc-val">' + formatSupply(c.circulating_supply) + '</span>' +
+                '</div>' +
+                '<div class="tc-row">' +
+                    '<span class="tc-label">Total Supply</span>' +
+                    '<span class="tc-val">' + formatSupply(c.total_supply) + '</span>' +
+                '</div>';
             grid.appendChild(card);
             observeFadeIn(card);
         });
@@ -1171,6 +867,19 @@
             });
     }
 
+    var FIAT_TV_SYMBOLS = {
+        usd: 'BINANCE:XMRUSDT',
+        eur: 'KRAKEN:XMREUR',
+        gbp: 'KRAKEN:XMRGBP',
+        chf: 'KRAKEN:XMRCHF',
+        aud: 'KRAKEN:XMRAUD',
+        jpy: 'KRAKEN:XMRJPY',
+        cad: 'KRAKEN:XMRCAD',
+        nzd: 'BINANCE:XMRUSDT',
+        sek: 'BINANCE:XMRUSDT',
+        nok: 'BINANCE:XMRUSDT'
+    };
+
     function renderFiat(data) {
         var grid = document.getElementById('fiatGrid');
         grid.innerHTML = '';
@@ -1180,13 +889,19 @@
             var chg = data[chgKey];
             var sym = FIAT_SYMBOLS[k] || '';
             var dec = FIAT_DECIMALS[k] || 2;
+            var tvSymbol = FIAT_TV_SYMBOLS[k] || 'BINANCE:XMRUSDT';
+            var tvUrl = 'https://www.tradingview.com/chart/?symbol=' + tvSymbol;
 
-            var card = document.createElement('div');
+            var card = document.createElement('a');
             card.className = 'fiat-card';
+            card.href = tvUrl;
+            card.target = '_blank';
+            card.rel = 'noopener';
             card.innerHTML =
                 '<div class="fiat-currency">XMR / ' + k.toUpperCase() + '</div>' +
                 '<div class="fiat-price">' + (price != null ? sym + price.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }) : '\u2014') + '</div>' +
-                '<div class="fiat-change ' + pctClass(chg) + '">' + formatPct(chg) + '</div>';
+                '<div class="fiat-change ' + pctClass(chg) + '">' + formatPct(chg) + '</div>' +
+                '<div class="fiat-chart-link">View Chart &rarr;</div>';
             grid.appendChild(card);
             observeFadeIn(card);
         });
