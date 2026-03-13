@@ -435,7 +435,7 @@
                 <script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js" async>
                 {
                     "autosize": true,
-                    "symbol": "BINANCE:XMRUSDT",
+                    "symbol": "KRAKEN:XMRUSD",
                     "interval": "D",
                     "timezone": "Etc/UTC",
                     "theme": "dark",
@@ -868,16 +868,16 @@
     }
 
     var FIAT_TV_SYMBOLS = {
-        usd: 'BINANCE:XMRUSDT',
+        usd: 'KRAKEN:XMRUSD',
         eur: 'KRAKEN:XMREUR',
         gbp: 'KRAKEN:XMRGBP',
         chf: 'KRAKEN:XMRCHF',
         aud: 'KRAKEN:XMRAUD',
         jpy: 'KRAKEN:XMRJPY',
         cad: 'KRAKEN:XMRCAD',
-        nzd: 'BINANCE:XMRUSDT',
-        sek: 'BINANCE:XMRUSDT',
-        nok: 'BINANCE:XMRUSDT'
+        nzd: 'KRAKEN:XMRUSD',
+        sek: 'KRAKEN:XMRUSD',
+        nok: 'KRAKEN:XMRUSD'
     };
 
     function renderFiat(data) {
@@ -889,7 +889,7 @@
             var chg = data[chgKey];
             var sym = FIAT_SYMBOLS[k] || '';
             var dec = FIAT_DECIMALS[k] || 2;
-            var tvSymbol = FIAT_TV_SYMBOLS[k] || 'BINANCE:XMRUSDT';
+            var tvSymbol = FIAT_TV_SYMBOLS[k] || 'KRAKEN:XMRUSD';
             var tvUrl = 'https://www.tradingview.com/chart/?symbol=' + tvSymbol;
 
             var card = document.createElement('a');
