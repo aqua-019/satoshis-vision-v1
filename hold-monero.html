@@ -1254,6 +1254,167 @@
             color: var(--text-primary);
         }
 
+        /* Ecosystem Grid */
+        .ecosystem-section {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        .ecosystem-section-header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .ecosystem-section-header h2 {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .ecosystem-section-header p {
+            color: var(--text-secondary);
+            max-width: 650px;
+            margin: 0 auto;
+            font-size: 1rem;
+        }
+
+        .eco-category {
+            margin-bottom: 3rem;
+        }
+
+        .eco-category-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--grey-18);
+        }
+
+        .eco-category-icon {
+            font-size: 1.5rem;
+        }
+
+        .eco-category-header h3 {
+            font-family: var(--font-display);
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .eco-category-header .eco-count {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--xmr-orange);
+            background: rgba(255, 102, 0, 0.15);
+            padding: 0.2rem 0.6rem;
+            border-radius: 10px;
+            margin-left: auto;
+        }
+
+        .eco-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        .eco-box {
+            display: flex;
+            flex-direction: column;
+            background: var(--card-bg);
+            border: 1px solid var(--grey-18);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-decoration: none;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .eco-box:hover {
+            border-color: var(--xmr-orange);
+            background: var(--card-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(255, 102, 0, 0.1);
+        }
+
+        .eco-box-top {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .eco-box-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .eco-box-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+        }
+
+        .eco-box-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .eco-box-url {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--xmr-orange);
+            margin-top: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .eco-box:hover .eco-box-url {
+            opacity: 1;
+        }
+
+        .eco-box.new-badge::after {
+            content: 'NEW';
+            position: absolute;
+            top: 10px;
+            right: -22px;
+            background: var(--success-green);
+            color: #000;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 0.15rem 1.5rem;
+            transform: rotate(45deg);
+            letter-spacing: 1px;
+        }
+
+        .eco-box.featured {
+            border-color: var(--xmr-orange);
+            background: linear-gradient(135deg, rgba(255, 102, 0, 0.08), transparent);
+        }
+
+        @media (max-width: 1024px) {
+            .eco-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .eco-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .eco-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .nav-links {
@@ -1365,7 +1526,7 @@
             <a href="dashboard.html">Dashboard</a>
             <a href="bottom-line.html">XMR Bottom Line</a>
             <a href="future-outlook.html">2027+</a>
-            <a href="hold-monero.html" style="color: var(--xmr-orange);">XMR</a>
+            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
         </div>
         <div class="hamburger" onclick="toggleMenu()">
             <span></span>
@@ -1384,7 +1545,7 @@
         <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
         <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
         <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()">XMR</a>
+        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
     </div>
 
     <!-- Hero -->
@@ -1887,102 +2048,493 @@
         </div>
     </section>
 
-    <!-- Ecosystem Section -->
-    <section id="ecosystem" class="info-section" style="padding: 4rem 2rem;">
-        <h2 style="text-align: center; font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem;">Monero Ecosystem</h2>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Services, tools, and platforms built on and supporting the Monero network.</p>
-        <div class="info-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-            <div class="info-card" style="border-left: 3px solid var(--xmr-orange);">
-                <h3>GetMonero.org</h3>
-                <p>The official Monero project site. Download the official wallet, read documentation, and join the community.</p>
-                <a href="https://www.getmonero.org/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Visit &rarr;</a>
-            </div>
-            <div class="info-card" style="border-left: 3px solid var(--btc-orange);">
-                <h3>Monero Research Lab</h3>
-                <p>Academic research driving Monero's privacy technology. Ring signatures, Bulletproofs, FCMP++ and more.</p>
-                <a href="https://www.getmonero.org/resources/research-lab/" target="_blank" rel="noopener" style="color: var(--btc-orange); text-decoration: none; font-size: 0.85rem;">Explore &rarr;</a>
-            </div>
-            <div class="info-card" style="border-left: 3px solid var(--success-green);">
-                <h3>LocalMonero (Archive)</h3>
-                <p>The former peer-to-peer Monero marketplace. Shut down May 2024 after serving the community since 2017.</p>
-                <span style="color: var(--text-secondary); font-size: 0.85rem;">Archived</span>
-            </div>
-            <div class="info-card" style="border-left: 3px solid #9B59B6;">
-                <h3>Haveno DEX</h3>
-                <p>Decentralized exchange for Monero. Peer-to-peer trading with fiat currencies. Successor to Bisq for XMR.</p>
-                <a href="https://haveno.exchange/" target="_blank" rel="noopener" style="color: #9B59B6; text-decoration: none; font-size: 0.85rem;">Visit &rarr;</a>
-            </div>
-            <div class="info-card" style="border-left: 3px solid #E91E63;">
-                <h3>Monero Community Workgroup</h3>
-                <p>Community funding for Monero development. Proposals, bounties, and the CCS (Community Crowdfunding System).</p>
-                <a href="https://ccs.getmonero.org/" target="_blank" rel="noopener" style="color: #E91E63; text-decoration: none; font-size: 0.85rem;">View CCS &rarr;</a>
-            </div>
-            <div class="info-card" style="border-left: 3px solid #00BCD4;">
-                <h3>P2Pool Mining</h3>
-                <p>Mine Monero with consumer CPUs via RandomX. ASIC-resistant by design. Support decentralization by running a node.</p>
-                <a href="https://www.getmonero.org/get-started/mining/" target="_blank" rel="noopener" style="color: #00BCD4; text-decoration: none; font-size: 0.85rem;">Start Mining &rarr;</a>
-            </div>
+    <!-- Monero Ecosystem Map -->
+    <section id="ecosystem" class="ecosystem-section">
+        <div class="ecosystem-section-header">
+            <h2>Monero Ecosystem Map</h2>
+            <p>The complete landscape of services, tools, and platforms powering the Monero network. All links open in a new tab.</p>
         </div>
-    </section>
 
-    <!-- Wallets Section -->
-    <section id="wallets" class="info-section" style="padding: 4rem 2rem; background: rgba(255,102,0,0.02);">
-        <h2 style="text-align: center; font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem;">Wallets</h2>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Self-custody is fundamental to Monero's privacy. Choose a wallet that fits your needs.</p>
-        <div class="info-grid" style="grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.5rem;">
-            <div class="info-card">
-                <h3>Feather Wallet</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Desktop &bull; Advanced</p>
-                <p>Feature-rich desktop wallet for power users. Tor support, coin control, hardware wallet integration.</p>
-                <a href="https://featherwallet.org/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
+        <!-- Exchanges & Swaps (DEX / No-KYC) -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#9878;</span>
+                <h3>Exchanges &amp; Swaps (DEX / No-KYC)</h3>
+                <span class="eco-count">9</span>
             </div>
-            <div class="info-card">
-                <h3>Cake Wallet</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Mobile &bull; User-friendly</p>
-                <p>Open-source mobile wallet for iOS and Android. Built-in exchange via ChangeNOW and SideShift.</p>
-                <a href="https://cakewallet.com/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
-            </div>
-            <div class="info-card">
-                <h3>Monero GUI / CLI</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Desktop &bull; Official</p>
-                <p>The official Monero wallets. GUI for visual interface, CLI for command-line. Run your own node for maximum privacy.</p>
-                <a href="https://www.getmonero.org/downloads/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
-            </div>
-            <div class="info-card">
-                <h3>Monerujo</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Android &bull; Open Source</p>
-                <p>Lightweight Android wallet with Tor support. Connect to your own node or use public remote nodes.</p>
-                <a href="https://www.monerujo.io/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none; font-size: 0.85rem;">Download &rarr;</a>
+            <div class="eco-grid">
+                <a href="https://haveno.markets/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9878;</span>
+                        <span class="eco-box-name">Haveno</span>
+                    </div>
+                    <span class="eco-box-desc">Decentralized P2P exchange. Trade XMR for fiat and crypto without intermediaries.</span>
+                    <span class="eco-box-url">haveno.markets</span>
+                </a>
+                <a href="https://basicswapdex.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#8644;</span>
+                        <span class="eco-box-name">BasicSwap</span>
+                    </div>
+                    <span class="eco-box-desc">Decentralized exchange using atomic swaps. True peer-to-peer, no middleman.</span>
+                    <span class="eco-box-url">basicswapdex.com</span>
+                </a>
+                <a href="https://trocador.app/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128256;</span>
+                        <span class="eco-box-name">Trocador</span>
+                    </div>
+                    <span class="eco-box-desc">Swap aggregator comparing rates across multiple no-KYC exchanges. Tor-friendly.</span>
+                    <span class="eco-box-url">trocador.app</span>
+                </a>
+                <a href="https://exolix.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9889;</span>
+                        <span class="eco-box-name">Exolix</span>
+                    </div>
+                    <span class="eco-box-desc">Instant cryptocurrency exchange. Fixed and floating rate swaps, no account required.</span>
+                    <span class="eco-box-url">exolix.com</span>
+                </a>
+                <a href="https://orangefren.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127818;</span>
+                        <span class="eco-box-name">OrangeFren</span>
+                    </div>
+                    <span class="eco-box-desc">Swap aggregator finding the best rates across no-KYC instant exchanges.</span>
+                    <span class="eco-box-url">orangefren.com</span>
+                </a>
+                <a href="https://cyphergoat.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128016;</span>
+                        <span class="eco-box-name">Cyphergoat</span>
+                    </div>
+                    <span class="eco-box-desc">Privacy-focused exchange built for the Monero community. No tracking, no KYC.</span>
+                    <span class="eco-box-url">cyphergoat.com</span>
+                </a>
+                <a href="https://kyc.rip/swap" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128279;</span>
+                        <span class="eco-box-name">kyc.rip/swap</span>
+                    </div>
+                    <span class="eco-box-desc">Master swap hub aggregating community-vetted no-KYC exchange services.</span>
+                    <span class="eco-box-url">kyc.rip/swap</span>
+                </a>
+                <a href="https://eigenswap.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128260;</span>
+                        <span class="eco-box-name">Eigenswap</span>
+                    </div>
+                    <span class="eco-box-desc">Cross-chain swaps with privacy. Swap between Monero and other chains seamlessly.</span>
+                    <span class="eco-box-url">eigenswap.com</span>
+                </a>
+                <a href="https://serai.exchange/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127754;</span>
+                        <span class="eco-box-name">Serai</span>
+                    </div>
+                    <span class="eco-box-desc">Cross-chain DEX enabling trustless swaps. No wrapped tokens, native asset trading.</span>
+                    <span class="eco-box-url">serai.exchange</span>
+                </a>
             </div>
         </div>
-    </section>
 
-    <!-- Community Section -->
-    <section id="community" class="info-section" style="padding: 4rem 2rem;">
-        <h2 style="text-align: center; font-family: var(--font-display); font-size: 2rem; margin-bottom: 0.5rem;">Community</h2>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 3rem; max-width: 600px; margin-left: auto; margin-right: auto;">Join the global Monero community across platforms.</p>
-        <div class="info-grid" style="grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1.5rem;">
-            <div class="info-card" style="text-align: center; padding: 2rem;">
-                <h3 style="font-size: 1.1rem;">r/Monero</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Reddit community with 400K+ members</p>
-                <a href="https://www.reddit.com/r/Monero/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Join &rarr;</a>
+        <!-- Wallets (Hot) -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#128091;</span>
+                <h3>Wallets (Hot)</h3>
+                <span class="eco-count">11</span>
             </div>
-            <div class="info-card" style="text-align: center; padding: 2rem;">
-                <h3 style="font-size: 1.1rem;">Monero Matrix/IRC</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Real-time developer and user chat</p>
-                <a href="https://www.getmonero.org/community/hangouts/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Connect &rarr;</a>
-            </div>
-            <div class="info-card" style="text-align: center; padding: 2rem;">
-                <h3 style="font-size: 1.1rem;">Monero Stack Exchange</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Q&amp;A for technical questions</p>
-                <a href="https://monero.stackexchange.com/" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Ask &rarr;</a>
-            </div>
-            <div class="info-card" style="text-align: center; padding: 2rem;">
-                <h3 style="font-size: 1.1rem;">GitHub</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Open source development</p>
-                <a href="https://github.com/monero-project/monero" target="_blank" rel="noopener" style="color: var(--xmr-orange); text-decoration: none;">Contribute &rarr;</a>
+            <div class="eco-grid">
+                <a href="https://cakewallet.com/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127856;</span>
+                        <span class="eco-box-name">Cake Wallet</span>
+                    </div>
+                    <span class="eco-box-desc">Premier open-source mobile wallet for iOS and Android. Built-in exchange and buying.</span>
+                    <span class="eco-box-url">cakewallet.com</span>
+                </a>
+                <a href="https://monero.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9898;</span>
+                        <span class="eco-box-name">monero.com</span>
+                    </div>
+                    <span class="eco-box-desc">Simplified Monero wallet by the Cake team. Streamlined for XMR-only users.</span>
+                    <span class="eco-box-url">monero.com</span>
+                </a>
+                <a href="https://cakewallet.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127847;</span>
+                        <span class="eco-box-name">Cupcake</span>
+                    </div>
+                    <span class="eco-box-desc">Cold wallet solution by the Cake team. Air-gapped signing for maximum security.</span>
+                    <span class="eco-box-url">cakewallet.com</span>
+                </a>
+                <a href="https://featherwallet.org/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#129718;</span>
+                        <span class="eco-box-name">Feather Wallet</span>
+                    </div>
+                    <span class="eco-box-desc">Lightweight desktop wallet with Tor built-in. Coin control, advanced features for power users.</span>
+                    <span class="eco-box-url">featherwallet.org</span>
+                </a>
+                <a href="https://www.monerujo.io/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128241;</span>
+                        <span class="eco-box-name">Monerujo</span>
+                    </div>
+                    <span class="eco-box-desc">Open-source Android wallet with Tor support. Connect to your own node or public nodes.</span>
+                    <span class="eco-box-url">monerujo.io</span>
+                </a>
+                <a href="https://stackwallet.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128203;</span>
+                        <span class="eco-box-name">Stack Wallet</span>
+                    </div>
+                    <span class="eco-box-desc">Multi-coin mobile wallet with a clean interface. Supports Monero alongside other privacy coins.</span>
+                    <span class="eco-box-url">stackwallet.com</span>
+                </a>
+                <a href="https://eigenswap.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128272;</span>
+                        <span class="eco-box-name">Eigenwallet</span>
+                    </div>
+                    <span class="eco-box-desc">Privacy-first wallet with integrated cross-chain swap capabilities.</span>
+                    <span class="eco-box-url">eigenswap.com</span>
+                </a>
+                <a href="https://www.monerujo.io/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#129302;</span>
+                        <span class="eco-box-name">Sidekick</span>
+                    </div>
+                    <span class="eco-box-desc">Companion wallet for air-gapped transaction signing. Pairs with Monerujo for cold storage.</span>
+                    <span class="eco-box-url">monerujo.io</span>
+                </a>
+                <a href="https://unstoppable.money/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128170;</span>
+                        <span class="eco-box-name">Unstoppable</span>
+                    </div>
+                    <span class="eco-box-desc">Multi-coin wallet with privacy features. Supports Monero alongside Bitcoin and more.</span>
+                    <span class="eco-box-url">unstoppable.money</span>
+                </a>
+                <a href="https://gitea.com/anonero/anonero" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128373;</span>
+                        <span class="eco-box-name">Anonero</span>
+                    </div>
+                    <span class="eco-box-desc">Privacy-focused Android wallet. Built for anonymity with Tor and I2P support.</span>
+                    <span class="eco-box-url">anonero</span>
+                </a>
+                <a href="https://monfluo.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127758;</span>
+                        <span class="eco-box-name">Monfluo</span>
+                    </div>
+                    <span class="eco-box-desc">Monero wallet focused on simplicity and ease of use for everyday transactions.</span>
+                    <span class="eco-box-url">monfluo.com</span>
+                </a>
             </div>
         </div>
+
+        <!-- Hardware Wallets -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#128273;</span>
+                <h3>Hardware Wallets</h3>
+                <span class="eco-count">3</span>
+            </div>
+            <div class="eco-grid">
+                <a href="https://keyst.one/" target="_blank" rel="noopener" class="eco-box new-badge featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#129516;</span>
+                        <span class="eco-box-name">Keystone</span>
+                    </div>
+                    <span class="eco-box-desc">Air-gapped hardware wallet with Monero support. QR code signing, no USB or Bluetooth needed.</span>
+                    <span class="eco-box-url">keyst.one</span>
+                </a>
+                <a href="https://www.ledger.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128737;</span>
+                        <span class="eco-box-name">Ledger</span>
+                    </div>
+                    <span class="eco-box-desc">Hardware wallet supporting Monero via the official Monero GUI. Secure element chip.</span>
+                    <span class="eco-box-url">ledger.com</span>
+                </a>
+                <a href="https://trezor.io/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128737;</span>
+                        <span class="eco-box-name">Trezor</span>
+                    </div>
+                    <span class="eco-box-desc">Open-source hardware wallet with Monero support via Monero GUI. Fully auditable firmware.</span>
+                    <span class="eco-box-url">trezor.io</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Payments & POS -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#128176;</span>
+                <h3>Payments &amp; POS</h3>
+                <span class="eco-count">7</span>
+            </div>
+            <div class="eco-grid">
+                <a href="https://btcpayserver.org/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128179;</span>
+                        <span class="eco-box-name">BTCPay Server</span>
+                    </div>
+                    <span class="eco-box-desc">Self-hosted payment processor. Accept Monero payments directly with no third-party fees.</span>
+                    <span class="eco-box-url">btcpayserver.org</span>
+                </a>
+                <a href="https://moneropay.eu/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9898;</span>
+                        <span class="eco-box-name">MoneroPay</span>
+                    </div>
+                    <span class="eco-box-desc">Lightweight Monero payment gateway. Easy integration for merchants accepting XMR.</span>
+                    <span class="eco-box-url">moneropay.eu</span>
+                </a>
+                <a href="https://bitrequest.io/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128233;</span>
+                        <span class="eco-box-name">Bitrequest</span>
+                    </div>
+                    <span class="eco-box-desc">Create and share payment requests for Monero and other cryptocurrencies. Point-of-sale ready.</span>
+                    <span class="eco-box-url">bitrequest.io</span>
+                </a>
+                <a href="https://nowpayments.io/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128184;</span>
+                        <span class="eco-box-name">NOW Payments</span>
+                    </div>
+                    <span class="eco-box-desc">Crypto payment gateway supporting Monero. Plugins for WooCommerce, Shopify, and more.</span>
+                    <span class="eco-box-url">nowpayments.io</span>
+                </a>
+                <a href="https://metronero.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127895;</span>
+                        <span class="eco-box-name">Metronero</span>
+                    </div>
+                    <span class="eco-box-desc">Suite of Monero payment tools for merchants. Invoicing, checkout, and point-of-sale solutions.</span>
+                    <span class="eco-box-url">metronero.com</span>
+                </a>
+                <a href="https://opencryptopay.io/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128275;</span>
+                        <span class="eco-box-name">Open CryptoPay</span>
+                    </div>
+                    <span class="eco-box-desc">Open-source cryptocurrency payment processor. Self-hosted, privacy-preserving payment gateway.</span>
+                    <span class="eco-box-url">opencryptopay.io</span>
+                </a>
+                <a href="https://bitcartcc.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128179;</span>
+                        <span class="eco-box-name">Bitcart</span>
+                    </div>
+                    <span class="eco-box-desc">Open-source payment processor with Monero support. Store management and checkout integration.</span>
+                    <span class="eco-box-url">bitcartcc.com</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Privacy Services -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#128373;</span>
+                <h3>Privacy Services</h3>
+                <span class="eco-count">2</span>
+            </div>
+            <div class="eco-grid">
+                <a href="https://privacygateway.io/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128179;</span>
+                        <span class="eco-box-name">Privacy Gateway</span>
+                    </div>
+                    <span class="eco-box-desc">Prepaid cards funded with Monero. Spend XMR anywhere that accepts Visa/Mastercard.</span>
+                    <span class="eco-box-url">privacygateway.io</span>
+                </a>
+                <a href="https://kycnot.me/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128683;</span>
+                        <span class="eco-box-name">KYCNOT.ME</span>
+                    </div>
+                    <span class="eco-box-desc">Directory of KYC-free services. Find exchanges, VPNs, and services that respect your privacy.</span>
+                    <span class="eco-box-url">kycnot.me</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Mining -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#9874;</span>
+                <h3>Mining</h3>
+                <span class="eco-count">3</span>
+            </div>
+            <div class="eco-grid">
+                <a href="https://p2pool.io/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9874;</span>
+                        <span class="eco-box-name">P2Pool</span>
+                    </div>
+                    <span class="eco-box-desc">Decentralized mining pool for Monero. No central server, no pool fees, mine with your own node.</span>
+                    <span class="eco-box-url">p2pool.io</span>
+                </a>
+                <a href="https://xmrig.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128187;</span>
+                        <span class="eco-box-name">XMRig</span>
+                    </div>
+                    <span class="eco-box-desc">High-performance Monero mining software. CPU and GPU support with advanced configuration.</span>
+                    <span class="eco-box-url">xmrig.com</span>
+                </a>
+                <a href="https://gupax.io/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127912;</span>
+                        <span class="eco-box-name">Gupax</span>
+                    </div>
+                    <span class="eco-box-desc">GUI for P2Pool and XMRig. One-click setup to start mining Monero on your own hardware.</span>
+                    <span class="eco-box-url">gupax.io</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Nodes & Infrastructure -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#128421;</span>
+                <h3>Nodes &amp; Infrastructure</h3>
+                <span class="eco-count">6</span>
+            </div>
+            <div class="eco-grid">
+                <a href="https://www.getmonero.org/downloads/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128187;</span>
+                        <span class="eco-box-name">Monero GUI/CLI</span>
+                    </div>
+                    <span class="eco-box-desc">Official Monero node software. Run a full node to strengthen the network and maximize your privacy.</span>
+                    <span class="eco-box-url">getmonero.org</span>
+                </a>
+                <a href="https://pinode.co.uk/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#129292;</span>
+                        <span class="eco-box-name">PiNode</span>
+                    </div>
+                    <span class="eco-box-desc">Run a Monero node on a Raspberry Pi. Low-cost, low-power, always-on node solution.</span>
+                    <span class="eco-box-url">pinode.co.uk</span>
+                </a>
+                <a href="https://monero.nodo.xyz/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128229;</span>
+                        <span class="eco-box-name">Nodo</span>
+                    </div>
+                    <span class="eco-box-desc">Dedicated Monero node hardware. Plug-and-play full node with built-in privacy features.</span>
+                    <span class="eco-box-url">nodo.xyz</span>
+                </a>
+                <a href="https://start9.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9881;</span>
+                        <span class="eco-box-name">Start9</span>
+                    </div>
+                    <span class="eco-box-desc">Sovereign computing platform. Run Monero and other services on your own personal server.</span>
+                    <span class="eco-box-url">start9.com</span>
+                </a>
+                <a href="https://umbrel.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9729;</span>
+                        <span class="eco-box-name">Umbrel</span>
+                    </div>
+                    <span class="eco-box-desc">Personal home server OS with app store. Install a Monero node alongside other self-hosted apps.</span>
+                    <span class="eco-box-url">umbrel.com</span>
+                </a>
+                <a href="https://xmrchat.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128172;</span>
+                        <span class="eco-box-name">XMRChat</span>
+                    </div>
+                    <span class="eco-box-desc">Monero-powered chat and tipping platform. Send tips and messages using XMR microtransactions.</span>
+                    <span class="eco-box-url">xmrchat.com</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Community & Resources -->
+        <div class="eco-category">
+            <div class="eco-category-header">
+                <span class="eco-category-icon">&#127760;</span>
+                <h3>Community &amp; Resources</h3>
+                <span class="eco-count">8</span>
+            </div>
+            <div class="eco-grid">
+                <a href="https://monerica.com/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128214;</span>
+                        <span class="eco-box-name">Monerica</span>
+                    </div>
+                    <span class="eco-box-desc">Comprehensive directory of businesses and services that accept Monero. The Monero yellow pages.</span>
+                    <span class="eco-box-url">monerica.com</span>
+                </a>
+                <a href="https://xmrbazaar.com/" target="_blank" rel="noopener" class="eco-box featured">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128722;</span>
+                        <span class="eco-box-name">XMRBazaar</span>
+                    </div>
+                    <span class="eco-box-desc">Marketplace for legal goods and services paid with Monero. Buy and sell with privacy.</span>
+                    <span class="eco-box-url">xmrbazaar.com</span>
+                </a>
+                <a href="https://www.monerotopia.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127908;</span>
+                        <span class="eco-box-name">MoneroTopia</span>
+                    </div>
+                    <span class="eco-box-desc">Community events, conferences, and podcast. News, interviews, and Monero ecosystem updates.</span>
+                    <span class="eco-box-url">monerotopia.com</span>
+                </a>
+                <a href="https://monerokon.org/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127916;</span>
+                        <span class="eco-box-name">MoneroKon</span>
+                    </div>
+                    <span class="eco-box-desc">Annual Monero conference. Technical talks, privacy workshops, and community gatherings.</span>
+                    <span class="eco-box-url">monerokon.org</span>
+                </a>
+                <a href="https://revuo-xmr.com/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128240;</span>
+                        <span class="eco-box-name">Revuo Monero</span>
+                    </div>
+                    <span class="eco-box-desc">Weekly Monero news digest. Development updates, community highlights, and ecosystem news.</span>
+                    <span class="eco-box-url">revuo-xmr.com</span>
+                </a>
+                <a href="https://monero.town/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#127968;</span>
+                        <span class="eco-box-name">Monero Town</span>
+                    </div>
+                    <span class="eco-box-desc">Lemmy-based Monero forum. Discussions, news, and community posts in a federated platform.</span>
+                    <span class="eco-box-url">monero.town</span>
+                </a>
+                <a href="https://ccs.getmonero.org/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#128176;</span>
+                        <span class="eco-box-name">CCS</span>
+                    </div>
+                    <span class="eco-box-desc">Community Crowdfunding System. Fund Monero development, research, and community projects.</span>
+                    <span class="eco-box-url">ccs.getmonero.org</span>
+                </a>
+                <a href="https://www.getmonero.org/" target="_blank" rel="noopener" class="eco-box">
+                    <div class="eco-box-top">
+                        <span class="eco-box-icon">&#9898;</span>
+                        <span class="eco-box-name">GetMonero.org</span>
+                    </div>
+                    <span class="eco-box-desc">Official Monero project site. Documentation, downloads, research lab, and community resources.</span>
+                    <span class="eco-box-url">getmonero.org</span>
+                </a>
+            </div>
+        </div>
+
     </section>
 
     <!-- Footer -->

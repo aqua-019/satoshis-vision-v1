@@ -1561,7 +1561,7 @@
                 <a href="dashboard.html">Dashboard</a>
                 <a href="bottom-line.html" style="color: var(--xmr-orange);">XMR Bottom Line</a>
             <a href="future-outlook.html">2027+</a>
-                <a href="hold-monero.html">XMR</a>
+                <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
             </div>
         </div>
     </nav>
@@ -2500,17 +2500,20 @@
                     <div class="bounty-amount">$625,000</div>
                     <div class="bounty-agency">IRS Criminal Investigation Division • September 2020</div>
                     <p class="evidence-text">The United States Internal Revenue Service posted a public bounty for contractors who could develop tools to trace Monero transactions. <strong>22 companies applied.</strong> Two were selected: Chainalysis and Integra FEC. They were given 8 months to deliver results.</p>
+                    <p class="evidence-text"><strong>That bounty remains stagnant and unfilled.</strong> No contractor has ever collected the full reward. No deterministic tracing tool was delivered. The 8-month deadline came and went. Years later, the challenge stands — unanswered.</p>
                     <p class="evidence-text">"You can't be as deterministic as Bitcoin. In tracing Monero, it's really more of a probabilistic game," admitted CipherTrace CEO Dave Jevans. "You can say: Well, I have 98% probability... or 78%... It takes a different approach."</p>
-                    <span class="bounty-outcome disputed">Outcome: Probabilistic Only — No Deterministic Tracing Achieved</span>
+                    <span class="bounty-outcome disputed">Outcome: STAGNANT — Bounty Unfilled, No Deterministic Tracing Achieved</span>
                     <p class="evidence-source">Source: <a href="https://decrypt.co/43451/irs-1-million-contracts-data-firms-crack-monero" target="_blank">Decrypt, October 2020</a></p>
                 </div>
 
                 <div class="bounty-item">
                     <div class="bounty-amount">$22,000,000</div>
-                    <div class="bounty-agency">IRS → Chainalysis Contract • 2021-Present</div>
-                    <p class="evidence-text">Following the bounty, Chainalysis secured a <strong>$22 million contract</strong> with the IRS, providing 620 yearly software licenses, API access, and training. A leaked 2024 training video revealed the limitations of their Monero analysis capabilities.</p>
-                    <p class="evidence-text">The leaked presentation showed investigators relying on <strong>external exchange data, IP correlation, and operational security failures</strong> — not cryptographic breaks. The Monero Research Lab responded, noting nothing in the presentation exceeded capabilities Monero developers had already identified and mitigated.</p>
-                    <span class="bounty-outcome failed">Outcome: No Cryptographic Break — Relies on External Data Only</span>
+                    <div class="bounty-agency">IRS → Chainalysis Contract • 2021-Present • STILL OPEN</div>
+                    <p class="evidence-text">When the $625K bounty failed to produce results, the government escalated — dramatically. Chainalysis secured a <strong>$22 million contract</strong> with the IRS: 620 yearly software licenses, API access, dedicated training sessions. This was not a research grant. This was a <strong>desperate, industrial-scale investment</strong> in breaking Monero's privacy.</p>
+                    <p class="evidence-text"><strong>Chainalysis can trace Bitcoin trivially.</strong> Their tools map every BTC transaction across the entire public ledger with near-perfect accuracy. But Monero is architecturally different: <strong>ring signatures</strong> obscure the true sender among decoys, <strong>stealth addresses</strong> generate one-time destinations so no two transactions link to the same public address, and <strong>RingCT</strong> (Ring Confidential Transactions) encrypts all amounts. Together, these three layers make Chainalysis's statistical analysis — the same pattern-matching that works flawlessly on Bitcoin — fundamentally ineffective against Monero.</p>
+                    <p class="evidence-text">A leaked 2024 IRS training video confirmed the failure. The presentation showed investigators relying on <strong>external exchange data, IP correlation, and user operational security mistakes</strong> — not cryptographic breaks. In other words: they can only trace Monero when the <em>user</em> makes an error, never when the <em>protocol</em> does. The Monero Research Lab responded that nothing in the presentation exceeded capabilities Monero developers had already identified and mitigated.</p>
+                    <p class="evidence-text"><strong>The $22 million contract represents the government's desperation.</strong> They threw unlimited resources at the most well-funded blockchain surveillance company on the planet — and that company still cannot crack the math. The contract remains open. The privacy guarantees hold.</p>
+                    <span class="bounty-outcome failed">Outcome: FAILURE — $22M Spent, No Cryptographic Break, Relies on External Data Only</span>
                     <p class="evidence-source">Source: <a href="https://takebackourtech.org/irs-attempts-to-trace-monero-in-leaked-training-video-response-from-monero/" target="_blank">TakeBackOurTech, October 2024</a></p>
                 </div>
 
@@ -2632,6 +2635,22 @@
                     <div class="evidence-date">Effective 2027</div>
                     <p class="evidence-text">The EU's Anti-Money Laundering Regulation will prohibit crypto service providers from offering privacy coins. Full enforcement expected by July 2027. Preemptive delistings have already occurred.</p>
                     <p class="evidence-source">Source: CPO Magazine, IFC Review</p>
+                </div>
+
+                <div class="evidence-card danger">
+                    <div class="evidence-icon">🔴</div>
+                    <h3 class="evidence-title">Bitstamp EU Delisting</h3>
+                    <div class="evidence-date">January 9, 2024</div>
+                    <p class="evidence-text">One of the oldest and most regulated exchanges in Europe, Bitstamp suspended all Monero trading and deposits for customers in the European Economic Area. The move came in direct anticipation of the EU's Anti-Money Laundering Regulation — proving that even compliance-first exchanges cannot reconcile regulation with true privacy.</p>
+                    <p class="evidence-source">Source: Bitstamp Announcements, CoinDesk</p>
+                </div>
+
+                <div class="evidence-card danger">
+                    <div class="evidence-icon">🔴</div>
+                    <h3 class="evidence-title">Huobi/HTX Global Removal</h3>
+                    <div class="evidence-date">September 2023</div>
+                    <p class="evidence-text">Huobi (rebranded to HTX) delisted Monero alongside other privacy coins globally, citing evolving regulatory requirements across multiple jurisdictions. As one of the top 10 exchanges by volume, the removal confirmed that no major centralized platform can offer privacy coins and satisfy government surveillance mandates simultaneously.</p>
+                    <p class="evidence-source">Source: HTX Announcements, The Block</p>
                 </div>
 
                 <div class="evidence-card success">
