@@ -7,92 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --grey-18: #2E2E2E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --success-green: #00D395;
-            --danger-red: #FF4757;
-            --privacy-purple: #9B59B6;
-            --crossover-cyan: #00CED1;
-            --reg-green: #00D395;
-            --reg-blue: #3498DB;
-            --reg-red: #FF4757;
-            --reg-purple: #9B59B6;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-
-        body {
-            font-family: var(--font-body);
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18); padding: 1rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .nav-logo {
-            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            background-clip: text; text-decoration: none;
-        }
-        .nav-links { display: flex; gap: 2rem; align-items: center; }
-        .nav-links a {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease;
-        }
-        .nav-links a:hover { color: var(--btc-orange); }
-        .nav-dropdown { position: relative; }
-        .nav-dropdown-toggle {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
-        }
-        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
-        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
-        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
-        .nav-dropdown-menu {
-            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
-            padding: 0.5rem 0; min-width: 160px;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-top: 0.75rem;
-        }
-        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
-        .nav-dropdown-menu a {
-            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
-            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
-        }
-        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
-
-        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 10px; }
-        .hamburger span { width: 25px; height: 2px; background: var(--text-primary); }
-
-        .mobile-menu {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 10, 0.98); z-index: 999;
-            flex-direction: column; justify-content: center; align-items: center; gap: 2rem;
-        }
-        .mobile-menu.active { display: flex; }
-        .mobile-menu a { color: var(--text-primary); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); }
-
         /* Hero */
         .hero {
             padding: 8rem 2rem 4rem; text-align: center; position: relative; overflow: hidden;
@@ -673,18 +589,6 @@
         }
         .cta-link:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,102,0,0.3); }
 
-        /* Footer */
-        footer {
-            border-top: 1px solid var(--grey-18); padding: 2rem;
-            text-align: center; color: var(--text-secondary); font-size: 0.85rem;
-        }
-        .footer-nav { display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; }
-        .footer-nav a {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;
-            transition: color 0.3s ease;
-        }
-        .footer-nav a:hover { color: var(--btc-orange); }
-
         /* Divider */
         .section-divider {
             max-width: 1200px; margin: 0 auto; padding: 0 2rem;
@@ -695,33 +599,7 @@
         }
 
         /* ===== Responsive ===== */
-        /* ── Price Ticker ── */
-        .price-ticker {
-            display: flex; align-items: center; gap: 1.25rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .live-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: #00D26A; box-shadow: 0 0 6px #00D26A;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-        }
-        .price-item { display: flex; align-items: center; gap: 0.4rem; }
-        .price-label {
-            font-size: 0.65rem; color: rgba(255,255,255,0.4);
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
-        .price-change { font-size: 0.7rem; font-weight: 500; }
-        .price-change.up { color: #00D26A; }
-        .price-change.down { color: #FF4757; }
-
         @media (max-width: 768px) {
-            .price-ticker { display: none; }
-            .nav-links { display: none; }
-            .hamburger { display: flex; }
             .drivers-grid { grid-template-columns: 1fr; }
             .paradox-grid { grid-template-columns: 1fr; }
             .stat-boxes-grid { grid-template-columns: 1fr 1fr; }
@@ -1848,11 +1726,6 @@
     </footer>
 
     <script>
-        function toggleMenu() {
-            var el = document.getElementById('mobileMenu');
-            if (el) el.classList.toggle('active');
-        }
-
         // Scroll-triggered fade-in animations
         const observer = new IntersectionObserver((entries) => {
             entries.forEach((entry, index) => {
@@ -1879,5 +1752,6 @@
             observer.observe(el);
         });
     </script>
+<script src="scripts.js"></script>
 </body>
 </html>

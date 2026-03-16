@@ -15,14 +15,16 @@
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
         { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://changenow.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://changenow.io https://www.wagyu.xyz; connect-src 'self' https://api.coingecko.com https://changenow.io" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://changenow.io https://s3.tradingview.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; frame-src https://changenow.io https://www.wagyu.xyz; connect-src 'self' https://api.coingecko.com https://changenow.io" }
       ]
     }
   ],
   "rewrites": [
     { "source": "/home", "destination": "/" },
     { "source": "/archive", "destination": "/bottom-line.html" },
-    { "source": "/education", "destination": "/btc-xmr-education.html" }
+    { "source": "/education", "destination": "/btc-xmr-education.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/future-outlook", "destination": "/future-outlook.html" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }

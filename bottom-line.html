@@ -7,117 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --text-primary: #EAEAEA;
-            --text-secondary: #A0A0A0;
-            --grey-18: #2E2E2E;
-            --success-green: #00D395;
-            --danger-red: #FF4757;
-            --warning-yellow: #FFD93D;
-            --tradfi-blue: #4A90D9;
-            --privacy-purple: #9B59B6;
-            --crossover-cyan: #00CED1;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background-color: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 600;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-family: var(--font-mono);
-            font-size: 0.85rem;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--xmr-orange);
-        }
-
-        .nav-dropdown { position: relative; }
-        .nav-dropdown-toggle {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
-        }
-        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
-        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
-        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
-        .nav-dropdown-menu {
-            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
-            padding: 0.5rem 0; min-width: 160px;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-top: 0.75rem;
-        }
-        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
-        .nav-dropdown-menu a {
-            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
-            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
-        }
-        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
-
         /* Hero Section */
         .hero {
             display: flex;
@@ -1021,53 +912,6 @@
             line-height: 1.5;
         }
 
-        /* Footer */
-        footer {
-            background: var(--card-bg);
-            padding: 1rem 1.5rem;
-            margin-top: 1rem;
-            border-top: 1px solid var(--grey-18);
-        }
-
-        .footer-content {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 1rem;
-        }
-
-        .footer-section h4 {
-            font-family: var(--font-display);
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-            color: var(--xmr-orange);
-        }
-
-        .footer-section a {
-            display: block;
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.8rem;
-            margin-bottom: 0.25rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-section a:hover {
-            color: var(--xmr-orange);
-        }
-
-        .footer-bottom {
-            max-width: 1200px;
-            margin: 0.75rem auto 0;
-            padding-top: 0.75rem;
-            border-top: 1px solid var(--grey-18);
-            text-align: center;
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            color: var(--text-secondary);
-        }
-
         /* Responsive */
         @media (max-width: 1200px) {
             .dual-timeline {
@@ -1076,10 +920,6 @@
         }
 
         @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
             .hero {
                 padding: 4rem 1rem 1rem;
             }
@@ -1541,31 +1381,6 @@
             }
         }
 
-        /* ── Price Ticker ── */
-        .price-ticker {
-            display: flex; align-items: center; gap: 1.25rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .live-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: #00D26A; box-shadow: 0 0 6px #00D26A;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-        }
-        .price-item { display: flex; align-items: center; gap: 0.4rem; }
-        .price-label {
-            font-size: 0.65rem; color: rgba(255,255,255,0.4);
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
-        .price-change { font-size: 0.7rem; font-weight: 500; }
-        .price-change.up { color: #00D26A; }
-        .price-change.down { color: #FF4757; }
-        @media (max-width: 768px) {
-            .price-ticker { display: none; }
-        }
     </style>
 </head>
 <body>
@@ -2994,41 +2809,6 @@
             });
         });
     </script>
-<script>
-(function() {
-    function fetchPrices() {
-        var controller = new AbortController();
-        setTimeout(function() { controller.abort(); }, 15000);
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true', { signal: controller.signal })
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                var btc = d.bitcoin || {};
-                var xmr = d.monero || {};
-
-                var fmt = function(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 }); };
-                var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
-
-                if (btc.usd) {
-                    var btcEl = document.getElementById('btc-price');
-                    if (btcEl) btcEl.textContent = fmt(btc.usd);
-                    var btcChg = document.getElementById('btc-change');
-                    if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
-                }
-                if (xmr.usd) {
-                    var xmrEl = document.getElementById('xmr-price');
-                    if (xmrEl) xmrEl.textContent = fmt(xmr.usd);
-                    var xmrChg = document.getElementById('xmr-change');
-                    if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
-                }
-                if (btc.usd && xmr.usd) {
-                    var ratioEl = document.getElementById('btc-xmr-ratio');
-                    if (ratioEl) ratioEl.textContent = (btc.usd / xmr.usd).toFixed(1);
-                }
-            }).catch(function(e) { console.log('Price fetch error:', e); });
-    }
-    fetchPrices();
-    setInterval(fetchPrices, 1800000);
-})();
-</script>
+<script src="scripts.js"></script>
 </body>
 </html>
