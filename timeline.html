@@ -729,7 +729,7 @@
     </div>
 
     <!-- Event Counter -->
-    <div class="event-counter" id="eventCounter">
+    <div class="event-counter" id="eventCounter" role="status" aria-live="polite">
         Showing <span id="visibleCount">48</span> of <span>48</span> events
     </div>
 
@@ -741,24 +741,24 @@
     </div>
 
     <!-- Detail Panel -->
-    <div class="detail-panel" id="detailPanel">
+    <div class="detail-panel" id="detailPanel" role="dialog" aria-label="Event details">
         <div class="detail-inner">
             <div class="detail-header">
                 <h2 class="detail-title" id="detailTitle">Event Title</h2>
-                <button class="detail-close" onclick="closePanel()">&times;</button>
+                <button class="detail-close" onclick="closePanel()" aria-label="Close event details">&times;</button>
             </div>
             <div class="detail-date" id="detailDate">Date</div>
             <div class="detail-content" id="detailContent">Content</div>
             <a href="#" class="detail-link" id="detailLink" target="_blank" rel="noopener" style="display: none;">View Source &rarr;</a>
             <div class="detail-nav">
-                <button class="detail-nav-btn" onclick="navigatePanel(-1)">&larr; Previous</button>
-                <button class="detail-nav-btn" onclick="navigatePanel(1)">Next &rarr;</button>
+                <button class="detail-nav-btn" onclick="navigatePanel(-1)" aria-label="Previous event">&larr; Previous</button>
+                <button class="detail-nav-btn" onclick="navigatePanel(1)" aria-label="Next event">Next &rarr;</button>
             </div>
         </div>
     </div>
 
     <!-- Scroll to top -->
-    <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr;</button>
+    <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Scroll to top">&uarr;</button>
 
     <site-footer variant="minimal"></site-footer>
 

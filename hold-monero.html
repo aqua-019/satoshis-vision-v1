@@ -1335,7 +1335,7 @@
                     </div>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; background: #1a1a1a; border-radius: 8px; font-family: var(--font-mono); font-size: 0.85rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; padding: 0.5rem 0.75rem; background: #1a1a1a; border-radius: 8px; font-family: var(--font-mono); font-size: 0.85rem;" role="status" aria-live="polite" aria-atomic="true">
                     <span style="color: var(--text-secondary);">Live Rate:</span>
                     <span id="live-swap-rate" style="color: var(--changenow-green); font-weight: 500;">Loading...</span>
                 </div>
@@ -1343,6 +1343,7 @@
                 <div class="iframe-wrapper">
                     <iframe
                         id="iframe-widget"
+                        title="ChangeNOW BTC to XMR exchange widget"
                         src="about:blank"
                         data-src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=true&amount=0.1&amountFiat=&backgroundColor=0a0a0a&darkMode=true&from=btc&fromFiat=&horizontal=false&isFiat=false&lang=en-US&link_id=&locales=true&logo=true&primaryColor=FF6600&to=xmr&toFiat=&toTheMoon=false"
                         style="height: 370px; width: 100%; border: none; border-radius: 12px;"
@@ -1360,22 +1361,24 @@
                         Paste your ChangeNOW transaction ID to check swap status.
                     </p>
                     <div style="display: flex; gap: 0.5rem;">
+                        <label for="swap-tx-id" class="sr-only">ChangeNOW transaction ID</label>
                         <input type="text" id="swap-tx-id" placeholder="Enter transaction ID..."
                             style="flex: 1; padding: 0.5rem 0.75rem; background: #0a0a0a; border: 1px solid var(--grey-18); border-radius: 6px; color: var(--text-primary); font-family: var(--font-mono); font-size: 0.85rem;"
                         >
                         <button onclick="SwapTracker.checkStatus(document.getElementById('swap-tx-id').value.trim())"
-                            style="padding: 0.5rem 1rem; background: var(--changenow-green); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap;">
+                            style="padding: 0.5rem 1rem; background: var(--changenow-green); color: #000; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 0.85rem; white-space: nowrap;"
+                            aria-label="Check swap status">
                             Check
                         </button>
                     </div>
-                    <div id="swap-tracker-result" style="margin-top: 0.75rem; display: none;"></div>
+                    <div id="swap-tracker-result" style="margin-top: 0.75rem; display: none;" role="alert" aria-live="assertive" aria-atomic="true"></div>
                     <p style="font-size: 0.7rem; color: var(--text-secondary); margin-top: 0.5rem; opacity: 0.7;">
                         Swap operations are processed entirely by ChangeNOW. This site does not custody or control any funds.
                     </p>
                 </div>
 
                 <!-- Market Dashboard -->
-                <div class="market-dashboard">
+                <div class="market-dashboard" aria-live="polite" aria-atomic="false">
                     <h4>Market Dashboard</h4>
                     <div class="dashboard-grid">
                         <div class="metric-card">

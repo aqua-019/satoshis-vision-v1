@@ -262,6 +262,7 @@
 
     <!-- Controls -->
     <div class="controls">
+        <label for="searchInput" class="sr-only">Search Satoshi quotes</label>
         <input type="text" class="search-input" id="searchInput" placeholder="Search quotes...">
         <button class="filter-btn active" onclick="filterQuotes('all')">All</button>
         <button class="filter-btn" onclick="filterQuotes('privacy')">Privacy</button>
@@ -271,7 +272,7 @@
         <button class="filter-btn" onclick="filterQuotes('farewell')">Farewell</button>
         <button class="filter-btn highlight-btn" id="keyQuotesBtn" onclick="toggleKeyQuotes()">★ Key Quotes</button>
         <button class="filter-btn" onclick="randomQuote()">🎲 Random</button>
-        <div class="stats" id="stats">Showing 30 quotes</div>
+        <div class="stats" id="stats" role="status" aria-live="polite">Showing 30 quotes</div>
     </div>
 
     <!-- Quote Grid -->

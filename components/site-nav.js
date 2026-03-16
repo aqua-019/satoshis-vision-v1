@@ -68,7 +68,7 @@ class SiteNav extends HTMLElement {
 
         var tickerHtml = '';
         if (showTicker) {
-            tickerHtml = '<div class="price-ticker">' +
+            tickerHtml = '<div class="price-ticker" role="status" aria-live="polite" aria-atomic="true" aria-label="Live cryptocurrency prices">' +
                 '<span class="live-dot"></span>' +
                 '<div class="price-item"><span class="price-label">BTC</span><span class="price-value" id="btc-price">\u2014</span><span class="price-change" id="btc-change"></span></div>' +
                 '<div class="price-item"><span class="price-label">XMR</span><span class="price-value" id="xmr-price">\u2014</span><span class="price-change" id="xmr-change"></span></div>' +
