@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="components/site-nav.js" defer></script>
+    <script src="components/site-footer.js" defer></script>
     <style>
         /* Hero Section */
         .hero {
@@ -1262,62 +1264,7 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav>
-        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <div class="nav-dropdown">
-                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
-                <div class="nav-dropdown-menu">
-                    <a href="btc-xmr-education.html">Education</a>
-                    <a href="timeline.html">Timeline</a>
-                    <a href="quotes.html">Quote Archive</a>
-                    <a href="secrets.html">Secrets</a>
-                    <a href="future-outlook.html">2027+</a>
-                </div>
-            </div>
-            <a href="dashboard.html">Dashboard</a>
-            <a href="bottom-line.html">XMR Bottom Line</a>
-            <a href="future-outlook.html">2027+</a>
-            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
-        </div>
-        <div class="price-ticker">
-            <span class="live-dot"></span>
-            <div class="price-item">
-                <span class="price-label">BTC</span>
-                <span class="price-value" id="btc-price">—</span>
-                <span class="price-change" id="btc-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">XMR</span>
-                <span class="price-value" id="xmr-price">—</span>
-                <span class="price-change" id="xmr-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">BTC/XMR</span>
-                <span class="price-value" id="btc-xmr-ratio">—</span>
-            </div>
-        </div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
-        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
-    </div>
+    <site-nav active="hold-monero"></site-nav>
 
     <!-- Hero -->
     <section class="hero">
@@ -1400,6 +1347,7 @@
                         data-src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=true&amount=0.1&amountFiat=&backgroundColor=0a0a0a&darkMode=true&from=btc&fromFiat=&horizontal=false&isFiat=false&lang=en-US&link_id=&locales=true&logo=true&primaryColor=FF6600&to=xmr&toFiat=&toTheMoon=false"
                         style="height: 370px; width: 100%; border: none; border-radius: 12px;"
                         allow="clipboard-read; clipboard-write"
+                        sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
                         loading="lazy">
                     </iframe>
                     <script defer type="text/javascript" src="https://changenow.io/embeds/exchange-widget/v2/stepper-connector.js" crossorigin="anonymous"></script>
@@ -2584,14 +2532,7 @@
             MarketDashboard.start();
         });
 
-        // Close mobile menu when clicking outside
-        document.addEventListener('click', function(e) {
-            const menu = document.getElementById('mobileMenu');
-            const hamburger = document.querySelector('.hamburger');
-            if (!menu.contains(e.target) && !hamburger.contains(e.target)) {
-                menu.classList.remove('active');
-            }
-        });
+        // Mobile menu close-on-outside-click is now handled by site-nav component
     </script>
 <script src="scripts.js"></script>
 </body>

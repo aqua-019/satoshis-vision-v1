@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="components/site-nav.js" defer></script>
+    <script src="components/site-footer.js" defer></script>
     <style>
         /* Hero Section */
         .hero {
@@ -1384,45 +1386,7 @@
     </style>
 </head>
 <body>
-    <nav>
-        <div class="nav-container">
-            <a href="index.html" class="logo">XMR.IRISH</a>
-            <div class="nav-links">
-                <a href="index.html">Home</a>
-                <div class="nav-dropdown">
-                    <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
-                    <div class="nav-dropdown-menu">
-                        <a href="btc-xmr-education.html">Education</a>
-                        <a href="timeline.html">Timeline</a>
-                        <a href="quotes.html">Quote Archive</a>
-                        <a href="secrets.html">Secrets</a>
-                        <a href="future-outlook.html">2027+</a>
-                    </div>
-                </div>
-                <a href="dashboard.html">Dashboard</a>
-                <a href="bottom-line.html" style="color: var(--xmr-orange);">XMR Bottom Line</a>
-            <a href="future-outlook.html">2027+</a>
-                <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
-            </div>
-            <div class="price-ticker">
-                <span class="live-dot"></span>
-                <div class="price-item">
-                    <span class="price-label">BTC</span>
-                    <span class="price-value" id="btc-price">—</span>
-                    <span class="price-change" id="btc-change"></span>
-                </div>
-                <div class="price-item">
-                    <span class="price-label">XMR</span>
-                    <span class="price-value" id="xmr-price">—</span>
-                    <span class="price-change" id="xmr-change"></span>
-                </div>
-                <div class="price-item">
-                    <span class="price-label">BTC/XMR</span>
-                    <span class="price-value" id="btc-xmr-ratio">—</span>
-                </div>
-            </div>
-        </div>
-    </nav>
+    <site-nav active="bottom-line"></site-nav>
 
     <!-- Hero Section -->
     <section class="hero">

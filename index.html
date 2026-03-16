@@ -8,6 +8,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <script src="components/site-nav.js" defer></script>
+    <script src="components/site-footer.js" defer></script>
     <style>
         /* Hero Section */
         .hero {
@@ -1294,68 +1296,7 @@
     <!-- Particles -->
     <div id="particles"></div>
 
-    <!-- Navigation -->
-    <nav class="nav">
-        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
-        <div class="nav-links">
-            <a href="index.html" class="nav-active">Home</a>
-            <div class="nav-dropdown">
-                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
-                <div class="nav-dropdown-menu">
-                    <a href="btc-xmr-education.html">Education</a>
-                    <a href="timeline.html">Timeline</a>
-                    <a href="quotes.html">Quote Archive</a>
-                    <a href="secrets.html">Secrets</a>
-                    <a href="future-outlook.html">2027+</a>
-                </div>
-            </div>
-            <a href="dashboard.html">Dashboard</a>
-            <a href="bottom-line.html">XMR Bottom Line</a>
-            <a href="future-outlook.html">2027+</a>
-            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
-        </div>
-        <div class="price-ticker">
-            <span class="live-dot"></span>
-            <div class="price-item">
-                <span class="price-label">BTC</span>
-                <span class="price-value" id="btc-price">—</span>
-                <span class="price-change" id="btc-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">XMR</span>
-                <span class="price-value" id="xmr-price">—</span>
-                <span class="price-change" id="xmr-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">BTC/XMR</span>
-                <span class="price-value" id="btc-xmr-ratio">—</span>
-                <span class="price-change" id="btc-xmr-change"></span>
-            </div>
-        </div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
-        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
-        <div class="mobile-prices">
-            <div>BTC: <span id="btc-price-mobile">—</span></div>
-            <div>XMR: <span id="xmr-price-mobile">—</span></div>
-            <div>BTC/XMR: <span id="btc-xmr-ratio-mobile">—</span></div>
-        </div>
-    </div>
+    <site-nav active="home"></site-nav>
 
     <!-- Hero -->
     <section class="hero">
@@ -1826,17 +1767,7 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <p class="footer-quote">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
-        <p class="footer-attribution">— Satoshi Nakamoto, Final Email, April 2011</p>
-        <div class="footer-links">
-            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto Institute</a>
-            <a href="https://getmonero.org" target="_blank">GetMonero.org</a>
-            <a href="https://bitcoin.org" target="_blank">Bitcoin.org</a>
-        </div>
-        <p class="footer-copy">Educational resource. Not financial advice. DYOR.</p>
-    </footer>
+    <site-footer></site-footer>
 
     <script>
         // Satoshi Quotes - Weighted toward privacy & Monero-predictive

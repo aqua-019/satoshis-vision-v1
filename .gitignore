@@ -27,6 +27,11 @@ dist/
 build/
 .cache/
 
+# Test artifacts
+test-results/
+playwright-report/
+.lhci/
+
 # Logs
 *.log
 npm-debug.log*
