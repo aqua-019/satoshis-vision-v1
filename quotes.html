@@ -848,7 +848,8 @@
         }
 
         function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
+            var el = document.getElementById('mobileMenu');
+            if (el) el.classList.toggle('active');
         }
 
         document.getElementById('searchInput').addEventListener('input', renderQuotes);
@@ -859,7 +860,9 @@
 <script>
 (function() {
     function fetchPrices() {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
+        var controller = new AbortController();
+        setTimeout(function() { controller.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true', { signal: controller.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var btc = d.bitcoin || {};
@@ -869,17 +872,20 @@
                 var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
 
                 if (btc.usd) {
-                    document.getElementById('btc-price').textContent = fmt(btc.usd);
+                    var btcEl = document.getElementById('btc-price');
+                    if (btcEl) btcEl.textContent = fmt(btc.usd);
                     var btcChg = document.getElementById('btc-change');
                     if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
                 }
                 if (xmr.usd) {
-                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
+                    var xmrEl = document.getElementById('xmr-price');
+                    if (xmrEl) xmrEl.textContent = fmt(xmr.usd);
                     var xmrChg = document.getElementById('xmr-change');
                     if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
                 }
                 if (btc.usd && xmr.usd) {
-                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
+                    var ratioEl = document.getElementById('btc-xmr-ratio');
+                    if (ratioEl) ratioEl.textContent = (btc.usd / xmr.usd).toFixed(1);
                 }
             }).catch(function(e) { console.log('Price fetch error:', e); });
     }

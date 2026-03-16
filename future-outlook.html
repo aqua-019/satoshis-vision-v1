@@ -1849,7 +1849,8 @@
 
     <script>
         function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
+            var el = document.getElementById('mobileMenu');
+            if (el) el.classList.toggle('active');
         }
 
         // Scroll-triggered fade-in animations

@@ -2548,7 +2548,8 @@
     <script>
         // Mobile menu toggle
         function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
+            var el = document.getElementById('mobileMenu');
+            if (el) el.classList.toggle('active');
         }
 
         // Portal switching
@@ -2606,11 +2607,19 @@
 
             async checkStatus(txId) {
                 if (!txId || !this.container) return;
-                this.container.innerHTML = '<p style="color: var(--text-secondary);">Checking swap status...</p>';
+                if (!/^[a-zA-Z0-9\-]+$/.test(txId)) {
+                    this.container.textContent = 'Invalid transaction ID format';
+                    this.container.style.display = 'block';
+                    return;
+                }
+                this.container.textContent = 'Checking swap status...';
+                this.container.style.color = 'var(--text-secondary)';
                 this.container.style.display = 'block';
 
                 try {
-                    const resp = await fetch(`https://changenow.io/api/v1/transactions/${txId}/`);
+                    const controller = new AbortController();
+                    setTimeout(function() { controller.abort(); }, 15000);
+                    const resp = await fetch('https://changenow.io/api/v1/transactions/' + encodeURIComponent(txId) + '/', { signal: controller.signal });
                     if (!resp.ok) throw new Error('Transaction not found');
                     const tx = await resp.json();
 
@@ -2619,26 +2628,64 @@
                         sending: '#00D395', finished: '#00D395', failed: '#FF4757',
                         refunded: '#4A90D9', expired: '#FF4757'
                     };
-                    const color = statusColors[tx.status] || '#A0A0A0';
+                    const safeStatus = String(tx.status || 'unknown');
+                    const color = statusColors[safeStatus] || '#A0A0A0';
 
-                    this.container.innerHTML = `
-                        <div style="padding: 1rem; background: #1a1a1a; border-radius: 8px; border-left: 3px solid ${color};">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
-                                <strong style="color: ${color}; text-transform: uppercase;">${tx.status}</strong>
-                                <span style="font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);">${tx.id}</span>
-                            </div>
-                            ${tx.amountFrom ? `<p style="font-size: 0.85rem;">Sending: ${tx.amountFrom} ${(tx.fromCurrency || '').toUpperCase()}</p>` : ''}
-                            ${tx.amountTo ? `<p style="font-size: 0.85rem;">Receiving: ~${tx.amountTo} ${(tx.toCurrency || '').toUpperCase()}</p>` : ''}
-                            <p style="font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-secondary);">
-                                Need help? <a href="https://support.changenow.io/" target="_blank" rel="noopener" style="color: var(--changenow-green);">ChangeNOW Support</a>
-                            </p>
-                        </div>`;
+                    this.container.innerHTML = '';
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = 'padding: 1rem; background: #1a1a1a; border-radius: 8px; border-left: 3px solid ' + color;
+
+                    const header = document.createElement('div');
+                    header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;';
+                    const statusEl = document.createElement('strong');
+                    statusEl.style.cssText = 'color: ' + color + '; text-transform: uppercase;';
+                    statusEl.textContent = safeStatus;
+                    const idEl = document.createElement('span');
+                    idEl.style.cssText = 'font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);';
+                    idEl.textContent = String(tx.id || '');
+                    header.appendChild(statusEl);
+                    header.appendChild(idEl);
+                    wrapper.appendChild(header);
+
+                    if (tx.amountFrom) {
+                        const sendP = document.createElement('p');
+                        sendP.style.fontSize = '0.85rem';
+                        sendP.textContent = 'Sending: ' + tx.amountFrom + ' ' + (tx.fromCurrency || '').toUpperCase();
+                        wrapper.appendChild(sendP);
+                    }
+                    if (tx.amountTo) {
+                        const recvP = document.createElement('p');
+                        recvP.style.fontSize = '0.85rem';
+                        recvP.textContent = 'Receiving: ~' + tx.amountTo + ' ' + (tx.toCurrency || '').toUpperCase();
+                        wrapper.appendChild(recvP);
+                    }
+
+                    const helpP = document.createElement('p');
+                    helpP.style.cssText = 'font-size: 0.8rem; margin-top: 0.5rem; color: var(--text-secondary);';
+                    helpP.textContent = 'Need help? ';
+                    const helpLink = document.createElement('a');
+                    helpLink.href = 'https://support.changenow.io/';
+                    helpLink.target = '_blank';
+                    helpLink.rel = 'noopener';
+                    helpLink.style.color = 'var(--changenow-green)';
+                    helpLink.textContent = 'ChangeNOW Support';
+                    helpP.appendChild(helpLink);
+                    wrapper.appendChild(helpP);
+
+                    this.container.appendChild(wrapper);
                 } catch (err) {
-                    this.container.innerHTML = `
-                        <p style="color: var(--danger-red); padding: 0.75rem; background: rgba(255,71,87,0.1); border-radius: 8px;">
-                            Could not find transaction. Double-check the ID or visit
-                            <a href="https://changenow.io/exchange/txs" target="_blank" rel="noopener" style="color: var(--changenow-green);">changenow.io/exchange/txs</a>
-                        </p>`;
+                    this.container.innerHTML = '';
+                    const errP = document.createElement('p');
+                    errP.style.cssText = 'color: var(--danger-red); padding: 0.75rem; background: rgba(255,71,87,0.1); border-radius: 8px;';
+                    errP.textContent = 'Could not find transaction. Double-check the ID or visit ';
+                    const errLink = document.createElement('a');
+                    errLink.href = 'https://changenow.io/exchange/txs';
+                    errLink.target = '_blank';
+                    errLink.rel = 'noopener';
+                    errLink.style.color = 'var(--changenow-green)';
+                    errLink.textContent = 'changenow.io/exchange/txs';
+                    errP.appendChild(errLink);
+                    this.container.appendChild(errP);
                 }
             }
         };
@@ -2675,9 +2722,12 @@
 
             async fetch() {
                 try {
+                    const controller = new AbortController();
+                    setTimeout(() => controller.abort(), 15000);
+                    const opts = { signal: controller.signal };
                     const [priceResp, coinResp] = await Promise.all([
-                        fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true&include_market_cap=true'),
-                        fetch('https://api.coingecko.com/api/v3/coins/monero?localization=false&tickers=false&community_data=false&developer_data=false')
+                        fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true&include_market_cap=true', opts),
+                        fetch('https://api.coingecko.com/api/v3/coins/monero?localization=false&tickers=false&community_data=false&developer_data=false', opts)
                     ]);
                     const priceData = await priceResp.json();
                     const coinData = await coinResp.json();
@@ -2721,8 +2771,11 @@
 
             async fetch() {
                 try {
+                    const controller = new AbortController();
+                    setTimeout(() => controller.abort(), 15000);
                     const resp = await fetch(
-                        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true'
+                        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true',
+                        { signal: controller.signal }
                     );
                     const data = await resp.json();
                     const btcUsd = data.bitcoin.usd;
@@ -2765,7 +2818,9 @@
 <script>
 (function() {
     function fetchPrices() {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
+        var controller = new AbortController();
+        setTimeout(function() { controller.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true', { signal: controller.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var btc = d.bitcoin || {};
@@ -2775,17 +2830,20 @@
                 var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
 
                 if (btc.usd) {
-                    document.getElementById('btc-price').textContent = fmt(btc.usd);
+                    var btcEl = document.getElementById('btc-price');
+                    if (btcEl) btcEl.textContent = fmt(btc.usd);
                     var btcChg = document.getElementById('btc-change');
                     if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
                 }
                 if (xmr.usd) {
-                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
+                    var xmrEl = document.getElementById('xmr-price');
+                    if (xmrEl) xmrEl.textContent = fmt(xmr.usd);
                     var xmrChg = document.getElementById('xmr-change');
                     if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
                 }
                 if (btc.usd && xmr.usd) {
-                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
+                    var ratioEl = document.getElementById('btc-xmr-ratio');
+                    if (ratioEl) ratioEl.textContent = (btc.usd / xmr.usd).toFixed(1);
                 }
             }).catch(function(e) { console.log('Price fetch error:', e); });
     }

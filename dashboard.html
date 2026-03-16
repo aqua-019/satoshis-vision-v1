@@ -961,7 +961,8 @@
        ═══════════════════════════════════════ */
 
     window.toggleMenu = function() {
-        document.getElementById('mobileMenu').classList.toggle('active');
+        var el = document.getElementById('mobileMenu');
+        if (el) el.classList.toggle('active');
     };
 
     /* ═══════════════════════════════════════
@@ -972,7 +973,9 @@
         var cached = cacheGet('dash_nav_prices', REFRESH_MS);
         if (cached) { renderNavPrices(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
+        var controller = new AbortController();
+        setTimeout(function() { controller.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true', { signal: controller.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var btc = d.bitcoin || {};
@@ -1024,7 +1027,9 @@
         var cached = cacheGet('dash_live_tickers', CACHE_MS);
         if (cached) { renderLiveTickers(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + LIVE_TICKER_IDS + '&order=market_cap_desc&sparkline=false&price_change_percentage=1h,24h,7d')
+        var controller = new AbortController();
+        setTimeout(function() { controller.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + LIVE_TICKER_IDS + '&order=market_cap_desc&sparkline=false&price_change_percentage=1h,24h,7d', { signal: controller.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 if (!Array.isArray(d)) throw new Error('bad response');
@@ -1148,7 +1153,9 @@
         var cached = cacheGet('dash_top10', CACHE_MS);
         if (cached) { renderTop10(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + TOP10_IDS + '&order=market_cap_desc&sparkline=true&price_change_percentage=24h,7d')
+        var controller2 = new AbortController();
+        setTimeout(function() { controller2.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + TOP10_IDS + '&order=market_cap_desc&sparkline=true&price_change_percentage=24h,7d', { signal: controller2.signal })
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (!Array.isArray(data)) throw new Error('bad response');
@@ -1250,7 +1257,9 @@
         if (cached) { renderFiat(cached); return; }
 
         var vs = FIAT_CURRENCIES.join(',');
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=' + vs + '&include_24hr_change=true')
+        var controller3 = new AbortController();
+        setTimeout(function() { controller3.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=' + vs + '&include_24hr_change=true', { signal: controller3.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var xmr = d.monero || {};
@@ -1313,7 +1322,9 @@
         var cached = cacheGet('dash_xmr_stats', CACHE_MS);
         if (cached) { renderNetworkStats(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/coins/monero?localization=false&tickers=false&community_data=false&developer_data=false')
+        var controller4 = new AbortController();
+        setTimeout(function() { controller4.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/coins/monero?localization=false&tickers=false&community_data=false&developer_data=false', { signal: controller4.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var stats = {

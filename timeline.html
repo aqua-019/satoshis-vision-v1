@@ -1478,7 +1478,8 @@
             closePanel();
 
             // Update counter
-            document.getElementById('visibleCount').textContent = visibleEventIndices.length;
+            var countEl = document.getElementById('visibleCount');
+            if (countEl) countEl.textContent = visibleEventIndices.length;
 
             // Re-trigger animations for newly visible items
             initScrollAnimations();
@@ -1508,15 +1509,18 @@
             if (targetEl) targetEl.classList.add('active');
 
             // Update panel
-            document.getElementById('detailTitle').textContent = event.title;
-            document.getElementById('detailDate').textContent = event.date;
-            document.getElementById('detailContent').textContent = event.content;
+            var titleEl = document.getElementById('detailTitle');
+            var dateEl = document.getElementById('detailDate');
+            var contentEl = document.getElementById('detailContent');
+            if (titleEl) titleEl.textContent = event.title;
+            if (dateEl) dateEl.textContent = event.date;
+            if (contentEl) contentEl.textContent = event.content;
 
             const link = document.getElementById('detailLink');
-            if (event.link) {
+            if (link && event.link) {
                 link.href = event.link;
                 link.style.display = 'inline-block';
-            } else {
+            } else if (link) {
                 link.style.display = 'none';
             }
 
@@ -1531,7 +1535,8 @@
         }
 
         function closePanel() {
-            document.getElementById('detailPanel').classList.remove('open');
+            var panel = document.getElementById('detailPanel');
+            if (panel) panel.classList.remove('open');
             allEventElements.forEach(item => item.classList.remove('active'));
             currentIndex = -1;
         }
@@ -1602,7 +1607,8 @@
             const scrollTop = window.scrollY;
             const docHeight = document.documentElement.scrollHeight - window.innerHeight;
             const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-            document.getElementById('progressBar').style.width = progress + '%';
+            var bar = document.getElementById('progressBar');
+            if (bar) bar.style.width = progress + '%';
         }
 
         /* ============================
@@ -1610,7 +1616,8 @@
            ============================ */
         function updateScrollTopButton() {
             const btn = document.getElementById('scrollTop');
-            const panelOpen = document.getElementById('detailPanel').classList.contains('open');
+            const detailPanelEl = document.getElementById('detailPanel');
+            const panelOpen = detailPanelEl ? detailPanelEl.classList.contains('open') : false;
             if (window.scrollY > 600 && !panelOpen) {
                 btn.classList.add('visible');
             } else {
@@ -1622,7 +1629,8 @@
            UTILS
            ============================ */
         function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
+            var el = document.getElementById('mobileMenu');
+            if (el) el.classList.toggle('active');
         }
 
         /* ============================
@@ -1660,7 +1668,9 @@
 <script>
 (function() {
     function fetchPrices() {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
+        var controller = new AbortController();
+        setTimeout(function() { controller.abort(); }, 15000);
+        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true', { signal: controller.signal })
             .then(function(r) { return r.json(); })
             .then(function(d) {
                 var btc = d.bitcoin || {};
@@ -1670,17 +1680,20 @@
                 var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
 
                 if (btc.usd) {
-                    document.getElementById('btc-price').textContent = fmt(btc.usd);
+                    var btcEl = document.getElementById('btc-price');
+                    if (btcEl) btcEl.textContent = fmt(btc.usd);
                     var btcChg = document.getElementById('btc-change');
                     if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
                 }
                 if (xmr.usd) {
-                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
+                    var xmrEl = document.getElementById('xmr-price');
+                    if (xmrEl) xmrEl.textContent = fmt(xmr.usd);
                     var xmrChg = document.getElementById('xmr-change');
                     if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
                 }
                 if (btc.usd && xmr.usd) {
-                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
+                    var ratioEl = document.getElementById('btc-xmr-ratio');
+                    if (ratioEl) ratioEl.textContent = (btc.usd / xmr.usd).toFixed(1);
                 }
             }).catch(function(e) { console.log('Price fetch error:', e); });
     }
