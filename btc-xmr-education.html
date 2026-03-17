@@ -3,161 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Genesis of Privacy | Bitcoin & Monero</title>
+    <title>xmr.irish — The Genesis of Privacy</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@300;400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
     <style>
-        :root {
-            /* Core palette */
-            --bg-dark: #121212;
-            --bg-light: #1a1a1a;
-            --grey-18: #2E2E2E;
-            --grey-light: #E8E8E8;
-            
-            /* Bitcoin colors */
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --btc-white: #FFFFFF;
-            
-            /* Monero colors */
-            --xmr-orange: #FF6600;
-            --xmr-grey: #4C4C4C;
-            --xmr-dark: #1A1A1A;
-            
-            /* Typography */
-            --font-display: 'Playfair Display', Georgia, serif;
-            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
-            --font-body: 'Sora', -apple-system, sans-serif;
-            
-            /* Spacing */
-            --section-padding: clamp(4rem, 10vw, 8rem);
-        }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
 
-        html {
-            scroll-behavior: smooth;
-            scroll-snap-type: y proximity;
-        }
 
-        body {
-            font-family: var(--font-body);
-            background: var(--bg-dark);
-            color: var(--btc-white);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
 
         /* Navigation */
-        .edu-nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(18, 18, 18, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .edu-nav .nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-        .edu-nav .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-        .edu-nav .nav-links a {
-            color: #A0A0A0;
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-        .edu-nav .nav-links a:hover { color: var(--btc-orange); }
-        .edu-nav .nav-links a.nav-active { color: var(--xmr-orange); }
-        .nav-dropdown { position: relative; }
-        .nav-dropdown-toggle {
-            color: #A0A0A0; text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
-        }
-        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
-        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
-        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
-        .nav-dropdown-menu {
-            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
-            padding: 0.5rem 0; min-width: 160px;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-top: 0.75rem;
-        }
-        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
-        .nav-dropdown-menu a {
-            display: block; padding: 0.5rem 1.25rem; color: #A0A0A0;
-            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
-        }
-        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
-        .hamburger {
-            display: none; flex-direction: column; gap: 5px; cursor: pointer; z-index: 1001;
-        }
-        .hamburger span {
-            width: 25px; height: 2px; background: #A0A0A0; transition: all 0.3s ease;
-        }
-        .mobile-menu {
-            display: none; position: fixed; top: 60px; left: 0; right: 0;
-            background: rgba(18,18,18,0.98); border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem; z-index: 999; flex-direction: column; gap: 1rem;
-        }
-        .mobile-menu.active { display: flex; }
-        .mobile-menu a {
-            color: #A0A0A0; text-decoration: none; font-size: 0.95rem;
-            font-weight: 500; transition: color 0.3s ease;
-        }
-        .mobile-menu a:hover { color: var(--xmr-orange); }
         /* ── Price Ticker ── */
-        .price-ticker {
-            display: flex; align-items: center; gap: 1.25rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .live-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: #00D26A; box-shadow: 0 0 6px #00D26A;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-        }
-        .price-item { display: flex; align-items: center; gap: 0.4rem; }
-        .price-label {
-            font-size: 0.65rem; color: rgba(255,255,255,0.4);
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
-        .price-change { font-size: 0.7rem; font-weight: 500; }
-        .price-change.up { color: #00D26A; }
-        .price-change.down { color: #FF4757; }
 
-        @media (max-width: 768px) {
-            .price-ticker { display: none; }
-            .edu-nav .nav-links { display: none; }
-            .hamburger { display: flex; }
-        }
 
         /* Particle canvas */
         #particles-canvas {
@@ -186,7 +44,7 @@
             justify-content: center;
             align-items: center;
             text-align: center;
-            background: linear-gradient(180deg, var(--bg-dark) 0%, var(--grey-18) 100%);
+            background: linear-gradient(180deg, var(--bg) 0%, var(--g8) 100%);
             position: relative;
             overflow: hidden;
             padding-top: calc(var(--section-padding) + 60px);
@@ -210,7 +68,7 @@
             font-size: clamp(0.75rem, 1.5vw, 0.9rem);
             letter-spacing: 0.3em;
             text-transform: uppercase;
-            color: var(--btc-orange);
+            color: var(--btc);
             margin-bottom: 1.5rem;
             opacity: 1;
             transform: translateY(20px);
@@ -218,7 +76,7 @@
         }
 
         .hero-title {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: clamp(3rem, 10vw, 7rem);
             font-weight: 700;
             line-height: 1.1;
@@ -230,7 +88,7 @@
 
         .hero-title span {
             display: block;
-            background: linear-gradient(135deg, var(--btc-orange) 0%, var(--btc-gold) 50%, var(--xmr-orange) 100%);
+            background: linear-gradient(135deg, var(--btc) 0%, var(--gold) 50%, var(--xmr) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
@@ -270,7 +128,7 @@
         .scroll-indicator .line {
             width: 1px;
             height: 60px;
-            background: linear-gradient(180deg, var(--btc-orange) 0%, transparent 100%);
+            background: linear-gradient(180deg, var(--btc) 0%, transparent 100%);
         }
 
         @keyframes fadeUp {
@@ -310,14 +168,14 @@
         .section-number {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: var(--btc-orange);
+            color: var(--btc);
             letter-spacing: 0.3em;
             display: block;
             margin-bottom: 1rem;
         }
 
         .section-title {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: clamp(2rem, 5vw, 3.5rem);
             font-weight: 600;
             line-height: 1.2;
@@ -332,7 +190,7 @@
 
         /* Genesis section - Bitcoin */
         .genesis-btc {
-            background: var(--bg-dark);
+            background: var(--bg);
             position: relative;
         }
 
@@ -359,7 +217,7 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background: linear-gradient(180deg, var(--btc-orange) 0%, rgba(247, 147, 26, 0.2) 100%);
+            background: linear-gradient(180deg, var(--btc) 0%, rgba(247, 147, 26, 0.2) 100%);
         }
 
         .timeline-item {
@@ -382,7 +240,7 @@
             top: 0.5rem;
             width: 12px;
             height: 12px;
-            background: var(--btc-orange);
+            background: var(--btc);
             border-radius: 50%;
             box-shadow: 0 0 20px rgba(247, 147, 26, 0.5);
         }
@@ -390,12 +248,12 @@
         .timeline-date {
             font-family: var(--font-mono);
             font-size: 0.85rem;
-            color: var(--btc-orange);
+            color: var(--btc);
             margin-bottom: 0.5rem;
         }
 
         .timeline-title {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: 1.5rem;
             font-weight: 600;
             margin-bottom: 0.75rem;
@@ -412,14 +270,14 @@
             padding: 2rem;
             margin: 2rem 0;
             background: linear-gradient(135deg, rgba(247, 147, 26, 0.08) 0%, rgba(247, 147, 26, 0.02) 100%);
-            border-left: 3px solid var(--btc-orange);
+            border-left: 3px solid var(--btc);
         }
 
         .quote-block::before {
             content: '"';
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: 4rem;
-            color: var(--btc-orange);
+            color: var(--btc);
             opacity: 0.3;
             position: absolute;
             top: -0.5rem;
@@ -428,7 +286,7 @@
         }
 
         .quote-text {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: 1.25rem;
             font-style: italic;
             line-height: 1.6;
@@ -438,7 +296,7 @@
         .quote-source {
             font-family: var(--font-mono);
             font-size: 0.8rem;
-            color: var(--btc-orange);
+            color: var(--btc);
         }
 
         /* Code blocks */
@@ -454,7 +312,7 @@
         .code-block code {
             font-family: var(--font-mono);
             font-size: 0.85rem;
-            color: var(--btc-orange);
+            color: var(--btc);
             line-height: 1.8;
         }
 
@@ -464,7 +322,7 @@
 
         /* Comparison section */
         .comparison-section {
-            background: var(--grey-18);
+            background: var(--g8);
             position: relative;
         }
 
@@ -498,17 +356,17 @@
         }
 
         .comparison-card h3 {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: 1.75rem;
             margin-bottom: 1rem;
         }
 
         .comparison-card.btc h3 {
-            color: var(--btc-orange);
+            color: var(--btc);
         }
 
         .comparison-card.xmr h3 {
-            color: var(--xmr-orange);
+            color: var(--xmr);
         }
 
         .comparison-list {
@@ -525,7 +383,7 @@
 
         .comparison-list li::before {
             content: '→';
-            color: var(--btc-orange);
+            color: var(--btc);
             font-family: var(--font-mono);
         }
 
@@ -544,7 +402,7 @@
         }
 
         .toggle-label {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: 1.5rem;
             cursor: pointer;
             transition: all 0.3s ease;
@@ -556,11 +414,11 @@
         }
 
         .toggle-label.btc.active {
-            color: var(--btc-orange);
+            color: var(--btc);
         }
 
         .toggle-label.xmr.active {
-            color: var(--xmr-orange);
+            color: var(--xmr);
         }
 
         .toggle-switch {
@@ -578,7 +436,7 @@
             position: absolute;
             width: 32px;
             height: 32px;
-            background: var(--btc-orange);
+            background: var(--btc);
             border-radius: 50%;
             top: 4px;
             left: 4px;
@@ -591,7 +449,7 @@
 
         .toggle-switch.xmr-active::before {
             left: 44px;
-            background: var(--xmr-orange);
+            background: var(--xmr);
         }
 
         /* Feature rows */
@@ -638,10 +496,10 @@
         .spectrum-bar {
             height: 8px;
             background: linear-gradient(90deg, 
-                var(--btc-orange) 0%, 
+                var(--btc) 0%, 
                 rgba(255, 255, 255, 0.1) 30%, 
                 rgba(255, 255, 255, 0.1) 70%, 
-                var(--xmr-orange) 100%);
+                var(--xmr) 100%);
             border-radius: 4px;
             position: relative;
             margin: 2rem 0;
@@ -652,7 +510,7 @@
             top: -8px;
             width: 24px;
             height: 24px;
-            background: var(--btc-orange);
+            background: var(--btc);
             border-radius: 50%;
             transform: translateX(-50%);
             box-shadow: 0 0 20px rgba(247, 147, 26, 0.5);
@@ -669,7 +527,7 @@
 
         /* Dark web & regulatory section */
         .controversy-section {
-            background: var(--bg-dark);
+            background: var(--bg);
             position: relative;
         }
 
@@ -704,10 +562,10 @@
         }
 
         .stat-number {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: clamp(2.5rem, 5vw, 4rem);
             font-weight: 700;
-            color: var(--xmr-orange);
+            color: var(--xmr);
             line-height: 1;
             margin-bottom: 0.5rem;
         }
@@ -722,7 +580,7 @@
 
         /* Wagyu section */
         .wagyu-section {
-            background: linear-gradient(180deg, var(--grey-18) 0%, var(--bg-dark) 100%);
+            background: linear-gradient(180deg, var(--g8) 0%, var(--bg) 100%);
             position: relative;
         }
 
@@ -750,19 +608,19 @@
             width: 50px;
             height: 50px;
             background: rgba(255, 102, 0, 0.2);
-            border: 1px solid var(--xmr-orange);
+            border: 1px solid var(--xmr);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-family: var(--font-mono);
             font-size: 1.25rem;
-            color: var(--xmr-orange);
+            color: var(--xmr);
             flex-shrink: 0;
         }
 
         .flow-content h4 {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: 1.25rem;
             margin-bottom: 0.5rem;
         }
@@ -775,13 +633,13 @@
         .flow-arrow {
             height: 30px;
             width: 2px;
-            background: linear-gradient(180deg, var(--xmr-orange) 0%, transparent 100%);
+            background: linear-gradient(180deg, var(--xmr) 0%, transparent 100%);
             margin-left: 24px;
         }
 
         /* CTA Section */
         .cta-section {
-            background: var(--bg-dark);
+            background: var(--bg);
             text-align: center;
             position: relative;
             overflow: hidden;
@@ -800,7 +658,7 @@
         }
 
         .cta-title {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: clamp(2rem, 5vw, 4rem);
             margin-bottom: 1.5rem;
         }
@@ -826,26 +684,26 @@
         }
 
         .cta-button.primary {
-            background: var(--xmr-orange);
-            color: var(--btc-white);
+            background: var(--xmr);
+            color: var(--g1);
             border: none;
         }
 
         .cta-button.primary:hover {
-            background: var(--btc-orange);
+            background: var(--btc);
             transform: translateY(-2px);
             box-shadow: 0 10px 30px rgba(255, 102, 0, 0.3);
         }
 
         .cta-button.secondary {
             background: transparent;
-            color: var(--btc-white);
+            color: var(--g1);
             border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .cta-button.secondary:hover {
-            border-color: var(--btc-orange);
-            color: var(--btc-orange);
+            border-color: var(--btc);
+            color: var(--btc);
         }
 
         /* Dropdown accordions */
@@ -895,7 +753,7 @@
         .accordion-icon::after {
             content: '';
             position: absolute;
-            background: var(--btc-orange);
+            background: var(--btc);
             transition: all 0.3s ease;
         }
 
@@ -930,33 +788,10 @@
             max-height: 2000px;
         }
 
-        .accordion-body {
-            padding: 1.5rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            color: rgba(255, 255, 255, 0.7);
-            font-size: 0.95rem;
-            line-height: 1.8;
-        }
 
         /* Footer */
-        footer {
-            padding: 4rem var(--section-padding);
-            background: var(--bg-dark);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            text-align: center;
-        }
 
-        .footer-text {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: rgba(255, 255, 255, 0.4);
-            letter-spacing: 0.1em;
-        }
 
-        .footer-text a {
-            color: var(--btc-orange);
-            text-decoration: none;
-        }
 
         /* Parallax layers */
         .parallax-layer {
@@ -1025,9 +860,6 @@
         }
 
         .light-section .timeline-content,
-        .light-section .accordion-body {
-            color: rgba(255, 255, 255, 0.7);
-        }
 
         /* Responsive */
         @media (max-width: 768px) {
@@ -1060,75 +892,14 @@
             }
 
         }
-    </style>
+        </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="edu-nav">
-        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <div class="nav-dropdown">
-                <span class="nav-dropdown-toggle">Learn <span class="dropdown-arrow">▼</span></span>
-                <div class="nav-dropdown-menu">
-                    <a href="btc-xmr-education.html" style="color: var(--xmr-orange);">Education</a>
-                    <a href="timeline.html">Timeline</a>
-                    <a href="quotes.html">Quote Archive</a>
-                    <a href="secrets.html">Secrets</a>
-                    <a href="future-outlook.html">2027+</a>
-                </div>
-            </div>
-            <a href="dashboard.html">Dashboard</a>
-            <a href="bottom-line.html">XMR Bottom Line</a>
-            <a href="future-outlook.html">2027+</a>
-            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
-        </div>
-        <div class="price-ticker">
-            <span class="live-dot"></span>
-            <div class="price-item">
-                <span class="price-label">BTC</span>
-                <span class="price-value" id="btc-price">—</span>
-                <span class="price-change" id="btc-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">XMR</span>
-                <span class="price-value" id="xmr-price">—</span>
-                <span class="price-change" id="xmr-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">BTC/XMR</span>
-                <span class="price-value" id="btc-xmr-ratio">—</span>
-            </div>
-        </div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="btc-xmr-education.html" onclick="toggleMenu()" style="color: var(--xmr-orange);">Education</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
-        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
-    </div>
-
-    <script>
-    function toggleMenu() {
-        document.getElementById('mobileMenu').classList.toggle('active');
-    }
-    </script>
-
-    <!-- Particle canvas -->
-    <canvas id="particles-canvas"></canvas>
-
+<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
+    <canvas id="constellation" class="constellation"></canvas>
+    <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
+    <div class="z1">
+        <div id="nav-mount"></div>
     <!-- Hero Section -->
     <section class="hero" id="hero">
         <div class="deco-grid parallax-layer slow" style="top: -100px; right: -100px; transform: rotate(15deg);"></div>
@@ -1224,7 +995,7 @@
     <section class="light-section" id="satoshi-privacy">
         <div class="content-wide">
             <div class="section-header">
-                <span class="section-number" style="color: var(--xmr-orange);">02 — THE VISION UNFULFILLED</span>
+                <span class="section-number" style="color: var(--xmr);">02 — THE VISION UNFULFILLED</span>
                 <h2 class="section-title">Satoshi's Privacy Problem</h2>
                 <p class="section-subtitle">
                     Here's what they don't tell you: Satoshi knew Bitcoin's privacy was incomplete. And on the forums, they wrestled with exactly how to fix it.
@@ -1232,7 +1003,7 @@
             </div>
 
             <div class="glass-card" style="margin-bottom: 2rem;">
-                <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem; color: #FFFFFF;">The "Not a Suggestion" Thread — August 10-13, 2010</h3>
+                <h3 style="font-family: var(--font-headline); font-size: 1.5rem; margin-bottom: 1rem; color: #FFFFFF;">The "Not a Suggestion" Thread — August 10-13, 2010</h3>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">
                     A BitcoinTalk user named "Red" opened a thread expressing concerns about Bitcoin's completely public transaction history. What followed was one of the most important—and overlooked—conversations in cryptocurrency history.
                 </p>
@@ -1307,7 +1078,7 @@
             </div>
 
             <div class="glass-card" style="margin-top: 3rem; text-align: center;">
-                <p style="font-family: var(--font-display); font-size: 1.5rem; font-style: italic; color: rgba(255,255,255,0.9);">
+                <p style="font-family: var(--font-headline); font-size: 1.5rem; font-style: italic; color: rgba(255,255,255,0.9);">
                     The creator of Bitcoin knew its privacy was incomplete.<br>
                     The question was: who would finish the work?
                 </p>
@@ -1358,14 +1129,14 @@
     <section class="comparison-section" id="monero">
         <div class="content-wide">
             <div class="section-header">
-                <span class="section-number" style="color: var(--xmr-orange);">04 — THE SUCCESSOR</span>
+                <span class="section-number" style="color: var(--xmr);">04 — THE SUCCESSOR</span>
                 <h2 class="section-title">Monero: Satoshi's Unfinished Work</h2>
                 <p class="section-subtitle">
                     In 2013, a pseudonymous author named Nicolas van Saberhagen published a paper that would change everything. Its opening line: "Privacy and anonymity are the most important aspects of electronic cash."
                 </p>
             </div>
 
-            <div class="timeline" style="--btc-orange: var(--xmr-orange);">
+            <div class="timeline" style="--btc-orange: var(--xmr);">
                 <div class="timeline-item">
                     <span class="timeline-date">October 2013</span>
                     <h3 class="timeline-title">The CryptoNote Whitepaper</h3>
@@ -1429,7 +1200,7 @@
     <section class="genesis-btc" id="how-monero-works">
         <div class="content-wide">
             <div class="section-header">
-                <span class="section-number" style="color: var(--xmr-orange);">05 — THE TECHNOLOGY</span>
+                <span class="section-number" style="color: var(--xmr);">05 — THE TECHNOLOGY</span>
                 <h2 class="section-title">How Monero Actually Works</h2>
                 <p class="section-subtitle">
                     Three cryptographic technologies. Three layers of privacy. One currency that cannot be traced.
@@ -1438,7 +1209,7 @@
 
             <div class="comparison-grid" style="margin-top: 3rem;">
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-display); color: var(--xmr-orange); font-size: 1.5rem; margin-bottom: 1rem;">Ring Signatures</h3>
+                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Ring Signatures</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: The Sender</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         When you send Monero, your transaction signature is mixed with decoy signatures from other transactions on the blockchain. Observers see that *someone* in a group of possible signers sent the funds—but cannot determine who. It's like signing a document as "one of these 16 people."
@@ -1446,7 +1217,7 @@
                 </div>
 
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-display); color: var(--xmr-orange); font-size: 1.5rem; margin-bottom: 1rem;">Stealth Addresses</h3>
+                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Stealth Addresses</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: The Receiver</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         Every transaction generates a unique, one-time address. Even if you publish your Monero address publicly, every payment you receive goes to a different stealth address on the blockchain. No two payments can be linked. Only you—with your private view key—can identify which outputs belong to you.
@@ -1454,7 +1225,7 @@
                 </div>
 
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-display); color: var(--xmr-orange); font-size: 1.5rem; margin-bottom: 1rem;">RingCT</h3>
+                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">RingCT</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: The Amount</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         Ring Confidential Transactions hide the amount transferred using Pedersen commitments. The network can verify that inputs equal outputs (no inflation) without ever seeing the actual numbers. Transaction amounts appear as cryptographic commitments—valid but unreadable.
@@ -1462,7 +1233,7 @@
                 </div>
 
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-display); color: var(--xmr-orange); font-size: 1.5rem; margin-bottom: 1rem;">Dandelion++</h3>
+                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Dandelion++</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: Your IP Address</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         Transactions are first passed through a random "stem" of nodes before being broadcast to the network. This obscures which node originated the transaction, protecting against network-level surveillance that could link your IP address to your transactions.
@@ -1470,7 +1241,7 @@
                 </div>
             </div>
 
-            <div class="quote-block" style="margin-top: 3rem; border-left-color: var(--xmr-orange);">
+            <div class="quote-block" style="margin-top: 3rem; border-left-color: var(--xmr);">
                 <p class="quote-text">
                     In Monero, the blockchain shows that transactions occurred—but not who sent them, who received them, or how much was transferred. It's not "opt-in" privacy. It's not "shielded" transactions. Every single transaction is private, by design, by default.
                 </p>
@@ -1547,7 +1318,7 @@
             </div>
 
             <div class="privacy-spectrum">
-                <h3 style="font-family: var(--font-display); font-size: 1.25rem; text-align: center; margin-bottom: 1rem;">The Privacy Spectrum</h3>
+                <h3 style="font-family: var(--font-headline); font-size: 1.25rem; text-align: center; margin-bottom: 1rem;">The Privacy Spectrum</h3>
                 <div class="spectrum-bar">
                     <div class="spectrum-marker" id="spectrum-marker" style="left: 15%;"></div>
                 </div>
@@ -1566,7 +1337,7 @@
     <section class="controversy-section" id="controversy">
         <div class="content-wide">
             <div class="section-header">
-                <span class="section-number" style="color: var(--xmr-orange);">07 — THE CONTROVERSY</span>
+                <span class="section-number" style="color: var(--xmr);">07 — THE CONTROVERSY</span>
                 <h2 class="section-title">Why Monero Is Under Attack</h2>
                 <p class="section-subtitle">
                     Monero is stigmatized. Delisted. Targeted by governments, banned on exchanges, and hunted by intelligence agencies. This isn't happening because Monero is weak. It's happening because <strong>Monero works</strong>.
@@ -1617,8 +1388,8 @@
             </div>
 
             <!-- Why Monero Threatens the System -->
-            <div class="glass-card" style="margin-bottom: 2rem; border-left: 3px solid var(--xmr-orange); padding: 1.5rem;">
-                <h3 style="font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 1rem; color: var(--xmr-orange);">Monero Breaks the Surveillance-Finance Model</h3>
+            <div class="glass-card" style="margin-bottom: 2rem; border-left: 3px solid var(--xmr); padding: 1.5rem;">
+                <h3 style="font-family: var(--font-headline); font-size: 1.3rem; margin-bottom: 1rem; color: var(--xmr);">Monero Breaks the Surveillance-Finance Model</h3>
                 <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">
                     The modern financial system operates on a single assumption: <strong>every transaction can be watched</strong>. Banks report to governments. Payment processors log everything. Bitcoin—despite its reputation—is a transparent ledger where every transaction is permanently visible to anyone. Chain analysis firms like Chainalysis built a billion-dollar industry on this transparency.
                 </p>
@@ -1640,7 +1411,7 @@
                         <div class="accordion-body">
                             <p>In <strong>September 2020</strong>, the IRS Criminal Investigation division posted a <strong>$625,000 bounty</strong> for contractors who could develop tools to trace Monero transactions. Chainalysis and Integra FEC were awarded initial contracts.</p>
                             <br>
-                            <p style="color: var(--xmr-orange); font-weight: 600;">Put this in context. September 2020:</p>
+                            <p style="color: var(--xmr); font-weight: 600;">Put this in context. September 2020:</p>
                             <ul style="color: rgba(255,255,255,0.8); margin: 0.5rem 0 1rem 1.5rem;">
                                 <li>Bitcoin was ~$10,000. Total crypto market cap ~$350 billion.</li>
                                 <li>Global crypto users: ~100 million.</li>
@@ -1750,7 +1521,7 @@
     <section class="wagyu-section" id="wagyu">
         <div class="content-wide">
             <div class="section-header">
-                <span class="section-number" style="color: var(--xmr-orange);">08 — THE SOLUTION</span>
+                <span class="section-number" style="color: var(--xmr);">08 — THE SOLUTION</span>
                 <h2 class="section-title">Wagyu: Breaking the Suppression</h2>
                 <p class="section-subtitle">
                     For years, instant exchange services have been silently draining Monero's value. Here's how—and what finally changed.
@@ -1758,7 +1529,7 @@
             </div>
 
             <div class="glass-card" style="margin-bottom: 3rem;">
-                <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 1rem;">The Hidden Tax on Monero</h3>
+                <h3 style="font-family: var(--font-headline); font-size: 1.5rem; margin-bottom: 1rem;">The Hidden Tax on Monero</h3>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">
                     When major exchanges delisted Monero, users turned to instant exchange services like ChangeNow. These services advertise 0.5-1% fees. The reality is closer to 3-4%—hidden in terrible exchange rates.
                 </p>
@@ -1771,7 +1542,7 @@
             </div>
 
             <div class="flow-diagram">
-                <h3 style="font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 2rem; text-align: center;">How Wagyu v2 Changes Everything</h3>
+                <h3 style="font-family: var(--font-headline); font-size: 1.5rem; margin-bottom: 2rem; text-align: center;">How Wagyu v2 Changes Everything</h3>
                 
                 <div class="flow-step">
                     <div class="flow-number">1</div>
@@ -1809,7 +1580,7 @@
                 </div>
             </div>
 
-            <div class="quote-block" style="border-left-color: var(--xmr-orange);">
+            <div class="quote-block" style="border-left-color: var(--xmr);">
                 <p class="quote-text">
                     We are not extracting from the Monero ecosystem; we are plugging it directly into real liquidity. The parasitic layer that has suppressed Monero for years finally has competition. And we're not competing on their terms—we're making their entire model obsolete.
                 </p>
@@ -1822,7 +1593,7 @@
     <section class="light-section" id="self-custody">
         <div class="content-wide">
             <div class="section-header">
-                <span class="section-number" style="color: var(--xmr-orange);">09 — TAKE ACTION</span>
+                <span class="section-number" style="color: var(--xmr);">09 — TAKE ACTION</span>
                 <h2 class="section-title">Self-Custody: Own Your Keys</h2>
                 <p class="section-subtitle">
                     Not your keys, not your coins. Here's how to actually hold Bitcoin and Monero.
@@ -1831,7 +1602,7 @@
 
             <div class="comparison-grid">
                 <div class="glass-card" style="border-color: rgba(247, 147, 26, 0.3);">
-                    <h3 style="font-family: var(--font-display); color: var(--btc-orange); font-size: 1.5rem; margin-bottom: 1.5rem;">Bitcoin Wallets</h3>
+                    <h3 style="font-family: var(--font-headline); color: var(--btc); font-size: 1.5rem; margin-bottom: 1.5rem;">Bitcoin Wallets</h3>
                     
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Hardware Wallets (Recommended)</h4>
@@ -1858,7 +1629,7 @@
                 </div>
 
                 <div class="glass-card" style="border-color: rgba(255, 102, 0, 0.3);">
-                    <h3 style="font-family: var(--font-display); color: var(--xmr-orange); font-size: 1.5rem; margin-bottom: 1.5rem;">Monero Wallets</h3>
+                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1.5rem;">Monero Wallets</h3>
                     
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Official Wallets</h4>
@@ -1874,11 +1645,11 @@
 
                         <!-- Cake Wallet Ecosystem - Featured -->
                         <div style="background: linear-gradient(135deg, rgba(255,102,0,0.12), rgba(255,102,0,0.04)); border: 2px solid rgba(255,102,0,0.4); border-radius: 12px; padding: 1rem 1.25rem; margin-bottom: 1rem;">
-                            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--xmr-orange); margin-bottom: 0.6rem;">Recommended Wallet Ecosystem</div>
+                            <div style="font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--xmr); margin-bottom: 0.6rem;">Recommended Wallet Ecosystem</div>
                             <ul style="color: rgba(255,255,255,0.8); font-size: 0.95rem; padding-left: 1.5rem; margin: 0;">
-                                <li style="margin-bottom: 0.4rem;"><strong style="color: var(--xmr-orange);">Cake Wallet</strong> — The premier mobile Monero wallet. iOS &amp; Android, built-in exchange, multi-coin support. The easiest way to hold and swap XMR.</li>
-                                <li style="margin-bottom: 0.4rem;"><strong style="color: var(--xmr-orange);">monero.com</strong> — By the Cake Wallet team. A streamlined, Monero-only wallet experience for users who want simplicity.</li>
-                                <li><strong style="color: var(--xmr-orange);">Cupcake</strong> — Cake Wallet's cold storage / hardware wallet solution. Air-gapped signing for secure long-term XMR storage.</li>
+                                <li style="margin-bottom: 0.4rem;"><strong style="color: var(--xmr);">Cake Wallet</strong> — The premier mobile Monero wallet. iOS &amp; Android, built-in exchange, multi-coin support. The easiest way to hold and swap XMR.</li>
+                                <li style="margin-bottom: 0.4rem;"><strong style="color: var(--xmr);">monero.com</strong> — By the Cake Wallet team. A streamlined, Monero-only wallet experience for users who want simplicity.</li>
+                                <li><strong style="color: var(--xmr);">Cupcake</strong> — Cake Wallet's cold storage / hardware wallet solution. Air-gapped signing for secure long-term XMR storage.</li>
                             </ul>
                         </div>
 
@@ -1903,23 +1674,23 @@
             </div>
 
             <div class="glass-card" style="margin-top: 3rem; text-align: center;">
-                <h3 style="font-family: var(--font-display); color: #FFFFFF; font-size: 1.5rem; margin-bottom: 1rem;">Acquiring Monero</h3>
+                <h3 style="font-family: var(--font-headline); color: #FFFFFF; font-size: 1.5rem; margin-bottom: 1rem;">Acquiring Monero</h3>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">With centralized exchanges increasingly hostile, alternatives matter:</p>
                 <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
                     <div>
-                        <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">Wagyu</h4>
+                        <h4 style="color: var(--xmr); margin-bottom: 0.5rem;">Wagyu</h4>
                         <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Exchange-level pricing, no KYC</p>
                     </div>
                     <div>
-                        <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">Haveno</h4>
+                        <h4 style="color: var(--xmr); margin-bottom: 0.5rem;">Haveno</h4>
                         <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Decentralized P2P trading</p>
                     </div>
                     <div>
-                        <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">Atomic Swaps</h4>
+                        <h4 style="color: var(--xmr); margin-bottom: 0.5rem;">Atomic Swaps</h4>
                         <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">BTC↔XMR trustlessly</p>
                     </div>
                     <div>
-                        <h4 style="color: var(--xmr-orange); margin-bottom: 0.5rem;">LocalMonero (RIP)</h4>
+                        <h4 style="color: var(--xmr); margin-bottom: 0.5rem;">LocalMonero (RIP)</h4>
                         <p style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">Closed 2024. Alternatives emerging.</p>
                     </div>
                 </div>
@@ -1943,7 +1714,7 @@
                 Both currencies matter. Bitcoin proved that decentralized money could work. Monero proved that it could be private. They are not competitors—they are two expressions of the same radical idea: that you should control your own money.
             </p>
 
-            <p style="text-align: center; color: var(--xmr-orange); font-size: 1.25rem; font-family: var(--font-display); font-style: italic; max-width: 700px; margin: 0 auto 3rem;">
+            <p style="text-align: center; color: var(--xmr); font-size: 1.25rem; font-family: var(--font-headline); font-style: italic; max-width: 700px; margin: 0 auto 3rem;">
                 The question isn't whether you need privacy today.<br>
                 It's whether you'll still have the option tomorrow.
             </p>
@@ -1956,18 +1727,17 @@
         </div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <p class="footer-text">
-            Built with conviction • No cookies, no tracking, no surveillance<br>
-            <a href="https://satoshi.nakamotoinstitute.org/" target="_blank">Read Satoshi's Original Posts</a> • 
-            <a href="https://www.getmonero.org/resources/about/" target="_blank">Learn More About Monero</a>
-        </p>
-    </footer>
 
+        <div class="footer">
+            <span>xmr.irish / education / GenUI-native</span>
+            <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
+            <span>satoshi.nakamotoinstitute.org</span>
+        </div>
+    </div><!-- z1 -->
+</div><!-- page-offset -->
     <script>
         // Particle system
-        const canvas = document.getElementById('particles-canvas');
+        const canvas = document.getElementById('constellation');
         const ctx = canvas.getContext('2d');
         
         function resizeCanvas() {
@@ -2117,36 +1887,14 @@
             });
         });
     </script>
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script src="js/genui.js"></script>
 <script>
-(function() {
-    function fetchPrices() {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                var btc = d.bitcoin || {};
-                var xmr = d.monero || {};
-
-                var fmt = function(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 }); };
-                var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
-
-                if (btc.usd) {
-                    document.getElementById('btc-price').textContent = fmt(btc.usd);
-                    var btcChg = document.getElementById('btc-change');
-                    if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
-                }
-                if (xmr.usd) {
-                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
-                    var xmrChg = document.getElementById('xmr-change');
-                    if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
-                }
-                if (btc.usd && xmr.usd) {
-                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
-                }
-            }).catch(function(e) { console.log('Price fetch error:', e); });
-    }
-    fetchPrices();
-    setInterval(fetchPrices, 1800000);
-})();
+NavComponent.inject('nav-mount');
+PriceService.start();
+MoneroNetwork.start();
 </script>
 </body>
 </html>
