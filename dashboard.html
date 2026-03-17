@@ -3,117 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard — Crypto Market Analytics | XMR.IRISH</title>
+    <title>xmr.irish — Crypto Market Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --grey-18: #2E2E2E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-            --green: #00D26A;
-            --red: #FF4757;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: var(--font-body);
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-
-        /* ── Navigation ── */
-        .nav {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex; justify-content: space-between; align-items: center;
-        }
-        .nav-logo {
-            font-family: var(--font-display); font-size: 1.5rem; font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-            text-decoration: none;
-        }
-        .nav-links { display: flex; gap: 2rem; align-items: center; }
-        .nav-links a {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease;
-        }
-        .nav-links a:hover, .nav-links a.nav-active { color: var(--xmr-orange); }
-        .nav-dropdown { position: relative; }
-        .nav-dropdown-toggle {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
-        }
-        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
-        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
-        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
-        .nav-dropdown-menu {
-            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
-            padding: 0.5rem 0; min-width: 160px;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-top: 0.75rem;
-        }
-        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
-        .nav-dropdown-menu a {
-            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
-            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
-        }
-        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
-
-        .price-ticker {
-            display: flex; gap: 1.5rem; font-family: var(--font-mono); font-size: 0.8rem;
-            align-items: center;
-        }
-        .price-ticker .live-dot {
-            width: 6px; height: 6px; border-radius: 50%; background: #00D26A;
-            animation: live-pulse 2s ease-in-out infinite; flex-shrink: 0;
-        }
-        @keyframes live-pulse {
-            0%, 100% { opacity: 0.4; box-shadow: 0 0 0 0 rgba(0,210,106,0); }
-            50% { opacity: 1; box-shadow: 0 0 8px 2px rgba(0,210,106,0.4); }
-        }
-        .price-item { display: flex; align-items: center; gap: 0.5rem; }
-        .price-label { color: var(--text-secondary); }
-        .price-value { color: var(--text-primary); font-weight: 500; }
-        .price-change { font-size: 0.75rem; }
-        .price-change.up { color: var(--green); }
-        .price-change.down { color: var(--red); }
-
-        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 10px; }
-        .hamburger span { width: 25px; height: 2px; background: var(--text-primary); transition: all 0.3s ease; }
-        .mobile-menu {
-            display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(10, 10, 10, 0.98); z-index: 999;
-            flex-direction: column; justify-content: center; align-items: center; gap: 2rem;
-        }
-        .mobile-menu.active { display: flex; }
-        .mobile-menu a { color: var(--text-primary); text-decoration: none; font-size: 1.5rem; font-family: var(--font-display); }
-        .mobile-prices { display: flex; flex-direction: column; gap: 1rem; margin-top: 2rem; font-family: var(--font-mono); }
-
         /* ── Layout ── */
         .container { max-width: 1280px; margin: 0 auto; padding: 0 2rem; }
         section { padding: 3rem 0; }
 
         /* ── Hero ── */
         .hero {
-            padding-top: 7rem; padding-bottom: 2rem; text-align: center; position: relative;
+            padding-top: 2rem; padding-bottom: 2rem; text-align: center; position: relative;
         }
         .hero::before {
             content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
@@ -121,25 +23,25 @@
             pointer-events: none;
         }
         .hero-eyebrow {
-            font-family: var(--font-mono); font-size: 0.85rem; color: var(--xmr-orange);
+            font-family: var(--font-mono); font-size: 0.85rem; color: var(--xmr);
             letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 1rem;
         }
         .hero h1 {
-            font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700;
+            font-family: var(--font-headline); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700;
             margin-bottom: 1rem;
-            background: linear-gradient(135deg, var(--text-primary), var(--xmr-orange));
+            background: linear-gradient(135deg, var(--g1), var(--xmr));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .hero p { color: var(--text-secondary); font-size: 1.05rem; max-width: 640px; margin: 0 auto; }
+        .hero p { color: var(--g3); font-size: 1.05rem; max-width: 640px; margin: 0 auto; }
 
         /* ── Section Titles ── */
         .section-title {
-            font-family: var(--font-display); font-size: 1.8rem; font-weight: 600; margin-bottom: 0.5rem;
+            font-family: var(--font-headline); font-size: 1.8rem; font-weight: 600; margin-bottom: 0.5rem;
         }
-        .section-subtitle { color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 2rem; }
+        .section-subtitle { color: var(--g3); font-size: 0.95rem; margin-bottom: 2rem; }
         .section-divider {
             width: 60px; height: 3px;
-            background: linear-gradient(90deg, var(--btc-orange), var(--xmr-orange));
+            background: linear-gradient(90deg, var(--btc), var(--xmr));
             border: none; border-radius: 2px; margin-bottom: 2rem;
         }
 
@@ -148,7 +50,7 @@
             display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
         }
         .live-ticker-card {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 1.25rem 1.5rem; transition: border-color 0.3s ease, transform 0.2s ease;
             opacity: 0; transform: translateY(12px);
         }
@@ -158,7 +60,7 @@
         .ltc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .ltc-name { font-weight: 600; font-size: 0.95rem; }
         .ltc-symbol {
-            font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--g4);
             background: rgba(255,255,255,0.05); padding: 0.15rem 0.5rem; border-radius: 4px;
         }
         .ltc-price { font-family: var(--font-mono); font-size: 1.5rem; font-weight: 500; margin-bottom: 0.5rem; }
@@ -166,7 +68,7 @@
             font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500;
             padding: 0.15rem 0.5rem; border-radius: 4px; display: inline-block;
         }
-        .ltc-change.positive { color: var(--green); background: rgba(0,210,106,0.1); }
+        .ltc-change.positive { color: var(--grn); background: rgba(0,210,106,0.1); }
         .ltc-change.negative { color: var(--red); background: rgba(255,71,87,0.1); }
         .ltc-pct-row {
             display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; margin-top: 0.5rem;
@@ -175,26 +77,26 @@
             font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500;
         }
         .ltc-pct-item .ltc-pct-label {
-            color: var(--text-secondary); margin-right: 0.2rem;
+            color: var(--g4); margin-right: 0.2rem;
         }
-        .ltc-pct-item .ltc-pct-val.positive { color: var(--green); }
+        .ltc-pct-item .ltc-pct-val.positive { color: var(--grn); }
         .ltc-pct-item .ltc-pct-val.negative { color: var(--red); }
         .ltc-metrics-row {
             display: flex; justify-content: space-between; font-family: var(--font-mono);
             font-size: 0.72rem; margin-bottom: 0.25rem;
         }
-        .ltc-metrics-row .ltc-met-label { color: var(--text-secondary); }
-        .ltc-metrics-row .ltc-met-val { color: var(--text-primary); font-weight: 500; }
+        .ltc-metrics-row .ltc-met-label { color: var(--g4); }
+        .ltc-metrics-row .ltc-met-val { color: var(--g1); font-weight: 500; }
 
         /* ── Charts (TradingView) ── */
         .tv-chart-wrap {
-            border: 1px solid var(--grey-18); border-radius: 12px;
+            border: 1px solid var(--card-border); border-radius: 12px;
             overflow: hidden; margin-bottom: 1.5rem;
             height: 500px;
         }
         .chart-loading {
             display: flex; align-items: center; justify-content: center; height: 100%;
-            color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.85rem;
+            color: var(--g4); font-family: var(--font-mono); font-size: 0.85rem;
         }
 
         /* ── Top 10 Ticker Grid ── */
@@ -202,7 +104,7 @@
             display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1rem;
         }
         .ticker-card {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 1.25rem; transition: border-color 0.3s ease, transform 0.2s ease;
             text-decoration: none; color: inherit; display: block;
             opacity: 0; transform: translateY(12px);
@@ -213,42 +115,42 @@
         .tc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
         .tc-name { font-weight: 600; font-size: 0.95rem; }
         .tc-symbol {
-            font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-secondary);
+            font-family: var(--font-mono); font-size: 0.75rem; color: var(--g4);
             background: rgba(255,255,255,0.05); padding: 0.15rem 0.5rem; border-radius: 4px;
         }
         .tc-price { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; margin-bottom: 0.5rem; }
         .tc-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; margin-bottom: 0.25rem; }
-        .tc-label { color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.7rem; }
+        .tc-label { color: var(--g4); font-family: var(--font-mono); font-size: 0.7rem; }
         .tc-val { font-family: var(--font-mono); font-weight: 500; font-size: 0.8rem; }
-        .tc-val.positive { color: var(--green); }
+        .tc-val.positive { color: var(--grn); }
         .tc-val.negative { color: var(--red); }
-        .tc-mcap { color: var(--text-secondary); font-family: var(--font-mono); font-size: 0.75rem; }
+        .tc-mcap { color: var(--g4); font-family: var(--font-mono); font-size: 0.75rem; }
 
         /* ── Fiat Grid ── */
         .fiat-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem;
         }
         .fiat-card {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 1.25rem; text-align: center; transition: border-color 0.3s ease;
             opacity: 0; transform: translateY(12px);
         }
         .fiat-card.visible { opacity: 1; transform: translateY(0); transition: opacity 0.5s ease, transform 0.5s ease; }
         .fiat-card:hover { border-color: rgba(255,102,0,0.3); }
         .fiat-currency {
-            font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-secondary);
+            font-family: var(--font-mono); font-size: 0.8rem; color: var(--g4);
             margin-bottom: 0.5rem; letter-spacing: 0.1em;
         }
         .fiat-price { font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; margin-bottom: 0.4rem; }
         .fiat-change { font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; }
-        .fiat-change.positive { color: var(--green); }
+        .fiat-change.positive { color: var(--grn); }
         .fiat-change.negative { color: var(--red); }
         a.fiat-card {
             text-decoration: none; color: inherit; display: block; cursor: pointer;
         }
         a.fiat-card:hover { border-color: rgba(255,102,0,0.5); transform: translateY(-2px); }
         .fiat-chart-link {
-            font-family: var(--font-mono); font-size: 0.7rem; color: var(--xmr-orange);
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--xmr);
             margin-top: 0.5rem; opacity: 0.7; transition: opacity 0.2s ease;
         }
         a.fiat-card:hover .fiat-chart-link { opacity: 1; }
@@ -258,7 +160,7 @@
             display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;
         }
         .stat-card {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 1.5rem; position: relative; overflow: hidden;
             transition: border-color 0.3s ease, transform 0.2s ease;
             opacity: 0; transform: translateY(12px);
@@ -268,25 +170,25 @@
         .stat-card::before {
             content: ''; position: absolute; top: 0; left: 0;
             width: 4px; height: 100%; border-radius: 4px 0 0 4px;
-            background: var(--xmr-orange);
+            background: var(--xmr);
         }
         .stat-label {
-            font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-secondary);
+            font-family: var(--font-mono); font-size: 0.7rem; color: var(--g4);
             text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.5rem;
         }
         .stat-value {
             font-family: var(--font-mono); font-size: 1.5rem; font-weight: 600;
-            background: linear-gradient(135deg, var(--xmr-orange), var(--btc-gold));
+            background: linear-gradient(135deg, var(--xmr), var(--gold));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
         }
-        .stat-note { font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.4rem; }
+        .stat-note { font-size: 0.75rem; color: var(--g4); margin-top: 0.4rem; }
 
         /* ── XMR Legality Grid ── */
         .legality-grid {
             display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem;
         }
         .legality-card {
-            background: var(--card-bg); border: 1px solid var(--grey-18); border-radius: 12px;
+            background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 12px;
             padding: 1.25rem; transition: border-color 0.3s ease, transform 0.2s ease;
         }
         .legality-card:hover { border-color: rgba(255,102,0,0.3); transform: translateY(-2px); }
@@ -297,39 +199,18 @@
         }
         .legality-badge.legal { background: rgba(0,210,106,0.15); color: #00D26A; }
         .legality-badge.restricted { background: rgba(255,165,0,0.15); color: #FFA500; }
-        .legality-badge.banned { background: rgba(255,71,87,0.15); color: #FF4757; }
-        .legality-badge.unclear { background: rgba(160,160,160,0.15); color: #A0A0A0; }
-        .legality-note { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.5; }
+        .legality-badge.banned { background: rgba(255,71,87,0.15); color: var(--red); }
+        .legality-badge.unclear { background: rgba(160,160,160,0.15); color: var(--g3); }
+        .legality-note { font-size: 0.8rem; color: var(--g4); line-height: 1.5; }
         .legality-subsection {
-            font-family: var(--font-display); font-size: 1.3rem; font-weight: 600;
-            margin-top: 2.5rem; margin-bottom: 1.25rem; color: var(--text-primary);
+            font-family: var(--font-headline); font-size: 1.3rem; font-weight: 600;
+            margin-top: 2.5rem; margin-bottom: 1.25rem; color: var(--g1);
         }
         .legality-disclaimer {
             margin-top: 2rem; padding: 1.25rem; border-radius: 12px;
             background: rgba(255,165,0,0.08); border: 1px solid rgba(255,165,0,0.2);
-            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
+            font-size: 0.85rem; color: var(--g4); line-height: 1.6;
         }
-
-        /* ── Footer ── */
-        footer {
-            background: var(--card-bg); padding: 4rem 2rem; text-align: center;
-            border-top: 1px solid var(--grey-18);
-        }
-        .footer-quote {
-            font-family: var(--font-display); font-size: clamp(1rem, 2vw, 1.3rem);
-            font-style: italic; max-width: 700px; margin: 0 auto 1rem; color: var(--text-secondary);
-        }
-        .footer-attribution {
-            font-family: var(--font-mono); font-size: 0.85rem; color: var(--btc-orange); margin-bottom: 2rem;
-        }
-        .footer-links {
-            display: flex; justify-content: center; gap: 2rem; flex-wrap: wrap; margin-bottom: 2rem;
-        }
-        .footer-links a {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem; transition: color 0.3s ease;
-        }
-        .footer-links a:hover { color: var(--btc-orange); }
-        .footer-copy { font-size: 0.8rem; color: var(--text-secondary); }
 
         /* ── Loading shimmer ── */
         .loading-shimmer {
@@ -340,11 +221,9 @@
 
         /* ── Responsive ── */
         @media (max-width: 768px) {
-            .nav-links, .price-ticker { display: none; }
-            .hamburger { display: flex; }
             .container { padding: 0 1rem; }
             section { padding: 2rem 0; }
-            .hero { padding-top: 5.5rem; padding-bottom: 1.5rem; }
+            .hero { padding-top: 1.5rem; padding-bottom: 1.5rem; }
             .hero h1 { font-size: 2rem; }
             .tv-chart-wrap { height: 350px; }
             .stats-grid { grid-template-columns: 1fr; }
@@ -355,68 +234,11 @@
     </style>
 </head>
 <body>
-
-<!-- Navigation -->
-<nav class="nav">
-    <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
-    <div class="nav-links">
-        <a href="index.html">Home</a>
-        <div class="nav-dropdown">
-            <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
-            <div class="nav-dropdown-menu">
-                <a href="btc-xmr-education.html">Education</a>
-                <a href="timeline.html">Timeline</a>
-                <a href="quotes.html">Quote Archive</a>
-                <a href="secrets.html">Secrets</a>
-                <a href="future-outlook.html">2027+</a>
-            </div>
-        </div>
-        <a href="bottom-line.html">XMR Bottom Line</a>
-        <a href="dashboard.html" class="nav-active">Dashboard</a>
-        <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
-    </div>
-    <div class="price-ticker">
-        <span class="live-dot"></span>
-        <div class="price-item">
-            <span class="price-label">BTC</span>
-            <span class="price-value" id="btc-price">&#8212;</span>
-            <span class="price-change" id="btc-change"></span>
-        </div>
-        <div class="price-item">
-            <span class="price-label">XMR</span>
-            <span class="price-value" id="xmr-price">&#8212;</span>
-            <span class="price-change" id="xmr-change"></span>
-        </div>
-        <div class="price-item">
-            <span class="price-label">BTC/XMR</span>
-            <span class="price-value" id="btc-xmr-ratio">&#8212;</span>
-            <span class="price-change" id="btc-xmr-change"></span>
-        </div>
-    </div>
-    <div class="hamburger" onclick="toggleMenu()">
-        <span></span>
-        <span></span>
-        <span></span>
-    </div>
-</nav>
-
-<!-- Mobile Menu -->
-<div class="mobile-menu" id="mobileMenu">
-    <a href="index.html" onclick="toggleMenu()">Home</a>
-    <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
-    <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-    <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-    <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-    <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
-    <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
-    <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
-    <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
-    <div class="mobile-prices">
-        <div>BTC: <span id="btc-price-mobile">&#8212;</span></div>
-        <div>XMR: <span id="xmr-price-mobile">&#8212;</span></div>
-        <div>BTC/XMR: <span id="btc-xmr-ratio-mobile">&#8212;</span></div>
-    </div>
-</div>
+<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
+    <canvas id="constellation" class="constellation"></canvas>
+    <div class="blob blob-1"></div><div class="blob blob-3"></div><div class="blob blob-5"></div>
+    <div class="z1">
+        <div id="nav-mount"></div>
 
 <!-- Hero -->
 <header class="hero">
@@ -430,9 +252,11 @@
 <!-- Section 1: Live Price Tickers -->
 <section id="live-tickers">
     <div class="container">
-        <h2 class="section-title">Live Price Tickers</h2>
-        <p class="section-subtitle">Key pairs updated every 30 minutes via CoinGecko</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Live Data</div>
+            <div class="sec-t">Live Price Tickers</div>
+            <div class="sec-s">Key pairs updated every 30 minutes via CoinGecko</div>
+        </div>
         <div class="live-ticker-grid" id="liveTickerGrid">
             <div class="live-ticker-card visible"><div class="chart-loading">Loading prices...</div></div>
         </div>
@@ -442,9 +266,11 @@
 <!-- Section 2: BTC Price Chart (TradingView) -->
 <section id="btc-chart-section">
     <div class="container">
-        <h2 class="section-title">BTC / USD Chart</h2>
-        <p class="section-subtitle">Bitcoin price history — interactive candlestick chart</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Charts</div>
+            <div class="sec-t">BTC / USD Chart</div>
+            <div class="sec-s">Bitcoin price history — interactive candlestick chart</div>
+        </div>
         <div class="tv-chart-wrap">
             <div class="tradingview-widget-container" style="height:100%;width:100%">
                 <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
@@ -472,9 +298,11 @@
 <!-- Section 3: XMR Price Chart (TradingView) -->
 <section id="xmr-chart-section">
     <div class="container">
-        <h2 class="section-title">XMR / USD Chart</h2>
-        <p class="section-subtitle">Monero price history — interactive candlestick chart</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Charts</div>
+            <div class="sec-t">XMR / USD Chart</div>
+            <div class="sec-s">Monero price history — interactive candlestick chart</div>
+        </div>
         <div class="tv-chart-wrap">
             <div class="tradingview-widget-container" style="height:100%;width:100%">
                 <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
@@ -502,9 +330,11 @@
 <!-- Section 4: BTC/XMR Ratio Chart (TradingView) -->
 <section id="ratio-chart-section">
     <div class="container">
-        <h2 class="section-title">BTC / XMR Ratio</h2>
-        <p class="section-subtitle">How many XMR per BTC — via KRAKEN:XMRBTC (inverted)</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Charts</div>
+            <div class="sec-t">BTC / XMR Ratio</div>
+            <div class="sec-s">How many XMR per BTC — via KRAKEN:XMRBTC (inverted)</div>
+        </div>
         <div class="tv-chart-wrap">
             <div class="tradingview-widget-container" style="height:100%;width:100%">
                 <div class="tradingview-widget-container__widget" style="height:calc(100% - 32px);width:100%"></div>
@@ -532,9 +362,11 @@
 <!-- Section 5: Top 10 Token Tickers -->
 <section id="top10">
     <div class="container">
-        <h2 class="section-title">Top 10 Tokens</h2>
-        <p class="section-subtitle">Price, 24h change, 7d change, and market cap</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Market Data</div>
+            <div class="sec-t">Top 10 Tokens</div>
+            <div class="sec-s">Price, 24h change, 7d change, and market cap</div>
+        </div>
         <div class="ticker-grid" id="top10Grid">
             <div class="ticker-card visible"><div class="chart-loading">Loading market data...</div></div>
         </div>
@@ -544,9 +376,11 @@
 <!-- Section 6: XMR Fiat Grid -->
 <section id="xmr-fiat">
     <div class="container">
-        <h2 class="section-title">XMR in Fiat Currencies</h2>
-        <p class="section-subtitle">Monero price across major world currencies</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Fiat Pairs</div>
+            <div class="sec-t">XMR in Fiat Currencies</div>
+            <div class="sec-s">Monero price across major world currencies</div>
+        </div>
         <div class="fiat-grid" id="fiatGrid">
             <div class="fiat-card visible"><div class="chart-loading">Loading...</div></div>
         </div>
@@ -556,9 +390,11 @@
 <!-- Section 7: XMR Network Stats -->
 <section id="xmr-network">
     <div class="container">
-        <h2 class="section-title">XMR Network Stats</h2>
-        <p class="section-subtitle">Key Monero network metrics and fundamentals</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Network</div>
+            <div class="sec-t">XMR Network Stats</div>
+            <div class="sec-s">Key Monero network metrics and fundamentals</div>
+        </div>
         <div class="stats-grid" id="networkStatsGrid">
             <!-- Populated by JS, with fallback static data -->
         </div>
@@ -568,9 +404,11 @@
 <!-- Section 8: XMR Legal Status -->
 <section id="xmr-legality">
     <div class="container">
-        <h2 class="section-title">XMR Legal Status</h2>
-        <p class="section-subtitle">Monero legality by region &mdash; buying, selling, trading, and mining</p>
-        <hr class="section-divider">
+        <div class="sec sec-border">
+            <div class="sec-k">Legal</div>
+            <div class="sec-t">XMR Legal Status</div>
+            <div class="sec-s">Monero legality by region &mdash; buying, selling, trading, and mining</div>
+        </div>
 
         <h3 class="legality-subsection" style="margin-top:0;">Global Regions</h3>
         <div class="legality-grid">
@@ -875,18 +713,23 @@
 </section>
 
 <!-- Footer -->
-<footer>
-    <p class="footer-quote">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
-    <p class="footer-attribution">&mdash; Satoshi Nakamoto, Final Email, April 2011</p>
-    <div class="footer-links">
-        <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Nakamoto Institute</a>
-        <a href="https://getmonero.org" target="_blank">GetMonero.org</a>
-        <a href="https://bitcoin.org" target="_blank">Bitcoin.org</a>
-    </div>
-    <p class="footer-copy">Educational resource. Not financial advice. DYOR.</p>
-</footer>
+<div class="footer">
+    <span>xmr.irish / dashboard / GenUI-native / SJB83</span>
+    <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
+    <span>Data via CoinGecko &amp; TradingView</span>
+</div>
 
+    </div><!-- z1 -->
+</div><!-- page-offset -->
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script src="js/genui.js"></script>
 <script>
+NavComponent.inject('nav-mount');
+PriceService.start();
+MoneroNetwork.start();
+
 (function() {
     'use strict';
 
@@ -955,63 +798,6 @@
     }, { rootMargin: '50px', threshold: 0.1 });
 
     function observeFadeIn(el) { fadeObserver.observe(el); }
-
-    /* ═══════════════════════════════════════
-       MOBILE MENU
-       ═══════════════════════════════════════ */
-
-    window.toggleMenu = function() {
-        document.getElementById('mobileMenu').classList.toggle('active');
-    };
-
-    /* ═══════════════════════════════════════
-       NAV PRICE TICKER
-       ═══════════════════════════════════════ */
-
-    function fetchNavPrices() {
-        var cached = cacheGet('dash_nav_prices', REFRESH_MS);
-        if (cached) { renderNavPrices(cached); return; }
-
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                var btc = d.bitcoin || {};
-                var xmr = d.monero || {};
-                var data = {
-                    btc: btc.usd, btcChg: btc.usd_24h_change,
-                    xmr: xmr.usd, xmrChg: xmr.usd_24h_change,
-                    ratio: (btc.usd && xmr.usd) ? (btc.usd / xmr.usd) : null
-                };
-                cacheSet('dash_nav_prices', data);
-                renderNavPrices(data);
-            }).catch(function() {});
-    }
-
-    function renderNavPrices(d) {
-        var pairs = [
-            ['btc-price', 'btc-price-mobile', d.btc ? formatUSD(d.btc) : '\u2014'],
-            ['xmr-price', 'xmr-price-mobile', d.xmr ? formatUSD(d.xmr) : '\u2014'],
-            ['btc-xmr-ratio', 'btc-xmr-ratio-mobile', d.ratio ? d.ratio.toFixed(1) : '\u2014']
-        ];
-        pairs.forEach(function(p) {
-            [p[0], p[1]].forEach(function(id) {
-                var el = document.getElementById(id);
-                if (el) el.textContent = p[2];
-            });
-        });
-        // 24h changes in nav
-        if (d.btcChg != null) {
-            var el = document.getElementById('btc-change');
-            if (el) { el.textContent = formatPct(d.btcChg); el.className = 'price-change ' + (d.btcChg >= 0 ? 'up' : 'down'); }
-        }
-        if (d.xmrChg != null) {
-            var el2 = document.getElementById('xmr-change');
-            if (el2) { el2.textContent = formatPct(d.xmrChg); el2.className = 'price-change ' + (d.xmrChg >= 0 ? 'up' : 'down'); }
-        }
-    }
-
-    fetchNavPrices();
-    setInterval(fetchNavPrices, REFRESH_MS);
 
     /* ═══════════════════════════════════════
        SECTION 1: LIVE PRICE TICKERS (5 cards)
@@ -1099,7 +885,6 @@
         // Calculate 24h change in the ratio
         var ratioChg24h = null;
         if (btc && xmr && btc.price_change_percentage_24h_in_currency != null && xmr.price_change_percentage_24h_in_currency != null) {
-            // ratio_change ≈ btc_change - xmr_change (for small percentages)
             var btcFactor = 1 + (btc.price_change_percentage_24h_in_currency / 100);
             var xmrFactor = 1 + (xmr.price_change_percentage_24h_in_currency / 100);
             ratioChg24h = ((btcFactor / xmrFactor) - 1) * 100;
@@ -1115,7 +900,7 @@
             '<div class="ltc-pct-row">' +
                 '<span class="ltc-pct-item"><span class="ltc-pct-label">24h:</span><span class="ltc-pct-val ' + (ratioChg24h != null ? pctClass(ratioChg24h) : '') + '">' + (ratioChg24h != null ? formatPct(ratioChg24h) : '\u2014') + '</span></span>' +
             '</div>' +
-            '<span class="ltc-change" style="color: var(--text-secondary);">XMR per BTC</span>';
+            '<span class="ltc-change" style="color: var(--g4);">XMR per BTC</span>';
         grid.appendChild(ratioCard);
         observeFadeIn(ratioCard);
     }
