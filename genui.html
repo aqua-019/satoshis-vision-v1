@@ -1,0 +1,1955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XMR.IRISH — Visual Redesign · Adaptive/Generative UI</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Syne:wght@400;500;600;700;800&family=Outfit:wght@200;300;400;500;600;700&family=DM+Mono:wght@300;400;500&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Archivo+Black&family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;600&family=Darker+Grotesque:wght@300;400;500;600;700;800;900&family=Unbounded:wght@200;300;400;500;600;700;800;900&family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Lexend:wght@100..900&family=Geologica:wght@100..900&family=Familjen+Grotesk:ital,wght@0,400..700;1,400..700&family=Fraunces:ital,opsz,wght@0,9..144,100..900;1,9..144,100..900&family=Playfair+Display:wght@400;600;700&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+--xmr:#FF6600;--xmr-d:#E55A00;--xmr-l:#FF8533;--xmr-glow:rgba(255,102,0,.15);
+--bg:#060606;--s1:#0C0C0C;--s2:#121212;--s3:#181818;--s4:#1E1E1E;
+--g9:#111;--g8:#1A1A1A;--g7:#272727;--g6:#363636;--g5:#505050;--g4:#707070;--g3:#909090;--g2:#B0B0B0;--g1:#D0D0D0;
+--t1:#F2F2F2;--t2:#909090;--t3:#606060;
+--neu:#1C1C1E;--neu-dk:#09090A;--neu-lt:#2F2F31;
+--grn:#00D395;--red:#FF4757;--blue:#4A9EFF;--gold:#FFD700;--cyan:#00CED1;--purp:#9B59B6;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--t1);font-family:'Outfit',sans-serif;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+
+/* === HEADER === */
+.hdr{padding:32px 40px 20px;max-width:1440px;margin:0 auto}
+.badge{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:16px;border:1px solid rgba(255,102,0,.2);background:rgba(255,102,0,.04);font-size:11px;color:var(--xmr);font-family:'DM Mono',monospace;letter-spacing:1px;margin-bottom:10px}
+.badge .p{width:5px;height:5px;border-radius:50%;background:var(--xmr);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hdr h1{font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(28px,4.5vw,44px);letter-spacing:-1.5px;line-height:1.15}
+.hdr h1 .gr{background:linear-gradient(135deg,var(--xmr),#FF9933);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hdr p{font-size:15px;color:var(--t2);max-width:700px;line-height:1.5;margin-top:6px}
+
+/* === CONTROLS === */
+.ctrl{max-width:1440px;margin:0 auto;padding:10px 40px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ctrl-l{font-size:9px;color:var(--g4);text-transform:uppercase;letter-spacing:1px;font-family:'DM Mono',monospace}
+.cb{padding:4px 12px;border-radius:12px;font-size:10px;font-weight:500;background:var(--g8);color:var(--t2);border:1px solid var(--g7);cursor:pointer;transition:all .2s;font-family:'Outfit',sans-serif}
+.cb:hover{border-color:var(--xmr);color:var(--xmr)}.cb.on{background:var(--xmr);color:#000;border-color:var(--xmr);font-weight:600}
+.cd{width:1px;height:18px;background:var(--g7);margin:0 4px}
+
+/* === NAV === */
+.nav{position:sticky;top:0;z-index:100;background:rgba(6,6,6,.94);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,102,0,.08);padding:10px 40px 14px;display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:thin;scrollbar-color:var(--xmr) var(--g8)}
+.nav::-webkit-scrollbar{height:6px}
+.nav::-webkit-scrollbar-track{background:var(--g8);border-radius:3px}
+.nav::-webkit-scrollbar-thumb{background:var(--xmr);border-radius:3px}
+.nav::-webkit-scrollbar-thumb:hover{background:var(--xmr-l)}
+.np{flex-shrink:0;padding:7px 18px;border-radius:16px;font-size:14px;font-weight:500;background:transparent;color:var(--g4);border:1px solid transparent;cursor:pointer;transition:all .2s;font-family:'Outfit'}
+.np:hover{color:var(--xmr)}.np.on{background:var(--xmr);color:#000;font-weight:600}
+
+/* === GRID === */
+.grid{max-width:1440px;margin:0 auto;padding:20px 40px;display:grid;grid-template-columns:1fr;gap:32px}
+
+/* === CARD === */
+.dc{border-radius:12px;overflow:hidden;border:1px solid var(--g7);transition:all .3s}
+.dc:hover{border-color:rgba(255,102,0,.3);box-shadow:0 0 40px rgba(255,102,0,.03)}
+.dm{padding:12px 16px;background:var(--s1);display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;border-bottom:1px solid rgba(255,255,255,.03)}
+.dm .left{display:flex;align-items:center;gap:10px}
+.dm .n{font-family:'DM Mono',monospace;font-size:9px;color:var(--xmr);letter-spacing:1.5px;background:rgba(255,102,0,.06);padding:2px 7px;border-radius:6px}
+.dm h2{font-family:'Syne',sans-serif;font-size:clamp(14px,1.8vw,18px);font-weight:700}
+.dt{display:flex;gap:3px;flex-wrap:wrap}
+.dt span{font-size:8px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.03);color:var(--g4);font-family:'DM Mono',monospace}
+.gt{font-size:8px;padding:2px 6px;border-radius:6px;font-family:'DM Mono',monospace;font-weight:500}
+.gt.rt{background:rgba(255,102,0,.08);color:var(--xmr)}.gt.st{background:rgba(74,158,255,.08);color:var(--blue)}.gt.ct{background:rgba(76,175,80,.08);color:var(--grn)}.gt.ad{background:rgba(156,39,176,.08);color:#CE93D8}
+
+/* === PREVIEW === */
+.dp{position:relative;cursor:default}
+
+/* === NOTES === */
+.dn{padding:10px 16px;background:var(--s1);border-top:1px solid rgba(255,255,255,.03);font-size:10px;color:var(--t2);line-height:1.5}
+.dn b{color:var(--xmr);font-weight:600}
+.gn{margin-top:4px;padding:5px 8px;background:rgba(255,102,0,.03);border:1px solid rgba(255,102,0,.05);border-radius:6px;font-size:9px;color:var(--g3)}
+.gn::before{content:'⚡ GenUI: ';color:var(--xmr);font-weight:600}
+
+/* ============================================
+   30 DESIGN PREVIEWS - UNIQUE STYLES
+   ============================================ */
+
+/* D1: Neumorphic Monolith */
+.d1{background:var(--neu);display:flex;align-items:center;justify-content:center;padding:32px}
+.d1 .box{width:72%;max-width:480px;background:var(--neu);border-radius:20px;padding:32px 28px;box-shadow:8px 8px 16px var(--neu-dk),-8px -8px 16px var(--neu-lt);text-align:center;transition:box-shadow .3s}
+.d1 .box:hover{box-shadow:12px 12px 24px var(--neu-dk),-12px -12px 24px var(--neu-lt)}
+.d1 h3{font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,32px);font-weight:800;letter-spacing:-1px;margin-bottom:6px}
+.d1 .a{color:var(--xmr)}
+.d1 p{color:var(--t2);font-size:clamp(11px,1.4vw,14px);margin-bottom:12px;line-height:1.3}
+.d1 .btn{display:inline-block;padding:10px 28px;border-radius:10px;background:var(--neu);box-shadow:3px 3px 6px var(--neu-dk),-3px -3px 6px var(--neu-lt);color:var(--xmr);font-weight:600;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s}
+.d1 .btn:hover{box-shadow:inset 3px 3px 6px var(--neu-dk),inset -3px -3px 6px var(--neu-lt)}
+
+/* D2: Brutalist */
+.d2{background:#0A0A0A;padding:24px 28px;display:flex;flex-direction:column;justify-content:center}
+.d2 .tb{display:flex;justify-content:space-between;border-bottom:2px solid var(--xmr);padding-bottom:8px;margin-bottom:16px;font-family:'Archivo Black',sans-serif;font-size:12px;color:var(--xmr)}
+.d2 h3{font-family:'Archivo Black',sans-serif;font-size:clamp(32px,5vw,52px);line-height:.88;text-transform:uppercase;margin-bottom:10px;transition:letter-spacing .3s}
+.d2:hover h3{letter-spacing:2px}
+.d2 .sub{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(13px,1.8vw,18px);color:var(--xmr);border-left:3px solid var(--xmr);padding-left:10px}
+
+/* D3: Glass */
+.d3{background:radial-gradient(ellipse at 30% 50%,rgba(255,102,0,.07) 0%,#0B0B0B 55%);padding:28px;display:flex;align-items:center;justify-content:center}
+.d3 .gc{width:80%;max-width:500px;background:rgba(255,255,255,.02);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.05);border-radius:16px;padding:20px;transition:border-color .3s}
+.d3 .gc:hover{border-color:rgba(255,102,0,.2)}
+.d3 h3{font-size:clamp(16px,2.2vw,24px);font-weight:700;margin-bottom:6px}
+.d3 .sr{display:flex;gap:8px;margin-top:10px}
+.d3 .st{background:rgba(255,102,0,.05);border:1px solid rgba(255,102,0,.12);border-radius:10px;padding:12px;flex:1;text-align:center;transition:transform .2s}
+.d3 .st:hover{transform:translateY(-2px)}
+.d3 .st .v{font-size:clamp(16px,2.2vw,24px);font-weight:700;color:var(--xmr)}
+.d3 .st .l{font-size:10px;color:var(--g4);margin-top:2px}
+
+/* D4: Typographic Manifesto */
+.d4{background:#0B0B0B;padding:24px 28px;display:flex;flex-direction:column;justify-content:center}
+.d4 h3{font-family:'Bebas Neue',sans-serif;font-size:clamp(44px,7vw,72px);line-height:.84;color:transparent;-webkit-text-stroke:1.5px var(--xmr);letter-spacing:3px;margin-bottom:10px;transition:all .4s}
+.d4:hover h3{-webkit-text-stroke:0;color:var(--xmr)}
+.d4 .bd{font-family:'Cormorant Garamond',serif;font-size:clamp(12px,1.5vw,16px);color:var(--g3);max-width:320px;line-height:1.4;font-style:italic}
+
+/* D5: Dashboard */
+.d5{background:var(--neu);padding:16px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.d5 .nc{background:var(--neu);border-radius:14px;padding:14px;box-shadow:5px 5px 10px var(--neu-dk),-5px -5px 10px var(--neu-lt);transition:transform .2s}
+.d5 .nc:hover{transform:translateY(-2px)}
+.d5 .nc.w{grid-column:span 2}
+.d5 .nc h4{font-size:10px;color:var(--g4);letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.d5 .nc .v{font-family:'Syne',sans-serif;font-size:clamp(16px,2.5vw,26px);font-weight:700}
+.d5 .nc .ch{font-size:12px;color:var(--grn);margin-top:2px}
+.d5 .bg{display:flex;gap:2px;align-items:flex-end;height:36px;margin-top:6px}
+.d5 .bg .b{width:100%;background:var(--xmr);border-radius:2px 2px 0 0;opacity:.6;transition:opacity .2s}
+.d5 .nc:hover .bg .b{opacity:1}
+
+/* D6: Cinematic Split */
+.d6{background:#000;display:grid;grid-template-columns:1fr 1fr}
+.d6 .L{background:linear-gradient(180deg,rgba(255,102,0,.08) 0%,#000 100%);padding:28px;display:flex;flex-direction:column;justify-content:center}
+.d6 .R{background:var(--g9);padding:28px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid var(--g7)}
+.d6 h3{font-family:'Playfair Display',serif;font-size:clamp(20px,3vw,32px);font-weight:400;line-height:1.1;margin-bottom:8px}
+.d6 h3 em{color:var(--xmr);font-style:italic}
+.d6 .mt{margin-bottom:8px}.d6 .mt .lb{font-size:10px;color:var(--g4);text-transform:uppercase;letter-spacing:2px;margin-bottom:2px}.d6 .mt .vl{font-family:'DM Mono',monospace;font-size:clamp(16px,2.2vw,24px);color:var(--xmr)}
+.d6 .feat{font-size:11px;color:var(--g3);line-height:1.5}
+
+/* D7: Organic Blob */
+.d7{background:#0F0F0F;padding:28px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.d7 .bl{position:absolute;border-radius:50% 40% 60% 30%/40% 50% 30% 60%;filter:blur(40px);opacity:.15;transition:all 1.5s ease}
+.d7:hover .bl{transform:scale(1.4) rotate(15deg);opacity:.3;filter:blur(50px)}
+.d7 .b1{width:200px;height:200px;background:var(--xmr);top:-20px;left:-20px}
+.d7 .b2{width:140px;height:140px;background:#FF9933;bottom:-10px;right:10%}
+.d7 .ct{position:relative;z-index:1;text-align:center;max-width:400px}
+.d7 h3{font-family:'Instrument Serif',serif;font-size:clamp(24px,3.5vw,36px);font-weight:400;margin-bottom:6px}
+.d7 p{font-size:clamp(11px,1.4vw,14px);color:var(--g3);line-height:1.3}
+
+/* D8: Terminal */
+.d8{background:#080808;padding:20px;font-family:'JetBrains Mono',monospace;font-size:clamp(10px,1.2vw,13px)}
+.d8 .tbar{display:flex;gap:4px;margin-bottom:10px;padding:5px 7px;background:var(--g8);border-radius:5px 5px 0 0}
+.d8 .dot{width:7px;height:7px;border-radius:50%}.d8 .dr{background:#FF5F57}.d8 .dy{background:#FEBC2E}.d8 .dg{background:#28C840}
+.d8 .asc{font-size:10px;line-height:1.1;color:var(--xmr);white-space:pre;margin-bottom:8px}
+.d8 .ln{margin-bottom:3px;color:var(--g4)}.d8 .pr{color:var(--xmr)}.d8 .cm{color:#fff}.d8 .vl2{color:var(--grn)}
+.d8 .cursor{display:inline-block;width:6px;height:11px;background:var(--xmr);animation:blink 1s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* D9: Magazine Editorial */
+.d9{background:#0A0A0A;display:grid;grid-template-columns:1fr 2fr;padding:0}
+.d9 .side{background:var(--xmr);padding:24px;display:flex;flex-direction:column;justify-content:flex-end}
+.d9 .side h3{font-family:'Instrument Serif',serif;font-size:clamp(24px,3.5vw,36px);color:#000;font-weight:400;line-height:1}
+.d9 .side p{font-size:9px;color:rgba(0,0,0,.6);margin-top:6px}
+.d9 .main{padding:24px;display:flex;flex-direction:column;justify-content:center}
+.d9 .main .cat{font-family:'DM Mono',monospace;font-size:10px;color:var(--xmr);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+.d9 .main h4{font-family:'Playfair Display',serif;font-size:clamp(16px,2.2vw,24px);margin-bottom:8px;line-height:1.2}
+.d9 .main p{font-size:11px;color:var(--g3);line-height:1.5}
+
+/* D10: Minimal Luxury */
+.d10{background:#0A0A0A;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px;text-align:center}
+.d10 .line{width:40px;height:1px;background:var(--xmr);margin-bottom:16px}
+.d10 h3{font-family:'Cormorant Garamond',serif;font-size:clamp(28px,4vw,42px);font-weight:300;letter-spacing:6px;text-transform:uppercase;margin-bottom:8px}
+.d10 p{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:clamp(13px,1.6vw,18px);color:var(--g3);margin-bottom:16px}
+.d10 .cta{font-family:'DM Mono',monospace;font-size:11px;color:var(--xmr);letter-spacing:3px;text-transform:uppercase;border-bottom:1px solid var(--xmr);padding-bottom:2px;cursor:pointer;transition:all .2s}
+.d10 .cta:hover{letter-spacing:5px}
+
+/* D11: Bento Grid */
+.d11{background:var(--s2);padding:14px;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:10px}
+.d11 .b{background:var(--s3);border-radius:12px;padding:12px;border:1px solid var(--g7);transition:border-color .2s;overflow:hidden}
+.d11 .b:hover{border-color:rgba(255,102,0,.3)}
+.d11 .b.w2{grid-column:span 2}
+.d11 .b h4{font-size:10px;color:var(--g4);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.d11 .b .v{font-family:'Syne',sans-serif;font-size:clamp(16px,2.2vw,24px);font-weight:700}
+.d11 .b .sm{font-size:11px;color:var(--g3);margin-top:3px}
+
+/* D12: Narrative Scroll */
+.d12{background:linear-gradient(180deg,#0A0A0A 0%,#111 100%);padding:28px 36px;display:flex;flex-direction:column;justify-content:center}
+.d12 .ch{font-family:'DM Mono',monospace;font-size:10px;color:var(--xmr);text-transform:uppercase;letter-spacing:3px;margin-bottom:8px}
+.d12 h3{font-family:'Darker Grotesque',sans-serif;font-size:clamp(30px,4.5vw,48px);font-weight:800;line-height:.95;margin-bottom:10px}
+.d12 p{font-size:clamp(11px,1.4vw,14px);color:var(--g3);max-width:420px;line-height:1.5}
+.d12 .scroll-hint{margin-top:12px;font-size:9px;color:var(--g5);display:flex;align-items:center;gap:4px}
+.d12 .scroll-hint::before{content:'';width:20px;height:1px;background:var(--xmr)}
+
+/* D13: Retro-Futurism */
+.d13{background:#0B0B0B;padding:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;position:relative}
+.d13::before{content:'';position:absolute;inset:20px;border:1px solid rgba(255,102,0,.08);border-radius:2px}
+.d13 h3{font-family:'Unbounded',sans-serif;font-size:clamp(24px,3.5vw,38px);font-weight:700;letter-spacing:-1px;margin-bottom:6px}
+.d13 h3 .o{color:var(--xmr)}
+.d13 p{font-size:13px;color:var(--g4);max-width:360px}
+.d13 .yr{font-family:'DM Mono',monospace;font-size:clamp(40px,6vw,64px);color:rgba(255,102,0,.06);position:absolute;bottom:16px;right:24px}
+
+/* D14: Dark Swiss */
+.d14{background:#0A0A0A;padding:24px 28px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center}
+.d14 .num{font-family:'Lexend',sans-serif;font-size:clamp(48px,8vw,96px);font-weight:900;color:rgba(255,102,0,.08);line-height:1}
+.d14 .content h3{font-family:'Lexend',sans-serif;font-size:clamp(18px,2.5vw,26px);font-weight:700;margin-bottom:4px}
+.d14 .content p{font-size:clamp(11px,1.4vw,14px);color:var(--g3);line-height:1.4}
+.d14 .content .tag{display:inline-block;font-size:8px;color:var(--xmr);border:1px solid rgba(255,102,0,.2);padding:2px 6px;border-radius:4px;margin-top:6px}
+
+/* D15: Adaptive Contextual */
+.d15{background:linear-gradient(135deg,#0B0B0B 0%,#181208 100%);padding:20px 28px}
+.d15 .ctx{display:flex;gap:6px;align-items:center;margin-bottom:10px;padding:5px 10px;background:rgba(255,102,0,.04);border:1px solid rgba(255,102,0,.08);border-radius:6px;font-size:9px;color:var(--xmr)}
+.d15 .ctx .pd{width:4px;height:4px;border-radius:50%;background:var(--xmr);animation:pulse 2s infinite}
+.d15 h3{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(20px,3vw,30px);font-weight:800;margin-bottom:6px}
+.d15 .acs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
+.d15 .ac{background:rgba(255,255,255,.02);border:1px solid var(--g7);border-radius:10px;padding:12px;transition:all .2s;cursor:pointer}
+.d15 .ac:hover{border-color:var(--xmr);background:rgba(255,102,0,.03)}
+.d15 .ac.ft{border-color:var(--xmr);background:rgba(255,102,0,.03)}
+.d15 .ac h4{font-size:12px;font-weight:600;margin-bottom:2px}
+.d15 .ac p{font-size:11px;color:var(--g4)}
+.d15 .ac .tg{font-size:7px;color:var(--xmr);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+
+/* D16: Data Wall */
+.d16{background:#080808;padding:14px;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;font-family:'DM Mono',monospace}
+.d16 .cell{background:var(--s2);border:1px solid var(--g7);border-radius:8px;padding:12px;text-align:center;transition:all .2s;cursor:default}
+.d16 .cell:hover{border-color:var(--xmr);background:rgba(255,102,0,.03)}
+.d16 .cell.w2{grid-column:span 2}
+.d16 .cell .lb{font-size:9px;color:var(--g4);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px}
+.d16 .cell .vl{font-size:clamp(14px,2vw,22px);font-weight:500;color:var(--xmr)}
+.d16 .cell .ch{font-size:10px;margin-top:2px}
+.d16 .cell .up{color:var(--grn)}.d16 .cell .dn2{color:var(--red)}
+
+/* D17: Immersive Ring */
+.d17{background:radial-gradient(circle at 50% 50%,rgba(255,102,0,.04) 0%,#080808 50%);display:flex;align-items:center;justify-content:center;position:relative}
+.d17 .ring{width:240px;height:240px;border:2px solid rgba(255,102,0,.15);border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;animation:spin 20s linear infinite}
+@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+.d17 .ring::before{content:'';position:absolute;width:8px;height:8px;background:var(--xmr);border-radius:50%;top:-4px;box-shadow:0 0 12px var(--xmr)}
+.d17 .inner{animation:spin 20s linear infinite reverse;text-align:center}
+.d17 .inner h3{font-family:'Syne',sans-serif;font-size:clamp(18px,2.5vw,28px);font-weight:800}
+.d17 .inner p{font-size:10px;color:var(--g4)}
+
+/* D18: Card Stack */
+.d18{background:var(--s2);display:flex;align-items:center;justify-content:center;padding:24px;gap:12px}
+.d18 .card{background:var(--s3);border:1px solid var(--g7);border-radius:12px;padding:18px;width:148px;transition:all .3s;cursor:pointer}
+.d18 .card:hover{transform:translateY(-8px);border-color:var(--xmr)}
+.d18 .card .ico{font-size:clamp(20px,2.8vw,28px);margin-bottom:6px}
+.d18 .card h4{font-size:clamp(11px,1.4vw,14px);font-weight:600;margin-bottom:3px}
+.d18 .card p{font-size:9px;color:var(--g4)}
+
+/* D19: Kinetic Type */
+.d19{background:#0A0A0A;display:flex;align-items:center;justify-content:center;padding:24px;overflow:hidden}
+.d19 .marquee{white-space:nowrap;animation:marquee 12s linear infinite;font-family:'Bebas Neue',sans-serif;font-size:clamp(60px,10vw,100px);color:rgba(255,102,0,.06);position:absolute}
+@keyframes marquee{from{transform:translateX(100%)}to{transform:translateX(-100%)}}
+.d19 .center{position:relative;z-index:1;text-align:center}
+.d19 .center h3{font-family:'Bebas Neue',sans-serif;font-size:clamp(36px,6vw,64px);letter-spacing:4px;color:var(--xmr)}
+.d19 .center p{font-size:11px;color:var(--g3)}
+
+/* D20: Zen/Wabi-Sabi */
+.d20{background:#0C0C0A;display:flex;align-items:center;justify-content:center;padding:40px;text-align:center}
+.d20 .zen{max-width:360px}
+.d20 .circle{width:88px;height:88px;border:1px solid rgba(255,102,0,.15);border-radius:50%;margin:0 auto 16px;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;color:var(--xmr)}
+.d20 h3{font-family:'Instrument Serif',serif;font-size:clamp(22px,3vw,32px);font-weight:400;font-style:italic;margin-bottom:8px;color:var(--g1)}
+.d20 p{font-size:11px;color:var(--g4);line-height:1.5}
+
+/* D21: 3D Glass */
+.d21{background:radial-gradient(ellipse at 40% 40%,rgba(255,102,0,.06) 0%,#0A0A0A 60%);display:flex;align-items:center;justify-content:center;padding:28px;gap:24px}
+.d21 .glass-obj{width:140px;height:140px;background:linear-gradient(135deg,rgba(255,102,0,.1),rgba(255,255,255,.03));border:1px solid rgba(255,255,255,.06);border-radius:24px;backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;font-size:36px;transform:perspective(400px) rotateY(-8deg) rotateX(4deg);transition:transform .4s}
+.d21 .glass-obj:hover{transform:perspective(400px) rotateY(8deg) rotateX(-4deg)}
+.d21 .text h3{font-family:'Syne',sans-serif;font-size:clamp(18px,2.5vw,28px);font-weight:800;margin-bottom:4px}
+.d21 .text p{font-size:11px;color:var(--g3);max-width:260px}
+
+/* D22: Personalized Grid */
+.d22{background:var(--s2);padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.d22 .tile{background:var(--s3);border-radius:10px;padding:14px;border:1px solid var(--g7);transition:all .2s;cursor:pointer}
+.d22 .tile:hover{border-color:var(--xmr);transform:scale(1.02)}
+.d22 .tile.hero-tile{grid-column:span 2;grid-row:span 2;display:flex;flex-direction:column;justify-content:flex-end}
+.d22 .tile h4{font-size:clamp(10px,1.3vw,13px);font-weight:600;margin-bottom:2px}
+.d22 .tile p{font-size:11px;color:var(--g4)}
+.d22 .tile .tg{font-size:7px;color:var(--xmr);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+
+/* D23: Hotspot */
+.d23{background:radial-gradient(circle at 60% 40%,rgba(255,102,0,.04) 0%,#0A0A0A 50%);padding:24px;position:relative;display:flex;align-items:center;justify-content:center}
+.d23 .hotspot{position:absolute;width:10px;height:10px;border-radius:50%;background:var(--xmr);cursor:pointer;animation:hotpulse 2s infinite}
+@keyframes hotpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,102,0,.4)}50%{box-shadow:0 0 0 12px rgba(255,102,0,0)}}
+.d23 h3{font-family:'Syne',sans-serif;font-size:clamp(18px,2.5vw,28px);font-weight:800;text-align:center}
+.d23 p{font-size:13px;color:var(--g4);text-align:center;margin-top:4px}
+
+/* D24: Pure Type List */
+.d24{background:#0A0A0A;padding:20px 28px;display:flex;flex-direction:column;justify-content:center}
+.d24 .item{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--g7);transition:all .2s;cursor:pointer}
+.d24 .item:hover{padding-left:8px;border-color:var(--xmr)}
+.d24 .item h4{font-family:'Instrument Serif',serif;font-size:clamp(16px,2.2vw,24px);font-weight:400}
+.d24 .item span{font-family:'DM Mono',monospace;font-size:11px;color:var(--g4)}
+
+/* D25: Scattered */
+.d25{background:#0B0B0B;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.d25 .float{position:absolute;font-family:'Fraunces',serif;font-style:italic;color:rgba(255,102,0,.06);transform:rotate(var(--r))}
+.d25 .center{position:relative;z-index:1;text-align:center}
+.d25 .center h3{font-family:'Fraunces',serif;font-size:clamp(22px,3.2vw,36px);font-weight:400;font-style:italic}
+.d25 .center p{font-size:13px;color:var(--g4);margin-top:4px}
+
+/* D26: Micro-Interaction Dashboard */
+.d26{background:var(--s2);padding:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.d26 .mi{background:var(--s3);border-radius:10px;padding:14px;border:1px solid var(--g7);transition:all .3s;cursor:pointer;text-align:center}
+.d26 .mi:hover{border-color:var(--xmr);transform:translateY(-3px);box-shadow:0 6px 20px rgba(255,102,0,.08)}
+.d26 .mi .ico{font-size:clamp(18px,2.5vw,26px);margin-bottom:4px}
+.d26 .mi h4{font-size:clamp(10px,1.3vw,13px);font-weight:600;margin-bottom:2px}
+.d26 .mi p{font-size:11px;color:var(--g4)}
+
+/* D27: H-Scroll Timeline */
+.d27{background:#0A0A0A;padding:20px;overflow:hidden}
+.d27 .tl{display:flex;gap:12px;overflow-x:auto;scrollbar-width:none;padding-bottom:8px}
+.d27 .tl::-webkit-scrollbar{display:none}
+.d27 .te{flex-shrink:0;width:180px;background:var(--s3);border-radius:10px;padding:14px;border-left:3px solid var(--xmr);transition:transform .2s;cursor:pointer}
+.d27 .te:hover{transform:translateY(-3px)}
+.d27 .te .yr{font-family:'DM Mono',monospace;font-size:11px;color:var(--xmr);margin-bottom:4px}
+.d27 .te h4{font-size:clamp(11px,1.4vw,14px);font-weight:600;margin-bottom:3px}
+.d27 .te p{font-size:11px;color:var(--g4)}
+.d27 h3{font-family:'Syne',sans-serif;font-size:clamp(14px,2vw,22px);font-weight:700;margin-bottom:10px}
+
+/* D28: Motion FX */
+.d28{background:#0A0A0A;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.d28 .glow{position:absolute;width:300px;height:300px;background:radial-gradient(circle,rgba(255,102,0,.08) 0%,transparent 60%);animation:float 6s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translate(0,0)}50%{transform:translate(30px,-20px)}}
+.d28 .center{position:relative;z-index:1;text-align:center}
+.d28 h3{font-family:'Geologica',sans-serif;font-size:clamp(24px,3.5vw,38px);font-weight:700;margin-bottom:6px}
+.d28 p{font-size:11px;color:var(--g4)}
+
+/* D29: A11y First */
+.d29{background:#121212;padding:24px 28px;display:flex;flex-direction:column;justify-content:center}
+.d29 .skip{font-size:8px;color:var(--xmr);margin-bottom:12px;font-family:'DM Mono',monospace}
+.d29 h3{font-family:'Lexend',sans-serif;font-size:clamp(22px,3vw,32px);font-weight:700;margin-bottom:6px;line-height:1.2}
+.d29 p{font-size:clamp(12px,1.5vw,15px);color:var(--g2);line-height:1.6;max-width:420px}
+.d29 .a11y-bar{display:flex;gap:6px;margin-top:12px}
+.d29 .a11y-bar span{font-size:8px;padding:3px 8px;border-radius:4px;background:rgba(255,102,0,.06);color:var(--xmr);font-family:'DM Mono',monospace}
+
+/* D30: Full Convergence */
+.d30{background:radial-gradient(ellipse at 50% 30%,rgba(255,102,0,.04) 0%,#060606 50%);display:grid;grid-template-rows:auto 1fr auto}
+.d30 .top{padding:10px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,.03)}
+.d30 .top .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:16px;color:var(--xmr)}
+.d30 .top .nav30{display:flex;gap:12px;font-size:11px;color:var(--g4)}
+.d30 .top .nav30 span{cursor:pointer;transition:color .2s}.d30 .top .nav30 span:hover{color:var(--xmr)}
+.d30 .top .live{display:flex;align-items:center;gap:4px;font-size:9px;color:var(--g4)}
+.d30 .top .live .ld{width:4px;height:4px;border-radius:50%;background:var(--grn);animation:pulse 1.5s infinite}
+.d30 .hero30{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.d30 .hero30 .tag{font-family:'DM Mono',monospace;font-size:10px;color:var(--xmr);letter-spacing:3px;text-transform:uppercase;margin-bottom:10px}
+.d30 .hero30 h3{font-family:'Instrument Serif',serif;font-size:clamp(28px,4.5vw,46px);font-weight:400;line-height:1.05;margin-bottom:10px}
+.d30 .hero30 h3 .em{font-style:italic;color:var(--xmr)}
+.d30 .hero30 .desc{font-size:clamp(11px,1.4vw,14px);color:var(--g4);max-width:380px;line-height:1.4;margin-bottom:14px}
+.d30 .hero30 .ctas{display:flex;gap:6px}
+.d30 .hero30 .ctas a{padding:8px 22px;border-radius:16px;font-size:11px;font-weight:600;transition:all .2s;cursor:pointer}
+.d30 .c1{background:var(--xmr);color:#000}.d30 .c1:hover{background:var(--xmr-l)}
+.d30 .c2{border:1px solid var(--g6);color:var(--g2)}.d30 .c2:hover{border-color:var(--xmr);color:var(--xmr)}
+.d30 .bot{padding:8px 24px;border-top:1px solid rgba(255,255,255,.03);display:flex;justify-content:space-between;align-items:center}
+.d30 .bot .prices{display:flex;gap:16px}
+.d30 .bot .pr{font-family:'DM Mono',monospace;font-size:11px}
+.d30 .bot .pr .sy{color:var(--xmr);margin-right:3px}
+.d30 .bot .pr .vl3{color:var(--t1);margin-right:3px}
+.d30 .bot .pr .pc{color:var(--grn)}
+
+/* === FOOTER === */
+.ftr{text-align:center;padding:32px;color:var(--g5);font-size:10px}
+.ftr .brand{color:var(--xmr);font-family:'Syne',sans-serif;font-weight:700;font-size:13px;margin-bottom:4px}
+
+/* === TABLET (768px) === */
+@media(max-width:768px){
+.hdr,.ctrl,.grid{padding-left:16px;padding-right:16px}
+.hdr h1{font-size:30px}
+.nav{padding:8px 16px;gap:5px}
+.d6,.d9{grid-template-columns:1fr}
+.d5,.d16,.d22,.d26{grid-template-columns:repeat(2,1fr)}
+.d11{grid-template-columns:repeat(2,1fr)}
+.d15 .acs{grid-template-columns:1fr}
+.d18{flex-wrap:wrap;gap:8px;padding:16px}
+.d18 .card{width:calc(50% - 8px)}
+.pgrid2{grid-template-columns:repeat(2,1fr)}
+.pbody{padding:20px 24px}
+}
+
+/* === PHONE (520px) === */
+@media(max-width:520px){
+.hdr{padding:20px 14px 12px}
+.hdr h1{font-size:24px}
+.hdr>p,.hdr p{font-size:12px}
+.badge{font-size:8px;padding:2px 8px}
+.ctrl{padding:6px 14px;gap:4px}
+.cb{padding:3px 8px;font-size:9px}
+.nav{padding:6px 14px;gap:4px}
+.np{padding:5px 12px;font-size:12px}
+.grid{padding:10px 14px;gap:20px}
+.dm{padding:8px 12px}
+.dm h2{font-size:13px}
+.ptab{padding:5px 10px;font-size:8px}
+
+/* Hero previews */
+.d1{padding:20px}
+.d1 .box{width:90%;padding:20px 16px}
+.d1 h3{font-size:22px}
+.d2{padding:16px 18px}
+.d2 h3{font-size:32px}
+.d3{padding:16px}
+.d3 .gc{width:95%;padding:14px}
+.d4{padding:16px 18px}
+.d4 h3{font-size:44px}
+.d5{padding:10px;gap:6px}
+.d5 .nc{padding:10px}
+.d5 .nc .v{font-size:18px}
+.d6{grid-template-columns:1fr}
+.d6 .R{border-left:none;border-top:1px solid var(--g7)}
+.d7{padding:20px}
+.d7 h3{font-size:26px}
+.d8{padding:12px;font-size:10px}
+.d8 .asc{font-size:7px}
+.d9{grid-template-columns:1fr}
+.d9 .side{padding:16px}
+.d9 .side h3{font-size:24px}
+.d10{padding:24px 16px}
+.d10 h3{font-size:28px;letter-spacing:3px}
+.d11{grid-template-columns:1fr 1fr;gap:6px;padding:10px}
+.d11 .b.w2{grid-column:span 2}
+.d12{padding:18px 20px}
+.d12 h3{font-size:30px}
+.d13{padding:20px}
+.d13 h3{font-size:24px}
+.d14{grid-template-columns:1fr;gap:8px;padding:18px}
+.d14 .num{font-size:48px}
+.d15{padding:14px 16px}
+.d15 .acs{grid-template-columns:1fr;gap:4px}
+.d15 h3{font-size:20px}
+.d16{grid-template-columns:repeat(2,1fr);gap:4px;padding:8px}
+.d16 .cell{padding:8px}
+.d16 .cell .vl{font-size:14px}
+.d16 .cell.w2{grid-column:span 2}
+.d17 .ring{width:180px;height:180px}
+.d17 .inner h3{font-size:18px}
+.d18{padding:12px;gap:6px}
+.d18 .card{width:calc(50% - 6px);padding:12px}
+.d18 .card .ico{font-size:20px}
+.d18 .card h4{font-size:11px}
+.d19 .center h3{font-size:36px}
+.d19 .marquee{font-size:60px}
+.d20{padding:24px 16px}
+.d20 h3{font-size:22px}
+.d20 .circle{width:70px;height:70px}
+.d21{flex-direction:column;gap:12px;padding:20px}
+.d21 .glass-obj{width:100px;height:100px}
+.d21 .text h3{font-size:20px}
+.d22{grid-template-columns:1fr 1fr;gap:4px;padding:8px}
+.d22 .tile.hero-tile{grid-column:span 2}
+.d23 h3{font-size:18px}
+.d24{padding:14px 16px}
+.d24 .item h4{font-size:16px}
+.d25 .center h3{font-size:22px}
+.d26{grid-template-columns:repeat(2,1fr);gap:4px;padding:8px}
+.d26 .mi{padding:10px}
+.d26 .mi .ico{font-size:18px}
+.d27{padding:12px}
+.d27 h3{font-size:14px}
+.d27 .te{width:140px;padding:10px}
+.d28 h3{font-size:24px}
+.d29{padding:16px 18px}
+.d29 h3{font-size:22px}
+.d29 p{font-size:11px}
+.d30 .hero30 h3{font-size:28px}
+.d30 .top .nav30{gap:6px;font-size:8px}
+.d30 .hero30 .ctas a{padding:6px 14px;font-size:9px}
+.d30 .bot .pr{font-size:8px}
+
+/* Shared views */
+.pgrid2{grid-template-columns:repeat(2,1fr);gap:6px;padding:14px}
+.pgrid2 .c{padding:8px}
+.pgrid2 .c .vl{font-size:14px}
+.pnl{padding:14px 18px}
+.pnl .it h4{font-size:13px}
+.pbody{padding:16px 18px}
+.pbody h3{font-size:17px}
+.pbody p{font-size:11px}
+.pquote{padding:18px}
+.pquote blockquote{font-size:14px}
+.pnav2{padding:6px 14px;font-size:8px}
+.pnav2 .logo{font-size:11px}
+.pnav2 .lk{gap:6px}
+.pbot2{padding:5px 14px;font-size:7px}
+.dn{padding:8px 12px;font-size:9px}
+.gn{font-size:8px}
+.chat-msgs{height:100px}
+.cmsg{font-size:9px}
+.chip{font-size:9px;padding:4px 8px}
+.chip-result{font-size:9px;padding:6px 8px}
+.chip-detail{font-size:8px}
+.genui-bar{padding:4px 12px;font-size:8px;gap:4px}
+.genui-toast{bottom:10px;right:10px;left:10px;text-align:center;font-size:9px;padding:8px 12px}
+.ctrl-l{font-size:8px;letter-spacing:.5px}
+.cinput{padding:6px 10px}
+.chat-panel input{font-size:9px;padding:6px 8px}
+.chat-panel .send{padding:6px 8px;font-size:8px}
+.chat-header{font-size:7px;padding:4px 10px}
+.chatplus-panel{padding:8px 12px}
+.chatplus-panel .hint{font-size:8px}
+.chip-followups{flex-wrap:wrap}
+.chip-fu{font-size:7px;padding:3px 6px}
+.pnav2{padding:6px 12px;font-size:7px}
+.pnav2 .logo{font-size:10px}
+.pnav2 .lk{gap:5px;font-size:7px}
+.pbot2{padding:4px 12px;font-size:7px}
+}
+
+
+/* === GenUI Runtime CSS === */
+.genui-bar{padding:6px 16px;background:rgba(255,102,0,.03);border-bottom:1px solid rgba(255,102,0,.06);font-family:'DM Mono',monospace;font-size:9px;color:var(--xmr);display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.genui-bar .dot{width:5px;height:5px;border-radius:50%;background:var(--xmr);animation:pulse 2s infinite}
+.genui-bar .ctx{color:var(--g3)}
+body.time-morning{--time-accent:rgba(255,180,50,.06)}
+body.time-afternoon{--time-accent:rgba(255,140,0,.06)}
+body.time-evening{--time-accent:rgba(100,60,255,.06)}
+body.time-night{--time-accent:rgba(30,30,80,.06)}
+.surface-chatplus .chatplus-panel{display:block!important}
+.surface-chat .chat-panel{display:block!important}
+.chatplus-panel,.chat-panel{display:none}
+.chatplus-panel{padding:10px 16px;background:var(--s1);border-top:1px solid rgba(255,102,0,.06)}
+.chatplus-panel .hint{font-size:9px;color:var(--g4);font-family:'DM Mono',monospace;margin-bottom:6px}
+.chatplus-panel .chips{display:flex;gap:4px;flex-wrap:wrap}
+.chatplus-panel .chip{padding:5px 12px;border-radius:12px;background:var(--g8);border:1px solid var(--g7);color:var(--g3);font-size:10px;cursor:pointer;transition:all .2s}
+.chatplus-panel .chip:hover{border-color:var(--xmr);color:var(--xmr)}
+.chip-result{margin-top:8px;padding:8px 12px;background:rgba(255,102,0,.02);border:1px solid rgba(255,102,0,.06);border-radius:8px;font-size:10px;color:var(--g2);line-height:1.5}
+.chip-answer{margin-bottom:4px}
+.chip-detail{margin-top:6px;padding:6px 8px;background:var(--g8);border-radius:6px;font-size:9px;color:var(--g3);font-family:'DM Mono',monospace;line-height:1.5}
+.chip-followups{display:flex;gap:4px;margin-top:6px}
+.chip-fu{padding:3px 10px;border-radius:10px;background:rgba(255,102,0,.06);color:var(--xmr);font-size:8px;cursor:pointer;transition:all .2s;font-family:'DM Mono',monospace}
+.chip-fu:hover{background:rgba(255,102,0,.12)}
+.chat-panel{padding:0;background:var(--s1);border-top:1px solid rgba(255,102,0,.08)}
+.chat-header{padding:6px 14px;font-size:8px;color:var(--xmr);font-family:'DM Mono',monospace;display:flex;align-items:center;gap:5px;border-bottom:1px solid rgba(255,255,255,.03)}
+.chat-live-dot{width:5px;height:5px;border-radius:50%;background:var(--grn);animation:pulse 1.5s infinite}
+.chat-msgs{height:120px;overflow-y:auto;padding:8px 14px;scrollbar-width:thin;scrollbar-color:var(--g6) transparent}
+.chat-msgs::-webkit-scrollbar{width:4px}
+.chat-msgs::-webkit-scrollbar-thumb{background:var(--g6);border-radius:2px}
+.cmsg{margin-bottom:4px;font-size:10px;line-height:1.4;color:var(--g2)}
+.chandle{font-family:'DM Mono',monospace;font-size:9px;margin-right:4px}
+.cinput{display:flex;gap:6px;padding:8px 14px;border-top:1px solid rgba(255,255,255,.03)}
+.chat-panel input{flex:1;padding:7px 10px;background:var(--g8);border:1px solid var(--g7);border-radius:8px;color:var(--t1);font-family:'Outfit',sans-serif;font-size:10px;outline:none}
+.chat-panel input:focus{border-color:var(--xmr)}
+.chat-panel input::placeholder{color:var(--g5)}
+.chat-panel .send{padding:7px 12px;background:var(--xmr);color:#000;border:none;border-radius:8px;font-size:9px;font-weight:600;cursor:pointer;font-family:'DM Mono',monospace}
+.genui-toast{position:fixed;bottom:20px;right:20px;padding:10px 18px;background:var(--xmr);color:#000;font-family:'DM Mono',monospace;font-size:10px;border-radius:8px;z-index:999;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+.genui-toast.show{opacity:1;transform:translateY(0)}
+.visit-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:4px;font-size:7px;font-family:'DM Mono',monospace}
+.visit-badge.new-v{background:rgba(0,211,149,.08);color:var(--grn)}
+.visit-badge.ret-v{background:rgba(255,102,0,.08);color:var(--xmr)}
+.skeleton{background:linear-gradient(90deg,var(--g8) 25%,var(--g7) 50%,var(--g8) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:4px}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.price-live{transition:color .3s}
+.price-up{color:var(--grn)!important}
+.price-down{color:var(--red)!important}
+
+
+/* === LAYOUT VARIANTS for DATA/NAV/QUOTE === */
+.dg4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:16px;font-family:'DM Mono',monospace}
+.dg4 .c{background:var(--s2);border:1px solid var(--g7);border-radius:6px;padding:10px;text-align:center}
+.dg4 .c .lb{font-size:7px;color:var(--g4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px}
+.dg4 .c .vl{font-size:clamp(12px,1.8vw,18px);font-weight:600;color:var(--xmr)}
+.dg4 .c .sub{font-size:7px;color:var(--g4);margin-top:1px}
+.dg4 .c.w2{grid-column:span 2}
+.dsplit{display:grid;grid-template-columns:1fr 1fr;gap:0;min-height:200px}
+.dsplit .big{display:flex;flex-direction:column;justify-content:center;padding:24px;border-right:1px solid var(--g7)}
+.dsplit .big .lb{font-size:9px;color:var(--g4);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.dsplit .big .vl{font-size:clamp(24px,4vw,40px);font-weight:700;color:var(--xmr)}
+.dsplit .big .sub{font-size:10px;color:var(--grn);margin-top:4px}
+.dsplit .side{display:flex;flex-direction:column;justify-content:center;gap:12px;padding:20px}
+.dsplit .side .row{display:flex;justify-content:space-between;align-items:baseline}
+.dsplit .side .row .lb{font-size:8px;color:var(--g4)}
+.dsplit .side .row .vl{font-size:14px;font-weight:600;color:var(--t1)}
+.dlist{padding:20px 28px}
+.dlist .dr{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--g7)}
+.dlist .dr:last-child{border-bottom:none}
+.dlist .dr .lb{font-size:10px;color:var(--g3)}
+.dlist .dr .vl{font-size:clamp(14px,1.8vw,18px);font-weight:600;color:var(--xmr);text-align:right}
+.dlist .dr .sub{font-size:8px;color:var(--g4);text-align:right}
+.dcards{display:flex;gap:8px;padding:16px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.dcards::-webkit-scrollbar{display:none}
+.dcards .sc{flex-shrink:0;width:130px;background:var(--s2);border:1px solid var(--g7);border-radius:10px;padding:14px;text-align:center}
+.dcards .sc .lb{font-size:7px;color:var(--g4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.dcards .sc .vl{font-size:clamp(14px,2vw,20px);font-weight:700;color:var(--xmr)}
+.dcards .sc .sub{font-size:8px;color:var(--g4);margin-top:3px}
+.ngrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:16px}
+.ngrid .nc{background:var(--s2);border:1px solid var(--g7);border-radius:10px;padding:14px;cursor:pointer;transition:all .2s}
+.ngrid .nc:hover{border-color:var(--xmr);transform:translateY(-2px)}
+.ngrid .nc.hl{border-color:var(--xmr);background:rgba(255,102,0,.03)}
+.ngrid .nc h4{font-size:clamp(12px,1.5vw,15px);font-weight:600;margin-bottom:3px}
+.ngrid .nc p{font-size:9px;color:var(--g4)}
+.ngrid .nc .tag{font-size:7px;color:var(--xmr);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px}
+.nmin{display:flex;flex-wrap:wrap;gap:6px;padding:20px 28px;align-items:center}
+.nmin a{padding:8px 16px;border-radius:20px;border:1px solid var(--g7);font-size:12px;color:var(--g3);cursor:pointer;transition:all .2s}
+.nmin a:hover{border-color:var(--xmr);color:var(--xmr)}
+.nmin a.hl{background:var(--xmr);color:#000;border-color:var(--xmr);font-weight:600}
+.nnum{padding:16px 28px;counter-reset:nav-step}
+.nnum .ns{display:flex;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--g7);counter-increment:nav-step}
+.nnum .ns::before{content:counter(nav-step,decimal-leading-zero);font-family:'DM Mono',monospace;font-size:16px;color:var(--g6);min-width:28px}
+.nnum .ns.hl::before{color:var(--xmr)}
+.nnum .ns h4{font-size:clamp(12px,1.6vw,16px);font-weight:500}
+.nnum .ns.hl h4{color:var(--xmr)}
+.nnum .ns p{font-size:9px;color:var(--g4);margin-top:1px}
+.qcenter{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:32px;min-height:240px}
+.qcenter blockquote{font-family:'Instrument Serif',serif;font-size:clamp(16px,2.5vw,24px);font-style:italic;line-height:1.5;color:var(--g1);max-width:500px;margin-bottom:12px}
+.qcenter cite{font-family:'DM Mono',monospace;font-size:9px;color:var(--xmr)}
+.qbig{display:flex;align-items:center;gap:20px;padding:28px}
+.qbig .num{font-family:'DM Mono',monospace;font-size:64px;color:rgba(255,102,0,.08);line-height:1;flex-shrink:0}
+.qbig .qt{flex:1}
+.qbig blockquote{font-family:'Instrument Serif',serif;font-size:clamp(14px,1.8vw,18px);font-style:italic;line-height:1.5;color:var(--g1);margin-bottom:8px}
+.qbig cite{font-family:'DM Mono',monospace;font-size:9px;color:var(--xmr)}
+.qcard{padding:24px;display:flex;justify-content:center}
+.qcard .inner{background:var(--s2);border:1px solid var(--g7);border-radius:12px;padding:24px;max-width:480px;position:relative}
+.qcard .inner::before{content:'\201C';font-family:'Instrument Serif',serif;font-size:64px;color:rgba(255,102,0,.1);position:absolute;top:8px;left:16px;line-height:1}
+.qcard blockquote{font-size:14px;font-style:italic;line-height:1.5;color:var(--g1);margin-bottom:10px;padding-top:20px}
+.qcard cite{font-family:'DM Mono',monospace;font-size:9px;color:var(--xmr)}
+.qterm{padding:20px;font-family:'JetBrains Mono',monospace;font-size:11px}
+.qterm .prompt{color:var(--xmr);margin-bottom:4px}
+.qterm .output{color:var(--g2);line-height:1.6;margin-bottom:8px;padding-left:16px;border-left:2px solid var(--g7)}
+.qterm .src{color:var(--grn);font-size:9px}
+.qsplit{display:grid;grid-template-columns:1fr 1fr;min-height:220px}
+.qsplit .ql{padding:24px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--g7)}
+.qsplit .ql blockquote{font-family:'Instrument Serif',serif;font-size:clamp(13px,1.6vw,17px);font-style:italic;line-height:1.5;color:var(--g1);margin-bottom:8px}
+.qsplit .ql cite{font-family:'DM Mono',monospace;font-size:8px;color:var(--xmr)}
+.qsplit .qr{padding:24px;display:flex;flex-direction:column;justify-content:center;background:rgba(255,102,0,.02)}
+.qsplit .qr h4{font-size:11px;color:var(--xmr);margin-bottom:6px}
+.qsplit .qr p{font-size:10px;color:var(--g3);line-height:1.5}
+@media(max-width:768px){.dg4{grid-template-columns:repeat(2,1fr)}.dsplit{grid-template-columns:1fr}.dsplit .big{border-right:none;border-bottom:1px solid var(--g7)}.ngrid{grid-template-columns:1fr}.qsplit{grid-template-columns:1fr}.qsplit .ql{border-right:none;border-bottom:1px solid var(--g7)}.qbig{flex-direction:column;gap:10px}.qbig .num{font-size:40px}}
+@media(max-width:520px){.dg4{grid-template-columns:repeat(2,1fr);gap:4px;padding:10px}.dg4 .c{padding:6px}.dg4 .c .vl{font-size:12px}.dsplit .big .vl{font-size:24px}.dcards .sc{width:110px;padding:10px}.dcards .sc .vl{font-size:14px}.ngrid{padding:10px;gap:6px}.nmin{padding:14px}.nmin a{padding:6px 10px;font-size:10px}.nnum{padding:12px 16px}.qcenter{padding:20px}.qcenter blockquote{font-size:16px}.qbig{padding:16px}.qcard .inner{padding:16px}.qterm{padding:14px;font-size:10px}}
+
+/* === v3.1 MULTI-PAGE ADDITIONS === */
+.ptabs{display:flex;gap:0;background:var(--s1);border-bottom:1px solid rgba(255,255,255,.04);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.ptabs::-webkit-scrollbar{display:none}
+.ptab{flex-shrink:0;padding:6px 16px;font-size:10px;font-family:'DM Mono',monospace;color:var(--g4);cursor:pointer;transition:all .15s;border-bottom:2px solid transparent;letter-spacing:.5px}
+.ptab:hover{color:var(--t2)}.ptab.on{color:var(--xmr);border-bottom-color:var(--xmr);background:rgba(255,102,0,.02)}
+.pv{aspect-ratio:16/9;overflow:hidden}.pv:not(.on){display:none!important}
+@media(max-width:520px){.pv{aspect-ratio:auto;min-height:220px}}
+
+/* Shared inner chrome */
+.pnav2{display:flex;justify-content:space-between;align-items:center;padding:10px 24px;border-bottom:1px solid rgba(255,255,255,.04);font-size:9px}
+.pnav2 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--xmr)}
+.pnav2 .lk{display:flex;gap:12px;color:var(--g4)}.pnav2 .lk span{cursor:pointer;transition:color .2s}.pnav2 .lk span:hover{color:var(--xmr)}
+.pnav2 .li{color:var(--g4);display:flex;align-items:center;gap:3px}
+.pnav2 .ld2{width:4px;height:4px;border-radius:50%;background:var(--grn);animation:pulse 1.5s infinite}
+
+.pbot2{display:flex;justify-content:space-between;align-items:center;padding:8px 24px;border-top:1px solid rgba(255,255,255,.04);font-family:'DM Mono',monospace;font-size:9px}
+.pbot2 .pr .sy{color:var(--xmr);margin-right:3px}.pbot2 .pr .pc{color:var(--grn)}
+.pbot2 .disc{color:var(--g5)}
+
+.pbody{padding:28px 32px}.pbody h3{font-size:clamp(17px,2.5vw,24px);font-weight:700;margin-bottom:10px}.pbody p{font-size:clamp(11px,1.4vw,14px);color:var(--g3);line-height:1.6;margin-bottom:8px}
+.pbody .sl{font-family:'DM Mono',monospace;font-size:8px;color:var(--xmr);text-transform:uppercase;letter-spacing:2px;margin-bottom:6px}
+
+.pgrid2{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:20px}
+.pgrid2 .c{background:rgba(255,255,255,.02);border:1px solid var(--g7);border-radius:8px;padding:12px;text-align:center;transition:border-color .2s}
+.pgrid2 .c:hover{border-color:rgba(255,102,0,.25)}
+.pgrid2 .c .lb{font-size:8px;color:var(--g4);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;font-family:'DM Mono',monospace}
+.pgrid2 .c .vl{font-size:clamp(14px,2vw,20px);font-weight:700;color:var(--xmr)}
+.pgrid2 .c .sub{font-size:8px;color:var(--g4);margin-top:2px}
+.pgrid2 .c.w2{grid-column:span 2}
+
+.pnl{padding:20px 32px}
+.pnl .it{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--g7);transition:all .15s;cursor:pointer}
+.pnl .it:hover{padding-left:6px;border-color:var(--xmr)}
+.pnl .it h4{font-size:clamp(13px,1.8vw,17px);font-weight:500}.pnl .it span{font-family:'DM Mono',monospace;font-size:9px;color:var(--g4)}
+
+.pquote{padding:32px;display:flex;flex-direction:column;justify-content:center}
+.pquote blockquote{font-family:'Instrument Serif',serif;font-size:18px;font-style:italic;line-height:1.5;border-left:3px solid var(--xmr);padding-left:16px;margin-bottom:10px;color:var(--g1)}
+.pquote cite{font-family:'DM Mono',monospace;font-size:9px;color:var(--xmr)}
+
+/* Theme wrappers for shared views */
+.th-neu .pgrid2 .c{background:var(--neu);box-shadow:3px 3px 6px var(--neu-dk),-3px -3px 6px var(--neu-lt);border:none}
+.th-brut .pbody h3,.th-brut .pnl .it h4{font-family:'Archivo Black',sans-serif;text-transform:uppercase}
+.th-glass .pgrid2 .c{background:rgba(255,255,255,.02);backdrop-filter:blur(6px)}
+.th-typo .pbody h3{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px}
+.th-term .pbody h3{font-family:'JetBrains Mono',monospace;font-size:16px;color:var(--xmr)}.th-term .pbody h3::before{content:'$ ';color:var(--grn)}
+.th-term .pnl .it h4{font-family:'JetBrains Mono',monospace;font-size:12px}.th-term .pnl .it h4::before{content:'> ';color:var(--xmr)}
+.th-lux .pbody h3{font-family:'Cormorant Garamond',serif;font-weight:300;letter-spacing:4px;text-transform:uppercase}
+.th-lux .pnl .it h4{font-family:'Cormorant Garamond',serif;font-size:18px}
+.th-narr .pbody h3{font-family:'Darker Grotesque',sans-serif;font-size:26px;font-weight:800}
+.th-retro .pbody h3{font-family:'Unbounded',sans-serif;letter-spacing:-1px}
+.th-swiss .pbody h3{font-family:'Lexend',sans-serif}
+.th-adapt .pbody h3{font-family:'Bricolage Grotesque',sans-serif;font-weight:800}
+.th-zen .pbody h3{font-family:'Instrument Serif',serif;font-style:italic;font-weight:400}
+.th-zen .pnl .it h4{font-family:'Instrument Serif',serif}
+.th-kin .pbody h3{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;color:var(--xmr)}
+.th-scat .pbody h3{font-family:'Fraunces',serif;font-style:italic;font-weight:400}
+.th-a11y .pbody h3{font-family:'Lexend',sans-serif}.th-a11y .pbody p{font-size:13px;color:var(--g2);line-height:1.7}
+.th-conv .pbody h3{font-family:'Instrument Serif',serif;font-weight:400}
+.th-geo .pbody h3{font-family:'Geologica',sans-serif}
+.th-mag .pbody h3{font-family:'Playfair Display',serif}
+.th-cine .pbody h3{font-family:'Playfair Display',serif;font-weight:400}
+.th-blob .pbody h3{font-family:'Instrument Serif',serif;font-weight:400}
+.th-list .pnl .it h4{font-family:'Instrument Serif',serif;font-size:18px}
+.th-pers .pbody h3{font-family:'Familjen Grotesk',sans-serif}
+.th-3d .pgrid2 .c{background:rgba(255,255,255,.02);backdrop-filter:blur(6px)}
+
+</style>
+</head>
+<body>
+
+<div class="hdr">
+<div class="badge"><div class="p"></div>XMR.IRISH · ADAPTIVE / GENUI · 30 CONCEPTS</div>
+<h1>XMR.IRISH <span class="gr">Visual Redesign</span><br><span style="font-size:.55em;font-weight:600;color:var(--g3);letter-spacing:0">Adaptive / Generative UI · 30 Concepts</span></h1>
+<p>All 30 designs with multi-page navigation. Click <b style="color:var(--xmr)">Hero / Content / Data / Nav / Quote</b> tabs to explore how each design handles different xmr.irish page types.</p>
+</div>
+
+<div class="ctrl">
+<span class="ctrl-l">Visitor</span>
+<button class="cb on" data-group="visitor" onclick="setV(this,'ret')">Returning</button>
+<button class="cb" data-group="visitor" onclick="setV(this,'new')">New</button>
+<button class="cb" data-group="visitor" onclick="setV(this,'dev')">Developer</button>
+<div class="cd"></div>
+<span class="ctrl-l">Surface</span>
+<button class="cb on" data-group="surface" onclick="setSurface(this,'chatless')">Chatless</button>
+<button class="cb" data-group="surface" onclick="setSurface(this,'chat+')">Chat+</button>
+<button class="cb" data-group="surface" onclick="setSurface(this,'chat')">Chat</button>
+<div class="cd"></div>
+<button class="cb" onclick="streamAll()">▶ Stream All</button>
+</div>
+
+<div class="genui-toast" id="toast"></div>
+<div class="nav" id="nav"></div>
+
+<div class="grid" id="grid">
+
+<!-- D1: Neumorphic Monolith -->
+<div class="dc" id="d-1"><div class="dm"><div class="left"><span class="n">01</span><h2>Neumorphic Monolith</h2></div><div class="dt"><span>neumorphism</span><span>soft-ui</span><span class="gt ct">catalog:hero</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(1,'hero',this)">Hero</div><div class="ptab" onclick="sw(1,'content',this)">Content</div><div class="ptab" onclick="sw(1,'data',this)">Data</div><div class="ptab" onclick="sw(1,'nav',this)">Nav</div><div class="ptab" onclick="sw(1,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d1" id="v1hero">
+<div class="box"><h3>Satoshi Built It.<br><span class="a">Monero Perfected It.</span></h3><p>Private by default. Untraceable by design.</p><div class="btn" onclick="this.textContent=this.textContent==='EXPLORE →'?'LOADING...':'EXPLORE →'">EXPLORE →</div></div>
+</div>
+<div class="pv" id="v1content"></div>
+<div class="pv" id="v1data"></div>
+<div class="pv" id="v1nav"></div>
+<div class="pv" id="v1quote"></div>
+</div>
+<div class="dn"><b>Neumorphism:</b> Soft shadows on #1C1C1E. Button has press-in effect on click.<div class="gn">Catalog:hero-centered. Selected for first-time visitors. Skeleton → hydration in 400ms.</div></div></div>
+
+<!-- D2: Brutalist Editorial -->
+<div class="dc" id="d-2"><div class="dm"><div class="left"><span class="n">02</span><h2>Brutalist Editorial</h2></div><div class="dt"><span>brutalist</span><span>editorial</span><span class="gt ct">catalog:hero</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(2,'hero',this)">Hero</div><div class="ptab" onclick="sw(2,'content',this)">Content</div><div class="ptab" onclick="sw(2,'data',this)">Data</div><div class="ptab" onclick="sw(2,'nav',this)">Nav</div><div class="ptab" onclick="sw(2,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d2" id="v2hero">
+<div class="tb"><span>XMR.IRISH</span><span>EST. 2026</span></div><h3>THE PRIVACY<br>EVOLUTION</h3><div class="sub">"Privacy is not a crime. It is a right."</div>
+</div>
+<div class="pv" id="v2content"></div>
+<div class="pv" id="v2data"></div>
+<div class="pv" id="v2nav"></div>
+<div class="pv" id="v2quote"></div>
+</div>
+<div class="dn"><b>Brutalist:</b> Archivo Black 38px. Hover expands letter-spacing. Raw power aesthetic.<div class="gn">High-contrast, bold type. Selected when visitor has high intent signal (direct URL visit).</div></div></div>
+
+<!-- D3: Glass Morphism -->
+<div class="dc" id="d-3"><div class="dm"><div class="left"><span class="n">03</span><h2>Glass Morphism</h2></div><div class="dt"><span>glass</span><span>blur</span><span class="gt st">streaming</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(3,'hero',this)">Hero</div><div class="ptab" onclick="sw(3,'content',this)">Content</div><div class="ptab" onclick="sw(3,'data',this)">Data</div><div class="ptab" onclick="sw(3,'nav',this)">Nav</div><div class="ptab" onclick="sw(3,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d3" id="v3hero">
+<div class="gc"><h3>Monero Dashboard</h3><p style="font-size:10px;color:var(--g4);margin-bottom:8px">Live market snapshot</p><div class="sr"><div class="st"><div class="v" id="g3-xmr">$812</div><div class="l">XMR/USD</div></div><div class="st"><div class="v">$87.4K</div><div class="l">BTC/USD</div></div><div class="st"><div class="v">0.0094</div><div class="l">BTC/XMR</div></div></div></div>
+</div>
+<div class="pv" id="v3content"></div>
+<div class="pv" id="v3data"></div>
+<div class="pv" id="v3nav"></div>
+<div class="pv" id="v3quote"></div>
+</div>
+<div class="dn"><b>Glassmorphism:</b> backdrop-filter:blur(12px). Stat cards lift on hover.<div class="gn">3 parallel tool calls: fetchXMR, fetchBTC, fetchRatio. Out-of-order streaming.</div></div></div>
+
+<!-- D4: Typographic Manifesto -->
+<div class="dc" id="d-4"><div class="dm"><div class="left"><span class="n">04</span><h2>Typographic Manifesto</h2></div><div class="dt"><span>typography</span><span>stroke</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(4,'hero',this)">Hero</div><div class="ptab" onclick="sw(4,'content',this)">Content</div><div class="ptab" onclick="sw(4,'data',this)">Data</div><div class="ptab" onclick="sw(4,'nav',this)">Nav</div><div class="ptab" onclick="sw(4,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d4" id="v4hero">
+<h3>SATOSHI<br>BUILT THE<br><span class="ft" style="-webkit-text-stroke:0;color:var(--xmr)">VISION</span></h3><div class="bd">"What we need is a way to generate additional blinded variations of a public key." — Satoshi, 2010</div>
+</div>
+<div class="pv" id="v4content"></div>
+<div class="pv" id="v4data"></div>
+<div class="pv" id="v4nav"></div>
+<div class="pv" id="v4quote"></div>
+</div>
+<div class="dn"><b>Manifesto:</b> Bebas Neue 56px outline fills on hover. Quote from Thread #174.<div class="gn">Runtime text generation from Satoshi quote database. Headline adapts to visitor context.</div></div></div>
+
+<!-- D5: Neumorphic Dashboard -->
+<div class="dc" id="d-5"><div class="dm"><div class="left"><span class="n">05</span><h2>Neumorphic Dashboard</h2></div><div class="dt"><span>dashboard</span><span>data</span><span class="gt st">streaming</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(5,'hero',this)">Hero</div><div class="ptab" onclick="sw(5,'content',this)">Content</div><div class="ptab" onclick="sw(5,'data',this)">Data</div><div class="ptab" onclick="sw(5,'nav',this)">Nav</div><div class="ptab" onclick="sw(5,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d5" id="v5hero">
+<div class="nc w"><h4>Monero Price</h4><div class="v" id="d5-price">$812.40</div><div class="ch">↑ 14.2% (30d)</div><div class="bg"><div class="b" style="height:40%"></div><div class="b" style="height:55%"></div><div class="b" style="height:35%"></div><div class="b" style="height:70%"></div><div class="b" style="height:85%"></div><div class="b" style="height:60%"></div><div class="b" style="height:95%"></div><div class="b" style="height:75%"></div><div class="b" style="height:100%"></div><div class="b" style="height:90%"></div></div></div><div class="nc"><h4>BTC/XMR</h4><div class="v">0.0094</div><div class="ch">↑ 8.7%</div></div><div class="nc"><h4>Hashrate</h4><div class="v">3.2 GH/s</div></div><div class="nc"><h4>Ring Size</h4><div class="v">16</div></div><div class="nc"><h4>IRS Bounty</h4><div class="v">$625K</div></div>
+</div>
+<div class="pv" id="v5content"></div>
+<div class="pv" id="v5data"></div>
+<div class="pv" id="v5nav"></div>
+<div class="pv" id="v5quote"></div>
+</div>
+<div class="dn"><b>Dashboard:</b> 5 neumorphic modules. Cards lift on hover. Price ticks live.<div class="gn">5 parallel tool calls hydrate independently. Investor persona default.</div></div></div>
+
+<!-- D6: Cinematic Split -->
+<div class="dc" id="d-6"><div class="dm"><div class="left"><span class="n">06</span><h2>Cinematic Split</h2></div><div class="dt"><span>split</span><span>cinematic</span><span class="gt ct">catalog:hero</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(6,'hero',this)">Hero</div><div class="ptab" onclick="sw(6,'content',this)">Content</div><div class="ptab" onclick="sw(6,'data',this)">Data</div><div class="ptab" onclick="sw(6,'nav',this)">Nav</div><div class="ptab" onclick="sw(6,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d6" id="v6hero">
+<div class="L"><h3>Satoshi Built the <em>Vision</em></h3><div class="mt"><div class="lb">XMR Price</div><div class="vl">$812.40</div></div><div class="mt"><div class="lb">24h Change</div><div class="vl" style="color:var(--grn)">+4.2%</div></div></div><div class="R"><div class="feat"><p style="margin-bottom:6px"><b style="color:var(--xmr)">Ring Signatures</b> — Sender hidden among 16 decoys</p><p style="margin-bottom:6px"><b style="color:var(--xmr)">Stealth Addresses</b> — One-time receiver addresses</p><p><b style="color:var(--xmr)">RingCT</b> — Amounts cryptographically hidden</p></div></div>
+</div>
+<div class="pv" id="v6content"></div>
+<div class="pv" id="v6data"></div>
+<div class="pv" id="v6nav"></div>
+<div class="pv" id="v6quote"></div>
+</div>
+<div class="dn"><b>Cinematic:</b> 50/50 split. Left = hero + price. Right = privacy features.<div class="gn">Two-column layout selected for returning visitors with data interest.</div></div></div>
+
+<!-- D7: Organic Blob -->
+<div class="dc" id="d-7"><div class="dm"><div class="left"><span class="n">07</span><h2>Organic Blob</h2></div><div class="dt"><span>organic</span><span>blob</span><span class="gt ad">adaptive</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(7,'hero',this)">Hero</div><div class="ptab" onclick="sw(7,'content',this)">Content</div><div class="ptab" onclick="sw(7,'data',this)">Data</div><div class="ptab" onclick="sw(7,'nav',this)">Nav</div><div class="ptab" onclick="sw(7,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d7" id="v7hero">
+<div class="bl b1"></div><div class="bl b2"></div><div class="ct"><h3>The Privacy Evolution</h3><p>Bitcoin proved decentralized money could work.<br>Monero proved it could be private.</p></div>
+</div>
+<div class="pv" id="v7content"></div>
+<div class="pv" id="v7data"></div>
+<div class="pv" id="v7nav"></div>
+<div class="pv" id="v7quote"></div>
+</div>
+<div class="dn"><b>Organic:</b> Blobs scale on hover. Instrument Serif for warmth.<div class="gn">Background blobs animate with CSS, no JS. Adaptive gradient intensity based on time-of-day.</div></div></div>
+
+<!-- D8: Terminal -->
+<div class="dc" id="d-8"><div class="dm"><div class="left"><span class="n">08</span><h2>Terminal / Cypherpunk</h2></div><div class="dt"><span>terminal</span><span>hacker</span><span class="gt ct">catalog:dev</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(8,'hero',this)">Hero</div><div class="ptab" onclick="sw(8,'content',this)">Content</div><div class="ptab" onclick="sw(8,'data',this)">Data</div><div class="ptab" onclick="sw(8,'nav',this)">Nav</div><div class="ptab" onclick="sw(8,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d8" id="v8hero">
+<div class="tbar"><div class="dot dr"></div><div class="dot dy"></div><div class="dot dg"></div></div><div class="asc">██╗  ██╗███╗   ███╗██████╗
+╚██╗██╔╝████╗ ████║██╔══██╗
+ ╚███╔╝ ██╔████╔██║██████╔╝
+ ██╔██╗ ██║╚██╔╝██║██╔══██╗
+██╔╝ ██╗██║ ╚═╝ ██║██║  ██║
+╚═╝  ╚═╝╚═╝     ╚═╝╚═╝  ╚═╝</div><div class="ln"><span class="pr">$ </span><span class="cm">monero-wallet-cli --verify</span></div><div class="ln"><span style="color:var(--g6)"># Ring Sigs: </span><span class="vl2">enabled (16)</span></div><div class="ln"><span style="color:var(--g6)"># Stealth: </span><span class="vl2">active</span></div><div class="ln"><span style="color:var(--g6)"># RingCT: </span><span class="vl2">hidden</span></div><div class="ln" style="margin-top:4px"><span class="pr">$ </span><span style="color:var(--g3)">Satoshi built the vision.</span><span class="cursor"></span></div>
+</div>
+<div class="pv" id="v8content"></div>
+<div class="pv" id="v8data"></div>
+<div class="pv" id="v8nav"></div>
+<div class="pv" id="v8quote"></div>
+</div>
+<div class="dn"><b>Terminal:</b> JetBrains Mono + ASCII. Blinking cursor. Developer persona.<div class="gn">Auto-selected when visitor profile = Developer (referrer:github.com). Interface Individualism.</div></div></div>
+
+<!-- D9: Magazine Editorial -->
+<div class="dc" id="d-9"><div class="dm"><div class="left"><span class="n">09</span><h2>Magazine Editorial</h2></div><div class="dt"><span>editorial</span><span>magazine</span><span class="gt ct">catalog:content</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(9,'hero',this)">Hero</div><div class="ptab" onclick="sw(9,'content',this)">Content</div><div class="ptab" onclick="sw(9,'data',this)">Data</div><div class="ptab" onclick="sw(9,'nav',this)">Nav</div><div class="ptab" onclick="sw(9,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d9" id="v9hero">
+<div class="side"><h3>XMR<br>.IRISH</h3><p>Issue 01 · March 2026</p></div><div class="main"><div class="cat">Feature Story</div><h4>The World's Most Powerful Untraceable Currency</h4><p>A comprehensive record of government attempts to break Monero, the billions spent in failure, and why XMR stands as humanity's last financial refuge.</p></div>
+</div>
+<div class="pv" id="v9content"></div>
+<div class="pv" id="v9data"></div>
+<div class="pv" id="v9nav"></div>
+<div class="pv" id="v9quote"></div>
+</div>
+<div class="dn"><b>Magazine:</b> Instrument Serif + Playfair Display. Orange sidebar accent.<div class="gn">Content-focused layout for users arriving from search engines or article links.</div></div></div>
+
+<!-- D10: Minimal Luxury -->
+<div class="dc" id="d-10"><div class="dm"><div class="left"><span class="n">10</span><h2>Minimal Luxury</h2></div><div class="dt"><span>minimal</span><span>luxury</span><span class="gt ct">catalog:hero</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(10,'hero',this)">Hero</div><div class="ptab" onclick="sw(10,'content',this)">Content</div><div class="ptab" onclick="sw(10,'data',this)">Data</div><div class="ptab" onclick="sw(10,'nav',this)">Nav</div><div class="ptab" onclick="sw(10,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d10" id="v10hero">
+<div class="line"></div><h3>MONERO</h3><p>Private by mathematics. Not by promise.</p><div class="cta">DISCOVER THE VISION →</div>
+</div>
+<div class="pv" id="v10content"></div>
+<div class="pv" id="v10data"></div>
+<div class="pv" id="v10nav"></div>
+<div class="pv" id="v10quote"></div>
+</div>
+<div class="dn"><b>Luxury:</b> Cormorant Garamond 300. Extreme negative space. CTA expands on hover.<div class="gn">Selected for high-value visitors. Minimal content, maximum impact.</div></div></div>
+
+<!-- D11: Bento Grid -->
+<div class="dc" id="d-11"><div class="dm"><div class="left"><span class="n">11</span><h2>Bento Grid</h2></div><div class="dt"><span>bento</span><span>grid</span><span class="gt st">streaming</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(11,'hero',this)">Hero</div><div class="ptab" onclick="sw(11,'content',this)">Content</div><div class="ptab" onclick="sw(11,'data',this)">Data</div><div class="ptab" onclick="sw(11,'nav',this)">Nav</div><div class="ptab" onclick="sw(11,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d11" id="v11hero">
+<div class="b w2"><h4>IRS Bounty</h4><div class="v" style="color:var(--red)">$625,000</div><div class="sm">Unclaimed since September 2020</div></div><div class="b"><h4>Delistings</h4><div class="v">73</div><div class="sm">Exchanges · 2025</div></div><div class="b"><h4>XMR Price</h4><div class="v" style="color:var(--grn)">+195%</div><div class="sm">Same period</div></div><div class="b"><h4>Ring Size</h4><div class="v">16</div><div class="sm">Decoys per tx</div></div><div class="b"><h4>Daily Txns</h4><div class="v">15-25K</div><div class="sm">On-chain</div></div>
+</div>
+<div class="pv" id="v11content"></div>
+<div class="pv" id="v11data"></div>
+<div class="pv" id="v11nav"></div>
+<div class="pv" id="v11quote"></div>
+</div>
+<div class="dn"><b>Bento:</b> Apple-inspired grid. Cards highlight on hover. Data-rich at a glance.<div class="gn">6 data modules stream independently. Layout orchestration Level 3 GenUI.</div></div></div>
+
+<!-- D12: Narrative Scroll -->
+<div class="dc" id="d-12"><div class="dm"><div class="left"><span class="n">12</span><h2>Scroll-Reveal Narrative</h2></div><div class="dt"><span>narrative</span><span>scroll</span><span class="gt ct">catalog:onboard</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(12,'hero',this)">Hero</div><div class="ptab" onclick="sw(12,'content',this)">Content</div><div class="ptab" onclick="sw(12,'data',this)">Data</div><div class="ptab" onclick="sw(12,'nav',this)">Nav</div><div class="ptab" onclick="sw(12,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d12" id="v12hero">
+<div class="ch">Chapter 01 — The Origin</div><h3>Bitcoin: A Cypherpunk's Dream</h3><p>On Halloween night 2008, during the worst financial crisis since the Great Depression, a pseudonymous figure posted a nine-page paper. Nobody noticed. The world was too busy watching banks collapse.</p><div class="scroll-hint">Scroll to continue the story</div>
+</div>
+<div class="pv" id="v12content"></div>
+<div class="pv" id="v12data"></div>
+<div class="pv" id="v12nav"></div>
+<div class="pv" id="v12quote"></div>
+</div>
+<div class="dn"><b>Narrative:</b> Darker Grotesque 36px. Chapter-based storytelling.<div class="gn">Selected for new visitors. Onboarding flow with progressive disclosure.</div></div></div>
+
+<!-- D13: Retro-Futurism -->
+<div class="dc" id="d-13"><div class="dm"><div class="left"><span class="n">13</span><h2>Retro-Futurism</h2></div><div class="dt"><span>retro</span><span>future</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(13,'hero',this)">Hero</div><div class="ptab" onclick="sw(13,'content',this)">Content</div><div class="ptab" onclick="sw(13,'data',this)">Data</div><div class="ptab" onclick="sw(13,'nav',this)">Nav</div><div class="ptab" onclick="sw(13,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d13" id="v13hero">
+<h3>THE <span class="o">FUTURE</span> OF MONEY</h3><p>73 exchange delistings. +195% price growth. The paradox of prohibition in action.</p><div class="yr">2026</div>
+</div>
+<div class="pv" id="v13content"></div>
+<div class="pv" id="v13data"></div>
+<div class="pv" id="v13nav"></div>
+<div class="pv" id="v13quote"></div>
+</div>
+<div class="dn"><b>Retro-Future:</b> Unbounded font. Border inset frame. Year watermark.<div class="gn">Runtime year injection. Selected for visitors interested in future outlook.</div></div></div>
+
+<!-- D14: Dark Swiss -->
+<div class="dc" id="d-14"><div class="dm"><div class="left"><span class="n">14</span><h2>Dark Swiss</h2></div><div class="dt"><span>swiss</span><span>grid</span><span class="gt ct">catalog:content</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(14,'hero',this)">Hero</div><div class="ptab" onclick="sw(14,'content',this)">Content</div><div class="ptab" onclick="sw(14,'data',this)">Data</div><div class="ptab" onclick="sw(14,'nav',this)">Nav</div><div class="ptab" onclick="sw(14,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d14" id="v14hero">
+<div class="num">01</div><div class="content"><h3>The Privacy Evolution</h3><p>Satoshi knew Bitcoin's privacy was incomplete. In August 2010, he described stealth addresses, ring signatures, and hidden amounts — features that wouldn't exist for four more years.</p><div class="tag">Thread #174 · BitcoinTalk · 2010</div></div>
+</div>
+<div class="pv" id="v14content"></div>
+<div class="pv" id="v14data"></div>
+<div class="pv" id="v14nav"></div>
+<div class="pv" id="v14quote"></div>
+</div>
+<div class="dn"><b>Swiss:</b> Lexend font. Large section number. Clean grid alignment.<div class="gn">Content-heavy layout for educational pages. Section numbering auto-generated.</div></div></div>
+
+<!-- D15: Adaptive Contextual -->
+<div class="dc" id="d-15"><div class="dm"><div class="left"><span class="n">15</span><h2>Adaptive Contextual</h2></div><div class="dt"><span>adaptive</span><span class="gt ad">adaptive</span><span class="gt rt">runtime</span><span class="gt st">streaming</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(15,'hero',this)">Hero</div><div class="ptab" onclick="sw(15,'content',this)">Content</div><div class="ptab" onclick="sw(15,'data',this)">Data</div><div class="ptab" onclick="sw(15,'nav',this)">Nav</div><div class="ptab" onclick="sw(15,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d15" id="v15hero">
+<div class="ctx"><div class="pd"></div><span id="d15-ctx">ADAPTIVE: Evening · Returning · NYC · XMR ↑14%</span></div><h3 id="d15-h">Welcome back. The thesis is strengthening.</h3><p style="font-size:10px;color:var(--g4)">Personalized for your context.</p><div class="acs"><div class="ac ft"><div class="tg">Trending</div><h4>XMR Surge</h4><p>Up 14.2% this month</p></div><div class="ac"><div class="tg">Continue</div><h4>Secret Threads</h4><p>Left off at Thread #174</p></div><div class="ac"><div class="tg">New</div><h4>2027+ Outlook</h4><p>6 structural drivers</p></div></div>
+</div>
+<div class="pv" id="v15content"></div>
+<div class="pv" id="v15data"></div>
+<div class="pv" id="v15nav"></div>
+<div class="pv" id="v15quote"></div>
+</div>
+<div class="dn"><b>Adaptive — the core GenUI pattern.</b> Cards respond to visitor profile switch.<div class="gn">Level 3 GenUI: Layout orchestration. LLM selects cards based on context. Headline, card selection, and ordering are ALL generative.</div></div></div>
+
+<!-- D16: Data Wall -->
+<div class="dc" id="d-16"><div class="dm"><div class="left"><span class="n">16</span><h2>Data Wall</h2></div><div class="dt"><span>data</span><span>dense</span><span class="gt st">streaming</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(16,'hero',this)">Hero</div><div class="ptab" onclick="sw(16,'content',this)">Content</div><div class="ptab" onclick="sw(16,'data',this)">Data</div><div class="ptab" onclick="sw(16,'nav',this)">Nav</div><div class="ptab" onclick="sw(16,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d16" id="v16hero">
+<div class="cell w2"><div class="lb">XMR/USD</div><div class="vl" id="d16-xmr">$812.40</div><div class="ch"><span class="up">↑14.2%</span></div></div><div class="cell"><div class="lb">BTC/USD</div><div class="vl">$87,420</div><div class="ch"><span class="up">↑2.1%</span></div></div><div class="cell"><div class="lb">BTC/XMR</div><div class="vl">0.0094</div><div class="ch"><span class="up">↑8.7%</span></div></div><div class="cell"><div class="lb">Hashrate</div><div class="vl">3.2G</div></div><div class="cell"><div class="lb">Ring</div><div class="vl">16</div></div><div class="cell"><div class="lb">Bounty</div><div class="vl">$625K</div></div><div class="cell"><div class="lb">Delistings</div><div class="vl" style="color:var(--red)">73</div></div><div class="cell"><div class="lb">Tail Em.</div><div class="vl">0.6/blk</div></div><div class="cell"><div class="lb">Daily TX</div><div class="vl">~20K</div></div><div class="cell"><div class="lb">Illicit %</div><div class="vl" style="color:var(--grn)">&lt;0.4%</div></div><div class="cell"><div class="lb">FCMP++</div><div class="vl">100M+</div></div>
+</div>
+<div class="pv" id="v16content"></div>
+<div class="pv" id="v16data"></div>
+<div class="pv" id="v16nav"></div>
+<div class="pv" id="v16quote"></div>
+</div>
+<div class="dn"><b>Data Wall:</b> Dense 4-column grid. Cells highlight on hover. DM Mono throughout.<div class="gn">Investor/trader persona. All 12 cells are independent streaming tool calls.</div></div></div>
+
+<!-- D17: Immersive Ring -->
+<div class="dc" id="d-17"><div class="dm"><div class="left"><span class="n">17</span><h2>Immersive Ring</h2></div><div class="dt"><span>immersive</span><span>animation</span><span class="gt ad">adaptive</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(17,'hero',this)">Hero</div><div class="ptab" onclick="sw(17,'content',this)">Content</div><div class="ptab" onclick="sw(17,'data',this)">Data</div><div class="ptab" onclick="sw(17,'nav',this)">Nav</div><div class="ptab" onclick="sw(17,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d17" id="v17hero">
+<div class="ring"><div class="inner"><h3>XMR</h3><p>Ring Size: 16</p></div></div>
+</div>
+<div class="pv" id="v17content"></div>
+<div class="pv" id="v17data"></div>
+<div class="pv" id="v17nav"></div>
+<div class="pv" id="v17quote"></div>
+</div>
+<div class="dn"><b>Immersive:</b> Rotating ring with orbiting dot. Counter-rotates text for readability.<div class="gn">Visual metaphor for ring signatures. Animation CSS-only, no JS overhead.</div></div></div>
+
+<!-- D18: Card Stack -->
+<div class="dc" id="d-18"><div class="dm"><div class="left"><span class="n">18</span><h2>Card Stack</h2></div><div class="dt"><span>cards</span><span>stack</span><span class="gt ct">catalog:nav</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(18,'hero',this)">Hero</div><div class="ptab" onclick="sw(18,'content',this)">Content</div><div class="ptab" onclick="sw(18,'data',this)">Data</div><div class="ptab" onclick="sw(18,'nav',this)">Nav</div><div class="ptab" onclick="sw(18,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d18" id="v18hero">
+<div class="card"><div class="ico">🔐</div><h4>Ring Signatures</h4><p>Sender hidden among 16 decoys</p></div><div class="card"><div class="ico">👤</div><h4>Stealth Addresses</h4><p>One-time receiver addresses</p></div><div class="card"><div class="ico">💰</div><h4>RingCT</h4><p>Amounts cryptographically hidden</p></div><div class="card"><div class="ico">⚡</div><h4>Dandelion++</h4><p>IP address obfuscation</p></div>
+</div>
+<div class="pv" id="v18content"></div>
+<div class="pv" id="v18data"></div>
+<div class="pv" id="v18nav"></div>
+<div class="pv" id="v18quote"></div>
+</div>
+<div class="dn"><b>Card Stack:</b> 4 privacy feature cards. Lift on hover with orange border.<div class="gn">Navigation component. Cards link to detailed explainer sections.</div></div></div>
+
+<!-- D19: Kinetic Typography -->
+<div class="dc" id="d-19"><div class="dm"><div class="left"><span class="n">19</span><h2>Kinetic Typography</h2></div><div class="dt"><span>kinetic</span><span>motion</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(19,'hero',this)">Hero</div><div class="ptab" onclick="sw(19,'content',this)">Content</div><div class="ptab" onclick="sw(19,'data',this)">Data</div><div class="ptab" onclick="sw(19,'nav',this)">Nav</div><div class="ptab" onclick="sw(19,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d19" id="v19hero">
+<div class="marquee">PRIVACY IS NOT A CRIME · PRIVACY IS A RIGHT · </div><div class="center"><h3>MONERO</h3><p>Untraceable. Unlinkable. Unstoppable.</p></div>
+</div>
+<div class="pv" id="v19content"></div>
+<div class="pv" id="v19data"></div>
+<div class="pv" id="v19nav"></div>
+<div class="pv" id="v19quote"></div>
+</div>
+<div class="dn"><b>Kinetic:</b> Bebas Neue 80px marquee. Center text in Monero orange.<div class="gn">Marquee text generated at runtime from site taglines database.</div></div></div>
+
+<!-- D20: Zen/Wabi-Sabi -->
+<div class="dc" id="d-20"><div class="dm"><div class="left"><span class="n">20</span><h2>Zen / Wabi-Sabi</h2></div><div class="dt"><span>zen</span><span>minimal</span><span class="gt ct">catalog:hero</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(20,'hero',this)">Hero</div><div class="ptab" onclick="sw(20,'content',this)">Content</div><div class="ptab" onclick="sw(20,'data',this)">Data</div><div class="ptab" onclick="sw(20,'nav',this)">Nav</div><div class="ptab" onclick="sw(20,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d20" id="v20hero">
+<div class="zen"><div class="circle">XMR</div><h3>Private by mathematics</h3><p>In a world of total surveillance, Monero exists as the only mathematical guarantee of financial privacy on Earth.</p></div>
+</div>
+<div class="pv" id="v20content"></div>
+<div class="pv" id="v20data"></div>
+<div class="pv" id="v20nav"></div>
+<div class="pv" id="v20quote"></div>
+</div>
+<div class="dn"><b>Zen:</b> Instrument Serif italic. Ensō-inspired circle. Maximum restraint.<div class="gn">Contemplative surface for visitors arriving from philosophical/privacy content.</div></div></div>
+
+<!-- D21: 3D Glass Object -->
+<div class="dc" id="d-21"><div class="dm"><div class="left"><span class="n">21</span><h2>3D Glass Object</h2></div><div class="dt"><span>3d</span><span>glass</span><span class="gt ad">adaptive</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(21,'hero',this)">Hero</div><div class="ptab" onclick="sw(21,'content',this)">Content</div><div class="ptab" onclick="sw(21,'data',this)">Data</div><div class="ptab" onclick="sw(21,'nav',this)">Nav</div><div class="ptab" onclick="sw(21,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d21" id="v21hero">
+<div class="glass-obj">ⓧ</div><div class="text"><h3>The XMR Protocol</h3><p>Ring signatures, stealth addresses, and RingCT form a three-layer privacy shield. FCMP++ will expand the anonymity set to 100M+ outputs.</p></div>
+</div>
+<div class="pv" id="v21content"></div>
+<div class="pv" id="v21data"></div>
+<div class="pv" id="v21nav"></div>
+<div class="pv" id="v21quote"></div>
+</div>
+<div class="dn"><b>3D Glass:</b> CSS perspective transform. Rotates on hover. Glassmorphic object.<div class="gn">Reference: FUTURA design. 3D transforms as per Elementor V4 controls.</div></div></div>
+
+<!-- D22: Personalized Grid -->
+<div class="dc" id="d-22"><div class="dm"><div class="left"><span class="n">22</span><h2>Personalized Adaptive Grid</h2></div><div class="dt"><span>personalized</span><span>grid</span><span class="gt ad">adaptive</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(22,'hero',this)">Hero</div><div class="ptab" onclick="sw(22,'content',this)">Content</div><div class="ptab" onclick="sw(22,'data',this)">Data</div><div class="ptab" onclick="sw(22,'nav',this)">Nav</div><div class="ptab" onclick="sw(22,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d22" id="v22hero">
+<div class="tile hero-tile"><div class="tg">Featured</div><h4 style="font-size:16px;margin-top:auto">Satoshi Built the Vision. Monero Is the Reality.</h4><p>The privacy evolution explained</p></div><div class="tile"><div class="tg">Quick Stats</div><h4>$812</h4><p>XMR/USD ↑14.2%</p></div><div class="tile"><div class="tg">Education</div><h4>How It Works</h4><p>3 privacy layers</p></div><div class="tile"><div class="tg">Timeline</div><h4>2008 → 2026</h4><p>48 events</p></div><div class="tile"><div class="tg">Hold XMR</div><h4>Acquire</h4><p>Swap services</p></div>
+</div>
+<div class="pv" id="v22content"></div>
+<div class="pv" id="v22data"></div>
+<div class="pv" id="v22nav"></div>
+<div class="pv" id="v22quote"></div>
+</div>
+<div class="dn"><b>Personalized:</b> MINIMAL ref. Hero tile spans 2×2. Content tiles adapt to visitor.<div class="gn">Grid composition is fully generative. AI selects which tiles to show per visitor profile.</div></div></div>
+
+<!-- D23: Hotspot Showcase -->
+<div class="dc" id="d-23"><div class="dm"><div class="left"><span class="n">23</span><h2>Hotspot Showcase</h2></div><div class="dt"><span>hotspot</span><span>interactive</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(23,'hero',this)">Hero</div><div class="ptab" onclick="sw(23,'content',this)">Content</div><div class="ptab" onclick="sw(23,'data',this)">Data</div><div class="ptab" onclick="sw(23,'nav',this)">Nav</div><div class="ptab" onclick="sw(23,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d23" id="v23hero">
+<div class="hotspot" style="top:30%;left:25%" title="Ring Signatures"></div><div class="hotspot" style="top:50%;left:65%" title="Stealth Addresses"></div><div class="hotspot" style="top:70%;left:40%" title="RingCT"></div><h3>Explore the Protocol</h3><p>Click the hotspots to learn about each privacy layer</p>
+</div>
+<div class="pv" id="v23content"></div>
+<div class="pv" id="v23data"></div>
+<div class="pv" id="v23nav"></div>
+<div class="pv" id="v23quote"></div>
+</div>
+<div class="dn"><b>Hotspot:</b> Pulsing orange dots. Each reveals a privacy feature explainer.<div class="gn">Reference: sky night product showcase. Interactive discovery pattern.</div></div></div>
+
+<!-- D24: Pure Type List -->
+<div class="dc" id="d-24"><div class="dm"><div class="left"><span class="n">24</span><h2>Pure Typographic List</h2></div><div class="dt"><span>typography</span><span>list</span><span class="gt ct">catalog:nav</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(24,'hero',this)">Hero</div><div class="ptab" onclick="sw(24,'content',this)">Content</div><div class="ptab" onclick="sw(24,'data',this)">Data</div><div class="ptab" onclick="sw(24,'nav',this)">Nav</div><div class="ptab" onclick="sw(24,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d24" id="v24hero">
+<div class="item"><h4>Education</h4><span>BTC vs XMR</span></div><div class="item"><h4>Timeline</h4><span>2008 → 2026</span></div><div class="item"><h4>Secret Threads</h4><span>Satoshi's Posts</span></div><div class="item"><h4>Quote Archive</h4><span>30+ Quotes</span></div><div class="item"><h4>The Bottom Line</h4><span>Full Analysis</span></div><div class="item"><h4>2027+ Outlook</h4><span>Demand Thesis</span></div><div class="item"><h4>Hold Monero</h4><span>Acquire XMR</span></div>
+</div>
+<div class="pv" id="v24content"></div>
+<div class="pv" id="v24data"></div>
+<div class="pv" id="v24nav"></div>
+<div class="pv" id="v24quote"></div>
+</div>
+<div class="dn"><b>Pure Type:</b> Laurenz Marsau ref. Instrument Serif items slide on hover.<div class="gn">Navigation catalog component. All 7 xmr.irish pages as typographic list.</div></div></div>
+
+<!-- D25: Scattered Artistic -->
+<div class="dc" id="d-25"><div class="dm"><div class="left"><span class="n">25</span><h2>Scattered Artistic</h2></div><div class="dt"><span>scattered</span><span>artistic</span><span class="gt ad">adaptive</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(25,'hero',this)">Hero</div><div class="ptab" onclick="sw(25,'content',this)">Content</div><div class="ptab" onclick="sw(25,'data',this)">Data</div><div class="ptab" onclick="sw(25,'nav',this)">Nav</div><div class="ptab" onclick="sw(25,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d25" id="v25hero">
+<div class="float" style="top:10%;left:10%;font-size:48px;--r:-12deg">Privacy</div><div class="float" style="top:60%;left:60%;font-size:36px;--r:8deg">Freedom</div><div class="float" style="top:30%;right:10%;font-size:28px;--r:-5deg">Monero</div><div class="center"><h3>Satoshi's Unfinished Work</h3><p>CryptoNote · Ring Signatures · Stealth Addresses</p></div>
+</div>
+<div class="pv" id="v25content"></div>
+<div class="pv" id="v25data"></div>
+<div class="pv" id="v25nav"></div>
+<div class="pv" id="v25quote"></div>
+</div>
+<div class="dn"><b>Scattered:</b> isshi ref. Fraunces italic floating words. Artistic chaos.<div class="gn">Scattered layout with intentional asymmetry. Words positioned via CSS custom properties.</div></div></div>
+
+<!-- D26: Micro-Interaction Dashboard -->
+<div class="dc" id="d-26"><div class="dm"><div class="left"><span class="n">26</span><h2>Micro-Interaction Dashboard</h2></div><div class="dt"><span>micro</span><span>interactions</span><span class="gt st">streaming</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(26,'hero',this)">Hero</div><div class="ptab" onclick="sw(26,'content',this)">Content</div><div class="ptab" onclick="sw(26,'data',this)">Data</div><div class="ptab" onclick="sw(26,'nav',this)">Nav</div><div class="ptab" onclick="sw(26,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d26" id="v26hero">
+<div class="mi"><div class="ico">🔐</div><h4>Ring Sigs</h4><p>16 decoys</p></div><div class="mi"><div class="ico">👤</div><h4>Stealth</h4><p>One-time addr</p></div><div class="mi"><div class="ico">💰</div><h4>RingCT</h4><p>Hidden amounts</p></div><div class="mi"><div class="ico">⚡</div><h4>RandomX</h4><p>CPU mining</p></div><div class="mi"><div class="ico">🌐</div><h4>Dandelion++</h4><p>IP hidden</p></div><div class="mi"><div class="ico">📊</div><h4>FCMP++</h4><p>100M+ set</p></div>
+</div>
+<div class="pv" id="v26content"></div>
+<div class="pv" id="v26data"></div>
+<div class="pv" id="v26nav"></div>
+<div class="pv" id="v26quote"></div>
+</div>
+<div class="dn"><b>Micro-Interaction:</b> 6 feature cards with lift + shadow + orange border on hover.<div class="gn">Designprompts.txt: purposeful motion, micro-interactions, connected components.</div></div></div>
+
+<!-- D27: Horizontal Scroll Timeline -->
+<div class="dc" id="d-27"><div class="dm"><div class="left"><span class="n">27</span><h2>Horizontal Scroll Timeline</h2></div><div class="dt"><span>h-scroll</span><span>timeline</span><span class="gt ct">catalog:timeline</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(27,'hero',this)">Hero</div><div class="ptab" onclick="sw(27,'content',this)">Content</div><div class="ptab" onclick="sw(27,'data',this)">Data</div><div class="ptab" onclick="sw(27,'nav',this)">Nav</div><div class="ptab" onclick="sw(27,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d27" id="v27hero">
+<h3>The Privacy Evolution</h3><div class="tl"><div class="te"><div class="yr">2008</div><h4>BTC Whitepaper</h4><p>Satoshi publishes "Peer-to-Peer Electronic Cash"</p></div><div class="te"><div class="yr">2009</div><h4>Genesis Block</h4><p>"Chancellor on brink of second bailout"</p></div><div class="te"><div class="yr">2010</div><h4>Thread #174</h4><p>Satoshi describes ring signatures</p></div><div class="te"><div class="yr">2013</div><h4>CryptoNote</h4><p>Van Saberhagen's privacy protocol</p></div><div class="te"><div class="yr">2014</div><h4>Monero Born</h4><p>Fair launch, no premine</p></div><div class="te"><div class="yr">2017</div><h4>RingCT Live</h4><p>Amounts now hidden</p></div><div class="te"><div class="yr">2020</div><h4>IRS Bounty</h4><p>$625K — unclaimed</p></div><div class="te"><div class="yr">2025</div><h4>73 Delistings</h4><p>+195% price growth</p></div><div class="te"><div class="yr">2026</div><h4>FCMP++</h4><p>Full-chain anonymity</p></div></div>
+</div>
+<div class="pv" id="v27content"></div>
+<div class="pv" id="v27data"></div>
+<div class="pv" id="v27nav"></div>
+<div class="pv" id="v27quote"></div>
+</div>
+<div class="dn"><b>H-Scroll:</b> Draggable timeline. Cards lift on hover. Orange left border.<div class="gn">Catalog:timeline component. 9 events from the xmr.irish timeline page.</div></div></div>
+
+<!-- D28: Motion Effects Hero -->
+<div class="dc" id="d-28"><div class="dm"><div class="left"><span class="n">28</span><h2>Motion Effects Hero</h2></div><div class="dt"><span>motion</span><span>parallax</span><span class="gt rt">runtime</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(28,'hero',this)">Hero</div><div class="ptab" onclick="sw(28,'content',this)">Content</div><div class="ptab" onclick="sw(28,'data',this)">Data</div><div class="ptab" onclick="sw(28,'nav',this)">Nav</div><div class="ptab" onclick="sw(28,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d28" id="v28hero">
+<div class="glow"></div><div class="center"><h3>Private by Default</h3><p>Untraceable by design. Unstoppable by nature.</p></div>
+</div>
+<div class="pv" id="v28content"></div>
+<div class="pv" id="v28data"></div>
+<div class="pv" id="v28nav"></div>
+<div class="pv" id="v28quote"></div>
+</div>
+<div class="dn"><b>Motion FX:</b> Geologica font. Floating radial glow. Parallax-inspired movement.<div class="gn">Elementor Transform/Transition V4. CSS-only animation for performance.</div></div></div>
+
+<!-- D29: Accessibility-First Dark -->
+<div class="dc" id="d-29"><div class="dm"><div class="left"><span class="n">29</span><h2>Accessibility-First Dark</h2></div><div class="dt"><span>a11y</span><span>accessible</span><span class="gt ct">catalog:content</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(29,'hero',this)">Hero</div><div class="ptab" onclick="sw(29,'content',this)">Content</div><div class="ptab" onclick="sw(29,'data',this)">Data</div><div class="ptab" onclick="sw(29,'nav',this)">Nav</div><div class="ptab" onclick="sw(29,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d29" id="v29hero">
+<div class="skip">Skip to main content</div><h3>The Privacy Evolution: Bitcoin → Monero</h3><p>Monero uses three cryptographic technologies to protect your financial privacy: ring signatures hide the sender, stealth addresses hide the receiver, and RingCT hides the amount. Every transaction is private by default.</p><div class="a11y-bar"><span>WCAG AAA</span><span>4.5:1 contrast</span><span>Semantic HTML</span><span>Screen reader</span></div>
+</div>
+<div class="pv" id="v29content"></div>
+<div class="pv" id="v29data"></div>
+<div class="pv" id="v29nav"></div>
+<div class="pv" id="v29quote"></div>
+</div>
+<div class="dn"><b>A11y-First:</b> Lexend (readability-optimized). 4.5:1 contrast. Skip link. Semantic.<div class="gn">EAA compliance. Ally scanner passing. ARIA labels on all interactive elements.</div></div></div>
+
+<!-- D30: Full Convergence -->
+<div class="dc" id="d-30"><div class="dm"><div class="left"><span class="n">30</span><h2>Full Immersive Convergence</h2></div><div class="dt"><span>production</span><span class="gt rt">runtime</span><span class="gt st">streaming</span><span class="gt ct">catalog:full</span><span class="gt ad">adaptive</span></div></div>
+<div class="ptabs"><div class="ptab on" onclick="sw(30,'hero',this)">Hero</div><div class="ptab" onclick="sw(30,'content',this)">Content</div><div class="ptab" onclick="sw(30,'data',this)">Data</div><div class="ptab" onclick="sw(30,'nav',this)">Nav</div><div class="ptab" onclick="sw(30,'quote',this)">Quote</div></div>
+<div class="dp">
+<div class="pv on d30" id="v30hero">
+<div class="top"><div class="logo">XMR.IRISH</div><div class="nav30"><span>Education</span><span>Timeline</span><span>Secrets</span><span>Dashboard</span><span>2027+</span></div><div class="live"><div class="ld"></div>LIVE</div></div><div class="hero30"><div class="tag">THE PRIVACY EVOLUTION: BITCOIN → MONERO</div><h3>Satoshi built the <span class="em">vision</span>.<br>Monero is the <span class="em">reality</span>.</h3><div class="desc">Private by default. Untraceable by design. Unstoppable by nature.</div><div class="ctas"><a class="c1">The XMR Bottom Line</a><a class="c2">Satoshi's Threads</a></div></div><div class="bot"><div class="prices"><div class="pr"><span class="sy">BTC</span><span class="vl3">$87,420</span><span class="pc">+2.1%</span></div><div class="pr"><span class="sy">XMR</span><span class="vl3" id="d30-xmr">$812</span><span class="pc">+14.2%</span></div><div class="pr"><span class="sy">BTC/XMR</span><span class="vl3">0.0094</span><span class="pc">+8.7%</span></div></div><div style="font-size:8px;color:var(--g5)">Educational · Not financial advice</div></div>
+</div>
+<div class="pv" id="v30content"></div>
+<div class="pv" id="v30data"></div>
+<div class="pv" id="v30nav"></div>
+<div class="pv" id="v30quote"></div>
+</div>
+<div class="dn"><b>Full Convergence — production-ready synthesis of all 30 concepts.</b><div class="gn">Chatless surface. Full GenUI pipeline: Intent → Context → Catalog → Tokens → Stream → Render. Nav links to all 7 xmr.irish pages. Price ticker uses dataModelUpdate (SSE) without re-rendering structure.</div></div></div>
+
+</div><!-- end grid -->
+
+<div class="ftr">
+<div class="brand">XMR.IRISH Visual Redesign · Adaptive/Generative UI</div>
+<p>30 designs × 5 views = 150 interactive previews · Real xmr.irish content · GenUI architecture</p>
+<p style="margin-top:6px;color:var(--xmr)">Select favorites to proceed with production implementation →</p>
+</div>
+
+<script>
+// ============================================================
+// GenUI Engine — Runtime Context + Dynamic View Generation
+// ============================================================
+
+// --- CONTEXT STATE ---
+const CTX = {
+  visitor: 'ret', // ret | new | dev
+  surface: 'chatless', // chatless | chat+ | chat
+  time: (() => { const h=new Date().getHours(); return h<6?'night':h<12?'morning':h<17?'afternoon':'evening' })(),
+  visits: parseInt(sessionStorage.getItem('xmr-visits')||'0') + 1,
+  xmrPrice: 812.40,
+  btcPrice: 87420,
+  ratio: 0.0094
+};
+sessionStorage.setItem('xmr-visits', CTX.visits);
+if(CTX.visits === 1 && !sessionStorage.getItem('xmr-set-visitor')) CTX.visitor = 'new';
+document.body.classList.add('time-' + CTX.time);
+
+// --- DESIGN DATA: unique content per design ---
+const DESIGNS = [
+  {id:1,th:'neu',topic:'Monero Basics',contentTitle:'What Makes Monero Different',
+   content:'Monero is the leading privacy-focused cryptocurrency. Unlike Bitcoin where every transaction is publicly visible on the blockchain, Monero uses three cryptographic technologies to ensure complete financial privacy by default.',
+   content2:'Ring signatures hide the sender among 16 decoys. Stealth addresses generate one-time addresses for every transaction. RingCT hides the amount being sent. Together they make Monero transactions untraceable and unlinkable.',
+   stat1:['Active Nodes','~45,000','Worldwide'],stat2:['Block Time','2 min','Average'],stat3:['Supply','18.4M','Circulating'],
+   quote:'"Electronic cash would allow online payments to be sent directly from one party to another without going through a financial institution."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper, 2008',
+   navHighlight:'Education'},
+  {id:2,th:'brut',topic:'The Delisting Paradox',contentTitle:'73 EXCHANGES SAID NO. THE PRICE SAID YES.',
+   content:'Between 2020 and 2025, 73 cryptocurrency exchanges delisted Monero under regulatory pressure. Analysts predicted collapse. Instead, XMR surged 195% in the same period.',
+   content2:'The delisting paradox proved a fundamental thesis: you cannot regulate mathematics. Every exchange that removed XMR simply pushed volume to decentralized alternatives, strengthening the very ecosystem regulators tried to weaken.',
+   stat1:['Delistings','73','2020-2025'],stat2:['Price Change','+195%','Same period'],stat3:['DEX Volume','↑ 340%','Post-delist'],
+   quote:'"I think there will be other currencies, alternative currencies — competitor currencies."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010',
+   navHighlight:'Bottom Line'},
+  {id:3,th:'glass',topic:'Market Intelligence',contentTitle:'Live Market Analysis',
+   content:'Monero currently trades at $812 with a 30-day gain of 14.2%. The BTC/XMR ratio sits at 0.0094, showing XMR outperforming Bitcoin over the past quarter.',
+   content2:'Network fundamentals remain strong: hashrate at 3.2 GH/s (all-time high), daily transactions averaging 20K, and the upcoming FCMP++ upgrade promising to expand the anonymity set to 100M+ outputs.',
+   stat1:['Market Cap','~$15B','Rank #18'],stat2:['24h Volume','$142M','Across DEX'],stat3:['ATH Ratio','62%','From peak'],
+   quote:'"The root problem with conventional currency is all the trust that is required to make it work."',quoteSrc:'Satoshi Nakamoto, P2P Foundation, 2009',
+   navHighlight:'Dashboard'},
+  {id:4,th:'typo',topic:'The Manifesto',contentTitle:'WORDS THAT BUILT A REVOLUTION',
+   content:'In nine pages, Satoshi Nakamoto described a system that would separate money from state. But the vision was incomplete. Bitcoin\'s transparent ledger left a gap that wouldn\'t be filled for six more years.',
+   content2:'On April 18, 2014, a pseudonymous developer launched Monero with zero premine, zero ICO, and zero corporate backing. Just mathematics. The cypherpunk ethos made real.',
+   stat1:['Whitepaper','9 pages','Oct 2008'],stat2:['Monero Launch','Fair','No premine'],stat3:['Privacy Default','100%','All txns'],
+   quote:'"What is needed is an electronic payment system based on cryptographic proof instead of trust."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper Abstract, 2008',
+   navHighlight:'Secrets'},
+  {id:5,th:'neu',topic:'Network Dashboard',contentTitle:'Real-Time Network Health',
+   content:'The Monero network processes 15,000-25,000 transactions daily with a 2-minute average block time. The RandomX proof-of-work algorithm ensures true decentralization by favoring CPU mining over specialized hardware.',
+   content2:'Current hashrate: 3.2 GH/s distributed across thousands of miners globally. Tail emission of 0.6 XMR per block ensures perpetual miner incentives, solving Bitcoin\'s long-term security budget problem.',
+   stat1:['Hashrate','3.2 GH/s','ATH'],stat2:['Difficulty','↑ 8.3%','30d'],stat3:['Avg Fee','$0.003','Per tx'],
+   quote:'"The steady addition of a constant amount of new coins is analogous to gold miners expending resources to add gold to circulation."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper §6, 2008',
+   navHighlight:'Dashboard'},
+  {id:6,th:'cine',topic:'BTC vs XMR',contentTitle:'Two Visions, One Origin',
+   content:'Bitcoin and Monero share the same philosophical DNA. Both are decentralized, proof-of-work, capped-supply digital currencies. The difference: Bitcoin chose transparency. Monero chose privacy.',
+   content2:'Every Bitcoin transaction is permanently visible. Anyone can see your balance, your history, your counterparties. Monero makes this impossible by default — not as an option, not as a layer, but as the fundamental protocol.',
+   stat1:['BTC Transparent','100%','By design'],stat2:['XMR Private','100%','By default'],stat3:['Thread #174','Aug 2010','Satoshi knew'],
+   quote:'"With e-currency based on cryptographic proof, without the need to trust a third-party middleman, money can be secure."',quoteSrc:'Satoshi Nakamoto, P2P Foundation, 2009',
+   navHighlight:'Education'},
+  {id:7,th:'blob',topic:'The Origin Story',contentTitle:'From Cypherpunk Dream to Mathematical Reality',
+   content:'The cypherpunks dreamed of digital cash since the 1990s. David Chaum, Wei Dai, Adam Back, Hal Finney — each contributed a piece. Satoshi assembled them into Bitcoin. But the puzzle was still missing one piece: privacy.',
+   content2:'In 2013, Nicolas van Saberhagen published the CryptoNote protocol. In 2014, a community of anonymous developers launched Monero. No company. No foundation. No leader. Just code and consensus.',
+   stat1:['CryptoNote','2013','Van Saberhagen'],stat2:['Monero','Apr 2014','Community launch'],stat3:['Contributors','400+','Open source'],
+   quote:'"Bitcoin is an implementation of Wei Dai\'s b-money proposal and Nick Szabo\'s Bitgold proposal."',quoteSrc:'Satoshi Nakamoto, email to Hal Finney, 2008',
+   navHighlight:'Timeline'},
+  {id:8,th:'term',topic:'Technical Deep Dive',contentTitle:'Protocol Architecture',
+   content:'Monero runs on CryptoNote with custom extensions. Ring signatures (size 16) create a set of plausible signers for every transaction. The network cannot determine which member of the ring is the actual sender.',
+   content2:'Stealth addresses use Diffie-Hellman key exchange to generate unique one-time addresses. RingCT uses Pedersen commitments and Bulletproofs+ to hide amounts while proving no inflation occurred. Zero trusted setup required.',
+   stat1:['Ring Size','16','Mandatory'],stat2:['Bulletproofs+','88%','Size reduction'],stat3:['FCMP++','100M+','Anon set'],
+   quote:'"We need a way to generate additional blinded variations of a public key."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk Thread #174, Aug 2010',
+   navHighlight:'Education'},
+  {id:9,th:'mag',topic:'Feature Story',contentTitle:'The $625,000 Question',
+   content:'In September 2020, the IRS offered $625,000 to anyone who could trace Monero transactions. Two firms claimed partial progress. None collected the bounty. It remains unclaimed as of 2026.',
+   content2:'The bounty represents the highest-profile government admission that Monero\'s privacy works. Chainalysis, the leading blockchain analytics firm, has repeatedly confirmed that Monero transactions cannot be reliably traced.',
+   stat1:['IRS Bounty','$625K','Unclaimed'],stat2:['CipherTrace','Failed','2021'],stat3:['Chainalysis','Cannot trace','2025 report'],
+   quote:'"Privacy in an open society requires anonymous transaction systems."',quoteSrc:'Eric Hughes, A Cypherpunk\'s Manifesto, 1993',
+   navHighlight:'Secrets'},
+  {id:10,th:'lux',topic:'The Value Thesis',contentTitle:'DIGITAL GOLD NEEDS A DIGITAL VAULT',
+   content:'Bitcoin is digital gold — a store of value visible to anyone with a blockchain explorer. Monero is the vault. The only cryptocurrency where your balance is known solely to you.',
+   content2:'In a world of increasing financial surveillance, CBDCs, and frozen bank accounts, the ability to transact privately isn\'t a luxury. It\'s a necessity. Monero provides this as a mathematical guarantee.',
+   stat1:['Privacy','100%','Default'],stat2:['Censorship','0%','Resistance'],stat3:['Illicit Use','<0.4%','Chainalysis'],
+   quote:'"Lost coins only make everyone else\'s coins worth slightly more."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010',
+   navHighlight:'Bottom Line'},
+  {id:11,th:'bento',topic:'Quick Facts',contentTitle:'Monero at a Glance',
+   content:'Monero launched April 18, 2014 with zero premine and zero ICO. It uses the RandomX proof-of-work algorithm designed for CPUs, ensuring mining remains accessible to ordinary hardware.',
+   content2:'The protocol enforces privacy at the base layer — there is no "transparent mode." Every single transaction uses ring signatures, stealth addresses, and RingCT. Optional privacy is no privacy at all.',
+   stat1:['Launch','Apr 2014','Fair launch'],stat2:['Premine','0','Zero'],stat3:['ICO','None','Community-funded'],
+   quote:'"Governments are good at cutting off the heads of centrally controlled networks like Napster, but pure P2P networks like Gnutella and Tor seem to be holding their own."',quoteSrc:'Satoshi Nakamoto, mailing list, 2008',
+   navHighlight:'Education'},
+  {id:12,th:'narr',topic:'Chapter 02 — The Gap',contentTitle:'The Privacy Problem Bitcoin Couldn\'t Solve',
+   content:'By 2013, blockchain analytics firms could trace Bitcoin transactions with frightening accuracy. Chainalysis, Elliptic, and CipherTrace built billion-dollar businesses selling surveillance to governments.',
+   content2:'Every Bitcoin "mixer" was eventually broken. Every "privacy coin" that bolted privacy on top of a transparent chain was eventually de-anonymized. Only one approach worked: privacy by default, at the protocol level, with no escape hatch.',
+   stat1:['Analytics Firms','$4B+','Industry value'],stat2:['Mixers Broken','100%','By 2022'],stat3:['XMR Traced','0%','Still'],
+   quote:'"Participants can be anonymous."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper §10, 2008',
+   navHighlight:'Education'},
+  {id:13,th:'retro',topic:'The Road Ahead',contentTitle:'2027 AND BEYOND',
+   content:'FCMP++ (Full-Chain Membership Proofs) will replace ring signatures with a system where the anonymity set is the entire blockchain — over 100 million outputs. This makes Monero\'s privacy theoretically perfect.',
+   content2:'Six structural demand drivers support the 2027+ thesis: regulatory pressure driving DEX adoption, CBDC surveillance pushing privacy demand, institutional Bitcoin normalizing crypto, tail emission solving security budgets, growing Monerica ecosystem, and FCMP++ deployment.',
+   stat1:['FCMP++','100M+','Anon set'],stat2:['Demand Drivers','6','Structural'],stat3:['Monerica','200+','Services'],
+   quote:'"I\'m sure that in 20 years there will either be very large transaction volume or no volume."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010',
+   navHighlight:'Future'},
+  {id:14,th:'swiss',topic:'Module 01',contentTitle:'Privacy as a Protocol Property',
+   content:'There are two approaches to cryptocurrency privacy: optional and mandatory. Optional privacy (Zcash, Litecoin MWEB) creates two pools — transparent and shielded. Analytics firms simply analyze the transparent pool and the transition points.',
+   content2:'Mandatory privacy (Monero) means every transaction looks identical to every other transaction. There are no "shielded" transactions to flag, no "z-addresses" to monitor, no metadata to harvest. The anonymity set is always the entire network.',
+   stat1:['Zcash Shielded','<10%','Of transactions'],stat2:['Monero Private','100%','Of transactions'],stat3:['ZEC vs XMR','2x','XMR leads'],
+   quote:'"With group signatures, it is possible for something to be signed but not know who signed it."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk Thread #174, 2010',
+   navHighlight:'Education'},
+  {id:15,th:'adapt',topic:'Personalized Feed',contentTitle:'Your Context, Your Interface',
+   content:'This design demonstrates GenUI Interface Individualism. The content you see is selected based on your visitor profile, time of day, browsing history, and market conditions.',
+   content2:'A returning visitor sees portfolio updates and continuation prompts. A new visitor sees educational onboarding. A developer sees technical documentation and API references. The interface adapts — no two sessions are identical.',
+   stat1:['Profiles','3','Active'],stat2:['Contexts','12','Variables'],stat3:['Layouts','30','In catalog'],
+   quote:'"The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010',
+   navHighlight:'Education'},
+  {id:16,th:'data',topic:'Deep Metrics',contentTitle:'Network Intelligence Feed',
+   content:'Monero\'s network processes approximately 20,000 on-chain transactions daily. The mempool typically contains 5-15 pending transactions, reflecting the 2-minute block time efficiency.',
+   content2:'The RandomX algorithm maintains ASIC resistance through periodic hard forks. Current network hashrate of 3.2 GH/s is distributed across an estimated 45,000+ mining nodes — the most decentralized PoW network by node count.',
+   stat1:['Mempool','5-15 tx','Typical'],stat2:['Nodes','~45K','Estimated'],stat3:['Block Reward','0.6 XMR','Tail emission'],
+   quote:'"The proof-of-work also solves the problem of determining representation in majority decision making."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper §4, 2008',
+   navHighlight:'Dashboard'},
+  {id:17,th:'ring',topic:'Ring Signatures',contentTitle:'The Mathematics of Anonymity',
+   content:'A ring signature allows a member of a group to sign a message such that it\'s impossible to determine which member produced the signature. Monero uses ring size 16 — every transaction has 16 plausible signers.',
+   content2:'The decoys are selected from real outputs on the blockchain using a sophisticated distribution algorithm. Observers see 16 equally likely signers. The true signer is computationally indistinguishable from the decoys.',
+   stat1:['Ring Size','16','Mandatory'],stat2:['Decoy Selection','Gamma','Distribution'],stat3:['False Positive','93.75%','Per attempt'],
+   quote:'"What is needed is an electronic payment system based on cryptographic proof instead of trust."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper, 2008',
+   navHighlight:'Education'},
+  {id:18,th:'cards',topic:'Privacy Stack',contentTitle:'Four Layers of Protection',
+   content:'Monero\'s privacy isn\'t a single technology — it\'s a stack. Ring signatures protect the sender. Stealth addresses protect the receiver. RingCT protects the amount. Dandelion++ protects the IP address.',
+   content2:'Each layer addresses a different attack vector. Remove any one layer and the others still provide partial protection. Together, they create a system where transaction metadata is cryptographically hidden at every level.',
+   stat1:['Sender','Hidden','Ring Signatures'],stat2:['Receiver','Hidden','Stealth Addr'],stat3:['Amount','Hidden','RingCT'],
+   quote:'"Announcing the first release of Bitcoin, a new electronic cash system."',quoteSrc:'Satoshi Nakamoto, Cryptography Mailing List, Jan 2009',
+   navHighlight:'Education'},
+  {id:19,th:'kin',topic:'The Movement',contentTitle:'PRIVACY IS NOT A CRIME',
+   content:'Every authoritarian regime in history has used financial surveillance as a tool of control. Monero exists to make this impossible. Not difficult — impossible. Through mathematics, not policy.',
+   content2:'The cypherpunk movement understood that privacy in the digital age requires active defense. Monero is that defense — a permissionless, censorship-resistant, private-by-default monetary network that no government can shut down.',
+   stat1:['Countries','195','Accessible'],stat2:['Permission','None','Required'],stat3:['Shutdown','Impossible','P2P network'],
+   quote:'"Privacy is necessary for an open society in the electronic age."',quoteSrc:'Eric Hughes, A Cypherpunk\'s Manifesto, 1993',
+   navHighlight:'Bottom Line'},
+  {id:20,th:'zen',topic:'Contemplation',contentTitle:'The Nature of Private Value',
+   content:'A coin that can be traced is a coin that can be censored. A coin that can be censored is a coin that requires permission. A coin that requires permission is not your coin.',
+   content2:'Monero achieves what the cypherpunks called "fungibility" — every XMR is identical to every other XMR. No coin has a history. No coin can be blacklisted. This is the foundation of sound digital money.',
+   stat1:['Fungibility','100%','Guaranteed'],stat2:['Blacklisted','0 XMR','Ever'],stat3:['Tainted','Impossible','By design'],
+   quote:'"It might make sense just to get some in case it catches on."',quoteSrc:'Satoshi Nakamoto, email to Hal Finney, 2009',
+   navHighlight:'Education'},
+  {id:21,th:'3d',topic:'Protocol Architecture',contentTitle:'Three-Layer Privacy Shield',
+   content:'Layer 1: Ring Signatures create a cryptographic group of 16 possible signers for every transaction, hiding the true sender. Layer 2: Stealth Addresses generate unique one-time keys for every receiver.',
+   content2:'Layer 3: RingCT uses Pedersen commitments to hide transaction amounts while mathematically proving no XMR was created from nothing. The upcoming Layer 4 (FCMP++) will expand the anonymity set from 16 to 100M+.',
+   stat1:['Layer 1','Ring Sigs','Sender'],stat2:['Layer 2','Stealth','Receiver'],stat3:['Layer 3','RingCT','Amount'],
+   quote:'"Nodes can leave and rejoin the network at will."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper §5, 2008',
+   navHighlight:'Education'},
+  {id:22,th:'pers',topic:'Recommended For You',contentTitle:'Based on Your Browsing',
+   content:'GenUI selects content tiles based on your visitor profile and interaction history. Returning visitors see updates since their last session. New visitors see the educational onboarding track.',
+   content2:'The personalization grid demonstrates how 30 design components can be mixed and matched at runtime. Your hero section, content modules, data displays, and navigation are all independently selected.',
+   stat1:['Components','30','Available'],stat2:['Combinations','∞','Possible'],stat3:['Latency','<400ms','Render time'],
+   quote:'"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks."',quoteSrc:'Satoshi Nakamoto, Bitcoin Genesis Block, 2009',
+   navHighlight:'Education'},
+  {id:23,th:'hot',topic:'Interactive Discovery',contentTitle:'Explore the Protocol Visually',
+   content:'Each hotspot reveals a different layer of Monero\'s privacy architecture. Click to discover how ring signatures, stealth addresses, and RingCT work together to create untraceable transactions.',
+   content2:'The hotspot pattern demonstrates GenUI progressive disclosure — information appears on demand rather than overwhelming the visitor. The interface reveals complexity gradually, adapting to engagement signals.',
+   stat1:['Hotspots','3','Interactive'],stat2:['Layers','4','Privacy'],stat3:['Clicks','Tracked','For GenUI'],
+   quote:'"The network is robust in its unstructured simplicity."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper §8, 2008',
+   navHighlight:'Education'},
+  {id:24,th:'list',topic:'Site Architecture',contentTitle:'Navigating xmr.irish',
+   content:'The site contains 8 pages spanning education, history, market data, and acquisition. Each page can be rendered through any of the 30 design components in the GenUI catalog.',
+   content2:'Navigation design reflects the GenUI principle that information architecture should adapt to visitor intent. An investor sees Dashboard first. A newcomer sees Education. A developer sees the technical documentation.',
+   stat1:['Pages','8','Core content'],stat2:['Designs','30','In catalog'],stat3:['Routes','240','Possible'],
+   quote:'"The system is secure as long as honest nodes collectively control more CPU power than any cooperating group of attacker nodes."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper §1, 2008',
+   navHighlight:'Education'},
+  {id:25,th:'scat',topic:'Art & Privacy',contentTitle:'The Aesthetics of Disappearance',
+   content:'Privacy is beautiful because it is absence. The most elegant cryptographic systems are those where the observer cannot even detect that information is being hidden.',
+   content2:'Monero transactions are visually indistinguishable from one another on the blockchain. There are no "shielded" markers, no "private" flags, no metadata that reveals intent. Every transaction is a work of cryptographic art.',
+   stat1:['Metadata','Zero','Leaked'],stat2:['Patterns','None','Detectable'],stat3:['Entropy','Maximum','Per tx'],
+   quote:'"I\'ve been working on a new electronic cash system that\'s fully peer-to-peer, with no trusted third party."',quoteSrc:'Satoshi Nakamoto, Cryptography Mailing List, 2008',
+   navHighlight:'Education'},
+  {id:26,th:'micro',topic:'Feature Matrix',contentTitle:'Technology Under the Hood',
+   content:'Six core technologies power Monero\'s privacy. Each addresses a specific attack surface. Together they create the most private transaction system ever deployed at scale.',
+   content2:'RandomX ensures mining decentralization. Dandelion++ prevents IP correlation. Ring Signatures hide senders. Stealth Addresses hide receivers. RingCT hides amounts. FCMP++ will hide everything in a 100M+ anonymity set.',
+   stat1:['Technologies','6','Core'],stat2:['Attack Surfaces','0','Remaining'],stat3:['Peer Review','Extensive','Academic'],
+   quote:'"We can win a major battle in the arms race and gain a new territory of freedom for several years."',quoteSrc:'Satoshi Nakamoto, Cryptography Mailing List, 2008',
+   navHighlight:'Education'},
+  {id:27,th:'hscroll',topic:'Key Events',contentTitle:'The Privacy Timeline',
+   content:'From Satoshi\'s whitepaper in 2008 to FCMP++ in 2026, the evolution of cryptocurrency privacy spans 18 years of innovation, regulation, and mathematical breakthroughs.',
+   content2:'Each event on the timeline represents a step toward the cypherpunk ideal of private digital cash. Bitcoin was step one. CryptoNote was step two. Monero was step three. FCMP++ may be the final step.',
+   stat1:['Events','48','Tracked'],stat2:['Span','18 years','2008-2026'],stat3:['Forks','15+','Protocol upgrades'],
+   quote:'"Bitcoin\'s privacy problem is often cited as its biggest weakness."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010 (paraphrased)',
+   navHighlight:'Timeline'},
+  {id:28,th:'geo',topic:'The Vision',contentTitle:'Building the Future of Money',
+   content:'The future of money is private, decentralized, and permissionless. Not because of ideology — because of mathematics. Cryptographic protocols don\'t have opinions, can\'t be bribed, and don\'t bend to political pressure.',
+   content2:'Monero represents the most advanced implementation of Satoshi\'s original vision. Not Bitcoin with extra features. Not a fork. A ground-up reimagining of what digital cash should be.',
+   stat1:['Vision','Satoshi\'s','Completed'],stat2:['Method','Mathematics','Not policy'],stat3:['Status','Unstoppable','By design'],
+   quote:'"Once it gets bootstrapped, there are so many applications if you could effortlessly pay a few cents to a website as easily as dropping coins in a vending machine."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010',
+   navHighlight:'Future'},
+  {id:29,th:'a11y',topic:'Accessible Education',contentTitle:'Understanding Monero: A Clear Guide',
+   content:'Monero is digital cash that protects your financial privacy. When you send Monero, nobody can see who sent it, who received it, or how much was sent. This privacy is automatic and cannot be turned off.',
+   content2:'Think of it like physical cash in the digital world. When you hand someone a $20 bill, no database records the transaction. Monero achieves this digitally using advanced mathematics called cryptography.',
+   stat1:['Contrast','4.5:1+','WCAG AAA'],stat2:['Font','Lexend','Readability'],stat3:['Semantics','Full','ARIA labels'],
+   quote:'"A purely peer-to-peer version of electronic cash would allow online payments to be sent directly from one party to another."',quoteSrc:'Satoshi Nakamoto, Bitcoin Whitepaper, Opening Line, 2008',
+   navHighlight:'Education'},
+  {id:30,th:'conv',topic:'Production Synthesis',contentTitle:'The Complete xmr.irish Experience',
+   content:'Design 30 represents the convergence of all 29 preceding concepts into a production-ready interface. GenUI selects the optimal combination of hero, navigation, content layout, and data presentation at runtime.',
+   content2:'The full pipeline: Visitor Intent Detection → Context Assembly → Catalog Query → Token Injection → Streaming Render → Hydration. Each step is independently testable, cacheable, and observable.',
+   stat1:['Designs','30','Synthesized'],stat2:['Pipeline','6 steps','GenUI'],stat3:['Render','<400ms','Target'],
+   quote:'"The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime."',quoteSrc:'Satoshi Nakamoto, BitcoinTalk, 2010',
+   navHighlight:'Education'}
+];
+
+// --- NAV NAMES ---
+const names=['Neumorphic','Brutalist','Glass','Typographic','Dashboard','Cinematic','Organic','Terminal','Magazine','Luxury','Bento','Narrative','Retro-Future','Swiss','Adaptive','Data Wall','Immersive','Card Stack','Kinetic','Zen','3D Glass','Personalized','Hotspot','Type List','Scattered','Micro-Int.','H-Scroll','Motion FX','A11y-First','Convergence'];
+
+// --- BUILD NAV ---
+let nh='<div class="np on" onclick="goN(0,this)">All</div>';
+for(let i=1;i<=30;i++) nh+=`<div class="np" onclick="goN(${i},this)">${String(i).padStart(2,'0')} ${names[i-1]}</div>`;
+document.getElementById('nav').innerHTML=nh;
+
+// --- VISITOR-AWARE TRANSFORMS ---
+function visitorize(text, d) {
+  if(CTX.visitor==='dev') return text.replace(/\.$/, '. View the source on GitHub →');
+  if(CTX.visitor==='new') return text;
+  return text;
+}
+
+function getGreeting() {
+  const greets = {morning:'Good morning',afternoon:'Good afternoon',evening:'Good evening',night:'Late night'};
+  return greets[CTX.time] || 'Welcome';
+}
+
+// Visitor-specific content overrides
+const V_CONTENT = {
+  new: {
+    prefix: '🟢 NEW VISITOR',
+    titleFn: (d) => 'Start Here: ' + d.contentTitle,
+    introFn: (d) => `<p style="padding:8px 12px;background:rgba(0,211,149,.06);border:1px solid rgba(0,211,149,.12);border-radius:8px;color:var(--grn);font-size:10px;margin-bottom:10px">👋 Welcome! This is your first visit. We recommend starting with the basics below.</p>`,
+    bodyFn: (d) => `<p>${d.content}</p><p>${d.content2}</p>`,
+    navOrder: [0,6,1,4,2,3,5,7], // Education first, Dashboard early
+    navLabel: 'Recommended path for new visitors',
+    dataNote: 'Key numbers to know as a newcomer',
+    quoteCtx: 'Why this matters for beginners'
+  },
+  dev: {
+    prefix: '⚙️ DEVELOPER',
+    titleFn: (d) => d.contentTitle + ' — Technical View',
+    introFn: (d) => `<p style="padding:8px 12px;background:rgba(255,102,0,.04);border:1px solid rgba(255,102,0,.1);border-radius:8px;color:var(--xmr);font-size:10px;margin-bottom:10px;font-family:'DM Mono',monospace">// GenUI pipeline: catalog:${d.th} → layout:${LAYOUTS[d.id-1].dl}/${LAYOUTS[d.id-1].nl}/${LAYOUTS[d.id-1].ql} → visitor:dev</p>`,
+    bodyFn: (d) => `<p>${d.content}</p><p>${d.content2}</p><p style="color:var(--g4);font-size:10px;font-family:'DM Mono',monospace;margin-top:6px;padding:6px 10px;background:var(--g8);border-radius:6px">Implementation: Ring sigs via Ed25519 curve. Stealth addr: ECDH key exchange. RingCT: Pedersen commitments + Bulletproofs+. RandomX: AES-NI + floating point. FCMP++: Curve Trees with Selene/Helios.</p>`,
+    navOrder: [0,6,2,4,5,1,3,7], // Education, Dashboard, Secrets first
+    navLabel: 'Sorted by technical depth',
+    dataNote: 'Protocol metrics · API: monero-daemon-rpc',
+    quoteCtx: 'The cryptographic insight'
+  },
+  ret: {
+    prefix: '🔄 RETURNING',
+    titleFn: (d) => d.contentTitle,
+    introFn: (d) => `<p style="padding:8px 12px;background:rgba(255,102,0,.03);border:1px solid rgba(255,102,0,.08);border-radius:8px;color:var(--t2);font-size:10px;margin-bottom:10px">Welcome back · Visit #${CTX.visits} · XMR ${CTX.xmrPrice > 812 ? '↑' : '↓'} since last visit · Continue where you left off</p>`,
+    bodyFn: (d) => `<p>${d.content}</p><p>${d.content2}</p>`,
+    navOrder: [4,6,5,2,0,1,3,7], // Bottom Line, Dashboard, Outlook first
+    navLabel: 'Jump back in · Recently viewed first',
+    dataNote: 'Updated since your last visit',
+    quoteCtx: 'A deeper reading'
+  }
+};
+
+// --- LAYOUT ASSIGNMENT per design ---
+// dataLayout: 'grid3' | 'grid4' | 'split' | 'list' | 'cards'
+// navLayout: 'list' | 'grid' | 'pills' | 'numbered'
+// quoteLayout: 'bar' | 'center' | 'big' | 'card' | 'term' | 'split'
+const LAYOUTS = [
+  {dl:'split',nl:'grid',ql:'center'},     // 1  Neumorphic
+  {dl:'list',nl:'numbered',ql:'big'},      // 2  Brutalist
+  {dl:'cards',nl:'pills',ql:'card'},       // 3  Glass
+  {dl:'split',nl:'numbered',ql:'big'},     // 4  Typographic
+  {dl:'grid4',nl:'grid',ql:'split'},       // 5  Dashboard
+  {dl:'split',nl:'list',ql:'split'},       // 6  Cinematic
+  {dl:'cards',nl:'pills',ql:'center'},     // 7  Organic
+  {dl:'list',nl:'numbered',ql:'term'},     // 8  Terminal
+  {dl:'split',nl:'grid',ql:'card'},        // 9  Magazine
+  {dl:'list',nl:'pills',ql:'center'},      // 10 Luxury
+  {dl:'grid3',nl:'grid',ql:'card'},        // 11 Bento
+  {dl:'list',nl:'numbered',ql:'big'},      // 12 Narrative
+  {dl:'grid4',nl:'pills',ql:'big'},        // 13 Retro
+  {dl:'split',nl:'numbered',ql:'split'},   // 14 Swiss
+  {dl:'cards',nl:'grid',ql:'card'},        // 15 Adaptive
+  {dl:'grid4',nl:'list',ql:'term'},        // 16 Data Wall
+  {dl:'cards',nl:'pills',ql:'center'},     // 17 Ring
+  {dl:'grid3',nl:'grid',ql:'card'},        // 18 Cards
+  {dl:'split',nl:'pills',ql:'big'},        // 19 Kinetic
+  {dl:'list',nl:'pills',ql:'center'},      // 20 Zen
+  {dl:'cards',nl:'grid',ql:'split'},       // 21 3D Glass
+  {dl:'grid3',nl:'grid',ql:'card'},        // 22 Personalized
+  {dl:'cards',nl:'pills',ql:'center'},     // 23 Hotspot
+  {dl:'list',nl:'list',ql:'big'},          // 24 Type List
+  {dl:'cards',nl:'pills',ql:'center'},     // 25 Scattered
+  {dl:'grid4',nl:'grid',ql:'card'},        // 26 Micro
+  {dl:'cards',nl:'numbered',ql:'split'},   // 27 Timeline
+  {dl:'split',nl:'pills',ql:'center'},     // 28 Motion
+  {dl:'list',nl:'numbered',ql:'card'},     // 29 A11y
+  {dl:'grid4',nl:'grid',ql:'split'}        // 30 Convergence
+];
+
+const PAGES = [
+  {name:'Education',desc:'BTC vs XMR · Genesis of Privacy',icon:'📚'},
+  {name:'Timeline',desc:'48 events · 2008 → 2026',icon:'📅'},
+  {name:'Secret Threads',desc:"Satoshi's BitcoinTalk Posts",icon:'🔍'},
+  {name:'Quote Archive',desc:'30+ Searchable Quotes',icon:'💬'},
+  {name:'The Bottom Line',desc:'Full BTC/XMR Analysis',icon:'📊'},
+  {name:'2027+ Outlook',desc:'6 Demand Drivers',icon:'🔮'},
+  {name:'Dashboard',desc:'Live Charts · Market Data',icon:'📈'},
+  {name:'Hold Monero',desc:'Wagyu · ChangeNOW · DEX',icon:'💰'}
+];
+
+// --- DATA LAYOUT RENDERERS ---
+function dataGrid3(d,vL){
+  return `<div class="pgrid2">
+    <div class="c w2"><div class="lb">XMR / USD</div><div class="vl price-live">$${CTX.xmrPrice.toFixed(2)}</div><div class="sub" style="color:var(--grn)">↑ 14.2%</div></div>
+    <div class="c"><div class="lb">BTC / USD</div><div class="vl">$${CTX.btcPrice.toLocaleString()}</div></div>
+    <div class="c"><div class="lb">${d.stat1[0]}</div><div class="vl">${d.stat1[1]}</div><div class="sub">${d.stat1[2]}</div></div>
+    <div class="c"><div class="lb">${d.stat2[0]}</div><div class="vl">${d.stat2[1]}</div><div class="sub">${d.stat2[2]}</div></div>
+    <div class="c"><div class="lb">${d.stat3[0]}</div><div class="vl">${d.stat3[1]}</div><div class="sub">${d.stat3[2]}</div></div>
+    <div class="c"><div class="lb">BTC/XMR</div><div class="vl">${CTX.ratio}</div></div>
+    <div class="c"><div class="lb">IRS Bounty</div><div class="vl" style="color:var(--red)">$625K</div></div>
+    <div class="c"><div class="lb">Illicit</div><div class="vl" style="color:var(--grn)">&lt;0.4%</div></div>
+    <div class="c"><div class="lb">FCMP++</div><div class="vl">100M+</div></div></div>`}
+
+function dataGrid4(d,vL){
+  return `<div class="dg4">
+    <div class="c w2"><div class="lb">XMR/USD</div><div class="vl price-live">$${CTX.xmrPrice.toFixed(2)}</div><div class="sub" style="color:var(--grn)">↑14.2%</div></div>
+    <div class="c"><div class="lb">BTC</div><div class="vl">$${(CTX.btcPrice/1000).toFixed(0)}K</div></div>
+    <div class="c"><div class="lb">Ratio</div><div class="vl">${CTX.ratio}</div></div>
+    <div class="c"><div class="lb">${d.stat1[0]}</div><div class="vl">${d.stat1[1]}</div></div>
+    <div class="c"><div class="lb">${d.stat2[0]}</div><div class="vl">${d.stat2[1]}</div></div>
+    <div class="c"><div class="lb">${d.stat3[0]}</div><div class="vl">${d.stat3[1]}</div></div>
+    <div class="c"><div class="lb">Bounty</div><div class="vl" style="color:var(--red)">$625K</div></div>
+    <div class="c"><div class="lb">Hash</div><div class="vl">3.2G</div></div>
+    <div class="c"><div class="lb">Ring</div><div class="vl">16</div></div>
+    <div class="c"><div class="lb">Delist</div><div class="vl" style="color:var(--red)">73</div></div>
+    <div class="c"><div class="lb">Tail</div><div class="vl">0.6</div></div>
+    <div class="c"><div class="lb">FCMP++</div><div class="vl">100M+</div></div></div>`}
+
+function dataSplit(d,vL){
+  return `<div class="dsplit">
+    <div class="big"><div class="lb">${d.stat1[0]}</div><div class="vl">${d.stat1[1]}</div><div class="sub">${d.stat1[2]}</div></div>
+    <div class="side">
+      <div class="row"><span class="lb">XMR/USD</span><span class="vl price-live" style="color:var(--xmr)">$${CTX.xmrPrice.toFixed(2)}</span></div>
+      <div class="row"><span class="lb">BTC/USD</span><span class="vl">$${CTX.btcPrice.toLocaleString()}</span></div>
+      <div class="row"><span class="lb">${d.stat2[0]}</span><span class="vl" style="color:var(--xmr)">${d.stat2[1]}</span></div>
+      <div class="row"><span class="lb">${d.stat3[0]}</span><span class="vl" style="color:var(--xmr)">${d.stat3[1]}</span></div>
+      <div class="row"><span class="lb">BTC/XMR</span><span class="vl">${CTX.ratio}</span></div>
+      <div class="row"><span class="lb">IRS Bounty</span><span class="vl" style="color:var(--red)">$625K</span></div>
+    </div></div>`}
+
+function dataList(d,vL){
+  return `<div class="dlist">
+    <div class="dr"><span class="lb">XMR / USD</span><span class="vl price-live">$${CTX.xmrPrice.toFixed(2)}</span></div>
+    <div class="dr"><span class="lb">BTC / USD</span><span class="vl">$${CTX.btcPrice.toLocaleString()}</span></div>
+    <div class="dr"><span class="lb">${d.stat1[0]}</span><div><div class="vl">${d.stat1[1]}</div><div class="sub">${d.stat1[2]}</div></div></div>
+    <div class="dr"><span class="lb">${d.stat2[0]}</span><div><div class="vl">${d.stat2[1]}</div><div class="sub">${d.stat2[2]}</div></div></div>
+    <div class="dr"><span class="lb">${d.stat3[0]}</span><div><div class="vl">${d.stat3[1]}</div><div class="sub">${d.stat3[2]}</div></div></div>
+    <div class="dr"><span class="lb">BTC/XMR Ratio</span><span class="vl">${CTX.ratio}</span></div>
+    <div class="dr"><span class="lb">IRS Bounty</span><span class="vl" style="color:var(--red)">$625K — Unclaimed</span></div>
+    <div class="dr"><span class="lb">FCMP++ Anon Set</span><span class="vl">100M+ outputs</span></div></div>`}
+
+function dataCards(d,vL){
+  return `<div class="dcards">
+    <div class="sc"><div class="lb">XMR</div><div class="vl price-live">$${CTX.xmrPrice.toFixed(2)}</div><div class="sub" style="color:var(--grn)">↑14.2%</div></div>
+    <div class="sc"><div class="lb">BTC</div><div class="vl">$${(CTX.btcPrice/1000).toFixed(0)}K</div><div class="sub">↑2.1%</div></div>
+    <div class="sc"><div class="lb">${d.stat1[0]}</div><div class="vl">${d.stat1[1]}</div><div class="sub">${d.stat1[2]}</div></div>
+    <div class="sc"><div class="lb">${d.stat2[0]}</div><div class="vl">${d.stat2[1]}</div><div class="sub">${d.stat2[2]}</div></div>
+    <div class="sc"><div class="lb">${d.stat3[0]}</div><div class="vl">${d.stat3[1]}</div><div class="sub">${d.stat3[2]}</div></div>
+    <div class="sc"><div class="lb">Bounty</div><div class="vl" style="color:var(--red)">$625K</div><div class="sub">Unclaimed</div></div>
+    <div class="sc"><div class="lb">FCMP++</div><div class="vl">100M+</div><div class="sub">Anon set</div></div></div>`}
+
+// --- NAV LAYOUT RENDERERS (visitor-ordered) ---
+function navList(d,vL,orderedPages){
+  let items='';orderedPages.forEach(p=>{
+    const hl=p.name.includes(d.navHighlight)||p.desc.includes(d.navHighlight);
+    items+=`<div class="it"${hl?' style="border-color:var(--xmr);padding-left:6px"':''}><h4${hl?' style="color:var(--xmr)"':''}>${p.name}</h4><span>${p.desc}</span></div>`;
+  });return `<div class="pnl">${items}</div>`}
+
+function navGrid(d,vL,orderedPages){
+  let cards='';orderedPages.forEach(p=>{
+    const hl=p.name.includes(d.navHighlight)||p.desc.includes(d.navHighlight);
+    cards+=`<div class="nc${hl?' hl':''}"><div class="tag">${p.icon} ${hl?'Recommended':'Browse'}</div><h4>${p.name}</h4><p>${p.desc}</p></div>`;
+  });return `<div class="ngrid">${cards}</div>`}
+
+function navPills(d,vL,orderedPages){
+  let pills='';orderedPages.forEach(p=>{
+    const hl=p.name.includes(d.navHighlight)||p.desc.includes(d.navHighlight);
+    pills+=`<a class="${hl?'hl':''}">${p.name}</a>`;
+  });return `<div class="nmin">${pills}</div>`}
+
+function navNumbered(d,vL,orderedPages){
+  let items='';orderedPages.forEach(p=>{
+    const hl=p.name.includes(d.navHighlight)||p.desc.includes(d.navHighlight);
+    items+=`<div class="ns${hl?' hl':''}"><div><h4>${p.name}</h4><p>${p.desc}</p></div></div>`;
+  });return `<div class="nnum">${items}</div>`}
+
+// --- QUOTE LAYOUT RENDERERS ---
+function quoteBar(d){return `<div class="pquote"><blockquote>${d.quote}</blockquote><cite>— ${d.quoteSrc}</cite></div>`}
+function quoteCenter(d){return `<div class="qcenter"><blockquote>${d.quote}</blockquote><cite>— ${d.quoteSrc}</cite></div>`}
+function quoteBig(d){return `<div class="qbig"><div class="num">${String(d.id).padStart(2,'0')}</div><div class="qt"><blockquote>${d.quote}</blockquote><cite>— ${d.quoteSrc}</cite></div></div>`}
+function quoteCard(d){return `<div class="qcard"><div class="inner"><blockquote>${d.quote}</blockquote><cite>— ${d.quoteSrc}</cite></div></div>`}
+function quoteTerm(d){return `<div class="qterm"><div class="prompt">$ cat /quotes/${d.id}.txt</div><div class="output">${d.quote}</div><div class="src">// source: ${d.quoteSrc}</div></div>`}
+function quoteSplit(d){return `<div class="qsplit"><div class="ql"><blockquote>${d.quote}</blockquote><cite>— ${d.quoteSrc}</cite></div><div class="qr"><h4>Context: ${d.topic}</h4><p>${d.content.substring(0,160)}...</p></div></div>`}
+
+const dataFns = {grid3:dataGrid3, grid4:dataGrid4, split:dataSplit, list:dataList, cards:dataCards};
+const navFns = {list:navList, grid:navGrid, pills:navPills, numbered:navNumbered};
+const quoteFns = {bar:quoteBar, center:quoteCenter, big:quoteBig, card:quoteCard, term:quoteTerm, split:quoteSplit};
+
+
+// --- CHAT FILLER PER DESIGN ---
+const CHAT_EXCHANGES = {
+  1:  [{u:'What makes Monero different from Bitcoin?',a:'Monero uses ring signatures, stealth addresses, and RingCT to make every transaction private by default. Bitcoin transactions are fully transparent.'}],
+  2:  [{u:'Why did 73 exchanges delist XMR?',a:'Regulatory pressure. Governments want to trace all transactions. But the price rose 195% after the delistings — proving demand for privacy cannot be regulated away.'}],
+  3:  [{u:'Is the XMR price data real-time?',a:'In production, prices stream via CoinGecko WebSocket. This demo simulates 3-second ticks with realistic variance.'}],
+  4:  [{u:'What is Thread #174?',a:'A BitcoinTalk post from August 2010 where Satoshi described ring signatures and stealth addresses — the exact technologies Monero would implement 4 years later.'}],
+  5:  [{u:'How healthy is the Monero network?',a:'Hashrate at all-time high of 3.2 GH/s, ~20K daily transactions, 2-min block time. Tail emission ensures perpetual miner incentives.'}],
+  6:  [{u:'Can Bitcoin add privacy features?',a:'Technically possible but politically impossible. Bitcoin\'s culture prioritizes transparency and regulatory compliance. Monero was built from scratch for privacy.'}],
+  7:  [{u:'Who created Monero?',a:'A community of pseudonymous developers forked Bytecoin in April 2014. No founder, no company, no premine. Pure cypherpunk ethos.'}],
+  8:  [{u:'How does RandomX work?',a:'RandomX is a proof-of-work algorithm optimized for general-purpose CPUs, using random code execution. This prevents ASIC/GPU dominance and keeps mining decentralized.'}],
+  9:  [{u:'Has anyone claimed the IRS bounty?',a:'No. $625,000 offered in September 2020 remains unclaimed. CipherTrace and Chainalysis both confirmed they cannot reliably trace Monero transactions.'}],
+  10: [{u:'Why is fungibility important?',a:'If coins can be traced and blacklisted, your money isn\'t truly yours. Monero\'s fungibility means every XMR is identical — none can be "tainted" or refused.'}],
+  11: [{u:'How much illicit activity uses Monero?',a:'Less than 0.4% according to Chainalysis 2025. Cash is used in far more crime. Privacy is a right, not a signal of wrongdoing.'}],
+  12: [{u:'Tell me the origin story',a:'Halloween 2008: Satoshi publishes the whitepaper. 2013: CryptoNote protocol. April 2014: Monero launched with zero premine. The rest is mathematical history.'}],
+  13: [{u:'What is FCMP++?',a:'Full-Chain Membership Proofs. Instead of hiding among 16 decoys, your transaction hides among ALL 100M+ outputs on the blockchain. Theoretically perfect privacy.'}],
+  14: [{u:'Why is mandatory privacy better?',a:'Optional privacy (Zcash) creates two pools. Analytics firms simply watch the transition points. When all transactions are private, there are no patterns to detect.'}],
+  15: [{u:'How does GenUI personalization work?',a:'The system detects visitor context (time, profile, history, market conditions) and selects the optimal UI components from a catalog of 30 designs at runtime.'}],
+  16: [{u:'What is tail emission?',a:'After the main supply is mined, Monero emits 0.6 XMR per block forever. This solves Bitcoin\'s long-term security budget problem and guarantees miner incentives.'}],
+  17: [{u:'Why ring size 16?',a:'Each transaction mixes with 16 decoys from the blockchain. This means any observer has a 1/16 (6.25%) chance of guessing the real sender — per transaction, compounding.'}],
+  18: [{u:'What is Dandelion++?',a:'A protocol that obscures the IP address of transaction broadcasters by routing through a random "stem" phase before the normal "fluff" propagation.'}],
+  19: [{u:'Is Monero actually used?',a:'15,000-25,000 on-chain transactions daily. 200+ merchants on Monerica.com. Growing DEX volume. It\'s the most actively used privacy technology in cryptocurrency.'}],
+  20: [{u:'What does fungibility mean?',a:'Every unit is interchangeable. Like cash — a $20 bill has no history. Monero achieves this digitally. No coin can be blacklisted or refused based on its past.'}],
+  21: [{u:'What is Bulletproofs+?',a:'A zero-knowledge proof system that validates transaction amounts are positive without revealing them. The "+" version reduces proof size by ~6% over the original.'}],
+  22: [{u:'How does the personalized grid work?',a:'GenUI assembles hero tiles, data modules, and navigation based on your visitor profile. The grid composition is fully generative — no two sessions identical.'}],
+  23: [{u:'What are the hotspots showing?',a:'Each hotspot represents a layer of Monero\'s privacy stack: ring signatures (sender), stealth addresses (receiver), and RingCT (amount).'}],
+  24: [{u:'How many pages does xmr.irish have?',a:'Eight core pages: Education, Timeline, Secret Threads, Quotes, Bottom Line, 2027+ Outlook, Dashboard, and Hold Monero. Plus the index splash.'}],
+  25: [{u:'Why the scattered design?',a:'It represents the artistic nature of cryptographic privacy — information scattered in beautiful disorder, impossible to reconstruct without the private key.'}],
+  26: [{u:'Why are micro-interactions important?',a:'Purposeful motion creates connected experiences. Each hover, click, and transition communicates system state and guides attention through the GenUI surface.'}],
+  27: [{u:'What happened in 2020?',a:'The IRS offered $625K to trace Monero. Exchanges began mass delistings. Instead of dying, Monero\'s price surged 195% and DEX volume exploded 340%.'}],
+  28: [{u:'What drives Monero\'s future demand?',a:'Six structural drivers: regulatory pressure, CBDC surveillance, institutional BTC normalizing crypto, tail emission, growing Monerica ecosystem, and FCMP++ deployment.'}],
+  29: [{u:'Why use Lexend font for accessibility?',a:'Lexend was specifically designed by Dr. Bonnie Shaver-Troup to improve reading fluency. Combined with WCAG AAA contrast ratios, it maximizes readability.'}],
+  30: [{u:'What is the GenUI pipeline?',a:'Intent Detection → Context Assembly → Catalog Query → Token Injection → Streaming Render → Hydration. Each step is independently testable and cacheable.'}]
+};
+
+const CHAT_CHIPS = {
+  1:['What is Monero?','How is it private?','Who uses it?'],
+  2:['Why delistings?','Price impact?','DEX volume?'],
+  3:['Live prices?','Market cap?','Volume data?'],
+  4:['Thread #174?','Satoshi quotes?','The vision?'],
+  5:['Network health?','Hashrate?','Block time?'],
+  6:['BTC vs XMR?','Privacy diff?','Same origin?'],
+  7:['Origin story?','Who created it?','Fair launch?'],
+  8:['How RandomX?','CLI commands?','Mining setup?'],
+  9:['IRS bounty?','Who tried?','Why failed?'],
+  10:['Fungibility?','Sound money?','Value thesis?'],
+  11:['Illicit use?','Bento stats?','Quick facts?'],
+  12:['Chapter 2?','The gap?','What next?'],
+  13:['FCMP++?','100M set?','When live?'],
+  14:['Optional vs mandatory?','Zcash comparison?','Privacy proof?'],
+  15:['How adaptive?','3 profiles?','Context vars?'],
+  16:['Tail emission?','Node count?','Fee structure?'],
+  17:['Ring math?','Decoy selection?','False positive rate?'],
+  18:['4 layers?','Attack vectors?','Dandelion++?'],
+  19:['How many users?','Merchants?','DEX volume?'],
+  20:['Fungibility?','Why private?','Philosophy?'],
+  21:['3 layers?','Bulletproofs+?','Curve Trees?'],
+  22:['How personalized?','Grid logic?','Combinations?'],
+  23:['Hotspot 1?','Hotspot 2?','Hotspot 3?'],
+  24:['8 pages?','Site map?','Navigation?'],
+  25:['Artistic chaos?','Design intent?','Scattered why?'],
+  26:['Micro FX?','6 features?','Hover states?'],
+  27:['Key events?','2020 turning point?','Timeline scope?'],
+  28:['6 drivers?','2027 thesis?','Price outlook?'],
+  29:['WCAG AAA?','Lexend font?','Screen readers?'],
+  30:['Full pipeline?','6 steps?','Production ready?']
+};
+
+// --- LIVE CHAT SYSTEM ---
+const HANDLES = ['@xmr_maxi','@privacy_chad','@satoshi_ghost','@ring_sig_rick','@monero_mom','@cypherpunk99','@dex_wizard','@fud_destroyer','@tail_emission','@stealth_steve','@fungible_frank','@dandelion_dan','@randomx_ray','@bulletproof_betty','@anon_andy'];
+const CHAT_MSGS = [
+  // Monero knowledge
+  'ring size 16 means 15 decoys + you. good luck tracing that lol',
+  'tail emission is unironically the best design decision in all of crypto',
+  'just ran the numbers — XMR hashrate hit ATH again. 3.2 GH/s of pure CPU power',
+  'FCMP++ is going to make ring sigs look like a warmup act',
+  'the IRS offered $625K and still nobody can trace monero. let that sink in.',
+  'fun fact: monero processes ~20K transactions daily and you can\'t see a single one',
+  'bulletproofs+ reduced tx size by like 88%. the devs don\'t get enough credit',
+  'the best part about XMR? every single coin is identical. no tainted coins. ever.',
+  'imagine telling someone in 2014 that the "no premine" coin would outperform 99% of crypto',
+  'dandelion++ is so underrated. hides your IP before the tx even hits the mempool',
+  'RandomX was designed to be ASIC-resistant and it actually worked. my CPU is happy',
+  '0.6 XMR per block forever. no halving drama. just consistent, reliable emission',
+  'stealth addresses mean even the receiver generates a one-time key. no address reuse possible',
+  'chainalysis literally said they can\'t trace XMR. that\'s the whole thesis right there',
+  // Website / design
+  'this xmr.irish redesign is actually sick. the GenUI concept is next level',
+  'ngl the terminal design (#8) goes hard. ascii art XMR in JetBrains Mono? chef kiss',
+  'design 30 is the one. full convergence. ship it.',
+  'the neumorphic dashboard (#5) would look insane with real CoinGecko data',
+  'whoever designed the brutalist one understood the assignment. RAW POWER.',
+  'the narrative scroll (#12) is how you onboard normies. chapter-based storytelling.',
+  'wait the zen design (#20) with the ensō circle is actually beautiful',
+  'the data wall (#16) is what traders want. 12 metrics at a glance. no fluff.',
+  // Questions
+  'can someone explain RingCT to me like I\'m 5?',
+  'what\'s the actual difference between Monero and Zcash?',
+  'how do I set up a Monero node? is it hard?',
+  'where can I buy XMR now that exchanges keep delisting it?',
+  'is FCMP++ really going to make the anonymity set 100M+?',
+  'what\'s the best wallet? Feather? Cake? CLI?',
+  'how does Monero handle smart contracts? or does it not?',
+  'what happens when all the XMR is mined? oh wait... tail emission. nvm.',
+  // Banter
+  'Bitcoin maxis are just Monero fans who haven\'t read Thread #174 yet',
+  'imagine using a transparent chain in 2026 and thinking you have "freedom" lmao',
+  'BTC is MySpace. XMR is the thing after the thing after the thing.',
+  'every time an exchange delists XMR the price goes up. they\'re literally marketing for us',
+  'your BTC balance is public. my XMR balance is between me and my cat.',
+  '"privacy coins are for criminals" — person who has curtains on their windows',
+  'just mass adoption things: 73 delistings, +195%. we are literally undelistable.',
+  'the virgin transparent ledger vs the chad ring signature',
+  'Zcash shielded pool usage: 10%. Monero private tx: 100%. we are not the same.',
+  'sorry I can\'t hear you over the sound of my untraceable transactions',
+  'BTC: "we have lightning!" XMR: "we have actual privacy." these are not comparable.',
+  '@ring_sig_rick your takes are so bad they should be hidden behind 16 decoys',
+  '@monero_mom coming in hot with the facts as usual. queen behavior.',
+  '@fud_destroyer just destroyed that FUD so hard it needs ring signatures to hide',
+  'imagine being a blockchain analytics company and your best product literally doesn\'t work on XMR',
+  '@stealth_steve your explanation of stealth addresses was stealthily wrong lol',
+  '@cypherpunk99 ratio\'d by a privacy coin. how does that feel.',
+  'the absolute state of people who think KYC will save them from inflation'
+];
+
+let chatIntervals = [];
+function stopChatFeeds(){chatIntervals.forEach(clearInterval);chatIntervals=[];}
+
+function startChatFeeds(){
+  stopChatFeeds();
+  document.querySelectorAll('.chat-msgs').forEach(el => {
+    const designId = el.dataset.design;
+    // Seed with 3 random messages
+    for(let i=0;i<3;i++) addChatMsg(el);
+    // Add new message every 2-5 seconds with random interval per panel
+    const iv = setInterval(() => {
+      if(CTX.surface !== 'chat') return;
+      addChatMsg(el);
+    }, 2000 + Math.random() * 3000);
+    chatIntervals.push(iv);
+  });
+}
+
+function addChatMsg(container){
+  const handle = HANDLES[Math.floor(Math.random()*HANDLES.length)];
+  const msg = CHAT_MSGS[Math.floor(Math.random()*CHAT_MSGS.length)];
+  const isHL = Math.random() > 0.7;
+  const div = document.createElement('div');
+  div.className = 'cmsg';
+  div.innerHTML = `<span class="chandle" style="${isHL?'color:var(--xmr)':'color:var(--g3)'}">${handle}</span> ${msg}`;
+  div.style.opacity = '0';
+  div.style.transform = 'translateY(6px)';
+  container.appendChild(div);
+  // Animate in
+  requestAnimationFrame(() => {
+    div.style.transition = 'opacity .3s, transform .3s';
+    div.style.opacity = '1';
+    div.style.transform = 'translateY(0)';
+  });
+  // Keep max 12 messages
+  while(container.children.length > 12) container.removeChild(container.firstChild);
+  // Auto scroll
+  container.scrollTop = container.scrollHeight;
+}
+
+// Chat+ state tracking
+const chipState = {};
+
+function chipClick(designId, chipEl, topic) {
+  const key = designId + '-' + topic;
+  const state = chipState[key] || 0;
+  const responses = CHAT_EXCHANGES[designId] || [{u:'Tell me more',a:'Monero is the leading privacy cryptocurrency.'}];
+  const ex = responses[0];
+
+  const panel = chipEl.closest('.chatplus-panel');
+  let resultArea = panel.querySelector('.chip-result');
+  if(!resultArea) {
+    resultArea = document.createElement('div');
+    resultArea.className = 'chip-result';
+    panel.appendChild(resultArea);
+  }
+
+  if(state === 0) {
+    // First click: show answer
+    chipEl.style.borderColor = 'var(--xmr)';
+    chipEl.style.color = 'var(--xmr)';
+    resultArea.innerHTML = `<div class="chip-answer">${ex.a}</div>`;
+    resultArea.style.opacity = '0';
+    requestAnimationFrame(() => { resultArea.style.transition = 'opacity .3s'; resultArea.style.opacity = '1'; });
+    chipState[key] = 1;
+    // Add follow-up chips
+    setTimeout(() => {
+      const followUps = document.createElement('div');
+      followUps.className = 'chip-followups';
+      followUps.innerHTML = `<div class="chip-fu" onclick="fuClick(this,${designId})">Go deeper →</div><div class="chip-fu" onclick="fuClick(this,${designId})">Show data</div>`;
+      resultArea.appendChild(followUps);
+    }, 400);
+  } else if(state === 1) {
+    // Second click: expand with more detail
+    resultArea.innerHTML = `<div class="chip-answer">${ex.a}</div><div class="chip-detail">This relates to ${topic}. Monero's approach ensures mathematical privacy — not policy-based, not optional, not bolted-on. The protocol enforces it at the base layer. XMR currently trades at $${CTX.xmrPrice.toFixed(2)} with ${CTX.visitor==='dev'?'3.2 GH/s hashrate across ~45K nodes':'strong network fundamentals'}.</div>`;
+    chipState[key] = 2;
+    chipEl.textContent = '✓ ' + topic;
+  } else {
+    // Third click: collapse
+    resultArea.innerHTML = '';
+    chipEl.style.borderColor = '';
+    chipEl.style.color = '';
+    chipEl.textContent = topic;
+    chipState[key] = 0;
+  }
+}
+
+function fuClick(el, designId) {
+  const text = el.textContent;
+  const parent = el.closest('.chip-result');
+  if(text.includes('deeper')) {
+    el.textContent = '✓ Expanded';
+    el.style.color = 'var(--grn)';
+    const extra = document.createElement('div');
+    extra.className = 'chip-detail';
+    extra.textContent = 'Ring signatures use Ed25519 curve operations. Stealth addresses leverage ECDH. RingCT employs Pedersen commitments with Bulletproofs+ proofs. FCMP++ will use Curve Trees (Selene/Helios) for full-chain membership proofs.';
+    parent.appendChild(extra);
+  } else {
+    el.textContent = '✓ Loaded';
+    el.style.color = 'var(--grn)';
+    const extra = document.createElement('div');
+    extra.className = 'chip-detail';
+    extra.innerHTML = `XMR: <span style="color:var(--xmr)">$${CTX.xmrPrice.toFixed(2)}</span> · Hash: <span style="color:var(--xmr)">3.2 GH/s</span> · Ring: <span style="color:var(--xmr)">16</span> · Daily TX: <span style="color:var(--xmr)">~20K</span>`;
+    parent.appendChild(extra);
+  }
+}
+
+function mkChat(d) {
+  if(CTX.surface==='chat') {
+    return `<div class="chat-panel" style="display:block"><div class="chat-header"><span class="chat-live-dot"></span> Live Chat · ${d.topic}</div><div class="chat-msgs" data-design="${d.id}"></div><div class="cinput"><input placeholder="say something about ${d.topic}..." readonly><button class="send" onclick="toast('Chat is demo mode — messages are simulated')">Send</button></div></div>`;
+  }
+  if(CTX.surface==='chat+') {
+    const chips = CHAT_CHIPS[d.id] || ['Learn more','Details','Compare'];
+    return `<div class="chatplus-panel" style="display:block"><div class="hint">Ask about ${d.topic}:</div><div class="chips">${chips.map(c=>`<div class="chip" onclick="chipClick(${d.id},this,'${c.replace(/'/g,"\\'")}')">${c}</div>`).join('')}</div></div>`;
+  }
+  return '';
+}
+
+// --- RENDER SHARED VIEWS ---
+// --- RENDER SHARED VIEWS ---
+function renderViews() {
+  const timeLabel = CTX.time.charAt(0).toUpperCase()+CTX.time.slice(1);
+  const vLabel = CTX.visitor==='ret'?'Returning':CTX.visitor==='new'?'New Visitor':'Developer';
+  const vc = V_CONTENT[CTX.visitor];
+  const bar = (ctx) => `<div class="genui-bar"><div class="dot"></div><span>${vc.prefix} · ${timeLabel} · Visit #${CTX.visits}</span><span class="ctx">→ ${ctx}</span></div>`;
+  const bot = (label) => `<div class="pbot2"><div class="pr"><span class="sy">XMR</span><span class="vl3 price-live">$${CTX.xmrPrice.toFixed(2)}</span> <span class="pc">+14.2%</span></div><div class="disc">${label}</div></div>`;
+
+  // Reorder pages per visitor
+  const orderedPages = vc.navOrder.map(i => PAGES[i]);
+
+  DESIGNS.forEach((d,i) => {
+    const L = LAYOUTS[i];
+
+    // CONTENT — genuinely different per visitor
+    const ce = document.getElementById('v'+d.id+'content');
+    if(ce) ce.innerHTML = `<div class="th-${d.th}">${bar(d.topic)}
+      <div class="pbody"><div class="sl">${d.topic}</div><h3>${vc.titleFn(d)}</h3>${vc.introFn(d)}${vc.bodyFn(d)}</div>
+      ${bot(d.navHighlight+' · '+vLabel)}${mkChat(d)}</div>`;
+
+    // DATA — different note, emphasis
+    const de = document.getElementById('v'+d.id+'data');
+    if(de) de.innerHTML = `<div class="th-${d.th}">${bar(d.topic+' metrics')}${dataFns[L.dl](d,vLabel)}${bot(vc.dataNote)}${mkChat(d)}</div>`;
+
+    // NAV — reordered per visitor
+    const ne = document.getElementById('v'+d.id+'nav');
+    if(ne) ne.innerHTML = `<div class="th-${d.th}">${bar('Navigate · '+d.navHighlight)}${navFns[L.nl](d,vLabel,orderedPages)}${bot(vc.navLabel)}${mkChat(d)}</div>`;
+
+    // QUOTE — different context framing
+    const qe = document.getElementById('v'+d.id+'quote');
+    if(qe) qe.innerHTML = `<div class="th-${d.th}">${bar(vc.quoteCtx)}${quoteFns[L.ql](d)}${bot('Quote '+d.id+' of 30 · '+vc.quoteCtx)}${mkChat(d)}</div>`;
+  });
+}
+
+// --- INITIAL RENDER ---
+renderViews();
+if(CTX.surface==='chat') startChatFeeds();
+
+// --- GENUI: VISITOR PROFILE SWITCHER ---
+function setV(el, type) {
+  document.querySelectorAll('[data-group="visitor"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  CTX.visitor = type;
+  sessionStorage.setItem('xmr-set-visitor', type);
+
+  // Update D15 hero
+  const h = document.getElementById('d15-h'), c = document.getElementById('d15-ctx');
+  if(h) {
+    if(type==='new'){h.textContent='Discover the privacy evolution.';c.textContent=`ADAPTIVE: ${CTX.time} · New visitor · NYC · XMR ↑14%`;}
+    else if(type==='dev'){h.textContent='Build with privacy by default.';c.textContent=`ADAPTIVE: ${CTX.time} · Developer · NYC · XMR ↑14%`;}
+    else{h.textContent=`${getGreeting()}. The thesis is strengthening.`;c.textContent=`ADAPTIVE: ${CTX.time} · Returning · NYC · XMR ↑14%`;}
+  }
+
+  // Re-render ALL shared views with new context
+  stopChatFeeds();
+  renderViews();
+  if(CTX.surface==='chat') setTimeout(startChatFeeds, 100);
+  toast(`GenUI: Visitor → ${type==='ret'?'Returning':type==='new'?'New Visitor':'Developer'} · Re-rendered 120 views`);
+}
+
+// --- GENUI: SURFACE MODE SWITCHER ---
+function setSurface(el, mode) {
+  document.querySelectorAll('[data-group="surface"]').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  CTX.surface = mode;
+  document.body.className = document.body.className.replace(/surface-\w+/g, '');
+  if(mode==='chat') document.body.classList.add('surface-chat');
+  if(mode==='chat+') document.body.classList.add('surface-chatplus');
+  stopChatFeeds();
+  Object.keys(chipState).forEach(k => delete chipState[k]);
+  renderViews();
+  if(mode==='chat') setTimeout(startChatFeeds, 100);
+  const labels = {'chatless':'Read-only · No interaction','chat+':'Quick chips active on all views','chat':'Full chat with filler conversations'};
+  toast(`GenUI: Surface → ${mode} · ${labels[mode]||mode}`);
+}
+
+// --- GENUI: LIVE PRICE TICK ---
+let lastPrice = CTX.xmrPrice;
+setInterval(() => {
+  const delta = (Math.random() - 0.48) * 3;
+  CTX.xmrPrice = Math.max(780, Math.min(850, CTX.xmrPrice + delta));
+  CTX.ratio = (CTX.xmrPrice / CTX.btcPrice).toFixed(4);
+  const dir = CTX.xmrPrice > lastPrice ? 'up' : 'down';
+
+  document.querySelectorAll('.price-live').forEach(el => {
+    el.textContent = '$' + CTX.xmrPrice.toFixed(2);
+    el.classList.remove('price-up', 'price-down');
+    el.classList.add('price-' + dir);
+    setTimeout(() => el.classList.remove('price-up', 'price-down'), 800);
+  });
+
+  // Also update v3 hero price elements
+  ['d5-price','d16-xmr','d30-xmr','g3-xmr'].forEach(id => {
+    const e = document.getElementById(id);
+    if(e) e.textContent = '$' + CTX.xmrPrice.toFixed(2);
+  });
+
+  lastPrice = CTX.xmrPrice;
+}, 3000);
+
+// --- GENUI: STREAM ALL ---
+function streamAll() {
+  const cards = document.querySelectorAll('.dc');
+  // Phase 1: hide all instantly
+  cards.forEach(dc => {
+    dc.style.opacity = '0';
+    dc.style.transform = 'translateY(20px) scale(0.98)';
+    dc.style.transition = 'none';
+  });
+  // Phase 2: cascade in with stagger
+  toast('⚡ GenUI: Streaming 30 components from catalog...');
+  requestAnimationFrame(() => {
+    cards.forEach((dc, i) => {
+      setTimeout(() => {
+        dc.style.transition = 'opacity .6s ease-out, transform .6s ease-out';
+        dc.style.opacity = '1';
+        dc.style.transform = 'translateY(0) scale(1)';
+      }, 80 + i * 70);
+    });
+  });
+  // Phase 3: toast when complete
+  setTimeout(() => toast('✓ 30 components rendered · 150 views hydrated'), 80 + 30 * 70 + 600);
+}
+
+// --- GENUI: SCROLL NAV ---
+function goN(n, el) {
+  document.querySelectorAll('.np').forEach(p => p.classList.remove('on'));
+  el.classList.add('on');
+  if(!n) { window.scrollTo({top:0, behavior:'smooth'}); return; }
+  const e = document.getElementById('d-' + n);
+  if(e) e.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// --- GENUI: TAB SWITCHING ---
+function sw(id, v, el) {
+  el.parentElement.querySelectorAll('.ptab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  ['hero','content','data','nav','quote'].forEach(k => {
+    const p = document.getElementById('v' + id + k);
+    if(p) p.classList.toggle('on', k === v);
+  });
+}
+
+// --- GENUI: D15 ADAPTIVE CARDS ---
+document.querySelectorAll('.d15 .ac').forEach(ac => {
+  ac.addEventListener('click', function() {
+    document.querySelectorAll('.d15 .ac').forEach(a => a.classList.remove('ft'));
+    this.classList.add('ft');
+  });
+});
+
+// --- GENUI: TOAST NOTIFICATIONS ---
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// --- GENUI: INIT ---
+toast(`GenUI: ${getGreeting()} · Visit #${CTX.visits} · ${CTX.visitor==='new'?'Welcome!':'Welcome back'} · 150 views rendered`);
+</script>
+</body>
+</html>
