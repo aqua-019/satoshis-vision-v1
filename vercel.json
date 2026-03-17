@@ -32,7 +32,13 @@
     { "source": "/market", "destination": "/markets.html" },
     { "source": "/eco", "destination": "/ecosystem.html" },
     { "source": "/law", "destination": "/legal.html" },
-    { "source": "/people", "destination": "/community.html" }
+    { "source": "/people", "destination": "/community.html" },
+    { "source": "/swap", "destination": "/hold-monero.html" },
+    { "source": "/quotes", "destination": "/quotes.html" },
+    { "source": "/secrets", "destination": "/secrets.html" },
+    { "source": "/timeline", "destination": "/timeline.html" },
+    { "source": "/outlook", "destination": "/future-outlook.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }
