@@ -62,3 +62,54 @@
   from = "/education"
   to = "/btc-xmr-education.html"
   status = 200
+
+# New pages
+[[redirects]]
+  from = "/mine"
+  to = "/mining.html"
+  status = 200
+
+[[redirects]]
+  from = "/pool"
+  to = "/mempool.html"
+  status = 200
+
+[[redirects]]
+  from = "/net"
+  to = "/network.html"
+  status = 200
+
+[[redirects]]
+  from = "/market"
+  to = "/markets.html"
+  status = 200
+
+[[redirects]]
+  from = "/eco"
+  to = "/ecosystem.html"
+  status = 200
+
+[[redirects]]
+  from = "/law"
+  to = "/legal.html"
+  status = 200
+
+[[redirects]]
+  from = "/people"
+  to = "/community.html"
+  status = 200
+
+[[redirects]]
+  from = "/outlook"
+  to = "/future-outlook.html"
+  status = 200
+
+[[redirects]]
+  from = "/dashboard"
+  to = "/dashboard.html"
+  status = 200
+
+[[redirects]]
+  from = "/swap"
+  to = "/hold-monero.html"
+  status = 200
