@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xmr.irish — Market Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
+    <style>
+        .token-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
+        .tk{border-radius:18px;padding:14px;border:1px solid var(--card-border);background:var(--card-bg);text-align:center;transition:all .5s;cursor:pointer;position:relative;overflow:hidden}
+        .tk:hover{border-color:rgba(255,102,0,.15);border-radius:22px;transform:translateY(-3px)}
+        .tk::before{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .6s;pointer-events:none}
+        .tk:hover::before{opacity:1;animation:orange-pulse 2.5s ease-in-out infinite}
+        .tk-sym{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--g5);text-transform:uppercase;position:relative;z-index:1}
+        .tk-price{font-family:var(--font-data);font-size:22px;font-weight:500;color:var(--xmr);margin:4px 0;position:relative;z-index:1}
+        .tk-chg{font-family:var(--font-mono);font-size:11px;position:relative;z-index:1}
+        .tk-chg.u{color:var(--grn)}.tk-chg.d{color:var(--red)}
+        .tk-mcap{font-family:var(--font-mono);font-size:11px;color:var(--g7);margin-top:2px;position:relative;z-index:1}
+        .tk-vol{font-family:var(--font-mono);font-size:11px;color:var(--g7);position:relative;z-index:1}
+
+        .ratio-box{border-radius:18px;border:1px solid var(--card-border);background:var(--card-bg);padding:16px;margin-bottom:14px;transition:all .4s}
+        .ratio-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+        .ratio-title{font-family:var(--font-subhead);font-style:italic;font-size:15px}
+        .ratio-cycle{font-family:var(--font-mono);font-size:9px;color:var(--g6);letter-spacing:1px}
+        .ratio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .rt{border-radius:14px;padding:10px;text-align:center}
+        .rt:hover{border-radius:18px}
+        .rt-v{font-family:var(--font-data);font-size:18px;font-weight:500;color:var(--xmr);position:relative;z-index:1}
+        .rt-l{font-family:var(--font-mono);font-size:11px;color:var(--g5);margin-top:1px;position:relative;z-index:1}
+
+        .chart-section{margin-bottom:14px}
+        .chart-tabs-row{display:flex;gap:3px;margin-bottom:8px;align-items:center}
+        .chart-tab{padding:3px 10px;border-radius:8px;border:1px solid var(--g8);background:transparent;color:var(--g5);font-family:var(--font-mono);font-size:11px;transition:all .2s;cursor:pointer}
+        .chart-tab:hover{border-color:var(--g6);color:var(--g3)}
+        .chart-tab.active{border-color:rgba(255,102,0,.3);color:var(--xmr);background:rgba(255,102,0,.06)}
+        .flip-toggle{padding:1px 5px;border-radius:4px;border:1px solid var(--g8);background:transparent;color:var(--g6);font-family:var(--font-mono);font-size:9px;margin-left:4px;letter-spacing:.5px;transition:all .2s;cursor:pointer}
+        .flip-toggle:hover{border-color:rgba(255,102,0,.3);color:var(--xmr)}
+        .chart-area{height:220px;background:#060609;border-radius:14px;border:1px solid var(--g9);padding:14px;display:flex;align-items:center;justify-content:center;position:relative}
+        .chart-area .ig{position:absolute;top:10px;left:14px;background:rgba(6,6,9,.92);border:1px solid var(--g8);border-radius:6px;padding:4px 8px;z-index:10}
+        .ig .ig-t{font-family:var(--font-mono);font-size:8px;letter-spacing:1px;color:var(--g6)}
+        .ig .ig-r{display:flex;gap:8px;margin-top:2px}
+        .ig .ig-l{font-family:var(--font-mono);font-size:11px;color:var(--g7)}
+        .ig .ig-v{font-family:var(--font-data);font-size:11px;font-weight:500;color:var(--g2)}
+        .chart-placeholder{font-family:var(--font-mono);font-size:11px;color:var(--g6)}
+
+        .inf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
+        .inf-c{border-radius:16px;padding:12px;text-align:center}
+        .inf-c:hover{border-radius:20px}
+        .inf-v{font-family:var(--font-data);font-size:18px;font-weight:500;color:var(--xmr);position:relative;z-index:1}
+        .inf-l{font-family:var(--font-mono);font-size:11px;color:var(--g5);margin-top:1px;position:relative;z-index:1}
+        .inf-s{font-family:var(--font-body);font-size:11px;color:var(--g6);margin-top:2px;position:relative;z-index:1;line-height:1.4}
+        @media(max-width:768px){.token-row{grid-template-columns:repeat(2,1fr)}.ratio-grid{grid-template-columns:1fr}.inf-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
+    <canvas id="constellation" class="constellation"></canvas>
+    <div class="blob blob-2"></div><div class="blob blob-5"></div>
+    <div class="z1">
+        <div id="nav-mount"></div>
+
+        <div class="sec">
+            <div class="sec-k">Markets / Live</div>
+            <div class="sec-t">Market dashboard</div>
+            <div class="sec-s">Five tokens, cycling ratios, four chart views.</div>
+
+            <!-- 5 Token Cards -->
+            <div class="token-row">
+                <div class="tk"><div class="tk-sym">XMR / Monero</div><div class="tk-price" id="tk-xmr">—</div><div class="tk-chg u" id="tk-xmr-chg">—</div><div class="tk-mcap" id="tk-xmr-mcap">—</div><div class="tk-vol" id="tk-xmr-vol">—</div></div>
+                <div class="tk"><div class="tk-sym">BTC / Bitcoin</div><div class="tk-price" id="tk-btc" style="color:var(--btc)">—</div><div class="tk-chg u" id="tk-btc-chg">—</div><div class="tk-mcap" id="tk-btc-mcap">—</div><div class="tk-vol" id="tk-btc-vol">—</div></div>
+                <div class="tk"><div class="tk-sym">ETH / Ethereum</div><div class="tk-price" id="tk-eth" style="color:var(--blue)">—</div><div class="tk-chg u" id="tk-eth-chg">—</div><div class="tk-mcap" id="tk-eth-mcap">—</div><div class="tk-vol" id="tk-eth-vol">—</div></div>
+                <div class="tk"><div class="tk-sym">SOL / Solana</div><div class="tk-price" id="tk-sol" style="color:var(--cyan)">—</div><div class="tk-chg u" id="tk-sol-chg">—</div><div class="tk-mcap" id="tk-sol-mcap">—</div><div class="tk-vol" id="tk-sol-vol">—</div></div>
+                <div class="tk"><div class="tk-sym">LTC / Litecoin</div><div class="tk-price" id="tk-ltc" style="color:var(--g3)">—</div><div class="tk-chg u" id="tk-ltc-chg">—</div><div class="tk-mcap" id="tk-ltc-mcap">—</div><div class="tk-vol" id="tk-ltc-vol">—</div></div>
+            </div>
+        </div>
+
+        <!-- Cycling Ratios -->
+        <div class="sec sec-border">
+            <div class="ratio-box">
+                <div class="ratio-hdr"><span class="ratio-title">Ratio metrics</span><span class="ratio-cycle" id="ratio-cycle">set 1/3 — cycles every 60s</span></div>
+                <div class="ratio-grid" id="ratio-grid">
+                    <div class="rt"><div class="rt-v" id="r1-v">—</div><div class="rt-l" id="r1-l">BTC/XMR ratio</div></div>
+                    <div class="rt"><div class="rt-v" id="r2-v">—</div><div class="rt-l" id="r2-l">XMR market cap</div></div>
+                    <div class="rt"><div class="rt-v" id="r3-v">—</div><div class="rt-l" id="r3-l">24h volume</div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4 Charts -->
+        <div class="sec sec-border">
+            <div class="sec-k">Charts</div>
+            <div class="chart-section">
+                <div class="chart-tabs-row">
+                    <button class="chart-tab active" data-chart="xmrusd" onclick="setM(this,'xmrusd')">XMR/USD</button>
+                    <button class="chart-tab" data-chart="btcusd" onclick="setM(this,'btcusd')">BTC/USD</button>
+                    <button class="chart-tab" data-chart="btcxmr" onclick="setM(this,'btcxmr')">BTC/XMR</button>
+                    <button class="flip-toggle" onclick="flipChart()" id="flipBtn" title="Toggle XMR/BTC ↔ BTC/XMR">flip</button>
+                    <button class="chart-tab" data-chart="compare" onclick="setM(this,'compare')">2014 vs 2026</button>
+                </div>
+                <div class="chart-area">
+                    <div class="ig">
+                        <div class="ig-t" id="ig-title">XMR / USD</div>
+                        <div class="ig-r"><span class="ig-l">Price</span><span class="ig-v" id="ig-price">—</span></div>
+                        <div class="ig-r"><span class="ig-l">24h</span><span class="ig-v" id="ig-chg">—</span></div>
+                    </div>
+                    <div class="chart-placeholder">Chart renders with CoinGecko historical data</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6-cell Inflation Grid -->
+        <div class="sec sec-border">
+            <div class="sec-k">Inflation</div>
+            <div class="sec-t">Supply dynamics</div>
+            <div class="sec-s">Monero's tail emission vs Bitcoin's halving model.</div>
+            <div class="inf-grid">
+                <div class="inf-c"><div class="inf-v">0.85%</div><div class="inf-l">XMR annual inflation</div><div class="inf-s">Declining every year as supply grows. Will be below 0.5% by 2035.</div></div>
+                <div class="inf-c"><div class="inf-v">0.83%</div><div class="inf-l">BTC annual inflation</div><div class="inf-s">Post-2024 halving. Drops to ~0.4% in 2028. Reaches 0% by 2140.</div></div>
+                <div class="inf-c"><div class="inf-v">∞ vs 21M</div><div class="inf-l">Supply cap</div><div class="inf-s">XMR is technically infinite but practically deflationary. BTC hard-capped.</div></div>
+                <div class="inf-c"><div class="inf-v">432/day</div><div class="inf-l">XMR daily issuance</div><div class="inf-s">Fixed forever at 0.6 XMR per block × 720 blocks/day.</div></div>
+                <div class="inf-c"><div class="inf-v">450/day</div><div class="inf-l">BTC daily issuance</div><div class="inf-s">3.125 BTC per block × 144 blocks/day. Halves in April 2028.</div></div>
+                <div class="inf-c"><div class="inf-v">0.6 XMR</div><div class="inf-l">Tail emission</div><div class="inf-s">Permanent mining incentive. No fee-only future. Network security guaranteed.</div></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>xmr.irish / markets / C.3.3 / SJB83</span>
+            <div><a href="index.html">Home</a><a href="network.html">Network</a><a href="mempool.html">Mempool</a><a href="ecosystem.html">Ecosystem</a></div>
+            <span>CoinGecko API</span>
+        </div>
+    </div>
+</div>
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script src="js/genui.js"></script>
+<script>
+NavComponent.inject('nav-mount');
+PriceService.start();
+MoneroNetwork.start();
+
+PriceService.subscribe(function(p){
+    if(!p.xmr)return;
+    function u(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
+    function uc(id,v,cls){var e=document.getElementById(id);if(e){e.textContent=v;e.className='tk-chg '+cls;}}
+    u('tk-xmr',PriceService.fmt(p.xmr.usd,0));uc('tk-xmr-chg',PriceService.pct(p.xmr.change24h),PriceService.cls(p.xmr.change24h));u('tk-xmr-mcap',PriceService.fmtCompact(p.xmr.mcap));u('tk-xmr-vol',PriceService.fmtCompact(p.xmr.vol)+' vol');
+    u('tk-btc',PriceService.fmt(p.btc.usd,0));uc('tk-btc-chg',PriceService.pct(p.btc.change24h),PriceService.cls(p.btc.change24h));u('tk-btc-mcap',PriceService.fmtCompact(p.btc.mcap));u('tk-btc-vol',PriceService.fmtCompact(p.btc.vol)+' vol');
+    u('tk-eth',PriceService.fmt(p.eth.usd,0));uc('tk-eth-chg',PriceService.pct(p.eth.change24h),PriceService.cls(p.eth.change24h));u('tk-eth-mcap',PriceService.fmtCompact(p.eth.mcap));u('tk-eth-vol',PriceService.fmtCompact(p.eth.vol)+' vol');
+    u('tk-sol',PriceService.fmt(p.sol.usd,0));uc('tk-sol-chg',PriceService.pct(p.sol.change24h),PriceService.cls(p.sol.change24h));u('tk-sol-mcap',PriceService.fmtCompact(p.sol.mcap));u('tk-sol-vol',PriceService.fmtCompact(p.sol.vol)+' vol');
+    u('tk-ltc',PriceService.fmt(p.ltc.usd,0));uc('tk-ltc-chg',PriceService.pct(p.ltc.change24h),PriceService.cls(p.ltc.change24h));u('tk-ltc-mcap',PriceService.fmtCompact(p.ltc.mcap));u('tk-ltc-vol',PriceService.fmtCompact(p.ltc.vol)+' vol');
+    u('ig-price',PriceService.fmt(p.xmr.usd,2));u('ig-chg',PriceService.pct(p.xmr.change24h));
+    updateRatios(p);
+});
+
+// Cycling ratios
+var ratioSets=[
+    [{v:'btcXmrRatio',l:'BTC/XMR ratio',fmt:function(p){return p.btcXmrRatio.toFixed(1)}},{v:'xmr',l:'XMR market cap',fmt:function(p){return PriceService.fmtCompact(p.xmr.mcap)}},{v:'xmr',l:'XMR 24h volume',fmt:function(p){return PriceService.fmtCompact(p.xmr.vol)}}],
+    [{v:'xmr',l:'XMR dominance',fmt:function(p){return ((p.xmr.mcap/p.btc.mcap)*100).toFixed(3)+'%'}},{v:'xmr',l:'XMR/ETH ratio',fmt:function(p){return (p.xmr.usd/p.eth.usd).toFixed(4)}},{v:'xmr',l:'XMR/SOL ratio',fmt:function(p){return (p.xmr.usd/p.sol.usd).toFixed(2)}}],
+    [{v:'btc',l:'BTC dominance approx',fmt:function(p){return '~62%'}},{v:'xmr',l:'Days of supply delisted',fmt:function(p){return '73 exchanges'}},{v:'xmr',l:'IRS bounty',fmt:function(p){return '$625,000'}}]
+];
+var rsi=0,lastPrices=null;
+function updateRatios(p){
+    lastPrices=p;
+    var set=ratioSets[rsi];
+    for(var i=0;i<3;i++){document.getElementById('r'+(i+1)+'-v').textContent=set[i].fmt(p);document.getElementById('r'+(i+1)+'-l').textContent=set[i].l;}
+    document.getElementById('ratio-cycle').textContent='set '+(rsi+1)+'/3 — cycles every 60s';
+}
+setInterval(function(){rsi=(rsi+1)%3;if(lastPrices)updateRatios(lastPrices);},60000);
+
+function setM(el,chart){document.querySelectorAll('.chart-tab').forEach(function(b){b.classList.remove('active')});el.classList.add('active');
+    var titles={'xmrusd':'XMR / USD','btcusd':'BTC / USD','btcxmr':'BTC / XMR','compare':'2014 vs 2026 overlay'};
+    document.getElementById('ig-title').textContent=titles[chart]||chart;
+}
+var flipped=false;
+function flipChart(){flipped=!flipped;document.getElementById('flipBtn').textContent=flipped?'flip ↺':'flip';
+    var active=document.querySelector('.chart-tab.active');
+    if(active&&active.dataset.chart==='btcxmr'){document.getElementById('ig-title').textContent=flipped?'XMR / BTC':'BTC / XMR';}
+}
+</script>
+</body>
+</html>

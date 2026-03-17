@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xmr.irish — Network Statistics</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
+    <style>
+        .range-row{display:flex;gap:3px;margin-bottom:10px}
+        .range-btn{padding:3px 10px;border-radius:8px;border:1px solid var(--g8);background:transparent;color:var(--g5);font-family:var(--font-mono);font-size:11px;transition:all .2s;cursor:pointer}
+        .range-btn:hover{border-color:var(--g6);color:var(--g3)}
+        .range-btn.active{border-color:rgba(255,102,0,.3);color:var(--xmr);background:rgba(255,102,0,.06)}
+        .chart-canvas-wrap{position:relative;height:200px;background:#060609;border-radius:14px;border:1px solid var(--g9);padding:14px;margin-bottom:14px}
+        .chart-legend{position:absolute;top:10px;left:14px;background:rgba(6,6,9,.92);border:1px solid var(--g8);border-radius:8px;padding:6px 10px;z-index:10}
+        .cl-row{display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;margin:2px 0}
+        .cl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+        .cl-name{color:var(--g4)}.cl-val{color:var(--g2);font-family:var(--font-data);font-weight:500;margin-left:auto}
+        .chart-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11px;color:var(--g6)}
+        .metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+        .mg{border-radius:16px;padding:12px;border:1px solid var(--card-border);background:var(--card-bg);text-align:center;transition:all .4s;cursor:pointer;position:relative;overflow:hidden}
+        .mg:hover{border-color:rgba(255,102,0,.12);border-radius:20px;transform:scale(1.03)}
+        .mg::before{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .6s;pointer-events:none}
+        .mg:hover::before{opacity:1;animation:orange-pulse 2.5s ease-in-out infinite}
+        .mg-v{font-family:var(--font-data);font-size:18px;font-weight:500;color:var(--xmr);position:relative;z-index:1}
+        .mg-l{font-family:var(--font-mono);font-size:11px;color:var(--g5);margin-top:2px;position:relative;z-index:1}
+        .mg-s{font-family:var(--font-mono);font-size:11px;color:var(--g7);margin-top:1px;position:relative;z-index:1}
+        .mg-bar{height:3px;border-radius:2px;background:var(--g9);margin-top:6px;overflow:hidden;position:relative;z-index:1}
+        .mg-bar-f{height:100%;border-radius:2px}
+        @media(max-width:768px){.metric-grid{grid-template-columns:repeat(2,1fr)}}
+    </style>
+</head>
+<body>
+<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
+    <canvas id="constellation" class="constellation"></canvas>
+    <div class="blob blob-1"></div><div class="blob blob-4"></div>
+    <div class="z1">
+        <div id="nav-mount"></div>
+
+        <div class="sec">
+            <div class="sec-k">Network / Live</div>
+            <div class="sec-t">Monero network statistics</div>
+            <div class="sec-s">Four core metrics — hashrate, difficulty, transactions, blocksize.</div>
+            <div class="range-row">
+                <button class="range-btn" data-range="7" onclick="setR(this,7)">7d</button>
+                <button class="range-btn" data-range="30" onclick="setR(this,30)">30d</button>
+                <button class="range-btn active" data-range="90" onclick="setR(this,90)">90d</button>
+                <button class="range-btn" data-range="180" onclick="setR(this,180)">180d</button>
+            </div>
+            <div class="chart-canvas-wrap">
+                <div class="chart-legend">
+                    <div class="cl-row"><div class="cl-dot" style="background:var(--xmr)"></div><span class="cl-name">Hashrate</span><span class="cl-val" id="cl-hash">—</span></div>
+                    <div class="cl-row"><div class="cl-dot" style="background:var(--grn)"></div><span class="cl-name">Difficulty</span><span class="cl-val" id="cl-diff">—</span></div>
+                    <div class="cl-row"><div class="cl-dot" style="background:var(--blue)"></div><span class="cl-name">Daily txns</span><span class="cl-val" id="cl-txns">—</span></div>
+                    <div class="cl-row"><div class="cl-dot" style="background:var(--gold)"></div><span class="cl-name">Block size</span><span class="cl-val" id="cl-bsize">—</span></div>
+                </div>
+                <div class="chart-placeholder">Chart renders with live data from Monero daemon RPC</div>
+            </div>
+        </div>
+
+        <div class="sec sec-border">
+            <div class="sec-k">Metrics / 16 cells</div>
+            <div class="sec-t">Complete network snapshot</div>
+            <div class="sec-s">Every cell is live from the Monero daemon, 3D interactive, and permalinked.</div>
+            <div class="metric-grid">
+                <a class="mg" href="https://monero.com/network" target="_blank" data-metric-id="hashrate"><div class="mg-v" id="n-hashrate">—</div><div class="mg-l">Hashrate</div><div class="mg-s">H/s network total</div><div class="mg-bar"><div class="mg-bar-f" style="width:92%;background:var(--xmr)"></div></div></a>
+                <a class="mg" href="https://monero.com/network" target="_blank" data-metric-id="difficulty"><div class="mg-v" id="n-diff">—</div><div class="mg-l">Difficulty</div><div class="mg-s">Adjusts every block</div><div class="mg-bar"><div class="mg-bar-f" style="width:94%;background:var(--grn)"></div></div></a>
+                <a class="mg" href="https://localmonero.co/blocks" target="_blank" data-metric-id="height"><div class="mg-v" id="n-height">—</div><div class="mg-l">Block height</div><div class="mg-s">Current tip</div><div class="mg-bar"><div class="mg-bar-f" style="width:100%;background:var(--xmr)"></div></div></a>
+                <a class="mg" href="https://localmonero.co/blocks" target="_blank" data-metric-id="txpool"><div class="mg-v" id="n-pool">—</div><div class="mg-l">Mempool size</div><div class="mg-s">Unconfirmed txns</div><div class="mg-bar"><div class="mg-bar-f" style="width:30%;background:var(--gold)"></div></div></a>
+                <div class="mg" data-metric-id="reward"><div class="mg-v">0.614 XMR</div><div class="mg-l">Block reward</div><div class="mg-s">Tail emission</div><div class="mg-bar"><div class="mg-bar-f" style="width:100%;background:var(--grn)"></div></div></div>
+                <div class="mg" data-metric-id="inflation"><div class="mg-v">0.85%</div><div class="mg-l">Annual inflation</div><div class="mg-s">Declining forever</div><div class="mg-bar"><div class="mg-bar-f" style="width:8%;background:var(--blue)"></div></div></div>
+                <div class="mg" data-metric-id="supply"><div class="mg-v">18.45M+</div><div class="mg-l">Circulating supply</div><div class="mg-s">+432 XMR/day</div><div class="mg-bar"><div class="mg-bar-f" style="width:85%;background:var(--xmr)"></div></div></div>
+                <div class="mg" data-metric-id="blocktime"><div class="mg-v">~120s</div><div class="mg-l">Target block time</div><div class="mg-s">2 minutes</div><div class="mg-bar"><div class="mg-bar-f" style="width:50%;background:var(--gold)"></div></div></div>
+                <div class="mg" data-metric-id="ringsize"><div class="mg-v">16</div><div class="mg-l">Ring size</div><div class="mg-s">15 decoys + 1 real</div><div class="mg-bar"><div class="mg-bar-f" style="width:16%;background:var(--xmr)"></div></div></div>
+                <div class="mg" data-metric-id="fcmp"><div class="mg-v">100M+</div><div class="mg-l">FCMP++ set</div><div class="mg-s">Coming soon</div><div class="mg-bar"><div class="mg-bar-f" style="width:0%;background:var(--grn)"></div></div></div>
+                <div class="mg" data-metric-id="totaltx"><div class="mg-v">58.97M</div><div class="mg-l">Total transactions</div><div class="mg-s">All private</div><div class="mg-bar"><div class="mg-bar-f" style="width:70%;background:var(--blue)"></div></div></div>
+                <div class="mg" data-metric-id="dailytx"><div class="mg-v">~20K</div><div class="mg-l">Daily transactions</div><div class="mg-s">Average</div><div class="mg-bar"><div class="mg-bar-f" style="width:40%;background:var(--xmr)"></div></div></div>
+                <div class="mg" data-metric-id="delistings"><div class="mg-v">73</div><div class="mg-l">Exchange delistings</div><div class="mg-s">Since 2020</div><div class="mg-bar"><div class="mg-bar-f" style="width:73%;background:var(--red)"></div></div></div>
+                <div class="mg" data-metric-id="irs"><div class="mg-v">$625K</div><div class="mg-l">IRS bounty</div><div class="mg-s">Still unclaimed</div><div class="mg-bar"><div class="mg-bar-f" style="width:0%;background:var(--grn)"></div></div></div>
+                <div class="mg" data-metric-id="illicit"><div class="mg-v">&lt;0.4%</div><div class="mg-l">Illicit usage</div><div class="mg-s">Lower than cash</div><div class="mg-bar"><div class="mg-bar-f" style="width:4%;background:var(--blue)"></div></div></div>
+                <div class="mg" data-metric-id="algo"><div class="mg-v">RandomX</div><div class="mg-l">Mining algorithm</div><div class="mg-s">CPU-optimized</div><div class="mg-bar"><div class="mg-bar-f" style="width:100%;background:var(--grn)"></div></div></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>xmr.irish / network / C.3.3 / SJB83</span>
+            <div><a href="index.html">Home</a><a href="markets.html">Markets</a><a href="mempool.html">Mempool</a><a href="mining.html">Mining</a></div>
+            <span>monero.com/network + daemon RPC</span>
+        </div>
+    </div>
+</div>
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script src="js/genui.js"></script>
+<script>
+NavComponent.inject('nav-mount');
+PriceService.start();
+MoneroNetwork.start();
+MoneroNetwork.subscribe(function(d){
+    if(d.hashrate){document.getElementById('n-hashrate').textContent=MoneroNetwork.fmtHashrate(d.hashrate);document.getElementById('cl-hash').textContent=MoneroNetwork.fmtHashrate(d.hashrate);}
+    if(d.difficulty){document.getElementById('n-diff').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);document.getElementById('cl-diff').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);}
+    if(d.height)document.getElementById('n-height').textContent=d.height.toLocaleString();
+    if(d.txPoolSize){document.getElementById('n-pool').textContent=d.txPoolSize;document.getElementById('cl-txns').textContent='~20K/day';}
+    document.getElementById('cl-bsize').textContent='~300 KB';
+});
+function setR(el,range){
+    document.querySelectorAll('.range-btn').forEach(function(b){b.classList.remove('active')});
+    if(el)el.classList.add('active');
+    else document.querySelector('[data-range="'+range+'"]').classList.add('active');
+    console.log('[Network] Range set to '+range+'d');
+}
+</script>
+</body>
+</html>

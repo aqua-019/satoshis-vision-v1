@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xmr.irish — Monero Mempool Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
+    <style>
+        /* ═══ MEMPOOL OVERRIDE: JetBrains Mono on everything ═══ */
+        .mp, .mp *, .mp *::before, .mp *::after {
+            font-family: 'JetBrains Mono', monospace !important;
+        }
+        /* Re-apply D09 only to the nav (which is outside .mp) */
+        .nav, .nav * { font-family: var(--font-mono) !important; }
+        .nav .nav-logo { font-family: var(--font-headline) !important; }
+        .nav .shamrock-link svg { font-family: inherit !important; }
+        .nav .nb-val { font-family: var(--font-data) !important; }
+        .nav .np .val { font-family: var(--font-data) !important; }
+
+        .mp{background:var(--bg);color:#C8C8C8;min-height:100vh}
+        .mp-tabs{display:flex;gap:12px;margin-left:auto;font-size:11px;color:#444}
+        .mp-tabs a{padding:4px 0;transition:color .2s;color:#444;text-decoration:none}
+        .mp-tabs a:hover{color:#C8C8C8}.mp-tabs a.a{color:var(--xmr);border-bottom:1px solid var(--xmr)}
+        .mp-search{display:flex;gap:5px;margin-left:14px}
+        .mp-search input{background:#080810;border:1px solid #1A1A22;border-radius:4px;padding:4px 8px;color:#C8C8C8;font-size:11px;width:220px;transition:border-color .2s}
+        .mp-search input:focus{outline:none;border-color:var(--xmr)}
+        .mp-search input::placeholder{color:#333}
+        .mp-search button{background:var(--xmr);color:var(--bg);border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600}
+
+        .stats{display:flex;gap:1px;padding:8px 20px;background:#040408}
+        .st{flex:1;background:#080810;padding:7px 8px;text-align:center}
+        .st:first-child{border-radius:6px 0 0 6px}.st:last-child{border-radius:0 6px 6px 0}
+        .st-v{font-size:13px;font-weight:600;color:var(--xmr)}
+        .st-l{font-size:11px;color:#444;font-weight:300}
+
+        .blk-area{padding:12px 20px;position:relative}
+        .blk-hdr{font-size:11px;color:#444;margin-bottom:4px;display:flex;justify-content:space-between;font-weight:300}
+        .blk-hdr .ch{color:var(--xmr)}
+        .arrow-wrap{position:relative;height:28px;margin:-2px 0 4px;overflow:visible}
+        .tx-arrow{position:absolute;display:flex;flex-direction:column;align-items:center;transition:left 1s ease;z-index:5}
+        .tx-arrow.hidden{opacity:0;pointer-events:none}
+        .arr-label{font-size:9px;color:#4A9EFF;font-weight:500;white-space:nowrap;margin-bottom:1px;letter-spacing:.5px}
+        .arr-line{width:1px;height:10px;background:#4A9EFF}
+        .arr-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #4A9EFF}
+
+        .blk-row{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:#1A1A22 transparent}
+        .blk-row::-webkit-scrollbar{height:3px}.blk-row::-webkit-scrollbar-thumb{background:#1A1A22;border-radius:2px}
+        .divider{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:30px;flex-shrink:0}
+        .div-line{width:1px;flex:1;background:linear-gradient(180deg,transparent,#333,transparent)}
+        .div-arr{font-size:11px;color:#444;padding:2px 0}
+        .bc{min-width:110px;flex-shrink:0;padding:7px 9px;display:flex;flex-direction:column;gap:2px;border-radius:6px;position:relative;overflow:hidden;transition:all .3s;cursor:default}
+        .bc:hover{transform:translateY(-2px)}
+        .bc.pend{background:#0A0A10;border:1px solid #16161E}.bc.pend:hover{border-color:#333}
+        .bc.pend .v1{color:#777;font-size:11px}.bc.pend .v2{color:#555;font-size:11px}
+        .bc.pend .v3{color:#888;font-size:12px;font-weight:500}.bc.pend .v4{color:#555;font-size:11px}
+        .bc.pend .v5{color:var(--xmr);font-size:11px;font-weight:500}
+        .bc.pend .bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:#16161E}
+        .bc.conf{background:linear-gradient(135deg,#1A0E00,#100800);border:1px solid rgba(255,102,0,.2)}
+        .bc.conf:hover{border-color:rgba(255,102,0,.45)}
+        .bc.conf .ht{color:var(--xmr);font-size:11px;font-weight:600}
+        .bc.conf .v3{color:var(--xmr);font-size:12px;font-weight:500}.bc.conf .v4{color:rgba(255,102,0,.4);font-size:11px}
+        .bc.conf .v5{color:rgba(255,102,0,.3);font-size:11px}
+        .bc.conf .cf{font-size:11px;margin-top:1px}
+        .bc.conf .bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--xmr)}
+        .cf-f{color:var(--grn)}.cf-p{color:#CC7733}
+        .bc.tracked{border-color:rgba(74,158,255,.5)!important;box-shadow:0 0 8px rgba(74,158,255,.15)}
+
+        .tx-confirmed-cell{margin:8px 20px 0;padding:10px 16px;border-radius:6px;background:rgba(0,211,149,.06);border:1px solid rgba(0,211,149,.15);display:none;text-align:center;animation:cfFlash .6s ease}
+        @keyframes cfFlash{0%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
+        .tx-confirmed-cell.vis{display:block}
+        .tcc-title{font-size:13px;font-weight:600;color:var(--grn)}
+        .tcc-sub{font-size:11px;color:#555;margin-top:2px;font-weight:300}
+
+        .tx-sec{padding:12px 20px;border-top:1px solid #0A0A10}
+        .tx-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+        .tx-title{font-size:15px;font-weight:600}
+        .tx-hash{font-size:11px;color:#4A9EFF;word-break:break-all;flex:1;font-weight:300}
+        .tx-badge{padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600}
+        .tx-badge.unc{background:rgba(255,71,87,.12);color:var(--red);border:1px solid rgba(255,71,87,.2)}
+        .tx-badge.full{background:rgba(0,211,149,.12);color:var(--grn);border:1px solid rgba(0,211,149,.2)}
+        .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#0A0A10;border-radius:6px;overflow:hidden}
+        .tx-cell{background:#080810;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
+        .tc-l{font-size:11px;color:#444;font-weight:300}.tc-v{font-size:11px;font-weight:500}
+        .tc-v.o{color:var(--xmr)}.tc-v.g{color:var(--grn)}.tc-v.b{color:#4A9EFF}
+
+        .tx-track{margin-top:8px;padding:10px 12px;background:#080810;border-radius:6px}
+        .tt-hdr{font-size:11px;color:#444;margin-bottom:5px;display:flex;justify-content:space-between;font-weight:300}
+        .tt-blocks{display:flex;gap:2px}
+        .tt-b{flex:1;height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;transition:all .6s}
+        .tt-b.done{background:rgba(255,102,0,.15);color:var(--xmr);border:1px solid rgba(255,102,0,.15)}
+        .tt-b.cur{background:rgba(255,102,0,.06);color:rgba(255,153,51,.5);border:1px solid rgba(255,102,0,.08);animation:tcp 2s infinite}
+        @keyframes tcp{0%,100%{border-color:rgba(255,102,0,.08)}50%{border-color:rgba(255,102,0,.3)}}
+        .tt-b.wait{background:#0A0A10;color:#222;border:1px solid #14141A}
+        .tt-b.fin{background:rgba(0,211,149,.12);color:var(--grn);border:1px solid rgba(0,211,149,.15)}
+        .tt-status{font-size:11px;color:var(--xmr);margin-top:3px;text-align:center;font-weight:300}
+
+        .txl{padding:12px 20px;border-top:1px solid #0A0A10}
+        .txl-title{font-size:12px;font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between}
+        .txl-title span{font-size:11px;color:#444;font-weight:300}
+        .txl-hdr,.txl-r{display:grid;grid-template-columns:1fr 80px 65px 60px 50px;padding:4px 5px;font-size:11px}
+        .txl-hdr{color:#333;border-bottom:1px solid #0A0A10;font-weight:300}
+        .txl-r{border-bottom:1px solid #060608;transition:background .15s}.txl-r:hover{background:#080810}
+        .txl-h{color:#4A9EFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:300}
+        .txl-f{color:var(--gold);text-align:right}.txl-s{color:#555;text-align:right;font-weight:300}
+        .txl-c{text-align:right}.txl-t{color:#333;text-align:right;font-weight:300}
+        .cp{display:inline-block;padding:1px 4px;border-radius:2px;font-size:11px;font-weight:500}
+        .cp.p{background:rgba(255,71,87,.08);color:var(--red)}
+        .cp.c{background:rgba(255,102,0,.08);color:var(--xmr)}
+        .cp.f{background:rgba(0,211,149,.08);color:var(--grn)}
+        .mp-foot{padding:5px 20px;text-align:center;font-size:11px;color:#1A1A1A;border-top:1px solid #060608;font-weight:300}
+    </style>
+</head>
+<body>
+<div class="page-offset">
+    <div id="nav-mount"></div>
+    <div class="mp">
+        <div style="display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,102,0,.06);gap:10px">
+            <div style="font-size:15px;color:var(--xmr);font-weight:600;letter-spacing:-.5px">xmr.irish <span style="color:#444;font-weight:400">/</span> mempool</div>
+            <div class="mp-tabs"><a href="mempool.html" class="a">Mempool</a><a href="mining.html">Mining</a><a href="network.html">Network</a><a href="markets.html">Markets</a></div>
+            <div class="mp-search"><input type="text" id="txIn" placeholder="search txn hash or block height..."><button onclick="doSearch()">TRACK</button></div>
+        </div>
+        <div class="stats">
+            <div class="st"><div class="st-v" id="st-unconf">—</div><div class="st-l">unconfirmed</div></div>
+            <div class="st"><div class="st-v" id="st-hash">—</div><div class="st-l">hashrate</div></div>
+            <div class="st"><div class="st-v" id="st-diff">—</div><div class="st-l">difficulty</div></div>
+            <div class="st"><div class="st-v">~2 min</div><div class="st-l">block_time</div></div>
+            <div class="st"><div class="st-v">0.614 XMR</div><div class="st-l">reward</div></div>
+            <div class="st"><div class="st-v" style="color:var(--grn)">0.00002/KB</div><div class="st-l">median_fee</div></div>
+        </div>
+        <div class="blk-area">
+            <div class="blk-hdr"><span>pending (mempool)</span><span class="ch">confirmed blocks</span></div>
+            <div class="arrow-wrap" id="arrowWrap"><div class="tx-arrow hidden" id="txArrow"><div class="arr-label" id="arrLabel">your_txn</div><div class="arr-line" id="arrLine"></div><div class="arr-tri" id="arrTri"></div></div></div>
+            <div class="blk-row" id="blkRow">
+                <!-- Pending blocks populated by JS -->
+                <div class="bc pend" id="pend-0"><div class="v2">loading...</div><div class="v4">— txns</div><div class="v5">—</div><div class="bar"></div></div>
+                <div class="bc pend" id="pend-1" style="opacity:.7"><div class="v2">—</div><div class="v4">—</div><div class="v5">—</div><div class="bar"></div></div>
+                <div class="bc pend" id="pend-2" style="opacity:.5"><div class="v2">—</div><div class="v4">—</div><div class="v5">—</div><div class="bar"></div></div>
+                <div class="divider"><div class="div-line"></div><div class="div-arr">&#8693;</div><div class="div-line"></div></div>
+                <!-- Confirmed blocks populated by JS -->
+                <div id="conf-blocks"></div>
+            </div>
+        </div>
+        <div class="tx-confirmed-cell" id="txConfCell"><div class="tcc-title">txn fully confirmed</div><div class="tcc-sub" id="tccSub"></div></div>
+        <div class="tx-sec" id="txSec">
+            <div class="tx-hdr">
+                <div class="tx-title">transaction</div>
+                <div class="tx-hash" id="txHash">—</div>
+                <div class="tx-badge unc" id="txBadge">—</div>
+            </div>
+            <div class="tx-grid">
+                <div class="tx-cell"><span class="tc-l">first_seen</span><span class="tc-v" id="txSeen">—</span></div>
+                <div class="tx-cell"><span class="tc-l">fee</span><span class="tc-v o" id="txFee">—</span></div>
+                <div class="tx-cell"><span class="tc-l">eta</span><span class="tc-v" id="txEta">—</span></div>
+                <div class="tx-cell"><span class="tc-l">fee_rate</span><span class="tc-v o" id="txRate">—</span></div>
+                <div class="tx-cell"><span class="tc-l">size</span><span class="tc-v" id="txSize">—</span></div>
+                <div class="tx-cell"><span class="tc-l">ring_size</span><span class="tc-v o">16 decoys</span></div>
+                <div class="tx-cell"><span class="tc-l">privacy</span><span class="tc-v g">RingCT + Stealth</span></div>
+                <div class="tx-cell"><span class="tc-l">inputs / outputs</span><span class="tc-v">hidden / hidden</span></div>
+            </div>
+            <div class="tx-track">
+                <div class="tt-hdr"><span>confirmation_progress</span><span id="cfCount">0/10 blocks</span></div>
+                <div class="tt-blocks" id="cfBlocks">
+                    <div class="tt-b cur">1</div><div class="tt-b wait">2</div><div class="tt-b wait">3</div><div class="tt-b wait">4</div><div class="tt-b wait">5</div><div class="tt-b wait">6</div><div class="tt-b wait">7</div><div class="tt-b wait">8</div><div class="tt-b wait">9</div><div class="tt-b wait">10</div>
+                </div>
+                <div class="tt-status" id="ttStat">enter a transaction hash to begin tracking...</div>
+            </div>
+        </div>
+        <div class="txl">
+            <div class="txl-title">recent_transactions <span id="txl-count">—</span></div>
+            <div class="txl-hdr"><span>hash</span><span style="text-align:right">fee</span><span style="text-align:right">size</span><span style="text-align:right">status</span><span style="text-align:right">time</span></div>
+            <div id="txl-body">
+                <div class="txl-r"><span class="txl-h">loading mempool data...</span><span></span><span></span><span></span><span></span></div>
+            </div>
+        </div>
+        <div class="mp-foot">xmr.irish / mempool / live data from Monero daemon RPC / SJB83</div>
+    </div>
+</div>
+
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script src="js/genui.js"></script>
+<script>
+NavComponent.inject('nav-mount');
+PriceService.start();
+
+// ═══ LIVE MONERO DATA ═══
+let tracking = false;
+let trackedHash = '';
+let trackedBlockHeight = 0;
+let confStep = 0;
+
+async function initMempool() {
+    await MoneroNetwork.startFull();
+
+    // Populate stats
+    MoneroNetwork.subscribe(function(d) {
+        if (d.hashrate) document.getElementById('st-hash').textContent = MoneroNetwork.fmtHashrate(d.hashrate);
+        if (d.difficulty) document.getElementById('st-diff').textContent = MoneroNetwork.fmtDifficulty(d.difficulty);
+        if (d.txPoolSize) {
+            document.getElementById('st-unconf').textContent = d.txPoolSize;
+            document.getElementById('txl-count').textContent = d.txPoolSize + ' unconfirmed';
+        }
+    });
+
+    // Populate confirmed blocks
+    renderConfirmedBlocks();
+
+    // Populate mempool transaction list
+    renderMempoolTxns();
+
+    // Poll for updates
+    setInterval(async () => {
+        const prevHeight = MoneroNetwork.data.height;
+        await MoneroNetwork.fetchInfo();
+        if (MoneroNetwork.data.height !== prevHeight) {
+            await MoneroNetwork.fetchRecentBlocks();
+            renderConfirmedBlocks();
+            if (tracking) checkTrackedTx();
+        }
+        await MoneroNetwork.fetchMempool();
+        renderMempoolTxns();
+    }, 30000);
+}
+
+function renderConfirmedBlocks() {
+    const container = document.getElementById('conf-blocks');
+    if (!container || !MoneroNetwork.blocks.length) return;
+
+    container.innerHTML = MoneroNetwork.blocks.map((b, i) => {
+        const opacity = Math.max(0.3, 1 - i * 0.07);
+        const confLabel = b.confirmations >= 10
+            ? '<span class="cf-f">10/10</span>'
+            : '<span class="cf-p">' + b.confirmations + '/10</span>';
+        const isTracked = tracking && trackedBlockHeight === b.height ? ' tracked' : '';
+        return `<div class="bc conf${isTracked}" id="conf-${i}" data-height="${b.height}" style="opacity:${opacity}">
+            <div class="ht">#${b.height.toLocaleString()}</div>
+            <div class="v3">${b.reward.toFixed(3)} XMR</div>
+            <div class="v4">${b.numTxes} txns</div>
+            <div class="v5">${MoneroNetwork.fmtTimeAgo(b.timestamp)}</div>
+            <div class="cf">${confLabel}</div>
+            <div class="bar"></div>
+        </div>`;
+    }).join('');
+}
+
+function renderMempoolTxns() {
+    const body = document.getElementById('txl-body');
+    if (!body || !MoneroNetwork.mempool.length) return;
+
+    body.innerHTML = MoneroNetwork.mempool.slice(0, 15).map(tx => {
+        const time = new Date(tx.receiveTime * 1000);
+        const timeStr = time.getHours().toString().padStart(2,'0') + ':' + time.getMinutes().toString().padStart(2,'0');
+        return `<div class="txl-r" style="cursor:pointer" onclick="searchHash('${tx.hash}')">
+            <span class="txl-h">${MoneroNetwork.truncHash(tx.hash)}</span>
+            <span class="txl-f">${tx.fee.toFixed(6)}</span>
+            <span class="txl-s">${tx.size.toLocaleString()} B</span>
+            <span class="txl-c"><span class="cp p">pending</span></span>
+            <span class="txl-t">${timeStr}</span>
+        </div>`;
+    }).join('');
+}
+
+// ═══ TRANSACTION TRACKING WITH ARROW ═══
+async function doSearch() {
+    const v = document.getElementById('txIn').value.trim();
+    if (!v) return;
+    searchHash(v);
+}
+
+async function searchHash(hash) {
+    document.getElementById('txIn').value = hash;
+    trackedHash = hash;
+    tracking = true;
+    confStep = 0;
+
+    // Store for GenUI return-visit pre-fill
+    localStorage.setItem('xmr_lasttx', hash);
+
+    // Reset UI
+    document.getElementById('txHash').textContent = hash;
+    document.getElementById('txBadge').className = 'tx-badge unc';
+    document.getElementById('txBadge').textContent = 'unconfirmed';
+    document.getElementById('txSeen').textContent = 'just now';
+    document.getElementById('txEta').textContent = 'in ~2 min';
+    document.getElementById('txConfCell').classList.remove('vis');
+
+    const bl = document.getElementById('cfBlocks').children;
+    for (let i = 0; i < 10; i++) bl[i].className = 'tt-b wait';
+    bl[0].className = 'tt-b cur';
+    document.getElementById('cfCount').textContent = '0/10 blocks';
+    document.getElementById('ttStat').textContent = 'tracking transaction...';
+    document.getElementById('ttStat').style.color = 'var(--xmr)';
+
+    // Show arrow in pending area
+    const arrow = document.getElementById('txArrow');
+    arrow.className = 'tx-arrow';
+    document.getElementById('arrLabel').textContent = 'your_txn [0/10]';
+    document.getElementById('arrLabel').style.color = '#4A9EFF';
+    document.getElementById('arrLine').style.background = '#4A9EFF';
+    document.getElementById('arrTri').style.borderTopColor = '#4A9EFF';
+
+    positionArrowAtPending();
+
+    // Look up transaction
+    const txData = await MoneroNetwork.lookupTransaction(hash);
+    if (txData && txData.found) {
+        if (txData.inPool) {
+            document.getElementById('txFee').textContent = 'pending...';
+            document.getElementById('txSize').textContent = '—';
+            document.getElementById('txRate').textContent = '—';
+        } else {
+            // Already confirmed
+            trackedBlockHeight = txData.blockHeight;
+            updateConfirmations(txData.confirmations);
+        }
+    } else {
+        // Try finding in mempool
+        const mempoolTx = MoneroNetwork.mempool.find(t => t.hash === hash);
+        if (mempoolTx) {
+            document.getElementById('txFee').textContent = mempoolTx.fee.toFixed(6) + ' XMR';
+            document.getElementById('txSize').textContent = mempoolTx.size.toLocaleString() + ' bytes';
+            document.getElementById('txRate').textContent = (mempoolTx.fee / (mempoolTx.size / 1024)).toFixed(6) + ' XMR/KB';
+        }
+    }
+
+    document.getElementById('txSec').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+async function checkTrackedTx() {
+    if (!tracking || !trackedHash) return;
+    const txData = await MoneroNetwork.lookupTransaction(trackedHash);
+    if (txData && txData.found && !txData.inPool) {
+        trackedBlockHeight = txData.blockHeight;
+        updateConfirmations(txData.confirmations);
+    }
+}
+
+function updateConfirmations(confs) {
+    confs = Math.min(confs, 10);
+    const bl = document.getElementById('cfBlocks').children;
+
+    for (let i = 0; i < 10; i++) {
+        if (i < confs - 1) bl[i].className = 'tt-b done';
+        else if (i === confs - 1) bl[i].className = confs >= 10 ? 'tt-b fin' : 'tt-b cur';
+        else bl[i].className = 'tt-b wait';
+    }
+
+    document.getElementById('cfCount').textContent = confs + '/10 blocks';
+
+    if (confs >= 10) {
+        document.getElementById('ttStat').textContent = 'fully confirmed at block #' + (trackedBlockHeight + 10).toLocaleString();
+        document.getElementById('ttStat').style.color = 'var(--grn)';
+        document.getElementById('txBadge').className = 'tx-badge full';
+        document.getElementById('txBadge').textContent = '10/10 confirmed';
+        document.getElementById('arrLabel').textContent = 'confirmed';
+        document.getElementById('arrLabel').style.color = 'var(--grn)';
+        document.getElementById('arrLine').style.background = 'var(--grn)';
+        document.getElementById('arrTri').style.borderTopColor = 'var(--grn)';
+        document.getElementById('txConfCell').classList.add('vis');
+        document.getElementById('tccSub').textContent = 'transaction included in block #' + trackedBlockHeight.toLocaleString() + ' — 10/10 confirmations reached';
+    } else {
+        document.getElementById('ttStat').textContent = 'waiting for block #' + (MoneroNetwork.data.height + 1).toLocaleString() + '...';
+        document.getElementById('arrLabel').textContent = 'your_txn [' + confs + '/10]';
+    }
+
+    // Position arrow at the correct confirmed block
+    positionArrowAtBlock(Math.min(confs - 1, 9));
+}
+
+function positionArrowAtPending() {
+    const p0 = document.getElementById('pend-0');
+    const wrap = document.getElementById('arrowWrap');
+    if (!p0 || !wrap) return;
+    const pRect = p0.getBoundingClientRect();
+    const wRect = wrap.getBoundingClientRect();
+    const arrow = document.getElementById('txArrow');
+    arrow.style.left = (pRect.left - wRect.left + pRect.width / 2) + 'px';
+    arrow.style.transform = 'translateX(-50%)';
+}
+
+function positionArrowAtBlock(idx) {
+    const block = document.getElementById('conf-' + idx);
+    const wrap = document.getElementById('arrowWrap');
+    if (!block || !wrap) return;
+    const bRect = block.getBoundingClientRect();
+    const wRect = wrap.getBoundingClientRect();
+    const arrow = document.getElementById('txArrow');
+    arrow.style.left = (bRect.left - wRect.left + bRect.width / 2) + 'px';
+    arrow.style.transform = 'translateX(-50%)';
+
+    // Highlight tracked block
+    document.querySelectorAll('.bc.tracked').forEach(el => el.classList.remove('tracked'));
+    block.classList.add('tracked');
+}
+
+document.getElementById('txIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
+window.addEventListener('resize', () => { if (tracking) positionArrowAtBlock(Math.min(confStep, 9)); });
+
+// Initialize
+initMempool();
+</script>
+</body>
+</html>

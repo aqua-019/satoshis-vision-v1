@@ -17,10 +17,22 @@
       ]
     }
   ],
+  "functions": {
+    "api/monero.js": {
+      "maxDuration": 15
+    }
+  },
   "rewrites": [
     { "source": "/home", "destination": "/" },
     { "source": "/archive", "destination": "/bottom-line.html" },
-    { "source": "/education", "destination": "/btc-xmr-education.html" }
+    { "source": "/education", "destination": "/btc-xmr-education.html" },
+    { "source": "/mine", "destination": "/mining.html" },
+    { "source": "/pool", "destination": "/mempool.html" },
+    { "source": "/net", "destination": "/network.html" },
+    { "source": "/market", "destination": "/markets.html" },
+    { "source": "/eco", "destination": "/ecosystem.html" },
+    { "source": "/law", "destination": "/legal.html" },
+    { "source": "/people", "destination": "/community.html" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }

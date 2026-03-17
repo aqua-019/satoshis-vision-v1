@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xmr.irish — Community</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
+    <style>
+        .ch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+        .ch{border-radius:18px;padding:16px;border:1px solid var(--card-border);background:var(--card-bg);display:block;color:var(--g1);transition:all .5s;cursor:pointer;position:relative;overflow:hidden}
+        .ch:hover{border-color:rgba(255,102,0,.15);border-radius:22px;transform:translateY(-3px)}
+        .ch::before{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .6s;pointer-events:none}
+        .ch:hover::before{opacity:1;animation:orange-pulse 2.5s ease-in-out infinite}
+        .ch-icon{font-size:20px;margin-bottom:6px;position:relative;z-index:1}
+        .ch-name{font-family:var(--font-subhead);font-style:italic;font-size:16px;position:relative;z-index:1}
+        .ch-desc{font-family:var(--font-body);font-size:12px;color:var(--g5);line-height:1.5;margin-top:4px;position:relative;z-index:1}
+        .ch-members{font-family:var(--font-data);font-size:14px;font-weight:500;color:var(--xmr);margin-top:8px;position:relative;z-index:1}
+        .ch-lbl{font-family:var(--font-mono);font-size:11px;color:var(--g6);position:relative;z-index:1}
+        .ch-url{font-family:var(--font-mono);font-size:11px;color:var(--blue);margin-top:4px;position:relative;z-index:1}
+        .ccs-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+        .ccs{border-radius:16px;padding:14px;border:1px solid var(--card-border);background:var(--card-bg);transition:all .4s}
+        .ccs:hover{border-color:rgba(255,102,0,.12);border-radius:20px;transform:scale(1.02)}
+        .ccs-title{font-family:var(--font-subhead);font-style:italic;font-size:14px;margin-bottom:4px}
+        .ccs-author{font-family:var(--font-mono);font-size:11px;color:var(--g5);margin-bottom:6px}
+        .ccs-bar{height:6px;border-radius:3px;background:var(--g9);overflow:hidden;margin-bottom:3px}
+        .ccs-bar-f{height:100%;border-radius:3px;background:var(--grn)}
+        .ccs-pct{font-family:var(--font-data);font-size:12px;font-weight:500;color:var(--grn)}
+        .ccs-amt{font-family:var(--font-mono);font-size:11px;color:var(--g5)}
+        .ev-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+        .ev{border-radius:16px;padding:14px;border:1px solid var(--card-border);background:var(--card-bg);transition:all .4s}
+        .ev:hover{border-color:rgba(255,102,0,.12);border-radius:20px}
+        .ev-date{font-family:var(--font-mono);font-size:11px;color:var(--xmr);margin-bottom:4px}
+        .ev-name{font-family:var(--font-subhead);font-style:italic;font-size:15px;margin-bottom:3px}
+        .ev-desc{font-family:var(--font-body);font-size:12px;color:var(--g5);line-height:1.4}
+        @media(max-width:768px){.ch-grid,.ccs-grid,.ev-grid{grid-template-columns:1fr}}
+    </style>
+</head>
+<body>
+<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
+    <canvas id="constellation" class="constellation"></canvas>
+    <div class="blob blob-3"></div><div class="blob blob-5"></div>
+    <div class="z1">
+        <div id="nav-mount"></div>
+
+        <div class="sec">
+            <div class="sec-k">Community</div>
+            <div class="sec-t">Where the Monero community lives</div>
+            <div class="sec-s">Sorted by your detected platform affinity.</div>
+            <div class="ch-grid">
+                <a class="ch" href="https://www.reddit.com/r/Monero/" target="_blank" data-community="reddit"><div class="ch-icon">◆</div><div class="ch-name">r/Monero</div><div class="ch-desc">Primary discussion hub. News, development updates, privacy debates, help requests. The largest Monero community online.</div><div class="ch-members">400K+</div><div class="ch-lbl">subscribers</div><div class="ch-url">reddit.com/r/Monero</div></a>
+                <a class="ch" href="https://matrix.to/#/#monero:monero.social" target="_blank" data-community="matrix"><div class="ch-icon">◇</div><div class="ch-name">Matrix / IRC</div><div class="ch-desc">Real-time developer chat. Bridge to Libera.Chat IRC. Core team hangs here. Technical discussions.</div><div class="ch-members">5,000+</div><div class="ch-lbl">active users</div><div class="ch-url">#monero:monero.social</div></a>
+                <a class="ch" href="https://github.com/monero-project" target="_blank" data-community="github"><div class="ch-icon">⬡</div><div class="ch-name">GitHub</div><div class="ch-desc">Open-source development. Monero core, GUI, CLI wallets, research papers. 500+ contributors.</div><div class="ch-members">14K+</div><div class="ch-lbl">stars (monero repo)</div><div class="ch-url">github.com/monero-project</div></a>
+                <a class="ch" href="https://monero.stackexchange.com/" target="_blank" data-community="stackexchange"><div class="ch-icon">□</div><div class="ch-name">StackExchange</div><div class="ch-desc">Q&A for technical questions. Mining setup, wallet issues, protocol specifics. Searchable knowledge base.</div><div class="ch-members">10K+</div><div class="ch-lbl">questions answered</div><div class="ch-url">monero.stackexchange.com</div></a>
+                <a class="ch" href="https://t.me/monero" target="_blank" data-community="telegram"><div class="ch-icon">△</div><div class="ch-name">Telegram</div><div class="ch-desc">Active chat groups across languages. English, Russian, Chinese, Spanish communities. Fast-moving discussion.</div><div class="ch-members">50K+</div><div class="ch-lbl">combined members</div><div class="ch-url">t.me/monero</div></a>
+                <a class="ch" href="https://forum.getmonero.org/" target="_blank" data-community="forum"><div class="ch-icon">≡</div><div class="ch-name">Monero Forum</div><div class="ch-desc">Long-form discussion. Governance proposals, research threads, community funding system (CCS) debates.</div><div class="ch-members">Active</div><div class="ch-lbl">since 2014</div><div class="ch-url">forum.getmonero.org</div></a>
+            </div>
+        </div>
+
+        <div class="sec sec-border">
+            <div class="sec-k">CCS / Funding</div>
+            <div class="sec-t">Community crowdfunding proposals</div>
+            <div class="sec-s">Anyone can propose work, the community funds it.</div>
+            <div class="ccs-grid">
+                <div class="ccs"><div class="ccs-title">FCMP++ development (Phase 2)</div><div class="ccs-author">by kayabanerve</div><div class="ccs-bar"><div class="ccs-bar-f" style="width:78%"></div></div><div style="display:flex;justify-content:space-between"><span class="ccs-pct">78% funded</span><span class="ccs-amt">312 / 400 XMR</span></div></div>
+                <div class="ccs"><div class="ccs-title">Seraphis audit coordination</div><div class="ccs-author">by UkoeHB</div><div class="ccs-bar"><div class="ccs-bar-f" style="width:42%"></div></div><div style="display:flex;justify-content:space-between"><span class="ccs-pct">42% funded</span><span class="ccs-amt">84 / 200 XMR</span></div></div>
+                <div class="ccs"><div class="ccs-title">Monero GUI wallet improvements Q2</div><div class="ccs-author">by selsta</div><div class="ccs-bar"><div class="ccs-bar-f" style="width:95%"></div></div><div style="display:flex;justify-content:space-between"><span class="ccs-pct">95% funded</span><span class="ccs-amt">142 / 150 XMR</span></div></div>
+                <div class="ccs"><div class="ccs-title">P2Pool infrastructure maintenance</div><div class="ccs-author">by SChernykh</div><div class="ccs-bar"><div class="ccs-bar-f" style="width:100%"></div></div><div style="display:flex;justify-content:space-between"><span class="ccs-pct" style="color:var(--xmr)">Funded ✓</span><span class="ccs-amt">90 / 90 XMR</span></div></div>
+            </div>
+        </div>
+
+        <div class="sec sec-border">
+            <div class="sec-k">Events</div>
+            <div class="sec-t">Upcoming</div>
+            <div class="ev-grid">
+                <div class="ev"><div class="ev-date">MoneroTopia 2026 — TBD</div><div class="ev-name">Annual Monero conference</div><div class="ev-desc">In-person event. Presentations from core developers, privacy researchers, and community builders. Location typically announced 2-3 months prior.</div></div>
+                <div class="ev"><div class="ev-date">MoneroKon — TBD 2026</div><div class="ev-name">European Monero meetup</div><div class="ev-desc">European-focused conference. Technical deep dives on protocol improvements, regulatory landscape, and privacy tech. Community-funded.</div></div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <span>xmr.irish / community / C.3.3 / SJB83</span>
+            <div><a href="index.html">Home</a><a href="ecosystem.html">Ecosystem</a><a href="legal.html">Legal</a></div>
+            <span>getmonero.org</span>
+        </div>
+    </div>
+</div>
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script src="js/genui.js"></script>
+<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+</body>
+</html>
