@@ -81,12 +81,58 @@ const NavComponent = {
                     <span class="val" id="nav-ratio-val">—</span>
                 </div>
             </div>
-        </nav>`;
+            <button class="hamburger" id="nav-hamburger" aria-label="Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </nav>
+        <div class="mobile-menu" id="mobile-menu">
+            <a href="index.html" class="mm-link ${isActive('index')}">Home</a>
+            <div class="mm-group">
+                <span class="mm-label">Education</span>
+                <a href="btc-xmr-education.html" class="mm-link ${isActive('btc-xmr-education')}">BTC vs XMR</a>
+                <a href="timeline.html" class="mm-link ${isActive('timeline')}">Timeline</a>
+                <a href="quotes.html" class="mm-link ${isActive('quotes')}">Quote explorer</a>
+                <a href="secrets.html" class="mm-link ${isActive('secrets')}">Secret threads</a>
+                <a href="future-outlook.html" class="mm-link ${isActive('future-outlook')}">2027+ outlook</a>
+            </div>
+            <div class="mm-group">
+                <span class="mm-label">Dashboard</span>
+                <a href="markets.html" class="mm-link ${isActive('markets')}">Markets</a>
+                <a href="network.html" class="mm-link ${isActive('network')}">Network</a>
+                <a href="mining.html" class="mm-link ${isActive('mining')}">Mining</a>
+                <a href="mempool.html" class="mm-link ${isActive('mempool')}">Mempool</a>
+                <a href="legal.html" class="mm-link ${isActive('legal')}">Legal status</a>
+            </div>
+            <div class="mm-group">
+                <span class="mm-label">Monero</span>
+                <a href="hold-monero.html" class="mm-link ${isActive('hold-monero')}">Hold XMR</a>
+                <a href="bottom-line.html" class="mm-link ${isActive('bottom-line')}">XMR bottom line</a>
+                <a href="community.html" class="mm-link ${isActive('community')}">Community</a>
+                <a href="ecosystem.html" class="mm-link ${isActive('ecosystem')}">Ecosystem map</a>
+            </div>
+        </div>`;
 
         if (targetId) {
             target.innerHTML = html;
         } else {
             document.body.insertAdjacentHTML('afterbegin', html);
+        }
+
+        // Wire up hamburger toggle
+        const hamburger = document.getElementById('nav-hamburger');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (hamburger && mobileMenu) {
+            hamburger.addEventListener('click', () => {
+                hamburger.classList.toggle('open');
+                mobileMenu.classList.toggle('open');
+            });
+            // Close menu when a link is tapped
+            mobileMenu.querySelectorAll('.mm-link').forEach(link => {
+                link.addEventListener('click', () => {
+                    hamburger.classList.remove('open');
+                    mobileMenu.classList.remove('open');
+                });
+            });
         }
     }
 };

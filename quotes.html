@@ -6,168 +6,36 @@
     <title>Satoshi Quote Archive — The Privacy Evolution</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=JetBrains+Mono:wght@400;500&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d09.css">
     <style>
-        :root {
-            --btc-orange: #F7931A;
-            --btc-gold: #FFD700;
-            --xmr-orange: #FF6600;
-            --dark-bg: #0a0a0a;
-            --card-bg: #121212;
-            --grey-18: #2E2E2E;
-            --text-primary: #FFFFFF;
-            --text-secondary: #A0A0A0;
-            --font-display: 'Playfair Display', serif;
-            --font-mono: 'JetBrains Mono', monospace;
-            --font-body: 'Sora', sans-serif;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: var(--font-body);
-            background: var(--dark-bg);
-            color: var(--text-primary);
-            line-height: 1.7;
-            min-height: 100vh;
-        }
-
-        /* Navigation */
-        .nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 1000;
-            background: rgba(10, 10, 10, 0.95);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--grey-18);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-logo {
-            font-family: var(--font-display);
-            font-size: 1.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--btc-orange), var(--xmr-orange));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            text-decoration: none;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: color 0.3s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--btc-orange);
-        }
-
-        .nav-dropdown { position: relative; }
-        .nav-dropdown-toggle {
-            color: var(--text-secondary); text-decoration: none; font-size: 0.9rem;
-            font-weight: 500; transition: color 0.3s ease; cursor: pointer; display: inline-block;
-        }
-        .nav-dropdown-toggle:hover { color: var(--btc-orange); }
-        .dropdown-arrow { font-size: 0.7rem; transition: transform 0.3s ease; display: inline-block; }
-        .nav-dropdown:hover .dropdown-arrow { transform: rotate(180deg); }
-        .nav-dropdown-menu {
-            position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
-            background: rgba(18,18,18,0.98); border: 1px solid var(--grey-18); border-radius: 8px;
-            padding: 0.5rem 0; min-width: 160px;
-            opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease;
-            margin-top: 0.75rem;
-        }
-        .nav-dropdown:hover .nav-dropdown-menu { opacity: 1; visibility: visible; }
-        .nav-dropdown-menu a {
-            display: block; padding: 0.5rem 1.25rem; color: var(--text-secondary);
-            text-decoration: none; font-size: 0.85rem; transition: all 0.2s ease;
-        }
-        .nav-dropdown-menu a:hover { color: var(--xmr-orange); background: rgba(255,102,0,0.08); }
-
-        .hamburger {
-            display: none;
-            flex-direction: column;
-            gap: 5px;
-            cursor: pointer;
-            padding: 10px;
-        }
-
-        .hamburger span {
-            width: 25px;
-            height: 2px;
-            background: var(--text-primary);
-        }
-
-        .mobile-menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(10, 10, 10, 0.98);
-            z-index: 999;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 2rem;
-        }
-
-        .mobile-menu.active {
-            display: flex;
-        }
-
-        .mobile-menu a {
-            color: var(--text-primary);
-            text-decoration: none;
-            font-size: 1.5rem;
-            font-family: var(--font-display);
-        }
-
         /* Hero */
         .hero {
-            padding: 8rem 2rem 3rem;
+            padding: 2rem 2rem 3rem;
             text-align: center;
-            background: linear-gradient(180deg, var(--dark-bg) 0%, var(--card-bg) 100%);
         }
 
         .hero-eyebrow {
             font-family: var(--font-mono);
             font-size: 0.85rem;
-            color: var(--btc-orange);
+            color: var(--btc);
             text-transform: uppercase;
             letter-spacing: 3px;
             margin-bottom: 1rem;
         }
 
         .hero-title {
-            font-family: var(--font-display);
+            font-family: var(--font-headline);
             font-size: clamp(2rem, 5vw, 3rem);
-            font-weight: 700;
+            font-weight: 400;
+            letter-spacing: -1.5px;
             margin-bottom: 1rem;
         }
 
         .hero-subtitle {
-            color: var(--text-secondary);
+            color: var(--g4);
+            font-family: var(--font-body);
+            font-size: 14px;
             max-width: 600px;
             margin: 0 auto;
         }
@@ -182,11 +50,12 @@
             gap: 1rem;
             align-items: center;
             justify-content: center;
-            background: var(--card-bg);
+            background: var(--g10);
+            border: 1px solid var(--g9);
+            border-radius: 14px;
             position: sticky;
-            top: 60px;
+            top: 52px;
             z-index: 100;
-            border-bottom: 1px solid var(--grey-18);
         }
 
         .search-input {
@@ -194,42 +63,59 @@
             min-width: 200px;
             max-width: 400px;
             padding: 0.8rem 1rem;
-            background: var(--dark-bg);
-            border: 1px solid var(--grey-18);
-            color: var(--text-primary);
-            font-family: var(--font-mono);
-            font-size: 0.9rem;
+            background: var(--bg);
+            border: 1px solid var(--g8);
+            border-radius: 12px;
+            color: var(--g1);
+            font-family: var(--font-subhead);
+            font-style: italic;
+            font-size: 13px;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--xmr);
         }
 
         .search-input::placeholder {
-            color: var(--text-secondary);
+            color: var(--g7);
+            font-family: var(--font-subhead);
+            font-style: italic;
         }
 
         .filter-btn {
             padding: 0.6rem 1.2rem;
-            background: var(--grey-18);
-            border: none;
-            color: var(--text-primary);
+            border-radius: 8px;
+            border: 1px solid var(--g8);
+            background: transparent;
+            color: var(--g5);
             font-family: var(--font-mono);
             font-size: 0.8rem;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .filter-btn:hover,
+        .filter-btn:hover {
+            border-color: var(--g6);
+            color: var(--g3);
+        }
+
         .filter-btn.active {
-            background: var(--btc-orange);
+            border-color: rgba(255,102,0,0.3);
+            color: var(--xmr);
+            background: rgba(255,102,0,0.06);
         }
 
         .filter-btn.highlight-btn.active {
-            background: var(--btc-gold);
-            color: var(--dark-bg);
+            border-color: rgba(255,215,0,0.3);
+            background: rgba(255,215,0,0.08);
+            color: var(--gold);
         }
 
         .stats {
             font-family: var(--font-mono);
             font-size: 0.85rem;
-            color: var(--text-secondary);
+            color: var(--g5);
             width: 100%;
             text-align: center;
             margin-top: 0.5rem;
@@ -248,25 +134,49 @@
         /* Quote Card */
         .quote-card {
             background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 14px;
             padding: 1.5rem;
-            border-left: 4px solid var(--grey-18);
-            transition: all 0.3s ease;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
             display: flex;
             flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .quote-card::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            opacity: 0;
+            transition: opacity 0.6s;
+            pointer-events: none;
         }
 
         .quote-card:hover {
-            transform: translateX(5px);
-            border-left-color: var(--btc-orange);
+            border-color: var(--card-hover);
+            border-radius: 18px;
+        }
+
+        .quote-card:hover::before {
+            opacity: 1;
+            animation: orange-pulse 2.5s ease-in-out infinite;
+        }
+
+        @keyframes orange-pulse {
+            0%, 100% { background: rgba(255,102,0,0.03); }
+            50% { background: rgba(255,102,0,0.08); }
         }
 
         .quote-card.key-quote {
-            border-left-color: var(--btc-gold);
-            background: linear-gradient(90deg, rgba(255, 215, 0, 0.05), transparent);
+            border-color: rgba(255, 215, 0, 0.12);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.03), transparent);
         }
 
         .quote-card.privacy {
-            border-left-color: var(--xmr-orange);
+            border-color: rgba(255, 102, 0, 0.12);
         }
 
         .quote-card.hidden {
@@ -274,12 +184,14 @@
         }
 
         .quote-text {
-            font-family: var(--font-display);
+            font-family: var(--font-subhead);
             font-size: 1rem;
             font-style: italic;
             line-height: 1.7;
             flex: 1;
             margin-bottom: 1rem;
+            position: relative;
+            z-index: 1;
         }
 
         .quote-meta {
@@ -289,17 +201,19 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             padding-top: 1rem;
-            border-top: 1px solid var(--grey-18);
+            border-top: 1px solid rgba(255,255,255,0.03);
+            position: relative;
+            z-index: 1;
         }
 
         .quote-source {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: var(--text-secondary);
+            color: var(--g7);
         }
 
         .quote-link {
-            color: var(--btc-orange);
+            color: var(--btc);
             text-decoration: none;
         }
 
@@ -310,7 +224,7 @@
         .quote-date {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: var(--text-secondary);
+            color: var(--g7);
         }
 
         .quote-tag {
@@ -319,16 +233,19 @@
             font-size: 0.65rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+            border-radius: 4px;
+            position: relative;
+            z-index: 1;
         }
 
         .quote-tag.privacy {
             background: rgba(255, 102, 0, 0.2);
-            color: var(--xmr-orange);
+            color: var(--xmr);
         }
 
         .quote-tag.philosophy {
             background: rgba(247, 147, 26, 0.2);
-            color: var(--btc-orange);
+            color: var(--btc);
         }
 
         .quote-tag.technical {
@@ -348,7 +265,7 @@
 
         .quote-tag.farewell {
             background: rgba(255, 215, 0, 0.2);
-            color: var(--btc-gold);
+            color: var(--gold);
         }
 
         .key-badge {
@@ -358,76 +275,14 @@
             font-family: var(--font-mono);
             font-size: 0.65rem;
             padding: 0.2rem 0.5rem;
-            background: var(--btc-gold);
-            color: var(--dark-bg);
+            background: var(--gold);
+            color: var(--bg);
+            border-radius: 4px;
+            z-index: 1;
         }
-
-        .quote-card {
-            position: relative;
-        }
-
-        /* Footer */
-        footer {
-            background: var(--card-bg);
-            padding: 3rem 2rem;
-            text-align: center;
-            border-top: 1px solid var(--grey-18);
-            margin-top: 4rem;
-        }
-
-        .footer-nav {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            flex-wrap: wrap;
-        }
-
-        .footer-nav a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.3s ease;
-        }
-
-        .footer-nav a:hover {
-            color: var(--btc-orange);
-        }
-
-        /* ── Price Ticker ── */
-        .price-ticker {
-            display: flex; align-items: center; gap: 1.25rem;
-            font-family: 'JetBrains Mono', monospace;
-        }
-        .live-dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: #00D26A; box-shadow: 0 0 6px #00D26A;
-            animation: pulse-dot 2s ease-in-out infinite;
-        }
-        @keyframes pulse-dot {
-            0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-        }
-        .price-item { display: flex; align-items: center; gap: 0.4rem; }
-        .price-label {
-            font-size: 0.65rem; color: rgba(255,255,255,0.4);
-            text-transform: uppercase; letter-spacing: 0.05em;
-        }
-        .price-value { font-size: 0.8rem; font-weight: 500; color: #fff; }
-        .price-change { font-size: 0.7rem; font-weight: 500; }
-        .price-change.up { color: #00D26A; }
-        .price-change.down { color: #FF4757; }
 
         /* Responsive */
         @media (max-width: 768px) {
-            .price-ticker { display: none; }
-
-            .nav-links {
-                display: none;
-            }
-
-            .hamburger {
-                display: flex;
-            }
-
             .quote-grid {
                 grid-template-columns: 1fr;
                 padding: 1rem;
@@ -435,106 +290,54 @@
 
             .controls {
                 padding: 1rem;
-                top: 56px;
+                top: 52px;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav class="nav">
-        <a href="index.html" class="nav-logo" style="text-decoration:none;">XMR.IRISH</a>
-        <div class="nav-links">
-            <a href="index.html">Home</a>
-            <div class="nav-dropdown">
-                <a href="#" class="nav-dropdown-toggle" onclick="return false">Learn <span class="dropdown-arrow">&#9662;</span></a>
-                <div class="nav-dropdown-menu">
-                    <a href="btc-xmr-education.html">Education</a>
-                    <a href="timeline.html">Timeline</a>
-                    <a href="quotes.html" style="color: var(--xmr-orange);">Quote Archive</a>
-                    <a href="secrets.html">Secrets</a>
-                    <a href="future-outlook.html">2027+</a>
-                </div>
+    <div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
+        <canvas id="constellation" class="constellation"></canvas>
+        <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
+        <div class="z1">
+            <div id="nav-mount"></div>
+
+            <!-- Hero -->
+            <section class="hero">
+                <div class="hero-eyebrow">Complete Archive</div>
+                <h1 class="hero-title">Satoshi Quote Collection</h1>
+                <p class="hero-subtitle">
+                    30+ quotes searchable by category. Weighted toward privacy discussions and Monero-predictive language.
+                </p>
+            </section>
+
+            <!-- Controls -->
+            <div class="controls">
+                <input type="text" class="search-input" id="searchInput" placeholder="Search quotes...">
+                <button class="filter-btn active" onclick="filterQuotes('all')">All</button>
+                <button class="filter-btn" onclick="filterQuotes('privacy')">Privacy</button>
+                <button class="filter-btn" onclick="filterQuotes('philosophy')">Philosophy</button>
+                <button class="filter-btn" onclick="filterQuotes('technical')">Technical</button>
+                <button class="filter-btn" onclick="filterQuotes('economics')">Economics</button>
+                <button class="filter-btn" onclick="filterQuotes('farewell')">Farewell</button>
+                <button class="filter-btn highlight-btn" id="keyQuotesBtn" onclick="toggleKeyQuotes()">★ Key Quotes</button>
+                <button class="filter-btn" onclick="randomQuote()">🎲 Random</button>
+                <div class="stats" id="stats">Showing 30 quotes</div>
             </div>
-            <a href="dashboard.html">Dashboard</a>
-            <a href="bottom-line.html">XMR Bottom Line</a>
-            <a href="future-outlook.html">2027+</a>
-            <a href="hold-monero.html" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600;">XMR</a>
+
+            <!-- Quote Grid -->
+            <div class="quote-grid" id="quoteGrid">
+                <!-- Quotes inserted by JavaScript -->
+            </div>
+
+            <!-- Footer -->
+            <div class="footer">
+                <span>xmr.irish / quotes / GenUI-native</span>
+                <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
+                <span>satoshi.nakamotoinstitute.org</span>
+            </div>
         </div>
-        <div class="price-ticker">
-            <span class="live-dot"></span>
-            <div class="price-item">
-                <span class="price-label">BTC</span>
-                <span class="price-value" id="btc-price">—</span>
-                <span class="price-change" id="btc-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">XMR</span>
-                <span class="price-value" id="xmr-price">—</span>
-                <span class="price-change" id="xmr-change"></span>
-            </div>
-            <div class="price-item">
-                <span class="price-label">BTC/XMR</span>
-                <span class="price-value" id="btc-xmr-ratio">—</span>
-            </div>
-        </div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <a href="index.html" onclick="toggleMenu()">Home</a>
-        <a href="btc-xmr-education.html" onclick="toggleMenu()">Education</a>
-        <a href="timeline.html" onclick="toggleMenu()">Timeline</a>
-        <a href="quotes.html" onclick="toggleMenu()">Quote Archive</a>
-        <a href="secrets.html" onclick="toggleMenu()">Secrets</a>
-        <a href="future-outlook.html" onclick="toggleMenu()">2027+</a>
-        <a href="dashboard.html" onclick="toggleMenu()">Dashboard</a>
-        <a href="bottom-line.html" onclick="toggleMenu()">XMR Bottom Line</a>
-        <a href="hold-monero.html" onclick="toggleMenu()" style="background: var(--xmr-orange); color: #fff !important; padding: 0.25rem 0.75rem; border-radius: 99px; font-weight: 600; display: inline-block;">XMR</a>
     </div>
-
-    <!-- Hero -->
-    <section class="hero">
-        <div class="hero-eyebrow">Complete Archive</div>
-        <h1 class="hero-title">Satoshi Quote Collection</h1>
-        <p class="hero-subtitle">
-            30+ quotes searchable by category. Weighted toward privacy discussions and Monero-predictive language.
-        </p>
-    </section>
-
-    <!-- Controls -->
-    <div class="controls">
-        <input type="text" class="search-input" id="searchInput" placeholder="Search quotes...">
-        <button class="filter-btn active" onclick="filterQuotes('all')">All</button>
-        <button class="filter-btn" onclick="filterQuotes('privacy')">Privacy</button>
-        <button class="filter-btn" onclick="filterQuotes('philosophy')">Philosophy</button>
-        <button class="filter-btn" onclick="filterQuotes('technical')">Technical</button>
-        <button class="filter-btn" onclick="filterQuotes('economics')">Economics</button>
-        <button class="filter-btn" onclick="filterQuotes('farewell')">Farewell</button>
-        <button class="filter-btn highlight-btn" id="keyQuotesBtn" onclick="toggleKeyQuotes()">★ Key Quotes</button>
-        <button class="filter-btn" onclick="randomQuote()">🎲 Random</button>
-        <div class="stats" id="stats">Showing 30 quotes</div>
-    </div>
-
-    <!-- Quote Grid -->
-    <div class="quote-grid" id="quoteGrid">
-        <!-- Quotes inserted by JavaScript -->
-    </div>
-
-    <!-- Footer -->
-    <footer>
-        <nav class="footer-nav">
-            <a href="index.html">Home</a>
-            <a href="secrets.html">Secret Threads</a>
-            <a href="timeline.html">Full Timeline</a>
-            <a href="https://satoshi.nakamotoinstitute.org" target="_blank">Satoshi Institute</a>
-        </nav>
-    </footer>
 
     <script>
         const quotes = [
@@ -779,10 +582,10 @@
         function renderQuotes() {
             const grid = document.getElementById('quoteGrid');
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            
+
             let filtered = quotes.filter(q => {
                 const matchesFilter = currentFilter === 'all' || q.tag === currentFilter;
-                const matchesSearch = q.text.toLowerCase().includes(searchTerm) || 
+                const matchesSearch = q.text.toLowerCase().includes(searchTerm) ||
                                      q.source.toLowerCase().includes(searchTerm) ||
                                      q.tag.toLowerCase().includes(searchTerm);
                 const matchesKey = !showKeyOnly || q.key;
@@ -837,18 +640,14 @@
             const grid = document.getElementById('quoteGrid');
             const cards = grid.querySelectorAll('.quote-card');
             cards.forEach(c => c.style.opacity = '0.3');
-            
+
             const randomIndex = Math.floor(Math.random() * cards.length);
             cards[randomIndex].style.opacity = '1';
             cards[randomIndex].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
+
             setTimeout(() => {
                 cards.forEach(c => c.style.opacity = '1');
             }, 2000);
-        }
-
-        function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
         }
 
         document.getElementById('searchInput').addEventListener('input', renderQuotes);
@@ -856,36 +655,14 @@
         // Initial render
         renderQuotes();
     </script>
-<script>
-(function() {
-    function fetchPrices() {
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero&vs_currencies=usd&include_24hr_change=true')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
-                var btc = d.bitcoin || {};
-                var xmr = d.monero || {};
-
-                var fmt = function(v) { return '$' + v.toLocaleString('en-US', { maximumFractionDigits: v >= 1000 ? 0 : 2 }); };
-                var pct = function(v) { return (v >= 0 ? '+' : '') + v.toFixed(2) + '%'; };
-
-                if (btc.usd) {
-                    document.getElementById('btc-price').textContent = fmt(btc.usd);
-                    var btcChg = document.getElementById('btc-change');
-                    if (btcChg) { btcChg.textContent = pct(btc.usd_24h_change); btcChg.className = 'price-change ' + (btc.usd_24h_change >= 0 ? 'up' : 'down'); }
-                }
-                if (xmr.usd) {
-                    document.getElementById('xmr-price').textContent = fmt(xmr.usd);
-                    var xmrChg = document.getElementById('xmr-change');
-                    if (xmrChg) { xmrChg.textContent = pct(xmr.usd_24h_change); xmrChg.className = 'price-change ' + (xmr.usd_24h_change >= 0 ? 'up' : 'down'); }
-                }
-                if (btc.usd && xmr.usd) {
-                    document.getElementById('btc-xmr-ratio').textContent = (btc.usd / xmr.usd).toFixed(1);
-                }
-            }).catch(function(e) { console.log('Price fetch error:', e); });
-    }
-    fetchPrices();
-    setInterval(fetchPrices, 1800000);
-})();
-</script>
+    <script src="js/nav.js"></script>
+    <script src="js/price-service.js"></script>
+    <script src="js/monero-network.js"></script>
+    <script src="js/genui.js"></script>
+    <script>
+    NavComponent.inject('nav-mount');
+    PriceService.start();
+    MoneroNetwork.start();
+    </script>
 </body>
 </html>
