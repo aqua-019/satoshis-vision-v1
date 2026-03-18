@@ -55,27 +55,30 @@ const MoneroNetwork = {
     },
 
     async fetchRecentBlocks(count = 10) {
-        const info = await this.rpc('get_info');
-        if (!info?.result) return;
+        const height = this.data.height;
+        if (!height) return;
 
-        const height = info.result.height;
-        this.blocks = [];
-
+        const promises = [];
         for (let i = 0; i < count; i++) {
-            const blockRes = await this.rpc('get_block_header_by_height', { height: height - 1 - i });
-            if (blockRes?.result?.block_header) {
-                const bh = blockRes.result.block_header;
-                this.blocks.push({
+            promises.push(this.rpc('get_block_header_by_height', { height: height - 1 - i }));
+        }
+
+        const results = await Promise.all(promises);
+        this.blocks = results
+            .filter(r => r?.result?.block_header)
+            .map(r => {
+                const bh = r.result.block_header;
+                return {
                     height: bh.height,
                     numTxes: bh.num_txes,
-                    reward: bh.reward / 1e12, // piconero to XMR
+                    reward: bh.reward / 1e12,
                     size: bh.block_size,
                     timestamp: bh.timestamp,
                     difficulty: bh.difficulty,
                     confirmations: height - bh.height
-                });
-            }
-        }
+                };
+            })
+            .sort((a, b) => b.height - a.height);
     },
 
     async fetchMempool() {
@@ -156,8 +159,7 @@ const MoneroNetwork = {
 
     async startFull() {
         await this.fetchInfo();
-        await this.fetchRecentBlocks();
-        await this.fetchMempool();
+        await Promise.all([this.fetchRecentBlocks(), this.fetchMempool()]);
         setInterval(async () => {
             const prevHeight = this.data.height;
             await this.fetchInfo();

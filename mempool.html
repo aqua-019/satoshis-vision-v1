@@ -21,11 +21,12 @@
         .nav .np .val { font-family: var(--font-data) !important; }
 
         .mp{background:var(--bg);color:#C8C8C8;min-height:100vh}
+        .mp-header{display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,102,0,.06);gap:10px;flex-wrap:wrap}
         .mp-tabs{display:flex;gap:12px;margin-left:auto;font-size:11px;color:#444}
         .mp-tabs a{padding:4px 0;transition:color .2s;color:#444;text-decoration:none}
         .mp-tabs a:hover{color:#C8C8C8}.mp-tabs a.a{color:var(--xmr);border-bottom:1px solid var(--xmr)}
-        .mp-search{display:flex;gap:5px;margin-left:14px}
-        .mp-search input{background:#080810;border:1px solid #1A1A22;border-radius:4px;padding:4px 8px;color:#C8C8C8;font-size:11px;width:220px;transition:border-color .2s}
+        .mp-search{display:flex;gap:5px;margin-left:14px;flex:1 1 200px;min-width:0}
+        .mp-search input{background:#080810;border:1px solid #1A1A22;border-radius:4px;padding:4px 8px;color:#C8C8C8;font-size:11px;width:220px;min-width:0;flex:1 1 auto;transition:border-color .2s}
         .mp-search input:focus{outline:none;border-color:var(--xmr)}
         .mp-search input::placeholder{color:#333}
         .mp-search button{background:var(--xmr);color:var(--bg);border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600}
@@ -111,21 +112,90 @@
         .cp.c{background:rgba(255,102,0,.08);color:var(--xmr)}
         .cp.f{background:rgba(0,211,149,.08);color:var(--grn)}
         .mp-foot{padding:5px 20px;text-align:center;font-size:11px;color:#1A1A1A;border-top:1px solid #060608;font-weight:300}
+
+        /* ═══ SKELETON LOADING ═══ */
+        @keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+        .skel{background:linear-gradient(90deg,#080810 25%,#12121E 50%,#080810 75%);background-size:400px 100%;animation:shimmer 1.8s infinite ease-in-out;border-radius:4px}
+        .skel-val{display:inline-block;width:52px;height:14px;vertical-align:middle}
+        .skel-block{min-width:110px;height:96px;border-radius:6px;flex-shrink:0;margin-right:3px}
+        .skel-row{height:22px;margin-bottom:2px;border-radius:3px}
+
+        /* ═══ VISUAL POLISH ═══ */
+        .mp-header{border-bottom:1px solid rgba(255,102,0,.08);background:linear-gradient(180deg,rgba(255,102,0,.02) 0%,transparent 100%)}
+        .stats{box-shadow:0 1px 0 rgba(255,102,0,.05)}
+        .st-v{font-size:14px}
+
+        .bc.pend{background:linear-gradient(135deg,#0A0A14,#08081A);border:1px solid #1A1A28}
+        .bc.pend:first-child{border-color:rgba(74,158,255,.2);animation:pendPulse 3s ease-in-out infinite}
+        @keyframes pendPulse{0%,100%{border-color:rgba(74,158,255,.15)}50%{border-color:rgba(74,158,255,.35)}}
+
+        .bc.conf{background:linear-gradient(135deg,#1A0E00 0%,#140A00 50%,#100800 100%);border:1px solid rgba(255,102,0,.18);box-shadow:inset 0 -24px 36px -24px rgba(255,102,0,.06)}
+        .bc.conf:hover{border-color:rgba(255,102,0,.4);box-shadow:inset 0 -24px 36px -24px rgba(255,102,0,.12),0 4px 12px rgba(0,0,0,.3)}
+        .bc.conf .bar{height:3px;background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
+        .bc.pend .bar{height:2px;background:linear-gradient(90deg,#1A1A28,rgba(74,158,255,.15))}
+
+        .txl-r:nth-child(even){background:rgba(255,255,255,.008)}
+        .txl-r:hover{background:rgba(255,102,0,.03)!important}
+        .txl-h{color:#5AADFF}
+
+        /* ═══ MOBILE RESPONSIVE ═══ */
+        @media(max-width:768px){
+            .mp-header{padding:8px 12px;gap:6px}
+            .mp-tabs{margin-left:0;flex-wrap:wrap;gap:8px}
+            .mp-search{margin-left:0;width:100%}
+            .mp-search input{flex:1;width:auto;min-width:0}
+
+            .stats{display:grid;grid-template-columns:repeat(3,1fr);padding:6px 12px}
+            .st{border-radius:0!important}
+            .st:first-child{border-radius:6px 0 0 0!important}
+            .st:nth-child(3){border-radius:0 6px 0 0!important}
+            .st:nth-last-child(3){border-radius:0 0 0 6px!important}
+            .st:last-child{border-radius:0 0 6px 0!important}
+
+            .blk-area{padding:10px 12px}
+            .bc{min-width:90px;padding:6px 8px}
+            .bc .v3{font-size:11px}
+
+            .tx-sec{padding:10px 12px}
+            .tx-hdr{flex-direction:column;gap:4px}
+            .tx-hash{font-size:10px}
+            .tx-grid{grid-template-columns:1fr}
+
+            .txl{padding:10px 12px}
+            .txl-hdr,.txl-r{grid-template-columns:1fr 65px 50px}
+            .txl-hdr span:nth-child(3),.txl-hdr span:nth-child(5),.txl-r .txl-s,.txl-r .txl-t{display:none}
+
+            .tt-blocks{gap:1px}
+            .tt-b{font-size:9px;height:20px}
+        }
+        @media(max-width:480px){
+            .stats{grid-template-columns:repeat(2,1fr)}
+            .st:first-child{border-radius:6px 0 0 0!important}
+            .st:nth-child(2){border-radius:0 6px 0 0!important}
+            .st:nth-child(3),.st:nth-child(4){border-radius:0!important}
+            .st:nth-child(5){border-radius:0 0 0 6px!important}
+            .st:last-child{border-radius:0 0 6px 0!important}
+
+            .bc{min-width:78px;padding:5px 6px}
+            .mp-tabs{font-size:10px}
+            .mp-tabs a{padding:3px 0}
+            .blk-hdr{font-size:10px}
+        }
     </style>
 </head>
 <body>
 <div class="page-offset">
     <div id="nav-mount"></div>
     <div class="mp">
-        <div style="display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,102,0,.06);gap:10px">
+        <div class="mp-header">
             <div style="font-size:15px;color:var(--xmr);font-weight:600;letter-spacing:-.5px">xmr.irish <span style="color:#444;font-weight:400">/</span> mempool</div>
             <div class="mp-tabs"><a href="mempool.html" class="a">Mempool</a><a href="mining.html">Mining</a><a href="network.html">Network</a><a href="markets.html">Markets</a></div>
             <div class="mp-search"><input type="text" id="txIn" placeholder="search txn hash or block height..."><button onclick="doSearch()">TRACK</button></div>
         </div>
         <div class="stats">
-            <div class="st"><div class="st-v" id="st-unconf">—</div><div class="st-l">unconfirmed</div></div>
-            <div class="st"><div class="st-v" id="st-hash">—</div><div class="st-l">hashrate</div></div>
-            <div class="st"><div class="st-v" id="st-diff">—</div><div class="st-l">difficulty</div></div>
+            <div class="st"><div class="st-v" id="st-unconf"><span class="skel skel-val"></span></div><div class="st-l">unconfirmed</div></div>
+            <div class="st"><div class="st-v" id="st-hash"><span class="skel skel-val"></span></div><div class="st-l">hashrate</div></div>
+            <div class="st"><div class="st-v" id="st-diff"><span class="skel skel-val"></span></div><div class="st-l">difficulty</div></div>
             <div class="st"><div class="st-v">~2 min</div><div class="st-l">block_time</div></div>
             <div class="st"><div class="st-v">0.614 XMR</div><div class="st-l">reward</div></div>
             <div class="st"><div class="st-v" style="color:var(--grn)">0.00002/KB</div><div class="st-l">median_fee</div></div>
@@ -134,13 +204,11 @@
             <div class="blk-hdr"><span>pending (mempool)</span><span class="ch">confirmed blocks</span></div>
             <div class="arrow-wrap" id="arrowWrap"><div class="tx-arrow hidden" id="txArrow"><div class="arr-label" id="arrLabel">your_txn</div><div class="arr-line" id="arrLine"></div><div class="arr-tri" id="arrTri"></div></div></div>
             <div class="blk-row" id="blkRow">
-                <!-- Pending blocks populated by JS -->
-                <div class="bc pend" id="pend-0"><div class="v2">loading...</div><div class="v4">— txns</div><div class="v5">—</div><div class="bar"></div></div>
-                <div class="bc pend" id="pend-1" style="opacity:.7"><div class="v2">—</div><div class="v4">—</div><div class="v5">—</div><div class="bar"></div></div>
-                <div class="bc pend" id="pend-2" style="opacity:.5"><div class="v2">—</div><div class="v4">—</div><div class="v5">—</div><div class="bar"></div></div>
+                <div class="bc pend" id="pend-0"><div class="v2"><span class="skel" style="display:inline-block;width:50px;height:11px"></span></div><div class="v4"><span class="skel" style="display:inline-block;width:40px;height:11px"></span></div><div class="v5"><span class="skel" style="display:inline-block;width:30px;height:11px"></span></div><div class="bar"></div></div>
+                <div class="bc pend" id="pend-1" style="opacity:.7"><div class="v2"><span class="skel" style="display:inline-block;width:50px;height:11px"></span></div><div class="v4"><span class="skel" style="display:inline-block;width:40px;height:11px"></span></div><div class="v5"><span class="skel" style="display:inline-block;width:30px;height:11px"></span></div><div class="bar"></div></div>
+                <div class="bc pend" id="pend-2" style="opacity:.5"><div class="v2"><span class="skel" style="display:inline-block;width:50px;height:11px"></span></div><div class="v4"><span class="skel" style="display:inline-block;width:40px;height:11px"></span></div><div class="v5"><span class="skel" style="display:inline-block;width:30px;height:11px"></span></div><div class="bar"></div></div>
                 <div class="divider"><div class="div-line"></div><div class="div-arr">&#8693;</div><div class="div-line"></div></div>
-                <!-- Confirmed blocks populated by JS -->
-                <div id="conf-blocks"></div>
+                <div id="conf-blocks" style="display:contents"><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div></div>
             </div>
         </div>
         <div class="tx-confirmed-cell" id="txConfCell"><div class="tcc-title">txn fully confirmed</div><div class="tcc-sub" id="tccSub"></div></div>
@@ -172,7 +240,14 @@
             <div class="txl-title">recent_transactions <span id="txl-count">—</span></div>
             <div class="txl-hdr"><span>hash</span><span style="text-align:right">fee</span><span style="text-align:right">size</span><span style="text-align:right">status</span><span style="text-align:right">time</span></div>
             <div id="txl-body">
-                <div class="txl-r"><span class="txl-h">loading mempool data...</span><span></span><span></span><span></span><span></span></div>
+                <div class="skel skel-row" style="opacity:.9"></div>
+                <div class="skel skel-row" style="opacity:.8"></div>
+                <div class="skel skel-row" style="opacity:.7"></div>
+                <div class="skel skel-row" style="opacity:.6"></div>
+                <div class="skel skel-row" style="opacity:.5"></div>
+                <div class="skel skel-row" style="opacity:.4"></div>
+                <div class="skel skel-row" style="opacity:.3"></div>
+                <div class="skel skel-row" style="opacity:.2"></div>
             </div>
         </div>
         <div class="mp-foot">xmr.irish / mempool / live data from Monero daemon RPC / SJB83</div>
