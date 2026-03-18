@@ -227,6 +227,8 @@
                 <div class="tx-cell"><span class="tc-l">ring_size</span><span class="tc-v o">16 decoys</span></div>
                 <div class="tx-cell"><span class="tc-l">privacy</span><span class="tc-v g">RingCT + Stealth</span></div>
                 <div class="tx-cell"><span class="tc-l">inputs / outputs</span><span class="tc-v">hidden / hidden</span></div>
+                <div class="tx-cell"><span class="tc-l">confirmed</span><span class="tc-v o" id="txConfs">—</span></div>
+                <div class="tx-cell"><span class="tc-l">eta_full_confirm</span><span class="tc-v" id="txEtaConf">—</span></div>
             </div>
             <div class="tx-track">
                 <div class="tt-hdr"><span>confirmation_progress</span><span id="cfCount">0/10 blocks</span></div>
@@ -267,6 +269,7 @@ let tracking = false;
 let trackedHash = '';
 let trackedBlockHeight = 0;
 let confStep = 0;
+let trackingInterval = null;
 
 async function initMempool() {
     await MoneroNetwork.startFull();
@@ -287,18 +290,37 @@ async function initMempool() {
     // Populate mempool transaction list
     renderMempoolTxns();
 
-    // Poll for updates
+    // Poll for updates (general — blocks + mempool)
     setInterval(async () => {
         const prevHeight = MoneroNetwork.data.height;
         await MoneroNetwork.fetchInfo();
         if (MoneroNetwork.data.height !== prevHeight) {
             await MoneroNetwork.fetchRecentBlocks();
             renderConfirmedBlocks();
-            if (tracking) checkTrackedTx();
         }
         await MoneroNetwork.fetchMempool();
         renderMempoolTxns();
     }, 30000);
+}
+
+// Fast polling interval for tracked transaction (10s)
+function startTrackingPoll() {
+    stopTrackingPoll();
+    trackingInterval = setInterval(async () => {
+        if (!tracking || !trackedHash) return;
+        await MoneroNetwork.fetchInfo();
+        await checkTrackedTx();
+        // Re-render blocks to keep confirmation labels in sync
+        await MoneroNetwork.fetchRecentBlocks();
+        renderConfirmedBlocks();
+    }, 10000);
+}
+
+function stopTrackingPoll() {
+    if (trackingInterval) {
+        clearInterval(trackingInterval);
+        trackingInterval = null;
+    }
 }
 
 function renderConfirmedBlocks() {
@@ -355,41 +377,53 @@ async function searchHash(hash) {
     // Store for GenUI return-visit pre-fill
     localStorage.setItem('xmr_lasttx', hash);
 
-    // Reset UI
+    // Reset UI — show loading state (not fake 0/10)
     document.getElementById('txHash').textContent = hash;
     document.getElementById('txBadge').className = 'tx-badge unc';
-    document.getElementById('txBadge').textContent = 'unconfirmed';
+    document.getElementById('txBadge').textContent = 'looking up...';
     document.getElementById('txSeen').textContent = 'just now';
     document.getElementById('txEta').textContent = 'in ~2 min';
     document.getElementById('txConfCell').classList.remove('vis');
+    document.getElementById('txConfs').textContent = '...';
+    document.getElementById('txEtaConf').textContent = '...';
 
     const bl = document.getElementById('cfBlocks').children;
     for (let i = 0; i < 10; i++) bl[i].className = 'tt-b wait';
-    bl[0].className = 'tt-b cur';
-    document.getElementById('cfCount').textContent = '0/10 blocks';
-    document.getElementById('ttStat').textContent = 'tracking transaction...';
+    document.getElementById('cfCount').textContent = 'loading...';
+    document.getElementById('ttStat').textContent = 'looking up transaction...';
     document.getElementById('ttStat').style.color = 'var(--xmr)';
 
-    // Show arrow in pending area
+    // Show arrow in pending area initially
     const arrow = document.getElementById('txArrow');
     arrow.className = 'tx-arrow';
-    document.getElementById('arrLabel').textContent = 'your_txn [0/10]';
+    document.getElementById('arrLabel').textContent = 'your_txn';
     document.getElementById('arrLabel').style.color = '#4A9EFF';
     document.getElementById('arrLine').style.background = '#4A9EFF';
     document.getElementById('arrTri').style.borderTopColor = '#4A9EFF';
 
     positionArrowAtPending();
 
+    // Force fresh height before lookup so confirmations are accurate
+    await MoneroNetwork.fetchInfo();
+
     // Look up transaction
     const txData = await MoneroNetwork.lookupTransaction(hash);
     if (txData && txData.found) {
         if (txData.inPool) {
+            document.getElementById('txBadge').textContent = 'unconfirmed';
             document.getElementById('txFee').textContent = 'pending...';
             document.getElementById('txSize').textContent = '—';
             document.getElementById('txRate').textContent = '—';
+            document.getElementById('arrLabel').textContent = 'your_txn [0/10]';
+            bl[0].className = 'tt-b cur';
+            document.getElementById('cfCount').textContent = '0/10 blocks';
+            document.getElementById('ttStat').textContent = 'tracking transaction...';
+            document.getElementById('txConfs').textContent = '0/10 blocks';
+            document.getElementById('txEtaConf').textContent = '~20 min';
         } else {
-            // Already confirmed
+            // Already confirmed — show real count immediately
             trackedBlockHeight = txData.blockHeight;
+            document.getElementById('txBadge').textContent = 'unconfirmed';
             updateConfirmations(txData.confirmations);
         }
     } else {
@@ -400,7 +434,17 @@ async function searchHash(hash) {
             document.getElementById('txSize').textContent = mempoolTx.size.toLocaleString() + ' bytes';
             document.getElementById('txRate').textContent = (mempoolTx.fee / (mempoolTx.size / 1024)).toFixed(6) + ' XMR/KB';
         }
+        document.getElementById('txBadge').textContent = 'unconfirmed';
+        document.getElementById('arrLabel').textContent = 'your_txn [0/10]';
+        bl[0].className = 'tt-b cur';
+        document.getElementById('cfCount').textContent = '0/10 blocks';
+        document.getElementById('ttStat').textContent = 'tracking transaction...';
+        document.getElementById('txConfs').textContent = '0/10 blocks';
+        document.getElementById('txEtaConf').textContent = '~20 min';
     }
+
+    // Start fast polling for this tracked tx
+    startTrackingPoll();
 
     document.getElementById('txSec').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
@@ -416,6 +460,7 @@ async function checkTrackedTx() {
 
 function updateConfirmations(confs) {
     confs = Math.min(confs, 10);
+    confStep = confs;
     const bl = document.getElementById('cfBlocks').children;
 
     for (let i = 0; i < 10; i++) {
@@ -425,6 +470,12 @@ function updateConfirmations(confs) {
     }
 
     document.getElementById('cfCount').textContent = confs + '/10 blocks';
+
+    // Update inline grid cells
+    document.getElementById('txConfs').textContent = confs + '/10 blocks';
+    const remaining = Math.max(0, 10 - confs);
+    document.getElementById('txEtaConf').textContent = confs >= 10 ? 'confirmed' : '~' + (remaining * 2) + ' min';
+    document.getElementById('txEtaConf').className = confs >= 10 ? 'tc-v g' : 'tc-v';
 
     if (confs >= 10) {
         document.getElementById('ttStat').textContent = 'fully confirmed at block #' + (trackedBlockHeight + 10).toLocaleString();
@@ -437,9 +488,13 @@ function updateConfirmations(confs) {
         document.getElementById('arrTri').style.borderTopColor = 'var(--grn)';
         document.getElementById('txConfCell').classList.add('vis');
         document.getElementById('tccSub').textContent = 'transaction included in block #' + trackedBlockHeight.toLocaleString() + ' — 10/10 confirmations reached';
+        document.getElementById('txEta').textContent = 'confirmed';
+        // Stop fast polling — fully confirmed
+        stopTrackingPoll();
     } else {
         document.getElementById('ttStat').textContent = 'waiting for block #' + (MoneroNetwork.data.height + 1).toLocaleString() + '...';
         document.getElementById('arrLabel').textContent = 'your_txn [' + confs + '/10]';
+        document.getElementById('txEta').textContent = '~' + (remaining * 2) + ' min to 10/10';
     }
 
     // Position arrow at the correct confirmed block
@@ -473,7 +528,22 @@ function positionArrowAtBlock(idx) {
 }
 
 document.getElementById('txIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
-window.addEventListener('resize', () => { if (tracking) positionArrowAtBlock(Math.min(confStep, 9)); });
+
+// Reposition arrow on window resize
+window.addEventListener('resize', () => {
+    if (!tracking) return;
+    if (confStep > 0) positionArrowAtBlock(Math.min(confStep - 1, 9));
+    else positionArrowAtPending();
+});
+
+// Reposition arrow when block row is scrolled (fixes mobile/desktop displacement)
+document.getElementById('blkRow').addEventListener('scroll', () => {
+    if (!tracking) return;
+    requestAnimationFrame(() => {
+        if (confStep > 0) positionArrowAtBlock(Math.min(confStep - 1, 9));
+        else positionArrowAtPending();
+    });
+});
 
 // Initialize
 initMempool();
