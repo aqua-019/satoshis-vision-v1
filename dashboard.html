@@ -739,6 +739,21 @@ MoneroNetwork.start();
 
     var REFRESH_MS = 30 * 60 * 1000; // 30 minutes
     var CACHE_MS = 5 * 60 * 1000;    // 5 min for tickers
+    var RETRY_MS = 15000;            // 15s retry on failure
+
+    function fetchWithRetry(url, onSuccess, onError, retries) {
+        retries = retries || 0;
+        fetch(url).then(function(r) {
+            if (r.status === 429 || r.status >= 500) throw new Error('status ' + r.status);
+            return r.json();
+        }).then(onSuccess).catch(function(err) {
+            console.warn('[Dashboard] fetch failed:', url, err);
+            if (retries < 3) {
+                var delay = RETRY_MS * Math.pow(2, retries);
+                setTimeout(function() { fetchWithRetry(url, onSuccess, onError, retries + 1); }, delay);
+            } else if (onError) { onError(err); }
+        });
+    }
 
     function formatUSD(n) {
         if (n == null) return '\u2014';
@@ -810,16 +825,18 @@ MoneroNetwork.start();
         var cached = cacheGet('dash_live_tickers', CACHE_MS);
         if (cached) { renderLiveTickers(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + LIVE_TICKER_IDS + '&order=market_cap_desc&sparkline=false&price_change_percentage=1h,24h,7d')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
+        fetchWithRetry(
+            'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + LIVE_TICKER_IDS + '&order=market_cap_desc&sparkline=false&price_change_percentage=1h,24h,7d',
+            function(d) {
                 if (!Array.isArray(d)) throw new Error('bad response');
                 cacheSet('dash_live_tickers', d);
                 renderLiveTickers(d);
-            }).catch(function() {
+            },
+            function() {
                 document.getElementById('liveTickerGrid').innerHTML =
-                    '<div class="live-ticker-card visible"><div class="chart-loading">Unable to load. Will retry.</div></div>';
-            });
+                    '<div class="live-ticker-card visible"><div class="chart-loading">Unable to load prices. CoinGecko may be rate-limited — will retry on next cycle.</div></div>';
+            }
+        );
     }
 
     function renderLiveTickers(data) {
@@ -933,16 +950,18 @@ MoneroNetwork.start();
         var cached = cacheGet('dash_top10', CACHE_MS);
         if (cached) { renderTop10(cached); return; }
 
-        fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + TOP10_IDS + '&order=market_cap_desc&sparkline=true&price_change_percentage=24h,7d')
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
+        fetchWithRetry(
+            'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=' + TOP10_IDS + '&order=market_cap_desc&sparkline=true&price_change_percentage=24h,7d',
+            function(data) {
                 if (!Array.isArray(data)) throw new Error('bad response');
                 cacheSet('dash_top10', data);
                 renderTop10(data);
-            }).catch(function() {
+            },
+            function() {
                 document.getElementById('top10Grid').innerHTML =
-                    '<div class="ticker-card visible"><div class="chart-loading">Unable to load market data. Will retry.</div></div>';
-            });
+                    '<div class="ticker-card visible"><div class="chart-loading">Unable to load market data. CoinGecko may be rate-limited — will retry on next cycle.</div></div>';
+            }
+        );
     }
 
     function renderTop10(coins) {
@@ -1035,16 +1054,18 @@ MoneroNetwork.start();
         if (cached) { renderFiat(cached); return; }
 
         var vs = FIAT_CURRENCIES.join(',');
-        fetch('https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=' + vs + '&include_24hr_change=true')
-            .then(function(r) { return r.json(); })
-            .then(function(d) {
+        fetchWithRetry(
+            'https://api.coingecko.com/api/v3/simple/price?ids=monero&vs_currencies=' + vs + '&include_24hr_change=true',
+            function(d) {
                 var xmr = d.monero || {};
                 cacheSet('dash_fiat', xmr);
                 renderFiat(xmr);
-            }).catch(function() {
+            },
+            function() {
                 document.getElementById('fiatGrid').innerHTML =
-                    '<div class="fiat-card visible"><div class="chart-loading">Unable to load fiat prices.</div></div>';
-            });
+                    '<div class="fiat-card visible"><div class="chart-loading">Unable to load fiat prices. CoinGecko may be rate-limited.</div></div>';
+            }
+        );
     }
 
     var FIAT_TV_SYMBOLS = {

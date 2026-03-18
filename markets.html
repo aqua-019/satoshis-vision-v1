@@ -38,13 +38,14 @@
         .chart-tab.active{border-color:rgba(255,102,0,.3);color:var(--xmr);background:rgba(255,102,0,.06)}
         .flip-toggle{padding:1px 5px;border-radius:4px;border:1px solid var(--g8);background:transparent;color:var(--g6);font-family:var(--font-mono);font-size:9px;margin-left:4px;letter-spacing:.5px;transition:all .2s;cursor:pointer}
         .flip-toggle:hover{border-color:rgba(255,102,0,.3);color:var(--xmr)}
-        .chart-area{height:220px;background:#060609;border-radius:14px;border:1px solid var(--g9);padding:14px;display:flex;align-items:center;justify-content:center;position:relative}
+        .chart-area{height:400px;background:#060609;border-radius:14px;border:1px solid var(--g9);overflow:hidden;position:relative}
+        .chart-area iframe{width:100%;height:100%;border:none}
         .chart-area .ig{position:absolute;top:10px;left:14px;background:rgba(6,6,9,.92);border:1px solid var(--g8);border-radius:6px;padding:4px 8px;z-index:10}
         .ig .ig-t{font-family:var(--font-mono);font-size:8px;letter-spacing:1px;color:var(--g6)}
         .ig .ig-r{display:flex;gap:8px;margin-top:2px}
         .ig .ig-l{font-family:var(--font-mono);font-size:11px;color:var(--g7)}
         .ig .ig-v{font-family:var(--font-data);font-size:11px;font-weight:500;color:var(--g2)}
-        .chart-placeholder{font-family:var(--font-mono);font-size:11px;color:var(--g6)}
+        .chart-loading-msg{font-family:var(--font-mono);font-size:11px;color:var(--g6);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
 
         .inf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
         .inf-c{border-radius:16px;padding:12px;text-align:center}
@@ -100,13 +101,8 @@
                     <button class="flip-toggle" onclick="flipChart()" id="flipBtn" title="Toggle XMR/BTC ↔ BTC/XMR">flip</button>
                     <button class="chart-tab" data-chart="compare" onclick="setM(this,'compare')">2014 vs 2026</button>
                 </div>
-                <div class="chart-area">
-                    <div class="ig">
-                        <div class="ig-t" id="ig-title">XMR / USD</div>
-                        <div class="ig-r"><span class="ig-l">Price</span><span class="ig-v" id="ig-price">—</span></div>
-                        <div class="ig-r"><span class="ig-l">24h</span><span class="ig-v" id="ig-chg">—</span></div>
-                    </div>
-                    <div class="chart-placeholder">Chart renders with CoinGecko historical data</div>
+                <div class="chart-area" id="chartArea">
+                    <div class="chart-loading-msg">Loading chart...</div>
                 </div>
             </div>
         </div>
@@ -170,15 +166,72 @@ function updateRatios(p){
 }
 setInterval(function(){rsi=(rsi+1)%3;if(lastPrices)updateRatios(lastPrices);},60000);
 
-function setM(el,chart){document.querySelectorAll('.chart-tab').forEach(function(b){b.classList.remove('active')});el.classList.add('active');
-    var titles={'xmrusd':'XMR / USD','btcusd':'BTC / USD','btcxmr':'BTC / XMR','compare':'2014 vs 2026 overlay'};
-    document.getElementById('ig-title').textContent=titles[chart]||chart;
-}
+var chartSymbols={
+    xmrusd:'KRAKEN:XMRUSD',
+    btcusd:'BINANCE:BTCUSDT',
+    btcxmr:'KRAKEN:XMRBTC',
+    compare:'KRAKEN:XMRUSD'
+};
+var chartTitles={xmrusd:'XMR / USD',btcusd:'BTC / USD',btcxmr:'BTC / XMR',compare:'XMR / USD (2014–now)'};
+var currentChart='xmrusd';
 var flipped=false;
-function flipChart(){flipped=!flipped;document.getElementById('flipBtn').textContent=flipped?'flip ↺':'flip';
-    var active=document.querySelector('.chart-tab.active');
-    if(active&&active.dataset.chart==='btcxmr'){document.getElementById('ig-title').textContent=flipped?'XMR / BTC':'BTC / XMR';}
+
+function loadTVChart(symbol){
+    var area=document.getElementById('chartArea');
+    area.innerHTML='';
+    var wrap=document.createElement('div');
+    wrap.className='tradingview-widget-container';
+    wrap.style.cssText='height:100%;width:100%';
+    var inner=document.createElement('div');
+    inner.className='tradingview-widget-container__widget';
+    inner.style.cssText='height:100%;width:100%';
+    wrap.appendChild(inner);
+    var sc=document.createElement('script');
+    sc.type='text/javascript';
+    sc.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+    sc.async=true;
+    sc.textContent=JSON.stringify({
+        autosize:true,
+        symbol:symbol,
+        interval:'D',
+        timezone:'Etc/UTC',
+        theme:'dark',
+        style:'1',
+        locale:'en',
+        backgroundColor:'rgba(6,6,9,1)',
+        gridColor:'rgba(255,255,255,0.04)',
+        allow_symbol_change:false,
+        hide_top_toolbar:false,
+        hide_legend:false,
+        save_image:false,
+        calendar:false,
+        support_host:'https://www.tradingview.com'
+    });
+    wrap.appendChild(sc);
+    area.appendChild(wrap);
 }
+
+function setM(el,chart){
+    document.querySelectorAll('.chart-tab').forEach(function(b){b.classList.remove('active')});
+    el.classList.add('active');
+    currentChart=chart;
+    flipped=false;
+    document.getElementById('flipBtn').textContent='flip';
+    var sym=chartSymbols[chart]||chartSymbols.xmrusd;
+    loadTVChart(sym);
+}
+
+function flipChart(){
+    if(currentChart!=='btcxmr')return;
+    flipped=!flipped;
+    document.getElementById('flipBtn').textContent=flipped?'flip ↺':'flip';
+    // TradingView XMRBTC is the pair — when "flipped" we show BTC denominated
+    // Since TV doesn't have BTCXMR, we toggle between XMRBTC and an inverted view
+    loadTVChart(flipped?'BINANCE:BTCUSDT/KRAKEN:XMRUSD':'KRAKEN:XMRBTC');
+}
+
+// Load initial chart
+loadTVChart(chartSymbols.xmrusd);
 </script>
 </body>
 </html>
