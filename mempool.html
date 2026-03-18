@@ -47,7 +47,7 @@
         .arr-line{width:1px;height:10px;background:#4A9EFF}
         .arr-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #4A9EFF}
 
-        .blk-row{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:#1A1A22 transparent}
+        .blk-row{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:#1A1A22 transparent;scroll-behavior:smooth}
         .blk-row::-webkit-scrollbar{height:3px}.blk-row::-webkit-scrollbar-thumb{background:#1A1A22;border-radius:2px}
         .divider{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:30px;flex-shrink:0}
         .div-line{width:1px;flex:1;background:linear-gradient(180deg,transparent,#333,transparent)}
@@ -501,26 +501,49 @@ function updateConfirmations(confs) {
     positionArrowAtBlock(Math.min(confs - 1, 9));
 }
 
+function scrollBlockIntoView(el) {
+    const row = document.getElementById('blkRow');
+    if (!el || !row) return;
+    const rowRect = row.getBoundingClientRect();
+    const elRect = el.getBoundingClientRect();
+    // Center the element within the visible scroll area
+    const elCenter = elRect.left + elRect.width / 2;
+    const rowCenter = rowRect.left + rowRect.width / 2;
+    const offset = elCenter - rowCenter;
+    row.scrollBy({ left: offset, behavior: 'smooth' });
+}
+
 function positionArrowAtPending() {
     const p0 = document.getElementById('pend-0');
     const wrap = document.getElementById('arrowWrap');
     if (!p0 || !wrap) return;
-    const pRect = p0.getBoundingClientRect();
-    const wRect = wrap.getBoundingClientRect();
-    const arrow = document.getElementById('txArrow');
-    arrow.style.left = (pRect.left - wRect.left + pRect.width / 2) + 'px';
-    arrow.style.transform = 'translateX(-50%)';
+    scrollBlockIntoView(p0);
+    // Recompute after scroll settles
+    requestAnimationFrame(() => {
+        const pRect = p0.getBoundingClientRect();
+        const wRect = wrap.getBoundingClientRect();
+        const arrow = document.getElementById('txArrow');
+        arrow.style.left = (pRect.left - wRect.left + pRect.width / 2) + 'px';
+        arrow.style.transform = 'translateX(-50%)';
+    });
 }
 
 function positionArrowAtBlock(idx) {
     const block = document.getElementById('conf-' + idx);
     const wrap = document.getElementById('arrowWrap');
     if (!block || !wrap) return;
-    const bRect = block.getBoundingClientRect();
-    const wRect = wrap.getBoundingClientRect();
-    const arrow = document.getElementById('txArrow');
-    arrow.style.left = (bRect.left - wRect.left + bRect.width / 2) + 'px';
-    arrow.style.transform = 'translateX(-50%)';
+
+    // Auto-scroll the block row to keep tracked block visible
+    scrollBlockIntoView(block);
+
+    // Recompute arrow position after scroll settles
+    requestAnimationFrame(() => {
+        const bRect = block.getBoundingClientRect();
+        const wRect = wrap.getBoundingClientRect();
+        const arrow = document.getElementById('txArrow');
+        arrow.style.left = (bRect.left - wRect.left + bRect.width / 2) + 'px';
+        arrow.style.transform = 'translateX(-50%)';
+    });
 
     // Highlight tracked block
     document.querySelectorAll('.bc.tracked').forEach(el => el.classList.remove('tracked'));
