@@ -165,8 +165,39 @@ const MoneroNetwork = {
             await this.fetchInfo();
             if (this.data.height !== prevHeight) {
                 await this.fetchRecentBlocks();
+                this.notifyBlocks();
             }
             await this.fetchMempool();
+            this.notifyPool();
         }, this.POLL_INTERVAL);
+    },
+
+    // Fast polling for mempool page (5s)
+    POLL_FAST: 5000,
+    blockListeners: [],
+    poolListeners: [],
+
+    subscribeBlocks(fn) { this.blockListeners.push(fn); },
+    subscribePool(fn) { this.poolListeners.push(fn); },
+    notifyBlocks() { this.blockListeners.forEach(fn => fn(this.blocks)); },
+    notifyPool() { this.poolListeners.forEach(fn => fn(this.mempool)); },
+
+    async startFast() {
+        await this.fetchInfo();
+        await Promise.all([this.fetchRecentBlocks(), this.fetchMempool()]);
+        this.notify();
+        this.notifyBlocks();
+        this.notifyPool();
+        setInterval(async () => {
+            const prevHeight = this.data.height;
+            await this.fetchInfo();
+            if (this.data.height !== prevHeight) {
+                await this.fetchRecentBlocks();
+                this.notifyBlocks();
+            }
+            await this.fetchMempool();
+            this.notify();
+            this.notifyPool();
+        }, this.POLL_FAST);
     }
 };
