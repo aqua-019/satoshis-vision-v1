@@ -68,14 +68,9 @@
     <div class="z1">
         <div id="nav-mount"></div>
         <div class="genui-bar">
-            <span class="gl">GenUI /</span>
             <span class="g-chip active" data-level="beginner" onclick="setLevel(this)">Beginner</span>
             <span class="g-chip" data-level="intermediate" onclick="setLevel(this)">Intermediate</span>
             <span class="g-chip" data-level="advanced" onclick="setLevel(this)">Advanced</span>
-            <span class="gl" style="margin-left:8px">detected:</span>
-            <span class="g-chip dev" id="detected-device">—</span>
-            <span class="g-chip dev" id="detected-time">—</span>
-            <span class="g-chip dev" id="detected-wallet">No wallet detected</span>
             <div class="g-os">
                 <span class="g-chip os-active" data-os="windows" onclick="setOS(this)">Windows</span>
                 <span class="g-chip" data-os="macos" onclick="setOS(this)">macOS</span>
@@ -168,7 +163,7 @@
         <div class="sec sec-border">
             <div class="sec-k">Section 04 / Solo vs Pool</div>
             <div class="sec-t">Pool mining wins for 99% of miners</div>
-            <div class="sec-s">GenUI recommends pool mining based on your detected hardware class.</div>
+            <div class="sec-s">Pool mining is recommended for most users — consistent payouts with minimal setup.</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
                 <div class="bub" style="padding:16px">
                     <div class="bh" style="color:var(--gold)">Solo mining</div>
@@ -205,7 +200,7 @@
         <div class="sec sec-border">
             <div class="sec-k">Section 06 / Setup</div>
             <div class="sec-t">Start mining in 5 minutes</div>
-            <div class="sec-s">GenUI detected your OS — showing XMRig setup instructions.</div>
+            <div class="sec-s">Select your OS above for platform-specific XMRig setup instructions.</div>
             <div style="display:flex;gap:6px;margin-bottom:10px">
                 <span class="g-chip active" data-sw="xmrig" onclick="setSW(this)">XMRig</span>
                 <span class="g-chip" data-sw="nanominer" onclick="setSW(this)">Nanominer</span>
@@ -297,7 +292,7 @@ echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</span>
         </div>
 
         <div class="footer">
-            <span>xmr.irish / mining / GenUI-native / SJB83</span>
+            <span>xmr.irish / mining</span>
             <div><a href="index.html">Home</a><a href="markets.html">Markets</a><a href="mempool.html">Mempool</a><a href="ecosystem.html">Ecosystem</a></div>
             <span>EIA + miningpoolstats.stream</span>
         </div>
@@ -315,15 +310,7 @@ MoneroNetwork.subscribe(function(d){
     if(d.height)document.getElementById('mining-block').textContent=d.height.toLocaleString();
     if(d.hashrate)document.getElementById('mining-hashrate').textContent=MoneroNetwork.fmtHashrate(d.hashrate);
 });
-// GenUI detected device display
-document.addEventListener('DOMContentLoaded',function(){
-    var ua=navigator.userAgent.toLowerCase();
-    var os=ua.includes('win')?'Windows':ua.includes('mac')?'macOS':ua.includes('linux')?'Linux':ua.includes('android')?'Android':ua.includes('iphone')?'iOS':'Unknown';
-    document.getElementById('detected-device').textContent='Desktop / '+os;
-    var secs=Math.floor((Date.now()-performance.timing.navigationStart)/1000);
-    document.getElementById('detected-time').textContent=secs+'s on site';
-    if(typeof window.ethereum!=='undefined')document.getElementById('detected-wallet').textContent='Wallet detected';
-});
+// Skill level and OS selectors
 function setLevel(el){document.querySelectorAll('.genui-bar .g-chip:not(.dev):not([class*="os"])').forEach(function(c){c.classList.remove('active')});el.classList.add('active');}
 function setOS(el){
     document.querySelectorAll('.g-os .g-chip').forEach(function(c){c.classList.remove('os-active')});
