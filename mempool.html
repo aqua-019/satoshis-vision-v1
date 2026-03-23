@@ -3,259 +3,305 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
     <title>xmr.irish — Monero Mempool Explorer</title>
+    <meta name="description" content="Real-time Monero mempool visualization. Track transactions, watch confirmations, explore blocks. Privacy by default.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
-        /* ═══ MEMPOOL OVERRIDE: JetBrains Mono on everything ═══ */
-        .mp, .mp *, .mp *::before, .mp *::after {
-            font-family: 'JetBrains Mono', monospace !important;
-        }
-        /* Re-apply D09 only to the nav (which is outside .mp) */
-        .nav, .nav * { font-family: var(--font-mono) !important; }
-        .nav .nav-logo { font-family: var(--font-headline) !important; }
-        .nav .shamrock-link svg { font-family: inherit !important; }
-        .nav .nb-val { font-family: var(--font-data) !important; }
-        .nav .np .val { font-family: var(--font-data) !important; }
+    .mp{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+    .mp .nav,.mp .nav *{font-family:var(--font-body)}
+    .mp .nav .nav-logo{font-family:var(--font-headline)}
+    .mp .nav .nb-val,.mp .nav .np .val{font-family:var(--font-data)}
 
-        .mp{background:var(--bg);color:#C8C8C8;min-height:100vh}
-        .mp-header{display:flex;align-items:center;padding:10px 20px;border-bottom:1px solid rgba(255,102,0,.06);gap:10px;flex-wrap:wrap}
-        .mp-tabs{display:flex;gap:12px;margin-left:auto;font-size:11px;color:#444}
-        .mp-tabs a{padding:4px 0;transition:color .2s;color:#444;text-decoration:none}
-        .mp-tabs a:hover{color:#C8C8C8}.mp-tabs a.a{color:var(--xmr);border-bottom:1px solid var(--xmr)}
-        .mp-search{display:flex;gap:5px;margin-left:14px;flex:1 1 200px;min-width:0}
-        .mp-search input{background:#080810;border:1px solid #1A1A22;border-radius:4px;padding:4px 8px;color:#C8C8C8;font-size:11px;width:220px;min-width:0;flex:1 1 auto;transition:border-color .2s}
-        .mp-search input:focus{outline:none;border-color:var(--xmr)}
-        .mp-search input::placeholder{color:#333}
-        .mp-search button{background:var(--xmr);color:var(--bg);border:none;border-radius:4px;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600}
+    .mp-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;flex-wrap:wrap}
+    .mp-brand{font-size:14px}.mp-brand em{color:var(--grn);font-style:normal;font-weight:600}.mp-brand span{color:var(--text-muted)}
+    .mp-tabs{display:flex;gap:4px;font-size:11px}
+    .mp-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}
+    .mp-tab.active{background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
+    .mp-search{margin-left:auto;display:flex;gap:6px;flex:1;max-width:400px}
+    .mp-search input{background:var(--surface-2);border:1px solid var(--border-default);border-radius:6px;padding:5px 10px;color:var(--g3);font-size:11px;flex:1;font-family:inherit}
+    .mp-search input:focus{border-color:var(--grn);outline:none}
+    .mp-search button{background:var(--grn);color:#000;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer}
 
-        .stats{display:flex;gap:1px;padding:8px 20px;background:#040408}
-        .st{flex:1;background:#080810;padding:7px 8px;text-align:center}
-        .st:first-child{border-radius:6px 0 0 6px}.st:last-child{border-radius:0 6px 6px 0}
-        .st-v{font-size:13px;font-weight:600;color:var(--xmr)}
-        .st-l{font-size:11px;color:#444;font-weight:300}
+    .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 var(--space-page-x);margin:14px 0}
+    .sc{background:var(--surface-1);padding:12px;text-align:center}
+    .sc:first-child{border-radius:10px 0 0 10px}.sc:last-child{border-radius:0 10px 10px 0}
+    .sc .sv{font-size:17px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:9px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
 
-        .blk-area{padding:12px 20px;position:relative}
-        .blk-hdr{font-size:11px;color:#444;margin-bottom:4px;display:flex;justify-content:space-between;font-weight:300}
-        .blk-hdr .ch{color:var(--xmr)}
-        .arrow-wrap{position:relative;height:28px;margin:-2px 0 4px;overflow:visible}
-        .tx-arrow{position:absolute;display:flex;flex-direction:column;align-items:center;transition:left 1s ease;z-index:5}
-        .tx-arrow.hidden{opacity:0;pointer-events:none}
-        .arr-label{font-size:9px;color:#4A9EFF;font-weight:500;white-space:nowrap;margin-bottom:1px;letter-spacing:.5px}
-        .arr-line{width:1px;height:10px;background:#4A9EFF}
-        .arr-tri{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid #4A9EFF}
+    .tth{margin:0 var(--space-page-x) 14px;padding:12px 16px;background:var(--surface-1);border:1px solid rgba(74,136,255,.15);border-radius:10px;display:none}
+    .tth.vis{display:block}
+    .tth-t{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+    .tth-h{font-size:11px;color:var(--blue);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .tth-b{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.2)}
+    .tth-g{display:grid;grid-template-columns:repeat(6,1fr);gap:1px}
+    .tth-m{background:var(--surface-2);padding:7px 6px;text-align:center}
+    .tth-m:first-child{border-radius:6px 0 0 6px}.tth-m:last-child{border-radius:0 6px 6px 0}
+    .tth-mv{font-size:11px;font-weight:600;margin-bottom:1px}.tth-ml{font-size:7px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
 
-        .blk-row{display:flex;gap:3px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin;scrollbar-color:#1A1A22 transparent;scroll-behavior:smooth}
-        .blk-row::-webkit-scrollbar{height:3px}.blk-row::-webkit-scrollbar-thumb{background:#1A1A22;border-radius:2px}
-        .divider{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:30px;flex-shrink:0}
-        .div-line{width:1px;flex:1;background:linear-gradient(180deg,transparent,#333,transparent)}
-        .div-arr{font-size:11px;color:#444;padding:2px 0}
-        .bc{min-width:110px;flex-shrink:0;padding:7px 9px;display:flex;flex-direction:column;gap:2px;border-radius:6px;position:relative;overflow:hidden;transition:all .3s;cursor:default}
-        .bc:hover{transform:translateY(-2px)}
-        .bc.pend{background:#0A0A10;border:1px solid #16161E}.bc.pend:hover{border-color:#333}
-        .bc.pend .v1{color:#777;font-size:11px}.bc.pend .v2{color:#555;font-size:11px}
-        .bc.pend .v3{color:#888;font-size:12px;font-weight:500}.bc.pend .v4{color:#555;font-size:11px}
-        .bc.pend .v5{color:var(--xmr);font-size:11px;font-weight:500}
-        .bc.pend .bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:#16161E}
-        .bc.conf{background:linear-gradient(135deg,#1A0E00,#100800);border:1px solid rgba(255,102,0,.2)}
-        .bc.conf:hover{border-color:rgba(255,102,0,.45)}
-        .bc.conf .ht{color:var(--xmr);font-size:11px;font-weight:600}
-        .bc.conf .v3{color:var(--xmr);font-size:12px;font-weight:500}.bc.conf .v4{color:rgba(255,102,0,.4);font-size:11px}
-        .bc.conf .v5{color:rgba(255,102,0,.3);font-size:11px}
-        .bc.conf .cf{font-size:11px;margin-top:1px}
-        .bc.conf .bar{position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--xmr)}
-        .cf-f{color:var(--grn)}.cf-p{color:#CC7733}
-        .bc.tracked{border-color:rgba(74,158,255,.5)!important;box-shadow:0 0 8px rgba(74,158,255,.15)}
+    .bf{margin:0 var(--space-page-x) 14px;border-radius:12px;background:var(--surface-1);border:1px solid var(--border-default)}
+    .bf-head{display:flex;justify-content:space-between;padding:8px 12px 0}
+    .bf-lbl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}.bf-lbl.r{color:var(--xmr)}
+    .bf-arr-row{height:18px;position:relative;margin:0 0 0 30%;display:none}
+    .bf-arr-row.vis{display:block}
+    .bf-arr{position:absolute;left:56px;display:flex;flex-direction:column;align-items:center;transition:left .6s ease}
+    .bf-arr-l{font-size:8px;color:var(--blue);font-weight:600;white-space:nowrap}
+    .bf-arr-ln{width:1px;height:4px;background:var(--blue)}.bf-arr-tr{width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:5px solid var(--blue)}
+    .bf-body{display:flex;height:120px}
+    .bf-left{width:30%;display:flex;gap:4px;padding:0 8px 8px;align-items:stretch;flex-shrink:0;overflow:hidden}
+    .bf-left .bk{width:auto;min-width:0;flex:1}
+    .bf-div{width:2px;background:var(--g7);position:relative;flex-shrink:0}
+    .bf-div::after{content:'';position:absolute;right:-4px;top:50%;transform:translateY(-50%) rotate(45deg);width:8px;height:8px;border-right:2px solid var(--g5);border-top:2px solid var(--g5);background:var(--surface-1)}
+    .bf-right{flex:1;overflow-x:auto;display:flex;gap:4px;padding:0 8px 8px;align-items:stretch;scrollbar-width:none;cursor:grab}
+    .bf-right::-webkit-scrollbar{display:none}.bf-right:active{cursor:grabbing}
 
-        .tx-confirmed-cell{margin:8px 20px 0;padding:10px 16px;border-radius:6px;background:rgba(0,211,149,.06);border:1px solid rgba(0,211,149,.15);display:none;text-align:center;animation:cfFlash .6s ease}
-        @keyframes cfFlash{0%{opacity:0;transform:scale(.95)}100%{opacity:1;transform:scale(1)}}
-        .tx-confirmed-cell.vis{display:block}
-        .tcc-title{font-size:13px;font-weight:600;color:var(--grn)}
-        .tcc-sub{font-size:11px;color:#555;margin-top:2px;font-weight:300}
+    .bk{width:100px;min-width:100px;padding:8px 7px;border-radius:6px;display:flex;flex-direction:column;gap:2px;position:relative;overflow:hidden;flex-shrink:0;cursor:pointer;transition:border-color .2s}
+    .bk.pnext{background:linear-gradient(135deg,#0A0A14,#08081A);border:1px dashed rgba(74,136,255,.08);opacity:.4;cursor:default}
+    .bk.pnext .bv1{font-size:10px;color:var(--text-tertiary)}.bk.pnext .bv2{font-size:9px;color:var(--text-muted)}
+    .bk.pend{background:linear-gradient(135deg,#0A0A14,#08081A);border:1px solid rgba(74,136,255,.15);cursor:default}
+    .bk.pend .bv1{font-size:11px;color:var(--g3);font-weight:600}.bk.pend .bv2{font-size:9px;color:var(--text-tertiary)}.bk.pend .bv3{font-size:10px;color:var(--blue)}
+    .bk.pend .bbar{position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,rgba(74,136,255,.08),rgba(74,136,255,.2))}
+    .bk.conf{background:linear-gradient(135deg,#1A0E00,#100800);border:1px solid rgba(255,102,0,.18)}
+    .bk.conf:hover{border-color:rgba(255,102,0,.35)}
+    .bk.conf .bh{font-size:10px;font-weight:600;color:var(--xmr)}.bk.conf .br{font-size:9px;color:var(--xmr-text)}.bk.conf .btx{font-size:9px;color:rgba(255,102,0,.4)}.bk.conf .bt{font-size:8px;color:var(--text-tertiary)}.bk.conf .bcf{font-size:9px;font-weight:600}
+    .bk.conf .cbar{position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
+    .bk.tracked{border-color:rgba(74,136,255,.5)!important;box-shadow:0 0 8px rgba(74,136,255,.12)}
+    .bk.six .cbar{background:linear-gradient(90deg,var(--grn),rgba(0,204,136,.3))!important}
 
-        .tx-sec{padding:12px 20px;border-top:1px solid #0A0A10}
-        .tx-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
-        .tx-title{font-size:15px;font-weight:600}
-        .tx-hash{font-size:11px;color:#4A9EFF;word-break:break-all;flex:1;font-weight:300}
-        .tx-badge{padding:2px 8px;border-radius:3px;font-size:11px;font-weight:600}
-        .tx-badge.unc{background:rgba(255,71,87,.12);color:var(--red);border:1px solid rgba(255,71,87,.2)}
-        .tx-badge.full{background:rgba(0,211,149,.12);color:var(--grn);border:1px solid rgba(0,211,149,.2)}
-        .tx-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:#0A0A10;border-radius:6px;overflow:hidden}
-        .tx-cell{background:#080810;padding:8px 12px;display:flex;justify-content:space-between;align-items:center}
-        .tc-l{font-size:11px;color:#444;font-weight:300}.tc-v{font-size:11px;font-weight:500}
-        .tc-v.o{color:var(--xmr)}.tc-v.g{color:var(--grn)}.tc-v.b{color:#4A9EFF}
+    .oc{position:relative;margin:0 var(--space-page-x) 14px;border-radius:12px;overflow:hidden;background:var(--surface-1);border:1px solid var(--border-default);height:200px}
+    .oc canvas{width:100%;height:100%}
+    .oc-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(10,10,12,.92))}
+    .oc-lb{font-size:8px;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
+    .oc-nr{font-size:10px;color:var(--text-secondary);max-width:440px;line-height:1.5}.oc-nr em{color:var(--grn);font-style:normal}
+    .oc-lg{position:absolute;top:8px;right:10px;display:flex;gap:8px}
+    .oc-li{display:flex;align-items:center;gap:3px;font-size:8px;color:var(--text-tertiary)}
+    .oc-ld{width:5px;height:5px;border-radius:50%}
 
-        .tx-track{margin-top:8px;padding:10px 12px;background:#080810;border-radius:6px}
-        .tt-hdr{font-size:11px;color:#444;margin-bottom:5px;display:flex;justify-content:space-between;font-weight:300}
-        .tt-blocks{display:flex;gap:2px}
-        .tt-b{flex:1;height:24px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;transition:all .6s}
-        .tt-b.done{background:rgba(255,102,0,.15);color:var(--xmr);border:1px solid rgba(255,102,0,.15)}
-        .tt-b.cur{background:rgba(255,102,0,.06);color:rgba(255,153,51,.5);border:1px solid rgba(255,102,0,.08);animation:tcp 2s infinite}
-        @keyframes tcp{0%,100%{border-color:rgba(255,102,0,.08)}50%{border-color:rgba(255,102,0,.3)}}
-        .tt-b.wait{background:#0A0A10;color:#222;border:1px solid #14141A}
-        .tt-b.fin{background:rgba(0,211,149,.12);color:var(--grn);border:1px solid rgba(0,211,149,.15)}
-        .tt-status{font-size:11px;color:var(--xmr);margin-top:3px;text-align:center;font-weight:300}
+    .ps{margin:0 var(--space-page-x) 14px;padding:8px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-default);display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+    .pi{text-align:center}.pil{font-size:7px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase;margin-bottom:1px}.piv{font-size:11px;font-weight:600}
 
-        .txl{padding:12px 20px;border-top:1px solid #0A0A10}
-        .txl-title{font-size:12px;font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between}
-        .txl-title span{font-size:11px;color:#444;font-weight:300}
-        .txl-hdr,.txl-r{display:grid;grid-template-columns:1fr 80px 65px 60px 50px;padding:4px 5px;font-size:11px}
-        .txl-hdr{color:#333;border-bottom:1px solid #0A0A10;font-weight:300}
-        .txl-r{border-bottom:1px solid #060608;transition:background .15s}.txl-r:hover{background:#080810}
-        .txl-h{color:#4A9EFF;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:300}
-        .txl-f{color:var(--gold);text-align:right}.txl-s{color:#555;text-align:right;font-weight:300}
-        .txl-c{text-align:right}.txl-t{color:#333;text-align:right;font-weight:300}
-        .cp{display:inline-block;padding:1px 4px;border-radius:2px;font-size:11px;font-weight:500}
-        .cp.p{background:rgba(255,71,87,.08);color:var(--red)}
-        .cp.c{background:rgba(255,102,0,.08);color:var(--xmr)}
-        .cp.f{background:rgba(0,211,149,.08);color:var(--grn)}
-        .mp-foot{padding:5px 20px;text-align:center;font-size:11px;color:#1A1A1A;border-top:1px solid #060608;font-weight:300}
+    .txl{margin:0 var(--space-page-x) 14px}
+    .txl-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+    .txl-ti{font-size:11px;font-weight:600}.txl-ct{font-size:9px;color:var(--text-tertiary)}
+    .txr{display:grid;grid-template-columns:1fr 60px 50px 40px 45px 40px 55px;padding:5px 0;border-bottom:1px solid var(--border-subtle);font-size:9px;align-items:center}
+    .txr.hd{color:var(--text-tertiary);font-size:8px;border-bottom:1px solid var(--border-default)}
+    .txr .th{color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}
+    .txr .th:hover{text-decoration:underline}
+    .txr .tf{text-align:right;color:var(--gold)}.txr .ts{text-align:right;color:var(--text-secondary)}
+    .txr .tr{text-align:right;color:var(--xmr-text)}.txr .tfr{text-align:right;color:var(--text-secondary)}
+    .txr .ta{text-align:right;color:var(--text-tertiary)}.txr .tst{text-align:right}
+    .tst-p{color:var(--red)}.tst-c{color:var(--grn)}
+    .txr-new{animation:ntx .6s ease}
+    @keyframes ntx{from{background:rgba(0,204,136,.06)}to{background:transparent}}
 
-        /* ═══ SKELETON LOADING ═══ */
-        @keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
-        .skel{background:linear-gradient(90deg,#080810 25%,#12121E 50%,#080810 75%);background-size:400px 100%;animation:shimmer 1.8s infinite ease-in-out;border-radius:4px}
-        .skel-val{display:inline-block;width:52px;height:14px;vertical-align:middle}
-        .skel-block{min-width:110px;height:96px;border-radius:6px;flex-shrink:0;margin-right:3px}
-        .skel-row{height:22px;margin-bottom:2px;border-radius:3px}
+    /* TX Detail view */
+    .txd{margin:0 var(--space-page-x) 14px;display:none}
+    .txd.vis{display:block}
+    .txd-divider{height:1px;background:var(--border-default);margin:14px var(--space-page-x)}
+    .txd-hero{display:grid;grid-template-columns:1fr 240px;gap:14px;margin-bottom:14px}
+    .txd-info{padding:16px;background:var(--surface-1);border-radius:12px;border:1px solid var(--border-default)}
+    .txd-hf{font-size:10px;color:var(--blue);word-break:break-all;margin-bottom:10px;line-height:1.5}
+    .txd-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px}
+    .txd-cell{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-subtle);font-size:10px}
+    .txd-cell .l{color:var(--text-tertiary);font-size:8px}.txd-cell .v{font-size:9px}
 
-        /* ═══ VISUAL POLISH ═══ */
-        .mp-header{border-bottom:1px solid rgba(255,102,0,.08);background:linear-gradient(180deg,rgba(255,102,0,.02) 0%,transparent 100%)}
-        .stats{box-shadow:0 1px 0 rgba(255,102,0,.05)}
-        .st-v{font-size:14px}
+    .rc{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface-1);border-radius:12px;border:1px solid var(--border-default);padding:14px;position:relative}
+    .rc svg{width:170px;height:170px}
+    .rcl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;margin-top:5px}
+    .rcs{font-size:9px;color:var(--grn);margin-top:3px;text-align:center}
+    .snd-btn{position:absolute;top:8px;right:8px;font-size:7px;color:var(--text-tertiary);padding:2px 5px;border:1px solid var(--border-default);border-radius:3px;background:transparent;cursor:pointer}
 
-        .bc.pend{background:linear-gradient(135deg,#0A0A14,#08081A);border:1px solid #1A1A28}
-        .bc.pend:first-child{border-color:rgba(74,158,255,.2);animation:pendPulse 3s ease-in-out infinite}
-        @keyframes pendPulse{0%,100%{border-color:rgba(74,158,255,.15)}50%{border-color:rgba(74,158,255,.35)}}
+    /* Block Anatomy view */
+    .bav{margin:0 var(--space-page-x) 14px;display:none}
+    .bav.vis{display:block}
+    .bav-hero{background:var(--surface-1);border:1px solid rgba(255,102,0,.12);border-radius:12px;padding:18px}
+    .bav-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
+    .bav-ht{font-size:24px;font-weight:600;color:var(--xmr)}
+    .bav-mt{text-align:right;font-size:9px;color:var(--text-tertiary);line-height:1.6}
+    .bav-top{display:grid;grid-template-columns:180px 1fr;gap:14px;margin-bottom:14px}
+    .bav-viz{background:var(--surface-2);border-radius:8px;border:1px solid var(--border-default);overflow:hidden;height:180px;position:relative}
+    .bav-viz canvas{width:100%;height:100%}
+    .bav-viz-l{position:absolute;bottom:5px;left:0;right:0;text-align:center;font-size:7px;color:var(--text-tertiary);letter-spacing:1px}
+    .bav-sts{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .bav-st{background:var(--surface-2);border-radius:6px;padding:8px;text-align:center}
+    .bav-st-v{font-size:13px;font-weight:600;margin-bottom:1px}.bav-st-l{font-size:7px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
+    .bav-back{font-size:11px;color:var(--blue);cursor:pointer;margin-bottom:10px;display:inline-block}
+    .bav-back:hover{text-decoration:underline}
 
-        .bc.conf{background:linear-gradient(135deg,#1A0E00 0%,#140A00 50%,#100800 100%);border:1px solid rgba(255,102,0,.18);box-shadow:inset 0 -24px 36px -24px rgba(255,102,0,.06)}
-        .bc.conf:hover{border-color:rgba(255,102,0,.4);box-shadow:inset 0 -24px 36px -24px rgba(255,102,0,.12),0 4px 12px rgba(0,0,0,.3)}
-        .bc.conf .bar{height:3px;background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
-        .bc.pend .bar{height:2px;background:linear-gradient(90deg,#1A1A28,rgba(74,158,255,.15))}
+    .mp-foot{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
 
-        .txl-r:nth-child(even){background:rgba(255,255,255,.008)}
-        .txl-r:hover{background:rgba(255,102,0,.03)!important}
-        .txl-h{color:#5AADFF}
+    @keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+    .skel{background:linear-gradient(90deg,var(--surface-05) 25%,var(--surface-2) 50%,var(--surface-05) 75%);background-size:400px 100%;animation:shimmer 1.8s infinite;border-radius:4px;display:inline-block}
 
-        /* ═══ MOBILE RESPONSIVE ═══ */
-        @media(max-width:768px){
-            .mp-header{padding:8px 12px;gap:6px}
-            .mp-tabs{margin-left:0;flex-wrap:wrap;gap:8px}
-            .mp-search{margin-left:0;width:100%}
-            .mp-search input{flex:1;width:auto;min-width:0}
-
-            .stats{display:grid;grid-template-columns:repeat(3,1fr);padding:6px 12px}
-            .st{border-radius:0!important}
-            .st:first-child{border-radius:6px 0 0 0!important}
-            .st:nth-child(3){border-radius:0 6px 0 0!important}
-            .st:nth-last-child(3){border-radius:0 0 0 6px!important}
-            .st:last-child{border-radius:0 0 6px 0!important}
-
-            .blk-area{padding:10px 12px}
-            .bc{min-width:90px;padding:6px 8px}
-            .bc .v3{font-size:11px}
-
-            .tx-sec{padding:10px 12px}
-            .tx-hdr{flex-direction:column;gap:4px}
-            .tx-hash{font-size:10px}
-            .tx-grid{grid-template-columns:1fr}
-
-            .txl{padding:10px 12px}
-            .txl-hdr,.txl-r{grid-template-columns:1fr 65px 50px}
-            .txl-hdr span:nth-child(3),.txl-hdr span:nth-child(5),.txl-r .txl-s,.txl-r .txl-t{display:none}
-
-            .tt-blocks{gap:1px}
-            .tt-b{font-size:9px;height:20px}
-        }
-        @media(max-width:480px){
-            .stats{grid-template-columns:repeat(2,1fr)}
-            .st:first-child{border-radius:6px 0 0 0!important}
-            .st:nth-child(2){border-radius:0 6px 0 0!important}
-            .st:nth-child(3),.st:nth-child(4){border-radius:0!important}
-            .st:nth-child(5){border-radius:0 0 0 6px!important}
-            .st:last-child{border-radius:0 0 6px 0!important}
-
-            .bc{min-width:78px;padding:5px 6px}
-            .mp-tabs{font-size:10px}
-            .mp-tabs a{padding:3px 0}
-            .blk-hdr{font-size:10px}
-        }
+    @media(max-width:768px){
+        .mp-nav{padding:8px 12px;gap:6px}.mp-tabs{margin-left:0;flex-wrap:wrap;gap:6px}.mp-search{margin-left:0;max-width:100%}
+        .sbar{grid-template-columns:repeat(2,1fr);padding:0 12px}
+        .tth{margin:0 12px 12px}.tth-g{grid-template-columns:repeat(3,1fr)}
+        .bf{margin:0 12px 12px}.bf-body{height:100px}.bk.conf .bh{font-size:9px}.bk.conf .br{font-size:8px}
+        .oc{margin:0 12px 12px;height:160px}
+        .ps{margin:0 12px 12px;grid-template-columns:repeat(2,1fr)}
+        .txl{margin:0 12px 12px}.txr{grid-template-columns:1fr 55px 45px 55px;font-size:8px}.txr .ts,.txr .tfr,.txr .tr{display:none}.txr.hd span:nth-child(3),.txr.hd span:nth-child(4),.txr.hd span:nth-child(5){display:none}
+        .txd{margin:0 12px 12px}.txd-hero{grid-template-columns:1fr}.rc{margin-top:12px}
+        .bav{margin:0 12px 12px}.bav-top{grid-template-columns:1fr}.bav-viz{height:140px}
+    }
     </style>
 </head>
 <body>
-<div class="page-offset">
+<div class="page-offset mp">
     <div id="nav-mount"></div>
-    <div class="mp">
-        <div class="mp-header">
-            <div style="font-size:15px;color:var(--xmr);font-weight:600;letter-spacing:-.5px">xmr.irish <span style="color:#444;font-weight:400">/</span> mempool</div>
-            <div class="mp-tabs"><a href="mempool.html" class="a">Mempool</a><a href="mining.html">Mining</a><a href="network.html">Network</a><a href="markets.html">Markets</a></div>
-            <div class="mp-search"><input type="text" id="txIn" placeholder="search txn hash or block height..."><button onclick="doSearch()">TRACK</button></div>
+    <div class="mp-nav">
+        <div class="mp-brand"><em>xmr.irish</em> <span>/</span> <em>mempool</em></div>
+        <div class="mp-tabs">
+            <a href="mempool.html" class="mp-tab active">Mempool</a>
+            <a href="mining.html" class="mp-tab">Mining</a>
+            <a href="network.html" class="mp-tab">Network</a>
+            <a href="markets.html" class="mp-tab">Markets</a>
         </div>
-        <div class="stats">
-            <div class="st"><div class="st-v" id="st-unconf"><span class="skel skel-val"></span></div><div class="st-l">unconfirmed</div></div>
-            <div class="st"><div class="st-v" id="st-hash"><span class="skel skel-val"></span></div><div class="st-l">hashrate</div></div>
-            <div class="st"><div class="st-v" id="st-diff"><span class="skel skel-val"></span></div><div class="st-l">difficulty</div></div>
-            <div class="st"><div class="st-v">~2 min</div><div class="st-l">block_time</div></div>
-            <div class="st"><div class="st-v">0.614 XMR</div><div class="st-l">reward</div></div>
-            <div class="st"><div class="st-v" style="color:var(--grn)">0.00002/KB</div><div class="st-l">median_fee</div></div>
+        <div class="mp-search">
+            <input type="text" id="txIn" placeholder="txn hash or block height...">
+            <button id="txBtn">Track</button>
         </div>
-        <div class="blk-area">
-            <div class="blk-hdr"><span>pending (mempool)</span><span class="ch">confirmed blocks</span></div>
-            <div class="arrow-wrap" id="arrowWrap"><div class="tx-arrow hidden" id="txArrow"><div class="arr-label" id="arrLabel">your_txn</div><div class="arr-line" id="arrLine"></div><div class="arr-tri" id="arrTri"></div></div></div>
-            <div class="blk-row" id="blkRow">
-                <div class="bc pend" id="pend-0"><div class="v2"><span class="skel" style="display:inline-block;width:50px;height:11px"></span></div><div class="v4"><span class="skel" style="display:inline-block;width:40px;height:11px"></span></div><div class="v5"><span class="skel" style="display:inline-block;width:30px;height:11px"></span></div><div class="bar"></div></div>
-                <div class="bc pend" id="pend-1" style="opacity:.7"><div class="v2"><span class="skel" style="display:inline-block;width:50px;height:11px"></span></div><div class="v4"><span class="skel" style="display:inline-block;width:40px;height:11px"></span></div><div class="v5"><span class="skel" style="display:inline-block;width:30px;height:11px"></span></div><div class="bar"></div></div>
-                <div class="bc pend" id="pend-2" style="opacity:.5"><div class="v2"><span class="skel" style="display:inline-block;width:50px;height:11px"></span></div><div class="v4"><span class="skel" style="display:inline-block;width:40px;height:11px"></span></div><div class="v5"><span class="skel" style="display:inline-block;width:30px;height:11px"></span></div><div class="bar"></div></div>
-                <div class="divider"><div class="div-line"></div><div class="div-arr">&#8693;</div><div class="div-line"></div></div>
-                <div id="conf-blocks" style="display:contents"><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div><div class="skel skel-block"></div></div>
-            </div>
-        </div>
-        <div class="tx-confirmed-cell" id="txConfCell"><div class="tcc-title">txn fully confirmed</div><div class="tcc-sub" id="tccSub"></div></div>
-        <div class="tx-sec" id="txSec">
-            <div class="tx-hdr">
-                <div class="tx-title">transaction</div>
-                <div class="tx-hash" id="txHash">—</div>
-                <div class="tx-badge unc" id="txBadge">—</div>
-            </div>
-            <div class="tx-grid">
-                <div class="tx-cell"><span class="tc-l">first_seen</span><span class="tc-v" id="txSeen">—</span></div>
-                <div class="tx-cell"><span class="tc-l">fee</span><span class="tc-v o" id="txFee">—</span></div>
-                <div class="tx-cell"><span class="tc-l">eta</span><span class="tc-v" id="txEta">—</span></div>
-                <div class="tx-cell"><span class="tc-l">fee_rate</span><span class="tc-v o" id="txRate">—</span></div>
-                <div class="tx-cell"><span class="tc-l">size</span><span class="tc-v" id="txSize">—</span></div>
-                <div class="tx-cell"><span class="tc-l">ring_size</span><span class="tc-v o">16 decoys</span></div>
-                <div class="tx-cell"><span class="tc-l">privacy</span><span class="tc-v g">RingCT + Stealth</span></div>
-                <div class="tx-cell"><span class="tc-l">inputs / outputs</span><span class="tc-v">hidden / hidden</span></div>
-                <div class="tx-cell"><span class="tc-l">confirmed</span><span class="tc-v o" id="txConfs">—</span></div>
-                <div class="tx-cell"><span class="tc-l">eta_full_confirm</span><span class="tc-v" id="txEtaConf">—</span></div>
-            </div>
-            <div class="tx-track">
-                <div class="tt-hdr"><span>confirmation_progress</span><span id="cfCount">0/10 blocks</span></div>
-                <div class="tt-blocks" id="cfBlocks">
-                    <div class="tt-b cur">1</div><div class="tt-b wait">2</div><div class="tt-b wait">3</div><div class="tt-b wait">4</div><div class="tt-b wait">5</div><div class="tt-b wait">6</div><div class="tt-b wait">7</div><div class="tt-b wait">8</div><div class="tt-b wait">9</div><div class="tt-b wait">10</div>
-                </div>
-                <div class="tt-status" id="ttStat">enter a transaction hash to begin tracking...</div>
-            </div>
-        </div>
-        <div class="txl">
-            <div class="txl-title">recent_transactions <span id="txl-count">—</span></div>
-            <div class="txl-hdr"><span>hash</span><span style="text-align:right">fee</span><span style="text-align:right">size</span><span style="text-align:right">status</span><span style="text-align:right">time</span></div>
-            <div id="txl-body">
-                <div class="skel skel-row" style="opacity:.9"></div>
-                <div class="skel skel-row" style="opacity:.8"></div>
-                <div class="skel skel-row" style="opacity:.7"></div>
-                <div class="skel skel-row" style="opacity:.6"></div>
-                <div class="skel skel-row" style="opacity:.5"></div>
-                <div class="skel skel-row" style="opacity:.4"></div>
-                <div class="skel skel-row" style="opacity:.3"></div>
-                <div class="skel skel-row" style="opacity:.2"></div>
-            </div>
-        </div>
-        <div class="mp-foot">xmr.irish / mempool / live data from Monero daemon RPC / SJB83</div>
     </div>
-</div>
 
+    <div class="sbar">
+        <div class="sc"><div class="sv" style="color:var(--grn)" id="st-unconf">—</div><div class="sl">Unconfirmed</div></div>
+        <div class="sc"><div class="sv" style="color:var(--xmr-text)" id="st-hash">—</div><div class="sl">Hashrate</div></div>
+        <div class="sc"><div class="sv" style="color:var(--g3)" id="st-diff">—</div><div class="sl">Difficulty</div></div>
+        <div class="sc"><div class="sv" style="color:var(--g3)">~2 min</div><div class="sl">Block time</div></div>
+    </div>
+
+    <!-- Tracking header -->
+    <div class="tth" id="tth">
+        <div class="tth-t">
+            <div style="font-size:11px;font-weight:600">Tracking</div>
+            <div class="tth-h" id="tth-hash">—</div>
+            <div class="tth-b" id="tth-badge">—</div>
+        </div>
+        <div class="tth-g">
+            <div class="tth-m"><div class="tth-mv" id="tth-seen" style="color:var(--g3)">—</div><div class="tth-ml">First seen</div></div>
+            <div class="tth-m"><div class="tth-mv" id="tth-fee" style="color:var(--gold)">—</div><div class="tth-ml">Fee rate</div></div>
+            <div class="tth-m"><div class="tth-mv" id="tth-next" style="color:var(--xmr-text)">—</div><div class="tth-ml">Next confirm</div></div>
+            <div class="tth-m"><div class="tth-mv" id="tth-eta6" style="color:var(--xmr-text)">—</div><div class="tth-ml">ETA 6/10</div></div>
+            <div class="tth-m"><div class="tth-mv" id="tth-eta10" style="color:var(--xmr-text)">—</div><div class="tth-ml">ETA 10/10</div></div>
+            <div class="tth-m" id="tth-detail" style="cursor:pointer"><div class="tth-mv" style="color:var(--blue)">Detail →</div><div class="tth-ml">View ring</div></div>
+        </div>
+    </div>
+
+    <!-- Block flow -->
+    <div class="bf">
+        <div class="bf-head"><div class="bf-lbl">Pending (mempool)</div><div class="bf-lbl r">Confirmed blocks →</div></div>
+        <div class="bf-arr-row" id="bf-arr-row"><div class="bf-arr" id="bf-arr"><div class="bf-arr-l" id="bf-arr-l">your txn [0/10]</div><div class="bf-arr-ln"></div><div class="bf-arr-tr"></div></div></div>
+        <div class="bf-body">
+            <div class="bf-left">
+                <div class="bk pnext"><div class="bv1">~next</div><div class="bv2">est. block</div><div class="bv2" style="margin-top:auto">—</div></div>
+                <div class="bk pend" id="pend-main"><div class="bv1" id="pend-count">—</div><div class="bv2" id="pend-fees">—</div><div class="bv2" style="margin-top:auto">~2 min</div><div class="bv3">waiting...</div><div class="bbar"></div></div>
+            </div>
+            <div class="bf-div"></div>
+            <div class="bf-right" id="bf-scroll"><div id="conf-blocks"></div></div>
+        </div>
+    </div>
+
+    <!-- Particle ocean -->
+    <div class="oc">
+        <canvas id="ocean"></canvas>
+        <div class="oc-lg"><div class="oc-li"><div class="oc-ld" style="background:var(--grn)"></div>Low</div><div class="oc-li"><div class="oc-ld" style="background:var(--gold)"></div>Med</div><div class="oc-li"><div class="oc-ld" style="background:var(--xmr)"></div>High</div></div>
+        <div class="oc-ov"><div class="oc-lb" id="oc-label">Live particle ocean</div><div class="oc-nr">Every particle is a real tx. You can see its <em>size</em> and <em>fee</em>. You cannot see who sent it, who receives it, or how much. <em>Privacy by default.</em></div></div>
+    </div>
+
+    <!-- Privacy strip -->
+    <div class="ps">
+        <div class="pi"><div class="pil">Sender</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
+        <div class="pi"><div class="pil">Receiver</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
+        <div class="pi"><div class="pil">Amount</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
+        <div class="pi"><div class="pil">Visible</div><div class="piv" style="color:var(--text-secondary)">Fee · Size · Time</div></div>
+    </div>
+
+    <!-- Recent transactions (dashboard) -->
+    <div class="txl" id="txl-dash">
+        <div class="txl-hd"><div class="txl-ti">Recent transactions</div><div class="txl-ct" id="txl-ct">— · live 5s</div></div>
+        <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Status</span></div>
+        <div id="txl-body"></div>
+    </div>
+
+    <!-- TX Detail view -->
+    <div id="txd-divider" class="txd-divider" style="display:none"></div>
+    <div class="txd" id="txd">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+            <div style="font-size:13px;font-weight:600">Transaction detail</div>
+            <div id="txd-badge" style="padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600;background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.2)">—</div>
+        </div>
+        <div class="txd-hero">
+            <div class="txd-info">
+                <div class="txd-hf" id="txd-hash">—</div>
+                <div class="txd-grid">
+                    <div class="txd-cell"><span class="l">First seen</span><span class="v" id="txd-seen">—</span></div>
+                    <div class="txd-cell"><span class="l">Fee</span><span class="v" style="color:var(--gold)" id="txd-fee">—</span></div>
+                    <div class="txd-cell"><span class="l">Size</span><span class="v" id="txd-size">—</span></div>
+                    <div class="txd-cell"><span class="l">Fee rate</span><span class="v" style="color:var(--xmr-text)" id="txd-rate">—</span></div>
+                    <div class="txd-cell"><span class="l">Ring size</span><span class="v" style="color:var(--xmr-text)">16 decoys</span></div>
+                    <div class="txd-cell"><span class="l">Privacy</span><span class="v" style="color:var(--grn)">RingCT + Stealth</span></div>
+                    <div class="txd-cell"><span class="l">Included in block</span><span class="v" style="color:var(--xmr)" id="txd-block">—</span></div>
+                    <div class="txd-cell"><span class="l">Inputs / Outputs</span><span class="v" style="color:var(--grn)">hidden / hidden</span></div>
+                    <div class="txd-cell"><span class="l">ETA 6/10</span><span class="v" id="txd-eta6">—</span></div>
+                    <div class="txd-cell"><span class="l">Block at 6/10</span><span class="v" id="txd-blk6">—</span></div>
+                    <div class="txd-cell"><span class="l">ETA 10/10</span><span class="v" id="txd-eta10">—</span></div>
+                    <div class="txd-cell"><span class="l">Est. block 10/10</span><span class="v" id="txd-blk10">—</span></div>
+                </div>
+            </div>
+            <div class="rc">
+                <button class="snd-btn" id="snd-btn">Sound: off</button>
+                <svg viewBox="0 0 200 200" id="ring-svg">
+                    <circle cx="100" cy="100" r="82" fill="none" stroke="#1A1A22" stroke-width="7"/>
+                    <circle cx="100" cy="100" r="82" fill="none" stroke="#FF6600" stroke-width="7" stroke-dasharray="0 515.22" stroke-dashoffset="-25.76" stroke-linecap="round" id="ring-fill"/>
+                    <circle cx="100" cy="100" r="82" fill="none" stroke="#00CC88" stroke-width="3" stroke-dasharray="3 512" stroke-dashoffset="-335" stroke-linecap="round" opacity=".7"/>
+                    <circle cx="100" cy="100" r="82" fill="none" stroke="#00CC88" stroke-width="9" stroke-dasharray="4 511" stroke-dashoffset="-335" opacity=".2"/>
+                    <text x="100" y="86" text-anchor="middle" fill="#FF8533" font-family="monospace" font-size="24" font-weight="600" id="ring-count">0/10</text>
+                    <text x="100" y="102" text-anchor="middle" fill="#70707A" font-family="monospace" font-size="8" letter-spacing="2">CONFIRMATIONS</text>
+                    <text x="100" y="118" text-anchor="middle" fill="#90909A" font-family="monospace" font-size="9" id="ring-eta">waiting...</text>
+                    <text x="100" y="134" text-anchor="middle" fill="#70707A" font-family="monospace" font-size="8" id="ring-6">—</text>
+                </svg>
+                <div class="rcl">Confirmation ring</div>
+                <div class="rcs" id="rc-status">enter a txn hash to track</div>
+            </div>
+        </div>
+        <div class="txl" style="margin:14px 0 0">
+            <div class="txl-hd"><div class="txl-ti">Recent transactions</div><div class="txl-ct">live 5s · new txns at top</div></div>
+            <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Status</span></div>
+            <div id="txl-body2"></div>
+        </div>
+    </div>
+
+    <!-- Block Anatomy view -->
+    <div class="bav" id="bav">
+        <div class="bav-back" id="bav-back">← Back to mempool</div>
+        <div class="bav-hero">
+            <div class="bav-hdr">
+                <div><div style="font-size:7px;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">Block</div><div class="bav-ht" id="bav-height">—</div></div>
+                <div class="bav-mt" id="bav-meta">—</div>
+            </div>
+            <div class="bav-top">
+                <div class="bav-viz"><canvas id="bav-canvas"></canvas><div class="bav-viz-l" id="bav-viz-label">Block fill</div></div>
+                <div class="bav-sts">
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--xmr-text)" id="bav-txcount">—</div><div class="bav-st-l">Transactions</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--xmr-text)" id="bav-reward">—</div><div class="bav-st-l">Reward</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--gold)" id="bav-fees">—</div><div class="bav-st-l">Total fees</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--g3)" id="bav-size">—</div><div class="bav-st-l">Block size</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--g3)" id="bav-diff">—</div><div class="bav-st-l">Difficulty</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--xmr-text)" id="bav-prev">—</div><div class="bav-st-l">Prev block</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--g3)">120s</div><div class="bav-st-l">Target time</div></div>
+                    <div class="bav-st"><div class="bav-st-v" style="color:var(--grn)">0.85%</div><div class="bav-st-l">Inflation</div></div>
+                </div>
+            </div>
+            <div style="font-size:10px;font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between">Transactions in block <span style="color:var(--text-tertiary);font-weight:400;font-size:9px">live · 5s</span></div>
+            <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Confs</span></div>
+            <div id="bav-txl"></div>
+        </div>
+    </div>
+
+    <div class="mp-foot">xmr.irish / mempool · live 5s · privacy is not optional</div>
+</div>
 <script src="js/nav.js"></script>
 <script src="js/price-service.js"></script>
 <script src="js/monero-network.js"></script>
@@ -264,312 +310,317 @@
 NavComponent.inject('nav-mount');
 PriceService.start();
 
-// ═══ LIVE MONERO DATA ═══
-let tracking = false;
-let trackedHash = '';
-let trackedBlockHeight = 0;
-let confStep = 0;
-let trackingInterval = null;
+/* ═══════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════ */
+var tracking = false, trackedHash = '', trackedConfs = 0, trackedBlock = 0, trackedFirstSeen = 0;
+var soundEnabled = false, audioCtx = null;
+var prevTxHashes = [];
 
-async function initMempool() {
-    await MoneroNetwork.startFull();
+/* ═══════════════════════════════════════════════════════════
+   ROUTER — URL param based
+   ═══════════════════════════════════════════════════════════ */
+function getParam(k) { return new URLSearchParams(location.search).get(k); }
+function setParam(k, v) { var u = new URL(location.href); u.searchParams.set(k, v); history.replaceState(null, '', u); }
 
-    // Populate stats
-    MoneroNetwork.subscribe(function(d) {
-        if (d.hashrate) document.getElementById('st-hash').textContent = MoneroNetwork.fmtHashrate(d.hashrate);
-        if (d.difficulty) document.getElementById('st-diff').textContent = MoneroNetwork.fmtDifficulty(d.difficulty);
-        if (d.txPoolSize) {
-            document.getElementById('st-unconf').textContent = d.txPoolSize;
-            document.getElementById('txl-count').textContent = d.txPoolSize + ' unconfirmed';
-        }
-    });
+var initTx = getParam('tx');
+var initBlock = getParam('block');
+if (initTx) { document.getElementById('txIn').value = initTx; }
 
-    // Populate confirmed blocks
-    renderConfirmedBlocks();
-
-    // Populate mempool transaction list
-    renderMempoolTxns();
-
-    // Poll for updates (general — blocks + mempool)
-    setInterval(async () => {
-        const prevHeight = MoneroNetwork.data.height;
-        await MoneroNetwork.fetchInfo();
-        if (MoneroNetwork.data.height !== prevHeight) {
-            await MoneroNetwork.fetchRecentBlocks();
-            renderConfirmedBlocks();
-        }
-        await MoneroNetwork.fetchMempool();
-        renderMempoolTxns();
-    }, 30000);
-}
-
-// Fast polling interval for tracked transaction (10s)
-function startTrackingPoll() {
-    stopTrackingPoll();
-    trackingInterval = setInterval(async () => {
-        if (!tracking || !trackedHash) return;
-        await MoneroNetwork.fetchInfo();
-        await checkTrackedTx();
-        // Re-render blocks to keep confirmation labels in sync
-        await MoneroNetwork.fetchRecentBlocks();
-        renderConfirmedBlocks();
-    }, 10000);
-}
-
-function stopTrackingPoll() {
-    if (trackingInterval) {
-        clearInterval(trackingInterval);
-        trackingInterval = null;
+/* ═══════════════════════════════════════════════════════════
+   SEARCH / TRACK
+   ═══════════════════════════════════════════════════════════ */
+function doSearch() {
+    var val = document.getElementById('txIn').value.trim();
+    if (!val) return;
+    if (/^\d+$/.test(val)) {
+        showBlockView(parseInt(val));
+    } else {
+        trackTransaction(val);
     }
 }
+document.getElementById('txBtn').addEventListener('click', doSearch);
+document.getElementById('txIn').addEventListener('keydown', function(e) { if (e.key === 'Enter') doSearch(); });
+document.getElementById('tth-detail').addEventListener('click', function() { if (tracking) { document.getElementById('txd').classList.add('vis'); document.getElementById('txd-divider').style.display = 'block'; document.getElementById('txd').scrollIntoView({ behavior: 'smooth', block: 'start' }); } });
+document.getElementById('bav-back').addEventListener('click', function() { document.getElementById('bav').classList.remove('vis'); });
 
-function renderConfirmedBlocks() {
-    const container = document.getElementById('conf-blocks');
-    if (!container || !MoneroNetwork.blocks.length) return;
-
-    container.innerHTML = MoneroNetwork.blocks.map((b, i) => {
-        const opacity = Math.max(0.3, 1 - i * 0.07);
-        const confLabel = b.confirmations >= 10
-            ? '<span class="cf-f">10/10</span>'
-            : '<span class="cf-p">' + b.confirmations + '/10</span>';
-        const isTracked = tracking && trackedBlockHeight === b.height ? ' tracked' : '';
-        return `<div class="bc conf${isTracked}" id="conf-${i}" data-height="${b.height}" style="opacity:${opacity}">
-            <div class="ht">#${b.height.toLocaleString()}</div>
-            <div class="v3">${b.reward.toFixed(3)} XMR</div>
-            <div class="v4">${b.numTxes} txns</div>
-            <div class="v5">${MoneroNetwork.fmtTimeAgo(b.timestamp)}</div>
-            <div class="cf">${confLabel}</div>
-            <div class="bar"></div>
-        </div>`;
-    }).join('');
-}
-
-function renderMempoolTxns() {
-    const body = document.getElementById('txl-body');
-    if (!body || !MoneroNetwork.mempool.length) return;
-
-    body.innerHTML = MoneroNetwork.mempool.slice(0, 15).map(tx => {
-        const time = new Date(tx.receiveTime * 1000);
-        const timeStr = time.getHours().toString().padStart(2,'0') + ':' + time.getMinutes().toString().padStart(2,'0');
-        return `<div class="txl-r" style="cursor:pointer" onclick="searchHash('${tx.hash}')">
-            <span class="txl-h">${MoneroNetwork.truncHash(tx.hash)}</span>
-            <span class="txl-f">${tx.fee.toFixed(6)}</span>
-            <span class="txl-s">${tx.size.toLocaleString()} B</span>
-            <span class="txl-c"><span class="cp p">pending</span></span>
-            <span class="txl-t">${timeStr}</span>
-        </div>`;
-    }).join('');
-}
-
-// ═══ TRANSACTION TRACKING WITH ARROW ═══
-async function doSearch() {
-    const v = document.getElementById('txIn').value.trim();
-    if (!v) return;
-    searchHash(v);
-}
-
-async function searchHash(hash) {
-    document.getElementById('txIn').value = hash;
+async function trackTransaction(hash) {
     trackedHash = hash;
     tracking = true;
-    confStep = 0;
-
-    // Store for GenUI return-visit pre-fill
-    localStorage.setItem('xmr_lasttx', hash);
-
-    // Reset UI — show loading state (not fake 0/10)
-    document.getElementById('txHash').textContent = hash;
-    document.getElementById('txBadge').className = 'tx-badge unc';
-    document.getElementById('txBadge').textContent = 'looking up...';
-    document.getElementById('txSeen').textContent = 'just now';
-    document.getElementById('txEta').textContent = 'in ~2 min';
-    document.getElementById('txConfCell').classList.remove('vis');
-    document.getElementById('txConfs').textContent = '...';
-    document.getElementById('txEtaConf').textContent = '...';
-
-    const bl = document.getElementById('cfBlocks').children;
-    for (let i = 0; i < 10; i++) bl[i].className = 'tt-b wait';
-    document.getElementById('cfCount').textContent = 'loading...';
-    document.getElementById('ttStat').textContent = 'looking up transaction...';
-    document.getElementById('ttStat').style.color = 'var(--xmr)';
-
-    // Show arrow in pending area initially
-    const arrow = document.getElementById('txArrow');
-    arrow.className = 'tx-arrow';
-    document.getElementById('arrLabel').textContent = 'your_txn';
-    document.getElementById('arrLabel').style.color = '#4A9EFF';
-    document.getElementById('arrLine').style.background = '#4A9EFF';
-    document.getElementById('arrTri').style.borderTopColor = '#4A9EFF';
-
-    positionArrowAtPending();
-
-    // Force fresh height before lookup so confirmations are accurate
-    await MoneroNetwork.fetchInfo();
-
-    // Look up transaction
-    const txData = await MoneroNetwork.lookupTransaction(hash);
-    if (txData && txData.found) {
-        if (txData.inPool) {
-            document.getElementById('txBadge').textContent = 'unconfirmed';
-            document.getElementById('txFee').textContent = 'pending...';
-            document.getElementById('txSize').textContent = '—';
-            document.getElementById('txRate').textContent = '—';
-            document.getElementById('arrLabel').textContent = 'your_txn [0/10]';
-            bl[0].className = 'tt-b cur';
-            document.getElementById('cfCount').textContent = '0/10 blocks';
-            document.getElementById('ttStat').textContent = 'tracking transaction...';
-            document.getElementById('txConfs').textContent = '0/10 blocks';
-            document.getElementById('txEtaConf').textContent = '~20 min';
-        } else {
-            // Already confirmed — show real count immediately
-            trackedBlockHeight = txData.blockHeight;
-            document.getElementById('txBadge').textContent = 'unconfirmed';
-            updateConfirmations(txData.confirmations);
-        }
-    } else {
-        // Try finding in mempool
-        const mempoolTx = MoneroNetwork.mempool.find(t => t.hash === hash);
-        if (mempoolTx) {
-            document.getElementById('txFee').textContent = mempoolTx.fee.toFixed(6) + ' XMR';
-            document.getElementById('txSize').textContent = mempoolTx.size.toLocaleString() + ' bytes';
-            document.getElementById('txRate').textContent = (mempoolTx.fee / (mempoolTx.size / 1024)).toFixed(6) + ' XMR/KB';
-        }
-        document.getElementById('txBadge').textContent = 'unconfirmed';
-        document.getElementById('arrLabel').textContent = 'your_txn [0/10]';
-        bl[0].className = 'tt-b cur';
-        document.getElementById('cfCount').textContent = '0/10 blocks';
-        document.getElementById('ttStat').textContent = 'tracking transaction...';
-        document.getElementById('txConfs').textContent = '0/10 blocks';
-        document.getElementById('txEtaConf').textContent = '~20 min';
-    }
-
-    // Start fast polling for this tracked tx
-    startTrackingPoll();
-
-    document.getElementById('txSec').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    trackedConfs = 0;
+    trackedBlock = 0;
+    trackedFirstSeen = Date.now();
+    setParam('tx', hash);
+    document.getElementById('tth').classList.add('vis');
+    document.getElementById('txd').classList.add('vis');
+    document.getElementById('txd-divider').style.display = 'block';
+    document.getElementById('bf-arr-row').classList.add('vis');
+    document.getElementById('tth-hash').textContent = hash;
+    document.getElementById('txd-hash').textContent = hash;
+    document.getElementById('txd-seen').textContent = 'just now';
+    document.getElementById('tth-seen').textContent = 'just now';
+    await checkTrackedTx();
 }
 
 async function checkTrackedTx() {
     if (!tracking || !trackedHash) return;
-    const txData = await MoneroNetwork.lookupTransaction(trackedHash);
-    if (txData && txData.found && !txData.inPool) {
-        trackedBlockHeight = txData.blockHeight;
-        updateConfirmations(txData.confirmations);
-    }
+    var txData = await MoneroNetwork.lookupTransaction(trackedHash);
+    if (!txData || !txData.found) { updateTrackingUI(0, 0); return; }
+    if (txData.inPool) { updateTrackingUI(0, 0); return; }
+    trackedBlock = txData.blockHeight;
+    var confs = txData.confirmations;
+    if (confs > trackedConfs && soundEnabled) playTone(confs);
+    trackedConfs = confs;
+    updateTrackingUI(confs, trackedBlock);
 }
 
-function updateConfirmations(confs) {
+function updateTrackingUI(confs, blockH) {
     confs = Math.min(confs, 10);
-    confStep = confs;
-    const bl = document.getElementById('cfBlocks').children;
+    var remaining = Math.max(0, 10 - confs);
+    var rem6 = Math.max(0, 6 - confs);
+    document.getElementById('tth-badge').textContent = confs + '/10 confirmed';
+    document.getElementById('tth-next').textContent = confs >= 10 ? 'done' : '~2 min';
+    document.getElementById('tth-eta6').textContent = confs >= 6 ? 'reached' : '~' + (rem6 * 2) + ' min';
+    document.getElementById('tth-eta6').style.color = confs >= 6 ? 'var(--grn)' : 'var(--xmr-text)';
+    document.getElementById('tth-eta10').textContent = confs >= 10 ? 'done' : '~' + (remaining * 2) + ' min';
+    document.getElementById('tth-eta10').style.color = confs >= 10 ? 'var(--grn)' : 'var(--xmr-text)';
+    document.getElementById('bf-arr-l').textContent = 'your txn [' + confs + '/10]';
+    document.getElementById('txd-badge').textContent = confs + '/10 confirmed';
+    document.getElementById('txd-block').textContent = blockH ? '#' + blockH.toLocaleString() : 'pending';
+    document.getElementById('txd-eta6').textContent = confs >= 6 ? 'reached ✓' : '~' + (rem6 * 2) + ' min';
+    document.getElementById('txd-eta6').style.color = confs >= 6 ? 'var(--grn)' : '';
+    document.getElementById('txd-blk6').textContent = blockH ? '#' + (blockH + Math.max(0, 6 - 1)).toLocaleString() : '—';
+    document.getElementById('txd-blk6').style.color = confs >= 6 ? 'var(--grn)' : '';
+    document.getElementById('txd-eta10').textContent = confs >= 10 ? 'confirmed ✓' : '~' + (remaining * 2) + ' min';
+    document.getElementById('txd-eta10').style.color = confs >= 10 ? 'var(--grn)' : 'var(--xmr-text)';
+    document.getElementById('txd-blk10').textContent = blockH ? '#' + (blockH + 9).toLocaleString() : '—';
+    updateRing(confs);
+    document.getElementById('ring-6').textContent = confs >= 6 ? 'ChangeNow 6/10 ✓' : '—';
+    document.getElementById('ring-6').setAttribute('fill', confs >= 6 ? '#00CC88' : '#70707A');
+    document.getElementById('rc-status').textContent = blockH ? 'Included in #' + blockH.toLocaleString() + ' · ' + confs + ' blocks deep' : 'waiting for inclusion...';
+}
 
-    for (let i = 0; i < 10; i++) {
-        if (i < confs - 1) bl[i].className = 'tt-b done';
-        else if (i === confs - 1) bl[i].className = confs >= 10 ? 'tt-b fin' : 'tt-b cur';
-        else bl[i].className = 'tt-b wait';
+function updateRing(confs) {
+    var circ = 2 * Math.PI * 82;
+    var fill = (confs / 10) * circ;
+    document.getElementById('ring-fill').setAttribute('stroke-dasharray', fill.toFixed(2) + ' ' + (circ - fill).toFixed(2));
+    document.getElementById('ring-fill').setAttribute('stroke', confs >= 10 ? '#00CC88' : '#FF6600');
+    document.getElementById('ring-count').textContent = Math.min(confs, 10) + '/10';
+    var rem = Math.max(0, 10 - confs);
+    document.getElementById('ring-eta').textContent = confs >= 10 ? 'fully confirmed' : '~' + (rem * 2) + ' min to 10/10';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BLOCK VIEW
+   ═══════════════════════════════════════════════════════════ */
+function showBlockView(height) {
+    setParam('block', height);
+    document.getElementById('bav').classList.add('vis');
+    document.getElementById('bav-height').textContent = '#' + height.toLocaleString();
+    document.getElementById('bav-prev').textContent = '#' + (height - 1).toLocaleString();
+    var block = MoneroNetwork.blocks.find(function(b) { return b.height === height; });
+    if (block) {
+        document.getElementById('bav-txcount').textContent = block.numTxes;
+        document.getElementById('bav-reward').textContent = block.reward.toFixed(3) + ' XMR';
+        document.getElementById('bav-size').textContent = (block.size / 1024).toFixed(1) + ' KB';
+        document.getElementById('bav-diff').textContent = MoneroNetwork.fmtDifficulty(block.difficulty);
+        document.getElementById('bav-meta').innerHTML = MoneroNetwork.fmtTimeAgo(block.timestamp) + '<br><span style="color:var(--grn)">' + block.confirmations + ' confirmations</span>';
+        document.getElementById('bav-viz-label').textContent = 'Block fill · ' + block.numTxes + ' transactions';
+        renderBlockFill(block.numTxes);
     }
+    document.getElementById('bav').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
-    document.getElementById('cfCount').textContent = confs + '/10 blocks';
+/* ═══════════════════════════════════════════════════════════
+   RENDER BLOCKS
+   ═══════════════════════════════════════════════════════════ */
+function renderConfBlocks(blocks) {
+    var container = document.getElementById('conf-blocks');
+    container.innerHTML = '';
+    container.style.display = 'flex';
+    container.style.gap = '4px';
+    container.style.alignItems = 'stretch';
+    container.style.minHeight = '100%';
+    blocks.forEach(function(b, i) {
+        var div = document.createElement('div');
+        var isTracked = tracking && trackedBlock && b.height >= trackedBlock && b.height < trackedBlock + 10;
+        var confNum = isTracked ? b.height - trackedBlock + 1 : 0;
+        var isSix = confNum === 6;
+        div.className = 'bk conf' + (isTracked && i === 0 ? ' tracked' : '') + (isSix ? ' six' : '');
+        div.innerHTML = '<div class="bh">#' + b.height.toLocaleString() + '</div><div class="br">' + b.reward.toFixed(3) + ' XMR</div><div class="btx">' + b.numTxes + ' txns</div><div class="bt">' + MoneroNetwork.fmtTimeAgo(b.timestamp) + '</div><div class="bcf" style="color:' + (isTracked ? (isSix ? 'var(--grn)' : 'var(--xmr)') : 'var(--text-tertiary)') + '">' + (isTracked ? confNum + '/10' + (isSix ? ' ✓' : '') : '—') + '</div><div class="cbar"></div>';
+        div.addEventListener('click', function() { showBlockView(b.height); });
+        container.appendChild(div);
+    });
+}
 
-    // Update inline grid cells
-    document.getElementById('txConfs').textContent = confs + '/10 blocks';
-    const remaining = Math.max(0, 10 - confs);
-    document.getElementById('txEtaConf').textContent = confs >= 10 ? 'confirmed' : '~' + (remaining * 2) + ' min';
-    document.getElementById('txEtaConf').className = confs >= 10 ? 'tc-v g' : 'tc-v';
+/* ═══════════════════════════════════════════════════════════
+   RENDER TRANSACTIONS
+   ═══════════════════════════════════════════════════════════ */
+function renderTxList(targetId, txs, blocks) {
+    var el = document.getElementById(targetId);
+    var allTx = [];
+    txs.forEach(function(tx) {
+        allTx.push({ hash: tx.hash, fee: tx.fee, size: tx.size, ring: 16, rate: tx.size > 0 ? (tx.fee / (tx.size / 1024)).toFixed(5) : '—', age: MoneroNetwork.fmtTimeAgo(tx.receiveTime), status: 'pending', isNew: prevTxHashes.indexOf(tx.hash) === -1 });
+    });
+    blocks.slice(0, 3).forEach(function(b) {
+        for (var i = 0; i < Math.min(b.numTxes, 3); i++) {
+            allTx.push({ hash: b.height + '_' + i, fee: '—', size: '—', ring: 16, rate: '—', age: MoneroNetwork.fmtTimeAgo(b.timestamp), status: b.confirmations + ' conf', isNew: false });
+        }
+    });
+    var html = '';
+    allTx.slice(0, 15).forEach(function(tx) {
+        var isPend = tx.status === 'pending';
+        html += '<div class="txr' + (tx.isNew ? ' txr-new' : '') + '"><span class="th" onclick="trackTransaction(\'' + tx.hash + '\')">' + MoneroNetwork.truncHash(tx.hash) + '</span><span class="tf">' + (typeof tx.fee === 'number' ? tx.fee.toFixed(5) : tx.fee) + '</span><span class="ts">' + (typeof tx.size === 'number' ? (tx.size / 1024).toFixed(1) + 'K' : tx.size) + '</span><span class="tr">' + tx.ring + '</span><span class="tfr">' + tx.rate + '</span><span class="ta">' + tx.age + '</span><span class="tst ' + (isPend ? 'tst-p' : 'tst-c') + '">' + tx.status + '</span></div>';
+    });
+    el.innerHTML = html;
+    prevTxHashes = txs.map(function(t) { return t.hash; });
+}
 
-    if (confs >= 10) {
-        document.getElementById('ttStat').textContent = 'fully confirmed at block #' + (trackedBlockHeight + 10).toLocaleString();
-        document.getElementById('ttStat').style.color = 'var(--grn)';
-        document.getElementById('txBadge').className = 'tx-badge full';
-        document.getElementById('txBadge').textContent = '10/10 confirmed';
-        document.getElementById('arrLabel').textContent = 'confirmed';
-        document.getElementById('arrLabel').style.color = 'var(--grn)';
-        document.getElementById('arrLine').style.background = 'var(--grn)';
-        document.getElementById('arrTri').style.borderTopColor = 'var(--grn)';
-        document.getElementById('txConfCell').classList.add('vis');
-        document.getElementById('tccSub').textContent = 'transaction included in block #' + trackedBlockHeight.toLocaleString() + ' — 10/10 confirmations reached';
-        document.getElementById('txEta').textContent = 'confirmed';
-        // Stop fast polling — fully confirmed
-        stopTrackingPoll();
+/* ═══════════════════════════════════════════════════════════
+   PARTICLE OCEAN
+   ═══════════════════════════════════════════════════════════ */
+var oceanCanvas, oceanCtx, oceanParticles = [], oceanW, oceanH;
+function initOcean() {
+    oceanCanvas = document.getElementById('ocean');
+    oceanCtx = oceanCanvas.getContext('2d');
+    resizeOcean();
+    window.addEventListener('resize', resizeOcean);
+    drawOcean();
+}
+function resizeOcean() {
+    var dpr = Math.min(devicePixelRatio || 1, 2);
+    oceanW = oceanCanvas.clientWidth; oceanH = oceanCanvas.clientHeight;
+    oceanCanvas.width = oceanW * dpr; oceanCanvas.height = oceanH * dpr;
+    oceanCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+function syncOceanToPool(pool) {
+    var colors = ['#00CC88','#00CC88','#00CC88','#FFD700','#FFD700','#FF6600'];
+    oceanParticles = pool.slice(0, 80).map(function(tx, i) {
+        var f = Math.min(tx.fee / 0.0001, 1);
+        return { x: Math.random() * oceanW, y: oceanH * 0.18 + Math.random() * oceanH * 0.65, bY: 0, s: 2 + (tx.size / 2000) * 4, f: f, c: colors[Math.floor(f * 5.99)], vx: (Math.random() - 0.5) * 0.3, ph: Math.random() * Math.PI * 2 };
+    });
+    oceanParticles.forEach(function(p) { p.bY = p.y; });
+    document.getElementById('oc-label').textContent = 'Live particle ocean — ' + pool.length + ' unconfirmed';
+}
+var ot = 0;
+function drawOcean() {
+    oceanCtx.clearRect(0, 0, oceanW, oceanH);
+    var th = oceanH * 0.15;
+    oceanCtx.setLineDash([5, 5]); oceanCtx.strokeStyle = 'rgba(0,204,136,0.1)'; oceanCtx.lineWidth = 1;
+    oceanCtx.beginPath(); oceanCtx.moveTo(0, th); oceanCtx.lineTo(oceanW, th); oceanCtx.stroke(); oceanCtx.setLineDash([]);
+    oceanCtx.font = '7px monospace'; oceanCtx.fillStyle = 'rgba(0,204,136,0.14)'; oceanCtx.textAlign = 'right'; oceanCtx.fillText('next block', oceanW - 6, th - 3);
+    oceanParticles.forEach(function(p) {
+        p.x += p.vx; var b = Math.sin(ot * 0.02 + p.ph) * 5 * (1 - p.f * 0.5); p.y = p.bY - p.f * 16 + b;
+        if (p.x < -8) p.x = oceanW + 8; if (p.x > oceanW + 8) p.x = -8;
+        var a = 0.2 + p.f * 0.45, r = parseInt(p.c.slice(1, 3), 16), g = parseInt(p.c.slice(3, 5), 16), bl = parseInt(p.c.slice(5, 7), 16);
+        oceanCtx.beginPath(); oceanCtx.arc(p.x, p.y, p.s, 0, Math.PI * 2); oceanCtx.fillStyle = 'rgba(' + r + ',' + g + ',' + bl + ',' + a + ')'; oceanCtx.fill();
+        if (p.s > 3.5) { oceanCtx.beginPath(); oceanCtx.arc(p.x, p.y, p.s * 2.5, 0, Math.PI * 2); oceanCtx.fillStyle = 'rgba(' + r + ',' + g + ',' + bl + ',' + (a * 0.1) + ')'; oceanCtx.fill(); }
+    });
+    ot++; requestAnimationFrame(drawOcean);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   BLOCK FILL VIZ
+   ═══════════════════════════════════════════════════════════ */
+var bfCanvas, bfCtx, bfFilled = [], bfT = 0;
+function renderBlockFill(numTxes) {
+    bfCanvas = document.getElementById('bav-canvas');
+    bfCtx = bfCanvas.getContext('2d');
+    var dpr = Math.min(devicePixelRatio || 1, 2);
+    bfCanvas.width = bfCanvas.clientWidth * dpr; bfCanvas.height = bfCanvas.clientHeight * dpr;
+    bfCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    var gs = 10; bfFilled = [];
+    for (var i = 0; i < gs * gs; i++) bfFilled.push(i < Math.min(numTxes, gs * gs) ? 1 : 0);
+    if (!bfT) { bfT = 1; animBlockFill(); }
+}
+function animBlockFill() {
+    if (!bfCanvas) { requestAnimationFrame(animBlockFill); return; }
+    var W = bfCanvas.clientWidth, H = bfCanvas.clientHeight, gs = 10;
+    bfCtx.clearRect(0, 0, W, H);
+    var cw = Math.min(W, H) * 0.8, cs = cw / gs, ox = (W - cw) / 2, oy = (H - cw) / 2;
+    for (var gx = 0; gx < gs; gx++) for (var gy = 0; gy < gs; gy++) {
+        var idx = gy * gs + gx, x = ox + gx * cs, y = oy + gy * cs;
+        if (bfFilled[idx]) {
+            var p = 0.12 + Math.sin(bfT * 0.03 + gx + gy) * 0.04;
+            bfCtx.fillStyle = 'rgba(255,102,0,' + p + ')'; bfCtx.fillRect(x + 1, y + 1, cs - 2, cs - 2);
+            bfCtx.strokeStyle = 'rgba(255,102,0,.2)'; bfCtx.lineWidth = 0.5; bfCtx.strokeRect(x + 1, y + 1, cs - 2, cs - 2);
+        } else {
+            bfCtx.fillStyle = 'rgba(255,102,0,.015)'; bfCtx.fillRect(x + 1, y + 1, cs - 2, cs - 2);
+            bfCtx.strokeStyle = 'rgba(255,102,0,.04)'; bfCtx.lineWidth = 0.3; bfCtx.strokeRect(x + 1, y + 1, cs - 2, cs - 2);
+        }
+    }
+    bfT++; requestAnimationFrame(animBlockFill);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SOUND ENGINE — Web Audio, opt-in
+   ═══════════════════════════════════════════════════════════ */
+document.getElementById('snd-btn').addEventListener('click', function() {
+    soundEnabled = !soundEnabled;
+    this.textContent = 'Sound: ' + (soundEnabled ? 'on' : 'off');
+    if (soundEnabled && !audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+});
+function playTone(conf) {
+    if (!audioCtx) return;
+    var osc = audioCtx.createOscillator();
+    var gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.type = 'sine';
+    if (conf >= 10) {
+        osc.frequency.value = 523.25; gain.gain.value = 0.15;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        setTimeout(function() {
+            var o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+            o2.connect(g2); g2.connect(audioCtx.destination); o2.type = 'sine';
+            o2.frequency.value = 659.25; g2.gain.value = 0.12;
+            o2.start(); o2.stop(audioCtx.currentTime + 0.4);
+        }, 150);
     } else {
-        document.getElementById('ttStat').textContent = 'waiting for block #' + (MoneroNetwork.data.height + 1).toLocaleString() + '...';
-        document.getElementById('arrLabel').textContent = 'your_txn [' + confs + '/10]';
-        document.getElementById('txEta').textContent = '~' + (remaining * 2) + ' min to 10/10';
+        osc.frequency.value = 220 + conf * 40;
+        gain.gain.value = 0.1;
+        osc.start(); osc.stop(audioCtx.currentTime + 0.15);
     }
-
-    // Position arrow at the correct confirmed block
-    positionArrowAtBlock(Math.min(confs - 1, 9));
 }
 
-function scrollBlockIntoView(el) {
-    const row = document.getElementById('blkRow');
-    if (!el || !row) return;
-    const rowRect = row.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
-    // Center the element within the visible scroll area
-    const elCenter = elRect.left + elRect.width / 2;
-    const rowCenter = rowRect.left + rowRect.width / 2;
-    const offset = elCenter - rowCenter;
-    row.scrollBy({ left: offset, behavior: 'smooth' });
-}
+/* ═══════════════════════════════════════════════════════════
+   DRAG SCROLL for block flow
+   ═══════════════════════════════════════════════════════════ */
+var bfEl = document.getElementById('bf-scroll'), isDrag = false, dragX, dragScroll;
+bfEl.addEventListener('mousedown', function(e) { isDrag = true; bfEl.style.cursor = 'grabbing'; dragX = e.pageX - bfEl.offsetLeft; dragScroll = bfEl.scrollLeft; });
+bfEl.addEventListener('mouseleave', function() { isDrag = false; bfEl.style.cursor = 'grab'; });
+bfEl.addEventListener('mouseup', function() { isDrag = false; bfEl.style.cursor = 'grab'; });
+bfEl.addEventListener('mousemove', function(e) { if (!isDrag) return; e.preventDefault(); bfEl.scrollLeft = dragScroll - (e.pageX - bfEl.offsetLeft - dragX); });
+bfEl.addEventListener('wheel', function(e) { e.preventDefault(); bfEl.scrollLeft += e.deltaY; }, { passive: false });
 
-function positionArrowAtPending() {
-    const p0 = document.getElementById('pend-0');
-    const wrap = document.getElementById('arrowWrap');
-    if (!p0 || !wrap) return;
-    scrollBlockIntoView(p0);
-    // Recompute after scroll settles
-    requestAnimationFrame(() => {
-        const pRect = p0.getBoundingClientRect();
-        const wRect = wrap.getBoundingClientRect();
-        const arrow = document.getElementById('txArrow');
-        arrow.style.left = (pRect.left - wRect.left + pRect.width / 2) + 'px';
-        arrow.style.transform = 'translateX(-50%)';
-    });
-}
-
-function positionArrowAtBlock(idx) {
-    const block = document.getElementById('conf-' + idx);
-    const wrap = document.getElementById('arrowWrap');
-    if (!block || !wrap) return;
-
-    // Auto-scroll the block row to keep tracked block visible
-    scrollBlockIntoView(block);
-
-    // Recompute arrow position after scroll settles
-    requestAnimationFrame(() => {
-        const bRect = block.getBoundingClientRect();
-        const wRect = wrap.getBoundingClientRect();
-        const arrow = document.getElementById('txArrow');
-        arrow.style.left = (bRect.left - wRect.left + bRect.width / 2) + 'px';
-        arrow.style.transform = 'translateX(-50%)';
-    });
-
-    // Highlight tracked block
-    document.querySelectorAll('.bc.tracked').forEach(el => el.classList.remove('tracked'));
-    block.classList.add('tracked');
-}
-
-document.getElementById('txIn').addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
-
-// Reposition arrow on window resize
-window.addEventListener('resize', () => {
-    if (!tracking) return;
-    if (confStep > 0) positionArrowAtBlock(Math.min(confStep - 1, 9));
-    else positionArrowAtPending();
+/* ═══════════════════════════════════════════════════════════
+   DATA SUBSCRIPTIONS
+   ═══════════════════════════════════════════════════════════ */
+MoneroNetwork.subscribe(function(d) {
+    document.getElementById('st-unconf').textContent = d.txPoolSize || '—';
+    document.getElementById('st-hash').textContent = d.hashrate ? MoneroNetwork.fmtHashrate(d.hashrate) : '—';
+    document.getElementById('st-diff').textContent = d.difficulty ? MoneroNetwork.fmtDifficulty(d.difficulty) : '—';
+    document.getElementById('pend-count').textContent = (d.txPoolSize || 0) + ' txns';
+    document.getElementById('txl-ct').textContent = (d.txPoolSize || 0) + ' unconfirmed · live 5s';
+    if (tracking) checkTrackedTx();
+});
+MoneroNetwork.subscribeBlocks(function(blocks) {
+    renderConfBlocks(blocks);
+});
+MoneroNetwork.subscribePool(function(pool) {
+    syncOceanToPool(pool);
+    document.getElementById('pend-fees').textContent = pool.reduce(function(s, t) { return s + t.fee; }, 0).toFixed(4) + ' XMR';
+    renderTxList('txl-body', pool, MoneroNetwork.blocks);
+    renderTxList('txl-body2', pool, MoneroNetwork.blocks);
 });
 
-// Reposition arrow when block row is scrolled (fixes mobile/desktop displacement)
-document.getElementById('blkRow').addEventListener('scroll', () => {
-    if (!tracking) return;
-    requestAnimationFrame(() => {
-        if (confStep > 0) positionArrowAtBlock(Math.min(confStep - 1, 9));
-        else positionArrowAtPending();
-    });
-});
-
-// Initialize
-initMempool();
+/* ═══════════════════════════════════════════════════════════
+   INIT
+   ═══════════════════════════════════════════════════════════ */
+initOcean();
+animBlockFill();
+MoneroNetwork.startFast();
+if (initTx) setTimeout(function() { trackTransaction(initTx); }, 500);
+if (initBlock) setTimeout(function() { showBlockView(parseInt(initBlock)); }, 800);
 </script>
 </body>
 </html>
