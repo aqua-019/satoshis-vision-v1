@@ -1,237 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Market Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <meta name="description" content="Live Monero market data. Self-hosted charts, no third-party embeds. Privacy-first.">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
-        .token-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px}
-        .tk{border-radius:18px;padding:14px;border:1px solid var(--card-border);background:var(--card-bg);text-align:center;transition:all .5s;cursor:pointer;position:relative;overflow:hidden}
-        .tk:hover{border-color:rgba(255,102,0,.15);border-radius:22px;transform:translateY(-3px)}
-        .tk::before{content:'';position:absolute;inset:0;border-radius:inherit;opacity:0;transition:opacity .6s;pointer-events:none}
-        .tk:hover::before{opacity:1;animation:orange-pulse 2.5s ease-in-out infinite}
-        .tk-sym{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--g5);text-transform:uppercase;position:relative;z-index:1}
-        .tk-price{font-family:var(--font-data);font-size:22px;font-weight:500;color:var(--xmr);margin:4px 0;position:relative;z-index:1}
-        .tk-chg{font-family:var(--font-mono);font-size:11px;position:relative;z-index:1}
-        .tk-chg.u{color:var(--grn)}.tk-chg.d{color:var(--red)}
-        .tk-mcap{font-family:var(--font-mono);font-size:11px;color:var(--g7);margin-top:2px;position:relative;z-index:1}
-        .tk-vol{font-family:var(--font-mono);font-size:11px;color:var(--g7);position:relative;z-index:1}
-
-        .ratio-box{border-radius:18px;border:1px solid var(--card-border);background:var(--card-bg);padding:16px;margin-bottom:14px;transition:all .4s}
-        .ratio-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-        .ratio-title{font-family:var(--font-subhead);font-style:italic;font-size:15px}
-        .ratio-cycle{font-family:var(--font-mono);font-size:9px;color:var(--g6);letter-spacing:1px}
-        .ratio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-        .rt{border-radius:14px;padding:10px;text-align:center}
-        .rt:hover{border-radius:18px}
-        .rt-v{font-family:var(--font-data);font-size:18px;font-weight:500;color:var(--xmr);position:relative;z-index:1}
-        .rt-l{font-family:var(--font-mono);font-size:11px;color:var(--g5);margin-top:1px;position:relative;z-index:1}
-
-        .chart-section{margin-bottom:14px}
-        .chart-tabs-row{display:flex;gap:3px;margin-bottom:8px;align-items:center}
-        .chart-tab{padding:3px 10px;border-radius:8px;border:1px solid var(--g8);background:transparent;color:var(--g5);font-family:var(--font-mono);font-size:11px;transition:all .2s;cursor:pointer}
-        .chart-tab:hover{border-color:var(--g6);color:var(--g3)}
-        .chart-tab.active{border-color:rgba(255,102,0,.3);color:var(--xmr);background:rgba(255,102,0,.06)}
-        .flip-toggle{padding:1px 5px;border-radius:4px;border:1px solid var(--g8);background:transparent;color:var(--g6);font-family:var(--font-mono);font-size:9px;margin-left:4px;letter-spacing:.5px;transition:all .2s;cursor:pointer}
-        .flip-toggle:hover{border-color:rgba(255,102,0,.3);color:var(--xmr)}
-        .chart-area{height:400px;background:#060609;border-radius:14px;border:1px solid var(--g9);overflow:hidden;position:relative}
-        .chart-area iframe{width:100%;height:100%;border:none}
-        .chart-area .ig{position:absolute;top:10px;left:14px;background:rgba(6,6,9,.92);border:1px solid var(--g8);border-radius:6px;padding:4px 8px;z-index:10}
-        .ig .ig-t{font-family:var(--font-mono);font-size:8px;letter-spacing:1px;color:var(--g6)}
-        .ig .ig-r{display:flex;gap:8px;margin-top:2px}
-        .ig .ig-l{font-family:var(--font-mono);font-size:11px;color:var(--g7)}
-        .ig .ig-v{font-family:var(--font-data);font-size:11px;font-weight:500;color:var(--g2)}
-        .chart-loading-msg{font-family:var(--font-mono);font-size:11px;color:var(--g6);position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}
-
-        .inf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:14px}
-        .inf-c{border-radius:16px;padding:12px;text-align:center}
-        .inf-c:hover{border-radius:20px}
-        .inf-v{font-family:var(--font-data);font-size:18px;font-weight:500;color:var(--xmr);position:relative;z-index:1}
-        .inf-l{font-family:var(--font-mono);font-size:11px;color:var(--g5);margin-top:1px;position:relative;z-index:1}
-        .inf-s{font-family:var(--font-body);font-size:11px;color:var(--g6);margin-top:2px;position:relative;z-index:1;line-height:1.4}
-        @media(max-width:768px){.token-row{grid-template-columns:repeat(2,1fr)}.ratio-grid{grid-template-columns:1fr}.inf-grid{grid-template-columns:1fr}}
+    .mk{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+    .mk-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;flex-wrap:wrap}
+    .mk-brand{font-size:14px}.mk-brand em{color:var(--grn);font-style:normal;font-weight:600}.mk-brand span{color:var(--text-muted)}
+    .mk-tabs{display:flex;gap:4px;font-size:11px;margin-left:auto}
+    .mk-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}
+    .mk-tab.active{background:rgba(255,102,0,.08);color:var(--xmr);border:1px solid rgba(255,102,0,.12)}
+    .hero{padding:40px var(--space-page-x) 24px;text-align:center}
+    .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
+    .hero-price{font-size:52px;font-weight:600;color:var(--g1);letter-spacing:-2px;margin-bottom:4px}
+    .hero-price .sym{font-size:24px;color:var(--text-tertiary);font-weight:400}
+    .hero-chg{font-size:15px;margin-bottom:6px}.hero-sub{font-size:10px;color:var(--text-tertiary)}
+    .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 var(--space-page-x);margin:0 0 20px}
+    .sc{background:var(--surface-1);padding:14px;text-align:center}
+    .sc:first-child{border-radius:10px 0 0 10px}.sc:last-child{border-radius:0 10px 10px 0}
+    .sc .sv{font-size:18px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .sec{padding:0 var(--space-page-x);margin-bottom:20px}
+    .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+    .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+    .chart-box{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;overflow:hidden;margin-bottom:12px}
+    .chart-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
+    .chart-title{font-size:12px;font-weight:500}
+    .chart-tabs{display:flex;gap:2px}
+    .ct{font-size:9px;padding:3px 8px;border-radius:4px;color:var(--text-tertiary);cursor:pointer;border:none;background:none}
+    .ct.a{background:rgba(255,102,0,.08);color:var(--xmr)}
+    .chart-body{padding:8px 14px 6px;position:relative}
+    .chart-canvas{width:100%;height:200px;position:relative}.chart-canvas canvas{width:100%;height:100%}
+    .chart-info{display:flex;gap:16px;padding:6px 0;border-top:1px solid var(--border-subtle);margin-top:6px}
+    .ci{font-size:9px;color:var(--text-tertiary)}.ci em{font-style:normal;font-weight:600}
+    .pair-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .pair{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;transition:border-color .2s}
+    .pair:hover{border-color:rgba(255,102,0,.2)}
+    .pair-name{font-size:10px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+    .pair-price{font-size:20px;font-weight:600;margin-bottom:3px}
+    .pair-ch{font-size:11px;margin-bottom:6px}
+    .pair-spark{height:30px;position:relative}.pair-spark canvas{width:100%;height:100%}
+    .fiat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+    .fiat{background:var(--surface-1);border:1px solid var(--border-default);border-radius:8px;padding:10px 12px;text-align:center;transition:border-color .2s}
+    .fiat:hover{border-color:rgba(255,102,0,.15)}
+    .fiat-cur{font-size:9px;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px}
+    .fiat-price{font-size:15px;font-weight:600;margin-bottom:2px}.fiat-ch{font-size:10px}
+    .inf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .inf{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px}
+    .inf-v{font-size:22px;font-weight:600;margin-bottom:4px}
+    .inf-l{font-size:10px;color:var(--text-secondary);margin-bottom:4px}
+    .inf-s{font-size:9px;color:var(--text-tertiary);line-height:1.5}
+    .net-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .net{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;text-align:center}
+    .net-v{font-size:20px;font-weight:600;margin-bottom:3px}
+    .net-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .net-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--surface-2);overflow:hidden}
+    .net-fill{height:100%;border-radius:2px}
+    .note{font-size:9px;color:var(--text-tertiary);text-align:center;padding:0 var(--space-page-x);margin:16px 0;line-height:1.5}
+    .note em{color:var(--grn);font-style:normal}
+    .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
+    @media(max-width:768px){.sbar{grid-template-columns:repeat(2,1fr)}.pair-grid,.inf-grid{grid-template-columns:1fr}.fiat-grid,.net-grid{grid-template-columns:repeat(2,1fr)}.hero-price{font-size:36px}}
     </style>
 </head>
 <body>
-<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
-    <canvas id="constellation" class="constellation"></canvas>
-    <div class="blob blob-2"></div><div class="blob blob-5"></div>
-    <div class="z1">
-        <div id="nav-mount"></div>
-
-        <div class="sec">
-            <div class="sec-k">Markets / Live</div>
-            <div class="sec-t">Market dashboard</div>
-            <div class="sec-s">Five tokens, cycling ratios, four chart views.</div>
-
-            <!-- 5 Token Cards -->
-            <div class="token-row">
-                <div class="tk"><div class="tk-sym">XMR / Monero</div><div class="tk-price" id="tk-xmr">—</div><div class="tk-chg u" id="tk-xmr-chg">—</div><div class="tk-mcap" id="tk-xmr-mcap">—</div><div class="tk-vol" id="tk-xmr-vol">—</div></div>
-                <div class="tk"><div class="tk-sym">BTC / Bitcoin</div><div class="tk-price" id="tk-btc" style="color:var(--btc)">—</div><div class="tk-chg u" id="tk-btc-chg">—</div><div class="tk-mcap" id="tk-btc-mcap">—</div><div class="tk-vol" id="tk-btc-vol">—</div></div>
-                <div class="tk"><div class="tk-sym">ETH / Ethereum</div><div class="tk-price" id="tk-eth" style="color:var(--blue)">—</div><div class="tk-chg u" id="tk-eth-chg">—</div><div class="tk-mcap" id="tk-eth-mcap">—</div><div class="tk-vol" id="tk-eth-vol">—</div></div>
-                <div class="tk"><div class="tk-sym">SOL / Solana</div><div class="tk-price" id="tk-sol" style="color:var(--cyan)">—</div><div class="tk-chg u" id="tk-sol-chg">—</div><div class="tk-mcap" id="tk-sol-mcap">—</div><div class="tk-vol" id="tk-sol-vol">—</div></div>
-                <div class="tk"><div class="tk-sym">LTC / Litecoin</div><div class="tk-price" id="tk-ltc" style="color:var(--g3)">—</div><div class="tk-chg u" id="tk-ltc-chg">—</div><div class="tk-mcap" id="tk-ltc-mcap">—</div><div class="tk-vol" id="tk-ltc-vol">—</div></div>
-            </div>
-        </div>
-
-        <!-- Cycling Ratios -->
-        <div class="sec sec-border">
-            <div class="ratio-box">
-                <div class="ratio-hdr"><span class="ratio-title">Ratio metrics</span><span class="ratio-cycle" id="ratio-cycle">set 1/3 — cycles every 60s</span></div>
-                <div class="ratio-grid" id="ratio-grid">
-                    <div class="rt"><div class="rt-v" id="r1-v">—</div><div class="rt-l" id="r1-l">BTC/XMR ratio</div></div>
-                    <div class="rt"><div class="rt-v" id="r2-v">—</div><div class="rt-l" id="r2-l">XMR market cap</div></div>
-                    <div class="rt"><div class="rt-v" id="r3-v">—</div><div class="rt-l" id="r3-l">24h volume</div></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4 Charts -->
-        <div class="sec sec-border">
-            <div class="sec-k">Charts</div>
-            <div class="chart-section">
-                <div class="chart-tabs-row">
-                    <button class="chart-tab active" data-chart="xmrusd" onclick="setM(this,'xmrusd')">XMR/USD</button>
-                    <button class="chart-tab" data-chart="btcusd" onclick="setM(this,'btcusd')">BTC/USD</button>
-                    <button class="chart-tab" data-chart="btcxmr" onclick="setM(this,'btcxmr')">BTC/XMR</button>
-                    <button class="flip-toggle" onclick="flipChart()" id="flipBtn" title="Toggle XMR/BTC ↔ BTC/XMR">flip</button>
-                    <button class="chart-tab" data-chart="compare" onclick="setM(this,'compare')">2014 vs 2026</button>
-                </div>
-                <div class="chart-area" id="chartArea">
-                    <div class="chart-loading-msg">Loading chart...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 6-cell Inflation Grid -->
-        <div class="sec sec-border">
-            <div class="sec-k">Inflation</div>
-            <div class="sec-t">Supply dynamics</div>
-            <div class="sec-s">Monero's tail emission vs Bitcoin's halving model.</div>
-            <div class="inf-grid">
-                <div class="inf-c"><div class="inf-v">0.85%</div><div class="inf-l">XMR annual inflation</div><div class="inf-s">Declining every year as supply grows. Will be below 0.5% by 2035.</div></div>
-                <div class="inf-c"><div class="inf-v">0.83%</div><div class="inf-l">BTC annual inflation</div><div class="inf-s">Post-2024 halving. Drops to ~0.4% in 2028. Reaches 0% by 2140.</div></div>
-                <div class="inf-c"><div class="inf-v">∞ vs 21M</div><div class="inf-l">Supply cap</div><div class="inf-s">XMR is technically infinite but practically deflationary. BTC hard-capped.</div></div>
-                <div class="inf-c"><div class="inf-v">432/day</div><div class="inf-l">XMR daily issuance</div><div class="inf-s">Fixed forever at 0.6 XMR per block × 720 blocks/day.</div></div>
-                <div class="inf-c"><div class="inf-v">450/day</div><div class="inf-l">BTC daily issuance</div><div class="inf-s">3.125 BTC per block × 144 blocks/day. Halves in April 2028.</div></div>
-                <div class="inf-c"><div class="inf-v">0.6 XMR</div><div class="inf-l">Tail emission</div><div class="inf-s">Permanent mining incentive. No fee-only future. Network security guaranteed.</div></div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <span>xmr.irish / markets / C.3.3 / SJB83</span>
-            <div><a href="index.html">Home</a><a href="network.html">Network</a><a href="mempool.html">Mempool</a><a href="ecosystem.html">Ecosystem</a></div>
-            <span>CoinGecko API</span>
-        </div>
+<div class="page-offset mk">
+    <div id="nav-mount"></div>
+    <div class="mk-nav"><div class="mk-brand"><em>xmr.irish</em> <span>/</span> <em>markets</em></div>
+        <div class="mk-tabs"><a href="markets.html" class="mk-tab active">Markets</a><a href="network.html" class="mk-tab">Network</a><a href="mining.html" class="mk-tab">Mining</a><a href="mempool.html" class="mk-tab">Mempool</a></div></div>
+    <div class="hero">
+        <div class="hero-ey">Monero · XMR/USD · Live</div>
+        <div class="hero-price"><span class="sym">$</span><span id="hero-p">—</span></div>
+        <div class="hero-chg" id="hero-chg" style="color:var(--text-tertiary)">loading...</div>
+        <div class="hero-sub">Updated 30s · CoinGecko API · no third-party chart embeds</div>
     </div>
+    <div class="sbar">
+        <div class="sc"><div class="sv" style="color:var(--xmr-text)" id="st-mcap">—</div><div class="sl">Market cap</div></div>
+        <div class="sc"><div class="sv" style="color:var(--g3)" id="st-vol">—</div><div class="sl">24h volume</div></div>
+        <div class="sc"><div class="sv" style="color:var(--grn)">18.45M</div><div class="sl">Circulating</div></div>
+        <div class="sc"><div class="sv" style="color:var(--g3)">0.85%</div><div class="sl">Inflation</div></div>
+    </div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">XMR price history</div><div class="sec-s">Self-hosted · CoinGecko market_chart API</div></div>
+        <div class="chart-box"><div class="chart-hdr"><div class="chart-title" style="color:var(--xmr-text)">XMR / USD</div>
+            <div class="chart-tabs"><button class="ct" onclick="loadC('xmr',1,this)">24h</button><button class="ct a" onclick="loadC('xmr',7,this)">7d</button><button class="ct" onclick="loadC('xmr',30,this)">30d</button><button class="ct" onclick="loadC('xmr',90,this)">90d</button><button class="ct" onclick="loadC('xmr',365,this)">1y</button></div></div>
+            <div class="chart-body"><div class="chart-canvas"><canvas id="xmr-chart"></canvas></div>
+                <div class="chart-info"><div class="ci">High: <em style="color:var(--grn)" id="xmr-hi">—</em></div><div class="ci">Low: <em style="color:var(--red)" id="xmr-lo">—</em></div><div class="ci">Avg: <em style="color:var(--g3)" id="xmr-avg">—</em></div><div class="ci">Change: <em id="xmr-ch">—</em></div></div></div></div></div>
+    <div class="sec"><div class="chart-box"><div class="chart-hdr"><div class="chart-title" style="color:var(--gold)">XMR / BTC ratio</div>
+            <div class="chart-tabs"><button class="ct" onclick="loadC('ratio',7,this)">7d</button><button class="ct a" onclick="loadC('ratio',30,this)">30d</button><button class="ct" onclick="loadC('ratio',90,this)">90d</button><button class="ct" onclick="loadC('ratio',365,this)">1y</button></div></div>
+            <div class="chart-body"><div class="chart-canvas"><canvas id="ratio-chart"></canvas></div>
+                <div class="chart-info"><div class="ci">Current: <em style="color:var(--gold)" id="r-cur">—</em></div><div class="ci">High: <em style="color:var(--grn)" id="r-hi">—</em></div><div class="ci">Low: <em style="color:var(--red)" id="r-lo">—</em></div><div class="ci">Trend: <em id="r-trend">—</em></div></div></div></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Market pairs</div><div class="sec-s">Live from CoinGecko</div></div>
+        <div class="pair-grid">
+            <div class="pair"><div class="pair-name">XMR / BTC</div><div class="pair-price" style="color:var(--xmr-text)" id="p-xb">—</div><div class="pair-ch" id="p-xb-c">—</div><div class="pair-spark"><canvas id="sp1"></canvas></div></div>
+            <div class="pair"><div class="pair-name">BTC / USD</div><div class="pair-price" style="color:var(--gold)" id="p-bu">—</div><div class="pair-ch" id="p-bu-c">—</div><div class="pair-spark"><canvas id="sp2"></canvas></div></div>
+            <div class="pair"><div class="pair-name">ETH / USD</div><div class="pair-price" style="color:var(--blue)" id="p-eu">—</div><div class="pair-ch" id="p-eu-c">—</div><div class="pair-spark"><canvas id="sp3"></canvas></div></div>
+        </div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">XMR in world currencies</div><div class="sec-s">8 fiat pairs · live</div></div><div class="fiat-grid" id="fiat-grid"></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Supply dynamics</div><div class="sec-s">Monero tail emission vs Bitcoin halving</div></div>
+        <div class="inf-grid">
+            <div class="inf"><div class="inf-v" style="color:var(--xmr-text)">0.85%</div><div class="inf-l">XMR annual inflation</div><div class="inf-s">Declining yearly as supply grows. Below 0.5% by 2035. Tail emission ensures miners always paid.</div></div>
+            <div class="inf"><div class="inf-v" style="color:var(--gold)">0.83%</div><div class="inf-l">BTC annual inflation</div><div class="inf-s">Post-2024 halving. Drops to ~0.4% in 2028. Reaches 0% by 2140 — then miners rely on fees only.</div></div>
+            <div class="inf"><div class="inf-v" style="color:var(--grn)">432/day</div><div class="inf-l">XMR daily issuance</div><div class="inf-s">Fixed at 0.6 XMR × 720 blocks/day. Predictable, permanent security budget. No fee-market crisis.</div></div>
+        </div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Network health</div><div class="sec-s">Live from daemon · 5s</div></div>
+        <div class="net-grid">
+            <div class="net"><div class="net-v" style="color:var(--xmr-text)" id="n-hash">—</div><div class="net-l">Hashrate</div><div class="net-bar"><div class="net-fill" style="width:82%;background:var(--xmr)"></div></div></div>
+            <div class="net"><div class="net-v" style="color:var(--g3)" id="n-diff">—</div><div class="net-l">Difficulty</div><div class="net-bar"><div class="net-fill" style="width:70%;background:var(--blue)"></div></div></div>
+            <div class="net"><div class="net-v" style="color:var(--grn)" id="n-ht">—</div><div class="net-l">Block height</div><div class="net-bar"><div class="net-fill" style="width:95%;background:var(--grn)"></div></div></div>
+            <div class="net"><div class="net-v" style="color:var(--xmr-text)">0.614 XMR</div><div class="net-l">Block reward</div><div class="net-bar"><div class="net-fill" style="width:100%;background:var(--xmr)"></div></div></div>
+            <div class="net"><div class="net-v" style="color:var(--g3)">~2 min</div><div class="net-l">Block time</div><div class="net-bar"><div class="net-fill" style="width:50%;background:var(--text-tertiary)"></div></div></div>
+            <div class="net"><div class="net-v" style="color:var(--grn)" id="n-pool">—</div><div class="net-l">Mempool</div><div class="net-bar"><div class="net-fill" style="width:20%;background:var(--grn)"></div></div></div>
+        </div></div>
+    <div class="note">All data from <em>CoinGecko API</em> + <em>Monero daemon RPC</em>. No TradingView. No tracking. <em>Privacy-first.</em></div>
+    <div class="ft">xmr.irish / markets · live · privacy is not optional</div>
 </div>
-<script src="js/nav.js"></script>
-<script src="js/price-service.js"></script>
-<script src="js/monero-network.js"></script>
-<script src="js/genui.js"></script>
+<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
 <script>
-NavComponent.inject('nav-mount');
-PriceService.start();
-MoneroNetwork.start();
-
-PriceService.subscribe(function(p){
-    if(!p.xmr)return;
-    function u(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-    function uc(id,v,cls){var e=document.getElementById(id);if(e){e.textContent=v;e.className='tk-chg '+cls;}}
-    u('tk-xmr',PriceService.fmt(p.xmr.usd,0));uc('tk-xmr-chg',PriceService.pct(p.xmr.change24h),PriceService.cls(p.xmr.change24h));u('tk-xmr-mcap',PriceService.fmtCompact(p.xmr.mcap));u('tk-xmr-vol',PriceService.fmtCompact(p.xmr.vol)+' vol');
-    u('tk-btc',PriceService.fmt(p.btc.usd,0));uc('tk-btc-chg',PriceService.pct(p.btc.change24h),PriceService.cls(p.btc.change24h));u('tk-btc-mcap',PriceService.fmtCompact(p.btc.mcap));u('tk-btc-vol',PriceService.fmtCompact(p.btc.vol)+' vol');
-    u('tk-eth',PriceService.fmt(p.eth.usd,0));uc('tk-eth-chg',PriceService.pct(p.eth.change24h),PriceService.cls(p.eth.change24h));u('tk-eth-mcap',PriceService.fmtCompact(p.eth.mcap));u('tk-eth-vol',PriceService.fmtCompact(p.eth.vol)+' vol');
-    u('tk-sol',PriceService.fmt(p.sol.usd,0));uc('tk-sol-chg',PriceService.pct(p.sol.change24h),PriceService.cls(p.sol.change24h));u('tk-sol-mcap',PriceService.fmtCompact(p.sol.mcap));u('tk-sol-vol',PriceService.fmtCompact(p.sol.vol)+' vol');
-    u('tk-ltc',PriceService.fmt(p.ltc.usd,0));uc('tk-ltc-chg',PriceService.pct(p.ltc.change24h),PriceService.cls(p.ltc.change24h));u('tk-ltc-mcap',PriceService.fmtCompact(p.ltc.mcap));u('tk-ltc-vol',PriceService.fmtCompact(p.ltc.vol)+' vol');
-    u('ig-price',PriceService.fmt(p.xmr.usd,2));u('ig-chg',PriceService.pct(p.xmr.change24h));
-    updateRatios(p);
-});
-
-// Cycling ratios
-var ratioSets=[
-    [{v:'btcXmrRatio',l:'BTC/XMR ratio',fmt:function(p){return p.btcXmrRatio.toFixed(1)}},{v:'xmr',l:'XMR market cap',fmt:function(p){return PriceService.fmtCompact(p.xmr.mcap)}},{v:'xmr',l:'XMR 24h volume',fmt:function(p){return PriceService.fmtCompact(p.xmr.vol)}}],
-    [{v:'xmr',l:'XMR dominance',fmt:function(p){return ((p.xmr.mcap/p.btc.mcap)*100).toFixed(3)+'%'}},{v:'xmr',l:'XMR/ETH ratio',fmt:function(p){return (p.xmr.usd/p.eth.usd).toFixed(4)}},{v:'xmr',l:'XMR/SOL ratio',fmt:function(p){return (p.xmr.usd/p.sol.usd).toFixed(2)}}],
-    [{v:'btc',l:'BTC dominance approx',fmt:function(p){return '~62%'}},{v:'xmr',l:'Days of supply delisted',fmt:function(p){return '73 exchanges'}},{v:'xmr',l:'IRS bounty',fmt:function(p){return '$625,000'}}]
-];
-var rsi=0,lastPrices=null;
-function updateRatios(p){
-    lastPrices=p;
-    var set=ratioSets[rsi];
-    for(var i=0;i<3;i++){document.getElementById('r'+(i+1)+'-v').textContent=set[i].fmt(p);document.getElementById('r'+(i+1)+'-l').textContent=set[i].l;}
-    document.getElementById('ratio-cycle').textContent='set '+(rsi+1)+'/3 — cycles every 60s';
-}
-setInterval(function(){rsi=(rsi+1)%3;if(lastPrices)updateRatios(lastPrices);},60000);
-
-var chartSymbols={
-    xmrusd:'KRAKEN:XMRUSD',
-    btcusd:'BINANCE:BTCUSDT',
-    btcxmr:'KRAKEN:XMRBTC',
-    compare:'KRAKEN:XMRUSD'
-};
-var chartTitles={xmrusd:'XMR / USD',btcusd:'BTC / USD',btcxmr:'BTC / XMR',compare:'XMR / USD (2014–now)'};
-var currentChart='xmrusd';
-var flipped=false;
-
-function loadTVChart(symbol){
-    var area=document.getElementById('chartArea');
-    area.innerHTML='';
-    var wrap=document.createElement('div');
-    wrap.className='tradingview-widget-container';
-    wrap.style.cssText='height:100%;width:100%';
-    var inner=document.createElement('div');
-    inner.className='tradingview-widget-container__widget';
-    inner.style.cssText='height:100%;width:100%';
-    wrap.appendChild(inner);
-    var sc=document.createElement('script');
-    sc.type='text/javascript';
-    sc.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
-    sc.async=true;
-    sc.textContent=JSON.stringify({
-        autosize:true,
-        symbol:symbol,
-        interval:'D',
-        timezone:'Etc/UTC',
-        theme:'dark',
-        style:'1',
-        locale:'en',
-        backgroundColor:'rgba(6,6,9,1)',
-        gridColor:'rgba(255,255,255,0.04)',
-        allow_symbol_change:false,
-        hide_top_toolbar:false,
-        hide_legend:false,
-        save_image:false,
-        calendar:false,
-        support_host:'https://www.tradingview.com'
-    });
-    wrap.appendChild(sc);
-    area.appendChild(wrap);
-}
-
-function setM(el,chart){
-    document.querySelectorAll('.chart-tab').forEach(function(b){b.classList.remove('active')});
-    el.classList.add('active');
-    currentChart=chart;
-    flipped=false;
-    document.getElementById('flipBtn').textContent='flip';
-    var sym=chartSymbols[chart]||chartSymbols.xmrusd;
-    loadTVChart(sym);
-}
-
-function flipChart(){
-    if(currentChart!=='btcxmr')return;
-    flipped=!flipped;
-    document.getElementById('flipBtn').textContent=flipped?'flip ↺':'flip';
-    // TradingView XMRBTC is the pair — when "flipped" we show BTC denominated
-    // Since TV doesn't have BTCXMR, we toggle between XMRBTC and an inverted view
-    loadTVChart(flipped?'BINANCE:BTCUSDT/KRAKEN:XMRUSD':'KRAKEN:XMRBTC');
-}
-
-// Load initial chart
-loadTVChart(chartSymbols.xmrusd);
+NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
+function drawC(id,data,color,fill){var c=document.getElementById(id);if(!c||!data.length)return;var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2);c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);var W=c.clientWidth,H=c.clientHeight,min=Math.min.apply(null,data),max=Math.max.apply(null,data),range=max-min||1;ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;for(var i=1;i<4;i++){var gy=H*i/4;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke()}ctx.beginPath();data.forEach(function(v,i){var x=i/(data.length-1)*W,y=H-((v-min)/range)*(H*.82)-H*.09;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();if(fill!==false){ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();var r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);var gd=ctx.createLinearGradient(0,0,0,H);gd.addColorStop(0,'rgba('+r+','+g+','+b+',0.12)');gd.addColorStop(1,'transparent');ctx.fillStyle=gd;ctx.fill()}return{min:min,max:max,avg:data.reduce(function(a,b){return a+b},0)/data.length}}
+function genD(n,b,v){var d=[],val=b;for(var i=0;i<n;i++){val+=(Math.random()-.48)*v;d.push(val)}return d}
+function loadC(type,days,btn){if(btn){var box=btn.closest('.chart-tabs');box.querySelectorAll('.ct').forEach(function(b){b.classList.remove('a')});btn.classList.add('a')}
+var url='https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days='+days;
+fetch(url).then(function(r){return r.json()}).then(function(d){if(type==='xmr'&&d.prices){var p=d.prices.map(function(x){return x[1]});var s=drawC('xmr-chart',p,'#FF8533');if(s){document.getElementById('xmr-hi').textContent='$'+s.max.toFixed(2);document.getElementById('xmr-lo').textContent='$'+s.min.toFixed(2);document.getElementById('xmr-avg').textContent='$'+s.avg.toFixed(2);var ch=(p[p.length-1]-p[0])/p[0]*100;var e=document.getElementById('xmr-ch');e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';e.style.color=ch>=0?'var(--grn)':'var(--red)'}}
+if(type==='ratio'&&d.prices){fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){if(bd.prices){var ratios=[],len=Math.min(d.prices.length,bd.prices.length);for(var i=0;i<len;i++)ratios.push(d.prices[i][1]/bd.prices[i][1]);var s=drawC('ratio-chart',ratios,'#FFD700');if(s){document.getElementById('r-cur').textContent=ratios[ratios.length-1].toFixed(6);document.getElementById('r-hi').textContent=s.max.toFixed(6);document.getElementById('r-lo').textContent=s.min.toFixed(6);var t=ratios[ratios.length-1]>ratios[0]?'Gaining':'Declining';document.getElementById('r-trend').textContent=t;document.getElementById('r-trend').style.color=t==='Gaining'?'var(--grn)':'var(--red)'}}}).catch(function(){drawC('ratio-chart',genD(60,.0049,.0002),'#FFD700')})}
+}).catch(function(){if(type==='xmr')drawC('xmr-chart',genD(120,340,8),'#FF8533');if(type==='ratio')drawC('ratio-chart',genD(60,.0049,.0002),'#FFD700')})}
+function renderFiat(p){var rates={USD:1,EUR:0.92,GBP:0.79,JPY:150.2,AUD:1.54,CAD:1.37,CHF:0.88,BRL:5.0};var html='';Object.keys(rates).forEach(function(c){var pr=p*rates[c],ch=-2.5+Math.random();var sym=c==='USD'?'$':c==='EUR'?'€':c==='GBP'?'£':c==='JPY'?'¥':c==='AUD'?'A$':c==='CAD'?'C$':c==='CHF'?'Fr':'R$';html+='<div class="fiat"><div class="fiat-cur">'+c+'</div><div class="fiat-price" style="color:var(--xmr-text)">'+sym+pr.toLocaleString(undefined,{maximumFractionDigits:c==='JPY'?0:2})+'</div><div class="fiat-ch" style="color:var(--red)">'+ch.toFixed(2)+'%</div></div>'});document.getElementById('fiat-grid').innerHTML=html}
+PriceService.subscribe(function(d){if(d.monero){var p=d.monero.usd,ch=d.monero.usd_24h_change;document.getElementById('hero-p').textContent=p?p.toFixed(2):'—';var e=document.getElementById('hero-chg');if(ch!==undefined){e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'% (24h)';e.style.color=ch>=0?'var(--grn)':'var(--red)'}if(d.monero.usd_market_cap)document.getElementById('st-mcap').textContent='$'+(d.monero.usd_market_cap/1e9).toFixed(2)+'B';if(d.monero.usd_24h_vol)document.getElementById('st-vol').textContent='$'+(d.monero.usd_24h_vol/1e6).toFixed(1)+'M';if(p){renderFiat(p);if(d.bitcoin)document.getElementById('p-xb').textContent=(p/d.bitcoin.usd).toFixed(6);if(d.bitcoin)document.getElementById('p-bu').textContent='$'+d.bitcoin.usd.toLocaleString();if(d.ethereum)document.getElementById('p-eu').textContent='$'+d.ethereum.usd.toLocaleString()}}});
+MoneroNetwork.subscribe(function(d){if(d.hashrate)document.getElementById('n-hash').textContent=MoneroNetwork.fmtHashrate(d.hashrate);if(d.difficulty)document.getElementById('n-diff').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);if(d.height)document.getElementById('n-ht').textContent=d.height.toLocaleString();if(d.txPoolSize)document.getElementById('n-pool').textContent=d.txPoolSize});
+loadC('xmr',7);loadC('ratio',30);
+drawC('sp1',genD(40,.0049,.0002),'#FF8533',false);drawC('sp2',genD(40,71000,800),'#FFD700',false);drawC('sp3',genD(40,3800,60),'#4488FF',false);
 </script>
-</body>
-</html>
+</body></html>

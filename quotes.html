@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Satoshi Quote Archive — The Privacy Evolution</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
         /* Hero */
         .hero {
@@ -50,7 +51,7 @@
             gap: 1rem;
             align-items: center;
             justify-content: center;
-            background: var(--g10);
+            background: var(--surface-2);
             border: 1px solid var(--g9);
             border-radius: 14px;
             position: sticky;
@@ -78,7 +79,7 @@
         }
 
         .search-input::placeholder {
-            color: var(--g7);
+            color: var(--text-muted);
             font-family: var(--font-subhead);
             font-style: italic;
         }
@@ -96,7 +97,7 @@
         }
 
         .filter-btn:hover {
-            border-color: var(--g6);
+            border-color: var(--text-tertiary);
             color: var(--g3);
         }
 
@@ -133,8 +134,8 @@
 
         /* Quote Card */
         .quote-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            background: var(--surface-1);
+            border: 1px solid var(--border-default);
             border-radius: 14px;
             padding: 1.5rem;
             transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -209,7 +210,7 @@
         .quote-source {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: var(--g7);
+            color: var(--text-muted);
         }
 
         .quote-link {
@@ -224,7 +225,7 @@
         .quote-date {
             font-family: var(--font-mono);
             font-size: 0.75rem;
-            color: var(--g7);
+            color: var(--text-muted);
         }
 
         .quote-tag {
@@ -296,11 +297,12 @@
     </style>
 </head>
 <body>
-    <div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
-        <canvas id="constellation" class="constellation"></canvas>
-        <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
+    <div class="page-offset" style="min-height:100vh">
         <div class="z1">
             <div id="nav-mount"></div>
+        <div style="display:flex;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border-subtle);gap:12px;font-family:'JetBrains Mono',monospace;font-size:12px">
+            <span style="font-weight:600"><em style="color:var(--grn);font-style:normal">xmr.irish</em> <span style="color:var(--text-muted)">/</span> <em style="color:var(--grn);font-style:normal">quotes</em></span>
+        </div>
 
             <!-- Hero -->
             <section class="hero">
@@ -331,12 +333,8 @@
             </div>
 
             <!-- Footer -->
-            <div class="footer">
-                <span>xmr.irish / quotes</span>
-                <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
-                <span>satoshi.nakamotoinstitute.org</span>
-            </div>
-        </div>
+            <div style="padding:12px 28px;border-top:1px solid var(--border-subtle);text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-tertiary)">xmr.irish / quotes · privacy is not optional</div>
+    </div>
     </div>
 
     <script>

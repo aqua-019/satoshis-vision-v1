@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — The Privacy Evolution Timeline</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
         /* Hero */
         .hero {
@@ -273,8 +274,8 @@
             position: relative;
             width: calc(50% - 35px);
             padding: 1.25rem 1.5rem;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+            background: var(--surface-1);
+            border: 1px solid var(--border-default);
             border-radius: 14px;
             cursor: pointer;
             transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -551,7 +552,7 @@
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background: var(--card-bg);
+            background: var(--surface-1);
             border: 1px solid var(--g8);
             color: var(--g4);
             font-size: 1.2rem;
@@ -671,11 +672,12 @@
     </style>
 </head>
 <body>
-<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
-    <canvas id="constellation" class="constellation"></canvas>
-    <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
+<div class="page-offset" style="min-height:100vh">
     <div class="z1">
         <div id="nav-mount"></div>
+        <div style="display:flex;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border-subtle);gap:12px;font-family:'JetBrains Mono',monospace;font-size:12px">
+            <span style="font-weight:600"><em style="color:var(--grn);font-style:normal">xmr.irish</em> <span style="color:var(--text-muted)">/</span> <em style="color:var(--grn);font-style:normal">timeline</em></span>
+        </div>
 
         <!-- Progress Bar -->
         <div class="progress-bar" id="progressBar"></div>
@@ -766,11 +768,7 @@
         <!-- Scroll to top -->
         <button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr;</button>
 
-        <div class="footer">
-            <span>xmr.irish / timeline</span>
-            <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
-            <span>satoshi.nakamotoinstitute.org</span>
-        </div>
+        <div style="padding:12px 28px;border-top:1px solid var(--border-subtle);text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-tertiary)">xmr.irish / timeline · privacy is not optional</div>
     </div>
 </div>
 

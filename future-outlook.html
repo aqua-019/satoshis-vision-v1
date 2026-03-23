@@ -1,743 +1,146 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xmr.irish - 2027+ Future Outlook</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <title>xmr.irish — Future Outlook</title>
+    <meta name="description" content="FCMP++, Seraphis, and the road to full-chain membership proofs. Where Monero goes from here.">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
-
-```
-    /* Navigation */
-    .nav {
-        position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-        background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(20px);
-        border-bottom: 1px solid var(--g8); padding: 1rem 2rem;
-        display: flex; justify-content: space-between; align-items: center;
-    }
-
-
-
-    /* Hero */
-    .hero {
-        padding: 8rem 2rem 4rem; text-align: center; position: relative; overflow: hidden;
-    }
-    .hero::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-        background:
-            radial-gradient(ellipse at 30% 20%, rgba(255, 102, 0, 0.12) 0%, transparent 50%),
-            radial-gradient(ellipse at 70% 80%, rgba(247, 147, 26, 0.08) 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 50%, rgba(155, 89, 182, 0.05) 0%, transparent 60%);
-        pointer-events: none;
-    }
-    .hero-eyebrow {
-        font-family: var(--font-mono); font-size: 0.85rem; color: var(--xmr);
-        text-transform: uppercase; letter-spacing: 3px; margin-bottom: 1rem; position: relative;
-    }
-    .hero-title {
-        font-family: var(--font-headline); font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 700;
-        margin-bottom: 1rem; position: relative;
-        background: linear-gradient(135deg, var(--g1) 0%, var(--gold) 50%, var(--xmr) 100%);
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .hero-subtitle {
-        color: var(--g4); max-width: 700px; margin: 0 auto 1.5rem;
-        font-size: 1.15rem; position: relative;
-    }
-    .hero-tagline {
-        font-family: var(--font-mono); font-size: 0.85rem; color: var(--danger-red);
-        max-width: 700px; margin: 0 auto; position: relative; letter-spacing: 0.5px;
-    }
-
-    /* Sections */
-    .section {
-        max-width: 1200px; margin: 0 auto; padding: 4rem 2rem;
-    }
-    .section-label {
-        font-family: var(--font-mono); font-size: 0.75rem; color: var(--xmr);
-        text-transform: uppercase; letter-spacing: 3px; margin-bottom: 0.75rem;
-    }
-    .section-title {
-        font-family: var(--font-headline); font-size: clamp(1.8rem, 4vw, 2.5rem);
-        font-weight: 700; margin-bottom: 1rem;
-    }
-    .section-intro {
-        color: var(--g4); max-width: 700px; margin-bottom: 3rem; font-size: 1rem;
-    }
-
-    /* Fade-in animation */
-    .fade-in {
-        opacity: 0; transform: translateY(30px);
-    }
-    .fade-in.visible {
-        opacity: 1; transform: translateY(0);
-        transition: opacity 0.6s ease, transform 0.6s ease;
-    }
-    .scale-in {
-        opacity: 0; transform: scale(0.97);
-    }
-    .scale-in.visible {
-        opacity: 1; transform: scale(1);
-        transition: opacity 0.8s ease, transform 0.8s ease;
-    }
-
-    /* ===== SECTION 1: Regulatory Timeline ===== */
-    .reg-timeline {
-        position: relative; padding-left: 2rem;
-    }
-    .reg-timeline::before {
-        content: ''; position: absolute; left: 8px; top: 0; bottom: 0;
-        width: 2px; background: linear-gradient(180deg, var(--reg-green), var(--reg-blue), var(--reg-red), var(--reg-purple));
-    }
-    .reg-item {
-        position: relative; margin-bottom: 2rem; padding-left: 1.5rem;
-    }
-    .reg-item::before {
-        content: ''; position: absolute; left: -1.55rem; top: 0.6rem;
-        width: 12px; height: 12px; border-radius: 50%;
-        border: 2px solid var(--g8); background: var(--bg);
-    }
-    .reg-item[data-type="pro-crypto"]::before { border-color: var(--reg-green); background: var(--reg-green); }
-    .reg-item[data-type="stablecoin"]::before { border-color: var(--reg-blue); background: var(--reg-blue); }
-    .reg-item[data-type="government"]::before { border-color: var(--reg-red); background: var(--reg-red); }
-    .reg-item[data-type="surveillance"]::before { border-color: var(--reg-purple); background: var(--reg-purple); }
-
-    .reg-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 12px;
-        padding: 1.5rem 1.75rem; transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    .reg-card:hover {
-        border-color: rgba(255, 102, 0, 0.4);
-        box-shadow: 0 0 20px rgba(255, 102, 0, 0.06);
-    }
-    .reg-date {
-        font-family: var(--font-mono); font-size: 0.8rem; color: var(--g4);
-        margin-bottom: 0.4rem;
-    }
-    .reg-title-row {
-        display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.5rem;
-    }
-    .reg-name {
-        font-family: var(--font-headline); font-size: 1.15rem; font-weight: 600;
-    }
-    .reg-badge {
-        font-family: var(--font-mono); font-size: 0.65rem; text-transform: uppercase;
-        letter-spacing: 1.5px; padding: 0.25rem 0.65rem; border-radius: 4px; font-weight: 500;
-    }
-    .reg-badge.pro-crypto { color: var(--reg-green); background: rgba(0,211,149,0.12); border: 1px solid rgba(0,211,149,0.3); }
-    .reg-badge.stablecoin { color: var(--reg-blue); background: rgba(52,152,219,0.12); border: 1px solid rgba(52,152,219,0.3); }
-    .reg-badge.government { color: var(--reg-red); background: rgba(255,71,87,0.12); border: 1px solid rgba(255,71,87,0.3); }
-    .reg-badge.surveillance { color: var(--reg-purple); background: rgba(155,89,182,0.12); border: 1px solid rgba(155,89,182,0.3); }
-
-    .reg-desc {
-        color: var(--g4); font-size: 0.9rem; line-height: 1.8;
-    }
-
-    /* ===== SECTION 2: Freedom Paradox ===== */
-    .paradox-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;
-    }
-    .paradox-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 16px;
-        padding: 2rem; position: relative; overflow: hidden;
-    }
-    .paradox-card.surveillance-card { border-color: rgba(255, 71, 87, 0.3); }
-    .paradox-card.surveillance-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-        background: linear-gradient(90deg, var(--danger-red), var(--reg-purple));
-    }
-    .paradox-card.monero-card { border-color: rgba(255, 102, 0, 0.3); }
-    .paradox-card.monero-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-        background: linear-gradient(90deg, var(--xmr), var(--success-green));
-    }
-    .paradox-card-title {
-        font-family: var(--font-headline); font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;
-    }
-    .paradox-card-text {
-        color: var(--g4); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1rem;
-    }
-    .paradox-chain {
-        display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0;
-    }
-    .chain-link {
-        font-family: var(--font-mono); font-size: 0.75rem; padding: 0.35rem 0.65rem;
-        background: rgba(255, 71, 87, 0.08); border: 1px solid rgba(255, 71, 87, 0.2);
-        border-radius: 6px; color: var(--danger-red);
-    }
-    .chain-arrow { color: var(--g4); font-size: 0.8rem; }
-    .monero-shield {
-        display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1rem;
-    }
-    .shield-item {
-        font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.75rem;
-        background: rgba(255, 102, 0, 0.08); border: 1px solid rgba(255, 102, 0, 0.25);
-        border-radius: 6px; color: var(--xmr);
-    }
-    .bounty-callout {
-        margin-top: 1.5rem; padding: 1rem 1.25rem; background: rgba(255, 102, 0, 0.06);
-        border-left: 3px solid var(--xmr); border-radius: 0 8px 8px 0;
-        font-family: var(--font-mono); font-size: 0.8rem; color: var(--gold);
-    }
-
-    /* ===== SECTION 3: Institutional Bitcoin ===== */
-    .stat-boxes-grid {
-        display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.25rem; margin-bottom: 2.5rem;
-    }
-    .stat-box {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 12px;
-        padding: 1.5rem; text-align: center;
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    .stat-box:hover {
-        border-color: rgba(255, 71, 87, 0.4);
-        box-shadow: 0 0 20px rgba(255, 71, 87, 0.08);
-    }
-    .stat-box-value {
-        font-family: var(--font-mono); font-size: 1.6rem; font-weight: 500;
-        color: var(--danger-red); margin-bottom: 0.25rem;
-    }
-    .stat-box-label {
-        font-size: 0.75rem; color: var(--g4); text-transform: uppercase; letter-spacing: 1px;
-    }
-    .institutional-text {
-        color: var(--g4); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
-    }
-    .institutional-text strong { color: var(--g1); }
-
-    /* ===== SECTION 4: ZCash Fallacy ===== */
-    .zcash-intro {
-        color: var(--g4); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
-        margin-bottom: 2.5rem;
-    }
-    .zcash-intro strong { color: var(--g1); }
-
-    .shielded-stat {
-        display: flex; gap: 1.5rem; margin-bottom: 2.5rem; flex-wrap: wrap;
-    }
-    .shielded-box {
-        flex: 1; min-width: 250px; background: var(--g9); border-radius: 16px;
-        padding: 2rem; text-align: center; border: 1px solid var(--g8); position: relative; overflow: hidden;
-    }
-    .shielded-box::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    }
-    .shielded-box.zcash-box::before { background: var(--danger-red); }
-    .shielded-box.monero-box::before { background: var(--xmr); }
-    .shielded-pct {
-        font-family: var(--font-mono); font-size: 3rem; font-weight: 500;
-    }
-    .shielded-box.zcash-box .shielded-pct { color: var(--danger-red); }
-    .shielded-box.monero-box .shielded-pct { color: var(--xmr); }
-    .shielded-label {
-        font-size: 0.85rem; color: var(--g4); margin-top: 0.25rem;
-    }
-
-    .comparison-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
-    }
-    .comparison-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 16px;
-        padding: 2rem; position: relative; overflow: hidden;
-    }
-    .comparison-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    }
-    .comparison-card.xmr-card::before {
-        background: linear-gradient(90deg, var(--xmr), var(--success-green));
-    }
-    .comparison-card.zec-card::before {
-        background: linear-gradient(90deg, var(--danger-red), #666);
-    }
-    .comparison-card-title {
-        font-family: var(--font-headline); font-size: 1.3rem; font-weight: 600; margin-bottom: 1.25rem;
-    }
-    .comparison-card.xmr-card .comparison-card-title { color: var(--xmr); }
-    .comparison-card.zec-card .comparison-card-title { color: var(--danger-red); }
-
-    .feature-list { list-style: none; }
-    .feature-list li {
-        padding: 0.5rem 0; font-size: 0.88rem; color: var(--g4);
-        border-bottom: 1px solid rgba(46, 46, 46, 0.5); display: flex; align-items: flex-start; gap: 0.6rem;
-    }
-    .feature-list li:last-child { border-bottom: none; }
-    .check { color: var(--success-green); font-weight: 700; flex-shrink: 0; }
-    .cross { color: var(--danger-red); font-weight: 700; flex-shrink: 0; }
-
-    /* ZCash Deep Dive Subsections */
-    .zcash-subsection {
-        margin-top: 3rem; padding-top: 2rem;
-        border-top: 1px solid rgba(46, 46, 46, 0.6);
-    }
-    .zcash-subsection-label {
-        font-family: var(--font-mono); font-size: 0.7rem; color: var(--danger-red);
-        text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
-    }
-    .zcash-subsection-title {
-        font-family: var(--font-headline); font-size: 1.5rem; font-weight: 600;
-        margin-bottom: 1.25rem; color: var(--g1);
-    }
-    .zcash-prose {
-        color: var(--g4); font-size: 0.93rem; line-height: 1.9;
-        max-width: 900px; margin-bottom: 1.5rem;
-    }
-    .zcash-prose strong { color: var(--g1); }
-    .zcash-prose em { color: var(--danger-red); font-style: italic; }
-
-    .zcash-timeline {
-        position: relative; padding-left: 2rem; margin: 2rem 0;
-        border-left: 2px solid var(--danger-red);
-    }
-    .zcash-timeline-item {
-        position: relative; margin-bottom: 2rem; padding-left: 1rem;
-    }
-    .zcash-timeline-item::before {
-        content: ''; position: absolute; left: -2.65rem; top: 0.35rem;
-        width: 10px; height: 10px; border-radius: 50%; background: var(--danger-red);
-        border: 2px solid var(--bg);
-    }
-    .zcash-timeline-year {
-        font-family: var(--font-mono); font-size: 0.8rem; color: var(--danger-red);
-        font-weight: 500; margin-bottom: 0.25rem;
-    }
-    .zcash-timeline-text {
-        color: var(--g4); font-size: 0.88rem; line-height: 1.7;
-    }
-    .zcash-timeline-text strong { color: var(--g1); }
-
-    .zcash-callout {
-        background: rgba(255, 71, 87, 0.06); border: 1px solid rgba(255, 71, 87, 0.2);
-        border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0;
-        border-left: 4px solid var(--danger-red);
-    }
-    .zcash-callout-title {
-        font-family: var(--font-mono); font-size: 0.75rem; color: var(--danger-red);
-        text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 0.5rem;
-    }
-    .zcash-callout p {
-        color: var(--g4); font-size: 0.9rem; line-height: 1.8;
-    }
-    .zcash-callout p strong { color: var(--g1); }
-
-    .zcash-callout-green {
-        background: rgba(0, 211, 149, 0.06); border: 1px solid rgba(0, 211, 149, 0.2);
-        border-radius: 12px; padding: 1.5rem 2rem; margin: 2rem 0;
-        border-left: 4px solid var(--success-green);
-    }
-    .zcash-callout-green .zcash-callout-title { color: var(--success-green); }
-    .zcash-callout-green p {
-        color: var(--g4); font-size: 0.9rem; line-height: 1.8;
-    }
-    .zcash-callout-green p strong { color: var(--g1); }
-
-    .zcash-funding-grid {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0;
-    }
-    .zcash-funding-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 12px;
-        padding: 1.75rem; position: relative; overflow: hidden;
-    }
-    .zcash-funding-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    }
-    .zcash-funding-card.zec-funding::before { background: linear-gradient(90deg, var(--danger-red), #666); }
-    .zcash-funding-card.xmr-funding::before { background: linear-gradient(90deg, var(--xmr), var(--success-green)); }
-    .zcash-funding-card-title {
-        font-family: var(--font-headline); font-size: 1.15rem; font-weight: 600; margin-bottom: 1rem;
-    }
-    .zcash-funding-card.zec-funding .zcash-funding-card-title { color: var(--danger-red); }
-    .zcash-funding-card.xmr-funding .zcash-funding-card-title { color: var(--xmr); }
-    .zcash-funding-list {
-        list-style: none; padding: 0;
-    }
-    .zcash-funding-list li {
-        padding: 0.45rem 0; font-size: 0.85rem; color: var(--g4);
-        border-bottom: 1px solid rgba(46, 46, 46, 0.4);
-        display: flex; align-items: flex-start; gap: 0.5rem;
-    }
-    .zcash-funding-list li:last-child { border-bottom: none; }
-
-    .zcash-stat-row {
-        display: flex; gap: 1rem; flex-wrap: wrap; margin: 2rem 0;
-    }
-    .zcash-stat-box {
-        flex: 1; min-width: 180px; background: var(--g9); border: 1px solid var(--g8);
-        border-radius: 12px; padding: 1.25rem; text-align: center;
-    }
-    .zcash-stat-num {
-        font-family: var(--font-mono); font-size: 2rem; font-weight: 500; color: var(--danger-red);
-    }
-    .zcash-stat-num.green { color: var(--success-green); }
-    .zcash-stat-num.orange { color: var(--xmr); }
-    .zcash-stat-desc {
-        font-size: 0.78rem; color: var(--g4); margin-top: 0.25rem;
-    }
-
-    .zcash-quote-box {
-        background: rgba(155, 89, 182, 0.06); border-left: 3px solid var(--privacy-purple);
-        padding: 1.25rem 1.75rem; margin: 1.5rem 0; border-radius: 0 8px 8px 0;
-    }
-    .zcash-quote-box p {
-        font-style: italic; color: var(--g4); font-size: 0.9rem; line-height: 1.8;
-    }
-    .zcash-quote-box .quote-attr {
-        font-style: normal; font-family: var(--font-mono); font-size: 0.75rem;
-        color: var(--privacy-purple); margin-top: 0.5rem;
-    }
-
-    @media (max-width: 768px) {
-        .zcash-funding-grid { grid-template-columns: 1fr; }
-        .zcash-stat-row { flex-direction: column; }
-    }
-
-    /* ===== SECTION 5: Demand Drivers (preserved from original) ===== */
-    .drivers-grid {
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;
-    }
-    .driver-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 16px;
-        padding: 2rem; position: relative; overflow: hidden;
-        transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
-    }
-    .driver-card:hover {
-        transform: translateY(-4px); border-color: var(--xmr);
-        box-shadow: 0 0 30px rgba(255, 102, 0, 0.1);
-    }
-    .driver-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-        border-radius: 16px 16px 0 0;
-    }
-    .driver-card[data-driver="catalyst"]::before { background: linear-gradient(90deg, var(--gold), var(--xmr)); }
-    .driver-card[data-driver="regulation"]::before { background: linear-gradient(90deg, var(--danger-red), var(--btc)); }
-    .driver-card[data-driver="geopolitical"]::before { background: linear-gradient(90deg, var(--privacy-purple), var(--danger-red)); }
-    .driver-card[data-driver="darknet"]::before { background: linear-gradient(90deg, #1a1a2e, var(--xmr)); }
-    .driver-card[data-driver="cbdc"]::before { background: linear-gradient(90deg, var(--crossover-cyan), var(--success-green)); }
-    .driver-card[data-driver="technical"]::before { background: linear-gradient(90deg, var(--success-green), var(--crossover-cyan)); }
-
-    .driver-icon { font-size: 2.5rem; margin-bottom: 1rem; display: block; }
-    .driver-number {
-        font-family: var(--font-mono); font-size: 0.7rem; color: var(--xmr);
-        text-transform: uppercase; letter-spacing: 2px; margin-bottom: 0.5rem;
-    }
-    .driver-title {
-        font-family: var(--font-headline); font-size: 1.4rem; font-weight: 600; margin-bottom: 0.75rem;
-    }
-    .driver-text { color: var(--g4); font-size: 0.9rem; line-height: 1.8; margin-bottom: 1.25rem; }
-    .driver-stats { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-    .stat-chip {
-        font-family: var(--font-mono); font-size: 0.75rem; padding: 0.4rem 0.8rem;
-        border-radius: 6px; border: 1px solid var(--g8);
-        background: rgba(255, 102, 0, 0.06); color: var(--gold); white-space: nowrap;
-    }
-    .stat-chip.green { color: var(--success-green); background: rgba(0,211,149,0.08); border-color: rgba(0,211,149,0.2); }
-    .stat-chip.red { color: var(--danger-red); background: rgba(255,71,87,0.08); border-color: rgba(255,71,87,0.2); }
-    .stat-chip.purple { color: var(--privacy-purple); background: rgba(155,89,182,0.08); border-color: rgba(155,89,182,0.2); }
-    .stat-chip.cyan { color: var(--crossover-cyan); background: rgba(0,206,209,0.08); border-color: rgba(0,206,209,0.2); }
-
-    /* ===== SECTION 6: Why Monero Threatens ===== */
-    .threat-grid {
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;
-        margin-top: 2rem;
-    }
-    .threat-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 12px;
-        padding: 1.5rem; text-align: center;
-        transition: border-color 0.3s ease;
-    }
-    .threat-card:hover { border-color: rgba(155, 89, 182, 0.4); }
-    .threat-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
-    .threat-title {
-        font-family: var(--font-mono); font-size: 0.8rem; color: var(--g1);
-        text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.5rem;
-    }
-    .threat-desc { color: var(--g4); font-size: 0.8rem; line-height: 1.6; }
-
-    .threat-text {
-        color: var(--g4); font-size: 0.95rem; line-height: 1.9; max-width: 900px;
-        margin-bottom: 2rem;
-    }
-    .threat-text strong { color: var(--g1); }
-
-    /* ===== SECTION 7: What 2027+ Looks Like ===== */
-    .future-cols {
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 3rem;
-    }
-    .future-card {
-        background: var(--g9); border: 1px solid var(--g8); border-radius: 16px;
-        padding: 2rem; position: relative; overflow: hidden;
-    }
-    .future-card::before {
-        content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-    }
-    .future-card.surveilled::before { background: linear-gradient(90deg, var(--danger-red), #666); }
-    .future-card.theater::before { background: linear-gradient(90deg, #666, var(--reg-purple)); }
-    .future-card.free::before { background: linear-gradient(90deg, var(--xmr), var(--success-green)); }
-
-    .future-card-label {
-        font-family: var(--font-mono); font-size: 0.7rem; text-transform: uppercase;
-        letter-spacing: 2px; margin-bottom: 0.75rem;
-    }
-    .future-card.surveilled .future-card-label { color: var(--danger-red); }
-    .future-card.theater .future-card-label { color: var(--reg-purple); }
-    .future-card.free .future-card-label { color: var(--xmr); }
-
-    .future-card-title {
-        font-family: var(--font-headline); font-size: 1.2rem; font-weight: 600; margin-bottom: 0.75rem;
-    }
-    .future-card-text { color: var(--g4); font-size: 0.88rem; line-height: 1.8; }
-
-    .closing-quote {
-        background: linear-gradient(135deg, rgba(255,102,0,0.06) 0%, rgba(155,89,182,0.04) 100%);
-        border: 1px solid rgba(255, 102, 0, 0.2); border-radius: 16px;
-        padding: 2.5rem; text-align: center; max-width: 800px; margin: 0 auto;
-    }
-    .closing-quote blockquote {
-        font-family: var(--font-headline); font-size: clamp(1.2rem, 3vw, 1.6rem);
-        font-weight: 600; font-style: italic; line-height: 1.6;
-        background: linear-gradient(135deg, var(--g1), var(--gold));
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-
-    /* ===== Meta Thesis ===== */
-    .meta-thesis {
-        max-width: 1200px; margin: 0 auto; padding: 4rem 2rem 5rem;
-    }
-    .thesis-box {
-        background: linear-gradient(135deg, rgba(255,102,0,0.08) 0%, rgba(155,89,182,0.06) 50%, rgba(0,206,209,0.04) 100%);
-        border: 1px solid rgba(255,102,0,0.25); border-radius: 20px;
-        padding: 3rem; position: relative; overflow: hidden;
-    }
-    .thesis-box::before {
-        content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
-        background: radial-gradient(circle at center, rgba(255,102,0,0.04) 0%, transparent 50%);
-        animation: thesis-glow 8s ease-in-out infinite; pointer-events: none;
-    }
-    @keyframes thesis-glow {
-        0%, 100% { transform: translate(0, 0); }
-        50% { transform: translate(5%, 5%); }
-    }
-    .thesis-label {
-        font-family: var(--font-mono); font-size: 0.75rem; text-transform: uppercase;
-        letter-spacing: 3px; color: var(--xmr); margin-bottom: 1rem; position: relative;
-    }
-    .thesis-headline {
-        font-family: var(--font-headline); font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700;
-        margin-bottom: 1.5rem; position: relative;
-        background: linear-gradient(135deg, var(--gold), var(--xmr));
-        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-    }
-    .thesis-body {
-        color: var(--g4); font-size: 1.05rem; line-height: 1.9;
-        max-width: 800px; position: relative; margin-bottom: 2rem;
-    }
-    .thesis-body strong { color: var(--g1); }
-    .thesis-pillars {
-        display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1rem; margin-top: 2rem; position: relative;
-    }
-    .pillar {
-        background: rgba(10,10,10,0.6); border: 1px solid var(--g8);
-        border-radius: 12px; padding: 1.25rem; text-align: center;
-    }
-    .pillar-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
-    .pillar-value {
-        font-family: var(--font-mono); font-size: 1.3rem; font-weight: 500; color: var(--xmr);
-    }
-    .pillar-label { font-size: 0.75rem; color: var(--g4); margin-top: 0.25rem; }
-
-    /* ===== SECTION 8: Technical Deep Dive Table ===== */
-    .tech-table-wrap {
-        overflow-x: auto; margin-top: 2rem; border-radius: 12px;
-        border: 1px solid var(--g8);
-    }
-    .tech-table {
-        width: 100%; border-collapse: collapse; min-width: 600px;
-    }
-    .tech-table thead th {
-        background: rgba(255,102,0,0.08); font-family: var(--font-mono); font-size: 0.8rem;
-        text-transform: uppercase; letter-spacing: 1.5px; padding: 1rem 1.25rem;
-        text-align: left; border-bottom: 1px solid var(--g8);
-    }
-    .tech-table thead th:first-child { color: var(--g4); }
-    .tech-table thead th:nth-child(2) { color: var(--xmr); }
-    .tech-table thead th:nth-child(3) { color: var(--danger-red); }
-
-    .tech-table tbody td {
-        padding: 0.85rem 1.25rem; font-size: 0.88rem; color: var(--g4);
-        border-bottom: 1px solid rgba(46,46,46,0.5); vertical-align: top;
-    }
-    .tech-table tbody td:first-child {
-        font-family: var(--font-mono); font-size: 0.8rem; color: var(--g1);
-        font-weight: 500; white-space: nowrap;
-    }
-    .tech-table tbody tr:hover td { background: rgba(255,102,0,0.03); }
-    .tech-table .positive { color: var(--success-green); }
-    .tech-table .negative { color: var(--danger-red); }
-    .tech-table .neutral { color: var(--g4); }
-
-    /* ===== Sources ===== */
-    .sources-list {
-        list-style: none; columns: 2; column-gap: 2rem;
-    }
-    .sources-list li {
-        font-size: 0.8rem; color: var(--g4); margin-bottom: 0.5rem;
-        break-inside: avoid;
-    }
-    .sources-list a {
-        color: var(--xmr); text-decoration: none; transition: color 0.3s ease;
-    }
-    .sources-list a:hover { color: var(--gold); text-decoration: underline; }
-
-    /* ===== CTA ===== */
-    .cta-section { text-align: center; padding: 2rem 2rem 5rem; }
-    .cta-link {
-        display: inline-block; font-family: var(--font-mono); font-size: 1rem;
-        color: var(--bg); background: linear-gradient(135deg, var(--btc), var(--xmr));
-        padding: 1rem 2.5rem; border-radius: 8px; text-decoration: none; font-weight: 500;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    .cta-link:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255,102,0,0.3); }
-
-    /* Footer */
-
-    /* Divider */
-    .section-divider {
-        max-width: 1200px; margin: 0 auto; padding: 0 2rem;
-    }
-    .section-divider hr {
-        border: none; height: 1px;
-        background: linear-gradient(90deg, transparent, var(--g8), transparent);
-    }
-
-    /* ===== Responsive ===== */
-    /* ── Price Ticker ── */
-
-
-    @media (max-width: 480px) {
-        .stat-boxes-grid { grid-template-columns: 1fr; }
-        .thesis-pillars { grid-template-columns: 1fr; }
-        .threat-grid { grid-template-columns: 1fr; }
-    }
-
-</style>
-```
-
+    .fo{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+    .fo-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
+    .fo-nav em{color:var(--grn);font-style:normal;font-weight:600}.fo-nav span{color:var(--text-muted)}
+    .hero{padding:48px var(--space-page-x) 24px;text-align:center}
+    .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
+    .hero-t{font-size:32px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--xmr);font-style:normal}
+    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:520px;margin:0 auto;line-height:1.6;font-style:italic}
+    .sec{padding:0 var(--space-page-x);margin-bottom:24px}
+    .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+    .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+    .upgrade{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:24px;margin-bottom:12px;position:relative;overflow:hidden}
+    .upgrade::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 12px 12px}
+    .upgrade.fcmp::after{background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
+    .upgrade.sera::after{background:linear-gradient(90deg,var(--grn),rgba(0,204,136,.3))}
+    .upgrade.dex::after{background:linear-gradient(90deg,var(--blue),rgba(68,136,255,.3))}
+    .up-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+    .up-t{font-size:20px;font-weight:600;color:var(--g1);margin-bottom:8px}
+    .up-desc{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-bottom:14px;max-width:600px}
+    .up-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+    .up-tag{font-size:9px;padding:3px 10px;border:1px solid var(--border-default);border-radius:6px;color:var(--text-tertiary)}
+    .up-tag.hot{border-color:rgba(255,102,0,.2);color:var(--xmr)}
+    .up-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-subtle)}
+    .up-cmp{text-align:center}
+    .up-cmp-v{font-size:18px;font-weight:600;margin-bottom:2px}
+    .up-cmp-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
+    .up-arrow{font-size:20px;color:var(--xmr)}
+    .timeline{position:relative;padding-left:20px}
+    .timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border-default)}
+    .tl-item{position:relative;margin-bottom:16px;padding-left:16px}
+    .tl-item::before{content:'';position:absolute;left:-17px;top:6px;width:8px;height:8px;border-radius:50%;border:2px solid var(--border-default);background:var(--surface-0)}
+    .tl-item.done::before{background:var(--grn);border-color:var(--grn)}
+    .tl-item.active::before{background:var(--xmr);border-color:var(--xmr);box-shadow:0 0 8px rgba(255,102,0,.3)}
+    .tl-item.future::before{background:var(--surface-2);border-color:var(--border-default)}
+    .tl-date{font-size:9px;color:var(--text-tertiary);margin-bottom:2px}
+    .tl-title{font-size:13px;font-weight:600;margin-bottom:2px}
+    .tl-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    .compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .cmp{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;text-align:center}
+    .cmp-coin{font-size:11px;font-weight:600;margin-bottom:8px}
+    .cmp-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-subtle);font-size:10px}
+    .cmp-row:last-child{border:none}
+    .cmp-label{color:var(--text-tertiary)}.cmp-val{font-weight:500}
+    .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
+    @media(max-width:768px){.compare-grid{grid-template-columns:1fr}.up-compare{grid-template-columns:1fr;gap:6px}.up-arrow{transform:rotate(90deg)}}
+    </style>
 </head>
 <body>
-<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
-    <canvas id="constellation" class="constellation"></canvas>
-    <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div>
-    <div class="z1">
-        <div id="nav-mount"></div>
+<div class="page-offset fo">
+    <div id="nav-mount"></div>
+    <div class="fo-nav"><em>xmr.irish</em> <span>/</span> <em>future outlook</em></div>
+    <div class="hero"><div class="hero-ey">2027+ outlook</div><div class="hero-t">The future of <em>privacy</em></div>
+        <div class="hero-sub">FCMP++, Seraphis, and the road to full-chain membership proofs — the largest privacy upgrades in cryptocurrency history.</div></div>
 
-```
-    <section style="padding:120px 28px 60px;text-align:center;position:relative;z-index:1;">
-        <div style="font-family:var(--font-mono);font-size:10px;letter-spacing:4px;color:var(--xmr);text-transform:uppercase;margin-bottom:12px;">2027+ Outlook</div>
-        <h1 style="font-family:var(--font-headline);font-size:clamp(28px,5vw,48px);font-weight:600;letter-spacing:-1px;line-height:1.1;margin-bottom:16px;color:var(--g1);">The Future of <span style="color:var(--xmr);">Privacy</span></h1>
-        <p style="font-family:var(--font-subhead);font-style:italic;font-size:15px;color:var(--g4);max-width:560px;margin:0 auto 48px;line-height:1.7;">
-            FCMP++, Seraphis, and the road to full-chain membership proofs — where Monero goes from here.
-        </p>
-
-        <div style="max-width:680px;margin:0 auto 48px;text-align:left;">
-
-            <div style="border:1px solid var(--g8);border-radius:14px;padding:28px;background:rgba(255,255,255,0.01);margin-bottom:20px;">
-                <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:3px;color:var(--xmr);text-transform:uppercase;margin-bottom:8px;">Coming · FCMP++</div>
-                <h2 style="font-family:var(--font-headline);font-size:20px;font-weight:600;margin-bottom:8px;color:var(--g1);">Full-Chain Membership Proofs</h2>
-                <p style="font-family:var(--font-body);font-size:14px;color:var(--g5);line-height:1.7;margin-bottom:12px;">
-                    Today, your transaction hides among 16 decoys. With FCMP++, it hides among <strong style="color:var(--xmr);">every transaction ever made</strong> — an anonymity set of 100M+ outputs. The largest privacy upgrade in Monero's history.
-                </p>
-                <div style="display:flex;gap:16px;flex-wrap:wrap;">
-                    <span style="font-family:var(--font-mono);font-size:10px;padding:4px 10px;border:1px solid var(--g8);border-radius:8px;color:var(--g5);">Ring 16 → Full Chain</span>
-                    <span style="font-family:var(--font-mono);font-size:10px;padding:4px 10px;border:1px solid var(--g8);border-radius:8px;color:var(--g5);">100M+ Anonymity Set</span>
-                    <span style="font-family:var(--font-mono);font-size:10px;padding:4px 10px;border:1px solid rgba(255,102,0,0.15);border-radius:8px;color:var(--xmr);">In Development</span>
-                </div>
+    <div class="sec">
+        <div class="upgrade fcmp">
+            <div class="up-ey" style="color:var(--xmr)">Coming · FCMP++</div>
+            <div class="up-t">Full-chain membership proofs</div>
+            <div class="up-desc">Today, your transaction hides among 16 decoys. With FCMP++, it hides among every transaction ever made — an anonymity set of 100M+ outputs. The largest privacy upgrade in Monero's history.</div>
+            <div class="up-tags">
+                <div class="up-tag">Ring 16 → Full chain</div>
+                <div class="up-tag">100M+ anonymity set</div>
+                <div class="up-tag hot">In development</div>
+                <div class="up-tag">kayabanerve lead</div>
             </div>
-
-            <div style="border:1px solid var(--g8);border-radius:14px;padding:28px;background:rgba(255,255,255,0.01);margin-bottom:20px;">
-                <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:3px;color:#00CC88;text-transform:uppercase;margin-bottom:8px;">Research · Seraphis</div>
-                <h2 style="font-family:var(--font-headline);font-size:20px;font-weight:600;margin-bottom:8px;color:var(--g1);">Next-Generation Transaction Protocol</h2>
-                <p style="font-family:var(--font-body);font-size:14px;color:var(--g5);line-height:1.7;">
-                    A complete redesign of Monero's transaction structure. Modular address schemes, improved multisig, and a foundation for future privacy innovations.
-                </p>
+            <div class="up-compare">
+                <div class="up-cmp"><div class="up-cmp-v" style="color:var(--text-secondary)">16</div><div class="up-cmp-l">Current ring size</div></div>
+                <div class="up-arrow">→</div>
+                <div class="up-cmp"><div class="up-cmp-v" style="color:var(--xmr)">100,000,000+</div><div class="up-cmp-l">FCMP++ anonymity set</div></div>
             </div>
-
-            <div style="border:1px solid var(--g8);border-radius:14px;padding:28px;background:rgba(255,255,255,0.01);">
-                <div style="font-family:var(--font-mono);font-size:9px;letter-spacing:3px;color:#4488FF;text-transform:uppercase;margin-bottom:8px;">Ecosystem · Growth</div>
-                <h2 style="font-family:var(--font-headline);font-size:20px;font-weight:600;margin-bottom:8px;color:var(--g1);">The Decentralized Exchange Era</h2>
-                <p style="font-family:var(--font-body);font-size:14px;color:var(--g5);line-height:1.7;">
-                    As centralized exchanges delist, decentralized alternatives (Haveno, atomic swaps, Wagyu) fill the gap — making Monero increasingly resistant to regulatory pressure.
-                </p>
-            </div>
-
         </div>
-
-        <div style="border:1px solid rgba(255,102,0,0.12);border-radius:14px;padding:24px 32px;max-width:640px;margin:0 auto;background:rgba(255,102,0,0.02);">
-            <p style="font-family:var(--font-mono);font-size:11px;color:var(--g5);line-height:1.8;margin:0;">
-                <span style="color:var(--xmr);font-weight:500;">v4.0 coming soon</span> — This page is being rebuilt with an interactive FCMP++ explainer, protocol upgrade timeline, community development tracker, and deep technical comparisons.
-            </p>
+        <div class="upgrade sera">
+            <div class="up-ey" style="color:var(--grn)">Research · Seraphis</div>
+            <div class="up-t">Next-generation transaction protocol</div>
+            <div class="up-desc">A complete redesign of Monero's transaction structure. Modular address schemes, improved multisig, forward secrecy for view keys, and a foundation for decades of future privacy innovations.</div>
+            <div class="up-tags">
+                <div class="up-tag">Modular addresses</div>
+                <div class="up-tag">Improved multisig</div>
+                <div class="up-tag">Forward secrecy</div>
+                <div class="up-tag">UkoeHB lead</div>
+            </div>
         </div>
-    </section>
-
-    <div class="footer">
-        <span>xmr.irish</span>
-        <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
-        <span>Privacy is not optional — it is a fundamental right</span>
+        <div class="upgrade dex">
+            <div class="up-ey" style="color:var(--blue)">Ecosystem · Growth</div>
+            <div class="up-t">The decentralized exchange era</div>
+            <div class="up-desc">As centralized exchanges delist, decentralized alternatives fill the gap. Haveno, atomic swaps, and Wagyu make Monero increasingly resistant to regulatory pressure. Delistings accelerate decentralization.</div>
+            <div class="up-tags">
+                <div class="up-tag">Haveno DEX</div>
+                <div class="up-tag">Atomic swaps</div>
+                <div class="up-tag">73 delistings → growth</div>
+            </div>
+        </div>
     </div>
+
+    <div class="sec"><div class="sec-h"><div class="sec-t">Development timeline</div><div class="sec-s">Past · present · future</div></div>
+        <div class="timeline">
+            <div class="tl-item done"><div class="tl-date">May 2022</div><div class="tl-title">Tail emission activated</div><div class="tl-desc">0.6 XMR/block forever. Permanent security budget — no fee-market crisis.</div></div>
+            <div class="tl-item done"><div class="tl-date">Aug 2022</div><div class="tl-title">Ring size 11 → 16</div><div class="tl-desc">Increased anonymity set per transaction. Bulletproofs+ enabled.</div></div>
+            <div class="tl-item done"><div class="tl-date">2023</div><div class="tl-title">View tags deployed</div><div class="tl-desc">10x faster wallet sync. Reduced bandwidth for light wallets.</div></div>
+            <div class="tl-item active"><div class="tl-date">2025-2026</div><div class="tl-title" style="color:var(--xmr)">FCMP++ development</div><div class="tl-desc">Active development by kayabanerve. CCS-funded. Audits in progress. Largest privacy upgrade ever.</div></div>
+            <div class="tl-item future"><div class="tl-date">2026-2027</div><div class="tl-title">FCMP++ hard fork</div><div class="tl-desc">Scheduled upgrade activating full-chain membership proofs. Ring-16 replaced by 100M+ anonymity set.</div></div>
+            <div class="tl-item future"><div class="tl-date">2027+</div><div class="tl-title">Seraphis integration</div><div class="tl-desc">New transaction protocol. Modular address schemes. Forward-secret view keys. Multi-decade foundation.</div></div>
+        </div>
+    </div>
+
+    <div class="sec"><div class="sec-h"><div class="sec-t">Privacy comparison</div><div class="sec-s">Monero vs competitors · post-FCMP++</div></div>
+        <div class="compare-grid">
+            <div class="cmp"><div class="cmp-coin" style="color:var(--xmr)">Monero (post-FCMP++)</div>
+                <div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--xmr)">100M+ (full chain)</span></div>
+                <div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--grn)">Mandatory</span></div>
+                <div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--grn)">Always</span></div>
+                <div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--grn)">Dandelion++</span></div>
+                <div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--grn)">Perfect</span></div>
+            </div>
+            <div class="cmp"><div class="cmp-coin" style="color:var(--gold)">Bitcoin</div>
+                <div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--red)">0 (transparent)</span></div>
+                <div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--red)">None by default</span></div>
+                <div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--red)">Never</span></div>
+                <div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--red)">None</span></div>
+                <div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--red)">Broken (taint)</span></div>
+            </div>
+            <div class="cmp"><div class="cmp-coin" style="color:var(--blue)">Zcash</div>
+                <div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--gold)">Shielded pool only</span></div>
+                <div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--gold)">Optional (~15%)</span></div>
+                <div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--gold)">If shielded</span></div>
+                <div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--red)">None</span></div>
+                <div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--gold)">Partial</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="ft">xmr.irish / future outlook · FCMP++ in development · privacy scales</div>
 </div>
-```
-
-</div>
-<script>
-        function toggleMenu() {
-            document.getElementById('mobileMenu').classList.toggle('active');
-        }
-
-```
-    // Scroll-triggered fade-in animations
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry, index) => {
-            if (entry.isIntersecting) {
-                // Stagger animations for sibling elements
-                const siblings = entry.target.parentElement.querySelectorAll('.fade-in, .scale-in');
-                let delay = 0;
-                siblings.forEach((sib, i) => {
-                    if (sib === entry.target) {
-                        delay = i * 100;
-                    }
-                });
-                setTimeout(() => {
-                    entry.target.classList.add('visible');
-                }, Math.min(delay, 400));
-            }
-        });
-    }, {
-        threshold: 0.12,
-        rootMargin: '0px 0px -50px 0px'
-    });
-
-    document.querySelectorAll('.fade-in, .scale-in').forEach(el => {
-        observer.observe(el);
-    });
-</script>
-```
-
-<script src="js/nav.js"></script>
-
-<script src="js/price-service.js"></script>
-
-<script src="js/monero-network.js"></script>
-
-<script src="js/genui.js"></script>
-
-<script>
-NavComponent.inject('nav-mount');
-PriceService.start();
-MoneroNetwork.start();
-</script>
-
-</body>
-</html>
+<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
+<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+</body></html>

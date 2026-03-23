@@ -2,21 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Mine Monero</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
-        .genui-bar{display:flex;gap:6px;padding:8px 28px;background:#050508;border-bottom:1px solid #0A0A0E;align-items:center;flex-wrap:wrap}
-        .genui-bar .gl{font-family:var(--font-mono);font-size:11px;color:var(--g6);margin-right:4px}
-        .g-chip{padding:3px 10px;border-radius:10px;font-family:var(--font-mono);font-size:11px;cursor:pointer;border:1px solid var(--g8);background:transparent;color:var(--g5);transition:all .25s}
-        .g-chip:hover{border-color:var(--g6);color:var(--g3)}
-        .g-chip.active{border-color:rgba(255,102,0,.3);color:var(--xmr);background:rgba(255,102,0,.06)}
-        .g-chip.dev{border-color:rgba(74,158,255,.2);color:var(--blue);background:rgba(74,158,255,.04);cursor:default}
-        .g-os{margin-left:auto;display:flex;gap:4px}
-        .g-chip.os-active{border-color:rgba(0,211,149,.3);color:var(--grn);background:rgba(0,211,149,.06)}
         .supply-row{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:10px}
         .sp-cell{border-radius:14px;padding:10px;border:1px solid var(--card-border);background:var(--card-bg);text-align:center;transition:all .35s}
         .sp-cell:hover{border-color:rgba(255,102,0,.1);border-radius:18px;transform:scale(1.03)}
@@ -67,15 +60,13 @@
     <div class="blob blob-1"></div><div class="blob blob-3"></div><div class="blob blob-5"></div>
     <div class="z1">
         <div id="nav-mount"></div>
-        <div class="genui-bar">
-            <span class="g-chip active" data-level="beginner" onclick="setLevel(this)">Beginner</span>
-            <span class="g-chip" data-level="intermediate" onclick="setLevel(this)">Intermediate</span>
-            <span class="g-chip" data-level="advanced" onclick="setLevel(this)">Advanced</span>
-            <div class="g-os">
-                <span class="g-chip os-active" data-os="windows" onclick="setOS(this)">Windows</span>
-                <span class="g-chip" data-os="macos" onclick="setOS(this)">macOS</span>
-                <span class="g-chip" data-os="linux" onclick="setOS(this)">Linux</span>
-                <span class="g-chip" data-os="mobile" onclick="setOS(this)">Mobile</span>
+        <div style="display:flex;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border-subtle);gap:12px;font-family:var(--font-mono);font-size:12px;flex-wrap:wrap">
+            <span style="font-weight:600"><em style="color:var(--grn);font-style:normal">xmr.irish</em> <span style="color:var(--text-muted)">/</span> <em style="color:var(--grn);font-style:normal">mining</em></span>
+            <div style="display:flex;gap:4px;margin-left:auto;font-size:11px">
+                <a href="markets.html" style="padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none">Markets</a>
+                <a href="network.html" style="padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none">Network</a>
+                <a href="mining.html" style="padding:4px 10px;border-radius:5px;background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12);text-decoration:none">Mining</a>
+                <a href="mempool.html" style="padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none">Mempool</a>
             </div>
         </div>
 
@@ -310,15 +301,6 @@ MoneroNetwork.subscribe(function(d){
     if(d.height)document.getElementById('mining-block').textContent=d.height.toLocaleString();
     if(d.hashrate)document.getElementById('mining-hashrate').textContent=MoneroNetwork.fmtHashrate(d.hashrate);
 });
-// Skill level and OS selectors
-function setLevel(el){document.querySelectorAll('.genui-bar .g-chip:not(.dev):not([class*="os"])').forEach(function(c){c.classList.remove('active')});el.classList.add('active');}
-function setOS(el){
-    document.querySelectorAll('.g-os .g-chip').forEach(function(c){c.classList.remove('os-active')});
-    el.classList.add('os-active');
-    var os=el.dataset.os;
-    document.querySelectorAll('[data-os-section]').forEach(function(s){s.style.display=s.dataset.osSection===os?'':'none';});
-}
-function setSW(el){document.querySelectorAll('[data-sw]').forEach(function(c){c.classList.remove('active')});el.classList.add('active');}
 </script>
 </body>
 </html>

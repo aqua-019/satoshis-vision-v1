@@ -2,12 +2,13 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — The Bottom Line</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
         /* Page-specific variables for legacy color names */
         :root {
@@ -159,7 +160,7 @@
             flex-wrap: wrap;
             margin-bottom: 1rem;
             padding: 0.75rem;
-            background: var(--card-bg);
+            background: var(--surface-1);
             border: 1px solid var(--g8);
         }
 
@@ -251,7 +252,7 @@
         .timeline-event {
             position: relative;
             max-width: 500px;
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1rem;
             border-left: 3px solid var(--btc);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -268,7 +269,7 @@
         .timeline-event.regulation-event { border-left-color: var(--red); }
         .timeline-event.crossover-event { 
             border-left-color: var(--crossover-cyan);
-            background: linear-gradient(135deg, var(--card-bg), rgba(0, 206, 209, 0.05));
+            background: linear-gradient(135deg, var(--surface-1), rgba(0, 206, 209, 0.05));
         }
         .timeline-event.privacy-event { border-left-color: var(--privacy-purple); }
 
@@ -401,7 +402,7 @@
             position: relative;
             margin-bottom: 0.5rem;
             padding: 0.75rem;
-            background: var(--card-bg);
+            background: var(--surface-1);
             margin-left: 30px;
             border-left: 3px solid var(--btc);
             transition: all 0.3s ease;
@@ -431,7 +432,7 @@
         .v-timeline-event.regulation { border-left-color: var(--red); }
         .v-timeline-event.crossover { 
             border-left-color: var(--crossover-cyan);
-            background: linear-gradient(135deg, var(--card-bg), rgba(0, 206, 209, 0.08));
+            background: linear-gradient(135deg, var(--surface-1), rgba(0, 206, 209, 0.08));
         }
         .v-timeline-event.privacy { border-left-color: var(--privacy-purple); }
 
@@ -526,7 +527,7 @@
         }
 
         .evidence-card {
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1.25rem;
             border-left: 3px solid var(--xmr);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -606,7 +607,7 @@
             position: relative;
             margin-bottom: 1.5rem;
             padding: 1.25rem;
-            background: var(--card-bg);
+            background: var(--surface-1);
         }
 
         .bounty-item::before {
@@ -672,7 +673,7 @@
         }
 
         .legal-table th {
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1rem;
             text-align: left;
             color: var(--xmr);
@@ -728,7 +729,7 @@
         }
 
         .crypto-card {
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1.25rem;
             text-align: center;
             border: 1px solid var(--g8);
@@ -817,7 +818,7 @@
 
         /* Manifesto Callouts */
         .manifesto-callout {
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1.25rem;
             margin: 1rem 0;
             border-left: 3px solid var(--xmr);
@@ -847,7 +848,7 @@
             align-items: center;
             gap: 1.5rem;
             padding: 1.25rem 1rem;
-            background: var(--card-bg);
+            background: var(--surface-1);
             margin: 1rem 0;
         }
 
@@ -896,7 +897,7 @@
             align-items: flex-start;
             gap: 1rem;
             padding: 1rem;
-            background: var(--card-bg);
+            background: var(--surface-1);
         }
 
         .key-point-number {
@@ -1098,7 +1099,7 @@
         }
 
         .comparison-table th {
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1.5rem;
             text-align: center;
             font-family: var(--font-headline);
@@ -1162,7 +1163,7 @@
         .tab-toggle-btn {
             flex: 1;
             padding: 1rem 1.5rem;
-            background: var(--card-bg);
+            background: var(--surface-1);
             border: 2px solid var(--g8);
             color: var(--g4);
             font-family: var(--font-mono);
@@ -1301,7 +1302,7 @@
         }
 
         .driver-card {
-            background: var(--card-bg);
+            background: var(--surface-1);
             padding: 1.25rem;
             border-left: 3px solid var(--xmr);
         }
@@ -1348,7 +1349,7 @@
         }
 
         .counter-arguments {
-            background: var(--card-bg);
+            background: var(--surface-1);
             border: 1px solid var(--g8);
             padding: 1.5rem;
             margin: 1.5rem 0;
@@ -1387,11 +1388,12 @@
     </style>
 </head>
 <body>
-<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
-    <canvas id="constellation" class="constellation"></canvas>
-    <div class="blob blob-1"></div><div class="blob blob-3"></div><div class="blob blob-5"></div>
+<div class="page-offset" style="min-height:100vh">
     <div class="z1">
         <div id="nav-mount"></div>
+        <div style="display:flex;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border-subtle);gap:12px;font-family:'JetBrains Mono',monospace;font-size:12px">
+            <span style="font-weight:600"><em style="color:var(--grn);font-style:normal">xmr.irish</em> <span style="color:var(--text-muted)">/</span> <em style="color:var(--grn);font-style:normal">bottom line</em></span>
+        </div>
 
     <!-- Hero Section -->
     <section class="hero">
@@ -2690,11 +2692,7 @@
 
     </main>
 
-        <div class="footer">
-            <span>xmr.irish / bottom-line</span>
-            <div><a href="index.html">Home</a><a href="btc-xmr-education.html">Education</a><a href="markets.html">Markets</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
-            <span>Not financial advice. Privacy is a right.</span>
-        </div>
+        <div style="padding:12px 28px;border-top:1px solid var(--border-subtle);text-align:center;font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-tertiary)">xmr.irish / bottom line · privacy is not optional</div>
     </div><!-- z1 -->
 </div><!-- page-offset -->
 <script src="js/nav.js"></script>
