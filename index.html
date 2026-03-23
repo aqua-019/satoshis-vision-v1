@@ -84,6 +84,23 @@
     .pillar-title{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-h3);margin-bottom:8px}
     .pillar-desc{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-tertiary);line-height:1.65;margin-bottom:16px}
     .pillar-val{font-family:var(--font-data);font-size:var(--pillar-value-size);font-weight:600}
+    .pillar-canvas{width:100%;height:140px;border-radius:var(--radius-sm);margin-bottom:14px;overflow:hidden;position:relative}
+    .pillar-canvas canvas{width:100%;height:100%;display:block}
+
+    /* Featured viz banner */
+    .featured-viz{margin:0 var(--space-page-x);max-width:960px;border:1px solid var(--border-default);border-radius:var(--radius-xl);overflow:hidden;display:grid;grid-template-columns:1fr 1fr;background:var(--card-bg-solid);transition:border-color var(--duration-base)}
+    .featured-viz:hover{border-color:rgba(255,102,0,.12)}
+    .featured-viz-canvas{height:260px;position:relative}
+    .featured-viz-canvas canvas{width:100%;height:100%;display:block}
+    .featured-viz-content{padding:var(--space-content);display:flex;flex-direction:column;justify-content:center}
+    .featured-viz-kicker{font-family:var(--font-mono);font-size:var(--text-eyebrow);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+    .featured-viz-title{font-family:var(--font-headline);font-size:var(--text-h2);font-weight:600;letter-spacing:-.5px;margin-bottom:8px}
+    .featured-viz-desc{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-secondary);line-height:1.65;margin-bottom:16px}
+    @media(max-width:768px){
+        .featured-viz{grid-template-columns:1fr}
+        .featured-viz-canvas{height:200px}
+        .pillar-canvas{height:110px}
+    }
 
     .invest-surface{background:var(--surface-1);padding:var(--space-section) 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)}
     .invest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:960px}
@@ -189,30 +206,42 @@
             </div>
         </div>
 
-        <!-- ═══ THREE PILLARS ═══ -->
+        <!-- ═══ THREE PILLARS + FEATURED VIZ ═══ -->
         <div class="section-gap-lg"></div>
         <div class="sec" style="padding-bottom:0">
             <div class="sec-k">Key privacy</div>
             <div class="sec-t">Three pillars of private money</div>
-            <div class="sec-s">Ring signatures hide the sender. Stealth addresses hide the receiver. RingCT hides the amount.</div>
+            <div class="sec-s">Ring signatures hide the sender. Stealth addresses hide the receiver. RingCT hides the amount. <a href="privacy-architecture.html" style="color:var(--xmr)">View all 18 protocol visualizations →</a></div>
         </div>
+
+        <!-- Featured viz: Dandelion++ -->
+        <a class="featured-viz" href="privacy-architecture.html" style="margin-bottom:20px">
+            <div class="featured-viz-canvas"><canvas id="fv-dandelion"></canvas></div>
+            <div class="featured-viz-content">
+                <div class="featured-viz-kicker" style="color:var(--xmr)">01 — Network Privacy</div>
+                <div class="featured-viz-title">Dandelion++ Protocol</div>
+                <div class="featured-viz-desc">Transaction propagation begins in a linear "stem" phase before exploding into a "fluff" broadcast — preventing IP-level deanonymization across the network.</div>
+                <span class="path-link" style="color:var(--xmr)">Explore all 18 visualizations →</span>
+            </div>
+        </a>
+
         <div class="pillar-grid" id="pillar-grid">
             <a class="pillar" href="btc-xmr-education.html">
-                <div class="pillar-icon" style="color:var(--xmr)">◎</div>
+                <div class="pillar-canvas"><canvas id="pv-ring"></canvas></div>
                 <div class="pillar-kicker" style="color:var(--xmr)">Ring signatures</div>
                 <div class="pillar-title">Who sent it? Everyone and no one.</div>
                 <div class="pillar-desc">Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.</div>
                 <div class="pillar-val" style="color:var(--xmr)">16</div>
             </a>
             <a class="pillar" href="btc-xmr-education.html">
-                <div class="pillar-icon" style="color:var(--grn)">◈</div>
+                <div class="pillar-canvas"><canvas id="pv-stealth"></canvas></div>
                 <div class="pillar-kicker" style="color:var(--grn)">Stealth addresses</div>
                 <div class="pillar-title">One address, infinite destinations.</div>
                 <div class="pillar-desc">Unique one-time address per transaction. No one can link payments on-chain.</div>
                 <div class="pillar-val" style="color:var(--grn)">Strong</div>
             </a>
             <a class="pillar" href="btc-xmr-education.html">
-                <div class="pillar-icon" style="color:var(--cyan)">◆</div>
+                <div class="pillar-canvas"><canvas id="pv-pedersen"></canvas></div>
                 <div class="pillar-kicker" style="color:var(--cyan)">RingCT</div>
                 <div class="pillar-title">The amount is nobody's business.</div>
                 <div class="pillar-desc">Pedersen commitments prove validity without revealing amounts. Zero leakage.</div>
@@ -377,6 +406,108 @@ setInterval(function(){
    ═══════════════════════════════════════════════════════════ */
 function trackFromHome(){var h=document.getElementById('mp-tx-input').value.trim();if(h)window.location.href='mempool.html?tx='+h}
 document.getElementById('mp-tx-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackFromHome()});
+
+/* ═══════════════════════════════════════════════════════════
+   3D ENGINE — Shared utilities for mini-vizs
+   ═══════════════════════════════════════════════════════════ */
+var TAU=Math.PI*2,PI=Math.PI;
+function proj(x,y,z,cx,cy,f){f=f||600;var s=f/(f+z);return{x:cx+x*s,y:cy+y*s,s:s,z:z}}
+function rX(p,a){var c=Math.cos(a),s=Math.sin(a);return{x:p.x,y:p.y*c-p.z*s,z:p.y*s+p.z*c}}
+function rY(p,a){var c=Math.cos(a),s=Math.sin(a);return{x:p.x*c+p.z*s,y:p.y,z:-p.x*s+p.z*c}}
+function hx(hex,a){var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return'rgba('+r+','+g+','+b+','+a+')'}
+
+/* ═══════════════════════════════════════════════════════════
+   FEATURED + PILLAR MINI-VIZS
+   ═══════════════════════════════════════════════════════════ */
+var miniVizs=[];
+var prefersReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function initMiniViz(canvasId,drawFn){
+    var canvas=document.getElementById(canvasId);
+    if(!canvas)return;
+    var entry={canvas:canvas,draw:drawFn,mx:-9999,my:-9999,W:0,H:0,dpr:1,visible:false};
+    canvas.addEventListener('mousemove',function(e){var r=canvas.getBoundingClientRect();entry.mx=e.clientX-r.left;entry.my=e.clientY-r.top});
+    canvas.addEventListener('mouseleave',function(){entry.mx=-9999;entry.my=-9999});
+    miniVizs.push(entry);
+}
+
+// Dandelion++ (featured — stem phase into fluff explosion)
+initMiniViz('fv-dandelion',function(c,W,H,t,mx,my){
+    var cx=W/2,cy=H/2;
+    for(var i=0;i<40;i++){var fx=Math.sin(i*.8+t*.005)*W*.4+cx,fy=Math.cos(i*1.1+t*.004)*H*.35+cy,r=25+Math.sin(i*.5+t*.01)*12;var g=c.createRadialGradient(fx,fy,0,fx,fy,r);g.addColorStop(0,hx('#FF6600',.012));g.addColorStop(1,'transparent');c.fillStyle=g;c.beginPath();c.arc(fx,fy,r,0,TAU);c.fill()}
+    var stemN=8,stemPts=[];for(var i=0;i<stemN;i++){var a=t*.008+i*.4,r=i*18;var p={x:Math.cos(a)*r*.25,y:-100+i*24,z:Math.sin(a)*r*.4};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,(my-cy)*.001);stemPts.push(proj(p.x,p.y,p.z,cx,cy))}
+    for(var i=1;i<stemPts.length;i++){c.beginPath();c.moveTo(stemPts[i-1].x,stemPts[i-1].y);c.lineTo(stemPts[i].x,stemPts[i].y);c.strokeStyle=hx('#FF6600',.25*stemPts[i-1].s);c.lineWidth=1.5*stemPts[i-1].s;c.stroke()}
+    var origin=stemPts[stemN-1];
+    for(var i=0;i<70;i++){var angle=i/70*TAU+Math.sin(i*.3)*.6;var dist=30+((t*.6+i*5.3)%140);var fade=1-dist/160;if(fade<=0)continue;var p={x:Math.cos(angle)*dist,y:Math.sin(angle*.3)*dist*.3+20,z:Math.sin(angle)*dist};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y+origin.y-cy,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,(2.5)*pr.s*fade,0,TAU);c.fillStyle=hx('#FF6600',fade*.4);c.fill()}
+    stemPts.forEach(function(n,i){c.beginPath();c.arc(n.x,n.y,(i===0?6:3)*n.s,0,TAU);c.fillStyle=hx('#FF6600',i===0?.8:.4);c.fill()});
+});
+
+// CLSAG Ring (pillar: Ring Signatures)
+initMiniViz('pv-ring',function(c,W,H,t,mx,my){
+    var cx=W/2,cy=H/2,mem=16;
+    var signer=Math.floor(t/100)%mem;
+    for(var i=0;i<mem;i++){var angle=i/mem*TAU+t*.008,r=Math.min(W,H)*.35;
+        var p={x:Math.cos(angle)*r,y:Math.sin(angle)*r*.4,z:Math.sin(angle)*r*.6};
+        p=rY(p,t*.004+(mx-cx)*.002);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);
+        var isS=i===signer;c.beginPath();c.arc(pr.x,pr.y,(isS?6:3)*pr.s,0,TAU);c.fillStyle=hx('#FF6600',isS?.7:.2*pr.s);c.fill();
+        if(isS){for(var w=0;w<2;w++){c.beginPath();c.arc(pr.x,pr.y,(8+w*10+(t%40))*pr.s,0,TAU);c.strokeStyle=hx('#FF6600',.07-w*.025);c.lineWidth=.7;c.stroke()}}
+        var ni=(i+1)%mem,na=ni/mem*TAU+t*.008;var np={x:Math.cos(na)*r,y:Math.sin(na)*r*.4,z:Math.sin(na)*r*.6};np=rY(np,t*.004+(mx-cx)*.002);np=rX(np,(my-cy)*.001);var npr=proj(np.x,np.y,np.z,cx,cy);
+        c.beginPath();c.moveTo(pr.x,pr.y);c.lineTo(npr.x,npr.y);c.strokeStyle=hx('#FF6600',.06);c.lineWidth=.6;c.stroke()}
+    c.beginPath();c.arc(cx,cy,8,0,TAU);c.fillStyle=hx('#FF6600',.1);c.fill();
+    c.font='bold 7px DM Mono';c.fillStyle=hx('#FF6600',.3);c.textAlign='center';c.fillText('LINK',cx,cy+3);
+});
+
+// Dual-Key branching (pillar: Stealth Addresses)
+initMiniViz('pv-stealth',function(c,W,H,t,mx,my){
+    var cx=W/2,cy=H/2;
+    function branch(x,y,z,angle,depth,len,isView){if(depth>5||len<4)return;var ex=x+Math.cos(angle)*len,ey=y+Math.sin(angle)*len,ez=z+Math.sin(depth*.8+t*.015)*10;
+        var p1={x:x,y:y,z:z},p2={x:ex,y:ey,z:ez};p1=rY(p1,t*.004+(mx-cx)*.0015);p1=rX(p1,(my-cy)*.001);p2=rY(p2,t*.004+(mx-cx)*.0015);p2=rX(p2,(my-cy)*.001);
+        var pr1=proj(p1.x,p1.y,p1.z,cx,cy),pr2=proj(p2.x,p2.y,p2.z,cx,cy);var col=isView?'#00CC88':'#FF6600';
+        c.beginPath();c.moveTo(pr1.x,pr1.y);c.lineTo(pr2.x,pr2.y);c.strokeStyle=hx(col,(.25-depth*.04)*pr1.s);c.lineWidth=(1.5-depth*.2)*pr1.s;c.stroke();
+        if(depth>=4){c.beginPath();c.arc(pr2.x,pr2.y,2.5*pr2.s,0,TAU);c.fillStyle=hx(col,.35*pr2.s);c.fill()}
+        var sp=.45+Math.sin(t*.008+depth)*.08;branch(ex,ey,ez,angle-sp,depth+1,len*.62,isView);branch(ex,ey,ez,angle+sp*.7,depth+1,len*.58,isView)}
+    branch(0,-55,0,-PI/2-.35,0,38,true);branch(0,-55,0,-PI/2+.35,0,38,false);
+    var sP={x:0,y:-55,z:0};sP=rY(sP,t*.004+(mx-cx)*.0015);sP=rX(sP,(my-cy)*.001);var sPr=proj(sP.x,sP.y,sP.z,cx,cy);
+    c.beginPath();c.arc(sPr.x,sPr.y,5,0,TAU);c.fillStyle=hx('#FFFFFF',.35);c.fill();
+    c.font='bold 7px DM Mono';c.fillStyle=hx('#00CC88',.35);c.textAlign='right';c.fillText('VIEW',cx-40,cy+55);
+    c.fillStyle=hx('#FF6600',.35);c.textAlign='left';c.fillText('SPEND',cx+40,cy+55);
+});
+
+// Pedersen Commitments (pillar: RingCT)
+initMiniViz('pv-pedersen',function(c,W,H,t,mx,my){
+    var cx=W/2,cy=H/2;
+    for(var i=-140;i<=140;i+=4){var y2=i*i*i-3*i+5;if(y2<0)continue;var y=Math.sqrt(y2)*.5;
+        [y,-y].forEach(function(yv){var p={x:i*.8,y:yv,z:Math.sin(i*.03+t*.01)*18};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,1*pr.s,0,TAU);c.fillStyle=hx('#00CED1',.06*pr.s);c.fill()})}
+    var gA=t*.012,hA=t*.012+2.8;
+    [{a:gA,r:50,l:'G',col:'#4488FF'},{a:hA,r:35,l:'H',col:'#00CC88'}].forEach(function(pt){
+        for(var tr=0;tr<8;tr++){var ta=pt.a-tr*.08;var p={x:Math.cos(ta)*pt.r,y:Math.sin(ta)*pt.r*.5,z:Math.sin(ta)*25};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,(1.5-tr*.12)*pr.s,0,TAU);c.fillStyle=hx(pt.col,(.2-tr*.02)*pr.s);c.fill()}
+        var p={x:Math.cos(pt.a)*pt.r,y:Math.sin(pt.a)*pt.r*.5,z:Math.sin(pt.a)*25};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);
+        c.beginPath();c.arc(pr.x,pr.y,5*pr.s,0,TAU);c.fillStyle=hx(pt.col,.55);c.fill();
+        c.font='bold 9px Playfair Display';c.fillStyle=hx(pt.col,.6);c.textAlign='center';c.fillText(pt.l,pr.x,pr.y-12*pr.s)});
+    c.font='9px DM Mono';c.fillStyle=hx('#00CED1',.2);c.textAlign='center';c.fillText('C = aG + bH',cx,cy+60);
+});
+
+// Resize + animation loop for mini-vizs
+function resizeMinis(){var dpr=Math.min(devicePixelRatio||1,2);miniVizs.forEach(function(v){var W=v.canvas.clientWidth,H=v.canvas.clientHeight;if(W>0&&H>0){v.canvas.width=W*dpr;v.canvas.height=H*dpr;v.W=W;v.H=H;v.dpr=dpr}})}
+resizeMinis();addEventListener('resize',resizeMinis);
+
+var miniObs=new IntersectionObserver(function(entries){entries.forEach(function(e){
+    miniVizs.forEach(function(v){if(v.canvas===e.target||v.canvas.closest('.featured-viz')===e.target||v.canvas.closest('.pillar')===e.target)v.visible=e.isIntersecting});
+})},{threshold:.05,rootMargin:'200px'});
+document.querySelectorAll('.featured-viz, .pillar').forEach(function(el){miniObs.observe(el)});
+
+var mT=0;
+function miniLoop(){
+    if(!prefersReducedMotion){
+        miniVizs.forEach(function(v){if(!v.W||!v.visible)return;var ctx=v.canvas.getContext('2d');ctx.setTransform(v.dpr,0,0,v.dpr,0,0);ctx.clearRect(0,0,v.W,v.H);v.draw(ctx,v.W,v.H,mT,v.mx<-999?v.W/2:v.mx,v.my<-999?v.H/2:v.my)});
+        mT++;
+    } else if(mT===0){
+        miniVizs.forEach(function(v){if(!v.W)return;var ctx=v.canvas.getContext('2d');ctx.setTransform(v.dpr,0,0,v.dpr,0,0);ctx.clearRect(0,0,v.W,v.H);v.draw(ctx,v.W,v.H,0,v.W/2,v.H/2)});
+        mT=1;
+    }
+    requestAnimationFrame(miniLoop);
+}
+miniLoop();
 </script>
 </body>
 </html>
