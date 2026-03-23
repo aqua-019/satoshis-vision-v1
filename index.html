@@ -3,49 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
     <title>xmr.irish — The Case for Monero</title>
     <meta name="description" content="The only cryptocurrency where every transaction is private by default. Education, mining, network stats, and the investment thesis for Monero (XMR).">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d09.css">
+    <link rel="stylesheet" href="css/d10.css">
     <style>
-        .hero{padding:44px 28px 28px;display:grid;grid-template-columns:1fr 320px;gap:28px;align-items:center;min-height:360px}
-        .hero-kicker{font-family:var(--font-mono);font-size:9px;letter-spacing:4px;color:var(--g5);text-transform:uppercase;margin-bottom:8px}
-        .hero-title{font-family:var(--font-headline);font-size:44px;font-weight:400;letter-spacing:-1.5px;line-height:1.08;margin-bottom:10px}
-        .hero-title span{color:var(--xmr)}
-        .hero-sub{font-family:var(--font-subhead);font-style:italic;font-size:16px;color:var(--g4);line-height:1.5;margin-bottom:18px;max-width:460px}
-        .cta-row{display:flex;gap:7px;flex-wrap:wrap}
+    /* ═══════════════════════════════════════════════════════════
+       HOME PAGE — v4.0 Overrides on d10
+       ═══════════════════════════════════════════════════════════ */
 
-        .stem-1{top:50%;left:50%;height:130px;transform:rotate(30deg);background:linear-gradient(rgba(255,102,0,.5),transparent)}
-        .stem-2{top:50%;left:50%;height:110px;transform:rotate(90deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
-        .stem-3{top:50%;left:50%;height:140px;transform:rotate(150deg);background:linear-gradient(rgba(255,102,0,.45),transparent)}
-        .stem-4{top:50%;left:50%;height:95px;transform:rotate(210deg);background:linear-gradient(rgba(255,102,0,.35),transparent)}
-        .stem-5{top:50%;left:50%;height:115px;transform:rotate(270deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
-        .stem-6{top:50%;left:50%;height:108px;transform:rotate(330deg);background:linear-gradient(rgba(255,102,0,.38),transparent)}
-        .ring-1 .rn-1{top:-4px;left:50%}.ring-1 .rn-2{bottom:20%;left:-4px;width:5px;height:5px;box-shadow:0 0 5px rgba(255,102,0,.4);position:absolute;border-radius:50%;background:var(--xmr)}
-        .ring-2 .rn-1{bottom:-4px;right:20%}.ring-2 .rn-2{top:15%;right:-3px;width:4px;height:4px;box-shadow:0 0 4px rgba(255,102,0,.3);position:absolute;border-radius:50%;background:var(--xmr)}
-        .ring-3 .rn-1{top:50%;right:-4px}
-        @media(max-width:768px){.hero{grid-template-columns:1fr;padding:24px 16px;min-height:auto}.ring-container{width:220px;height:220px;margin:0 auto 20px}.hero-title{font-size:32px}.metrics{grid-template-columns:repeat(3,1fr)!important}}
+    .hero{padding:80px var(--space-page-x) 0;display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:center;min-height:380px}
+    .hero-kicker{font-family:var(--font-mono);font-size:var(--text-eyebrow);letter-spacing:4px;color:var(--text-tertiary);text-transform:uppercase;margin-bottom:12px}
+    .hero-title{font-family:var(--font-headline);font-size:var(--text-hero);font-weight:600;letter-spacing:-1.5px;line-height:1.08;margin-bottom:14px}
+    .hero-title span{color:var(--xmr)}
+    .hero-sub{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-body);color:var(--text-secondary);line-height:1.7;margin-bottom:24px;max-width:500px}
+    .cta-row{display:flex;gap:10px;flex-wrap:wrap}
+
+    .stem-1{top:50%;left:50%;height:130px;transform:rotate(30deg);background:linear-gradient(rgba(255,102,0,.5),transparent)}
+    .stem-2{top:50%;left:50%;height:110px;transform:rotate(90deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
+    .stem-3{top:50%;left:50%;height:140px;transform:rotate(150deg);background:linear-gradient(rgba(255,102,0,.45),transparent)}
+    .stem-4{top:50%;left:50%;height:95px;transform:rotate(210deg);background:linear-gradient(rgba(255,102,0,.35),transparent)}
+    .stem-5{top:50%;left:50%;height:115px;transform:rotate(270deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
+    .stem-6{top:50%;left:50%;height:108px;transform:rotate(330deg);background:linear-gradient(rgba(255,102,0,.38),transparent)}
+    .ring-1 .rn-1{top:-4px;left:50%}
+    .ring-1 .rn-2{bottom:20%;left:-4px;width:5px;height:5px;box-shadow:0 0 5px rgba(255,102,0,.4);position:absolute;border-radius:50%;background:var(--xmr)}
+    .ring-2 .rn-1{bottom:-4px;right:20%}
+    .ring-2 .rn-2{top:15%;right:-3px;width:4px;height:4px;box-shadow:0 0 4px rgba(255,102,0,.3);position:absolute;border-radius:50%;background:var(--xmr)}
+    .ring-3 .rn-1{top:50%;right:-4px}
+
+    .stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:920px}
+    .stat-cell{text-align:center;padding:20px 12px}
+    .stat-val{font-family:var(--font-data);font-size:var(--stat-value-size);font-weight:600;color:var(--xmr-text);margin-bottom:4px;transition:opacity var(--duration-slow) var(--ease-smooth)}
+    .stat-label{font-family:var(--font-mono);font-size:var(--stat-label-size);color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;transition:opacity var(--duration-slow) var(--ease-smooth)}
+    .stat-cell.fading .stat-val,.stat-cell.fading .stat-label{opacity:0}
+    .stat-dots{display:flex;justify-content:center;gap:6px;padding:12px 0 0}
+    .stat-dot{width:4px;height:4px;border-radius:50%;background:var(--g8);transition:background var(--duration-base)}
+    .stat-dot.active{background:var(--xmr)}
+
+    .mempool-hero{background:var(--card-bg-solid);border:1px solid var(--border-default);border-radius:var(--radius-xl);padding:36px 32px;margin:0 var(--space-page-x);max-width:960px;position:relative;overflow:hidden;transition:border-color var(--duration-base)}
+    .mempool-hero:hover{border-color:rgba(0,211,149,.15)}
+    .mempool-particles{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+    .mp-dot{position:absolute;border-radius:50%;background:var(--grn);animation:mp-float 8s ease-in-out infinite}
+    @keyframes mp-float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+    .mempool-content{position:relative;z-index:1}
+    .mempool-title{font-family:var(--font-headline);font-size:var(--text-h1);font-weight:600;letter-spacing:-.5px;margin-bottom:8px}
+    .mempool-title em{color:var(--grn);font-style:normal}
+    .mempool-sub{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-secondary);line-height:1.7;max-width:520px;margin-bottom:24px}
+    .mempool-stats{display:flex;gap:36px;margin-bottom:24px}
+    .mempool-stat-val{font-family:var(--font-data);font-size:22px;font-weight:600;color:var(--grn)}
+    .mempool-stat-label{font-family:var(--font-mono);font-size:var(--text-eyebrow);color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;margin-top:2px}
+    .mempool-track-row{display:flex;gap:8px;align-items:center;margin-top:20px;padding-top:20px;border-top:1px solid var(--border-subtle)}
+    .mempool-track-row input[type="text"]{flex:1;max-width:360px}
+
+    .pillar-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:960px}
+    .pillar{background:var(--card-bg-solid);border:1px solid var(--border-default);border-radius:var(--radius-lg);padding:var(--space-content);transition:border-color var(--duration-base);display:block;color:inherit}
+    .pillar:hover{border-color:rgba(255,102,0,.12)}
+    .pillar-icon{width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid rgba(255,102,0,.08);display:flex;align-items:center;justify-content:center;font-size:16px;margin-bottom:14px}
+    .pillar-kicker{font-family:var(--font-mono);font-size:var(--text-eyebrow);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+    .pillar-title{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-h3);margin-bottom:8px}
+    .pillar-desc{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-tertiary);line-height:1.65;margin-bottom:16px}
+    .pillar-val{font-family:var(--font-data);font-size:var(--pillar-value-size);font-weight:600}
+
+    .invest-surface{background:var(--surface-1);padding:var(--space-section) 0;border-top:1px solid var(--border-subtle);border-bottom:1px solid var(--border-subtle)}
+    .invest-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:960px}
+    .invest-card{padding:20px 0;display:block;color:inherit}
+    .invest-kicker{font-family:var(--font-mono);font-size:var(--text-eyebrow);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}
+    .invest-title{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-h3);margin-bottom:8px}
+    .invest-desc{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-tertiary);line-height:1.65;margin-bottom:14px}
+    .invest-val{font-family:var(--font-data);font-size:var(--stat-value-size);font-weight:600}
+
+    .path-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:960px}
+    .path-card{border:1px solid var(--border-default);border-radius:var(--radius-lg);padding:var(--space-content);display:block;color:inherit;transition:border-color var(--duration-base)}
+    .path-card:hover{border-color:rgba(255,102,0,.12)}
+    .path-kicker{font-family:var(--font-mono);font-size:var(--text-eyebrow);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px}
+    .path-title{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-h3);margin-bottom:8px}
+    .path-desc{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-tertiary);line-height:1.65;margin-bottom:16px}
+    .path-link{font-family:var(--font-mono);font-size:var(--text-mono)}
+
+    .quote-section{text-align:center;padding:var(--space-section) var(--space-page-x);border-top:1px solid var(--border-subtle)}
+
+    @media(max-width:768px){
+        .hero{grid-template-columns:1fr;padding:60px 16px 0;min-height:auto}
+        .ring-container{width:220px;height:220px;margin:0 auto 20px}
+        .stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+        .pillar-grid,.invest-grid,.path-grid{grid-template-columns:1fr}
+        .mempool-hero{margin:0 16px;padding:24px 20px}
+        .mempool-stats{flex-wrap:wrap;gap:20px}
+        .mempool-track-row{flex-direction:column;align-items:stretch}
+        .mempool-track-row input[type="text"]{max-width:100%}
+    }
     </style>
 </head>
 <body>
 <div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
     <canvas id="constellation" class="constellation"></canvas>
-    <div class="blob blob-1"></div><div class="blob blob-2"></div><div class="blob blob-3"></div><div class="blob blob-4"></div><div class="blob blob-5"></div>
+    <div class="blob blob-1"></div><div class="blob blob-3"></div><div class="blob blob-5"></div>
     <div class="z1">
         <div id="nav-mount"></div>
-        <div class="hero" data-genui-section="hero">
+
+        <!-- ═══ HERO ═══ -->
+        <section class="hero">
             <div>
                 <div class="hero-kicker">Privacy is not a feature. It is a right.</div>
                 <h1 class="hero-title">The case for <span>Monero</span></h1>
-                <p class="hero-sub" id="hero-sub">The only cryptocurrency where every transaction is private by default. No transparent chain. No tainted coins. No surveillance.</p>
+                <p class="hero-sub">Ring-16, Dandelion++, tail emission at 0.6 XMR/block. FCMP++ incoming with 100M+ anonymity set. Hashrate at ATH. The network has never been stronger.</p>
                 <div class="cta-row">
-                    <a class="cta cta-primary" id="cta-primary" href="hold-monero.html">Why hold XMR</a>
-                    <a class="cta cta-secondary" id="cta-secondary" href="bottom-line.html">The bottom line thesis</a>
-                    <a class="cta cta-secondary" id="cta-tertiary" href="mining.html">Mine on this device</a>
+                    <a class="cta cta-primary" href="hold-monero.html">Why hold XMR</a>
+                    <a class="cta cta-secondary" href="bottom-line.html">The bottom line thesis</a>
+                    <a class="cta cta-secondary" href="mining.html">Mine on this device</a>
                 </div>
-
             </div>
             <div class="ring-container">
                 <div class="ring-glow"></div>
@@ -60,58 +129,149 @@
                     <div class="rc-change" id="rc-change"></div>
                 </div>
             </div>
+        </section>
+
+        <!-- ═══ STATS — Rotating 4 of 12 ═══ -->
+        <div class="section-gap"></div>
+        <div class="stat-row" id="stat-row">
+            <div class="stat-cell"><div class="stat-val" id="sv-0">—</div><div class="stat-label" id="sl-0">—</div></div>
+            <div class="stat-cell"><div class="stat-val" id="sv-1">—</div><div class="stat-label" id="sl-1">—</div></div>
+            <div class="stat-cell"><div class="stat-val" id="sv-2">—</div><div class="stat-label" id="sl-2">—</div></div>
+            <div class="stat-cell"><div class="stat-val" id="sv-3">—</div><div class="stat-label" id="sl-3">—</div></div>
         </div>
-        <div class="grid-6 metrics" style="padding:0 28px 20px;">
-            <a class="mc" href="https://monero.com/network" target="_blank" data-metric-id="hashrate"><div class="mc-v" id="met-hashrate">—</div><div class="mc-l">Network hashrate</div><div class="mc-s" id="met-hashrate-raw">—</div><div class="mc-c up">ATH region</div></a>
-            <a class="mc" href="https://moneroj.net/supply/" target="_blank" data-metric-id="supply"><div class="mc-v">18.45M XMR</div><div class="mc-l">Circulating supply</div><div class="mc-s">+432 XMR/day (tail)</div><div class="mc-c up">0.85% annual inflation</div></a>
-            <a class="mc" href="https://localmonero.co/blocks" target="_blank" data-metric-id="reward"><div class="mc-v">0.614 XMR</div><div class="mc-l">Block reward</div><div class="mc-s" id="met-reward-usd">—</div><div class="mc-c up">Fixed forever (tail)</div></a>
-            <a class="mc" href="https://www.getmonero.org/resources/moneropedia/ring-size.html" target="_blank" data-metric-id="ring"><div class="mc-v">Ring 16</div><div class="mc-l">Decoy set</div><div class="mc-s">15 decoys + 1 real</div><div class="mc-c up">FCMP++ → 100M+</div></a>
-            <a class="mc" href="https://localmonero.co/blocks" target="_blank" data-metric-id="txns"><div class="mc-v">58.97M</div><div class="mc-l">Total transactions</div><div class="mc-s">All fully private</div><div class="mc-c up">~20K daily avg</div></a>
-            <a class="mc" href="https://monero.com/network" target="_blank" data-metric-id="difficulty"><div class="mc-v" id="met-difficulty">—</div><div class="mc-l">Difficulty</div><div class="mc-s">Adjusts every block</div><div class="mc-c up">Near all-time-high</div></a>
-        </div>
-        <div class="sec sec-border" data-genui-section="pillars">
-            <div class="sec-k">Why Monero</div><div class="sec-t">Three pillars of private money</div><div class="sec-s">Ring signatures hide the sender. Stealth addresses hide the receiver. RingCT hides the amount.</div>
-            <div class="grid-3">
-                <a class="bub" href="https://www.getmonero.org/resources/moneropedia/ringsignatures.html" target="_blank"><div class="bi"><div class="dot"></div>Ring signatures</div><div class="bh">Who sent it? Everyone and no one.</div><div class="bp">Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.</div><div class="bs"><span class="bsv">16</span><span class="bsl">Ring size</span></div></a>
-                <a class="bub" href="https://www.getmonero.org/resources/moneropedia/stealthaddress.html" target="_blank"><div class="bi"><div class="dot"></div>Stealth addresses</div><div class="bh">One address, infinite destinations.</div><div class="bp">Unique one-time address per transaction. No one can link payments on-chain.</div><div class="bs"><span class="bsv" style="color:var(--grn)">Strong</span><span class="bsl">Assurance</span></div></a>
-                <a class="bub" href="https://www.getmonero.org/resources/moneropedia/ringCT.html" target="_blank"><div class="bi"><div class="dot"></div>RingCT</div><div class="bh">The amount is nobody's business.</div><div class="bp">Pedersen commitments prove validity without revealing amounts. Zero leakage.</div><div class="bs"><span class="bsv" style="color:var(--grn)">Hidden</span><span class="bsl">All amounts</span></div></a>
+        <div class="stat-dots" id="stat-dots"></div>
+
+        <!-- ═══ MEMPOOL PREVIEW ═══ -->
+        <div class="section-gap-lg"></div>
+        <div class="mempool-hero">
+            <div class="mempool-particles">
+                <div class="mp-dot" style="width:8px;height:8px;top:25%;left:8%;opacity:0.5;animation-delay:0s"></div>
+                <div class="mp-dot" style="width:12px;height:12px;top:40%;left:22%;opacity:0.7;animation-delay:1.2s"></div>
+                <div class="mp-dot" style="width:6px;height:6px;top:20%;left:45%;opacity:0.35;animation-delay:2.5s"></div>
+                <div class="mp-dot" style="width:14px;height:14px;top:30%;left:60%;opacity:0.6;animation-delay:0.8s"></div>
+                <div class="mp-dot" style="width:5px;height:5px;top:55%;left:75%;opacity:0.3;animation-delay:3.1s"></div>
+                <div class="mp-dot" style="width:10px;height:10px;top:45%;left:88%;opacity:0.45;animation-delay:1.8s"></div>
+                <div class="mp-dot" style="width:7px;height:7px;top:65%;left:35%;opacity:0.4;animation-delay:4s"></div>
+                <div class="mp-dot" style="width:9px;height:9px;top:15%;left:92%;opacity:0.35;animation-delay:2s"></div>
+            </div>
+            <div class="mempool-content">
+                <div class="sec-k" style="color:var(--grn);margin-bottom:8px">Live · Network</div>
+                <h2 class="mempool-title">Explore the <em>Mempool</em></h2>
+                <p class="mempool-sub">Real-time visualization of Monero's transaction pool. Every particle is a real unconfirmed transaction. You can see its size and fee. You cannot see who sent it, who receives it, or how much it carries. That's by design.</p>
+                <div class="mempool-stats">
+                    <div><div class="mempool-stat-val" id="mp-unconfirmed">—</div><div class="mempool-stat-label">Unconfirmed</div></div>
+                    <div><div class="mempool-stat-val">~2 min</div><div class="mempool-stat-label">Next block</div></div>
+                    <div><div class="mempool-stat-val">0.614 XMR</div><div class="mempool-stat-label">Block reward</div></div>
+                </div>
+                <a class="cta cta-green" href="mempool.html">Enter the mempool →</a>
+                <div class="mempool-track-row">
+                    <input type="text" id="mp-tx-input" placeholder="Paste transaction hash to track...">
+                    <button class="btn-track" onclick="trackFromHome()">Track</button>
+                </div>
             </div>
         </div>
-        <div class="sec sec-border" data-genui-section="network">
-            <div class="sec-k">Network</div><div class="sec-t">Live from the Monero blockchain</div><div class="sec-s">Tail emission secures the network forever.</div>
-            <div class="grid-4">
-                <a class="orb" href="markets.html"><div class="ov" id="orb-price">—</div><div class="oc">XMR/USD live</div><div class="ob"><div class="ob-f" style="width:68%;background:var(--xmr)"></div></div><div class="ol">vs ATH</div></a>
-                <a class="orb" href="network.html"><div class="ov" id="orb-diff">—</div><div class="oc">Difficulty</div><div class="ob"><div class="ob-f" style="width:92%;background:var(--grn)"></div></div><div class="ol">Near ATH</div></a>
-                <a class="orb" href="https://www.getmonero.org/resources/moneropedia/tail-emission.html" target="_blank"><div class="ov">0.614</div><div class="oc">Block reward</div><div class="ob"><div class="ob-f" style="width:100%;background:var(--gold)"></div></div><div class="ol">Fixed forever</div></a>
-                <a class="orb" href="legal.html"><div class="ov">&lt;0.4%</div><div class="oc">Illicit use</div><div class="ob"><div class="ob-f" style="width:4%;background:var(--blue)"></div></div><div class="ol">Lower than cash</div></a>
-            </div>
-            <a class="mempool-shortcut" href="mempool.html"><div class="ms-orb"><span id="ms-block">—</span></div><div><div class="ms-title">Monero mempool explorer</div><div class="ms-desc"><span id="ms-pool-size">—</span> unconfirmed — live block stream, 10-block tracker</div></div><div style="display:flex;gap:5px;align-items:center;" onclick="event.preventDefault();event.stopPropagation();"><input type="text" id="ms-tx-input" placeholder="Paste txn hash..." onclick="event.stopPropagation();"><button class="btn-track" onclick="trackFromHome();">Track</button></div></a>
+
+        <!-- ═══ THREE PILLARS ═══ -->
+        <div class="section-gap-lg"></div>
+        <div class="sec" style="padding-bottom:0">
+            <div class="sec-k">Key privacy</div>
+            <div class="sec-t">Three pillars of private money</div>
+            <div class="sec-s">Ring signatures hide the sender. Stealth addresses hide the receiver. RingCT hides the amount.</div>
         </div>
-        <div class="sec sec-border" data-genui-section="thesis">
-            <div class="sec-k">Thesis</div><div class="sec-t">The investment case</div><div class="sec-s">Privacy demand is structural, not speculative.</div>
-            <div class="grid-3">
-                <a class="bub hero-bub" href="bottom-line.html"><div class="bi"><div class="dot"></div>Supply shock</div><div class="bh">73 exchanges delisted. Supply tightened.</div><div class="bp">Demand moved P2P. Less supply + persistent demand = structural price support.</div><div class="bs"><span class="bsv">73</span><span class="bsl">Delistings</span></div></a>
-                <a class="bub hero-bub" href="bottom-line.html"><div class="bi"><div class="dot"></div>IRS bounty</div><div class="bh">$625K bounty. Still unclaimed.</div><div class="bp">Most expensive public audit in crypto — Monero passed. No one collected since 2020.</div><div class="bs"><span class="bsv" style="color:var(--grn)">Unclaimed</span><span class="bsl">Since 2020</span></div></a>
-                <a class="bub hero-bub" href="future-outlook.html"><div class="bi"><div class="dot"></div>FCMP++</div><div class="bh">100M+ anonymity set. Coming.</div><div class="bp">Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.</div><div class="bs"><span class="bsv">100M+</span><span class="bsl">Future set</span></div></a>
+        <div class="pillar-grid" id="pillar-grid">
+            <a class="pillar" href="btc-xmr-education.html">
+                <div class="pillar-icon" style="color:var(--xmr)">◎</div>
+                <div class="pillar-kicker" style="color:var(--xmr)">Ring signatures</div>
+                <div class="pillar-title">Who sent it? Everyone and no one.</div>
+                <div class="pillar-desc">Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.</div>
+                <div class="pillar-val" style="color:var(--xmr)">16</div>
+            </a>
+            <a class="pillar" href="btc-xmr-education.html">
+                <div class="pillar-icon" style="color:var(--grn)">◈</div>
+                <div class="pillar-kicker" style="color:var(--grn)">Stealth addresses</div>
+                <div class="pillar-title">One address, infinite destinations.</div>
+                <div class="pillar-desc">Unique one-time address per transaction. No one can link payments on-chain.</div>
+                <div class="pillar-val" style="color:var(--grn)">Strong</div>
+            </a>
+            <a class="pillar" href="btc-xmr-education.html">
+                <div class="pillar-icon" style="color:var(--cyan)">◆</div>
+                <div class="pillar-kicker" style="color:var(--cyan)">RingCT</div>
+                <div class="pillar-title">The amount is nobody's business.</div>
+                <div class="pillar-desc">Pedersen commitments prove validity without revealing amounts. Zero leakage.</div>
+                <div class="pillar-val" style="color:var(--cyan)">Hidden</div>
+            </a>
+        </div>
+
+        <!-- ═══ INVESTMENT CASE ═══ -->
+        <div class="section-gap-lg"></div>
+        <div class="invest-surface">
+            <div class="sec" style="padding-bottom:0;padding-top:0">
+                <div class="sec-k">Thesis</div>
+                <div class="sec-t">The investment case</div>
+                <div class="sec-s">Privacy demand is structural, not speculative.</div>
+            </div>
+            <div class="invest-grid" id="invest-grid">
+                <a class="invest-card" href="bottom-line.html">
+                    <div class="invest-kicker" style="color:var(--xmr)">Supply shock</div>
+                    <div class="invest-title">73 exchanges delisted. Supply tightened.</div>
+                    <div class="invest-desc">Demand moved P2P. Less supply + persistent demand = structural price support.</div>
+                    <div class="invest-val" style="color:var(--xmr)">73</div>
+                </a>
+                <a class="invest-card" href="bottom-line.html">
+                    <div class="invest-kicker" style="color:var(--grn)">IRS bounty</div>
+                    <div class="invest-title">$625K bounty. Still unclaimed.</div>
+                    <div class="invest-desc">Most expensive public audit in crypto — Monero passed. No one collected since 2020.</div>
+                    <div class="invest-val" style="color:var(--grn)">Unclaimed</div>
+                </a>
+                <a class="invest-card" href="future-outlook.html">
+                    <div class="invest-kicker" style="color:var(--cyan)">FCMP++</div>
+                    <div class="invest-title">100M+ anonymity set. Coming.</div>
+                    <div class="invest-desc">Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.</div>
+                    <div class="invest-val" style="color:var(--cyan)">100M+</div>
+                </a>
             </div>
         </div>
-        <div class="sec sec-border" data-genui-section="paths">
-            <div class="sec-k">Start</div><div class="sec-t">Three paths into Monero</div><div class="sec-s">Hold, mine, or learn.</div>
-            <div class="grid-3">
-                <a class="bub" href="hold-monero.html"><div class="bi"><div class="dot"></div>Hold XMR</div><div class="bh">Get Monero in 2 minutes</div><div class="bp">Wagyu.xyz, ChangeNOW, Haveno DEX, atomic swaps. Complete self-custody guide.</div><div class="bs"><span class="bsv" style="font-size:12px">Explore guide →</span></div></a>
-                <a class="bub" href="mining.html"><div class="bi"><div class="dot"></div>Mine XMR</div><div class="bh">Mine on this device</div><div class="bp">RandomX CPU-optimized. XMRig setup in 5 minutes. Pool comparison + electricity calc.</div><div class="bs"><span class="bsv" style="font-size:12px">Start mining →</span></div></a>
-                <a class="bub" href="btc-xmr-education.html"><div class="bi"><div class="dot"></div>BTC vs XMR</div><div class="bh">The education deep dive</div><div class="bp">Transparent vs private. Architectural differences. Why privacy is not optional.</div><div class="bs"><span class="bsv" style="font-size:12px">Read comparison →</span></div></a>
-            </div>
+
+        <!-- ═══ THREE PATHS ═══ -->
+        <div class="section-gap"></div>
+        <div class="sec" style="padding-bottom:0">
+            <div class="sec-k">Get started</div>
+            <div class="sec-t">Three paths into Monero</div>
+            <div class="sec-s">Hold, mine, or learn.</div>
         </div>
-        <div class="sec sec-border" style="text-align:center;padding:32px 28px;">
+        <div class="path-grid">
+            <a class="path-card" href="hold-monero.html">
+                <div class="path-kicker" style="color:var(--xmr)">Trade · Instant</div>
+                <div class="path-title">Get Monero in 2 minutes</div>
+                <div class="path-desc">Wagyu.xyz, ChangeNOW, Haveno DEX, atomic swaps. Complete self-custody guide.</div>
+                <span class="path-link" style="color:var(--xmr)">Explore exchanges →</span>
+            </a>
+            <a class="path-card" href="mining.html">
+                <div class="path-kicker" style="color:var(--grn)">Mine · Earn</div>
+                <div class="path-title">Mine on this device</div>
+                <div class="path-desc">RandomX CPU-optimized. XMRig setup in 5 minutes. Pool comparison + electricity costs.</div>
+                <span class="path-link" style="color:var(--grn)">Start mining →</span>
+            </a>
+            <a class="path-card" href="btc-xmr-education.html">
+                <div class="path-kicker" style="color:var(--blue)">Learn · Understand</div>
+                <div class="path-title">The education deep dive</div>
+                <div class="path-desc">Transparent vs private. Architectural differences. Why privacy is not optional.</div>
+                <span class="path-link" style="color:var(--blue)">Read comparison →</span>
+            </a>
+        </div>
+
+        <!-- ═══ QUOTE ═══ -->
+        <div class="quote-section">
             <div class="quote-mark">"</div>
             <div class="quote-text" id="quote-text">Privacy is not about having something to hide. Privacy is about having something to protect.</div>
             <div class="quote-attr" id="quote-attr">— Edward Snowden</div>
         </div>
+
+        <!-- ═══ FOOTER ═══ -->
         <div class="footer">
-            <span>xmr.irish / C.3.3 / SJB83</span>
-            <div><a href="btc-xmr-education.html">Education</a><a href="markets.html">Dashboard</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a><a href="https://x.com/aquaticXCP" target="_blank">@AquaticXCP</a></div>
-            <span>monero.com/network</span>
+            <span>xmr.irish</span>
+            <div><a href="btc-xmr-education.html">Education</a><a href="mempool.html">Mempool</a><a href="markets.html">Dashboard</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
+            <span>Privacy is not optional — it is a fundamental right</span>
         </div>
     </div>
 </div>
@@ -123,22 +283,82 @@
 NavComponent.inject('nav-mount');
 PriceService.start();
 MoneroNetwork.start();
-MoneroNetwork.subscribe(function(d){
-    if(d.hashrate){document.getElementById('met-hashrate').textContent=MoneroNetwork.fmtHashrate(d.hashrate);document.getElementById('met-hashrate-raw').textContent=d.hashrate.toLocaleString()+' H/s';}
-    if(d.difficulty){document.getElementById('met-difficulty').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);document.getElementById('orb-diff').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);}
-    if(d.txPoolSize){document.getElementById('ms-pool-size').textContent=d.txPoolSize;}
-});
+
+/* ═══════════════════════════════════════════════════════════
+   STAT ROW — Rotating 4-of-12 every 15 seconds
+   ═══════════════════════════════════════════════════════════ */
+var STATS=[
+    {val:'—',label:'XMR / USD',id:'price'},
+    {val:'—',label:'Network hashrate',id:'hashrate'},
+    {val:'0.614 XMR',label:'Block reward',id:'reward'},
+    {val:'Ring 16',label:'Privacy level',id:'ring'},
+    {val:'—',label:'Difficulty',id:'difficulty'},
+    {val:'18.45M+',label:'Circulating supply',id:'supply'},
+    {val:'~20K/day',label:'Daily transactions',id:'txns'},
+    {val:'—',label:'Mempool size',id:'mempool'},
+    {val:'0.85%',label:'Annual inflation',id:'inflation'},
+    {val:'~2 min',label:'Block time',id:'blocktime'},
+    {val:'100M+',label:'FCMP++ anonymity set',id:'fcmp'},
+    {val:'73',label:'Exchange delistings',id:'delistings'}
+];
+var statPage=0,totalStatPages=Math.ceil(STATS.length/4);
+var dotsEl=document.getElementById('stat-dots');
+for(var d=0;d<totalStatPages;d++){var dot=document.createElement('div');dot.className='stat-dot'+(d===0?' active':'');dotsEl.appendChild(dot)}
+
+function renderStats(page){
+    var cells=document.querySelectorAll('.stat-cell');
+    cells.forEach(function(c){c.classList.add('fading')});
+    setTimeout(function(){
+        var start=page*4;
+        for(var i=0;i<4;i++){var s=STATS[(start+i)%STATS.length];document.getElementById('sv-'+i).textContent=s.val;document.getElementById('sl-'+i).textContent=s.label}
+        cells.forEach(function(c){c.classList.remove('fading')});
+    },350);
+    dotsEl.querySelectorAll('.stat-dot').forEach(function(d,idx){d.classList.toggle('active',idx===page)});
+}
+renderStats(0);
+setInterval(function(){statPage=(statPage+1)%totalStatPages;renderStats(statPage)},15000);
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE DATA
+   ═══════════════════════════════════════════════════════════ */
 PriceService.subscribe(function(p){
     if(!p.xmr)return;
-    document.getElementById('rc-price').textContent=PriceService.fmt(p.xmr.usd,0);
+    document.getElementById('rc-price').textContent=PriceService.fmt(p.xmr.usd,2);
     document.getElementById('rc-change').textContent=PriceService.pct(p.xmr.change24h);
-    document.getElementById('orb-price').textContent=PriceService.fmt(p.xmr.usd,0);
-    document.getElementById('met-reward-usd').textContent=PriceService.fmt(0.614*p.xmr.usd,0)+' per block';
+    STATS[0].val=PriceService.fmt(p.xmr.usd,2);
 });
-var quotes=[{t:'Privacy is not about having something to hide. Privacy is about having something to protect.',a:'Edward Snowden'},{t:'Fungibility is the only property of money that Monero has and Bitcoin does not.',a:'Riccardo Spagni'},{t:'The first thing a totalitarian regime does is attack the privacy of the individual.',a:'Edward Snowden'},{t:'If privacy is outlawed, only outlaws will have privacy.',a:'Philip Zimmermann'}];
-var qi=0;setInterval(function(){qi=(qi+1)%quotes.length;document.getElementById('quote-text').textContent=quotes[qi].t;document.getElementById('quote-attr').textContent='— '+quotes[qi].a;},12000);
-function trackFromHome(){var h=document.getElementById('ms-tx-input').value.trim();if(h){localStorage.setItem('xmr_lasttx',h);window.location.href='mempool.html?tx='+h;}}
-document.getElementById('ms-tx-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackFromHome();});
+MoneroNetwork.subscribe(function(d){
+    if(d.hashrate)STATS[1].val=MoneroNetwork.fmtHashrate(d.hashrate);
+    if(d.difficulty)STATS[4].val=MoneroNetwork.fmtDifficulty(d.difficulty);
+    if(d.txPoolSize){STATS[7].val=d.txPoolSize.toString();document.getElementById('mp-unconfirmed').textContent=d.txPoolSize}
+    renderStats(statPage);
+});
+
+/* ═══════════════════════════════════════════════════════════
+   QUOTE ROTATION
+   ═══════════════════════════════════════════════════════════ */
+var quotes=[
+    {t:'Privacy is not about having something to hide. Privacy is about having something to protect.',a:'Edward Snowden'},
+    {t:'Fungibility is the only property of money that Monero has and Bitcoin does not.',a:'Riccardo Spagni'},
+    {t:'The first thing a totalitarian regime does is attack the privacy of the individual.',a:'Edward Snowden'},
+    {t:'If privacy is outlawed, only outlaws will have privacy.',a:'Philip Zimmermann'},
+    {t:'Bitcoin is a remarkable cryptographic achievement. The ability to create something not duplicable in the digital world has enormous value.',a:'Eric Schmidt'},
+    {t:'Those who would give up essential liberty, to purchase a little temporary safety, deserve neither liberty nor safety.',a:'Benjamin Franklin'}
+];
+var qi=0;
+var qText=document.getElementById('quote-text'),qAttr=document.getElementById('quote-attr');
+qText.style.transition='opacity 0.4s';qAttr.style.transition='opacity 0.4s';
+setInterval(function(){
+    qi=(qi+1)%quotes.length;
+    qText.style.opacity=0;qAttr.style.opacity=0;
+    setTimeout(function(){qText.textContent=quotes[qi].t;qAttr.textContent='— '+quotes[qi].a;qText.style.opacity=1;qAttr.style.opacity=1},400);
+},12000);
+
+/* ═══════════════════════════════════════════════════════════
+   TX TRACKING
+   ═══════════════════════════════════════════════════════════ */
+function trackFromHome(){var h=document.getElementById('mp-tx-input').value.trim();if(h)window.location.href='mempool.html?tx='+h}
+document.getElementById('mp-tx-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackFromHome()});
 </script>
 </body>
 </html>
