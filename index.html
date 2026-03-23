@@ -379,7 +379,10 @@
 <script src="js/price-service.js"></script>
 <script src="js/monero-network.js"></script>
 <script src="js/genui.js"></script>
-<script>
+<script type="module">
+import { TAU, PI, proj, rX, rY, hx } from './js/3d-engine.js';
+import { VizRunner } from './js/viz-runner.js';
+
 NavComponent.inject('nav-mount');
 PriceService.start();
 MoneroNetwork.start();
@@ -404,7 +407,6 @@ var STATS=[
 var statPage=0,totalStatPages=Math.ceil(STATS.length/4);
 var dotsEl=document.getElementById('stat-dots');
 for(var d=0;d<totalStatPages;d++){var dot=document.createElement('div');dot.className='stat-dot'+(d===0?' active':'');dotsEl.appendChild(dot)}
-
 function renderStats(page){
     var cells=document.querySelectorAll('.stat-cell');
     cells.forEach(function(c){c.classList.add('fading')});
@@ -418,9 +420,6 @@ function renderStats(page){
 renderStats(0);
 setInterval(function(){statPage=(statPage+1)%totalStatPages;renderStats(statPage)},15000);
 
-/* ═══════════════════════════════════════════════════════════
-   LIVE DATA
-   ═══════════════════════════════════════════════════════════ */
 PriceService.subscribe(function(p){
     if(!p.xmr)return;
     document.getElementById('rc-price').textContent=PriceService.fmt(p.xmr.usd,2);
@@ -454,324 +453,111 @@ setInterval(function(){
     setTimeout(function(){qText.textContent=quotes[qi].t;qAttr.textContent='— '+quotes[qi].a;qText.style.opacity=1;qAttr.style.opacity=1},400);
 },12000);
 
-/* ═══════════════════════════════════════════════════════════
-   TX TRACKING
-   ═══════════════════════════════════════════════════════════ */
 function trackFromHome(){var h=document.getElementById('mp-tx-input').value.trim();if(h)window.location.href='mempool.html?tx='+h}
 document.getElementById('mp-tx-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackFromHome()});
 
 /* ═══════════════════════════════════════════════════════════
-   PILLAR CYCLING — 9 topics, 3 visible, every 20s
-   Priority: privacy first → origin → modern use → future
+   PILLAR CYCLING
    ═══════════════════════════════════════════════════════════ */
 var PILLARS=[
-  // Set 0 — Core privacy (default, matches canvas vizs)
   [{kicker:'Ring signatures',title:'Who sent it? Everyone and no one.',desc:'Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.',val:'16',color:'var(--xmr)',href:'btc-xmr-education.html'},
    {kicker:'Stealth addresses',title:'One address, infinite destinations.',desc:'Unique one-time address per transaction. No one can link payments on-chain.',val:'Strong',color:'var(--grn)',href:'btc-xmr-education.html'},
-   {kicker:'RingCT',title:'The amount is nobody\'s business.',desc:'Pedersen commitments prove validity without revealing amounts. Zero leakage.',val:'Hidden',color:'var(--cyan)',href:'btc-xmr-education.html'}],
-  // Set 1 — Protocol layer
+   {kicker:'RingCT',title:"The amount is nobody's business.",desc:'Pedersen commitments prove validity without revealing amounts. Zero leakage.',val:'Hidden',color:'var(--cyan)',href:'btc-xmr-education.html'}],
   [{kicker:'Dandelion++',title:'Invisible broadcast.',desc:'Transactions propagate through a stem phase before exploding into fluff — preventing IP-level deanonymization.',val:'IP Safe',color:'var(--xmr)',href:'privacy-architecture.html'},
    {kicker:'CLSAG signatures',title:'25% smaller. Same privacy.',desc:'Compact Linkable Spontaneous Anonymous Group signatures — optimized ring proofs without compromising anonymity.',val:'25%',color:'var(--grn)',href:'privacy-architecture.html'},
    {kicker:'View tags',title:'80% faster sync.',desc:'One-byte tags on outputs let wallets skip irrelevant transactions during scanning. Massive UX improvement.',val:'80%',color:'var(--cyan)',href:'privacy-architecture.html'}],
-  // Set 2 — Future + origin
   [{kicker:'FCMP++',title:'Full chain membership proofs.',desc:'Anonymity set expands from 16 decoys to the entire 100M+ output set. The largest privacy upgrade in Monero history.',val:'100M+',color:'var(--xmr)',href:'future-outlook.html'},
    {kicker:'CryptoNote',title:'Where it all began.',desc:'The foundational protocol from Bytecoin research. Privacy-by-default at the protocol level, not as an afterthought.',val:'2014',color:'var(--grn)',href:'timeline.html'},
    {kicker:'Tail emission',title:'Security forever.',desc:'0.6 XMR per block in perpetuity. No halving death spiral. Miners are incentivized to secure the chain indefinitely.',val:'∞',color:'var(--cyan)',href:'btc-xmr-education.html'}]
 ];
-
 var pillarPage=0;
 var pillarDotsEl=document.getElementById('pillar-dots');
 for(var d=0;d<PILLARS.length;d++){var dot=document.createElement('div');dot.className='cycle-dot'+(d===0?' active':'');pillarDotsEl.appendChild(dot)}
-
 function renderPillars(page){
-    var set=PILLARS[page];
-    var texts=document.querySelectorAll('.pillar-text');
-    var cards=[document.getElementById('pillar-0'),document.getElementById('pillar-1'),document.getElementById('pillar-2')];
+    var set=PILLARS[page],texts=document.querySelectorAll('.pillar-text'),cards=[document.getElementById('pillar-0'),document.getElementById('pillar-1'),document.getElementById('pillar-2')];
     texts.forEach(function(t){t.classList.add('fading')});
-    setTimeout(function(){
-        set.forEach(function(p,i){
-            cards[i].href=p.href;
-            var t=texts[i];
-            t.querySelector('.pillar-kicker').textContent=p.kicker;
-            t.querySelector('.pillar-kicker').style.color=p.color;
-            t.querySelector('.pillar-title').textContent=p.title;
-            t.querySelector('.pillar-desc').textContent=p.desc;
-            t.querySelector('.pillar-val').textContent=p.val;
-            t.querySelector('.pillar-val').style.color=p.color;
-        });
-        texts.forEach(function(t){t.classList.remove('fading')});
-    },400);
+    setTimeout(function(){set.forEach(function(p,i){cards[i].href=p.href;var t=texts[i];t.querySelector('.pillar-kicker').textContent=p.kicker;t.querySelector('.pillar-kicker').style.color=p.color;t.querySelector('.pillar-title').textContent=p.title;t.querySelector('.pillar-desc').textContent=p.desc;t.querySelector('.pillar-val').textContent=p.val;t.querySelector('.pillar-val').style.color=p.color});texts.forEach(function(t){t.classList.remove('fading')})},400);
     pillarDotsEl.querySelectorAll('.cycle-dot').forEach(function(d,i){d.classList.toggle('active',i===page)});
 }
 setInterval(function(){pillarPage=(pillarPage+1)%PILLARS.length;renderPillars(pillarPage)},20000);
 
 /* ═══════════════════════════════════════════════════════════
-   INVESTMENT CYCLING — 9 topics, 3 visible, every 18s
-   Heavy 2027+ bias: future topics appear in 2 of 3 sets
+   INVESTMENT CYCLING
    ═══════════════════════════════════════════════════════════ */
 var INVEST=[
-  // Set 0 — Current fundamentals
   [{kicker:'Supply shock',title:'73 exchanges delisted. Supply tightened.',desc:'Demand moved P2P. Less supply + persistent demand = structural price support.',val:'73',color:'var(--xmr)',href:'bottom-line.html'},
    {kicker:'IRS bounty',title:'$625K bounty. Still unclaimed.',desc:'Most expensive public audit in crypto — Monero passed. No one collected since 2020.',val:'Unclaimed',color:'var(--grn)',href:'bottom-line.html'},
    {kicker:'FCMP++',title:'100M+ anonymity set. Coming.',desc:'Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.',val:'100M+',color:'var(--cyan)',href:'future-outlook.html'}],
-  // Set 1 — 2027+ outlook (weighted)
   [{kicker:'Seraphis',title:'Next-generation transaction protocol.',desc:'Modular address framework replacing RingCT. Enables hardware wallet support and flexible membership proofs.',val:'2027+',color:'var(--xmr)',href:'future-outlook.html'},
    {kicker:'DEX era',title:'Atomic swaps go mainstream.',desc:'Haveno, cross-chain swaps, and decentralized on-ramps eliminate the need for centralized exchanges entirely.',val:'P2P',color:'var(--grn)',href:'future-outlook.html'},
    {kicker:'Regulatory proof',title:'Survived 73 delistings. Still growing.',desc:'Privacy demand is inelastic. Delistings drive P2P adoption and strengthen the decentralized network.',val:'Antifragile',color:'var(--cyan)',href:'bottom-line.html'}],
-  // Set 2 — Market + future mix
   [{kicker:'Tail emission',title:'Inflation below gold by 2025.',desc:'0.85% annual inflation — declining every year. Sound monetary policy without the halving cliff Bitcoin faces.',val:'0.85%',color:'var(--xmr)',href:'btc-xmr-education.html'},
    {kicker:'Hashrate ATH',title:'Network security at all-time highs.',desc:'CPU mining via RandomX keeps mining accessible while the hashrate reaches record levels. No ASIC cartel.',val:'ATH',color:'var(--grn)',href:'bottom-line.html'},
    {kicker:'Privacy demand',title:'Surveillance economy drives adoption.',desc:'CBDCs, chain surveillance, and financial censorship create structural demand for private, fungible money.',val:'Growing',color:'var(--cyan)',href:'future-outlook.html'}]
 ];
-
 var investPage=0;
 var investDotsEl=document.getElementById('invest-dots');
 for(var d=0;d<INVEST.length;d++){var dot=document.createElement('div');dot.className='cycle-dot'+(d===0?' active':'');investDotsEl.appendChild(dot)}
-
 function renderInvest(page){
-    var set=INVEST[page];
-    var texts=document.querySelectorAll('.invest-text');
-    var cards=[document.getElementById('inv-0'),document.getElementById('inv-1'),document.getElementById('inv-2')];
+    var set=INVEST[page],texts=document.querySelectorAll('.invest-text'),cards=[document.getElementById('inv-0'),document.getElementById('inv-1'),document.getElementById('inv-2')];
     texts.forEach(function(t){t.classList.add('fading')});
-    setTimeout(function(){
-        set.forEach(function(p,i){
-            cards[i].href=p.href;
-            var t=texts[i];
-            t.querySelector('.invest-kicker').textContent=p.kicker;
-            t.querySelector('.invest-kicker').style.color=p.color;
-            t.querySelector('.invest-title').textContent=p.title;
-            t.querySelector('.invest-desc').textContent=p.desc;
-            t.querySelector('.invest-val').textContent=p.val;
-            t.querySelector('.invest-val').style.color=p.color;
-        });
-        texts.forEach(function(t){t.classList.remove('fading')});
-    },400);
+    setTimeout(function(){set.forEach(function(p,i){cards[i].href=p.href;var t=texts[i];t.querySelector('.invest-kicker').textContent=p.kicker;t.querySelector('.invest-kicker').style.color=p.color;t.querySelector('.invest-title').textContent=p.title;t.querySelector('.invest-desc').textContent=p.desc;t.querySelector('.invest-val').textContent=p.val;t.querySelector('.invest-val').style.color=p.color});texts.forEach(function(t){t.classList.remove('fading')})},400);
     investDotsEl.querySelectorAll('.cycle-dot').forEach(function(d,i){d.classList.toggle('active',i===page)});
 }
 setInterval(function(){investPage=(investPage+1)%INVEST.length;renderInvest(investPage)},18000);
 
 /* ═══════════════════════════════════════════════════════════
-   3D ENGINE — Shared utilities for mini-vizs
+   MINI-VIZ RUNNER — Uses shared VizRunner module
    ═══════════════════════════════════════════════════════════ */
-var TAU=Math.PI*2,PI=Math.PI;
-function proj(x,y,z,cx,cy,f){f=f||600;var s=f/(f+z);return{x:cx+x*s,y:cy+y*s,s:s,z:z}}
-function rX(p,a){var c=Math.cos(a),s=Math.sin(a);return{x:p.x,y:p.y*c-p.z*s,z:p.y*s+p.z*c}}
-function rY(p,a){var c=Math.cos(a),s=Math.sin(a);return{x:p.x*c+p.z*s,y:p.y,z:-p.x*s+p.z*c}}
-function hx(hex,a){var r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);return'rgba('+r+','+g+','+b+','+a+')'}
+var runner = new VizRunner();
 
-/* ═══════════════════════════════════════════════════════════
-   FEATURED + PILLAR MINI-VIZS
-   ═══════════════════════════════════════════════════════════ */
-var miniVizs=[];
-var prefersReducedMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-function initMiniViz(canvasId,drawFn){
-    var canvas=document.getElementById(canvasId);
-    if(!canvas)return;
-    var entry={canvas:canvas,draw:drawFn,mx:-9999,my:-9999,W:0,H:0,dpr:1,visible:false};
-    canvas.addEventListener('mousemove',function(e){var r=canvas.getBoundingClientRect();entry.mx=e.clientX-r.left;entry.my=e.clientY-r.top});
-    canvas.addEventListener('mouseleave',function(){entry.mx=-9999;entry.my=-9999});
-    miniVizs.push(entry);
-}
-
-// Dandelion++ (featured — stem phase into fluff explosion)
-initMiniViz('fv-dandelion',function(c,W,H,t,mx,my){
+runner.add('fv-dandelion',function(c,W,H,t,mx,my){
     var cx=W/2,cy=H/2;
     for(var i=0;i<40;i++){var fx=Math.sin(i*.8+t*.005)*W*.4+cx,fy=Math.cos(i*1.1+t*.004)*H*.35+cy,r=25+Math.sin(i*.5+t*.01)*12;var g=c.createRadialGradient(fx,fy,0,fx,fy,r);g.addColorStop(0,hx('#FF6600',.012));g.addColorStop(1,'transparent');c.fillStyle=g;c.beginPath();c.arc(fx,fy,r,0,TAU);c.fill()}
-    var stemN=8,stemPts=[];for(var i=0;i<stemN;i++){var a=t*.008+i*.4,r=i*18;var p={x:Math.cos(a)*r*.25,y:-100+i*24,z:Math.sin(a)*r*.4};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,(my-cy)*.001);stemPts.push(proj(p.x,p.y,p.z,cx,cy))}
+    var stemN=8,stemPts=[];for(var i=0;i<stemN;i++){var a=t*.008+i*.4,r2=i*18;var p={x:Math.cos(a)*r2*.25,y:-100+i*24,z:Math.sin(a)*r2*.4};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,(my-cy)*.001);stemPts.push(proj(p.x,p.y,p.z,cx,cy))}
     for(var i=1;i<stemPts.length;i++){c.beginPath();c.moveTo(stemPts[i-1].x,stemPts[i-1].y);c.lineTo(stemPts[i].x,stemPts[i].y);c.strokeStyle=hx('#FF6600',.25*stemPts[i-1].s);c.lineWidth=1.5*stemPts[i-1].s;c.stroke()}
     var origin=stemPts[stemN-1];
-    for(var i=0;i<70;i++){var angle=i/70*TAU+Math.sin(i*.3)*.6;var dist=30+((t*.6+i*5.3)%140);var fade=1-dist/160;if(fade<=0)continue;var p={x:Math.cos(angle)*dist,y:Math.sin(angle*.3)*dist*.3+20,z:Math.sin(angle)*dist};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y+origin.y-cy,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,(2.5)*pr.s*fade,0,TAU);c.fillStyle=hx('#FF6600',fade*.4);c.fill()}
+    for(var i=0;i<70;i++){var angle=i/70*TAU+Math.sin(i*.3)*.6;var dist=30+((t*.6+i*5.3)%140);var fade=1-dist/160;if(fade<=0)continue;var p={x:Math.cos(angle)*dist,y:Math.sin(angle*.3)*dist*.3+20,z:Math.sin(angle)*dist};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y+origin.y-cy,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,2.5*pr.s*fade,0,TAU);c.fillStyle=hx('#FF6600',fade*.4);c.fill()}
     stemPts.forEach(function(n,i){c.beginPath();c.arc(n.x,n.y,(i===0?6:3)*n.s,0,TAU);c.fillStyle=hx('#FF6600',i===0?.8:.4);c.fill()});
-});
+},'.featured-viz');
 
-// CLSAG Ring (pillar: Ring Signatures)
-initMiniViz('pv-ring',function(c,W,H,t,mx,my){
-    var cx=W/2,cy=H/2,mem=16;
-    var signer=Math.floor(t/100)%mem;
-    for(var i=0;i<mem;i++){var angle=i/mem*TAU+t*.008,r=Math.min(W,H)*.35;
-        var p={x:Math.cos(angle)*r,y:Math.sin(angle)*r*.4,z:Math.sin(angle)*r*.6};
-        p=rY(p,t*.004+(mx-cx)*.002);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);
-        var isS=i===signer;c.beginPath();c.arc(pr.x,pr.y,(isS?6:3)*pr.s,0,TAU);c.fillStyle=hx('#FF6600',isS?.7:.2*pr.s);c.fill();
-        if(isS){for(var w=0;w<2;w++){c.beginPath();c.arc(pr.x,pr.y,(8+w*10+(t%40))*pr.s,0,TAU);c.strokeStyle=hx('#FF6600',.07-w*.025);c.lineWidth=.7;c.stroke()}}
-        var ni=(i+1)%mem,na=ni/mem*TAU+t*.008;var np={x:Math.cos(na)*r,y:Math.sin(na)*r*.4,z:Math.sin(na)*r*.6};np=rY(np,t*.004+(mx-cx)*.002);np=rX(np,(my-cy)*.001);var npr=proj(np.x,np.y,np.z,cx,cy);
-        c.beginPath();c.moveTo(pr.x,pr.y);c.lineTo(npr.x,npr.y);c.strokeStyle=hx('#FF6600',.06);c.lineWidth=.6;c.stroke()}
-    c.beginPath();c.arc(cx,cy,8,0,TAU);c.fillStyle=hx('#FF6600',.1);c.fill();
-    c.font='bold 7px DM Mono';c.fillStyle=hx('#FF6600',.3);c.textAlign='center';c.fillText('LINK',cx,cy+3);
-});
+runner.add('pv-ring',function(c,W,H,t,mx,my){
+    var cx=W/2,cy=H/2,mem=16,signer=Math.floor(t/100)%mem;
+    for(var i=0;i<mem;i++){var angle=i/mem*TAU+t*.008,r=Math.min(W,H)*.35;var p={x:Math.cos(angle)*r,y:Math.sin(angle)*r*.4,z:Math.sin(angle)*r*.6};p=rY(p,t*.004+(mx-cx)*.002);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);var isS=i===signer;c.beginPath();c.arc(pr.x,pr.y,(isS?6:3)*pr.s,0,TAU);c.fillStyle=hx('#FF6600',isS?.7:.2*pr.s);c.fill();if(isS){for(var w=0;w<2;w++){c.beginPath();c.arc(pr.x,pr.y,(8+w*10+(t%40))*pr.s,0,TAU);c.strokeStyle=hx('#FF6600',.07-w*.025);c.lineWidth=.7;c.stroke()}}var ni=(i+1)%mem,na=ni/mem*TAU+t*.008;var np={x:Math.cos(na)*r,y:Math.sin(na)*r*.4,z:Math.sin(na)*r*.6};np=rY(np,t*.004+(mx-cx)*.002);np=rX(np,(my-cy)*.001);var npr=proj(np.x,np.y,np.z,cx,cy);c.beginPath();c.moveTo(pr.x,pr.y);c.lineTo(npr.x,npr.y);c.strokeStyle=hx('#FF6600',.06);c.lineWidth=.6;c.stroke()}
+    c.beginPath();c.arc(cx,cy,8,0,TAU);c.fillStyle=hx('#FF6600',.1);c.fill();c.font='bold 7px DM Mono';c.fillStyle=hx('#FF6600',.3);c.textAlign='center';c.fillText('LINK',cx,cy+3);
+},'.pillar');
 
-// Stealth Addresses — one public address spawns unique one-time destinations
-// Visual story: center address pulses, one-time addresses spawn outward and dissolve (unlinkable)
-initMiniViz('pv-stealth',function(c,W,H,t,mx,my){
+runner.add('pv-stealth',function(c,W,H,t,mx,my){
+    var cx=W/2,cy=H/2,NUM=12;
+    for(var ring=1;ring<=3;ring++){var rr=ring*28;var p={x:0,y:0,z:0};p=rY(p,t*.003+(mx-cx)*.001);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,rr*pr.s,0,TAU);c.strokeStyle=hx('#00CC88',.04);c.lineWidth=.5;c.stroke()}
+    for(var i=0;i<NUM;i++){var spawnT=(t*0.8+i*83)%200;var life=spawnT/200;if(life>1)continue;var angle=i/NUM*TAU+i*2.3+Math.sin(i*7.1)*1.5;var dist=8+life*75;var fade=life<0.15?life/0.15:life>0.7?1-(life-0.7)/0.3:1;var wobble=Math.sin(t*.02+i*3)*3*life;var p={x:Math.cos(angle)*dist+wobble,y:Math.sin(angle)*dist*.6,z:Math.sin(angle)*dist*.4+Math.cos(t*.01+i)*8};p=rY(p,t*.003+(mx-cx)*.001);p=rX(p,(my-cy)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);var lineAlpha=fade*0.12*(1-life*0.7);if(lineAlpha>0.01){c.beginPath();c.moveTo(cx,cy);c.lineTo(pr.x,pr.y);c.strokeStyle=hx('#00CC88',lineAlpha);c.lineWidth=0.5;c.setLineDash([3,4]);c.stroke();c.setLineDash([])}var dotSize=(3+Math.sin(i*4)*1)*pr.s*fade;c.beginPath();c.arc(pr.x,pr.y,dotSize,0,TAU);c.fillStyle=hx('#00CC88',fade*.55*pr.s);c.fill();if(life<0.3){c.beginPath();c.arc(pr.x,pr.y,dotSize*3,0,TAU);c.fillStyle=hx('#00CC88',fade*.06);c.fill()}}
+    var pulse=0.8+Math.sin(t*.04)*0.2;var cp={x:0,y:0,z:0};cp=rY(cp,t*.003+(mx-cx)*.001);cp=rX(cp,(my-cy)*.001);var cpr=proj(cp.x,cp.y,cp.z,cx,cy);c.beginPath();c.arc(cpr.x,cpr.y,18*pulse,0,TAU);c.fillStyle=hx('#00CC88',.04);c.fill();c.beginPath();c.arc(cpr.x,cpr.y,10*pulse,0,TAU);c.fillStyle=hx('#00CC88',.08);c.fill();c.beginPath();c.arc(cpr.x,cpr.y,5,0,TAU);c.fillStyle=hx('#00CC88',.7);c.fill();
+    c.font='bold 8px DM Mono';c.textAlign='center';c.fillStyle=hx('#00CC88',.4);c.fillText('PUBLIC ADDRESS',cx,cy-22);c.font='7px DM Mono';c.fillStyle=hx('#00CC88',.2);c.fillText('unique one-time destinations',cx,cy+58);
+},'.pillar');
+
+runner.add('pv-pedersen',function(c,W,H,t,mx,my){
     var cx=W/2,cy=H/2;
-    var NUM=12;
-
-    // Faint radial grid showing "address space"
-    for(var ring=1;ring<=3;ring++){
-        var rr=ring*28;
-        var p={x:0,y:0,z:0};p=rY(p,t*.003+(mx-cx)*.001);p=rX(p,(my-cy)*.001);
-        var pr=proj(p.x,p.y,p.z,cx,cy);
-        c.beginPath();c.arc(pr.x,pr.y,rr*pr.s,0,TAU);
-        c.strokeStyle=hx('#00CC88',.04);c.lineWidth=.5;c.stroke();
-    }
-
-    // One-time addresses — spawn from center, drift outward, fade
-    for(var i=0;i<NUM;i++){
-        var spawnT=(t*0.8+i*83)%200; // cycle per particle
-        var life=spawnT/200; // 0→1 lifecycle
-        if(life>1)continue;
-
-        var angle=i/NUM*TAU+i*2.3+Math.sin(i*7.1)*1.5; // unique direction per OTA
-        var dist=8+life*75; // drift outward
-        var fade=life<0.15?life/0.15:life>0.7?1-(life-0.7)/0.3:1; // fade in, hold, fade out
-        var wobble=Math.sin(t*.02+i*3)*3*life;
-
-        var p={x:Math.cos(angle)*dist+wobble,y:Math.sin(angle)*dist*.6,z:Math.sin(angle)*dist*.4+Math.cos(t*.01+i)*8};
-        p=rY(p,t*.003+(mx-cx)*.001);p=rX(p,(my-cy)*.001);
-        var pr=proj(p.x,p.y,p.z,cx,cy);
-
-        // Dashed connection line from center (fades with distance)
-        var lineAlpha=fade*0.12*(1-life*0.7);
-        if(lineAlpha>0.01){
-            c.beginPath();c.moveTo(cx,cy);c.lineTo(pr.x,pr.y);
-            c.strokeStyle=hx('#00CC88',lineAlpha);c.lineWidth=0.5;
-            c.setLineDash([3,4]);c.stroke();c.setLineDash([]);
-        }
-
-        // One-time address dot
-        var dotSize=(3+Math.sin(i*4)*1)*pr.s*fade;
-        c.beginPath();c.arc(pr.x,pr.y,dotSize,0,TAU);
-        c.fillStyle=hx('#00CC88',fade*0.55*pr.s);c.fill();
-
-        // Soft glow on fresh spawns
-        if(life<0.3){
-            c.beginPath();c.arc(pr.x,pr.y,dotSize*3,0,TAU);
-            c.fillStyle=hx('#00CC88',fade*0.06);c.fill();
-        }
-    }
-
-    // Center: public address (always visible, pulses)
-    var pulse=0.8+Math.sin(t*.04)*0.2;
-    var cp={x:0,y:0,z:0};cp=rY(cp,t*.003+(mx-cx)*.001);cp=rX(cp,(my-cy)*.001);
-    var cpr=proj(cp.x,cp.y,cp.z,cx,cy);
-
-    // Glow rings
-    c.beginPath();c.arc(cpr.x,cpr.y,18*pulse,0,TAU);c.fillStyle=hx('#00CC88',.04);c.fill();
-    c.beginPath();c.arc(cpr.x,cpr.y,10*pulse,0,TAU);c.fillStyle=hx('#00CC88',.08);c.fill();
-    // Core dot
-    c.beginPath();c.arc(cpr.x,cpr.y,5,0,TAU);c.fillStyle=hx('#00CC88',.7);c.fill();
-
-    // Labels
-    c.font='bold 8px DM Mono';c.textAlign='center';
-    c.fillStyle=hx('#00CC88',.4);c.fillText('PUBLIC ADDRESS',cx,cy-22);
-    c.font='7px DM Mono';c.fillStyle=hx('#00CC88',.2);
-    c.fillText('unique one-time destinations',cx,cy+58);
-});
-
-// Pedersen Commitments (pillar: RingCT)
-initMiniViz('pv-pedersen',function(c,W,H,t,mx,my){
-    var cx=W/2,cy=H/2;
-    for(var i=-140;i<=140;i+=4){var y2=i*i*i-3*i+5;if(y2<0)continue;var y=Math.sqrt(y2)*.5;
-        [y,-y].forEach(function(yv){var p={x:i*.8,y:yv,z:Math.sin(i*.03+t*.01)*18};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,1*pr.s,0,TAU);c.fillStyle=hx('#00CED1',.06*pr.s);c.fill()})}
+    for(var i=-140;i<=140;i+=4){var y2=i*i*i-3*i+5;if(y2<0)continue;var y=Math.sqrt(y2)*.5;[y,-y].forEach(function(yv){var p={x:i*.8,y:yv,z:Math.sin(i*.03+t*.01)*18};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,1*pr.s,0,TAU);c.fillStyle=hx('#00CED1',.06*pr.s);c.fill()})}
     var gA=t*.012,hA=t*.012+2.8;
-    [{a:gA,r:50,l:'G',col:'#4488FF'},{a:hA,r:35,l:'H',col:'#00CC88'}].forEach(function(pt){
-        for(var tr=0;tr<8;tr++){var ta=pt.a-tr*.08;var p={x:Math.cos(ta)*pt.r,y:Math.sin(ta)*pt.r*.5,z:Math.sin(ta)*25};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,(1.5-tr*.12)*pr.s,0,TAU);c.fillStyle=hx(pt.col,(.2-tr*.02)*pr.s);c.fill()}
-        var p={x:Math.cos(pt.a)*pt.r,y:Math.sin(pt.a)*pt.r*.5,z:Math.sin(pt.a)*25};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);
-        c.beginPath();c.arc(pr.x,pr.y,5*pr.s,0,TAU);c.fillStyle=hx(pt.col,.55);c.fill();
-        c.font='bold 9px Playfair Display';c.fillStyle=hx(pt.col,.6);c.textAlign='center';c.fillText(pt.l,pr.x,pr.y-12*pr.s)});
+    [{a:gA,r:50,l:'G',col:'#4488FF'},{a:hA,r:35,l:'H',col:'#00CC88'}].forEach(function(pt){for(var tr=0;tr<8;tr++){var ta=pt.a-tr*.08;var p={x:Math.cos(ta)*pt.r,y:Math.sin(ta)*pt.r*.5,z:Math.sin(ta)*25};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,(1.5-tr*.12)*pr.s,0,TAU);c.fillStyle=hx(pt.col,(.2-tr*.02)*pr.s);c.fill()}var p={x:Math.cos(pt.a)*pt.r,y:Math.sin(pt.a)*pt.r*.5,z:Math.sin(pt.a)*25};p=rY(p,t*.004+(mx-cx)*.001);var pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,5*pr.s,0,TAU);c.fillStyle=hx(pt.col,.55);c.fill();c.font='bold 9px Playfair Display';c.fillStyle=hx(pt.col,.6);c.textAlign='center';c.fillText(pt.l,pr.x,pr.y-12*pr.s)});
     c.font='9px DM Mono';c.fillStyle=hx('#00CED1',.2);c.textAlign='center';c.fillText('C = aG + bH',cx,cy+60);
-});
+},'.pillar');
 
-// Resize + animation loop for mini-vizs
-function resizeMinis(){var dpr=Math.min(devicePixelRatio||1,2);miniVizs.forEach(function(v){var W=v.canvas.clientWidth,H=v.canvas.clientHeight;if(W>0&&H>0){v.canvas.width=W*dpr;v.canvas.height=H*dpr;v.W=W;v.H=H;v.dpr=dpr}})}
-resizeMinis();addEventListener('resize',resizeMinis);
-
-var miniObs=new IntersectionObserver(function(entries){entries.forEach(function(e){
-    miniVizs.forEach(function(v){if(v.canvas===e.target||v.canvas.closest('.featured-viz')===e.target||v.canvas.closest('.pillar')===e.target)v.visible=e.isIntersecting});
-})},{threshold:.05,rootMargin:'200px'});
-document.querySelectorAll('.featured-viz, .pillar').forEach(function(el){miniObs.observe(el)});
-
-var mT=0;
-function miniLoop(){
-    if(!prefersReducedMotion){
-        miniVizs.forEach(function(v){if(!v.W||!v.visible)return;var ctx=v.canvas.getContext('2d');ctx.setTransform(v.dpr,0,0,v.dpr,0,0);ctx.clearRect(0,0,v.W,v.H);v.draw(ctx,v.W,v.H,mT,v.mx<-999?v.W/2:v.mx,v.my<-999?v.H/2:v.my)});
-        mT++;
-    } else if(mT===0){
-        miniVizs.forEach(function(v){if(!v.W)return;var ctx=v.canvas.getContext('2d');ctx.setTransform(v.dpr,0,0,v.dpr,0,0);ctx.clearRect(0,0,v.W,v.H);v.draw(ctx,v.W,v.H,0,v.W/2,v.H/2)});
-        mT=1;
-    }
-    requestAnimationFrame(miniLoop);
-}
-miniLoop();
+runner.observe('.featured-viz, .pillar');
+runner.start();
 
 /* ═══════════════════════════════════════════════════════════
-   PARTICLE RAIN — Cascading orange dots background
-   Lightweight: ~120 particles, no physics, just sin/cos drift
+   PARTICLE RAIN
    ═══════════════════════════════════════════════════════════ */
 (function(){
-    if(prefersReducedMotion)return;
-    var c=document.getElementById('particleRain');
-    if(!c)return;
-    var ctx=c.getContext('2d');
-    var W,H,dpr;
-    var particles=[];
-    var PARTICLE_COUNT=120;
-
-    function resize(){
-        dpr=Math.min(devicePixelRatio||1,2);
-        W=window.innerWidth;H=window.innerHeight;
-        c.width=W*dpr;c.height=H*dpr;
-        ctx.setTransform(dpr,0,0,dpr,0,0);
-    }
-    resize();
-    window.addEventListener('resize',resize);
-
-    // Initialize particles
-    for(var i=0;i<PARTICLE_COUNT;i++){
-        particles.push({
-            x:Math.random()*2000,
-            y:Math.random()*2000-500,
-            speed:0.15+Math.random()*0.45,
-            size:0.8+Math.random()*2.2,
-            opacity:0.06+Math.random()*0.22,
-            drift:Math.random()*2-1,
-            phase:Math.random()*Math.PI*2,
-            pulse:0.5+Math.random()*0.5
-        });
-    }
-
-    function drawRain(){
-        ctx.clearRect(0,0,W,H);
-        for(var i=0;i<particles.length;i++){
-            var p=particles[i];
-            p.y+=p.speed;
-            p.x+=Math.sin(p.y*0.003+p.phase)*p.drift*0.3;
-
-            // Pulse opacity
-            var alpha=p.opacity*(0.6+Math.sin(p.y*0.005+p.phase)*0.4*p.pulse);
-
-            // Wrap around
-            if(p.y>H+20){p.y=-20;p.x=Math.random()*W}
-            if(p.x<-20)p.x=W+20;
-            if(p.x>W+20)p.x=-20;
-
-            // Draw dot with soft glow
-            ctx.beginPath();
-            ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
-            ctx.fillStyle='rgba(255,102,0,'+alpha+')';
-            ctx.fill();
-
-            // Subtle glow ring on larger particles
-            if(p.size>2){
-                ctx.beginPath();
-                ctx.arc(p.x,p.y,p.size*3,0,Math.PI*2);
-                ctx.fillStyle='rgba(255,102,0,'+(alpha*0.15)+')';
-                ctx.fill();
-            }
-        }
-        requestAnimationFrame(drawRain);
-    }
-    drawRain();
+    if(runner.reducedMotion)return;
+    var cv=document.getElementById('particleRain');if(!cv)return;
+    var ctx=cv.getContext('2d'),W,H,dpr,particles=[],COUNT=120;
+    function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*dpr;cv.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+    resize();addEventListener('resize',resize);
+    for(var i=0;i<COUNT;i++)particles.push({x:Math.random()*2000,y:Math.random()*2000-500,speed:.15+Math.random()*.45,size:.8+Math.random()*2.2,opacity:.06+Math.random()*.22,drift:Math.random()*2-1,phase:Math.random()*PI*2,pulse:.5+Math.random()*.5});
+    function draw(){ctx.clearRect(0,0,W,H);for(var i=0;i<particles.length;i++){var p=particles[i];p.y+=p.speed;p.x+=Math.sin(p.y*.003+p.phase)*p.drift*.3;var a=p.opacity*(.6+Math.sin(p.y*.005+p.phase)*.4*p.pulse);if(p.y>H+20){p.y=-20;p.x=Math.random()*W}if(p.x<-20)p.x=W+20;if(p.x>W+20)p.x=-20;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,TAU);ctx.fillStyle='rgba(255,102,0,'+a+')';ctx.fill();if(p.size>2){ctx.beginPath();ctx.arc(p.x,p.y,p.size*3,0,TAU);ctx.fillStyle='rgba(255,102,0,'+(a*.15)+')';ctx.fill()}}requestAnimationFrame(draw)}
+    draw();
 })();
 </script>
 </body>
