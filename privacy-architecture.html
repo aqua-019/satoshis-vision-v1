@@ -194,13 +194,68 @@ draw(c,W,H,t,mx,my){const cx=W/2,cy=H/2;
     let p={x:Math.cos(pt.a)*pt.r,y:Math.sin(pt.a)*pt.r*.5,z:Math.sin(pt.a)*35};p=rY(p,t*.004+(mx-cx)*.001);const pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,7*pr.s,0,TAU);c.fillStyle=hx(pt.col,.65);c.fill();const glow=c.createRadialGradient(pr.x,pr.y,0,pr.x,pr.y,22*pr.s);glow.addColorStop(0,hx(pt.col,.18));glow.addColorStop(1,'transparent');c.fillStyle=glow;c.beginPath();c.arc(pr.x,pr.y,22*pr.s,0,TAU);c.fill();c.font='bold 12px Playfair Display';c.fillStyle=hx(pt.col,.7);c.textAlign='center';c.fillText(pt.l,pr.x,pr.y-16*pr.s)});
   let cP={x:0,y:-8,z:70*Math.sin(t*.008)};cP=rY(cP,t*.004+(mx-cx)*.001);const cPr=proj(cP.x,cP.y,cP.z,cx,cy);c.beginPath();c.arc(cPr.x,cPr.y,10*cPr.s,0,TAU);c.fillStyle=hx('#FF6600',.55);c.fill();c.font='bold 14px Playfair Display';c.fillStyle=hx('#FF6600',.65);c.textAlign='center';c.fillText('C',cPr.x,cPr.y-20*cPr.s);c.font='11px DM Mono';c.fillStyle=hx('#4488FF',.22);c.fillText('C = aG + bH',cx,cy+155)}},
 
-// 04 — BULLETPROOFS+ (L-System Fractal)
-{id:'bulletproofs',title:'Bulletproofs+',sub:'Logarithmic-size range proofs using recursive fractal compression — verifying committed values are positive while reducing proof size by ~96%.',color:'cyan',index:'04 — Range Proofs',tags:['O(log n)','Zero-Knowledge','Fractal Recursion','Inner Product Argument'],
+// 04 — BULLETPROOFS+ (Compression Funnel)
+{id:'bulletproofs',title:'Bulletproofs+',sub:'Logarithmic-size range proofs — verifying committed values are positive while compressing proof size by ~96%. Large data in, tiny proof out.',color:'cyan',index:'04 — Range Proofs',tags:['O(log n)','Zero-Knowledge','96% Compression','Inner Product Argument'],
 draw(c,W,H,t,mx,my){const cx=W/2,cy=H/2;
-  function branch(x,y,z,angle,depth,len,thick){if(depth>7||len<3)return;const ex=x+Math.cos(angle)*len,ey=y+Math.sin(angle)*len,ez=z+Math.sin(depth*.8+t*.015)*15;let p1={x,y,z},p2={x:ex,y:ey,z:ez};p1=rY(p1,t*.005+(mx-cx)*.001);p1=rX(p1,(my-cy)*.001);p2=rY(p2,t*.005+(mx-cx)*.001);p2=rX(p2,(my-cy)*.001);const pr1=proj(p1.x,p1.y,p1.z,cx,cy),pr2=proj(p2.x,p2.y,p2.z,cx,cy);c.beginPath();c.moveTo(pr1.x,pr1.y);c.lineTo(pr2.x,pr2.y);c.strokeStyle=hx('#00BBDD',clamp(.3-depth*.03,.02,.3)*pr1.s);c.lineWidth=thick*pr1.s;c.stroke();c.beginPath();c.arc(pr2.x,pr2.y,(3-depth*.3)*pr2.s,0,TAU);c.fillStyle=hx('#00BBDD',(.4-depth*.04)*pr2.s);c.fill();const sp=.45+Math.sin(t*.01+depth)*.1,sh=.62+Math.sin(t*.008+depth*.5)*.05;branch(ex,ey,ez,angle-sp,depth+1,len*sh,thick*.7);branch(ex,ey,ez,angle+sp,depth+1,len*sh,thick*.7)}
-  branch(0,-140,0,-PI/2+.05,0,55,2);
-  const pw=50+Math.sin(t*.035)*8;c.strokeStyle=hx('#00BBDD',.25);c.lineWidth=1;c.strokeRect(cx-pw/2,cy+120,pw,22);c.fillStyle=hx('#00BBDD',.04);c.fillRect(cx-pw/2,cy+120,pw,22);c.font='bold 8px DM Mono';c.fillStyle=hx('#00BBDD',.5);c.textAlign='center';c.fillText('PROOF',cx,cy+134);
-  for(let i=0;i<8;i++){const phase=(t*.5+i*30)%180,yy=cy-20+phase*.8,xx=cx+Math.sin(phase*.03+i)*20,fade=1-phase/180;c.beginPath();c.arc(xx,yy,1.5*fade,0,TAU);c.fillStyle=hx('#00BBDD',.3*fade);c.fill()}}},
+
+  // Background: faint converging guide lines showing compression
+  for(var g=0;g<8;g++){
+    var gy=-80+g*20,gw=120-g*12;
+    var gl={x:-gw,y:gy,z:0},gr={x:gw,y:gy,z:0};
+    gl=rY(gl,t*.004+(mx-cx)*.001);gl=rX(gl,(my-cy)*.001);
+    gr=rY(gr,t*.004+(mx-cx)*.001);gr=rX(gr,(my-cy)*.001);
+    var pgl=proj(gl.x,gl.y,gl.z,cx,cy),pgr=proj(gr.x,gr.y,gr.z,cx,cy);
+    c.beginPath();c.moveTo(pgl.x,pgl.y);c.lineTo(pgr.x,pgr.y);
+    c.strokeStyle=hx('#00BBDD',.03+g*.005);c.lineWidth=.4;c.stroke();
+  }
+
+  // Input data points (large, scattered at top) — "values to prove"
+  for(var i=0;i<40;i++){
+    var spread=1-i/60;
+    var ix=(Math.sin(i*2.7+t*.003)*100+Math.cos(i*1.3)*40)*spread;
+    var iy=-85+Math.sin(i*1.9)* 20;
+    var iz=Math.cos(i*3.1+t*.005)*30*spread;
+    var ip={x:ix,y:iy,z:iz};
+    ip=rY(ip,t*.004+(mx-cx)*.001);ip=rX(ip,(my-cy)*.001);
+    var ipr=proj(ip.x,ip.y,ip.z,cx,cy);
+    c.beginPath();c.arc(ipr.x,ipr.y,2.5*ipr.s,0,TAU);
+    c.fillStyle=hx('#00BBDD',.15*ipr.s);c.fill();
+  }
+
+  // Flowing compression particles — travel from top-spread to bottom-compact
+  for(var i=0;i<30;i++){
+    var life=((t*0.6+i*21)%180)/180; // 0→1
+    var spread2=(1-life);
+    var fx=Math.sin(i*3.3+i*i*.1)*100*spread2*spread2;
+    var fy=-85+life*175;
+    var fz=Math.cos(i*2.1)*30*spread2;
+    var fp={x:fx,y:fy,z:fz};
+    fp=rY(fp,t*.004+(mx-cx)*.001);fp=rX(fp,(my-cy)*.001);
+    var fpr=proj(fp.x,fp.y,fp.z,cx,cy);
+    var sz=(2.5-life*1.8)*fpr.s;
+    var alpha=(0.4-life*0.2)*fpr.s;
+    if(sz>0.3&&alpha>0.01){
+      c.beginPath();c.arc(fpr.x,fpr.y,sz,0,TAU);
+      c.fillStyle=hx('#00BBDD',alpha);c.fill();
+    }
+  }
+
+  // Output proof (tiny, compact at bottom) — pulsing to show it's valid
+  var pulse=0.85+Math.sin(t*.05)*0.15;
+  var op={x:0,y:85,z:0};
+  op=rY(op,t*.004+(mx-cx)*.001);op=rX(op,(my-cy)*.001);
+  var opr=proj(op.x,op.y,op.z,cx,cy);
+  c.beginPath();c.arc(opr.x,opr.y,18*pulse,0,TAU);c.fillStyle=hx('#00BBDD',.06);c.fill();
+  c.beginPath();c.arc(opr.x,opr.y,10*pulse,0,TAU);c.fillStyle=hx('#00BBDD',.12);c.fill();
+  c.beginPath();c.arc(opr.x,opr.y,5,0,TAU);c.fillStyle=hx('#00BBDD',.7);c.fill();
+
+  // Labels
+  c.font='bold 8px DM Mono';c.textAlign='center';
+  c.fillStyle=hx('#00BBDD',.3);c.fillText('RAW VALUES',cx,cy-100);
+  c.fillStyle=hx('#00BBDD',.5);c.fillText('PROOF',opr.x,opr.y+20);
+  c.font='7px DM Mono';c.fillStyle=hx('#00BBDD',.25);
+  c.fillText('96% smaller',cx,cy+115);
+}},
 
 // 05 — CRYPTONOTE (Cellular Automata Layers)
 {id:'cryptonote',title:'CryptoNote Protocol Stack',sub:'The foundational protocol layers with cellular automata data propagation — from network transport through consensus to privacy application layer.',color:'violet',index:'05 — Protocol Foundation',tags:['Layered Architecture','Cellular Automata','Data Propagation','Privacy Stack'],
@@ -210,12 +265,90 @@ draw(c,W,H,t,mx,my){const cx=W/2,cy=H/2;const layers=['NETWORK','CONSENSUS','TRA
     let tl={x:-w/2,y:y0,z:-25+li*12},tr={x:w/2,y:y0,z:-25+li*12},bl={x:-w/2,y:y0+h,z:-15+li*12},br={x:w/2,y:y0+h,z:-15+li*12};[tl,tr,bl,br]=[tl,tr,bl,br].map(p=>{p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,.28+(my-cy)*.001);return p});const ptl=proj(tl.x,tl.y,tl.z,cx,cy),ptr=proj(tr.x,tr.y,tr.z,cx,cy),pbl=proj(bl.x,bl.y,bl.z,cx,cy),pbr=proj(br.x,br.y,br.z,cx,cy);c.beginPath();c.moveTo(ptl.x,ptl.y);c.lineTo(ptr.x,ptr.y);c.lineTo(pbr.x,pbr.y);c.lineTo(pbl.x,pbl.y);c.closePath();c.strokeStyle=hx(cols[li],.18+li*.04);c.lineWidth=.8;c.stroke();c.fillStyle=hx(cols[li],.02+li*.008);c.fill();c.font='bold 8px DM Mono';c.fillStyle=hx(cols[li],.45+li*.08);c.textAlign='center';c.fillText(name,(ptl.x+ptr.x)/2,(ptl.y+pbl.y)/2+3)});
   for(let i=0;i<40;i++){const phase=t*.018+i*1.7,layer=((phase/2.5)%5),lx=Math.sin(phase*.6+i)*140,ly=-95+layer*46+20,lz=Math.cos(phase*.4+i)*25;let p={x:lx,y:ly,z:lz};p=rY(p,t*.005+(mx-cx)*.001);p=rX(p,.28+(my-cy)*.001);const pr=proj(p.x,p.y,p.z,cx,cy);c.beginPath();c.arc(pr.x,pr.y,1.8*pr.s,0,TAU);c.fillStyle=hx('#8855FF',.35*pr.s);c.fill()}}},
 
-// 06 — DUAL-KEY (L-System Branching)
-{id:'dualkey',title:'Dual-Key Architecture',sub:'Every Monero address encodes two cryptographic keys branching from a single seed through L-system derivation — a view key for detection and a spend key for authorization.',color:'green',index:'06 — Key Management',tags:['View Key','Spend Key','L-System Derivation','HD Wallet'],
+// 06 — DUAL-KEY (Seed Split → View + Spend)
+{id:'dualkey',title:'Dual-Key Architecture',sub:'Every Monero address encodes two cryptographic keys: a view key that detects incoming payments, and a spend key that authorizes outgoing transactions. Both derive from a single seed.',color:'green',index:'06 — Key Management',tags:['View Key','Spend Key','Key Derivation','Wallet Security'],
 draw(c,W,H,t,mx,my){const cx=W/2,cy=H/2;
-  function lB(x,y,z,angle,depth,len,isView){if(depth>6||len<4)return;const sway=Math.sin(t*.012+depth*.8+(isView?0:PI))*4;const ex=x+Math.cos(angle)*len+sway,ey=y+Math.sin(angle)*len,ez=z+Math.sin(depth*.5+t*.008)*12;let p1={x,y,z},p2={x:ex,y:ey,z:ez};p1=rY(p1,t*.004+(mx-cx)*.0015);p1=rX(p1,(my-cy)*.001);p2=rY(p2,t*.004+(mx-cx)*.0015);p2=rX(p2,(my-cy)*.001);const pr1=proj(p1.x,p1.y,p1.z,cx,cy),pr2=proj(p2.x,p2.y,p2.z,cx,cy);const col=isView?'#00CC88':'#FF6600';c.beginPath();c.moveTo(pr1.x,pr1.y);c.lineTo(pr2.x,pr2.y);c.strokeStyle=hx(col,(.25-depth*.03)*pr1.s);c.lineWidth=(2-depth*.2)*pr1.s;c.stroke();if(depth===6||len<8){c.beginPath();c.arc(pr2.x,pr2.y,3*pr2.s,0,TAU);c.fillStyle=hx(col,.4*pr2.s);c.fill()}const sp=.4+Math.sin(t*.005+depth)*.08;lB(ex,ey,ez,angle-sp,depth+1,len*.65,isView);lB(ex,ey,ez,angle+sp*.7,depth+1,len*.6,isView)}
-  let sP={x:0,y:-120,z:0};sP=rY(sP,t*.004+(mx-cx)*.0015);sP=rX(sP,(my-cy)*.001);const sPr=proj(sP.x,sP.y,sP.z,cx,cy);c.beginPath();c.arc(sPr.x,sPr.y,8,0,TAU);c.fillStyle=hx('#FFFFFF',.4);c.fill();const sg=c.createRadialGradient(sPr.x,sPr.y,0,sPr.x,sPr.y,24);sg.addColorStop(0,hx('#FFFFFF',.1));sg.addColorStop(1,'transparent');c.fillStyle=sg;c.beginPath();c.arc(sPr.x,sPr.y,24,0,TAU);c.fill();c.font='bold 9px DM Mono';c.fillStyle=hx('#FFFFFF',.35);c.textAlign='center';c.fillText('SEED',sPr.x,sPr.y-16);
-  lB(0,-120,0,-PI/2-.4,0,50,true);lB(0,-120,0,-PI/2+.4,0,50,false);c.font='bold 10px DM Mono';c.fillStyle=hx('#00CC88',.4);c.textAlign='right';c.fillText('VIEW',cx-90,cy+140);c.fillStyle=hx('#FF6600',.4);c.textAlign='left';c.fillText('SPEND',cx+90,cy+140)}},
+
+  // Seed node at top
+  var seed={x:0,y:-80,z:0};
+  seed=rY(seed,t*.004+(mx-cx)*.001);seed=rX(seed,(my-cy)*.001);
+  var spr=proj(seed.x,seed.y,seed.z,cx,cy);
+  c.beginPath();c.arc(spr.x,spr.y,7,0,TAU);c.fillStyle=hx('#FFFFFF',.5);c.fill();
+  c.beginPath();c.arc(spr.x,spr.y,16,0,TAU);c.fillStyle=hx('#FFFFFF',.04);c.fill();
+  c.font='bold 8px DM Mono';c.fillStyle=hx('#FFFFFF',.4);c.textAlign='center';c.fillText('SEED',spr.x,spr.y-18);
+
+  // Split point
+  var split={x:0,y:-40,z:0};
+  split=rY(split,t*.004+(mx-cx)*.001);split=rX(split,(my-cy)*.001);
+  var sppr=proj(split.x,split.y,split.z,cx,cy);
+
+  // Seed→split line
+  c.beginPath();c.moveTo(spr.x,spr.y);c.lineTo(sppr.x,sppr.y);
+  c.strokeStyle=hx('#FFFFFF',.2);c.lineWidth=1.5;c.stroke();
+
+  // View key (left, green)
+  var vk={x:-70,y:30,z:-10};
+  vk=rY(vk,t*.004+(mx-cx)*.001);vk=rX(vk,(my-cy)*.001);
+  var vpr=proj(vk.x,vk.y,vk.z,cx,cy);
+
+  // Spend key (right, orange)
+  var sk={x:70,y:30,z:10};
+  sk=rY(sk,t*.004+(mx-cx)*.001);sk=rX(sk,(my-cy)*.001);
+  var skpr=proj(sk.x,sk.y,sk.z,cx,cy);
+
+  // Split→keys lines
+  c.beginPath();c.moveTo(sppr.x,sppr.y);c.lineTo(vpr.x,vpr.y);
+  c.strokeStyle=hx('#00CC88',.25);c.lineWidth=1.2;c.stroke();
+  c.beginPath();c.moveTo(sppr.x,sppr.y);c.lineTo(skpr.x,skpr.y);
+  c.strokeStyle=hx('#FF6600',.25);c.lineWidth=1.2;c.stroke();
+
+  // View key node
+  var vpulse=0.85+Math.sin(t*.04)*0.15;
+  c.beginPath();c.arc(vpr.x,vpr.y,14*vpulse,0,TAU);c.fillStyle=hx('#00CC88',.06);c.fill();
+  c.beginPath();c.arc(vpr.x,vpr.y,6,0,TAU);c.fillStyle=hx('#00CC88',.6);c.fill();
+
+  // Spend key node
+  var spulse=0.85+Math.sin(t*.04+PI)*0.15;
+  c.beginPath();c.arc(skpr.x,skpr.y,14*spulse,0,TAU);c.fillStyle=hx('#FF6600',.06);c.fill();
+  c.beginPath();c.arc(skpr.x,skpr.y,6,0,TAU);c.fillStyle=hx('#FF6600',.6);c.fill();
+
+  // Incoming payments → view key detects them (green dots arriving from left)
+  for(var i=0;i<8;i++){
+    var life=((t*0.7+i*40)%160)/160;
+    var ix=-140+life*70,iy=30+Math.sin(i*2.1+t*.01)*15,iz=-10+Math.cos(i*1.7)*12;
+    var ip={x:ix,y:iy,z:iz};
+    ip=rY(ip,t*.004+(mx-cx)*.001);ip=rX(ip,(my-cy)*.001);
+    var ipr=proj(ip.x,ip.y,ip.z,cx,cy);
+    var fade=life<0.2?life/0.2:life>0.8?1-(life-0.8)/0.2:1;
+    c.beginPath();c.arc(ipr.x,ipr.y,2.5*fade*ipr.s,0,TAU);
+    c.fillStyle=hx('#00CC88',fade*.4);c.fill();
+    // Trail
+    if(fade>0.3){c.beginPath();c.moveTo(ipr.x-6*ipr.s,ipr.y);c.lineTo(ipr.x,ipr.y);
+    c.strokeStyle=hx('#00CC88',fade*.15);c.lineWidth=.8;c.stroke();}
+  }
+
+  // Outgoing authorizations → spend key signs them (orange dots departing to right)
+  for(var i=0;i<6;i++){
+    var life2=((t*0.6+i*50)%180)/180;
+    var ox=70+life2*80,oy=30+Math.sin(i*2.8+t*.012)*12,oz=10+Math.cos(i*1.3)*10;
+    var op={x:ox,y:oy,z:oz};
+    op=rY(op,t*.004+(mx-cx)*.001);op=rX(op,(my-cy)*.001);
+    var opr=proj(op.x,op.y,op.z,cx,cy);
+    var fade2=life2<0.15?life2/0.15:life2>0.75?1-(life2-0.75)/0.25:1;
+    c.beginPath();c.arc(opr.x,opr.y,2.5*fade2*opr.s,0,TAU);
+    c.fillStyle=hx('#FF6600',fade2*.4);c.fill();
+    if(fade2>0.3){c.beginPath();c.moveTo(opr.x,opr.y);c.lineTo(opr.x+6*opr.s,opr.y);
+    c.strokeStyle=hx('#FF6600',fade2*.15);c.lineWidth=.8;c.stroke();}
+  }
+
+  // Labels
+  c.font='bold 9px DM Mono';c.textAlign='center';
+  c.fillStyle=hx('#00CC88',.45);c.fillText('VIEW KEY',vpr.x,vpr.y+22);
+  c.font='7px DM Mono';c.fillStyle=hx('#00CC88',.25);c.fillText('detects incoming',vpr.x,vpr.y+34);
+  c.font='bold 9px DM Mono';
+  c.fillStyle=hx('#FF6600',.45);c.fillText('SPEND KEY',skpr.x,skpr.y+22);
+  c.font='7px DM Mono';c.fillStyle=hx('#FF6600',.25);c.fillText('authorizes outgoing',skpr.x,skpr.y+34);
+}},
 
 // 07 — RANDOMX (Soft-Body CPU Grid)
 {id:'randomx',title:'RandomX Mining',sub:'A CPU-optimized proof-of-work algorithm using random code execution with memory-hard particle computation, ensuring ASIC resistance and democratized mining.',color:'orange',index:'07 — Proof of Work',tags:['CPU-Optimized','ASIC-Resistant','Memory-Hard','Random Programs'],
