@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Hold Monero</title>
-    <meta name="description" content="Three paths into Monero: buy, mine, or learn. Self-custody guide, wallet comparison, and acquisition methods.">
+    <meta name="description" content="Get Monero: ChangeNOW instant swaps, Wagyu exchange-level pricing, wallet guide, self-custody best practices. Why swap systems suppress XMR price and how to fight back.">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
@@ -12,20 +12,73 @@
     .hm{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
     .hm-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
     .hm-nav em{color:var(--grn);font-style:normal;font-weight:600}.hm-nav span{color:var(--text-muted)}
+
     .hero{padding:48px var(--space-page-x) 24px;text-align:center}
     .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
     .hero-t{font-size:32px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--xmr);font-style:normal}
-    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:500px;margin:0 auto;line-height:1.6;font-style:italic}
-    .sec{padding:0 var(--space-page-x);margin-bottom:24px}
+    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:520px;margin:0 auto;line-height:1.6;font-style:italic}
+
+    .sec{padding:0 var(--space-page-x);margin-bottom:28px}
     .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+
+    /* Three paths */
     .paths{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:32px}
-    .path{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:24px;transition:border-color .2s;text-decoration:none;color:inherit;display:block}
+    .path{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:22px;transition:border-color .2s;text-decoration:none;color:inherit;display:block}
     .path:hover{border-color:rgba(255,102,0,.25)}
     .path-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
-    .path-t{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--g1)}
-    .path-desc{font-size:12px;color:var(--text-tertiary);line-height:1.6;margin-bottom:14px}
-    .path-link{font-size:11px;letter-spacing:1px}
+    .path-t{font-size:17px;font-weight:600;margin-bottom:8px;color:var(--g1)}
+    .path-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin-bottom:12px}
+    .path-link{font-size:10px;letter-spacing:1px}
+
+    /* ChangeNOW widget section */
+    .swap-widget{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin-bottom:16px}
+    .swap-widget-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+    .swap-widget-title{font-size:16px;font-weight:600}
+    .swap-widget-badge{font-size:9px;padding:3px 10px;border-radius:4px;background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
+    .swap-widget-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin-bottom:14px;max-width:600px}
+    .swap-iframe-wrap{border-radius:8px;overflow:hidden;border:1px solid var(--border-default);background:#0D0D12}
+    .swap-disclaimer{font-size:9px;color:var(--text-tertiary);margin-top:10px;padding:8px 12px;border:1px solid var(--border-subtle);border-radius:6px;line-height:1.5}
+    .swap-disclaimer em{color:var(--xmr);font-style:normal}
+
+    /* Wagyu section */
+    .wagyu{background:var(--surface-1);border:1px solid rgba(0,204,136,.12);border-radius:12px;padding:22px;position:relative;overflow:hidden}
+    .wagyu::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--grn),rgba(0,204,136,.3))}
+    .wagyu-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--grn);margin-bottom:8px}
+    .wagyu-t{font-size:20px;font-weight:600;margin-bottom:10px}
+    .wagyu-desc{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-bottom:16px;max-width:700px}
+    .wagyu-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+    .wagyu-step{text-align:center;padding:14px 8px;background:var(--surface-2);border-radius:8px}
+    .wagyu-step-num{font-size:18px;font-weight:600;color:var(--grn);margin-bottom:4px}
+    .wagyu-step-t{font-size:11px;font-weight:600;margin-bottom:3px}
+    .wagyu-step-d{font-size:9px;color:var(--text-tertiary);line-height:1.4}
+    .wagyu-link{display:inline-block;font-size:11px;color:var(--grn);padding:6px 16px;border:1px solid rgba(0,204,136,.2);border-radius:6px;text-decoration:none;transition:border-color .2s}
+    .wagyu-link:hover{border-color:rgba(0,204,136,.5)}
+
+    /* Price suppression analysis */
+    .suppress{background:var(--surface-1);border:1px solid rgba(255,71,87,.12);border-radius:12px;padding:22px;margin-top:16px}
+    .suppress-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:8px}
+    .suppress-t{font-size:18px;font-weight:600;margin-bottom:10px;color:var(--g1)}
+    .suppress-desc{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-bottom:16px;max-width:700px}
+    .suppress-flow{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin-bottom:16px;align-items:center}
+    .sf-step{text-align:center;padding:12px 6px;background:var(--surface-2);border-radius:8px}
+    .sf-step-t{font-size:10px;font-weight:600;margin-bottom:3px}
+    .sf-step-d{font-size:8px;color:var(--text-tertiary);line-height:1.4}
+    .sf-arrow{text-align:center;font-size:16px;color:var(--red)}
+    .suppress-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+    .ss{text-align:center;padding:14px;background:var(--surface-2);border-radius:8px}
+    .ss-v{font-size:18px;font-weight:600;margin-bottom:3px}
+    .ss-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
+    .suppress-solution{background:rgba(0,204,136,.03);border:1px solid rgba(0,204,136,.12);border-radius:8px;padding:14px;margin-top:12px}
+    .suppress-solution-t{font-size:12px;font-weight:600;color:var(--grn);margin-bottom:6px}
+    .suppress-solution-d{font-size:11px;color:var(--text-tertiary);line-height:1.6}
+
+    /* Canvas for suppression viz */
+    .suppress-canvas{width:100%;height:140px;border-radius:8px;background:var(--surface-0);border:1px solid var(--border-subtle);margin-bottom:12px;position:relative;overflow:hidden}
+    .suppress-canvas canvas{width:100%;height:100%}
+    .suppress-canvas-label{position:absolute;bottom:6px;left:10px;font-size:8px;color:var(--text-tertiary)}
+
+    /* Wallets */
     .wallets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
     .wal{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;transition:border-color .2s}
     .wal:hover{border-color:rgba(255,102,0,.2)}
@@ -33,6 +86,8 @@
     .wal-name{font-size:14px;font-weight:600}.wal-badge{font-size:8px;padding:2px 6px;border-radius:3px;font-weight:600}
     .wal-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5;margin-bottom:6px}
     .wal-url{font-size:10px;color:var(--blue)}
+
+    /* Exchange grid */
     .exch{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .ex{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;text-align:center;transition:border-color .2s;text-decoration:none;color:inherit;display:block}
     .ex:hover{border-color:rgba(255,102,0,.2)}
@@ -40,53 +95,226 @@
     .ex-type{font-size:9px;color:var(--text-tertiary);margin-bottom:6px}
     .ex-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5}
     .ex-tag{font-size:8px;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:6px}
+
+    /* Tips */
     .tips{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
     .tip{background:var(--surface-1);border-left:3px solid var(--xmr);border-radius:0 10px 10px 0;padding:14px}
     .tip-t{font-size:12px;font-weight:600;margin-bottom:4px}.tip-d{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.paths,.wallets,.exch,.tips{grid-template-columns:1fr}}
+    @media(max-width:768px){.paths,.wallets,.exch,.tips{grid-template-columns:1fr}.wagyu-grid{grid-template-columns:repeat(2,1fr)}.suppress-flow{grid-template-columns:1fr}.sf-arrow{transform:rotate(90deg)}.suppress-stats{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
 <div class="page-offset hm">
     <div id="nav-mount"></div>
     <div class="hm-nav"><em>xmr.irish</em> <span>/</span> <em>hold monero</em></div>
-    <div class="hero"><div class="hero-ey">Three paths into Monero</div><div class="hero-t">Hold <em>Monero</em></div>
-        <div class="hero-sub">Privacy is default. No mixing required. No transparent chain. Just send. Here's how to get started.</div></div>
+    <div class="hero">
+        <div class="hero-ey">Buy · Mine · Learn · Self-custody</div>
+        <div class="hero-t">Hold <em>Monero</em></div>
+        <div class="hero-sub">Privacy is default. No mixing required. No transparent chain. Just send. Here's how to get started — and why how you acquire matters for the entire ecosystem.</div>
+    </div>
 
+    <!-- Three paths -->
     <div class="sec">
         <div class="paths">
-            <a class="path" href="ecosystem.html"><div class="path-ey" style="color:var(--xmr)">Trade · Instant</div><div class="path-t">Get Monero in 2 minutes</div><div class="path-desc">Wagyu.xyz, ChangeNOW, Haveno DEX, atomic swaps. Non-custodial, no KYC, complete self-custody.</div><div class="path-link" style="color:var(--xmr)">Explore exchanges →</div></a>
-            <a class="path" href="mining.html"><div class="path-ey" style="color:var(--grn)">Mine · Earn</div><div class="path-t">Mine on this device</div><div class="path-desc">RandomX CPU-optimized. XMRig setup in 5 minutes. Pool comparison, electricity costs, profitability.</div><div class="path-link" style="color:var(--grn)">Start mining →</div></a>
-            <a class="path" href="btc-xmr-education.html"><div class="path-ey" style="color:var(--blue)">Learn · Understand</div><div class="path-t">The education deep dive</div><div class="path-desc">Transparent vs private. Architectural differences. Why privacy is not optional. Satoshi's original vision.</div><div class="path-link" style="color:var(--blue)">Read comparison →</div></a>
+            <a class="path" href="#swap-section"><div class="path-ey" style="color:var(--xmr)">Trade · Instant</div><div class="path-t">Get Monero in 2 minutes</div><div class="path-desc">ChangeNOW widget below, Wagyu.xyz for exchange-level pricing, Haveno DEX, atomic swaps. Non-custodial, no KYC, complete self-custody.</div><div class="path-link" style="color:var(--xmr)">Swap now ↓</div></a>
+            <a class="path" href="mining.html"><div class="path-ey" style="color:var(--grn)">Mine · Earn</div><div class="path-t">Mine on this device</div><div class="path-desc">RandomX CPU-optimized. XMRig setup in 5 minutes. Pool comparison, electricity costs, profitability calculator.</div><div class="path-link" style="color:var(--grn)">Start mining →</div></a>
+            <a class="path" href="btc-xmr-education.html"><div class="path-ey" style="color:var(--blue)">Learn · Understand</div><div class="path-t">The education deep dive</div><div class="path-desc">Transparent vs private. Architectural differences. Why privacy is not optional. Satoshi's original vision fulfilled.</div><div class="path-link" style="color:var(--blue)">Read comparison →</div></a>
         </div>
     </div>
 
-    <div class="sec"><div class="sec-h"><div class="sec-t">Recommended wallets</div><div class="sec-s">Self-custody · open-source · verified</div></div>
-        <div class="wallets">
-            <div class="wal"><div class="wal-top"><div class="wal-name">Cake Wallet</div><div class="wal-badge" style="background:rgba(0,204,136,.1);color:var(--grn);border:1px solid rgba(0,204,136,.15)">Mobile best</div></div><div class="wal-desc">iOS + Android. Open-source. Built-in exchange. XMR, BTC, LTC support. Tor connectivity.</div><div class="wal-url">cakewallet.com</div></div>
-            <div class="wal"><div class="wal-top"><div class="wal-name">Feather Wallet</div><div class="wal-badge" style="background:rgba(68,136,255,.1);color:var(--blue);border:1px solid rgba(68,136,255,.15)">Desktop best</div></div><div class="wal-desc">Win/Mac/Linux. Power-user features. Tor built-in. Coin control. Advanced send options.</div><div class="wal-url">featherwallet.org</div></div>
-            <div class="wal"><div class="wal-top"><div class="wal-name">Official GUI</div><div class="wal-badge" style="background:rgba(255,102,0,.08);color:var(--xmr);border:1px solid rgba(255,102,0,.12)">Full node</div></div><div class="wal-desc">Built by core team. Full node or remote node. Most secure. Desktop only.</div><div class="wal-url">getmonero.org/downloads</div></div>
-            <div class="wal"><div class="wal-top"><div class="wal-name">Monero CLI</div><div class="wal-badge" style="background:rgba(144,144,154,.1);color:var(--g4);border:1px solid rgba(144,144,154,.15)">Advanced</div></div><div class="wal-desc">Command-line wallet. Maximum control. Scriptable. For power users and developers.</div><div class="wal-url">getmonero.org/downloads</div></div>
-        </div></div>
+    <!-- ChangeNOW Widget Section -->
+    <div class="sec" id="swap-section">
+        <div class="sec-h"><div class="sec-t">Instant swap — ChangeNOW</div><div class="sec-s">No account · no KYC for small amounts · 500+ pairs</div></div>
+        <div class="swap-widget">
+            <div class="swap-widget-header">
+                <div class="swap-widget-title">Swap any crypto → XMR</div>
+                <div class="swap-widget-badge">Non-custodial</div>
+            </div>
+            <div class="swap-widget-desc">ChangeNOW processes the swap. xmr.irish does not custody funds, handle keys, or intermediate any transaction. You send crypto, you receive XMR directly to your wallet.</div>
+            <div class="swap-iframe-wrap">
+                <iframe id="changenow-widget" src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=false&amount=0.1&amountFiat=500&backgroundColor=0D0D12&darkMode=true&from=btc&fromFiat=usd&horizontal=false&isFiat=false&lang=en&link_id=&locales=false&logo=false&primaryColor=FF6600&to=xmr&toTheMoon=false" style="height:356px;width:100%;border:none;display:block" loading="lazy"></iframe>
+            </div>
+            <div class="swap-disclaimer">
+                <em>Disclaimer:</em> xmr.irish is an educational resource. ChangeNOW is the sole service provider for all swap operations. We do not custody, transmit, or control any funds. By using the widget, you interact directly with ChangeNOW's infrastructure. Review their <a href="https://changenow.io/terms-of-use" target="_blank" style="color:var(--blue)">terms of use</a>.
+            </div>
+        </div>
+    </div>
 
-    <div class="sec"><div class="sec-h"><div class="sec-t">Where to acquire</div><div class="sec-s">Non-custodial · no KYC preferred</div></div>
+    <!-- Wagyu Section -->
+    <div class="sec">
+        <div class="sec-h"><div class="sec-t">Wagyu.xyz — Exchange-level pricing</div><div class="sec-s">Professional market makers · zero forced selling</div></div>
+        <div class="wagyu">
+            <div class="wagyu-ey">Recommended · Wagyu v2</div>
+            <div class="wagyu-t">The hidden tax on Monero — and how Wagyu fixes it</div>
+            <div class="wagyu-desc">When major exchanges delisted Monero, users turned to instant swap services. These services advertise 0.5-1% fees but the reality is 3-4% — hidden in terrible exchange rates. Worse: they collect fees in XMR, then immediately dump it for stablecoins. Conservative estimates suggest $300,000+ in daily selling pressure from swap services alone. Wagyu v2 eliminates this parasitic layer entirely.</div>
+            <div class="wagyu-grid">
+                <div class="wagyu-step">
+                    <div class="wagyu-step-num">1</div>
+                    <div class="wagyu-step-t">Professional routing</div>
+                    <div class="wagyu-step-d">Routes swaps through Hyperliquid where institutional market makers compete for your order.</div>
+                </div>
+                <div class="wagyu-step">
+                    <div class="wagyu-step-num">2</div>
+                    <div class="wagyu-step-t">Exchange-level rates</div>
+                    <div class="wagyu-step-d">No hidden fees. No terrible rates. Professional traders' pricing — for everyone.</div>
+                </div>
+                <div class="wagyu-step">
+                    <div class="wagyu-step-num">3</div>
+                    <div class="wagyu-step-t">Zero forced selling</div>
+                    <div class="wagyu-step-d">$1M through traditional swaps = $10K dumped. Through Wagyu = zero forced selling.</div>
+                </div>
+                <div class="wagyu-step">
+                    <div class="wagyu-step-num">4</div>
+                    <div class="wagyu-step-t">True price discovery</div>
+                    <div class="wagyu-step-d">For the first time since delistings, genuine demand can translate into price.</div>
+                </div>
+            </div>
+            <a href="https://wagyu.xyz" target="_blank" class="wagyu-link">Visit wagyu.xyz →</a>
+        </div>
+
+        <!-- Price Suppression Analysis -->
+        <div class="suppress">
+            <div class="suppress-ey">Analysis · Price suppression mechanism</div>
+            <div class="suppress-t">How swap services suppress Monero's price</div>
+            <div class="suppress-desc">Since 73+ exchange delistings, the majority of XMR acquisition flows through instant swap services. These services operate a systematic extraction loop that creates constant downward pressure on XMR price — regardless of organic demand.</div>
+
+            <div class="suppress-canvas">
+                <canvas id="suppress-viz"></canvas>
+                <div class="suppress-canvas-label">Selling pressure loop · swap services collect XMR fees → dump for stablecoins</div>
+            </div>
+
+            <div class="suppress-flow">
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--blue)">User sends BTC</div><div class="sf-step-d">Wants to acquire XMR via swap service</div></div>
+                <div class="sf-arrow">→</div>
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--gold)">Service takes 3-4%</div><div class="sf-step-d">Advertised as 0.5-1% but hidden in spread</div></div>
+                <div class="sf-arrow">→</div>
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--red)">XMR fee dumped</div><div class="sf-step-d">Service sells collected XMR for USDT/USDC instantly</div></div>
+            </div>
+
+            <div class="suppress-stats">
+                <div class="ss"><div class="ss-v" style="color:var(--red)">~$300K+/day</div><div class="ss-l">Estimated daily sell pressure</div></div>
+                <div class="ss"><div class="ss-v" style="color:var(--gold)">3-4%</div><div class="ss-l">Real fee (hidden in spread)</div></div>
+                <div class="ss"><div class="ss-v" style="color:var(--xmr-text)">73+</div><div class="ss-l">Exchange delistings forcing swap usage</div></div>
+            </div>
+
+            <div class="suppress-desc">Every $10M in XMR volume through traditional swap services generates ~$300K-$400K in forced XMR selling. This happens daily, automatically, regardless of market conditions. The more volume flows through these services, the more XMR gets dumped. It's a structural drain that suppresses price regardless of actual demand.</div>
+
+            <div class="suppress-solution">
+                <div class="suppress-solution-t">The solution: Wagyu + DEX + Atomic Swaps</div>
+                <div class="suppress-solution-d">Wagyu routes through professional market makers with no forced selling. Haveno DEX enables peer-to-peer trading. Atomic swaps remove intermediaries entirely. Each of these alternatives breaks the extraction loop and allows genuine price discovery.</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Where to acquire -->
+    <div class="sec">
+        <div class="sec-h"><div class="sec-t">Where to acquire</div><div class="sec-s">Non-custodial · no KYC preferred · ranked by impact</div></div>
         <div class="exch">
-            <a class="ex" href="https://changenow.io" target="_blank"><div class="ex-name">ChangeNOW</div><div class="ex-type">Instant swap</div><div class="ex-desc">No account needed. 500+ pairs. Fast. 6-block XMR confirmation.</div><div class="ex-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">Recommended</div></a>
-            <a class="ex" href="https://haveno.exchange" target="_blank"><div class="ex-name">Haveno DEX</div><div class="ex-type">Decentralized exchange</div><div class="ex-desc">Peer-to-peer. No central authority. Fork of Bisq for Monero. Fiat on/off ramps.</div><div class="ex-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">P2P</div></a>
-            <a class="ex" href="https://trocador.app" target="_blank"><div class="ex-name">Trocador</div><div class="ex-type">Swap aggregator</div><div class="ex-desc">Compares rates across 30+ exchanges. No KYC. Tor-friendly. Privacy-focused.</div><div class="ex-tag" style="background:rgba(68,136,255,.08);color:var(--blue)">Aggregator</div></a>
-        </div></div>
+            <a class="ex" href="https://wagyu.xyz" target="_blank"><div class="ex-name">Wagyu.xyz</div><div class="ex-type">Exchange-level pricing</div><div class="ex-desc">Professional market maker routing via Hyperliquid. Best rates. Zero forced selling. The gold standard post-delisting.</div><div class="ex-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">Best rates</div></a>
+            <a class="ex" href="https://changenow.io" target="_blank"><div class="ex-name">ChangeNOW</div><div class="ex-type">Instant swap</div><div class="ex-desc">No account needed. 500+ pairs. Fixed & floating rates. Fast. Widget embedded above.</div><div class="ex-tag" style="background:rgba(255,102,0,.08);color:var(--xmr)">Easiest</div></a>
+            <a class="ex" href="https://haveno.exchange" target="_blank"><div class="ex-name">Haveno DEX</div><div class="ex-type">Decentralized exchange</div><div class="ex-desc">Peer-to-peer. No central authority. Fork of Bisq for Monero. Fiat on/off ramps.</div><div class="ex-tag" style="background:rgba(68,136,255,.08);color:var(--blue)">P2P · No intermediary</div></a>
+            <a class="ex" href="https://trocador.app" target="_blank"><div class="ex-name">Trocador</div><div class="ex-type">Swap aggregator</div><div class="ex-desc">Compares rates across 30+ exchanges. No KYC. Tor-friendly. Privacy-focused.</div><div class="ex-tag" style="background:rgba(144,144,154,.08);color:var(--g4)">Aggregator</div></a>
+            <a class="ex" href="https://majesticbank.sc" target="_blank"><div class="ex-name">Majestic Bank</div><div class="ex-type">No-KYC swap</div><div class="ex-desc">Tor-first. XMR/BTC swaps. Community-run. Privacy maximized.</div><div class="ex-tag" style="background:rgba(144,144,154,.08);color:var(--g4)">Tor-native</div></a>
+            <a class="ex" href="#" onclick="return false"><div class="ex-name">Atomic Swaps</div><div class="ex-type">Trustless BTC↔XMR</div><div class="ex-desc">No intermediary whatsoever. Research-grade; improving rapidly. The endgame for decentralized acquisition.</div><div class="ex-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">Trustless</div></a>
+        </div>
+    </div>
 
-    <div class="sec"><div class="sec-h"><div class="sec-t">Storage best practices</div><div class="sec-s">Self-custody principles</div></div>
+    <!-- Wallet recommendations -->
+    <div class="sec">
+        <div class="sec-h"><div class="sec-t">Recommended wallets</div><div class="sec-s">Self-custody · open-source · verified</div></div>
+        <div class="wallets">
+            <div class="wal"><div class="wal-top"><div class="wal-name">Cake Wallet</div><div class="wal-badge" style="background:rgba(0,204,136,.1);color:var(--grn);border:1px solid rgba(0,204,136,.15)">Mobile best</div></div><div class="wal-desc">iOS + Android. Open-source. Built-in exchange. XMR, BTC, LTC support. Tor connectivity. Also offers monero.com (XMR-only) and Cupcake (cold storage).</div><div class="wal-url">cakewallet.com</div></div>
+            <div class="wal"><div class="wal-top"><div class="wal-name">Feather Wallet</div><div class="wal-badge" style="background:rgba(68,136,255,.1);color:var(--blue);border:1px solid rgba(68,136,255,.15)">Desktop best</div></div><div class="wal-desc">Win/Mac/Linux. Power-user features. Tor built-in. Coin control. Advanced send options. Keystone hardware wallet support.</div><div class="wal-url">featherwallet.org</div></div>
+            <div class="wal"><div class="wal-top"><div class="wal-name">Official GUI</div><div class="wal-badge" style="background:rgba(255,102,0,.08);color:var(--xmr);border:1px solid rgba(255,102,0,.12)">Full node</div></div><div class="wal-desc">Built by core team. Full node or remote node. Most secure option. Desktop only. Ledger and Trezor hardware wallet support.</div><div class="wal-url">getmonero.org/downloads</div></div>
+            <div class="wal"><div class="wal-top"><div class="wal-name">Monero CLI</div><div class="wal-badge" style="background:rgba(144,144,154,.1);color:var(--g4);border:1px solid rgba(144,144,154,.15)">Advanced</div></div><div class="wal-desc">Command-line wallet. Maximum control. Scriptable. For power users and developers. Supports all hardware wallets.</div><div class="wal-url">getmonero.org/downloads</div></div>
+        </div>
+    </div>
+
+    <!-- Storage best practices -->
+    <div class="sec">
+        <div class="sec-h"><div class="sec-t">Storage best practices</div><div class="sec-s">Self-custody principles · not your keys, not your coins</div></div>
         <div class="tips">
-            <div class="tip"><div class="tip-t" style="color:var(--grn)">Write down your seed phrase</div><div class="tip-d">25 words. Never digital. Never in a screenshot. Store on paper or metal in 2+ locations. This IS your wallet.</div></div>
-            <div class="tip"><div class="tip-t" style="color:var(--xmr-text)">Use your own node</div><div class="tip-d">Remote nodes work but leak your IP. Running your own node is the privacy gold standard. ~180GB disk space.</div></div>
-            <div class="tip"><div class="tip-t" style="color:var(--blue)">Privacy is default</div><div class="tip-d">No mixing. No extra steps. Every Monero transaction uses ring signatures, stealth addresses, and RingCT automatically.</div></div>
-            <div class="tip"><div class="tip-t" style="color:var(--grn)">Hardware wallets</div><div class="tip-d">Ledger and Trezor both support XMR. Use Feather Wallet or Official GUI as the interface. Keys never leave the device.</div></div>
-        </div></div>
+            <div class="tip"><div class="tip-t" style="color:var(--grn)">Write down your seed phrase</div><div class="tip-d">25 words. Never digital. Never in a screenshot. Store on paper or metal plate in 2+ separate physical locations. This IS your wallet — anyone with these words controls your funds.</div></div>
+            <div class="tip"><div class="tip-t" style="color:var(--xmr-text)">Use your own node</div><div class="tip-d">Remote nodes work but leak your IP address to the node operator. Running your own node is the privacy gold standard. Requires ~180GB disk space and minimal bandwidth.</div></div>
+            <div class="tip"><div class="tip-t" style="color:var(--blue)">Privacy is default</div><div class="tip-d">No mixing. No extra steps. Every Monero transaction automatically uses ring signatures (hide sender), stealth addresses (hide receiver), and RingCT (hide amount).</div></div>
+            <div class="tip"><div class="tip-t" style="color:var(--grn)">Hardware wallets</div><div class="tip-d">Ledger (Nano S/X/S+) and Trezor (Model T) both support XMR. Use Feather Wallet or Official GUI as the interface. Your private keys never leave the hardware device.</div></div>
+        </div>
+    </div>
 
-    <div class="ft">xmr.irish / hold monero · privacy is default · just send</div>
+    <div class="ft">xmr.irish / hold monero · privacy is default · not your keys, not your coins</div>
 </div>
 <script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
-<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+<script>
+NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
+
+// Price suppression visualization — animated selling pressure loop
+(function(){
+    var c=document.getElementById('suppress-viz');if(!c)return;
+    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H,t=0;
+    function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+    resize();addEventListener('resize',resize);
+
+    // Generate fake price data with suppression dips
+    var priceData=[],basePrice=340;
+    for(var i=0;i<200;i++){
+        var organic=Math.sin(i*0.03)*40+Math.sin(i*0.07)*20+Math.cos(i*0.01)*30;
+        // Add periodic suppression dips (representing swap dumps)
+        var suppression=0;
+        if(i%15<3)suppression=-8-Math.random()*12;
+        basePrice=340+organic+suppression+Math.random()*5;
+        priceData.push(Math.max(200,basePrice));
+    }
+
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        var padding=20,chartW=W-padding*2,chartH=H-padding*2;
+        var min=Math.min.apply(null,priceData),max=Math.max.apply(null,priceData),range=max-min||1;
+
+        // Grid lines
+        ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
+        for(var i=1;i<4;i++){var gy=padding+chartH*i/4;ctx.beginPath();ctx.moveTo(padding,gy);ctx.lineTo(W-padding,gy);ctx.stroke()}
+
+        // Price line
+        ctx.beginPath();
+        var offset=Math.floor(t*0.3)%priceData.length;
+        for(var i=0;i<Math.min(priceData.length,chartW);i++){
+            var idx=(i+offset)%priceData.length;
+            var x=padding+i/(priceData.length-1)*chartW;
+            var y=padding+chartH-(priceData[idx]-min)/range*chartH;
+            i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+        }
+        ctx.strokeStyle='rgba(255,102,0,0.5)';ctx.lineWidth=1.5;ctx.stroke();
+
+        // Fill under
+        ctx.lineTo(W-padding,H-padding);ctx.lineTo(padding,H-padding);ctx.closePath();
+        var gd=ctx.createLinearGradient(0,0,0,H);
+        gd.addColorStop(0,'rgba(255,102,0,0.08)');gd.addColorStop(1,'transparent');
+        ctx.fillStyle=gd;ctx.fill();
+
+        // Animated selling pressure arrows (red dots falling)
+        for(var i=0;i<6;i++){
+            var phase=((t*1.5+i*40)%120)/120;
+            var ax=W*0.3+i*W*0.1+Math.sin(i*2.3)*20;
+            var ay=padding+phase*chartH;
+            var fade=phase<0.15?phase/0.15:phase>0.7?1-(phase-0.7)/0.3:1;
+            ctx.beginPath();ctx.arc(ax,ay,2.5*fade,0,Math.PI*2);
+            ctx.fillStyle='rgba(255,71,87,'+(fade*0.5)+')';ctx.fill();
+            // Trail
+            if(fade>0.2){ctx.beginPath();ctx.moveTo(ax,ay-8);ctx.lineTo(ax,ay);
+            ctx.strokeStyle='rgba(255,71,87,'+(fade*0.2)+')';ctx.lineWidth=1;ctx.stroke()}
+        }
+
+        // Labels
+        ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(255,71,87,0.4)';ctx.textAlign='center';
+        ctx.fillText('SWAP DUMPS',W*0.5,padding+12);
+        ctx.fillStyle='rgba(255,102,0,0.3)';
+        ctx.fillText('XMR PRICE',W-padding-30,padding+12);
+
+        t++;requestAnimationFrame(draw);
+    }
+    draw();
+})();
+</script>
 </body></html>

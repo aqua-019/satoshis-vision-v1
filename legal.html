@@ -26,16 +26,35 @@
     .sec{padding:0 var(--space-page-x);margin-bottom:20px}
     .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
-    .sgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:3px}
-    .st{border-radius:4px;padding:8px 2px;text-align:center;cursor:pointer;transition:transform .15s;border:1px solid transparent;position:relative}
-    .st:hover{transform:scale(1.08);z-index:2}
-    .st-ab{font-size:10px;font-weight:600;margin-bottom:2px}.st-lb{font-size:7px;text-transform:uppercase;letter-spacing:.5px}
+
+    /* STATE GRID — 2-3x larger cells with hover tooltips */
+    .sgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
+    .st{border-radius:6px;padding:14px 6px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent;position:relative;min-height:56px;display:flex;flex-direction:column;justify-content:center;align-items:center}
+    .st:hover{transform:scale(1.1);z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .st-ab{font-size:13px;font-weight:700;margin-bottom:3px}.st-lb{font-size:8px;text-transform:uppercase;letter-spacing:.5px}
     .st.legal{background:rgba(0,204,136,.08);border-color:rgba(0,204,136,.15)}.st.legal .st-ab{color:var(--grn)}.st.legal .st-lb{color:rgba(0,204,136,.5)}
     .st.legal:hover{border-color:rgba(0,204,136,.4)}
+    .st.gray-zone{background:rgba(255,215,0,.06);border-color:rgba(255,215,0,.12)}.st.gray-zone .st-ab{color:var(--gold)}.st.gray-zone .st-lb{color:rgba(255,215,0,.5)}
+    .st.gray-zone:hover{border-color:rgba(255,215,0,.4)}
     .st.restricted{background:rgba(255,71,87,.08);border-color:rgba(255,71,87,.15)}.st.restricted .st-ab{color:var(--red)}.st.restricted .st-lb{color:rgba(255,71,87,.5)}
     .st.restricted:hover{border-color:rgba(255,71,87,.4)}
     .st.exchange-restricted{background:rgba(68,136,255,.08);border-color:rgba(68,136,255,.15)}.st.exchange-restricted .st-ab{color:var(--blue)}.st.exchange-restricted .st-lb{color:rgba(68,136,255,.5)}
     .st.exchange-restricted:hover{border-color:rgba(68,136,255,.4)}
+
+    /* Tooltip popup */
+    .tooltip{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:var(--surface-2);border:1px solid var(--border-default);border-radius:8px;padding:10px 14px;min-width:220px;max-width:280px;z-index:100;box-shadow:0 12px 36px rgba(0,0,0,.5);text-align:left;pointer-events:none}
+    .tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--surface-2)}
+    .st:hover .tooltip{display:block}
+    .tooltip-name{font-size:12px;font-weight:600;color:var(--g1);margin-bottom:3px}
+    .tooltip-status{font-size:10px;font-weight:600;margin-bottom:6px}
+    .tooltip-detail{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    /* Position tooltips on right edge to go left */
+    .st:nth-child(10n+8) .tooltip,.st:nth-child(10n+9) .tooltip,.st:nth-child(10n) .tooltip{left:auto;right:0;transform:none}
+    .st:nth-child(10n+8) .tooltip::after,.st:nth-child(10n+9) .tooltip::after,.st:nth-child(10n) .tooltip::after{left:auto;right:14px;transform:none}
+    .st:nth-child(10n+1) .tooltip,.st:nth-child(10n+2) .tooltip{left:0;transform:none}
+    .st:nth-child(10n+1) .tooltip::after,.st:nth-child(10n+2) .tooltip::after{left:14px;transform:none}
+
+    /* Country grid */
     .cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
     .cc{background:var(--surface-1);border-radius:8px;padding:12px 14px;border:1px solid var(--border-default);cursor:pointer;transition:border-color .2s}
     .cc:hover{border-color:rgba(255,102,0,.2)}
@@ -47,16 +66,20 @@
     .cc-badge.exchange-restricted{background:rgba(68,136,255,.1);color:var(--blue);border:1px solid rgba(68,136,255,.15)}
     .cc-badge.gray-zone{background:rgba(255,215,0,.08);color:var(--gold);border:1px solid rgba(255,215,0,.12)}
     .cc-detail{font-size:10px;color:var(--text-tertiary);line-height:1.5}
-    .deep{margin:0 var(--space-page-x) 20px;background:var(--surface-1);border:1px solid rgba(255,71,87,.12);border-radius:12px;overflow:hidden}
+
+    /* Deep dive */
+    .deep{margin:0 var(--space-page-x) 20px;background:var(--surface-1);border:1px solid rgba(255,215,0,.15);border-radius:12px;overflow:hidden}
     .deep-hdr{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;cursor:pointer}
-    .deep-t{font-size:14px;font-weight:600;color:var(--red)}.deep-tog{font-size:10px;color:var(--text-tertiary)}
+    .deep-t{font-size:14px;font-weight:600;color:var(--gold)}.deep-tog{font-size:10px;color:var(--text-tertiary)}
     .deep-body{padding:0 16px 16px;display:none}.deep.open .deep-body{display:block}
-    .deep-pt{background:rgba(255,71,87,.03);border-left:2px solid rgba(255,71,87,.2);border-radius:0 6px 6px 0;padding:8px 12px;margin-bottom:6px}
+    .deep-pt{background:rgba(255,215,0,.02);border-left:2px solid rgba(255,215,0,.2);border-radius:0 6px 6px 0;padding:8px 12px;margin-bottom:6px}
     .deep-pt strong{color:var(--g1);font-weight:500;font-size:12px}.deep-pt p{font-size:10px;color:var(--text-tertiary);line-height:1.5;margin-top:2px}
     .deep-pt.ok{border-left-color:rgba(255,102,0,.3);background:rgba(255,102,0,.02)}
+
     .note{font-size:9px;color:var(--text-tertiary);text-align:center;padding:0 var(--space-page-x);margin:16px 0;line-height:1.5}.note em{color:var(--grn);font-style:normal}
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.sgrid{grid-template-columns:repeat(5,1fr)}.cgrid{grid-template-columns:1fr}.sbar{grid-template-columns:repeat(2,1fr)}.legend{gap:12px}}
+    @media(max-width:768px){.sgrid{grid-template-columns:repeat(5,1fr)}.cgrid{grid-template-columns:1fr}.sbar{grid-template-columns:repeat(2,1fr)}.legend{gap:12px}.st{padding:12px 4px;min-height:48px}.tooltip{min-width:180px}}
+    @media(max-width:480px){.sgrid{grid-template-columns:repeat(4,1fr)}}
     </style>
 </head>
 <body>
@@ -69,7 +92,7 @@
     <div class="legend">
         <div class="leg"><div class="leg-d" style="background:rgba(0,204,136,.3);border:1px solid rgba(0,204,136,.5)"></div><span style="color:var(--grn)">Legal</span> — no restrictions</div>
         <div class="leg"><div class="leg-d" style="background:rgba(68,136,255,.3);border:1px solid rgba(68,136,255,.5)"></div><span style="color:var(--blue)">Exchange limited</span> — holding legal</div>
-        <div class="leg"><div class="leg-d" style="background:rgba(255,215,0,.25);border:1px solid rgba(255,215,0,.4)"></div><span style="color:var(--gold)">Gray zone</span> — unclear</div>
+        <div class="leg"><div class="leg-d" style="background:rgba(255,215,0,.25);border:1px solid rgba(255,215,0,.4)"></div><span style="color:var(--gold)">Gray zone</span> — unclear/regulatory barrier</div>
         <div class="leg"><div class="leg-d" style="background:rgba(255,71,87,.3);border:1px solid rgba(255,71,87,.5)"></div><span style="color:var(--red)">Restricted</span> — banned</div>
     </div>
     <div class="sbar">
@@ -78,32 +101,151 @@
         <div class="sc"><div class="sv" style="color:var(--gold)" id="sum-gray">—</div><div class="sl">Gray zone</div></div>
         <div class="sc"><div class="sv" style="color:var(--red)" id="sum-rest">—</div><div class="sl">Restricted</div></div>
     </div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">United States — 50 states</div><div class="sec-s">Click any state for Google search</div></div><div class="sgrid" id="sgrid"></div></div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">International — 30 countries</div><div class="sec-s">Sorted by status</div></div><div class="cgrid" id="cgrid"></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">United States — 50 states</div><div class="sec-s">Hover/tap for details · click to search</div></div><div class="sgrid" id="sgrid"></div></div>
+
+    <!-- NY BitLicense deep dive — updated to reflect gray-zone status -->
     <div class="deep" id="deep" onclick="this.classList.toggle('open');document.getElementById('dtog').textContent=this.classList.contains('open')?'▴ collapse':'▾ expand'">
         <div class="deep-hdr"><div class="deep-t">New York BitLicense — deep dive</div><div class="deep-tog" id="dtog">▾ expand</div></div>
         <div class="deep-body">
-            <div class="deep-pt"><strong>For individuals</strong><p>No license required to hold, mine, or use Monero personally. BitLicense applies only to businesses.</p></div>
-            <div class="deep-pt"><strong>For businesses</strong><p>Must apply for BitLicense ($5,000 fee, extensive compliance). Most exchanges block NY. Only ~30 licenses issued since 2015.</p></div>
-            <div class="deep-pt"><strong>For mining</strong><p>Personal mining legal. Commercial may need permits. RandomX (CPU) not specifically targeted by PoW moratorium.</p></div>
-            <div class="deep-pt"><strong>Privacy coins</strong><p>No NY law specifically bans privacy coins. NYDFS informally discourages listings.</p></div>
-            <div class="deep-pt ok"><strong>Bottom line</strong><p>In NY you can legally hold, mine, and send Monero. Buy via P2P, atomic swaps, or non-custodial exchanges (Haveno, Trocador).</p></div>
+            <div class="deep-pt"><strong>For individuals</strong><p>No license required to hold, mine, or use Monero personally. BitLicense applies only to businesses providing virtual currency services.</p></div>
+            <div class="deep-pt"><strong>For businesses</strong><p>Must apply for BitLicense ($5,000 fee, extensive compliance). Most exchanges block NY. Only ~30 licenses issued since 2015. This is a barrier for businesses, not individuals.</p></div>
+            <div class="deep-pt"><strong>For mining</strong><p>Personal mining legal. Commercial may need permits. RandomX (CPU) not specifically targeted by any PoW moratorium.</p></div>
+            <div class="deep-pt"><strong>Privacy coins specifically</strong><p>No NY law specifically bans privacy coins. NYDFS informally discourages exchange listings, but holding and mining XMR is legal for individuals.</p></div>
+            <div class="deep-pt ok"><strong>Bottom line — Gray Zone, not Restricted</strong><p>In NY you can legally hold, mine, and send Monero. BitLicense creates a regulatory barrier for businesses, not a ban on the technology. Acquire via P2P, atomic swaps, or non-custodial exchanges (Haveno, Trocador).</p></div>
         </div>
     </div>
-    <div class="note"><em>Monero is legal in the vast majority of tracked jurisdictions.</em> The trend is toward regulation, not prohibition. Privacy is not illegal.</div>
+
+    <div class="sec"><div class="sec-h"><div class="sec-t">International — 30 countries</div><div class="sec-s">Sorted by status</div></div><div class="cgrid" id="cgrid"></div></div>
+    <div class="note"><em>Monero is legal in the vast majority of tracked jurisdictions.</em> The trend is toward regulation of exchanges, not prohibition of the technology. Privacy is not illegal.</div>
     <div class="ft">xmr.irish / legal · updated March 2026 · not legal advice</div>
 </div>
 <script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
 <script>
 NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
-var states=[{s:'AL',n:'Alabama',st:'legal',d:'No specific crypto restrictions.'},{s:'AK',n:'Alaska',st:'legal',d:'No money transmitter laws for crypto.'},{s:'AZ',n:'Arizona',st:'legal',d:'Crypto-friendly legislation.'},{s:'AR',n:'Arkansas',st:'legal',d:'Standard regulations.'},{s:'CA',n:'California',st:'legal',d:'DFPI oversees crypto. No privacy coin ban.'},{s:'CO',n:'Colorado',st:'legal',d:'Accepts crypto for state payments.'},{s:'CT',n:'Connecticut',st:'legal',d:'Money transmitter license required for businesses.'},{s:'DE',n:'Delaware',st:'legal',d:'Business-friendly.'},{s:'FL',n:'Florida',st:'legal',d:'Active crypto market.'},{s:'GA',n:'Georgia',st:'legal',d:'Standard money transmitter laws.'},{s:'HI',n:'Hawaii',st:'exchange-restricted',d:'Limited exchange access.'},{s:'ID',n:'Idaho',st:'legal',d:'No specific restrictions.'},{s:'IL',n:'Illinois',st:'legal',d:'Digital commerce act.'},{s:'IN',n:'Indiana',st:'legal',d:'Minimal restrictions.'},{s:'IA',n:'Iowa',st:'legal',d:'No specific crypto legislation.'},{s:'KS',n:'Kansas',st:'legal',d:'Standard rules.'},{s:'KY',n:'Kentucky',st:'legal',d:'Standard regulations.'},{s:'LA',n:'Louisiana',st:'legal',d:'Virtual currency business act.'},{s:'ME',n:'Maine',st:'legal',d:'No specific restrictions.'},{s:'MD',n:'Maryland',st:'legal',d:'Standard money transmitter laws.'},{s:'MA',n:'Massachusetts',st:'legal',d:'Standard securities regulations.'},{s:'MI',n:'Michigan',st:'legal',d:'No specific restrictions.'},{s:'MN',n:'Minnesota',st:'legal',d:'Standard regulations.'},{s:'MS',n:'Mississippi',st:'legal',d:'No specific restrictions.'},{s:'MO',n:'Missouri',st:'legal',d:'No specific restrictions.'},{s:'MT',n:'Montana',st:'legal',d:'Crypto-friendly.'},{s:'NE',n:'Nebraska',st:'legal',d:'Digital asset banking framework.'},{s:'NV',n:'Nevada',st:'legal',d:'No income tax. Crypto-friendly.'},{s:'NH',n:'New Hampshire',st:'legal',d:'No sales tax. Crypto-friendly.'},{s:'NJ',n:'New Jersey',st:'legal',d:'Standard laws.'},{s:'NM',n:'New Mexico',st:'legal',d:'No specific restrictions.'},{s:'NY',n:'New York',st:'restricted',d:'BitLicense required. See deep dive.'},{s:'NC',n:'North Carolina',st:'legal',d:'Standard laws.'},{s:'ND',n:'North Dakota',st:'legal',d:'Cheap electricity.'},{s:'OH',n:'Ohio',st:'legal',d:'Previously accepted BTC for taxes.'},{s:'OK',n:'Oklahoma',st:'legal',d:'No specific restrictions.'},{s:'OR',n:'Oregon',st:'legal',d:'No specific restrictions.'},{s:'PA',n:'Pennsylvania',st:'legal',d:'Standard regulations.'},{s:'RI',n:'Rhode Island',st:'legal',d:'Standard regulations.'},{s:'SC',n:'South Carolina',st:'legal',d:'No specific restrictions.'},{s:'SD',n:'South Dakota',st:'legal',d:'No income tax.'},{s:'TN',n:'Tennessee',st:'legal',d:'No income tax.'},{s:'TX',n:'Texas',st:'legal',d:'Mining incentives.'},{s:'UT',n:'Utah',st:'legal',d:'Blockchain promotion act.'},{s:'VT',n:'Vermont',st:'legal',d:'Blockchain-friendly.'},{s:'VA',n:'Virginia',st:'legal',d:'Standard regulations.'},{s:'WA',n:'Washington',st:'legal',d:'Money transmitter license required.'},{s:'WV',n:'West Virginia',st:'legal',d:'No specific restrictions.'},{s:'WI',n:'Wisconsin',st:'legal',d:'Standard regulations.'},{s:'WY',n:'Wyoming',st:'legal',d:'Most crypto-friendly state. DAO LLC law.'}];
-var countries=[{s:'UK',n:'United Kingdom',st:'legal',d:'FCA oversees. No privacy coin ban.'},{s:'DE',n:'Germany',st:'legal',d:'BaFin regulated. Tax-free after 1yr holding.'},{s:'IE',n:'Ireland',st:'legal',d:'Revenue Commissioners treat as property.'},{s:'FR',n:'France',st:'gray-zone',d:'AMF oversight. Privacy coins under scrutiny.'},{s:'JP',n:'Japan',st:'exchange-restricted',d:'XMR delisted from all exchanges. Holding legal.'},{s:'KR',n:'South Korea',st:'exchange-restricted',d:'Privacy coins banned from exchanges since 2021.'},{s:'AU',n:'Australia',st:'legal',d:'AUSTRAC regulated. Standard CGT.'},{s:'CA',n:'Canada',st:'legal',d:'CRA treats as commodity.'},{s:'CH',n:'Switzerland',st:'legal',d:'FINMA oversight. Crypto Valley.'},{s:'SG',n:'Singapore',st:'legal',d:'MAS regulated.'},{s:'NL',n:'Netherlands',st:'legal',d:'DNB registered. EU regulations.'},{s:'BR',n:'Brazil',st:'legal',d:'Active community.'},{s:'IN',n:'India',st:'gray-zone',d:'30% tax. Hostile environment.'},{s:'RU',n:'Russia',st:'gray-zone',d:'Mining legal. Trading restricted.'},{s:'AE',n:'UAE',st:'legal',d:'VARA in Dubai. Crypto-friendly.'},{s:'TH',n:'Thailand',st:'legal',d:'SEC regulated.'},{s:'PH',n:'Philippines',st:'legal',d:'BSP registered exchanges.'},{s:'MX',n:'Mexico',st:'legal',d:'FinTech law covers crypto.'},{s:'NG',n:'Nigeria',st:'gray-zone',d:'Growing P2P market.'},{s:'ZA',n:'South Africa',st:'legal',d:'FSCA declaration as financial product.'},{s:'AR',n:'Argentina',st:'legal',d:'High adoption due to inflation.'},{s:'CO',n:'Colombia',st:'legal',d:'Growing adoption.'},{s:'TR',n:'Turkey',st:'exchange-restricted',d:'Payments banned. Trading possible.'},{s:'PL',n:'Poland',st:'legal',d:'EU MiCA regulations.'},{s:'CN',n:'China',st:'restricted',d:'All crypto banned since 2021.'},{s:'DZ',n:'Algeria',st:'restricted',d:'Banned since 2018.'},{s:'BD',n:'Bangladesh',st:'restricted',d:'All crypto banned.'},{s:'EG',n:'Egypt',st:'restricted',d:'Banking restrictions.'},{s:'MA',n:'Morocco',st:'restricted',d:'Banned since 2017.'},{s:'NP',n:'Nepal',st:'restricted',d:'NRB banned all crypto.'}];
+
+// NY is now GRAY-ZONE (gold) not restricted (red)
+var states=[
+{s:'AL',n:'Alabama',st:'legal',d:'No specific crypto restrictions. Standard business regulations apply.'},
+{s:'AK',n:'Alaska',st:'legal',d:'No money transmitter laws for crypto. Favorable regulatory environment.'},
+{s:'AZ',n:'Arizona',st:'legal',d:'Crypto-friendly legislation. Blockchain technology promoted by state.'},
+{s:'AR',n:'Arkansas',st:'legal',d:'Standard regulations. No privacy coin restrictions.'},
+{s:'CA',n:'California',st:'legal',d:'DFPI oversees crypto. No privacy coin ban. Active crypto community.'},
+{s:'CO',n:'Colorado',st:'legal',d:'Accepts crypto for state payments. Progressive crypto policies.'},
+{s:'CT',n:'Connecticut',st:'legal',d:'Money transmitter license required for businesses. Holding legal.'},
+{s:'DE',n:'Delaware',st:'legal',d:'Business-friendly state. No specific crypto restrictions.'},
+{s:'FL',n:'Florida',st:'legal',d:'Active crypto market. No privacy coin restrictions.'},
+{s:'GA',n:'Georgia',st:'legal',d:'Standard money transmitter laws. No crypto-specific bans.'},
+{s:'HI',n:'Hawaii',st:'exchange-restricted',d:'Limited exchange access. Digital Currency Innovation Lab program active.'},
+{s:'ID',n:'Idaho',st:'legal',d:'No specific restrictions. Low electricity costs favor mining.'},
+{s:'IL',n:'Illinois',st:'legal',d:'Digital commerce act. Active blockchain community.'},
+{s:'IN',n:'Indiana',st:'legal',d:'Minimal restrictions on crypto. Standard regulations.'},
+{s:'IA',n:'Iowa',st:'legal',d:'No specific crypto legislation. Standard rules apply.'},
+{s:'KS',n:'Kansas',st:'legal',d:'Standard rules. No privacy coin restrictions.'},
+{s:'KY',n:'Kentucky',st:'legal',d:'Standard regulations. Low electricity costs in some areas.'},
+{s:'LA',n:'Louisiana',st:'legal',d:'Virtual currency business act. Low electricity costs.'},
+{s:'ME',n:'Maine',st:'legal',d:'No specific restrictions on privacy coins.'},
+{s:'MD',n:'Maryland',st:'legal',d:'Standard money transmitter laws apply.'},
+{s:'MA',n:'Massachusetts',st:'legal',d:'Standard securities regulations. High electricity costs.'},
+{s:'MI',n:'Michigan',st:'legal',d:'No specific restrictions on crypto or mining.'},
+{s:'MN',n:'Minnesota',st:'legal',d:'Standard regulations. No privacy coin restrictions.'},
+{s:'MS',n:'Mississippi',st:'legal',d:'No specific restrictions. Low electricity costs.'},
+{s:'MO',n:'Missouri',st:'legal',d:'No specific crypto restrictions.'},
+{s:'MT',n:'Montana',st:'legal',d:'Crypto-friendly. Low electricity costs for mining.'},
+{s:'NE',n:'Nebraska',st:'legal',d:'Digital asset banking framework. Progressive approach.'},
+{s:'NV',n:'Nevada',st:'legal',d:'No income tax. Crypto-friendly legislation.'},
+{s:'NH',n:'New Hampshire',st:'legal',d:'No sales tax. Very crypto-friendly policies.'},
+{s:'NJ',n:'New Jersey',st:'legal',d:'Standard laws. No privacy coin ban.'},
+{s:'NM',n:'New Mexico',st:'legal',d:'No specific restrictions.'},
+{s:'NY',n:'New York',st:'gray-zone',d:'BitLicense required for businesses — not individuals. Holding, mining, and sending XMR is legal. Regulatory barrier, not a ban.'},
+{s:'NC',n:'North Carolina',st:'legal',d:'Standard laws. No privacy coin restrictions.'},
+{s:'ND',n:'North Dakota',st:'legal',d:'Cheapest electricity in US. Ideal for mining.'},
+{s:'OH',n:'Ohio',st:'legal',d:'Previously accepted BTC for taxes. No crypto ban.'},
+{s:'OK',n:'Oklahoma',st:'legal',d:'No specific restrictions. Low electricity costs.'},
+{s:'OR',n:'Oregon',st:'legal',d:'No specific restrictions on crypto.'},
+{s:'PA',n:'Pennsylvania',st:'legal',d:'Standard regulations. Active crypto community.'},
+{s:'RI',n:'Rhode Island',st:'legal',d:'Standard regulations.'},
+{s:'SC',n:'South Carolina',st:'legal',d:'No specific restrictions.'},
+{s:'SD',n:'South Dakota',st:'legal',d:'No income tax. Business-friendly.'},
+{s:'TN',n:'Tennessee',st:'legal',d:'No income tax. Standard crypto regulations.'},
+{s:'TX',n:'Texas',st:'legal',d:'Mining incentives. Very crypto-friendly. Low electricity.'},
+{s:'UT',n:'Utah',st:'legal',d:'Blockchain promotion act. Crypto-friendly.'},
+{s:'VT',n:'Vermont',st:'legal',d:'Blockchain-friendly legislation.'},
+{s:'VA',n:'Virginia',st:'legal',d:'Standard regulations. No privacy coin ban.'},
+{s:'WA',n:'Washington',st:'legal',d:'Money transmitter license required for businesses. Low electricity.'},
+{s:'WV',n:'West Virginia',st:'legal',d:'No specific restrictions.'},
+{s:'WI',n:'Wisconsin',st:'legal',d:'Standard regulations.'},
+{s:'WY',n:'Wyoming',st:'legal',d:'Most crypto-friendly state. DAO LLC law. Digital asset framework.'}
+];
+
+var countries=[
+{s:'UK',n:'United Kingdom',st:'legal',d:'FCA oversees. No privacy coin ban. Standard CGT applies.'},
+{s:'DE',n:'Germany',st:'legal',d:'BaFin regulated. Tax-free after 1yr holding period.'},
+{s:'IE',n:'Ireland',st:'legal',d:'Revenue Commissioners treat as property. No specific ban.'},
+{s:'FR',n:'France',st:'gray-zone',d:'AMF oversight. Privacy coins under scrutiny with EU AMLR.'},
+{s:'JP',n:'Japan',st:'exchange-restricted',d:'XMR delisted from all exchanges. Holding and mining legal.'},
+{s:'KR',n:'South Korea',st:'exchange-restricted',d:'Privacy coins banned from exchanges since 2021. Holding legal.'},
+{s:'AU',n:'Australia',st:'legal',d:'AUSTRAC regulated. Standard CGT. No privacy coin ban.'},
+{s:'CA',n:'Canada',st:'legal',d:'CRA treats as commodity. No privacy coin restrictions.'},
+{s:'CH',n:'Switzerland',st:'legal',d:'FINMA oversight. Crypto Valley. Very crypto-friendly.'},
+{s:'SG',n:'Singapore',st:'legal',d:'MAS regulated. Progressive crypto framework.'},
+{s:'NL',n:'Netherlands',st:'legal',d:'DNB registered. EU regulations apply.'},
+{s:'BR',n:'Brazil',st:'legal',d:'Active community. Growing crypto adoption.'},
+{s:'IN',n:'India',st:'gray-zone',d:'30% tax on crypto gains. Hostile regulatory environment.'},
+{s:'RU',n:'Russia',st:'gray-zone',d:'Mining legalized. Trading restricted. Complex regulatory picture.'},
+{s:'AE',n:'UAE',st:'legal',d:'VARA in Dubai. Generally crypto-friendly. Some privacy token restrictions.'},
+{s:'TH',n:'Thailand',st:'legal',d:'SEC regulated. Standard crypto framework.'},
+{s:'PH',n:'Philippines',st:'legal',d:'BSP registered exchanges. Growing adoption.'},
+{s:'MX',n:'Mexico',st:'legal',d:'FinTech law covers crypto. Growing market.'},
+{s:'NG',n:'Nigeria',st:'gray-zone',d:'Growing P2P market despite central bank restrictions.'},
+{s:'ZA',n:'South Africa',st:'legal',d:'FSCA declaration as financial product. Regulated.'},
+{s:'AR',n:'Argentina',st:'legal',d:'High adoption due to inflation. Crypto widely used.'},
+{s:'CO',n:'Colombia',st:'legal',d:'Growing adoption. No specific crypto ban.'},
+{s:'TR',n:'Turkey',st:'exchange-restricted',d:'Crypto payments banned. Exchange trading possible with restrictions.'},
+{s:'PL',n:'Poland',st:'legal',d:'EU MiCA regulations apply. No additional restrictions.'},
+{s:'CN',n:'China',st:'restricted',d:'All crypto mining and trading banned since 2021.'},
+{s:'DZ',n:'Algeria',st:'restricted',d:'All cryptocurrency activities banned since 2018.'},
+{s:'BD',n:'Bangladesh',st:'restricted',d:'All crypto banned. Strict enforcement.'},
+{s:'EG',n:'Egypt',st:'restricted',d:'Banking restrictions on crypto. Effectively banned.'},
+{s:'MA',n:'Morocco',st:'restricted',d:'Crypto banned since 2017. Under review.'},
+{s:'NP',n:'Nepal',st:'restricted',d:'NRB banned all crypto. Strict enforcement.'}
+];
+
 var all=states.concat(countries);
 document.getElementById('sum-legal').textContent=all.filter(function(x){return x.st==='legal'}).length;
 document.getElementById('sum-exch').textContent=all.filter(function(x){return x.st==='exchange-restricted'}).length;
 document.getElementById('sum-gray').textContent=all.filter(function(x){return x.st==='gray-zone'}).length;
 document.getElementById('sum-rest').textContent=all.filter(function(x){return x.st==='restricted'}).length;
-var sg=document.getElementById('sgrid');sg.innerHTML=states.map(function(s){return '<div class="st '+s.st+'" title="'+s.n+': '+s.d+'" onclick="window.open(\'https://www.google.com/search?q=monero+legal+status+'+encodeURIComponent(s.n)+'\',\'_blank\')"><div class="st-ab">'+s.s+'</div><div class="st-lb">'+s.st.replace('exchange-','exc-').replace('-zone','')+'</div></div>'}).join('');
-var cg=document.getElementById('cgrid');cg.innerHTML=countries.map(function(c){return '<div class="cc" onclick="window.open(\'https://www.google.com/search?q=monero+legal+status+'+encodeURIComponent(c.n)+'\',\'_blank\')"><div class="cc-top"><div><div class="cc-name">'+c.n+'</div><div class="cc-code">'+c.s+'</div></div><div class="cc-badge '+c.st+'">'+c.st.replace('-',' ')+'</div></div><div class="cc-detail">'+c.d+'</div></div>'}).join('');
+
+// Render state grid with hover tooltips
+var sg=document.getElementById('sgrid');
+sg.innerHTML=states.map(function(s){
+    var statusLabel=s.st.replace('exchange-','exc-').replace('-zone','');
+    var statusColor=s.st==='legal'?'var(--grn)':s.st==='gray-zone'?'var(--gold)':s.st==='restricted'?'var(--red)':'var(--blue)';
+    return '<div class="st '+s.st+'" onclick="window.open(\'https://www.google.com/search?q=monero+legal+status+'+encodeURIComponent(s.n)+'\',\'_blank\')">'
+        +'<div class="tooltip"><div class="tooltip-name">'+s.n+'</div><div class="tooltip-status" style="color:'+statusColor+'">'+s.st.replace('-',' ').toUpperCase()+'</div><div class="tooltip-detail">'+s.d+'</div></div>'
+        +'<div class="st-ab">'+s.s+'</div><div class="st-lb">'+statusLabel+'</div></div>';
+}).join('');
+
+// Render country grid
+var cg=document.getElementById('cgrid');
+cg.innerHTML=countries.map(function(c){
+    return '<div class="cc" onclick="window.open(\'https://www.google.com/search?q=monero+legal+status+'+encodeURIComponent(c.n)+'\',\'_blank\')">'
+        +'<div class="cc-top"><div><div class="cc-name">'+c.n+'</div><div class="cc-code">'+c.s+'</div></div><div class="cc-badge '+c.st+'">'+c.st.replace('-',' ')+'</div></div>'
+        +'<div class="cc-detail">'+c.d+'</div></div>';
+}).join('');
+
+// Mobile: tap to show tooltip (toggle)
+if('ontouchstart' in window){
+    document.querySelectorAll('.st').forEach(function(el){
+        el.addEventListener('touchstart',function(e){
+            var wasActive=el.querySelector('.tooltip').style.display==='block';
+            document.querySelectorAll('.tooltip').forEach(function(t){t.style.display='none'});
+            if(!wasActive){el.querySelector('.tooltip').style.display='block';e.preventDefault()}
+        });
+    });
+    document.addEventListener('touchstart',function(e){
+        if(!e.target.closest('.st')){document.querySelectorAll('.tooltip').forEach(function(t){t.style.display='none'})}
+    });
+}
 </script>
 </body></html>
