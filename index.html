@@ -15,41 +15,50 @@
        HOME PAGE — v4.0 Overrides on d10
        ═══════════════════════════════════════════════════════════ */
 
-    .hero{padding:80px var(--space-page-x) 0;display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:center;min-height:380px}
+    .hero{padding:80px var(--space-page-x) 0;display:grid;grid-template-columns:1fr 560px;gap:32px;align-items:center;min-height:520px}
     .hero-kicker{font-family:var(--font-mono);font-size:var(--text-eyebrow);letter-spacing:4px;color:var(--text-tertiary);text-transform:uppercase;margin-bottom:12px}
     .hero-title{font-family:var(--font-headline);font-size:var(--text-hero);font-weight:600;letter-spacing:-1.5px;line-height:1.08;margin-bottom:14px}
     .hero-title span{color:var(--xmr)}
     .hero-sub{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-body);color:var(--text-secondary);line-height:1.7;margin-bottom:24px;max-width:500px}
     .cta-row{display:flex;gap:10px;flex-wrap:wrap}
 
-    .stem-1{top:50%;left:50%;height:130px;transform:rotate(30deg);background:linear-gradient(rgba(255,102,0,.5),transparent)}
-    .stem-2{top:50%;left:50%;height:110px;transform:rotate(90deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
-    .stem-3{top:50%;left:50%;height:140px;transform:rotate(150deg);background:linear-gradient(rgba(255,102,0,.45),transparent)}
-    .stem-4{top:50%;left:50%;height:95px;transform:rotate(210deg);background:linear-gradient(rgba(255,102,0,.35),transparent)}
-    .stem-5{top:50%;left:50%;height:115px;transform:rotate(270deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
-    .stem-6{top:50%;left:50%;height:108px;transform:rotate(330deg);background:linear-gradient(rgba(255,102,0,.38),transparent)}
-    .ring-1 .rn-1{top:-4px;left:50%}
-    .ring-1 .rn-2{bottom:20%;left:-4px;width:5px;height:5px;box-shadow:0 0 5px rgba(255,102,0,.4);position:absolute;border-radius:50%;background:var(--xmr)}
-    .ring-2 .rn-1{bottom:-4px;right:20%}
-    .ring-2 .rn-2{top:15%;right:-3px;width:4px;height:4px;box-shadow:0 0 4px rgba(255,102,0,.3);position:absolute;border-radius:50%;background:var(--xmr)}
-    .ring-3 .rn-1{top:50%;right:-4px}
+    /* Particle rain background */
+    #particleRain{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:0;opacity:0.4}
 
-    /* Ambient glow behind orbital viz */
+    /* Enlarged orbital — 2x scale */
+    .hero .ring-container{width:520px;height:520px}
+    .hero .ring-glow{width:480px;height:480px}
+    .hero .ring-1{width:440px;height:440px;border-width:2.5px;border-top-color:rgba(255,102,0,.65);border-right-color:rgba(255,102,0,.25);border-bottom-color:rgba(255,102,0,.12)}
+    .hero .ring-2{width:340px;height:340px;border-width:2px;border-bottom-color:rgba(255,102,0,.55);border-left-color:rgba(255,102,0,.2)}
+    .hero .ring-3{width:230px;height:230px;border-width:2px;border-top-color:rgba(255,102,0,.5);border-right-color:rgba(255,102,0,.15)}
+    .hero .ring-node{width:10px;height:10px;box-shadow:0 0 12px rgba(255,102,0,.6)}
+    .hero .rc-price{font-size:44px}
+    .hero .rc-label{font-size:11px;letter-spacing:3px;margin-top:4px}
+    .hero .rc-change{font-size:14px;margin-top:5px}
+
+    .stem-1{top:50%;left:50%;height:220px;transform:rotate(30deg);background:linear-gradient(rgba(255,102,0,.5),transparent)}
+    .stem-2{top:50%;left:50%;height:190px;transform:rotate(90deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
+    .stem-3{top:50%;left:50%;height:240px;transform:rotate(150deg);background:linear-gradient(rgba(255,102,0,.45),transparent)}
+    .stem-4{top:50%;left:50%;height:165px;transform:rotate(210deg);background:linear-gradient(rgba(255,102,0,.35),transparent)}
+    .stem-5{top:50%;left:50%;height:200px;transform:rotate(270deg);background:linear-gradient(rgba(255,102,0,.4),transparent)}
+    .stem-6{top:50%;left:50%;height:185px;transform:rotate(330deg);background:linear-gradient(rgba(255,102,0,.38),transparent)}
+    .ring-1 .rn-1{top:-5px;left:50%}
+    .ring-1 .rn-2{bottom:20%;left:-5px;width:8px;height:8px;box-shadow:0 0 8px rgba(255,102,0,.5);position:absolute;border-radius:50%;background:var(--xmr)}
+    .ring-2 .rn-1{bottom:-5px;right:20%}
+    .ring-2 .rn-2{top:15%;right:-4px;width:7px;height:7px;box-shadow:0 0 6px rgba(255,102,0,.4);position:absolute;border-radius:50%;background:var(--xmr)}
+    .ring-3 .rn-1{top:50%;right:-5px}
+
+    /* Ambient glow behind orbital viz — scaled up */
     .ring-container{position:relative}
     .ring-container::after{
         content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
-        width:360px;height:360px;border-radius:50%;
-        background:radial-gradient(circle,rgba(255,102,0,.07) 0%,rgba(255,102,0,.03) 35%,transparent 70%);
+        width:620px;height:620px;border-radius:50%;
+        background:radial-gradient(circle,rgba(255,102,0,.08) 0%,rgba(255,102,0,.04) 30%,rgba(255,102,0,.01) 55%,transparent 75%);
         pointer-events:none;z-index:0
     }
     .ring-glow{
-        background:radial-gradient(circle,rgba(255,102,0,.08) 0%,rgba(255,102,0,.03) 40%,transparent 70%)
+        background:radial-gradient(circle,rgba(255,102,0,.09) 0%,rgba(255,102,0,.04) 40%,transparent 70%)
     }
-    /* Boost ring stroke visibility */
-    .ring-1{border-top-color:rgba(255,102,0,.65);border-right-color:rgba(255,102,0,.25);border-bottom-color:rgba(255,102,0,.12)}
-    .ring-2{border-bottom-color:rgba(255,102,0,.55);border-left-color:rgba(255,102,0,.2)}
-    .ring-3{border-top-color:rgba(255,102,0,.5);border-right-color:rgba(255,102,0,.15)}
-    /* Boost stem visibility */
     .stem{opacity:.28}
 
     .stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:920px}
@@ -120,19 +129,39 @@
 
     .quote-section{text-align:center;padding:var(--space-section) var(--space-page-x);border-top:1px solid var(--border-subtle)}
 
+    @media(max-width:1100px){
+        .hero{grid-template-columns:1fr 380px}
+        .hero .ring-container{width:360px;height:360px}
+        .hero .ring-1{width:320px;height:320px}
+        .hero .ring-2{width:240px;height:240px}
+        .hero .ring-3{width:160px;height:160px}
+        .hero .rc-price{font-size:34px}
+        .stem-1,.stem-2,.stem-3,.stem-4,.stem-5,.stem-6{height:140px!important}
+        .ring-container::after{width:440px;height:440px}
+    }
     @media(max-width:768px){
         .hero{grid-template-columns:1fr;padding:60px 16px 0;min-height:auto}
-        .ring-container{width:220px;height:220px;margin:0 auto 20px}
+        .hero .ring-container{width:260px;height:260px;margin:0 auto 20px}
+        .hero .ring-1{width:230px;height:230px}
+        .hero .ring-2{width:170px;height:170px}
+        .hero .ring-3{width:115px;height:115px}
+        .hero .rc-price{font-size:28px}
+        .hero .rc-label{font-size:9px}
+        .hero .rc-change{font-size:11px}
+        .stem-1,.stem-2,.stem-3,.stem-4,.stem-5,.stem-6{height:100px!important}
+        .ring-container::after{width:320px;height:320px}
         .stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}
         .pillar-grid,.invest-grid,.path-grid{grid-template-columns:1fr}
         .mempool-hero{margin:0 16px;padding:24px 20px}
         .mempool-stats{flex-wrap:wrap;gap:20px}
         .mempool-track-row{flex-direction:column;align-items:stretch}
         .mempool-track-row input[type="text"]{max-width:100%}
+        #particleRain{opacity:0.25}
     }
     </style>
 </head>
 <body>
+<canvas id="particleRain"></canvas>
 <div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
     <canvas id="constellation" class="constellation"></canvas>
     <div class="blob blob-1"></div><div class="blob blob-3"></div><div class="blob blob-5"></div>
@@ -457,20 +486,72 @@ initMiniViz('pv-ring',function(c,W,H,t,mx,my){
     c.font='bold 7px DM Mono';c.fillStyle=hx('#FF6600',.3);c.textAlign='center';c.fillText('LINK',cx,cy+3);
 });
 
-// Dual-Key branching (pillar: Stealth Addresses)
+// Stealth Addresses — one public address spawns unique one-time destinations
+// Visual story: center address pulses, one-time addresses spawn outward and dissolve (unlinkable)
 initMiniViz('pv-stealth',function(c,W,H,t,mx,my){
     var cx=W/2,cy=H/2;
-    function branch(x,y,z,angle,depth,len,isView){if(depth>5||len<4)return;var ex=x+Math.cos(angle)*len,ey=y+Math.sin(angle)*len,ez=z+Math.sin(depth*.8+t*.015)*10;
-        var p1={x:x,y:y,z:z},p2={x:ex,y:ey,z:ez};p1=rY(p1,t*.004+(mx-cx)*.0015);p1=rX(p1,(my-cy)*.001);p2=rY(p2,t*.004+(mx-cx)*.0015);p2=rX(p2,(my-cy)*.001);
-        var pr1=proj(p1.x,p1.y,p1.z,cx,cy),pr2=proj(p2.x,p2.y,p2.z,cx,cy);var col=isView?'#00CC88':'#FF6600';
-        c.beginPath();c.moveTo(pr1.x,pr1.y);c.lineTo(pr2.x,pr2.y);c.strokeStyle=hx(col,(.25-depth*.04)*pr1.s);c.lineWidth=(1.5-depth*.2)*pr1.s;c.stroke();
-        if(depth>=4){c.beginPath();c.arc(pr2.x,pr2.y,2.5*pr2.s,0,TAU);c.fillStyle=hx(col,.35*pr2.s);c.fill()}
-        var sp=.45+Math.sin(t*.008+depth)*.08;branch(ex,ey,ez,angle-sp,depth+1,len*.62,isView);branch(ex,ey,ez,angle+sp*.7,depth+1,len*.58,isView)}
-    branch(0,-55,0,-PI/2-.35,0,38,true);branch(0,-55,0,-PI/2+.35,0,38,false);
-    var sP={x:0,y:-55,z:0};sP=rY(sP,t*.004+(mx-cx)*.0015);sP=rX(sP,(my-cy)*.001);var sPr=proj(sP.x,sP.y,sP.z,cx,cy);
-    c.beginPath();c.arc(sPr.x,sPr.y,5,0,TAU);c.fillStyle=hx('#FFFFFF',.35);c.fill();
-    c.font='bold 7px DM Mono';c.fillStyle=hx('#00CC88',.35);c.textAlign='right';c.fillText('VIEW',cx-40,cy+55);
-    c.fillStyle=hx('#FF6600',.35);c.textAlign='left';c.fillText('SPEND',cx+40,cy+55);
+    var NUM=12;
+
+    // Faint radial grid showing "address space"
+    for(var ring=1;ring<=3;ring++){
+        var rr=ring*28;
+        var p={x:0,y:0,z:0};p=rY(p,t*.003+(mx-cx)*.001);p=rX(p,(my-cy)*.001);
+        var pr=proj(p.x,p.y,p.z,cx,cy);
+        c.beginPath();c.arc(pr.x,pr.y,rr*pr.s,0,TAU);
+        c.strokeStyle=hx('#00CC88',.04);c.lineWidth=.5;c.stroke();
+    }
+
+    // One-time addresses — spawn from center, drift outward, fade
+    for(var i=0;i<NUM;i++){
+        var spawnT=(t*0.8+i*83)%200; // cycle per particle
+        var life=spawnT/200; // 0→1 lifecycle
+        if(life>1)continue;
+
+        var angle=i/NUM*TAU+i*2.3+Math.sin(i*7.1)*1.5; // unique direction per OTA
+        var dist=8+life*75; // drift outward
+        var fade=life<0.15?life/0.15:life>0.7?1-(life-0.7)/0.3:1; // fade in, hold, fade out
+        var wobble=Math.sin(t*.02+i*3)*3*life;
+
+        var p={x:Math.cos(angle)*dist+wobble,y:Math.sin(angle)*dist*.6,z:Math.sin(angle)*dist*.4+Math.cos(t*.01+i)*8};
+        p=rY(p,t*.003+(mx-cx)*.001);p=rX(p,(my-cy)*.001);
+        var pr=proj(p.x,p.y,p.z,cx,cy);
+
+        // Dashed connection line from center (fades with distance)
+        var lineAlpha=fade*0.12*(1-life*0.7);
+        if(lineAlpha>0.01){
+            c.beginPath();c.moveTo(cx,cy);c.lineTo(pr.x,pr.y);
+            c.strokeStyle=hx('#00CC88',lineAlpha);c.lineWidth=0.5;
+            c.setLineDash([3,4]);c.stroke();c.setLineDash([]);
+        }
+
+        // One-time address dot
+        var dotSize=(3+Math.sin(i*4)*1)*pr.s*fade;
+        c.beginPath();c.arc(pr.x,pr.y,dotSize,0,TAU);
+        c.fillStyle=hx('#00CC88',fade*0.55*pr.s);c.fill();
+
+        // Soft glow on fresh spawns
+        if(life<0.3){
+            c.beginPath();c.arc(pr.x,pr.y,dotSize*3,0,TAU);
+            c.fillStyle=hx('#00CC88',fade*0.06);c.fill();
+        }
+    }
+
+    // Center: public address (always visible, pulses)
+    var pulse=0.8+Math.sin(t*.04)*0.2;
+    var cp={x:0,y:0,z:0};cp=rY(cp,t*.003+(mx-cx)*.001);cp=rX(cp,(my-cy)*.001);
+    var cpr=proj(cp.x,cp.y,cp.z,cx,cy);
+
+    // Glow rings
+    c.beginPath();c.arc(cpr.x,cpr.y,18*pulse,0,TAU);c.fillStyle=hx('#00CC88',.04);c.fill();
+    c.beginPath();c.arc(cpr.x,cpr.y,10*pulse,0,TAU);c.fillStyle=hx('#00CC88',.08);c.fill();
+    // Core dot
+    c.beginPath();c.arc(cpr.x,cpr.y,5,0,TAU);c.fillStyle=hx('#00CC88',.7);c.fill();
+
+    // Labels
+    c.font='bold 8px DM Mono';c.textAlign='center';
+    c.fillStyle=hx('#00CC88',.4);c.fillText('PUBLIC ADDRESS',cx,cy-22);
+    c.font='7px DM Mono';c.fillStyle=hx('#00CC88',.2);
+    c.fillText('unique one-time destinations',cx,cy+58);
 });
 
 // Pedersen Commitments (pillar: RingCT)
@@ -508,6 +589,76 @@ function miniLoop(){
     requestAnimationFrame(miniLoop);
 }
 miniLoop();
+
+/* ═══════════════════════════════════════════════════════════
+   PARTICLE RAIN — Cascading orange dots background
+   Lightweight: ~120 particles, no physics, just sin/cos drift
+   ═══════════════════════════════════════════════════════════ */
+(function(){
+    if(prefersReducedMotion)return;
+    var c=document.getElementById('particleRain');
+    if(!c)return;
+    var ctx=c.getContext('2d');
+    var W,H,dpr;
+    var particles=[];
+    var PARTICLE_COUNT=120;
+
+    function resize(){
+        dpr=Math.min(devicePixelRatio||1,2);
+        W=window.innerWidth;H=window.innerHeight;
+        c.width=W*dpr;c.height=H*dpr;
+        ctx.setTransform(dpr,0,0,dpr,0,0);
+    }
+    resize();
+    window.addEventListener('resize',resize);
+
+    // Initialize particles
+    for(var i=0;i<PARTICLE_COUNT;i++){
+        particles.push({
+            x:Math.random()*2000,
+            y:Math.random()*2000-500,
+            speed:0.15+Math.random()*0.45,
+            size:0.8+Math.random()*2.2,
+            opacity:0.03+Math.random()*0.12,
+            drift:Math.random()*2-1,
+            phase:Math.random()*Math.PI*2,
+            pulse:0.5+Math.random()*0.5
+        });
+    }
+
+    function drawRain(){
+        ctx.clearRect(0,0,W,H);
+        for(var i=0;i<particles.length;i++){
+            var p=particles[i];
+            p.y+=p.speed;
+            p.x+=Math.sin(p.y*0.003+p.phase)*p.drift*0.3;
+
+            // Pulse opacity
+            var alpha=p.opacity*(0.6+Math.sin(p.y*0.005+p.phase)*0.4*p.pulse);
+
+            // Wrap around
+            if(p.y>H+20){p.y=-20;p.x=Math.random()*W}
+            if(p.x<-20)p.x=W+20;
+            if(p.x>W+20)p.x=-20;
+
+            // Draw dot with soft glow
+            ctx.beginPath();
+            ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+            ctx.fillStyle='rgba(255,102,0,'+alpha+')';
+            ctx.fill();
+
+            // Subtle glow ring on larger particles
+            if(p.size>2){
+                ctx.beginPath();
+                ctx.arc(p.x,p.y,p.size*3,0,Math.PI*2);
+                ctx.fillStyle='rgba(255,102,0,'+(alpha*0.15)+')';
+                ctx.fill();
+            }
+        }
+        requestAnimationFrame(drawRain);
+    }
+    drawRain();
+})();
 </script>
 </body>
 </html>
