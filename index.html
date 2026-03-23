@@ -34,6 +34,24 @@
     .ring-2 .rn-2{top:15%;right:-3px;width:4px;height:4px;box-shadow:0 0 4px rgba(255,102,0,.3);position:absolute;border-radius:50%;background:var(--xmr)}
     .ring-3 .rn-1{top:50%;right:-4px}
 
+    /* Ambient glow behind orbital viz */
+    .ring-container{position:relative}
+    .ring-container::after{
+        content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+        width:360px;height:360px;border-radius:50%;
+        background:radial-gradient(circle,rgba(255,102,0,.07) 0%,rgba(255,102,0,.03) 35%,transparent 70%);
+        pointer-events:none;z-index:0
+    }
+    .ring-glow{
+        background:radial-gradient(circle,rgba(255,102,0,.08) 0%,rgba(255,102,0,.03) 40%,transparent 70%)
+    }
+    /* Boost ring stroke visibility */
+    .ring-1{border-top-color:rgba(255,102,0,.65);border-right-color:rgba(255,102,0,.25);border-bottom-color:rgba(255,102,0,.12)}
+    .ring-2{border-bottom-color:rgba(255,102,0,.55);border-left-color:rgba(255,102,0,.2)}
+    .ring-3{border-top-color:rgba(255,102,0,.5);border-right-color:rgba(255,102,0,.15)}
+    /* Boost stem visibility */
+    .stem{opacity:.28}
+
     .stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:0 var(--space-page-x);max-width:920px}
     .stat-cell{text-align:center;padding:20px 12px}
     .stat-val{font-family:var(--font-data);font-size:var(--stat-value-size);font-weight:600;color:var(--xmr-text);margin-bottom:4px;transition:opacity var(--duration-slow) var(--ease-smooth)}
