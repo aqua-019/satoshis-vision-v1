@@ -93,6 +93,16 @@
     .pillar-title{font-family:var(--font-subhead);font-style:italic;font-size:var(--text-h3);margin-bottom:8px}
     .pillar-desc{font-family:var(--font-body);font-size:var(--text-body-sm);color:var(--text-tertiary);line-height:1.65;margin-bottom:16px}
     .pillar-val{font-family:var(--font-data);font-size:var(--pillar-value-size);font-weight:600}
+    .pillar-text{transition:opacity var(--duration-slow) var(--ease-smooth)}
+    .pillar-text.fading{opacity:0}
+
+    .invest-text{transition:opacity var(--duration-slow) var(--ease-smooth)}
+    .invest-text.fading{opacity:0}
+
+    /* Cycling indicators */
+    .cycle-dots{display:flex;justify-content:center;gap:6px;padding:14px 0 0}
+    .cycle-dot{width:4px;height:4px;border-radius:50%;background:var(--g8);transition:background var(--duration-base)}
+    .cycle-dot.active{background:var(--xmr)}
     .pillar-canvas{width:100%;height:140px;border-radius:var(--radius-sm);margin-bottom:14px;overflow:hidden;position:relative}
     .pillar-canvas canvas{width:100%;height:100%;display:block}
 
@@ -255,28 +265,35 @@
         </a>
 
         <div class="pillar-grid" id="pillar-grid">
-            <a class="pillar" href="btc-xmr-education.html">
+            <a class="pillar" id="pillar-0" href="btc-xmr-education.html">
                 <div class="pillar-canvas"><canvas id="pv-ring"></canvas></div>
-                <div class="pillar-kicker" style="color:var(--xmr)">Ring signatures</div>
-                <div class="pillar-title">Who sent it? Everyone and no one.</div>
-                <div class="pillar-desc">Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.</div>
-                <div class="pillar-val" style="color:var(--xmr)">16</div>
+                <div class="pillar-text">
+                    <div class="pillar-kicker" style="color:var(--xmr)">Ring signatures</div>
+                    <div class="pillar-title">Who sent it? Everyone and no one.</div>
+                    <div class="pillar-desc">Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.</div>
+                    <div class="pillar-val" style="color:var(--xmr)">16</div>
+                </div>
             </a>
-            <a class="pillar" href="btc-xmr-education.html">
+            <a class="pillar" id="pillar-1" href="btc-xmr-education.html">
                 <div class="pillar-canvas"><canvas id="pv-stealth"></canvas></div>
-                <div class="pillar-kicker" style="color:var(--grn)">Stealth addresses</div>
-                <div class="pillar-title">One address, infinite destinations.</div>
-                <div class="pillar-desc">Unique one-time address per transaction. No one can link payments on-chain.</div>
-                <div class="pillar-val" style="color:var(--grn)">Strong</div>
+                <div class="pillar-text">
+                    <div class="pillar-kicker" style="color:var(--grn)">Stealth addresses</div>
+                    <div class="pillar-title">One address, infinite destinations.</div>
+                    <div class="pillar-desc">Unique one-time address per transaction. No one can link payments on-chain.</div>
+                    <div class="pillar-val" style="color:var(--grn)">Strong</div>
+                </div>
             </a>
-            <a class="pillar" href="btc-xmr-education.html">
+            <a class="pillar" id="pillar-2" href="btc-xmr-education.html">
                 <div class="pillar-canvas"><canvas id="pv-pedersen"></canvas></div>
-                <div class="pillar-kicker" style="color:var(--cyan)">RingCT</div>
-                <div class="pillar-title">The amount is nobody's business.</div>
-                <div class="pillar-desc">Pedersen commitments prove validity without revealing amounts. Zero leakage.</div>
-                <div class="pillar-val" style="color:var(--cyan)">Hidden</div>
+                <div class="pillar-text">
+                    <div class="pillar-kicker" style="color:var(--cyan)">RingCT</div>
+                    <div class="pillar-title">The amount is nobody's business.</div>
+                    <div class="pillar-desc">Pedersen commitments prove validity without revealing amounts. Zero leakage.</div>
+                    <div class="pillar-val" style="color:var(--cyan)">Hidden</div>
+                </div>
             </a>
         </div>
+        <div class="cycle-dots" id="pillar-dots"></div>
 
         <!-- ═══ INVESTMENT CASE ═══ -->
         <div class="section-gap-lg"></div>
@@ -287,25 +304,32 @@
                 <div class="sec-s">Privacy demand is structural, not speculative.</div>
             </div>
             <div class="invest-grid" id="invest-grid">
-                <a class="invest-card" href="bottom-line.html">
-                    <div class="invest-kicker" style="color:var(--xmr)">Supply shock</div>
-                    <div class="invest-title">73 exchanges delisted. Supply tightened.</div>
-                    <div class="invest-desc">Demand moved P2P. Less supply + persistent demand = structural price support.</div>
-                    <div class="invest-val" style="color:var(--xmr)">73</div>
+                <a class="invest-card" id="inv-0" href="bottom-line.html">
+                    <div class="invest-text">
+                        <div class="invest-kicker" style="color:var(--xmr)">Supply shock</div>
+                        <div class="invest-title">73 exchanges delisted. Supply tightened.</div>
+                        <div class="invest-desc">Demand moved P2P. Less supply + persistent demand = structural price support.</div>
+                        <div class="invest-val" style="color:var(--xmr)">73</div>
+                    </div>
                 </a>
-                <a class="invest-card" href="bottom-line.html">
-                    <div class="invest-kicker" style="color:var(--grn)">IRS bounty</div>
-                    <div class="invest-title">$625K bounty. Still unclaimed.</div>
-                    <div class="invest-desc">Most expensive public audit in crypto — Monero passed. No one collected since 2020.</div>
-                    <div class="invest-val" style="color:var(--grn)">Unclaimed</div>
+                <a class="invest-card" id="inv-1" href="bottom-line.html">
+                    <div class="invest-text">
+                        <div class="invest-kicker" style="color:var(--grn)">IRS bounty</div>
+                        <div class="invest-title">$625K bounty. Still unclaimed.</div>
+                        <div class="invest-desc">Most expensive public audit in crypto — Monero passed. No one collected since 2020.</div>
+                        <div class="invest-val" style="color:var(--grn)">Unclaimed</div>
+                    </div>
                 </a>
-                <a class="invest-card" href="future-outlook.html">
-                    <div class="invest-kicker" style="color:var(--cyan)">FCMP++</div>
-                    <div class="invest-title">100M+ anonymity set. Coming.</div>
-                    <div class="invest-desc">Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.</div>
-                    <div class="invest-val" style="color:var(--cyan)">100M+</div>
+                <a class="invest-card" id="inv-2" href="future-outlook.html">
+                    <div class="invest-text">
+                        <div class="invest-kicker" style="color:var(--cyan)">FCMP++</div>
+                        <div class="invest-title">100M+ anonymity set. Coming.</div>
+                        <div class="invest-desc">Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.</div>
+                        <div class="invest-val" style="color:var(--cyan)">100M+</div>
+                    </div>
                 </a>
             </div>
+            <div class="cycle-dots" id="invest-dots"></div>
         </div>
 
         <!-- ═══ THREE PATHS ═══ -->
@@ -435,6 +459,96 @@ setInterval(function(){
    ═══════════════════════════════════════════════════════════ */
 function trackFromHome(){var h=document.getElementById('mp-tx-input').value.trim();if(h)window.location.href='mempool.html?tx='+h}
 document.getElementById('mp-tx-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackFromHome()});
+
+/* ═══════════════════════════════════════════════════════════
+   PILLAR CYCLING — 9 topics, 3 visible, every 20s
+   Priority: privacy first → origin → modern use → future
+   ═══════════════════════════════════════════════════════════ */
+var PILLARS=[
+  // Set 0 — Core privacy (default, matches canvas vizs)
+  [{kicker:'Ring signatures',title:'Who sent it? Everyone and no one.',desc:'Every transaction mixes your input with 15 decoys. 16 possible senders — statistically indistinguishable.',val:'16',color:'var(--xmr)',href:'btc-xmr-education.html'},
+   {kicker:'Stealth addresses',title:'One address, infinite destinations.',desc:'Unique one-time address per transaction. No one can link payments on-chain.',val:'Strong',color:'var(--grn)',href:'btc-xmr-education.html'},
+   {kicker:'RingCT',title:'The amount is nobody\'s business.',desc:'Pedersen commitments prove validity without revealing amounts. Zero leakage.',val:'Hidden',color:'var(--cyan)',href:'btc-xmr-education.html'}],
+  // Set 1 — Protocol layer
+  [{kicker:'Dandelion++',title:'Invisible broadcast.',desc:'Transactions propagate through a stem phase before exploding into fluff — preventing IP-level deanonymization.',val:'IP Safe',color:'var(--xmr)',href:'privacy-architecture.html'},
+   {kicker:'CLSAG signatures',title:'25% smaller. Same privacy.',desc:'Compact Linkable Spontaneous Anonymous Group signatures — optimized ring proofs without compromising anonymity.',val:'25%',color:'var(--grn)',href:'privacy-architecture.html'},
+   {kicker:'View tags',title:'80% faster sync.',desc:'One-byte tags on outputs let wallets skip irrelevant transactions during scanning. Massive UX improvement.',val:'80%',color:'var(--cyan)',href:'privacy-architecture.html'}],
+  // Set 2 — Future + origin
+  [{kicker:'FCMP++',title:'Full chain membership proofs.',desc:'Anonymity set expands from 16 decoys to the entire 100M+ output set. The largest privacy upgrade in Monero history.',val:'100M+',color:'var(--xmr)',href:'future-outlook.html'},
+   {kicker:'CryptoNote',title:'Where it all began.',desc:'The foundational protocol from Bytecoin research. Privacy-by-default at the protocol level, not as an afterthought.',val:'2014',color:'var(--grn)',href:'timeline.html'},
+   {kicker:'Tail emission',title:'Security forever.',desc:'0.6 XMR per block in perpetuity. No halving death spiral. Miners are incentivized to secure the chain indefinitely.',val:'∞',color:'var(--cyan)',href:'btc-xmr-education.html'}]
+];
+
+var pillarPage=0;
+var pillarDotsEl=document.getElementById('pillar-dots');
+for(var d=0;d<PILLARS.length;d++){var dot=document.createElement('div');dot.className='cycle-dot'+(d===0?' active':'');pillarDotsEl.appendChild(dot)}
+
+function renderPillars(page){
+    var set=PILLARS[page];
+    var texts=document.querySelectorAll('.pillar-text');
+    var cards=[document.getElementById('pillar-0'),document.getElementById('pillar-1'),document.getElementById('pillar-2')];
+    texts.forEach(function(t){t.classList.add('fading')});
+    setTimeout(function(){
+        set.forEach(function(p,i){
+            cards[i].href=p.href;
+            var t=texts[i];
+            t.querySelector('.pillar-kicker').textContent=p.kicker;
+            t.querySelector('.pillar-kicker').style.color=p.color;
+            t.querySelector('.pillar-title').textContent=p.title;
+            t.querySelector('.pillar-desc').textContent=p.desc;
+            t.querySelector('.pillar-val').textContent=p.val;
+            t.querySelector('.pillar-val').style.color=p.color;
+        });
+        texts.forEach(function(t){t.classList.remove('fading')});
+    },400);
+    pillarDotsEl.querySelectorAll('.cycle-dot').forEach(function(d,i){d.classList.toggle('active',i===page)});
+}
+setInterval(function(){pillarPage=(pillarPage+1)%PILLARS.length;renderPillars(pillarPage)},20000);
+
+/* ═══════════════════════════════════════════════════════════
+   INVESTMENT CYCLING — 9 topics, 3 visible, every 18s
+   Heavy 2027+ bias: future topics appear in 2 of 3 sets
+   ═══════════════════════════════════════════════════════════ */
+var INVEST=[
+  // Set 0 — Current fundamentals
+  [{kicker:'Supply shock',title:'73 exchanges delisted. Supply tightened.',desc:'Demand moved P2P. Less supply + persistent demand = structural price support.',val:'73',color:'var(--xmr)',href:'bottom-line.html'},
+   {kicker:'IRS bounty',title:'$625K bounty. Still unclaimed.',desc:'Most expensive public audit in crypto — Monero passed. No one collected since 2020.',val:'Unclaimed',color:'var(--grn)',href:'bottom-line.html'},
+   {kicker:'FCMP++',title:'100M+ anonymity set. Coming.',desc:'Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.',val:'100M+',color:'var(--cyan)',href:'future-outlook.html'}],
+  // Set 1 — 2027+ outlook (weighted)
+  [{kicker:'Seraphis',title:'Next-generation transaction protocol.',desc:'Modular address framework replacing RingCT. Enables hardware wallet support and flexible membership proofs.',val:'2027+',color:'var(--xmr)',href:'future-outlook.html'},
+   {kicker:'DEX era',title:'Atomic swaps go mainstream.',desc:'Haveno, cross-chain swaps, and decentralized on-ramps eliminate the need for centralized exchanges entirely.',val:'P2P',color:'var(--grn)',href:'future-outlook.html'},
+   {kicker:'Regulatory proof',title:'Survived 73 delistings. Still growing.',desc:'Privacy demand is inelastic. Delistings drive P2P adoption and strengthen the decentralized network.',val:'Antifragile',color:'var(--cyan)',href:'bottom-line.html'}],
+  // Set 2 — Market + future mix
+  [{kicker:'Tail emission',title:'Inflation below gold by 2025.',desc:'0.85% annual inflation — declining every year. Sound monetary policy without the halving cliff Bitcoin faces.',val:'0.85%',color:'var(--xmr)',href:'btc-xmr-education.html'},
+   {kicker:'Hashrate ATH',title:'Network security at all-time highs.',desc:'CPU mining via RandomX keeps mining accessible while the hashrate reaches record levels. No ASIC cartel.',val:'ATH',color:'var(--grn)',href:'bottom-line.html'},
+   {kicker:'Privacy demand',title:'Surveillance economy drives adoption.',desc:'CBDCs, chain surveillance, and financial censorship create structural demand for private, fungible money.',val:'Growing',color:'var(--cyan)',href:'future-outlook.html'}]
+];
+
+var investPage=0;
+var investDotsEl=document.getElementById('invest-dots');
+for(var d=0;d<INVEST.length;d++){var dot=document.createElement('div');dot.className='cycle-dot'+(d===0?' active':'');investDotsEl.appendChild(dot)}
+
+function renderInvest(page){
+    var set=INVEST[page];
+    var texts=document.querySelectorAll('.invest-text');
+    var cards=[document.getElementById('inv-0'),document.getElementById('inv-1'),document.getElementById('inv-2')];
+    texts.forEach(function(t){t.classList.add('fading')});
+    setTimeout(function(){
+        set.forEach(function(p,i){
+            cards[i].href=p.href;
+            var t=texts[i];
+            t.querySelector('.invest-kicker').textContent=p.kicker;
+            t.querySelector('.invest-kicker').style.color=p.color;
+            t.querySelector('.invest-title').textContent=p.title;
+            t.querySelector('.invest-desc').textContent=p.desc;
+            t.querySelector('.invest-val').textContent=p.val;
+            t.querySelector('.invest-val').style.color=p.color;
+        });
+        texts.forEach(function(t){t.classList.remove('fading')});
+    },400);
+    investDotsEl.querySelectorAll('.cycle-dot').forEach(function(d,i){d.classList.toggle('active',i===page)});
+}
+setInterval(function(){investPage=(investPage+1)%INVEST.length;renderInvest(investPage)},18000);
 
 /* ═══════════════════════════════════════════════════════════
    3D ENGINE — Shared utilities for mini-vizs
