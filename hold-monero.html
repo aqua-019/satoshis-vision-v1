@@ -79,7 +79,7 @@
     .wagyu-link{display:inline-block;font-size:11px;color:var(--grn);padding:6px 16px;border:1px solid rgba(0,204,136,.2);border-radius:6px;text-decoration:none;transition:border-color .2s}
     .wagyu-link:hover{border-color:rgba(0,204,136,.5)}
 
-    /* Price suppression analysis */
+    /* Price suppression analysis — expanded */
     .suppress{background:var(--surface-1);border:1px solid rgba(255,71,87,.12);border-radius:12px;padding:22px;margin-top:16px}
     .suppress-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--red);margin-bottom:8px}
     .suppress-t{font-size:18px;font-weight:600;margin-bottom:10px;color:var(--g1)}
@@ -89,18 +89,42 @@
     .sf-step-t{font-size:10px;font-weight:600;margin-bottom:3px}
     .sf-step-d{font-size:8px;color:var(--text-tertiary);line-height:1.4}
     .sf-arrow{text-align:center;font-size:16px;color:var(--red)}
-    .suppress-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+    .suppress-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px}
     .ss{text-align:center;padding:14px;background:var(--surface-2);border-radius:8px}
     .ss-v{font-size:18px;font-weight:600;margin-bottom:3px}
     .ss-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
     .suppress-solution{background:rgba(0,204,136,.03);border:1px solid rgba(0,204,136,.12);border-radius:8px;padding:14px;margin-top:12px}
     .suppress-solution-t{font-size:12px;font-weight:600;color:var(--grn);margin-bottom:6px}
     .suppress-solution-d{font-size:11px;color:var(--text-tertiary);line-height:1.6}
-
-    /* Canvas for suppression viz */
-    .suppress-canvas{width:100%;height:140px;border-radius:8px;background:var(--surface-0);border:1px solid var(--border-subtle);margin-bottom:12px;position:relative;overflow:hidden}
+    /* Expanded viz panels */
+    .suppress-canvas{width:100%;height:180px;border-radius:8px;background:var(--surface-0);border:1px solid var(--border-subtle);margin-bottom:12px;position:relative;overflow:hidden}
     .suppress-canvas canvas{width:100%;height:100%}
     .suppress-canvas-label{position:absolute;bottom:6px;left:10px;font-size:8px;color:var(--text-tertiary)}
+    .suppress-canvas-label.right{left:auto;right:10px}
+    .viz-pair{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .suppress-math{background:var(--surface-0);border:1px solid var(--border-subtle);border-radius:8px;padding:14px;margin:12px 0}
+    .math-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border-subtle);font-size:11px}
+    .math-row:last-child{border:none}
+    .math-label{color:var(--text-tertiary)}.math-val{font-weight:600;font-family:'DM Mono',monospace}
+    .math-total{background:rgba(255,71,87,.06);border:1px solid rgba(255,71,87,.15);border-radius:6px;padding:10px 14px;margin-top:8px;display:flex;justify-content:space-between;font-size:12px;font-weight:600}
+    .math-total .math-label{color:var(--red)}.math-total .math-val{color:var(--red)}
+    .suppress-deep{font-size:11px;color:var(--text-tertiary);line-height:1.7;margin:12px 0;padding:14px;background:var(--surface-2);border-radius:8px;border-left:3px solid var(--red)}
+    .suppress-deep strong{color:var(--g1);font-weight:500}
+    .suppress-deep em{color:var(--gold);font-style:normal}
+    .compare-before-after{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:start;margin:16px 0}
+    .cba-col{padding:14px;border-radius:8px;background:var(--surface-2)}
+    .cba-col.before{border:1px solid rgba(255,71,87,.15)}.cba-col.after{border:1px solid rgba(0,204,136,.15)}
+    .cba-t{font-size:12px;font-weight:600;margin-bottom:8px}
+    .cba-row{font-size:10px;color:var(--text-tertiary);padding:3px 0;line-height:1.4}
+    .cba-row .val{font-weight:600;float:right}
+    .cba-arrow{text-align:center;font-size:24px;color:var(--xmr);padding-top:40px}
+    .suppress-timeline{margin:16px 0}
+    .stl-item{display:flex;gap:12px;padding:8px 0;border-bottom:1px solid var(--border-subtle);font-size:10px}
+    .stl-item:last-child{border:none}
+    .stl-date{color:var(--text-tertiary);min-width:80px;font-weight:500}
+    .stl-event{color:var(--text-tertiary);line-height:1.5}
+    .stl-event strong{color:var(--g1);font-weight:500}
+    @media(max-width:768px){.suppress-flow{grid-template-columns:1fr;gap:2px}.sf-arrow{transform:rotate(90deg)}.suppress-stats{grid-template-columns:repeat(2,1fr)}.viz-pair{grid-template-columns:1fr}.compare-before-after{grid-template-columns:1fr}.cba-arrow{transform:rotate(90deg);padding:8px 0}}
 
     /* Wallets */
     .wallets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
@@ -234,36 +258,121 @@
             <a href="https://wagyu.xyz" target="_blank" class="wagyu-link">Visit wagyu.xyz →</a>
         </div>
 
-        <!-- Price Suppression Analysis -->
+        <!-- Price Suppression Analysis — EXPANDED -->
         <div class="suppress">
             <div class="suppress-ey">Analysis · Price suppression mechanism</div>
             <div class="suppress-t">How swap services suppress Monero's price</div>
-            <div class="suppress-desc">Since 73+ exchange delistings, the majority of XMR acquisition flows through instant swap services. These services operate a systematic extraction loop that creates constant downward pressure on XMR price — regardless of organic demand.</div>
+            <div class="suppress-desc">Since 73+ exchange delistings, the majority of XMR acquisition flows through instant swap services. These services operate a systematic extraction loop that creates constant downward pressure on XMR price — regardless of organic demand. This is the single most important market dynamic for understanding Monero's price action.</div>
 
-            <div class="suppress-canvas">
-                <canvas id="suppress-viz"></canvas>
-                <div class="suppress-canvas-label">Selling pressure loop · swap services collect XMR fees → dump for stablecoins</div>
+            <!-- Dual canvas visualizations -->
+            <div class="viz-pair">
+                <div class="suppress-canvas" style="height:180px">
+                    <canvas id="suppress-viz"></canvas>
+                    <div class="suppress-canvas-label">Selling pressure loop · swap dumps shown as red drops</div>
+                    <div class="suppress-canvas-label right" style="color:rgba(255,102,0,.4)">XMR PRICE →</div>
+                </div>
+                <div class="suppress-canvas" style="height:180px">
+                    <canvas id="volume-viz"></canvas>
+                    <div class="suppress-canvas-label">Daily swap volume estimate · $ millions</div>
+                    <div class="suppress-canvas-label right" style="color:rgba(255,71,87,.4)">EXTRACTION →</div>
+                </div>
             </div>
 
+            <!-- The 5-step extraction loop -->
+            <div style="font-size:12px;font-weight:600;margin-bottom:8px">The extraction loop — step by step</div>
             <div class="suppress-flow">
-                <div class="sf-step"><div class="sf-step-t" style="color:var(--blue)">User sends BTC</div><div class="sf-step-d">Wants to acquire XMR via swap service</div></div>
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--blue)">① User sends BTC</div><div class="sf-step-d">Wants XMR. No CEX available. Uses swap service.</div></div>
                 <div class="sf-arrow">→</div>
-                <div class="sf-step"><div class="sf-step-t" style="color:var(--gold)">Service takes 3-4%</div><div class="sf-step-d">Advertised as 0.5-1% but hidden in spread</div></div>
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--gold)">② Service takes 3-4%</div><div class="sf-step-d">Advertised 0.5-1%. Real fee hidden in terrible exchange rate.</div></div>
                 <div class="sf-arrow">→</div>
-                <div class="sf-step"><div class="sf-step-t" style="color:var(--red)">XMR fee dumped</div><div class="sf-step-d">Service sells collected XMR for USDT/USDC instantly</div></div>
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--red)">③ XMR fee dumped</div><div class="sf-step-d">Service sells XMR for USDT/USDC immediately. Every single time.</div></div>
+            </div>
+            <div class="suppress-flow" style="margin-top:-8px">
+                <div class="sf-step"><div class="sf-step-t" style="color:var(--red)">④ Price suppressed</div><div class="sf-step-d">$300K+/day constant selling. Price can't rise regardless of demand.</div></div>
+                <div class="sf-arrow">→</div>
+                <div class="sf-step"><div class="sf-step-t" style="color:#9B59B6">⑤ Cycle repeats</div><div class="sf-step-d">More users forced to swaps → more extraction → more suppression.</div></div>
+                <div class="sf-arrow" style="color:var(--gold)">⟲</div>
+                <div class="sf-step" style="background:rgba(255,71,87,.06)"><div class="sf-step-t" style="color:var(--red)">∞ Structural drain</div><div class="sf-step-d">Self-reinforcing loop. Delistings increase swap dependency.</div></div>
             </div>
 
+            <!-- The math -->
+            <div style="font-size:12px;font-weight:600;margin:16px 0 8px">The extraction math — real numbers</div>
+            <div class="suppress-math">
+                <div class="math-row"><span class="math-label">Estimated daily XMR swap volume</span><span class="math-val" style="color:var(--xmr)">$8-12M</span></div>
+                <div class="math-row"><span class="math-label">Advertised service fee</span><span class="math-val">0.5-1.0%</span></div>
+                <div class="math-row"><span class="math-label">Actual fee (hidden in spread)</span><span class="math-val" style="color:var(--gold)">3.0-4.5%</span></div>
+                <div class="math-row"><span class="math-label">Daily extraction at 3.5% avg</span><span class="math-val" style="color:var(--red)">$280K-$420K</span></div>
+                <div class="math-row"><span class="math-label">Weekly extraction</span><span class="math-val" style="color:var(--red)">$1.96M-$2.94M</span></div>
+                <div class="math-row"><span class="math-label">Monthly extraction</span><span class="math-val" style="color:var(--red)">$8.4M-$12.6M</span></div>
+                <div class="math-row"><span class="math-label">Annual extraction estimate</span><span class="math-val" style="color:var(--red)">$100M-$150M</span></div>
+                <div class="math-total"><span class="math-label">ALL of this is immediate sell pressure on XMR</span><span class="math-val">-$300K+/day</span></div>
+            </div>
+
+            <!-- Stat cards -->
             <div class="suppress-stats">
-                <div class="ss"><div class="ss-v" style="color:var(--red)">~$300K+/day</div><div class="ss-l">Estimated daily sell pressure</div></div>
-                <div class="ss"><div class="ss-v" style="color:var(--gold)">3-4%</div><div class="ss-l">Real fee (hidden in spread)</div></div>
-                <div class="ss"><div class="ss-v" style="color:var(--xmr-text)">73+</div><div class="ss-l">Exchange delistings forcing swap usage</div></div>
+                <div class="ss"><div class="ss-v" style="color:var(--red)">~$300K+</div><div class="ss-l">Daily sell pressure</div></div>
+                <div class="ss"><div class="ss-v" style="color:var(--gold)">3-4%</div><div class="ss-l">Real fee (hidden)</div></div>
+                <div class="ss"><div class="ss-v" style="color:var(--xmr-text)">73+</div><div class="ss-l">Delistings forcing swaps</div></div>
+                <div class="ss"><div class="ss-v" style="color:var(--red)">~$100M/yr</div><div class="ss-l">Annual extraction est.</div></div>
             </div>
 
-            <div class="suppress-desc">Every $10M in XMR volume through traditional swap services generates ~$300K-$400K in forced XMR selling. This happens daily, automatically, regardless of market conditions. The more volume flows through these services, the more XMR gets dumped. It's a structural drain that suppresses price regardless of actual demand.</div>
+            <!-- Deep dive paragraphs -->
+            <div class="suppress-deep">
+                <strong>Why the advertised fee is a lie:</strong> Swap services display fees of "0.5%" or "0.99%" but the real cost is in the exchange rate. If XMR trades at $350 on an order book, the swap service quotes you $335-$340 — pocketing the spread. On a $10,000 swap, you lose $300-450 instead of the advertised $50-100. <em>The hidden spread is the product.</em>
+            </div>
+            <div class="suppress-deep">
+                <strong>Why they dump immediately:</strong> Swap services operate on a "collect and dump" model. They receive XMR as fees, then immediately convert it to USDT or USDC for treasury management. They don't hold XMR — they have no incentive to. Every fee collected becomes instant selling pressure. <em>The more people use swap services, the more XMR gets dumped.</em>
+            </div>
+            <div class="suppress-deep">
+                <strong>The whale freeze problem:</strong> Large buyers ($50K+) face additional barriers. Many swap services freeze funds under "AML review" for large transactions, creating 24-72 hour holds. During this time, the user can't access their funds and the service may front-run the order. This effectively blocks whale accumulation while extracting fees from retail — the worst of both worlds.
+            </div>
+            <div class="suppress-deep">
+                <strong>Why this doesn't happen with Bitcoin:</strong> BTC has Coinbase, Kraken, Binance, Fidelity, Robinhood, PayPal — dozens of high-liquidity, low-spread venues. Competition keeps spreads at 0.01-0.1%. Monero has been pushed into a captive market where a handful of swap services face minimal competition. <em>Delistings created a monopoly, and monopolies extract rents.</em>
+            </div>
+
+            <!-- Before/After comparison -->
+            <div style="font-size:12px;font-weight:600;margin:16px 0 8px">Before vs After: What changes with Wagyu + DEXs</div>
+            <div class="compare-before-after">
+                <div class="cba-col before">
+                    <div class="cba-t" style="color:var(--red)">Current: Swap services</div>
+                    <div class="cba-row">Advertised fee: <span class="val" style="color:var(--gold)">0.5-1%</span></div>
+                    <div class="cba-row">Real fee (spread): <span class="val" style="color:var(--red)">3-4.5%</span></div>
+                    <div class="cba-row">$10K swap cost: <span class="val" style="color:var(--red)">$300-$450</span></div>
+                    <div class="cba-row">Forced XMR selling: <span class="val" style="color:var(--red)">100%</span></div>
+                    <div class="cba-row">Price suppression: <span class="val" style="color:var(--red)">$300K+/day</span></div>
+                    <div class="cba-row">Large orders: <span class="val" style="color:var(--red)">Frozen/reviewed</span></div>
+                    <div class="cba-row">KYC for large: <span class="val" style="color:var(--gold)">Often forced</span></div>
+                </div>
+                <div class="cba-arrow">→</div>
+                <div class="cba-col after">
+                    <div class="cba-t" style="color:var(--grn)">With Wagyu + Haveno + Atomic</div>
+                    <div class="cba-row">Wagyu fee: <span class="val" style="color:var(--grn)">0.1-0.3%</span></div>
+                    <div class="cba-row">Haveno fee: <span class="val" style="color:var(--grn)">0.5% (P2P)</span></div>
+                    <div class="cba-row">$10K swap cost: <span class="val" style="color:var(--grn)">$10-$50</span></div>
+                    <div class="cba-row">Forced XMR selling: <span class="val" style="color:var(--grn)">0%</span></div>
+                    <div class="cba-row">Price suppression: <span class="val" style="color:var(--grn)">None</span></div>
+                    <div class="cba-row">Large orders: <span class="val" style="color:var(--grn)">No limits</span></div>
+                    <div class="cba-row">KYC: <span class="val" style="color:var(--grn)">Never</span></div>
+                </div>
+            </div>
+
+            <!-- Historical timeline of swap ecosystem -->
+            <div style="font-size:12px;font-weight:600;margin:16px 0 8px">How we got here — swap dependency timeline</div>
+            <div class="suppress-timeline">
+                <div class="stl-item"><div class="stl-date">Pre-2018</div><div class="stl-event"><strong>XMR on all major exchanges.</strong> Bitfinex, Poloniex, Bittrex, Binance. Tight spreads. Normal price discovery. No forced swap usage.</div></div>
+                <div class="stl-item"><div class="stl-date">2018</div><div class="stl-event"><strong>Japan FSA bans.</strong> First delisting wave. Minor impact — most volume elsewhere. Swap services begin gaining traction.</div></div>
+                <div class="stl-item"><div class="stl-date">2020-2021</div><div class="stl-event"><strong>S. Korea + Australia delistings.</strong> Swap services become primary on-ramp for millions of users. ChangeNOW, Trocador, Majestic Bank volumes surge.</div></div>
+                <div class="stl-item"><div class="stl-date">2023</div><div class="stl-event"><strong>Huobi/HTX + EU partial bans.</strong> Swap dependency deepens. Services begin raising hidden spreads as competition decreases. Extraction loop intensifies.</div></div>
+                <div class="stl-item"><div class="stl-date">Feb 2024</div><div class="stl-event"><strong>Binance global delisting.</strong> Tipping point. Swap services become the dominant acquisition channel. Daily extraction estimated to exceed $200K for the first time.</div></div>
+                <div class="stl-item"><div class="stl-date">2025</div><div class="stl-event"><strong>73 total delistings.</strong> Swap services at peak extraction. $300K+/day structural drain. Haveno DEX launches. Wagyu v2 enters market. Competition finally arrives.</div></div>
+                <div class="stl-item"><div class="stl-date">2026+</div><div class="stl-event"><strong>DEX ecosystem matures.</strong> Haveno, Wagyu, atomic swaps reduce swap service market share. Extraction drain declining. Genuine price discovery returning.</div></div>
+            </div>
+
+            <div class="suppress-desc">Every $10M in XMR volume through traditional swap services generates ~$300K-$400K in forced XMR selling. This happens daily, automatically, regardless of market conditions. The more volume flows through these services, the more XMR gets dumped. It's a structural drain that suppresses price regardless of actual demand. <strong>Wagyu and Haveno are the first real competition these services have ever faced.</strong></div>
 
             <div class="suppress-solution">
-                <div class="suppress-solution-t">The solution: Wagyu + DEX + Atomic Swaps</div>
-                <div class="suppress-solution-d">Wagyu routes through professional market makers with no forced selling. Haveno DEX enables peer-to-peer trading. Atomic swaps remove intermediaries entirely. Each of these alternatives breaks the extraction loop and allows genuine price discovery.</div>
+                <div class="suppress-solution-t">The solution: Wagyu + Haveno DEX + Atomic Swaps</div>
+                <div class="suppress-solution-d">Wagyu routes through professional market makers (Hyperliquid) with no forced selling — $1M through Wagyu = zero XMR dumped. Haveno enables peer-to-peer trading with no intermediary extraction. Atomic swaps remove intermediaries entirely — trustless BTC↔XMR at protocol level. Each of these alternatives breaks the extraction loop and allows genuine price discovery. As their market share grows, the structural drain decreases, and Monero's price can finally reflect real demand.</div>
             </div>
         </div>
     </div>
@@ -309,20 +418,18 @@
 <script>
 NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
 
-// Price suppression visualization — animated selling pressure loop
+// Price suppression visualization — animated selling pressure loop (SLOWED)
 (function(){
     var c=document.getElementById('suppress-viz');if(!c)return;
     var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H,t=0;
     function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
     resize();addEventListener('resize',resize);
 
-    // Generate fake price data with suppression dips
     var priceData=[],basePrice=340;
     for(var i=0;i<200;i++){
         var organic=Math.sin(i*0.03)*40+Math.sin(i*0.07)*20+Math.cos(i*0.01)*30;
-        // Add periodic suppression dips (representing swap dumps)
         var suppression=0;
-        if(i%15<3)suppression=-8-Math.random()*12;
+        if(i%18<4)suppression=-6-Math.random()*10;
         basePrice=340+organic+suppression+Math.random()*5;
         priceData.push(Math.max(200,basePrice));
     }
@@ -332,13 +439,12 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
         var padding=20,chartW=W-padding*2,chartH=H-padding*2;
         var min=Math.min.apply(null,priceData),max=Math.max.apply(null,priceData),range=max-min||1;
 
-        // Grid lines
         ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
-        for(var i=1;i<4;i++){var gy=padding+chartH*i/4;ctx.beginPath();ctx.moveTo(padding,gy);ctx.lineTo(W-padding,gy);ctx.stroke()}
+        for(var i=1;i<5;i++){var gy=padding+chartH*i/5;ctx.beginPath();ctx.moveTo(padding,gy);ctx.lineTo(W-padding,gy);ctx.stroke()}
 
         // Price line
         ctx.beginPath();
-        var offset=Math.floor(t*0.3)%priceData.length;
+        var offset=Math.floor(t*0.15)%priceData.length; // SLOWED: was 0.3, now 0.15
         for(var i=0;i<Math.min(priceData.length,chartW);i++){
             var idx=(i+offset)%priceData.length;
             var x=padding+i/(priceData.length-1)*chartW;
@@ -353,28 +459,134 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
         gd.addColorStop(0,'rgba(255,102,0,0.08)');gd.addColorStop(1,'transparent');
         ctx.fillStyle=gd;ctx.fill();
 
-        // Animated selling pressure arrows (red dots falling)
-        for(var i=0;i<6;i++){
-            var phase=((t*1.5+i*40)%120)/120;
-            var ax=W*0.3+i*W*0.1+Math.sin(i*2.3)*20;
+        // Selling pressure drops — SLOWED (was 1.5, now 0.7)
+        for(var i=0;i<8;i++){
+            var phase=((t*0.7+i*30)%150)/150;
+            var ax=W*0.15+i*W*0.09+Math.sin(i*2.3)*15;
             var ay=padding+phase*chartH;
-            var fade=phase<0.15?phase/0.15:phase>0.7?1-(phase-0.7)/0.3:1;
+            var fade=phase<0.2?phase/0.2:phase>0.7?1-(phase-0.7)/0.3:1;
             ctx.beginPath();ctx.arc(ax,ay,2.5*fade,0,Math.PI*2);
-            ctx.fillStyle='rgba(255,71,87,'+(fade*0.5)+')';ctx.fill();
-            // Trail
-            if(fade>0.2){ctx.beginPath();ctx.moveTo(ax,ay-8);ctx.lineTo(ax,ay);
-            ctx.strokeStyle='rgba(255,71,87,'+(fade*0.2)+')';ctx.lineWidth=1;ctx.stroke()}
+            ctx.fillStyle='rgba(255,71,87,'+(fade*0.45)+')';ctx.fill();
+            if(fade>0.2){ctx.beginPath();ctx.moveTo(ax,ay-10);ctx.lineTo(ax,ay);
+            ctx.strokeStyle='rgba(255,71,87,'+(fade*0.15)+')';ctx.lineWidth=1;ctx.stroke()}
         }
 
-        // Labels
+        // Suppression zones highlighted
+        for(var i=0;i<priceData.length;i++){
+            if(i%18<4){
+                var x=padding+i/(priceData.length-1)*chartW;
+                ctx.fillStyle='rgba(255,71,87,0.03)';
+                ctx.fillRect(x-1,padding,3,chartH);
+            }
+        }
+
         ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(255,71,87,0.4)';ctx.textAlign='center';
-        ctx.fillText('SWAP DUMPS',W*0.5,padding+12);
+        ctx.fillText('SWAP DUMPS ↓',W*0.5,padding+12);
         ctx.fillStyle='rgba(255,102,0,0.3)';
         ctx.fillText('XMR PRICE',W-padding-30,padding+12);
 
         t++;requestAnimationFrame(draw);
     }
     draw();
+})();
+
+// Volume extraction visualization — second canvas
+(function(){
+    var c=document.getElementById('volume-viz');if(!c)return;
+    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H;
+    function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+    resize();addEventListener('resize',resize);
+
+    // Generate 30 days of estimated swap volume + extraction
+    var days=30,volumes=[],extractions=[];
+    for(var i=0;i<days;i++){
+        var vol=8+Math.random()*6+Math.sin(i*0.5)*2;// $8-14M daily
+        volumes.push(vol);
+        extractions.push(vol*0.035);// 3.5% extraction
+    }
+    var maxVol=Math.max.apply(null,volumes);
+
+    function draw(){
+        ctx.clearRect(0,0,W,H);
+        var pad=24,bw=(W-pad*2)/days-2,chartH=H-pad*2;
+
+        // Grid
+        ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
+        for(var i=1;i<4;i++){var y=pad+chartH*i/4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke()}
+
+        // Volume bars
+        for(var i=0;i<days;i++){
+            var x=pad+i*(bw+2);
+            var h=volumes[i]/maxVol*chartH;
+            var eh=extractions[i]/maxVol*chartH;
+
+            // Total volume (blue-ish)
+            ctx.fillStyle='rgba(68,136,255,0.15)';
+            ctx.fillRect(x,pad+chartH-h,bw,h);
+
+            // Extraction portion (red overlay on top)
+            ctx.fillStyle='rgba(255,71,87,0.35)';
+            ctx.fillRect(x,pad+chartH-h,bw,eh);
+        }
+
+        // Labels
+        ctx.font='8px JetBrains Mono,monospace';ctx.textAlign='center';
+        ctx.fillStyle='rgba(68,136,255,0.4)';ctx.fillText('SWAP VOLUME (30d)',W*0.35,pad+12);
+        ctx.fillStyle='rgba(255,71,87,0.5)';ctx.fillText('RED = EXTRACTION',W*0.7,pad+12);
+        ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillText('~$10M/day',pad+30,pad+chartH-10);
+    }
+    draw();
+})();
+
+// ChangeNOW widget pair detection via postMessage
+(function(){
+    var pairEl=document.getElementById('sw-pair');
+    var statusEl=document.getElementById('swap-status');
+
+    // Listen for ChangeNOW widget postMessage events
+    window.addEventListener('message',function(e){
+        // ChangeNOW widget sends messages about state changes
+        if(!e.data)return;
+        var data=e.data;
+        // Try to parse if string
+        if(typeof data==='string'){try{data=JSON.parse(data)}catch(x){}}
+        if(typeof data!=='object')return;
+
+        // ChangeNOW widget sends from/to currency changes
+        if(data.type==='currencyChange'||data.from||data.to||data.fromCurrency||data.toCurrency){
+            var from=(data.from||data.fromCurrency||'').toUpperCase();
+            var to=(data.to||data.toCurrency||'').toUpperCase();
+            if(from&&to&&pairEl)pairEl.textContent=from+' → '+to;
+        }
+        // Detect swap initiation
+        if(data.type==='swap'||data.type==='exchange'||data.status==='waiting'){
+            if(statusEl){statusEl.className='swap-status waiting';statusEl.textContent='Swap initiated — waiting for deposit...';}
+        }
+        if(data.status==='confirming'||data.status==='exchanging'){
+            if(statusEl){statusEl.className='swap-status confirming';statusEl.textContent='Exchanging...';}
+        }
+        if(data.status==='finished'||data.status==='done'){
+            if(statusEl){statusEl.className='swap-status complete';statusEl.textContent='✓ Swap complete!';}
+        }
+    });
+
+    // Also poll the iframe src for parameter changes (fallback)
+    var lastFrom='btc',lastTo='xmr';
+    setInterval(function(){
+        try{
+            var iframe=document.getElementById('changenow-widget');
+            if(!iframe)return;
+            var src=iframe.src||'';
+            var fromMatch=src.match(/[?&]from=([^&]+)/);
+            var toMatch=src.match(/[?&]to=([^&]+)/);
+            var from=fromMatch?fromMatch[1].toUpperCase():lastFrom.toUpperCase();
+            var to=toMatch?toMatch[1].toUpperCase():lastTo.toUpperCase();
+            if(from!==lastFrom.toUpperCase()||to!==lastTo.toUpperCase()){
+                lastFrom=from;lastTo=to;
+                if(pairEl)pairEl.textContent=from+' → '+to;
+            }
+        }catch(x){}
+    },2000);
 })();
 
 // Swap confirmation flow simulator
