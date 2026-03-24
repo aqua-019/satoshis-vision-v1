@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Future Outlook 2027+</title>
-    <meta name="description" content="FCMP++, Seraphis, demand thesis 2026-2030, full protocol history, regulatory landscape, exchange delistings, and why structural demand for privacy is inevitable.">
+    <meta name="description" content="The structural demand thesis for Monero 2026-2030. FCMP++, regulatory landscape, and why the tracked economy guarantees privacy demand.">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
@@ -12,22 +12,48 @@
     .fo{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
     .fo-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
     .fo-nav em{color:var(--grn);font-style:normal;font-weight:600}.fo-nav span{color:var(--text-muted)}
-    .hero{padding:48px var(--space-page-x) 24px;text-align:center}
+    .hero{padding:48px var(--space-page-x) 16px;text-align:center}
     .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
     .hero-t{font-size:32px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--xmr);font-style:normal}
-    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:620px;margin:0 auto;line-height:1.6;font-style:italic}
+    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:640px;margin:0 auto;line-height:1.6;font-style:italic}
     .hero-stats{display:flex;justify-content:center;gap:28px;margin-top:16px;flex-wrap:wrap}
     .hs{text-align:center}.hs-v{font-size:22px;font-weight:600;color:var(--xmr)}.hs-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 var(--space-page-x);margin:0 0 20px}
+    .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 var(--space-page-x);margin:16px 0 0}
     .sc{background:var(--surface-1);padding:14px;text-align:center}.sc:first-child{border-radius:10px 0 0 10px}.sc:last-child{border-radius:0 10px 10px 0}
-    .sc .sv{font-size:18px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .tabs{display:flex;justify-content:center;gap:4px;padding:14px var(--space-page-x);position:sticky;top:52px;z-index:50;background:rgba(10,10,12,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-subtle)}
-    .tab{font-family:inherit;font-size:10px;padding:6px 16px;border:1px solid var(--border-default);background:transparent;color:var(--text-tertiary);border-radius:100px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s}
-    .tab:hover{border-color:var(--text-tertiary);color:var(--g3)}.tab.active{background:var(--xmr);color:#fff;border-color:var(--xmr)}
+    .sc .sv{font-size:18px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:7px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    /* ═══ THE THESIS — prominent splash ═══ */
+    .meta{padding:32px var(--space-page-x) 24px}
+    .meta-badge{font-size:10px;color:var(--xmr);letter-spacing:3px;text-transform:uppercase;margin-bottom:16px;text-align:center}
+    .chapter{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:24px;margin-bottom:16px;border-left:4px solid var(--xmr);position:relative}
+    .chapter.highlight{border-color:var(--gold);background:linear-gradient(135deg,rgba(255,102,0,.04),rgba(255,215,0,.02))}
+    .chapter.green{border-left-color:var(--grn)}
+    .chapter.blue{border-left-color:var(--blue)}
+    .chapter.purple{border-left-color:#9B59B6}
+    .chapter.red{border-left-color:var(--red)}
+    .ch-num{font-size:9px;color:var(--xmr);letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
+    .ch-t{font-size:18px;font-weight:600;margin-bottom:12px;line-height:1.3;color:var(--g1)}
+    .ch-body{font-size:12px;color:var(--text-secondary);line-height:1.8}
+    .ch-body p{margin-bottom:10px}.ch-body p:last-child{margin-bottom:0}
+    .ch-body strong{color:var(--g1);font-weight:600}.ch-body em{color:var(--gold);font-style:normal}
+    .ch-data{background:rgba(255,102,0,.05);border-left:3px solid var(--xmr);padding:10px 14px;margin:12px 0;font-size:11px;line-height:1.6}
+    .ch-data .m{color:var(--gold);font-weight:600}
+    .ch-data.green{border-left-color:var(--grn);background:rgba(0,204,136,.03)}
+    .ch-data.red{border-left-color:var(--red);background:rgba(255,71,87,.03)}
+    .ch-data.blue{border-left-color:var(--blue);background:rgba(68,136,255,.03)}
+    .ch-close{margin-top:16px;padding-top:14px;border-top:1px solid var(--border-subtle);font-size:13px;color:var(--g2);line-height:1.7;font-weight:500}
+    .ch-close strong{color:var(--xmr)}.ch-close em{color:var(--gold);font-style:normal}
+    .ch-sig{margin-top:14px;text-align:right;font-size:10px;color:var(--text-muted)}
+    /* ═══ TAB SYSTEM — bigger, more visible ═══ */
+    .tabs{display:flex;justify-content:center;gap:6px;padding:20px var(--space-page-x);position:sticky;top:52px;z-index:50;background:rgba(10,10,12,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-subtle);flex-wrap:wrap}
+    .tab{font-family:inherit;font-size:12px;padding:10px 22px;border:2px solid var(--border-default);background:transparent;color:var(--text-tertiary);border-radius:8px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;font-weight:500}
+    .tab:hover{border-color:var(--xmr);color:var(--xmr);background:rgba(255,102,0,.03)}
+    .tab.active{background:var(--xmr);color:#fff;border-color:var(--xmr);font-weight:600}
+    .tab .tab-count{font-size:9px;opacity:.7;margin-left:4px}
     .tab-panel{display:none}.tab-panel.active{display:block}
     .sec{padding:0 var(--space-page-x);margin-bottom:24px}
     .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+    /* Upgrade cards */
     .upgrade{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:24px;margin-bottom:12px;position:relative;overflow:hidden}
     .upgrade::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 12px 12px}
     .upgrade.fcmp::after{background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
@@ -45,6 +71,7 @@
     .up-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-subtle)}
     .up-cmp{text-align:center}.up-cmp-v{font-size:18px;font-weight:600;margin-bottom:2px}.up-cmp-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
     .up-arrow{font-size:20px;color:var(--xmr)}
+    /* Timeline */
     .timeline{position:relative;padding-left:20px}
     .timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,#F7931A 0%,var(--xmr) 30%,var(--grn) 50%,#B44DFF 70%,var(--xmr) 100%)}
     .tl-era{font-size:14px;font-weight:600;padding:16px 0 8px;position:relative;margin-left:-4px}
@@ -59,6 +86,7 @@
     .tl-date{font-size:9px;color:var(--text-tertiary);margin-bottom:2px}
     .tl-title{font-size:12px;font-weight:600;margin-bottom:2px;line-height:1.3}
     .tl-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    /* Demand drivers */
     .dd{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin-bottom:12px;border-left:3px solid var(--xmr)}
     .dd-num{font-size:9px;color:var(--xmr);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
     .dd-t{font-size:16px;font-weight:600;margin-bottom:8px;line-height:1.3}
@@ -74,6 +102,7 @@
     .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin:12px 0}
     .dg{background:var(--surface-0);border:1px solid var(--border-default);border-radius:8px;padding:12px;border-left:3px solid var(--xmr)}
     .dg-t{font-size:11px;font-weight:600;margin-bottom:4px}.dg-p{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    /* Compare / Supply / Reg / Delist — same as before */
     .compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .cmp{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;text-align:center}
     .cmp-coin{font-size:11px;font-weight:600;margin-bottom:8px}
@@ -83,14 +112,6 @@
     .sup{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px}
     .sup-v{font-size:22px;font-weight:600;margin-bottom:4px}.sup-l{font-size:10px;color:var(--text-secondary);margin-bottom:4px}
     .sup-s{font-size:9px;color:var(--text-tertiary);line-height:1.5}
-    .thesis{background:linear-gradient(135deg,rgba(255,102,0,.06),rgba(0,204,136,.03));border:2px solid var(--xmr);border-radius:12px;padding:24px;margin:20px var(--space-page-x)}
-    .thesis-t{font-size:18px;font-weight:600;color:var(--xmr);margin-bottom:14px}
-    .thesis-p{font-size:12px;color:var(--text-secondary);line-height:1.8;margin-bottom:10px}
-    .thesis-p strong{color:var(--xmr)}.thesis-p em{color:var(--gold);font-style:normal}
-    .counter{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin:0 var(--space-page-x) 20px}
-    .counter-t{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:10px}
-    .counter-p{font-size:11px;color:var(--text-tertiary);line-height:1.7;margin-bottom:6px}.counter-p:last-child{margin:0}
-    .counter-p strong{color:var(--g1);font-weight:500}
     .reg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
     .reg{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;border-left:3px solid var(--red)}
     .reg.pro{border-left-color:var(--grn)}.reg.neutral{border-left-color:var(--gold)}
@@ -99,8 +120,11 @@
     .delist-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px}
     .dl{background:var(--surface-1);border:1px solid var(--border-default);border-radius:8px;padding:10px 12px}
     .dl-name{font-size:11px;font-weight:600;margin-bottom:2px}.dl-date{font-size:9px;color:var(--text-tertiary)}.dl-scope{font-size:9px;color:var(--red);margin-top:2px}
+    .counter{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin:0 var(--space-page-x) 20px}
+    .counter-t{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:10px}
+    .counter-p{font-size:11px;color:var(--text-tertiary);line-height:1.7;margin-bottom:6px}.counter-p:last-child{margin:0}.counter-p strong{color:var(--g1);font-weight:500}
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.compare-grid,.sup-grid{grid-template-columns:1fr}.up-compare{grid-template-columns:1fr;gap:6px}.up-arrow{transform:rotate(90deg)}.dgrid{grid-template-columns:1fr}.reg-grid{grid-template-columns:1fr}.tabs{gap:2px;padding:10px;flex-wrap:wrap}.tab{font-size:8px;padding:5px 10px}.sbar{grid-template-columns:repeat(2,1fr)}.delist-grid{grid-template-columns:1fr 1fr}}
+    @media(max-width:768px){.compare-grid,.sup-grid{grid-template-columns:1fr}.up-compare{grid-template-columns:1fr;gap:6px}.up-arrow{transform:rotate(90deg)}.dgrid{grid-template-columns:1fr}.reg-grid{grid-template-columns:1fr}.tabs{gap:4px;padding:12px var(--space-page-x)}.tab{font-size:10px;padding:8px 14px}.sbar{grid-template-columns:repeat(2,1fr)}.delist-grid{grid-template-columns:1fr 1fr}}
     </style>
 </head>
 <body>
@@ -108,14 +132,13 @@
     <div id="nav-mount"></div>
     <div class="fo-nav"><em>xmr.irish</em> <span>/</span> <em>future outlook</em></div>
     <div class="hero">
-        <div class="hero-ey">2027+ outlook · protocol history · demand thesis · regulatory map</div>
+        <div class="hero-ey">The demand thesis · 2026–2030</div>
         <div class="hero-t">The future of <em>privacy</em></div>
-        <div class="hero-sub">From the genesis block to FCMP++. Complete protocol evolution, 8 structural demand drivers, 22 regulatory milestones, and why the tracked economy guarantees Monero's relevance.</div>
+        <div class="hero-sub">Eight chapters on why the tracked economy guarantees Monero's relevance — from the genesis block mystery to FCMP++ and the structural inevitability of demand for the world's only private money.</div>
         <div class="hero-stats">
             <div class="hs"><div class="hs-v">100M+</div><div class="hs-l">FCMP++ anonymity set</div></div>
             <div class="hs"><div class="hs-v">73</div><div class="hs-l">Delistings 2025</div></div>
             <div class="hs"><div class="hs-v" style="color:var(--grn)">+195%</div><div class="hs-l">Price YoY</div></div>
-            <div class="hs"><div class="hs-v">48</div><div class="hs-l">Timeline events</div></div>
             <div class="hs"><div class="hs-v">$22.6M</div><div class="hs-l">Gov spent tracing</div></div>
             <div class="hs"><div class="hs-v">0</div><div class="hs-l">Successful traces</div></div>
         </div>
@@ -126,228 +149,318 @@
         <div class="sc"><div class="sv" style="color:var(--gold)">0.6 XMR</div><div class="sl">Block reward (forever)</div></div>
         <div class="sc"><div class="sv" style="color:var(--g3)">~2 min</div><div class="sl">Block time</div></div>
     </div>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         THE THESIS — 8 chapters — TOP OF PAGE
+         ═══════════════════════════════════════════════════════════ -->
+    <div class="meta">
+        <div class="meta-badge">The structural demand thesis · 8 chapters</div>
+
+        <div class="chapter highlight">
+            <div class="ch-num">Chapter I — The Parallel Genesis</div>
+            <div class="ch-t">Two pseudonymous creators. Two white papers. One unfinished vision.</div>
+            <div class="ch-body">
+                <p>On October 31, 2008, a figure calling themselves <strong>Satoshi Nakamoto</strong> published a nine-page paper to a cryptography mailing list. Nobody cared. The world was watching banks collapse. Five years later, on an obscure forum, a figure calling themselves <strong>Nicolas van Saberhagen</strong> published the CryptoNote whitepaper — its opening line: <em>"Privacy and anonymity are the most important aspects of electronic cash."</em></p>
+                <p>Both authors were pseudonymous. Both vanished. Both left behind protocols that would reshape money. The difference: Satoshi built a transparent ledger and knew it was incomplete. In August 2010, on BitcoinTalk Thread #174, Satoshi described — in precise technical detail — <strong>stealth addresses, ring signatures, and hidden transaction amounts.</strong> Exactly the three technologies that would define Monero four years later.</p>
+                <p>Was van Saberhagen connected to Satoshi? No proof exists. But the CryptoNote paper reads like a direct response to Bitcoin's acknowledged privacy failures — solving exactly the problems Satoshi identified but couldn't solve within Bitcoin's architecture. In April 2014, seven pseudonymous developers forked Bytecoin to create Monero: zero premine, no ICO, no company, no CEO. <em>The alpha was Bitcoin in 2009. The beta was Monero in 2014.</em> The same pattern: mysterious creator, community takeover, years of quiet building before the world notices.</p>
+                <div class="ch-data"><span class="m">The parallel:</span> BTC genesis block: Jan 3, 2009. XMR genesis block: Apr 18, 2014. Both had pseudonymous creators who vanished. Both had zero premine. Both were dismissed for years. BTC took 12 years to reach $1T market cap. XMR is in year 12.</div>
+            </div>
+        </div>
+
+        <div class="chapter red">
+            <div class="ch-num">Chapter II — The Surveillance Arc</div>
+            <div class="ch-t">From "Chancellor on brink of second bailout" to "every transaction tracked."</div>
+            <div class="ch-body">
+                <p>Bitcoin was born from disgust at the 2008 financial crisis — at banks that privatized profits and socialized losses, at a system where trust was mandatory and trust was broken. Satoshi's genesis block message was a manifesto: <strong>the traditional financial system cannot be trusted.</strong></p>
+                <p>But Bitcoin solved the trust problem by creating a transparency problem. Every transaction permanently recorded on a public ledger. In 2013, when the FBI seized Silk Road using on-chain analysis, the message was clear: <em>Bitcoin is pseudonymous, not anonymous.</em> Chainalysis was founded in 2014. Elliptic in 2013. By 2020, blockchain surveillance was a billion-dollar industry. By 2025, every major government had chain analysis contracts.</p>
+                <p>The arc from 2008 to 2026 is a story of <strong>institutional capture</strong>. Bitcoin — created to escape TradFi control — became TradFi's newest product. BlackRock's IBIT holds 800,000+ BTC. The U.S. Strategic Bitcoin Reserve holds 200,000+ BTC. Bitcoin ETFs require surveillance-sharing agreements. Every BTC in an ETF is a BTC under government oversight. <em>The tool of liberation became the tool of compliance.</em></p>
+                <div class="ch-data red"><span class="m">The trajectory:</span> 2008: "Banks can't be trusted" → 2014: "Bitcoin fixes this" → 2020: "Chainalysis traces every BTC transaction" → 2024: "ETFs require surveillance-sharing" → 2025: "Strategic Reserve — government holds your freedom money." The escape route was captured. Monero is what's left.</div>
+            </div>
+        </div>
+
+        <div class="chapter blue">
+            <div class="ch-num">Chapter III — 2026 Regulation: The Double-Edged Sword</div>
+            <div class="ch-t">Accessibility rises. Privacy collapses. Both are true simultaneously.</div>
+            <div class="ch-body">
+                <p>The GENIUS Act, CLARITY Act, and EU MiCA represent the most comprehensive cryptocurrency regulatory framework in history. The <strong>pros are real:</strong> legitimate businesses get clear rules, consumers get protections, banks can offer crypto services without legal ambiguity, and the "regulation by enforcement" era ends. For Bitcoin and compliant tokens, this is genuinely positive — more accessible, more legitimate, more integrated into daily financial life.</p>
+                <p>The <strong>cons are equally real:</strong> Form 1099-DA means every crypto transaction reported to the IRS. DAC8 means EU providers report to tax authorities across all member states. The FATF Travel Rule requires sender/receiver identification for transactions over $1,000. Bank Secrecy Act AML/KYC applies to all "digital commodity" trading. <em>The tracked economy is not coming — it arrived.</em></p>
+                <p>This is the double-edged sword: <strong>regulation makes crypto more accessible by making it less private.</strong> For most users of Bitcoin, Ethereum, and stablecoins, this trade-off is acceptable. For a growing minority — journalists, activists, dissidents, domestic abuse survivors, people in authoritarian regimes, anyone who believes financial privacy is a human right — <em>the trade-off is not acceptable.</em> And Monero is the only mathematically guaranteed alternative.</p>
+                <div class="ch-data blue"><span class="m">The Anti-CBDC Surveillance State Act</span> was bundled with CLARITY specifically because legislators acknowledged the surveillance risk. The very existence of this bill proves that even within the regulatory establishment, there is recognition that financial surveillance has gone too far. They are building the cage and the escape hatch at the same time.</div>
+            </div>
+        </div>
+
+        <div class="chapter">
+            <div class="ch-num">Chapter IV — The Dark Market Signal</div>
+            <div class="ch-t">Crime migrates to what works. So does freedom.</div>
+            <div class="ch-body">
+                <p>In 2013, Silk Road ran on Bitcoin. The FBI traced every transaction and seized 144,000 BTC. In 2025, <strong>48% of newly launched darknet marketplaces accept only Monero.</strong> 89% use XMR as mandatory or preferred currency. Bitcoin-only markets are an endangered species.</p>
+                <p>This matters not because darknet markets are the use case — but because <strong>they are the canary in the coal mine.</strong> When state-level actors, intelligence agencies, and law enforcement with unlimited budgets cannot trace a currency, that currency's privacy is validated by the most adversarial test possible. The IRS spent $22.6 million. The FBI, DEA, Europol have all attempted. The cryptography holds.</p>
+                <p>The same privacy that protects criminal markets also protects the journalist exposing corruption, the dissident sending money to family, the woman fleeing an abusive partner, the citizen in an authoritarian state preserving savings. <em>Privacy is a tool. Tools don't have morals. The users do.</em></p>
+                <div class="ch-data green"><span class="m">The metric:</span> $450M+ monthly estimated transaction volume on darknet markets using Monero exclusively. Every dollar that flows through these markets — regardless of legality — is a dollar that validated Monero's cryptography against the most motivated adversaries on Earth.</div>
+            </div>
+        </div>
+
+        <div class="chapter green">
+            <div class="ch-num">Chapter V — Breaking the Extraction Loop</div>
+            <div class="ch-t">Wagyu, Haveno, and the end of the $300K/day structural drain.</div>
+            <div class="ch-body">
+                <p>When 73 exchanges delisted Monero, users didn't stop buying — they were forced into instant swap services. These services advertise 0.5-1% fees but charge 3-4% through hidden spreads. Worse: <strong>they collect fees in XMR and immediately dump for stablecoins.</strong> Conservative estimates: $300,000+ per day in structural sell pressure, regardless of market conditions. $100M+ annually.</p>
+                <p>This is why Monero's price has been suppressed despite growing demand. The extraction loop is self-reinforcing: delistings force swap usage → swap services extract → price suppressed → more delistings seem justified → more swap dependency. <em>A parasitic layer was built on Monero's regulatory exclusion.</em></p>
+                <p><strong>Wagyu v2 breaks this loop.</strong> By routing through Hyperliquid market makers — the same firms providing liquidity to Binance and Bybit — Wagyu offers exchange-level pricing without KYC or forced selling. $1M through swap services = $35K-$45K dumped on the market. $1M through Wagyu = zero dumped. Haveno DEX adds peer-to-peer with no intermediary. Atomic swaps remove intermediaries entirely. <em>For the first time since the delisting wave, genuine price discovery is possible.</em></p>
+                <div class="ch-data green"><span class="m">The speculation:</span> If Wagyu + Haveno + atomic swaps capture even 30% of current swap volume, that's $90K-$130K/day of sell pressure eliminated. Over a year, $33M-$47M in structural drain removed. Against a $5-8B market cap asset with fixed supply, the price impact is not trivial.</div>
+            </div>
+        </div>
+
+        <div class="chapter purple">
+            <div class="ch-num">Chapter VI — The CBDC Surveillance State</div>
+            <div class="ch-t">91% of central banks are building what Satoshi tried to escape.</div>
+            <div class="ch-body">
+                <p>The BIS reports that <strong>91% of 93 central banks surveyed are actively investigating CBDCs.</strong> China's e-CNY has 260M+ wallets. The EU digital euro is in live pilots. Nigeria's eNaira, Jamaica's JAM-DEX, and the Bahamas' Sand Dollar are all operational. The architecture of most proposed CBDCs enables: real-time transaction monitoring, programmable spending restrictions, account freezing without court order, negative interest rates enforced at protocol level, and expiration dates on money.</p>
+                <p>During the ECB's consultation, <strong>41% of all public comments centered on privacy concerns.</strong> The public knows what's coming. Every CBDC that launches creates a new cohort who realize their government can now see every transaction, freeze funds programmatically, and restrict spending categories. <em>Monero becomes the escape valve — not because people want to evade taxes, but because they want to retain the financial privacy that cash provided for centuries.</em></p>
+                <div class="ch-data purple"><span class="m">The irony:</span> Satoshi created Bitcoin in 2009 to escape a financial system he didn't trust. In 2026, that system adopted Bitcoin. Now the same system is building CBDCs — programmable money with total surveillance. The wheel has come full circle. The escape route isn't Bitcoin anymore. It's Monero.</div>
+            </div>
+        </div>
+
+        <div class="chapter">
+            <div class="ch-num">Chapter VII — The Technology Compounds</div>
+            <div class="ch-t">FCMP++ doesn't just improve privacy. It makes tracing mathematically extinct.</div>
+            <div class="ch-body">
+                <p>Today, Monero hides your transaction among 16 decoys. Chainalysis uses statistical heuristics — temporal analysis, output age clustering, ring-size patterns — to achieve probabilistic (never deterministic) guesses about the real spend. Their success rate is disputed, but it's not zero.</p>
+                <p><strong>FCMP++ changes the math entirely.</strong> Using Curve Trees — a novel construction combining Selene and Helios curves — every transaction proves membership against the entire set of all outputs ever created. The anonymity set jumps from 16 to 100,000,000+. Temporal analysis: eliminated (every output in history is equally likely). Output poisoning: eliminated (flooding known outputs changes nothing). Ring-size heuristics: eliminated (there are no rings). <em>Chainalysis's entire analytical framework becomes computationally irrelevant.</em></p>
+                <p>Then Seraphis + Jamtis modernize the transaction protocol for the next decade. Cuprate provides a Rust implementation so a single bug can't take down every node. Each upgrade compounds: FCMP++ makes tracing impossible → Seraphis makes the protocol modular → Cuprate makes the network resilient → each strengthens the others. <strong>This is not a static technology. It's an actively improving one, and it's about to make its biggest leap.</strong></p>
+                <div class="ch-data"><span class="m">Status:</span> FCMP++ in alpha stressnet. CCS-funded 2,700+ XMR. Cypher Stack audit in progress. Expected mainnet hard fork Q2-Q3 2026. All code open-source. The upgrade that makes chain analysis extinct is months away, not years.</div>
+            </div>
+        </div>
+
+        <div class="chapter highlight">
+            <div class="ch-num">Chapter VIII — The Structural Inevitability</div>
+            <div class="ch-t">The demand is structural. The supply is fixed. The technology is unbroken.</div>
+            <div class="ch-body">
+                <p>The world is simultaneously doing two contradictory things: <strong>making transparent crypto the regulated norm</strong> (GENIUS, CLARITY, DAC8, 1099-DA, Travel Rule, MiCA, AMLR) while <strong>expanding state surveillance capacity</strong> (CBDCs, chain analytics, KYC everywhere, AI-powered transaction monitoring, facial recognition at banking endpoints).</p>
+                <p><em>Every single step in that direction creates organic, non-speculative demand for the one asset that provides genuine financial privacy by default.</em></p>
+                <p>The supply side: Monero is already in tail emission — 0.6 XMR per block forever. Cannot be increased. No governance attack vector. 73 exchanges delisted it in 2025, yet on-chain activity stayed flat or grew at 15,000-25,000 daily transactions. Shrinking accessible supply meeting growing structural demand. The extraction drain from swap services — $300K+/day — is being broken by Wagyu, Haveno, and atomic swaps. When the drain stops, price can finally reflect actual demand.</p>
+                <p>The government spent $22.6 million trying to crack it. Twenty-two companies applied for the IRS bounty. Chainalysis got 620 yearly licenses and a dedicated training program. <strong>The leaked training video admitted they rely on user mistakes, not protocol vulnerabilities.</strong> The bounty remains unfilled. The cryptography holds. FCMP++ will make it stronger by orders of magnitude.</p>
+                <p>No company to sue. No CEO to arrest. No server to seize. No premine to dump. No foundation to corrupt. No governance to capture. The protocol runs as long as one node exists on one computer anywhere on Earth.</p>
+            </div>
+            <div class="ch-close">
+                <strong>The question is not whether demand for financial privacy exists.</strong> It is whether anything can stop Monero from meeting it.<br><br>
+                <em>Ten years of government attempts suggest the answer is no.</em><br><br>
+                <strong>That is the thesis.</strong>
+            </div>
+            <div class="ch-sig">— The Monero Archive, March 2026</div>
+        </div>
+    </div>
+
+    <!-- ═══ DEEP-DIVE TABS — bigger, more visible ═══ -->
     <div class="tabs">
-        <button class="tab active" onclick="showTab('protocol',this)">Protocol</button>
-        <button class="tab" onclick="showTab('timeline',this)">Timeline (48)</button>
-        <button class="tab" onclick="showTab('demand',this)">Demand thesis</button>
-        <button class="tab" onclick="showTab('regulatory',this)">Regulatory (22)</button>
-        <button class="tab" onclick="showTab('delistings',this)">Delistings</button>
+        <button class="tab active" onclick="showTab('protocol',this)">Protocol<span class="tab-count">(4)</span></button>
+        <button class="tab" onclick="showTab('timeline',this)">Timeline<span class="tab-count">(57)</span></button>
+        <button class="tab" onclick="showTab('demand',this)">Demand data<span class="tab-count">(8)</span></button>
+        <button class="tab" onclick="showTab('regulatory',this)">Regulatory<span class="tab-count">(22)</span></button>
+        <button class="tab" onclick="showTab('delistings',this)">Delistings<span class="tab-count">(73+)</span></button>
         <button class="tab" onclick="showTab('supply',this)">Supply</button>
     </div>
 
     <!-- TAB 1: PROTOCOL -->
     <div id="tab-protocol" class="tab-panel active">
     <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Protocol upgrades — past, present, future</div><div class="sec-s">Every major privacy enhancement</div></div>
-        <div class="upgrade fcmp"><div class="up-ey" style="color:var(--xmr)">Coming · FCMP++</div><div class="up-t">Full-chain membership proofs</div><div class="up-desc">Today, your transaction hides among 16 decoys. With FCMP++, it hides among every transaction ever made — an anonymity set of 100M+ outputs. The largest privacy upgrade in cryptocurrency history.</div><div class="up-tags"><div class="up-tag">Ring 16 → Full chain</div><div class="up-tag">100M+ anonymity set</div><div class="up-tag hot">Alpha stressnet</div><div class="up-tag">kayabanerve lead</div><div class="up-tag">CCS-funded 2700+ XMR</div><div class="up-tag">Cypher Stack audit</div></div>
-            <div class="up-detail"><strong>How it works:</strong> FCMP++ uses Curve Trees — a novel construction combining Selene and Helios curves — to prove your output belongs to the entire set of all outputs, without revealing which one. Proving time is logarithmic: 100M outputs takes only marginally longer than 16. This is the breakthrough making full-chain proofs practical.<br><br><strong>What it eliminates:</strong> Ring-size heuristic analysis, temporal analysis (guessing real spend by output age), output poisoning attacks (flooding chain with known outputs), and all probabilistic tracing. Every output becomes mathematically equally likely to be the real spend.<br><br><strong>Status:</strong> Alpha stressnet running. Independent audits by Cypher Stack and additional firms. All code open-source and peer-reviewed. Expected mainnet hard fork Q2-Q3 2026.</div>
-            <div class="up-compare"><div class="up-cmp"><div class="up-cmp-v" style="color:var(--text-secondary)">16</div><div class="up-cmp-l">Current ring size</div></div><div class="up-arrow">→</div><div class="up-cmp"><div class="up-cmp-v" style="color:var(--xmr)">100,000,000+</div><div class="up-cmp-l">FCMP++ anonymity set</div></div></div></div>
-        <div class="upgrade sera"><div class="up-ey" style="color:var(--grn)">Research · Seraphis + Jamtis</div><div class="up-t">Next-generation transaction protocol</div><div class="up-desc">Complete redesign of Monero's transaction structure. Modular addresses, improved multisig, forward secrecy, tier-based wallet permissions.</div><div class="up-tags"><div class="up-tag">Modular addresses</div><div class="up-tag">Multisig n² → n</div><div class="up-tag">Forward secrecy</div><div class="up-tag">Tier-based permissions</div><div class="up-tag">UkoeHB lead</div><div class="up-tag">Carrot bridging</div></div>
-            <div class="up-detail"><strong>Seraphis</strong> replaces CryptoNote-era transaction structure (2013). Modular components upgrade independently without full hard forks. Composable membership proofs. Multisig coordination from n² to n rounds.<br><br><strong>Jamtis addressing:</strong> Human-readable addresses with forward secrecy. If a view key is compromised in the future, past transactions remain private. Tier-based permissions: find-received, view-balance, view-received, master spend. Merchants can give bookkeepers view-only access without theft risk.<br><br><strong>Carrot (Cryptonote Address Rules for Robust Output Tagging):</strong> Bridging protocol for backward compatibility. Old wallets keep working during transition. No forced migration.</div></div>
-        <div class="upgrade cup"><div class="up-ey" style="color:var(--gold)">Development · Cuprate</div><div class="up-t">Rust node implementation</div><div class="up-desc">Alternative full node in Rust. Faster sync, memory safety, implementation diversity. A single bug can't take down the entire network.</div><div class="up-tags"><div class="up-tag">Rust memory safety</div><div class="up-tag">Faster sync</div><div class="up-tag">Implementation diversity</div><div class="up-tag">Raspberry Pi viable</div></div>
-            <div class="up-detail"><strong>Why diversity matters:</strong> If a critical bug hits C++ monerod, all nodes are vulnerable. Cuprate provides independent implementation — like Ethereum's Geth/Nethermind/Besu diversity. Rust eliminates buffer overflows, use-after-free, data races at compile time.<br><br><strong>Practical impact:</strong> Faster initial sync → new users operational faster. Lower resource requirements → more full nodes on consumer hardware (Raspberry Pi, old laptops), strengthening decentralization during political pressure.</div></div>
-        <div class="upgrade dex"><div class="up-ey" style="color:var(--blue)">Ecosystem · Post-exchange era</div><div class="up-t">Decentralized access infrastructure</div><div class="up-desc">73 delistings couldn't kill Monero because decentralized alternatives emerged faster than centralized ones disappeared.</div><div class="up-tags"><div class="up-tag">Haveno DEX</div><div class="up-tag">BTC↔XMR atomic swaps</div><div class="up-tag">Wagyu v2</div><div class="up-tag">Trocador via Tor</div><div class="up-tag">P2Pool mining</div></div>
-            <div class="up-detail"><strong>Haveno DEX:</strong> Decentralized P2P built on Bisq. Fiat on/off ramps. No central point of failure. Multiple forks (Haveno Reto). Cannot be delisted because there's nothing to delist.<br><br><strong>Atomic swaps:</strong> Trustless BTC↔XMR using adaptor signatures + HTLCs. No intermediary, no counterparty risk. COMIT network implementation improving rapidly.<br><br><strong>Wagyu v2:</strong> Routes through Hyperliquid market makers. Exchange-level pricing without KYC or forced XMR selling. $1M through swap services = $10K dumped. $1M through Wagyu = zero forced selling.<br><br><strong>Trocador:</strong> Tor-accessible swap aggregator. 20+ services compared. No account, no JS required for basic use.</div></div>
+        <div class="upgrade fcmp"><div class="up-ey" style="color:var(--xmr)">Coming · FCMP++</div><div class="up-t">Full-chain membership proofs</div><div class="up-desc">Anonymity set from 16 to 100M+ outputs. Curve Trees construction. Logarithmic proving time. The largest privacy upgrade in cryptocurrency history.</div><div class="up-tags"><div class="up-tag">Ring 16 → Full chain</div><div class="up-tag">100M+ anonymity set</div><div class="up-tag hot">Alpha stressnet</div><div class="up-tag">kayabanerve lead</div><div class="up-tag">CCS-funded 2700+ XMR</div><div class="up-tag">Cypher Stack audit</div></div>
+            <div class="up-detail"><strong>Eliminates:</strong> Ring-size heuristics, temporal analysis, output poisoning, probabilistic tracing. Every output mathematically equally likely. Chainalysis's framework becomes irrelevant.<br><br><strong>Status:</strong> Alpha stressnet running. Independent audits. All open-source. Expected mainnet Q2-Q3 2026.</div>
+            <div class="up-compare"><div class="up-cmp"><div class="up-cmp-v" style="color:var(--text-secondary)">16</div><div class="up-cmp-l">Current ring</div></div><div class="up-arrow">→</div><div class="up-cmp"><div class="up-cmp-v" style="color:var(--xmr)">100,000,000+</div><div class="up-cmp-l">FCMP++ set</div></div></div></div>
+        <div class="upgrade sera"><div class="up-ey" style="color:var(--grn)">Research · Seraphis + Jamtis</div><div class="up-t">Next-generation transaction protocol</div><div class="up-desc">Complete redesign. Modular addresses, multisig n²→n, forward secrecy, tier-based wallet permissions. Multi-decade foundation.</div><div class="up-tags"><div class="up-tag">Modular addresses</div><div class="up-tag">Forward secrecy</div><div class="up-tag">Tier permissions</div><div class="up-tag">Carrot bridging</div><div class="up-tag">UkoeHB lead</div></div>
+            <div class="up-detail"><strong>Jamtis:</strong> Human-readable addresses. If view key compromised in future, past txs stay private. Tier-based: find-received, view-balance, view-received, master spend.<br><br><strong>Carrot:</strong> Backward-compatible bridging. Old wallets keep working during transition.</div></div>
+        <div class="upgrade cup"><div class="up-ey" style="color:var(--gold)">Development · Cuprate</div><div class="up-t">Rust node implementation</div><div class="up-desc">Implementation diversity (single bug can't kill network). Memory safety. Faster sync. Consumer hardware viable.</div><div class="up-tags"><div class="up-tag">Rust memory safety</div><div class="up-tag">Faster sync</div><div class="up-tag">Raspberry Pi viable</div><div class="up-tag">Like ETH's Geth/Nethermind diversity</div></div></div>
+        <div class="upgrade dex"><div class="up-ey" style="color:var(--blue)">Ecosystem · Post-exchange era</div><div class="up-t">Decentralized access infrastructure</div><div class="up-desc">Haveno DEX, atomic swaps, Wagyu v2, Trocador. 73 delistings couldn't kill Monero because alternatives emerged faster than exchanges disappeared.</div><div class="up-tags"><div class="up-tag">Haveno DEX</div><div class="up-tag">BTC↔XMR atomic swaps</div><div class="up-tag">Wagyu v2</div><div class="up-tag">Trocador via Tor</div></div></div>
     </div>
     <div class="sec"><div class="sec-h"><div class="sec-t">Privacy comparison</div><div class="sec-s">Post-FCMP++ · 9 metrics</div></div>
         <div class="compare-grid">
-            <div class="cmp"><div class="cmp-coin" style="color:var(--xmr)">Monero (post-FCMP++)</div><div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--xmr)">100M+ (full chain)</span></div><div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--grn)">Mandatory</span></div><div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--grn)">Always</span></div><div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--grn)">Dandelion++</span></div><div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--grn)">Perfect</span></div><div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--grn)">CPU (democratic)</span></div><div class="cmp-row"><span class="cmp-label">Trusted setup</span><span class="cmp-val" style="color:var(--grn)">None required</span></div><div class="cmp-row"><span class="cmp-label">Supply audit</span><span class="cmp-val" style="color:var(--grn)">Cryptographic</span></div><div class="cmp-row"><span class="cmp-label">ETF possible</span><span class="cmp-val" style="color:var(--red)">Impossible</span></div></div>
-            <div class="cmp"><div class="cmp-coin" style="color:var(--gold)">Bitcoin</div><div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--red)">0 (transparent)</span></div><div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--red)">None default</span></div><div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--red)">Never</span></div><div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--red)">None</span></div><div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--red)">Broken</span></div><div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--red)">ASIC industrial</span></div><div class="cmp-row"><span class="cmp-label">Trusted setup</span><span class="cmp-val" style="color:var(--grn)">None</span></div><div class="cmp-row"><span class="cmp-label">Supply audit</span><span class="cmp-val" style="color:var(--grn)">Transparent</span></div><div class="cmp-row"><span class="cmp-label">ETF possible</span><span class="cmp-val" style="color:var(--grn)">Approved 2024</span></div></div>
-            <div class="cmp"><div class="cmp-coin" style="color:var(--blue)">Zcash</div><div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--gold)">Shielded pool</span></div><div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--gold)">Optional ~15%</span></div><div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--gold)">If shielded</span></div><div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--red)">None</span></div><div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--gold)">Partial</span></div><div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--red)">ASIC</span></div><div class="cmp-row"><span class="cmp-label">Trusted setup</span><span class="cmp-val" style="color:var(--red)">Required</span></div><div class="cmp-row"><span class="cmp-label">Supply audit</span><span class="cmp-val" style="color:var(--red)">Trust-dependent</span></div><div class="cmp-row"><span class="cmp-label">ETF possible</span><span class="cmp-val" style="color:var(--red)">ECC crisis</span></div></div>
+            <div class="cmp"><div class="cmp-coin" style="color:var(--xmr)">Monero (post-FCMP++)</div><div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--xmr)">100M+</span></div><div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--grn)">Mandatory</span></div><div class="cmp-row"><span class="cmp-label">Amounts</span><span class="cmp-val" style="color:var(--grn)">Always hidden</span></div><div class="cmp-row"><span class="cmp-label">IP</span><span class="cmp-val" style="color:var(--grn)">Dandelion++</span></div><div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--grn)">Perfect</span></div><div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--grn)">CPU</span></div><div class="cmp-row"><span class="cmp-label">Trusted setup</span><span class="cmp-val" style="color:var(--grn)">None</span></div><div class="cmp-row"><span class="cmp-label">ETF</span><span class="cmp-val" style="color:var(--red)">Impossible</span></div></div>
+            <div class="cmp"><div class="cmp-coin" style="color:var(--gold)">Bitcoin</div><div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--red)">0</span></div><div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--red)">None</span></div><div class="cmp-row"><span class="cmp-label">Amounts</span><span class="cmp-val" style="color:var(--red)">Visible</span></div><div class="cmp-row"><span class="cmp-label">IP</span><span class="cmp-val" style="color:var(--red)">None</span></div><div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--red)">Broken</span></div><div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--red)">ASIC</span></div><div class="cmp-row"><span class="cmp-label">Trusted setup</span><span class="cmp-val" style="color:var(--grn)">None</span></div><div class="cmp-row"><span class="cmp-label">ETF</span><span class="cmp-val" style="color:var(--grn)">Approved</span></div></div>
+            <div class="cmp"><div class="cmp-coin" style="color:var(--blue)">Zcash</div><div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--gold)">Shielded</span></div><div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--gold)">Optional</span></div><div class="cmp-row"><span class="cmp-label">Amounts</span><span class="cmp-val" style="color:var(--gold)">If shielded</span></div><div class="cmp-row"><span class="cmp-label">IP</span><span class="cmp-val" style="color:var(--red)">None</span></div><div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--gold)">Partial</span></div><div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--red)">ASIC</span></div><div class="cmp-row"><span class="cmp-label">Trusted setup</span><span class="cmp-val" style="color:var(--red)">Required</span></div><div class="cmp-row"><span class="cmp-label">ETF</span><span class="cmp-val" style="color:var(--red)">Crisis</span></div></div>
         </div>
     </div></div>
 
-    <!-- TAB 2: TIMELINE (rendered by JS) -->
+    <!-- TAB 2: TIMELINE -->
     <div id="tab-timeline" class="tab-panel">
-    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Complete protocol + regulatory timeline</div><div class="sec-s">48 events · 2008–2028 · filterable</div></div>
+    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Complete timeline</div><div class="sec-s">57 events · 2008–2028 · filterable</div></div>
         <div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:16px" id="tl-filters">
-            <button class="tab active" style="font-size:8px;padding:4px 10px" onclick="filterTL('all',this)">All (48)</button>
-            <button class="tab" style="font-size:8px;padding:4px 10px;background:transparent" onclick="filterTL('btc',this)">Bitcoin</button>
-            <button class="tab" style="font-size:8px;padding:4px 10px;background:transparent" onclick="filterTL('xmr',this)">Monero</button>
-            <button class="tab" style="font-size:8px;padding:4px 10px;background:transparent" onclick="filterTL('reg',this)">Regulatory</button>
-            <button class="tab" style="font-size:8px;padding:4px 10px;background:transparent" onclick="filterTL('cross',this)">Crossover</button>
+            <button class="tab active" style="font-size:9px;padding:5px 12px" onclick="filterTL('all',this)">All</button>
+            <button class="tab" style="font-size:9px;padding:5px 12px;background:transparent" onclick="filterTL('btc',this)">Bitcoin</button>
+            <button class="tab" style="font-size:9px;padding:5px 12px;background:transparent" onclick="filterTL('xmr',this)">Monero</button>
+            <button class="tab" style="font-size:9px;padding:5px 12px;background:transparent" onclick="filterTL('reg',this)">Regulatory</button>
+            <button class="tab" style="font-size:9px;padding:5px 12px;background:transparent" onclick="filterTL('cross',this)">Crossover</button>
         </div>
         <div class="timeline" id="tl-container"></div>
     </div></div>
 
-    <!-- TAB 3: DEMAND THESIS -->
+    <!-- TAB 3: DEMAND DATA -->
     <div id="tab-demand" class="tab-panel">
-    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">The January 2026 ATH (~$800)</div><div class="sec-s">Convergence of forces</div></div>
-        <div class="dd" style="border-left-color:var(--gold)"><div class="dd-num">The catalyst</div><div class="dd-t">XMR hit ~$800 in January 2026 — +195% from early 2025</div><div class="dd-body"><p>Not one catalyst — a convergence:</p><div class="dgrid"><div class="dg"><div class="dg-t">Political shift</div><div class="dg-p">US policymakers reframe privacy as a constitutional right. Global economic uncertainty → financial autonomy assets.</div></div><div class="dg"><div class="dg-t">Technical breakout</div><div class="dg-p">Multi-year resistance broken. Capital rotation from transparent chains into privacy assets accelerated.</div></div><div class="dg"><div class="dg-t">Zcash collapse</div><div class="dg-p">ECC governance crisis. Dev team resigned. ZEC −20%. Capital rotated into Monero as the only viable privacy coin.</div></div><div class="dg"><div class="dg-t">Paradox validation</div><div class="dg-p">Dubai VARA ban → ATH next day. CLARITY Act progress highlighted surveillance divide. Each ban = proof of concept.</div></div></div><div class="dd-data red"><span class="metric">The descent:</span> By February, XMR retraced 57%+. Pattern: pump on validation, retrace on access restriction, higher lows each cycle.</div></div></div>
+    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">The $800 ATH catalyst (Jan 2026)</div><div class="sec-s">Convergence analysis</div></div>
+        <div class="dd" style="border-left-color:var(--gold)"><div class="dd-num">The catalyst</div><div class="dd-t">XMR hit ~$800 — +195% from early 2025</div><div class="dd-body"><div class="dgrid"><div class="dg"><div class="dg-t">Political shift</div><div class="dg-p">US policymakers reframed privacy as constitutional right. Global uncertainty → financial autonomy assets.</div></div><div class="dg"><div class="dg-t">Zcash collapse</div><div class="dg-p">ECC governance crisis. Dev team resigned. ZEC −20%. Capital rotated into XMR.</div></div><div class="dg"><div class="dg-t">Technical breakout</div><div class="dg-p">Multi-year resistance broken. Price discovery for first time in 3+ years.</div></div><div class="dg"><div class="dg-t">Paradox validation</div><div class="dg-p">Dubai VARA ban → ATH next day. Each ban = proof of concept.</div></div></div><div class="dd-data red"><span class="metric">Descent:</span> Feb retrace 57%+. Pattern: pump on validation, retrace on access restriction, higher lows each cycle.</div></div></div>
     </div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">Eight structural demand drivers</div><div class="sec-s">2026–2030 · substantiated by current data</div></div>
-        <div class="dd"><div class="dd-num">Driver I</div><div class="dd-t">CLARITY / GENIUS — the tracked economy reaction</div><div class="dd-body"><p>GENIUS + CLARITY require disclosure and registration. IRS Form 1099-DA. EU DAC8 forces provider reporting. Anti-CBDC Surveillance State Act bundled with CLARITY — <em>proving the political class acknowledges the surveillance risk.</em></p><div class="dd-data blue"><span class="metric">The paradox:</span> Every new reporting mandate is free marketing for Monero. CLARITY passed House 294-134. Applies Bank Secrecy Act AML/KYC. Monero cannot comply by design — that's the feature.</div></div></div>
-        <div class="dd"><div class="dd-num">Driver II</div><div class="dd-t">Geopolitical — Iran, sanctions evasion, state actors</div><div class="dd-body"><p><strong>IRGC: 50%+ of Iranian crypto inflows</strong> — $3B+ in 2025. Mining arbitrage: $1,320/BTC cost (subsidized power) vs $68K market.</p><div class="dd-data red"><span class="metric">Scale:</span> Sanctions evasion +694% in 2025. Russia's A7A5 stablecoin: $93B in <1 year. North Korea's Lazarus Group: $1.5B Bybit hack. As BTC gets traced, demand for private settlement intensifies.</div></div></div>
-        <div class="dd"><div class="dd-num">Driver III</div><div class="dd-t">Darknet markets — Bitcoin phase-out accelerating</div><div class="dd-body"><p><strong>48% of new darknet markets in 2025 support XMR exclusively.</strong> 89% use XMR as mandatory/preferred currency. Monthly volume: $450M+.</p><div class="dd-data green"><span class="metric">Trajectory:</span> Every Chainalysis upgrade pushes more volume from BTC to XMR. One-directional migration. Bitcoin-only markets are an endangered species.</div></div></div>
-        <div class="dd"><div class="dd-num">Driver IV</div><div class="dd-t">CBDC surveillance — 91% of central banks investigating</div><div class="dd-body"><p>China's e-CNY: 260M+ wallets. EU digital euro pilots active. Nigeria eNaira, Jamaica JAM-DEX, Bahamas Sand Dollar operational.</p><div class="dd-data purple"><span class="metric">Public awareness:</span> 41% of ECB consultation comments about privacy. Anti-CBDC Surveillance State Act exists because legislators know the threat. Every CBDC launch → new Monero demand cohort.</div><p>CBDCs enable programmable restrictions: purchase limits, spending categories, expiration dates, negative interest rates enforced at protocol level. <strong>Monero is the escape valve.</strong></p></div></div>
-        <div class="dd"><div class="dd-num">Driver V</div><div class="dd-t">Exchange delisting paradox — 73 delistings, +195% price</div><div class="dd-body"><div class="dgrid"><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2018: Japan</div><div class="dg-p">First wave. Price recovered within months.</div></div><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2020: S. Korea</div><div class="dg-p">All major exchanges. XMR barely reacted.</div></div><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2024: Binance</div><div class="dg-p">World's largest. Price exceeded pre-delist levels.</div></div><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2025: 73 total</div><div class="dg-p">Mass wave. +195%. ATH. Paradox confirmed.</div></div></div><div class="dd-data green"><span class="metric">Why:</span> If traceable, regulators would keep XMR on exchanges as a honeypot. They delist because they can't see inside. Each delisting compresses supply while demand grows = structural squeeze.</div></div></div>
-        <div class="dd"><div class="dd-num">Driver VI</div><div class="dd-t">$22.6M government tracing failure</div><div class="dd-body"><div class="dgrid"><div class="dg" style="border-left-color:var(--gold)"><div class="dg-t">$625K IRS bounty (2020)</div><div class="dg-p">22 applicants. Chainalysis + Integra FEC selected. 8-month deadline. Bounty remains unfilled.</div></div><div class="dg" style="border-left-color:var(--gold)"><div class="dg-t">$22M Chainalysis contract</div><div class="dg-p">620 licenses, API access. Leaked video: reliance on exchange KYC, not crypto breaks.</div></div><div class="dg" style="border-left-color:var(--gold)"><div class="dg-t">CipherTrace "breakthrough"</div><div class="dg-p">DHS-funded. Claims disputed. Lacked wallet ID or exchange attribution.</div></div></div><div class="dd-data"><span class="metric">Implication:</span> The most well-funded surveillance company, backed by $22M+ in gov contracts, cannot crack the math. The privacy guarantee is verified by the adversary's own failure.</div></div></div>
-        <div class="dd"><div class="dd-num">Driver VII</div><div class="dd-t">Institutional exclusion as a feature</div><div class="dd-body"><p>BTC gained $150B+ institutional investment by being traceable. ETFs, corporate treasuries, sovereign reserves all require surveillance-sharing.</p><p><strong>Monero is structurally excluded.</strong> No ETF (surveillance-sharing impossible). No institutional custody (compliance impossible). No sovereign reserve (holdings unverifiable).</p><div class="dd-data blue"><span class="metric">Why bullish:</span> Every BTC in a BlackRock ETF is under government oversight. Monero occupies the opposite pole: the asset that can never be institutionalized, surveilled, or controlled. For a growing global segment, that's exactly what they need.</div></div></div>
-        <div class="dd"><div class="dd-num">Driver VIII</div><div class="dd-t">Compounding technical upgrades</div><div class="dd-body"><div class="dgrid"><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">FCMP++ (2026)</div><div class="dg-p">100M+ anonymity set. Eliminates all heuristic analysis. Chain analysis becomes impractical.</div></div><div class="dg" style="border-left-color:var(--blue)"><div class="dg-t">Cuprate</div><div class="dg-p">Rust node. Faster sync. Memory safety. Implementation diversity.</div></div><div class="dg" style="border-left-color:#9B59B6"><div class="dg-t">Seraphis + Jamtis</div><div class="dg-p">New tx protocol. Forward secrecy. Tier-based permissions. Multi-decade foundation.</div></div><div class="dg" style="border-left-color:var(--gold)"><div class="dg-t">Carrot bridging</div><div class="dg-p">Backward-compatible addressing. Old wallets keep working.</div></div></div><p>Each upgrade compounds: FCMP++ makes tracing impossible → Seraphis makes protocol modular → Cuprate makes network resilient → each strengthens the others.</p></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Supporting demand data</div><div class="sec-s">8 drivers with metrics</div></div>
+        <div class="dd"><div class="dd-num">Driver I</div><div class="dd-t">CLARITY / GENIUS — tracked economy reaction</div><div class="dd-body"><p>Form 1099-DA reporting. DAC8 EU provider reporting. BSA AML/KYC for digital assets. <em>Every mandate is free marketing for Monero.</em></p><div class="dd-data blue"><span class="metric">CLARITY:</span> Passed House 294-134. Applies Bank Secrecy Act. Monero cannot comply by design.</div></div></div>
+        <div class="dd"><div class="dd-num">Driver II</div><div class="dd-t">Geopolitical — sanctions evasion at state scale</div><div class="dd-body"><p>IRGC: 50%+ of Iranian crypto inflows ($3B+). Mining arbitrage: $1,320/BTC vs $68K market.</p><div class="dd-data red"><span class="metric">Scale:</span> Evasion volume +694% in 2025. Russia's A7A5: $93B. Lazarus Group: $1.5B Bybit hack.</div></div></div>
+        <div class="dd"><div class="dd-num">Driver III</div><div class="dd-t">Darknet — Bitcoin phase-out accelerating</div><div class="dd-body"><p>48% of new markets XMR-exclusive. 89% use XMR as mandatory/preferred. Monthly volume: $450M+.</p></div></div>
+        <div class="dd"><div class="dd-num">Driver IV</div><div class="dd-t">CBDCs — 91% of central banks investigating</div><div class="dd-body"><p>e-CNY: 260M wallets. ECB: 41% of comments about privacy. Every CBDC launch → new Monero demand cohort.</p></div></div>
+        <div class="dd"><div class="dd-num">Driver V</div><div class="dd-t">Delisting paradox — 73 delistings, +195% price</div><div class="dd-body"><div class="dgrid"><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2018: Japan</div><div class="dg-p">Recovery in months.</div></div><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2024: Binance</div><div class="dg-p">Exceeded pre-delist.</div></div><div class="dg" style="border-left-color:var(--red)"><div class="dg-t">2025: 73 total</div><div class="dg-p">+195%. ATH.</div></div></div></div></div>
+        <div class="dd"><div class="dd-num">Driver VI</div><div class="dd-t">$22.6M government tracing failure</div><div class="dd-body"><p>$625K bounty unfilled. $22M Chainalysis contract: leaked video showed KYC-dependence, not crypto breaks.</p></div></div>
+        <div class="dd"><div class="dd-num">Driver VII</div><div class="dd-t">Institutional exclusion as feature</div><div class="dd-body"><p>No ETF (surveillance impossible). No custody (compliance impossible). No reserve (unverifiable). <em>The asset that can never be captured.</em></p></div></div>
+        <div class="dd"><div class="dd-num">Driver VIII</div><div class="dd-t">Compounding technical upgrades</div><div class="dd-body"><div class="dgrid"><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">FCMP++ (2026)</div><div class="dg-p">100M+ anonymity set.</div></div><div class="dg" style="border-left-color:var(--blue)"><div class="dg-t">Cuprate</div><div class="dg-p">Rust node diversity.</div></div><div class="dg" style="border-left-color:#9B59B6"><div class="dg-t">Seraphis</div><div class="dg-p">New tx protocol.</div></div></div></div></div>
     </div>
-    <div class="thesis"><div class="thesis-t">The meta-thesis: structural inevitability</div><div class="thesis-p">The world is simultaneously making transparent crypto the regulated norm (GENIUS, CLARITY, DAC8, MiCA, AMLR) while expanding surveillance (CBDCs, chain analytics, KYC everywhere). <em>Every step creates organic demand for the one asset providing genuine financial privacy by default.</em></div><div class="thesis-p"><strong>73 exchanges delisted XMR in 2025. On-chain activity stayed flat or grew.</strong> Shrinking accessible supply meeting growing structural demand. No company to sue. No CEO to arrest. No server to seize.</div><div class="thesis-p"><em>The demand is structural. The supply is fixed. The technology is unbroken. $22.6M spent trying and failed.</em> <strong>That is the thesis.</strong></div></div>
-    <div class="counter"><div class="counter-t">Counterarguments — eyes open</div><div class="counter-p"><strong>Liquidity risk:</strong> Delistings reduce on/off ramp access. Large positions harder to enter/exit. Spreads increase on DEXs.</div><div class="counter-p"><strong>Regulatory escalation:</strong> Governments could ban possession (not just exchange trading). France briefly considered this. No major economy has yet.</div><div class="counter-p"><strong>Quantum computing:</strong> Theoretical long-term risk to all public-key cryptography. MRL actively researching post-quantum alternatives. Timeline: 10-20+ years.</div><div class="counter-p"><strong>Protocol risk:</strong> Undiscovered cryptographic bugs possible. Mitigated by open-source, multiple audits, and Cuprate diversity.</div><div class="counter-p"><strong>Bottom line:</strong> Counterarguments are real. <strong>But demand drivers are substantiated by current data.</strong> Ten years of government attempts suggest they can't stop it.</div></div>
+    <div class="counter"><div class="counter-t">Counterarguments — eyes open</div><div class="counter-p"><strong>Liquidity risk:</strong> Delistings reduce access. Large positions harder.</div><div class="counter-p"><strong>Regulatory escalation:</strong> Possession bans possible but no major economy has yet.</div><div class="counter-p"><strong>Quantum:</strong> Theoretical 10-20yr risk. MRL researching post-quantum alternatives.</div><div class="counter-p"><strong>Bottom line:</strong> Counterarguments real. <strong>Demand drivers substantiated by current data.</strong> Ten years of attempts suggest they can't stop it.</div></div>
     </div>
 
     <!-- TAB 4: REGULATORY -->
     <div id="tab-regulatory" class="tab-panel">
     <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Global regulatory timeline — 22 events</div><div class="sec-s">Restrictions · legislation · enforcement</div></div>
         <div class="reg-grid">
-            <div class="reg"><div class="reg-t">IRS classifies crypto as property</div><div class="reg-date">Mar 2014</div><div class="reg-desc">Notice 2014-21. Beginning of regulatory infrastructure requiring surveillance-sharing for institutional adoption.</div></div>
-            <div class="reg"><div class="reg-t">Winklevoss ETF rejected</div><div class="reg-date">Mar 2017</div><div class="reg-desc">SEC cites lack of surveillance-sharing. Begins 7-year battle shaping the entire crypto industry.</div></div>
-            <div class="reg"><div class="reg-t">Japan FSA — privacy coin ban</div><div class="reg-date">2018</div><div class="reg-desc">First country to ban privacy coins on regulated exchanges. Coincheck, bitFlyer delist. Sets global precedent.</div></div>
-            <div class="reg"><div class="reg-t">IRS $625K Monero bounty</div><div class="reg-date">Sep 2020</div><div class="reg-desc">22 companies apply. Chainalysis + Integra FEC selected. Bounty remains unfilled.</div></div>
-            <div class="reg"><div class="reg-t">South Korea Travel Rule</div><div class="reg-date">2020-2021</div><div class="reg-desc">All five major exchanges drop XMR. Bithumb, Upbit comply.</div></div>
-            <div class="reg"><div class="reg-t">Chainalysis $22M IRS contract</div><div class="reg-date">Nov 2020</div><div class="reg-desc">620 yearly licenses. Leaked 2024 video: relies on external data, not cryptographic breaks.</div></div>
-            <div class="reg"><div class="reg-t">US Infrastructure Bill crypto provisions</div><div class="reg-date">Nov 2021</div><div class="reg-desc">Expands IRS surveillance. Broker reporting. Transparent chains can comply; privacy coins cannot.</div></div>
-            <div class="reg"><div class="reg-t">Australia AUSTRAC pressure</div><div class="reg-date">2021</div><div class="reg-desc">Bitcoin.com.au, Swyftx delist. Holding remains legal.</div></div>
-            <div class="reg"><div class="reg-t">EU MiCA passed</div><div class="reg-date">Dec 2022</div><div class="reg-desc">CASPs prohibited from privacy coins. Most comprehensive crypto regulation globally.</div></div>
-            <div class="reg"><div class="reg-t">Huobi/HTX global removal</div><div class="reg-date">Sep 2023</div><div class="reg-desc">Top-10 exchange. All privacy coins. Confirms: no major CEX can satisfy surveillance mandates + offer privacy.</div></div>
-            <div class="reg neutral"><div class="reg-t">Grayscale wins vs SEC</div><div class="reg-date">Aug 2023</div><div class="reg-desc">Opens ETF path — via surveillance-sharing impossible for privacy coins.</div></div>
-            <div class="reg neutral"><div class="reg-t">11 spot Bitcoin ETFs approved</div><div class="reg-date">Jan 2024</div><div class="reg-desc">BlackRock, Fidelity + 9. All require surveillance-sharing. Proves no XMR ETF is structurally possible.</div></div>
-            <div class="reg"><div class="reg-t">EU bans anonymous crypto >€1000</div><div class="reg-date">Jan 2024</div><div class="reg-desc">AML regulation prohibits privacy coin usage through regulated entities for non-trivial transactions.</div></div>
-            <div class="reg"><div class="reg-t">Binance global XMR delisting</div><div class="reg-date">Feb 2024</div><div class="reg-desc">World's largest exchange. Price recovers and exceeds pre-delisting levels.</div></div>
-            <div class="reg"><div class="reg-t">Chainalysis training video leaked</div><div class="reg-date">Oct 2024</div><div class="reg-desc">IRS training: probabilistic, KYC-dependent, not cryptographic. MRL: nothing exceeds known capabilities.</div></div>
-            <div class="reg"><div class="reg-t">Kraken EEA delisting</div><div class="reg-date">Oct 2024</div><div class="reg-desc">All XMR halted for European Economic Area. Balances forcibly converted to BTC.</div></div>
-            <div class="reg"><div class="reg-t">Dubai VARA privacy token ban</div><div class="reg-date">Jan 2025</div><div class="reg-desc">Full ban on trading and custody. XMR hits ATH next day.</div></div>
-            <div class="reg pro"><div class="reg-t">Trump EO on Digital Finance</div><div class="reg-date">Jan 2025</div><div class="reg-desc">Prohibits CBDCs. Promotes stablecoins. Protects crypto banking. David Sacks as Crypto Czar. Mixed for privacy.</div></div>
-            <div class="reg neutral"><div class="reg-t">US Strategic Bitcoin Reserve</div><div class="reg-date">Mar 2025</div><div class="reg-desc">~200K BTC from forfeitures. Bitcoin chosen because verifiable. XMR holdings would be unverifiable — by design.</div></div>
-            <div class="reg"><div class="reg-t">CLARITY Act passes House 294-134</div><div class="reg-date">Jul 2025</div><div class="reg-desc">BSA AML/KYC for digital assets. Form 1099-DA. Senate reconciliation pending.</div></div>
-            <div class="reg"><div class="reg-t">EU DAC8 activates</div><div class="reg-date">Jan 2026</div><div class="reg-desc">Most comprehensive crypto surveillance framework ever. Providers must report to tax authorities across all EU states.</div></div>
-            <div class="reg"><div class="reg-t">EU AMLR full enforcement</div><div class="reg-date">Jul 2027 (exp)</div><div class="reg-desc">CASPs banned from privacy coins. Self-custody unaffected. P2P remains legal.</div></div>
+            <div class="reg"><div class="reg-t">IRS classifies crypto as property</div><div class="reg-date">Mar 2014</div><div class="reg-desc">Notice 2014-21. Tax framework begins.</div></div>
+            <div class="reg"><div class="reg-t">Winklevoss ETF rejected</div><div class="reg-date">Mar 2017</div><div class="reg-desc">No surveillance-sharing. 7-year battle begins.</div></div>
+            <div class="reg"><div class="reg-t">Japan FSA — privacy coin ban</div><div class="reg-date">2018</div><div class="reg-desc">First country. Sets global precedent.</div></div>
+            <div class="reg"><div class="reg-t">IRS $625K Monero bounty</div><div class="reg-date">Sep 2020</div><div class="reg-desc">22 applicants. Remains unfilled.</div></div>
+            <div class="reg"><div class="reg-t">South Korea Travel Rule</div><div class="reg-date">2020-21</div><div class="reg-desc">All five major exchanges drop XMR.</div></div>
+            <div class="reg"><div class="reg-t">Chainalysis $22M contract</div><div class="reg-date">Nov 2020</div><div class="reg-desc">620 licenses. Leaked video: no crypto break.</div></div>
+            <div class="reg"><div class="reg-t">US Infrastructure Bill</div><div class="reg-date">Nov 2021</div><div class="reg-desc">Crypto broker reporting. Privacy coins can't comply.</div></div>
+            <div class="reg"><div class="reg-t">Australia AUSTRAC</div><div class="reg-date">2021</div><div class="reg-desc">Exchange delistings. Holding legal.</div></div>
+            <div class="reg"><div class="reg-t">EU MiCA passed</div><div class="reg-date">Dec 2022</div><div class="reg-desc">CASPs banned from privacy coins.</div></div>
+            <div class="reg"><div class="reg-t">Huobi/HTX global</div><div class="reg-date">Sep 2023</div><div class="reg-desc">Top-10 exchange. All privacy coins.</div></div>
+            <div class="reg neutral"><div class="reg-t">11 Bitcoin ETFs approved</div><div class="reg-date">Jan 2024</div><div class="reg-desc">All require surveillance-sharing. No XMR ETF possible.</div></div>
+            <div class="reg"><div class="reg-t">EU bans anon crypto >€1000</div><div class="reg-date">Jan 2024</div><div class="reg-desc">AML reg targets privacy coins.</div></div>
+            <div class="reg"><div class="reg-t">Binance global delisting</div><div class="reg-date">Feb 2024</div><div class="reg-desc">Largest exchange. Price exceeded pre-delist.</div></div>
+            <div class="reg"><div class="reg-t">Chainalysis video leaked</div><div class="reg-date">Oct 2024</div><div class="reg-desc">Probabilistic, KYC-dependent. Not crypto.</div></div>
+            <div class="reg"><div class="reg-t">Kraken EEA delisting</div><div class="reg-date">Oct 2024</div><div class="reg-desc">Forced BTC conversion.</div></div>
+            <div class="reg"><div class="reg-t">Dubai VARA ban</div><div class="reg-date">Jan 2025</div><div class="reg-desc">ATH next day.</div></div>
+            <div class="reg pro"><div class="reg-t">Trump crypto EO</div><div class="reg-date">Jan 2025</div><div class="reg-desc">No CBDC. Protects banking. Mixed for privacy.</div></div>
+            <div class="reg neutral"><div class="reg-t">US Strategic BTC Reserve</div><div class="reg-date">Mar 2025</div><div class="reg-desc">~200K BTC. Verifiable. XMR can't be reserve — by design.</div></div>
+            <div class="reg"><div class="reg-t">CLARITY passes House</div><div class="reg-date">Jul 2025</div><div class="reg-desc">294-134. BSA for digital assets.</div></div>
+            <div class="reg"><div class="reg-t">EU DAC8 activates</div><div class="reg-date">Jan 2026</div><div class="reg-desc">Provider reporting across all EU.</div></div>
+            <div class="reg"><div class="reg-t">EU AMLR enforcement</div><div class="reg-date">Jul 2027</div><div class="reg-desc">CASPs banned. Self-custody unaffected.</div></div>
+            <div class="reg"><div class="reg-t">Fifth BTC halving</div><div class="reg-date">Apr 2028</div><div class="reg-desc">1.5625 BTC. 97%+ mined. Fee question.</div></div>
         </div>
-        <div style="background:var(--surface-1);border:1px solid rgba(0,204,136,.15);border-radius:10px;padding:16px;margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--grn);margin-bottom:8px">The critical distinction</div><div style="font-size:11px;color:var(--text-tertiary);line-height:1.7">Most jurisdictions ban <strong style="color:var(--g1)">exchange trading</strong>, not <strong style="color:var(--g1)">possession</strong>. Holding, mining, and P2P use of Monero remains legal almost everywhere. Regulations target intermediaries — the surveillance chokepoints. When CEXs delist, DEXs emerge. No company to sue, no CEO to arrest, no way to stop the protocol.</div></div>
+        <div style="background:var(--surface-1);border:1px solid rgba(0,204,136,.15);border-radius:10px;padding:16px;margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--grn);margin-bottom:8px">The critical distinction</div><div style="font-size:11px;color:var(--text-tertiary);line-height:1.7">Most jurisdictions ban <strong style="color:var(--g1)">exchange trading</strong>, not <strong style="color:var(--g1)">possession</strong>. Holding, mining, and P2P use remains legal almost everywhere. Regulations target intermediaries. When CEXs delist, DEXs emerge. No company to sue, no CEO to arrest.</div></div>
     </div></div>
 
     <!-- TAB 5: DELISTINGS -->
     <div id="tab-delistings" class="tab-panel">
-    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Exchange delisting tracker — 73+ in 2025</div><div class="sec-s">Every major delisting · date · scope</div></div>
-        <div class="dd" style="border-left-color:var(--grn);margin-bottom:16px"><div class="dd-t" style="color:var(--grn)">73 delistings. +195% price. The paradox IS the thesis.</div><div class="dd-body"><p>Every delisting compresses accessible supply. Demand migrates to DEXs, not away from Monero. 15K-25K daily transactions throughout. If traceable, they'd keep it as a honeypot. They delist because they cannot see inside.</p></div></div>
+    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Exchange delisting tracker</div><div class="sec-s">73+ documented · 2018–2025</div></div>
+        <div class="dd" style="border-left-color:var(--grn);margin-bottom:16px"><div class="dd-t" style="color:var(--grn)">73 delistings. +195% price. The paradox IS the thesis.</div><div class="dd-body"><p>If traceable, regulators would keep XMR as a honeypot. They delist because they can't see inside.</p></div></div>
         <div class="delist-grid">
-            <div class="dl"><div class="dl-name">Coincheck (Japan)</div><div class="dl-date">2018</div><div class="dl-scope">Full — FSA mandate</div></div>
-            <div class="dl"><div class="dl-name">bitFlyer (Japan)</div><div class="dl-date">2018</div><div class="dl-scope">Full — FSA mandate</div></div>
-            <div class="dl"><div class="dl-name">Bithumb (S. Korea)</div><div class="dl-date">2020</div><div class="dl-scope">Full — Travel Rule</div></div>
-            <div class="dl"><div class="dl-name">Upbit (S. Korea)</div><div class="dl-date">2020</div><div class="dl-scope">Full — Travel Rule</div></div>
+            <div class="dl"><div class="dl-name">Coincheck</div><div class="dl-date">2018</div><div class="dl-scope">Japan — FSA</div></div>
+            <div class="dl"><div class="dl-name">bitFlyer</div><div class="dl-date">2018</div><div class="dl-scope">Japan — FSA</div></div>
+            <div class="dl"><div class="dl-name">Bithumb</div><div class="dl-date">2020</div><div class="dl-scope">S. Korea — Travel Rule</div></div>
+            <div class="dl"><div class="dl-name">Upbit</div><div class="dl-date">2020</div><div class="dl-scope">S. Korea — Travel Rule</div></div>
             <div class="dl"><div class="dl-name">Bitcoin.com.au</div><div class="dl-date">2021</div><div class="dl-scope">Australia — AUSTRAC</div></div>
-            <div class="dl"><div class="dl-name">Swyftx</div><div class="dl-date">2021</div><div class="dl-scope">Australia — AUSTRAC</div></div>
-            <div class="dl"><div class="dl-name">Bittrex</div><div class="dl-date">2021</div><div class="dl-scope">Global — compliance</div></div>
-            <div class="dl"><div class="dl-name">ShapeShift</div><div class="dl-date">2021</div><div class="dl-scope">Global — regulatory</div></div>
-            <div class="dl"><div class="dl-name">Huobi/HTX</div><div class="dl-date">Sep 2023</div><div class="dl-scope">Global — all privacy coins</div></div>
-            <div class="dl"><div class="dl-name">Binance (Australia)</div><div class="dl-date">2023</div><div class="dl-scope">Regional — AUSTRAC</div></div>
-            <div class="dl"><div class="dl-name">Binance (France)</div><div class="dl-date">2023</div><div class="dl-scope">Regional — AMF</div></div>
-            <div class="dl"><div class="dl-name">Binance (Spain)</div><div class="dl-date">2023</div><div class="dl-scope">Regional — CNMV</div></div>
-            <div class="dl"><div class="dl-name">Binance (Italy)</div><div class="dl-date">2023</div><div class="dl-scope">Regional — CONSOB</div></div>
-            <div class="dl"><div class="dl-name">Binance (Poland)</div><div class="dl-date">2023</div><div class="dl-scope">Regional — KNF</div></div>
-            <div class="dl"><div class="dl-name">Bitstamp (EU)</div><div class="dl-date">Jan 2024</div><div class="dl-scope">EEA — pre-AMLR</div></div>
-            <div class="dl"><div class="dl-name">OKX</div><div class="dl-date">Jan 2024</div><div class="dl-scope">Global — all privacy coins</div></div>
-            <div class="dl"><div class="dl-name">Binance</div><div class="dl-date">Feb 2024</div><div class="dl-scope">GLOBAL — largest exchange</div></div>
-            <div class="dl"><div class="dl-name">Kraken (Ireland)</div><div class="dl-date">Early 2024</div><div class="dl-scope">Regional — CBI</div></div>
-            <div class="dl"><div class="dl-name">Kraken (Belgium)</div><div class="dl-date">Early 2024</div><div class="dl-scope">Regional — FSMA</div></div>
-            <div class="dl"><div class="dl-name">Kraken (EEA)</div><div class="dl-date">Oct 2024</div><div class="dl-scope">Full EEA — forced BTC conversion</div></div>
-            <div class="dl"><div class="dl-name">Dubai VARA platforms</div><div class="dl-date">Jan 2025</div><div class="dl-scope">Dubai — full ban</div></div>
+            <div class="dl"><div class="dl-name">Bittrex</div><div class="dl-date">2021</div><div class="dl-scope">Global</div></div>
+            <div class="dl"><div class="dl-name">Huobi/HTX</div><div class="dl-date">Sep 2023</div><div class="dl-scope">Global — all privacy</div></div>
+            <div class="dl"><div class="dl-name">Binance (EU)</div><div class="dl-date">2023</div><div class="dl-scope">FR/ES/IT/PL/AU</div></div>
+            <div class="dl"><div class="dl-name">Bitstamp</div><div class="dl-date">Jan 2024</div><div class="dl-scope">EEA — pre-AMLR</div></div>
+            <div class="dl"><div class="dl-name">OKX</div><div class="dl-date">Jan 2024</div><div class="dl-scope">Global</div></div>
+            <div class="dl"><div class="dl-name">Binance</div><div class="dl-date">Feb 2024</div><div class="dl-scope">GLOBAL</div></div>
+            <div class="dl"><div class="dl-name">Kraken</div><div class="dl-date">Oct 2024</div><div class="dl-scope">Full EEA</div></div>
+            <div class="dl"><div class="dl-name">Dubai VARA</div><div class="dl-date">Jan 2025</div><div class="dl-scope">Full ban</div></div>
         </div>
-        <div style="text-align:center;padding:16px;font-size:10px;color:var(--text-tertiary)">...plus 50+ additional regional delistings. Total: 73+ documented in 2025.</div>
-        <div style="background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:16px;margin-top:12px"><div style="font-size:12px;font-weight:600;color:var(--xmr);margin-bottom:8px">Where XMR is still traded</div><div class="dgrid" style="margin:0"><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Kraken (limited)</div><div class="dg-p">US (varies by state) + some non-EU. One of last major CEXs.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Haveno DEX</div><div class="dg-p">Decentralized P2P. Cannot be delisted. Fiat ramps.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">TradeOgre</div><div class="dg-p">Privacy-focused. No KYC small amounts. Order book.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Wagyu.xyz</div><div class="dg-p">Exchange-level rates. No KYC. Zero forced selling.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">ChangeNOW</div><div class="dg-p">Instant swap. 500+ pairs. No account.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Atomic swaps</div><div class="dg-p">BTC↔XMR trustless. COMIT network. No intermediary.</div></div></div></div>
+        <div style="text-align:center;padding:12px;font-size:10px;color:var(--text-tertiary)">+ 60 additional regional delistings</div>
+        <div style="background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:16px;margin-top:8px"><div style="font-size:12px;font-weight:600;color:var(--xmr);margin-bottom:8px">Where XMR is still traded</div><div class="dgrid" style="margin:0"><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Kraken (limited)</div><div class="dg-p">US varies by state.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Haveno DEX</div><div class="dg-p">P2P. Can't be delisted.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Wagyu.xyz</div><div class="dg-p">Exchange-level. No KYC.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">ChangeNOW</div><div class="dg-p">Instant. 500+ pairs.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">TradeOgre</div><div class="dg-p">Privacy-focused.</div></div><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Atomic swaps</div><div class="dg-p">Trustless BTC↔XMR.</div></div></div></div>
     </div></div>
 
     <!-- TAB 6: SUPPLY -->
     <div id="tab-supply" class="tab-panel">
-    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Monero tail emission vs Bitcoin halving</div><div class="sec-s">Permanent security vs fee-market dependency</div></div>
+    <div class="sec" style="padding-top:20px"><div class="sec-h"><div class="sec-t">Supply dynamics</div><div class="sec-s">Tail emission vs halving</div></div>
         <div class="sup-grid">
-            <div class="sup"><div class="sup-v" style="color:var(--xmr)">0.85%</div><div class="sup-l">XMR annual inflation</div><div class="sup-s">Declining yearly. Below 0.5% by 2035. Tail emission = permanent security budget. No fee-market crisis.</div></div>
-            <div class="sup"><div class="sup-v" style="color:var(--gold)">0.83%</div><div class="sup-l">BTC annual inflation</div><div class="sup-s">Post-2024 halving. 0% by 2140. Then miners rely on fees only. Untested economic model.</div></div>
-            <div class="sup"><div class="sup-v" style="color:var(--grn)">432/day</div><div class="sup-l">XMR daily issuance</div><div class="sup-s">0.6 XMR × 720 blocks/day forever. No halving shocks. No miner exodus risk.</div></div>
+            <div class="sup"><div class="sup-v" style="color:var(--xmr)">0.85%</div><div class="sup-l">XMR annual inflation</div><div class="sup-s">Declining. Below 0.5% by 2035. Permanent security budget.</div></div>
+            <div class="sup"><div class="sup-v" style="color:var(--gold)">0.83%</div><div class="sup-l">BTC inflation</div><div class="sup-s">Post-2024 halving. 0% by 2140. Untested fee-only model.</div></div>
+            <div class="sup"><div class="sup-v" style="color:var(--grn)">432/day</div><div class="sup-l">XMR issuance</div><div class="sup-s">0.6 × 720 blocks. Fixed forever. No shocks.</div></div>
         </div>
-        <div style="margin-top:16px"><div class="dd" style="border-left-color:var(--grn)"><div class="dd-num">Supply thesis</div><div class="dd-t">Shrinking accessible supply meets growing structural demand</div><div class="dd-body"><p><strong>73 exchanges delisted XMR in 2025.</strong> Each removes an on-ramp.</p><div class="dgrid"><div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Tail emission: fixed</div><div class="dg-p">0.6 XMR/block forever. Cannot increase. No governance attack on supply.</div></div><div class="dg" style="border-left-color:var(--xmr)"><div class="dg-t">Circulating: 18.45M</div><div class="dg-p">Cryptographically auditable via Pedersen commitments. Inflation → 0 asymptote.</div></div><div class="dg" style="border-left-color:var(--gold)"><div class="dg-t">On-chain: stable</div><div class="dg-p">15K-25K daily txs despite delistings. Users migrated to DEXs, not away.</div></div><div class="dg" style="border-left-color:var(--blue)"><div class="dg-t">Swap drain: $300K+/day</div><div class="dg-p">Instant swaps collect XMR fees, dump for stablecoins. Wagyu v2 eliminates this.</div></div></div><div class="dd-data green"><span class="metric">Result:</span> Fewer exchanges + stable demand + fixed supply + reduced drain = structural price floor rising with each delisting.</div></div></div>
-        <div class="dd" style="border-left-color:var(--gold)"><div class="dd-num">Bitcoin comparison</div><div class="dd-t">Why tail emission solves what Bitcoin hasn't faced yet</div><div class="dd-body"><p>BTC halving → 0% reward by 2140. Will fees alone secure a $2T+ network?</p><div class="dd-data"><span class="metric">The math:</span> BTC ~400K txs/day, avg fee ~$2-5. Total: ~$1-2M/day. Current subsidy: ~$30M/day. Fees need 15-30x increase to replace. Block limit constrains throughput.</div><p>Monero's tail emission avoids this. 0.6 XMR/block forever. Permanent, predictable security budget. No game-theory uncertainty.</p></div></div>
+        <div style="margin-top:16px"><div class="dd" style="border-left-color:var(--grn)"><div class="dd-num">Supply thesis</div><div class="dd-t">Shrinking access meets growing demand</div><div class="dd-body"><p>73 delistings removed on-ramps. Fixed supply. 15K-25K daily txs stable. Swap drain ($300K+/day) being broken by Wagyu/Haveno.</p><div class="dd-data green"><span class="metric">Result:</span> Fewer exchanges + stable demand + fixed supply + reduced drain = structural price floor rising with each delisting.</div></div></div>
+        <div class="dd" style="border-left-color:var(--gold)"><div class="dd-num">BTC comparison</div><div class="dd-t">Why tail emission solves what Bitcoin hasn't faced</div><div class="dd-body"><p>BTC ~400K txs/day, avg fee ~$2-5. Total: $1-2M/day. Current subsidy: ~$30M/day. Fees need 15-30x to replace. Monero's tail emission avoids this entirely.</p></div></div>
         </div>
     </div></div>
 
-    <div class="ft">xmr.irish / future outlook · 48 events · 8 demand drivers · 22 regulatory milestones · privacy is structural</div>
+    <div class="ft">xmr.irish / future outlook · 8-chapter thesis · 57 timeline events · structural demand is not speculation</div>
 </div>
 <script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
 <script>
 NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
-PriceService.subscribe(function(d){if(d.monero&&d.monero.usd)document.getElementById('fo-price').textContent='$'+d.monero.usd.toFixed(2)});
+PriceService.subscribe(function(d){if(d.xmr&&d.xmr.usd)document.getElementById('fo-price').textContent='$'+d.xmr.usd.toFixed(2)});
 function showTab(id,btn){document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});document.querySelectorAll('.tabs>.tab').forEach(function(b){b.classList.remove('active')});document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');window.scrollTo({top:document.querySelector('.tabs').offsetTop-60,behavior:'smooth'})}
 
 var TL=[
 {era:'The Bitcoin Era',eraS:'2008 — 2011'},
-{d:'Oct 31, 2008',t:'Bitcoin whitepaper published',p:'Satoshi publishes "A Peer-to-Peer Electronic Cash System." Section 10 warns about privacy limitations.',ty:'btc'},
-{d:'Jan 3, 2009',t:'Genesis block mined',p:'"Chancellor on brink of second bailout for banks" — embedded in block 0. 50 BTC subsidy permanently unspendable.',ty:'btc'},
-{d:'Jan 12, 2009',t:'First BTC transaction',p:'Satoshi sends 10 BTC to Hal Finney in block 170. First peer-to-peer crypto transfer.',ty:'btc'},
-{d:'Oct 5, 2009',t:'First BTC price established',p:'$0.00076 per BTC via New Liberty Standard. Based on electricity cost to mine.',ty:'btc'},
-{d:'May 22, 2010',t:'Bitcoin Pizza Day',p:'10,000 BTC for two pizzas. First commercial Bitcoin transaction.',ty:'btc'},
-{d:'Jul 7-8, 2010',t:'Satoshi\'s Anonymity Thread (#82)',p:'Community debates Bitcoin privacy. Satoshi acknowledges limitations.',ty:'btc'},
-{d:'Jul 17, 2010',t:'Mt. Gox launches',p:'First major exchange. Would handle 70%+ of all BTC trading before collapse.',ty:'btc'},
-{d:'Aug 10-13, 2010',t:'Satoshi describes stealth addresses & ring signatures',p:'Thread #174: "blinded variations of a public key" + "group signatures." Blueprint for Monero.',ty:'cross'},
-{d:'Aug 15, 2010',t:'Value overflow bug',p:'184B BTC created and patched within hours. Demonstrates both vulnerability and rapid response.',ty:'btc'},
-{d:'Dec 5, 2010',t:'Satoshi\'s last public post',p:'"WikiLeaks has kicked the hornet\'s nest, and the swarm is headed towards us."',ty:'btc'},
-{d:'Apr 23, 2011',t:'Satoshi\'s final email',p:'"I\'ve moved on to other things. It\'s in good hands with Gavin and everyone."',ty:'btc'},
-{d:'Jun 2011',t:'WikiLeaks accepts Bitcoin',p:'Validates censorship-resistance. Transparent ledger makes all donations traceable.',ty:'btc'},
+{d:'Oct 31, 2008',t:'Bitcoin whitepaper',p:'Satoshi: "A Peer-to-Peer Electronic Cash System." Section 10 warns about privacy.',ty:'btc'},
+{d:'Jan 3, 2009',t:'Genesis block',p:'"Chancellor on brink of second bailout" embedded in block 0.',ty:'btc'},
+{d:'Jan 12, 2009',t:'First BTC transaction',p:'10 BTC to Hal Finney. Block 170.',ty:'btc'},
+{d:'Oct 5, 2009',t:'First price: $0.00076',p:'New Liberty Standard. Electricity-cost basis.',ty:'btc'},
+{d:'May 22, 2010',t:'Bitcoin Pizza Day',p:'10,000 BTC for two pizzas.',ty:'btc'},
+{d:'Jul 7-8, 2010',t:'Anonymity Thread #82',p:'Satoshi acknowledges Bitcoin privacy limitations.',ty:'btc'},
+{d:'Jul 17, 2010',t:'Mt. Gox launches',p:'First major exchange. 70%+ of volume at peak.',ty:'btc'},
+{d:'Aug 10-13, 2010',t:'Thread #174: stealth addresses + ring sigs',p:'Satoshi describes exact technologies Monero would implement.',ty:'cross'},
+{d:'Aug 15, 2010',t:'Value overflow bug',p:'184B BTC created/patched in hours.',ty:'btc'},
+{d:'Dec 5, 2010',t:'Satoshi\'s last post',p:'"WikiLeaks has kicked the hornet\'s nest."',ty:'btc'},
+{d:'Apr 23, 2011',t:'Satoshi\'s final email',p:'"I\'ve moved on to other things."',ty:'btc'},
+{d:'Jun 2011',t:'WikiLeaks accepts BTC',p:'Transparent ledger makes donations traceable.',ty:'btc'},
 {era:'CryptoNote Emerges',eraS:'2012 — 2014'},
-{d:'Nov 28, 2012',t:'First Bitcoin halving',p:'Block 210,000. Reward: 50→25 BTC. Price: $12.35 → $1,003 within year.',ty:'btc'},
-{d:'Jul 2012',t:'Bytecoin launches (80% premined)',p:'First CryptoNote. Ring signatures + one-time addresses. Premine motivates fair-launch fork.',ty:'xmr'},
-{d:'Dec 2012',t:'CryptoNote v1 whitepaper',p:'Van Saberhagen criticizes BTC traceability as "critical flaw." Proposes ring signatures.',ty:'xmr'},
-{d:'Feb 2013',t:'Bitcoin hits $1,000',p:'First major bull run. Media attention draws regulatory interest.',ty:'btc'},
-{d:'Oct 2013',t:'Silk Road shutdown',p:'FBI seizes 144K BTC. Investigation relied on transparent blockchain. BTC = pseudonymous, not anonymous.',ty:'cross'},
-{d:'2013-14',t:'Chainalysis & Elliptic founded',p:'Blockchain surveillance industry born. BTC ledger becomes government tracking tool.',ty:'cross'},
-{d:'Feb 2014',t:'Mt. Gox collapse',p:'850K BTC lost. "Not your keys, not your coins" movement accelerates.',ty:'btc'},
-{d:'Mar 2014',t:'IRS classifies crypto as property',p:'Notice 2014-21. Tax framework begins. Surveillance-sharing infrastructure starts.',ty:'reg'},
-{d:'Apr 18, 2014',t:'Monero launched',p:'Fair fork of Bytecoin. Zero premine, no ICO, no corporate backing. 7 pseudonymous founders.',ty:'xmr'},
-{d:'Sep 2014',t:'Monero community takeover',p:'thankful_for_today ousted. Rebranded BitMonero→Monero. Decentralized governance.',ty:'xmr'},
+{d:'Nov 28, 2012',t:'First BTC halving',p:'50→25 BTC. $12.35 → $1,003 within year.',ty:'btc'},
+{d:'Jul 2012',t:'Bytecoin (80% premined)',p:'First CryptoNote. Premine motivates fair fork.',ty:'xmr'},
+{d:'Dec 2012',t:'CryptoNote v1 whitepaper',p:'Van Saberhagen: BTC traceability is "critical flaw."',ty:'xmr'},
+{d:'Feb 2013',t:'BTC hits $1,000',p:'Media attention draws regulators.',ty:'btc'},
+{d:'Oct 2013',t:'Silk Road shutdown',p:'FBI traces BTC. Proves pseudonymous ≠ anonymous.',ty:'cross'},
+{d:'2013-14',t:'Chainalysis/Elliptic founded',p:'BTC surveillance industry born.',ty:'cross'},
+{d:'Feb 2014',t:'Mt. Gox collapse',p:'850K BTC lost. "Not your keys" movement.',ty:'btc'},
+{d:'Mar 2014',t:'IRS: crypto = property',p:'Tax framework begins.',ty:'reg'},
+{d:'Apr 18, 2014',t:'Monero launched',p:'Fair fork. Zero premine. 7 pseudonymous founders.',ty:'xmr'},
+{d:'Sep 2014',t:'Community takeover',p:'Decentralized governance begins.',ty:'xmr'},
 {era:'The Privacy War',eraS:'2017 — 2022'},
-{d:'Jan 10, 2017',t:'RingCT activated',p:'Amounts hidden via Pedersen commitments. Privacy trifecta complete: sender + receiver + amount.',ty:'xmr'},
-{d:'Sep 2017',t:'Mandatory RingCT hard fork',p:'Privacy-by-default. Not optional. The decision making institutional adoption impossible by design.',ty:'xmr'},
-{d:'Mar 2017',t:'Winklevoss ETF rejected',p:'SEC cites no surveillance-sharing. 7-year regulatory battle begins.',ty:'reg'},
-{d:'Apr 2018',t:'First anti-ASIC hard fork',p:'PoW modified to resist ASIC centralization. "One CPU, one vote."',ty:'xmr'},
-{d:'Oct 2018',t:'Bulletproofs activated',p:'"Beryllium Bullet." Tx size −80%, fees −97%. No trusted setup. Privacy gets cheaper.',ty:'xmr'},
-{d:'2018',t:'Japan exchanges delist privacy coins',p:'Coincheck, bitFlyer comply with FSA. First major delisting wave.',ty:'reg'},
-{d:'Nov 2019',t:'RandomX activated',p:'CPU-optimized, ASIC-resistant mining. Consumer hardware viable. Decentralization preserved.',ty:'xmr'},
-{d:'Dec 2019',t:'Fluffypony steps back',p:'Lead maintainer voluntarily reduces role. Snipa takes over. Project continues seamlessly.',ty:'xmr'},
-{d:'May 2020',t:'Third Bitcoin halving',p:'Block 630K. Reward: 6.25 BTC. Price: $8,500 → $67,000 within 18 months.',ty:'btc'},
-{d:'Aug 2020',t:'MicroStrategy adopts BTC treasury',p:'21,454 BTC @ $250M. Cites transparent ledger enabling corporate compliance.',ty:'btc'},
-{d:'Sep 2020',t:'IRS posts $625K Monero bounty',p:'22 companies apply. Chainalysis + Integra FEC selected. Remains unfilled.',ty:'reg'},
-{d:'Oct 2020',t:'CLSAG + Dandelion++ activated',p:'Signatures −25%. IP obfuscation via probabilistic routing.',ty:'xmr'},
-{d:'Nov 2020',t:'Chainalysis wins $22M IRS contract',p:'620 licenses, API access. Leaked video later reveals no cryptographic break.',ty:'reg'},
-{d:'Jun 2022',t:'Tail emission begins',p:'0.6 XMR/block forever. Permanent security budget. Unlike BTC\'s eventual 0% reward.',ty:'xmr'},
-{d:'Aug 2022',t:'Ring 11→16 + Bulletproofs+ + View tags',p:'Anonymity +45%. Sync +40% faster. No privacy trade-offs.',ty:'xmr'},
+{d:'Jan 10, 2017',t:'RingCT activated',p:'Amounts hidden. Privacy trifecta complete.',ty:'xmr'},
+{d:'Mar 2017',t:'Winklevoss ETF rejected',p:'No surveillance-sharing. 7-year battle.',ty:'reg'},
+{d:'Sep 2017',t:'Mandatory RingCT fork',p:'Privacy-by-default. Institutional adoption made impossible by design.',ty:'xmr'},
+{d:'Apr 2018',t:'First anti-ASIC fork',p:'"One CPU, one vote."',ty:'xmr'},
+{d:'Oct 2018',t:'Bulletproofs',p:'Tx −80%, fees −97%. No trusted setup.',ty:'xmr'},
+{d:'2018',t:'Japan delistings',p:'First wave. Coincheck, bitFlyer.',ty:'reg'},
+{d:'Nov 2019',t:'RandomX activated',p:'CPU mining. ASIC-resistant. Decentralization preserved.',ty:'xmr'},
+{d:'Dec 2019',t:'Fluffypony steps back',p:'Decentralization deepens.',ty:'xmr'},
+{d:'May 2020',t:'Third BTC halving',p:'6.25 BTC. $8,500 → $67,000.',ty:'btc'},
+{d:'Aug 2020',t:'MicroStrategy BTC treasury',p:'21,454 BTC @ $250M.',ty:'btc'},
+{d:'Sep 2020',t:'IRS $625K bounty',p:'22 applicants. Remains unfilled.',ty:'reg'},
+{d:'Oct 2020',t:'CLSAG + Dandelion++',p:'Sigs −25%. IP obfuscation.',ty:'xmr'},
+{d:'Nov 2020',t:'Chainalysis $22M contract',p:'Leaked video: no crypto break.',ty:'reg'},
+{d:'Jun 2022',t:'Tail emission begins',p:'0.6 XMR/block forever.',ty:'xmr'},
+{d:'Aug 2022',t:'Ring 11→16 + BP+ + View tags',p:'Anonymity +45%. Sync +40% faster.',ty:'xmr'},
 {era:'The Regulatory Storm',eraS:'2023 — 2025'},
-{d:'Dec 2022',t:'EU MiCA passed',p:'CASPs prohibited from privacy coins. Most comprehensive crypto framework.',ty:'reg'},
-{d:'Aug 2023',t:'Grayscale wins vs SEC',p:'Opens ETF path — via surveillance-sharing impossible for XMR.',ty:'cross'},
-{d:'Sep 2023',t:'Huobi/HTX global delisting',p:'Top-10 exchange removes all privacy coins globally.',ty:'reg'},
-{d:'Jan 2024',t:'SEC approves 11 Bitcoin ETFs',p:'All require surveillance-sharing agreements. Proves no XMR ETF structurally possible.',ty:'cross'},
-{d:'Feb 2024',t:'Binance global XMR delisting',p:'World\'s largest exchange. Price recovers and exceeds pre-delist levels.',ty:'reg'},
-{d:'Apr 2024',t:'Fourth Bitcoin halving',p:'Block 840K. Reward: 3.125 BTC. ETFs absorb supply faster than miners produce.',ty:'btc'},
-{d:'Apr 2024',t:'FCMP++ research published',p:'Full-chain membership proofs. Anonymity set: 16 → 100M+ outputs.',ty:'xmr'},
-{d:'Oct 2024',t:'Chainalysis training video leaked',p:'IRS training: probabilistic, KYC-dependent, not cryptographic. MRL: nothing new.',ty:'cross'},
-{d:'Oct 2024',t:'Kraken delists XMR in EEA',p:'Remaining balances forcibly converted to BTC.',ty:'reg'},
-{d:'Jan 2025',t:'Dubai VARA bans privacy tokens',p:'XMR hits all-time highs next day. Paradox of prohibition.',ty:'reg'},
-{d:'Jan 2025',t:'XMR hits ~$800 ATH',p:'73 delistings + 195% price increase. Structural demand validated.',ty:'xmr'},
-{d:'Mar 2025',t:'US Strategic Bitcoin Reserve',p:'~200K BTC. Chosen because holdings publicly verifiable. XMR cannot be reserve — by design.',ty:'cross'},
-{d:'Jul 2025',t:'CLARITY Act passes House 294-134',p:'BSA AML/KYC for digital assets. Form 1099-DA. Senate pending.',ty:'reg'},
+{d:'Dec 2022',t:'EU MiCA passed',p:'CASPs banned from privacy coins.',ty:'reg'},
+{d:'Aug 2023',t:'Grayscale wins vs SEC',p:'Opens ETF path via surveillance-sharing.',ty:'cross'},
+{d:'Sep 2023',t:'HTX global delisting',p:'Top-10 exchange removes all privacy coins.',ty:'reg'},
+{d:'Jan 2024',t:'11 Bitcoin ETFs approved',p:'All require surveillance-sharing. No XMR ETF possible.',ty:'cross'},
+{d:'Feb 2024',t:'Binance global delisting',p:'Largest exchange. Price exceeded pre-delist.',ty:'reg'},
+{d:'Apr 2024',t:'Fourth BTC halving',p:'3.125 BTC. ETFs absorb > miners produce.',ty:'btc'},
+{d:'Apr 2024',t:'FCMP++ research published',p:'16 → 100M+ anonymity set.',ty:'xmr'},
+{d:'Oct 2024',t:'Chainalysis video leaked',p:'Probabilistic, KYC-dependent, not cryptographic.',ty:'cross'},
+{d:'Oct 2024',t:'Kraken EEA delisting',p:'Forced BTC conversion.',ty:'reg'},
+{d:'Jan 2025',t:'Dubai VARA ban',p:'ATH next day. Paradox.',ty:'reg'},
+{d:'Jan 2025',t:'XMR ~$800 ATH',p:'73 delistings + 195%. Structural demand.',ty:'xmr'},
+{d:'Mar 2025',t:'US Strategic BTC Reserve',p:'~200K BTC. Verifiable. XMR can\'t be reserve.',ty:'cross'},
+{d:'Jul 2025',t:'CLARITY passes House',p:'294-134. BSA for digital assets.',ty:'reg'},
 {era:'2026+ The Future',eraS:'Building what Satoshi envisioned'},
-{d:'Jan 2026',t:'EU DAC8 activates',p:'Most comprehensive crypto surveillance framework. Provider reporting across all EU states.',ty:'reg'},
-{d:'2026',t:'CLARITY + GENIUS Acts',p:'US framework. 1099-DA reporting. Bank Secrecy Act for digital assets.',ty:'reg'},
-{d:'Q2-Q3 2026',t:'FCMP++ expected mainnet',p:'Ring-16 → 100M+ anonymity set. Largest privacy upgrade in history.',ty:'xmr'},
-{d:'2026',t:'Cuprate Rust node',p:'Alternative implementation. Faster sync. Memory safety. Implementation diversity.',ty:'xmr'},
-{d:'2026-27',t:'Seraphis + Jamtis',p:'New tx protocol. Forward-secret view keys. Tier-based permissions. Multi-decade foundation.',ty:'xmr'},
-{d:'Jul 2027',t:'EU AMLR full enforcement',p:'CASPs banned from privacy coins. Self-custody unaffected. P2P remains.',ty:'reg'},
-{d:'Apr 2028',t:'Fifth Bitcoin halving',p:'Reward: 1.5625 BTC. 97%+ mined. Fee-market question intensifies.',ty:'btc'}
+{d:'Jan 2026',t:'EU DAC8 activates',p:'Most comprehensive surveillance framework.',ty:'reg'},
+{d:'2026',t:'CLARITY + GENIUS',p:'US framework. 1099-DA. BSA.',ty:'reg'},
+{d:'Q2-Q3 2026',t:'FCMP++ mainnet',p:'100M+ anonymity set. Chain analysis extinct.',ty:'xmr'},
+{d:'2026',t:'Cuprate Rust node',p:'Diversity. Memory safety. Fast sync.',ty:'xmr'},
+{d:'2026-27',t:'Seraphis + Jamtis',p:'New tx protocol. Forward secrecy.',ty:'xmr'},
+{d:'Jul 2027',t:'EU AMLR full enforcement',p:'CASPs banned. Self-custody legal.',ty:'reg'},
+{d:'Apr 2028',t:'Fifth BTC halving',p:'1.5625 BTC. Fee-market question.',ty:'btc'}
 ];
 
-function renderTL(filter){
-    var c=document.getElementById('tl-container'),html='',cnt=0;
+function renderTL(f){
+    var c=document.getElementById('tl-container'),html='';
     var colors={btc:'#F7931A',xmr:'var(--xmr)',reg:'#B44DFF',cross:'var(--blue)'};
     TL.forEach(function(e){
-        if(e.era){html+='<div class="tl-era" data-era style="color:'+(e.eraS.includes('Future')?'var(--xmr)':e.eraS.includes('Bitcoin')?'#F7931A':e.eraS.includes('CryptoNote')?'var(--xmr)':e.eraS.includes('Privacy')?'var(--blue)':'#B44DFF')+'">'+e.era+'<span class="tl-era-s">'+e.eraS+'</span></div>';return}
-        if(filter!=='all'&&e.ty!==filter)return;
-        cnt++;
+        if(e.era){html+='<div class="tl-era" data-era style="color:'+(e.eraS.includes('Future')?'var(--xmr)':e.eraS.includes('Bitcoin')?'#F7931A':e.eraS.includes('Crypto')?'var(--xmr)':e.eraS.includes('Privacy')?'var(--blue)':'#B44DFF')+'">'+e.era+'<span class="tl-era-s">'+e.eraS+'</span></div>';return}
+        if(f!=='all'&&e.ty!==f)return;
         var cls=e.d.includes('2026')||e.d.includes('2027')||e.d.includes('2028')?'future':(e.d.includes('2025')||e.d.includes('Q2-Q3'))?'active':'done';
         html+='<div class="tl-item '+cls+'" style="border-left:2px solid '+(colors[e.ty]||'var(--xmr)')+'"><div class="tl-date" style="color:'+(colors[e.ty]||'var(--xmr)')+'">'+e.d+'</div><div class="tl-title">'+e.t+'</div><div class="tl-desc">'+e.p+'</div></div>';
     });
     c.innerHTML=html;
-    if(filter!=='all'){document.querySelectorAll('[data-era]').forEach(function(h){var n=h.nextElementSibling,has=false;while(n&&!n.hasAttribute('data-era')){if(n.classList.contains('tl-item')){has=true;break}n=n.nextElementSibling}h.style.display=has?'':'none'})}
-    return cnt;
+    if(f!=='all'){document.querySelectorAll('[data-era]').forEach(function(h){var n=h.nextElementSibling,has=false;while(n&&!n.hasAttribute('data-era')){if(n.classList.contains('tl-item')){has=true;break}n=n.nextElementSibling}h.style.display=has?'':'none'})}
 }
 function filterTL(f,btn){document.querySelectorAll('#tl-filters .tab').forEach(function(b){b.classList.remove('active');b.style.background='transparent'});btn.classList.add('active');renderTL(f)}
 renderTL('all');
