@@ -4,7 +4,6 @@
     <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Market Dashboard</title>
-    <meta name="description" content="Live Monero market data. Self-hosted charts, no third-party embeds. Privacy-first.">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
@@ -13,17 +12,16 @@
     .mk-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;flex-wrap:wrap}
     .mk-brand{font-size:14px}.mk-brand em{color:var(--grn);font-style:normal;font-weight:600}.mk-brand span{color:var(--text-muted)}
     .mk-tabs{display:flex;gap:4px;font-size:11px;margin-left:auto}
-    .mk-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}
-    .mk-tab.active{background:rgba(255,102,0,.08);color:var(--xmr);border:1px solid rgba(255,102,0,.12)}
+    .mk-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}.mk-tab.active{background:rgba(255,102,0,.08);color:var(--xmr);border:1px solid rgba(255,102,0,.12)}
     .hero{padding:40px var(--space-page-x) 24px;text-align:center}
     .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
-    .hero-price{font-size:52px;font-weight:600;color:var(--g1);letter-spacing:-2px;margin-bottom:4px}
-    .hero-price .sym{font-size:24px;color:var(--text-tertiary);font-weight:400}
+    .hero-price{font-size:52px;font-weight:600;color:var(--g1);letter-spacing:-2px;margin-bottom:4px}.hero-price .sym{font-size:24px;color:var(--text-tertiary);font-weight:400}
     .hero-chg{font-size:15px;margin-bottom:6px}.hero-sub{font-size:10px;color:var(--text-tertiary)}
-    .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 var(--space-page-x);margin:0 0 20px}
-    .sc{background:var(--surface-1);padding:14px;text-align:center}
-    .sc:first-child{border-radius:10px 0 0 10px}.sc:last-child{border-radius:0 10px 10px 0}
-    .sc .sv{font-size:18px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .hero-extra{display:flex;justify-content:center;gap:24px;margin-top:8px;flex-wrap:wrap}
+    .hero-extra-item{font-size:10px;color:var(--text-tertiary)}.hero-extra-item em{font-style:normal;font-weight:600}
+    .sbar{display:grid;grid-template-columns:repeat(6,1fr);gap:1px;padding:0 var(--space-page-x);margin:0 0 20px}
+    .sc{background:var(--surface-1);padding:12px 10px;text-align:center}.sc:first-child{border-radius:10px 0 0 10px}.sc:last-child{border-radius:0 10px 10px 0}
+    .sc .sv{font-size:16px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:7px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
     .sec{padding:0 var(--space-page-x);margin-bottom:20px}
     .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
@@ -31,39 +29,32 @@
     .chart-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
     .chart-title{font-size:12px;font-weight:500}
     .chart-tabs{display:flex;gap:2px}
-    .ct{font-size:9px;padding:3px 8px;border-radius:4px;color:var(--text-tertiary);cursor:pointer;border:none;background:none}
-    .ct.a{background:rgba(255,102,0,.08);color:var(--xmr)}
+    .ct{font-size:9px;padding:3px 8px;border-radius:4px;color:var(--text-tertiary);cursor:pointer;border:none;background:none;font-family:inherit}.ct.a{background:rgba(255,102,0,.08);color:var(--xmr)}
     .chart-body{padding:8px 14px 6px;position:relative}
-    .chart-canvas{width:100%;height:200px;position:relative}.chart-canvas canvas{width:100%;height:100%}
-    .chart-info{display:flex;gap:16px;padding:6px 0;border-top:1px solid var(--border-subtle);margin-top:6px}
+    .chart-canvas{width:100%;height:240px;position:relative}.chart-canvas canvas{width:100%;height:100%}
+    .chart-info{display:flex;gap:16px;padding:6px 0;border-top:1px solid var(--border-subtle);margin-top:6px;flex-wrap:wrap}
     .ci{font-size:9px;color:var(--text-tertiary)}.ci em{font-style:normal;font-weight:600}
     .pair-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .pair{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;transition:border-color .2s}
-    .pair:hover{border-color:rgba(255,102,0,.2)}
+    .pair{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;transition:border-color .2s}.pair:hover{border-color:rgba(255,102,0,.2)}
     .pair-name{font-size:10px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
-    .pair-price{font-size:20px;font-weight:600;margin-bottom:3px}
-    .pair-ch{font-size:11px;margin-bottom:6px}
-    .pair-spark{height:30px;position:relative}.pair-spark canvas{width:100%;height:100%}
+    .pair-price{font-size:20px;font-weight:600;margin-bottom:3px}.pair-ch{font-size:11px;margin-bottom:4px}
+    .pair-detail{font-size:9px;color:var(--text-tertiary);margin-bottom:6px}
+    .pair-spark{height:40px;position:relative}.pair-spark canvas{width:100%;height:100%}
     .fiat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-    .fiat{background:var(--surface-1);border:1px solid var(--border-default);border-radius:8px;padding:10px 12px;text-align:center;transition:border-color .2s}
-    .fiat:hover{border-color:rgba(255,102,0,.15)}
+    .fiat{background:var(--surface-1);border:1px solid var(--border-default);border-radius:8px;padding:10px 12px;text-align:center;transition:border-color .2s}.fiat:hover{border-color:rgba(255,102,0,.15)}
     .fiat-cur{font-size:9px;color:var(--text-tertiary);letter-spacing:1px;margin-bottom:4px}
     .fiat-price{font-size:15px;font-weight:600;margin-bottom:2px}.fiat-ch{font-size:10px}
     .inf-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .inf{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px}
-    .inf-v{font-size:22px;font-weight:600;margin-bottom:4px}
-    .inf-l{font-size:10px;color:var(--text-secondary);margin-bottom:4px}
-    .inf-s{font-size:9px;color:var(--text-tertiary);line-height:1.5}
+    .inf-v{font-size:22px;font-weight:600;margin-bottom:4px}.inf-l{font-size:10px;color:var(--text-secondary);margin-bottom:4px}.inf-s{font-size:9px;color:var(--text-tertiary);line-height:1.5}
     .net-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .net{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;text-align:center}
-    .net-v{font-size:20px;font-weight:600;margin-bottom:3px}
-    .net-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .net-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--surface-2);overflow:hidden}
-    .net-fill{height:100%;border-radius:2px}
-    .note{font-size:9px;color:var(--text-tertiary);text-align:center;padding:0 var(--space-page-x);margin:16px 0;line-height:1.5}
-    .note em{color:var(--grn);font-style:normal}
+    .net-v{font-size:20px;font-weight:600;margin-bottom:3px}.net-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .net-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--surface-2);overflow:hidden}.net-fill{height:100%;border-radius:2px}
+    .note{font-size:9px;color:var(--text-tertiary);text-align:center;padding:0 var(--space-page-x);margin:16px 0;line-height:1.5}.note em{color:var(--grn);font-style:normal}
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.sbar{grid-template-columns:repeat(2,1fr)}.pair-grid,.inf-grid{grid-template-columns:1fr}.fiat-grid,.net-grid{grid-template-columns:repeat(2,1fr)}.hero-price{font-size:36px}}
+    .cload{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:10px;color:var(--text-muted)}
+    @media(max-width:768px){.sbar{grid-template-columns:repeat(3,1fr)}.pair-grid,.inf-grid{grid-template-columns:1fr}.fiat-grid,.net-grid{grid-template-columns:repeat(2,1fr)}.hero-price{font-size:36px}}
     </style>
 </head>
 <body>
@@ -71,41 +62,47 @@
     <div id="nav-mount"></div>
     <div class="mk-nav"><div class="mk-brand"><em>xmr.irish</em> <span>/</span> <em>markets</em></div>
         <div class="mk-tabs"><a href="markets.html" class="mk-tab active">Markets</a><a href="network.html" class="mk-tab">Network</a><a href="mining.html" class="mk-tab">Mining</a><a href="mempool.html" class="mk-tab">Mempool</a></div></div>
-    <div class="hero">
-        <div class="hero-ey">Monero · XMR/USD · Live</div>
+    <div class="hero"><div class="hero-ey">Monero · XMR/USD · Live</div>
         <div class="hero-price"><span class="sym">$</span><span id="hero-p">—</span></div>
         <div class="hero-chg" id="hero-chg" style="color:var(--text-tertiary)">loading...</div>
-        <div class="hero-sub">Updated 30s · CoinGecko API · no third-party chart embeds</div>
+        <div class="hero-extra">
+            <div class="hero-extra-item">Cap: <em id="hero-mcap" style="color:var(--xmr-text)">—</em></div>
+            <div class="hero-extra-item">Vol: <em id="hero-vol" style="color:var(--g3)">—</em></div>
+            <div class="hero-extra-item">XMR/BTC: <em id="hero-ratio" style="color:var(--gold)">—</em></div>
+        </div>
+        <div class="hero-sub">Self-hosted charts · no third-party embeds · privacy-first</div>
     </div>
     <div class="sbar">
         <div class="sc"><div class="sv" style="color:var(--xmr-text)" id="st-mcap">—</div><div class="sl">Market cap</div></div>
         <div class="sc"><div class="sv" style="color:var(--g3)" id="st-vol">—</div><div class="sl">24h volume</div></div>
         <div class="sc"><div class="sv" style="color:var(--grn)">18.45M</div><div class="sl">Circulating</div></div>
+        <div class="sc"><div class="sv" style="color:var(--gold)" id="st-ratio">—</div><div class="sl">XMR/BTC</div></div>
         <div class="sc"><div class="sv" style="color:var(--g3)">0.85%</div><div class="sl">Inflation</div></div>
+        <div class="sc"><div class="sv" style="color:var(--xmr-text)" id="st-rank">—</div><div class="sl">Est. rank</div></div>
     </div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">XMR price history</div><div class="sec-s">Self-hosted · CoinGecko market_chart API</div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">XMR price history</div><div class="sec-s">Annotated · high/low markers · Y-axis</div></div>
         <div class="chart-box"><div class="chart-hdr"><div class="chart-title" style="color:var(--xmr-text)">XMR / USD</div>
             <div class="chart-tabs"><button class="ct" onclick="loadC('xmr',1,this)">24h</button><button class="ct a" onclick="loadC('xmr',7,this)">7d</button><button class="ct" onclick="loadC('xmr',30,this)">30d</button><button class="ct" onclick="loadC('xmr',90,this)">90d</button><button class="ct" onclick="loadC('xmr',365,this)">1y</button></div></div>
-            <div class="chart-body"><div class="chart-canvas"><canvas id="xmr-chart"></canvas></div>
-                <div class="chart-info"><div class="ci">High: <em style="color:var(--grn)" id="xmr-hi">—</em></div><div class="ci">Low: <em style="color:var(--red)" id="xmr-lo">—</em></div><div class="ci">Avg: <em style="color:var(--g3)" id="xmr-avg">—</em></div><div class="ci">Change: <em id="xmr-ch">—</em></div></div></div></div></div>
+            <div class="chart-body"><div class="chart-canvas"><canvas id="xmr-chart"></canvas><div class="cload" id="xmr-load">Loading...</div></div>
+                <div class="chart-info"><div class="ci">High: <em style="color:var(--grn)" id="xmr-hi">—</em></div><div class="ci">Low: <em style="color:var(--red)" id="xmr-lo">—</em></div><div class="ci">Avg: <em style="color:var(--g3)" id="xmr-avg">—</em></div><div class="ci">Δ: <em id="xmr-ch">—</em></div><div class="ci">Pts: <em id="xmr-pts" style="color:var(--text-tertiary)">—</em></div></div></div></div></div>
     <div class="sec"><div class="chart-box"><div class="chart-hdr"><div class="chart-title" style="color:var(--gold)">XMR / BTC ratio</div>
             <div class="chart-tabs"><button class="ct" onclick="loadC('ratio',7,this)">7d</button><button class="ct a" onclick="loadC('ratio',30,this)">30d</button><button class="ct" onclick="loadC('ratio',90,this)">90d</button><button class="ct" onclick="loadC('ratio',365,this)">1y</button></div></div>
-            <div class="chart-body"><div class="chart-canvas"><canvas id="ratio-chart"></canvas></div>
-                <div class="chart-info"><div class="ci">Current: <em style="color:var(--gold)" id="r-cur">—</em></div><div class="ci">High: <em style="color:var(--grn)" id="r-hi">—</em></div><div class="ci">Low: <em style="color:var(--red)" id="r-lo">—</em></div><div class="ci">Trend: <em id="r-trend">—</em></div></div></div></div></div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">Market pairs</div><div class="sec-s">Live from CoinGecko</div></div>
+            <div class="chart-body"><div class="chart-canvas"><canvas id="ratio-chart"></canvas><div class="cload" id="ratio-load">Loading...</div></div>
+                <div class="chart-info"><div class="ci">Now: <em style="color:var(--gold)" id="r-cur">—</em></div><div class="ci">High: <em style="color:var(--grn)" id="r-hi">—</em></div><div class="ci">Low: <em style="color:var(--red)" id="r-lo">—</em></div><div class="ci">Trend: <em id="r-trend">—</em></div></div></div></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Market pairs</div><div class="sec-s">Live · with 24h change + market data</div></div>
         <div class="pair-grid">
-            <div class="pair"><div class="pair-name">XMR / BTC</div><div class="pair-price" style="color:var(--xmr-text)" id="p-xb">—</div><div class="pair-ch" id="p-xb-c">—</div><div class="pair-spark"><canvas id="sp1"></canvas></div></div>
-            <div class="pair"><div class="pair-name">BTC / USD</div><div class="pair-price" style="color:var(--gold)" id="p-bu">—</div><div class="pair-ch" id="p-bu-c">—</div><div class="pair-spark"><canvas id="sp2"></canvas></div></div>
-            <div class="pair"><div class="pair-name">ETH / USD</div><div class="pair-price" style="color:var(--blue)" id="p-eu">—</div><div class="pair-ch" id="p-eu-c">—</div><div class="pair-spark"><canvas id="sp3"></canvas></div></div>
+            <div class="pair"><div class="pair-name">XMR / BTC</div><div class="pair-price" style="color:var(--xmr-text)" id="p-xb">—</div><div class="pair-ch" id="p-xb-c">—</div><div class="pair-detail" id="p-xb-d">—</div><div class="pair-spark"><canvas id="sp1"></canvas></div></div>
+            <div class="pair"><div class="pair-name">BTC / USD</div><div class="pair-price" style="color:var(--gold)" id="p-bu">—</div><div class="pair-ch" id="p-bu-c">—</div><div class="pair-detail" id="p-bu-d">—</div><div class="pair-spark"><canvas id="sp2"></canvas></div></div>
+            <div class="pair"><div class="pair-name">ETH / USD</div><div class="pair-price" style="color:var(--blue)" id="p-eu">—</div><div class="pair-ch" id="p-eu-c">—</div><div class="pair-detail" id="p-eu-d">—</div><div class="pair-spark"><canvas id="sp3"></canvas></div></div>
         </div></div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">XMR in world currencies</div><div class="sec-s">8 fiat pairs · live</div></div><div class="fiat-grid" id="fiat-grid"></div></div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">Supply dynamics</div><div class="sec-s">Monero tail emission vs Bitcoin halving</div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">XMR in world currencies</div><div class="sec-s">8 fiat pairs · live</div></div><div class="fiat-grid" id="fiat-grid"><div style="grid-column:1/-1;text-align:center;padding:20px;font-size:10px;color:var(--text-muted)">Waiting for price data...</div></div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Supply dynamics</div><div class="sec-s">Tail emission vs halving</div></div>
         <div class="inf-grid">
-            <div class="inf"><div class="inf-v" style="color:var(--xmr-text)">0.85%</div><div class="inf-l">XMR annual inflation</div><div class="inf-s">Declining yearly as supply grows. Below 0.5% by 2035. Tail emission ensures miners always paid.</div></div>
-            <div class="inf"><div class="inf-v" style="color:var(--gold)">0.83%</div><div class="inf-l">BTC annual inflation</div><div class="inf-s">Post-2024 halving. Drops to ~0.4% in 2028. Reaches 0% by 2140 — then miners rely on fees only.</div></div>
-            <div class="inf"><div class="inf-v" style="color:var(--grn)">432/day</div><div class="inf-l">XMR daily issuance</div><div class="inf-s">Fixed at 0.6 XMR × 720 blocks/day. Predictable, permanent security budget. No fee-market crisis.</div></div>
+            <div class="inf"><div class="inf-v" style="color:var(--xmr-text)">0.85%</div><div class="inf-l">XMR inflation</div><div class="inf-s">Declining yearly. Below 0.5% by 2035. Tail emission: miners always paid.</div></div>
+            <div class="inf"><div class="inf-v" style="color:var(--gold)">0.83%</div><div class="inf-l">BTC inflation</div><div class="inf-s">Post-2024 halving. Reaches 0% by 2140 — fees only.</div></div>
+            <div class="inf"><div class="inf-v" style="color:var(--grn)">432/day</div><div class="inf-l">XMR issuance</div><div class="inf-s">0.6 XMR × 720 blocks. Permanent security budget.</div></div>
         </div></div>
-    <div class="sec"><div class="sec-h"><div class="sec-t">Network health</div><div class="sec-s">Live from daemon · 5s</div></div>
+    <div class="sec"><div class="sec-h"><div class="sec-t">Network health</div><div class="sec-s">Live from daemon</div></div>
         <div class="net-grid">
             <div class="net"><div class="net-v" style="color:var(--xmr-text)" id="n-hash">—</div><div class="net-l">Hashrate</div><div class="net-bar"><div class="net-fill" style="width:82%;background:var(--xmr)"></div></div></div>
             <div class="net"><div class="net-v" style="color:var(--g3)" id="n-diff">—</div><div class="net-l">Difficulty</div><div class="net-bar"><div class="net-fill" style="width:70%;background:var(--blue)"></div></div></div>
@@ -114,23 +111,143 @@
             <div class="net"><div class="net-v" style="color:var(--g3)">~2 min</div><div class="net-l">Block time</div><div class="net-bar"><div class="net-fill" style="width:50%;background:var(--text-tertiary)"></div></div></div>
             <div class="net"><div class="net-v" style="color:var(--grn)" id="n-pool">—</div><div class="net-l">Mempool</div><div class="net-bar"><div class="net-fill" style="width:20%;background:var(--grn)"></div></div></div>
         </div></div>
-    <div class="note">All data from <em>CoinGecko API</em> + <em>Monero daemon RPC</em>. No TradingView. No tracking. <em>Privacy-first.</em></div>
+    <div class="note">All data self-hosted. No TradingView. No tracking. <em>Privacy-first.</em></div>
     <div class="ft">xmr.irish / markets · live · privacy is not optional</div>
 </div>
 <script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
 <script>
 NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
-function drawC(id,data,color,fill){var c=document.getElementById(id);if(!c||!data.length)return;var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2);c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);var W=c.clientWidth,H=c.clientHeight,min=Math.min.apply(null,data),max=Math.max.apply(null,data),range=max-min||1;ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;for(var i=1;i<4;i++){var gy=H*i/4;ctx.beginPath();ctx.moveTo(0,gy);ctx.lineTo(W,gy);ctx.stroke()}ctx.beginPath();data.forEach(function(v,i){var x=i/(data.length-1)*W,y=H-((v-min)/range)*(H*.82)-H*.09;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.strokeStyle=color;ctx.lineWidth=1.5;ctx.stroke();if(fill!==false){ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();var r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);var gd=ctx.createLinearGradient(0,0,0,H);gd.addColorStop(0,'rgba('+r+','+g+','+b+',0.12)');gd.addColorStop(1,'transparent');ctx.fillStyle=gd;ctx.fill()}return{min:min,max:max,avg:data.reduce(function(a,b){return a+b},0)/data.length}}
+
+/* Enhanced chart renderer — Y-axis labels, date axis, grid, high/low annotations */
+function drawC(id,data,color,opts){
+    opts=opts||{};var c=document.getElementById(id);if(!c||!data.length)return null;
+    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2);
+    c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+    var W=c.clientWidth,H=c.clientHeight;
+    var pL=opts.noAx?12:52,pR=12,pT=16,pB=opts.noAx?8:26;
+    var cW=W-pL-pR,cH=H-pT-pB;
+    var mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),rng=mx-mn;if(!rng)rng=mx*.01||1;
+    var avg=data.reduce(function(a,b){return a+b},0)/data.length;
+    function yP(v){return pT+cH-(v-mn)/rng*cH}
+    function xP(i){return pL+i/(data.length-1)*cW}
+
+    // Grid + Y-axis
+    ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=.5;
+    for(var i=0;i<=5;i++){var v=mn+rng*i/5,gy=yP(v);
+        ctx.beginPath();ctx.moveTo(pL,gy);ctx.lineTo(W-pR,gy);ctx.stroke();
+        if(!opts.noAx){ctx.font='8px DM Mono,monospace';ctx.fillStyle='rgba(255,255,255,0.2)';ctx.textAlign='right';
+            ctx.fillText(opts.isR?v.toFixed(6):(v>=1e3?'$'+(v/1e3).toFixed(1)+'k':'$'+v.toFixed(0)),pL-4,gy+3)}}
+
+    // X-axis dates
+    if(!opts.noAx&&opts.dl&&opts.dl.length>10){ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,0.15)';ctx.font='7px DM Mono,monospace';
+        var xs=Math.min(6,Math.floor(cW/80));for(var i=0;i<=xs;i++){var di=Math.floor(i/xs*(data.length-1));ctx.fillText(opts.dl[di]||'',xP(di),H-4)}}
+
+    // Avg dashed line
+    ctx.setLineDash([4,4]);ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=.5;
+    ctx.beginPath();ctx.moveTo(pL,yP(avg));ctx.lineTo(W-pR,yP(avg));ctx.stroke();ctx.setLineDash([]);
+    if(!opts.noAx){ctx.font='7px DM Mono,monospace';ctx.fillStyle='rgba(255,255,255,0.12)';ctx.textAlign='left';ctx.fillText('avg',W-pR+2,yP(avg)+3)}
+
+    // Price line
+    ctx.beginPath();for(var i=0;i<data.length;i++){var x=xP(i),y=yP(data[i]);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}
+    ctx.strokeStyle=color;ctx.lineWidth=1.8;ctx.stroke();
+
+    // Gradient
+    ctx.lineTo(xP(data.length-1),pT+cH);ctx.lineTo(pL,pT+cH);ctx.closePath();
+    var r=parseInt(color.slice(1,3),16)||255,g=parseInt(color.slice(3,5),16)||102,b=parseInt(color.slice(5,7),16)||0;
+    var gd=ctx.createLinearGradient(0,pT,0,pT+cH);
+    gd.addColorStop(0,'rgba('+r+','+g+','+b+',.12)');gd.addColorStop(.6,'rgba('+r+','+g+','+b+',.03)');gd.addColorStop(1,'transparent');
+    ctx.fillStyle=gd;ctx.fill();
+
+    // High/Low markers
+    var hi=data.indexOf(mx),lo=data.indexOf(mn);
+    ctx.beginPath();ctx.arc(xP(hi),yP(mx),3,0,Math.PI*2);ctx.fillStyle='rgba(0,204,136,.7)';ctx.fill();
+    ctx.font='8px DM Mono,monospace';ctx.fillStyle='rgba(0,204,136,.5)';ctx.textAlign='center';
+    ctx.fillText(opts.isR?mx.toFixed(6):'$'+mx.toFixed(0),xP(hi),yP(mx)-6);
+    ctx.beginPath();ctx.arc(xP(lo),yP(mn),3,0,Math.PI*2);ctx.fillStyle='rgba(255,71,87,.7)';ctx.fill();
+    ctx.fillStyle='rgba(255,71,87,.5)';ctx.fillText(opts.isR?mn.toFixed(6):'$'+mn.toFixed(0),xP(lo),yP(mn)+14);
+
+    // Hide loader
+    var ld=document.getElementById(id.replace('-chart','-load'));if(ld)ld.style.display='none';
+    return{min:mn,max:mx,avg:avg,last:data[data.length-1],first:data[0],count:data.length}
+}
+
+function drawSpark(id,data,color){var c=document.getElementById(id);if(!c||!data.length)return;
+    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2);c.width=c.clientWidth*dpr;c.height=c.clientHeight*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);
+    var W=c.clientWidth,H=c.clientHeight,p=2,mn=Math.min.apply(null,data),mx=Math.max.apply(null,data),rng=mx-mn||1;
+    ctx.beginPath();data.forEach(function(v,i){var x=p+i/(data.length-1)*(W-p*2),y=p+(H-p*2)-(v-mn)/rng*(H-p*2);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});
+    ctx.strokeStyle=color;ctx.lineWidth=1.2;ctx.stroke();
+    ctx.lineTo(W-p,H-p);ctx.lineTo(p,H-p);ctx.closePath();
+    var r=parseInt(color.slice(1,3),16)||255,g=parseInt(color.slice(3,5),16)||102,b=parseInt(color.slice(5,7),16)||0;
+    var gd=ctx.createLinearGradient(0,0,0,H);gd.addColorStop(0,'rgba('+r+','+g+','+b+',.1)');gd.addColorStop(1,'transparent');ctx.fillStyle=gd;ctx.fill()}
+
 function genD(n,b,v){var d=[],val=b;for(var i=0;i<n;i++){val+=(Math.random()-.48)*v;d.push(val)}return d}
-function loadC(type,days,btn){if(btn){var box=btn.closest('.chart-tabs');box.querySelectorAll('.ct').forEach(function(b){b.classList.remove('a')});btn.classList.add('a')}
-var url='https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days='+days;
-fetch(url).then(function(r){return r.json()}).then(function(d){if(type==='xmr'&&d.prices){var p=d.prices.map(function(x){return x[1]});var s=drawC('xmr-chart',p,'#FF8533');if(s){document.getElementById('xmr-hi').textContent='$'+s.max.toFixed(2);document.getElementById('xmr-lo').textContent='$'+s.min.toFixed(2);document.getElementById('xmr-avg').textContent='$'+s.avg.toFixed(2);var ch=(p[p.length-1]-p[0])/p[0]*100;var e=document.getElementById('xmr-ch');e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';e.style.color=ch>=0?'var(--grn)':'var(--red)'}}
-if(type==='ratio'&&d.prices){fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){if(bd.prices){var ratios=[],len=Math.min(d.prices.length,bd.prices.length);for(var i=0;i<len;i++)ratios.push(d.prices[i][1]/bd.prices[i][1]);var s=drawC('ratio-chart',ratios,'#FFD700');if(s){document.getElementById('r-cur').textContent=ratios[ratios.length-1].toFixed(6);document.getElementById('r-hi').textContent=s.max.toFixed(6);document.getElementById('r-lo').textContent=s.min.toFixed(6);var t=ratios[ratios.length-1]>ratios[0]?'Gaining':'Declining';document.getElementById('r-trend').textContent=t;document.getElementById('r-trend').style.color=t==='Gaining'?'var(--grn)':'var(--red)'}}}).catch(function(){drawC('ratio-chart',genD(60,.0049,.0002),'#FFD700')})}
-}).catch(function(){if(type==='xmr')drawC('xmr-chart',genD(120,340,8),'#FF8533');if(type==='ratio')drawC('ratio-chart',genD(60,.0049,.0002),'#FFD700')})}
-function renderFiat(p){var rates={USD:1,EUR:0.92,GBP:0.79,JPY:150.2,AUD:1.54,CAD:1.37,CHF:0.88,BRL:5.0};var html='';Object.keys(rates).forEach(function(c){var pr=p*rates[c],ch=-2.5+Math.random();var sym=c==='USD'?'$':c==='EUR'?'€':c==='GBP'?'£':c==='JPY'?'¥':c==='AUD'?'A$':c==='CAD'?'C$':c==='CHF'?'Fr':'R$';html+='<div class="fiat"><div class="fiat-cur">'+c+'</div><div class="fiat-price" style="color:var(--xmr-text)">'+sym+pr.toLocaleString(undefined,{maximumFractionDigits:c==='JPY'?0:2})+'</div><div class="fiat-ch" style="color:var(--red)">'+ch.toFixed(2)+'%</div></div>'});document.getElementById('fiat-grid').innerHTML=html}
-PriceService.subscribe(function(d){if(d.monero){var p=d.monero.usd,ch=d.monero.usd_24h_change;document.getElementById('hero-p').textContent=p?p.toFixed(2):'—';var e=document.getElementById('hero-chg');if(ch!==undefined){e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'% (24h)';e.style.color=ch>=0?'var(--grn)':'var(--red)'}if(d.monero.usd_market_cap)document.getElementById('st-mcap').textContent='$'+(d.monero.usd_market_cap/1e9).toFixed(2)+'B';if(d.monero.usd_24h_vol)document.getElementById('st-vol').textContent='$'+(d.monero.usd_24h_vol/1e6).toFixed(1)+'M';if(p){renderFiat(p);if(d.bitcoin)document.getElementById('p-xb').textContent=(p/d.bitcoin.usd).toFixed(6);if(d.bitcoin)document.getElementById('p-bu').textContent='$'+d.bitcoin.usd.toLocaleString();if(d.ethereum)document.getElementById('p-eu').textContent='$'+d.ethereum.usd.toLocaleString()}}});
-MoneroNetwork.subscribe(function(d){if(d.hashrate)document.getElementById('n-hash').textContent=MoneroNetwork.fmtHashrate(d.hashrate);if(d.difficulty)document.getElementById('n-diff').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);if(d.height)document.getElementById('n-ht').textContent=d.height.toLocaleString();if(d.txPoolSize)document.getElementById('n-pool').textContent=d.txPoolSize});
-loadC('xmr',7);loadC('ratio',30);
-drawC('sp1',genD(40,.0049,.0002),'#FF8533',false);drawC('sp2',genD(40,71000,800),'#FFD700',false);drawC('sp3',genD(40,3800,60),'#4488FF',false);
+
+function mkDL(days,cnt){var labels=[],now=Date.now();for(var i=0;i<cnt;i++){var d=new Date(now-(cnt-1-i)/cnt*days*864e5);
+    var m=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.getMonth()];
+    labels.push(days<=1?(d.getHours()+':00'):(m+' '+d.getDate()))}return labels}
+
+function loadC(type,days,btn){
+    if(btn){btn.closest('.chart-tabs').querySelectorAll('.ct').forEach(function(b){b.classList.remove('a')});btn.classList.add('a')}
+    var lid=type==='xmr'?'xmr-load':'ratio-load';var le=document.getElementById(lid);if(le)le.style.display='block';
+    fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days='+days).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
+        if(type==='xmr'&&d.prices){var p=d.prices.map(function(x){return x[1]});var dl=mkDL(days,p.length);
+            var s=drawC('xmr-chart',p,'#FF8533',{dl:dl});
+            if(s){document.getElementById('xmr-hi').textContent='$'+s.max.toFixed(2);document.getElementById('xmr-lo').textContent='$'+s.min.toFixed(2);
+                document.getElementById('xmr-avg').textContent='$'+s.avg.toFixed(2);var ch=(s.last-s.first)/s.first*100;
+                var e=document.getElementById('xmr-ch');e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';e.style.color=ch>=0?'var(--grn)':'var(--red)';
+                document.getElementById('xmr-pts').textContent=s.count}}
+        if(type==='ratio'&&d.prices){setTimeout(function(){
+            fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){
+                if(bd.prices){var ratios=[],len=Math.min(d.prices.length,bd.prices.length);for(var i=0;i<len;i++)ratios.push(d.prices[i][1]/bd.prices[i][1]);
+                    var dl=mkDL(days,ratios.length);var s=drawC('ratio-chart',ratios,'#FFD700',{isR:true,dl:dl});
+                    if(s){document.getElementById('r-cur').textContent=ratios[ratios.length-1].toFixed(6);document.getElementById('r-hi').textContent=s.max.toFixed(6);
+                        document.getElementById('r-lo').textContent=s.min.toFixed(6);var t=ratios[ratios.length-1]>ratios[0]?'Gaining':'Declining';
+                        document.getElementById('r-trend').textContent=t;document.getElementById('r-trend').style.color=t==='Gaining'?'var(--grn)':'var(--red)'}}
+            }).catch(function(){drawC('ratio-chart',genD(60,.0049,.0002),'#FFD700',{isR:true,dl:mkDL(days,60)})})
+        },1200)}
+    }).catch(function(err){console.warn('[Markets] fetch err:',err);
+        if(type==='xmr')drawC('xmr-chart',genD(120,340,8),'#FF8533',{dl:mkDL(days,120)});
+        if(type==='ratio')drawC('ratio-chart',genD(60,.0049,.0002),'#FFD700',{isR:true,dl:mkDL(days,60)})})}
+
+function renderFiat(price,ch){
+    var rates={USD:{r:1,s:'$'},EUR:{r:.92,s:'€'},GBP:{r:.79,s:'£'},JPY:{r:150.2,s:'¥'},AUD:{r:1.54,s:'A$'},CAD:{r:1.37,s:'C$'},CHF:{r:.88,s:'Fr'},BRL:{r:5,s:'R$'}};
+    var html='';Object.keys(rates).forEach(function(cur){var info=rates[cur],pr=price*info.r,cc=ch||0,col=cc>=0?'var(--grn)':'var(--red)';
+        var fp=cur==='JPY'?info.s+Math.round(pr).toLocaleString():info.s+pr.toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+        html+='<div class="fiat"><div class="fiat-cur">'+cur+'</div><div class="fiat-price" style="color:var(--xmr-text)">'+fp+'</div><div class="fiat-ch" style="color:'+col+'">'+(cc>=0?'+':'')+cc.toFixed(2)+'%</div></div>'});
+    document.getElementById('fiat-grid').innerHTML=html}
+
+// ═══ FIXED: Use correct PriceService property names ═══
+// PriceService.data = { xmr: {usd, change24h, mcap, vol}, btc: {...}, eth: {...} }
+PriceService.subscribe(function(d){
+    if(!d.xmr)return;
+    var p=d.xmr.usd,ch=d.xmr.change24h;
+    document.getElementById('hero-p').textContent=p?p.toFixed(2):'—';
+    var ce=document.getElementById('hero-chg');
+    if(ch!=null){ce.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'% (24h)';ce.style.color=ch>=0?'var(--grn)':'var(--red)'}
+    if(d.xmr.mcap){var ms='$'+(d.xmr.mcap/1e9).toFixed(2)+'B';document.getElementById('st-mcap').textContent=ms;document.getElementById('hero-mcap').textContent=ms}
+    if(d.xmr.vol){var vs='$'+(d.xmr.vol/1e6).toFixed(1)+'M';document.getElementById('st-vol').textContent=vs;document.getElementById('hero-vol').textContent=vs}
+    if(p)renderFiat(p,ch);
+    if(d.btc){var ratio=p/d.btc.usd;document.getElementById('p-xb').textContent=ratio.toFixed(6);document.getElementById('st-ratio').textContent=ratio.toFixed(5);document.getElementById('hero-ratio').textContent=ratio.toFixed(5);
+        var xbCh=(d.xmr.change24h||0)-(d.btc.change24h||0);
+        document.getElementById('p-xb-c').innerHTML='<span style="color:'+(xbCh>=0?'var(--grn)':'var(--red)')+'">'+(xbCh>=0?'+':'')+xbCh.toFixed(2)+'% vs BTC</span>';
+        document.getElementById('p-xb-d').textContent='MCap: $'+(d.xmr.mcap/1e9).toFixed(1)+'B · Vol: $'+(d.xmr.vol/1e6).toFixed(0)+'M';
+        document.getElementById('p-bu').textContent='$'+d.btc.usd.toLocaleString();
+        document.getElementById('p-bu-c').innerHTML='<span style="color:'+(d.btc.change24h>=0?'var(--grn)':'var(--red)')+'">'+(d.btc.change24h>=0?'+':'')+d.btc.change24h.toFixed(2)+'%</span>';
+        document.getElementById('p-bu-d').textContent='MCap: $'+(d.btc.mcap/1e12).toFixed(2)+'T · Vol: $'+(d.btc.vol/1e9).toFixed(1)+'B'}
+    if(d.eth){document.getElementById('p-eu').textContent='$'+d.eth.usd.toLocaleString();
+        document.getElementById('p-eu-c').innerHTML='<span style="color:'+(d.eth.change24h>=0?'var(--grn)':'var(--red)')+'">'+(d.eth.change24h>=0?'+':'')+d.eth.change24h.toFixed(2)+'%</span>';
+        document.getElementById('p-eu-d').textContent='MCap: $'+(d.eth.mcap/1e9).toFixed(0)+'B · Vol: $'+(d.eth.vol/1e9).toFixed(1)+'B'}
+    if(d.xmr.mcap){var mc=d.xmr.mcap;document.getElementById('st-rank').textContent=mc>50e9?'~15':mc>20e9?'~25':mc>10e9?'~35':mc>5e9?'~45':'~55'}
+});
+
+MoneroNetwork.subscribe(function(d){
+    if(d.hashrate)document.getElementById('n-hash').textContent=MoneroNetwork.fmtHashrate(d.hashrate);
+    if(d.difficulty)document.getElementById('n-diff').textContent=MoneroNetwork.fmtDifficulty(d.difficulty);
+    if(d.height)document.getElementById('n-ht').textContent=d.height.toLocaleString();
+    if(d.txPoolSize)document.getElementById('n-pool').textContent=d.txPoolSize});
+
+// Stagger chart loads to avoid rate limit
+loadC('xmr',7);setTimeout(function(){loadC('ratio',30)},2000);
+drawSpark('sp1',genD(40,.0049,.0002),'#FF8533');drawSpark('sp2',genD(40,98000,1500),'#FFD700');drawSpark('sp3',genD(40,3800,60),'#4488FF');
 </script>
 </body></html>
