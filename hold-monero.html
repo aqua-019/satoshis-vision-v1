@@ -33,13 +33,37 @@
 
     /* ChangeNOW widget section */
     .swap-widget{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin-bottom:16px}
+    .swap-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
     .swap-widget-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
     .swap-widget-title{font-size:16px;font-weight:600}
     .swap-widget-badge{font-size:9px;padding:3px 10px;border-radius:4px;background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
-    .swap-widget-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin-bottom:14px;max-width:600px}
-    .swap-iframe-wrap{border-radius:8px;overflow:hidden;border:1px solid var(--border-default);background:#0D0D12}
+    .swap-widget-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin-bottom:14px}
+    .swap-iframe-wrap{border-radius:8px;overflow:hidden;border:1px solid var(--border-default);background:#0D0D12;min-height:356px}
+    .swap-iframe-wrap iframe{width:100%;height:356px;border:none;display:block}
     .swap-disclaimer{font-size:9px;color:var(--text-tertiary);margin-top:10px;padding:8px 12px;border:1px solid var(--border-subtle);border-radius:6px;line-height:1.5}
     .swap-disclaimer em{color:var(--xmr);font-style:normal}
+    /* Swap tracker panel */
+    .swap-tracker{background:var(--surface-0);border:1px solid var(--border-default);border-radius:10px;padding:16px}
+    .swap-tracker-t{font-size:13px;font-weight:600;margin-bottom:12px;color:var(--xmr)}
+    .swap-metric{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border-subtle);font-size:11px}
+    .swap-metric:last-child{border:none}
+    .swap-metric-l{color:var(--text-tertiary)}.swap-metric-v{font-weight:500;color:var(--g1)}
+    .swap-confirm{margin-top:12px}
+    .swap-confirm-t{font-size:10px;color:var(--text-tertiary);margin-bottom:8px;letter-spacing:1px;text-transform:uppercase}
+    .confirm-bar{display:flex;gap:3px;margin-bottom:6px}
+    .confirm-block{flex:1;height:24px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--text-muted);transition:all .3s}
+    .confirm-block.confirmed{background:rgba(0,204,136,.12);border-color:rgba(0,204,136,.3);color:var(--grn)}
+    .confirm-block.pending{background:rgba(255,102,0,.08);border-color:rgba(255,102,0,.2);color:var(--xmr);animation:pulse-block 1.5s infinite}
+    @keyframes pulse-block{0%,100%{opacity:1}50%{opacity:.5}}
+    .swap-eta{font-size:10px;color:var(--text-tertiary);text-align:center;margin-top:4px}
+    .swap-eta em{color:var(--grn);font-style:normal;font-weight:600}
+    .swap-txid{font-size:9px;color:var(--text-muted);word-break:break-all;margin-top:8px;padding:6px 8px;background:var(--surface-2);border-radius:4px;font-family:'DM Mono',monospace}
+    .swap-status{display:inline-block;font-size:9px;padding:3px 8px;border-radius:4px;font-weight:600;margin-bottom:8px}
+    .swap-status.waiting{background:rgba(255,215,0,.1);color:var(--gold);border:1px solid rgba(255,215,0,.15)}
+    .swap-status.confirming{background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.15)}
+    .swap-status.complete{background:rgba(0,204,136,.1);color:var(--grn);border:1px solid rgba(0,204,136,.15)}
+    .swap-status.idle{background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border-subtle)}
+    @media(max-width:768px){.swap-layout{grid-template-columns:1fr}}
 
     /* Wagyu section */
     .wagyu{background:var(--surface-1);border:1px solid rgba(0,204,136,.12);border-radius:12px;padding:22px;position:relative;overflow:hidden}
@@ -133,8 +157,44 @@
                 <div class="swap-widget-badge">Non-custodial</div>
             </div>
             <div class="swap-widget-desc">ChangeNOW processes the swap. xmr.irish does not custody funds, handle keys, or intermediate any transaction. You send crypto, you receive XMR directly to your wallet.</div>
-            <div class="swap-iframe-wrap">
-                <iframe id="changenow-widget" src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=false&amount=0.1&amountFiat=500&backgroundColor=0D0D12&darkMode=true&from=btc&fromFiat=usd&horizontal=false&isFiat=false&lang=en&link_id=&locales=false&logo=false&primaryColor=FF6600&to=xmr&toTheMoon=false" style="height:356px;width:100%;border:none;display:block" loading="lazy"></iframe>
+            <div class="swap-layout">
+                <div>
+                    <div class="swap-iframe-wrap">
+                        <iframe id="changenow-widget" src="https://changenow.io/embeds/exchange-widget/v2/widget.html?FAQ=false&amount=0.1&amountFiat=500&backgroundColor=0D0D12&darkMode=true&from=btc&fromFiat=usd&horizontal=false&isFiat=false&lang=en&link_id=&locales=false&logo=false&primaryColor=FF6600&to=xmr&toTheMoon=false" loading="lazy"></iframe>
+                    </div>
+                </div>
+                <div class="swap-tracker" id="swap-tracker">
+                    <div class="swap-tracker-t">Swap status monitor</div>
+                    <div class="swap-status idle" id="swap-status">Idle — initiate swap in widget</div>
+                    <div class="swap-metric"><span class="swap-metric-l">Service</span><span class="swap-metric-v">ChangeNOW</span></div>
+                    <div class="swap-metric"><span class="swap-metric-l">Pair</span><span class="swap-metric-v" id="sw-pair">BTC → XMR</span></div>
+                    <div class="swap-metric"><span class="swap-metric-l">Est. rate</span><span class="swap-metric-v" id="sw-rate">—</span></div>
+                    <div class="swap-metric"><span class="swap-metric-l">Network fee</span><span class="swap-metric-v" id="sw-fee">~0.0001 XMR</span></div>
+                    <div class="swap-metric"><span class="swap-metric-l">Est. arrival</span><span class="swap-metric-v" id="sw-eta">~10-20 min</span></div>
+
+                    <div class="swap-confirm">
+                        <div class="swap-confirm-t">XMR block confirmations (6 required)</div>
+                        <div class="confirm-bar">
+                            <div class="confirm-block" id="cb1">1</div>
+                            <div class="confirm-block" id="cb2">2</div>
+                            <div class="confirm-block" id="cb3">3</div>
+                            <div class="confirm-block" id="cb4">4</div>
+                            <div class="confirm-block" id="cb5">5</div>
+                            <div class="confirm-block" id="cb6">6</div>
+                        </div>
+                        <div class="swap-eta">Estimated: <em id="sw-blocks-eta">~12 min</em> (6 blocks × ~2 min)</div>
+                    </div>
+
+                    <div class="swap-txid" id="sw-txid" style="display:none">
+                        TX: <span id="sw-txid-val">—</span>
+                    </div>
+
+                    <div style="margin-top:12px;font-size:9px;color:var(--text-muted);line-height:1.5">
+                        Monero transactions require 6 block confirmations (~12 min) before funds are fully spendable. The ChangeNOW widget handles the swap — this panel shows estimated timing once you initiate.
+                    </div>
+
+                    <button onclick="simulateSwap()" style="margin-top:10px;width:100%;padding:8px;background:rgba(255,102,0,.08);border:1px solid rgba(255,102,0,.15);border-radius:6px;color:var(--xmr);font-family:inherit;font-size:10px;cursor:pointer;transition:all .2s" onmouseover="this.style.background='rgba(255,102,0,.15)'" onmouseout="this.style.background='rgba(255,102,0,.08)'">▶ Preview confirmation flow</button>
+                </div>
             </div>
             <div class="swap-disclaimer">
                 <em>Disclaimer:</em> xmr.irish is an educational resource. ChangeNOW is the sole service provider for all swap operations. We do not custody, transmit, or control any funds. By using the widget, you interact directly with ChangeNOW's infrastructure. Review their <a href="https://changenow.io/terms-of-use" target="_blank" style="color:var(--blue)">terms of use</a>.
@@ -316,5 +376,52 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
     }
     draw();
 })();
+
+// Swap confirmation flow simulator
+function simulateSwap(){
+    var status=document.getElementById('swap-status');
+    var txid=document.getElementById('sw-txid');
+    var txval=document.getElementById('sw-txid-val');
+    var eta=document.getElementById('sw-blocks-eta');
+    var blocks=['cb1','cb2','cb3','cb4','cb5','cb6'];
+
+    // Reset
+    blocks.forEach(function(id){var el=document.getElementById(id);el.className='confirm-block'});
+    status.className='swap-status waiting';status.textContent='Waiting for deposit...';
+    txid.style.display='none';
+
+    // Phase 1: Deposit detected (3s)
+    setTimeout(function(){
+        status.className='swap-status confirming';status.textContent='Deposit detected — exchanging...';
+        var fakeTx='8a3f7b2c4d9e1f6a0b5c3d7e2f8a4b6c9d1e3f5a7b2c4d6e8f0a1b3c5d7e9f';
+        txval.textContent=fakeTx;txid.style.display='block';
+
+        // Phase 2: Confirmations (every 2s)
+        var confirmed=0;
+        var interval=setInterval(function(){
+            if(confirmed<6){
+                document.getElementById(blocks[confirmed]).className='confirm-block '+(confirmed<5?'confirmed':'confirmed');
+                if(confirmed<5)document.getElementById(blocks[confirmed+1]).className='confirm-block pending';
+                confirmed++;
+                var remaining=6-confirmed;
+                eta.textContent=remaining>0?'~'+(remaining*2)+' min remaining':'Complete!';
+                if(confirmed>=6){
+                    clearInterval(interval);
+                    status.className='swap-status complete';status.textContent='✓ Swap complete — XMR received!';
+                    eta.textContent='All 6 confirmations received';
+                }
+            }
+        },2000);
+    },3000);
+}
+
+// Listen for price to update swap rate display
+PriceService.subscribe(function(d){
+    if(d.monero&&d.bitcoin){
+        var rate=(d.bitcoin.usd/d.monero.usd).toFixed(4);
+        var el=document.getElementById('sw-rate');
+        if(el)el.textContent='1 BTC ≈ '+rate+' XMR';
+    }
+});
 </script>
 </body></html>

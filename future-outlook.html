@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xmr.irish — Future Outlook</title>
-    <meta name="description" content="FCMP++, Seraphis, and the road to full-chain membership proofs. Where Monero goes from here.">
+    <title>xmr.irish — Future Outlook 2027+</title>
+    <meta name="description" content="FCMP++, Seraphis, demand thesis 2026-2030, regulatory landscape, and why structural demand for privacy is inevitable.">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
@@ -15,26 +15,60 @@
     .hero{padding:48px var(--space-page-x) 24px;text-align:center}
     .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
     .hero-t{font-size:32px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--xmr);font-style:normal}
-    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:520px;margin:0 auto;line-height:1.6;font-style:italic}
+    .hero-sub{font-size:13px;color:var(--text-secondary);max-width:620px;margin:0 auto;line-height:1.6;font-style:italic}
+    .hero-stats{display:flex;justify-content:center;gap:28px;margin-top:16px;flex-wrap:wrap}
+    .hs{text-align:center}.hs-v{font-size:22px;font-weight:600;color:var(--xmr)}.hs-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .tabs{display:flex;justify-content:center;gap:4px;padding:14px var(--space-page-x);position:sticky;top:52px;z-index:50;background:rgba(10,10,12,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-subtle)}
+    .tab{font-family:inherit;font-size:10px;padding:6px 16px;border:1px solid var(--border-default);background:transparent;color:var(--text-tertiary);border-radius:100px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s}
+    .tab:hover{border-color:var(--text-tertiary);color:var(--g3)}
+    .tab.active{background:var(--xmr);color:#fff;border-color:var(--xmr)}
+    .tab-panel{display:none}.tab-panel.active{display:block}
     .sec{padding:0 var(--space-page-x);margin-bottom:24px}
     .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+    /* Upgrade cards */
     .upgrade{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:24px;margin-bottom:12px;position:relative;overflow:hidden}
     .upgrade::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 12px 12px}
     .upgrade.fcmp::after{background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
     .upgrade.sera::after{background:linear-gradient(90deg,var(--grn),rgba(0,204,136,.3))}
     .upgrade.dex::after{background:linear-gradient(90deg,var(--blue),rgba(68,136,255,.3))}
+    .upgrade.cup::after{background:linear-gradient(90deg,var(--gold),rgba(255,215,0,.3))}
     .up-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px}
     .up-t{font-size:20px;font-weight:600;color:var(--g1);margin-bottom:8px}
-    .up-desc{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-bottom:14px;max-width:600px}
+    .up-desc{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-bottom:14px;max-width:700px}
     .up-tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
     .up-tag{font-size:9px;padding:3px 10px;border:1px solid var(--border-default);border-radius:6px;color:var(--text-tertiary)}
     .up-tag.hot{border-color:rgba(255,102,0,.2);color:var(--xmr)}
+    .up-detail{font-size:11px;color:var(--text-tertiary);line-height:1.7;border-top:1px solid var(--border-subtle);padding-top:12px;margin-top:12px}
+    .up-detail strong{color:var(--g1);font-weight:500}
     .up-compare{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border-subtle)}
     .up-cmp{text-align:center}
     .up-cmp-v{font-size:18px;font-weight:600;margin-bottom:2px}
     .up-cmp-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
     .up-arrow{font-size:20px;color:var(--xmr)}
+    /* Demand driver cards */
+    .dd{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin-bottom:12px;border-left:3px solid var(--xmr)}
+    .dd-num{font-size:9px;color:var(--xmr);letter-spacing:3px;text-transform:uppercase;margin-bottom:6px}
+    .dd-t{font-size:16px;font-weight:600;margin-bottom:8px;line-height:1.3}
+    .dd-body{font-size:11px;color:var(--text-tertiary);line-height:1.7}
+    .dd-body p{margin-bottom:8px}.dd-body p:last-child{margin-bottom:0}
+    .dd-body strong{color:var(--g1);font-weight:500}
+    .dd-body em{color:var(--gold);font-style:normal}
+    .dd-data{background:rgba(255,102,0,.06);border-left:3px solid var(--xmr);padding:10px 14px;margin:10px 0;font-size:10px}
+    .dd-data .metric{color:var(--gold);font-weight:600}
+    .dd-data.blue{border-left-color:var(--blue);background:rgba(68,136,255,.04)}
+    .dd-data.blue .metric{color:var(--blue)}
+    .dd-data.red{border-left-color:var(--red);background:rgba(255,71,87,.04)}
+    .dd-data.red .metric{color:var(--red)}
+    .dd-data.green{border-left-color:var(--grn);background:rgba(0,204,136,.04)}
+    .dd-data.green .metric{color:var(--grn)}
+    .dd-data.purple{border-left-color:#9B59B6;background:rgba(155,89,182,.04)}
+    .dd-data.purple .metric{color:#9B59B6}
+    /* Driver mini-grid */
+    .dgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px;margin:12px 0}
+    .dg{background:var(--surface-0);border:1px solid var(--border-default);border-radius:8px;padding:12px;border-left:3px solid var(--xmr)}
+    .dg-t{font-size:11px;font-weight:600;margin-bottom:4px}.dg-p{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    /* Timeline */
     .timeline{position:relative;padding-left:20px}
     .timeline::before{content:'';position:absolute;left:6px;top:0;bottom:0;width:2px;background:var(--border-default)}
     .tl-item{position:relative;margin-bottom:16px;padding-left:16px}
@@ -45,33 +79,80 @@
     .tl-date{font-size:9px;color:var(--text-tertiary);margin-bottom:2px}
     .tl-title{font-size:13px;font-weight:600;margin-bottom:2px}
     .tl-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    /* Comparison grid */
     .compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
     .cmp{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;text-align:center}
     .cmp-coin{font-size:11px;font-weight:600;margin-bottom:8px}
     .cmp-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-subtle);font-size:10px}
     .cmp-row:last-child{border:none}
     .cmp-label{color:var(--text-tertiary)}.cmp-val{font-weight:500}
+    /* Supply cards */
+    .sup-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .sup{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px}
+    .sup-v{font-size:22px;font-weight:600;margin-bottom:4px}
+    .sup-l{font-size:10px;color:var(--text-secondary);margin-bottom:4px}
+    .sup-s{font-size:9px;color:var(--text-tertiary);line-height:1.5}
+    /* Thesis box */
+    .thesis{background:linear-gradient(135deg,rgba(255,102,0,.06),rgba(0,204,136,.03));border:2px solid var(--xmr);border-radius:12px;padding:24px;margin:20px var(--space-page-x)}
+    .thesis-t{font-size:18px;font-weight:600;color:var(--xmr);margin-bottom:14px}
+    .thesis-p{font-size:12px;color:var(--text-secondary);line-height:1.8;margin-bottom:10px}
+    .thesis-p strong{color:var(--xmr)}.thesis-p em{color:var(--gold);font-style:normal}
+    /* Counter-arguments */
+    .counter{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px;margin:0 var(--space-page-x) 20px}
+    .counter-t{font-size:14px;font-weight:600;color:var(--gold);margin-bottom:10px}
+    .counter-p{font-size:11px;color:var(--text-tertiary);line-height:1.7}
+    .counter-p strong{color:var(--g1);font-weight:500}
+    /* Regulatory grid */
+    .reg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+    .reg{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;border-left:3px solid var(--red)}
+    .reg-t{font-size:12px;font-weight:600;margin-bottom:4px}
+    .reg-date{font-size:9px;color:var(--text-tertiary);margin-bottom:6px}
+    .reg-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5}
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.compare-grid{grid-template-columns:1fr}.up-compare{grid-template-columns:1fr;gap:6px}.up-arrow{transform:rotate(90deg)}}
+    @media(max-width:768px){.compare-grid,.sup-grid{grid-template-columns:1fr}.up-compare{grid-template-columns:1fr;gap:6px}.up-arrow{transform:rotate(90deg)}.dgrid{grid-template-columns:1fr}.reg-grid{grid-template-columns:1fr}.tabs{gap:2px;padding:10px}.tab{font-size:8px;padding:5px 10px}}
     </style>
 </head>
 <body>
 <div class="page-offset fo">
     <div id="nav-mount"></div>
     <div class="fo-nav"><em>xmr.irish</em> <span>/</span> <em>future outlook</em></div>
-    <div class="hero"><div class="hero-ey">2027+ outlook</div><div class="hero-t">The future of <em>privacy</em></div>
-        <div class="hero-sub">FCMP++, Seraphis, and the road to full-chain membership proofs — the largest privacy upgrades in cryptocurrency history.</div></div>
+    <div class="hero">
+        <div class="hero-ey">2027+ outlook · demand thesis · protocol evolution</div>
+        <div class="hero-t">The future of <em>privacy</em></div>
+        <div class="hero-sub">FCMP++, Seraphis, the tracked economy reaction, and why structural demand for the world's only private money is inevitable.</div>
+        <div class="hero-stats">
+            <div class="hs"><div class="hs-v">100M+</div><div class="hs-l">FCMP++ anonymity set</div></div>
+            <div class="hs"><div class="hs-v">73</div><div class="hs-l">Delistings in 2025</div></div>
+            <div class="hs"><div class="hs-v" style="color:var(--grn)">+195%</div><div class="hs-l">Price YoY despite bans</div></div>
+            <div class="hs"><div class="hs-v">5</div><div class="hs-l">Demand drivers</div></div>
+        </div>
+    </div>
 
-    <div class="sec">
+    <div class="tabs">
+        <button class="tab active" onclick="showTab('protocol',this)">Protocol upgrades</button>
+        <button class="tab" onclick="showTab('demand',this)">Demand thesis</button>
+        <button class="tab" onclick="showTab('regulatory',this)">Regulatory landscape</button>
+        <button class="tab" onclick="showTab('supply',this)">Supply dynamics</button>
+    </div>
+
+    <!-- ═══════════════ TAB 1: PROTOCOL UPGRADES ═══════════════ -->
+    <div id="tab-protocol" class="tab-panel active">
+    <div class="sec" style="padding-top:20px">
         <div class="upgrade fcmp">
             <div class="up-ey" style="color:var(--xmr)">Coming · FCMP++</div>
             <div class="up-t">Full-chain membership proofs</div>
-            <div class="up-desc">Today, your transaction hides among 16 decoys. With FCMP++, it hides among every transaction ever made — an anonymity set of 100M+ outputs. The largest privacy upgrade in Monero's history.</div>
+            <div class="up-desc">Today, your transaction hides among 16 decoys. With FCMP++, it hides among every transaction ever made — an anonymity set of 100M+ outputs. The largest privacy upgrade in cryptocurrency history.</div>
             <div class="up-tags">
                 <div class="up-tag">Ring 16 → Full chain</div>
                 <div class="up-tag">100M+ anonymity set</div>
-                <div class="up-tag hot">In development</div>
+                <div class="up-tag hot">Alpha stressnet testing</div>
                 <div class="up-tag">kayabanerve lead</div>
+                <div class="up-tag">CCS-funded</div>
+            </div>
+            <div class="up-detail">
+                <strong>How it works:</strong> Current ring signatures pick 16 outputs from the blockchain as decoys. An observer knows the real spend is among those 16 — a 1-in-16 anonymity set. FCMP++ uses advanced membership proofs to prove your output belongs to the entire set of all outputs ever created, without revealing which one. The anonymity set jumps from 16 to 100,000,000+.<br><br>
+                <strong>Why it matters:</strong> Ring-size heuristic analysis — the primary statistical attack on current Monero — becomes computationally impractical. Every output is equally likely to be the real spend. Statistical chain analysis is eliminated at the mathematical level.<br><br>
+                <strong>Status:</strong> Active development by kayabanerve. CCS-funded with community donations. Currently in alpha stressnet testing. Audits in progress by multiple independent cryptography firms. Expected mainnet hard fork Q2-Q3 2026.
             </div>
             <div class="up-compare">
                 <div class="up-cmp"><div class="up-cmp-v" style="color:var(--text-secondary)">16</div><div class="up-cmp-l">Current ring size</div></div>
@@ -79,37 +160,73 @@
                 <div class="up-cmp"><div class="up-cmp-v" style="color:var(--xmr)">100,000,000+</div><div class="up-cmp-l">FCMP++ anonymity set</div></div>
             </div>
         </div>
+
         <div class="upgrade sera">
-            <div class="up-ey" style="color:var(--grn)">Research · Seraphis</div>
+            <div class="up-ey" style="color:var(--grn)">Research · Seraphis + Jamtis</div>
             <div class="up-t">Next-generation transaction protocol</div>
             <div class="up-desc">A complete redesign of Monero's transaction structure. Modular address schemes, improved multisig, forward secrecy for view keys, and a foundation for decades of future privacy innovations.</div>
             <div class="up-tags">
                 <div class="up-tag">Modular addresses</div>
                 <div class="up-tag">Improved multisig</div>
                 <div class="up-tag">Forward secrecy</div>
+                <div class="up-tag">Tier-based wallet permissions</div>
                 <div class="up-tag">UkoeHB lead</div>
             </div>
+            <div class="up-detail">
+                <strong>Seraphis</strong> modernizes the entire transaction structure. Current Monero uses CryptoNote-derived transactions designed in 2013. Seraphis introduces modular components that can be upgraded independently, enabling faster iteration on privacy features without full hard forks.<br><br>
+                <strong>Jamtis addressing</strong> provides human-readable addresses with forward secrecy — if a view key is compromised in the future, past transactions remain private. Also enables tier-based wallet permissions: view-only, view+scan, spend — allowing delegation without full key exposure.<br><br>
+                <strong>Impact:</strong> Most ambitious protocol evolution in Monero's history. Provides a multi-decade foundation for future privacy innovations. Currently in beta/audit phase.
+            </div>
         </div>
+
+        <div class="upgrade cup">
+            <div class="up-ey" style="color:var(--gold)">Development · Cuprate</div>
+            <div class="up-t">Rust node implementation</div>
+            <div class="up-desc">Alternative full node written in Rust. Sharply reduces sync times, enables full nodes on modest hardware, and provides implementation diversity that reduces systemic risk.</div>
+            <div class="up-tags">
+                <div class="up-tag">Rust memory safety</div>
+                <div class="up-tag">Faster sync</div>
+                <div class="up-tag">Implementation diversity</div>
+                <div class="up-tag">Reduced attack surface</div>
+            </div>
+            <div class="up-detail">
+                <strong>Why implementation diversity matters:</strong> If a critical bug exists in the C++ node, all nodes are vulnerable simultaneously. Cuprate provides a second, independent implementation — a single bug cannot take down the entire network. Rust's memory safety guarantees eliminate entire classes of vulnerabilities (buffer overflows, use-after-free) that plague C++ codebases.<br><br>
+                <strong>Practical impact:</strong> Faster initial blockchain synchronization means new users get operational faster. Lower resource requirements mean more people can run full nodes, strengthening decentralization during periods of political or economic pressure on the network.
+            </div>
+        </div>
+
         <div class="upgrade dex">
-            <div class="up-ey" style="color:var(--blue)">Ecosystem · Growth</div>
-            <div class="up-t">The decentralized exchange era</div>
-            <div class="up-desc">As centralized exchanges delist, decentralized alternatives fill the gap. Haveno, atomic swaps, and Wagyu make Monero increasingly resistant to regulatory pressure. Delistings accelerate decentralization.</div>
+            <div class="up-ey" style="color:var(--blue)">Ecosystem · Decentralized access</div>
+            <div class="up-t">The post-exchange era</div>
+            <div class="up-desc">As centralized exchanges delist, decentralized alternatives fill the gap. Haveno, atomic swaps, Wagyu, and P2P markets make Monero increasingly resistant to regulatory pressure.</div>
             <div class="up-tags">
                 <div class="up-tag">Haveno DEX</div>
-                <div class="up-tag">Atomic swaps</div>
+                <div class="up-tag">BTC↔XMR atomic swaps</div>
+                <div class="up-tag">Wagyu v2</div>
                 <div class="up-tag">73 delistings → growth</div>
+            </div>
+            <div class="up-detail">
+                <strong>The paradox of prohibition:</strong> 73 exchanges delisted Monero in 2025. XMR price rose 195%. Daily on-chain transactions remained 15,000-25,000. The delistings validated that Monero's privacy works — if it could be traced, regulators would keep it on exchanges as a honeypot.<br><br>
+                <strong>Haveno DEX</strong> provides decentralized P2P trading with fiat on/off ramps. No central point of failure, no company to pressure, no CEO to arrest.<br>
+                <strong>Atomic swaps</strong> enable trustless BTC↔XMR trades without any intermediary. Research-grade but improving rapidly.<br>
+                <strong>Wagyu v2</strong> routes swaps through Hyperliquid market makers — exchange-level pricing without KYC or forced selling.
             </div>
         </div>
     </div>
 
     <div class="sec"><div class="sec-h"><div class="sec-t">Development timeline</div><div class="sec-s">Past · present · future</div></div>
         <div class="timeline">
-            <div class="tl-item done"><div class="tl-date">May 2022</div><div class="tl-title">Tail emission activated</div><div class="tl-desc">0.6 XMR/block forever. Permanent security budget — no fee-market crisis.</div></div>
-            <div class="tl-item done"><div class="tl-date">Aug 2022</div><div class="tl-title">Ring size 11 → 16</div><div class="tl-desc">Increased anonymity set per transaction. Bulletproofs+ enabled.</div></div>
-            <div class="tl-item done"><div class="tl-date">2023</div><div class="tl-title">View tags deployed</div><div class="tl-desc">10x faster wallet sync. Reduced bandwidth for light wallets.</div></div>
-            <div class="tl-item active"><div class="tl-date">2025-2026</div><div class="tl-title" style="color:var(--xmr)">FCMP++ development</div><div class="tl-desc">Active development by kayabanerve. CCS-funded. Audits in progress. Largest privacy upgrade ever.</div></div>
-            <div class="tl-item future"><div class="tl-date">2026-2027</div><div class="tl-title">FCMP++ hard fork</div><div class="tl-desc">Scheduled upgrade activating full-chain membership proofs. Ring-16 replaced by 100M+ anonymity set.</div></div>
-            <div class="tl-item future"><div class="tl-date">2027+</div><div class="tl-title">Seraphis integration</div><div class="tl-desc">New transaction protocol. Modular address schemes. Forward-secret view keys. Multi-decade foundation.</div></div>
+            <div class="tl-item done"><div class="tl-date">Jan 2017</div><div class="tl-title">RingCT activated</div><div class="tl-desc">Transaction amounts hidden. Completes privacy trifecta: sender (rings) + receiver (stealth) + amount (RingCT).</div></div>
+            <div class="tl-item done"><div class="tl-date">Oct 2018</div><div class="tl-title">Bulletproofs ("Beryllium Bullet")</div><div class="tl-desc">Transaction size −80%, fees −97%. No trusted setup. Privacy becomes cheaper.</div></div>
+            <div class="tl-item done"><div class="tl-date">Nov 2019</div><div class="tl-title">RandomX activated</div><div class="tl-desc">CPU-optimized, ASIC-resistant mining. "One CPU, one vote" — Satoshi's original vision.</div></div>
+            <div class="tl-item done"><div class="tl-date">Oct 2020</div><div class="tl-title">CLSAG + Dandelion++</div><div class="tl-desc">Signatures 25% smaller, 10% faster. Dandelion++ obscures transaction broadcast IP.</div></div>
+            <div class="tl-item done"><div class="tl-date">Jun 2022</div><div class="tl-title">Tail emission activated</div><div class="tl-desc">0.6 XMR/block forever. Permanent security budget — no fee-market crisis.</div></div>
+            <div class="tl-item done"><div class="tl-date">Aug 2022</div><div class="tl-title">Ring 11 → 16 + Bulletproofs+</div><div class="tl-desc">Increased anonymity set. View tags: 40% faster wallet sync.</div></div>
+            <div class="tl-item active"><div class="tl-date">2025-2026</div><div class="tl-title" style="color:var(--xmr)">FCMP++ development</div><div class="tl-desc">Active development by kayabanerve. CCS-funded. Alpha stressnet testing. Audits in progress.</div></div>
+            <div class="tl-item future"><div class="tl-date">Q2-Q3 2026</div><div class="tl-title">FCMP++ hard fork</div><div class="tl-desc">Ring-16 replaced by 100M+ anonymity set. Largest privacy upgrade ever.</div></div>
+            <div class="tl-item future"><div class="tl-date">2026</div><div class="tl-title">Cuprate Rust node</div><div class="tl-desc">Alternative implementation. Faster sync, memory safety, implementation diversity.</div></div>
+            <div class="tl-item future"><div class="tl-date">2026-2027</div><div class="tl-title">Seraphis + Jamtis</div><div class="tl-desc">New tx protocol. Modular addresses. Forward secrecy. Multi-decade foundation.</div></div>
+            <div class="tl-item future"><div class="tl-date">2027+</div><div class="tl-title">Post-FCMP++ optimizations</div><div class="tl-desc">Transaction size reductions, cross-chain interoperability, second-layer solutions on private base.</div></div>
         </div>
     </div>
 
@@ -121,6 +238,8 @@
                 <div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--grn)">Always</span></div>
                 <div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--grn)">Dandelion++</span></div>
                 <div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--grn)">Perfect</span></div>
+                <div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--grn)">CPU (democratic)</span></div>
+                <div class="cmp-row"><span class="cmp-label">Supply audit</span><span class="cmp-val" style="color:var(--grn)">Cryptographic</span></div>
             </div>
             <div class="cmp"><div class="cmp-coin" style="color:var(--gold)">Bitcoin</div>
                 <div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--red)">0 (transparent)</span></div>
@@ -128,19 +247,170 @@
                 <div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--red)">Never</span></div>
                 <div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--red)">None</span></div>
                 <div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--red)">Broken (taint)</span></div>
+                <div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--red)">ASIC (industrial)</span></div>
+                <div class="cmp-row"><span class="cmp-label">Supply audit</span><span class="cmp-val" style="color:var(--grn)">Transparent</span></div>
             </div>
             <div class="cmp"><div class="cmp-coin" style="color:var(--blue)">Zcash</div>
-                <div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--gold)">Shielded pool only</span></div>
+                <div class="cmp-row"><span class="cmp-label">Anonymity set</span><span class="cmp-val" style="color:var(--gold)">Shielded pool</span></div>
                 <div class="cmp-row"><span class="cmp-label">Privacy</span><span class="cmp-val" style="color:var(--gold)">Optional (~15%)</span></div>
                 <div class="cmp-row"><span class="cmp-label">Amounts hidden</span><span class="cmp-val" style="color:var(--gold)">If shielded</span></div>
                 <div class="cmp-row"><span class="cmp-label">IP protection</span><span class="cmp-val" style="color:var(--red)">None</span></div>
                 <div class="cmp-row"><span class="cmp-label">Fungibility</span><span class="cmp-val" style="color:var(--gold)">Partial</span></div>
+                <div class="cmp-row"><span class="cmp-label">Mining</span><span class="cmp-val" style="color:var(--red)">ASIC</span></div>
+                <div class="cmp-row"><span class="cmp-label">Supply audit</span><span class="cmp-val" style="color:var(--red)">Trusted setup</span></div>
+            </div>
+        </div>
+    </div>
+    </div><!-- end tab-protocol -->
+
+    <!-- ═══════════════ TAB 2: DEMAND THESIS ═══════════════ -->
+    <div id="tab-demand" class="tab-panel">
+    <div class="sec" style="padding-top:20px">
+        <div class="sec-h"><div class="sec-t">The January 2026 ATH pump (~$800)</div><div class="sec-s">The catalyst · what happened</div></div>
+        <div class="dd" style="border-left-color:var(--gold)">
+            <div class="dd-num">The catalyst</div>
+            <div class="dd-t">XMR hit ~$800 in January 2026 — +195% from early 2025 lows</div>
+            <div class="dd-body">
+                <p>It wasn't one catalyst — it was a convergence of several forces.</p>
+                <div class="dgrid">
+                    <div class="dg"><div class="dg-t">Political shift</div><div class="dg-p">Unexpected support from US policymakers who reframed privacy as a "constitutional right." Global economic uncertainty pushed investors toward financial autonomy assets.</div></div>
+                    <div class="dg"><div class="dg-t">Technical breakout</div><div class="dg-p">Broke multi-year resistance levels into price discovery. Capital rotation from transparent chains into privacy-focused assets accelerated.</div></div>
+                    <div class="dg"><div class="dg-t">Zcash collapse</div><div class="dg-p">Governance crisis at Electric Coin Company. ZEC dropped ~20%, triggering capital rotation into Monero as the only serious privacy coin.</div></div>
+                    <div class="dg"><div class="dg-t">Paradox validation</div><div class="dg-p">Dubai DFSA ban on privacy tokens paradoxically validated Monero's tech. CLARITY Act's progress highlighted the surveillance-vs-privacy divide.</div></div>
+                </div>
+                <div class="dd-data red"><span class="metric">The descent:</span> By February, XMR retraced 57%+ of gains, driven by accelerated exchange delistings. Pattern: pump on validation, retrace on access restriction, higher lows each cycle.</div>
             </div>
         </div>
     </div>
 
-    <div class="ft">xmr.irish / future outlook · FCMP++ in development · privacy scales</div>
+    <div class="sec">
+        <div class="sec-h"><div class="sec-t">Five structural demand drivers</div><div class="sec-s">2026–2030 · substantiated by current data</div></div>
+
+        <div class="dd">
+            <div class="dd-num">Demand driver I</div>
+            <div class="dd-t">CLARITY Act / GENIUS Act — the "tracked economy" reaction</div>
+            <div class="dd-body">
+                <p>The GENIUS Act and CLARITY Act together require anyone trading digital currencies to follow disclosure and registration requirements similar to those for other assets. New IRS rules require brokers to report digital asset transactions using <strong>Form 1099-DA</strong>, with expanded cost-basis reporting beginning in 2026.</p>
+                <p>The Anti-CBDC Surveillance State Act was bundled with CLARITY specifically because privacy advocates wanted to prevent the Federal Reserve from issuing a retail CBDC. <em>The very existence of this bill proves the political class acknowledges the surveillance risk is real.</em></p>
+                <div class="dd-data blue"><span class="metric">The paradox:</span> The more the U.S. formalizes transparent crypto rails, the more users feel pushed toward the one asset that can't be surveilled. The EU's DAC8 directive (activated Jan 1, 2026) forces crypto service providers to disclose customer and transaction details to tax officials. Every new reporting mandate is free marketing for Monero.</div>
+            </div>
+        </div>
+
+        <div class="dd">
+            <div class="dd-num">Demand driver II</div>
+            <div class="dd-t">Iran, sanctions evasion & the geopolitical angle</div>
+            <div class="dd-body">
+                <p>Iran has built a multibillion-dollar parallel economy using state-sponsored Bitcoin mining and stablecoins, with the <strong>IRGC accounting for over 50% of total Iranian crypto inflows by Q4 2025</strong>, receiving more than $3 billion that year alone.</p>
+                <div class="dd-data"><span class="metric">Mining arbitrage:</span> Cost to mine 1 BTC in Iran: ~$1,320 (subsidized power) vs. market price ~$68,000 — massive arbitrage funding sanctions evasion.</div>
+                <p>If Iran's BTC mining capacity gets degraded by conflict, and if Chainalysis continues to improve Bitcoin tracing (they already publicly track IRGC wallets), <strong>the logical next step for sanctioned actors is migration toward untraceable assets.</strong></p>
+                <div class="dd-data red"><span class="metric">Scale:</span> State-driven sanctions evasion volume surged 694% in 2025. Russia built a purpose-made ruble stablecoin (A7A5) that processed $93B in under a year. As BTC gets traced more effectively, demand for a truly private settlement layer intensifies.</div>
+            </div>
+        </div>
+
+        <div class="dd">
+            <div class="dd-num">Demand driver III</div>
+            <div class="dd-t">Darknet markets — already happening, accelerating</div>
+            <div class="dd-body">
+                <p>TRM Labs data shows that <strong>48% of newly launched darknet marketplaces in 2025 now support XMR exclusively</strong>, a sharp increase compared to previous years. This trend is especially pronounced in Western-facing markets.</p>
+                <div class="dd-data green"><span class="metric">Adoption rate:</span> Monero is the mandatory or preferred currency on 89% of active darknet markets, with monthly transaction volume estimated at $450M+.</div>
+                <p><strong>Bitcoin is being phased out of these environments because it's no longer safe to use.</strong> Every Chainalysis upgrade, every FBI seizure using on-chain forensics, pushes more volume into XMR permanently.</p>
+            </div>
+        </div>
+
+        <div class="dd">
+            <div class="dd-num">Demand driver IV</div>
+            <div class="dd-t">The CBDC surveillance state as macro tailwind</div>
+            <div class="dd-body">
+                <p>As of February 2026, the BIS reports that <strong>91% of 93 central banks surveyed are actively investigating retail or wholesale CBDCs.</strong> China's digital yuan is already live. The EU is deep into digital euro pilots.</p>
+                <p>During the ECB's consultation process, <strong>41% of all public comments centered on privacy concerns.</strong> The public is aware and deeply uncomfortable.</p>
+                <div class="dd-data purple"><span class="metric">The escape valve:</span> Every CBDC that launches creates a new cohort of people who realize their government can now see every transaction, freeze funds programmatically, and potentially restrict spending categories. Monero becomes the escape valve.</div>
+                <p>Critics warn that the underlying architecture of many proposed CBDCs leans toward a centralized model that would enable <strong>unprecedented state surveillance and control over citizens' financial lives.</strong></p>
+            </div>
+        </div>
+
+        <div class="dd">
+            <div class="dd-num">Demand driver V</div>
+            <div class="dd-t">Technical upgrades making XMR stronger</div>
+            <div class="dd-body">
+                <div class="dgrid">
+                    <div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">FCMP++ (Q2-Q3 2026)</div><div class="dg-p">Anonymity set from 16 to entire blockchain. Makes chain analysis computationally impractical.</div></div>
+                    <div class="dg" style="border-left-color:var(--blue)"><div class="dg-t">Cuprate Rust node</div><div class="dg-p">Faster sync, modest hardware. Supports decentralization. Reduces attack surface during political pressure.</div></div>
+                    <div class="dg" style="border-left-color:#9B59B6"><div class="dg-t">Seraphis & Jamtis</div><div class="dg-p">New tx protocol + human-readable addresses with forward secrecy. In beta/audit phase.</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="thesis">
+        <div class="thesis-t">The meta-thesis: structural inevitability</div>
+        <div class="thesis-p">The bull case for XMR demand through 2030 isn't about price speculation — it's about <strong>structural inevitability.</strong></div>
+        <div class="thesis-p">The world is simultaneously doing two contradictory things: making transparent crypto the regulated norm (GENIUS, CLARITY, DAC8, 1099-DA, Travel Rule) while expanding state surveillance capacity (CBDCs, chain analytics, KYC everywhere). <em>Every step in that direction creates organic, non-speculative demand for the one asset that provides genuine financial privacy by default.</em></div>
+        <div class="thesis-p">The supply side matters too: Monero is already in tail emission with a fixed ~0.6 XMR per block forever. <strong>73 exchanges delisted it in 2025 alone, yet on-chain activity stayed flat or grew.</strong> That's a shrinking supply of accessible XMR meeting growing structural demand from sanctioned states, darknet economies, privacy-conscious individuals, and anyone who doesn't want their government watching every transaction.</div>
+    </div>
+
+    <div class="counter">
+        <div class="counter-t">Counterarguments — eyes open</div>
+        <div class="counter-p">The counterarguments are real: exchange delistings reduce liquidity, regulatory crackdowns could intensify, and quantum computing is a theoretical long-term risk. <strong>But the demand drivers identified above are all substantiated by what's actually happening on the ground right now.</strong> The question is not whether demand for privacy exists — it's whether anything can stop Monero from meeting it. Ten years of government attempts suggest the answer is no.</div>
+    </div>
+    </div><!-- end tab-demand -->
+
+    <!-- ═══════════════ TAB 3: REGULATORY LANDSCAPE ═══════════════ -->
+    <div id="tab-regulatory" class="tab-panel">
+    <div class="sec" style="padding-top:20px">
+        <div class="sec-h"><div class="sec-t">Global regulatory timeline</div><div class="sec-s">Exchange restrictions · not technology bans</div></div>
+        <div class="reg-grid">
+            <div class="reg"><div class="reg-t">Japan — FSA ban</div><div class="reg-date">2018</div><div class="reg-desc">First country to ban privacy coins on regulated exchanges after Coincheck hack. Holding and mining remain legal.</div></div>
+            <div class="reg"><div class="reg-t">South Korea — Travel Rule</div><div class="reg-date">2020-2021</div><div class="reg-desc">All five major exchanges dropped XMR. Amended financial transaction reporting act.</div></div>
+            <div class="reg"><div class="reg-t">EU MiCA — Comprehensive framework</div><div class="reg-date">Dec 2022</div><div class="reg-desc">Markets in Crypto-Assets regulation. CASPs prohibited from offering privacy coins. Full enforcement 2027.</div></div>
+            <div class="reg"><div class="reg-t">Binance — Global delisting</div><div class="reg-date">Feb 2024</div><div class="reg-desc">World's largest exchange removes XMR. XMR price recovers and exceeds pre-delisting levels.</div></div>
+            <div class="reg"><div class="reg-t">Kraken — EEA delisting</div><div class="reg-date">Oct 2024</div><div class="reg-desc">Halted all XMR trading for European Economic Area. Remaining balances forcibly converted to Bitcoin.</div></div>
+            <div class="reg"><div class="reg-t">Dubai VARA — Privacy token ban</div><div class="reg-date">Jan 2025</div><div class="reg-desc">Officially bans trading and custody of privacy tokens. XMR hits all-time highs the next day.</div></div>
+            <div class="reg"><div class="reg-t">EU DAC8 — Tax reporting</div><div class="reg-date">Jan 2026</div><div class="reg-desc">Crypto service providers must disclose customer and transaction details to tax authorities across all EU member states.</div></div>
+            <div class="reg"><div class="reg-t">CLARITY Act — US framework</div><div class="reg-date">2025-2026</div><div class="reg-desc">Digital Asset Market Clarity Act. Bank Secrecy Act AML/KYC requirements. Form 1099-DA crypto reporting. Monero cannot comply by design.</div></div>
+            <div class="reg"><div class="reg-t">EU AMLR — Full enforcement</div><div class="reg-date">Jul 2027 (expected)</div><div class="reg-desc">CASPs prohibited from offering privacy coins. Personal self-custody wallets unaffected. P2P trading remains accessible.</div></div>
+            <div class="reg"><div class="reg-t">Fifth Bitcoin halving</div><div class="reg-date">Apr 2028 (expected)</div><div class="reg-desc">BTC reward drops to 1.5625. 97%+ of all Bitcoin mined. By contrast, Monero's tail emission ensures perpetual mining incentive.</div></div>
+        </div>
+
+        <div style="background:var(--surface-1);border:1px solid rgba(0,204,136,.15);border-radius:10px;padding:16px;margin-top:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--grn);margin-bottom:8px">The critical distinction</div>
+            <div style="font-size:11px;color:var(--text-tertiary);line-height:1.7">Most jurisdictions ban <strong style="color:var(--g1)">exchange trading</strong>, not <strong style="color:var(--g1)">possession</strong>. Holding, mining, and using Monero peer-to-peer remains legal in the vast majority of the world. Regulations target intermediaries — because intermediaries are the surveillance chokepoints, and Monero makes surveillance at those chokepoints impossible. When centralized exchanges delist, decentralized alternatives emerge. No company to sue, no CEO to arrest, no way to stop the protocol.</div>
+        </div>
+    </div>
+    </div><!-- end tab-regulatory -->
+
+    <!-- ═══════════════ TAB 4: SUPPLY DYNAMICS ═══════════════ -->
+    <div id="tab-supply" class="tab-panel">
+    <div class="sec" style="padding-top:20px">
+        <div class="sec-h"><div class="sec-t">Monero tail emission vs Bitcoin halving</div><div class="sec-s">Permanent security budget vs fee-market dependency</div></div>
+        <div class="sup-grid">
+            <div class="sup"><div class="sup-v" style="color:var(--xmr)">0.85%</div><div class="sup-l">XMR annual inflation</div><div class="sup-s">Declining yearly as supply grows. Below 0.5% by 2035. Tail emission ensures miners are always paid — no fee-market crisis.</div></div>
+            <div class="sup"><div class="sup-v" style="color:var(--gold)">0.83%</div><div class="sup-l">BTC annual inflation</div><div class="sup-s">Post-2024 halving. Drops to ~0.4% in 2028. Reaches 0% by 2140 — then miners rely on fees only. Untested economic model.</div></div>
+            <div class="sup"><div class="sup-v" style="color:var(--grn)">432/day</div><div class="sup-l">XMR daily issuance</div><div class="sup-s">Fixed at 0.6 XMR × 720 blocks/day. Predictable, permanent security budget. No halving shocks, no miner exodus risk.</div></div>
+        </div>
+
+        <div style="margin-top:16px">
+        <div class="dd" style="border-left-color:var(--grn)">
+            <div class="dd-num">Supply thesis</div>
+            <div class="dd-t">Shrinking accessible supply meets growing structural demand</div>
+            <div class="dd-body">
+                <p><strong>73 exchanges delisted XMR in 2025.</strong> Each delisting removes an on-ramp. Remaining accessible supply shrinks with each one. Meanwhile:</p>
+                <div class="dgrid">
+                    <div class="dg" style="border-left-color:var(--grn)"><div class="dg-t">Tail emission: fixed</div><div class="dg-p">0.6 XMR per block forever. Cannot be increased. No governance attack vector on supply.</div></div>
+                    <div class="dg" style="border-left-color:var(--xmr)"><div class="dg-t">Circulating: 18.45M</div><div class="dg-p">Known, predictable, cryptographically auditable. Inflation rate declining yearly toward zero asymptote.</div></div>
+                    <div class="dg" style="border-left-color:var(--gold)"><div class="dg-t">On-chain activity: stable</div><div class="dg-p">15,000-25,000 daily transactions despite delistings. Users migrated to DEXs, not away from Monero.</div></div>
+                </div>
+                <div class="dd-data green"><span class="metric">Result:</span> Fewer exchanges offering XMR + stable/growing demand + fixed supply = structural price floor that rises with each delisting. The delistings are compressing access while demand remains constant or grows.</div>
+            </div>
+        </div>
+        </div>
+    </div>
+    </div><!-- end tab-supply -->
+
+    <div class="ft">xmr.irish / future outlook · FCMP++ in development · structural demand is not speculation</div>
 </div>
 <script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
-<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+<script>
+NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
+function showTab(id,btn){document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active')});document.querySelectorAll('.tab').forEach(function(b){b.classList.remove('active')});document.getElementById('tab-'+id).classList.add('active');btn.classList.add('active');window.scrollTo({top:document.querySelector('.tabs').offsetTop-60,behavior:'smooth'})}
+</script>
 </body></html>
