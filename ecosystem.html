@@ -1,108 +1,119 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="referrer" content="no-referrer">
+    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Ecosystem Map</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <meta name="description" content="45+ Monero projects: wallets, exchanges, mining tools, services, developer resources. Recommended, standard, and warning tiers.">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
     <style>
-        .eco-sec-t{font-family:var(--font-subhead);font-style:italic;font-size:16px;color:var(--xmr);margin:12px 0 6px;padding-top:8px;border-top:1px solid var(--g9)}
-        .eco-sec-t:first-of-type{border-top:none;margin-top:0}
-        .eco-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-        @media(max-width:768px){.eco-grid{grid-template-columns:repeat(2,1fr)}}
+    .eco{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+    .eco-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
+    .eco-nav em{color:var(--grn);font-style:normal;font-weight:600}.eco-nav span{color:var(--text-muted)}
+    .hero{padding:40px var(--space-page-x) 20px;text-align:center}
+    .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
+    .hero-t{font-size:28px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--grn);font-style:normal}
+    .hero-sub{font-size:12px;color:var(--text-secondary);max-width:480px;margin:0 auto;line-height:1.6;font-style:italic}
+    .legend{display:flex;justify-content:center;gap:20px;padding:12px 20px;margin:12px var(--space-page-x) 18px;background:var(--surface-1);border-radius:10px;border:1px solid var(--border-default);flex-wrap:wrap}
+    .leg{display:flex;align-items:center;gap:6px;font-size:10px}
+    .leg-d{width:10px;height:10px;border-radius:3px}
+    .sec{padding:0 var(--space-page-x);margin-bottom:20px}
+    .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+    .sec-t{font-size:13px;font-weight:600;color:var(--xmr)}.sec-s{font-size:9px;color:var(--text-tertiary)}
+    .egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+    .ec{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;transition:border-color .2s;display:block;text-decoration:none;color:inherit;position:relative}
+    .ec:hover{border-color:rgba(255,102,0,.2)}
+    .ec-name{font-size:14px;font-weight:600;margin-bottom:3px;color:var(--g1)}
+    .ec-desc{font-size:10px;color:var(--text-tertiary);line-height:1.5;margin-bottom:6px}
+    .ec-url{font-size:9px;color:var(--blue);display:block;margin-bottom:4px}
+    .ec-tag{font-size:8px;padding:2px 8px;border-radius:3px;display:inline-block}
+    /* Tier system */
+    .ec.rec{border-color:rgba(0,204,136,.15);background:linear-gradient(135deg,rgba(0,204,136,.02),transparent)}
+    .ec.rec::after{content:'RECOMMENDED';position:absolute;top:6px;right:8px;font-size:7px;letter-spacing:1px;color:var(--grn);background:rgba(0,204,136,.08);padding:2px 6px;border-radius:3px}
+    .ec.rec:hover{border-color:rgba(0,204,136,.35)}
+    .ec.warn{border-color:rgba(255,215,0,.1)}
+    .ec-warn{font-size:9px;color:var(--gold);margin-top:4px}
+    .ec.danger .ec-warn{color:var(--red)}
+    .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
+    @media(max-width:768px){.egrid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
-<div class="page-offset" style="position:relative;overflow:hidden;min-height:100vh;">
-    <canvas id="constellation" class="constellation"></canvas>
-    <div class="blob blob-1"></div><div class="blob blob-4"></div>
-    <div class="z1">
-        <div id="nav-mount"></div>
-        <div style="display:flex;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border-subtle);gap:12px;font-family:var(--font-mono);font-size:12px">
-            <span style="font-weight:600"><em style="color:var(--grn);font-style:normal">xmr.irish</em> <span style="color:var(--text-muted)">/</span> <em style="color:var(--grn);font-style:normal">ecosystem</em></span>
-        </div>
-
-        <div class="sec">
-            <div class="sec-k">Ecosystem / 45+ Projects</div>
-            <div class="sec-t">Monero ecosystem map</div>
-            <div class="sec-s">Wallets, exchanges, services, tools, and developer resources for the Monero ecosystem.</div>
-
-            <!-- Hot Wallets -->
-            <div class="eco-sec-t" id="eco-wallets-hot">Hot wallets (mobile / desktop)</div>
-            <div class="eco-grid">
-                <a class="eco-card recommended" href="https://cakewallet.com" target="_blank" data-eco="cakewallet"><div class="eco-name">Cake Wallet</div><div class="eco-desc">iOS + Android. Open-source. Built-in exchange. XMR, BTC, LTC support.</div><div class="eco-url">cakewallet.com</div><div class="eco-tag" style="background:rgba(0,211,149,.08);color:var(--grn)">Mobile best</div></a>
-                <a class="eco-card recommended" href="https://featherwallet.org" target="_blank" data-eco="feather"><div class="eco-name">Feather Wallet</div><div class="eco-desc">Desktop (Win/Mac/Linux). Power-user features. Tor built-in. Coin control. Advanced send.</div><div class="eco-url">featherwallet.org</div><div class="eco-tag" style="background:rgba(74,158,255,.08);color:var(--blue)">Desktop best</div></a>
-                <a class="eco-card" href="https://www.getmonero.org/downloads/" target="_blank"><div class="eco-name">Official GUI</div><div class="eco-desc">Full node or remote node. Built by core team. Most secure.</div><div class="eco-url">getmonero.org/downloads</div></a>
-                <a class="eco-card" href="https://www.getmonero.org/downloads/#cli" target="_blank"><div class="eco-name">Official CLI</div><div class="eco-desc">Command-line wallet. Maximum control. Scripting support.</div><div class="eco-url">getmonero.org (CLI)</div></a>
-                <a class="eco-card" href="https://mymonero.com" target="_blank"><div class="eco-name">MyMonero</div><div class="eco-desc">Web + desktop. Light wallet. Fast sync. Open-source client.</div><div class="eco-url">mymonero.com</div></a>
-                <a class="eco-card" href="https://monerujo.io" target="_blank"><div class="eco-name">Monerujo</div><div class="eco-desc">Android-only. Open-source. Tor/i2p support. SideKick air-gap mode.</div><div class="eco-url">monerujo.io</div></a>
-            </div>
-
-            <!-- Cold / Hardware -->
-            <div class="eco-sec-t">Cold storage / Hardware wallets</div>
-            <div class="eco-grid">
-                <a class="eco-card" href="https://www.ledger.com" target="_blank"><div class="eco-name">Ledger</div><div class="eco-desc">Hardware wallet. Monero app via CLI. Nano S/X/S+ supported.</div><div class="eco-url">ledger.com</div></a>
-                <a class="eco-card" href="https://trezor.io" target="_blank"><div class="eco-name">Trezor</div><div class="eco-desc">Model T supports Monero. Passphrase protection. Open-source firmware.</div><div class="eco-url">trezor.io</div></a>
-                <a class="eco-card warn" href="https://keyst.one" target="_blank"><div class="eco-name">Keystone Pro 3</div><div class="eco-desc">Air-gapped QR signing. Pairs with Feather Desktop. New integration — may have UX rough edges.</div><div class="eco-url">keyst.one</div><div class="eco-warn">⚠ Feather-Keystone signing integration still maturing</div></a>
-            </div>
-
-            <!-- Exchanges -->
-            <div class="eco-sec-t" id="eco-exchanges">Exchanges (non-KYC + KYC)</div>
-            <div class="eco-grid">
-                <a class="eco-card recommended" href="https://wagyu.xyz" target="_blank"><div class="eco-name">Wagyu.xyz</div><div class="eco-desc">No-KYC instant swap. Best rates for small-medium amounts. Simple UI.</div><div class="eco-url">wagyu.xyz</div><div class="eco-tag" style="background:rgba(0,211,149,.08);color:var(--grn)">No KYC</div></a>
-                <a class="eco-card recommended" href="https://changenow.io" target="_blank"><div class="eco-name">ChangeNOW</div><div class="eco-desc">No-KYC swap aggregator. 200+ coins. Fixed & floating rates.</div><div class="eco-url">changenow.io</div><div class="eco-tag" style="background:rgba(0,211,149,.08);color:var(--grn)">No KYC</div></a>
-                <a class="eco-card" href="https://haveno.exchange" target="_blank"><div class="eco-name">Haveno DEX</div><div class="eco-desc">Decentralized exchange. P2P trading. No central point of failure.</div><div class="eco-url">haveno.exchange</div><div class="eco-tag" style="background:rgba(74,158,255,.08);color:var(--blue)">DEX</div></a>
-                <a class="eco-card" href="https://tradeogre.com" target="_blank"><div class="eco-name">TradeOgre</div><div class="eco-desc">Privacy-focused exchange. No KYC for small amounts. Order book trading.</div><div class="eco-url">tradeogre.com</div></a>
-                <a class="eco-card" href="https://trocador.app" target="_blank"><div class="eco-name">Trocador</div><div class="eco-desc">Swap aggregator. Tor-accessible. Compares rates across 20+ services.</div><div class="eco-url">trocador.app</div></a>
-                <a class="eco-card" href="https://bisq.network" target="_blank"><div class="eco-name">Bisq</div><div class="eco-desc">Decentralized, open-source. P2P. Requires BTC as collateral.</div><div class="eco-url">bisq.network</div></a>
-                <a class="eco-card" href="https://majesticbank.sc" target="_blank"><div class="eco-name">Majestic Bank</div><div class="eco-desc">No-KYC. Tor-first. XMR/BTC swaps. Community-run.</div><div class="eco-url">majesticbank.sc</div></a>
-                <a class="eco-card warn" href="https://www.kraken.com" target="_blank"><div class="eco-name">Kraken</div><div class="eco-desc">Major exchange. Full KYC. Still lists XMR (one of few). US access varies by state.</div><div class="eco-url">kraken.com</div><div class="eco-warn">⚠ Full KYC required — links your identity to XMR</div></a>
-                <a class="eco-card" href="#"><div class="eco-name">Atomic swaps</div><div class="eco-desc">BTC↔XMR trustless swaps. No intermediary. Research-grade; improving rapidly.</div><div class="eco-url">github.com/comit-network</div></a>
-            </div>
-
-            <!-- Mining tools -->
-            <div class="eco-sec-t">Mining software & tools</div>
-            <div class="eco-grid">
-                <a class="eco-card" href="https://xmrig.com" target="_blank"><div class="eco-name">XMRig</div><div class="eco-desc">Industry standard. CPU/GPU. Open-source. RandomX optimized. 1% dev fee (removable).</div><div class="eco-url">xmrig.com</div></a>
-                <a class="eco-card" href="https://p2pool.io" target="_blank"><div class="eco-name">P2Pool</div><div class="eco-desc">Decentralized pool. No registration. Run your own mini-blockchain. 0% fee.</div><div class="eco-url">p2pool.io</div></a>
-                <a class="eco-card" href="https://miningpoolstats.stream/monero" target="_blank"><div class="eco-name">MiningPoolStats</div><div class="eco-desc">Pool comparison dashboard. Hashrate, fees, payout methods. Live data.</div><div class="eco-url">miningpoolstats.stream</div></a>
-                <a class="eco-card" href="https://monero.com/network" target="_blank"><div class="eco-name">monero.com</div><div class="eco-desc">Network stats dashboard by Cake Wallet. Hashrate, block explorer, pricing.</div><div class="eco-url">monero.com/network</div></a>
-            </div>
-
-            <!-- Services -->
-            <div class="eco-sec-t">Services & directories</div>
-            <div class="eco-grid">
-                <a class="eco-card" href="https://monerica.com" target="_blank"><div class="eco-name">Monerica.com</div><div class="eco-desc">Directory of merchants accepting Monero. Hundreds of listings. Community maintained.</div><div class="eco-url">monerica.com</div></a>
-                <a class="eco-card" href="https://xmrbazaar.com" target="_blank"><div class="eco-name">XMR Bazaar</div><div class="eco-desc">Marketplace for goods and services. Monero-only payments.</div><div class="eco-url">xmrbazaar.com</div></a>
-                <a class="eco-card" href="https://monero.how" target="_blank"><div class="eco-name">Monero.how</div><div class="eco-desc">Guides and tutorials. Remote node list. Mining calculators.</div><div class="eco-url">monero.how</div></a>
-                <a class="eco-card" href="https://moneroj.net" target="_blank"><div class="eco-name">Moneroj.net</div><div class="eco-desc">Charts and analytics. Supply, inflation, emission, transaction metrics.</div><div class="eco-url">moneroj.net</div></a>
-            </div>
-
-            <!-- Dev / Research -->
-            <div class="eco-sec-t">Development & research</div>
-            <div class="eco-grid">
-                <a class="eco-card" href="https://github.com/monero-project/monero" target="_blank"><div class="eco-name">monero (core)</div><div class="eco-desc">C++ daemon, wallet, and RPC server. The protocol implementation.</div><div class="eco-url">github.com/monero-project</div></a>
-                <a class="eco-card" href="https://github.com/monero-project/research-lab" target="_blank"><div class="eco-name">MRL (Research Lab)</div><div class="eco-desc">Cryptographic research papers. Ring signatures, bulletproofs, FCMP.</div><div class="eco-url">github.com/monero-project/research-lab</div></a>
-                <a class="eco-card" href="https://www.getmonero.org/resources/developer-guides/" target="_blank"><div class="eco-name">Developer guides</div><div class="eco-desc">RPC API docs, integration guides, library references.</div><div class="eco-url">getmonero.org/developer-guides</div></a>
-                <a class="eco-card" href="https://localmonero.co/knowledge" target="_blank"><div class="eco-name">LocalMonero knowledge</div><div class="eco-desc">Educational articles archive. Privacy concepts, Monero internals.</div><div class="eco-url">localmonero.co/knowledge</div></a>
-            </div>
-        </div>
-
-        <div class="footer">
-            <span>xmr.irish / ecosystem / C.3.3 / SJB83</span>
-            <div><a href="index.html">Home</a><a href="community.html">Community</a><a href="legal.html">Legal</a><a href="mining.html">Mining</a></div>
-            <span>45+ projects cataloged</span>
-        </div>
+<div class="page-offset eco">
+    <div id="nav-mount"></div>
+    <div class="eco-nav"><em>xmr.irish</em> <span>/</span> <em>ecosystem</em></div>
+    <div class="hero"><div class="hero-ey">45+ projects · wallets · exchanges · tools</div><div class="hero-t">Monero <em>ecosystem</em></div>
+        <div class="hero-sub">Wallets, exchanges, mining tools, services, and developer resources. Color-coded tier system: recommended, standard, and caution.</div></div>
+    <div class="legend">
+        <div class="leg"><div class="leg-d" style="background:rgba(0,204,136,.3);border:1px solid rgba(0,204,136,.5)"></div><span style="color:var(--grn)">Recommended</span></div>
+        <div class="leg"><div class="leg-d" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.15)"></div><span>Standard</span></div>
+        <div class="leg"><div class="leg-d" style="background:rgba(255,215,0,.2);border:1px solid rgba(255,215,0,.4)"></div><span style="color:var(--gold)">Caution</span></div>
     </div>
+
+    <!-- Hot Wallets -->
+    <div class="sec"><div class="sec-h"><div class="sec-t">Hot wallets (mobile / desktop)</div><div class="sec-s">Self-custody · open-source</div></div>
+        <div class="egrid">
+            <a class="ec rec" href="https://cakewallet.com" target="_blank"><div class="ec-name">Cake Wallet</div><div class="ec-desc">iOS + Android. Open-source. Built-in exchange. XMR, BTC, LTC support. Also: monero.com (XMR-only) and Cupcake (cold storage).</div><div class="ec-url">cakewallet.com</div><div class="ec-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">Mobile best</div></a>
+            <a class="ec rec" href="https://featherwallet.org" target="_blank"><div class="ec-name">Feather Wallet</div><div class="ec-desc">Desktop (Win/Mac/Linux). Power-user features. Tor built-in. Coin control. Advanced send. Keystone hardware wallet support.</div><div class="ec-url">featherwallet.org</div><div class="ec-tag" style="background:rgba(68,136,255,.08);color:var(--blue)">Desktop best</div></a>
+            <a class="ec" href="https://www.getmonero.org/downloads/" target="_blank"><div class="ec-name">Official GUI</div><div class="ec-desc">Full node or remote node. Built by core team. Most secure. Ledger + Trezor support.</div><div class="ec-url">getmonero.org/downloads</div></a>
+            <a class="ec" href="https://www.getmonero.org/downloads/#cli" target="_blank"><div class="ec-name">Official CLI</div><div class="ec-desc">Command-line wallet. Maximum control. Scripting support. For power users and developers.</div><div class="ec-url">getmonero.org (CLI)</div></a>
+            <a class="ec" href="https://mymonero.com" target="_blank"><div class="ec-name">MyMonero</div><div class="ec-desc">Web + desktop. Light wallet. Fast sync. Open-source client.</div><div class="ec-url">mymonero.com</div></a>
+            <a class="ec" href="https://monerujo.io" target="_blank"><div class="ec-name">Monerujo</div><div class="ec-desc">Android-only. Open-source. Tor/i2p support. SideKick air-gap mode.</div><div class="ec-url">monerujo.io</div></a>
+        </div></div>
+
+    <!-- Cold/Hardware -->
+    <div class="sec"><div class="sec-h"><div class="sec-t">Cold storage / Hardware wallets</div><div class="sec-s">Air-gapped · maximum security</div></div>
+        <div class="egrid">
+            <a class="ec" href="https://www.ledger.com" target="_blank"><div class="ec-name">Ledger</div><div class="ec-desc">Hardware wallet. Monero app via CLI/GUI. Nano S/X/S+ supported.</div><div class="ec-url">ledger.com</div></a>
+            <a class="ec" href="https://trezor.io" target="_blank"><div class="ec-name">Trezor</div><div class="ec-desc">Model T supports Monero. Passphrase protection. Open-source firmware.</div><div class="ec-url">trezor.io</div></a>
+            <a class="ec warn" href="https://keyst.one" target="_blank"><div class="ec-name">Keystone Pro 3</div><div class="ec-desc">Air-gapped QR signing. Pairs with Feather Desktop. New integration.</div><div class="ec-url">keyst.one</div><div class="ec-warn">⚠ Feather-Keystone integration still maturing</div></a>
+        </div></div>
+
+    <!-- Exchanges -->
+    <div class="sec"><div class="sec-h"><div class="sec-t">Exchanges (non-KYC + KYC)</div><div class="sec-s">Ranked by ecosystem impact</div></div>
+        <div class="egrid">
+            <a class="ec rec" href="https://wagyu.xyz" target="_blank"><div class="ec-name">Wagyu.xyz</div><div class="ec-desc">No-KYC. Exchange-level rates via Hyperliquid market makers. Zero forced selling. Best for ecosystem health.</div><div class="ec-url">wagyu.xyz</div><div class="ec-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">Best rates · No KYC</div></a>
+            <a class="ec rec" href="https://changenow.io" target="_blank"><div class="ec-name">ChangeNOW</div><div class="ec-desc">No-KYC swap aggregator. 200+ coins. Fixed & floating rates. Widget available for embedding.</div><div class="ec-url">changenow.io</div><div class="ec-tag" style="background:rgba(0,204,136,.08);color:var(--grn)">Easiest · No KYC</div></a>
+            <a class="ec" href="https://haveno.exchange" target="_blank"><div class="ec-name">Haveno DEX</div><div class="ec-desc">Decentralized exchange. P2P trading. No central point of failure. Fiat on/off ramps.</div><div class="ec-url">haveno.exchange</div><div class="ec-tag" style="background:rgba(68,136,255,.08);color:var(--blue)">DEX · P2P</div></a>
+            <a class="ec" href="https://tradeogre.com" target="_blank"><div class="ec-name">TradeOgre</div><div class="ec-desc">Privacy-focused exchange. No KYC for small amounts. Order book trading.</div><div class="ec-url">tradeogre.com</div></a>
+            <a class="ec" href="https://trocador.app" target="_blank"><div class="ec-name">Trocador</div><div class="ec-desc">Swap aggregator. Tor-accessible. Compares rates across 20+ services.</div><div class="ec-url">trocador.app</div></a>
+            <a class="ec" href="https://bisq.network" target="_blank"><div class="ec-name">Bisq</div><div class="ec-desc">Decentralized, open-source. P2P. Requires BTC as collateral.</div><div class="ec-url">bisq.network</div></a>
+            <a class="ec" href="https://majesticbank.sc" target="_blank"><div class="ec-name">Majestic Bank</div><div class="ec-desc">No-KYC. Tor-first. XMR/BTC swaps. Community-run.</div><div class="ec-url">majesticbank.sc</div></a>
+            <a class="ec warn" href="https://www.kraken.com" target="_blank"><div class="ec-name">Kraken</div><div class="ec-desc">Major exchange. Full KYC required. Still lists XMR (one of few). US access varies by state.</div><div class="ec-url">kraken.com</div><div class="ec-warn">⚠ Full KYC — links your identity to XMR</div></a>
+            <a class="ec" href="#"><div class="ec-name">Atomic swaps</div><div class="ec-desc">BTC↔XMR trustless swaps. No intermediary. Research-grade; improving rapidly.</div><div class="ec-url">github.com/comit-network</div></a>
+        </div></div>
+
+    <!-- Mining -->
+    <div class="sec"><div class="sec-h"><div class="sec-t">Mining software & tools</div><div class="sec-s">CPU-optimized · RandomX</div></div>
+        <div class="egrid">
+            <a class="ec" href="https://xmrig.com" target="_blank"><div class="ec-name">XMRig</div><div class="ec-desc">Industry standard. CPU/GPU. Open-source. RandomX optimized. 1% dev fee (removable).</div><div class="ec-url">xmrig.com</div></a>
+            <a class="ec" href="https://p2pool.io" target="_blank"><div class="ec-name">P2Pool</div><div class="ec-desc">Decentralized pool. No registration. Run your own mini-blockchain. 0% fee.</div><div class="ec-url">p2pool.io</div></a>
+            <a class="ec" href="https://miningpoolstats.stream/monero" target="_blank"><div class="ec-name">MiningPoolStats</div><div class="ec-desc">Pool comparison dashboard. Hashrate, fees, payout methods. Live data.</div><div class="ec-url">miningpoolstats.stream</div></a>
+            <a class="ec" href="https://monero.com/network" target="_blank"><div class="ec-name">monero.com</div><div class="ec-desc">Network stats dashboard by Cake Wallet. Hashrate, block explorer, pricing.</div><div class="ec-url">monero.com/network</div></a>
+        </div></div>
+
+    <!-- Services -->
+    <div class="sec"><div class="sec-h"><div class="sec-t">Services & directories</div><div class="sec-s">Merchants · marketplaces · tools</div></div>
+        <div class="egrid">
+            <a class="ec" href="https://monerica.com" target="_blank"><div class="ec-name">Monerica.com</div><div class="ec-desc">Directory of merchants accepting Monero. Hundreds of listings. Community maintained.</div><div class="ec-url">monerica.com</div></a>
+            <a class="ec" href="https://xmrbazaar.com" target="_blank"><div class="ec-name">XMR Bazaar</div><div class="ec-desc">Marketplace for goods and services. Monero-only payments.</div><div class="ec-url">xmrbazaar.com</div></a>
+            <a class="ec" href="https://monero.how" target="_blank"><div class="ec-name">Monero.how</div><div class="ec-desc">Guides and tutorials. Remote node list. Mining calculators.</div><div class="ec-url">monero.how</div></a>
+            <a class="ec" href="https://moneroj.net" target="_blank"><div class="ec-name">Moneroj.net</div><div class="ec-desc">Charts and analytics. Supply, inflation, emission, transaction metrics.</div><div class="ec-url">moneroj.net</div></a>
+        </div></div>
+
+    <!-- Dev -->
+    <div class="sec"><div class="sec-h"><div class="sec-t">Development & research</div><div class="sec-s">Open-source · peer-reviewed</div></div>
+        <div class="egrid">
+            <a class="ec" href="https://github.com/monero-project/monero" target="_blank"><div class="ec-name">monero (core)</div><div class="ec-desc">C++ daemon, wallet, and RPC server. The protocol implementation.</div><div class="ec-url">github.com/monero-project</div></a>
+            <a class="ec" href="https://github.com/monero-project/research-lab" target="_blank"><div class="ec-name">MRL (Research Lab)</div><div class="ec-desc">Cryptographic research papers. Ring signatures, bulletproofs, FCMP.</div><div class="ec-url">github.com/monero-project/research-lab</div></a>
+            <a class="ec" href="https://www.getmonero.org/resources/developer-guides/" target="_blank"><div class="ec-name">Developer guides</div><div class="ec-desc">RPC API docs, integration guides, library references.</div><div class="ec-url">getmonero.org/developer-guides</div></a>
+            <a class="ec" href="https://localmonero.co/knowledge" target="_blank"><div class="ec-name">LocalMonero knowledge</div><div class="ec-desc">Educational articles archive. Privacy concepts, Monero internals.</div><div class="ec-url">localmonero.co/knowledge</div></a>
+        </div></div>
+
+    <div class="ft">xmr.irish / ecosystem · 45+ projects · privacy is the standard</div>
 </div>
-<script src="js/nav.js"></script>
-<script src="js/price-service.js"></script>
-<script src="js/monero-network.js"></script>
-<script src="js/genui.js"></script>
+<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
 <script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
-</body>
-</html>
+</body></html>

@@ -10,6 +10,41 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
     <style>
+        /* ═══════════════════════════════════════════════════════════════
+           d10 Typography Override — btc-xmr-education.html
+           Loaded AFTER d10.css to override font variables at page scope.
+           Link: <link rel="stylesheet" href="css/d10-education.css">
+           ═══════════════════════════════════════════════════════════════ */
+        
+        body {
+            --font-headline: 'JetBrains Mono', 'DM Mono', monospace;
+            --font-subhead: 'JetBrains Mono', 'DM Mono', monospace;
+        }
+        
+        .hero-description, .section-subtitle, .quote-text,
+        .timeline-title, .flow-content h4, .glass-card h3,
+        .accordion-header h4, .timeline-content { font-style: normal !important; }
+        
+        .hero-title { font-size: clamp(2rem, 6vw, 3.5rem) !important; font-weight: 600 !important; }
+        .section-title { font-size: clamp(1.5rem, 3vw, 2rem) !important; font-weight: 600 !important; letter-spacing: -0.5px !important; }
+        .timeline-title { font-size: 14px !important; font-weight: 600 !important; }
+        .timeline-content { font-size: 11px !important; line-height: 1.7 !important; }
+        .quote-text { font-size: 12px !important; line-height: 1.6 !important; }
+        .glass-card h3 { font-size: 14px !important; font-weight: 600 !important; }
+        .comparison-card h3 { font-size: 16px !important; font-weight: 600 !important; }
+        .accordion-header h4 { font-size: 12px !important; font-weight: 500 !important; }
+        .flow-content h4 { font-size: 13px !important; font-weight: 600 !important; }
+        .cta-title { font-size: clamp(1.5rem, 3vw, 2.5rem) !important; font-weight: 600 !important; }
+        .stat-number { font-family: 'Geologica', 'JetBrains Mono', monospace !important; }
+        .stat-label { font-size: 9px !important; }
+        .code-block code { font-size: 10px !important; }
+        .feature-content { font-size: 12px !important; }
+        .spectrum-labels { font-size: 9px !important; }
+        .light-section { color: rgba(255, 255, 255, 0.85) !important; }
+        .flow-content p { font-size: 11px !important; }
+        .accordion-body, .accordion-body p { font-size: 11px !important; line-height: 1.7 !important; }
+        .toggle-label { font-size: 16px !important; }
+        .feature-label { font-size: 10px !important; }
 
 
 

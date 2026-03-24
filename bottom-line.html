@@ -10,6 +10,50 @@
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
     <style>
+        /* ═══ d10 TYPOGRAPHY ENFORCEMENT — injected override ═══ */
+        body { --font-headline: 'JetBrains Mono', 'DM Mono', monospace; --font-subhead: 'JetBrains Mono', 'DM Mono', monospace; }
+        .hero-subtitle, .section-intro, .thesis-text, .sec-s, .manifesto-callout p, .exclusion-callout p, .meta-thesis-box p, .counter-arguments p, .chapter-body, .chapter-body p, .driver-card p { font-style: normal !important; }
+        .hero h1 { font-size: clamp(1.4rem, 3vw, 2rem) !important; font-weight: 600 !important; letter-spacing: -0.5px !important; }
+        .section-title { font-size: 16px !important; font-weight: 600 !important; }
+        .thesis-title { font-size: 17px !important; font-weight: 600 !important; }
+        .thesis-text { font-size: 12px !important; line-height: 1.7 !important; font-style: normal !important; }
+        .thesis-section { padding: 1.5rem !important; }
+        .thesis-section::before { font-size: 4rem !important; opacity: 0.08 !important; }
+        .chapter-title { font-size: 16px !important; font-weight: 600 !important; }
+        .chapter-body, .chapter-body p { font-size: 11px !important; line-height: 1.7 !important; }
+        .chapter-number { font-size: 9px !important; }
+        .future-chapter { margin-bottom: 2rem !important; padding-bottom: 1.5rem !important; }
+        .bounty-amount { font-size: 26px !important; }
+        .bounty-agency { font-size: 10px !important; }
+        .counter-number { font-size: 28px !important; }
+        .crypto-name { font-size: 13px !important; }
+        .crypto-subtitle { font-size: 9px !important; }
+        .crypto-desc { font-size: 10px !important; }
+        .evidence-title { font-size: 13px !important; }
+        .evidence-text { font-size: 11px !important; line-height: 1.6 !important; }
+        .event-title { font-size: 12px !important; }
+        .timeline-year-header { font-size: 15px !important; }
+        .year-marker { font-size: 14px !important; }
+        .comparison-table th { font-size: 11px !important; }
+        .meta-thesis-box h3 { font-size: 15px !important; }
+        .meta-thesis-box p { font-size: 11px !important; line-height: 1.7 !important; }
+        .counter-arguments h4 { font-size: 13px !important; }
+        .manifesto-callout h3 { font-size: 13px !important; }
+        .manifesto-callout p { font-size: 11px !important; }
+        .exclusion-callout h4 { font-size: 12px !important; }
+        .exclusion-callout p { font-size: 11px !important; }
+        .tradfi-exclusion-box h4 { font-size: 12px !important; }
+        .tab-toggle-label { font-size: 13px !important; }
+        .tab-toggle-desc { font-size: 9px !important; }
+        .driver-card h4 { font-size: 12px !important; }
+        .driver-card p { font-size: 10px !important; }
+        .data-box { font-size: 10px !important; }
+        .hero-stat-value { font-family: 'Geologica', 'JetBrains Mono', monospace !important; }
+        .thesis-signature { font-size: 10px !important; }
+        .key-point-content h4 { font-size: 12px !important; }
+        .key-point-content p { font-size: 10px !important; }
+        /* ═══ END d10 OVERRIDE ═══ */
+
         /* Page-specific variables for legacy color names */
         :root {
             --tradfi-blue: #4A90D9;
