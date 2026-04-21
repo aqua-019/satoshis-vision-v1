@@ -6,9 +6,8 @@
     <meta name="referrer" content="no-referrer">
     <title>xmr.irish — The Case for Monero</title>
     <meta name="description" content="The only cryptocurrency where every transaction is private by default. Education, mining, network stats, and the investment thesis for Monero (XMR).">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
     <style>
     /* ═══════════════════════════════════════════════════════════
@@ -185,9 +184,9 @@
                 <h1 class="hero-title">The case for <span>Monero</span></h1>
                 <p class="hero-sub">Ring-16, Dandelion++, tail emission at 0.6 XMR/block. FCMP++ incoming with 100M+ anonymity set. Hashrate at ATH. The network has never been stronger.</p>
                 <div class="cta-row">
-                    <a class="cta cta-primary" href="hold-monero.html">Why hold XMR</a>
-                    <a class="cta cta-secondary" href="bottom-line.html">The bottom line thesis</a>
-                    <a class="cta cta-secondary" href="mining.html">Mine on this device</a>
+                    <a class="cta cta-primary" href="/hold-monero">Why hold XMR</a>
+                    <a class="cta cta-secondary" href="/bottom-line">The bottom line thesis</a>
+                    <a class="cta cta-secondary" href="/mining">Mine on this device</a>
                 </div>
             </div>
             <div class="ring-container">
@@ -237,7 +236,7 @@
                     <div><div class="mempool-stat-val">~2 min</div><div class="mempool-stat-label">Next block</div></div>
                     <div><div class="mempool-stat-val">0.614 XMR</div><div class="mempool-stat-label">Block reward</div></div>
                 </div>
-                <a class="cta cta-green" href="mempool.html">Enter the mempool →</a>
+                <a class="cta cta-green" href="/mempool">Enter the mempool →</a>
                 <div class="mempool-track-row">
                     <input type="text" id="mp-tx-input" placeholder="Paste transaction hash to track...">
                     <button class="btn-track" onclick="trackFromHome()">Track</button>
@@ -250,11 +249,11 @@
         <div class="sec" style="padding-bottom:0">
             <div class="sec-k">Key privacy</div>
             <div class="sec-t">Three pillars of private money</div>
-            <div class="sec-s">Ring signatures hide the sender. Stealth addresses hide the receiver. RingCT hides the amount. <a href="privacy-architecture.html" style="color:var(--xmr)">View all 18 protocol visualizations →</a></div>
+            <div class="sec-s">Ring signatures hide the sender. Stealth addresses hide the receiver. RingCT hides the amount. <a href="/privacy-architecture" style="color:var(--xmr)">View all 18 protocol visualizations →</a></div>
         </div>
 
         <!-- Featured viz: Dandelion++ -->
-        <a class="featured-viz" href="privacy-architecture.html" style="margin-bottom:20px">
+        <a class="featured-viz" href="/privacy-architecture" style="margin-bottom:20px">
             <div class="featured-viz-canvas"><canvas id="fv-dandelion"></canvas></div>
             <div class="featured-viz-content">
                 <div class="featured-viz-kicker" style="color:var(--xmr)">01 — Network Privacy</div>
@@ -265,7 +264,7 @@
         </a>
 
         <div class="pillar-grid" id="pillar-grid">
-            <a class="pillar" id="pillar-0" href="btc-xmr-education.html">
+            <a class="pillar" id="pillar-0" href="/btc-xmr-education">
                 <div class="pillar-canvas"><canvas id="pv-ring"></canvas></div>
                 <div class="pillar-text">
                     <div class="pillar-kicker" style="color:var(--xmr)">Ring signatures</div>
@@ -274,7 +273,7 @@
                     <div class="pillar-val" style="color:var(--xmr)">16</div>
                 </div>
             </a>
-            <a class="pillar" id="pillar-1" href="btc-xmr-education.html">
+            <a class="pillar" id="pillar-1" href="/btc-xmr-education">
                 <div class="pillar-canvas"><canvas id="pv-stealth"></canvas></div>
                 <div class="pillar-text">
                     <div class="pillar-kicker" style="color:var(--grn)">Stealth addresses</div>
@@ -283,7 +282,7 @@
                     <div class="pillar-val" style="color:var(--grn)">Strong</div>
                 </div>
             </a>
-            <a class="pillar" id="pillar-2" href="btc-xmr-education.html">
+            <a class="pillar" id="pillar-2" href="/btc-xmr-education">
                 <div class="pillar-canvas"><canvas id="pv-pedersen"></canvas></div>
                 <div class="pillar-text">
                     <div class="pillar-kicker" style="color:var(--cyan)">RingCT</div>
@@ -304,7 +303,7 @@
                 <div class="sec-s">Privacy demand is structural, not speculative.</div>
             </div>
             <div class="invest-grid" id="invest-grid">
-                <a class="invest-card" id="inv-0" href="bottom-line.html">
+                <a class="invest-card" id="inv-0" href="/bottom-line">
                     <div class="invest-text">
                         <div class="invest-kicker" style="color:var(--xmr)">Supply shock</div>
                         <div class="invest-title">73 exchanges delisted. Supply tightened.</div>
@@ -312,7 +311,7 @@
                         <div class="invest-val" style="color:var(--xmr)">73</div>
                     </div>
                 </a>
-                <a class="invest-card" id="inv-1" href="bottom-line.html">
+                <a class="invest-card" id="inv-1" href="/bottom-line">
                     <div class="invest-text">
                         <div class="invest-kicker" style="color:var(--grn)">IRS bounty</div>
                         <div class="invest-title">$625K bounty. Still unclaimed.</div>
@@ -320,7 +319,7 @@
                         <div class="invest-val" style="color:var(--grn)">Unclaimed</div>
                     </div>
                 </a>
-                <a class="invest-card" id="inv-2" href="future-outlook.html">
+                <a class="invest-card" id="inv-2" href="/future-outlook">
                     <div class="invest-text">
                         <div class="invest-kicker" style="color:var(--cyan)">FCMP++</div>
                         <div class="invest-title">100M+ anonymity set. Coming.</div>
@@ -340,19 +339,19 @@
             <div class="sec-s">Hold, mine, or learn.</div>
         </div>
         <div class="path-grid">
-            <a class="path-card" href="hold-monero.html">
+            <a class="path-card" href="/hold-monero">
                 <div class="path-kicker" style="color:var(--xmr)">Trade · Instant</div>
                 <div class="path-title">Get Monero in 2 minutes</div>
                 <div class="path-desc">Wagyu.xyz, ChangeNOW, Haveno DEX, atomic swaps. Complete self-custody guide.</div>
                 <span class="path-link" style="color:var(--xmr)">Explore exchanges →</span>
             </a>
-            <a class="path-card" href="mining.html">
+            <a class="path-card" href="/mining">
                 <div class="path-kicker" style="color:var(--grn)">Mine · Earn</div>
                 <div class="path-title">Mine on this device</div>
                 <div class="path-desc">RandomX CPU-optimized. XMRig setup in 5 minutes. Pool comparison + electricity costs.</div>
                 <span class="path-link" style="color:var(--grn)">Start mining →</span>
             </a>
-            <a class="path-card" href="btc-xmr-education.html">
+            <a class="path-card" href="/btc-xmr-education">
                 <div class="path-kicker" style="color:var(--blue)">Learn · Understand</div>
                 <div class="path-title">The education deep dive</div>
                 <div class="path-desc">Transparent vs private. Architectural differences. Why privacy is not optional.</div>
@@ -370,7 +369,7 @@
         <!-- ═══ FOOTER ═══ -->
         <div class="footer">
             <span>xmr.irish</span>
-            <div><a href="btc-xmr-education.html">Education</a><a href="mempool.html">Mempool</a><a href="markets.html">Dashboard</a><a href="hold-monero.html">Hold XMR</a><a href="mining.html">Mine XMR</a><a href="community.html">Community</a></div>
+            <div><a href="/btc-xmr-education">Education</a><a href="/mempool">Mempool</a><a href="/markets">Dashboard</a><a href="/hold-monero">Hold XMR</a><a href="/mining">Mine XMR</a><a href="/community">Community</a></div>
             <span>Privacy is not optional — it is a fundamental right</span>
         </div>
     </div>
