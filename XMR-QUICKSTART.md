@@ -58,7 +58,7 @@ Do not change any wording, only visual presentation and structure.
 → HANDOFF-05 (bottom-line — most important, most complex typography job)
 
 ### Session 6: Typography batch part 2 (Sonnet)
-→ HANDOFF-06 (timeline + quotes + secrets + btc-xmr-education)
+→ HANDOFF-06 (timeline + quotes + secrets + btc-xmr-education + ecosystem)
 → Do one page at a time, commit after each
 
 ### Session 7: Homepage upgrades (Sonnet)
