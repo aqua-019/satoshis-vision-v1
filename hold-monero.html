@@ -9,17 +9,17 @@
     <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
     <style>
-    .hm{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+    .hm{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh;padding-bottom:72px}
     .hm-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
     .hm-nav em{color:var(--grn);font-style:normal;font-weight:600}.hm-nav span{color:var(--text-muted)}
 
-    .hero{padding:48px var(--space-page-x) 24px;text-align:center}
+    .hero{padding:40px var(--space-page-x) 24px;text-align:center}
     .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
     .hero-t{font-size:32px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--xmr);font-style:normal}
     .hero-sub{font-size:13px;color:var(--text-secondary);max-width:520px;margin:0 auto;line-height:1.6;font-style:italic}
 
-    .sec{padding:0 var(--space-page-x);margin-bottom:28px}
-    .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+    .sec{padding:0 var(--space-page-x);margin-bottom:20px}
+    .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
 
     /* Three paths */
@@ -38,8 +38,8 @@
     .swap-widget-title{font-size:16px;font-weight:600}
     .swap-widget-badge{font-size:9px;padding:3px 10px;border-radius:4px;background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
     .swap-widget-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin-bottom:14px}
-    .swap-iframe-wrap{border-radius:8px;overflow:hidden;border:1px solid var(--border-default);background:#0D0D12;min-height:356px}
-    .swap-iframe-wrap iframe{width:100%;height:356px;border:none;display:block}
+    .swap-iframe-wrap{border-radius:8px;overflow:hidden;border:1px solid var(--border-default);background:#0D0D12;min-height:420px}
+    .swap-iframe-wrap iframe{width:100%;min-height:420px;height:420px;border:none;display:block}
     .swap-disclaimer{font-size:9px;color:var(--text-tertiary);margin-top:10px;padding:8px 12px;border:1px solid var(--border-subtle);border-radius:6px;line-height:1.5}
     .swap-disclaimer em{color:var(--xmr);font-style:normal}
     /* Swap tracker panel */
@@ -63,7 +63,7 @@
     .swap-status.confirming{background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.15)}
     .swap-status.complete{background:rgba(0,204,136,.1);color:var(--grn);border:1px solid rgba(0,204,136,.15)}
     .swap-status.idle{background:var(--surface-2);color:var(--text-muted);border:1px solid var(--border-subtle)}
-    @media(max-width:768px){.swap-layout{grid-template-columns:1fr}}
+    @media(max-width:900px){.swap-layout{grid-template-columns:1fr}}
 
     /* Wagyu section */
     .wagyu{background:var(--surface-1);border:1px solid rgba(0,204,136,.12);border-radius:12px;padding:22px;position:relative;overflow:hidden}
@@ -165,7 +165,7 @@
     .tip-t{font-size:12px;font-weight:600;margin-bottom:4px}.tip-d{font-size:10px;color:var(--text-tertiary);line-height:1.5}
 
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.paths,.wallets,.exch,.exch-rank,.tips{grid-template-columns:1fr}.wagyu-grid{grid-template-columns:repeat(2,1fr)}.suppress-flow{grid-template-columns:1fr}.sf-arrow{transform:rotate(90deg)}.suppress-stats{grid-template-columns:1fr}}
+    @media(max-width:768px){.paths,.wallets,.exch,.exch-rank,.tips{grid-template-columns:1fr}.wagyu-grid{grid-template-columns:repeat(2,1fr)}.suppress-flow{grid-template-columns:1fr}.sf-arrow{transform:rotate(90deg)}.suppress-stats{grid-template-columns:1fr}.hm{padding-bottom:96px}}
     </style>
 </head>
 <body>
@@ -474,9 +474,9 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
 // Price suppression visualization — animated selling pressure loop (SLOWED)
 (function(){
     var c=document.getElementById('suppress-viz');if(!c)return;
-    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H,t=0;
+    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H,t=0,visible=false,rafId=0;
     function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
-    resize();addEventListener('resize',resize);
+    addEventListener('resize',resize);
 
     var priceData=[],basePrice=340;
     for(var i=0;i<200;i++){
@@ -538,17 +538,28 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
         ctx.fillStyle='rgba(255,102,0,0.3)';
         ctx.fillText('XMR PRICE',W-padding-30,padding+12);
 
-        t++;requestAnimationFrame(draw);
+        t++;if(visible)rafId=requestAnimationFrame(draw);
     }
-    draw();
+    requestAnimationFrame(function(){
+        resize();
+        if('IntersectionObserver' in window){
+            var io=new IntersectionObserver(function(entries){
+                entries.forEach(function(e){
+                    if(e.isIntersecting){if(!visible){visible=true;rafId=requestAnimationFrame(draw)}}
+                    else{visible=false;if(rafId)cancelAnimationFrame(rafId)}
+                });
+            },{threshold:0});
+            io.observe(c);
+        }else{visible=true;draw()}
+    });
 })();
 
 // Volume extraction visualization — second canvas
 (function(){
     var c=document.getElementById('volume-viz');if(!c)return;
     var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H;
-    function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
-    resize();addEventListener('resize',resize);
+    function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);if(typeof draw==='function')draw()}
+    addEventListener('resize',resize);
 
     // Generate 30 days of estimated swap volume + extraction
     var days=30,volumes=[],extractions=[];
@@ -588,7 +599,7 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
         ctx.fillStyle='rgba(255,71,87,0.5)';ctx.fillText('RED = EXTRACTION',W*0.7,pad+12);
         ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillText('~$10M/day',pad+30,pad+chartH-10);
     }
-    draw();
+    requestAnimationFrame(function(){resize()});
 })();
 
 // ChangeNOW widget pair detection via postMessage
