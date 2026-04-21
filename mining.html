@@ -1,441 +1,572 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xmr.irish — Mine Monero</title>
-    <meta name="description" content="Mine Monero with your CPU. RandomX benchmarks, electricity costs, pool comparison, XMRig setup guide. Everything you need to start mining XMR.">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d10.css">
-    <style>
-    .mn{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
-    .mn-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;flex-wrap:wrap}
-    .mn-brand{font-size:14px}.mn-brand em{color:var(--grn);font-style:normal;font-weight:600}.mn-brand span{color:var(--text-muted)}
-    .mn-tabs{display:flex;gap:4px;font-size:11px;margin-left:auto}
-    .mn-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}
-    .mn-tab.active{background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
+<meta charset="UTF-8"><meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>xmr.irish — Mine Monero</title>
+<meta name="description" content="Mine Monero with your CPU. RandomX benchmarks, electricity costs, pool comparison, XMRig setup guide. Everything you need to start mining XMR.">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/d10.css">
+<style>
+/* ── Layout ── */
+.mn{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+.mn-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;flex-wrap:wrap}
+.mn-brand{font-size:14px}.mn-brand em{color:var(--grn);font-style:normal;font-weight:600}.mn-brand span{color:var(--text-muted)}
+.mn-tabs{display:flex;gap:4px;font-size:11px;margin-left:auto}
+.mn-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}
+.mn-tab.active{background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
 
-    .hero{padding:40px var(--space-page-x) 20px;text-align:center}
-    .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
-    .hero-t{font-size:28px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}.hero-t em{color:var(--grn);font-style:normal}
-    .hero-sub{font-size:12px;color:var(--text-secondary);max-width:480px;margin:0 auto;line-height:1.6;font-style:italic}
+.page-hero{padding:40px var(--space-page-x) 16px;text-align:center}
+.hero-eyebrow{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
+.hero-title{font-size:30px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}
+.hero-title em{color:var(--grn);font-style:normal}
+.hero-subtitle{font-size:12px;color:var(--text-secondary);max-width:500px;margin:0 auto;line-height:1.6;font-style:italic}
 
-    .top4{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:16px var(--space-page-x) 20px}
-    .t4{background:var(--surface-1);padding:16px 12px;text-align:center}
-    .t4:first-child{border-radius:10px 0 0 10px}.t4:last-child{border-radius:0 10px 10px 0}
-    .t4-v{font-size:20px;font-weight:600;margin-bottom:3px}
-    .t4-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .t4-d{font-size:9px;color:var(--text-tertiary);margin-top:2px}
+.stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:20px var(--space-page-x) 24px}
+.stat-card{background:var(--surface-1);padding:16px 12px;text-align:center}
+.stat-card:first-child{border-radius:10px 0 0 10px}
+.stat-card:last-child{border-radius:0 10px 10px 0}
+.stat-label{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px}
+.stat-value{font-size:20px;font-weight:600;color:var(--xmr-text);margin-bottom:2px}
+.stat-sub{font-size:9px;color:var(--text-tertiary)}
 
-    .sec{padding:0 var(--space-page-x);margin-bottom:24px}
-    .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
-    .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+.sec{padding:0 var(--space-page-x);margin-bottom:26px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
+.sec-note{font-size:9px;color:var(--text-tertiary);margin-top:10px;line-height:1.5;text-align:center}
+.sec-note em{color:var(--grn);font-style:normal}
 
-    /* Overview cards */
-    .ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-    .ov{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:18px}
-    .ov-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:6px}
-    .ov-ey::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
-    .ov-val{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-    .ov-num{font-size:22px;font-weight:600}
-    .ov-badge{font-size:9px;padding:2px 8px;border-radius:4px;letter-spacing:1px;text-transform:uppercase}
-    .ov-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6}
+/* ── Overview cards ── */
+.ov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.ov{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:18px}
+.ov-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ov-ey::before{content:'';width:4px;height:4px;border-radius:50%;background:currentColor}
+.ov-val{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.ov-num{font-size:22px;font-weight:600}
+.ov-badge{font-size:9px;padding:2px 8px;border-radius:4px;letter-spacing:1px;text-transform:uppercase}
+.ov-desc{font-size:11px;color:var(--text-tertiary);line-height:1.65}
 
-    /* Hardware cards */
-    .hw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .hw{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:16px;position:relative}
-    .hw-icon{font-size:14px;margin-bottom:8px}
-    .hw-name{font-size:14px;font-weight:600;margin-bottom:6px}
-    .hw-desc{font-size:10px;color:var(--text-tertiary);line-height:1.6;margin-bottom:10px}
-    .hw-tag{font-size:9px;padding:3px 10px;border-radius:4px;display:inline-block}
-    .hw-tag.best{background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
-    .hw-tag.warn{background:rgba(255,71,87,.06);color:var(--red);border:1px solid rgba(255,71,87,.1)}
-    .hw-tag.ok{background:rgba(255,215,0,.06);color:var(--gold);border:1px solid rgba(255,215,0,.1)}
+/* ── Chart boxes ── */
+.chart-box{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;overflow:hidden;margin-top:10px}
+.chart-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;gap:6px}
+.chart-title{font-size:11px;font-weight:500;color:var(--text-secondary)}
+.chart-sub{font-size:9px;color:var(--text-tertiary)}
+.chart-body{padding:10px 14px}
+.chart-canvas{width:100%;position:relative}
+.chart-canvas canvas{width:100%;display:block}
 
-    /* Benchmark row */
-    .bench{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:12px}
-    .bn{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:12px;text-align:center}
-    .bn-v{font-size:16px;font-weight:600;margin-bottom:3px}
-    .bn-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
+/* ── Hardware ── */
+.hw-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.hw{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:16px}
+.hw.best{border-color:rgba(0,204,136,.2)}
+.hw-icon{font-size:14px;margin-bottom:8px}
+.hw-name{font-size:14px;font-weight:600;margin-bottom:6px}
+.hw-desc{font-size:10px;color:var(--text-tertiary);line-height:1.65;margin-bottom:10px}
+.hw-tag{font-size:9px;padding:3px 10px;border-radius:4px;display:inline-block;letter-spacing:1px;text-transform:uppercase}
+.hw-tag.good{background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
+.hw-tag.bad{background:rgba(255,71,87,.06);color:var(--red);border:1px solid rgba(255,71,87,.1)}
+.hw-tag.key{background:rgba(255,215,0,.06);color:var(--gold);border:1px solid rgba(255,215,0,.12)}
 
-    /* Electricity grid */
-    .elec-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
-    .el{border-radius:8px;padding:10px 6px;text-align:center;border:1px solid transparent;transition:transform .15s}
-    .el:hover{transform:scale(1.05);z-index:2}
-    .el-st{font-size:11px;font-weight:600;margin-bottom:2px}
-    .el-rate{font-size:12px;font-weight:600;margin-bottom:2px}
-    .el-profit{font-size:9px}
-    .el.cheap{background:rgba(0,204,136,.04);border-color:rgba(0,204,136,.1)}.el.cheap .el-rate{color:var(--grn)}.el.cheap .el-profit{color:var(--grn)}
-    .el.mid{background:rgba(255,215,0,.03);border-color:rgba(255,215,0,.06)}.el.mid .el-rate{color:var(--gold)}.el.mid .el-profit{color:var(--gold)}
-    .el.exp{background:rgba(255,71,87,.03);border-color:rgba(255,71,87,.06)}.el.exp .el-rate{color:var(--red)}.el.exp .el-profit{color:var(--red)}
+/* ── Tables ── */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--border-default);border-radius:12px;background:var(--surface-1)}
+.tbl{width:100%;border-collapse:collapse;font-size:11px}
+.tbl th{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;padding:10px 12px;text-align:left;border-bottom:1px solid var(--border-default);font-weight:500;white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid var(--border-subtle);white-space:nowrap}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tr.cpu td.type-cell{color:var(--grn)}
+.tbl tr.gpu td{color:var(--text-tertiary)}
+.tbl tr.gpu td.type-cell{color:var(--gold)}
+.tbl tr.arm td{color:var(--text-tertiary)}
+.tbl tr.arm td.type-cell{color:var(--blue)}
+.tbl tr.cpu{background:rgba(0,204,136,.015)}
+.tbl tr.gpu{background:rgba(255,215,0,.015)}
+.tbl tr.arm{background:rgba(74,158,255,.015)}
+.tbl td.hs{font-weight:600;color:var(--g1)}
+.tbl tr.hl-p2pool{background:rgba(0,204,136,.04)}
+.tbl tr.hl-p2pool td:first-child{color:var(--grn);font-weight:600}
+.tbl tr.hl-mo td:first-child{color:var(--xmr-text);font-weight:600}
+.fee-free{color:var(--grn);font-weight:600}
+.fee-paid{color:var(--xmr-text)}
+.fee-high{color:var(--red)}
+.min-low{color:var(--grn)}
+.pool-bar{display:inline-block;width:60px;height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden;vertical-align:middle;margin-right:6px}
+.pool-bar>span{display:block;height:100%;background:var(--xmr);border-radius:2px}
 
-    /* Solo vs Pool */
-    .vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .vs{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:18px}
-    .vs-t{font-size:16px;font-weight:600;margin-bottom:8px}
-    .vs-desc{font-size:11px;color:var(--text-tertiary);line-height:1.6;margin-bottom:10px}
-    .vs-pro{font-size:10px;color:var(--grn);margin-bottom:2px}
-    .vs-con{font-size:10px;color:var(--red);margin-bottom:2px}
-    .vs-rec{font-size:10px;color:var(--xmr);padding:6px 10px;background:rgba(255,102,0,.04);border-radius:6px;margin-top:8px}
-    .vs.recommended{border-color:rgba(0,204,136,.15)}
+/* ── Electricity grid ── */
+.elec-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:14px}
+.el{border-radius:10px;padding:14px 8px;text-align:center;border:1px solid transparent;transition:transform .15s}
+.el:hover{transform:scale(1.04);z-index:2}
+.el-st{font-size:13px;font-weight:600;margin-bottom:3px;color:var(--g1)}
+.el-rate{font-size:14px;font-weight:600;margin-bottom:3px}
+.el-profit{font-size:10px}
+.el.cheap{background:rgba(0,204,136,.05);border-color:rgba(0,204,136,.12)}
+.el.cheap .el-rate,.el.cheap .el-profit{color:var(--grn)}
+.el.mid{background:rgba(255,215,0,.04);border-color:rgba(255,215,0,.1)}
+.el.mid .el-rate,.el.mid .el-profit{color:var(--gold)}
+.el.exp{background:rgba(255,71,87,.04);border-color:rgba(255,71,87,.1)}
+.el.exp .el-rate,.el.exp .el-profit{color:var(--red)}
 
-    /* Pool grid */
-    .pool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .pool{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;transition:border-color .2s}
-    .pool:hover{border-color:rgba(255,102,0,.2)}
-    .pool-name{font-size:15px;font-weight:600;margin-bottom:8px}
-    .pool-rows{display:flex;flex-direction:column;gap:3px}
-    .pool-row{display:flex;justify-content:space-between;font-size:10px}
-    .pool-row .pl{color:var(--text-tertiary)}.pool-row .pv{font-weight:500}
-    .pool-row .pv.o{color:var(--xmr-text)}.pool-row .pv.g{color:var(--grn)}.pool-row .pv.r{color:var(--red)}
-    .pool-bar{height:3px;border-radius:2px;margin-top:8px;background:var(--surface-2);overflow:hidden}
-    .pool-fill{height:100%;border-radius:2px;background:var(--xmr)}
-    .pool-share{font-size:9px;color:var(--text-tertiary);margin-top:3px;text-align:right}
+/* ── Solo vs Pool ── */
+.vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.vs{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:18px}
+.vs.recommended{border-color:rgba(0,204,136,.2)}
+.vs-t{font-size:16px;font-weight:600;margin-bottom:8px}
+.vs-desc{font-size:11px;color:var(--text-tertiary);line-height:1.65;margin-bottom:10px}
+.vs-pro{font-size:10px;color:var(--grn);margin-bottom:2px;line-height:1.6}
+.vs-con{font-size:10px;color:var(--red);margin-bottom:2px;line-height:1.6}
+.vs-rec{font-size:10px;color:var(--xmr);padding:8px 10px;background:rgba(255,102,0,.05);border-radius:6px;margin-top:10px;border-left:2px solid var(--xmr)}
 
-    /* Setup box */
-    .setup{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:18px}
-    .setup .step{font-size:13px;font-weight:600;color:var(--g1);margin-top:12px;display:block}
-    .setup .step:first-of-type{margin-top:0}
-    .setup .text{font-size:11px;color:var(--text-tertiary);line-height:1.7;margin-top:4px}
-    .setup .cmd{display:block;background:var(--surface-0);padding:8px 12px;border-radius:6px;margin:6px 0;font-size:10px;color:var(--xmr-text);border-left:2px solid rgba(255,102,0,.3);overflow-x:auto;white-space:pre;line-height:1.6}
-    .setup .note{font-size:10px;color:var(--grn);margin-top:6px;display:block}
-    .setup a{color:var(--blue);text-decoration:none}
-    .os-tabs{display:flex;gap:4px;margin-bottom:12px}
-    .os-tab{font-size:10px;padding:4px 12px;border-radius:5px;color:var(--text-tertiary);cursor:pointer;border:1px solid var(--border-default);background:none}
-    .os-tab.active{background:rgba(255,102,0,.08);color:var(--xmr);border-color:rgba(255,102,0,.15)}
-    .os-panel{display:none}.os-panel.active{display:block}
+/* ── Setup guide ── */
+.os-tabs{display:flex;gap:4px;margin-bottom:12px;flex-wrap:wrap}
+.os-tab{font-size:10px;padding:6px 14px;border-radius:6px;color:var(--text-tertiary);cursor:pointer;border:1px solid var(--border-default);background:none;font-family:inherit;letter-spacing:1px;text-transform:uppercase}
+.os-tab.active{background:rgba(255,102,0,.08);color:var(--xmr);border-color:rgba(255,102,0,.2)}
+.setup-content{display:none}
+.setup-content.active{display:block}
+.setup{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:20px}
+.setup .step{font-size:13px;font-weight:600;color:var(--g1);margin-top:14px;display:block}
+.setup .step:first-of-type{margin-top:0}
+.setup .text{font-size:11px;color:var(--text-tertiary);line-height:1.7;margin-top:4px}
+.setup .cmd{display:block;background:var(--surface-0);padding:10px 14px;border-radius:6px;margin:8px 0;font-size:10px;color:var(--xmr-text);border-left:2px solid rgba(255,102,0,.3);overflow-x:auto;white-space:pre;line-height:1.6;font-family:'JetBrains Mono',monospace}
+.setup .note{font-size:10px;color:var(--grn);margin-top:8px;display:block;line-height:1.6}
+.setup a{color:var(--blue);text-decoration:none}
+.setup a:hover{text-decoration:underline}
 
-    /* Concepts */
-    .concept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-    .concept{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px}
-    .concept-t{font-size:13px;font-weight:600;margin-bottom:6px}
-    .concept-d{font-size:10px;color:var(--text-tertiary);line-height:1.6}
+/* ── Concepts ── */
+.concept-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.concept{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:16px}
+.concept-t{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--xmr-text)}
+.concept-d{font-size:10px;color:var(--text-tertiary);line-height:1.65}
 
-    /* Legal grid */
-    .legal-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:3px}
+/* ── Legality ── */
+.legal-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.lc{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px}
+.lc-name{font-size:13px;font-weight:600;margin-bottom:6px}
+.lc-status{font-size:8px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:3px;display:inline-block;margin-bottom:6px;font-weight:600}
+.lc-note{font-size:9px;color:var(--text-tertiary);line-height:1.5}
+.lc.legal .lc-status{background:rgba(0,204,136,.1);color:var(--grn)}
+.lc.gray-zone .lc-status{background:rgba(255,215,0,.1);color:var(--gold)}
+.lc.restricted .lc-status{background:rgba(255,71,87,.1);color:var(--red)}
 
-    .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
+.ft{padding:14px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary);margin-top:20px}
 
-    @media(max-width:768px){
-        .top4{grid-template-columns:repeat(2,1fr)}
-        .ov-grid,.vs-grid{grid-template-columns:1fr}
-        .hw-grid,.pool-grid,.concept-grid{grid-template-columns:1fr}
-        .bench{grid-template-columns:repeat(2,1fr)}
-        .elec-grid{grid-template-columns:repeat(3,1fr)}
-        .legal-grid{grid-template-columns:repeat(4,1fr)}
-    }
-    </style>
+@media(max-width:768px){
+  .stat-strip{grid-template-columns:repeat(2,1fr)}
+  .stat-card:nth-child(1){border-radius:10px 0 0 0}
+  .stat-card:nth-child(2){border-radius:0 10px 0 0}
+  .stat-card:nth-child(3){border-radius:0 0 0 10px}
+  .stat-card:nth-child(4){border-radius:0 0 10px 0}
+  .ov-grid,.hw-grid,.vs-grid,.concept-grid{grid-template-columns:1fr}
+  .legal-grid{grid-template-columns:repeat(2,1fr)}
+  .elec-grid{grid-template-columns:repeat(3,1fr)}
+  .hero-title{font-size:24px}
+}
+@media(max-width:480px){
+  .elec-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
 </head>
 <body>
 <div class="page-offset mn">
-    <div id="nav-mount"></div>
-    <div class="mn-nav">
-        <div class="mn-brand"><em>xmr.irish</em> <span>/</span> <em>mining</em></div>
-        <div class="mn-tabs">
-            <a href="/markets" class="mn-tab">Markets</a>
-            <a href="/network" class="mn-tab">Network</a>
-            <a href="/mining" class="mn-tab active">Mining</a>
-            <a href="/mempool" class="mn-tab">Mempool</a>
-        </div>
-    </div>
+<div id="nav-mount"></div>
 
-    <div class="hero">
-        <div class="hero-ey">RandomX · CPU-optimized · ASIC-resistant</div>
-        <div class="hero-t">Mine <em>Monero</em> on this device</div>
-        <div class="hero-sub">Every 2 minutes, a new block is mined. The reward is 0.6 XMR — forever. No halvings. No fee-market death spiral. Just permanent, democratized mining.</div>
-    </div>
+<!-- Sub-nav -->
+<div class="mn-nav">
+  <div class="mn-brand"><em>xmr.irish</em> <span>/</span> <em>mining</em></div>
+  <div class="mn-tabs">
+    <a href="/markets" class="mn-tab">Markets</a>
+    <a href="/network" class="mn-tab">Network</a>
+    <a href="/mining" class="mn-tab active">Mining</a>
+    <a href="/mempool" class="mn-tab">Mempool</a>
+  </div>
+</div>
 
-    <div class="top4">
-        <div class="t4"><div class="t4-v" style="color:var(--xmr-text)">0.6 XMR</div><div class="t4-l">Block reward</div><div class="t4-d">Tail emission · forever</div></div>
-        <div class="t4"><div class="t4-v" style="color:var(--grn)">432/day</div><div class="t4-l">XMR mined daily</div><div class="t4-d">720 blocks × 0.6</div></div>
-        <div class="t4"><div class="t4-v" style="color:var(--g3)">0.85%</div><div class="t4-l">Annual inflation</div><div class="t4-d">Declining yearly</div></div>
-        <div class="t4"><div class="t4-v" style="color:var(--xmr-text)" id="mn-hashrate">—</div><div class="t4-l">Network hashrate</div><div class="t4-d" id="mn-height">—</div></div>
-    </div>
+<!-- Hero -->
+<div class="page-hero">
+  <div class="hero-eyebrow">MINING · RANDOMX · CPU-OPTIMIZED</div>
+  <h1 class="hero-title">Mine <em>Monero</em> on this device</h1>
+  <p class="hero-subtitle">Every 2 minutes, a new block. The reward is 0.6 XMR — forever. No halvings. No fee-market death spiral. Just permanent, democratized mining.</p>
+</div>
 
-    <!-- Section 01: Overview -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 01 / Overview</div><div class="sec-s">Block reward · supply model · key stats</div></div>
-        <div class="ov-grid">
-            <div class="ov">
-                <div class="ov-ey" style="color:var(--xmr)">Block reward</div>
-                <div class="ov-val">
-                    <div class="ov-num" style="color:var(--xmr)">0.6 XMR</div>
-                    <div class="ov-badge" style="background:rgba(255,102,0,.08);color:var(--xmr)">TAIL EMISSION</div>
-                </div>
-                <div class="ov-desc">Fixed forever. No halvings. Monero entered tail emission in May 2022 after ~18.4M XMR were mined. Unlike Bitcoin's diminishing rewards, every Monero block pays 0.6 XMR in perpetuity.</div>
-            </div>
-            <div class="ov">
-                <div class="ov-ey" style="color:var(--grn)">Supply model</div>
-                <div class="ov-val">
-                    <div class="ov-num" style="color:var(--grn)">18.45M+</div>
-                    <div class="ov-badge" style="background:rgba(0,204,136,.08);color:var(--grn)">INFINITE</div>
-                </div>
-                <div class="ov-desc">Technically infinite, practically deflationary. Tail emission adds ~157,680 XMR/year (~0.85% inflation, declining annually). Lost coins likely exceed new issuance.</div>
-            </div>
-        </div>
-    </div>
+<!-- Stat strip -->
+<div class="stat-strip">
+  <div class="stat-card">
+    <div class="stat-label">Block reward</div>
+    <div class="stat-value">0.6 XMR</div>
+    <div class="stat-sub">tail emission · forever</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Mined daily</div>
+    <div class="stat-value" style="color:var(--grn)">432 XMR</div>
+    <div class="stat-sub">720 blocks × 0.6</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Annual inflation</div>
+    <div class="stat-value" style="color:var(--blue)">0.85%</div>
+    <div class="stat-sub">declining yearly</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Network hashrate</div>
+    <div class="stat-value" id="live-hashrate">—</div>
+    <div class="stat-sub">live · GH/s</div>
+  </div>
+</div>
 
-    <!-- Section 02: Hardware -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 02 / Hardware</div><div class="sec-s">CPU is king — RandomX was designed for your processor</div></div>
-        <div class="hw-grid">
-            <div class="hw">
-                <div class="hw-icon" style="color:var(--grn)">■</div>
-                <div class="hw-name">CPU mining</div>
-                <div class="hw-desc">RandomX is memory-hard and optimized for general-purpose CPUs. Requires 2GB+ RAM per thread, AES-NI support. AMD Ryzen/EPYC and Intel i7/i9 perform best.</div>
-                <div class="hw-tag best">Optimal for Monero</div>
-            </div>
-            <div class="hw">
-                <div class="hw-icon" style="color:var(--gold)">▲</div>
-                <div class="hw-name">GPU mining</div>
-                <div class="hw-desc">GPUs are structurally disadvantaged with RandomX. Random code execution maps poorly to shader cores. Fewer hashes per watt than CPU. Not recommended since 2019.</div>
-                <div class="hw-tag warn">Not recommended</div>
-            </div>
-            <div class="hw">
-                <div class="hw-icon" style="color:var(--blue)">◆</div>
-                <div class="hw-name">RAM matters</div>
-                <div class="hw-desc">Each thread needs 2GB+ of fast memory. RandomX constantly reads/writes a 2GB scratchpad. DDR4-3200+ with tight timings can boost hashrate 10-15%.</div>
-                <div class="hw-tag ok">Key performance factor</div>
-            </div>
-        </div>
-        <div class="bench">
-            <div class="bn"><div class="bn-v" style="color:var(--xmr-text)">~4,800 H/s</div><div class="bn-l">i9-9900K typical</div></div>
-            <div class="bn"><div class="bn-v" style="color:var(--grn)">~14,000 H/s</div><div class="bn-l">Ryzen 9 7950X</div></div>
-            <div class="bn"><div class="bn-v" style="color:var(--gold)">~1,200 H/s</div><div class="bn-l">RTX 3080 (GPU)</div></div>
-            <div class="bn"><div class="bn-v" style="color:var(--text-tertiary)">~800 H/s</div><div class="bn-l">M1 MacBook Pro</div></div>
-        </div>
+<!-- Section 01: Overview -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 01 / Overview</div><div class="sec-s">Block reward · supply model · key stats</div></div>
+  <div class="ov-grid">
+    <div class="ov">
+      <div class="ov-ey" style="color:var(--xmr)">Block reward</div>
+      <div class="ov-val">
+        <div class="ov-num" style="color:var(--xmr)">0.6 XMR</div>
+        <div class="ov-badge" style="background:rgba(255,102,0,.08);color:var(--xmr)">TAIL EMISSION</div>
+      </div>
+      <div class="ov-desc">Fixed forever. No halvings. Monero entered tail emission in May 2022 after ~18.4M XMR were mined. Unlike Bitcoin's diminishing rewards, every Monero block pays 0.6 XMR in perpetuity.</div>
     </div>
-
-    <!-- Section 03: Electricity -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 03 / Electricity</div><div class="sec-s">Cost to mine by US state · national avg: 18.05¢/kWh</div></div>
-        <div class="elec-grid">
-            <div class="el cheap"><div class="el-st">ND</div><div class="el-rate">11.02¢</div><div class="el-profit">+$2.41/mo</div></div>
-            <div class="el cheap"><div class="el-st">ID</div><div class="el-rate">11.74¢</div><div class="el-profit">+$2.18/mo</div></div>
-            <div class="el cheap"><div class="el-st">LA</div><div class="el-rate">12.44¢</div><div class="el-profit">+$1.96/mo</div></div>
-            <div class="el cheap"><div class="el-st">WY</div><div class="el-rate">12.70¢</div><div class="el-profit">+$1.88/mo</div></div>
-            <div class="el cheap"><div class="el-st">UT</div><div class="el-rate">12.89¢</div><div class="el-profit">+$1.82/mo</div></div>
-            <div class="el cheap"><div class="el-st">WA</div><div class="el-rate">13.10¢</div><div class="el-profit">+$1.75/mo</div></div>
-            <div class="el cheap"><div class="el-st">OK</div><div class="el-rate">13.45¢</div><div class="el-profit">+$1.64/mo</div></div>
-            <div class="el mid"><div class="el-st">TX</div><div class="el-rate">16.18¢</div><div class="el-profit">+$0.77/mo</div></div>
-            <div class="el mid"><div class="el-st">FL</div><div class="el-rate">16.52¢</div><div class="el-profit">+$0.66/mo</div></div>
-            <div class="el mid"><div class="el-st">CO</div><div class="el-rate">16.33¢</div><div class="el-profit">+$0.72/mo</div></div>
-            <div class="el mid"><div class="el-st">NY</div><div class="el-rate">22.65¢</div><div class="el-profit">-$1.31/mo</div></div>
-            <div class="el exp"><div class="el-st">CT</div><div class="el-rate">28.71¢</div><div class="el-profit">-$3.26/mo</div></div>
-            <div class="el exp"><div class="el-st">MA</div><div class="el-rate">31.51¢</div><div class="el-profit">-$4.16/mo</div></div>
-            <div class="el exp"><div class="el-st">CA</div><div class="el-rate">33.75¢</div><div class="el-profit">-$4.88/mo</div></div>
-            <div class="el exp"><div class="el-st">HI</div><div class="el-rate">39.89¢</div><div class="el-profit">-$6.85/mo</div></div>
-        </div>
-        <div style="font-size:9px;color:var(--text-tertiary);margin-top:8px;text-align:center">Profit estimates: single i9-9900K (~4,800 H/s, 95W TDP). Green = profitable, Gold = marginal, Red = electricity exceeds revenue. Data: EIA.</div>
+    <div class="ov">
+      <div class="ov-ey" style="color:var(--grn)">Supply model</div>
+      <div class="ov-val">
+        <div class="ov-num" style="color:var(--grn)">18.45M+</div>
+        <div class="ov-badge" style="background:rgba(0,204,136,.08);color:var(--grn)">INFINITE</div>
+      </div>
+      <div class="ov-desc">Technically infinite, practically deflationary. Tail emission adds ~157,680 XMR/year (~0.85% inflation, declining annually). Lost coins likely exceed new issuance.</div>
     </div>
-
-    <!-- Section 04: Solo vs Pool -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 04 / Solo vs Pool</div><div class="sec-s">Pool mining wins for 99% of miners</div></div>
-        <div class="vs-grid">
-            <div class="vs">
-                <div class="vs-t" style="color:var(--gold)">Solo mining</div>
-                <div class="vs-desc">You mine alone against the network. At 4,800 H/s vs ~5.97 GH/s network, expected time to find a block is ~804 days. High variance — you might wait years or get lucky in hours.</div>
-                <div class="vs-pro">+ Full 0.6 XMR reward · No fees · Maximum privacy</div>
-                <div class="vs-con">- Extreme variance · May never find a block at low hashrate</div>
-            </div>
-            <div class="vs recommended">
-                <div class="vs-t" style="color:var(--grn)">Pool mining</div>
-                <div class="vs-desc">Contribute shares to a pool. Steady, predictable payouts proportional to your hashrate. Payments every few hours to days depending on pool and your hashrate.</div>
-                <div class="vs-pro">+ Predictable income · Low variance · Easy setup</div>
-                <div class="vs-con">- Pool fee (0-1%) · Trust pool operator</div>
-                <div class="vs-rec">Recommended for: Home miners, beginners, anyone under 50 KH/s. This is you.</div>
-            </div>
-        </div>
+    <div class="ov">
+      <div class="ov-ey" style="color:var(--blue)">Mining algorithm</div>
+      <div class="ov-val">
+        <div class="ov-num" style="color:var(--blue)">RandomX</div>
+        <div class="ov-badge" style="background:rgba(74,158,255,.08);color:var(--blue)">CPU-OPTIMIZED</div>
+      </div>
+      <div class="ov-desc">Memory-hard proof of work. Requires 2GB+ RAM per mining thread. AES-NI hardware acceleration. Designed specifically to resist ASIC domination.</div>
     </div>
-
-    <!-- Section 05: Pool Comparison -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 05 / Pools</div><div class="sec-s">Mining pool comparison · data from miningpoolstats.stream</div></div>
-        <div class="pool-grid">
-            <div class="pool">
-                <div class="pool-name">P2Pool</div>
-                <div class="pool-rows">
-                    <div class="pool-row"><span class="pl">Fee</span><span class="pv g">0%</span></div>
-                    <div class="pool-row"><span class="pl">Hashrate</span><span class="pv">403 MH/s</span></div>
-                    <div class="pool-row"><span class="pl">Min payout</span><span class="pv">0.0003 XMR</span></div>
-                    <div class="pool-row"><span class="pl">Payment</span><span class="pv">Local PPLNS</span></div>
-                    <div class="pool-row"><span class="pl">Requires</span><span class="pv o">Full node</span></div>
-                </div>
-                <div class="pool-bar"><div class="pool-fill" style="width:7.2%"></div></div>
-                <div class="pool-share">7.2% network share</div>
-            </div>
-            <div class="pool">
-                <div class="pool-name">MoneroOcean</div>
-                <div class="pool-rows">
-                    <div class="pool-row"><span class="pl">Fee</span><span class="pv g">0%</span></div>
-                    <div class="pool-row"><span class="pl">Hashrate</span><span class="pv">~250 MH/s</span></div>
-                    <div class="pool-row"><span class="pl">Min payout</span><span class="pv">0.003 XMR</span></div>
-                    <div class="pool-row"><span class="pl">Payment</span><span class="pv">PPLNS</span></div>
-                    <div class="pool-row"><span class="pl">Feature</span><span class="pv o">Algo-switch</span></div>
-                </div>
-                <div class="pool-bar"><div class="pool-fill" style="width:4.5%"></div></div>
-                <div class="pool-share">4.5% network share</div>
-            </div>
-            <div class="pool">
-                <div class="pool-name">SupportXMR</div>
-                <div class="pool-rows">
-                    <div class="pool-row"><span class="pl">Fee</span><span class="pv o">0.6%</span></div>
-                    <div class="pool-row"><span class="pl">Hashrate</span><span class="pv">~180 MH/s</span></div>
-                    <div class="pool-row"><span class="pl">Min payout</span><span class="pv">0.1 XMR</span></div>
-                    <div class="pool-row"><span class="pl">Payment</span><span class="pv">PPLNS</span></div>
-                    <div class="pool-row"><span class="pl">Reputation</span><span class="pv g">Strong</span></div>
-                </div>
-                <div class="pool-bar"><div class="pool-fill" style="width:3.2%"></div></div>
-                <div class="pool-share">3.2% network share</div>
-            </div>
-            <div class="pool">
-                <div class="pool-name">HashVault</div>
-                <div class="pool-rows">
-                    <div class="pool-row"><span class="pl">Fee</span><span class="pv o">0.9%</span></div>
-                    <div class="pool-row"><span class="pl">Hashrate</span><span class="pv">~85 MH/s</span></div>
-                    <div class="pool-row"><span class="pl">Min payout</span><span class="pv">0.5 XMR</span></div>
-                    <div class="pool-row"><span class="pl">Payment</span><span class="pv">PPLNS</span></div>
-                </div>
-                <div class="pool-bar"><div class="pool-fill" style="width:1.5%"></div></div>
-                <div class="pool-share">1.5% network share</div>
-            </div>
-            <div class="pool">
-                <div class="pool-name">C3Pool</div>
-                <div class="pool-rows">
-                    <div class="pool-row"><span class="pl">Fee</span><span class="pv g">0%</span></div>
-                    <div class="pool-row"><span class="pl">Hashrate</span><span class="pv">~120 MH/s</span></div>
-                    <div class="pool-row"><span class="pl">Min payout</span><span class="pv">0.003 XMR</span></div>
-                    <div class="pool-row"><span class="pl">Payment</span><span class="pv">PPLNS</span></div>
-                </div>
-                <div class="pool-bar"><div class="pool-fill" style="width:2.1%"></div></div>
-                <div class="pool-share">2.1% network share</div>
-            </div>
-            <div class="pool">
-                <div class="pool-name">Nanopool</div>
-                <div class="pool-rows">
-                    <div class="pool-row"><span class="pl">Fee</span><span class="pv r">1%</span></div>
-                    <div class="pool-row"><span class="pl">Hashrate</span><span class="pv">323 MH/s</span></div>
-                    <div class="pool-row"><span class="pl">Min payout</span><span class="pv">1 XMR</span></div>
-                    <div class="pool-row"><span class="pl">Payment</span><span class="pv">PPLNS</span></div>
-                </div>
-                <div class="pool-bar"><div class="pool-fill" style="width:5.8%"></div></div>
-                <div class="pool-share">5.8% network share</div>
-            </div>
-        </div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-hdr">
+      <div class="chart-title">Reward model · BTC halving vs XMR tail emission</div>
+      <div class="chart-sub">10-year projection · block reward over time</div>
     </div>
+    <div class="chart-body">
+      <div class="chart-canvas" style="height:180px"><canvas id="reward-chart"></canvas></div>
+    </div>
+  </div>
+</div>
 
-    <!-- Section 06: Setup Guide -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 06 / Setup</div><div class="sec-s">Start mining in 5 minutes · XMRig</div></div>
-        <div class="os-tabs">
-            <button class="os-tab active" onclick="setOS('windows',this)">Windows</button>
-            <button class="os-tab" onclick="setOS('macos',this)">macOS</button>
-            <button class="os-tab" onclick="setOS('linux',this)">Linux</button>
-            <button class="os-tab" onclick="setOS('mobile',this)">Mobile</button>
-        </div>
-        <div class="os-panel active" id="os-windows">
-            <div class="setup">
-                <span class="step">1. Download XMRig</span>
-                <div class="text">Visit <a href="https://xmrig.com/" target="_blank">xmrig.com</a> and download the latest release for Windows. Extract the ZIP. Your antivirus will flag it — add an exception.</div>
-                <span class="step">2. Edit config.json</span>
-                <div class="text">Open config.json in Notepad. Set your pool and wallet:</div>
-                <span class="cmd">"url": "pool.supportxmr.com:443"
+<!-- Section 02: Hardware -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 02 / Hardware</div><div class="sec-s">CPU is king — RandomX was designed for your processor</div></div>
+  <div class="hw-grid">
+    <div class="hw best">
+      <div class="hw-icon" style="color:var(--grn)">■ CPU</div>
+      <div class="hw-name">CPU mining</div>
+      <div class="hw-desc">RandomX is memory-hard and optimized for general-purpose CPUs. Requires 2GB+ RAM per thread, AES-NI support. AMD Ryzen/EPYC and Intel i7/i9 perform best.</div>
+      <div class="hw-tag good">Optimal for Monero</div>
+    </div>
+    <div class="hw">
+      <div class="hw-icon" style="color:var(--gold)">▲ GPU</div>
+      <div class="hw-name">GPU mining</div>
+      <div class="hw-desc">GPUs are structurally disadvantaged with RandomX. Random code execution maps poorly to shader cores. Fewer hashes per watt than CPU.</div>
+      <div class="hw-tag bad">Not recommended since 2019</div>
+    </div>
+    <div class="hw">
+      <div class="hw-icon" style="color:var(--gold)">◆ RAM</div>
+      <div class="hw-name">RAM performance factor</div>
+      <div class="hw-desc">Each thread needs 2GB+ of fast memory. RandomX constantly reads/writes a 2GB scratchpad. DDR4-3200+ with tight timings can boost hashrate 10-15%.</div>
+      <div class="hw-tag key">Key performance factor</div>
+    </div>
+  </div>
+  <div class="tbl-wrap" style="margin-bottom:12px">
+    <table class="tbl">
+      <thead>
+        <tr><th>Hardware</th><th>Hashrate</th><th>Type</th><th>Notes</th></tr>
+      </thead>
+      <tbody>
+        <tr class="cpu"><td>Ryzen 9 7950X</td><td class="hs">~14,000 H/s</td><td class="type-cell">CPU</td><td>Best consumer CPU</td></tr>
+        <tr class="cpu"><td>i9-9900K</td><td class="hs">~4,800 H/s</td><td class="type-cell">CPU</td><td>Older gen, still solid</td></tr>
+        <tr class="cpu"><td>Ryzen 9 5900X</td><td class="hs">~11,200 H/s</td><td class="type-cell">CPU</td><td>Great value</td></tr>
+        <tr class="cpu"><td>Ryzen 5 5600X</td><td class="hs">~6,800 H/s</td><td class="type-cell">CPU</td><td>Budget pick</td></tr>
+        <tr class="gpu"><td>RTX 3080</td><td class="hs">~1,200 H/s</td><td class="type-cell">GPU</td><td>Poor per-watt</td></tr>
+        <tr class="arm"><td>M1 MacBook Pro</td><td class="hs">~800 H/s</td><td class="type-cell">CPU (ARM)</td><td>No Huge Pages</td></tr>
+        <tr class="arm"><td>Raspberry Pi 4</td><td class="hs">~80 H/s</td><td class="type-cell">ARM</td><td>Educational only</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="chart-box">
+    <div class="chart-hdr">
+      <div class="chart-title">Hashrate benchmark · sorted descending</div>
+      <div class="chart-sub">Green = CPU · Gold = GPU · Blue = ARM</div>
+    </div>
+    <div class="chart-body">
+      <div class="chart-canvas" style="height:280px"><canvas id="bench-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 03: Electricity -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 03 / Electricity</div><div class="sec-s">Cost to mine by US state · national avg: 18.05¢/kWh</div></div>
+  <div class="chart-box">
+    <div class="chart-hdr">
+      <div class="chart-title">Electricity cost by state · i9-9900K @ 95W</div>
+      <div class="chart-sub">Green = profitable · Gold = marginal · Red = loss</div>
+    </div>
+    <div class="chart-body">
+      <div class="chart-canvas" style="height:440px"><canvas id="elec-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="elec-grid">
+    <div class="el cheap"><div class="el-st">ND</div><div class="el-rate">11.02¢</div><div class="el-profit">+$2.41/mo</div></div>
+    <div class="el cheap"><div class="el-st">ID</div><div class="el-rate">11.74¢</div><div class="el-profit">+$2.18/mo</div></div>
+    <div class="el cheap"><div class="el-st">LA</div><div class="el-rate">12.44¢</div><div class="el-profit">+$1.96/mo</div></div>
+    <div class="el cheap"><div class="el-st">WY</div><div class="el-rate">12.70¢</div><div class="el-profit">+$1.88/mo</div></div>
+    <div class="el cheap"><div class="el-st">UT</div><div class="el-rate">12.89¢</div><div class="el-profit">+$1.82/mo</div></div>
+    <div class="el cheap"><div class="el-st">WA</div><div class="el-rate">13.10¢</div><div class="el-profit">+$1.75/mo</div></div>
+    <div class="el cheap"><div class="el-st">OK</div><div class="el-rate">13.45¢</div><div class="el-profit">+$1.64/mo</div></div>
+    <div class="el mid"><div class="el-st">TX</div><div class="el-rate">16.18¢</div><div class="el-profit">+$0.77/mo</div></div>
+    <div class="el mid"><div class="el-st">CO</div><div class="el-rate">16.33¢</div><div class="el-profit">+$0.72/mo</div></div>
+    <div class="el mid"><div class="el-st">FL</div><div class="el-rate">16.52¢</div><div class="el-profit">+$0.66/mo</div></div>
+    <div class="el exp"><div class="el-st">NY</div><div class="el-rate">22.65¢</div><div class="el-profit">-$1.31/mo</div></div>
+    <div class="el exp"><div class="el-st">CT</div><div class="el-rate">28.71¢</div><div class="el-profit">-$3.26/mo</div></div>
+    <div class="el exp"><div class="el-st">MA</div><div class="el-rate">31.51¢</div><div class="el-profit">-$4.16/mo</div></div>
+    <div class="el exp"><div class="el-st">CA</div><div class="el-rate">33.75¢</div><div class="el-profit">-$4.88/mo</div></div>
+    <div class="el exp"><div class="el-st">HI</div><div class="el-rate">39.89¢</div><div class="el-profit">-$6.85/mo</div></div>
+  </div>
+  <div class="sec-note">Profit estimates based on single i9-9900K (~4,800 H/s, 95W TDP). Green = profitable · Gold = marginal (within 20% of breakeven) · Red = electricity exceeds revenue. Data source: EIA.</div>
+</div>
+
+<!-- Section 04: Solo vs Pool -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 04 / Solo vs Pool</div><div class="sec-s">Pool mining wins for 99% of miners</div></div>
+  <div class="vs-grid">
+    <div class="vs">
+      <div class="vs-t" style="color:var(--gold)">Solo mining</div>
+      <div class="vs-desc">You mine alone against the network. At 4,800 H/s vs ~5.97 GH/s network, expected time to find a block: ~804 days. High variance — you might wait years or get lucky in hours.</div>
+      <div class="vs-pro">+ Full 0.6 XMR reward · No fees · Maximum privacy</div>
+      <div class="vs-con">- Extreme variance · May never find a block at low hashrate</div>
+      <div class="vs-rec" style="color:var(--gold);background:rgba(255,215,0,.04);border-left-color:var(--gold)">Recommended for: Miners &gt;100 KH/s with long-term patience</div>
+    </div>
+    <div class="vs recommended">
+      <div class="vs-t" style="color:var(--grn)">Pool mining</div>
+      <div class="vs-desc">Contribute shares to a pool. Steady, predictable payouts proportional to your hashrate. Payments every few hours to days.</div>
+      <div class="vs-pro">+ Predictable income · Low variance · Easy setup</div>
+      <div class="vs-con">- Pool fee (0-1%) · Trust pool operator</div>
+      <div class="vs-rec" style="color:var(--grn);background:rgba(0,204,136,.04);border-left-color:var(--grn)">Recommended for: Home miners, beginners, anyone under 50 KH/s</div>
+    </div>
+  </div>
+  <div class="chart-box">
+    <div class="chart-hdr">
+      <div class="chart-title">365-day income variance · solo vs pool @ 4,800 H/s</div>
+      <div class="chart-sub">Gold = solo (jagged, mostly zero) · Green = pool (smooth, predictable)</div>
+    </div>
+    <div class="chart-body">
+      <div class="chart-canvas" style="height:220px"><canvas id="variance-chart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- Section 05: Pool Comparison -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 05 / Pool comparison</div><div class="sec-s">6 pools · data from miningpoolstats.stream</div></div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>Pool</th>
+          <th>Fee</th>
+          <th>Hashrate</th>
+          <th>Min payout</th>
+          <th>Method</th>
+          <th>Network share</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="hl-p2pool">
+          <td>P2Pool</td>
+          <td class="fee-free">0%</td>
+          <td class="hs">403 MH/s</td>
+          <td class="min-low">0.0003 XMR</td>
+          <td>Local PPLNS</td>
+          <td><span class="pool-bar"><span style="width:100%"></span></span>7.2%</td>
+          <td style="color:var(--grn)">Requires full node · privacy-maximizing</td>
+        </tr>
+        <tr class="hl-mo">
+          <td>MoneroOcean</td>
+          <td class="fee-free">0%</td>
+          <td class="hs">~250 MH/s</td>
+          <td class="min-low">0.003 XMR</td>
+          <td>PPLNS</td>
+          <td><span class="pool-bar"><span style="width:62.5%"></span></span>4.5%</td>
+          <td style="color:var(--xmr-text)">Algo-switch supported</td>
+        </tr>
+        <tr>
+          <td>SupportXMR</td>
+          <td class="fee-paid">0.6%</td>
+          <td class="hs">~180 MH/s</td>
+          <td>0.1 XMR</td>
+          <td>PPLNS</td>
+          <td><span class="pool-bar"><span style="width:44.4%"></span></span>3.2%</td>
+          <td>Strong reputation</td>
+        </tr>
+        <tr>
+          <td>HashVault</td>
+          <td class="fee-paid">0.9%</td>
+          <td class="hs">~85 MH/s</td>
+          <td>0.5 XMR</td>
+          <td>PPLNS</td>
+          <td><span class="pool-bar"><span style="width:20.8%"></span></span>1.5%</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>C3Pool</td>
+          <td class="fee-free">0%</td>
+          <td class="hs">~120 MH/s</td>
+          <td class="min-low">0.003 XMR</td>
+          <td>PPLNS</td>
+          <td><span class="pool-bar"><span style="width:29.2%"></span></span>2.1%</td>
+          <td>—</td>
+        </tr>
+        <tr>
+          <td>Nanopool</td>
+          <td class="fee-high">1%</td>
+          <td class="hs">323 MH/s</td>
+          <td style="color:var(--red)">1 XMR</td>
+          <td>PPLNS</td>
+          <td><span class="pool-bar"><span style="width:80.5%"></span></span>5.8%</td>
+          <td>High min payout</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Section 06: Setup Guide -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 06 / Setup guide</div><div class="sec-s">Start mining in 5 minutes · XMRig</div></div>
+  <div class="os-tabs">
+    <button class="os-tab active" data-tab="windows" onclick="switchTab('windows')">Windows</button>
+    <button class="os-tab" data-tab="macos" onclick="switchTab('macos')">macOS</button>
+    <button class="os-tab" data-tab="linux" onclick="switchTab('linux')">Linux</button>
+    <button class="os-tab" data-tab="mobile" onclick="switchTab('mobile')">Mobile</button>
+  </div>
+
+  <div class="setup-content active" id="setup-windows">
+    <div class="setup">
+      <span class="step">1. Download XMRig</span>
+      <div class="text">Visit <a href="https://xmrig.com/" target="_blank" rel="noopener">xmrig.com</a> and download the latest release for Windows. Extract the ZIP. Your antivirus will flag it — add an exception.</div>
+      <span class="step">2. Edit config.json</span>
+      <div class="text">Open config.json in Notepad. Set your pool and wallet:</div>
+      <pre class="cmd"><code>"url": "pool.supportxmr.com:443"
 "user": "YOUR_XMR_WALLET_ADDRESS.WORKER_NAME"
 "pass": "x"
-"tls": true</span>
-                <span class="step">3. Enable Huge Pages</span>
-                <div class="text">Run as Administrator. If Huge Pages fails:</div>
-                <span class="cmd">Local Security Policy → Local Policies → User Rights Assignment
-→ "Lock pages in memory" → Add your user → Reboot</span>
-                <span class="step">4. Launch</span>
-                <span class="cmd">xmrig.exe</span>
-                <span class="note">Tip: Use --threads=N to limit CPU cores. Reduce voltage for lower temps.</span>
-            </div>
-        </div>
-        <div class="os-panel" id="os-macos">
-            <div class="setup">
-                <span class="step">1. Install via Homebrew</span>
-                <span class="cmd">brew install xmrig</span>
-                <div class="text">Or download from <a href="https://xmrig.com/" target="_blank">xmrig.com</a>. Right-click → Open to bypass Gatekeeper.</div>
-                <span class="step">2. Configure</span>
-                <span class="cmd">nano ~/.xmrig.json</span>
-                <div class="text">Set pool:</div>
-                <span class="cmd">"url": "pool.supportxmr.com:443"
+"tls": true</code></pre>
+      <span class="step">3. Enable Huge Pages</span>
+      <div class="text">Run as Administrator. If Huge Pages fails:</div>
+      <pre class="cmd"><code>Local Security Policy → Local Policies → User Rights Assignment
+→ "Lock pages in memory" → Add your user → Reboot</code></pre>
+      <span class="step">4. Launch</span>
+      <pre class="cmd"><code>xmrig.exe</code></pre>
+      <span class="note">Tip: Use --threads=N to limit CPU cores. Reduce voltage for lower temps.</span>
+    </div>
+  </div>
+
+  <div class="setup-content" id="setup-macos">
+    <div class="setup">
+      <span class="step">1. Install via Homebrew</span>
+      <pre class="cmd"><code>brew install xmrig</code></pre>
+      <div class="text">Or download from <a href="https://xmrig.com/" target="_blank" rel="noopener">xmrig.com</a>. Right-click → Open to bypass Gatekeeper.</div>
+      <span class="step">2. Configure</span>
+      <pre class="cmd"><code>nano ~/.xmrig.json</code></pre>
+      <div class="text">Set pool: url/user/tls fields</div>
+      <pre class="cmd"><code>"url": "pool.supportxmr.com:443"
 "user": "YOUR_XMR_WALLET.WORKER"
-"tls": true</span>
-                <span class="step">3. Run</span>
-                <span class="cmd">xmrig</span>
-                <span class="note">Apple Silicon gets ~600-900 H/s. macOS limits Huge Pages.</span>
-            </div>
-        </div>
-        <div class="os-panel" id="os-linux">
-            <div class="setup">
-                <span class="step">1. Build from source</span>
-                <span class="cmd">sudo apt install git build-essential cmake libuv1-dev libssl-dev libhwloc-dev
+"tls": true</code></pre>
+      <span class="step">3. Run</span>
+      <pre class="cmd"><code>xmrig</code></pre>
+      <span class="note">Apple Silicon gets ~600-900 H/s. macOS limits Huge Pages.</span>
+    </div>
+  </div>
+
+  <div class="setup-content" id="setup-linux">
+    <div class="setup">
+      <span class="step">1. Build from source</span>
+      <pre class="cmd"><code>sudo apt install git build-essential cmake libuv1-dev libssl-dev libhwloc-dev
 git clone https://github.com/xmrig/xmrig.git
-cd xmrig && mkdir build && cd build
-cmake .. && make -j$(nproc)</span>
-                <span class="step">2. Enable Huge Pages</span>
-                <span class="cmd">sudo sysctl -w vm.nr_hugepages=1280
-echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</span>
-                <span class="step">3. Run</span>
-                <span class="cmd">sudo ./xmrig</span>
-                <span class="note">Linux gives the best RandomX performance. Enable MSR for extra 5-15%.</span>
-            </div>
-        </div>
-        <div class="os-panel" id="os-mobile">
-            <div class="setup">
-                <span class="step">Mobile mining — the honest truth</span>
-                <div class="text">Mining XMR on a phone produces ~50-150 H/s — roughly 1/50th of a desktop. The electricity and device wear exceed the XMR value produced.</div>
-                <span class="step">What you should do instead</span>
-                <div class="text">Use your phone to monitor your mining operation via the pool dashboard. Or consider buying XMR directly via <a href="/hold-monero">Wagyu, ChangeNOW, or Haveno</a>.</div>
-                <span class="note">Third-party mining apps carry security risks. We do not recommend any of them.</span>
-            </div>
-        </div>
+cd xmrig &amp;&amp; mkdir build &amp;&amp; cd build
+cmake .. &amp;&amp; make -j$(nproc)</code></pre>
+      <span class="step">2. Enable Huge Pages</span>
+      <pre class="cmd"><code>sudo sysctl -w vm.nr_hugepages=1280
+echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</code></pre>
+      <span class="step">3. Run</span>
+      <pre class="cmd"><code>sudo ./xmrig</code></pre>
+      <span class="note">Linux gives the best RandomX performance. Enable MSR for extra 5-15%.</span>
     </div>
+  </div>
 
-    <!-- Section 07: Concepts -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 07 / Concepts</div><div class="sec-s">Hashrate, shares, rewards, payments</div></div>
-        <div class="concept-grid">
-            <div class="concept">
-                <div class="concept-t">Hashrate (H/s)</div>
-                <div class="concept-d">RandomX hashes per second. Higher = more lottery tickets. The network runs ~5.97 GH/s total. Your share determines your proportion of block rewards.</div>
-            </div>
-            <div class="concept">
-                <div class="concept-t">Shares</div>
-                <div class="concept-d">Proof-of-work fragments submitted to the pool. More shares = bigger slice of the block reward when the pool finds a block. Invalid shares don't count.</div>
-            </div>
-            <div class="concept">
-                <div class="concept-t">PPLNS payments</div>
-                <div class="concept-d">Pay Per Last N Shares. When pool finds a block, reward splits proportional to your recent shares. Discourages pool-hopping, rewards loyal miners.</div>
-            </div>
-        </div>
+  <div class="setup-content" id="setup-mobile">
+    <div class="setup">
+      <span class="step">Mobile mining — the honest truth</span>
+      <div class="text">Mining XMR on a phone produces ~50-150 H/s — roughly 1/50th of a desktop. The electricity and device wear exceed the XMR value produced.</div>
+      <span class="step">What you should do instead</span>
+      <div class="text">Use your phone to monitor your mining operation via the pool dashboard. Or consider buying XMR directly via <a href="/hold-monero">Wagyu, ChangeNOW, or Haveno</a>.</div>
+      <span class="note">Third-party mining apps carry security risks. We do not recommend any.</span>
     </div>
+  </div>
+</div>
 
-    <!-- Section 08: Legality -->
-    <div class="sec">
-        <div class="sec-h"><div class="sec-t">Section 08 / Legality</div><div class="sec-s">Mining is legal almost everywhere · restrictions affect trading, not mining</div></div>
-        <div class="legal-grid">
-            <div class="lc legal"><div class="lc-name">USA</div><div class="lc-status">Legal</div></div>
-            <div class="lc legal"><div class="lc-name">Canada</div><div class="lc-status">Legal</div></div>
-            <div class="lc legal"><div class="lc-name">UK</div><div class="lc-status">Legal</div></div>
-            <div class="lc legal"><div class="lc-name">Germany</div><div class="lc-status">Legal</div></div>
-            <div class="lc legal"><div class="lc-name">Ireland</div><div class="lc-status">Legal</div></div>
-            <div class="lc legal"><div class="lc-name">Australia</div><div class="lc-status">Legal</div></div>
-            <div class="lc legal"><div class="lc-name">Japan</div><div class="lc-status">Legal*</div></div>
-            <div class="lc legal"><div class="lc-name">Brazil</div><div class="lc-status">Legal</div></div>
-            <div class="lc gray-zone"><div class="lc-name">India</div><div class="lc-status">Gray zone</div></div>
-            <div class="lc gray-zone"><div class="lc-name">Russia</div><div class="lc-status">Gray zone</div></div>
-            <div class="lc restricted"><div class="lc-name">China</div><div class="lc-status">Banned</div></div>
-            <div class="lc restricted"><div class="lc-name">Algeria</div><div class="lc-status">Banned</div></div>
-        </div>
-        <div style="font-size:9px;color:var(--text-tertiary);margin-top:8px;text-align:center">* Mining legal; XMR delisted from exchanges. Privacy coin restrictions affect exchange trading, not mining or holding. This is not legal advice.</div>
+<!-- Section 07: Concepts -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 07 / Mining concepts</div><div class="sec-s">Key terms every miner should know</div></div>
+  <div class="concept-grid">
+    <div class="concept">
+      <div class="concept-t">Hashrate</div>
+      <div class="concept-d">Hashes per second your hardware can compute. Higher = more shares submitted. H/s (hashes), KH/s (kilohashes), MH/s (megahashes), GH/s (gigahashes).</div>
     </div>
+    <div class="concept">
+      <div class="concept-t">Shares</div>
+      <div class="concept-d">Proof of work submitted to the pool. Shares prove you're working. The pool collects shares, finds blocks, distributes rewards proportionally.</div>
+    </div>
+    <div class="concept">
+      <div class="concept-t">PPLNS</div>
+      <div class="concept-d">Pay Per Last N Shares. Most common Monero pool payout method. Rewards recent consistent contributors. Protects against pool-hopping.</div>
+    </div>
+    <div class="concept">
+      <div class="concept-t">Huge Pages</div>
+      <div class="concept-d">Memory optimization that gives XMRig direct access to large memory pages. Improves RandomX performance 30-50%. Requires OS-level configuration.</div>
+    </div>
+    <div class="concept">
+      <div class="concept-t">Difficulty</div>
+      <div class="concept-d">Target number the block hash must be below. Adjusts every block to maintain ~2 minute block times as hashrate fluctuates.</div>
+    </div>
+    <div class="concept">
+      <div class="concept-t">Block Time</div>
+      <div class="concept-d">Average time between blocks: 2 minutes. Difficulty adjusts each block to maintain this target. Short-term variance is normal.</div>
+    </div>
+  </div>
+</div>
 
-    <div class="ft">xmr.irish / mining · RandomX CPU-optimized · data from EIA + miningpoolstats.stream</div>
+<!-- Section 08: Legality -->
+<div class="sec">
+  <div class="sec-h"><div class="sec-t">Section 08 / Legality</div><div class="sec-s">Mining is legal almost everywhere · restrictions affect trading, not mining</div></div>
+  <div class="legal-grid">
+    <div class="lc legal"><div class="lc-name">Ireland</div><div class="lc-status">Legal</div><div class="lc-note">No specific regulation. Mining is legal. Tax treatment as income at time of receipt.</div></div>
+    <div class="lc legal"><div class="lc-name">USA</div><div class="lc-status">Legal (varies)</div><div class="lc-note">Legal federally. State regulations vary. Income/capital gains tax applies.</div></div>
+    <div class="lc legal"><div class="lc-name">EU</div><div class="lc-status">Generally legal</div><div class="lc-note">MiCA framework in force. Mining is legal. Proof-of-work carve-out maintained.</div></div>
+    <div class="lc legal"><div class="lc-name">Canada</div><div class="lc-status">Legal</div><div class="lc-note">Mining recognized as a business activity. GST/HST may apply to operations.</div></div>
+    <div class="lc legal"><div class="lc-name">UK</div><div class="lc-status">Legal</div><div class="lc-note">HMRC treats mining rewards as income. No prohibition on activity.</div></div>
+    <div class="lc legal"><div class="lc-name">Germany</div><div class="lc-status">Legal</div><div class="lc-note">Private mining permitted. Income taxable. BaFin has no mining-specific rules.</div></div>
+    <div class="lc legal"><div class="lc-name">Australia</div><div class="lc-status">Legal</div><div class="lc-note">ATO treats mining as income. Commercial operations require an ABN.</div></div>
+    <div class="lc legal"><div class="lc-name">Japan</div><div class="lc-status">Legal*</div><div class="lc-note">Mining legal. XMR delisted from licensed exchanges; holding/mining unaffected.</div></div>
+    <div class="lc legal"><div class="lc-name">Brazil</div><div class="lc-status">Legal</div><div class="lc-note">No restrictions on mining. Crypto framework in effect for exchanges.</div></div>
+    <div class="lc gray-zone"><div class="lc-name">India</div><div class="lc-status">Gray zone</div><div class="lc-note">No explicit ban. 30% tax on crypto income. Regulation evolving.</div></div>
+    <div class="lc gray-zone"><div class="lc-name">Russia</div><div class="lc-status">Gray zone</div><div class="lc-note">Mining legalized 2024 for registered entities. Individual mining in flux.</div></div>
+    <div class="lc restricted"><div class="lc-name">China</div><div class="lc-status">Restricted</div><div class="lc-note">Mining largely banned since 2021. Individual holding may be tolerated.</div></div>
+    <div class="lc restricted"><div class="lc-name">Algeria</div><div class="lc-status">Banned</div><div class="lc-note">All crypto activity prohibited, including mining and holding.</div></div>
+  </div>
+  <div class="sec-note">* Mining legal; XMR delisted from Japanese exchanges. Privacy coin restrictions affect exchange trading, not mining or holding. <em>This is not legal advice.</em></div>
+</div>
+
+<div class="ft">xmr.irish / mining · RandomX · CPU-optimized · ASIC-resistant</div>
 </div>
 <script src="js/nav.js"></script>
 <script src="js/price-service.js"></script>
@@ -445,29 +576,261 @@ echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</span>
 NavComponent.inject('nav-mount');
 PriceService.start();
 MoneroNetwork.start();
+
+/* Live hashrate binding */
 MoneroNetwork.subscribe(function(d){
-    if(d.height){document.getElementById('mn-height').textContent='Block #'+d.height.toLocaleString()}
-    if(d.hashrate){document.getElementById('mn-hashrate').textContent=MoneroNetwork.fmtHashrate(d.hashrate)}
+  if(d && d.hashrate){
+    var el=document.getElementById('live-hashrate');
+    if(el) el.textContent=MoneroNetwork.fmtHashrate(d.hashrate);
+  }
 });
 
-// OS tab switching
-function setOS(os,btn){
-    document.querySelectorAll('.os-tab').forEach(function(t){t.classList.remove('active')});
-    document.querySelectorAll('.os-panel').forEach(function(p){p.classList.remove('active')});
-    btn.classList.add('active');
-    document.getElementById('os-'+os).classList.add('active');
+/* OS tab switching */
+function switchTab(os){
+  document.querySelectorAll('.os-tab').forEach(function(t){t.classList.remove('active')});
+  document.querySelectorAll('.setup-content').forEach(function(c){c.classList.remove('active')});
+  var btn=document.querySelector('.os-tab[data-tab="'+os+'"]');
+  var panel=document.getElementById('setup-'+os);
+  if(btn) btn.classList.add('active');
+  if(panel) panel.classList.add('active');
 }
 
-// Auto-detect OS
+/* Auto-detect OS on load */
 (function(){
-    var ua=navigator.userAgent.toLowerCase();
-    var os='windows';
-    if(ua.includes('mac'))os='macos';
-    else if(ua.includes('linux')&&!ua.includes('android'))os='linux';
-    else if(ua.includes('android')||ua.includes('iphone')||ua.includes('ipad'))os='mobile';
-    var btn=document.querySelector('.os-tab[onclick*="'+os+'"]');
-    if(btn)setOS(os,btn);
+  var ua=(navigator.userAgent||'').toLowerCase();
+  var os='windows';
+  if(ua.indexOf('mac')>-1) os='macos';
+  else if(ua.indexOf('linux')>-1 && ua.indexOf('android')===-1) os='linux';
+  else if(ua.indexOf('android')>-1 || ua.indexOf('iphone')>-1 || ua.indexOf('ipad')>-1) os='mobile';
+  switchTab(os);
 })();
+
+/* Canvas helpers */
+function _ctx(id){
+  var c=document.getElementById(id); if(!c) return null;
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  var W=c.clientWidth, H=c.clientHeight;
+  c.width=W*dpr; c.height=H*dpr;
+  var ctx=c.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx:ctx,W:W,H:H};
+}
+
+/* Chart 1: BTC halving vs XMR tail emission */
+function drawRewardChart(){
+  var o=_ctx('reward-chart'); if(!o) return;
+  var ctx=o.ctx, W=o.W, H=o.H;
+  var pL=48, pR=20, pT=18, pB=24;
+  var cW=W-pL-pR, cH=H-pT-pB;
+  var years=10, pts=101;
+  function btcR(y){ if(y<4) return 6.25; if(y<8) return 3.125; return 1.5625; }
+  var maxY=6.5;
+  function xP(i){ return pL + i/(pts-1)*cW; }
+  function yP(v){ return pT + cH - (v/maxY)*cH; }
+
+  /* Grid */
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5;
+  for(var i=0;i<=5;i++){ var gy=pT+cH*i/5; ctx.beginPath(); ctx.moveTo(pL,gy); ctx.lineTo(W-pR,gy); ctx.stroke(); }
+  /* Y labels */
+  ctx.font='8px "DM Mono",monospace'; ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.textAlign='right';
+  for(var i=0;i<=5;i++){ var v=maxY*(5-i)/5; ctx.fillText(v.toFixed(2),pL-4,pT+cH*i/5+3); }
+  /* X labels */
+  ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.2)';
+  for(var y=0;y<=years;y+=2){ var xi=Math.round(y/years*(pts-1)); ctx.fillText('Y'+y,xP(xi),H-6); }
+
+  /* Halving dashed lines */
+  ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(255,215,0,0.2)'; ctx.lineWidth=0.8;
+  [4,8].forEach(function(y){
+    var xi=Math.round(y/years*(pts-1));
+    ctx.beginPath(); ctx.moveTo(xP(xi),pT); ctx.lineTo(xP(xi),pT+cH); ctx.stroke();
+  });
+  ctx.setLineDash([]);
+
+  /* BTC line (gold, step) */
+  var btcPts=[];
+  for(var i=0;i<pts;i++){ var y=i/(pts-1)*years; btcPts.push(btcR(y)); }
+  ctx.beginPath();
+  btcPts.forEach(function(v,i){ i===0?ctx.moveTo(xP(i),yP(v)):ctx.lineTo(xP(i),yP(v)); });
+  ctx.strokeStyle='#FFD700'; ctx.lineWidth=2.2; ctx.stroke();
+  /* BTC fill */
+  ctx.lineTo(xP(pts-1),pT+cH); ctx.lineTo(pL,pT+cH); ctx.closePath();
+  var gBtc=ctx.createLinearGradient(0,pT,0,pT+cH);
+  gBtc.addColorStop(0,'rgba(255,215,0,0.15)'); gBtc.addColorStop(1,'transparent');
+  ctx.fillStyle=gBtc; ctx.fill();
+
+  /* XMR line (green, flat 0.6) */
+  ctx.beginPath();
+  for(var i=0;i<pts;i++){ var x=xP(i), y=yP(0.6); i===0?ctx.moveTo(x,y):ctx.lineTo(x,y); }
+  ctx.strokeStyle='#00CC88'; ctx.lineWidth=2.2; ctx.stroke();
+
+  /* Labels */
+  ctx.textAlign='left'; ctx.font='9px "JetBrains Mono",monospace';
+  ctx.fillStyle='rgba(255,215,0,0.85)'; ctx.fillText('BTC: halving model', pL+6, yP(6.25)+14);
+  ctx.fillStyle='rgba(0,204,136,0.85)'; ctx.fillText('XMR: 0.6 forever', xP(pts-40), yP(0.6)-6);
+  /* Halving annotations */
+  ctx.fillStyle='rgba(255,215,0,0.45)'; ctx.textAlign='center'; ctx.font='8px "DM Mono",monospace';
+  ctx.fillText('halving', xP(Math.round(4/years*(pts-1))), pT+12);
+  ctx.fillText('halving', xP(Math.round(8/years*(pts-1))), pT+12);
+}
+
+/* Chart 2: Hardware benchmark bars */
+function drawBenchChart(){
+  var o=_ctx('bench-chart'); if(!o) return;
+  var ctx=o.ctx, W=o.W, H=o.H;
+  var data=[
+    {n:'Ryzen 9 7950X',h:14000,t:'CPU',c:'#00CC88'},
+    {n:'Ryzen 9 5900X',h:11200,t:'CPU',c:'#00CC88'},
+    {n:'Ryzen 5 5600X',h:6800,t:'CPU',c:'#00CC88'},
+    {n:'i9-9900K',h:4800,t:'CPU',c:'#00CC88'},
+    {n:'RTX 3080',h:1200,t:'GPU',c:'#FFD700'},
+    {n:'M1 MacBook Pro',h:800,t:'ARM',c:'#4A9EFF'},
+    {n:'Raspberry Pi 4',h:80,t:'ARM',c:'#4A9EFF'}
+  ];
+  var pL=130, pR=60, pT=10, pB=10;
+  var cW=W-pL-pR, cH=H-pT-pB;
+  var maxH=14000, rowH=cH/data.length;
+  data.forEach(function(d,i){
+    var y=pT+i*rowH+rowH/2;
+    var barH=Math.max(12,rowH-10);
+    var barW=Math.max(2, d.h/maxH*cW);
+    /* Label */
+    ctx.font='10px "JetBrains Mono",monospace'; ctx.fillStyle='rgba(255,255,255,0.75)'; ctx.textAlign='right';
+    ctx.fillText(d.n, pL-8, y+3);
+    /* Bar */
+    ctx.fillStyle=d.c+'22'; ctx.fillRect(pL, y-barH/2, cW, barH);
+    ctx.fillStyle=d.c; ctx.fillRect(pL, y-barH/2, barW, barH);
+    /* Value */
+    ctx.fillStyle='rgba(255,255,255,0.85)'; ctx.textAlign='left'; ctx.font='10px "DM Mono",monospace';
+    ctx.fillText(d.h.toLocaleString()+' H/s', pL+barW+6, y+3);
+  });
+}
+
+/* Chart 3: Electricity cost bars */
+function drawElecChart(){
+  var o=_ctx('elec-chart'); if(!o) return;
+  var ctx=o.ctx, W=o.W, H=o.H;
+  var data=[
+    {s:'North Dakota',r:11.02,p:2.41},
+    {s:'Idaho',r:11.74,p:2.18},
+    {s:'Louisiana',r:12.44,p:1.96},
+    {s:'Wyoming',r:12.70,p:1.88},
+    {s:'Utah',r:12.89,p:1.82},
+    {s:'Washington',r:13.10,p:1.75},
+    {s:'Oklahoma',r:13.45,p:1.64},
+    {s:'Texas',r:16.18,p:0.77},
+    {s:'Colorado',r:16.33,p:0.72},
+    {s:'Florida',r:16.52,p:0.66},
+    {s:'New York',r:22.65,p:-1.31},
+    {s:'Connecticut',r:28.71,p:-3.26},
+    {s:'Massachusetts',r:31.51,p:-4.16},
+    {s:'California',r:33.75,p:-4.88},
+    {s:'Hawaii',r:39.89,p:-6.85}
+  ];
+  function colorFor(p){ if(p>1) return '#00CC88'; if(p>=0) return '#FFD700'; return '#FF4757'; }
+  var pL=120, pR=80, pT=12, pB=18;
+  var cW=W-pL-pR, cH=H-pT-pB;
+  var maxR=40, rowH=cH/data.length;
+  var avgX=pL + 18.05/maxR*cW;
+
+  /* Avg + breakeven lines (avg rate + breakeven ~20.8¢ where profit=0) */
+  ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(255,255,255,0.15)'; ctx.lineWidth=0.8;
+  ctx.beginPath(); ctx.moveTo(avgX,pT); ctx.lineTo(avgX,pT+cH); ctx.stroke();
+  var beX=pL + 20.8/maxR*cW;
+  ctx.strokeStyle='rgba(255,71,87,0.25)';
+  ctx.beginPath(); ctx.moveTo(beX,pT); ctx.lineTo(beX,pT+cH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font='8px "DM Mono",monospace'; ctx.textAlign='center';
+  ctx.fillStyle='rgba(255,255,255,0.3)'; ctx.fillText('nat. avg 18.05¢', avgX, pT+8);
+  ctx.fillStyle='rgba(255,71,87,0.45)'; ctx.fillText('breakeven', beX, pT+cH+14);
+
+  data.forEach(function(d,i){
+    var y=pT+i*rowH+rowH/2;
+    var barH=Math.max(8,rowH-6);
+    var barW=Math.max(2, d.r/maxR*cW);
+    var c=colorFor(d.p);
+    /* State name */
+    ctx.font='9px "JetBrains Mono",monospace'; ctx.fillStyle='rgba(255,255,255,0.75)'; ctx.textAlign='right';
+    ctx.fillText(d.s, pL-8, y+3);
+    /* Bar */
+    ctx.fillStyle=c+'22'; ctx.fillRect(pL, y-barH/2, cW, barH);
+    ctx.fillStyle=c; ctx.fillRect(pL, y-barH/2, barW, barH);
+    /* Profit/loss */
+    var sign=d.p>=0?'+':'';
+    ctx.fillStyle=c; ctx.textAlign='left'; ctx.font='9px "DM Mono",monospace';
+    ctx.fillText(sign+'$'+d.p.toFixed(2)+'/mo · '+d.r.toFixed(2)+'¢', pL+barW+6, y+3);
+  });
+}
+
+/* Chart 4: Solo vs Pool 365-day income simulation */
+function drawVarianceChart(){
+  var o=_ctx('variance-chart'); if(!o) return;
+  var ctx=o.ctx, W=o.W, H=o.H;
+  var days=365;
+  var poolPerDay=0.000347;
+  var soloProbPerDay=1/804;
+  /* Seeded pseudo-random for stable visual */
+  var seed=42;
+  function rnd(){ seed=(seed*9301+49297)%233280; return seed/233280; }
+  var pool=[], solo=[], pSum=0, sSum=0;
+  for(var d=0; d<days; d++){
+    pSum += poolPerDay * (0.92 + rnd()*0.16);
+    pool.push(pSum);
+    if(rnd() < soloProbPerDay) sSum += 0.6;
+    solo.push(sSum);
+  }
+  var maxY=Math.max(pSum, sSum, 0.6)*1.1;
+  var pL=48, pR=16, pT=16, pB=24;
+  var cW=W-pL-pR, cH=H-pT-pB;
+  function xP(i){ return pL + i/(days-1)*cW; }
+  function yP(v){ return pT + cH - v/maxY*cH; }
+
+  /* Grid */
+  ctx.strokeStyle='rgba(255,255,255,0.04)'; ctx.lineWidth=0.5;
+  for(var i=0;i<=4;i++){ var gy=pT+cH*i/4; ctx.beginPath(); ctx.moveTo(pL,gy); ctx.lineTo(W-pR,gy); ctx.stroke(); }
+  /* Y labels */
+  ctx.font='8px "DM Mono",monospace'; ctx.fillStyle='rgba(255,255,255,0.25)'; ctx.textAlign='right';
+  for(var i=0;i<=4;i++){ var v=maxY*(4-i)/4; ctx.fillText(v.toFixed(2)+' XMR', pL-4, pT+cH*i/4+3); }
+  /* X labels */
+  ctx.textAlign='center'; ctx.fillStyle='rgba(255,255,255,0.2)';
+  ['Day 0','Day 90','Day 180','Day 270','Day 365'].forEach(function(lbl,i){
+    var xi=Math.round(i/4*(days-1)); ctx.fillText(lbl, xP(xi), H-6);
+  });
+
+  /* Solo line (gold, jagged) */
+  ctx.beginPath();
+  solo.forEach(function(v,i){ i===0?ctx.moveTo(xP(i),yP(v)):ctx.lineTo(xP(i),yP(v)); });
+  ctx.strokeStyle='#FFD700'; ctx.lineWidth=1.6; ctx.stroke();
+
+  /* Pool line (green, smooth) */
+  ctx.beginPath();
+  pool.forEach(function(v,i){ i===0?ctx.moveTo(xP(i),yP(v)):ctx.lineTo(xP(i),yP(v)); });
+  ctx.strokeStyle='#00CC88'; ctx.lineWidth=2; ctx.stroke();
+  /* Pool fill */
+  ctx.lineTo(xP(days-1),pT+cH); ctx.lineTo(pL,pT+cH); ctx.closePath();
+  var gPool=ctx.createLinearGradient(0,pT,0,pT+cH);
+  gPool.addColorStop(0,'rgba(0,204,136,0.12)'); gPool.addColorStop(1,'transparent');
+  ctx.fillStyle=gPool; ctx.fill();
+
+  /* Labels */
+  ctx.textAlign='right'; ctx.font='9px "JetBrains Mono",monospace';
+  ctx.fillStyle='rgba(0,204,136,0.85)';
+  ctx.fillText('pool: '+pSum.toFixed(3)+' XMR', W-pR-4, yP(pSum)-6);
+  ctx.fillStyle='rgba(255,215,0,0.85)';
+  ctx.fillText('solo: '+sSum.toFixed(1)+' XMR', W-pR-4, yP(sSum)+(sSum>=pSum?-6:14));
+}
+
+function drawAll(){
+  drawRewardChart();
+  drawBenchChart();
+  drawElecChart();
+  drawVarianceChart();
+}
+
+/* Initial draw + debounced resize */
+if(document.readyState==='complete' || document.readyState==='interactive') setTimeout(drawAll,0);
+else document.addEventListener('DOMContentLoaded', drawAll);
+var _resizeT;
+window.addEventListener('resize', function(){ clearTimeout(_resizeT); _resizeT=setTimeout(drawAll,150); });
 </script>
 </body>
 </html>
