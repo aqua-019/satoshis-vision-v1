@@ -27,11 +27,11 @@
     .sec-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
     .sec-t{font-size:14px;font-weight:600}.sec-s{font-size:9px;color:var(--text-tertiary)}
 
-    /* STATE GRID — 2-3x larger cells with hover tooltips */
-    .sgrid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}
-    .st{border-radius:6px;padding:14px 6px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent;position:relative;min-height:56px;display:flex;flex-direction:column;justify-content:center;align-items:center}
-    .st:hover{transform:scale(1.1);z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.4)}
-    .st-ab{font-size:13px;font-weight:700;margin-bottom:3px}.st-lb{font-size:8px;text-transform:uppercase;letter-spacing:.5px}
+    /* STATE GRID — fluid auto-fill, readable cells, hover tooltips */
+    .sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+    .st{border-radius:var(--radius-sm,6px);padding:10px 12px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;border:1px solid transparent;position:relative;min-height:80px;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
+    .st:hover{transform:scale(1.06);z-index:10;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+    .st-ab{font-size:13px;font-weight:700;margin-bottom:3px}.st-lb{font-size:10px;text-transform:uppercase;letter-spacing:.5px}
     .st.legal{background:rgba(0,204,136,.08);border-color:rgba(0,204,136,.15)}.st.legal .st-ab{color:var(--grn)}.st.legal .st-lb{color:rgba(0,204,136,.5)}
     .st.legal:hover{border-color:rgba(0,204,136,.4)}
     .st.gray-zone{background:rgba(255,215,0,.06);border-color:rgba(255,215,0,.12)}.st.gray-zone .st-ab{color:var(--gold)}.st.gray-zone .st-lb{color:rgba(255,215,0,.5)}
@@ -48,11 +48,6 @@
     .tooltip-name{font-size:12px;font-weight:600;color:var(--g1);margin-bottom:3px}
     .tooltip-status{font-size:10px;font-weight:600;margin-bottom:6px}
     .tooltip-detail{font-size:10px;color:var(--text-tertiary);line-height:1.5}
-    /* Position tooltips on right edge to go left */
-    .st:nth-child(10n+8) .tooltip,.st:nth-child(10n+9) .tooltip,.st:nth-child(10n) .tooltip{left:auto;right:0;transform:none}
-    .st:nth-child(10n+8) .tooltip::after,.st:nth-child(10n+9) .tooltip::after,.st:nth-child(10n) .tooltip::after{left:auto;right:14px;transform:none}
-    .st:nth-child(10n+1) .tooltip,.st:nth-child(10n+2) .tooltip{left:0;transform:none}
-    .st:nth-child(10n+1) .tooltip::after,.st:nth-child(10n+2) .tooltip::after{left:14px;transform:none}
 
     /* Country grid */
     .cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
@@ -78,8 +73,8 @@
 
     .note{font-size:9px;color:var(--text-tertiary);text-align:center;padding:0 var(--space-page-x);margin:16px 0;line-height:1.5}.note em{color:var(--grn);font-style:normal}
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.sgrid{grid-template-columns:repeat(5,1fr)}.cgrid{grid-template-columns:1fr}.sbar{grid-template-columns:repeat(2,1fr)}.legend{gap:12px}.st{padding:12px 4px;min-height:48px}.tooltip{min-width:180px}}
-    @media(max-width:480px){.sgrid{grid-template-columns:repeat(4,1fr)}}
+    @media(max-width:768px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:6px}.cgrid{grid-template-columns:1fr}.sbar{grid-template-columns:repeat(2,1fr)}.legend{gap:12px}.st{min-height:72px;padding:10px}.tooltip{min-width:180px}}
+    @media(max-width:480px){.sgrid{grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}.st{min-height:68px}}
     </style>
 </head>
 <body>
@@ -156,7 +151,7 @@ var states=[
 {s:'NH',n:'New Hampshire',st:'legal',d:'No sales tax. Very crypto-friendly policies.'},
 {s:'NJ',n:'New Jersey',st:'legal',d:'Standard laws. No privacy coin ban.'},
 {s:'NM',n:'New Mexico',st:'legal',d:'No specific restrictions.'},
-{s:'NY',n:'New York',st:'gray-zone',d:'BitLicense required for businesses — not individuals. Holding, mining, and sending XMR is legal. Regulatory barrier, not a ban.'},
+{s:'NY',n:'New York',st:'gray-zone',d:'BitLicense (23 NYCRR Part 200) creates significant regulatory barriers for businesses offering XMR services in New York. However, individuals may legally hold, mine, and transact with Monero. Most exchanges delist XMR for NY users due to compliance costs, not because individual use is illegal. Mining at home: legal. Holding XMR: legal. Sending XMR: legal. Running a XMR business: requires BitLicense.'},
 {s:'NC',n:'North Carolina',st:'legal',d:'Standard laws. No privacy coin restrictions.'},
 {s:'ND',n:'North Dakota',st:'legal',d:'Cheapest electricity in US. Ideal for mining.'},
 {s:'OH',n:'Ohio',st:'legal',d:'Previously accepted BTC for taxes. No crypto ban.'},
@@ -225,6 +220,28 @@ sg.innerHTML=states.map(function(s){
         +'<div class="tooltip"><div class="tooltip-name">'+s.n+'</div><div class="tooltip-status" style="color:'+statusColor+'">'+s.st.replace('-',' ').toUpperCase()+'</div><div class="tooltip-detail">'+s.d+'</div></div>'
         +'<div class="st-ab">'+s.s+'</div><div class="st-lb">'+statusLabel+'</div></div>';
 }).join('');
+
+// Flip tooltip horizontally when it would overflow the viewport (fluid grid)
+document.querySelectorAll('#sgrid .st').forEach(function(cell){
+    cell.addEventListener('mouseenter',function(){positionTooltip(cell)});
+});
+function positionTooltip(cell){
+    var tip=cell.querySelector('.tooltip');
+    if(!tip) return;
+    tip.style.left='50%';tip.style.right='auto';tip.style.transform='translateX(-50%)';
+    requestAnimationFrame(function(){
+        var r=tip.getBoundingClientRect();
+        var vw=window.innerWidth;
+        var pad=8;
+        if(r.right>vw-pad){
+            var overflow=r.right-(vw-pad);
+            tip.style.left='calc(50% - '+overflow+'px)';
+        } else if(r.left<pad){
+            var under=pad-r.left;
+            tip.style.left='calc(50% + '+under+'px)';
+        }
+    });
+}
 
 // Render country grid
 var cg=document.getElementById('cgrid');
