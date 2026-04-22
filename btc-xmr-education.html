@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — The Genesis of Privacy</title>
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
     <style>
         /* ═══════════════════════════════════════════════════════════════
@@ -19,7 +19,12 @@
             --font-headline: 'JetBrains Mono', 'DM Mono', monospace;
             --font-subhead: 'JetBrains Mono', 'DM Mono', monospace;
         }
-        
+
+        .eu{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
+        .eu-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
+        .eu-nav em{color:var(--grn);font-style:normal;font-weight:600}
+        .eu-nav span{color:var(--text-muted)}
+
         .hero-description, .section-subtitle, .quote-text,
         .timeline-title, .flow-content h4, .glass-card h3,
         .accordion-header h4, .timeline-content { font-style: normal !important; }
@@ -930,12 +935,10 @@
         </style>
 </head>
 <body>
-<div class="page-offset" style="min-height:100vh">
+<div class="page-offset eu">
     <div class="z1">
         <div id="nav-mount"></div>
-        <div style="display:flex;align-items:center;padding:10px 28px;border-bottom:1px solid var(--border-subtle);gap:12px;font-family:'JetBrains Mono',monospace;font-size:12px">
-            <span style="font-weight:600"><em style="color:var(--grn);font-style:normal">xmr.irish</em> <span style="color:var(--text-muted)">/</span> <em style="color:var(--grn);font-style:normal">btc xmr education</em></span>
-        </div>
+        <div class="eu-nav"><em>xmr.irish</em> <span>/</span> <em>btc xmr education</em></div>
     <!-- Hero Section -->
     <section class="hero" id="hero">
         <div class="deco-grid parallax-layer slow" style="top: -100px; right: -100px; transform: rotate(15deg);"></div>
@@ -1039,7 +1042,7 @@
             </div>
 
             <div class="glass-card" style="margin-bottom: 2rem;">
-                <h3 style="font-family: var(--font-headline); font-size: 1.5rem; margin-bottom: 1rem; color: #FFFFFF;">The "Not a Suggestion" Thread — August 10-13, 2010</h3>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem; color: #FFFFFF;">The "Not a Suggestion" Thread — August 10-13, 2010</h3>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">
                     A BitcoinTalk user named "Red" opened a thread expressing concerns about Bitcoin's completely public transaction history. What followed was one of the most important—and overlooked—conversations in cryptocurrency history.
                 </p>
@@ -1114,7 +1117,7 @@
             </div>
 
             <div class="glass-card" style="margin-top: 3rem; text-align: center;">
-                <p style="font-family: var(--font-headline); font-size: 1.5rem; font-style: italic; color: rgba(255,255,255,0.9);">
+                <p style="font-size: 1.5rem; font-style: italic; color: rgba(255,255,255,0.9);">
                     The creator of Bitcoin knew its privacy was incomplete.<br>
                     The question was: who would finish the work?
                 </p>
@@ -1245,7 +1248,7 @@
 
             <div class="comparison-grid" style="margin-top: 3rem;">
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Ring Signatures</h3>
+                    <h3 style="color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Ring Signatures</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: The Sender</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         When you send Monero, your transaction signature is mixed with decoy signatures from other transactions on the blockchain. Observers see that *someone* in a group of possible signers sent the funds—but cannot determine who. It's like signing a document as "one of these 16 people."
@@ -1253,7 +1256,7 @@
                 </div>
 
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Stealth Addresses</h3>
+                    <h3 style="color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Stealth Addresses</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: The Receiver</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         Every transaction generates a unique, one-time address. Even if you publish your Monero address publicly, every payment you receive goes to a different stealth address on the blockchain. No two payments can be linked. Only you—with your private view key—can identify which outputs belong to you.
@@ -1261,7 +1264,7 @@
                 </div>
 
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">RingCT</h3>
+                    <h3 style="color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">RingCT</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: The Amount</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         Ring Confidential Transactions hide the amount transferred using Pedersen commitments. The network can verify that inputs equal outputs (no inflation) without ever seeing the actual numbers. Transaction amounts appear as cryptographic commitments—valid but unreadable.
@@ -1269,7 +1272,7 @@
                 </div>
 
                 <div class="glass-card">
-                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Dandelion++</h3>
+                    <h3 style="color: var(--xmr); font-size: 1.5rem; margin-bottom: 1rem;">Dandelion++</h3>
                     <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;"><strong>Protects: Your IP Address</strong></p>
                     <p style="color: rgba(255,255,255,0.6); font-size: 0.95rem;">
                         Transactions are first passed through a random "stem" of nodes before being broadcast to the network. This obscures which node originated the transaction, protecting against network-level surveillance that could link your IP address to your transactions.
@@ -1354,7 +1357,7 @@
             </div>
 
             <div class="privacy-spectrum">
-                <h3 style="font-family: var(--font-headline); font-size: 1.25rem; text-align: center; margin-bottom: 1rem;">The Privacy Spectrum</h3>
+                <h3 style="font-size: 1.25rem; text-align: center; margin-bottom: 1rem;">The Privacy Spectrum</h3>
                 <div class="spectrum-bar">
                     <div class="spectrum-marker" id="spectrum-marker" style="left: 15%;"></div>
                 </div>
@@ -1425,7 +1428,7 @@
 
             <!-- Why Monero Threatens the System -->
             <div class="glass-card" style="margin-bottom: 2rem; border-left: 3px solid var(--xmr); padding: 1.5rem;">
-                <h3 style="font-family: var(--font-headline); font-size: 1.3rem; margin-bottom: 1rem; color: var(--xmr);">Monero Breaks the Surveillance-Finance Model</h3>
+                <h3 style="font-size: 1.3rem; margin-bottom: 1rem; color: var(--xmr);">Monero Breaks the Surveillance-Finance Model</h3>
                 <p style="color: rgba(255,255,255,0.8); margin-bottom: 1rem;">
                     The modern financial system operates on a single assumption: <strong>every transaction can be watched</strong>. Banks report to governments. Payment processors log everything. Bitcoin—despite its reputation—is a transparent ledger where every transaction is permanently visible to anyone. Chain analysis firms like Chainalysis built a billion-dollar industry on this transparency.
                 </p>
@@ -1565,7 +1568,7 @@
             </div>
 
             <div class="glass-card" style="margin-bottom: 3rem;">
-                <h3 style="font-family: var(--font-headline); font-size: 1.5rem; margin-bottom: 1rem;">The Hidden Tax on Monero</h3>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">The Hidden Tax on Monero</h3>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 1rem;">
                     When major exchanges delisted Monero, users turned to instant exchange services like ChangeNow. These services advertise 0.5-1% fees. The reality is closer to 3-4%—hidden in terrible exchange rates.
                 </p>
@@ -1578,7 +1581,7 @@
             </div>
 
             <div class="flow-diagram">
-                <h3 style="font-family: var(--font-headline); font-size: 1.5rem; margin-bottom: 2rem; text-align: center;">How Wagyu v2 Changes Everything</h3>
+                <h3 style="font-size: 1.5rem; margin-bottom: 2rem; text-align: center;">How Wagyu v2 Changes Everything</h3>
                 
                 <div class="flow-step">
                     <div class="flow-number">1</div>
@@ -1638,7 +1641,7 @@
 
             <div class="comparison-grid">
                 <div class="glass-card" style="border-color: rgba(247, 147, 26, 0.3);">
-                    <h3 style="font-family: var(--font-headline); color: var(--btc); font-size: 1.5rem; margin-bottom: 1.5rem;">Bitcoin Wallets</h3>
+                    <h3 style="color: var(--btc); font-size: 1.5rem; margin-bottom: 1.5rem;">Bitcoin Wallets</h3>
                     
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Hardware Wallets (Recommended)</h4>
@@ -1665,7 +1668,7 @@
                 </div>
 
                 <div class="glass-card" style="border-color: rgba(255, 102, 0, 0.3);">
-                    <h3 style="font-family: var(--font-headline); color: var(--xmr); font-size: 1.5rem; margin-bottom: 1.5rem;">Monero Wallets</h3>
+                    <h3 style="color: var(--xmr); font-size: 1.5rem; margin-bottom: 1.5rem;">Monero Wallets</h3>
                     
                     <div style="margin-bottom: 1.5rem;">
                         <h4 style="font-size: 1.1rem; margin-bottom: 0.5rem; color: #FFFFFF;">Official Wallets</h4>
@@ -1710,7 +1713,7 @@
             </div>
 
             <div class="glass-card" style="margin-top: 3rem; text-align: center;">
-                <h3 style="font-family: var(--font-headline); color: #FFFFFF; font-size: 1.5rem; margin-bottom: 1rem;">Acquiring Monero</h3>
+                <h3 style="color: #FFFFFF; font-size: 1.5rem; margin-bottom: 1rem;">Acquiring Monero</h3>
                 <p style="color: rgba(255,255,255,0.7); margin-bottom: 1.5rem;">With centralized exchanges increasingly hostile, alternatives matter:</p>
                 <div style="display: flex; justify-content: center; gap: 3rem; flex-wrap: wrap;">
                     <div>
@@ -1750,7 +1753,7 @@
                 Both currencies matter. Bitcoin proved that decentralized money could work. Monero proved that it could be private. They are not competitors—they are two expressions of the same radical idea: that you should control your own money.
             </p>
 
-            <p style="text-align: center; color: var(--xmr); font-size: 1.25rem; font-family: var(--font-headline); font-style: italic; max-width: 700px; margin: 0 auto 3rem;">
+            <p style="text-align: center; color: var(--xmr); font-size: 1.25rem; font-style: italic; max-width: 700px; margin: 0 auto 3rem;">
                 The question isn't whether you need privacy today.<br>
                 It's whether you'll still have the option tomorrow.
             </p>
