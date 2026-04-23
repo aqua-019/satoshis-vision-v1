@@ -47,7 +47,14 @@
               '<span>Daily emission: <b>—</b></span>' +
               '<span>Annual inflation: <b>—</b></span>' +
             '</div>' +
-            '<canvas data-role="canvas"></canvas>';
+            '<canvas data-role="canvas"></canvas>' +
+            '<p class="explainer">' +
+              'Unlike Bitcoin\'s fixed 21M cap with diminishing block rewards (eventually ' +
+              'reaching zero), Monero\'s tail emission guarantees a permanent 0.6 XMR subsidy ' +
+              'per block. Miners are always incentivized to secure the network, so security ' +
+              'never depends purely on a fee market — resolving one of Bitcoin\'s long-term ' +
+              'economic debates.' +
+            '</p>';
 
         this.canvas = this.container.querySelector('[data-role="canvas"]');
     };
@@ -143,8 +150,69 @@
         this.drawAnnotations(ctx, px, py);   // Task 19b no-op until extended
     };
 
-    MempoolMiningEmission.prototype.drawAnnotations = function (/* ctx, px, py */) {
-        /* Task 19b extends this with tail-emission marker, TODAY dot, projection. */
+    MempoolMiningEmission.prototype.drawAnnotations = function (ctx, px, py) {
+        if (!this.data) return;
+        var d = this.data;
+        var utils = global.MPChart;
+        var gold = (utils && utils.cssVar('--gold')) || '#FFD700';
+        var grn  = (utils && utils.cssVar('--grn'))  || '#00D395';
+        var pts  = d.curve_points.slice().sort(function (a, b) { return a.height - b.height; });
+        var curH = Number(d.current_height) || 0;
+        var curSupplyM = (Number(d.current_supply_xmr) || 0) / 1e6;
+        var tailH = Number(d.tail_emission_started_height) || 2641623;
+
+        /* Projection segment: redraw the points past TODAY with a dashed stroke. */
+        if (curH) {
+            var projection = pts.filter(function (p) { return p.height >= curH; });
+            if (projection.length > 1) {
+                ctx.save();
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = 'rgba(255,102,0,0.55)';
+                ctx.lineWidth = 1.4;
+                ctx.beginPath();
+                for (var i = 0; i < projection.length; i++) {
+                    var x = px(projection[i].height);
+                    var y = py((Number(projection[i].supply) || 0) / 1e6);
+                    if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+                ctx.restore();
+            }
+        }
+
+        /* Tail emission vertical marker. */
+        if (tailH) {
+            var tx = px(tailH);
+            ctx.save();
+            ctx.setLineDash([4, 4]);
+            ctx.strokeStyle = 'rgba(255,215,0,0.6)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(tx, py(MAX_SUPPLY)); ctx.lineTo(tx, py(0));
+            ctx.stroke();
+            ctx.restore();
+            ctx.fillStyle = gold;
+            ctx.font = '9px "DM Mono", monospace';
+            ctx.textAlign = 'left';
+            ctx.fillText('Tail emission begins', tx + 5, py(MAX_SUPPLY) + 12);
+            ctx.fillText('May 2022', tx + 5, py(MAX_SUPPLY) + 24);
+        }
+
+        /* TODAY marker dot. */
+        if (curH && curSupplyM) {
+            var cx = px(curH), cy = py(curSupplyM);
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5, 0, Math.PI * 2);
+            ctx.fillStyle = grn;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.fillStyle = grn;
+            ctx.font = '10px "DM Mono", monospace';
+            ctx.textAlign = 'center';
+            ctx.fillText('TODAY ' + curSupplyM.toFixed(2) + 'M XMR', cx, cy - 10);
+        }
     };
 
     global.MempoolMiningEmission = new MempoolMiningEmission();
