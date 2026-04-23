@@ -6,6 +6,33 @@
     <meta name="referrer" content="no-referrer">
     <title>xmr.irish — The Case for Monero</title>
     <meta name="description" content="The only cryptocurrency where every transaction is private by default. Education, mining, network stats, and the investment thesis for Monero (XMR).">
+    <meta name="keywords" content="Monero, XMR, privacy cryptocurrency, ring signatures, RingCT, Monero mining, Monero price, Monero wallet">
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="xmr.irish — The Case for Monero">
+    <meta property="og:description" content="Privacy is not a feature. It is a right. The definitive Monero educational and data resource.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://xmr.irish">
+
+    <!-- Canonical -->
+    <link rel="canonical" href="https://xmr.irish/">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "xmr.irish",
+      "url": "https://xmr.irish",
+      "description": "Educational and data resource for Monero (XMR), the privacy-focused cryptocurrency",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://xmr.irish/mempool?track={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css2?family=Instrument+Serif:ital@0;1&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
@@ -167,6 +194,51 @@
         .mempool-track-row input[type="text"]{max-width:100%}
         #particleRain{opacity:0.55}
     }
+
+    /* ═══════════════════════════════════════════════════════════
+       HANDOFF-08 — Start-here strip, user paths, SEO context, noscript
+       ═══════════════════════════════════════════════════════════ */
+
+    /* Start-here strip (between nav and hero) */
+    .start-here-strip{display:flex;align-items:center;gap:12px;padding:10px var(--space-page-x);background:rgba(0,204,136,0.06);border-bottom:1px solid rgba(0,204,136,0.15);font-family:var(--font-mono);font-size:12px}
+    .start-here-strip .strip-label{color:var(--text-muted)}
+    .start-here-strip .strip-link{color:var(--grn);text-decoration:none;font-weight:500}
+    .start-here-strip .strip-link:hover{text-decoration:underline}
+
+    /* Noscript fallback */
+    .noscript-content{padding:24px var(--space-page-x);font-family:var(--font-mono);font-size:12px;line-height:1.8;color:var(--text-secondary)}
+    .noscript-content p{margin:0;max-width:880px}
+
+    /* User paths section (below hero) */
+    .user-paths-section{padding:24px var(--space-page-x) 48px}
+    .user-paths-section .paths-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:16px}
+    .user-paths-section .path-card{display:flex;flex-direction:column;gap:12px;padding:24px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:var(--radius-lg,10px);text-decoration:none;color:inherit;transition:border-color .2s,background .2s;cursor:pointer}
+    .user-paths-section .path-card:hover{border-color:var(--border-active,rgba(255,255,255,0.15));background:var(--surface-2)}
+    .user-paths-section .path-card.path-beginner:hover{border-color:var(--grn)}
+    .user-paths-section .path-card.path-technical:hover{border-color:var(--blue)}
+    .user-paths-section .path-card.path-investor:hover{border-color:var(--xmr)}
+    .user-paths-section .path-badge{font-family:var(--font-mono);font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted)}
+    .user-paths-section .path-icon{font-family:var(--font-mono);font-size:32px;font-weight:700;color:var(--border-active,rgba(255,255,255,0.15));line-height:1}
+    .user-paths-section .path-title{font-family:var(--font-mono);font-size:18px;font-weight:600;color:var(--text-primary);font-style:normal;margin:0}
+    .user-paths-section .path-description{font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--text-secondary);flex:1;margin:0}
+    .user-paths-section .path-links{display:flex;flex-direction:column;gap:4px}
+    .user-paths-section .path-link-item{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);padding-left:12px;position:relative}
+    .user-paths-section .path-link-item::before{content:'→';position:absolute;left:0;color:var(--xmr-text)}
+    .user-paths-section .path-cta{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--grn);margin-top:8px}
+    .user-paths-section .path-card.path-technical .path-cta{color:var(--blue)}
+    .user-paths-section .path-card.path-investor .path-cta{color:var(--xmr-text)}
+
+    /* SEO context section (above quote/footer) */
+    .seo-context-section{padding:48px var(--space-page-x);border-top:1px solid var(--border-default);margin-top:32px}
+    .seo-context-section .context-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px;margin-top:16px}
+    .seo-context-section .context-card{padding:20px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:var(--radius-lg,10px)}
+    .seo-context-section .context-heading{font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--text-primary);margin:0 0 10px}
+    .seo-context-section .context-body{font-family:var(--font-mono);font-size:12px;line-height:1.8;color:var(--text-secondary);margin:0}
+
+    @media (max-width: 720px){
+        .user-paths-section .paths-grid{grid-template-columns:1fr}
+        .seo-context-section .context-grid{grid-template-columns:1fr}
+    }
     </style>
 </head>
 <body>
@@ -177,8 +249,19 @@
     <div class="z1">
         <div id="nav-mount"></div>
 
+        <!-- ═══ START HERE STRIP ═══ -->
+        <div class="start-here-strip">
+            <span class="strip-label">New to Monero?</span>
+            <a href="/btc-xmr-education" class="strip-link">Start with the Bitcoin vs Monero comparison →</a>
+        </div>
+
         <!-- ═══ HERO ═══ -->
         <section class="hero">
+            <noscript>
+                <div class="noscript-content">
+                    <p>Monero (XMR) is a privacy-focused cryptocurrency using ring signatures, stealth addresses, and RingCT to hide sender, receiver, and amount in every transaction. The network operates with a 0.6 XMR permanent block reward (tail emission), approximately 20,000 daily transactions, and has never had a confirmed transaction trace despite a $625,000 IRS bounty outstanding since 2020. Hashrate has reached all-time highs as of 2024. The upcoming FCMP++ upgrade will expand the anonymity set to 100M+ outputs.</p>
+                </div>
+            </noscript>
             <div>
                 <div class="hero-kicker">Privacy is not a feature. It is a right.</div>
                 <h1 class="hero-title">The case for <span>Monero</span></h1>
@@ -201,6 +284,57 @@
                     <div class="rc-label">XMR / USD</div>
                     <div class="rc-change" id="rc-change"></div>
                 </div>
+            </div>
+        </section>
+
+        <!-- ═══ USER PATHS — Where to begin ═══ -->
+        <section class="user-paths-section">
+            <div class="sec" style="padding-bottom:0;padding-top:0">
+                <div class="sec-k">Where to begin</div>
+                <div class="sec-t">Three paths into Monero</div>
+                <div class="sec-s">Choose your starting point.</div>
+            </div>
+            <div class="paths-grid">
+
+                <a href="/btc-xmr-education" class="path-card path-beginner">
+                    <div class="path-badge">START HERE</div>
+                    <div class="path-icon">01</div>
+                    <h3 class="path-title">New to Monero</h3>
+                    <p class="path-description">Understand why financial privacy matters and how Monero achieves it. Compare Monero vs Bitcoin architecturally. No technical background needed.</p>
+                    <div class="path-links">
+                        <span class="path-link-item">BTC vs XMR comparison</span>
+                        <span class="path-link-item">Privacy architecture</span>
+                        <span class="path-link-item">Why it matters</span>
+                    </div>
+                    <div class="path-cta">Start learning →</div>
+                </a>
+
+                <a href="/mempool" class="path-card path-technical">
+                    <div class="path-badge">EXPLORE</div>
+                    <div class="path-icon">02</div>
+                    <h3 class="path-title">Technical user</h3>
+                    <p class="path-description">Explore the live network. Watch real transactions flow through the mempool. Dive into the cryptographic protocol. Study network metrics and trends.</p>
+                    <div class="path-links">
+                        <span class="path-link-item">Mempool explorer</span>
+                        <span class="path-link-item">Network statistics</span>
+                        <span class="path-link-item">18 protocol visualizations</span>
+                    </div>
+                    <div class="path-cta">Enter the mempool →</div>
+                </a>
+
+                <a href="/bottom-line" class="path-card path-investor">
+                    <div class="path-badge">THE CASE</div>
+                    <div class="path-icon">03</div>
+                    <h3 class="path-title">Investment thesis</h3>
+                    <p class="path-description">The full case for XMR as a monetary asset. Supply dynamics, IRS bounty analysis, exchange delistings, FCMP++ upgrade, and the structural argument for private money.</p>
+                    <div class="path-links">
+                        <span class="path-link-item">The bottom line thesis</span>
+                        <span class="path-link-item">Market structure analysis</span>
+                        <span class="path-link-item">Future outlook</span>
+                    </div>
+                    <div class="path-cta">Read the thesis →</div>
+                </a>
+
             </div>
         </section>
 
@@ -379,6 +513,38 @@
                 <span class="path-link" style="color:var(--blue)">Read comparison →</span>
             </a>
         </div>
+
+        <!-- ═══ SEO CONTEXT — About Monero ═══ -->
+        <section class="seo-context-section" aria-label="About Monero">
+            <div class="sec" style="padding-bottom:0;padding-top:0;padding-left:0;padding-right:0">
+                <div class="sec-k">About Monero</div>
+                <div class="sec-t">The basics, for reference</div>
+                <div class="sec-s">A static summary of what Monero is, why it exists, how it's mined, and current network scale.</div>
+            </div>
+            <div class="context-grid">
+
+                <div class="context-card">
+                    <h2 class="context-heading">What is Monero?</h2>
+                    <p class="context-body">Monero (XMR) is a cryptocurrency that makes financial privacy the default, not an option. Every transaction automatically hides the sender via ring signatures, the receiver via stealth addresses, and the amount via RingCT (Ring Confidential Transactions). Unlike Bitcoin where all transactions are permanently public, Monero transactions are unlinkable and untraceable by design.</p>
+                </div>
+
+                <div class="context-card">
+                    <h2 class="context-heading">Why does Monero matter?</h2>
+                    <p class="context-body">Financial privacy is increasingly rare. Most payment systems — including transparent blockchains like Bitcoin — create permanent public records of every transaction. Monero provides the digital equivalent of cash: a payment medium where the only parties who know what was transacted are the sender and receiver. The IRS has spent $625,000+ trying to break Monero's privacy. No confirmed successful trace has been announced.</p>
+                </div>
+
+                <div class="context-card">
+                    <h2 class="context-heading">How is Monero mined?</h2>
+                    <p class="context-body">Monero uses RandomX, a proof-of-work algorithm optimized for consumer CPUs. Unlike Bitcoin which requires ASICs, any computer with a modern CPU can mine Monero competitively. The block reward is permanently 0.6 XMR per block (tail emission) — no halvings mean miners are always compensated, securing the network indefinitely. A Ryzen 9 7950X achieves ~14,000 H/s. Pool mining pays out within hours to days.</p>
+                </div>
+
+                <div class="context-card">
+                    <h2 class="context-heading">Monero network data</h2>
+                    <p class="context-body">The Monero network mines approximately 20,000 transactions per day, all private. 58.97 million total transactions have been processed since launch — every one with hidden sender, receiver, and amount. Hashrate is at all-time highs as of 2024. The network has processed over 18.45 million XMR into circulation, with 432 new XMR created per day via tail emission.</p>
+                </div>
+
+            </div>
+        </section>
 
         <!-- ═══ QUOTE ═══ -->
         <div class="quote-section">
