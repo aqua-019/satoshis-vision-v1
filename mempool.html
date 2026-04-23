@@ -570,6 +570,184 @@
     .exp-search-bar{grid-template-columns:1fr}
     .exp-search-bar button{width:100%}
 }
+
+/* ── M4 MINING MODE ─────────────────────────────────────────────── */
+
+/* Layout */
+#mp-panel-mining{display:flex;flex-direction:column;gap:16px}
+.mp-mining-row-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mp-mining-col{display:flex;flex-direction:column;min-width:0}
+.mp-mining-card{
+    background:var(--surface-1);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-lg,10px);
+    padding:18px 18px 16px;
+    min-width:0;
+}
+@media(max-width:900px){
+    .mp-mining-row-2{grid-template-columns:1fr}
+}
+
+/* Health bar chips */
+.mp-mining-health{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:1px;
+    background:var(--border-subtle);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-lg,10px);
+    overflow:hidden;
+}
+.mp-mining-chip{
+    background:var(--surface-1);
+    padding:12px 14px;
+    display:flex;flex-direction:column;gap:4px;min-width:0;
+}
+.mp-mining-chip .k{
+    font:9px/1 var(--font-mono);
+    letter-spacing:.12em;
+    color:var(--text-tertiary);
+    text-transform:uppercase;
+}
+.mp-mining-chip .v{
+    font:600 15px/1.2 var(--font-mono);
+    color:var(--text-primary);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.mp-mining-chip .v.accent-xmr{color:var(--xmr)}
+.mp-mining-chip .v.accent-grn{color:var(--grn)}
+
+/* Card titles + range selectors */
+.mp-mining-card-head{
+    display:flex;align-items:baseline;justify-content:space-between;
+    gap:12px;margin-bottom:12px;flex-wrap:wrap;
+}
+.mp-mining-card-title{
+    font:10px/1 var(--font-mono);
+    letter-spacing:.14em;
+    color:var(--text-tertiary);
+    text-transform:uppercase;
+    margin:0;
+}
+.mp-mining-card-sub{
+    font:11px/1.4 var(--font-mono);
+    color:var(--text-secondary);
+}
+.mp-mining-range{display:flex;gap:4px}
+.mp-mining-range button{
+    padding:3px 9px;border-radius:var(--radius-sm,4px);
+    border:1px solid var(--border-default);
+    background:transparent;
+    color:var(--text-tertiary);
+    font:10px/1 var(--font-mono);
+    letter-spacing:.06em;cursor:pointer;
+    transition:all var(--duration-fast,150ms);
+}
+.mp-mining-range button:hover{color:var(--text-primary)}
+.mp-mining-range button.active{
+    border-color:var(--xmr);color:var(--xmr);
+    background:rgba(255,102,0,0.08);
+}
+
+/* RandomX seed tracker */
+.mp-mining-randomx .hash{
+    font:11px/1.5 var(--font-mono);
+    color:var(--xmr-text);
+    word-break:break-all;
+    margin:10px 0 14px;
+    padding:10px 12px;
+    background:var(--surface-05);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm,4px);
+}
+.mp-mining-randomx .progress{
+    position:relative;height:8px;
+    background:var(--surface-2);
+    border-radius:4px;overflow:hidden;margin:12px 0 8px;
+}
+.mp-mining-randomx .progress>.fill{
+    position:absolute;inset:0 auto 0 0;
+    background:linear-gradient(90deg,var(--xmr),var(--gold));
+    transition:width var(--duration-base,300ms) var(--ease-out-expo,ease);
+}
+.mp-mining-randomx .meta{
+    display:flex;flex-wrap:wrap;gap:14px;
+    font:11px/1.4 var(--font-mono);color:var(--text-secondary);
+}
+.mp-mining-randomx .meta b{color:var(--text-primary);font-weight:600}
+.mp-mining-randomx .explainer{
+    margin-top:14px;font:12px/1.55 var(--font-body);
+    color:var(--text-secondary);
+}
+
+/* Emission curve */
+.mp-mining-emission canvas{width:100%;height:260px;display:block}
+.mp-mining-emission .stats{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+    gap:10px 18px;margin:10px 0 14px;
+    font:11px/1.4 var(--font-mono);color:var(--text-secondary);
+}
+.mp-mining-emission .stats b{color:var(--text-primary);font-weight:600}
+.mp-mining-emission .explainer{
+    margin-top:14px;font:12px/1.55 var(--font-body);
+    color:var(--text-secondary);
+}
+
+/* P2Pool panel */
+.mp-mining-p2pool .banner{
+    margin:0 0 14px;padding:10px 14px;
+    background:rgba(242,104,34,0.10);
+    border:1px solid rgba(242,104,34,0.35);
+    border-radius:var(--radius-sm,4px);
+    font:11px/1.5 var(--font-mono);color:var(--xmr-text);
+}
+.mp-mining-p2pool .cards{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:10px;
+}
+.mp-mining-p2pool .cards>div{
+    padding:12px 14px;
+    background:var(--surface-05);
+    border:1px solid var(--border-subtle);
+    border-radius:var(--radius-sm,4px);
+    display:flex;flex-direction:column;gap:4px;
+}
+.mp-mining-p2pool .cards .k{
+    font:9px/1 var(--font-mono);letter-spacing:.12em;
+    color:var(--text-tertiary);text-transform:uppercase;
+}
+.mp-mining-p2pool .cards .v{
+    font:600 15px/1.2 var(--font-mono);color:var(--text-primary);
+}
+.mp-mining-p2pool .links{
+    margin-top:14px;display:flex;flex-wrap:wrap;gap:14px;
+    font:11px/1 var(--font-mono);
+}
+.mp-mining-p2pool .links a{color:var(--xmr);text-decoration:none}
+.mp-mining-p2pool .links a:hover{text-decoration:underline}
+@media(max-width:600px){
+    .mp-mining-p2pool .cards{grid-template-columns:repeat(2,1fr)}
+}
+
+/* Pool pie + table */
+.mp-mining-pool-body{display:grid;grid-template-columns:180px 1fr;gap:18px;align-items:start}
+.mp-mining-pool-body canvas{width:180px;height:180px;display:block}
+.mp-mining-pool-table{width:100%;border-collapse:collapse;font:11px/1.3 var(--font-mono)}
+.mp-mining-pool-table th{
+    text-align:left;padding:6px 8px;
+    color:var(--text-tertiary);font-weight:400;
+    letter-spacing:.1em;text-transform:uppercase;font-size:9px;
+    border-bottom:1px solid var(--border-subtle);
+}
+.mp-mining-pool-table td{padding:6px 8px;color:var(--text-primary);border-bottom:1px solid var(--border-subtle)}
+.mp-mining-pool-table td a{color:var(--xmr);text-decoration:none}
+.mp-mining-pool-table td a:hover{text-decoration:underline}
+.mp-mining-pool-table .swatch{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:middle}
+@media(max-width:700px){
+    .mp-mining-pool-body{grid-template-columns:1fr;justify-items:center}
+}
+
+/* Generic chart canvas */
+.mp-mining-card canvas{width:100%;display:block}
 </style>
 </head>
 <body>
@@ -634,9 +812,41 @@
 
     </section>
 
-    <!-- MINING placeholder (filled in M4) ─────────────────────────── -->
+    <!-- MINING mode (M4) ──────────────────────────────────────────── -->
     <section class="mp-mode-panel" id="mp-panel-mining" data-mode="mining" role="tabpanel" hidden>
-        <div class="mp-placeholder">Mining mode — coming in M4</div>
+
+        <!-- Row 1: Network Health Bar -->
+        <div class="mp-mining-health" id="mp-mining-health"></div>
+
+        <!-- Row 2: Pool Distribution | Hashrate Chart -->
+        <div class="mp-mining-row-2">
+            <div class="mp-mining-col">
+                <div class="mp-mining-card" id="mp-mining-pool"></div>
+            </div>
+            <div class="mp-mining-col">
+                <div class="mp-mining-card" id="mp-mining-hashrate"></div>
+            </div>
+        </div>
+
+        <!-- Row 3: RandomX Seed Hash Tracker (Monero-exclusive) -->
+        <div class="mp-mining-card mp-mining-randomx" id="mp-mining-randomx"></div>
+
+        <!-- Row 4: Emission Curve (Monero-exclusive, full width) -->
+        <div class="mp-mining-card mp-mining-emission" id="mp-mining-emission"></div>
+
+        <!-- Row 5: Block Time Histogram | Difficulty History -->
+        <div class="mp-mining-row-2">
+            <div class="mp-mining-col">
+                <div class="mp-mining-card" id="mp-mining-blocktime"></div>
+            </div>
+            <div class="mp-mining-col">
+                <div class="mp-mining-card" id="mp-mining-difficulty"></div>
+            </div>
+        </div>
+
+        <!-- Row 6: P2Pool Decentralized Mining Panel (Monero-exclusive) -->
+        <div class="mp-mining-card mp-mining-p2pool" id="mp-mining-p2pool"></div>
+
     </section>
 
 </div>
@@ -659,6 +869,19 @@
 
 <!-- M3 modules -->
 <script src="js/mempool-explorer.js"></script>
+
+<!-- M4 modules -->
+<script src="js/mempool-chart-utils.js"></script>
+<script src="js/mempool-mining-timeseries.js"></script>
+<script src="js/mempool-mining-health.js"></script>
+<script src="js/mempool-mining-randomx.js"></script>
+<script src="js/mempool-mining-p2pool.js"></script>
+<script src="js/mempool-mining-pool.js"></script>
+<script src="js/mempool-mining-hashrate.js"></script>
+<script src="js/mempool-mining-difficulty.js"></script>
+<script src="js/mempool-mining-emission.js"></script>
+<script src="js/mempool-mining-blocktime.js"></script>
+<script src="js/mempool-mining.js"></script>
 
 <script>
 /* ═══ Boot ═══ */
@@ -693,6 +916,11 @@
             if (mode === 'ocean') MempoolOcean.resume();
             else MempoolOcean.pause();
         }
+        // MINING: pause polling + chart refresh when not visible.
+        if (window.MempoolMining) {
+            if (mode === 'mining') MempoolMining.resume();
+            else MempoolMining.pause();
+        }
     }
 
     // Buttons
@@ -718,6 +946,16 @@
         MempoolOcean.init({ debug: false });
     } catch (e) {
         console.error('[mempool.html] MempoolOcean init failed', e);
+    }
+
+    /* ── Boot the MINING orchestrator ── */
+    try {
+        if (window.MempoolMining) {
+            MempoolMining.init({ ws: window.__xmrWs, debug: false });
+            if (initial === 'mining') MempoolMining.resume();
+        }
+    } catch (e) {
+        console.error('[mempool.html] MempoolMining init failed', e);
     }
 
     /* ── GenUI ?tx= prefill (M2: just log; M3 will route to EXPLORER) ── */
