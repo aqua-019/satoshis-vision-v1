@@ -1,833 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="no-referrer">
-    <title>xmr.irish — Monero Mempool Explorer</title>
-    <meta name="description" content="Real-time Monero mempool visualization. Track transactions, watch confirmations, explore blocks. Privacy by default.">
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d10.css">
-    <style>
-    .mp{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
-    .mp .nav,.mp .nav *{font-family:var(--font-body)}
-    .mp .nav .nav-logo{font-family:var(--font-headline)}
-    .mp .nav .nb-val,.mp .nav .np .val{font-family:var(--font-data)}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<title>xmr.irish — Monero Mempool Explorer</title>
+<meta name="description" content="Real-time Monero mempool — fee tiers, projected block, transaction flow, live depth chart. Privacy by default.">
+<link rel="preconnect" href="https://fonts.bunny.net">
+<link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/d10.css">
+<style>
+/* Prevent hidden-panel flash before d10.css applies. */
+.mp-mode-panel[hidden]{display:none}
 
-    .mp-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;flex-wrap:wrap}
-    .mp-brand{font-size:14px}.mp-brand em{color:var(--grn);font-style:normal;font-weight:600}.mp-brand span{color:var(--text-muted)}
-    .mp-tabs{display:flex;gap:4px;font-size:11px}
-    .mp-tab{padding:4px 10px;border-radius:5px;color:var(--text-tertiary);text-decoration:none}
-    .mp-tab.active{background:rgba(0,204,136,.08);color:var(--grn);border:1px solid rgba(0,204,136,.12)}
-    .mp-search{margin-left:auto;display:flex;gap:6px;flex:1;max-width:400px}
-    .mp-search input{background:var(--surface-2);border:1px solid var(--border-default);border-radius:6px;padding:5px 10px;color:var(--g3);font-size:11px;flex:1;font-family:inherit}
-    .mp-search input:focus{border-color:var(--grn);outline:none}
-    .mp-search button{background:var(--grn);color:#000;border:none;border-radius:6px;padding:5px 14px;font-size:11px;font-weight:600;cursor:pointer}
+/* ═══════════════════════════════════════════════════════════════
+   Mempool 3.0 OCEAN mode — M2 styles (prefix .mp-*)
+   ═══════════════════════════════════════════════════════════════ */
+.mp{min-height:100vh}
+.mp,.mp *{font-family:var(--font-mono,'DM Mono'),monospace}
+.mp .nav,.mp .nav *{font-family:var(--font-body)}
+.mp .nav .nav-logo{font-family:var(--font-headline)}
+.mp .nav .nb-val,.mp .nav .np .val{font-family:var(--font-data)}
 
-    .sbar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;padding:0 var(--space-page-x);margin:14px 0}
-    .sc{background:var(--surface-1);padding:12px;text-align:center}
-    .sc:first-child{border-radius:10px 0 0 10px}.sc:last-child{border-radius:0 10px 10px 0}
-    .sc .sv{font-size:17px;font-weight:600;margin-bottom:2px}.sc .sl{font-size:9px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+/* Sub-nav: brand / mode tabs / connection indicator */
+.mp-subnav{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:10px var(--space-page-x);
+    border-bottom:1px solid var(--border-subtle);
+    background:var(--surface-0);
+}
+.mp-brand{font-size:12px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
+.mp-brand b{color:var(--xmr);font-weight:600}
+.mp-modes{display:flex;gap:4px}
+.mp-mode-btn{
+    background:transparent;border:1px solid var(--border-subtle);
+    color:var(--text-tertiary);font-size:10.5px;font-weight:600;
+    letter-spacing:1.2px;padding:6px 14px;border-radius:6px;cursor:pointer;
+    font-family:inherit;transition:color .15s,border-color .15s,background .15s;
+}
+.mp-mode-btn:hover{color:var(--text-secondary);border-color:var(--border-default)}
+.mp-mode-btn.active{
+    background:rgba(255,102,0,.08);border-color:rgba(255,102,0,.28);
+    color:var(--xmr);
+}
+.mp-conn-status{
+    margin-left:auto;display:flex;align-items:center;gap:7px;
+    font-size:10px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--text-tertiary);
+}
+.mp-conn-status .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);transition:background .2s}
+.mp-conn-status.live .dot{background:var(--grn);box-shadow:0 0 8px var(--grn);animation:mp-pulse 1.8s ease-in-out infinite}
+.mp-conn-status.live .label{color:var(--grn)}
+.mp-conn-status.connecting .dot{background:var(--gold)}
+.mp-conn-status.connecting .label{color:var(--gold)}
+.mp-conn-status.offline .dot{background:var(--red)}
+.mp-conn-status.offline .label{color:var(--red)}
+@keyframes mp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@media(prefers-reduced-motion:reduce){
+    .mp-conn-status.live .dot{animation:none}
+}
 
-    .tth{margin:0 var(--space-page-x) 14px;padding:12px 16px;background:var(--surface-1);border:1px solid rgba(74,136,255,.15);border-radius:10px;display:none}
-    .tth.vis{display:block}
-    .tth-t{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
-    .tth-h{font-size:11px;color:var(--blue);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .tth-b{padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.2)}
-    .tth-g{display:grid;grid-template-columns:repeat(6,1fr);gap:1px}
-    .tth-m{background:var(--surface-2);padding:7px 6px;text-align:center}
-    .tth-m:first-child{border-radius:6px 0 0 6px}.tth-m:last-child{border-radius:0 6px 6px 0}
-    .tth-mv{font-size:11px;font-weight:600;margin-bottom:1px}.tth-ml{font-size:7px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
+/* Mode panels */
+.mp-mode-panel{padding:18px var(--space-page-x) 32px}
+.mp-placeholder{
+    min-height:240px;display:flex;align-items:center;justify-content:center;
+    border:1px dashed var(--border-subtle);border-radius:12px;
+    color:var(--text-tertiary);font-size:12px;letter-spacing:1.5px;
+    text-transform:uppercase;
+}
 
-    /* ═══ BLOCK FLOW — single horizontal strip ═══ */
-    .bf{margin:0 var(--space-page-x) 14px;border-radius:12px;background:var(--surface-1);border:1px solid var(--border-default);position:relative}
-    .bf-head{display:flex;justify-content:space-between;padding:8px 12px 4px}
-    .bf-lbl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}.bf-lbl.r{color:var(--xmr)}
-    .bf-strip{display:flex;gap:6px;padding:4px 12px 12px;overflow-x:auto;scrollbar-width:none;cursor:grab;align-items:stretch;height:220px}
-    .bf-strip::-webkit-scrollbar{display:none}.bf-strip:active{cursor:grabbing}
-    .bf-divider{width:2px;flex-shrink:0;background:var(--g7);position:relative;align-self:stretch;margin:0 4px}
-    .bf-divider::after{content:'';position:absolute;right:-5px;top:50%;transform:translateY(-50%) rotate(45deg);width:9px;height:9px;border-right:2px solid var(--g5);border-top:2px solid var(--g5);background:var(--surface-1)}
-    .bf-arr-wrap{position:absolute;top:28px;left:0;right:0;height:22px;pointer-events:none;z-index:5}
-    .bf-arr{position:absolute;display:flex;flex-direction:column;align-items:center;transition:left 1s ease}
-    .bf-arr.hidden{display:none}
-    .bf-arr-l{font-size:9px;color:var(--blue);font-weight:600;white-space:nowrap;background:rgba(17,17,20,.9);padding:0 4px;border-radius:2px}
-    .bf-arr-ln{width:1px;height:5px;background:var(--blue)}.bf-arr-tr{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--blue)}
+/* Fee hero cards (4) */
+.mp-fee-hero{
+    display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;
+}
+.mp-fee-card{
+    background:var(--surface-1);border:1px solid var(--border-subtle);
+    border-top:3px solid #888;border-radius:10px;padding:14px 16px;
+    transition:transform .15s,border-color .15s;
+}
+.mp-fee-card:hover{transform:translateY(-1px)}
+.mp-fee-card-label{font-size:10px;font-weight:700;letter-spacing:1.6px;margin-bottom:6px}
+.mp-fee-card-rate{display:flex;align-items:baseline;gap:5px;margin-bottom:4px}
+.mp-fee-rate-val{font-size:22px;font-weight:600;color:var(--text-primary)}
+.mp-fee-rate-unit{font-size:11px;color:var(--text-tertiary);letter-spacing:1px}
+.mp-fee-card-eta{font-size:10px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase}
 
-    /* All blocks: uniform 130px, bottom-aligned text */
-    .bk{width:130px;min-width:130px;padding:10px 9px;border-radius:8px;display:flex;flex-direction:column;justify-content:flex-end;gap:3px;position:relative;overflow:hidden;flex-shrink:0;cursor:pointer;transition:all .8s ease}
-    .bk.pnext{background:linear-gradient(135deg,#0A0A14,#08081A);border:1px dashed rgba(74,136,255,.06);opacity:.3;cursor:default}
-    .bk.pnext .bv1{font-size:11px;color:var(--text-tertiary)}.bk.pnext .bv2{font-size:10px;color:var(--text-muted)}
-    .bk.pend{background:linear-gradient(135deg,#0A0A14,#08081A);border:1px solid rgba(74,136,255,.15);cursor:default}
-    .bk.pend .bv1{font-size:13px;color:var(--g3);font-weight:600}.bk.pend .bv2{font-size:10px;color:var(--text-tertiary)}.bk.pend .bv3{font-size:11px;color:var(--blue)}
-    .bk.pend .bbar{position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,rgba(74,136,255,.08),rgba(74,136,255,.25))}
-    .bk.conf{background:linear-gradient(135deg,#1A0E00,#100800);border:1px solid rgba(255,102,0,.18)}
-    .bk.conf:hover{border-color:rgba(255,102,0,.35)}
-    .bk.conf .bh{font-size:12px;font-weight:600;color:var(--xmr)}.bk.conf .br{font-size:11px;color:var(--xmr-text)}
-    .bk.conf .btx{font-size:10px;color:rgba(255,102,0,.4)}.bk.conf .bt{font-size:10px;color:var(--text-tertiary)}.bk.conf .bcf{font-size:11px;font-weight:600}
-    .bk.conf .cbar{position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--xmr),rgba(255,102,0,.3))}
-    .bk.tracked{border-color:rgba(74,136,255,.5)!important;box-shadow:0 0 12px rgba(74,136,255,.15)}
-    .bk.six .cbar{background:linear-gradient(90deg,var(--grn),rgba(0,204,136,.3))!important}
-    .bk.slide-in{animation:slideIn .8s ease forwards}
-    @keyframes slideIn{from{transform:translateX(-60px);opacity:0}to{transform:translateX(0);opacity:1}}
+/* Projected block strip */
+.mp-proj-block{
+    background:var(--surface-1);border:1px solid var(--border-subtle);
+    border-radius:10px;padding:12px 16px;margin-bottom:14px;
+}
+.mp-proj-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mp-proj-label{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--text-tertiary)}
+.mp-proj-eta{font-size:11px;color:var(--xmr);letter-spacing:1px}
+.mp-proj-bar{
+    height:18px;background:var(--surface-2);border-radius:5px;
+    overflow:hidden;position:relative;margin-bottom:6px;
+}
+.mp-proj-fill{display:flex;height:100%}
+.mp-proj-seg{display:block;height:100%}
+.mp-proj-seg:first-child{border-radius:5px 0 0 5px}
+.mp-proj-seg:last-child{border-radius:0 5px 5px 0}
+.mp-proj-pct{font-size:12px;color:var(--text-secondary);margin-bottom:4px}
+.mp-proj-meta{font-size:10.5px;color:var(--text-muted);letter-spacing:.4px}
 
-    .oc{position:relative;margin:0 var(--space-page-x) 14px;border-radius:12px;overflow:hidden;background:var(--surface-1);border:1px solid var(--border-default);height:200px}
-    .oc canvas{width:100%;height:100%}
-    .oc-ov{position:absolute;bottom:0;left:0;right:0;padding:12px 14px;background:linear-gradient(transparent,rgba(10,10,12,.92))}
-    .oc-lb{font-size:8px;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px}
-    .oc-nr{font-size:10px;color:var(--text-secondary);max-width:440px;line-height:1.5}.oc-nr em{color:var(--grn);font-style:normal}
-    .oc-lg{position:absolute;top:8px;right:10px;display:flex;gap:8px}
-    .oc-li{display:flex;align-items:center;gap:3px;font-size:8px;color:var(--text-tertiary)}
-    .oc-ld{width:5px;height:5px;border-radius:50%}
+/* Ocean canvas */
+.mp-ocean{
+    position:relative;background:var(--surface-1);
+    border:1px solid var(--border-subtle);border-radius:10px;
+    height:340px;margin-bottom:14px;overflow:hidden;
+}
+.mp-ocean canvas{width:100%;height:100%;display:block}
+.mp-ocean-tip{
+    position:absolute;top:0;left:0;width:200px;pointer-events:none;
+    background:rgba(10,10,14,.94);border:1px solid var(--border-default);
+    border-radius:8px;padding:8px 10px;font-size:10.5px;
+    box-shadow:0 6px 24px rgba(0,0,0,.4);z-index:5;
+}
+.mp-tt-row{display:flex;justify-content:space-between;gap:10px;padding:1px 0;color:var(--text-tertiary)}
+.mp-tt-row b{color:var(--text-primary);font-weight:500}
+.mp-tt-tier{font-size:9px;font-weight:700;letter-spacing:1.6px;margin-top:4px;text-transform:uppercase}
 
-    .ps{margin:0 var(--space-page-x) 14px;padding:8px 14px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border-default);display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-    .pi{text-align:center}.pil{font-size:7px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase;margin-bottom:1px}.piv{font-size:11px;font-weight:600}
+/* Fee depth chart */
+.mp-depth{
+    background:var(--surface-1);border:1px solid var(--border-subtle);
+    border-radius:10px;padding:10px;height:260px;margin-bottom:14px;
+}
+.mp-depth-head{
+    display:flex;justify-content:space-between;margin-bottom:4px;
+    font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-tertiary);
+}
+.mp-depth canvas{width:100%;height:calc(100% - 18px);display:block}
 
-    .txl{margin:0 var(--space-page-x) 14px}
-    .txl-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
-    .txl-ti{font-size:11px;font-weight:600}.txl-ct{font-size:9px;color:var(--text-tertiary)}
-    .txr{display:grid;grid-template-columns:1fr 60px 50px 40px 45px 40px 55px;padding:5px 0;border-bottom:1px solid var(--border-subtle);font-size:9px;align-items:center}
-    .txr.hd{color:var(--text-tertiary);font-size:8px;border-bottom:1px solid var(--border-default)}
-    .txr .th{color:var(--blue);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer}.txr .th:hover{text-decoration:underline}
-    .txr .tf{text-align:right;color:var(--gold)}.txr .ts{text-align:right;color:var(--text-secondary)}
-    .txr .tr{text-align:right;color:var(--xmr-text)}.txr .tfr{text-align:right;color:var(--text-secondary)}
-    .txr .ta{text-align:right;color:var(--text-tertiary)}.txr .tst{text-align:right}
-    .tst-p{color:var(--red)}.tst-c{color:var(--grn)}
-    .txr-new{animation:ntx .6s ease}
-    @keyframes ntx{from{background:rgba(0,204,136,.06)}to{background:transparent}}
-    .txl-toggle{font-size:10px;color:var(--blue);cursor:pointer;padding:6px 0;text-align:center}
-    .txl-toggle:hover{text-decoration:underline}
-    .txl-body.collapsed .txr:nth-child(n+5){display:none}
+/* Live TX feed */
+.mp-txfeed{
+    background:var(--surface-1);border:1px solid var(--border-subtle);
+    border-radius:10px;padding:10px 12px;margin-bottom:14px;
+}
+.mp-txfeed-h{
+    display:grid;grid-template-columns:1.4fr .7fr 1fr .55fr .9fr .55fr;
+    gap:10px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;
+    color:var(--text-muted);padding:4px 6px;border-bottom:1px solid var(--border-subtle);
+}
+.mp-txfeed-list{max-height:320px;overflow:hidden}
+.mp-txrow{
+    display:grid;grid-template-columns:1.4fr .7fr 1fr .55fr .9fr .55fr;
+    gap:10px;font-size:11px;padding:6px;border-bottom:1px solid rgba(255,255,255,.02);
+    cursor:pointer;transition:background .12s;
+}
+.mp-txrow:hover{background:rgba(255,255,255,.02)}
+.mp-txrow .c-txid{color:var(--blue)}
+.mp-txrow .c-size,.mp-txrow .c-fee,.mp-txrow .c-rate,.mp-txrow .c-age{color:var(--text-secondary)}
+.mp-txrow .c-tier{display:flex;align-items:center;gap:5px;font-size:9px;letter-spacing:1.3px;color:var(--text-tertiary);text-transform:uppercase}
+.mp-tier-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+@keyframes mp-slide-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.mp-txrow-in{animation:mp-slide-in .32s ease-out}
+@media(prefers-reduced-motion:reduce){.mp-txrow-in{animation:none}}
 
-    /* TX Detail */
-    .txd{margin:0 var(--space-page-x) 14px;display:none}.txd.vis{display:block}
-    .txd-divider{height:1px;background:var(--border-default);margin:14px var(--space-page-x)}
-    .txd-hero{display:grid;grid-template-columns:1fr 340px;gap:20px;margin-bottom:14px}
-    .txd-info{padding:20px;background:var(--surface-1);border-radius:12px;border:1px solid var(--border-default)}
-    .txd-hf{font-size:12px;color:var(--blue);word-break:break-all;margin-bottom:14px;line-height:1.6}
-    .txd-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px}
-    .txd-cell{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-subtle);font-size:12px}
-    .txd-cell .l{color:var(--text-tertiary);font-size:10px}.txd-cell .v{font-size:11px}
-    .rc{display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--surface-1);border-radius:12px;border:1px solid var(--border-default);padding:24px;position:relative}
-    .rc svg{width:280px;height:280px}
-    .rcl{font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase;margin-top:8px}
-    .rcs{font-size:11px;color:var(--grn);margin-top:4px;text-align:center}
-    .snd-btn{position:absolute;top:10px;right:10px;font-size:8px;color:var(--text-tertiary);padding:3px 6px;border:1px solid var(--border-default);border-radius:3px;background:transparent;cursor:pointer}
+/* Stats row (chips) */
+.mp-stats-row{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.mp-stat-chip{
+    background:var(--surface-1);border:1px solid var(--border-subtle);
+    border-radius:8px;padding:10px 12px;text-align:center;
+}
+.mp-stat-v{font-size:14px;font-weight:600;color:var(--text-primary)}
+.mp-stat-l{font-size:8.5px;color:var(--text-muted);letter-spacing:1.6px;text-transform:uppercase;margin-top:3px}
 
-    /* Block Anatomy */
-    .bav{margin:0 var(--space-page-x) 14px;display:none}.bav.vis{display:block}
-    .bav-hero{background:var(--surface-1);border:1px solid rgba(255,102,0,.12);border-radius:12px;padding:18px}
-    .bav-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-    .bav-ht{font-size:32px;font-weight:600;color:var(--xmr)}
-    .bav-mt{text-align:right;font-size:11px;color:var(--text-tertiary);line-height:1.6}
-    .bav-top{display:grid;grid-template-columns:380px 1fr;gap:16px;margin-bottom:14px}
-    .bav-viz{background:var(--surface-2);border-radius:8px;border:1px solid var(--border-default);overflow:hidden;height:380px;position:relative}
-    .bav-viz canvas{width:100%;height:100%}
-    .bav-viz-l{position:absolute;bottom:6px;left:0;right:0;text-align:center;font-size:9px;color:var(--text-tertiary);letter-spacing:1px}
-    .bav-sts{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-    .bav-st{background:var(--surface-2);border-radius:6px;padding:10px;text-align:center}
-    .bav-st-v{font-size:16px;font-weight:600;margin-bottom:2px}.bav-st-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1px;text-transform:uppercase}
-    .bav-back{font-size:11px;color:var(--blue);cursor:pointer;margin-bottom:10px;display:inline-block}.bav-back:hover{text-decoration:underline}
-
-    .mp-foot{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-
-    /* ═══ MEMPOOL 3.0 — mode strip ═══ */
-    .mode-strip{display:flex;gap:4px;padding:10px var(--space-page-x) 4px;align-items:center}
-    .mode-btn{font-family:inherit;font-size:10px;letter-spacing:2px;padding:6px 14px;border-radius:5px;background:var(--surface-1);color:var(--text-tertiary);border:1px solid var(--border-default);cursor:pointer;text-transform:uppercase}
-    .mode-btn:hover{color:var(--text-secondary);border-color:var(--border-active)}
-    .mode-btn.active{background:rgba(255,102,0,.08);color:var(--xmr);border-color:rgba(255,102,0,.25)}
-
-    /* ═══ fee heatmap strip ═══ */
-    .fee-heatmap{margin:0 var(--space-page-x) 10px;padding:10px 14px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px}
-    .heatmap-bar{display:flex;height:14px;gap:1px;border-radius:3px;overflow:hidden;background:var(--surface-2)}
-    .heatmap-bar .seg{flex:1;min-width:0}
-    .heatmap-labels{display:flex;justify-content:space-between;margin-top:7px;font-size:9px;color:var(--text-tertiary)}
-    .heatmap-labels em{color:var(--text-secondary);font-style:normal;letter-spacing:1.2px;text-transform:uppercase;margin-right:4px}
-    .heatmap-labels span span{color:var(--gold);font-variant-numeric:tabular-nums}
-
-    /* ═══ congestion sparkline ═══ */
-    .cong-spark{margin:0 var(--space-page-x) 10px;padding:6px 14px 8px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px}
-    .cs-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
-    .cs-lbl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .cs-ct{font-size:10px;color:var(--xmr-text);font-variant-numeric:tabular-nums}
-    .cong-spark canvas{width:100%;height:40px;display:block}
-
-    /* ═══ block formation overlay ═══ */
-    .oc{position:relative}
-    .block-form{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:44px;height:52px;border-radius:4px;background:linear-gradient(135deg,rgba(255,102,0,.08),rgba(255,102,0,.18));border:1px dashed rgba(255,102,0,.4);opacity:0;pointer-events:none;transition:opacity .4s ease}
-    .block-form.vis{opacity:1}
-    .block-form.flash{animation:bfFlash .5s ease}
-    @keyframes bfFlash{0%{box-shadow:0 0 0 rgba(255,102,0,.6)}50%{box-shadow:0 0 24px rgba(255,102,0,.7)}100%{box-shadow:0 0 0 rgba(255,102,0,0);opacity:0}}
-
-    /* ═══ ocean-aux: density + clock ═══ */
-    .ocean-aux{display:grid;grid-template-columns:1fr 220px;gap:10px;margin:0 var(--space-page-x) 14px}
-    .privacy-density{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:10px}
-    .pd-row{display:flex;align-items:baseline;gap:10px}
-    .pd-pct{font-size:28px;font-weight:600;color:var(--grn);font-variant-numeric:tabular-nums}
-    .pd-tag{font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .pd-bar{height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden}
-    .pd-fill{height:100%;background:linear-gradient(90deg,var(--grn),#00DDAA);transition:width .6s ease}
-    .mempool-clock-wrap{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:8px;display:flex;align-items:center;justify-content:center}
-    .mempool-clock-wrap canvas{width:100%;height:190px;display:block}
-
-    /* ═══ MARKET pane ═══ */
-    .market-pane{padding:0 var(--space-page-x);display:none;flex-direction:column;gap:12px;margin-bottom:18px}
-    .market-pane.active{display:flex}
-    .mk-block{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;overflow:hidden}
-    .mk-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
-    .mk-t{font-size:12px;font-weight:500}
-    .mk-s{font-size:9px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .mk-canvas-wrap{padding:10px 14px}
-    .mk-canvas-wrap canvas{width:100%;display:block}
-    .mk-tall canvas{height:320px}
-    .mk-short canvas{height:180px}
-    .mk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px}
-    .mk-sc{background:var(--surface-1);padding:14px;text-align:center;border-radius:10px}
-    .mk-sv{font-size:22px;font-weight:600;color:var(--xmr-text);font-variant-numeric:tabular-nums;margin-bottom:3px}
-    .mk-sl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .fee-estimator{padding:14px}
-    .est-buttons{display:flex;gap:4px;padding:0 0 10px 0}
-    .est-btn{font-family:inherit;font-size:10px;padding:6px 12px;background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border-default);border-radius:5px;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
-    .est-btn.active{background:rgba(255,102,0,.08);color:var(--xmr);border-color:rgba(255,102,0,.25)}
-    .est-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px}
-    .est-cell{background:var(--surface-2);padding:14px;text-align:center;border-radius:8px}
-    .est-v{font-size:18px;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;margin-bottom:3px}
-    .est-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .bh-table-wrap{padding:6px 14px 12px;font-size:11px}
-    .bh-row{display:grid;grid-template-columns:1.2fr .6fr 1fr 1fr .6fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:center;font-variant-numeric:tabular-nums}
-    .bh-row.bh-head{color:var(--text-tertiary);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border-default)}
-    .bh-row .bh-h{color:var(--xmr)}
-    .bh-fill-g{color:var(--grn)}.bh-fill-y{color:var(--gold)}.bh-fill-r{color:var(--xmr)}
-
-    /* ═══ TRACK extras: privacy report + propagation ═══ */
-    .track-aux{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-    .privacy-report{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
-    .pr-row{display:flex;align-items:center;gap:8px;padding:6px 0}
-    .pr-chk{color:var(--grn);font-weight:600;font-size:12px}
-    .pr-lbl{font-size:11px;flex:1}
-    .pr-v{font-size:9px;color:var(--grn);letter-spacing:1.5px;text-transform:uppercase}
-    .prop-timeline{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:8px}
-    .pt-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border-subtle)}
-    .pt-row:last-child{border-bottom:none}
-    .pt-time{font-size:13px;color:var(--blue);font-variant-numeric:tabular-nums}
-    .pt-lbl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-
-    /* ═══ generic mode visibility (uses the `hidden` attribute for native display:none) ═══ */
-    [hidden]{display:none!important}
-
-    /* ═══ reduced-motion: kill all keyframe + transition animations ═══ */
-    @media(prefers-reduced-motion: reduce){
-        .bk.slide-in,.txr-new,.block-form.flash,.pd-fill,.mode-btn{animation:none!important;transition:none!important}
-        *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
-    }
-
-    /* ═══ confirmation ring segments + hover tooltip ═══ */
-    .ring-seg{cursor:pointer;pointer-events:stroke;transition:opacity .15s}
-    .ring-seg:hover{opacity:.75}
-    .ring-tip{position:absolute;min-width:160px;padding:8px 10px;background:rgba(10,10,14,.96);border:1px solid rgba(255,102,0,.3);border-radius:6px;font-size:10px;line-height:1.5;color:var(--text-primary);pointer-events:none;opacity:0;transform:translate(-50%,-8px);transition:opacity .15s;z-index:10;white-space:nowrap}
-    .ring-tip.vis{opacity:1}
-    .ring-tip .rt-h{color:var(--xmr);font-weight:600}
-    .ring-tip .rt-m{color:var(--text-tertiary);font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-right:6px}
-    .ring-tip .rt-v{color:var(--grn)}
-
-    @media(max-width:768px){
-        .ocean-aux{grid-template-columns:1fr}.mempool-clock-wrap canvas{height:160px}
-        .mk-stats{grid-template-columns:1fr 1fr 1fr}.mk-sv{font-size:17px}
-        .track-aux{grid-template-columns:1fr}
-        .bh-row{grid-template-columns:1fr .5fr .9fr .9fr .5fr;font-size:10px}
-        .mk-tall canvas{height:240px}
-    }
-
-    @media(max-width:768px){
-        .mp-nav{padding:8px 12px;gap:6px}.mp-tabs{margin-left:0;flex-wrap:wrap;gap:6px}.mp-search{margin-left:0;max-width:100%}
-        .sbar{grid-template-columns:repeat(2,1fr);padding:0 12px}
-        .tth{margin:0 12px 12px}.tth-g{grid-template-columns:repeat(3,1fr)}
-        .bf{margin:0 12px 12px}.bf-strip{height:160px}.bk{width:100px;min-width:100px;padding:8px 6px}
-        .oc{margin:0 12px 12px;height:160px}
-        .ps{margin:0 12px 12px;grid-template-columns:repeat(2,1fr)}
-        .txl{margin:0 12px 12px}.txr{grid-template-columns:1fr 55px 45px 55px;font-size:8px}.txr .ts,.txr .tfr,.txr .tr{display:none}
-        .txd{margin:0 12px 12px}.txd-hero{grid-template-columns:1fr}.rc{margin-top:12px}.rc svg{width:220px;height:220px}
-        .bav{margin:0 12px 12px}.bav-top{grid-template-columns:1fr}.bav-viz{height:240px}
-    }
-    </style>
+/* Responsive */
+@media(max-width:900px){
+    .mp-fee-hero{grid-template-columns:repeat(2,1fr)}
+    .mp-stats-row{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:560px){
+    .mp-subnav{gap:8px;padding:8px 14px}
+    .mp-mode-btn{padding:5px 9px;font-size:9.5px;letter-spacing:1px}
+    .mp-conn-status{font-size:9px;margin-left:0;width:100%;justify-content:flex-start;border-top:1px solid var(--border-subtle);padding-top:6px}
+    .mp-stats-row{grid-template-columns:repeat(2,1fr)}
+    .mp-txfeed-h,.mp-txrow{grid-template-columns:1.3fr .6fr 1fr .55fr}
+    .mp-txfeed-h .c-tier,.mp-txrow .c-tier,
+    .mp-txfeed-h .c-age,.mp-txrow .c-age{display:none}
+    .mp-ocean{height:260px}
+    .mp-depth{height:220px}
+}
+</style>
 </head>
 <body>
 <div class="page-offset mp">
+
     <div id="nav-mount"></div>
-    <div class="mp-nav">
-        <div class="mp-brand"><em>xmr.irish</em> <span>/</span> <em>mempool</em></div>
-        <div class="mp-tabs">
-            <a href="/markets" class="mp-tab">Markets</a>
-            <a href="/network" class="mp-tab">Network</a>
-            <a href="/mining" class="mp-tab">Mining</a>
-            <a href="/mempool" class="mp-tab active">Mempool</a>
-        </div>
-        <div class="mp-search">
-            <input type="text" id="txIn" placeholder="txn hash or block height...">
-            <button id="txBtn">Track</button>
-        </div>
-    </div>
 
-    <div class="mode-strip" role="tablist" aria-label="Mempool mode">
-        <button type="button" class="mode-btn active" data-mode-btn="ocean" role="tab" aria-selected="true">OCEAN</button>
-        <button type="button" class="mode-btn" data-mode-btn="market" role="tab" aria-selected="false">MARKET</button>
-        <button type="button" class="mode-btn" data-mode-btn="track" role="tab" aria-selected="false">TRACK</button>
-    </div>
-
-    <div class="sbar" data-mode="ocean,market,track">
-        <div class="sc"><div class="sv" style="color:var(--grn)" id="st-unconf">—</div><div class="sl">Unconfirmed</div></div>
-        <div class="sc"><div class="sv" style="color:var(--xmr-text)" id="st-hash">—</div><div class="sl">Hashrate</div></div>
-        <div class="sc"><div class="sv" style="color:var(--g3)" id="st-diff">—</div><div class="sl">Difficulty</div></div>
-        <div class="sc"><div class="sv" style="color:var(--g3)">~2 min</div><div class="sl">Block time</div></div>
-    </div>
-
-    <div class="tth" id="tth" data-mode="track">
-        <div class="tth-t">
-            <div style="font-size:11px;font-weight:600">Tracking</div>
-            <div class="tth-h" id="tth-hash">—</div>
-            <div class="tth-b" id="tth-badge">—</div>
+    <div class="mp-subnav">
+        <div class="mp-brand"><b>xmr.irish</b> &nbsp;/&nbsp; mempool</div>
+        <div class="mp-modes" role="tablist" aria-label="Mempool modes">
+            <button class="mp-mode-btn active" data-mode="ocean"    role="tab" aria-selected="true">OCEAN</button>
+            <button class="mp-mode-btn"        data-mode="explorer" role="tab" aria-selected="false">EXPLORER</button>
+            <button class="mp-mode-btn"        data-mode="mining"   role="tab" aria-selected="false">MINING</button>
         </div>
-        <div class="tth-g">
-            <div class="tth-m"><div class="tth-mv" id="tth-seen" style="color:var(--g3)">—</div><div class="tth-ml">First seen</div></div>
-            <div class="tth-m"><div class="tth-mv" id="tth-fee" style="color:var(--gold)">—</div><div class="tth-ml">Fee rate</div></div>
-            <div class="tth-m"><div class="tth-mv" id="tth-next" style="color:var(--xmr-text)">—</div><div class="tth-ml">Next confirm</div></div>
-            <div class="tth-m"><div class="tth-mv" id="tth-eta6" style="color:var(--xmr-text)">—</div><div class="tth-ml">ETA 6/10</div></div>
-            <div class="tth-m"><div class="tth-mv" id="tth-eta10" style="color:var(--xmr-text)">—</div><div class="tth-ml">ETA 10/10</div></div>
-            <div class="tth-m" id="tth-detail" style="cursor:pointer"><div class="tth-mv" style="color:var(--blue)">Detail →</div><div class="tth-ml">View ring</div></div>
+        <div class="mp-conn-status connecting" id="mp-conn" aria-live="polite">
+            <span class="dot"></span><span class="label">CONNECTING</span>
         </div>
     </div>
 
-    <!-- Block flow: single strip, uniform blocks -->
-    <div class="bf" data-mode="track">
-        <div class="bf-head"><div class="bf-lbl">Pending (mempool)</div><div class="bf-lbl r">Confirmed blocks →</div></div>
-        <div class="bf-arr-wrap"><div class="bf-arr hidden" id="bf-arr"><div class="bf-arr-l" id="bf-arr-l">your txn [0/10]</div><div class="bf-arr-ln"></div><div class="bf-arr-tr"></div></div></div>
-        <div class="bf-strip" id="bf-strip">
-            <div class="bk pnext" id="pend-ghost"><div class="bv1">~next</div><div class="bv2">est. block</div><div class="bv2">~4 min</div></div>
-            <div class="bk pend" id="pend-main"><div class="bv1" id="pend-count">—</div><div class="bv2" id="pend-fees">—</div><div class="bv2">~2 min</div><div class="bv3">waiting...</div><div class="bbar"></div></div>
-            <div class="bf-divider" id="bf-divider"></div>
+    <!-- OCEAN MODE ───────────────────────────────────────────────── -->
+    <section class="mp-mode-panel" id="mp-panel-ocean" data-mode="ocean" role="tabpanel">
+        <div class="mp-fee-hero" id="mp-fee-hero"></div>
+        <div class="mp-proj-block" id="mp-proj-block"></div>
+        <div class="mp-ocean">
+            <canvas id="mp-ocean-canvas" aria-label="Live mempool transaction ocean"></canvas>
+            <div class="mp-ocean-tip" id="mp-ocean-tip" hidden></div>
         </div>
-    </div>
-
-    <div class="fee-heatmap" data-mode="ocean">
-        <div class="heatmap-bar" id="fee-heatmap-bar"></div>
-        <div class="heatmap-labels">
-            <span><em>Economy</em> <span id="fee-economy">—</span> XMR/kB</span>
-            <span><em>Standard</em> <span id="fee-standard">—</span> XMR/kB</span>
-            <span><em>Priority</em> <span id="fee-priority">—</span> XMR/kB</span>
+        <div class="mp-depth">
+            <div class="mp-depth-head"><span>FEE DEPTH</span><span>piconero/byte · bytes</span></div>
+            <canvas id="mp-depth-canvas" aria-label="Fee depth chart"></canvas>
         </div>
-    </div>
-
-    <div class="cong-spark" data-mode="ocean">
-        <div class="cs-hdr"><span class="cs-lbl">24h</span><span class="cs-ct" id="cong-spark-ct">—</span></div>
-        <canvas id="cong-spark-canvas" role="img" aria-label="24 hour mempool congestion sparkline"></canvas>
-    </div>
-
-    <div class="oc" data-mode="ocean">
-        <canvas id="ocean"></canvas>
-        <div class="block-form" id="block-form" aria-hidden="true"></div>
-        <div class="oc-lg"><div class="oc-li"><div class="oc-ld" style="background:var(--grn)"></div>Low</div><div class="oc-li"><div class="oc-ld" style="background:var(--gold)"></div>Med</div><div class="oc-li"><div class="oc-ld" style="background:var(--xmr)"></div>High</div></div>
-        <div class="oc-ov"><div class="oc-lb" id="oc-label">Live particle ocean</div><div class="oc-nr">Every particle is a real tx. You can see its <em>size</em> and <em>fee</em>. You cannot see who sent it, who receives it, or how much. <em>Privacy by default.</em></div></div>
-    </div>
-
-    <div class="ps" data-mode="ocean">
-        <div class="pi"><div class="pil">Sender</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
-        <div class="pi"><div class="pil">Receiver</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
-        <div class="pi"><div class="pil">Amount</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
-        <div class="pi"><div class="pil">Visible</div><div class="piv" style="color:var(--text-secondary)">Fee · Size · Time</div></div>
-    </div>
-
-    <div class="ocean-aux" data-mode="ocean">
-        <div class="privacy-density">
-            <div class="pd-row"><span class="pd-pct" id="ring16-pct">—</span><span class="pd-tag">Ring-16</span></div>
-            <div class="pd-bar"><div class="pd-fill" id="density-fill" style="width:0%"></div></div>
-        </div>
-        <div class="mempool-clock-wrap">
-            <canvas id="mempool-clock" role="img" aria-label="Mempool congestion by hour (UTC)"></canvas>
-        </div>
-    </div>
-
-    <div class="txl" id="txl-dash" data-mode="ocean,track">
-        <div class="txl-hd"><div class="txl-ti">Recent transactions</div><div class="txl-ct" id="txl-ct">— · live 5s</div></div>
-        <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Status</span></div>
-        <div id="txl-body" class="txl-body collapsed"></div>
-        <div class="txl-toggle" onclick="toggleTxl(this)">Show all transactions ▾</div>
-    </div>
-
-    <section class="market-pane" data-mode="market">
-        <div class="mk-block">
-            <div class="mk-hdr"><span class="mk-t">Fee depth</span><span class="mk-s" id="mk-depth-sub">—</span></div>
-            <div class="mk-canvas-wrap mk-tall"><canvas id="fee-depth-chart" role="img" aria-label="Cumulative fee distribution"></canvas></div>
-        </div>
-
-        <div class="mk-stats">
-            <div class="mk-sc"><div class="mk-sv" id="stat-median-fee">—</div><div class="mk-sl">Median fee</div></div>
-            <div class="mk-sc"><div class="mk-sv" id="stat-confirmed-10blk">—</div><div class="mk-sl">Confirmed 10 blk</div></div>
-            <div class="mk-sc"><div class="mk-sv" id="stat-pool-size">—</div><div class="mk-sl">Mempool size</div></div>
-        </div>
-
-        <div class="mk-block">
-            <div class="mk-hdr"><span class="mk-t">Fee histogram</span><span class="mk-s" id="mk-hist-sub">30 buckets</span></div>
-            <div class="mk-canvas-wrap mk-short"><canvas id="fee-histogram" role="img" aria-label="Fee rate histogram"></canvas></div>
-        </div>
-
-        <div class="mk-block fee-estimator">
-            <div class="mk-hdr"><span class="mk-t">Fee estimator</span></div>
-            <div class="est-buttons" role="group">
-                <button type="button" class="est-btn active" data-target="1">1 blk</button>
-                <button type="button" class="est-btn" data-target="3">3 blk</button>
-                <button type="button" class="est-btn" data-target="10">10 blk</button>
-            </div>
-            <div class="est-grid">
-                <div class="est-cell"><div class="est-v" id="est-fee-rate">—</div><div class="est-l">XMR/kB</div></div>
-                <div class="est-cell"><div class="est-v" id="est-fee-cost">—</div><div class="est-l">Typical tx</div></div>
-            </div>
-        </div>
-
-        <div class="mk-block">
-            <div class="mk-hdr"><span class="mk-t">Block history</span><span class="mk-s">last 10</span></div>
-            <div class="bh-table-wrap">
-                <div class="bh-row bh-head"><span>Block</span><span>Txns</span><span>Median fee</span><span>Min confirmed</span><span>Fill %</span></div>
-                <div id="block-history-body"></div>
-            </div>
-        </div>
+        <div class="mp-txfeed" id="mp-txfeed"></div>
+        <div class="mp-stats-row" id="mp-stats-row"></div>
     </section>
 
-    <div id="txd-divider" class="txd-divider" style="display:none" data-mode="track"></div>
-    <div class="txd" id="txd" data-mode="track">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
-            <div style="font-size:18px;font-weight:600">Transaction detail</div>
-            <div id="txd-badge" style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.2)">—</div>
-        </div>
-        <div class="track-aux">
-            <div class="privacy-report">
-                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">RingCT</span><span class="pr-v">on</span></div>
-                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">Stealth</span><span class="pr-v">on</span></div>
-                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">Ring 16</span><span class="pr-v">on</span></div>
-                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">BP+</span><span class="pr-v">on</span></div>
-            </div>
-            <div class="prop-timeline">
-                <div class="pt-row"><span class="pt-time" id="prop-first-seen">—</span><span class="pt-lbl">first seen</span></div>
-                <div class="pt-row"><span class="pt-time" id="prop-mempool-time">—</span><span class="pt-lbl">in mempool</span></div>
-                <div class="pt-row"><span class="pt-time" id="prop-confirmed-time">—</span><span class="pt-lbl">confirmed</span></div>
-            </div>
-        </div>
-        <div class="txd-hero">
-            <div class="txd-info">
-                <div class="txd-hf" id="txd-hash">—</div>
-                <div class="txd-grid">
-                    <div class="txd-cell"><span class="l">First seen</span><span class="v" id="txd-seen">—</span></div>
-                    <div class="txd-cell"><span class="l">Fee</span><span class="v" style="color:var(--gold)" id="txd-fee">—</span></div>
-                    <div class="txd-cell"><span class="l">Size</span><span class="v" id="txd-size">—</span></div>
-                    <div class="txd-cell"><span class="l">Fee rate</span><span class="v" style="color:var(--xmr-text)" id="txd-rate">—</span></div>
-                    <div class="txd-cell"><span class="l">Ring size</span><span class="v" style="color:var(--xmr-text)">16 decoys</span></div>
-                    <div class="txd-cell"><span class="l">Privacy</span><span class="v" style="color:var(--grn)">RingCT + Stealth</span></div>
-                    <div class="txd-cell"><span class="l">Included in block</span><span class="v" style="color:var(--xmr)" id="txd-block">—</span></div>
-                    <div class="txd-cell"><span class="l">Inputs / Outputs</span><span class="v" style="color:var(--grn)">hidden / hidden</span></div>
-                    <div class="txd-cell"><span class="l">ETA 6/10</span><span class="v" id="txd-eta6">—</span></div>
-                    <div class="txd-cell"><span class="l">Block at 6/10</span><span class="v" id="txd-blk6">—</span></div>
-                    <div class="txd-cell"><span class="l">ETA 10/10</span><span class="v" id="txd-eta10">—</span></div>
-                    <div class="txd-cell"><span class="l">Est. block 10/10</span><span class="v" id="txd-blk10">—</span></div>
-                </div>
-            </div>
-            <div class="rc">
-                <button class="snd-btn" id="snd-btn">Sound: off</button>
-                <svg viewBox="0 0 200 200" id="ring-svg">
-                    <circle cx="100" cy="100" r="82" fill="none" stroke="#1A1A22" stroke-width="7"/>
-                    <g id="ring-seg-group" transform="rotate(-90 100 100)"></g>
-                    <circle cx="100" cy="100" r="82" fill="none" stroke="#FF6600" stroke-width="7" stroke-dasharray="0 515.22" stroke-dashoffset="-25.76" stroke-linecap="round" id="ring-fill" style="display:none"/>
-                    <circle cx="100" cy="100" r="82" fill="none" stroke="#00CC88" stroke-width="3" stroke-dasharray="3 512" stroke-dashoffset="-335" stroke-linecap="round" opacity=".7"/>
-                    <circle cx="100" cy="100" r="82" fill="none" stroke="#00CC88" stroke-width="9" stroke-dasharray="4 511" stroke-dashoffset="-335" opacity=".2"/>
-                    <text x="100" y="82" text-anchor="middle" fill="#FF8533" font-family="monospace" font-size="32" font-weight="600" id="ring-count">0/10</text>
-                    <text x="100" y="102" text-anchor="middle" fill="#70707A" font-family="monospace" font-size="9" letter-spacing="2">CONFIRMATIONS</text>
-                    <text x="100" y="120" text-anchor="middle" fill="#90909A" font-family="monospace" font-size="10" id="ring-eta">waiting...</text>
-                    <text x="100" y="138" text-anchor="middle" fill="#70707A" font-family="monospace" font-size="9" id="ring-6">—</text>
-                </svg>
-                <div class="rcl">Confirmation ring</div>
-                <div class="rcs" id="rc-status">enter a txn hash to track</div>
-                <div class="ring-tip" id="ring-tip" role="tooltip" aria-hidden="true"></div>
-            </div>
-        </div>
-        <div class="txl" style="margin:14px 0 0">
-            <div class="txl-hd"><div class="txl-ti">Recent transactions</div><div class="txl-ct">live 5s · new txns at top</div></div>
-            <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Status</span></div>
-            <div id="txl-body2" class="txl-body collapsed"></div>
-            <div class="txl-toggle" onclick="toggleTxl(this)">Show all transactions ▾</div>
-        </div>
-    </div>
+    <!-- EXPLORER placeholder (filled in M3) ───────────────────────── -->
+    <section class="mp-mode-panel" id="mp-panel-explorer" data-mode="explorer" role="tabpanel" hidden>
+        <div class="mp-placeholder">Explorer mode — coming in M3</div>
+    </section>
 
-    <div class="bav" id="bav" data-mode="track">
-        <div class="bav-back" id="bav-back">← Back to mempool</div>
-        <div class="bav-hero">
-            <div class="bav-hdr">
-                <div><div style="font-size:7px;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase;margin-bottom:2px">Block</div><div class="bav-ht" id="bav-height">—</div></div>
-                <div class="bav-mt" id="bav-meta">—</div>
-            </div>
-            <div class="bav-top">
-                <div class="bav-viz"><canvas id="bav-canvas"></canvas><div class="bav-viz-l" id="bav-viz-label">Block fill</div></div>
-                <div class="bav-sts">
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--xmr-text)" id="bav-txcount">—</div><div class="bav-st-l">Transactions</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--xmr-text)" id="bav-reward">—</div><div class="bav-st-l">Reward</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--gold)" id="bav-fees">—</div><div class="bav-st-l">Total fees</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--g3)" id="bav-size">—</div><div class="bav-st-l">Block size</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--g3)" id="bav-diff">—</div><div class="bav-st-l">Difficulty</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--xmr-text)" id="bav-prev">—</div><div class="bav-st-l">Prev block</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--g3)">120s</div><div class="bav-st-l">Target time</div></div>
-                    <div class="bav-st"><div class="bav-st-v" style="color:var(--grn)">0.85%</div><div class="bav-st-l">Inflation</div></div>
-                </div>
-            </div>
-            <div style="font-size:10px;font-weight:600;margin-bottom:5px;display:flex;justify-content:space-between">Transactions in block <span style="color:var(--text-tertiary);font-weight:400;font-size:9px">live · 5s</span></div>
-            <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Confs</span></div>
-            <div id="bav-txl" class="txl-body collapsed"></div>
-            <div class="txl-toggle" onclick="toggleTxl(this)">Show all transactions ▾</div>
-        </div>
-    </div>
+    <!-- MINING placeholder (filled in M4) ─────────────────────────── -->
+    <section class="mp-mode-panel" id="mp-panel-mining" data-mode="mining" role="tabpanel" hidden>
+        <div class="mp-placeholder">Mining mode — coming in M4</div>
+    </section>
 
-    <div class="mp-foot" data-mode="ocean,market,track">xmr.irish / mempool · live 5s · privacy is not optional</div>
 </div>
+
+<!-- Shared services -->
 <script src="js/nav.js"></script>
 <script src="js/price-service.js"></script>
 <script src="js/monero-network.js"></script>
 <script src="js/genui.js"></script>
-<script src="js/mempool-3.js"></script>
+
+<!-- M2 modules -->
+<script src="js/xmr-relay-ws.js"></script>
+<script src="js/mempool-ocean-stats.js"></script>
+<script src="js/mempool-ocean-feed.js"></script>
+<script src="js/mempool-ocean-hero.js"></script>
+<script src="js/mempool-ocean-projected.js"></script>
+<script src="js/mempool-ocean-depth.js"></script>
+<script src="js/mempool-ocean-viz.js"></script>
 <script src="js/mempool-ocean.js"></script>
-<script src="js/mempool-market.js"></script>
-<script src="js/mempool-track.js"></script>
+
 <script>
-NavComponent.inject('nav-mount');
-PriceService.start();
+/* ═══ Boot ═══ */
+(function () {
+    'use strict';
 
-var tracking=false,trackedHash='',trackedConfs=0,trackedBlock=0,trackedFirstSeen=0,trackedFeeRate=0;
-var soundEnabled=false,audioCtx=null;
-var prevPoolHashes=[],prevHeight=0;
-var REDUCED_MOTION=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // Nav + global price service.
+    NavComponent.inject('nav-mount');
+    if (window.PriceService && typeof PriceService.start === 'function') PriceService.start();
 
-function getParam(k){return new URLSearchParams(location.search).get(k)}
-function setParam(k,v){var u=new URL(location.href);u.searchParams.set(k,v);history.replaceState(null,'',u)}
-function toggleTxl(btn){var body=btn.previousElementSibling;body.classList.toggle('collapsed');btn.textContent=body.classList.contains('collapsed')?'Show all transactions ▾':'Collapse ▴'}
-var initTx=getParam('tx'),initBlock=getParam('block');
-if(initTx)document.getElementById('txIn').value=initTx;
+    /* ── Mode switcher (OCEAN / EXPLORER / MINING) ── */
+    var VALID = { ocean: 1, explorer: 1, mining: 1 };
+    var STORAGE_KEY = 'mempool-mode';
 
-function doSearch(){var v=document.getElementById('txIn').value.trim();if(!v)return;/^\d+$/.test(v)?showBlockView(parseInt(v)):trackTransaction(v)}
-document.getElementById('txBtn').addEventListener('click',doSearch);
-document.getElementById('txIn').addEventListener('keydown',function(e){if(e.key==='Enter')doSearch()});
-document.getElementById('tth-detail').addEventListener('click',function(){if(tracking){document.getElementById('txd').classList.add('vis');document.getElementById('txd-divider').style.display='block';document.getElementById('txd').scrollIntoView({behavior:'smooth',block:'start'})}});
-document.getElementById('bav-back').addEventListener('click',function(){document.getElementById('bav').classList.remove('vis')});
+    function setMode(mode) {
+        if (!VALID[mode]) mode = 'ocean';
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch (_) {}
 
-/* ═══ TRACK TRANSACTION ═══ */
-async function trackTransaction(hash){
-    trackedHash=hash;tracking=true;trackedConfs=0;trackedBlock=0;trackedFirstSeen=Date.now();
-    setParam('tx',hash);
-    document.getElementById('tth').classList.add('vis');
-    document.getElementById('txd').classList.add('vis');
-    document.getElementById('txd-divider').style.display='block';
-    document.getElementById('bf-arr').classList.remove('hidden');
-    document.getElementById('tth-hash').textContent=hash;
-    document.getElementById('txd-hash').textContent=hash;
-    document.getElementById('txd-seen').textContent='just now';
-    document.getElementById('tth-seen').textContent='just now';
-    var poolTx=(MoneroNetwork.mempool||[]).find(function(t){return t.hash===hash});
-    trackedFeeRate=poolTx&&poolTx.size>0?poolTx.fee/(poolTx.size/1024):0;
-    if(window.MempoolTrack)window.MempoolTrack.onTrackStart(hash,trackedFeeRate);
-    await checkTrackedTx();
-    positionArrow();
-}
-async function checkTrackedTx(){
-    if(!tracking||!trackedHash)return;
-    var d=await MoneroNetwork.lookupTransaction(trackedHash);
-    if(!d||!d.found){updateTrackingUI(0,0);return}
-    if(d.inPool){updateTrackingUI(0,0);return}
-    trackedBlock=d.blockHeight;
-    var c=d.confirmations;
-    if(c>trackedConfs&&soundEnabled)playTone(c);
-    trackedConfs=c;
-    if(c>=1&&window.MempoolTrack){
-        var blk=MoneroNetwork.blocks.find(function(b){return b.height===trackedBlock});
-        window.MempoolTrack.onTrackConfirmed(trackedBlock,blk?blk.timestamp:0);
-    }
-    updateTrackingUI(c,trackedBlock);
-}
-function updateTrackingUI(confs,blockH){
-    confs=Math.min(confs,10);var rem=Math.max(0,10-confs),rem6=Math.max(0,6-confs);
-    document.getElementById('tth-badge').textContent=confs+'/10 confirmed';
-    document.getElementById('tth-next').textContent=confs>=10?'done':'~2 min';
-    document.getElementById('tth-eta6').textContent=confs>=6?'reached':'~'+(rem6*2)+' min';
-    document.getElementById('tth-eta6').style.color=confs>=6?'var(--grn)':'var(--xmr-text)';
-    document.getElementById('tth-eta10').textContent=confs>=10?'done':'~'+(rem*2)+' min';
-    document.getElementById('tth-eta10').style.color=confs>=10?'var(--grn)':'var(--xmr-text)';
-    document.getElementById('bf-arr-l').textContent='your txn ['+confs+'/10]';
-    document.getElementById('txd-badge').textContent=confs+'/10 confirmed';
-    document.getElementById('txd-block').textContent=blockH?'#'+blockH.toLocaleString():'pending';
-    document.getElementById('txd-eta6').textContent=confs>=6?'reached ✓':'~'+(rem6*2)+' min';
-    document.getElementById('txd-eta6').style.color=confs>=6?'var(--grn)':'';
-    document.getElementById('txd-blk6').textContent=blockH?'#'+(blockH+5).toLocaleString():'—';
-    document.getElementById('txd-blk6').style.color=confs>=6?'var(--grn)':'';
-    document.getElementById('txd-eta10').textContent=confs>=10?'confirmed ✓':'~'+(rem*2)+' min';
-    document.getElementById('txd-eta10').style.color=confs>=10?'var(--grn)':'var(--xmr-text)';
-    document.getElementById('txd-blk10').textContent=blockH?'#'+(blockH+9).toLocaleString():'—';
-    updateRing(confs);
-    document.getElementById('ring-6').textContent=confs>=6?'ChangeNow 6/10 ✓':'—';
-    document.getElementById('ring-6').setAttribute('fill',confs>=6?'#00CC88':'#70707A');
-    document.getElementById('rc-status').textContent=blockH?'Included in #'+blockH.toLocaleString()+' · '+confs+' blocks deep':'waiting for inclusion...';
-    positionArrow();
-}
-function updateRing(c){
-    if(window.MempoolTrack&&window.MempoolTrack.updateRing){window.MempoolTrack.updateRing(c,trackedBlock);return}
-    document.getElementById('ring-count').textContent=Math.min(c,10)+'/10';
-    document.getElementById('ring-eta').textContent=c>=10?'fully confirmed':'~'+(Math.max(0,10-c)*2)+' min to 10/10';
-}
-
-/* ═══ ARROW POSITIONING — follows the tracked block ═══ */
-function positionArrow(){
-    var arr=document.getElementById('bf-arr');
-    if(!tracking){arr.classList.add('hidden');return}
-    arr.classList.remove('hidden');
-    var strip=document.getElementById('bf-strip');
-    var target=null;
-    if(trackedConfs===0){
-        target=document.getElementById('pend-main');
-    } else {
-        var allBlocks=strip.querySelectorAll('.bk.conf');
-        for(var i=0;i<allBlocks.length;i++){
-            if(allBlocks[i].dataset.height==trackedBlock){target=allBlocks[i];break}
+        var panels = document.querySelectorAll('.mp-mode-panel[data-mode]');
+        for (var i = 0; i < panels.length; i++) {
+            panels[i].hidden = panels[i].getAttribute('data-mode') !== mode;
         }
-        if(!target&&allBlocks.length)target=allBlocks[0];
-    }
-    if(!target)return;
-    var stripRect=strip.getBoundingClientRect();
-    var targetRect=target.getBoundingClientRect();
-    var left=targetRect.left-stripRect.left+strip.scrollLeft+targetRect.width/2;
-    arr.style.left=left+'px';arr.style.transform='translateX(-50%)';
-}
-
-/* ═══ BLOCK VIEW ═══ */
-function showBlockView(height){
-    setParam('block',height);document.getElementById('bav').classList.add('vis');
-    document.getElementById('bav-height').textContent='#'+height.toLocaleString();
-    document.getElementById('bav-prev').textContent='#'+(height-1).toLocaleString();
-    var block=MoneroNetwork.blocks.find(function(b){return b.height===height});
-    if(block){
-        document.getElementById('bav-txcount').textContent=block.numTxes;
-        document.getElementById('bav-reward').textContent=block.reward.toFixed(3)+' XMR';
-        document.getElementById('bav-size').textContent=(block.size/1024).toFixed(1)+' KB';
-        document.getElementById('bav-diff').textContent=MoneroNetwork.fmtDifficulty(block.difficulty);
-        document.getElementById('bav-meta').innerHTML=MoneroNetwork.fmtTimeAgo(block.timestamp)+'<br><span style="color:var(--grn)">'+block.confirmations+' confirmations</span>';
-        document.getElementById('bav-viz-label').textContent='Block fill · '+block.numTxes+' transactions';
-        renderBlockFill(block.numTxes);
-    }
-    document.getElementById('bav').scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-/* ═══ RENDER BLOCKS — with slide animation for new blocks ═══ */
-function renderConfBlocks(blocks){
-    var strip=document.getElementById('bf-strip');
-    var divider=document.getElementById('bf-divider');
-    var existing=strip.querySelectorAll('.bk.conf');
-    var existingHeights=[];
-    existing.forEach(function(el){existingHeights.push(parseInt(el.dataset.height))});
-
-    blocks.forEach(function(b){
-        var already=strip.querySelector('.bk.conf[data-height="'+b.height+'"]');
-        if(already){
-            // Update data in place
-            var isTracked=tracking&&trackedBlock&&b.height===trackedBlock;
-            var confNum=tracking&&trackedBlock?b.height-trackedBlock+1:0;
-            var isSix=confNum===6;
-            already.className='bk conf'+(isTracked?' tracked':'')+(isSix?' six':'');
-            already.querySelector('.btx').textContent=b.numTxes+' txns';
-            already.querySelector('.bt').textContent=MoneroNetwork.fmtTimeAgo(b.timestamp);
-            var bcfEl=already.querySelector('.bcf');
-            if(tracking&&trackedBlock&&confNum>=1&&confNum<=10){
-                bcfEl.textContent=confNum+'/10'+(isSix?' ✓':'');
-                bcfEl.style.color=isSix?'var(--grn)':'var(--xmr)';
-            } else {
-                bcfEl.textContent='—';bcfEl.style.color='var(--text-tertiary)';
-            }
-        } else {
-            // New block — create and slide in
-            var div=document.createElement('div');
-            var isTracked=tracking&&trackedBlock&&b.height===trackedBlock;
-            var confNum=tracking&&trackedBlock?b.height-trackedBlock+1:0;
-            var isSix=confNum===6;
-            div.className='bk conf slide-in'+(isTracked?' tracked':'')+(isSix?' six':'');
-            div.dataset.height=b.height;
-            div.innerHTML='<div class="bh">#'+b.height.toLocaleString()+'</div><div class="br">'+b.reward.toFixed(3)+' XMR</div><div class="btx">'+b.numTxes+' txns</div><div class="bt">'+MoneroNetwork.fmtTimeAgo(b.timestamp)+'</div><div class="bcf" style="color:'+(isTracked?(isSix?'var(--grn)':'var(--xmr)'):'var(--text-tertiary)')+'">'+((tracking&&trackedBlock&&confNum>=1&&confNum<=10)?confNum+'/10'+(isSix?' ✓':''):'—')+'</div><div class="cbar"></div>';
-            div.addEventListener('click',function(){showBlockView(b.height)});
-            if(divider.nextSibling){strip.insertBefore(div,divider.nextSibling)}else{strip.appendChild(div)}
-            setTimeout(function(){div.classList.remove('slide-in')},800);
+        var btns = document.querySelectorAll('.mp-mode-btn[data-mode]');
+        for (var j = 0; j < btns.length; j++) {
+            var on = btns[j].getAttribute('data-mode') === mode;
+            btns[j].classList.toggle('active', on);
+            btns[j].setAttribute('aria-selected', on ? 'true' : 'false');
         }
-    });
 
-    // Sort blocks: newest first (right after divider)
-    var confEls=Array.from(strip.querySelectorAll('.bk.conf'));
-    confEls.sort(function(a,b){return parseInt(b.dataset.height)-parseInt(a.dataset.height)});
-    confEls.forEach(function(el){strip.appendChild(el)});
-    // Reinsert pending blocks and divider at start
-    strip.insertBefore(document.getElementById('bf-divider'),strip.firstChild);
-    strip.insertBefore(document.getElementById('pend-main'),strip.firstChild);
-    strip.insertBefore(document.getElementById('pend-ghost'),strip.firstChild);
-
-    positionArrow();
-}
-
-/* ═══ RENDER TX LIST ═══ */
-function renderTxList(targetId,txs,blocks){
-    var el=document.getElementById(targetId);
-    var allTx=[];
-    txs.forEach(function(tx){
-        allTx.push({hash:tx.hash,fee:tx.fee,size:tx.size,ring:16,rate:tx.size>0?(tx.fee/(tx.size/1024)).toFixed(5):'—',age:MoneroNetwork.fmtTimeAgo(tx.receiveTime),status:'pending',isNew:prevPoolHashes.indexOf(tx.hash)===-1});
-    });
-    blocks.slice(0,3).forEach(function(b){
-        for(var i=0;i<Math.min(b.numTxes,3);i++){
-            allTx.push({hash:b.height+'_'+i,fee:'—',size:'—',ring:16,rate:'—',age:MoneroNetwork.fmtTimeAgo(b.timestamp),status:b.confirmations+' conf',isNew:false});
-        }
-    });
-    var html='';
-    allTx.slice(0,15).forEach(function(tx){
-        var isPend=tx.status==='pending';
-        html+='<div class="txr'+(tx.isNew?' txr-new':'')+'"><span class="th" onclick="trackTransaction(\''+tx.hash+'\')">'+MoneroNetwork.truncHash(tx.hash)+'</span><span class="tf">'+(typeof tx.fee==='number'?tx.fee.toFixed(5):tx.fee)+'</span><span class="ts">'+(typeof tx.size==='number'?(tx.size/1024).toFixed(1)+'K':tx.size)+'</span><span class="tr">'+tx.ring+'</span><span class="tfr">'+tx.rate+'</span><span class="ta">'+tx.age+'</span><span class="tst '+(isPend?'tst-p':'tst-c')+'">'+tx.status+'</span></div>';
-    });
-    el.innerHTML=html;
-}
-
-/* ═══ PARTICLE OCEAN — persistent particles, no position jumps ═══ */
-var oceanCanvas,oceanCtx,oceanParticles=[],oceanW,oceanH,oceanInit=false;
-function initOcean(){
-    oceanCanvas=document.getElementById('ocean');oceanCtx=oceanCanvas.getContext('2d');
-    resizeOcean();window.addEventListener('resize',resizeOcean);drawOcean();
-}
-function resizeOcean(){
-    var dpr=Math.min(devicePixelRatio||1,2);
-    oceanW=oceanCanvas.clientWidth;oceanH=oceanCanvas.clientHeight;
-    oceanCanvas.width=oceanW*dpr;oceanCanvas.height=oceanH*dpr;
-    oceanCtx.setTransform(dpr,0,0,dpr,0,0);
-}
-function syncOceanToPool(pool){
-    var colors=['#00CC88','#00CC88','#00CC88','#FFD700','#FFD700','#FF6600'];
-    var target=Math.min(pool.length,80);
-    if(!oceanInit){
-        // First load: create all particles
-        oceanParticles=[];
-        for(var i=0;i<target;i++){
-            var tx=pool[i],f=Math.min(tx.fee/0.0001,1);
-            var p={x:Math.random()*oceanW,y:oceanH*0.2+Math.random()*oceanH*0.6,s:2+(tx.size/2000)*4,f:f,c:colors[Math.floor(f*5.99)],vx:(Math.random()-0.5)*0.25,ph:Math.random()*Math.PI*2,a:1};
-            p.bY=p.y;oceanParticles.push(p);
-        }
-        oceanInit=true;
-    } else {
-        // Subsequent: add new, trim excess, update existing data only (never reposition)
-        while(oceanParticles.length<target){
-            var idx=oceanParticles.length;
-            if(idx<pool.length){
-                var tx=pool[idx],f=Math.min(tx.fee/0.0001,1);
-                var p={x:Math.random()*oceanW,y:oceanH*0.2+Math.random()*oceanH*0.6,s:2+(tx.size/2000)*4,f:f,c:colors[Math.floor(f*5.99)],vx:(Math.random()-0.5)*0.25,ph:Math.random()*Math.PI*2,a:0};
-                p.bY=p.y;oceanParticles.push(p);
-            }
-        }
-        if(oceanParticles.length>target)oceanParticles.length=target;
-        for(var i=0;i<Math.min(target,pool.length);i++){
-            var tx=pool[i],f=Math.min(tx.fee/0.0001,1);
-            oceanParticles[i].f=f;
-            oceanParticles[i].s=2+(tx.size/2000)*4;
-            oceanParticles[i].c=colors[Math.floor(f*5.99)];
+        // RAF discipline: pause ocean when not visible, resume when back.
+        if (window.MempoolOcean) {
+            if (mode === 'ocean') MempoolOcean.resume();
+            else MempoolOcean.pause();
         }
     }
-    document.getElementById('oc-label').textContent='Live particle ocean — '+pool.length+' unconfirmed';
-}
-var ot=0;
-function drawOcean(){
-    oceanCtx.clearRect(0,0,oceanW,oceanH);
-    var th=oceanH*0.15;
-    oceanCtx.setLineDash([5,5]);oceanCtx.strokeStyle='rgba(0,204,136,0.1)';oceanCtx.lineWidth=1;
-    oceanCtx.beginPath();oceanCtx.moveTo(0,th);oceanCtx.lineTo(oceanW,th);oceanCtx.stroke();oceanCtx.setLineDash([]);
-    oceanCtx.font='7px monospace';oceanCtx.fillStyle='rgba(0,204,136,0.14)';oceanCtx.textAlign='right';oceanCtx.fillText('next block',oceanW-6,th-3);
-    for(var i=0;i<oceanParticles.length;i++){
-        var p=oceanParticles[i];
-        p.x+=p.vx;
-        p.y=p.bY-p.f*16+Math.sin(ot*0.015+p.ph)*4*(1-p.f*0.4);
-        if(p.x<-10)p.x=oceanW+10;if(p.x>oceanW+10)p.x=-10;
-        if(p.a<1)p.a=Math.min(1,p.a+0.015);
-        var a=(0.2+p.f*0.45)*p.a,r=parseInt(p.c.slice(1,3),16),g=parseInt(p.c.slice(3,5),16),bl=parseInt(p.c.slice(5,7),16);
-        oceanCtx.beginPath();oceanCtx.arc(p.x,p.y,p.s,0,Math.PI*2);
-        oceanCtx.fillStyle='rgba('+r+','+g+','+bl+','+a+')';oceanCtx.fill();
-        if(p.s>3.5){oceanCtx.beginPath();oceanCtx.arc(p.x,p.y,p.s*2.5,0,Math.PI*2);oceanCtx.fillStyle='rgba('+r+','+g+','+bl+','+(a*0.1)+')';oceanCtx.fill()}
-    }
-    ot++;if(!REDUCED_MOTION)requestAnimationFrame(drawOcean);
-}
 
-/* ═══ BLOCK FILL VIZ ═══ */
-var bfCanvas,bfCtx,bfFilled=[],bfT=0,bfRunning=false;
-function renderBlockFill(n){
-    bfCanvas=document.getElementById('bav-canvas');bfCtx=bfCanvas.getContext('2d');
-    var dpr=Math.min(devicePixelRatio||1,2);
-    bfCanvas.width=bfCanvas.clientWidth*dpr;bfCanvas.height=bfCanvas.clientHeight*dpr;
-    bfCtx.setTransform(dpr,0,0,dpr,0,0);
-    var gs=10;bfFilled=[];for(var i=0;i<gs*gs;i++)bfFilled.push(i<Math.min(n,gs*gs)?1:0);
-    if(!bfRunning){bfRunning=true;animBF()}
-}
-function animBF(){
-    if(!bfCanvas){requestAnimationFrame(animBF);return}
-    var W=bfCanvas.clientWidth,H=bfCanvas.clientHeight,gs=10;
-    bfCtx.clearRect(0,0,W,H);
-    var cw=Math.min(W,H)*0.8,cs=cw/gs,ox=(W-cw)/2,oy=(H-cw)/2;
-    for(var gx=0;gx<gs;gx++)for(var gy=0;gy<gs;gy++){
-        var idx=gy*gs+gx,x=ox+gx*cs,y=oy+gy*cs;
-        if(bfFilled[idx]){
-            var p=0.12+Math.sin(bfT*0.03+gx+gy)*0.04;
-            bfCtx.fillStyle='rgba(255,102,0,'+p+')';bfCtx.fillRect(x+1,y+1,cs-2,cs-2);
-            bfCtx.strokeStyle='rgba(255,102,0,.2)';bfCtx.lineWidth=0.5;bfCtx.strokeRect(x+1,y+1,cs-2,cs-2);
-        } else {
-            bfCtx.fillStyle='rgba(255,102,0,.015)';bfCtx.fillRect(x+1,y+1,cs-2,cs-2);
-            bfCtx.strokeStyle='rgba(255,102,0,.04)';bfCtx.lineWidth=0.3;bfCtx.strokeRect(x+1,y+1,cs-2,cs-2);
+    // Buttons
+    var btns = document.querySelectorAll('.mp-mode-btn[data-mode]');
+    for (var i = 0; i < btns.length; i++) {
+        (function (btn) {
+            btn.addEventListener('click', function () {
+                setMode(btn.getAttribute('data-mode'));
+            });
+        })(btns[i]);
+    }
+
+    // Initial mode — default ocean; migrate legacy values (market/track) away.
+    var initial = 'ocean';
+    try {
+        var stored = localStorage.getItem(STORAGE_KEY);
+        if (stored && VALID[stored]) initial = stored;
+    } catch (_) {}
+    setMode(initial);
+
+    /* ── Boot the OCEAN orchestrator ── */
+    try {
+        MempoolOcean.init({ debug: false });
+    } catch (e) {
+        console.error('[mempool.html] MempoolOcean init failed', e);
+    }
+
+    /* ── GenUI ?tx= prefill (M2: just log; M3 will route to EXPLORER) ── */
+    try {
+        var params = new URLSearchParams(window.location.search);
+        var tx = params.get('tx');
+        if (tx && /^[0-9a-fA-F]{64}$/.test(tx)) {
+            console.log('[mempool.html] prefill txid:', tx);
+            /* M3 will switch to EXPLORER mode and render the tx detail here. */
         }
-    }
-    bfT++;if(!REDUCED_MOTION)requestAnimationFrame(animBF);
-}
-
-/* ═══ SOUND ═══ */
-document.getElementById('snd-btn').addEventListener('click',function(){
-    soundEnabled=!soundEnabled;this.textContent='Sound: '+(soundEnabled?'on':'off');
-    if(soundEnabled&&!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-});
-function playTone(c){
-    if(!audioCtx)return;var o=audioCtx.createOscillator(),g=audioCtx.createGain();
-    o.connect(g);g.connect(audioCtx.destination);o.type='sine';
-    if(c>=10){o.frequency.value=523.25;g.gain.value=0.15;o.start();o.stop(audioCtx.currentTime+0.3);
-        setTimeout(function(){var o2=audioCtx.createOscillator(),g2=audioCtx.createGain();o2.connect(g2);g2.connect(audioCtx.destination);o2.type='sine';o2.frequency.value=659.25;g2.gain.value=0.12;o2.start();o2.stop(audioCtx.currentTime+0.4)},150);
-    } else {o.frequency.value=220+c*40;g.gain.value=0.1;o.start();o.stop(audioCtx.currentTime+0.15)}
-}
-
-/* ═══ DRAG SCROLL ═══ */
-var bfEl=document.getElementById('bf-strip'),isDrag=false,dragX,dragScroll;
-bfEl.addEventListener('mousedown',function(e){isDrag=true;bfEl.style.cursor='grabbing';dragX=e.pageX;dragScroll=bfEl.scrollLeft});
-document.addEventListener('mouseup',function(){isDrag=false;bfEl.style.cursor='grab'});
-document.addEventListener('mousemove',function(e){if(!isDrag)return;e.preventDefault();bfEl.scrollLeft=dragScroll-(e.pageX-dragX)});
-bfEl.addEventListener('wheel',function(e){e.preventDefault();bfEl.scrollLeft+=e.deltaY},{passive:false});
-
-/* ═══ DATA SUBSCRIPTIONS ═══ */
-MoneroNetwork.subscribe(function(d){
-    document.getElementById('st-unconf').textContent=d.txPoolSize||'—';
-    document.getElementById('st-hash').textContent=d.hashrate?MoneroNetwork.fmtHashrate(d.hashrate):'—';
-    document.getElementById('st-diff').textContent=d.difficulty?MoneroNetwork.fmtDifficulty(d.difficulty):'—';
-    document.getElementById('pend-count').textContent=(d.txPoolSize||0)+' txns';
-    document.getElementById('txl-ct').textContent=(d.txPoolSize||0)+' unconfirmed · live 5s';
-    if(tracking)checkTrackedTx();
-});
-MoneroNetwork.subscribeBlocks(function(blocks){renderConfBlocks(blocks)});
-MoneroNetwork.subscribePool(function(pool){
-    syncOceanToPool(pool);
-    document.getElementById('pend-fees').textContent=pool.reduce(function(s,t){return s+t.fee},0).toFixed(4)+' XMR';
-    renderTxList('txl-body',pool,MoneroNetwork.blocks);
-    renderTxList('txl-body2',pool,MoneroNetwork.blocks);
-    prevPoolHashes=pool.map(function(t){return t.hash});
-});
-
-/* ═══ INIT ═══ */
-initOcean();
-MoneroNetwork.startFast();
-if(initTx)setTimeout(function(){trackTransaction(initTx)},500);
-if(initBlock)setTimeout(function(){showBlockView(parseInt(initBlock))},800);
-window.addEventListener('resize',function(){if(tracking)positionArrow()});
-bfEl.addEventListener('scroll',function(){if(tracking)requestAnimationFrame(positionArrow)});
+    } catch (_) {}
+})();
 </script>
 </body>
 </html>

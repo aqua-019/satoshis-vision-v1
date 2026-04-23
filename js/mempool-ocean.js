@@ -1,276 +1,295 @@
 /* ═══════════════════════════════════════════════════════════════
-   Mempool 3.0 — OCEAN mode add-ons
-   Reuses the inline particle ocean (mempool.html). Adds:
-   - 30-segment fee heatmap strip (above ocean)
-   - 24h congestion sparkline
-   - 24h mempool clock (radial)
-   - Privacy density meter (Ring-16 share)
-   - Block formation preview (right edge of ocean)
-   Z-depth on existing particles is patched into MoneroNetwork's
-   pool subscriber by augmenting particle objects directly.
+   MempoolOcean — OCEAN mode orchestrator for mempool.html (M2).
+   Wires six components to XmrRelayWS.  Falls back to MoneroNetwork
+   polling when the relay WS is offline.
+   Depends on (loaded before this):
+     js/xmr-relay-ws.js
+     js/monero-network.js
+     js/mempool-ocean-stats.js
+     js/mempool-ocean-feed.js
+     js/mempool-ocean-hero.js
+     js/mempool-ocean-projected.js
+     js/mempool-ocean-depth.js
+     js/mempool-ocean-viz.js
    ═══════════════════════════════════════════════════════════════ */
-
 (function (global) {
     'use strict';
+    var MO = global.MempoolOceanShared || (global.MempoolOceanShared = {});
 
-    var REDUCED_MOTION = global.matchMedia &&
-        global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    /* ── Formatting helpers (shared across components via MO.fmt) ── */
+    var fmt = {
+        int: function (n) {
+            if (n == null || !isFinite(n)) return '—';
+            return Math.round(n).toLocaleString();
+        },
+        bytes: function (n) {
+            if (!n && n !== 0) return '—';
+            if (n < 1024) return n + ' B';
+            if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+            return (n / 1024 / 1024).toFixed(2) + ' MB';
+        },
+        // fee passed in as piconero (integer) — convert to XMR with up to 6 sig decimals.
+        xmr: function (piconero) {
+            if (piconero == null || !isFinite(piconero)) return '—';
+            var xmr = piconero / 1e12;
+            if (xmr >= 1) return xmr.toFixed(4);
+            if (xmr >= 0.0001) return xmr.toFixed(6);
+            return xmr.toFixed(8);
+        },
+        age: function (ms) {
+            if (!ms || ms < 0) return 'just now';
+            var s = Math.floor(ms / 1000);
+            if (s < 2) return 'just now';
+            if (s < 60) return s + 's';
+            var m = Math.floor(s / 60);
+            if (m < 60) return m + 'm';
+            var h = Math.floor(m / 60);
+            return h + 'h';
+        },
+        txidShort: function (id) {
+            if (!id || id.length < 12) return id || '—';
+            return id.slice(0, 6) + '…' + id.slice(-4);
+        }
+    };
+    MO.fmt = fmt;
 
-    function $(id) { return document.getElementById(id); }
+    /* ── Fallback adapter ──
+       Shapes MoneroNetwork.mempool output into the payloads our components
+       expect when relay WS is offline.  MoneroNetwork provides fee in XMR
+       and size in bytes; relay provides fee in piconero and fee_rate in p/B. */
+    var Fallback = {
+        active: false,
 
-    /* ─── DPR-aware canvas sizing ─── */
-    function fitCanvas(canvas) {
-        if (!canvas) return null;
-        var dpr = Math.min(global.devicePixelRatio || 1, 2);
-        var w = canvas.clientWidth, h = canvas.clientHeight;
-        canvas.width = w * dpr; canvas.height = h * dpr;
-        var ctx = canvas.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        return { ctx: ctx, w: w, h: h };
-    }
-
-    /* ─── 1. Fee heatmap strip ─── */
-    var heatmapBuilt = false;
-    function renderHeatmap(hist, bands) {
-        var bar = $('fee-heatmap-bar');
-        if (!bar) return;
-        if (!heatmapBuilt) {
-            bar.innerHTML = '';
-            for (var i = 0; i < 30; i++) {
-                var s = document.createElement('div');
-                s.className = 'seg';
-                bar.appendChild(s);
+        start: function (ctx) {
+            if (this.active) return;
+            this.active = true;
+            var self = this;
+            if (!global.MoneroNetwork) return;
+            if (typeof global.MoneroNetwork.startFast === 'function' && !global.MoneroNetwork._started) {
+                global.MoneroNetwork.startFast();
+                global.MoneroNetwork._started = true;
             }
-            heatmapBuilt = true;
-        }
-        if (!hist || !hist.length) return;
-        var maxRate = hist[hist.length - 1].feeRate || 1;
-        // bucket counts into 30 equal-width bands
-        var counts = new Array(30).fill(0);
-        for (var k = 0; k < hist.length; k++) {
-            var idx = Math.min(29, Math.floor((hist[k].feeRate / maxRate) * 30));
-            counts[idx] += hist[k].txCount;
-        }
-        var maxCount = Math.max.apply(null, counts) || 1;
-        var segs = bar.children;
-        for (var j = 0; j < 30; j++) {
-            var w = counts[j] / maxCount;
-            var color;
-            if (j < 10) {
-                color = 'rgba(0,204,136,' + (0.25 + w * 0.7) + ')';
-            } else if (j < 20) {
-                color = 'rgba(255,215,0,' + (0.25 + w * 0.7) + ')';
-            } else {
-                color = 'rgba(255,102,0,' + (0.25 + w * 0.7) + ')';
+            this._poolHandler = function (pool) { self._onPool(ctx, pool); };
+            global.MoneroNetwork.subscribePool(this._poolHandler);
+        },
+
+        stop: function () { this.active = false; },
+
+        _onPool: function (ctx, pool) {
+            if (!this.active) return;
+            var payload = this._shapeMempool(pool);
+            ctx.applyMempoolUpdate(payload);
+            ctx.applyFeeUpdate(this._shapeFees(pool));
+        },
+
+        _shapeMempool: function (pool) {
+            var recent = [], total_bytes = 0, total_fees_pico = 0;
+            var rates = [];
+            for (var i = 0; i < pool.length; i++) {
+                var t = pool[i];
+                var size = t.size || 0;
+                var feePico = (t.fee || 0) * 1e12;
+                var rate = size > 0 ? feePico / size : 0;
+                var tier = global.XmrRelayWS.classify(rate);
+                recent.push({
+                    txid: t.hash,
+                    blob_size: size,
+                    fee: feePico,
+                    fee_rate: rate,
+                    receive_time: t.receiveTime || Math.floor(Date.now() / 1000),
+                    fee_tier: tier.key
+                });
+                total_bytes += size;
+                total_fees_pico += feePico;
+                rates.push(rate);
             }
-            segs[j].style.background = color;
-        }
+            rates.sort(function (a, b) { return a - b; });
+            var median = rates.length ? rates[Math.floor(rates.length / 2)] : 0;
 
-        var fmt = function (n) { return n ? n.toFixed(6) : '—'; };
-        if (bands) {
-            var e = $('fee-economy'); if (e) e.textContent = fmt(bands.economy);
-            var s = $('fee-standard'); if (s) s.textContent = fmt(bands.standard);
-            var p = $('fee-priority'); if (p) p.textContent = fmt(bands.priority);
+            // 20 log-spaced buckets 0.1→200 p/B for client-side fee histogram.
+            var hist = [], NB = 20, lmin = Math.log(0.1), lmax = Math.log(200);
+            for (var b = 0; b < NB; b++) {
+                var lo = Math.exp(lmin + (lmax - lmin) * (b / NB));
+                var hi = Math.exp(lmin + (lmax - lmin) * ((b + 1) / NB));
+                var bucketBytes = 0, bucketCount = 0;
+                for (var r = 0; r < recent.length; r++) {
+                    if (recent[r].fee_rate > lo && recent[r].fee_rate <= hi) {
+                        bucketBytes += recent[r].blob_size;
+                        bucketCount++;
+                    }
+                }
+                if (bucketCount === 0) continue;
+                var tier2 = global.XmrRelayWS.classify((lo + hi) / 2);
+                hist.push({
+                    fee_rate_min: lo, fee_rate_max: hi,
+                    tx_count: bucketCount, bytes: bucketBytes,
+                    label: tier2.label, color: tier2.color
+                });
+            }
+
+            // Client-side projected block: highest-fee txs until ~300 KB.
+            var limit = 300000;
+            var sorted = recent.slice().sort(function (a, b) { return b.fee_rate - a.fee_rate; });
+            var projBytes = 0, projTxCount = 0, projFees = 0;
+            var projTierBytes = { stuck: 0, economy: 0, normal: 0, fast: 0, priority: 0 };
+            for (var s = 0; s < sorted.length && projBytes < limit; s++) {
+                var tx = sorted[s];
+                projBytes += tx.blob_size;
+                projTxCount++;
+                projFees += tx.fee;
+                projTierBytes[tx.fee_tier] += tx.blob_size;
+            }
+
+            return {
+                tx_count: pool.length,
+                bytes_total: total_bytes,
+                fees_total: total_fees_pico,
+                fee_histogram: hist,
+                recent_txs: recent.slice(0, 40),
+                projected_block: {
+                    tx_count: projTxCount,
+                    bytes: projBytes,
+                    bytes_limit: limit,
+                    fill_pct: (projBytes / limit) * 100,
+                    total_fees: projFees,
+                    median_fee_rate: median,
+                    fee_tiers: projTierBytes
+                },
+                median_fee_rate: median
+            };
+        },
+
+        _shapeFees: function (pool) {
+            var rates = [];
+            for (var i = 0; i < pool.length; i++) {
+                var t = pool[i];
+                if ((t.size || 0) > 0) rates.push((t.fee || 0) * 1e12 / t.size);
+            }
+            rates.sort(function (a, b) { return a - b; });
+            function pct(p) { return rates.length ? rates[Math.min(rates.length - 1, Math.floor(rates.length * p))] : 0; }
+            var tiers = [pct(0.1), pct(0.5), pct(0.9), pct(0.99)];
+            return { tiers: tiers, recommended: tiers[1], timestamp: Date.now() };
         }
+    };
+
+    /* ── Connection indicator ── */
+    function wireConnStatus(el, ws) {
+        function apply(state) {
+            el.classList.remove('live', 'connecting', 'offline');
+            el.classList.add(state);
+            var label = el.querySelector('.label');
+            if (label) label.textContent = state.toUpperCase();
+        }
+        apply(ws.state);
+        ws.on('state', apply);
     }
 
-    /* ─── 2. 24h congestion sparkline ─── */
-    function renderSparkline(history) {
-        var canvas = $('cong-spark-canvas');
-        if (!canvas) return;
-        var pen = fitCanvas(canvas);
-        if (!pen) return;
-        var ctx = pen.ctx, W = pen.w, H = pen.h;
-        ctx.clearRect(0, 0, W, H);
+    /* ── Orchestrator ── */
+    function MempoolOceanCtrl(opts) {
+        this.ws = opts.ws;
+        this.els = opts.els;
+        this.reduced = !!opts.reducedMotion;
+        this.paused = false;
+        this._fallbackArmed = false;
+        this._fallbackTimer = 0;
 
-        if (!history || history.length < 2) return;
-
-        var minV = Infinity, maxV = -Infinity;
-        for (var i = 0; i < history.length; i++) {
-            if (history[i].n < minV) minV = history[i].n;
-            if (history[i].n > maxV) maxV = history[i].n;
-        }
-        if (maxV === minV) maxV = minV + 1;
-
-        ctx.beginPath();
-        for (var k = 0; k < history.length; k++) {
-            var x = (k / (history.length - 1)) * W;
-            var y = H - ((history[k].n - minV) / (maxV - minV)) * (H - 4) - 2;
-            k === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-        ctx.strokeStyle = 'rgba(255,102,0,0.65)';
-        ctx.lineWidth = 1.4;
-        ctx.stroke();
-
-        // gradient under-fill
-        ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath();
-        var grad = ctx.createLinearGradient(0, 0, 0, H);
-        grad.addColorStop(0, 'rgba(255,102,0,0.18)');
-        grad.addColorStop(1, 'rgba(255,102,0,0)');
-        ctx.fillStyle = grad; ctx.fill();
-
-        var ct = $('cong-spark-ct');
-        if (ct) ct.textContent = history[history.length - 1].n + ' tx';
-    }
-
-    /* ─── 3. Mempool clock (radial 24h) ─── */
-    function renderClock(hourly) {
-        var canvas = $('mempool-clock');
-        if (!canvas) return;
-        var pen = fitCanvas(canvas);
-        if (!pen) return;
-        var ctx = pen.ctx, W = pen.w, H = pen.h;
-        ctx.clearRect(0, 0, W, H);
-
-        var cx = W / 2, cy = H / 2;
-        var maxR = Math.min(cx, cy) - 18;
-        var minR = maxR * 0.4;
-        var maxV = Math.max.apply(null, hourly || [0]) || 1;
-        var anyData = (hourly || []).some(function (v) { return v > 0; });
-
-        // backdrop ring
-        ctx.beginPath();
-        ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.lineWidth = 1; ctx.stroke();
-
-        if (!anyData) {
-            ctx.fillStyle = 'rgba(255,255,255,0.25)';
-            ctx.font = '9px monospace';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText('—', cx, cy);
-            return;
-        }
-
-        for (var hr = 0; hr < 24; hr++) {
-            var v = hourly[hr] || 0;
-            var ang = (hr / 24) * Math.PI * 2 - Math.PI / 2;
-            var r = minR + (v / maxV) * (maxR - minR);
-            var intensity = v / maxV;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.arc(cx, cy, r, ang, ang + (Math.PI * 2 / 24) - 0.025);
-            ctx.closePath();
-            ctx.fillStyle = 'rgba(255,' + Math.floor(102 + intensity * 100) + ',0,' + (0.25 + intensity * 0.55) + ')';
-            ctx.fill();
-        }
-
-        // hour ticks
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.font = '8px monospace';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        var labels = [['00', 0], ['06', 6], ['12', 12], ['18', 18]];
-        for (var t = 0; t < labels.length; t++) {
-            var lAng = (labels[t][1] / 24) * Math.PI * 2 - Math.PI / 2;
-            var lx = cx + Math.cos(lAng) * (maxR + 8);
-            var ly = cy + Math.sin(lAng) * (maxR + 8);
-            ctx.fillText(labels[t][0], lx, ly);
-        }
-    }
-
-    /* ─── 4. Privacy density meter (Ring-16 share is 100% post-v17) ─── */
-    function renderDensity() {
-        var pct = $('ring16-pct');
-        var fill = $('density-fill');
-        if (pct) pct.textContent = '100%';
-        if (fill) fill.style.width = '100%';
-    }
-
-    /* ─── 5. Block formation preview ─── */
-    var blockFormShown = false;
-    var lastBlockTs = 0;
-    function checkBlockFormation() {
-        var el = $('block-form');
-        if (!el) return;
-        var blocks = (global.MoneroNetwork && global.MoneroNetwork.blocks) || [];
-        if (!blocks.length) return;
-        var newest = blocks[0];
-        if (lastBlockTs && newest.timestamp > lastBlockTs) {
-            el.classList.add('flash');
-            setTimeout(function () { el.classList.remove('flash', 'vis'); blockFormShown = false; }, 500);
-        }
-        lastBlockTs = newest.timestamp;
-        var sinceLast = (Date.now() / 1000) - newest.timestamp;
-        var eta = 120 - sinceLast; // ~2 min target
-        if (eta < 30 && eta > 0) {
-            if (!blockFormShown) { el.classList.add('vis'); blockFormShown = true; }
-        } else {
-            if (blockFormShown) { el.classList.remove('vis'); blockFormShown = false; }
-        }
-    }
-
-    /* ─── 6. Z-depth on existing particles ───
-       The inline syncOceanToPool sets s, c, f. We can't easily patch the
-       drawOcean loop, but we CAN visually approximate Z-depth by
-       remapping each particle's size after sync: high-fee particles get
-       slightly larger (closer), low-fee slightly smaller (sunk). The
-       inline draw already factors size+opacity by f, so this just
-       amplifies the existing depth read. */
-    function applyDepthToParticles() {
-        var pool = global.oceanParticles;
-        if (!pool || !pool.length) return;
-        for (var i = 0; i < pool.length; i++) {
-            var p = pool[i];
-            // store original once
-            if (p._baseS == null) p._baseS = p.s;
-            // depth multiplier 0.55 (sunk) → 1.45 (floating)
-            var depth = 0.55 + (p.f || 0) * 0.9;
-            p.s = p._baseS * depth;
-        }
-    }
-
-    /* ─── boot ─── */
-    function boot() {
-        // initial paint of static UI
-        renderDensity();
-        renderHeatmap([], { economy: 0, standard: 0, priority: 0 });
-        renderClock(new Array(24).fill(0));
-
-        if (global.MempoolData) {
-            global.MempoolData.subscribe('fee_histogram', function (h) {
-                renderHeatmap(h, global.MempoolData.fee_bands);
-            });
-            global.MempoolData.subscribe('bands', function (b) {
-                renderHeatmap(global.MempoolData.fee_histogram, b);
-            });
-            global.MempoolData.subscribe('size', function (s) { renderSparkline(s); });
-            global.MempoolData.subscribe('hourly', function (h) { renderClock(h); });
-        }
-
-        if (global.MoneroNetwork) {
-            global.MoneroNetwork.subscribePool(function () {
-                applyDepthToParticles();
-                checkBlockFormation();
-            });
-            global.MoneroNetwork.subscribeBlocks(function () { checkBlockFormation(); });
-        }
-
-        if (!REDUCED_MOTION) {
-            setInterval(checkBlockFormation, 5000);
-        }
-
-        // resize redraws
-        global.addEventListener('resize', function () {
-            renderSparkline(global.MempoolData ? global.MempoolData.size_history : []);
-            renderClock(global.MempoolData ? global.MempoolData.hourly_clock : new Array(24).fill(0));
+        this.stats     = new MO.MempoolStatsRow(this.els.stats);
+        this.feed      = new MO.LiveTxFeed(this.els.feed, { reducedMotion: this.reduced });
+        this.hero      = new MO.FeeHeroCards(this.els.hero);
+        this.projected = new MO.ProjectedBlockStrip(this.els.projected);
+        this.depth     = new MO.FeeDepthChart(this.els.depthCanvas, { reducedMotion: this.reduced });
+        this.ocean     = new MO.OceanViz(this.els.oceanCanvas, {
+            reducedMotion: this.reduced,
+            tooltipEl: this.els.oceanTip,
+            onClickTx: function (txid) {
+                try { global.location.assign('/mempool?tx=' + encodeURIComponent(txid)); } catch (_) {}
+            }
         });
 
-        if (global.Mempool) {
-            global.Mempool.register('ocean', {
-                onEnter: function () {
-                    // Re-fit canvases on entry (they may have been hidden, with 0 size)
-                    setTimeout(function () {
-                        renderSparkline(global.MempoolData ? global.MempoolData.size_history : []);
-                        renderClock(global.MempoolData ? global.MempoolData.hourly_clock : new Array(24).fill(0));
-                    }, 50);
-                }
-            });
-        }
+        this.feed.onClickRow(function (txid) {
+            try { global.location.assign('/mempool?tx=' + encodeURIComponent(txid)); } catch (_) {}
+        });
+
+        this.ocean.start();
+
+        var self = this;
+        this.ws.on('mempool-update', function (p) { self.applyMempoolUpdate(p); });
+        this.ws.on('fee-update',     function (p) { self.applyFeeUpdate(p); });
+        this.ws.on('block',          function () { /* ocean handles via next mempool diff */ });
+        this.ws.on('tx-confirmed',   function (p) { self.ocean.confirmTxids([p && p.txid]); });
+        this.ws.on('state',          function (s) { self._onWsState(s); });
+
+        // Seed initial state via REST.
+        this.ws.fetchMempool().then(function (p) { self.applyMempoolUpdate(p); }).catch(function () {});
+        this.ws.fetchFees().then(function (p) { self.applyFeeUpdate(p); }).catch(function () {});
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', boot);
-    } else {
-        boot();
-    }
+    MempoolOceanCtrl.prototype.applyMempoolUpdate = function (p) {
+        if (!p) return;
+        this.stats.render(p);
+        if (p.recent_txs) this.feed.render(p.recent_txs);
+        this.projected.render(p.projected_block);
+        this.depth.setHistogram(p.fee_histogram || []);
+        this.ocean.sync(p.recent_txs || []);
+    };
+
+    MempoolOceanCtrl.prototype.applyFeeUpdate = function (p) {
+        this.hero.render(p);
+        this.depth.setFeeTiers(p);
+    };
+
+    MempoolOceanCtrl.prototype._onWsState = function (s) {
+        var self = this;
+        if (s === 'live') {
+            if (this._fallbackTimer) { clearTimeout(this._fallbackTimer); this._fallbackTimer = 0; }
+            if (this._fallbackArmed) { Fallback.stop(); this._fallbackArmed = false; }
+        } else if (s === 'offline' && !this._fallbackTimer && !this._fallbackArmed) {
+            this._fallbackTimer = setTimeout(function () {
+                self._fallbackTimer = 0;
+                if (self.ws.state !== 'live') {
+                    self._fallbackArmed = true;
+                    Fallback.start(self);
+                }
+            }, 10000);
+        }
+    };
+
+    MempoolOceanCtrl.prototype.pause = function () {
+        if (this.paused) return;
+        this.paused = true;
+        this.ocean.stop();
+    };
+
+    MempoolOceanCtrl.prototype.resume = function () {
+        if (!this.paused) return;
+        this.paused = false;
+        this.ocean.start();
+    };
+
+    /* ── Public init ── */
+    global.MempoolOcean = {
+        init: function (opts) {
+            opts = opts || {};
+            var reduced = global.matchMedia && global.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var els = {
+                hero:         document.getElementById('mp-fee-hero'),
+                projected:    document.getElementById('mp-proj-block'),
+                oceanCanvas:  document.getElementById('mp-ocean-canvas'),
+                oceanTip:     document.getElementById('mp-ocean-tip'),
+                depthCanvas:  document.getElementById('mp-depth-canvas'),
+                feed:         document.getElementById('mp-txfeed'),
+                stats:        document.getElementById('mp-stats-row'),
+                conn:         document.getElementById('mp-conn')
+            };
+            var ws = opts.ws || new global.XmrRelayWS({ debug: !!opts.debug });
+            if (els.conn) wireConnStatus(els.conn, ws);
+            ws.connect();
+            var ctrl = new MempoolOceanCtrl({ ws: ws, els: els, reducedMotion: reduced });
+            this._ctrl = ctrl;
+            this._ws = ws;
+            return ctrl;
+        },
+        pause:  function () { if (this._ctrl) this._ctrl.pause(); },
+        resume: function () { if (this._ctrl) this._ctrl.resume(); }
+    };
 })(window);
