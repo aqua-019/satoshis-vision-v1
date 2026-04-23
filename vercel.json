@@ -60,7 +60,9 @@
     { "source": "/secrets", "destination": "/secrets.html" },
     { "source": "/timeline", "destination": "/timeline.html" },
     { "source": "/outlook", "destination": "/future-outlook.html" },
-    { "source": "/dashboard", "destination": "/markets" }
+    { "source": "/dashboard", "destination": "/markets" },
+    { "source": "/privacy", "destination": "/privacy-architecture.html" },
+    { "source": "/api/xmr/:path*", "destination": "https://relay.xmr.irish/api/:path*" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }
