@@ -748,6 +748,173 @@
 
 /* Generic chart canvas */
 .mp-mining-card canvas{width:100%;display:block}
+
+/* ═══════════════════════════════════════════════════════════════
+   Mempool 3.0 M5 — Monero-exclusive features
+   ═══════════════════════════════════════════════════════════════ */
+
+/* --- OCEAN / CLOCK viz toggle --- */
+.ocean-viz-toggle{display:flex;gap:6px;margin:6px 0 10px}
+.viz-toggle-btn{
+    flex:0 0 auto;padding:6px 14px;
+    background:transparent;border:1px solid var(--border);
+    color:var(--text-secondary);
+    font-family:var(--font-mono);font-size:10px;letter-spacing:.08em;
+    cursor:pointer;border-radius:3px;
+    transition:background .15s,border-color .15s,color .15s;
+}
+.viz-toggle-btn:hover{color:var(--text-primary);border-color:var(--xmr)}
+.viz-toggle-btn.active{
+    background:rgba(255,102,0,.08);
+    border-color:var(--xmr);
+    color:var(--xmr);
+}
+
+/* --- Mempool Clock viz --- */
+#mp-clock-viz{
+    position:relative;
+    background:#0D0D0D;
+    border:1px solid var(--border-subtle);
+    border-radius:4px;
+    padding:8px;margin:0 0 12px;
+}
+#mp-clock-canvas{display:block;width:100%;height:260px}
+.m5-clock-caption{
+    margin-top:8px;
+    font-family:var(--font-mono);font-size:9.5px;
+    color:var(--text-muted);line-height:1.6;text-align:center;
+}
+
+/* --- Dandelion++ indicator --- */
+.dandelion-indicator{
+    display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    padding:8px 14px;margin:0 0 10px;
+    background:rgba(0,211,149,.04);
+    border:1px solid rgba(0,211,149,.14);
+    border-radius:6px;
+    font-family:var(--font-mono);font-size:10px;
+}
+.dand-dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--grn);
+    box-shadow:0 0 5px var(--grn);
+    animation:m5-pulse-grn 2.5s ease-in-out infinite;
+    flex-shrink:0;
+}
+.dand-label{color:var(--grn);font-weight:700;letter-spacing:.08em}
+.dand-detail{color:var(--text-secondary);flex:1;min-width:0}
+.dand-expand{
+    background:transparent;border:none;padding:2px 6px;
+    color:var(--text-muted);font-family:var(--font-mono);font-size:10px;
+    cursor:pointer;
+}
+.dand-expand:hover{color:var(--grn)}
+@keyframes m5-pulse-grn{
+    0%,100%{opacity:1}
+    50%{opacity:.35}
+}
+.dandelion-info{
+    padding:14px;margin:-4px 0 12px;
+    background:rgba(0,211,149,.02);
+    border:1px solid rgba(0,211,149,.08);
+    border-radius:6px;
+}
+.dand-flow{
+    display:flex;align-items:center;justify-content:center;
+    gap:10px;flex-wrap:wrap;margin-bottom:14px;
+}
+.dand-step{
+    padding:10px 14px;
+    background:var(--card-bg);
+    border:1px solid var(--border);
+    border-radius:4px;
+    font-family:var(--font-mono);font-size:10px;
+    text-align:center;min-width:100px;
+    color:var(--text-primary);
+}
+.dand-step span{
+    display:block;font-size:8.5px;color:var(--text-muted);
+    margin-top:3px;font-weight:400;letter-spacing:.04em;
+}
+.dand-step.stem{background:rgba(0,211,149,.08);border-color:rgba(0,211,149,.22);color:var(--grn)}
+.dand-step.fluff{background:rgba(74,158,255,.08);border-color:rgba(74,158,255,.22);color:var(--blu)}
+.dand-arrow{color:var(--text-muted);font-size:14px}
+.dandelion-info p{
+    font-size:11px;color:var(--text-secondary);
+    line-height:1.7;margin:0;
+}
+
+/* --- Privacy breakdown expandable list --- */
+.pbd-list{margin:12px 0 0;border-top:1px solid var(--border-subtle)}
+.pbd-item{border-bottom:1px solid var(--border-subtle)}
+.pbd-header{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 0;cursor:pointer;
+    background:transparent;border:none;width:100%;
+    text-align:left;color:inherit;
+    font-family:var(--font-mono);
+}
+.pbd-pts{
+    font-size:11px;font-weight:700;width:36px;flex-shrink:0;
+}
+.pbd-name{
+    font-size:10px;color:var(--text-secondary);
+    flex:1;letter-spacing:.03em;
+}
+.pbd-toggle{
+    font-size:10px;color:var(--text-muted);
+    transition:transform .2s;
+}
+.pbd-item.open .pbd-toggle{transform:rotate(180deg)}
+.pbd-body{
+    display:none;padding:0 0 12px 46px;
+    font-family:var(--font-body);font-size:11px;
+    color:var(--text-muted);line-height:1.7;
+}
+.pbd-item.open .pbd-body{display:block}
+.pbd-link{display:block;margin-top:6px}
+.pbd-link a{
+    color:var(--xmr);text-decoration:none;font-weight:600;
+    font-family:var(--font-mono);font-size:10px;
+}
+.pbd-link a:hover{text-decoration:underline}
+
+/* --- M5 chart blocks (decoy age, bulletproof timeline) --- */
+.m5-chart-block{
+    margin:14px 0;padding:12px;
+    background:#0D0D0D;
+    border:1px solid var(--border-subtle);
+    border-radius:4px;
+}
+.m5-chart-title{
+    font-family:var(--font-mono);font-size:10px;
+    color:var(--text-secondary);letter-spacing:.08em;
+    margin-bottom:8px;
+}
+.m5-chart-block canvas{display:block;width:100%}
+.m5-chart-caption{
+    margin-top:10px;
+    font-family:var(--font-body);font-size:10.5px;
+    color:var(--text-muted);line-height:1.7;
+}
+
+/* --- Enriched ring hover tooltip (overrides tight M3 styling) --- */
+.m5-ring-tip{line-height:1.55;padding:8px 10px;min-width:180px}
+.m5-ring-tip .rt-hdr{font-weight:700;color:var(--text-primary);margin-bottom:4px}
+.m5-ring-tip .rt-age{color:var(--text-secondary)}
+.m5-ring-tip .rt-eq{color:var(--grn);margin-top:4px}
+.m5-ring-tip .rt-cryp{color:var(--text-muted);font-size:9px;margin-top:2px}
+
+/* --- Mobile --- */
+@media(max-width:640px){
+    .dandelion-indicator{font-size:9px;padding:7px 10px;gap:6px}
+    .dand-flow{gap:6px}
+    .dand-step{min-width:80px;padding:8px 10px;font-size:9px}
+    .dand-step span{font-size:8px}
+    .viz-toggle-btn{font-size:9px;padding:5px 10px}
+    #mp-clock-canvas{height:240px}
+    .pbd-body{padding-left:36px}
+}
 </style>
 </head>
 <body>
@@ -771,10 +938,44 @@
     <section class="mp-mode-panel" id="mp-panel-ocean" data-mode="ocean" role="tabpanel">
         <div class="mp-fee-hero" id="mp-fee-hero"></div>
         <div class="mp-proj-block" id="mp-proj-block"></div>
-        <div class="mp-ocean">
+
+        <!-- M5: OCEAN / CLOCK viz toggle -->
+        <div class="ocean-viz-toggle" role="tablist" aria-label="Mempool visualization mode">
+            <button class="viz-toggle-btn active" data-viz="ocean" role="tab" aria-selected="true">⬤ OCEAN</button>
+            <button class="viz-toggle-btn"        data-viz="clock" role="tab" aria-selected="false">⏱ CLOCK</button>
+        </div>
+
+        <!-- M5: Dandelion++ indicator -->
+        <div class="dandelion-indicator" id="mp-dandelion">
+            <span class="dand-dot" aria-hidden="true"></span>
+            <span class="dand-label">DANDELION++ ACTIVE</span>
+            <span class="dand-detail">Stem phase privacy enabled</span>
+            <button type="button" class="dand-expand" data-dand-toggle aria-expanded="false" aria-controls="mp-dandelion-info">what is this? ▾</button>
+        </div>
+        <div class="dandelion-info" id="mp-dandelion-info" hidden>
+            <div class="dand-flow">
+                <div class="dand-step">YOUR TX<span>broadcast</span></div>
+                <div class="dand-arrow" aria-hidden="true">→</div>
+                <div class="dand-step stem">STEM PHASE<span>1 private peer</span></div>
+                <div class="dand-arrow" aria-hidden="true">→</div>
+                <div class="dand-step fluff">FLUFF PHASE<span>all peers</span></div>
+            </div>
+            <p>Monero uses Dandelion++ to prevent observers from linking your IP address to your transactions. Your transaction travels privately to one peer (stem), then broadcasts publicly (fluff). Even if the fluff phase is observed, the origin IP cannot be determined.</p>
+        </div>
+
+        <div class="mp-ocean" id="mp-ocean-viz">
             <canvas id="mp-ocean-canvas" aria-label="Live mempool transaction ocean"></canvas>
             <div class="mp-ocean-tip" id="mp-ocean-tip" hidden></div>
         </div>
+
+        <!-- M5: Mempool Clock (alternative to ocean bubbles) -->
+        <div id="mp-clock-viz" hidden>
+            <canvas id="mp-clock-canvas" aria-label="Mempool clock — radial visualization of pending transactions"></canvas>
+            <div class="m5-clock-caption">
+                Transactions orbit the next block at center. Distance from center = blocks until likely confirmation. Colored by fee tier: red (priority) → orange (fast) → green (normal) → blue (economy).
+            </div>
+        </div>
+
         <div class="mp-depth">
             <div class="mp-depth-head"><span>FEE DEPTH</span><span>piconero/byte · bytes</span></div>
             <canvas id="mp-depth-canvas" aria-label="Fee depth chart"></canvas>
@@ -869,6 +1070,11 @@
 
 <!-- M3 modules -->
 <script src="js/mempool-explorer.js"></script>
+
+<!-- M5 modules (Monero-exclusive features) -->
+<script src="js/m5-decoy-age-chart.js"></script>
+<script src="js/m5-bulletproof-timeline.js"></script>
+<script src="js/m5-mempool-clock.js"></script>
 
 <!-- M4 modules -->
 <script src="js/mempool-chart-utils.js"></script>
@@ -967,6 +1173,86 @@
             /* M3 will switch to EXPLORER mode and render the tx detail here. */
         }
     } catch (_) {}
+
+    /* ── M5: OCEAN / CLOCK viz toggle + WS wiring for clock ── */
+    (function () {
+        var VIZ_KEY = 'mempool-ocean-viz';
+        var oceanBox  = document.getElementById('mp-ocean-viz');
+        var clockBox  = document.getElementById('mp-clock-viz');
+        var clockCanv = document.getElementById('mp-clock-canvas');
+        var vizBtns   = document.querySelectorAll('.viz-toggle-btn[data-viz]');
+        var clock = null;
+        var lastTxs = [];
+
+        function ensureClock() {
+            if (!clock && window.M5MempoolClock && clockCanv) {
+                clock = new window.M5MempoolClock(clockCanv);
+            }
+            return clock;
+        }
+
+        function setViz(mode) {
+            if (mode !== 'clock') mode = 'ocean';
+            try { localStorage.setItem(VIZ_KEY, mode); } catch (_) {}
+            if (oceanBox) oceanBox.hidden = (mode !== 'ocean');
+            if (clockBox) clockBox.hidden = (mode !== 'clock');
+            for (var i = 0; i < vizBtns.length; i++) {
+                var on = vizBtns[i].getAttribute('data-viz') === mode;
+                vizBtns[i].classList.toggle('active', on);
+                vizBtns[i].setAttribute('aria-selected', on ? 'true' : 'false');
+            }
+            if (mode === 'clock') {
+                var c = ensureClock();
+                if (c) c.update(lastTxs);
+            }
+        }
+
+        for (var i = 0; i < vizBtns.length; i++) {
+            (function (btn) {
+                btn.addEventListener('click', function () {
+                    setViz(btn.getAttribute('data-viz'));
+                });
+            })(vizBtns[i]);
+        }
+
+        // Subscribe to mempool-update on the shared WS (owned by MempoolOcean).
+        function wireWs() {
+            var ws = window.MempoolOcean && window.MempoolOcean._ws;
+            if (!ws || typeof ws.on !== 'function') return false;
+            ws.on('mempool-update', function (p) {
+                lastTxs = (p && p.recent_txs) || [];
+                if (clock && clockBox && !clockBox.hidden) clock.update(lastTxs);
+            });
+            return true;
+        }
+        if (!wireWs()) setTimeout(wireWs, 500);
+
+        // Initial viz preference
+        var storedViz = 'ocean';
+        try {
+            var s = localStorage.getItem(VIZ_KEY);
+            if (s === 'clock' || s === 'ocean') storedViz = s;
+        } catch (_) {}
+        setViz(storedViz);
+    })();
+
+    /* ── M5: Dandelion++ info expand/collapse ── */
+    (function () {
+        var toggles = document.querySelectorAll('[data-dand-toggle]');
+        for (var i = 0; i < toggles.length; i++) {
+            (function (btn) {
+                btn.addEventListener('click', function () {
+                    var id = btn.getAttribute('aria-controls');
+                    var target = id ? document.getElementById(id) : null;
+                    if (!target) return;
+                    var wasHidden = target.hidden;
+                    target.hidden = !wasHidden;
+                    btn.setAttribute('aria-expanded', wasHidden ? 'true' : 'false');
+                    btn.textContent = wasHidden ? 'hide ▴' : 'what is this? ▾';
+                });
+            })(toggles[i]);
+        }
+    })();
 })();
 </script>
 </body>
