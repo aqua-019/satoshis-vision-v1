@@ -190,6 +190,73 @@
         ];
     }
 
+    /* ── Privacy component breakdown (expandable cards) ── */
+    var PBD_CONTENT = {
+        'Ring Size': {
+            body: 'Mandatory since Monero hard fork 15 (August 2021). A ring of 16 means 15 decoys per real input. The minimum is protocol-enforced — wallets cannot create transactions with smaller rings.',
+            link: 'privacy-architecture.html#pc_clsag'
+        },
+        'CLSAG + BP+': {
+            body: 'RingCT type 6 is the current standard (HF15+). CLSAG signatures are smaller and faster than the previous MLSAG format. Bulletproofs+ range proofs are 5% smaller than Bulletproofs, with significant batch-verification speedups for nodes.',
+            link: 'privacy-architecture.html#pc_bulletproofs'
+        },
+        'View Tags': {
+            body: 'View tags (Monero 0.18 / HF16) are 1-byte hints that let wallets scan the blockchain up to 40× faster by filtering outputs. Modern wallets (Cake, Feather, Official GUI) include them automatically.',
+            link: 'privacy-architecture.html#pc_cryptonote'
+        },
+        'No Timelock': {
+            body: 'Transactions with no unlock_time are spendable immediately once confirmed. A non-zero timelock is unusual and can make a transaction stand out in chain analysis.',
+            link: null
+        },
+        'Output Count': {
+            body: 'Transactions with ≤2 outputs are the most common pattern. Unusually high output counts can leak information about merchant payment batching or churning behavior.',
+            link: null
+        },
+        'Relayed': {
+            body: 'This transaction propagated through the Dandelion++ mempool. Relayed transactions benefit from stem-phase IP privacy before public flooding.',
+            link: 'privacy-architecture.html#pc_dandelion'
+        }
+    };
+
+    function renderPrivacyBreakdown(container, tx) {
+        if (!container) return;
+        var comps = privacyComponents(tx);
+        var html = '';
+        for (var i = 0; i < comps.length; i++) {
+            var c = comps[i];
+            var info = PBD_CONTENT[c.lbl] || { body: '', link: null };
+            var color = c.pts > 0 ? 'var(--grn)' : 'var(--text-muted)';
+            var ptsLbl = c.pts > 0 ? '+' + c.pts : '—';
+            var linkHtml = info.link
+                ? '<span class="pbd-link"><a href="' + esc(info.link) + '">Learn more →</a></span>'
+                : '';
+            html +=
+                '<div class="pbd-item">' +
+                  '<button type="button" class="pbd-header" data-pbd-toggle>' +
+                    '<span class="pbd-pts" style="color:' + color + '">' + esc(ptsLbl) + '</span>' +
+                    '<span class="pbd-name">' + esc(c.lbl) + '</span>' +
+                    '<span class="pbd-toggle">▾</span>' +
+                  '</button>' +
+                  '<div class="pbd-body">' +
+                    esc(info.body) +
+                    linkHtml +
+                  '</div>' +
+                '</div>';
+        }
+        container.innerHTML = html;
+
+        if (container.dataset.pbdWired === '1') return;
+        container.dataset.pbdWired = '1';
+        container.addEventListener('click', function (e) {
+            var btn = e.target && e.target.closest && e.target.closest('[data-pbd-toggle]');
+            if (!btn) return;
+            var item = btn.closest('.pbd-item');
+            if (!item) return;
+            if (item.classList.contains('open')) item.classList.remove('open');
+            else item.classList.add('open');
+        });
+    }
+
     function rctLabel(t) {
         if (t === 0) return 'Type 0 (coinbase / no RingCT)';
         if (t === 1) return 'Type 1 (RingCT Full)';
@@ -265,6 +332,7 @@
                 '<h3>Privacy Profile</h3>' +
                 '<div class="exp-gauge-wrap"><canvas class="exp-gauge" id="exp-tx-gauge" aria-label="Privacy score gauge"></canvas></div>' +
                 '<div class="exp-pscore-list">' + compHtml + '</div>' +
+                '<div class="pbd-list" id="exp-tx-pbd"></div>' +
                 '<div class="exp-pscore-total"><span>Total</span><span><b>' + score + '</b> / 100</span></div>' +
               '</div>' +
               '<div class="exp-tx-card">' +
@@ -306,6 +374,14 @@
             '</div>' +
 
             '<div class="exp-tx-section">' +
+              '<div class="m5-chart-block">' +
+                '<div class="m5-chart-title">DECOY SELECTION ANALYSIS — INPUT 0</div>' +
+                '<canvas id="exp-tx-decoy-age" aria-label="Decoy age distribution chart"></canvas>' +
+                '<div class="m5-chart-caption">Monero\'s wallet software selects decoys using a log-normal age distribution, weighting toward recently created outputs. This makes statistical timing attacks ineffective — an observer cannot reliably identify which ring member is the true spender based on age alone.</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="exp-tx-section">' +
               '<h3>Outputs (' + esc(fmtInt(outputsCount)) + ')</h3>' +
               renderOutputsSection(tx) +
             '</div>' +
@@ -319,6 +395,11 @@
                   ? 'Bulletproofs+ is the current standard (2022+): smaller, faster verification.'
                   : 'This transaction uses an earlier RingCT variant.') +
                 '<span class="exp-bp-size">~1,500 bytes today vs ~13,000 bytes in 2017 (−88%)</span>' +
+              '</div>' +
+              '<div class="m5-chart-block" style="margin-top:12px">' +
+                '<div class="m5-chart-title">ZERO-KNOWLEDGE PROOF SIZE EVOLUTION</div>' +
+                '<canvas id="exp-tx-bp-timeline" aria-label="Bulletproof+ size timeline"></canvas>' +
+                '<div class="m5-chart-caption" id="exp-tx-bp-caption">Monero has reduced range-proof size from 13 KB (2017) to 1.5 KB (2022), an 89% reduction.</div>' +
               '</div>' +
             '</div>' +
 
@@ -334,7 +415,28 @@
         attachCopyButtons(node);
         wireTxDetailNav(node, tx);
         renderPrivacyGauge(el('exp-tx-gauge'), score);
+        renderPrivacyBreakdown(el('exp-tx-pbd'), tx);
         renderRingViz(el('exp-tx-ring'), el('exp-tx-ring-tip'), tx);
+
+        try {
+            var decoyCanvas = el('exp-tx-decoy-age');
+            if (decoyCanvas && window.M5DecoyAgeChart && typeof window.M5DecoyAgeChart.render === 'function') {
+                var firstInput = (tx.inputs && tx.inputs[0]) || {};
+                var keyOffsets = firstInput.key_offsets || firstInput.keyOffsets || [];
+                window.M5DecoyAgeChart.render(decoyCanvas, keyOffsets, tx.block_height || 0, tx.total_outputs || 0);
+            }
+        } catch (e) { if (window.console) console.warn('[m5] decoy chart failed', e); }
+
+        try {
+            var bpCanvas = el('exp-tx-bp-timeline');
+            if (bpCanvas && window.M5BulletproofTimeline && typeof window.M5BulletproofTimeline.render === 'function') {
+                window.M5BulletproofTimeline.render(bpCanvas, tx);
+                var size = window.M5BulletproofTimeline.estimateProofSize(tx);
+                var pct = Math.round((1 - size / 13200) * 100);
+                var cap = el('exp-tx-bp-caption');
+                if (cap) cap.textContent = 'This transaction uses ~' + size + ' bytes — ' + pct + '% smaller than the 2017 RingCT baseline.';
+            }
+        } catch (e) { if (window.console) console.warn('[m5] bp timeline failed', e); }
 
         showView('tx');
     }
@@ -410,8 +512,13 @@
                 var p = positions[i];
                 var dx = mx - p.x, dy = my - p.y;
                 if (dx * dx + dy * dy <= nodeR * nodeR) {
+                    tip.className = 'exp-ring-tip m5-ring-tip';
                     tip.hidden = false;
-                    tip.textContent = '#' + (i + 1) + '  ·  ' + p.age + '  ·  decoy';
+                    tip.innerHTML =
+                        '<div class="rt-hdr">Ring member ' + (i + 1) + ' of ' + positions.length + '</div>' +
+                        '<div class="rt-age">Estimated age: ' + esc(p.age) + '</div>' +
+                        '<div class="rt-eq">Could be: True spender OR decoy</div>' +
+                        '<div class="rt-cryp">Cryptographically indistinguishable</div>';
                     tip.style.left = p.x + 'px';
                     tip.style.top  = p.y + 'px';
                     return;
@@ -843,6 +950,69 @@
         });
     }
 
+    /* ── Broadcast view ── */
+    function mountBroadcastView() {
+        var node = el('exp-view-broadcast');
+        if (!node || node.dataset.mounted === '1') return;
+        node.innerHTML =
+            '<button type="button" class="exp-btn-back" data-exp-back>← Back</button>' +
+            '<h2>Broadcast Transaction</h2>' +
+            '<div class="dandelion-info" style="margin:14px 0">' +
+              '<div class="dand-flow">' +
+                '<div class="dand-step">YOUR TX<span>paste hex</span></div>' +
+                '<div class="dand-arrow">→</div>' +
+                '<div class="dand-step stem">STEM PHASE<span>1 private peer</span></div>' +
+                '<div class="dand-arrow">→</div>' +
+                '<div class="dand-step fluff">FLUFF PHASE<span>all peers</span></div>' +
+              '</div>' +
+              '<p>Transactions submitted through this tool are forwarded to a Monero node via the xmr.irish relay and enter the Dandelion++ stem phase, protecting the origin IP before the transaction fluffs to the public mempool.</p>' +
+            '</div>' +
+            '<label class="exp-bc-label" for="exp-bc-hex" style="display:block;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);margin:14px 0 6px">RAW TRANSACTION HEX</label>' +
+            '<textarea id="exp-bc-hex" rows="6" placeholder="Paste raw transaction hex (no 0x prefix)…" style="width:100%;background:var(--card-bg);border:1px solid var(--border);color:var(--text-primary);font-family:var(--font-mono);font-size:11px;padding:10px;border-radius:4px;resize:vertical"></textarea>' +
+            '<button type="button" id="exp-bc-submit" class="exp-broadcast-cta" style="margin-top:10px">📡 Broadcast via relay</button>' +
+            '<div id="exp-bc-result" class="exp-bc-result" style="margin-top:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-muted)"></div>';
+        node.dataset.mounted = '1';
+
+        // Wire back button (init()'s querySelectorAll already ran before this view was mounted).
+        var back = node.querySelector('[data-exp-back]');
+        if (back) back.addEventListener('click', function () { showView('recent'); });
+
+        var submitBtn = el('exp-bc-submit');
+        var hexInput  = el('exp-bc-hex');
+        var resultEl  = el('exp-bc-result');
+        if (submitBtn && hexInput && resultEl) {
+            submitBtn.addEventListener('click', function () {
+                var hex = (hexInput.value || '').trim();
+                if (!hex) {
+                    resultEl.style.color = 'var(--red)';
+                    resultEl.textContent = '✗ Please paste the raw transaction hex.';
+                    return;
+                }
+                resultEl.style.color = 'var(--text-muted)';
+                resultEl.textContent = 'Submitting…';
+                fetch(restBase() + '/tx/submit', {
+                    method: 'POST',
+                    headers: { 'accept': 'application/json', 'content-type': 'application/json' },
+                    body: JSON.stringify({ hex: hex })
+                }).then(function (r) {
+                    return r.json().then(function (j) { return { ok: r.ok, body: j }; });
+                }).then(function (res) {
+                    if (res.ok && res.body && res.body.txid) {
+                        resultEl.style.color = 'var(--grn)';
+                        resultEl.textContent = '✓ Broadcast accepted: ' + res.body.txid;
+                    } else {
+                        var msg = (res.body && (res.body.error || res.body.message)) || ('HTTP error');
+                        resultEl.style.color = 'var(--red)';
+                        resultEl.textContent = '✗ ' + msg;
+                    }
+                }).catch(function (err) {
+                    resultEl.style.color = 'var(--red)';
+                    resultEl.textContent = '✗ ' + ((err && err.message) || err);
+                });
+            });
+        }
+    }
+
     /* ── Recent blocks view ── */
     var RECENT_MAX = 10;
     var recentState = { rows: [] };
@@ -886,7 +1056,10 @@
         });
 
         var cta = el('exp-show-broadcast');
-        if (cta) cta.addEventListener('click', function () { showView('broadcast'); });
+        if (cta) cta.addEventListener('click', function () {
+            mountBroadcastView();
+            showView('broadcast');
+        });
     }
 
     function renderRecentBlocks(rows) {
