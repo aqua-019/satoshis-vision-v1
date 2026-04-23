@@ -9,60 +9,48 @@
     {
       "source": "/(.*)",
       "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data: https://api.coingecko.com; connect-src 'self' wss://relay.xmr.irish https://api.coingecko.com https://xmrchain.net https://localmonero.co; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
-        },
         { "key": "X-Frame-Options", "value": "DENY" },
         { "key": "X-Content-Type-Options", "value": "nosniff" },
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
         { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" }
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data: https://api.coingecko.com; connect-src 'self' https://api.coingecko.com https://xmrchain.net https://localmonero.co wss://relay.xmr.irish; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
+        }
       ]
     },
     {
-      "source": "/css/(.*)",
+      "source": "/api/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/fonts/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/js/(.*)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=3600" }
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
+        { "key": "Cache-Control", "value": "no-store" }
       ]
     }
   ],
   "functions": {
     "api/monero.js": {
       "maxDuration": 15
+    },
+    "api/xmr.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
-    { "source": "/home", "destination": "/" },
-    { "source": "/archive", "destination": "/bottom-line.html" },
-    { "source": "/education", "destination": "/btc-xmr-education.html" },
-    { "source": "/mine", "destination": "/mining.html" },
-    { "source": "/pool", "destination": "/mempool.html" },
-    { "source": "/net", "destination": "/network.html" },
-    { "source": "/market", "destination": "/markets.html" },
-    { "source": "/eco", "destination": "/ecosystem.html" },
-    { "source": "/law", "destination": "/legal.html" },
-    { "source": "/people", "destination": "/community.html" },
-    { "source": "/swap", "destination": "/hold-monero.html" },
-    { "source": "/quotes", "destination": "/quotes.html" },
-    { "source": "/secrets", "destination": "/secrets.html" },
-    { "source": "/timeline", "destination": "/timeline.html" },
-    { "source": "/outlook", "destination": "/future-outlook.html" },
-    { "source": "/dashboard", "destination": "/markets" },
-    { "source": "/privacy", "destination": "/privacy-architecture.html" },
-    { "source": "/api/xmr/:path*", "destination": "https://relay.xmr.irish/api/:path*" }
+    { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },
+    { "source": "/home",           "destination": "/" },
+    { "source": "/archive",        "destination": "/bottom-line.html" },
+    { "source": "/education",      "destination": "/btc-xmr-education.html" },
+    { "source": "/mine",           "destination": "/mining.html" },
+    { "source": "/pool",           "destination": "/mempool.html" },
+    { "source": "/net",            "destination": "/network.html" },
+    { "source": "/market",         "destination": "/markets.html" },
+    { "source": "/eco",            "destination": "/ecosystem.html" },
+    { "source": "/law",            "destination": "/legal.html" },
+    { "source": "/people",         "destination": "/community.html" },
+    { "source": "/privacy",        "destination": "/privacy-architecture.html" }
   ],
   "redirects": [
     { "source": "/index.html", "destination": "/", "permanent": true }
