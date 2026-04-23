@@ -916,6 +916,11 @@
             if (mode === 'ocean') MempoolOcean.resume();
             else MempoolOcean.pause();
         }
+        // MINING: pause polling + chart refresh when not visible.
+        if (window.MempoolMining) {
+            if (mode === 'mining') MempoolMining.resume();
+            else MempoolMining.pause();
+        }
     }
 
     // Buttons
@@ -941,6 +946,16 @@
         MempoolOcean.init({ debug: false });
     } catch (e) {
         console.error('[mempool.html] MempoolOcean init failed', e);
+    }
+
+    /* ── Boot the MINING orchestrator ── */
+    try {
+        if (window.MempoolMining) {
+            MempoolMining.init({ ws: window.__xmrWs, debug: false });
+            if (initial === 'mining') MempoolMining.resume();
+        }
+    } catch (e) {
+        console.error('[mempool.html] MempoolMining init failed', e);
     }
 
     /* ── GenUI ?tx= prefill (M2: just log; M3 will route to EXPLORER) ── */
