@@ -1023,3 +1023,138 @@ canvas.constellation { position: absolute; top: 0; left: 0; width: 100%; height:
     .grid-4 { grid-template-columns: 1fr; }
     .grid-5 { grid-template-columns: 1fr; }
 }
+
+/* ─── Citation & Trust Components ─────────────────── */
+
+.cite-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+  padding: 10px 14px;
+  margin: 12px 0 20px;
+  background: rgba(255,255,255,0.03);
+  border-left: 2px solid var(--border-active, rgba(255,255,255,0.15));
+  border-radius: 0 4px 4px 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.cite-block .cite-source {
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.04em;
+}
+
+.cite-block .cite-date {
+  color: var(--text-muted);
+}
+
+.cite-block .cite-note {
+  color: var(--text-muted);
+  flex: 1 1 200px;
+}
+
+.cite-block .cite-link {
+  color: var(--grn);
+  text-decoration: none;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.cite-block .cite-link:hover {
+  text-decoration: underline;
+}
+
+/* Methodology accordion */
+.methodology-block {
+  margin: 20px 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-sm, 6px);
+  overflow: hidden;
+}
+
+.methodology-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface-2);
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-secondary);
+  letter-spacing: 0.06em;
+  border: none;
+  width: 100%;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.methodology-toggle:hover {
+  color: var(--text-primary);
+}
+
+.methodology-toggle .toggle-icon {
+  transition: transform 0.2s;
+  font-size: 10px;
+}
+
+.methodology-block.open .toggle-icon {
+  transform: rotate(180deg);
+}
+
+.methodology-body {
+  display: none;
+  padding: 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  background: var(--surface-1);
+}
+
+.methodology-block.open .methodology-body {
+  display: block;
+}
+
+/* Fact / Opinion / Analysis label pills */
+.content-label {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.content-label.fact {
+  background: rgba(0, 204, 136, 0.12);
+  color: var(--grn);
+}
+
+.content-label.analysis {
+  background: rgba(68, 136, 255, 0.12);
+  color: var(--blue);
+}
+
+.content-label.opinion {
+  background: rgba(255, 102, 0, 0.12);
+  color: var(--xmr-text);
+}
+
+/* Page-verified timestamp footer */
+.page-timestamp {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 8px 0;
+  border-top: 1px solid var(--border-default);
+  margin-top: 32px;
+}
+.timestamp-label { color: var(--text-secondary); }
+.timestamp-date { color: var(--xmr-text); font-weight: 500; }
