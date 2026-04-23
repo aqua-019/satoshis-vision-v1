@@ -200,6 +200,13 @@
     XmrRelayWS.prototype.fetchProjected = function ()      { return restGet('/mempool/projected'); };
     XmrRelayWS.prototype.fetchRecent    = function (limit) { return restGet('/mempool/recent?limit=' + (limit || 20)); };
 
+    /* ── M4 mining REST helpers ── */
+    XmrRelayWS.prototype.fetchNetwork    = function ()      { return restGet('/network'); };
+    XmrRelayWS.prototype.fetchHashrate   = function (range) { return restGet('/network/hashrate?range=' + (range || '7d')); };
+    XmrRelayWS.prototype.fetchDifficulty = function (range) { return restGet('/network/difficulty?range=' + (range || '7d')); };
+    XmrRelayWS.prototype.fetchPools      = function ()      { return restGet('/mining/pools'); };
+    XmrRelayWS.prototype.fetchEmission   = function ()      { return restGet('/emission'); };
+
     /* ── Static exports ── */
     XmrRelayWS.FEE_TIERS  = FEE_TIERS;
     XmrRelayWS.classify   = classify;
