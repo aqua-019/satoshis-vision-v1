@@ -215,6 +215,21 @@
     /* ═══ generic mode visibility (uses the `hidden` attribute for native display:none) ═══ */
     [hidden]{display:none!important}
 
+    /* ═══ reduced-motion: kill all keyframe + transition animations ═══ */
+    @media(prefers-reduced-motion: reduce){
+        .bk.slide-in,.txr-new,.block-form.flash,.pd-fill,.mode-btn{animation:none!important;transition:none!important}
+        *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+    }
+
+    /* ═══ confirmation ring segments + hover tooltip ═══ */
+    .ring-seg{cursor:pointer;pointer-events:stroke;transition:opacity .15s}
+    .ring-seg:hover{opacity:.75}
+    .ring-tip{position:absolute;min-width:160px;padding:8px 10px;background:rgba(10,10,14,.96);border:1px solid rgba(255,102,0,.3);border-radius:6px;font-size:10px;line-height:1.5;color:var(--text-primary);pointer-events:none;opacity:0;transform:translate(-50%,-8px);transition:opacity .15s;z-index:10;white-space:nowrap}
+    .ring-tip.vis{opacity:1}
+    .ring-tip .rt-h{color:var(--xmr);font-weight:600}
+    .ring-tip .rt-m{color:var(--text-tertiary);font-size:9px;letter-spacing:1px;text-transform:uppercase;margin-right:6px}
+    .ring-tip .rt-v{color:var(--grn)}
+
     @media(max-width:768px){
         .ocean-aux{grid-template-columns:1fr}.mempool-clock-wrap canvas{height:160px}
         .mk-stats{grid-template-columns:1fr 1fr 1fr}.mk-sv{font-size:17px}
@@ -418,7 +433,8 @@
                 <button class="snd-btn" id="snd-btn">Sound: off</button>
                 <svg viewBox="0 0 200 200" id="ring-svg">
                     <circle cx="100" cy="100" r="82" fill="none" stroke="#1A1A22" stroke-width="7"/>
-                    <circle cx="100" cy="100" r="82" fill="none" stroke="#FF6600" stroke-width="7" stroke-dasharray="0 515.22" stroke-dashoffset="-25.76" stroke-linecap="round" id="ring-fill"/>
+                    <g id="ring-seg-group" transform="rotate(-90 100 100)"></g>
+                    <circle cx="100" cy="100" r="82" fill="none" stroke="#FF6600" stroke-width="7" stroke-dasharray="0 515.22" stroke-dashoffset="-25.76" stroke-linecap="round" id="ring-fill" style="display:none"/>
                     <circle cx="100" cy="100" r="82" fill="none" stroke="#00CC88" stroke-width="3" stroke-dasharray="3 512" stroke-dashoffset="-335" stroke-linecap="round" opacity=".7"/>
                     <circle cx="100" cy="100" r="82" fill="none" stroke="#00CC88" stroke-width="9" stroke-dasharray="4 511" stroke-dashoffset="-335" opacity=".2"/>
                     <text x="100" y="82" text-anchor="middle" fill="#FF8533" font-family="monospace" font-size="32" font-weight="600" id="ring-count">0/10</text>
@@ -428,6 +444,7 @@
                 </svg>
                 <div class="rcl">Confirmation ring</div>
                 <div class="rcs" id="rc-status">enter a txn hash to track</div>
+                <div class="ring-tip" id="ring-tip" role="tooltip" aria-hidden="true"></div>
             </div>
         </div>
         <div class="txl" style="margin:14px 0 0">
@@ -479,9 +496,10 @@
 NavComponent.inject('nav-mount');
 PriceService.start();
 
-var tracking=false,trackedHash='',trackedConfs=0,trackedBlock=0,trackedFirstSeen=0;
+var tracking=false,trackedHash='',trackedConfs=0,trackedBlock=0,trackedFirstSeen=0,trackedFeeRate=0;
 var soundEnabled=false,audioCtx=null;
 var prevPoolHashes=[],prevHeight=0;
+var REDUCED_MOTION=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function getParam(k){return new URLSearchParams(location.search).get(k)}
 function setParam(k,v){var u=new URL(location.href);u.searchParams.set(k,v);history.replaceState(null,'',u)}
@@ -507,7 +525,9 @@ async function trackTransaction(hash){
     document.getElementById('txd-hash').textContent=hash;
     document.getElementById('txd-seen').textContent='just now';
     document.getElementById('tth-seen').textContent='just now';
-    if(window.MempoolTrack)window.MempoolTrack.onTrackStart(hash);
+    var poolTx=(MoneroNetwork.mempool||[]).find(function(t){return t.hash===hash});
+    trackedFeeRate=poolTx&&poolTx.size>0?poolTx.fee/(poolTx.size/1024):0;
+    if(window.MempoolTrack)window.MempoolTrack.onTrackStart(hash,trackedFeeRate);
     await checkTrackedTx();
     positionArrow();
 }
@@ -551,9 +571,7 @@ function updateTrackingUI(confs,blockH){
     positionArrow();
 }
 function updateRing(c){
-    var circ=2*Math.PI*82,fill=(c/10)*circ;
-    document.getElementById('ring-fill').setAttribute('stroke-dasharray',fill.toFixed(2)+' '+(circ-fill).toFixed(2));
-    document.getElementById('ring-fill').setAttribute('stroke',c>=10?'#00CC88':'#FF6600');
+    if(window.MempoolTrack&&window.MempoolTrack.updateRing){window.MempoolTrack.updateRing(c,trackedBlock);return}
     document.getElementById('ring-count').textContent=Math.min(c,10)+'/10';
     document.getElementById('ring-eta').textContent=c>=10?'fully confirmed':'~'+(Math.max(0,10-c)*2)+' min to 10/10';
 }
@@ -733,7 +751,7 @@ function drawOcean(){
         oceanCtx.fillStyle='rgba('+r+','+g+','+bl+','+a+')';oceanCtx.fill();
         if(p.s>3.5){oceanCtx.beginPath();oceanCtx.arc(p.x,p.y,p.s*2.5,0,Math.PI*2);oceanCtx.fillStyle='rgba('+r+','+g+','+bl+','+(a*0.1)+')';oceanCtx.fill()}
     }
-    ot++;requestAnimationFrame(drawOcean);
+    ot++;if(!REDUCED_MOTION)requestAnimationFrame(drawOcean);
 }
 
 /* ═══ BLOCK FILL VIZ ═══ */
@@ -762,7 +780,7 @@ function animBF(){
             bfCtx.strokeStyle='rgba(255,102,0,.04)';bfCtx.lineWidth=0.3;bfCtx.strokeRect(x+1,y+1,cs-2,cs-2);
         }
     }
-    bfT++;requestAnimationFrame(animBF);
+    bfT++;if(!REDUCED_MOTION)requestAnimationFrame(animBF);
 }
 
 /* ═══ SOUND ═══ */
