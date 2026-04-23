@@ -131,6 +131,98 @@
 
     .mp-foot{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
 
+    /* ═══ MEMPOOL 3.0 — mode strip ═══ */
+    .mode-strip{display:flex;gap:4px;padding:10px var(--space-page-x) 4px;align-items:center}
+    .mode-btn{font-family:inherit;font-size:10px;letter-spacing:2px;padding:6px 14px;border-radius:5px;background:var(--surface-1);color:var(--text-tertiary);border:1px solid var(--border-default);cursor:pointer;text-transform:uppercase}
+    .mode-btn:hover{color:var(--text-secondary);border-color:var(--border-active)}
+    .mode-btn.active{background:rgba(255,102,0,.08);color:var(--xmr);border-color:rgba(255,102,0,.25)}
+
+    /* ═══ fee heatmap strip ═══ */
+    .fee-heatmap{margin:0 var(--space-page-x) 10px;padding:10px 14px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px}
+    .heatmap-bar{display:flex;height:14px;gap:1px;border-radius:3px;overflow:hidden;background:var(--surface-2)}
+    .heatmap-bar .seg{flex:1;min-width:0}
+    .heatmap-labels{display:flex;justify-content:space-between;margin-top:7px;font-size:9px;color:var(--text-tertiary)}
+    .heatmap-labels em{color:var(--text-secondary);font-style:normal;letter-spacing:1.2px;text-transform:uppercase;margin-right:4px}
+    .heatmap-labels span span{color:var(--gold);font-variant-numeric:tabular-nums}
+
+    /* ═══ congestion sparkline ═══ */
+    .cong-spark{margin:0 var(--space-page-x) 10px;padding:6px 14px 8px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px}
+    .cs-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:2px}
+    .cs-lbl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .cs-ct{font-size:10px;color:var(--xmr-text);font-variant-numeric:tabular-nums}
+    .cong-spark canvas{width:100%;height:40px;display:block}
+
+    /* ═══ block formation overlay ═══ */
+    .oc{position:relative}
+    .block-form{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:44px;height:52px;border-radius:4px;background:linear-gradient(135deg,rgba(255,102,0,.08),rgba(255,102,0,.18));border:1px dashed rgba(255,102,0,.4);opacity:0;pointer-events:none;transition:opacity .4s ease}
+    .block-form.vis{opacity:1}
+    .block-form.flash{animation:bfFlash .5s ease}
+    @keyframes bfFlash{0%{box-shadow:0 0 0 rgba(255,102,0,.6)}50%{box-shadow:0 0 24px rgba(255,102,0,.7)}100%{box-shadow:0 0 0 rgba(255,102,0,0);opacity:0}}
+
+    /* ═══ ocean-aux: density + clock ═══ */
+    .ocean-aux{display:grid;grid-template-columns:1fr 220px;gap:10px;margin:0 var(--space-page-x) 14px}
+    .privacy-density{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:10px}
+    .pd-row{display:flex;align-items:baseline;gap:10px}
+    .pd-pct{font-size:28px;font-weight:600;color:var(--grn);font-variant-numeric:tabular-nums}
+    .pd-tag{font-size:10px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .pd-bar{height:4px;background:var(--surface-2);border-radius:2px;overflow:hidden}
+    .pd-fill{height:100%;background:linear-gradient(90deg,var(--grn),#00DDAA);transition:width .6s ease}
+    .mempool-clock-wrap{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:8px;display:flex;align-items:center;justify-content:center}
+    .mempool-clock-wrap canvas{width:100%;height:190px;display:block}
+
+    /* ═══ MARKET pane ═══ */
+    .market-pane{padding:0 var(--space-page-x);display:none;flex-direction:column;gap:12px;margin-bottom:18px}
+    .market-pane.active{display:flex}
+    .mk-block{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;overflow:hidden}
+    .mk-hdr{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border-subtle)}
+    .mk-t{font-size:12px;font-weight:500}
+    .mk-s{font-size:9px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .mk-canvas-wrap{padding:10px 14px}
+    .mk-canvas-wrap canvas{width:100%;display:block}
+    .mk-tall canvas{height:320px}
+    .mk-short canvas{height:180px}
+    .mk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px}
+    .mk-sc{background:var(--surface-1);padding:14px;text-align:center;border-radius:10px}
+    .mk-sv{font-size:22px;font-weight:600;color:var(--xmr-text);font-variant-numeric:tabular-nums;margin-bottom:3px}
+    .mk-sl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .fee-estimator{padding:14px}
+    .est-buttons{display:flex;gap:4px;padding:0 0 10px 0}
+    .est-btn{font-family:inherit;font-size:10px;padding:6px 12px;background:var(--surface-2);color:var(--text-secondary);border:1px solid var(--border-default);border-radius:5px;cursor:pointer;letter-spacing:1px;text-transform:uppercase}
+    .est-btn.active{background:rgba(255,102,0,.08);color:var(--xmr);border-color:rgba(255,102,0,.25)}
+    .est-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px}
+    .est-cell{background:var(--surface-2);padding:14px;text-align:center;border-radius:8px}
+    .est-v{font-size:18px;font-weight:600;color:var(--gold);font-variant-numeric:tabular-nums;margin-bottom:3px}
+    .est-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+    .bh-table-wrap{padding:6px 14px 12px;font-size:11px}
+    .bh-row{display:grid;grid-template-columns:1.2fr .6fr 1fr 1fr .6fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-subtle);align-items:center;font-variant-numeric:tabular-nums}
+    .bh-row.bh-head{color:var(--text-tertiary);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;border-bottom:1px solid var(--border-default)}
+    .bh-row .bh-h{color:var(--xmr)}
+    .bh-fill-g{color:var(--grn)}.bh-fill-y{color:var(--gold)}.bh-fill-r{color:var(--xmr)}
+
+    /* ═══ TRACK extras: privacy report + propagation ═══ */
+    .track-aux{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+    .privacy-report{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+    .pr-row{display:flex;align-items:center;gap:8px;padding:6px 0}
+    .pr-chk{color:var(--grn);font-weight:600;font-size:12px}
+    .pr-lbl{font-size:11px;flex:1}
+    .pr-v{font-size:9px;color:var(--grn);letter-spacing:1.5px;text-transform:uppercase}
+    .prop-timeline{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:10px 14px;display:flex;flex-direction:column;justify-content:center;gap:8px}
+    .pt-row{display:flex;justify-content:space-between;align-items:baseline;padding:4px 0;border-bottom:1px solid var(--border-subtle)}
+    .pt-row:last-child{border-bottom:none}
+    .pt-time{font-size:13px;color:var(--blue);font-variant-numeric:tabular-nums}
+    .pt-lbl{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
+
+    /* ═══ generic mode visibility (uses the `hidden` attribute for native display:none) ═══ */
+    [hidden]{display:none!important}
+
+    @media(max-width:768px){
+        .ocean-aux{grid-template-columns:1fr}.mempool-clock-wrap canvas{height:160px}
+        .mk-stats{grid-template-columns:1fr 1fr 1fr}.mk-sv{font-size:17px}
+        .track-aux{grid-template-columns:1fr}
+        .bh-row{grid-template-columns:1fr .5fr .9fr .9fr .5fr;font-size:10px}
+        .mk-tall canvas{height:240px}
+    }
+
     @media(max-width:768px){
         .mp-nav{padding:8px 12px;gap:6px}.mp-tabs{margin-left:0;flex-wrap:wrap;gap:6px}.mp-search{margin-left:0;max-width:100%}
         .sbar{grid-template-columns:repeat(2,1fr);padding:0 12px}
@@ -150,10 +242,10 @@
     <div class="mp-nav">
         <div class="mp-brand"><em>xmr.irish</em> <span>/</span> <em>mempool</em></div>
         <div class="mp-tabs">
-            <a href="/mempool" class="mp-tab active">Mempool</a>
-            <a href="/mining" class="mp-tab">Mining</a>
-            <a href="/network" class="mp-tab">Network</a>
             <a href="/markets" class="mp-tab">Markets</a>
+            <a href="/network" class="mp-tab">Network</a>
+            <a href="/mining" class="mp-tab">Mining</a>
+            <a href="/mempool" class="mp-tab active">Mempool</a>
         </div>
         <div class="mp-search">
             <input type="text" id="txIn" placeholder="txn hash or block height...">
@@ -161,14 +253,20 @@
         </div>
     </div>
 
-    <div class="sbar">
+    <div class="mode-strip" role="tablist" aria-label="Mempool mode">
+        <button type="button" class="mode-btn active" data-mode-btn="ocean" role="tab" aria-selected="true">OCEAN</button>
+        <button type="button" class="mode-btn" data-mode-btn="market" role="tab" aria-selected="false">MARKET</button>
+        <button type="button" class="mode-btn" data-mode-btn="track" role="tab" aria-selected="false">TRACK</button>
+    </div>
+
+    <div class="sbar" data-mode="ocean,market,track">
         <div class="sc"><div class="sv" style="color:var(--grn)" id="st-unconf">—</div><div class="sl">Unconfirmed</div></div>
         <div class="sc"><div class="sv" style="color:var(--xmr-text)" id="st-hash">—</div><div class="sl">Hashrate</div></div>
         <div class="sc"><div class="sv" style="color:var(--g3)" id="st-diff">—</div><div class="sl">Difficulty</div></div>
         <div class="sc"><div class="sv" style="color:var(--g3)">~2 min</div><div class="sl">Block time</div></div>
     </div>
 
-    <div class="tth" id="tth">
+    <div class="tth" id="tth" data-mode="track">
         <div class="tth-t">
             <div style="font-size:11px;font-weight:600">Tracking</div>
             <div class="tth-h" id="tth-hash">—</div>
@@ -185,7 +283,7 @@
     </div>
 
     <!-- Block flow: single strip, uniform blocks -->
-    <div class="bf">
+    <div class="bf" data-mode="track">
         <div class="bf-head"><div class="bf-lbl">Pending (mempool)</div><div class="bf-lbl r">Confirmed blocks →</div></div>
         <div class="bf-arr-wrap"><div class="bf-arr hidden" id="bf-arr"><div class="bf-arr-l" id="bf-arr-l">your txn [0/10]</div><div class="bf-arr-ln"></div><div class="bf-arr-tr"></div></div></div>
         <div class="bf-strip" id="bf-strip">
@@ -195,31 +293,108 @@
         </div>
     </div>
 
-    <div class="oc">
+    <div class="fee-heatmap" data-mode="ocean">
+        <div class="heatmap-bar" id="fee-heatmap-bar"></div>
+        <div class="heatmap-labels">
+            <span><em>Economy</em> <span id="fee-economy">—</span> XMR/kB</span>
+            <span><em>Standard</em> <span id="fee-standard">—</span> XMR/kB</span>
+            <span><em>Priority</em> <span id="fee-priority">—</span> XMR/kB</span>
+        </div>
+    </div>
+
+    <div class="cong-spark" data-mode="ocean">
+        <div class="cs-hdr"><span class="cs-lbl">24h</span><span class="cs-ct" id="cong-spark-ct">—</span></div>
+        <canvas id="cong-spark-canvas" role="img" aria-label="24 hour mempool congestion sparkline"></canvas>
+    </div>
+
+    <div class="oc" data-mode="ocean">
         <canvas id="ocean"></canvas>
+        <div class="block-form" id="block-form" aria-hidden="true"></div>
         <div class="oc-lg"><div class="oc-li"><div class="oc-ld" style="background:var(--grn)"></div>Low</div><div class="oc-li"><div class="oc-ld" style="background:var(--gold)"></div>Med</div><div class="oc-li"><div class="oc-ld" style="background:var(--xmr)"></div>High</div></div>
         <div class="oc-ov"><div class="oc-lb" id="oc-label">Live particle ocean</div><div class="oc-nr">Every particle is a real tx. You can see its <em>size</em> and <em>fee</em>. You cannot see who sent it, who receives it, or how much. <em>Privacy by default.</em></div></div>
     </div>
 
-    <div class="ps">
+    <div class="ps" data-mode="ocean">
         <div class="pi"><div class="pil">Sender</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
         <div class="pi"><div class="pil">Receiver</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
         <div class="pi"><div class="pil">Amount</div><div class="piv" style="color:var(--grn)">Hidden</div></div>
         <div class="pi"><div class="pil">Visible</div><div class="piv" style="color:var(--text-secondary)">Fee · Size · Time</div></div>
     </div>
 
-    <div class="txl" id="txl-dash">
+    <div class="ocean-aux" data-mode="ocean">
+        <div class="privacy-density">
+            <div class="pd-row"><span class="pd-pct" id="ring16-pct">—</span><span class="pd-tag">Ring-16</span></div>
+            <div class="pd-bar"><div class="pd-fill" id="density-fill" style="width:0%"></div></div>
+        </div>
+        <div class="mempool-clock-wrap">
+            <canvas id="mempool-clock" role="img" aria-label="Mempool congestion by hour (UTC)"></canvas>
+        </div>
+    </div>
+
+    <div class="txl" id="txl-dash" data-mode="ocean,track">
         <div class="txl-hd"><div class="txl-ti">Recent transactions</div><div class="txl-ct" id="txl-ct">— · live 5s</div></div>
         <div class="txr hd"><span>Hash</span><span style="text-align:right">Fee</span><span style="text-align:right">Size</span><span style="text-align:right">Ring</span><span style="text-align:right">Rate</span><span style="text-align:right">Age</span><span style="text-align:right">Status</span></div>
         <div id="txl-body" class="txl-body collapsed"></div>
         <div class="txl-toggle" onclick="toggleTxl(this)">Show all transactions ▾</div>
     </div>
 
-    <div id="txd-divider" class="txd-divider" style="display:none"></div>
-    <div class="txd" id="txd">
+    <section class="market-pane" data-mode="market">
+        <div class="mk-block">
+            <div class="mk-hdr"><span class="mk-t">Fee depth</span><span class="mk-s" id="mk-depth-sub">—</span></div>
+            <div class="mk-canvas-wrap mk-tall"><canvas id="fee-depth-chart" role="img" aria-label="Cumulative fee distribution"></canvas></div>
+        </div>
+
+        <div class="mk-stats">
+            <div class="mk-sc"><div class="mk-sv" id="stat-median-fee">—</div><div class="mk-sl">Median fee</div></div>
+            <div class="mk-sc"><div class="mk-sv" id="stat-confirmed-10blk">—</div><div class="mk-sl">Confirmed 10 blk</div></div>
+            <div class="mk-sc"><div class="mk-sv" id="stat-pool-size">—</div><div class="mk-sl">Mempool size</div></div>
+        </div>
+
+        <div class="mk-block">
+            <div class="mk-hdr"><span class="mk-t">Fee histogram</span><span class="mk-s" id="mk-hist-sub">30 buckets</span></div>
+            <div class="mk-canvas-wrap mk-short"><canvas id="fee-histogram" role="img" aria-label="Fee rate histogram"></canvas></div>
+        </div>
+
+        <div class="mk-block fee-estimator">
+            <div class="mk-hdr"><span class="mk-t">Fee estimator</span></div>
+            <div class="est-buttons" role="group">
+                <button type="button" class="est-btn active" data-target="1">1 blk</button>
+                <button type="button" class="est-btn" data-target="3">3 blk</button>
+                <button type="button" class="est-btn" data-target="10">10 blk</button>
+            </div>
+            <div class="est-grid">
+                <div class="est-cell"><div class="est-v" id="est-fee-rate">—</div><div class="est-l">XMR/kB</div></div>
+                <div class="est-cell"><div class="est-v" id="est-fee-cost">—</div><div class="est-l">Typical tx</div></div>
+            </div>
+        </div>
+
+        <div class="mk-block">
+            <div class="mk-hdr"><span class="mk-t">Block history</span><span class="mk-s">last 10</span></div>
+            <div class="bh-table-wrap">
+                <div class="bh-row bh-head"><span>Block</span><span>Txns</span><span>Median fee</span><span>Min confirmed</span><span>Fill %</span></div>
+                <div id="block-history-body"></div>
+            </div>
+        </div>
+    </section>
+
+    <div id="txd-divider" class="txd-divider" style="display:none" data-mode="track"></div>
+    <div class="txd" id="txd" data-mode="track">
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
             <div style="font-size:18px;font-weight:600">Transaction detail</div>
             <div id="txd-badge" style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;background:rgba(255,102,0,.1);color:var(--xmr);border:1px solid rgba(255,102,0,.2)">—</div>
+        </div>
+        <div class="track-aux">
+            <div class="privacy-report">
+                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">RingCT</span><span class="pr-v">on</span></div>
+                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">Stealth</span><span class="pr-v">on</span></div>
+                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">Ring 16</span><span class="pr-v">on</span></div>
+                <div class="pr-row"><span class="pr-chk">✓</span><span class="pr-lbl">BP+</span><span class="pr-v">on</span></div>
+            </div>
+            <div class="prop-timeline">
+                <div class="pt-row"><span class="pt-time" id="prop-first-seen">—</span><span class="pt-lbl">first seen</span></div>
+                <div class="pt-row"><span class="pt-time" id="prop-mempool-time">—</span><span class="pt-lbl">in mempool</span></div>
+                <div class="pt-row"><span class="pt-time" id="prop-confirmed-time">—</span><span class="pt-lbl">confirmed</span></div>
+            </div>
         </div>
         <div class="txd-hero">
             <div class="txd-info">
@@ -263,7 +438,7 @@
         </div>
     </div>
 
-    <div class="bav" id="bav">
+    <div class="bav" id="bav" data-mode="track">
         <div class="bav-back" id="bav-back">← Back to mempool</div>
         <div class="bav-hero">
             <div class="bav-hdr">
@@ -290,12 +465,16 @@
         </div>
     </div>
 
-    <div class="mp-foot">xmr.irish / mempool · live 5s · privacy is not optional</div>
+    <div class="mp-foot" data-mode="ocean,market,track">xmr.irish / mempool · live 5s · privacy is not optional</div>
 </div>
 <script src="js/nav.js"></script>
 <script src="js/price-service.js"></script>
 <script src="js/monero-network.js"></script>
 <script src="js/genui.js"></script>
+<script src="js/mempool-3.js"></script>
+<script src="js/mempool-ocean.js"></script>
+<script src="js/mempool-market.js"></script>
+<script src="js/mempool-track.js"></script>
 <script>
 NavComponent.inject('nav-mount');
 PriceService.start();
@@ -328,6 +507,7 @@ async function trackTransaction(hash){
     document.getElementById('txd-hash').textContent=hash;
     document.getElementById('txd-seen').textContent='just now';
     document.getElementById('tth-seen').textContent='just now';
+    if(window.MempoolTrack)window.MempoolTrack.onTrackStart(hash);
     await checkTrackedTx();
     positionArrow();
 }
@@ -340,6 +520,10 @@ async function checkTrackedTx(){
     var c=d.confirmations;
     if(c>trackedConfs&&soundEnabled)playTone(c);
     trackedConfs=c;
+    if(c>=1&&window.MempoolTrack){
+        var blk=MoneroNetwork.blocks.find(function(b){return b.height===trackedBlock});
+        window.MempoolTrack.onTrackConfirmed(trackedBlock,blk?blk.timestamp:0);
+    }
     updateTrackingUI(c,trackedBlock);
 }
 function updateTrackingUI(confs,blockH){
