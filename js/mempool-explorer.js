@@ -10,6 +10,17 @@
 
     function el(id) { return document.getElementById(id); }
 
+    /* ── Live TX panel state ── */
+    var _txLive = {
+        txid: null,
+        tx: null,
+        blockHeight: null,
+        receiveTime: null,
+        timer: null,
+        lastTip: null
+    };
+    var XMR_BLOCK_TIME_S = 120;
+
     /* ── REST base (mirrors XmrRelayWS.restBase) ── */
     function restBase() {
         return '/api/xmr';
@@ -100,6 +111,7 @@
 
         /* Clear any prior tracked TX overlays on a fresh search. */
         if (window._blockParade) window._blockParade.clearTracked();
+        stopTxLive();
 
         showView('loading');
 
@@ -336,6 +348,39 @@
               '<button type="button" class="exp-copy-btn" data-exp-copy="' + esc(tx.txid) + '">COPY</button>' +
             '</div>' +
 
+            '<div class="exp-tx-live" id="exp-tx-live">' +
+              '<div class="exp-tx-live-header">' +
+                '<span class="exp-tx-live-label">Confirmation Status</span>' +
+                '<span class="exp-tx-live-pulse" id="exp-tx-live-pulse">● LIVE</span>' +
+              '</div>' +
+              '<div class="exp-tx-live-grid">' +
+                '<div class="exp-tx-live-cell">' +
+                  '<div class="exp-tx-live-val" id="exp-tx-live-confs">0</div>' +
+                  '<div class="exp-tx-live-sub" id="exp-tx-live-confs-sub">of 10 confirmations</div>' +
+                '</div>' +
+                '<div class="exp-tx-live-cell">' +
+                  '<div class="exp-tx-live-val" id="exp-tx-live-remain">10</div>' +
+                  '<div class="exp-tx-live-sub">blocks remaining</div>' +
+                '</div>' +
+                '<div class="exp-tx-live-cell">' +
+                  '<div class="exp-tx-live-val" id="exp-tx-live-next-eta">~2:00</div>' +
+                  '<div class="exp-tx-live-sub">until next confirmation</div>' +
+                '</div>' +
+                '<div class="exp-tx-live-cell">' +
+                  '<div class="exp-tx-live-val" id="exp-tx-live-unlock-eta">~20:00</div>' +
+                  '<div class="exp-tx-live-sub">until full unlock (10/10)</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="exp-tx-live-progress">' +
+                '<div class="exp-tx-live-progress-fill" id="exp-tx-live-progress-fill" style="width:0%"></div>' +
+                '<div class="exp-tx-live-progress-ticks"></div>' +
+              '</div>' +
+              '<div class="exp-tx-live-footer">' +
+                '<span id="exp-tx-live-status-line">Awaiting first confirmation…</span>' +
+                '<span class="exp-tx-live-lastupdate" id="exp-tx-live-lastupdate">updated just now</span>' +
+              '</div>' +
+            '</div>' +
+
             '<div class="exp-tx-grid">' +
               '<div class="exp-tx-card">' +
                 '<h3>Privacy Profile</h3>' +
@@ -448,6 +493,7 @@
         } catch (e) { if (window.console) console.warn('[m5] bp timeline failed', e); }
 
         showView('tx');
+        startTxLive(tx);
     }
 
     /* ── Ring signature visualizer (Canvas 2D) ── */
@@ -626,6 +672,7 @@
         if (back) back.addEventListener('click', function () {
             // Back from tx → block (if we came from one) or recent.
             if (window._blockParade) window._blockParade.clearTracked();
+            stopTxLive();
             if (blockState.current) showView('block');
             else showView('recent');
         });
@@ -1204,6 +1251,115 @@
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
+    }
+
+    /* ── Live TX panel logic ──
+       Piggy-backs on the block parade's 15s tip refresh. Ticks every 1s to
+       drive the seconds-until-next-confirmation countdown. */
+
+    function startTxLive(tx) {
+        stopTxLive();
+        _txLive.txid = tx.txid;
+        _txLive.tx = tx;
+        _txLive.blockHeight = tx.confirmed ? tx.block_height : null;
+        _txLive.receiveTime = tx.receive_time || null;
+        _txLive.lastTip = (window._blockParade && window._blockParade.blocks && window._blockParade.blocks[0])
+            ? window._blockParade.blocks[0].height : null;
+
+        updateTxLiveFromParade();
+        _txLive.timer = setInterval(updateTxLiveFromParade, 1000);
+    }
+
+    function stopTxLive() {
+        if (_txLive.timer) { clearInterval(_txLive.timer); _txLive.timer = null; }
+        _txLive.txid = null;
+        _txLive.tx = null;
+    }
+
+    function updateTxLiveFromParade() {
+        if (!_txLive.tx) return;
+        var host = el('exp-tx-live');
+        if (!host) { stopTxLive(); return; }
+
+        var parade = window._blockParade;
+        var tip = (parade && parade.blocks && parade.blocks[0]) ? parade.blocks[0].height : null;
+        if (tip != null) _txLive.lastTip = tip;
+
+        var CONF_REQ = 10;
+        var confs, remaining, nextEtaS, unlockEtaS, statusLine, confClass;
+
+        if (!_txLive.blockHeight) {
+            /* Unconfirmed (in mempool). */
+            confs = 0;
+            remaining = CONF_REQ;
+            nextEtaS = XMR_BLOCK_TIME_S;
+            unlockEtaS = nextEtaS + (CONF_REQ - 1) * XMR_BLOCK_TIME_S;
+            statusLine = 'Awaiting block inclusion…';
+            confClass = 'is-pending';
+        } else if (tip != null) {
+            confs = Math.max(0, tip - _txLive.blockHeight + 1);
+            remaining = Math.max(0, CONF_REQ - confs);
+
+            if (confs >= CONF_REQ) {
+                nextEtaS = 0;
+                unlockEtaS = 0;
+                statusLine = '✓ Fully unlocked — spendable';
+                confClass = 'is-confirmed';
+            } else {
+                var lastBlock = parade.blocks[0];
+                var sinceLastBlock = lastBlock && lastBlock.timestamp
+                    ? Math.max(0, Math.floor(Date.now() / 1000) - Number(lastBlock.timestamp))
+                    : 0;
+                nextEtaS = Math.max(0, XMR_BLOCK_TIME_S - sinceLastBlock);
+                unlockEtaS = remaining > 1
+                    ? nextEtaS + (remaining - 1) * XMR_BLOCK_TIME_S
+                    : nextEtaS;
+                statusLine = confs === 1
+                    ? 'First confirmation received — 9 more for unlock'
+                    : remaining === 1
+                    ? 'One more block until unlock'
+                    : confs + ' of 10 — ' + remaining + ' more until unlock';
+                confClass = 'is-updating';
+            }
+        } else {
+            /* Confirmed but no tip info yet. */
+            confs = _txLive.tx.confirmations || 0;
+            remaining = Math.max(0, CONF_REQ - confs);
+            nextEtaS = remaining > 0 ? XMR_BLOCK_TIME_S : 0;
+            unlockEtaS = remaining * XMR_BLOCK_TIME_S;
+            statusLine = 'Connecting to network…';
+            confClass = 'is-updating';
+        }
+
+        setField('exp-tx-live-confs', confs, confClass);
+        setField('exp-tx-live-confs-sub', confs >= CONF_REQ
+            ? 'fully confirmed — spendable'
+            : 'of 10 confirmations');
+        setField('exp-tx-live-remain', remaining);
+        setField('exp-tx-live-next-eta', remaining > 0 ? '~' + fmtMinSec(nextEtaS) : '—');
+        setField('exp-tx-live-unlock-eta', remaining > 0 ? '~' + fmtMinSec(unlockEtaS) : 'unlocked');
+        setField('exp-tx-live-status-line', statusLine);
+        setField('exp-tx-live-lastupdate', 'updated ' + (tip != null ? 'just now' : 'waiting…'));
+
+        var fill = el('exp-tx-live-progress-fill');
+        if (fill) fill.style.width = Math.min(100, Math.round((confs / CONF_REQ) * 100)) + '%';
+    }
+
+    function setField(id, text, addClass) {
+        var n = el(id);
+        if (!n) return;
+        if (n.textContent !== String(text)) n.textContent = text;
+        if (addClass) {
+            n.classList.remove('is-pending', 'is-updating', 'is-confirmed');
+            n.classList.add(addClass);
+        }
+    }
+
+    function fmtMinSec(s) {
+        s = Math.max(0, Math.floor(s));
+        var m = Math.floor(s / 60);
+        var r = s % 60;
+        return m + ':' + (r < 10 ? '0' : '') + r;
     }
 
     /* ── Public API ── */
