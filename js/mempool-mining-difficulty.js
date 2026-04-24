@@ -57,8 +57,7 @@
             '<div class="mp-mining-card-sub" data-role="current">Current: —</div>' +
             '<canvas data-role="canvas"></canvas>' +
             '<p class="mp-mining-card-sub" style="margin-top:10px">' +
-              'Monero difficulty adjusts every block via LWMA-3 — not every 2,016 blocks ' +
-              'like Bitcoin. The algorithm responds to hashrate swings within minutes.' +
+              "Monero retargets every block via LWMA-3 (vs Bitcoin's 2016-block cycle)" +
             '</p>';
 
         this.canvas = this.container.querySelector('[data-role="canvas"]');

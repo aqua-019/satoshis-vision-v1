@@ -506,6 +506,122 @@ module.exports = async function handler(req, res) {
     } else if (sub === 'mining/pools') {
       data = await handlePools();
 
+    } else if (sub === 'mining/pools/live') {
+      // Fetch live pool stats from public pool APIs in parallel
+      const [p2poolData, moData] = await Promise.allSettled([
+        fetch('https://p2pool.io/api/stats', {
+          headers: { 'accept': 'application/json' },
+          signal: AbortSignal.timeout(8000)
+        }).then(r => r.ok ? r.json() : null),
+        fetch('https://moneroocean.stream/api/pool/stats', {
+          headers: { 'accept': 'application/json' },
+          signal: AbortSignal.timeout(8000)
+        }).then(r => r.ok ? r.json() : null),
+      ]);
+
+      const p2 = p2poolData.status === 'fulfilled' ? p2poolData.value : null;
+      const mo = moData.status === 'fulfilled' ? moData.value : null;
+
+      const networkInfo = await rpc('get_info');
+      const networkHashrate = networkInfo
+        ? networkInfo.difficulty / 120
+        : 5000000000;
+
+      const pools = [
+        {
+          name: 'P2Pool',
+          type: 'decentralized',
+          url: 'https://p2pool.io',
+          fee_pct: 0,
+          min_payout: 0.0003,
+          method: 'Local PPLNS',
+          hashrate_hs: p2?.pool_statistics?.hashRate ?? null,
+          miners: p2?.pool_statistics?.miners ?? null,
+          blocks_found: p2?.pool_statistics?.totalBlocksFound ?? null,
+          network_share_pct: p2?.pool_statistics?.hashRate
+            ? parseFloat(((p2.pool_statistics.hashRate / networkHashrate) * 100).toFixed(2))
+            : null,
+          last_block_height: p2?.pool_statistics?.height ?? null,
+          live: !!p2,
+          note: 'No trusted operator · privacy-maximizing · requires full node'
+        },
+        {
+          name: 'MoneroOcean',
+          type: 'centralized',
+          url: 'https://moneroocean.stream',
+          fee_pct: 0,
+          min_payout: 0.003,
+          method: 'PPLNS',
+          hashrate_hs: mo?.pool?.hashrate ?? null,
+          miners: mo?.pool?.miners ?? null,
+          blocks_found: mo?.pool?.totalBlocksFound ?? null,
+          network_share_pct: mo?.pool?.hashrate
+            ? parseFloat(((mo.pool.hashrate / networkHashrate) * 100).toFixed(2))
+            : null,
+          last_block_height: null,
+          live: !!mo,
+          note: 'Algo-switch supported · 0% fee'
+        },
+        {
+          name: 'SupportXMR',
+          type: 'centralized',
+          url: 'https://supportxmr.com',
+          fee_pct: 0.6,
+          min_payout: 0.1,
+          method: 'PPLNS',
+          hashrate_hs: null,
+          miners: null,
+          network_share_pct: null,
+          live: false,
+          note: 'Strong reputation · longest-running'
+        },
+        {
+          name: 'Nanopool',
+          type: 'centralized',
+          url: 'https://xmr.nanopool.org',
+          fee_pct: 1.0,
+          min_payout: 1.0,
+          method: 'PPLNS',
+          hashrate_hs: null,
+          miners: null,
+          network_share_pct: null,
+          live: false,
+          note: 'High minimum payout'
+        },
+        {
+          name: 'HashVault',
+          type: 'centralized',
+          url: 'https://monero.hashvault.pro',
+          fee_pct: 0.9,
+          min_payout: 0.5,
+          method: 'PPLNS',
+          hashrate_hs: null,
+          miners: null,
+          network_share_pct: null,
+          live: false,
+          note: '—'
+        },
+        {
+          name: 'C3Pool',
+          type: 'centralized',
+          url: 'https://c3pool.com',
+          fee_pct: 0,
+          min_payout: 0.003,
+          method: 'PPLNS',
+          hashrate_hs: null,
+          miners: null,
+          network_share_pct: null,
+          live: false,
+          note: '0% fee · smaller pool'
+        }
+      ];
+
+      data = {
+        network_hashrate_hs: networkHashrate,
+        pools,
+        timestamp: Date.now()
+      };
+
     } else if (sub === 'emission') {
       const info = await rpc('get_info');
       data = handleEmission(info?.height || 3200000);

@@ -16,7 +16,7 @@
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data: https://api.coingecko.com; connect-src 'self' https://api.coingecko.com https://xmrchain.net https://localmonero.co wss://relay.xmr.irish; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data: https://api.coingecko.com; connect-src 'self' https://api.coingecko.com https://xmrchain.net https://localmonero.co https://p2pool.io https://moneroocean.stream wss://relay.xmr.irish; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
         }
       ]
     },
@@ -44,7 +44,11 @@
     { "source": "/archive",        "destination": "/bottom-line.html" },
     { "source": "/education",      "destination": "/btc-xmr-education.html" },
     { "source": "/mine",           "destination": "/mining.html" },
-    { "source": "/pool",           "destination": "/mempool.html" },
+    { "source": "/mempool/explorer", "destination": "/mempool-explorer.html" },
+    { "source": "/mempool/ocean",    "destination": "/mempool-ocean.html" },
+    { "source": "/mempool/mining",   "destination": "/mempool-mining.html" },
+    { "source": "/mempool",          "destination": "/mempool-explorer.html" },
+    { "source": "/pool",           "destination": "/mempool-explorer.html" },
     { "source": "/net",            "destination": "/network.html" },
     { "source": "/market",         "destination": "/markets.html" },
     { "source": "/eco",            "destination": "/ecosystem.html" },
