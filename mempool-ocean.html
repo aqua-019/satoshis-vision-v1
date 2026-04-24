@@ -1069,6 +1069,7 @@
 <script src="js/mempool-ocean.js"></script>
 
 <!-- M3 modules -->
+<script src="js/mempool-block-parade.js"></script>
 <script src="js/mempool-explorer.js"></script>
 
 <!-- M5 modules (Monero-exclusive features) -->
@@ -1150,6 +1151,30 @@
     } catch (e) {
         console.error('[mempool.html] MempoolMining init failed', e);
     }
+
+    /* ── Block Parade ── */
+    (function () {
+        var explorerPanel = document.getElementById('mp-panel-explorer');
+        if (!explorerPanel) return;
+        var parade = new BlockParade(explorerPanel, function (height) {
+            /* Navigate to block detail in explorer */
+            if (window.MempoolExplorer && window.MempoolExplorer.loadBlockView) {
+                /* Switch to explorer mode first */
+                var btns = document.querySelectorAll('.mp-mode-btn[data-mode]');
+                for (var i = 0; i < btns.length; i++) {
+                    if (btns[i].getAttribute('data-mode') === 'explorer') {
+                        btns[i].click();
+                        break;
+                    }
+                }
+                setTimeout(function () {
+                    window.MempoolExplorer.loadBlockView(height);
+                }, 100);
+            }
+        });
+        parade.start();
+        window._blockParade = parade;
+    })();
 
     /* ── GenUI ?tx= prefill (M2: just log; M3 will route to EXPLORER) ── */
     try {
