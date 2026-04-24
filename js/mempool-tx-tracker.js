@@ -19,13 +19,21 @@
     var CELL_W   = BLOCK_W + GAP;   /* total width per block cell */
     var CONF_REQ = 10;    /* XMR unlock confirmations */
 
+    var POLL_MS  = 20000; /* pending → confirming poll cadence */
+    var ORPHAN_THRESHOLD = 3; /* consecutive 404s before auto-clear */
+
     /* ── State ────────────────────────────────────────────────── */
     var state = {
-        txid:       null,
-        blockHeight: null,   /* null = pending (mempool) */
-        confs:       0,
-        status:      'none', /* none | pending | confirming | confirmed */
-        chainTip:    0,
+        txid:           null,
+        blockHeight:    null,   /* null = pending (mempool) */
+        confs:          0,
+        status:         'none', /* none | pending | confirming | confirmed */
+        chainTip:       0,
+        trackedTs:      null,   /* seconds; tracked block timestamp */
+        firstSeenAt:    null,   /* ms; first setTracked for this txid */
+        pollTimer:      null,   /* setTimeout id for pending poller */
+        pollGen:        0,      /* monotonic id; invalidates stale responses */
+        notFoundStreak: 0,      /* consecutive 404s while pending */
     };
 
     /* ── CSS injection (once) ──────────────────────────────────── */
@@ -122,7 +130,7 @@
             '  position:absolute;',
             '  top:0;bottom:-20px;', /* extends slightly below cards */
             '  width:0;',
-            '  border-left:2px dashed rgba(255,209,0,.45);',
+            '  border-left:2px dotted rgba(255,209,0,.45);',
             '  transition:left 2s cubic-bezier(0.25,0.46,0.45,0.94);',
             '  pointer-events:none;z-index:8;',
             '}',
@@ -153,6 +161,31 @@
             '.tt-spotlight.tt-sp-confirming{border-top:8px solid rgba(74,158,255,.3);}',
             '.tt-spotlight.tt-sp-confirmed{border-top:8px solid rgba(0,201,122,.3);}',
 
+            /* Floating labeled pointer plate below tracked/pending block.
+               Sits beneath the spotlight triangle, slides in lockstep with
+               arrow/dotline on block arrival. */
+            '#tt-plate{',
+            '  position:absolute;',
+            '  bottom:-62px;',
+            '  transform:translateX(-50%);',
+            '  min-width:110px;padding:4px 8px;',
+            '  background:var(--surface-1);',
+            '  border:1px solid var(--border-subtle);',
+            '  border-radius:5px;',
+            '  font:600 9px/1.35 "DM Mono","JetBrains Mono",monospace;',
+            '  letter-spacing:.06em;text-align:center;',
+            '  transition:left 2s cubic-bezier(0.25,0.46,0.45,0.94),',
+            '             border-color .4s,color .4s;',
+            '  z-index:11;pointer-events:none;',
+            '}',
+            '.tt-plate-txid{color:var(--text-secondary);font-weight:400;margin-bottom:2px;}',
+            '.tt-plate-pending{border-color:rgba(255,209,0,.45);}',
+            '.tt-plate-pending .tt-plate-state{color:var(--gold);}',
+            '.tt-plate-confirming{border-color:rgba(74,158,255,.5);}',
+            '.tt-plate-confirming .tt-plate-state{color:var(--blue);}',
+            '.tt-plate-confirmed{border-color:rgba(0,201,122,.55);}',
+            '.tt-plate-confirmed .tt-plate-state{color:var(--grn);}',
+
             /* bp-wrap needs position:relative for absolute children */
             '.bp-wrap{position:relative;}',
 
@@ -163,6 +196,16 @@
     /* ── Public API ────────────────────────────────────────────── */
 
     function setTracked(txid, blockHeight, chainTip) {
+        /* Always stop any prior poller on re-entry (new txid or promotion). */
+        _stopPolling();
+
+        /* First-time seeing this txid → stamp firstSeenAt for STATE 1 copy. */
+        if (state.txid !== txid) {
+            state.firstSeenAt = Date.now();
+            state.trackedTs   = null;
+            state.notFoundStreak = 0;
+        }
+
         state.txid        = txid;
         state.blockHeight = blockHeight || null;
         state.chainTip    = chainTip || 0;
@@ -170,6 +213,7 @@
         if (!blockHeight) {
             state.confs  = 0;
             state.status = 'pending';
+            _startPollingIfPending();
         } else {
             state.confs  = Math.max(0, (chainTip || 0) - blockHeight + 1);
             state.status = state.confs >= CONF_REQ ? 'confirmed' : 'confirming';
@@ -178,10 +222,14 @@
     }
 
     function clearTracked() {
-        state.txid        = null;
-        state.blockHeight = null;
-        state.confs       = 0;
-        state.status      = 'none';
+        _stopPolling();
+        state.txid           = null;
+        state.blockHeight    = null;
+        state.confs          = 0;
+        state.status         = 'none';
+        state.trackedTs      = null;
+        state.firstSeenAt    = null;
+        state.notFoundStreak = 0;
         _updateUI();
     }
 
@@ -193,6 +241,16 @@
         if (state.blockHeight) {
             state.confs  = Math.max(0, tip - state.blockHeight + 1);
             state.status = state.confs >= CONF_REQ ? 'confirmed' : 'confirming';
+
+            /* Capture tracked-block timestamp once it's in the parade window,
+               needed for STATE 3 "included N min ago" copy. */
+            var targetH = state.blockHeight;
+            for (var i = 0; i < blocks.length; i++) {
+                if (blocks[i].height === targetH) {
+                    state.trackedTs = Number(blocks[i].timestamp) || state.trackedTs;
+                    break;
+                }
+            }
         }
         _updateUI();
     }
@@ -240,23 +298,40 @@
         var cls, msgContent, progContent;
         if (state.status === 'pending') {
             cls        = 'tt-bar tt-pending';
-            msgContent = '⟳ UNCONFIRMED — awaiting block inclusion';
-            progContent = '';
+            msgContent = '⟳ UNCONFIRMED · awaiting block inclusion';
+            if (state.firstSeenAt) {
+                var seenSec = Math.max(0, (Date.now() - state.firstSeenAt) / 1000);
+                progContent =
+                    '<div class="tt-prog-wrap">' +
+                      '<span class="tt-prog-label">seen ' + _fmtAgo(seenSec) + '</span>' +
+                    '</div>';
+            } else {
+                progContent = '';
+            }
         } else if (state.status === 'confirming') {
             cls        = 'tt-bar tt-confirming';
             msgContent = state.confs + ' / ' + CONF_REQ + ' CONFIRMATIONS';
+            var etaLabel = need + ' more block' + (need !== 1 ? 's' : '') +
+                           ' · ~' + _fmtEta(need * 2) + ' remaining';
             progContent =
                 '<div class="tt-prog-wrap">' +
                   '<div class="tt-prog"><div class="tt-prog-fill" style="width:' + pct + '%"></div></div>' +
-                  '<span class="tt-prog-label">' + need + ' block' + (need !== 1 ? 's' : '') + ' to unlock</span>' +
+                  '<span class="tt-prog-label">' + etaLabel + '</span>' +
                 '</div>';
         } else {
             cls        = 'tt-bar tt-confirmed';
             msgContent = '✓ FULLY CONFIRMED · ' + state.confs + ' CONFIRMATIONS · UNLOCKED';
+            var ageLabel;
+            if (state.trackedTs) {
+                var ageSec = Math.max(0, (Date.now() / 1000) - Number(state.trackedTs));
+                ageLabel = 'included ' + _fmtAgo(ageSec) + ' ago';
+            } else {
+                ageLabel = 'XMR unlocked';
+            }
             progContent =
                 '<div class="tt-prog-wrap">' +
                   '<div class="tt-prog"><div class="tt-prog-fill" style="width:100%"></div></div>' +
-                  '<span class="tt-prog-label">XMR unlocked</span>' +
+                  '<span class="tt-prog-label">' + ageLabel + '</span>' +
                 '</div>';
         }
 
@@ -307,10 +382,19 @@
             wrap.appendChild(spotlight);
         }
 
+        /* Get or create plate element (labeled pointer box below block) */
+        var plate = document.getElementById('tt-plate');
+        if (!plate) {
+            plate = document.createElement('div');
+            plate.id = 'tt-plate';
+            wrap.appendChild(plate);
+        }
+
         if (state.status === 'none') {
             arrow.hidden     = true;
             dotline.hidden   = true;
             spotlight.hidden = true;
+            plate.hidden     = true;
             /* Remove tracked classes from all blocks */
             wrap.querySelectorAll('[class*="tt-tracked"]').forEach(function (el) {
                 el.classList.remove('tt-tracked-pending','tt-tracked-confirming','tt-tracked-confirmed');
@@ -347,9 +431,11 @@
                 spotlight.style.left = (cx + 2) + 'px';
                 spotlight.className  = 'tt-spotlight ' + spCls;
                 spotlight.hidden     = false;
+                _renderPlate(plate, rect.left + rect.width / 2, 'pending', '⟳ PENDING');
             } else {
                 arrow.hidden     = true;
                 spotlight.hidden = true;
+                plate.hidden     = true;
             }
             dotline.hidden = true; /* no dotline when pending */
 
@@ -381,6 +467,12 @@
                 spotlight.className  = 'tt-spotlight ' + spCls;
                 spotlight.hidden     = false;
 
+                /* Plate (labeled pointer box below arrow) */
+                var plateLabel = state.status === 'confirmed'
+                    ? '✓ ' + state.confs + ' CONF ✓'
+                    : state.confs + '/' + CONF_REQ + ' ●';
+                _renderPlate(plate, rect.left + rect.width / 2, state.status, plateLabel);
+
                 /* Dotted line: CELL_W × 10 to the RIGHT of the tracked block's left edge.
                    As new blocks arrive, tracked block slides LEFT, dotline slides with it
                    via CSS transition. When TX block crosses to the LEFT of where the line
@@ -393,6 +485,7 @@
                 /* Tracked block not visible in the current parade window */
                 arrow.hidden     = true;
                 spotlight.hidden = true;
+                plate.hidden     = true;
                 if (state.status === 'confirming') {
                     /* Estimate position based on confirmations */
                     var wrapW   = wrap.getBoundingClientRect().width || (blocks.length * CELL_W);
@@ -426,6 +519,116 @@
         star.className = 'tt-star';
         star.textContent = symbol;
         fillArea.appendChild(star);
+    }
+
+    /* Position and fill the floating labeled pointer plate. xCenter is the
+       cell midpoint — plate uses transform:translateX(-50%) so this centers
+       horizontally on the same x as the arrow tip. */
+    function _renderPlate(plate, xCenter, statusKey, label) {
+        plate.className = 'tt-plate tt-plate-' + statusKey;
+        plate.style.left = xCenter + 'px';
+        plate.hidden = false;
+        var txShort = state.txid
+            ? state.txid.slice(0, 8) + '…' + state.txid.slice(-4)
+            : '—';
+        plate.innerHTML =
+            '<div class="tt-plate-txid">' + txShort + '</div>' +
+            '<div class="tt-plate-state">' + label + '</div>';
+    }
+
+    /* "12 min" / "1h 5m" */
+    function _fmtEta(min) {
+        min = Math.max(0, Math.round(min));
+        if (min < 60) return min + ' min';
+        var h = Math.floor(min / 60);
+        var m = min % 60;
+        return h + 'h ' + (m > 0 ? m + 'm' : '0m');
+    }
+
+    /* "45s" / "28 min" / "2h 14m" */
+    function _fmtAgo(sec) {
+        sec = Math.max(0, Math.floor(sec));
+        if (sec < 60)   return sec + 's';
+        if (sec < 3600) return Math.floor(sec / 60) + ' min';
+        var h = Math.floor(sec / 3600);
+        var m = Math.floor((sec % 3600) / 60);
+        return h + 'h ' + m + 'm';
+    }
+
+    /* ── Pending → confirming auto-promotion poller ────────────── */
+
+    function _startPollingIfPending() {
+        if (state.status !== 'pending' || !state.txid) return;
+        /* Fire once on next tick so caller's DOM paint completes first. */
+        state.pollTimer = setTimeout(_pollTxOnce, POLL_MS);
+    }
+
+    function _stopPolling() {
+        if (state.pollTimer) {
+            clearTimeout(state.pollTimer);
+            state.pollTimer = null;
+        }
+        state.pollGen++;
+    }
+
+    function _pollTxOnce() {
+        state.pollTimer = null;
+        if (state.status !== 'pending' || !state.txid) return;
+
+        var gen  = state.pollGen;
+        var txid = state.txid;
+        var url  = '/api/xmr/tx/' + encodeURIComponent(txid);
+
+        var ctrl = null, timer = null;
+        if (typeof AbortController !== 'undefined') {
+            ctrl = new AbortController();
+            timer = setTimeout(function () { ctrl.abort(); }, 6000);
+        }
+
+        var opts = { headers: { accept: 'application/json' } };
+        if (ctrl) opts.signal = ctrl.signal;
+
+        fetch(url, opts).then(function (r) {
+            if (timer) clearTimeout(timer);
+            /* Stale response? Discard. */
+            if (gen !== state.pollGen || txid !== state.txid) return null;
+
+            if (r.status === 404) {
+                state.notFoundStreak++;
+                if (state.notFoundStreak >= ORPHAN_THRESHOLD) {
+                    /* Tx dropped from mempool without inclusion. */
+                    clearTracked();
+                    return null;
+                }
+                return null;
+            }
+            state.notFoundStreak = 0;
+            return r.ok ? r.json() : null;
+        }).then(function (data) {
+            if (!data) return;
+            if (gen !== state.pollGen || txid !== state.txid) return;
+
+            if (data.status === 'confirmed' && data.block_height) {
+                /* Cache receive_time as a fallback for STATE 3 age copy in
+                   case the block isn't in the parade window yet. */
+                if (data.receive_time && !state.trackedTs) {
+                    state.trackedTs = Number(data.receive_time);
+                }
+                var tip = Math.max(state.chainTip || 0, Number(data.block_height));
+                /* Recursive call promotes state → confirming/confirmed and
+                   naturally stops this poller via _stopPolling() at the top
+                   of setTracked(). */
+                setTracked(txid, Number(data.block_height), tip);
+            }
+        }).catch(function () {
+            if (timer) clearTimeout(timer);
+            /* Swallow — next tick will retry. */
+        }).then(function () {
+            /* Reschedule unless state has moved on. */
+            if (state.status === 'pending' && txid === state.txid && gen === state.pollGen) {
+                state.pollTimer = setTimeout(_pollTxOnce, POLL_MS);
+            }
+        });
     }
 
     /* ── Init ──────────────────────────────────────────────────── */
