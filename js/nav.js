@@ -28,6 +28,22 @@ const NavComponent = {
                 ${this.shamrockSVG}
             </a>
             <a href="index.html" class="nav-logo"><span>xmr</span>.irish</a>
+
+            <!-- Always-visible search (PROMPT C) -->
+            <div class="nav-search" role="search">
+                <span class="nav-search-icon" aria-hidden="true">⌕</span>
+                <input type="text" id="nav-search-input"
+                       class="nav-search-input"
+                       placeholder="Search block / tx hash…"
+                       spellcheck="false"
+                       autocomplete="off"
+                       aria-label="Search block height, block hash, or transaction hash">
+                <button type="button" class="nav-search-btn" id="nav-search-btn" aria-label="Submit search">→</button>
+                <div class="nav-search-hint" id="nav-search-hint" hidden>
+                    enter a block height or 64-char hex hash
+                </div>
+            </div>
+
             <div class="nav-links">
                 <a href="index.html" class="nav-link ${isActive('index')}">Home</a>
                 <a href="/mempool-explorer" class="nav-link ${mempoolActive}">Mempool</a>
@@ -84,6 +100,7 @@ const NavComponent = {
                     <span class="val" id="nav-ratio-val">—</span>
                 </div>
             </div>
+            <button type="button" class="nav-search-toggle" id="nav-search-toggle" aria-label="Open search">⌕</button>
             <button class="hamburger" id="nav-hamburger" aria-label="Menu">
                 <span></span><span></span><span></span>
             </button>
@@ -139,5 +156,74 @@ const NavComponent = {
                 });
             });
         }
+        this._wireSearch();
+    },
+
+    _wireSearch() {
+        const input = document.getElementById('nav-search-input');
+        const btn = document.getElementById('nav-search-btn');
+        const toggle = document.getElementById('nav-search-toggle');
+        const hint = document.getElementById('nav-search-hint');
+        const wrap = input && input.closest('.nav-search');
+        if (!input || !btn || !wrap) return;
+
+        const isValid = (q) => {
+            const s = (q || '').trim();
+            if (!s) return false;
+            if (/^\d+$/.test(s) && parseInt(s, 10) < 10000000) return true;
+            if (/^[0-9a-fA-F]{64}$/.test(s)) return true;
+            return false;
+        };
+
+        const submit = () => {
+            const q = input.value.trim();
+            if (!isValid(q)) {
+                wrap.classList.add('is-invalid');
+                if (hint) hint.hidden = false;
+                setTimeout(() => {
+                    wrap.classList.remove('is-invalid');
+                    if (hint) hint.hidden = true;
+                }, 2200);
+                return;
+            }
+            const target = '/mempool-explorer?search=' + encodeURIComponent(q);
+            if (window.location.pathname === '/mempool-explorer' || window.location.pathname.endsWith('mempool-explorer.html')) {
+                if (window.MempoolExplorer && window.MempoolExplorer.routeSearch) {
+                    const explorerBtn = document.querySelector('.mp-mode-btn[data-mode="explorer"]');
+                    if (explorerBtn) explorerBtn.click();
+                    setTimeout(() => window.MempoolExplorer.routeSearch(q), 50);
+                    input.blur();
+                    return;
+                }
+            }
+            window.location.href = target;
+        };
+
+        btn.addEventListener('click', submit);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); submit(); }
+            if (e.key === 'Escape') { input.value = ''; input.blur(); wrap.classList.remove('is-open'); }
+        });
+        input.addEventListener('input', () => {
+            wrap.classList.remove('is-invalid');
+            if (hint) hint.hidden = true;
+        });
+
+        if (toggle) {
+            toggle.addEventListener('click', () => {
+                wrap.classList.toggle('is-open');
+                if (wrap.classList.contains('is-open')) {
+                    setTimeout(() => input.focus(), 80);
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && !['INPUT', 'TEXTAREA'].includes(document.activeElement.tagName)) {
+                e.preventDefault();
+                input.focus();
+                input.select();
+            }
+        });
     }
 };
