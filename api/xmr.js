@@ -37,12 +37,12 @@ function identifyPool(extraHex) {
   return POOL_TAGS[POOL_TAGS.length - 1];
 }
 
-async function rpc(method, params = {}, timeoutMs = 12000) {
+async function rpc(method, params = {}) {
   const body = JSON.stringify({ jsonrpc: '2.0', id: '0', method, params });
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
   for (const node of NODES) {
     try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
       const res = await fetch(`${node}/json_rpc`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -55,15 +55,14 @@ async function rpc(method, params = {}, timeoutMs = 12000) {
       if (json?.result) return json.result;
     } catch (_) { /* try next node */ }
   }
-  clearTimeout(timer);
   return null;
 }
 
-async function rpcHttp(path, timeoutMs = 12000) {
-  const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+async function rpcHttp(path) {
   for (const node of NODES) {
     try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 6000);
       const res = await fetch(`${node}${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -75,7 +74,6 @@ async function rpcHttp(path, timeoutMs = 12000) {
       return await res.json();
     } catch (_) { /* try next */ }
   }
-  clearTimeout(timer);
   return null;
 }
 
@@ -243,18 +241,21 @@ async function handleBlockDetail(hashOrHeight) {
 
 async function handleTx(txid) {
   const res = await (async () => {
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 12000);
     for (const node of NODES) {
       try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
         const r = await fetch(`${node}/get_transactions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ txs_hashes: [txid], decode_as_json: true }),
           signal: ctrl.signal,
         });
+        clearTimeout(timer);
         if (!r.ok) continue;
-        return await r.json();
+        const data = await r.json();
+        const list = data?.txs || data?.txs_as_json || [];
+        if (list.length > 0) return data;
       } catch (_) {}
     }
     return null;
@@ -481,9 +482,24 @@ module.exports = async function handler(req, res) {
       data = info ? { height: info.height, hash: info.top_block_hash } : {};
 
     } else if (sub.startsWith('block/')) {
-      const hashOrHeight = sub.slice(6);
-      data = await handleBlockDetail(hashOrHeight);
-      if (!data) { res.status(404).json({ error: 'Block not found' }); return; }
+      const rest = sub.slice(6);  // everything after 'block/'
+      if (rest.endsWith('/txs')) {
+        // Paginated tx list for a block: /block/HASH/txs?page=0&limit=25
+        const ref = rest.slice(0, -4);
+        const page  = Math.max(0, parseInt(qs.page  || '0', 10));
+        const limit = Math.max(1, Math.min(100, parseInt(qs.limit || '25', 10)));
+        const block = await handleBlockDetail(ref);
+        if (!block) { res.status(404).json({ error: 'Block not found' }); return; }
+        const allTxs   = block.tx_hashes || [];
+        const total    = allTxs.length;
+        const pageSlice = allTxs.slice(page * limit, page * limit + limit);
+        data = { tx_hashes: pageSlice, total, page, limit,
+                 block_height: block.height, block_hash: block.hash };
+      } else {
+        // Block detail: /block/HASH  or  /block/HEIGHT
+        data = await handleBlockDetail(rest);
+        if (!data) { res.status(404).json({ error: 'Block not found' }); return; }
+      }
 
     } else if (sub.startsWith('tx/')) {
       const txid = sub.slice(3);

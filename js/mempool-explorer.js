@@ -12,8 +12,6 @@
 
     /* ── REST base (mirrors XmrRelayWS.restBase) ── */
     function restBase() {
-        var host = (global.location && global.location.hostname) || '';
-        if (/(^|\.)xmr\.irish$/.test(host)) return 'https://relay.xmr.irish/api';
         return '/api/xmr';
     }
 
@@ -26,10 +24,10 @@
             });
     }
 
-    function fetchBlock(hashOrHeight)      { return restGet('/blocks/' + encodeURIComponent(hashOrHeight)); }
+    function fetchBlock(hashOrHeight)      { return restGet('/block/'  + encodeURIComponent(hashOrHeight)); }
     function fetchTx(txid)                 { return restGet('/tx/'     + encodeURIComponent(txid)); }
     function fetchRecentBlocks(limit)      { return restGet('/blocks?limit=' + (limit || 10)); }
-    function fetchBlockTxs(ref, page, lim) { return restGet('/blocks/' + encodeURIComponent(ref) + '/txs?page=' + (page||0) + '&limit=' + (lim||25)); }
+    function fetchBlockTxs(ref, page, lim) { return restGet('/block/'  + encodeURIComponent(ref) + '/txs?page=' + (page||0) + '&limit=' + (lim||25)); }
 
     /* ── Formatters ── */
     function fmtInt(n) {
