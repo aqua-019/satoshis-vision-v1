@@ -30,7 +30,7 @@ const NavComponent = {
             <a href="index.html" class="nav-logo"><span>xmr</span>.irish</a>
             <div class="nav-links">
                 <a href="index.html" class="nav-link ${isActive('index')}">Home</a>
-                <a href="/mempool/explorer" class="nav-link ${mempoolActive}">Mempool</a>
+                <a href="/mempool-explorer" class="nav-link ${mempoolActive}">Mempool</a>
                 <div class="dd-wrap">
                     <span class="nav-link ${isDropdownActive(['btc-xmr-education','timeline','quotes','secrets','future-outlook','privacy-architecture'])}">Education</span>
                     <div class="dd-menu">
@@ -48,7 +48,7 @@ const NavComponent = {
                         <a class="dd-item" href="markets.html">Market dashboard</a>
                         <a class="dd-item" href="network.html">Network statistics</a>
                         <a class="dd-item" href="mining.html">Mining</a>
-                        <a class="dd-item" href="/mempool/explorer">Monero mempool</a>
+                        <a class="dd-item" href="/mempool-explorer">Monero mempool</a>
                         <a class="dd-item" href="legal.html">Legal status</a>
                     </div>
                 </div>
@@ -90,7 +90,7 @@ const NavComponent = {
         </nav>
         <div class="mobile-menu" id="mobile-menu">
             <a href="index.html" class="mm-link ${isActive('index')}">Home</a>
-            <a href="/mempool/explorer" class="mm-link ${mempoolActive}">Mempool</a>
+            <a href="/mempool-explorer" class="mm-link ${mempoolActive}">Mempool</a>
             <div class="mm-group">
                 <span class="mm-label">Education</span>
                 <a href="privacy-architecture.html" class="mm-link ${isActive('privacy-architecture')}">Protocol visualizations</a>
@@ -105,7 +105,7 @@ const NavComponent = {
                 <a href="markets.html" class="mm-link ${isActive('markets')}">Markets</a>
                 <a href="network.html" class="mm-link ${isActive('network')}">Network</a>
                 <a href="mining.html" class="mm-link ${isActive('mining')}">Mining</a>
-                <a href="/mempool/explorer" class="mm-link ${mempoolActive}">Mempool</a>
+                <a href="/mempool-explorer" class="mm-link ${mempoolActive}">Mempool</a>
                 <a href="legal.html" class="mm-link ${isActive('legal')}">Legal status</a>
             </div>
             <div class="mm-group">

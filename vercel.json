@@ -39,10 +39,6 @@
     }
   },
   "rewrites": [
-    { "source": "/mempool/explorer", "destination": "/mempool-explorer.html" },
-    { "source": "/mempool/ocean",    "destination": "/mempool-ocean.html" },
-    { "source": "/mempool/mining",   "destination": "/mempool-mining.html" },
-    { "source": "/mempool",          "destination": "/mempool-explorer.html" },
     { "source": "/pool",             "destination": "/mempool-explorer.html" },
     { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },
     { "source": "/home",           "destination": "/" },
@@ -58,6 +54,10 @@
   ],
   "redirects": [
     { "source": "/index.html",   "destination": "/", "permanent": true },
-    { "source": "/mempool.html", "destination": "/mempool/explorer", "permanent": true }
+    { "source": "/mempool.html", "destination": "/mempool-explorer", "permanent": true },
+    { "source": "/mempool/explorer", "destination": "/mempool-explorer", "permanent": false },
+    { "source": "/mempool/ocean",    "destination": "/mempool-ocean",    "permanent": false },
+    { "source": "/mempool/mining",   "destination": "/mempool-mining",   "permanent": false },
+    { "source": "/mempool",          "destination": "/mempool-explorer", "permanent": false }
   ]
 }
