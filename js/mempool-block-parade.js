@@ -8,7 +8,7 @@
     'use strict';
 
     var REFRESH_MS    = 15000;
-    var MAX_CONFIRMED = 10;
+    var MAX_CONFIRMED = 12;   /* API returns 15; render up to 12 so a 10-conf line has blocks on both sides */
     var PENDING_COUNT = 2;
     var CONF_REQ      = 10;
     var AVG_BLOCK_SEC = 120;   /* Monero ~2 min */
@@ -42,6 +42,26 @@
         return 'vhigh';
     }
 
+    /* Tier is driven by absolute tx count, not the normalized %, so an
+       80-tx block always reads as "busy" even on a day every other
+       block has 200. */
+    function tierForTxCount(n) {
+        n = Number(n) || 0;
+        if (n < 15)  return 'quiet';
+        if (n < 40)  return 'normal';
+        if (n < 80)  return 'active';
+        if (n < 160) return 'busy';
+        return 'congested';
+    }
+    var GRADIENTS = {
+        quiet:     'linear-gradient(0deg, rgba(140,88,255,.55), rgba(140,88,255,.12))',
+        normal:    'linear-gradient(0deg, rgba(74,158,255,.65), rgba(74,158,255,.12))',
+        active:    'linear-gradient(0deg, rgba(255,209,0,.7),  rgba(255,209,0,.12))',
+        busy:      'linear-gradient(0deg, rgba(255,102,0,.8),  rgba(255,102,0,.15))',
+        congested: 'linear-gradient(0deg, rgba(255,68,85,.85), rgba(255,68,85,.18))'
+    };
+    function gradientForTier(t) { return GRADIENTS[t] || GRADIENTS.normal; }
+
     function BlockParade(container, onBlockClick) {
         this.container    = container;
         this.onBlockClick = onBlockClick || null;
@@ -49,15 +69,17 @@
         this.pending      = null;
         this.topHeight    = 0;
         this._timer       = null;
-        this._prevHeights = Object.create(null);
+        this._confirmedNodes = Object.create(null);
+        this._txScale     = { max: 20 };
         this._resizeTimer = 0;
         this._resizeHandler = null;
 
         /* Tracking state */
-        this.trackedTxid   = null;
-        this.trackedBlock  = null;
-        this.trackedConfs  = 0;
-        this.trackedStatus = 'none';   /* none | pending | confirming | confirmed */
+        this.trackedTxid      = null;
+        this.trackedBlock     = null;
+        this.trackedConfs     = 0;
+        this.trackedStatus    = 'none';   /* none | pending | confirming | confirmed */
+        this._highlightedBlock = null;     /* purely visual "point at this block" */
 
         this._inject();
         this.refresh();
@@ -85,6 +107,18 @@
         this.render();
     };
 
+    /* Purely visual "point the arrow at this block" — independent of TX
+       lifecycle tracking. Used when navigating to a block detail view. */
+    BlockParade.prototype.highlightBlock = function (height) {
+        this._highlightedBlock = height ? Number(height) : null;
+        this._positionOverlays();
+    };
+
+    BlockParade.prototype.clearHighlight = function () {
+        this._highlightedBlock = null;
+        this._positionOverlays();
+    };
+
     BlockParade.prototype.start = function () {
         var self = this;
         if (this._timer) return;
@@ -103,7 +137,6 @@
         var statusBar = document.createElement('div');
         statusBar.className = 'bp-status-bar';
         statusBar.hidden = true;
-        c.appendChild(statusBar);
 
         /* Outer positioning context */
         var outer = document.createElement('div');
@@ -133,11 +166,21 @@
             '</div>' +
             '<div class="bp-dotline" hidden>' +
               '<span class="bp-dotline-label">10 CONF · UNLOCK</span>' +
-            '</div>';
+            '</div>' +
+            '<div class="bp-offscreen-hint" hidden></div>';
 
         outer.appendChild(wrap);
         outer.appendChild(overlay);
-        c.appendChild(outer);
+
+        /* Wrap status-bar + outer in a shared .bp-host so sticky positioning
+           can pin both together. Prepend into the container so the parade is
+           the FIRST child of #mp-panel-explorer (the explorer panel renders
+           ~2,000px of tx detail below it otherwise). */
+        var host = document.createElement('div');
+        host.className = 'bp-host';
+        host.appendChild(statusBar);
+        host.appendChild(outer);
+        c.insertBefore(host, c.firstChild);
 
         var self = this;
         this._resizeHandler = function () {
@@ -170,8 +213,7 @@
             '.bp-block.is-confirmed{cursor:pointer}',
             '.bp-block.is-confirmed .bp-fill-area{background:rgba(140,88,255,.05)}',
             '.bp-fill-area{flex:1;position:relative;min-height:120px}',
-            '.bp-fill-bar{position:absolute;bottom:0;left:0;right:0;transition:height .5s ease-out}',
-            '.bp-fill-label{position:absolute;top:4px;right:5px;font:8px/1 "DM Mono",monospace;color:rgba(255,255,255,.45)}',
+            '.bp-fill-bar{position:absolute;bottom:0;left:0;right:0;transition:height .5s ease-out,background .3s ease}',
             '.bp-pool-badge{position:absolute;top:4px;left:5px;font:7px/1 "DM Mono",monospace;padding:1px 4px;border-radius:2px;background:rgba(255,102,0,.2);color:var(--xmr);letter-spacing:.04em}',
 
             /* Pending — fee tier colors */
@@ -220,6 +262,30 @@
             '.bp-status-clear:hover{color:var(--red);border-color:var(--red)}',
             '.bp-conf-bar{height:4px;width:60px;background:var(--surface-2);border-radius:2px;overflow:hidden}',
             '.bp-conf-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .4s ease-out}',
+
+            /* Sticky host so parade stays visible while scrolling a tx/block detail */
+            '.bp-host{position:sticky;top:var(--nav-height,60px);z-index:30;background:var(--surface-0);padding:8px 12px 10px;margin:0 -12px 12px;border-bottom:1px solid var(--border-subtle)}',
+
+            /* Tx-count meta (replaces weight %) */
+            '.bp-tx-count{display:flex;align-items:baseline;gap:4px;font-family:"DM Mono",monospace}',
+            '.bp-tx-num{font-size:14px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums}',
+            '.bp-tx-lbl{font-size:9px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase}',
+
+            /* Tier tint on height label — at-a-glance activity */
+            '.bp-block.tier-quiet .bp-height{color:rgba(140,88,255,.9)}',
+            '.bp-block.tier-normal .bp-height{color:rgba(74,158,255,.95)}',
+            '.bp-block.tier-active .bp-height{color:var(--gold)}',
+            '.bp-block.tier-busy .bp-height{color:var(--xmr)}',
+            '.bp-block.tier-congested .bp-height{color:var(--red)}',
+
+            /* Highlight arrow (block view, not TX tracking) */
+            '.bp-arrow.is-highlight .bp-arrow-glyph,.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);text-shadow:0 0 8px rgba(255,102,0,.5)}',
+            /* is-confirming mirrors the default blue tracking color (same as base) */
+
+            /* Off-range hint — tracked/highlighted block not in visible range */
+            '.bp-offscreen-hint{position:absolute;transform:translate(6px,-50%);font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none}',
+            '.bp-offscreen-hint[hidden]{display:none}',
+            '.bp-offscreen-hint.is-visible{color:var(--xmr);border-color:rgba(255,102,0,.3)}',
 
             '@keyframes bp-pulse{from{opacity:.55}to{opacity:1}}'
         ].join('');
@@ -299,24 +365,27 @@
     };
 
     BlockParade.prototype._makeConfirmedBlock = function (b, isNew) {
-        var weight = Number(b.block_weight) || 0;
-        var limit  = Number(b.block_weight_limit) || 0;
-        var pct    = limit > 0 ? Math.min(100, Math.round(weight / limit * 100)) : 45;
-        var isP2P  = /p2pool/i.test(b.pool_name || '');
+        var txCount = Number(b.tx_count) || 0;
+        var scale   = this._txScale || { max: 20 };
+        var pct     = Math.min(100, Math.round((txCount / scale.max) * 100));
+        var tier    = tierForTxCount(txCount);
+        var isP2P   = /p2pool/i.test(b.pool_name || '');
 
         var el = document.createElement('div');
-        el.className = 'bp-block is-confirmed' + (isNew ? ' bp-block-new' : '');
+        el.className = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
         el.setAttribute('data-height', b.height);
 
         var html =
             '<div class="bp-fill-area">' +
-              '<div class="bp-fill-bar" style="height:' + pct + '%;background:linear-gradient(0deg,var(--xmr),rgba(140,88,255,.35))"></div>' +
+              '<div class="bp-fill-bar" style="height:' + pct + '%;background:' + gradientForTier(tier) + '"></div>' +
               (isP2P ? '<div class="bp-pool-badge">P2P</div>' : '') +
-              '<div class="bp-fill-label">' + pct + '%</div>' +
             '</div>' +
             '<div class="bp-meta">' +
               '<div class="bp-height">#' + Number(b.height).toLocaleString() + '</div>' +
-              '<div class="bp-stats">' + (b.tx_count || 0) + ' txs · ' + fmtBytes(weight) + '</div>' +
+              '<div class="bp-tx-count">' +
+                '<span class="bp-tx-num">' + txCount + '</span>' +
+                '<span class="bp-tx-lbl">txs</span>' +
+              '</div>' +
               '<div class="bp-age">' + fmtAgo(b.timestamp) + '</div>' +
             '</div>';
         el.innerHTML = html;
@@ -326,6 +395,31 @@
             if (self.onBlockClick) self.onBlockClick(String(b.height));
         });
         return el;
+    };
+
+    /* Update a persistent confirmed-block node in place. Age ticks each
+       refresh; tier/fill can shift when _txScale.max rebalances (e.g. a
+       very-busy block enters the window). */
+    BlockParade.prototype._updateConfirmedBlock = function (node, b) {
+        var age = node.querySelector('.bp-age');
+        if (age) age.textContent = fmtAgo(b.timestamp);
+
+        var txCount = Number(b.tx_count) || 0;
+        var scale = this._txScale || { max: 20 };
+        var pct = Math.min(100, Math.round((txCount / scale.max) * 100));
+        var tier = tierForTxCount(txCount);
+
+        node.classList.remove('tier-quiet', 'tier-normal', 'tier-active', 'tier-busy', 'tier-congested');
+        node.classList.add('tier-' + tier);
+
+        var fill = node.querySelector('.bp-fill-bar');
+        if (fill) {
+            fill.style.height = pct + '%';
+            fill.style.background = gradientForTier(tier);
+        }
+
+        var num = node.querySelector('.bp-tx-num');
+        if (num) num.textContent = txCount;
     };
 
     BlockParade.prototype._makePendingBlock = function (opts) {
@@ -400,26 +494,48 @@
         }));
         pendingGroup.replaceChildren(pendingFrag);
 
-        /* ── Confirmed group ─────────────────────────────────────── */
-        /* this.blocks is newest-first. We want newest adjacent to divider
-           (left edge of confirmed group), oldest on far right — that IS
-           the same iteration order, inserted left→right. */
-        var confirmedFrag = document.createDocumentFragment();
-        var nextPrev = Object.create(null);
-        for (var j = 0; j < this.blocks.length; j++) {
-            var b = this.blocks[j];
-            var isNew = !this._prevHeights[b.height];
-            confirmedFrag.appendChild(this._makeConfirmedBlock(b, isNew));
-            nextPrev[b.height] = true;
-        }
-        confirmedGroup.replaceChildren(confirmedFrag);
-        this._prevHeights = nextPrev;
+        /* ── Confirmed group: true keyed DOM diff ───────────────── */
+        /* Compute tx-count scale. Floor at 20 so a quiet chain doesn't
+           render every block as 100% full. */
+        var txCounts = this.blocks.map(function (b) { return b.tx_count || 0; });
+        this._txScale = { max: Math.max(20, Math.max.apply(null, txCounts.length ? txCounts : [20])) };
+
+        var wanted = Object.create(null);
+        this.blocks.forEach(function (b) { wanted[b.height] = true; });
+
+        if (!this._confirmedNodes) this._confirmedNodes = Object.create(null);
+
+        /* Remove nodes no longer wanted */
+        Object.keys(this._confirmedNodes).forEach(function (h) {
+            if (!wanted[h]) {
+                self._confirmedNodes[h].remove();
+                delete self._confirmedNodes[h];
+            }
+        });
+
+        /* Create-or-update each wanted block, ensure correct position.
+           blocks is newest-first → index 0 is the DOM's first child
+           (adjacent to the divider on the confirmed side). */
+        this.blocks.forEach(function (b, idx) {
+            var node = self._confirmedNodes[b.height];
+            if (!node) {
+                node = self._makeConfirmedBlock(b, true);
+                self._confirmedNodes[b.height] = node;
+            } else {
+                self._updateConfirmedBlock(node, b);
+            }
+            var currentAtIdx = confirmedGroup.children[idx];
+            if (currentAtIdx !== node) {
+                confirmedGroup.insertBefore(node, currentAtIdx || null);
+            }
+        });
 
         /* Strip .bp-block-new after animation completes so re-renders don't
            re-trigger. */
         setTimeout(function () {
-            var newOnes = confirmedGroup.querySelectorAll('.bp-block-new');
-            for (var k = 0; k < newOnes.length; k++) newOnes[k].classList.remove('bp-block-new');
+            Object.keys(self._confirmedNodes).forEach(function (h) {
+                self._confirmedNodes[h].classList.remove('bp-block-new');
+            });
         }, 450);
 
         requestAnimationFrame(function () { self._positionOverlays(); });
@@ -431,41 +547,50 @@
         if (!outer || !overlay) return;
         var arrow   = overlay.querySelector('.bp-arrow');
         var dotline = overlay.querySelector('.bp-dotline');
+        var hint    = overlay.querySelector('.bp-offscreen-hint');
         if (!arrow || !dotline) return;
 
-        var outerRect = outer.getBoundingClientRect();
+        var outerRect      = outer.getBoundingClientRect();
+        var confirmedGroup = this.container.querySelector('.bp-confirmed-group');
 
-        /* Arrow */
-        var trackedEl = null;
+        /* Arrow priority: pending > tracked-block > highlight > none */
+        var target   = null;   /* height the arrow wants to point at (if any) */
+        var targetEl = null;
+        var mode     = null;   /* 'pending' | 'confirming' | 'confirmed' | 'highlight' */
+
         if (this.trackedStatus === 'pending') {
-            trackedEl = this.container.querySelector('.bp-block.is-pending-next');
+            targetEl = this.container.querySelector('.bp-block.is-pending-next');
+            mode = 'pending';
         } else if (this.trackedBlock) {
-            trackedEl = this.container.querySelector('.bp-block[data-height="' + this.trackedBlock + '"]');
+            target   = this.trackedBlock;
+            targetEl = this.container.querySelector('.bp-block[data-height="' + this.trackedBlock + '"]');
+            mode     = this.trackedConfs >= CONF_REQ ? 'confirmed' : 'confirming';
+        } else if (this._highlightedBlock) {
+            target   = this._highlightedBlock;
+            targetEl = this.container.querySelector('.bp-block[data-height="' + this._highlightedBlock + '"]');
+            mode     = 'highlight';
         }
 
-        if (!trackedEl || this.trackedStatus === 'none') {
+        arrow.classList.remove('is-pending', 'is-confirming', 'is-confirmed', 'is-highlight');
+        if (!targetEl || !mode) {
             arrow.hidden = true;
         } else {
             arrow.hidden = false;
-            arrow.classList.remove('is-pending', 'is-confirmed');
-            if (this.trackedStatus === 'pending') {
-                arrow.classList.add('is-pending');
-            } else if (this.trackedStatus === 'confirmed' || this.trackedConfs >= CONF_REQ) {
-                arrow.classList.add('is-confirmed');
-            }
-            var r = trackedEl.getBoundingClientRect();
+            arrow.classList.add('is-' + mode);
+            var r = targetEl.getBoundingClientRect();
             arrow.style.left = (r.left + r.width / 2 - outerRect.left) + 'px';
             arrow.style.top  = (r.bottom - outerRect.top + 6) + 'px';
 
             var label = arrow.querySelector('.bp-arrow-label');
             if (label) {
-                if (this.trackedStatus === 'pending')            label.textContent = '⟳ UNCONF';
-                else if (this.trackedConfs >= CONF_REQ)          label.textContent = '✓ 10/10';
-                else                                             label.textContent = this.trackedConfs + '/10';
+                if      (mode === 'pending')    label.textContent = '⟳ UNCONF';
+                else if (mode === 'confirmed')  label.textContent = '✓ 10/10';
+                else if (mode === 'confirming') label.textContent = this.trackedConfs + '/10';
+                else if (mode === 'highlight')  label.textContent = '#' + Number(this._highlightedBlock).toLocaleString();
             }
         }
 
-        /* Dotline at the 10th-confirmation block (= trackedBlock + 9) */
+        /* Dotline — only when a TX is bound to a block (not for highlight-only). */
         if (!this.trackedBlock) {
             dotline.hidden = true;
         } else {
@@ -477,6 +602,22 @@
                 dotline.hidden = false;
                 var tr = tenthEl.getBoundingClientRect();
                 dotline.style.left = (tr.left - outerRect.left - 4) + 'px';
+            }
+        }
+
+        /* Off-range hint — target height known but not in visible blocks. */
+        if (hint && confirmedGroup) {
+            if (target && !targetEl) {
+                hint.hidden = false;
+                hint.classList.toggle('is-visible', !!this._highlightedBlock || this.trackedStatus !== 'none');
+                var tipH = this.blocks.length ? this.blocks[0].height : this.topHeight;
+                var back = Math.max(0, Number(tipH) - Number(target));
+                hint.textContent = '→ #' + Number(target).toLocaleString() + ' (' + back + ' back)';
+                var cRect = confirmedGroup.getBoundingClientRect();
+                hint.style.left = (cRect.right - outerRect.left) + 'px';
+                hint.style.top  = (cRect.top  - outerRect.top + cRect.height / 2) + 'px';
+            } else {
+                hint.hidden = true;
             }
         }
     };
