@@ -44,3 +44,6 @@ yarn-error.log*
 *.bak
 *.tmp
 *.temp
+
+# Claude Code local agent scratch (worktrees, plans, etc.)
+.claude/
