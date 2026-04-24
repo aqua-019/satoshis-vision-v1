@@ -98,6 +98,9 @@
         var q = (query || '').trim();
         if (!q) return;
 
+        /* Clear any prior tracked TX overlays on a fresh search. */
+        if (window.TxTracker) window.TxTracker.clearTracked();
+
         showView('loading');
 
         // Rule 1: pure integer → block by height.
@@ -272,6 +275,14 @@
     function renderTxView(tx) {
         txState.current = tx;
         txState.tracking = false;
+
+        /* Bind the tx to the block-parade tracker (status bar, arrow, dotline). */
+        if (window.TxTracker) {
+            var tip = (window._blockParade && window._blockParade.blocks && window._blockParade.blocks[0])
+                ? window._blockParade.blocks[0].height : 0;
+            var bh = (tx.confirmed && tx.block_height > 0) ? tx.block_height : null;
+            window.TxTracker.setTracked(tx.txid || '', bh, tip);
+        }
 
         var node = el('exp-view-tx');
         if (!node) return;
@@ -614,6 +625,7 @@
         var back = root.querySelector('[data-exp-back-detail]');
         if (back) back.addEventListener('click', function () {
             // Back from tx → block (if we came from one) or recent.
+            if (window.TxTracker) window.TxTracker.clearTracked();
             if (blockState.current) showView('block');
             else showView('recent');
         });

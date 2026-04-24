@@ -79,6 +79,12 @@
             self.blocks  = blocks.slice(0, MAX_BLOCKS);
             self.pending = mempool;
             self.render(isNew);
+
+            /* Notify tx tracker of new chain tip so it can re-apply overlays
+               after the parade's innerHTML was rebuilt. */
+            if (window.TxTracker && self.blocks.length) {
+                window.TxTracker.onBlocksUpdate(self.blocks);
+            }
         });
     };
 
