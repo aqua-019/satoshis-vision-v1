@@ -1255,13 +1255,24 @@
         window._blockParade = parade;
     })();
 
-    /* ── GenUI ?tx= prefill (M2: just log; M3 will route to EXPLORER) ── */
+    /* ── GenUI ?tx= prefill + ?search= route (PROMPT C — nav search) ── */
     try {
         var params = new URLSearchParams(window.location.search);
         var tx = params.get('tx');
         if (tx && /^[0-9a-fA-F]{64}$/.test(tx)) {
             console.log('[mempool.html] prefill txid:', tx);
             /* M3 will switch to EXPLORER mode and render the tx detail here. */
+        }
+
+        var searchParam = params.get('search');
+        if (searchParam) {
+            var explorerBtn = document.querySelector('.mp-mode-btn[data-mode="explorer"]');
+            if (explorerBtn) explorerBtn.click();
+            setTimeout(function () {
+                if (window.MempoolExplorer && window.MempoolExplorer.routeSearch) {
+                    window.MempoolExplorer.routeSearch(searchParam);
+                }
+            }, 100);
         }
     } catch (_) {}
 
