@@ -85,8 +85,13 @@
         return this.ws.fetchHashrate(this.range).then(function (data) {
             var rows = Array.isArray(data) ? data : (data && data.series) || [];
             self.series = rows
-                .filter(function (p) { return p && p.timestamp && p.hashrate_ghs != null; })
-                .map(function (p) { return { timestamp: p.timestamp, value: Number(p.hashrate_ghs) || 0 }; });
+                .filter(function (p) { return p && p.timestamp && (p.hashrate_ghs != null || p.difficulty != null); })
+                .map(function (p) {
+                    var ghs = p.hashrate_ghs != null
+                        ? Number(p.hashrate_ghs)
+                        : (Number(p.difficulty) || 0) / 120 / 1e9;
+                    return { timestamp: p.timestamp, value: ghs || 0 };
+                });
             self.draw();
         }).catch(function (err) {
             if (self.ws && self.ws.debug) console.warn('[mining-hashrate] fetch failed', err);
