@@ -109,10 +109,20 @@
     MempoolMining.prototype.resume = function () {
         if (!this._initialized) return;
         if (!this._paused) return;
+        var self = this;
         this._paused = false;
         this.refreshLive();
         this.refreshSeries();
-        var self = this;
+        /* Force canvas redraw now that the panel is visible */
+        setTimeout(function () {
+            if (self._modules) {
+                self._modules.forEach(function (m) {
+                    if (m.series && m.mod && typeof m.mod.draw === 'function') {
+                        try { m.mod.draw(); } catch (_) {}
+                    }
+                });
+            }
+        }, 50);
         this._liveTimer   = setInterval(function () { self.refreshLive(); },   LIVE_POLL_MS);
         this._seriesTimer = setInterval(function () { self.refreshSeries(); }, SERIES_POLL_MS);
     };
