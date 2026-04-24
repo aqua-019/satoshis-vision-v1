@@ -99,7 +99,7 @@
         if (!q) return;
 
         /* Clear any prior tracked TX overlays on a fresh search. */
-        if (window.TxTracker) window.TxTracker.clearTracked();
+        if (window._blockParade) window._blockParade.clearTracked();
 
         showView('loading');
 
@@ -277,11 +277,11 @@
         txState.tracking = false;
 
         /* Bind the tx to the block-parade tracker (status bar, arrow, dotline). */
-        if (window.TxTracker) {
-            var tip = (window._blockParade && window._blockParade.blocks && window._blockParade.blocks[0])
-                ? window._blockParade.blocks[0].height : 0;
+        if (window._blockParade) {
+            var tip = (window._blockParade.blocks && window._blockParade.blocks[0])
+                ? window._blockParade.blocks[0].height : null;
             var bh = (tx.confirmed && tx.block_height > 0) ? tx.block_height : null;
-            window.TxTracker.setTracked(tx.txid || '', bh, tip);
+            window._blockParade.setTracked(tx.txid || tx.id || '', bh, tip);
         }
 
         var node = el('exp-view-tx');
@@ -625,7 +625,7 @@
         var back = root.querySelector('[data-exp-back-detail]');
         if (back) back.addEventListener('click', function () {
             // Back from tx → block (if we came from one) or recent.
-            if (window.TxTracker) window.TxTracker.clearTracked();
+            if (window._blockParade) window._blockParade.clearTracked();
             if (blockState.current) showView('block');
             else showView('recent');
         });
