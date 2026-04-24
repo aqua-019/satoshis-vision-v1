@@ -302,9 +302,10 @@ async function handleTx(txid) {
 }
 
 async function handleNetwork() {
-  const [info, feeEst] = await Promise.all([
+  const [info, feeEst, minerData] = await Promise.all([
     rpc('get_info'),
     rpc('get_fee_estimate'),
+    rpc('get_miner_data'),
   ]);
   if (!info) return null;
   return {
@@ -324,6 +325,7 @@ async function handleNetwork() {
     version: info.version || '0.18.3.4',
     major_version: 16,
     fee_tiers: feeEst?.fees || [20000, 80000, 320000, 4000000],
+    randomx_seed_hash: minerData?.seed_hash || '',
   };
 }
 
