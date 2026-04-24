@@ -54,12 +54,24 @@ const PriceService = {
             };
 
             this.notify();
+            try { sessionStorage.setItem('xmr_prices', JSON.stringify(this.data)); } catch (_) {}
         } catch (err) {
             console.warn('[PriceService] fetch error:', err);
         }
     },
 
     start() {
+        /* Restore cached prices immediately so nav shows on first paint */
+        try {
+            const cached = sessionStorage.getItem('xmr_prices');
+            if (cached) {
+                const parsed = JSON.parse(cached);
+                if (parsed && parsed.btc && parsed.xmr) {
+                    this.data = parsed;
+                    this.notify();
+                }
+            }
+        } catch (_) {}
         this.fetch();
         setInterval(() => this.fetch(), this.INTERVAL);
     },

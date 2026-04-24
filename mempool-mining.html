@@ -925,8 +925,8 @@
     <div class="mp-subnav">
         <div class="mp-brand"><b>xmr.irish</b> &nbsp;/&nbsp; mempool &nbsp;/&nbsp; mining</div>
         <div class="mp-modes" role="tablist" aria-label="Mempool modes">
-            <button class="mp-mode-btn"        data-mode="ocean"    role="tab" aria-selected="false">OCEAN</button>
             <button class="mp-mode-btn"        data-mode="explorer" role="tab" aria-selected="false">EXPLORER</button>
+            <button class="mp-mode-btn"        data-mode="ocean"    role="tab" aria-selected="false">OCEAN</button>
             <button class="mp-mode-btn active" data-mode="mining"   role="tab" aria-selected="true">MINING</button>
         </div>
         <div class="mp-conn-status connecting" id="mp-conn" aria-live="polite">
@@ -1097,7 +1097,8 @@
 
     // Nav + global price service.
     NavComponent.inject('nav-mount');
-    if (window.PriceService && typeof PriceService.start === 'function') PriceService.start();
+    if (window.PriceService  && typeof PriceService.start  === 'function') PriceService.start();
+    if (window.MoneroNetwork && typeof MoneroNetwork.start === 'function') MoneroNetwork.start();
 
     /* ── Mode switcher — each mode lives on its own page ── */
     var VALID = { ocean: 1, explorer: 1, mining: 1 };
