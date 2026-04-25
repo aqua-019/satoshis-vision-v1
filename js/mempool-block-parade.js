@@ -232,6 +232,9 @@
            >4px suppresses the resulting click so block navigation isn't
            triggered when the user just wanted to pan. */
         var dragState = { active: false, startX: 0, startScroll: 0, moved: false };
+        var dragJustEnded = false;
+        var dragJustEndedTimer = 0;
+
         wrap.addEventListener('mousedown', function (e) {
             if (e.button !== 0) return;
             dragState.active = true;
@@ -250,15 +253,19 @@
             if (!dragState.active) return;
             dragState.active = false;
             wrap.classList.remove('is-grabbing');
+
             if (dragState.moved) {
-                var swallow = function (ev) {
-                    ev.stopPropagation();
-                    ev.preventDefault();
-                    window.removeEventListener('click', swallow, true);
-                };
-                window.addEventListener('click', swallow, true);
+                /* Mark "drag just ended" for one event-loop tick. The block click
+                   handler reads this flag synchronously when it fires. After 50ms,
+                   the flag clears so subsequent clicks behave normally. */
+                dragJustEnded = true;
+                if (dragJustEndedTimer) clearTimeout(dragJustEndedTimer);
+                dragJustEndedTimer = setTimeout(function () { dragJustEnded = false; }, 50);
             }
         });
+
+        /* Expose to the click handler defined later in _makeConfirmedBlock. */
+        self._wasJustDragged = function () { return dragJustEnded; };
 
         /* Double-rAF — first frame batches with current layout, second frame
            reads post-layout dimensions for accurate edge-fade state. */
@@ -305,6 +312,10 @@
             '.bp-block:hover::before{border-color:var(--border-default);transform:translateY(-1px)}',
             '.bp-block-new{animation:bp-slide-in .4s ease-out}',
             '@keyframes bp-slide-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}',
+            '.bp-cell-confirmed{will-change:transform}',
+            '.bp-confs-label{font:600 10px/1 "DM Mono",monospace;color:rgba(var(--zone-rgb), var(--zone-label));margin-bottom:4px;letter-spacing:.04em;text-align:center}',
+            '.bp-confs-label span{font-weight:400;color:var(--text-tertiary);text-transform:uppercase;font-size:8px;margin-left:1px}',
+            '.bp-cell-pending .bp-confs-label{display:none}',
 
             /* ── Zone color scheme — uniform orange, three saturation levels ── */
             '.bp-block.is-confirmed{cursor:pointer}',
@@ -333,7 +344,7 @@
 
             /* Tracker overlay */
             '.bp-overlay{position:absolute;inset:0;overflow:visible;pointer-events:none}',
-            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform .35s cubic-bezier(.2,.8,.2,1)}',
+            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform .55s cubic-bezier(.2,.8,.2,1)}',
             '.bp-arrow[hidden]{display:none}',
             '.bp-arrow.is-instant{transition:none}',
             '.bp-arrow-line{width:1px;height:20px;background:repeating-linear-gradient(180deg,var(--blue) 0 2px,transparent 2px 4px)}',
@@ -349,10 +360,10 @@
             '.bp-arrow.is-highlight .bp-arrow-tri{border-bottom-color:var(--xmr);filter:drop-shadow(0 0 4px rgba(255,102,0,.7))}',
             '.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);border-color:var(--xmr);box-shadow:0 0 10px rgba(255,102,0,.45)}',
 
-            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform .35s cubic-bezier(.2,.8,.2,1);pointer-events:none;width:0}',
+            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform .55s cubic-bezier(.2,.8,.2,1);pointer-events:none;width:0}',
             '.bp-dotline[hidden]{display:none}',
             '.bp-dotline.is-instant{transition:none}',
-            '.bp-dotline-label{position:absolute;top:4px;left:4px;font:7px/1 "DM Mono",monospace;color:rgba(255,209,0,.8);writing-mode:vertical-lr;transform:rotate(180deg);letter-spacing:.12em;white-space:nowrap}',
+            '.bp-dotline-label{position:absolute;top:-22px;left:-28px;font:700 9px/1 "DM Mono",monospace;color:var(--gold);letter-spacing:.12em;white-space:nowrap;background:var(--surface-0);padding:3px 8px;border:1px solid rgba(255,209,0,.4);border-radius:3px;text-transform:uppercase;writing-mode:horizontal-tb;transform:none}',
 
             /* Status bar */
             '.bp-status-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;margin-bottom:8px;border-radius:6px;font:10px/1 "DM Mono",monospace;flex-wrap:wrap}',
@@ -379,7 +390,7 @@
             /* is-confirming mirrors the default blue tracking color (same as base) */
 
             /* Off-range hint — tracked/highlighted block not in visible range */
-            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform .35s cubic-bezier(.2,.8,.2,1)}',
+            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform .55s cubic-bezier(.2,.8,.2,1)}',
             '.bp-offscreen-hint[hidden]{display:none}',
             '.bp-offscreen-hint.is-instant{transition:none}',
             '.bp-offscreen-hint.is-visible{color:var(--xmr);border-color:rgba(255,102,0,.3)}',
@@ -472,8 +483,15 @@
         var rewardXmr = b.reward != null ? (Number(b.reward) / 1e12).toFixed(2) + ' XMR' : '—';
         var fillH = fillHeightForTxCount(b.tx_count);
 
+        /* Confirmation depth = position from the tip + 1. blocks[0] is the tip → 1 conf,
+           blocks[1] is one back → 2 confs, etc. */
+        var confs = (typeof indexInBlocks === 'number' ? indexInBlocks : 0) + 1;
+
         cell.innerHTML =
             '<div class="bp-height-above">#' + Number(b.height).toLocaleString() + '</div>' +
+            '<div class="bp-confs-label" data-confs="' + confs + '">' +
+                confs + ' <span>conf' + (confs === 1 ? '' : 's') + '</span>' +
+            '</div>' +
             '<div class="bp-block is-confirmed" role="button" tabindex="0">' +
               '<div class="bp-fill-area"><div class="bp-fill-bar" style="height:' + fillH + '%"></div></div>' +
               '<div class="bp-content">' +
@@ -485,7 +503,13 @@
             '</div>';
 
         var self = this;
-        cell.querySelector('.bp-block').addEventListener('click', function () {
+        cell.querySelector('.bp-block').addEventListener('click', function (e) {
+            /* If a drag-pan just ended, suppress this click — the user was
+               panning, not selecting a block. */
+            if (self._wasJustDragged && self._wasJustDragged()) {
+                e.stopPropagation();
+                return;
+            }
             if (self.onBlockClick) self.onBlockClick(String(b.height));
         });
         return cell;
@@ -499,6 +523,12 @@
             cellNode.classList.remove('zone-confirming', 'zone-unlocked');
             cellNode.classList.add('zone-' + nextZone);
             cellNode.dataset.zone = nextZone;
+        }
+        var newConfs = (typeof indexInBlocks === 'number' ? indexInBlocks : 0) + 1;
+        var confsLabel = cellNode.querySelector('.bp-confs-label');
+        if (confsLabel && Number(confsLabel.dataset.confs) !== newConfs) {
+            confsLabel.dataset.confs = String(newConfs);
+            confsLabel.innerHTML = newConfs + ' <span>conf' + (newConfs === 1 ? '' : 's') + '</span>';
         }
         var fill = cellNode.querySelector('.bp-fill-bar');
         if (fill) {
@@ -568,6 +598,17 @@
         }
 
         this._renderStatusBar();
+
+        /* FLIP step 1 (First): record current bounding rects of all confirmed blocks. */
+        var firstRects = Object.create(null);
+        if (this._confirmedNodes) {
+            Object.keys(this._confirmedNodes).forEach(function (h) {
+                var node = self._confirmedNodes[h];
+                if (node && node.isConnected) {
+                    firstRects[h] = node.getBoundingClientRect();
+                }
+            });
+        }
 
         var pendingGroup   = this.container.querySelector('.bp-pending-group');
         var confirmedGroup = this.container.querySelector('.bp-confirmed-group');
@@ -647,7 +688,32 @@
             }
         });
 
-        requestAnimationFrame(function () { self._positionOverlays(); });
+        /* FLIP step 2 (Last → Invert → Play): for each confirmed block whose
+           position changed, jump it back to its old visual position via transform,
+           then transition to identity in the next frame. */
+        requestAnimationFrame(function () {
+            Object.keys(self._confirmedNodes).forEach(function (h) {
+                var node = self._confirmedNodes[h];
+                var first = firstRects[h];
+                if (!first) return;   /* newly added — bp-cell-new keyframe handles it */
+
+                var last = node.getBoundingClientRect();
+                var dx = first.left - last.left;
+                if (Math.abs(dx) < 1) return;   /* didn't actually move */
+
+                /* Invert: instantly translate back to old position. */
+                node.style.transition = 'none';
+                node.style.transform = 'translate3d(' + dx + 'px, 0, 0)';
+
+                /* Play: in the next frame, remove the transform with a transition. */
+                requestAnimationFrame(function () {
+                    node.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
+                    node.style.transform = 'translate3d(0, 0, 0)';
+                });
+            });
+
+            self._positionOverlays();   /* read post-layout target for the arrow */
+        });
     };
 
     BlockParade.prototype._positionOverlays = function () {
@@ -700,18 +766,21 @@
             }
         }
 
-        /* Dotline — only when a TX is bound to a block (not for highlight-only). */
-        if (!this.trackedBlock) {
+        /* Position the 10-conf line between confirmed block #10 (counting from
+           the divider) and #11. That's `this.blocks[9]` and `this.blocks[10]`.
+           Visible whenever the parade has at least 10 confirmed blocks rendered. */
+        var anchorBlock = this.blocks && this.blocks.length >= 10 ? this.blocks[9] : null;
+        if (!anchorBlock) {
             dotline.hidden = true;
         } else {
-            var tenthH  = this.trackedBlock + (CONF_REQ - 1);
-            var tenthEl = this.container.querySelector('.bp-cell[data-height="' + tenthH + '"] .bp-block');
-            if (!tenthEl) {
+            var anchorEl = this.container.querySelector(
+                '.bp-cell[data-height="' + anchorBlock.height + '"] .bp-block');
+            if (!anchorEl) {
                 dotline.hidden = true;
             } else {
                 dotline.hidden = false;
-                var tr = tenthEl.getBoundingClientRect();
-                var dx = (tr.left - outerRect.left - 4);
+                var ar = anchorEl.getBoundingClientRect();
+                var dx = (ar.right - outerRect.left + 3);   /* 3px gap to the right of block #10 */
                 dotline.style.transform = 'translate3d(' + dx + 'px, 0, 0)';
             }
         }
