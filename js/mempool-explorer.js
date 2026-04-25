@@ -21,6 +21,27 @@
     };
     var _feeUsd = { currentTx: null, subscribed: false };
     var XMR_BLOCK_TIME_S = 120;
+    var XMR_BLOCK_TIME_FALLBACK_S = 120;   /* used until parade has data */
+
+    function avgBlockIntervalS() {
+        var bp = window._blockParade;
+        if (!bp || !bp.blocks || bp.blocks.length < 3) return XMR_BLOCK_TIME_FALLBACK_S;
+
+        /* blocks are newest-first; timestamp deltas between adjacent blocks. */
+        var deltas = [];
+        for (var i = 0; i < Math.min(bp.blocks.length - 1, 10); i++) {
+            var a = Number(bp.blocks[i].timestamp);
+            var b = Number(bp.blocks[i + 1].timestamp);
+            if (!a || !b) continue;
+            var d = a - b;
+            /* Sanity-clamp: discard outliers (clock skew, restored chains). */
+            if (d > 5 && d < 1800) deltas.push(d);
+        }
+        if (!deltas.length) return XMR_BLOCK_TIME_FALLBACK_S;
+        var sum = 0;
+        for (var j = 0; j < deltas.length; j++) sum += deltas[j];
+        return Math.round(sum / deltas.length);
+    }
 
     /* ── REST base (mirrors XmrRelayWS.restBase) ── */
     function restBase() {
@@ -336,11 +357,16 @@
         txState.current = tx;
         txState.tracking = true;
 
+        /* Defensive: API now sends `confirmed`, but accept any of these signals too. */
+        var confirmed = !!(tx.confirmed
+            || tx.status === 'confirmed'
+            || (tx.block_height && !tx.in_pool));
+
         /* Bind the tx to the block-parade tracker (status bar, arrow, dotline). */
         if (window._blockParade) {
             var tip = (window._blockParade.blocks && window._blockParade.blocks[0])
                 ? window._blockParade.blocks[0].height : null;
-            var bh = (tx.confirmed && tx.block_height > 0) ? tx.block_height : null;
+            var bh = (confirmed && tx.block_height > 0) ? tx.block_height : null;
             window._blockParade.setTracked(tx.txid || tx.id || '', bh, tip);
         }
 
@@ -353,8 +379,6 @@
 
         var node = el('exp-view-tx');
         if (!node) return;
-
-        var confirmed = !!tx.confirmed;
 
         var score = computePrivacyScore(tx);
         var comps = privacyComponents(tx);
@@ -374,7 +398,17 @@
         var outputsCount = tx.output_count || 0;
         var ringSize = tx.ring_size || 0;
 
-        var firstSeenStr = tx.receive_time ? fmtAgo(tx.receive_time).replace(' ago', '') : '—';
+        var firstSeenStr, firstSeenLabel;
+        if (tx.receive_time) {
+            firstSeenStr = fmtAgo(tx.receive_time).replace(' ago', '');
+            firstSeenLabel = 'First seen';
+        } else if (tx.block_timestamp) {
+            firstSeenStr = fmtAgo(tx.block_timestamp).replace(' ago', '');
+            firstSeenLabel = 'Mined';
+        } else {
+            firstSeenStr = '—';
+            firstSeenLabel = 'First seen';
+        }
         var etaStr;
         if (confirmed) {
             etaStr = 'Confirmed';
@@ -383,7 +417,7 @@
             var _lastBlk = (_parade && _parade.blocks && _parade.blocks[0]) || null;
             var _since   = (_lastBlk && _lastBlk.timestamp)
                 ? Math.max(0, Math.floor(Date.now() / 1000) - Number(_lastBlk.timestamp)) : 0;
-            var _etaSec  = Math.max(0, XMR_BLOCK_TIME_S - _since);
+            var _etaSec  = Math.max(0, avgBlockIntervalS() - _since);
             etaStr = '~' + Math.max(1, Math.round(_etaSec / 60)) + ' min';
         }
         var heightHtml = '—', confsTxt = '';
@@ -422,7 +456,7 @@
                 (confirmed
                   ? '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Included in block</div><div class="exp-tx-metaval">' +
                     heightHtml + (confsTxt ? ' <span class="exp-tx-metasub">· ' + esc(confsTxt) + '</span>' : '') + '</div></div>'
-                  : '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">First seen</div><div class="exp-tx-metaval">' + esc(firstSeenStr) + '</div></div>') +
+                  : '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">' + esc(firstSeenLabel) + '</div><div class="exp-tx-metaval">' + esc(firstSeenStr) + '</div></div>') +
                 '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee</div><div class="exp-tx-metaval">' + esc(fmtXmr(tx.fee)) +
                   ' <span class="exp-tx-metausd" id="exp-tx-fee-usd">$—</span></div></div>' +
                 '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">ETA</div><div class="exp-tx-metaval">' + (confirmed ? 'Confirmed' : 'In ' + esc(etaStr)) + '</div></div>' +
@@ -1405,7 +1439,11 @@
         stopTxLive();
         _txLive.txid = tx.txid;
         _txLive.tx = tx;
-        _txLive.blockHeight = tx.confirmed ? tx.block_height : null;
+        var _confirmed = !!(tx.confirmed
+            || tx.status === 'confirmed'
+            || (tx.block_height && !tx.in_pool));
+        _txLive.blockHeight = _confirmed ? tx.block_height : null;
+        _txLive.confirmed = _confirmed;
         _txLive.receiveTime = tx.receive_time || null;
         _txLive.lastTip = (window._blockParade && window._blockParade.blocks && window._blockParade.blocks[0])
             ? window._blockParade.blocks[0].height : null;
@@ -1436,14 +1474,20 @@
         if (tip != null) _txLive.lastTip = tip;
 
         var CONF_REQ = 10;
+        var avgBlock = avgBlockIntervalS();   /* fresh each tick */
         var confs, remaining, nextEtaS, unlockEtaS, statusLine, confClass;
 
         if (!_txLive.blockHeight) {
             /* Unconfirmed (in mempool). */
             confs = 0;
             remaining = CONF_REQ;
-            nextEtaS = XMR_BLOCK_TIME_S;
-            unlockEtaS = nextEtaS + (CONF_REQ - 1) * XMR_BLOCK_TIME_S;
+            /* Account for time elapsed since the last seen block — the wait isn't
+               a full avgBlock anymore. */
+            var sinceTipTs = (parade && parade.blocks && parade.blocks[0] && parade.blocks[0].timestamp)
+                ? Math.max(0, Math.floor(Date.now() / 1000) - Number(parade.blocks[0].timestamp))
+                : 0;
+            nextEtaS = Math.max(15, avgBlock - sinceTipTs);   /* never below 15s */
+            unlockEtaS = nextEtaS + (CONF_REQ - 1) * avgBlock;
             statusLine = 'Awaiting block inclusion…';
             confClass = 'is-pending';
         } else if (tip != null) {
@@ -1460,9 +1504,9 @@
                 var sinceLastBlock = lastBlock && lastBlock.timestamp
                     ? Math.max(0, Math.floor(Date.now() / 1000) - Number(lastBlock.timestamp))
                     : 0;
-                nextEtaS = Math.max(0, XMR_BLOCK_TIME_S - sinceLastBlock);
+                nextEtaS = Math.max(15, avgBlock - sinceLastBlock);
                 unlockEtaS = remaining > 1
-                    ? nextEtaS + (remaining - 1) * XMR_BLOCK_TIME_S
+                    ? nextEtaS + (remaining - 1) * avgBlock
                     : nextEtaS;
                 statusLine = confs === 1
                     ? 'First confirmation received — 9 more for unlock'
@@ -1475,8 +1519,8 @@
             /* Confirmed but no tip info yet. */
             confs = _txLive.tx.confirmations || 0;
             remaining = Math.max(0, CONF_REQ - confs);
-            nextEtaS = remaining > 0 ? XMR_BLOCK_TIME_S : 0;
-            unlockEtaS = remaining * XMR_BLOCK_TIME_S;
+            nextEtaS = remaining > 0 ? avgBlock : 0;
+            unlockEtaS = remaining * avgBlock;
             statusLine = 'Connecting to network…';
             confClass = 'is-updating';
         }

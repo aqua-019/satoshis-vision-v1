@@ -277,13 +277,24 @@ async function handleTx(txid) {
     view_tag: v.target?.tagged_key?.view_tag || '',
   }));
 
+  const isConfirmed = !raw.in_pool && (raw.block_height != null);
+
   return {
     txid,
-    status: raw.in_pool ? 'mempool' : 'confirmed',
-    block_height: raw.block_height || null,
+    status: isConfirmed ? 'confirmed' : 'mempool',
+
+    /* Frontend reads `tx.confirmed`. Provide it as a real boolean. */
+    confirmed: isConfirmed,
+    in_pool: !!raw.in_pool,
+
+    block_height: raw.block_height != null ? raw.block_height : null,
     block_hash: raw.block_hash || null,
-    confirmations: raw.confirmations || 0,
-    receive_time: raw.receive_time || null,
+    block_timestamp: raw.block_timestamp != null ? raw.block_timestamp : null,
+    confirmations: typeof raw.confirmations === 'number' ? raw.confirmations : 0,
+
+    /* monerod returns `received_timestamp` (with the `d`), not `receive_time`. */
+    receive_time: raw.received_timestamp != null ? raw.received_timestamp : null,
+
     blob_size: raw.block_size || 1847,
     fee: txJson.rct_signatures?.txnFee || 0,
     fee_rate: rate,
