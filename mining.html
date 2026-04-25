@@ -164,6 +164,48 @@
 @media(max-width:480px){
   .elec-grid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ── ROI Calculator (mining-specific) ── */
+.section-roi{background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;padding:18px;margin-bottom:14px}
+.roi-h{font-size:14px;font-weight:600;margin:0 0 6px;color:var(--xmr-text);letter-spacing:.5px}
+.roi-lede{font-size:11px;color:var(--text-tertiary);line-height:1.65;margin:0 0 14px}
+.roi-calculator{display:grid;grid-template-columns:1.1fr 1fr;gap:18px}
+.roi-controls{display:flex;flex-direction:column;gap:14px}
+.roi-control{display:grid;grid-template-columns:1fr auto;align-items:center;gap:6px 12px;font-family:'JetBrains Mono',monospace}
+.roi-control-label{font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-tertiary);grid-column:1 / -1}
+.roi-control input[type=range]{grid-column:1;-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;background:var(--surface-2);outline:none}
+.roi-control input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:14px;height:14px;border-radius:50%;background:var(--xmr);cursor:pointer;border:2px solid var(--surface-0)}
+.roi-control input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--xmr);cursor:pointer;border:2px solid var(--surface-0)}
+.roi-control-value{grid-column:2;font-family:'DM Mono',monospace;font-size:11px;color:var(--g1);min-width:64px;text-align:right}
+.roi-output{display:flex;flex-direction:column;background:var(--surface-0);border:1px solid var(--border-subtle);border-radius:10px;padding:10px 14px}
+.roi-output-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border-subtle);font-family:'JetBrains Mono',monospace}
+.roi-output-row:last-child{border-bottom:none}
+.roi-output-label{font-size:10px;color:var(--text-tertiary);letter-spacing:.5px}
+.roi-output-value{font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:var(--g1)}
+.roi-output-net{margin-top:4px;border-top:1px solid var(--border-default);padding-top:8px}
+.roi-output-net .roi-output-value{font-size:15px}
+.roi-output-net .roi-output-value.positive{color:var(--grn)}
+.roi-output-net .roi-output-value.negative{color:var(--red)}
+.roi-output-breakeven .roi-output-value{color:var(--gold)}
+
+/* ── Related pages list ── */
+.related-pages{margin-top:24px}
+.related-list{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.related-list li{font-size:11px;color:var(--text-tertiary);line-height:1.6;padding:8px 12px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:8px}
+.related-list a{color:var(--xmr-text);text-decoration:none;font-weight:600}
+.related-list a:hover{text-decoration:underline}
+
+/* ── Sortable table affordance ── */
+.tbl th[data-sort]{cursor:pointer;user-select:none}
+.tbl th[data-sort]:hover{color:var(--g3)}
+.tbl th[data-sort]::after{content:' ↕';opacity:.4;font-size:8px}
+.tbl th[data-sort].sort-asc::after{content:' ↑';opacity:.9;color:var(--xmr)}
+.tbl th[data-sort].sort-desc::after{content:' ↓';opacity:.9;color:var(--xmr)}
+
+@media(max-width:768px){
+  .roi-calculator{grid-template-columns:1fr}
+  .related-list{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -188,27 +230,27 @@
   <p class="hero-subtitle">Every 2 minutes, a new block. The reward is 0.6 XMR — forever. No halvings. No fee-market death spiral. Just permanent, democratized mining.</p>
 </div>
 
-<!-- Stat strip -->
-<div class="stat-strip">
-  <div class="stat-card">
-    <div class="stat-label">Block reward</div>
-    <div class="stat-value">0.6 XMR</div>
-    <div class="stat-sub">tail emission · forever</div>
+<!-- Stat strip · live from /api/xmr -->
+<div class="stat-strip hero-stats-strip">
+  <div class="stat-card hero-stat-tile">
+    <div class="stat-label hero-stat-label">Network hashrate</div>
+    <div class="stat-value hero-stat-value" id="live-hashrate" data-mining-hashrate>—</div>
+    <div class="stat-sub hero-stat-unit">GH/s · live</div>
   </div>
-  <div class="stat-card">
-    <div class="stat-label">Mined daily</div>
-    <div class="stat-value" style="color:var(--grn)">432 XMR</div>
-    <div class="stat-sub">720 blocks × 0.6</div>
+  <div class="stat-card hero-stat-tile">
+    <div class="stat-label hero-stat-label">Difficulty</div>
+    <div class="stat-value hero-stat-value" data-mining-difficulty>—</div>
+    <div class="stat-sub hero-stat-unit">trillion · adjusts each block</div>
+  </div>
+  <div class="stat-card hero-stat-tile">
+    <div class="stat-label hero-stat-label">Block reward</div>
+    <div class="stat-value hero-stat-value" data-mining-reward>0.6</div>
+    <div class="stat-sub hero-stat-unit">XMR · tail emission</div>
   </div>
   <div class="stat-card">
     <div class="stat-label">Annual inflation</div>
     <div class="stat-value" style="color:var(--blue)">0.85%</div>
     <div class="stat-sub">declining yearly</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Network hashrate</div>
-    <div class="stat-value" id="live-hashrate">—</div>
-    <div class="stat-sub">live · GH/s</div>
   </div>
 </div>
 
@@ -305,6 +347,47 @@
 <!-- Section 03: Electricity -->
 <div class="sec">
   <div class="sec-h"><div class="sec-t">Section 03 / Electricity</div><div class="sec-s">Cost to mine by US state · national avg: 18.05¢/kWh</div></div>
+
+  <!-- ROI Calculator · interactive -->
+  <section class="section-roi">
+    <h2 class="roi-h">ROI Calculator</h2>
+    <p class="roi-lede">Adjust hardware, electricity, and uptime to see your projected daily, monthly, and annual returns at the current XMR price.</p>
+    <div class="roi-calculator">
+      <div class="roi-controls">
+        <label class="roi-control">
+          <span class="roi-control-label">Hashrate (h/s)</span>
+          <input type="range" id="roi-hashrate" min="500" max="40000" step="100" value="4800">
+          <span class="roi-control-value" data-roi-hashrate-display>4,800</span>
+        </label>
+        <label class="roi-control">
+          <span class="roi-control-label">Electricity ($/kWh)</span>
+          <input type="range" id="roi-electricity" min="0.05" max="0.40" step="0.01" value="0.18">
+          <span class="roi-control-value" data-roi-electricity-display>$0.18</span>
+        </label>
+        <label class="roi-control">
+          <span class="roi-control-label">Power draw (W)</span>
+          <input type="range" id="roi-power" min="30" max="400" step="5" value="95">
+          <span class="roi-control-value" data-roi-power-display>95</span>
+        </label>
+        <label class="roi-control">
+          <span class="roi-control-label">Uptime (hrs/day)</span>
+          <input type="range" id="roi-uptime" min="1" max="24" step="1" value="24">
+          <span class="roi-control-value" data-roi-uptime-display>24</span>
+        </label>
+      </div>
+      <div class="roi-output">
+        <div class="roi-output-row"><span class="roi-output-label">Daily XMR earned</span><span class="roi-output-value" data-roi-daily-xmr>—</span></div>
+        <div class="roi-output-row"><span class="roi-output-label">Daily revenue</span><span class="roi-output-value" data-roi-daily-rev>—</span></div>
+        <div class="roi-output-row"><span class="roi-output-label">Daily electricity cost</span><span class="roi-output-value" data-roi-daily-cost>—</span></div>
+        <div class="roi-output-row roi-output-net"><span class="roi-output-label">Daily net profit</span><span class="roi-output-value" data-roi-daily-net>—</span></div>
+        <div class="roi-output-row"><span class="roi-output-label">Monthly net profit</span><span class="roi-output-value" data-roi-monthly-net>—</span></div>
+        <div class="roi-output-row"><span class="roi-output-label">Annual net profit</span><span class="roi-output-value" data-roi-annual-net>—</span></div>
+        <div class="roi-output-row roi-output-breakeven"><span class="roi-output-label">Break-even XMR price</span><span class="roi-output-value" data-roi-breakeven>—</span></div>
+      </div>
+    </div>
+    <div class="sec-note">Calculations use the live network hashrate, current block reward, and 120-second block target. Revenue tracks the live XMR/USD price.</div>
+  </section>
+
   <div class="chart-box">
     <div class="chart-hdr">
       <div class="chart-title">Electricity cost by state · i9-9900K @ 95W</div>
@@ -368,15 +451,15 @@
 <div class="sec">
   <div class="sec-h"><div class="sec-t">Section 05 / Pool comparison</div><div class="sec-s">6 pools · data from miningpoolstats.stream</div></div>
   <div class="tbl-wrap">
-    <table class="tbl">
+    <table class="tbl sortable" id="pool-table" data-sort-default="share-desc">
       <thead>
         <tr>
-          <th>Pool</th>
-          <th>Fee</th>
-          <th>Hashrate</th>
-          <th>Min payout</th>
+          <th data-sort="name">Pool</th>
+          <th data-sort="fee">Fee</th>
+          <th data-sort="hashrate">Hashrate</th>
+          <th data-sort="min">Min payout</th>
           <th>Method</th>
-          <th>Network share</th>
+          <th data-sort="share">Network share</th>
           <th>Notes</th>
         </tr>
       </thead>
@@ -443,7 +526,7 @@
 <!-- Section 06: Setup Guide -->
 <div class="sec">
   <div class="sec-h"><div class="sec-t">Section 06 / Setup guide</div><div class="sec-s">Start mining in 5 minutes · XMRig</div></div>
-  <div class="os-tabs">
+  <div class="os-tabs setup-steps">
     <button class="os-tab active" data-tab="windows" onclick="switchTab('windows')">Windows</button>
     <button class="os-tab" data-tab="macos" onclick="switchTab('macos')">macOS</button>
     <button class="os-tab" data-tab="linux" onclick="switchTab('linux')">Linux</button>
@@ -548,7 +631,7 @@ echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</code></pre>
 <!-- Section 08: Legality -->
 <div class="sec">
   <div class="sec-h"><div class="sec-t">Section 08 / Legality</div><div class="sec-s">Mining is legal almost everywhere · restrictions affect trading, not mining</div></div>
-  <div class="legal-grid">
+  <div class="legal-grid legality-grid">
     <div class="lc legal"><div class="lc-name">Ireland</div><div class="lc-status">Legal</div><div class="lc-note">No specific regulation. Mining is legal. Tax treatment as income at time of receipt.</div></div>
     <div class="lc legal"><div class="lc-name">USA</div><div class="lc-status">Legal (varies)</div><div class="lc-note">Legal federally. State regulations vary. Income/capital gains tax applies.</div></div>
     <div class="lc legal"><div class="lc-name">EU</div><div class="lc-status">Generally legal</div><div class="lc-note">MiCA framework in force. Mining is legal. Proof-of-work carve-out maintained.</div></div>
@@ -566,6 +649,17 @@ echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</code></pre>
   <div class="sec-note">* Mining legal; XMR delisted from Japanese exchanges. Privacy coin restrictions affect exchange trading, not mining or holding. <em>This is not legal advice.</em></div>
 </div>
 
+<!-- Related pages -->
+<aside class="related-pages sec">
+  <div class="sec-h"><div class="sec-t">Related</div><div class="sec-s">Cross-references</div></div>
+  <ul class="related-list">
+    <li><a href="/network">Network telemetry</a> — live hashrate, difficulty, pool distribution</li>
+    <li><a href="/markets">Markets</a> — live XMR price for ROI calculations</li>
+    <li><a href="/privacy-architecture">Privacy architecture</a> — RandomX in context</li>
+    <li><a href="/community">Community</a> — mining discussion forums and IRC</li>
+  </ul>
+</aside>
+
 <div class="page-timestamp">
     <span class="timestamp-label">Statistics last verified:</span>
     <span class="timestamp-date">April 2026</span>
@@ -578,18 +672,92 @@ echo vm.nr_hugepages=1280 | sudo tee -a /etc/sysctl.conf</code></pre>
 <script src="js/monero-network.js"></script>
 <script src="js/genui.js"></script>
 <script src="js/trust.js"></script>
+<script src="js/mining-charts.js"></script>
 <script>
 NavComponent.inject('nav-mount');
 PriceService.start();
 MoneroNetwork.start();
 
-/* Live hashrate binding */
+/* Live hero-stats binding · MoneroNetwork is the websocket-backed source */
 MoneroNetwork.subscribe(function(d){
-  if(d && d.hashrate){
+  if(!d) return;
+  if(d.hashrate){
     var el=document.getElementById('live-hashrate');
-    if(el) el.textContent=MoneroNetwork.fmtHashrate(d.hashrate);
+    if(el) el.textContent=(d.hashrate/1e9).toFixed(2);
+    var hr=document.querySelector('[data-mining-hashrate]');
+    if(hr) hr.textContent=(d.hashrate/1e9).toFixed(2);
+  }
+  if(d.difficulty){
+    var df=document.querySelector('[data-mining-difficulty]');
+    if(df) df.textContent=(d.difficulty/1e12).toFixed(2);
   }
 });
+
+/* Hero stats refresh from /api/xmr?_p=network and /api/xmr?_p=blocks
+   — single network round-trip, then minute polling. */
+function refreshMiningHeroStats(){
+  fetch('/api/xmr?_p=network')
+    .then(function(r){return r.ok?r.json():null})
+    .then(function(data){
+      if(!data) return;
+      /* api returns hashrate_ghs (already GH/s) and raw difficulty */
+      if(data.hashrate_ghs){
+        var hr=document.querySelector('[data-mining-hashrate]');
+        if(hr) hr.textContent=Number(data.hashrate_ghs).toFixed(2);
+        window._cachedHashrate=data.hashrate_ghs*1e9;
+      }
+      if(data.difficulty){
+        var diffT=data.difficulty/1e12;
+        var df=document.querySelector('[data-mining-difficulty]');
+        if(df) df.textContent=diffT.toFixed(2);
+      }
+    })
+    .catch(function(){});
+  fetch('/api/xmr?_p=blocks')
+    .then(function(r){return r.ok?r.json():null})
+    .then(function(blocks){
+      if(!blocks||!blocks.length) return;
+      /* api returns reward in piconeros (atomic units, 1e12 = 1 XMR) */
+      var raw=blocks[0].reward;
+      var reward=raw>1e6?raw/1e12:raw;
+      window._cachedBlockReward=reward;
+      var rw=document.querySelector('[data-mining-reward]');
+      if(rw) rw.textContent=reward.toFixed(3);
+      document.dispatchEvent(new CustomEvent('miningStatsUpdate'));
+    })
+    .catch(function(){});
+}
+document.addEventListener('DOMContentLoaded', function(){
+  refreshMiningHeroStats();
+  setInterval(refreshMiningHeroStats, 60000);
+});
+
+/* Sortable pool comparison table — parses numeric prefixes from cell text. */
+(function(){
+  function parseCell(td){
+    var t=(td.textContent||'').trim();
+    var m=t.match(/-?[\d.]+/);
+    return m?parseFloat(m[0]):t.toLowerCase();
+  }
+  document.addEventListener('click',function(ev){
+    var th=ev.target.closest('th[data-sort]');
+    if(!th) return;
+    var table=th.closest('table');
+    if(!table||!table.classList.contains('sortable')) return;
+    var idx=Array.prototype.indexOf.call(th.parentNode.children,th);
+    var asc=!th.classList.contains('sort-asc');
+    th.parentNode.querySelectorAll('th').forEach(function(o){o.classList.remove('sort-asc','sort-desc')});
+    th.classList.add(asc?'sort-asc':'sort-desc');
+    var tb=table.tBodies[0];
+    var rows=Array.prototype.slice.call(tb.rows);
+    rows.sort(function(a,b){
+      var av=parseCell(a.cells[idx]), bv=parseCell(b.cells[idx]);
+      if(typeof av==='number'&&typeof bv==='number') return asc?av-bv:bv-av;
+      return asc?String(av).localeCompare(String(bv)):String(bv).localeCompare(String(av));
+    });
+    rows.forEach(function(r){tb.appendChild(r)});
+  });
+})();
 
 /* OS tab switching */
 function switchTab(os){
