@@ -21,26 +21,56 @@
     };
     var _feeUsd = { currentTx: null, subscribed: false };
     var XMR_BLOCK_TIME_S = 120;
-    var XMR_BLOCK_TIME_FALLBACK_S = 120;   /* used until parade has data */
+    var XMR_BLOCK_TIME_FALLBACK_S = 120;   /* used until /block_intervals returns */
+
+    /* 100-block average is fetched server-side (single get_block_headers_range)
+       and cached on the edge for 60s. The local cache below avoids a fetch on
+       every tick — we read the value synchronously and refresh in background. */
+    var _avgBlockCache = {
+        value: XMR_BLOCK_TIME_FALLBACK_S,
+        fetchedAt: 0,
+        tipHeight: 0,
+        sampleSize: 0
+    };
 
     function avgBlockIntervalS() {
-        var bp = window._blockParade;
-        if (!bp || !bp.blocks || bp.blocks.length < 3) return XMR_BLOCK_TIME_FALLBACK_S;
+        return _avgBlockCache.value;
+    }
 
-        /* blocks are newest-first; timestamp deltas between adjacent blocks. */
-        var deltas = [];
-        for (var i = 0; i < Math.min(bp.blocks.length - 1, 10); i++) {
-            var a = Number(bp.blocks[i].timestamp);
-            var b = Number(bp.blocks[i + 1].timestamp);
-            if (!a || !b) continue;
-            var d = a - b;
-            /* Sanity-clamp: discard outliers (clock skew, restored chains). */
-            if (d > 5 && d < 1800) deltas.push(d);
+    function refreshBlockIntervalCache() {
+        return fetch(restBase() + '/block_intervals', { headers: { 'accept': 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.avg_block_interval_s) return;
+                _avgBlockCache = {
+                    value: data.avg_block_interval_s,
+                    fetchedAt: Date.now(),
+                    tipHeight: data.tip_height || 0,
+                    sampleSize: data.sample_size || 0
+                };
+                if (window._xmrDebug) {
+                    console.log('[avgBlock] refreshed', _avgBlockCache);
+                }
+            })
+            .catch(function () { /* keep stale cache */ });
+    }
+
+    /* Perpetual ETA formatter — counts down to 0 then counts up while overdue.
+       Never returns a static value: when seconds drop to/below 0 the caller
+       still sees a meaningful state (`+0:30 overdue`, then `imminent` past 5m). */
+    function fmtEta(s) {
+        if (s == null || isNaN(s)) return '—';
+        if (s > 0) {
+            var sec = Math.floor(s);
+            var m = Math.floor(sec / 60);
+            var r = sec % 60;
+            return '~' + m + ':' + (r < 10 ? '0' : '') + r;
         }
-        if (!deltas.length) return XMR_BLOCK_TIME_FALLBACK_S;
-        var sum = 0;
-        for (var j = 0; j < deltas.length; j++) sum += deltas[j];
-        return Math.round(sum / deltas.length);
+        var overdue = -Math.floor(s);
+        if (overdue >= 300) return 'imminent';
+        var om = Math.floor(overdue / 60);
+        var os = overdue % 60;
+        return '+' + om + ':' + (os < 10 ? '0' : '') + os + ' overdue';
     }
 
     /* ── REST base (mirrors XmrRelayWS.restBase) ── */
@@ -159,6 +189,73 @@
         }
     }
 
+    /* ── URL routing ──
+       /mempool-explorer            → recent (strip + recent blocks list)
+       /mempool-explorer/block/<id> → block detail (id = height OR 64-hex hash)
+       /mempool-explorer/tx/<txid>  → tx detail (txid = 64-hex)
+       Browser back/forward and shareable links work because the server
+       rewrites all three patterns to mempool-explorer.html (see vercel.json).
+    */
+    var TX_HEX_RE    = /^[0-9a-fA-F]{64}$/;
+    var BLOCK_REF_RE = /^([0-9a-fA-F]{64}|\d+)$/;
+
+    function navigateToTx(txid) {
+        if (!txid || !TX_HEX_RE.test(txid)) return;
+        var url = '/mempool-explorer/tx/' + txid;
+        if (global.location.pathname !== url) {
+            global.history.pushState({ kind: 'tx', txid: txid }, '', url);
+        }
+        routeFromUrl();
+    }
+
+    function navigateToBlock(heightOrHash) {
+        var ref = String(heightOrHash || '');
+        if (!ref || !BLOCK_REF_RE.test(ref)) return;
+        var url = '/mempool-explorer/block/' + ref;
+        if (global.location.pathname !== url) {
+            global.history.pushState({ kind: 'block', id: ref }, '', url);
+        }
+        routeFromUrl();
+    }
+
+    function navigateToStrip() {
+        var url = '/mempool-explorer';
+        if (global.location.pathname !== url) {
+            global.history.pushState({ kind: 'strip' }, '', url);
+        }
+        routeFromUrl();
+    }
+
+    function clearSearchInput() {
+        var input = el('exp-search-input');
+        if (input) input.value = '';
+    }
+
+    function routeFromUrl() {
+        clearSearchInput();
+        var path = global.location.pathname || '';
+        var m;
+
+        m = path.match(/^\/mempool-explorer\/tx\/([0-9a-fA-F]{64})\/?$/);
+        if (m) {
+            return loadTxView(m[1]);
+        }
+
+        m = path.match(/^\/mempool-explorer\/block\/([0-9a-fA-F]{64}|\d+)\/?$/);
+        if (m) {
+            return loadBlockView(m[1]);
+        }
+
+        /* Default: strip + recent list. */
+        if (window._blockParade) {
+            try { window._blockParade.clearTracked(); } catch (_) {}
+            try { window._blockParade.clearHighlight(); } catch (_) {}
+        }
+        stopTxLive();
+        showView('recent');
+        return null;
+    }
+
     function showError(msg) {
         var m = el('exp-error-msg');
         if (m) m.textContent = msg || 'Something went wrong.';
@@ -175,31 +272,23 @@
         var q = (query || '').trim();
         if (!q) return;
 
-        /* Clear any prior tracked TX overlays on a fresh search. */
-        if (window._blockParade) {
-            window._blockParade.clearTracked();
-            window._blockParade.clearHighlight();
-        }
-        stopTxLive();
+        /* Reset the input so the next search starts from an empty field. */
+        clearSearchInput();
 
-        showView('loading');
-
-        // Rule 1: pure integer → block by height.
+        /* Pure integer → block by height. */
         if (/^\d+$/.test(q) && parseInt(q, 10) < 10000000) {
-            return fetchBlock(parseInt(q, 10)).then(function (block) {
-                if (!block) return showError('No block found at height ' + q + '.');
-                return renderBlockView(block);
-            }).catch(function (err) {
-                showError('Error loading block: ' + (err && err.message || err));
-            });
+            return navigateToBlock(parseInt(q, 10));
         }
 
-        // Rule 2: 64-char hex → block first, then tx.
+        /* 64-char hex → could be a block hash or a txid. Probe block first;
+           on miss, fall back to tx (loadBlockView/loadTxView surface their
+           own 404s, so we resolve before navigating to avoid bouncing the URL). */
         if (/^[0-9a-f]{64}$/i.test(q)) {
+            showView('loading');
             return fetchBlock(q).then(function (block) {
-                if (block) return renderBlockView(block);
+                if (block) return navigateToBlock(q);
                 return fetchTx(q).then(function (tx) {
-                    if (tx) return renderTxView(tx);
+                    if (tx) return navigateToTx(q);
                     return showError('No block or transaction found for hash ' + q.slice(0, 16) + '…');
                 });
             }).catch(function (err) {
@@ -541,9 +630,11 @@
 
             '<div class="exp-tx-section">' +
               '<div class="m5-chart-block">' +
-                '<div class="m5-chart-title">DECOY SELECTION ANALYSIS — INPUT 0</div>' +
-                '<canvas id="exp-tx-decoy-age" aria-label="Decoy age distribution chart"></canvas>' +
-                '<div class="m5-chart-caption">Monero\'s wallet software selects decoys using a log-normal age distribution, weighting toward recently created outputs. This makes statistical timing attacks ineffective — an observer cannot reliably identify which ring member is the true spender based on age alone.</div>' +
+                '<div class="m5-chart-title">DECOY SELECTION ANALYSIS</div>' +
+                '<div id="exp-tx-decoy-mount" class="exp-tx-decoy-mount">' +
+                  '<div class="exp-tx-decoy-loading">Analyzing ring members…</div>' +
+                '</div>' +
+                '<canvas id="exp-tx-decoy-age" aria-label="Decoy age distribution chart" hidden></canvas>' +
               '</div>' +
             '</div>' +
 
@@ -587,13 +678,9 @@
         renderRingViz(el('exp-tx-ring'), el('exp-tx-ring-tip'), tx);
 
         try {
-            var decoyCanvas = el('exp-tx-decoy-age');
-            if (decoyCanvas && window.M5DecoyAgeChart && typeof window.M5DecoyAgeChart.render === 'function') {
-                var firstInput = (tx.inputs && tx.inputs[0]) || {};
-                var keyOffsets = firstInput.key_offsets || firstInput.keyOffsets || [];
-                window.M5DecoyAgeChart.render(decoyCanvas, keyOffsets, tx.block_height || 0, tx.total_outputs || 0);
-            }
-        } catch (e) { if (window.console) console.warn('[m5] decoy chart failed', e); }
+            var decoyMount = el('exp-tx-decoy-mount');
+            if (decoyMount) renderDecoyAnalysis(tx.txid, decoyMount);
+        } catch (e) { if (window.console) console.warn('[decoys] render failed', e); }
 
         try {
             var bpCanvas = el('exp-tx-bp-timeline');
@@ -714,6 +801,88 @@
         canvas.onmouseleave = function () { tip.hidden = true; };
     }
 
+    /* ── Real decoy age analysis ──
+       Backend `/api/xmr?_p=decoys/<txid>` resolves every ring member to its
+       origin block height via a single batched get_outs RPC, then we render
+       the per-input ring with concrete ages ("3 days", "6 weeks"). Falls back
+       to educational copy when the API can't resolve. */
+    function renderDecoyAnalysis(txid, container) {
+        if (!container) return;
+        if (!txid || !/^[0-9a-fA-F]{64}$/.test(txid)) {
+            container.innerHTML = renderDecoyEducationalFallback();
+            return;
+        }
+        container.innerHTML = '<div class="exp-tx-decoy-loading">Analyzing ring members…</div>';
+        fetch(restBase() + '/decoys/' + encodeURIComponent(txid), { headers: { 'accept': 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.inputs || !data.inputs.length) {
+                    container.innerHTML = renderDecoyEducationalFallback();
+                    return;
+                }
+                container.innerHTML = renderDecoyTable(data);
+            })
+            .catch(function () {
+                container.innerHTML = renderDecoyEducationalFallback();
+            });
+    }
+
+    function ageLabel(blocks) {
+        if (blocks == null || !isFinite(blocks)) return '—';
+        if (blocks < 0) blocks = 0;
+        if (blocks < 720)         return blocks + ' blk';
+        if (blocks < 720 * 30)    return Math.floor(blocks / 720) + ' d';
+        if (blocks < 720 * 365)   return Math.floor(blocks / (720 * 30)) + ' mo';
+        return Math.floor(blocks / (720 * 365)) + ' y';
+    }
+
+    function renderDecoyTable(data) {
+        var totalRings = 0;
+        for (var i = 0; i < data.inputs.length; i++) totalRings += data.inputs[i].ring.length;
+
+        var html = '<div class="exp-tx-decoy-header">' +
+            '<span>Real-time analysis</span>' +
+            ' · <span>' + data.inputs.length + ' input' + (data.inputs.length === 1 ? '' : 's') +
+            ' · ' + totalRings + ' ring members analyzed</span>' +
+            '</div>';
+
+        for (var ii = 0; ii < data.inputs.length; ii++) {
+            var input = data.inputs[ii];
+            html +=
+                '<div class="exp-tx-decoy-input">' +
+                  '<div class="exp-tx-decoy-input-label">Input ' + input.inputIdx +
+                    ' — ' + input.ring.length + ' ring member' +
+                    (input.ring.length === 1 ? '' : 's') + '</div>' +
+                  '<div class="exp-tx-decoy-rings">';
+            for (var jj = 0; jj < input.ring.length; jj++) {
+                var r = input.ring[jj];
+                var lbl = ageLabel(r.age_blocks);
+                var title = 'Block ' + (r.block_height != null ? r.block_height : '?') +
+                            ' · age ' + lbl + (r.unlocked ? ' · unlocked' : '');
+                html +=
+                    '<div class="exp-tx-decoy-ring" title="' + esc(title) + '">' +
+                      '<span class="exp-tx-decoy-ring-idx">' + r.ringIdx + '</span>' +
+                      '<span class="exp-tx-decoy-ring-age">' + esc(lbl) + '</span>' +
+                    '</div>';
+            }
+            html += '</div></div>';
+        }
+
+        html += '<div class="exp-tx-decoy-footnote">All ring members appear identical to outside observers. ' +
+            'The true spender is computationally indistinguishable from decoys.</div>';
+        return html;
+    }
+
+    function renderDecoyEducationalFallback() {
+        return '<div class="exp-tx-decoy-fallback">' +
+            '<div class="exp-tx-decoy-header"><em>Educational — how Monero ring signatures work</em></div>' +
+            '<p>Monero\'s wallet software selects decoys using a log-normal age distribution, ' +
+            'weighting toward recently created outputs. This makes statistical timing attacks ' +
+            'ineffective — an observer cannot reliably identify which ring member is the true ' +
+            'spender based on age alone.</p>' +
+            '</div>';
+    }
+
     function renderInputsSection(tx) {
         if (tx.inputs && tx.inputs.length) {
             var html = '';
@@ -800,21 +969,19 @@
     function wireTxDetailNav(root, tx, score) {
         var back = root.querySelector('[data-exp-back-detail]');
         if (back) back.addEventListener('click', function () {
-            // Back from tx → block (if we came from one) or recent.
-            if (window._blockParade) {
-                window._blockParade.clearTracked();
-                window._blockParade.clearHighlight();
+            /* Use history when we have somewhere to go back to; otherwise
+               navigate to the strip URL explicitly. */
+            if (global.history.length > 1) {
+                global.history.back();
+            } else {
+                navigateToStrip();
             }
-            stopTxLive();
-            txState.tracking = false;
-            if (blockState.current) showView('block');
-            else showView('recent');
         });
 
         // Clickable confirmed-block link.
         var gb = root.querySelector('[data-exp-goto-block]');
         if (gb) gb.addEventListener('click', function () {
-            loadBlockView(gb.getAttribute('data-exp-goto-block'));
+            navigateToBlock(gb.getAttribute('data-exp-goto-block'));
         });
 
         var track = el('exp-tx-track');
@@ -1034,27 +1201,27 @@
     function wireBlockNav(root, block) {
         var back = root.querySelector('[data-exp-back-detail]');
         if (back) back.addEventListener('click', function () {
-            if (window._blockParade) window._blockParade.clearHighlight();
-            showView('recent');
+            if (global.history.length > 1) global.history.back();
+            else navigateToStrip();
         });
 
         var prev = root.querySelector('[data-exp-nav-prev]');
         var next = root.querySelector('[data-exp-nav-next]');
         if (prev) {
             if (!block.height || block.height <= 0) prev.disabled = true;
-            else prev.addEventListener('click', function () { loadBlockView(block.height - 1); });
+            else prev.addEventListener('click', function () { navigateToBlock(block.height - 1); });
         }
         if (next) {
             // Only enable "next" if we know a later block exists.
             var tipHeight = getKnownTipHeight();
             if (tipHeight == null || block.height >= tipHeight) next.disabled = true;
-            else next.addEventListener('click', function () { loadBlockView(block.height + 1); });
+            else next.addEventListener('click', function () { navigateToBlock(block.height + 1); });
         }
 
         var prevLink = root.querySelector('[data-exp-nav]');
         if (prevLink) {
             prevLink.addEventListener('click', function () {
-                loadBlockView(prevLink.getAttribute('data-exp-nav'));
+                navigateToBlock(prevLink.getAttribute('data-exp-nav'));
             });
         }
 
@@ -1062,7 +1229,7 @@
         for (var i = 0; i < txLinks.length; i++) {
             (function (a) {
                 a.addEventListener('click', function () {
-                    loadTxView(a.getAttribute('data-exp-tx'));
+                    navigateToTx(a.getAttribute('data-exp-tx'));
                 });
             })(txLinks[i]);
         }
@@ -1164,7 +1331,7 @@
                 (function (row) {
                     row.setAttribute('data-wired', '1');
                     row.addEventListener('click', function () {
-                        loadTxView(row.getAttribute('data-exp-tx'));
+                        navigateToTx(row.getAttribute('data-exp-tx'));
                     });
                 })(rows[j]);
             }
@@ -1279,7 +1446,7 @@
             var tr = e.target.closest && e.target.closest('tr[data-height]');
             if (!tr) return;
             var ref = tr.getAttribute('data-hash') || tr.getAttribute('data-height');
-            if (ref) loadBlockView(ref);
+            if (ref) navigateToBlock(ref);
         });
 
         var cta = el('exp-show-broadcast');
@@ -1395,11 +1562,8 @@
         var backs = document.querySelectorAll('[data-exp-back]');
         for (var i = 0; i < backs.length; i++) {
             backs[i].addEventListener('click', function () {
-                if (window._blockParade) {
-                    window._blockParade.clearTracked();
-                    window._blockParade.clearHighlight();
-                }
-                showView('recent');
+                if (global.history.length > 1) global.history.back();
+                else navigateToStrip();
             });
         }
 
@@ -1419,8 +1583,19 @@
         subscribeWs();
         subscribeTxConfirmed();
 
-        // Default view.
-        showView('recent');
+        /* Wire popstate so browser back/forward re-renders the appropriate
+           view from the URL. pushState does NOT fire popstate — navigateTo*
+           calls routeFromUrl directly to keep behaviour symmetric. */
+        global.addEventListener('popstate', routeFromUrl);
+
+        /* 100-block average — initial fetch + 60s refresh. Server caches the
+           response edge-side for 60s, so this loop is effectively free. */
+        refreshBlockIntervalCache();
+        setInterval(refreshBlockIntervalCache, 60000);
+
+        /* Initial route from the current URL (handles deep links and
+           refreshes on /mempool-explorer/tx/* and /mempool-explorer/block/*). */
+        routeFromUrl();
     }
 
     if (document.readyState === 'loading') {
@@ -1479,12 +1654,13 @@
             /* Unconfirmed (in mempool). */
             confs = 0;
             remaining = CONF_REQ;
-            /* Account for time elapsed since the last seen block — the wait isn't
-               a full avgBlock anymore. */
+            /* Time since the most recent block — the wait isn't a full avgBlock
+               anymore. nextEtaS may go negative when the next block is overdue;
+               fmtEta shows `+0:30 overdue` then `imminent`, never a stale value. */
             var sinceTipTs = (parade && parade.blocks && parade.blocks[0] && parade.blocks[0].timestamp)
                 ? Math.max(0, Math.floor(Date.now() / 1000) - Number(parade.blocks[0].timestamp))
                 : 0;
-            nextEtaS = Math.max(15, avgBlock - sinceTipTs);   /* never below 15s */
+            nextEtaS = avgBlock - sinceTipTs;
             unlockEtaS = nextEtaS + (CONF_REQ - 1) * avgBlock;
             statusLine = 'Awaiting block inclusion…';
             confClass = 'is-pending';
@@ -1502,7 +1678,7 @@
                 var sinceLastBlock = lastBlock && lastBlock.timestamp
                     ? Math.max(0, Math.floor(Date.now() / 1000) - Number(lastBlock.timestamp))
                     : 0;
-                nextEtaS = Math.max(15, avgBlock - sinceLastBlock);
+                nextEtaS = avgBlock - sinceLastBlock;
                 unlockEtaS = remaining > 1
                     ? nextEtaS + (remaining - 1) * avgBlock
                     : nextEtaS;
@@ -1547,8 +1723,8 @@
             ? 'fully confirmed — spendable'
             : 'of 10 confirmations');
         setField('exp-tx-live-remain', remaining);
-        setField('exp-tx-live-next-eta', remaining > 0 ? '~' + fmtMinSec(nextEtaS) : '—');
-        setField('exp-tx-live-unlock-eta', remaining > 0 ? '~' + fmtMinSec(unlockEtaS) : 'unlocked');
+        setField('exp-tx-live-next-eta', remaining > 0 ? fmtEta(nextEtaS) : '—');
+        setField('exp-tx-live-unlock-eta', remaining > 0 ? fmtEta(unlockEtaS) : 'unlocked');
         setField('exp-tx-live-status-line', statusLine);
         setField('exp-tx-live-lastupdate', 'updated ' + (tip != null ? 'just now' : 'waiting…'));
         updateStepper(confs);
@@ -1600,11 +1776,20 @@
         loadBlockView:     loadBlockView,
         loadTxView:        loadTxView,
         loadRecentBlocks:  loadRecentBlocks,
+        navigateToTx:      navigateToTx,
+        navigateToBlock:   navigateToBlock,
+        navigateToStrip:   navigateToStrip,
+        routeFromUrl:      routeFromUrl,
         fetchBlock:        fetchBlock,
         fetchTx:           fetchTx,
         fetchRecentBlocks: fetchRecentBlocks,
         fetchBlockTxs:     fetchBlockTxs,
-        restBase:          restBase
+        restBase:          restBase,
+        /* Read-only handle for sibling modules (mempool-ocean-projected.js
+           reuses the same 100-block average instead of fetching its own). */
+        get _avgBlockCache() { return _avgBlockCache; },
+        avgBlockIntervalS: avgBlockIntervalS,
+        fmtEta:            fmtEta
     };
 
 })(window);

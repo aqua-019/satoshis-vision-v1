@@ -58,15 +58,16 @@ async function rpc(method, params = {}) {
   return null;
 }
 
-async function rpcHttp(path) {
+async function rpcHttp(path, payload) {
+  const body = payload != null ? JSON.stringify(payload) : '{}';
   for (const node of NODES) {
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 6000);
+      const timer = setTimeout(() => ctrl.abort(), 8000);
       const res = await fetch(`${node}${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: '{}',
+        body,
         signal: ctrl.signal,
       });
       clearTimeout(timer);
@@ -550,6 +551,47 @@ module.exports = async function handler(req, res) {
         difficulty: info?.difficulty || 0,
       };
 
+    } else if (sub === 'block_intervals') {
+      /* Average block interval over the last 100 blocks. Used by the explorer
+         to compute "until next confirmation" ETAs with low variance — n=10
+         (parade strip) is too noisy for a Poisson process. One get_block_headers_range
+         RPC call returns all 100 headers in a single round trip. Edge-cached
+         for 60s — block intervals don't change fast enough to need fresher data. */
+      const info = await rpcRetry('get_info');
+      if (!info?.height) {
+        res.status(503).json({ error: 'no info' });
+        return;
+      }
+      const tip = info.height - 1;
+      const N = 100;
+      const range = await rpcRetry('get_block_headers_range', {
+        start_height: Math.max(0, tip - N),
+        end_height: tip,
+      });
+      const headers = range?.headers || [];
+      if (headers.length < 2) {
+        res.status(503).json({ error: 'too few blocks' });
+        return;
+      }
+      headers.sort((a, b) => b.height - a.height);
+      const deltas = [];
+      for (let i = 0; i < headers.length - 1; i++) {
+        const d = Number(headers[i].timestamp) - Number(headers[i + 1].timestamp);
+        if (d > 5 && d < 1800) deltas.push(d);
+      }
+      if (!deltas.length) {
+        res.status(503).json({ error: 'no valid deltas' });
+        return;
+      }
+      const avg = Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length);
+      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+      data = {
+        avg_block_interval_s: avg,
+        sample_size: deltas.length,
+        tip_height: tip,
+        tip_timestamp: Number(headers[0].timestamp),
+      };
+
     } else if (sub.startsWith('block/')) {
       const rest = sub.slice(6);  // everything after 'block/'
       if (rest.endsWith('/txs')) {
@@ -577,6 +619,83 @@ module.exports = async function handler(req, res) {
       }
       data = await handleTx(txid);
       if (!data) { res.status(404).json({ error: 'Transaction not found' }); return; }
+
+    } else if (sub.startsWith('decoys/')) {
+      /* Real decoy age analysis. Fetches the tx to read its ring members'
+         key_offsets, converts relative offsets to absolute output indices,
+         then issues a single batched /get_outs HTTP RPC to resolve all ring
+         members across all inputs. ~200-500ms per call.
+
+         Note: /get_outs uses amount=0 for RingCT outputs (post-HF13 — every
+         modern Monero tx). Pre-RingCT outputs are not currently surfaced here. */
+      const decTxid = sub.slice('decoys/'.length);
+      if (!/^[0-9a-f]{64}$/i.test(decTxid)) {
+        res.status(400).json({ error: 'invalid txid' }); return;
+      }
+
+      const txData = await (async () => {
+        for (const node of NODES) {
+          try {
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 6000);
+            const r = await fetch(`${node}/get_transactions`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ txs_hashes: [decTxid], decode_as_json: true }),
+              signal: ctrl.signal,
+            });
+            clearTimeout(timer);
+            if (!r.ok) continue;
+            const j = await r.json();
+            if (j?.txs?.length || j?.txs_as_json?.length) return j;
+          } catch (_) {}
+        }
+        return null;
+      })();
+
+      const decTx = txData?.txs?.[0] || null;
+      if (!decTx) { res.status(404).json({ error: 'tx not found' }); return; }
+      let decJson;
+      try { decJson = typeof decTx.as_json === 'string' ? JSON.parse(decTx.as_json) : decTx.as_json; }
+      catch { res.status(500).json({ error: 'tx json parse failed' }); return; }
+
+      const decInputs = (decJson?.vin || []).filter(v => v.key);
+      if (!decInputs.length) {
+        data = { txid: decTxid, tip_height: null, inputs: [] };
+      } else {
+        const allOutputs = [];
+        for (let i = 0; i < decInputs.length; i++) {
+          const offs = decInputs[i].key.key_offsets || [];
+          let cum = 0;
+          for (let j = 0; j < offs.length; j++) {
+            cum += Number(offs[j]);
+            allOutputs.push({ inputIdx: i, ringIdx: j, abs_idx: cum });
+          }
+        }
+
+        const outsRes = await rpcHttp('/get_outs', {
+          outputs: allOutputs.map(o => ({ amount: 0, index: o.abs_idx })),
+          get_txid: false,
+        });
+        const outs = outsRes?.outs || [];
+
+        const tipInfo = await rpcRetry('get_info');
+        const tipHeight = tipInfo?.height ? tipInfo.height - 1 : null;
+
+        const inputsResult = decInputs.map((_, i) => ({ inputIdx: i, ring: [] }));
+        for (let k = 0; k < allOutputs.length; k++) {
+          const meta = allOutputs[k];
+          const out = outs[k] || {};
+          inputsResult[meta.inputIdx].ring.push({
+            ringIdx: meta.ringIdx,
+            block_height: out.height != null ? Number(out.height) : null,
+            age_blocks: tipHeight != null && out.height != null ? tipHeight - Number(out.height) : null,
+            unlocked: !!out.unlocked,
+          });
+        }
+
+        data = { txid: decTxid, tip_height: tipHeight, inputs: inputsResult };
+      }
 
     } else if (sub === 'network') {
       data = await handleNetwork();
