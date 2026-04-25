@@ -85,6 +85,50 @@
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
 
+    function buildStepperMarkup() {
+        var html = '';
+        for (var i = 1; i <= 10; i++) {
+            if (i > 1) html += '<div class="exp-stepper-line" data-step="' + (i - 1) + '"></div>';
+            html += '<div class="exp-stepper-dot" data-step="' + i + '" aria-label="Confirmation ' + i + '"></div>';
+        }
+        return html;
+    }
+
+    function updateStepper(confs) {
+        var stepper = el('exp-tx-stepper');
+        if (!stepper) return;
+        confs = Math.max(0, Math.min(10, Number(confs) || 0));
+        stepper.dataset.confs = String(confs);
+
+        var dots = stepper.querySelectorAll('.exp-stepper-dot');
+        var lines = stepper.querySelectorAll('.exp-stepper-line');
+        for (var i = 0; i < dots.length; i++) {
+            var stepNum = i + 1;
+            dots[i].classList.toggle('is-filled', stepNum <= confs);
+            dots[i].classList.toggle('is-current', stepNum === confs && confs < 10);
+        }
+        for (var j = 0; j < lines.length; j++) {
+            lines[j].classList.toggle('is-filled', (j + 1) < confs);
+        }
+        stepper.classList.toggle('is-fully-unlocked', confs >= 10);
+
+        var cap = el('exp-tx-stepper-caption');
+        if (cap) {
+            if (confs === 0) cap.textContent = 'Awaiting first confirmation';
+            else if (confs >= 10) cap.textContent = '✓ Fully unlocked — spendable';
+            else if (confs === 9) cap.textContent = 'One more block to unlock';
+            else cap.textContent = 'Confirming · ' + confs + ' of 10';
+        }
+    }
+
+    function privacyTier(s) {
+        if (s >= 95) return 'EXCELLENT';
+        if (s >= 80) return 'STRONG';
+        if (s >= 60) return 'GOOD';
+        if (s >= 40) return 'FAIR';
+        return 'WEAK';
+    }
+
     /* ── View switching ── */
     function showView(name) {
         if (VIEWS.indexOf(name) < 0) name = 'recent';
@@ -373,6 +417,29 @@
               '</div>' +
             '</div>' +
 
+            '<section class="exp-tx-metagrid-wrap">' +
+              '<div class="exp-tx-metagrid">' +
+                (confirmed
+                  ? '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Included in block</div><div class="exp-tx-metaval">' +
+                    heightHtml + (confsTxt ? ' <span class="exp-tx-metasub">· ' + esc(confsTxt) + '</span>' : '') + '</div></div>'
+                  : '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">First seen</div><div class="exp-tx-metaval">' + esc(firstSeenStr) + '</div></div>') +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee</div><div class="exp-tx-metaval">' + esc(fmtXmr(tx.fee)) +
+                  ' <span class="exp-tx-metausd" id="exp-tx-fee-usd">$—</span></div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">ETA</div><div class="exp-tx-metaval">' + (confirmed ? 'Confirmed' : 'In ' + esc(etaStr)) + '</div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee rate</div><div class="exp-tx-metaval">' +
+                  esc(tx.fee_rate != null ? tx.fee_rate.toFixed(2) + ' pcn/B' : '—') + '</div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Size</div><div class="exp-tx-metaval">' + esc(fmtBytes(tx.blob_size)) + '</div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Ring size</div><div class="exp-tx-metaval">' + esc(fmtInt(ringSize)) + ' decoys</div></div>' +
+              '</div>' +
+              '<div class="exp-tx-metafooter"><div class="exp-tx-metachips">' +
+                '<span class="exp-tx-chip exp-tx-chip-on">CLSAG</span>' +
+                '<span class="exp-tx-chip exp-tx-chip-on">BP+</span>' +
+                '<span class="exp-tx-chip ' + (tx.has_view_tags ? 'exp-tx-chip-on' : 'exp-tx-chip-off') + '">View Tags</span>' +
+                '<span class="exp-tx-chip ' + ((tx.unlock_time || 0) === 0 ? 'exp-tx-chip-on' : 'exp-tx-chip-off') + '">No Timelock</span>' +
+                (tx.relayed !== false ? '<span class="exp-tx-chip exp-tx-chip-on">Dandelion++</span>' : '') +
+              '</div></div>' +
+            '</section>' +
+
             '<div class="exp-tx-live" id="exp-tx-live">' +
               '<div class="exp-tx-live-header">' +
                 '<span class="exp-tx-live-label">Confirmation Status</span>' +
@@ -396,48 +463,28 @@
                   '<div class="exp-tx-live-sub">until full unlock (10/10)</div>' +
                 '</div>' +
               '</div>' +
-              '<div class="exp-tx-live-progress">' +
-                '<div class="exp-tx-live-progress-fill" id="exp-tx-live-progress-fill" style="width:0%"></div>' +
-                '<div class="exp-tx-live-progress-ticks"></div>' +
-              '</div>' +
+              '<div class="exp-tx-stepper" id="exp-tx-stepper" data-confs="0"></div>' +
+              '<div class="exp-tx-stepper-caption" id="exp-tx-stepper-caption">Awaiting first confirmation</div>' +
               '<div class="exp-tx-live-footer">' +
                 '<span id="exp-tx-live-status-line">Awaiting first confirmation…</span>' +
                 '<span class="exp-tx-live-lastupdate" id="exp-tx-live-lastupdate">updated just now</span>' +
               '</div>' +
             '</div>' +
 
-            '<div class="exp-tx-grid">' +
-              '<div class="exp-tx-card">' +
-                '<h3>Privacy Profile</h3>' +
+            '<div class="exp-privacy-pill" id="exp-privacy-pill" data-expanded="false">' +
+              '<button type="button" class="exp-privacy-toggle" id="exp-privacy-toggle" aria-expanded="false" aria-controls="exp-privacy-body">' +
+                '<span class="exp-privacy-icon">✓</span>' +
+                '<span class="exp-privacy-label">Privacy <strong>' + score + '/100</strong> ' + privacyTier(score) + '</span>' +
+                '<span class="exp-privacy-summary">CLSAG · BP+ · ' + fmtInt(ringSize) + ' ring · View Tags · No Timelock</span>' +
+                '<span class="exp-privacy-chevron" aria-hidden="true">▾</span>' +
+              '</button>' +
+              '<div class="exp-privacy-body" id="exp-privacy-body" hidden>' +
                 '<div class="exp-gauge-wrap"><canvas class="exp-gauge" id="exp-tx-gauge" aria-label="Privacy score gauge"></canvas></div>' +
                 '<div class="exp-pscore-list">' + compHtml + '</div>' +
                 '<div class="pbd-list" id="exp-tx-pbd"></div>' +
                 '<div class="exp-pscore-total"><span>Total</span><span><b>' + score + '</b> / 100</span></div>' +
               '</div>' +
             '</div>' +
-
-            '<section class="exp-tx-metagrid-wrap">' +
-              '<div class="exp-tx-metagrid">' +
-                (confirmed
-                  ? '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Included in block</div><div class="exp-tx-metaval">' +
-                    heightHtml + (confsTxt ? ' <span class="exp-tx-metasub">· ' + esc(confsTxt) + '</span>' : '') + '</div></div>'
-                  : '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">First seen</div><div class="exp-tx-metaval">' + esc(firstSeenStr) + '</div></div>') +
-                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee</div><div class="exp-tx-metaval">' + esc(fmtXmr(tx.fee)) +
-                  ' <span class="exp-tx-metausd" id="exp-tx-fee-usd">$—</span></div></div>' +
-                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">ETA</div><div class="exp-tx-metaval">' + (confirmed ? 'Confirmed' : 'In ' + esc(etaStr)) + '</div></div>' +
-                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee rate</div><div class="exp-tx-metaval">' +
-                  esc(tx.fee_rate != null ? tx.fee_rate.toFixed(2) + ' pcn/B' : '—') + '</div></div>' +
-                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Size</div><div class="exp-tx-metaval">' + esc(fmtBytes(tx.blob_size)) + '</div></div>' +
-                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Ring size</div><div class="exp-tx-metaval">' + esc(fmtInt(ringSize)) + ' decoys</div></div>' +
-              '</div>' +
-              '<div class="exp-tx-metafooter"><div class="exp-tx-metachips">' +
-                '<span class="exp-tx-chip exp-tx-chip-on">CLSAG</span>' +
-                '<span class="exp-tx-chip exp-tx-chip-on">BP+</span>' +
-                '<span class="exp-tx-chip ' + (tx.has_view_tags ? 'exp-tx-chip-on' : 'exp-tx-chip-off') + '">View Tags</span>' +
-                '<span class="exp-tx-chip ' + ((tx.unlock_time || 0) === 0 ? 'exp-tx-chip-on' : 'exp-tx-chip-off') + '">No Timelock</span>' +
-                (tx.relayed !== false ? '<span class="exp-tx-chip exp-tx-chip-on">Dandelion++</span>' : '') +
-              '</div></div>' +
-            '</section>' +
 
             '<div class="exp-tx-section" id="exp-tx-inputs-mount">' +
               '<h3>Inputs (' + esc(fmtInt(inputsCount)) + ')</h3>' +
@@ -499,9 +546,11 @@
                 '</div>' +
               '</div>') : '');
 
+        var stepperEl = el('exp-tx-stepper');
+        if (stepperEl) stepperEl.innerHTML = buildStepperMarkup();
+
         attachCopyButtons(node);
-        wireTxDetailNav(node, tx);
-        renderPrivacyGauge(el('exp-tx-gauge'), score);
+        wireTxDetailNav(node, tx, score);
         renderPrivacyBreakdown(el('exp-tx-pbd'), tx);
         renderRingViz(el('exp-tx-ring'), el('exp-tx-ring-tip'), tx);
 
@@ -716,7 +765,7 @@
                '</div>';
     }
 
-    function wireTxDetailNav(root, tx) {
+    function wireTxDetailNav(root, tx, score) {
         var back = root.querySelector('[data-exp-back-detail]');
         if (back) back.addEventListener('click', function () {
             // Back from tx → block (if we came from one) or recent.
@@ -757,6 +806,26 @@
             hexBtn.addEventListener('click', function () {
                 var wrap = el('exp-tx-extra');
                 if (wrap) wrap.classList.toggle('is-open');
+            });
+        }
+
+        var pill = root.querySelector('#exp-privacy-pill');
+        var pToggle = root.querySelector('#exp-privacy-toggle');
+        var pBody = root.querySelector('#exp-privacy-body');
+        if (pill && pToggle && pBody) {
+            pToggle.addEventListener('click', function () {
+                var expanded = pill.dataset.expanded === 'true';
+                var next = !expanded;
+                pill.dataset.expanded = String(next);
+                pToggle.setAttribute('aria-expanded', String(next));
+                pBody.hidden = !next;
+                if (next) {
+                    var canvas = root.querySelector('#exp-tx-gauge');
+                    if (canvas && !canvas.dataset.rendered) {
+                        renderPrivacyGauge(canvas, score);
+                        canvas.dataset.rendered = '1';
+                    }
+                }
             });
         }
 
@@ -1356,6 +1425,12 @@
         var host = el('exp-tx-live');
         if (!host) { stopTxLive(); return; }
 
+        if (!window._blockParade || !window._blockParade.blocks || window._blockParade.blocks.length === 0) {
+            setField('exp-tx-live-confs', '—');
+            setField('exp-tx-live-confs-sub', 'connecting…');
+            return;
+        }
+
         var parade = window._blockParade;
         var tip = (parade && parade.blocks && parade.blocks[0]) ? parade.blocks[0].height : null;
         if (tip != null) _txLive.lastTip = tip;
@@ -1415,9 +1490,7 @@
         setField('exp-tx-live-unlock-eta', remaining > 0 ? '~' + fmtMinSec(unlockEtaS) : 'unlocked');
         setField('exp-tx-live-status-line', statusLine);
         setField('exp-tx-live-lastupdate', 'updated ' + (tip != null ? 'just now' : 'waiting…'));
-
-        var fill = el('exp-tx-live-progress-fill');
-        if (fill) fill.style.width = Math.min(100, Math.round((confs / CONF_REQ) * 100)) + '%';
+        updateStepper(confs);
     }
 
     function setField(id, text, addClass) {
