@@ -84,6 +84,13 @@
             this.trackedStatus = this.trackedConfs >= CONF_REQ ? 'confirmed' : 'confirming';
         }
         this.render();
+        var self = this;
+        requestAnimationFrame(function () { self._scrollToTrackedBlock(); });
+        /* If blocks haven't loaded yet, refresh now so the arrow doesn't sit
+           hidden for ~15s until the next interval tick. */
+        if (!this.blocks || this.blocks.length === 0) {
+            this.refresh();
+        }
     };
 
     BlockParade.prototype.clearTracked = function () {
@@ -99,6 +106,8 @@
     BlockParade.prototype.highlightBlock = function (height) {
         this._highlightedBlock = height ? Number(height) : null;
         this._positionOverlays();
+        var self = this;
+        requestAnimationFrame(function () { self._scrollToTrackedBlock(); });
     };
 
     BlockParade.prototype.clearHighlight = function () {
@@ -158,6 +167,9 @@
             '<div class="bp-offscreen-hint" hidden></div>';
 
         outer.appendChild(wrap);
+        var baseline = document.createElement('div');
+        baseline.className = 'bp-baseline';
+        outer.appendChild(baseline);
         outer.appendChild(overlay);
 
         /* Wrap status-bar + outer in a shared .bp-host so sticky positioning
@@ -173,17 +185,85 @@
         var self = this;
         this._resizeHandler = function () {
             if (self._resizeTimer) clearTimeout(self._resizeTimer);
-            self._resizeTimer = setTimeout(function () { self._positionOverlays(); }, 100);
+            self._resizeTimer = setTimeout(function () {
+                self._positionOverlays();
+                updateEdgeFades();
+            }, 100);
         };
         window.addEventListener('resize', this._resizeHandler);
-        var rafQueued = false;
+
+        function updateEdgeFades() {
+            var atStart = wrap.scrollLeft <= 1;
+            var atEnd   = wrap.scrollLeft + wrap.clientWidth >= wrap.scrollWidth - 1;
+            outer.classList.toggle('is-at-scroll-start', atStart);
+            outer.classList.toggle('is-at-scroll-end',   atEnd);
+        }
+        self._updateEdgeFades = updateEdgeFades;
+
+        /* Scroll listener — keeps overlays glued to their blocks during user
+           scroll (zero-lag via is-instant), then re-enables transitions ~80ms
+           after scroll settles. Edge fades update too. */
+        var scrollEndTimer = 0;
         wrap.addEventListener('scroll', function () {
-            if (rafQueued) return;
-            rafQueued = true;
-            requestAnimationFrame(function () {
-                rafQueued = false;
-                self._positionOverlays();
-            });
+            var overlays = self.container.querySelectorAll('.bp-arrow, .bp-dotline, .bp-offscreen-hint');
+            for (var i = 0; i < overlays.length; i++) overlays[i].classList.add('is-instant');
+            self._positionOverlays();
+            if (scrollEndTimer) clearTimeout(scrollEndTimer);
+            scrollEndTimer = setTimeout(function () {
+                for (var j = 0; j < overlays.length; j++) overlays[j].classList.remove('is-instant');
+            }, 80);
+            updateEdgeFades();
+        }, { passive: true });
+
+        /* Wheel-to-horizontal — vertical wheel rotation scrolls the strip
+           horizontally while the cursor is over it. Page scroll resumes when
+           the strip hits a boundary. */
+        wrap.addEventListener('wheel', function (e) {
+            var delta = e.deltaY || e.deltaX;
+            if (Math.abs(delta) < 1) return;
+            var atStart = wrap.scrollLeft <= 0;
+            var atEnd   = wrap.scrollLeft + wrap.clientWidth >= wrap.scrollWidth - 1;
+            if ((delta > 0 && atEnd) || (delta < 0 && atStart)) return;
+            e.preventDefault();
+            wrap.scrollLeft += delta;
+        }, { passive: false });
+
+        /* Click-and-drag panning — mouse users can grab the strip. A drag of
+           >4px suppresses the resulting click so block navigation isn't
+           triggered when the user just wanted to pan. */
+        var dragState = { active: false, startX: 0, startScroll: 0, moved: false };
+        wrap.addEventListener('mousedown', function (e) {
+            if (e.button !== 0) return;
+            dragState.active = true;
+            dragState.startX = e.pageX;
+            dragState.startScroll = wrap.scrollLeft;
+            dragState.moved = false;
+            wrap.classList.add('is-grabbing');
+        });
+        window.addEventListener('mousemove', function (e) {
+            if (!dragState.active) return;
+            var dx = e.pageX - dragState.startX;
+            if (Math.abs(dx) > 4) dragState.moved = true;
+            wrap.scrollLeft = dragState.startScroll - dx;
+        });
+        window.addEventListener('mouseup', function () {
+            if (!dragState.active) return;
+            dragState.active = false;
+            wrap.classList.remove('is-grabbing');
+            if (dragState.moved) {
+                var swallow = function (ev) {
+                    ev.stopPropagation();
+                    ev.preventDefault();
+                    window.removeEventListener('click', swallow, true);
+                };
+                window.addEventListener('click', swallow, true);
+            }
+        });
+
+        /* Double-rAF — first frame batches with current layout, second frame
+           reads post-layout dimensions for accurate edge-fade state. */
+        requestAnimationFrame(function () {
+            requestAnimationFrame(updateEdgeFades);
         });
     };
 
@@ -193,9 +273,18 @@
         style.id = 'bp-css';
         style.textContent = [
             '.bp-outer{position:relative;overflow:visible}',
-            '.bp-outer::after{content:"";position:absolute;left:0;right:0;bottom:30px;border-bottom:1px dashed rgba(255,255,255,.12);pointer-events:none;z-index:0}',
-            '.bp-wrap{overflow-x:auto;overflow-y:visible;display:flex;align-items:flex-end;gap:6px;padding:4px 0 8px;scrollbar-width:none}',
-            '.bp-wrap::-webkit-scrollbar{display:none}',
+            '.bp-baseline{position:absolute;left:0;right:0;bottom:30px;border-bottom:1px dashed rgba(255,255,255,.12);pointer-events:none;z-index:0}',
+            '.bp-outer::before,.bp-outer::after{content:"";position:absolute;top:0;bottom:0;width:32px;pointer-events:none;z-index:5;transition:opacity .25s}',
+            '.bp-outer::before{left:0;background:linear-gradient(90deg,var(--surface-0) 0%,transparent 100%)}',
+            '.bp-outer::after{right:0;background:linear-gradient(270deg,var(--surface-0) 0%,transparent 100%)}',
+            '.bp-outer.is-at-scroll-start::before{opacity:0}',
+            '.bp-outer.is-at-scroll-end::after{opacity:0}',
+            '.bp-wrap{overflow-x:auto;overflow-y:visible;display:flex;align-items:flex-end;gap:6px;padding:4px 0 8px;cursor:grab;scroll-behavior:auto;scrollbar-color:rgba(255,102,0,.4) transparent;scrollbar-width:thin}',
+            '.bp-wrap.is-grabbing{cursor:grabbing;user-select:none}',
+            '.bp-wrap::-webkit-scrollbar{height:6px;background:transparent}',
+            '.bp-wrap::-webkit-scrollbar-thumb{background:rgba(255,102,0,.35);border-radius:3px;transition:background .15s}',
+            '.bp-wrap::-webkit-scrollbar-thumb:hover{background:rgba(255,102,0,.6)}',
+            '.bp-wrap::-webkit-scrollbar-track{background:transparent}',
             '.bp-pending-group,.bp-confirmed-group{display:flex;gap:6px;flex:0 0 auto;align-items:flex-end}',
             '.bp-divider{flex:0 0 auto;width:1px;height:220px;background:var(--border-default);margin:0 10px;position:relative}',
             '.bp-divider::before{content:"\\2195";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:10px/1 "JetBrains Mono",monospace;color:var(--text-tertiary);background:var(--surface-0);padding:2px 1px}',
@@ -244,8 +333,9 @@
 
             /* Tracker overlay */
             '.bp-overlay{position:absolute;inset:0;overflow:visible;pointer-events:none}',
-            '.bp-arrow{position:absolute;pointer-events:none;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;transition:left .6s ease,top .2s ease}',
+            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform .35s cubic-bezier(.2,.8,.2,1)}',
             '.bp-arrow[hidden]{display:none}',
+            '.bp-arrow.is-instant{transition:none}',
             '.bp-arrow-line{width:1px;height:20px;background:repeating-linear-gradient(180deg,var(--blue) 0 2px,transparent 2px 4px)}',
             '.bp-arrow-tri{width:0;height:0;border:7px solid transparent;border-top:0;border-bottom:10px solid var(--blue);filter:drop-shadow(0 0 4px rgba(74,158,255,.7));transform:rotate(180deg)}',
             '.bp-arrow-label{font:700 9px/1 "DM Mono",monospace;color:var(--blue);letter-spacing:.1em;white-space:nowrap;padding:2px 6px;border:1px solid var(--blue);border-radius:3px;background:rgba(10,12,20,.75);margin-top:2px}',
@@ -259,8 +349,9 @@
             '.bp-arrow.is-highlight .bp-arrow-tri{border-bottom-color:var(--xmr);filter:drop-shadow(0 0 4px rgba(255,102,0,.7))}',
             '.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);border-color:var(--xmr);box-shadow:0 0 10px rgba(255,102,0,.45)}',
 
-            '.bp-dotline{position:absolute;top:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);transition:left .6s ease;pointer-events:none;width:0}',
+            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform .35s cubic-bezier(.2,.8,.2,1);pointer-events:none;width:0}',
             '.bp-dotline[hidden]{display:none}',
+            '.bp-dotline.is-instant{transition:none}',
             '.bp-dotline-label{position:absolute;top:4px;left:4px;font:7px/1 "DM Mono",monospace;color:rgba(255,209,0,.8);writing-mode:vertical-lr;transform:rotate(180deg);letter-spacing:.12em;white-space:nowrap}',
 
             /* Status bar */
@@ -288,8 +379,9 @@
             /* is-confirming mirrors the default blue tracking color (same as base) */
 
             /* Off-range hint — tracked/highlighted block not in visible range */
-            '.bp-offscreen-hint{position:absolute;transform:translate(6px,-50%);font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none}',
+            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform .35s cubic-bezier(.2,.8,.2,1)}',
             '.bp-offscreen-hint[hidden]{display:none}',
+            '.bp-offscreen-hint.is-instant{transition:none}',
             '.bp-offscreen-hint.is-visible{color:var(--xmr);border-color:rgba(255,102,0,.3)}',
 
             '@keyframes bp-pulse{from{opacity:.55}to{opacity:1}}'
@@ -595,8 +687,9 @@
             arrow.hidden = false;
             arrow.classList.add('is-' + mode);
             var r = targetEl.getBoundingClientRect();
-            arrow.style.left = (r.left + r.width / 2 - outerRect.left) + 'px';
-            arrow.style.top  = (r.bottom - outerRect.top + 2) + 'px';
+            var ax = (r.left + r.width / 2 - outerRect.left);
+            var ay = (r.bottom - outerRect.top + 2);
+            arrow.style.transform = 'translate3d(' + ax + 'px, ' + ay + 'px, 0) translateX(-50%)';
 
             var label = arrow.querySelector('.bp-arrow-label');
             if (label) {
@@ -618,24 +711,63 @@
             } else {
                 dotline.hidden = false;
                 var tr = tenthEl.getBoundingClientRect();
-                dotline.style.left = (tr.left - outerRect.left - 4) + 'px';
+                var dx = (tr.left - outerRect.left - 4);
+                dotline.style.transform = 'translate3d(' + dx + 'px, 0, 0)';
             }
         }
 
-        /* Off-range hint — target height known but not in visible blocks. */
+        /* Off-range — target height known but not in visible blocks. The
+           arrow itself anchors to the right edge of the confirmed group with
+           a "→ N BACK" label so the user can see direction + distance at a
+           glance. The chip-style hint is suppressed in this case. */
         if (hint && confirmedGroup) {
             if (target && !targetEl) {
-                hint.hidden = false;
-                hint.classList.toggle('is-visible', !!this._highlightedBlock || this.trackedStatus !== 'none');
                 var tipH = this.blocks.length ? this.blocks[0].height : this.topHeight;
                 var back = Math.max(0, Number(tipH) - Number(target));
-                hint.textContent = '→ #' + Number(target).toLocaleString() + ' (' + back + ' back)';
                 var cRect = confirmedGroup.getBoundingClientRect();
-                hint.style.left = (cRect.right - outerRect.left) + 'px';
-                hint.style.top  = (cRect.top  - outerRect.top + cRect.height / 2) + 'px';
+
+                arrow.hidden = false;
+                arrow.classList.add('is-' + (mode || 'highlight'));
+                var oax = (cRect.right - outerRect.left);
+                var oay = (cRect.bottom - outerRect.top + 2);
+                arrow.style.transform = 'translate3d(' + oax + 'px, ' + oay + 'px, 0) translateX(-50%)';
+                var oLabel = arrow.querySelector('.bp-arrow-label');
+                if (oLabel) oLabel.textContent = '→ ' + back + ' BACK';
+
+                hint.hidden = true;
             } else {
                 hint.hidden = true;
             }
+        }
+    };
+
+    /* Center the tracked/highlighted block in the visible scroll viewport.
+       Falls back through pending → tracked → highlighted in priority order. */
+    BlockParade.prototype._scrollToTrackedBlock = function (opts) {
+        opts = opts || {};
+        var smooth = opts.smooth !== false;
+        var wrap = this.container.querySelector('.bp-wrap');
+        if (!wrap) return;
+
+        var targetEl = null;
+        if (this.trackedStatus === 'pending') {
+            targetEl = this.container.querySelector('.bp-cell-pending.is-next-bright .bp-block');
+        } else if (this.trackedBlock) {
+            targetEl = this.container.querySelector('.bp-cell[data-height="' + this.trackedBlock + '"] .bp-block');
+        } else if (this._highlightedBlock) {
+            targetEl = this.container.querySelector('.bp-cell[data-height="' + this._highlightedBlock + '"] .bp-block');
+        }
+        if (!targetEl) return;
+
+        var wrapRect   = wrap.getBoundingClientRect();
+        var targetRect = targetEl.getBoundingClientRect();
+        var targetCenter = targetRect.left + targetRect.width / 2 - wrapRect.left + wrap.scrollLeft;
+        var newScroll    = Math.max(0, targetCenter - wrap.clientWidth / 2);
+
+        if (smooth) {
+            wrap.scrollTo({ left: newScroll, behavior: 'smooth' });
+        } else {
+            wrap.scrollLeft = newScroll;
         }
     };
 
