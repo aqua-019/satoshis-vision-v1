@@ -42,72 +42,12 @@
         return 'vhigh';
     }
 
-    /* Tier is driven by absolute tx count, not the normalized %, so an
-       80-tx block always reads as "busy" even on a day every other
-       block has 200. */
-    function tierForTxCount(n) {
+    function zoneForConfirmedIndex(i) { return i < 10 ? 'confirming' : 'unlocked'; }
+    function fillHeightForTxCount(n) {
         n = Number(n) || 0;
-        if (n < 15)  return 'quiet';
-        if (n < 40)  return 'normal';
-        if (n < 80)  return 'active';
-        if (n < 160) return 'busy';
-        return 'congested';
-    }
-    var GRADIENTS = {
-        quiet:     'linear-gradient(0deg, rgba(140,88,255,.55), rgba(140,88,255,.12))',
-        normal:    'linear-gradient(0deg, rgba(74,158,255,.65), rgba(74,158,255,.12))',
-        active:    'linear-gradient(0deg, rgba(255,209,0,.7),  rgba(255,209,0,.12))',
-        busy:      'linear-gradient(0deg, rgba(255,102,0,.8),  rgba(255,102,0,.15))',
-        congested: 'linear-gradient(0deg, rgba(255,68,85,.85), rgba(255,68,85,.18))'
-    };
-    function gradientForTier(t) { return GRADIENTS[t] || GRADIENTS.normal; }
-
-    /* Compact piconero formatter — 12345 → "12k", 1.2M → "1.2M". */
-    function formatPcn(n) {
-        if (n == null || !isFinite(n) || n < 0) return '0';
-        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-        if (n >= 1e3) return Math.round(n / 1e3) + 'k';
-        return String(Math.round(n));
-    }
-    function fmtFeeMedian(b) {
-        if (!b) return '~0 pcn/B';
-        var median = null;
-        if (b.median_fee_rate != null && isFinite(Number(b.median_fee_rate))) {
-            median = Number(b.median_fee_rate);
-        } else if (b.total_fees != null && b.block_weight) {
-            var tf = Number(b.total_fees), bw = Number(b.block_weight);
-            if (isFinite(tf) && isFinite(bw) && bw > 0) median = tf / bw;
-        }
-        if (median == null || !isFinite(median)) return '~0 pcn/B';
-        return '~' + formatPcn(median) + ' pcn/B';
-    }
-    function fmtFeeRange(b) {
-        if (!b) return '—';
-        var lo = Number(b.fee_rate_min), hi = Number(b.fee_rate_max);
-        if (!isFinite(lo) || !isFinite(hi) || lo < 0 || hi < 0) return '—';
-        return formatPcn(lo) + ' – ' + formatPcn(hi) + ' pcn/B';
-    }
-    function fmtXmrFees(atomic) {
-        if (atomic == null) return '—';
-        var a = Number(atomic);
-        if (!isFinite(a) || a < 0) return '—';
-        var xmr = a / 1e12;
-        if (xmr >= 1)    return xmr.toFixed(3);
-        if (xmr >= 0.01) return xmr.toFixed(4);
-        return xmr.toFixed(6);
-    }
-    /* Stable hue per pool name so each pool's dot is consistent across renders. */
-    function renderPoolBadge(poolName) {
-        var name = (poolName == null ? '' : String(poolName)).trim();
-        if (!name || name === 'Unknown' || name === '—') {
-            return '<span class="bp-pool-name">—</span>';
-        }
-        var sum = 0;
-        for (var i = 0; i < name.length; i++) sum = (sum + name.charCodeAt(i)) | 0;
-        var hue = ((sum % 360) + 360) % 360;
-        var safe = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return '<span class="bp-pool-dot" style="background:hsl(' + hue + ',60%,55%)"></span>' +
-               '<span class="bp-pool-name">' + safe + '</span>';
+        if (n <= 10) return 75;
+        if (n <= 50) return 85;
+        return 95;
     }
 
     function BlockParade(container, onBlockClick) {
@@ -118,7 +58,6 @@
         this.topHeight    = 0;
         this._timer       = null;
         this._confirmedNodes = Object.create(null);
-        this._txScale     = { max: 20 };
         this._resizeTimer = 0;
         this._resizeHandler = null;
 
@@ -237,7 +176,15 @@
             self._resizeTimer = setTimeout(function () { self._positionOverlays(); }, 100);
         };
         window.addEventListener('resize', this._resizeHandler);
-        wrap.addEventListener('scroll', function () { self._positionOverlays(); });
+        var rafQueued = false;
+        wrap.addEventListener('scroll', function () {
+            if (rafQueued) return;
+            rafQueued = true;
+            requestAnimationFrame(function () {
+                rafQueued = false;
+                self._positionOverlays();
+            });
+        });
     };
 
     BlockParade.prototype._injectCSS = function () {
@@ -270,45 +217,30 @@
             '.bp-block-new{animation:bp-slide-in .4s ease-out}',
             '@keyframes bp-slide-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}',
 
-            /* Confirmed tier backgrounds (on ::before) */
+            /* ── Zone color scheme — uniform orange, three saturation levels ── */
             '.bp-block.is-confirmed{cursor:pointer}',
-            '.bp-block.is-confirmed.tier-quiet::before{background:linear-gradient(180deg,rgba(0,201,122,.04),rgba(0,201,122,.10))}',
-            '.bp-block.is-confirmed.tier-normal::before{background:linear-gradient(180deg,rgba(74,158,255,.04),rgba(74,158,255,.10))}',
-            '.bp-block.is-confirmed.tier-active::before{background:linear-gradient(180deg,rgba(255,209,0,.05),rgba(255,209,0,.12))}',
-            '.bp-block.is-confirmed.tier-busy::before{background:linear-gradient(180deg,rgba(255,102,0,.06),rgba(255,102,0,.16))}',
-            '.bp-block.is-confirmed.tier-congested::before{background:linear-gradient(180deg,rgba(216,54,66,.08),rgba(216,54,66,.20))}',
+            '.bp-cell.zone-pending     { --zone-rgb: 255, 102, 0; --zone-bg-hi: .06; --zone-bg-lo: .02; --zone-border: .20; --zone-fill-hi: .50; --zone-fill-lo: .22; --zone-glow: .08;  --zone-edge: .35; --zone-label: .55; }',
+            '.bp-cell.zone-confirming  { --zone-rgb: 255, 102, 0; --zone-bg-hi: .12; --zone-bg-lo: .04; --zone-border: .50; --zone-fill-hi: .80; --zone-fill-lo: .45; --zone-glow: .18;  --zone-edge: .65; --zone-label: .90; }',
+            '.bp-cell.zone-unlocked    { --zone-rgb: 255, 102, 0; --zone-bg-hi: .22; --zone-bg-lo: .10; --zone-border: .85; --zone-fill-hi: .98; --zone-fill-lo: .72; --zone-glow: .35;  --zone-edge: 1.0; --zone-label: 1.0; }',
 
-            /* Confirmed tier slant-edge colors (on ::after) */
-            '.bp-block.is-confirmed.tier-quiet::after{background:linear-gradient(135deg,transparent 13px,rgba(0,201,122,.55) 13px,rgba(0,201,122,.55) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-confirmed.tier-normal::after{background:linear-gradient(135deg,transparent 13px,rgba(74,158,255,.55) 13px,rgba(74,158,255,.55) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-confirmed.tier-active::after{background:linear-gradient(135deg,transparent 13px,rgba(255,209,0,.60) 13px,rgba(255,209,0,.60) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-confirmed.tier-busy::after{background:linear-gradient(135deg,transparent 13px,rgba(255,102,0,.60) 13px,rgba(255,102,0,.60) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-confirmed.tier-congested::after{background:linear-gradient(135deg,transparent 13px,rgba(216,54,66,.65) 13px,rgba(216,54,66,.65) 14.5px,transparent 14.5px)}',
+            '.bp-cell .bp-block::before{background:linear-gradient(180deg,rgba(var(--zone-rgb), var(--zone-bg-lo)),rgba(var(--zone-rgb), var(--zone-bg-hi)));border-color:rgba(var(--zone-rgb), var(--zone-border))}',
+            '.bp-cell .bp-block::after{background:linear-gradient(135deg,transparent 13px,rgba(var(--zone-rgb), var(--zone-edge)) 13px,rgba(var(--zone-rgb), var(--zone-edge)) 14.5px,transparent 14.5px)}',
+            '.bp-cell .bp-block{box-shadow:0 0 0 0 rgba(var(--zone-rgb), 0),0 0 14px rgba(var(--zone-rgb), var(--zone-glow));transition:box-shadow .35s ease}',
+            '.bp-cell:hover .bp-block{box-shadow:0 0 0 0 rgba(var(--zone-rgb), 0),0 0 22px rgba(var(--zone-rgb), calc(var(--zone-glow) + .10))}',
+            '.bp-cell .bp-height-above{color:rgba(var(--zone-rgb), var(--zone-label))}',
 
-            /* Pending tier backgrounds (on ::before) */
-            '.bp-block.is-pending.tier-low::before{background:linear-gradient(180deg,rgba(0,201,122,.05),rgba(0,201,122,.12))}',
-            '.bp-block.is-pending.tier-med::before{background:linear-gradient(180deg,rgba(255,209,0,.05),rgba(255,209,0,.14))}',
-            '.bp-block.is-pending.tier-high::before{background:linear-gradient(180deg,rgba(255,102,0,.06),rgba(255,102,0,.16))}',
-            '.bp-block.is-pending.tier-vhigh::before{background:linear-gradient(180deg,rgba(255,90,90,.08),rgba(255,90,90,.18))}',
+            '.bp-fill-area{position:absolute;inset:8px 8px 36px 8px;pointer-events:none;z-index:1}',
+            '.bp-fill-bar{position:absolute;bottom:0;left:0;right:0;border-radius:2px;background:linear-gradient(0deg,rgba(var(--zone-rgb), var(--zone-fill-hi)),rgba(var(--zone-rgb), var(--zone-fill-lo)));transition:height .9s cubic-bezier(.2,.8,.2,1);box-shadow:0 0 8px rgba(var(--zone-rgb), calc(var(--zone-glow) + .08))}',
 
-            /* Pending tier slant-edge colors (on ::after) */
-            '.bp-block.is-pending.tier-low::after{background:linear-gradient(135deg,transparent 13px,rgba(0,201,122,.55) 13px,rgba(0,201,122,.55) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-pending.tier-med::after{background:linear-gradient(135deg,transparent 13px,rgba(255,209,0,.60) 13px,rgba(255,209,0,.60) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-pending.tier-high::after{background:linear-gradient(135deg,transparent 13px,rgba(255,102,0,.60) 13px,rgba(255,102,0,.60) 14.5px,transparent 14.5px)}',
-            '.bp-block.is-pending.tier-vhigh::after{background:linear-gradient(135deg,transparent 13px,rgba(255,90,90,.65) 13px,rgba(255,90,90,.65) 14.5px,transparent 14.5px)}',
-
-            /* Next-to-mine bright highlight */
-            '.bp-block.is-pending.is-next-bright::before{background:linear-gradient(180deg,rgba(255,209,0,.12),rgba(255,209,0,.22));box-shadow:0 0 0 1px rgba(255,209,0,.25),0 0 18px rgba(255,209,0,.10)}',
-            '.bp-block.is-pending.is-next-bright .bp-fees-total{color:var(--gold)}',
-            '.bp-block.is-pending.is-far{opacity:.7}',
-
-            /* Content stack cells */
-            '.bp-fee-median{font:700 15px/1.1 "JetBrains Mono",monospace;color:var(--text-primary);margin-bottom:2px}',
-            '.bp-fee-range{font:10px/1.1 "DM Mono",monospace;color:var(--text-muted);margin-bottom:6px}',
-            '.bp-fees-total{font:600 11px/1.1 "JetBrains Mono",monospace;color:var(--xmr);margin-bottom:8px}',
-            '.bp-tx-count-big{font:700 18px/1 "JetBrains Mono",monospace;color:var(--text-primary);display:flex;align-items:baseline;gap:4px}',
-            '.bp-tx-count-big span{font:500 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.08em}',
-            '.bp-age{font:9px/1 "DM Mono",monospace;color:var(--text-tertiary);margin-top:auto}',
+            '.bp-content{position:relative;z-index:2;display:flex;flex-direction:column;height:100%;padding:10px 8px 8px;pointer-events:none}',
+            '.bp-tx-count-big{font:700 16px/1 "JetBrains Mono",monospace;color:var(--text-primary);text-shadow:0 1px 2px rgba(0,0,0,.5);margin-bottom:4px}',
+            '.bp-tx-count-big span{font:9px/1 "DM Mono",monospace;font-weight:400;color:var(--text-tertiary);letter-spacing:.08em;text-transform:uppercase;margin-left:2px}',
+            '.bp-secondary-line{font:500 11px/1.2 "DM Mono",monospace;color:var(--text-secondary);text-shadow:0 1px 1px rgba(0,0,0,.4);margin-bottom:2px}',
+            '.bp-secondary-line.bp-reward{color:rgba(255,255,255,.65)}',
+            '.bp-age{margin-top:auto;font:9px/1 "DM Mono",monospace;color:var(--text-tertiary);text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+            '.bp-pending-marker{font:700 9px/1 "DM Mono",monospace;color:rgba(var(--zone-rgb), .85);letter-spacing:.12em;margin-bottom:4px}',
+            '.bp-cell-pending.is-next-bright{--zone-fill-hi:.65;--zone-fill-lo:.35;--zone-glow:.15}',
+            '.bp-cell-pending.is-far{opacity:.78}',
 
             /* Tracker overlay */
             '.bp-overlay{position:absolute;inset:0;overflow:visible;pointer-events:none}',
@@ -352,18 +284,6 @@
 
             /* Sticky host so parade stays visible while scrolling a tx/block detail */
             '.bp-host{position:sticky;top:var(--nav-height,60px);z-index:30;background:var(--surface-0);padding:8px 12px 10px;margin:0 -12px 12px;border-bottom:1px solid var(--border-subtle)}',
-
-            /* Tx-count meta (replaces weight %) */
-            '.bp-tx-count{display:flex;align-items:baseline;gap:4px;font-family:"DM Mono",monospace}',
-            '.bp-tx-num{font-size:14px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums}',
-            '.bp-tx-lbl{font-size:9px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase}',
-
-            /* Tier tint on height label — at-a-glance activity */
-            '.bp-block.tier-quiet .bp-height{color:rgba(140,88,255,.9)}',
-            '.bp-block.tier-normal .bp-height{color:rgba(74,158,255,.95)}',
-            '.bp-block.tier-active .bp-height{color:var(--gold)}',
-            '.bp-block.tier-busy .bp-height{color:var(--xmr)}',
-            '.bp-block.tier-congested .bp-height{color:var(--red)}',
 
             /* is-confirming mirrors the default blue tracking color (same as base) */
 
@@ -449,22 +369,29 @@
         if (clr) clr.addEventListener('click', function () { self.clearTracked(); });
     };
 
-    BlockParade.prototype._makeConfirmedBlock = function (b, isNew) {
+    BlockParade.prototype._makeConfirmedBlock = function (b, isNew, indexInBlocks) {
+        var zone = zoneForConfirmedIndex(indexInBlocks);
         var cell = document.createElement('div');
-        cell.className = 'bp-cell bp-cell-confirmed';
+        cell.className = 'bp-cell bp-cell-confirmed zone-' + zone + (isNew ? ' bp-cell-new' : '');
         cell.setAttribute('data-height', b.height);
-        var tier = tierForTxCount(b.tx_count);
-        var blockClass = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
+        cell.dataset.zone = zone;
+
+        var weightKb = b.block_weight ? (b.block_weight / 1024).toFixed(1) + ' KB' : '—';
+        var rewardXmr = b.reward != null ? (Number(b.reward) / 1e12).toFixed(2) + ' XMR' : '—';
+        var fillH = fillHeightForTxCount(b.tx_count);
+
         cell.innerHTML =
             '<div class="bp-height-above">#' + Number(b.height).toLocaleString() + '</div>' +
-            '<div class="' + blockClass + '">' +
-              '<div class="bp-fee-median">' + fmtFeeMedian(b) + '</div>' +
-              '<div class="bp-fee-range">' + fmtFeeRange(b) + '</div>' +
-              '<div class="bp-fees-total">' + fmtXmrFees(b.total_fees) + ' XMR</div>' +
-              '<div class="bp-tx-count-big">' + (Number(b.tx_count) || 0).toLocaleString() + '<span>TXS</span></div>' +
-              '<div class="bp-age">' + fmtAgo(b.timestamp) + '</div>' +
-            '</div>' +
-            '<div class="bp-pool-row">' + renderPoolBadge(b.pool_name) + '</div>';
+            '<div class="bp-block is-confirmed" role="button" tabindex="0">' +
+              '<div class="bp-fill-area"><div class="bp-fill-bar" style="height:' + fillH + '%"></div></div>' +
+              '<div class="bp-content">' +
+                '<div class="bp-tx-count-big">' + (b.tx_count || 0).toLocaleString() + ' <span>txs</span></div>' +
+                '<div class="bp-secondary-line bp-size">' + weightKb + '</div>' +
+                '<div class="bp-secondary-line bp-reward">' + rewardXmr + '</div>' +
+                '<div class="bp-age">' + fmtAgo(b.timestamp) + '</div>' +
+              '</div>' +
+            '</div>';
+
         var self = this;
         cell.querySelector('.bp-block').addEventListener('click', function () {
             if (self.onBlockClick) self.onBlockClick(String(b.height));
@@ -472,55 +399,82 @@
         return cell;
     };
 
-    /* Update a persistent confirmed-cell node in place. Age ticks each
-       refresh; tier class can shift if tx_count is updated. */
-    BlockParade.prototype._updateConfirmedBlock = function (cell, b) {
-        var age = cell.querySelector('.bp-age');
-        if (age) age.textContent = fmtAgo(b.timestamp);
-
-        var inner = cell.querySelector('.bp-block');
-        if (inner) {
-            var tier = tierForTxCount(b.tx_count);
-            inner.classList.remove('tier-quiet', 'tier-normal', 'tier-active', 'tier-busy', 'tier-congested');
-            inner.classList.add('tier-' + tier);
+    /* Update a persistent confirmed-cell node in place. Compare-then-set
+       to avoid redundant DOM mutations on the steady-state refresh. */
+    BlockParade.prototype._updateConfirmedBlock = function (cellNode, b, indexInBlocks) {
+        var nextZone = zoneForConfirmedIndex(indexInBlocks);
+        if (cellNode.dataset.zone !== nextZone) {
+            cellNode.classList.remove('zone-confirming', 'zone-unlocked');
+            cellNode.classList.add('zone-' + nextZone);
+            cellNode.dataset.zone = nextZone;
+        }
+        var fill = cellNode.querySelector('.bp-fill-bar');
+        if (fill) {
+            var newH = fillHeightForTxCount(b.tx_count) + '%';
+            if (fill.style.height !== newH) fill.style.height = newH;
+        }
+        var age = cellNode.querySelector('.bp-age');
+        if (age) {
+            var newAge = fmtAgo(b.timestamp);
+            if (age.textContent !== newAge) age.textContent = newAge;
         }
     };
 
     BlockParade.prototype._makePendingBlock = function (opts) {
         var cell = document.createElement('div');
-        cell.className = 'bp-cell bp-cell-pending';
-        var heightStr = (typeof opts.height === 'number')
-            ? '~#' + Number(opts.height).toLocaleString()
-            : '~#' + opts.height;
-        cell.setAttribute('data-height', opts.height);
-        var isNext = opts.isNext === true;
-        var brightFar = isNext ? ' is-next-bright' : ' is-far';
-        var blockClass = 'bp-block is-pending tier-' + opts.tier + brightFar;
-        var feeMedianHtml  = opts.feeMedian != null ? fmtFeeMedian(opts.feeMedian) : '~0 pcn/B';
-        var feeRangeHtml   = opts.feeRange != null  ? fmtFeeRange(opts.feeRange)  : '—';
-        var feesTotalHtml  = opts.totalFees != null ? fmtXmrFees(opts.totalFees)  : '—';
-        var txCountHtml    = (opts.txCount != null)
-            ? (Number(opts.txCount) || 0).toLocaleString()
-            : '—';
-        var poolRowHtml = isNext
-            ? '<span class="bp-pool-name">⟳ awaiting</span>'
-            : '<span class="bp-pool-name"></span>';
+        var fillH = opts.txCount != null ? fillHeightForTxCount(opts.txCount) : 30;
+        var sizeStr = opts.weight != null ? (opts.weight / 1024).toFixed(1) + ' KB' : '—';
 
         cell.innerHTML =
-            '<div class="bp-height-above">' + heightStr + '</div>' +
-            '<div class="' + blockClass + '">' +
-              '<div class="bp-fee-median">' + feeMedianHtml + '</div>' +
-              '<div class="bp-fee-range">' + feeRangeHtml + '</div>' +
-              '<div class="bp-fees-total">' + feesTotalHtml + ' XMR</div>' +
-              '<div class="bp-tx-count-big">' + txCountHtml + '<span>TXS</span></div>' +
-              '<div class="bp-age">' + (opts.eta || '') + '</div>' +
-            '</div>' +
-            '<div class="bp-pool-row">' + poolRowHtml + '</div>';
+            '<div class="bp-height-above">~#' + Number(opts.height).toLocaleString() + '</div>' +
+            '<div class="bp-block is-pending' + (opts.isNext ? ' is-pending-next' : ' is-far') + '">' +
+              '<div class="bp-fill-area"><div class="bp-fill-bar" style="height:' + fillH + '%"></div></div>' +
+              '<div class="bp-content">' +
+                '<div class="bp-pending-marker">' + (opts.isNext ? '⟳ NEXT' : '⟳ QUEUED') + '</div>' +
+                '<div class="bp-tx-count-big">' + (opts.txCount != null ? Number(opts.txCount).toLocaleString() : '—') + ' <span>txs</span></div>' +
+                '<div class="bp-secondary-line bp-size">' + sizeStr + '</div>' +
+                '<div class="bp-age">' + (opts.eta || '') + '</div>' +
+              '</div>' +
+            '</div>';
+
+        cell.className = 'bp-cell bp-cell-pending zone-pending' + (opts.isNext ? ' is-next-bright' : ' is-far');
+        cell.dataset.zone = 'pending';
+        cell.setAttribute('data-height', opts.height);
         return cell;
     };
 
     BlockParade.prototype.render = function () {
         var self = this;
+
+        var digest = '';
+        var bs = this.blocks || [];
+        digest += bs.length + ':';
+        digest += (bs[0] ? bs[0].height : 0) + ':';
+        for (var di = 0; di < bs.length; di++) {
+            digest += (bs[di].height || 0) + ',' + (bs[di].tx_count || 0) + ';';
+        }
+        digest += '|tracked=' + (this.trackedTxid || '') + ':' + (this.trackedBlock || '');
+        digest += '|hl=' + (this._highlightedBlock || '');
+        digest += '|status=' + (this.trackedStatus || '');
+
+        var fullRenderNeeded = (digest !== this._renderDigest);
+        this._renderDigest = digest;
+
+        if (!fullRenderNeeded) {
+            if (this._confirmedNodes) {
+                this.blocks.forEach(function (b) {
+                    var n = self._confirmedNodes[b.height];
+                    if (!n) return;
+                    var ageEl = n.querySelector('.bp-age');
+                    if (ageEl) {
+                        var na = fmtAgo(b.timestamp);
+                        if (ageEl.textContent !== na) ageEl.textContent = na;
+                    }
+                });
+            }
+            return;
+        }
+
         this._renderStatusBar();
 
         var pendingGroup   = this.container.querySelector('.bp-pending-group');
@@ -571,11 +525,6 @@
         pendingGroup.replaceChildren(pendingFrag);
 
         /* ── Confirmed group: true keyed DOM diff ───────────────── */
-        /* Compute tx-count scale. Floor at 20 so a quiet chain doesn't
-           render every block as 100% full. */
-        var txCounts = this.blocks.map(function (b) { return b.tx_count || 0; });
-        this._txScale = { max: Math.max(20, Math.max.apply(null, txCounts.length ? txCounts : [20])) };
-
         var wanted = Object.create(null);
         this.blocks.forEach(function (b) { wanted[b.height] = true; });
 
@@ -595,26 +544,16 @@
         this.blocks.forEach(function (b, idx) {
             var node = self._confirmedNodes[b.height];
             if (!node) {
-                node = self._makeConfirmedBlock(b, true);
+                node = self._makeConfirmedBlock(b, true, idx);
                 self._confirmedNodes[b.height] = node;
             } else {
-                self._updateConfirmedBlock(node, b);
+                self._updateConfirmedBlock(node, b, idx);
             }
             var currentAtIdx = confirmedGroup.children[idx];
             if (currentAtIdx !== node) {
                 confirmedGroup.insertBefore(node, currentAtIdx || null);
             }
         });
-
-        /* Strip .bp-block-new after animation completes so re-renders don't
-           re-trigger. The class lives on the inner .bp-block (the cell is
-           the keyed-diff node). */
-        setTimeout(function () {
-            Object.keys(self._confirmedNodes).forEach(function (h) {
-                var inner = self._confirmedNodes[h].querySelector('.bp-block');
-                if (inner) inner.classList.remove('bp-block-new');
-            });
-        }, 450);
 
         requestAnimationFrame(function () { self._positionOverlays(); });
     };

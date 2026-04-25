@@ -624,24 +624,6 @@
   font: 9px/1.2 "DM Mono", monospace;
   color: var(--text-tertiary); letter-spacing: 1px; text-transform: uppercase;
 }
-.exp-tx-live-progress {
-  position: relative; height: 8px; background: var(--surface-2);
-  border-radius: 4px; overflow: hidden; margin-bottom: 12px;
-}
-.exp-tx-live-progress-fill {
-  position: absolute; top: 0; left: 0; bottom: 0;
-  background: linear-gradient(90deg, var(--blue), var(--grn));
-  transition: width .8s ease-out;
-}
-.exp-tx-live-progress-ticks {
-  position: absolute; inset: 0;
-  display: grid; grid-template-columns: repeat(10, 1fr); gap: 1px;
-  pointer-events: none;
-}
-.exp-tx-live-progress-ticks::before,
-.exp-tx-live-progress-ticks::after {
-  content: ''; border-left: 1px solid rgba(0,0,0,.4);
-}
 .exp-tx-live-footer {
   display: flex; justify-content: space-between; align-items: center;
   font: 10px/1 "DM Mono", monospace; color: var(--text-tertiary);
@@ -718,6 +700,118 @@
 .exp-tx-chip-on  { background: rgba(0,201,122,.15); color: var(--grn); }
 .exp-tx-chip-off { background: rgba(120,120,120,.18); color: var(--text-muted); text-decoration: line-through; }
 /* --- /PROMPT-E --- */
+
+/* --- PROMPT-F: stepper + privacy pill --- */
+
+/* 10-dot horizontal confirmation stepper */
+.exp-tx-stepper {
+    display: flex; align-items: center; gap: 0;
+    margin: 16px 0 8px;
+    padding: 4px 0;
+}
+.exp-stepper-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 1.5px solid var(--border-default);
+    flex-shrink: 0;
+    box-sizing: border-box;
+    transition: background .35s ease, border-color .35s ease, box-shadow .35s ease, transform .25s ease;
+}
+.exp-stepper-dot.is-filled {
+    background: var(--blue);
+    border-color: var(--blue);
+    box-shadow: 0 0 8px rgba(74, 158, 255, .55);
+}
+.exp-stepper-dot.is-current {
+    background: var(--surface-0);
+    border-color: var(--blue);
+    border-width: 2px;
+    animation: stepper-pulse 1.6s ease-in-out infinite;
+}
+.exp-stepper-line {
+    flex: 1;
+    height: 2px;
+    background: var(--surface-2);
+    transition: background .35s ease;
+    margin: 0 -1px;
+    min-width: 6px;
+}
+.exp-stepper-line.is-filled { background: var(--blue); }
+.exp-tx-stepper.is-fully-unlocked .exp-stepper-dot {
+    background: var(--grn);
+    border-color: var(--grn);
+    box-shadow: 0 0 10px rgba(0, 201, 122, .55);
+}
+.exp-tx-stepper.is-fully-unlocked .exp-stepper-line { background: var(--grn); }
+@keyframes stepper-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(74, 158, 255, .55); }
+    50%      { box-shadow: 0 0 0 5px rgba(74, 158, 255, 0); }
+}
+.exp-tx-stepper-caption {
+    font: 11px/1.2 "DM Mono", monospace;
+    color: var(--text-secondary);
+    letter-spacing: .04em;
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+/* Collapsed privacy pill */
+.exp-privacy-pill {
+    background: rgba(0, 201, 122, .06);
+    border: 1px solid rgba(0, 201, 122, .25);
+    border-radius: 6px;
+    margin: 14px 0;
+    overflow: hidden;
+    transition: background .15s, border-color .15s;
+}
+.exp-privacy-toggle {
+    width: 100%;
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font: 11px/1.2 "DM Mono", monospace;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s;
+}
+.exp-privacy-toggle:hover { background: rgba(0, 201, 122, .04); }
+.exp-privacy-icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--grn);
+    color: var(--surface-0);
+    font-size: 12px; font-weight: 700;
+    flex-shrink: 0;
+}
+.exp-privacy-label { color: var(--grn); letter-spacing: .04em; flex-shrink: 0; }
+.exp-privacy-label strong { font-weight: 700; }
+.exp-privacy-summary {
+    flex: 1; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text-secondary);
+    font-size: 10px;
+    letter-spacing: .04em;
+}
+.exp-privacy-chevron {
+    color: var(--text-tertiary);
+    transition: transform .25s ease;
+    flex-shrink: 0;
+}
+.exp-privacy-pill[data-expanded="true"] .exp-privacy-chevron {
+    transform: rotate(180deg);
+}
+.exp-privacy-body {
+    padding: 14px;
+    border-top: 1px solid rgba(0, 201, 122, .18);
+    background: var(--surface-0);
+}
+@media (max-width: 720px) {
+    .exp-privacy-summary { display: none; }
+}
 
 @media(max-width:700px){
     .exp-tx-grid{grid-template-columns:1fr}
