@@ -1442,3 +1442,574 @@ canvas.constellation { position: absolute; top: 0; left: 0; width: 100%; height:
 @media (max-width: 768px) {
     .related-list { grid-template-columns: 1fr; }
 }
+
+/* ============================================================ */
+/* QUOTES PAGE — curated voices grid                            */
+/* ============================================================ */
+
+.quotes-page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+}
+.quotes-page .lede {
+    font-family: var(--font-mono);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 680px;
+    margin: 16px 0 48px;
+}
+.quotes-page h1 {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 32px 0 8px;
+    letter-spacing: -0.5px;
+}
+.quotes-page h2 {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--xmr);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 48px 0 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.quotes-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 24px;
+    margin: 32px 0;
+}
+.quote-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    padding: 32px 28px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+.quote-card.is-key {
+    border-color: rgba(255, 215, 0, 0.25);
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.025), var(--surface-1));
+}
+.quote-card::before {
+    content: "\201C";
+    position: absolute;
+    top: -8px;
+    left: 12px;
+    font-family: var(--font-headline);
+    font-size: 96px;
+    color: var(--xmr);
+    opacity: 0.1;
+    line-height: 1;
+    pointer-events: none;
+}
+.quote-card .key-marker {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--gold);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    z-index: 2;
+}
+.quote-card .quote-text {
+    font-family: var(--font-headline);
+    font-style: italic;
+    font-weight: 700;
+    font-size: 19px;
+    line-height: 1.5;
+    color: var(--text-primary);
+    margin: 0 0 24px;
+    position: relative;
+    z-index: 1;
+}
+.quote-card .quote-attribution {
+    margin-top: auto;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-subtle);
+}
+.quote-card .quote-author {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--xmr);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin: 0;
+}
+.quote-card .quote-context {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+    margin: 4px 0 0;
+}
+.quote-card .quote-source {
+    display: inline-block;
+    margin-top: 8px;
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+.quote-card .quote-source a {
+    color: var(--xmr);
+    text-decoration: none;
+}
+.quote-card .quote-source a:hover { text-decoration: underline; }
+
+/* ============================================================ */
+/* SECRETS PAGE — vignette list                                 */
+/* ============================================================ */
+
+.secrets-page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+}
+.secrets-page h1 {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 32px 0 8px;
+    letter-spacing: -0.5px;
+}
+.secrets-page .lede {
+    font-family: var(--font-mono);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 16px 0 48px;
+    max-width: 680px;
+}
+.vignettes-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    counter-reset: vignette;
+}
+.vignette {
+    counter-increment: vignette;
+    padding: 32px 0 32px 56px;
+    border-bottom: 1px solid var(--border-subtle);
+    position: relative;
+}
+.vignette::before {
+    content: counter(vignette, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 36px;
+    font-family: var(--font-data);
+    font-size: 13px;
+    color: var(--xmr);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+.vignette h2 {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 19px;
+    line-height: 1.3;
+    margin: 0 0 12px;
+    color: var(--text-primary);
+}
+.vignette .vignette-meta {
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin: 0 0 18px;
+    letter-spacing: 0.04em;
+}
+.vignette .vignette-meta a { color: var(--xmr); text-decoration: none; }
+.vignette .vignette-meta a:hover { text-decoration: underline; }
+.vignette p {
+    font-family: var(--font-mono);
+    font-size: 15px;
+    line-height: 1.65;
+    color: var(--text-primary);
+    margin: 0 0 14px;
+    max-width: 640px;
+}
+.vignette .vignette-source {
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 8px;
+}
+.vignette .vignette-source a { color: var(--xmr); }
+.vignette:last-child { border-bottom: 0; }
+
+/* Dialogue posts inside vignettes (secrets page only) */
+.vignette .dialogue-post {
+    background: var(--surface-1);
+    border-left: 3px solid var(--border-default);
+    border-radius: 0 6px 6px 0;
+    padding: 14px 18px;
+    margin: 0 0 12px;
+    max-width: 640px;
+}
+.vignette .dialogue-post.is-satoshi {
+    border-left-color: var(--gold);
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.04), var(--surface-1));
+}
+.vignette .dialogue-post .post-author {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+.vignette .dialogue-post.is-satoshi .post-author { color: var(--gold); }
+.vignette .dialogue-post .post-date {
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-left: 10px;
+}
+.vignette .dialogue-post p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 8px 0 0;
+}
+.vignette .dialogue-post p:first-of-type { margin-top: 8px; }
+.vignette .vignette-insight {
+    background: var(--surface-05);
+    border: 1px solid rgba(255, 102, 0, 0.18);
+    border-radius: 6px;
+    padding: 16px 18px;
+    margin: 14px 0;
+    max-width: 640px;
+}
+.vignette .insight-label {
+    font-family: var(--font-data);
+    font-size: 10px;
+    color: var(--xmr);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+}
+.vignette .vignette-insight blockquote {
+    font-family: var(--font-headline);
+    font-style: italic;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+}
+
+/* "Direct Line to Monero" connection block (secrets page) */
+.secrets-page .connection-block {
+    margin: 56px 0 32px;
+    padding: 28px 24px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+}
+.secrets-page .connection-block h2 {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-align: center;
+    margin: 0 0 18px;
+    letter-spacing: 0.04em;
+}
+.secrets-page .connection-row {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.secrets-page .connection-row:last-child { border: 0; }
+.secrets-page .connection-label {
+    font-family: var(--font-data);
+    font-size: 9px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 4px;
+}
+.secrets-page .connection-text {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+}
+.secrets-page .connection-sat { color: var(--gold); text-align: right; }
+.secrets-page .connection-xmr { color: var(--xmr); }
+.secrets-page .connection-arrow {
+    font-family: var(--font-data);
+    font-size: 18px;
+    color: var(--xmr);
+    text-align: center;
+}
+.secrets-page .secrets-summary {
+    margin: 32px 0;
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(255, 102, 0, 0.04), rgba(0, 204, 136, 0.02));
+    border: 1px solid rgba(255, 102, 0, 0.15);
+    border-radius: 8px;
+}
+.secrets-page .secrets-summary h2 {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 14px;
+    color: var(--text-primary);
+}
+.secrets-page .secrets-summary ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.secrets-page .secrets-summary li {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    padding: 6px 0 6px 22px;
+    position: relative;
+}
+.secrets-page .secrets-summary li::before {
+    content: '\2192';
+    position: absolute;
+    left: 0;
+    color: var(--xmr);
+    font-weight: 700;
+}
+
+/* ============================================================ */
+/* TIMELINE PAGE — chronological event spine                    */
+/* ============================================================ */
+
+.timeline-page {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+}
+.timeline-page h1 {
+    font-family: var(--font-mono);
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 32px 0 8px;
+    letter-spacing: -0.5px;
+}
+.timeline-page .lede {
+    font-family: var(--font-mono);
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    margin: 16px 0 32px;
+    max-width: 680px;
+}
+.timeline-page .timeline-stats {
+    display: flex;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin: 0 0 24px;
+    padding: 16px 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: 1px solid var(--border-subtle);
+}
+.timeline-page .timeline-stat-value {
+    font-family: var(--font-data);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--xmr);
+    line-height: 1;
+}
+.timeline-page .timeline-stat-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 4px;
+}
+.timeline-page .timeline-legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    margin: 0 0 32px;
+}
+.timeline-page .timeline-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-tertiary);
+}
+.timeline-page .timeline-legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+.timeline-page .legend-btc { background: #F7931A; }
+.timeline-page .legend-xmr { background: var(--xmr); }
+.timeline-page .legend-crossover { background: #00D4FF; }
+.timeline-page .legend-regulatory { background: #B44DFF; }
+.timeline-spine {
+    list-style: none;
+    padding: 0;
+    margin: 32px 0;
+    position: relative;
+}
+.timeline-spine::before {
+    content: '';
+    position: absolute;
+    left: 124px;
+    top: 8px;
+    bottom: 8px;
+    width: 2px;
+    background: var(--xmr);
+    opacity: 0.35;
+}
+.timeline-event {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 40px;
+    padding: 20px 0;
+    position: relative;
+}
+.timeline-event::before {
+    content: '';
+    position: absolute;
+    left: 119px;
+    top: 28px;
+    width: 12px;
+    height: 12px;
+    background: var(--xmr);
+    border: 2px solid var(--surface-0);
+    border-radius: 50%;
+    z-index: 1;
+}
+.timeline-event[data-type="btc"]::before { background: #F7931A; }
+.timeline-event[data-type="xmr"]::before { background: var(--xmr); }
+.timeline-event[data-type="crossover"]::before { background: #00D4FF; }
+.timeline-event[data-type="regulatory"]::before { background: #B44DFF; }
+.timeline-event-date {
+    font-family: var(--font-data);
+    font-size: 13px;
+    color: var(--xmr);
+    font-weight: 700;
+    padding-top: 4px;
+    text-align: right;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.timeline-event[data-type="btc"] .timeline-event-date { color: #F7931A; }
+.timeline-event[data-type="crossover"] .timeline-event-date { color: #00D4FF; }
+.timeline-event[data-type="regulatory"] .timeline-event-date { color: #B44DFF; }
+.timeline-event-content h3 {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    color: var(--text-primary);
+    letter-spacing: 0;
+    text-transform: none;
+}
+.timeline-event-content p {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    margin: 0 0 8px;
+    max-width: 600px;
+}
+.timeline-event-content p.event-summary {
+    color: var(--text-primary);
+    font-weight: 500;
+    font-size: 14px;
+}
+.timeline-event-content .event-tag {
+    display: inline-block;
+    font-family: var(--font-data);
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    padding: 2px 8px;
+    border-radius: 3px;
+    margin-top: 4px;
+}
+.timeline-event[data-type="btc"] .event-tag { background: rgba(247, 147, 26, 0.12); color: #F7931A; }
+.timeline-event[data-type="xmr"] .event-tag { background: rgba(255, 102, 0, 0.12); color: var(--xmr); }
+.timeline-event[data-type="crossover"] .event-tag { background: rgba(0, 212, 255, 0.12); color: #00D4FF; }
+.timeline-event[data-type="regulatory"] .event-tag { background: rgba(180, 77, 255, 0.12); color: #B44DFF; }
+.timeline-event-content .event-source {
+    font-family: var(--font-data);
+    font-size: 11px;
+    color: var(--text-tertiary);
+    display: inline-block;
+    margin-top: 4px;
+}
+.timeline-event-content .event-source a {
+    color: var(--xmr);
+    text-decoration: none;
+}
+.timeline-event-content .event-source a:hover { text-decoration: underline; }
+
+/* Era separators */
+.timeline-era {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    gap: 40px;
+    padding: 32px 0 16px;
+    margin: 24px 0 16px;
+    border-top: 1px solid var(--border-subtle);
+}
+.timeline-era-label {
+    font-family: var(--font-data);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-tertiary);
+    text-align: right;
+    padding-top: 4px;
+}
+.timeline-era-name {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--xmr);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+/* Mobile adjustments for all three patterns */
+@media (max-width: 720px) {
+    .quotes-grid { grid-template-columns: 1fr; }
+    .quote-card { padding: 24px 20px; }
+    .quote-card .quote-text { font-size: 17px; }
+
+    .vignette { padding-left: 40px; }
+    .vignette::before { font-size: 11px; }
+    .vignette .dialogue-post { padding: 12px 14px; }
+
+    .timeline-spine::before { left: 24px; }
+    .timeline-event { grid-template-columns: 1fr; gap: 12px; padding-left: 56px; }
+    .timeline-event::before { left: 19px; top: 24px; }
+    .timeline-event-date { text-align: left; padding-top: 0; padding-left: 0; }
+    .timeline-era { grid-template-columns: 1fr; padding-left: 56px; }
+    .timeline-era-label { text-align: left; }
+
+    .secrets-page .connection-row { grid-template-columns: 1fr; gap: 6px; }
+    .secrets-page .connection-sat { text-align: left; }
+    .secrets-page .connection-arrow { transform: rotate(90deg); text-align: left; }
+}
