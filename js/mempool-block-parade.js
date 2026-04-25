@@ -101,6 +101,7 @@
         this.trackedBlock  = null;
         this.trackedConfs  = 0;
         this.trackedStatus = 'none';
+        this._lastArrowState = null;
         this.render();
     };
 
@@ -348,7 +349,7 @@
 
             /* Tracker overlay */
             '.bp-overlay{position:absolute;inset:0;overflow:visible;pointer-events:none}',
-            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform .55s cubic-bezier(.2,.8,.2,1)}',
+            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform .9s cubic-bezier(.32,.72,.25,1)}',
             '.bp-arrow[hidden]{display:none}',
             '.bp-arrow.is-instant{transition:none}',
             '.bp-arrow-line{width:1px;height:20px;background:repeating-linear-gradient(180deg,var(--blue) 0 2px,transparent 2px 4px)}',
@@ -364,7 +365,7 @@
             '.bp-arrow.is-highlight .bp-arrow-tri{border-bottom-color:var(--xmr);filter:drop-shadow(0 0 4px rgba(255,102,0,.7))}',
             '.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);border-color:var(--xmr);box-shadow:0 0 10px rgba(255,102,0,.45)}',
 
-            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform .55s cubic-bezier(.2,.8,.2,1);pointer-events:none;width:0}',
+            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform .9s cubic-bezier(.32,.72,.25,1);pointer-events:none;width:0}',
             '.bp-dotline[hidden]{display:none}',
             '.bp-dotline.is-instant{transition:none}',
             '.bp-dotline-label{position:absolute;top:-22px;left:-28px;font:700 9px/1 "DM Mono",monospace;color:var(--gold);letter-spacing:.12em;white-space:nowrap;background:var(--surface-0);padding:3px 8px;border:1px solid rgba(255,209,0,.4);border-radius:3px;text-transform:uppercase;writing-mode:horizontal-tb;transform:none}',
@@ -394,7 +395,7 @@
             /* is-confirming mirrors the default blue tracking color (same as base) */
 
             /* Off-range hint — tracked/highlighted block not in visible range */
-            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform .55s cubic-bezier(.2,.8,.2,1)}',
+            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform .9s cubic-bezier(.32,.72,.25,1)}',
             '.bp-offscreen-hint[hidden]{display:none}',
             '.bp-offscreen-hint.is-instant{transition:none}',
             '.bp-offscreen-hint.is-visible{color:var(--xmr);border-color:rgba(255,102,0,.3)}',
@@ -433,7 +434,13 @@
             }
 
             self.topHeight = newTip;
-            self.blocks    = blocks.slice(0, MAX_CONFIRMED);
+            /* Defensive sort: API should return newest-first, but in partial-failure
+               cases (one upstream node returns 22 blocks at heights N..N-21, another
+               returns 22 at N-1..N-22, and the cascade response is mixed) the array
+               could surface out of order. Sort explicitly so this.blocks[0] is always
+               the highest height. */
+            self.blocks    = blocks.slice(0, MAX_CONFIRMED)
+                .sort(function (a, b) { return Number(b.height) - Number(a.height); });
             self.pending   = pending;
             self._lastRefreshAt = Date.now();   /* used by debug logs */
 
@@ -610,7 +617,20 @@
         return cell;
     };
 
+    /* Public entry point: coalesces multiple render() calls within a single
+       animation frame into one actual render. Prevents thrash when refresh +
+       setTracked + scroll all fire within ~16ms of each other. */
     BlockParade.prototype.render = function () {
+        if (this._renderQueued) return;
+        this._renderQueued = true;
+        var self = this;
+        requestAnimationFrame(function () {
+            self._renderQueued = false;
+            self._renderImpl();
+        });
+    };
+
+    BlockParade.prototype._renderImpl = function () {
         var self = this;
 
         var digest = '';
@@ -644,9 +664,33 @@
 
         this._renderStatusBar();
 
-        /* FLIP step 1 (First): record current bounding rects of all confirmed blocks. */
+        /* FLIP step 1 (First): record current bounding rects of all confirmed blocks.
+
+           CRITICAL — Settle any in-flight Play transforms BEFORE measuring. If a
+           previous render's .Play transition is still running (the user can trigger
+           a re-render by scrolling, hovering, or via the 15s refresh interval
+           landing during a previous transition), getBoundingClientRect() returns
+           a transformed position that's a lie — somewhere between old and new
+           layout. Computing dx against that lie produces visibly chaotic motion.
+
+           Solution: clear all transforms instantly (transition:none + transform:'')
+           before capturing firstRects. This snaps any in-flight blocks to their
+           true layout positions, so we measure truth. */
         var firstRects = Object.create(null);
         if (this._confirmedNodes) {
+            /* 1a. Settle. */
+            Object.keys(this._confirmedNodes).forEach(function (h) {
+                var node = self._confirmedNodes[h];
+                if (node && node.isConnected) {
+                    node.style.transition = 'none';
+                    node.style.transform = '';
+                }
+            });
+            /* 1b. Force a synchronous reflow so the cleared transform takes effect
+                   before getBoundingClientRect runs. Without this the browser may
+                   batch the style mutation with subsequent reads. */
+            void this.container.offsetWidth;
+            /* 1c. NOW capture truthful layout positions. */
             Object.keys(this._confirmedNodes).forEach(function (h) {
                 var node = self._confirmedNodes[h];
                 if (node && node.isConnected) {
@@ -783,7 +827,7 @@
                   block back to identity. */
             requestAnimationFrame(function () {
                 for (var i = 0; i < moving.length; i++) {
-                    moving[i].style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
+                    moving[i].style.transition = 'transform .9s cubic-bezier(.32,.72,.25,1)';
                     moving[i].style.transform = 'translate3d(0, 0, 0)';
                 }
             });
@@ -821,23 +865,46 @@
         }
 
         arrow.classList.remove('is-pending', 'is-confirming', 'is-confirmed', 'is-highlight');
-        if (!targetEl || !mode) {
+        if (!mode) {
+            /* No tracking active at all — hide the arrow. */
             arrow.hidden = true;
+            self._lastArrowState = null;
+        } else if (!targetEl) {
+            /* Tracking IS active but the cell isn't queryable this tick — could
+               be a transient race (cell was just re-keyed) or the tracked block
+               genuinely fell off MAX_CONFIRMED. The off-range branch below will
+               handle the latter case explicitly. For the transient race, KEEP the
+               arrow visible at its last known position so it doesn't flicker. */
+            if (self._lastArrowState) {
+                arrow.hidden = false;
+                arrow.classList.add('is-' + self._lastArrowState.mode);
+                arrow.style.transform = self._lastArrowState.transform;
+                var prevLabel = arrow.querySelector('.bp-arrow-label');
+                if (prevLabel) prevLabel.textContent = self._lastArrowState.label;
+            } else {
+                arrow.hidden = true;
+            }
         } else {
             arrow.hidden = false;
             arrow.classList.add('is-' + mode);
             var r = targetEl.getBoundingClientRect();
             var ax = (r.left + r.width / 2 - outerRect.left);
             var ay = (r.bottom - outerRect.top + 2);
-            arrow.style.transform = 'translate3d(' + ax + 'px, ' + ay + 'px, 0) translateX(-50%)';
+            var transformStr = 'translate3d(' + ax + 'px, ' + ay + 'px, 0) translateX(-50%)';
+            arrow.style.transform = transformStr;
 
             var label = arrow.querySelector('.bp-arrow-label');
+            var labelText = '';
             if (label) {
-                if      (mode === 'pending')    label.textContent = '⟳ UNCONF';
-                else if (mode === 'confirmed')  label.textContent = '✓ 10/10';
-                else if (mode === 'confirming') label.textContent = this.trackedConfs + '/10';
-                else if (mode === 'highlight')  label.textContent = '#' + Number(this._highlightedBlock).toLocaleString();
+                if      (mode === 'pending')    labelText = '⟳ UNCONF';
+                else if (mode === 'confirmed')  labelText = '✓ 10/10';
+                else if (mode === 'confirming') labelText = this.trackedConfs + '/10';
+                else if (mode === 'highlight')  labelText = '#' + Number(this._highlightedBlock).toLocaleString();
+                label.textContent = labelText;
             }
+
+            /* Cache for next tick's persistence guard. */
+            self._lastArrowState = { mode: mode, transform: transformStr, label: labelText };
         }
 
         /* Position the 10-conf line at the boundary between block at index 8
