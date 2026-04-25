@@ -110,7 +110,18 @@
         if (!q) return;
 
         /* Clear any prior tracked TX overlays on a fresh search. */
-        if (window._blockParade) window._blockParade.clearTracked();
+        if (window._blockParade) {
+            window._blockParade.clearTracked();
+            if (typeof window._blockParade.clearHighlight === 'function') {
+                window._blockParade.clearHighlight();
+            }
+        }
+        if (txState.current && txState.current.txid) {
+            try {
+                var _ws = getSharedWs();
+                if (_ws && typeof _ws.untrack === 'function') _ws.untrack(txState.current.txid);
+            } catch (_) {}
+        }
         stopTxLive();
 
         showView('loading');
@@ -296,6 +307,14 @@
             window._blockParade.setTracked(tx.txid || tx.id || '', bh, tip);
         }
 
+        try {
+            var _ws = getSharedWs();
+            if (_ws && typeof _ws.track === 'function') {
+                _ws.track(tx.txid);
+                txState.tracking = true;
+            }
+        } catch (_) {}
+
         var node = el('exp-view-tx');
         if (!node) return;
 
@@ -310,13 +329,20 @@
                     (tx.block_height != null ? '<a data-exp-goto-block="' + esc(tx.block_height) + '">#' + esc(heightTxt) + '</a>' : '#' + esc(heightTxt)) +
                     (confsTxt ? '  ·  ' + esc(confsTxt) : '') +
                   '</span>' +
+                  '<button type="button" class="exp-tx-track-btn is-tracking" id="exp-tx-track">' +
+                    '<span class="exp-track-icon">🔔</span> TRACKING ' +
+                    '<span class="exp-track-toggle">✕ STOP</span>' +
+                  '</button>' +
                 '</div>';
         } else {
             var ageStr = tx.receive_time ? fmtAgo(tx.receive_time) : '—';
             bannerHtml =
                 '<div class="exp-tx-banner is-unconfirmed">' +
                   '<span>⏳ <b>UNCONFIRMED</b> — ' + esc(ageStr.replace(' ago', ' in mempool')) + '</span>' +
-                  '<button type="button" class="exp-tx-track-btn" id="exp-tx-track">🔔 TRACK TX</button>' +
+                  '<button type="button" class="exp-tx-track-btn is-tracking" id="exp-tx-track">' +
+                    '<span class="exp-track-icon">🔔</span> TRACKING ' +
+                    '<span class="exp-track-toggle">✕ STOP</span>' +
+                  '</button>' +
                 '</div>';
         }
 
@@ -494,6 +520,15 @@
 
         showView('tx');
         startTxLive(tx);
+
+        try {
+            var _parade = document.querySelector('#mp-panel-explorer .bp-host')
+                       || document.querySelector('#mp-panel-explorer .bp-outer')
+                       || document.getElementById('mp-panel-explorer');
+            if (_parade && typeof _parade.scrollIntoView === 'function') {
+                _parade.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (_) {}
     }
 
     /* ── Ring signature visualizer (Canvas 2D) ── */
@@ -671,8 +706,18 @@
         var back = root.querySelector('[data-exp-back-detail]');
         if (back) back.addEventListener('click', function () {
             // Back from tx → block (if we came from one) or recent.
-            if (window._blockParade) window._blockParade.clearTracked();
+            if (window._blockParade) {
+                window._blockParade.clearTracked();
+                if (typeof window._blockParade.clearHighlight === 'function') {
+                    window._blockParade.clearHighlight();
+                }
+            }
+            try {
+                var _ws = getSharedWs();
+                if (_ws && typeof _ws.untrack === 'function' && tx && tx.txid) _ws.untrack(tx.txid);
+            } catch (_) {}
             stopTxLive();
+            txState.tracking = false;
             if (blockState.current) showView('block');
             else showView('recent');
         });
@@ -683,16 +728,18 @@
             loadBlockView(gb.getAttribute('data-exp-goto-block'));
         });
 
-        // Track button (unconfirmed only).
         var track = el('exp-tx-track');
         if (track) {
             track.addEventListener('click', function () {
+                if (window._blockParade) window._blockParade.clearTracked();
                 var ws = getSharedWs();
-                if (!ws || !ws.track) { track.textContent = 'WS OFFLINE'; track.disabled = true; return; }
-                ws.track(tx.txid);
-                txState.tracking = true;
-                track.classList.add('is-tracking');
-                track.textContent = '🔔 TRACKING';
+                if (ws && typeof ws.untrack === 'function') {
+                    try { ws.untrack(tx.txid); } catch (_) {}
+                }
+                stopTxLive();
+                txState.tracking = false;
+                track.classList.remove('is-tracking');
+                track.innerHTML = '<span class="exp-track-icon">🔔</span> TRACKING STOPPED · SEARCH AGAIN TO RESUME';
                 track.disabled = true;
             });
         }
@@ -867,12 +914,34 @@
         wireExpandables(node);
         wireTxListPagination(block);
 
+        if (window._blockParade) {
+            window._blockParade.clearTracked();
+            if (typeof window._blockParade.highlightBlock === 'function' && block.height != null) {
+                window._blockParade.highlightBlock(block.height);
+            }
+        }
+        stopTxLive();
+
         showView('block');
+
+        try {
+            var _parade = document.querySelector('#mp-panel-explorer .bp-host')
+                       || document.querySelector('#mp-panel-explorer .bp-outer')
+                       || document.getElementById('mp-panel-explorer');
+            if (_parade && typeof _parade.scrollIntoView === 'function') {
+                _parade.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (_) {}
     }
 
     function wireBlockNav(root, block) {
         var back = root.querySelector('[data-exp-back-detail]');
-        if (back) back.addEventListener('click', function () { showView('recent'); });
+        if (back) back.addEventListener('click', function () {
+            if (window._blockParade && typeof window._blockParade.clearHighlight === 'function') {
+                window._blockParade.clearHighlight();
+            }
+            showView('recent');
+        });
 
         var prev = root.querySelector('[data-exp-nav-prev]');
         var next = root.querySelector('[data-exp-nav-next]');

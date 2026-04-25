@@ -8,7 +8,7 @@
     'use strict';
 
     var REFRESH_MS    = 15000;
-    var MAX_CONFIRMED = 10;
+    var MAX_CONFIRMED = 12;
     var PENDING_COUNT = 2;
     var CONF_REQ      = 10;
     var AVG_BLOCK_SEC = 120;   /* Monero ~2 min */
@@ -42,6 +42,22 @@
         return 'vhigh';
     }
 
+    function tierForTxCount(n) {
+        if (n < 15)  return 'quiet';
+        if (n < 40)  return 'normal';
+        if (n < 80)  return 'active';
+        if (n < 160) return 'busy';
+        return 'congested';
+    }
+    var TIER_GRADIENTS = {
+        quiet:     'linear-gradient(0deg, rgba(140,88,255,.55), rgba(140,88,255,.12))',
+        normal:    'linear-gradient(0deg, rgba(74,158,255,.65), rgba(74,158,255,.12))',
+        active:    'linear-gradient(0deg, rgba(255,209,0,.7),  rgba(255,209,0,.12))',
+        busy:      'linear-gradient(0deg, rgba(255,102,0,.8),  rgba(255,102,0,.15))',
+        congested: 'linear-gradient(0deg, rgba(255,68,85,.85), rgba(255,68,85,.18))'
+    };
+    function gradientForTier(t) { return TIER_GRADIENTS[t] || TIER_GRADIENTS.normal; }
+
     function BlockParade(container, onBlockClick) {
         this.container    = container;
         this.onBlockClick = onBlockClick || null;
@@ -58,6 +74,15 @@
         this.trackedBlock  = null;
         this.trackedConfs  = 0;
         this.trackedStatus = 'none';   /* none | pending | confirming | confirmed */
+
+        /* Highlight (block search nav — distinct from tx tracking) */
+        this._highlightedBlock = null;
+
+        /* Tx-count scale (Fix 3) — recomputed on every render */
+        this._txScale = { max: 20 };
+
+        /* Keyed-diff cache (Fix 4) — height → DOM node */
+        this._confirmedNodes = Object.create(null);
 
         this._inject();
         this.refresh();
@@ -85,6 +110,16 @@
         this.render();
     };
 
+    BlockParade.prototype.highlightBlock = function (h) {
+        this._highlightedBlock = h ? Number(h) : null;
+        this._positionOverlays();
+    };
+
+    BlockParade.prototype.clearHighlight = function () {
+        this._highlightedBlock = null;
+        this._positionOverlays();
+    };
+
     BlockParade.prototype.start = function () {
         var self = this;
         if (this._timer) return;
@@ -99,11 +134,16 @@
         this._injectCSS();
 
         var c = this.container;
+
+        /* Sticky host wrapper (Fix 1) */
+        var host = document.createElement('div');
+        host.className = 'bp-host';
+
         /* Status bar */
         var statusBar = document.createElement('div');
         statusBar.className = 'bp-status-bar';
         statusBar.hidden = true;
-        c.appendChild(statusBar);
+        host.appendChild(statusBar);
 
         /* Outer positioning context */
         var outer = document.createElement('div');
@@ -133,11 +173,13 @@
             '</div>' +
             '<div class="bp-dotline" hidden>' +
               '<span class="bp-dotline-label">10 CONF · UNLOCK</span>' +
-            '</div>';
+            '</div>' +
+            '<div class="bp-offscreen-hint" hidden></div>';
 
         outer.appendChild(wrap);
         outer.appendChild(overlay);
-        c.appendChild(outer);
+        host.appendChild(outer);
+        c.insertBefore(host, c.firstChild);
 
         var self = this;
         this._resizeHandler = function () {
@@ -221,7 +263,26 @@
             '.bp-conf-bar{height:4px;width:60px;background:var(--surface-2);border-radius:2px;overflow:hidden}',
             '.bp-conf-fill{height:100%;background:var(--blue);border-radius:2px;transition:width .4s ease-out}',
 
-            '@keyframes bp-pulse{from{opacity:.55}to{opacity:1}}'
+            '@keyframes bp-pulse{from{opacity:.55}to{opacity:1}}',
+
+            /* Sticky host (Fix 1) */
+            '.bp-host{position:sticky;top:52px;z-index:30;background:var(--surface-0);padding:8px 12px 10px;margin:0 -12px 12px;border-bottom:1px solid var(--border-subtle)}',
+
+            /* Tx-count tiers (Fix 3) */
+            '.bp-tx-count{display:flex;align-items:baseline;gap:4px;font-family:"DM Mono",monospace}',
+            '.bp-tx-num{font-size:14px;font-weight:700;color:var(--text-primary);font-variant-numeric:tabular-nums}',
+            '.bp-tx-lbl{font-size:9px;color:var(--text-muted);letter-spacing:.1em;text-transform:uppercase}',
+            '.bp-block.tier-quiet     .bp-height{color:rgba(140,88,255,.9)}',
+            '.bp-block.tier-normal    .bp-height{color:rgba(74,158,255,.95)}',
+            '.bp-block.tier-active    .bp-height{color:var(--gold)}',
+            '.bp-block.tier-busy      .bp-height{color:var(--xmr)}',
+            '.bp-block.tier-congested .bp-height{color:var(--red)}',
+
+            /* Highlight arrow + off-range hint (Fix 5) */
+            '.bp-arrow.is-highlight .bp-arrow-glyph,.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);text-shadow:0 0 8px rgba(255,102,0,.5)}',
+            '.bp-offscreen-hint{position:absolute;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none}',
+            '.bp-offscreen-hint[hidden]{display:none}',
+            '.bp-offscreen-hint.is-visible{color:var(--xmr);border-color:rgba(255,102,0,.3)}'
         ].join('');
         document.head.appendChild(style);
     };
@@ -299,33 +360,74 @@
     };
 
     BlockParade.prototype._makeConfirmedBlock = function (b, isNew) {
-        var weight = Number(b.block_weight) || 0;
-        var limit  = Number(b.block_weight_limit) || 0;
-        var pct    = limit > 0 ? Math.min(100, Math.round(weight / limit * 100)) : 45;
-        var isP2P  = /p2pool/i.test(b.pool_name || '');
+        var txCount  = Number(b.tx_count) || 0;
+        var tier     = tierForTxCount(txCount);
+        var scaleMax = (this._txScale && this._txScale.max) || 20;
+        var pct      = Math.min(100, Math.round(txCount / scaleMax * 100));
+        var isP2P    = /p2pool/i.test(b.pool_name || '');
 
         var el = document.createElement('div');
-        el.className = 'bp-block is-confirmed' + (isNew ? ' bp-block-new' : '');
+        el.className = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
         el.setAttribute('data-height', b.height);
 
-        var html =
+        el.innerHTML =
             '<div class="bp-fill-area">' +
-              '<div class="bp-fill-bar" style="height:' + pct + '%;background:linear-gradient(0deg,var(--xmr),rgba(140,88,255,.35))"></div>' +
+              '<div class="bp-fill-bar" style="height:' + pct + '%;background:' + gradientForTier(tier) + '"></div>' +
               (isP2P ? '<div class="bp-pool-badge">P2P</div>' : '') +
-              '<div class="bp-fill-label">' + pct + '%</div>' +
             '</div>' +
             '<div class="bp-meta">' +
               '<div class="bp-height">#' + Number(b.height).toLocaleString() + '</div>' +
-              '<div class="bp-stats">' + (b.tx_count || 0) + ' txs · ' + fmtBytes(weight) + '</div>' +
+              '<div class="bp-tx-count"><span class="bp-tx-num">' + txCount + '</span><span class="bp-tx-lbl">txs</span></div>' +
               '<div class="bp-age">' + fmtAgo(b.timestamp) + '</div>' +
             '</div>';
-        el.innerHTML = html;
 
         var self = this;
         el.addEventListener('click', function () {
             if (self.onBlockClick) self.onBlockClick(String(b.height));
         });
         return el;
+    };
+
+    BlockParade.prototype._updateConfirmedBlock = function (node, b) {
+        var txCount  = Number(b.tx_count) || 0;
+        var tier     = tierForTxCount(txCount);
+        var scaleMax = (this._txScale && this._txScale.max) || 20;
+        var pct      = Math.min(100, Math.round(txCount / scaleMax * 100));
+
+        /* Strip prior tier-* class, re-apply current */
+        var cls = node.className.split(/\s+/).filter(function (c) {
+            return c && c.indexOf('tier-') !== 0;
+        });
+        cls.push('tier-' + tier);
+        node.className = cls.join(' ');
+
+        /* Fill bar — height + gradient (scaleMax may have shifted) */
+        var bar = node.querySelector('.bp-fill-bar');
+        if (bar) {
+            bar.style.height = pct + '%';
+            bar.style.background = gradientForTier(tier);
+        }
+
+        /* Tx count number */
+        var num = node.querySelector('.bp-tx-num');
+        if (num) num.textContent = txCount;
+
+        /* Age tick */
+        var age = node.querySelector('.bp-age');
+        if (age) age.textContent = fmtAgo(b.timestamp);
+
+        /* P2Pool badge — add/remove if pool changed */
+        var isP2P = /p2pool/i.test(b.pool_name || '');
+        var fillArea = node.querySelector('.bp-fill-area');
+        var existingBadge = fillArea ? fillArea.querySelector('.bp-pool-badge') : null;
+        if (isP2P && !existingBadge && fillArea) {
+            var nb = document.createElement('div');
+            nb.className = 'bp-pool-badge';
+            nb.textContent = 'P2P';
+            fillArea.insertBefore(nb, fillArea.firstChild);
+        } else if (!isP2P && existingBadge) {
+            existingBadge.parentNode.removeChild(existingBadge);
+        }
     };
 
     BlockParade.prototype._makePendingBlock = function (opts) {
@@ -358,6 +460,10 @@
         if (!pendingGroup || !confirmedGroup) return;
 
         var tip = this.blocks.length ? this.blocks[0].height : this.topHeight;
+
+        /* Compute tx-count scale for tier coloring (Fix 3) */
+        var txCounts = this.blocks.map(function (b) { return Number(b.tx_count) || 0; });
+        this._txScale = { max: Math.max(20, txCounts.length ? Math.max.apply(null, txCounts) : 20) };
 
         /* ── Pending group ───────────────────────────────────────── */
         var mp = this.pending || {};
@@ -400,27 +506,47 @@
         }));
         pendingGroup.replaceChildren(pendingFrag);
 
-        /* ── Confirmed group ─────────────────────────────────────── */
-        /* this.blocks is newest-first. We want newest adjacent to divider
-           (left edge of confirmed group), oldest on far right — that IS
-           the same iteration order, inserted left→right. */
-        var confirmedFrag = document.createDocumentFragment();
+        /* ── Confirmed group: keyed DOM diff ─────────────────────── */
+        var wanted = Object.create(null);
+        for (var j0 = 0; j0 < this.blocks.length; j0++) wanted[this.blocks[j0].height] = true;
+
+        /* Remove nodes no longer in wanted set */
+        var heights = Object.keys(this._confirmedNodes);
+        for (var k0 = 0; k0 < heights.length; k0++) {
+            var h = heights[k0];
+            if (!wanted[h]) {
+                var gone = this._confirmedNodes[h];
+                if (gone && gone.parentNode) gone.parentNode.removeChild(gone);
+                delete this._confirmedNodes[h];
+            }
+        }
+
         var nextPrev = Object.create(null);
+        var newCreated = [];
         for (var j = 0; j < this.blocks.length; j++) {
             var b = this.blocks[j];
-            var isNew = !this._prevHeights[b.height];
-            confirmedFrag.appendChild(this._makeConfirmedBlock(b, isNew));
+            var node = this._confirmedNodes[b.height];
+            if (node) {
+                this._updateConfirmedBlock(node, b);
+            } else {
+                var isNew = !this._prevHeights[b.height];
+                node = this._makeConfirmedBlock(b, isNew);
+                this._confirmedNodes[b.height] = node;
+                if (isNew) newCreated.push(node);
+            }
+            /* Reorder: position j must match confirmedGroup.children[j] */
+            var atJ = confirmedGroup.children[j];
+            if (atJ !== node) confirmedGroup.insertBefore(node, atJ || null);
             nextPrev[b.height] = true;
         }
-        confirmedGroup.replaceChildren(confirmedFrag);
         this._prevHeights = nextPrev;
 
-        /* Strip .bp-block-new after animation completes so re-renders don't
-           re-trigger. */
-        setTimeout(function () {
-            var newOnes = confirmedGroup.querySelectorAll('.bp-block-new');
-            for (var k = 0; k < newOnes.length; k++) newOnes[k].classList.remove('bp-block-new');
-        }, 450);
+        /* Strip .bp-block-new only on freshly created nodes */
+        if (newCreated.length) {
+            setTimeout(function () {
+                for (var k = 0; k < newCreated.length; k++) newCreated[k].classList.remove('bp-block-new');
+            }, 450);
+        }
 
         requestAnimationFrame(function () { self._positionOverlays(); });
     };
@@ -431,45 +557,57 @@
         if (!outer || !overlay) return;
         var arrow   = overlay.querySelector('.bp-arrow');
         var dotline = overlay.querySelector('.bp-dotline');
+        var hint    = overlay.querySelector('.bp-offscreen-hint');
         if (!arrow || !dotline) return;
 
         var outerRect = outer.getBoundingClientRect();
 
-        /* Arrow */
+        /* Arrow priority: pending → tracked → highlight */
         var trackedEl = null;
+        var mode = 'none';
+        var offRangeHeight = null;
+
         if (this.trackedStatus === 'pending') {
             trackedEl = this.container.querySelector('.bp-block.is-pending-next');
+            if (trackedEl) mode = 'pending';
         } else if (this.trackedBlock) {
             trackedEl = this.container.querySelector('.bp-block[data-height="' + this.trackedBlock + '"]');
+            if (trackedEl) mode = 'tracked';
+            else offRangeHeight = this.trackedBlock;
+        }
+        if (mode === 'none' && this._highlightedBlock != null) {
+            trackedEl = this.container.querySelector('.bp-block[data-height="' + this._highlightedBlock + '"]');
+            if (trackedEl) mode = 'highlight';
+            else offRangeHeight = this._highlightedBlock;
         }
 
-        if (!trackedEl || this.trackedStatus === 'none') {
+        arrow.classList.remove('is-pending', 'is-confirmed', 'is-highlight');
+        if (mode === 'none' || !trackedEl) {
             arrow.hidden = true;
         } else {
             arrow.hidden = false;
-            arrow.classList.remove('is-pending', 'is-confirmed');
-            if (this.trackedStatus === 'pending') {
+            var label = arrow.querySelector('.bp-arrow-label');
+            if (mode === 'pending') {
                 arrow.classList.add('is-pending');
-            } else if (this.trackedStatus === 'confirmed' || this.trackedConfs >= CONF_REQ) {
-                arrow.classList.add('is-confirmed');
+                if (label) label.textContent = '⟳ UNCONF';
+            } else if (mode === 'tracked') {
+                if (this.trackedConfs >= CONF_REQ) arrow.classList.add('is-confirmed');
+                if (label) label.textContent = this.trackedConfs >= CONF_REQ
+                    ? '✓ 10/10' : (this.trackedConfs + '/10');
+            } else { /* highlight */
+                arrow.classList.add('is-highlight');
+                if (label) label.textContent = '#' + Number(this._highlightedBlock).toLocaleString();
             }
             var r = trackedEl.getBoundingClientRect();
             arrow.style.left = (r.left + r.width / 2 - outerRect.left) + 'px';
             arrow.style.top  = (r.bottom - outerRect.top + 6) + 'px';
-
-            var label = arrow.querySelector('.bp-arrow-label');
-            if (label) {
-                if (this.trackedStatus === 'pending')            label.textContent = '⟳ UNCONF';
-                else if (this.trackedConfs >= CONF_REQ)          label.textContent = '✓ 10/10';
-                else                                             label.textContent = this.trackedConfs + '/10';
-            }
         }
 
-        /* Dotline at the 10th-confirmation block (= trackedBlock + 9) */
+        /* Dotline (tracked only — 10-conf unlock) */
         if (!this.trackedBlock) {
             dotline.hidden = true;
         } else {
-            var tenthH = this.trackedBlock + (CONF_REQ - 1);
+            var tenthH  = this.trackedBlock + (CONF_REQ - 1);
             var tenthEl = this.container.querySelector('.bp-block[data-height="' + tenthH + '"]');
             if (!tenthEl) {
                 dotline.hidden = true;
@@ -477,6 +615,28 @@
                 dotline.hidden = false;
                 var tr = tenthEl.getBoundingClientRect();
                 dotline.style.left = (tr.left - outerRect.left - 4) + 'px';
+            }
+        }
+
+        /* Off-range hint */
+        if (hint) {
+            if (offRangeHeight == null) {
+                hint.hidden = true;
+            } else {
+                var tip = this.blocks.length ? this.blocks[0].height : this.topHeight;
+                var back = tip ? (tip - offRangeHeight) : 0;
+                var isTracked = (this.trackedBlock === offRangeHeight);
+                hint.hidden = false;
+                hint.classList.toggle('is-visible', isTracked);
+                hint.textContent = '→ #' + Number(offRangeHeight).toLocaleString() +
+                    (back > 0 ? ' (' + back + ' back)' : '');
+                var cg = this.container.querySelector('.bp-confirmed-group');
+                if (cg) {
+                    var cgr = cg.getBoundingClientRect();
+                    hint.style.right = (outerRect.right - cgr.right + 4) + 'px';
+                    hint.style.left  = 'auto';
+                    hint.style.top   = (cgr.top - outerRect.top + cgr.height / 2 - 10) + 'px';
+                }
             }
         }
     };
