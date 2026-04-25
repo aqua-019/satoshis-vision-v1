@@ -453,8 +453,6 @@
         var cell = document.createElement('div');
         cell.className = 'bp-cell bp-cell-confirmed';
         cell.setAttribute('data-height', b.height);
-        /* Tier is driven by tx count (see tierForTxCount) — same buckets as
-           the CSS .tier-* rules. */
         var tier = tierForTxCount(b.tx_count);
         var blockClass = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
         cell.innerHTML =
@@ -674,7 +672,7 @@
         if (!this.trackedBlock) {
             dotline.hidden = true;
         } else {
-            var tenthH = this.trackedBlock + (CONF_REQ - 1);
+            var tenthH  = this.trackedBlock + (CONF_REQ - 1);
             var tenthEl = this.container.querySelector('.bp-cell[data-height="' + tenthH + '"] .bp-block');
             if (!tenthEl) {
                 dotline.hidden = true;
