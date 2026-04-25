@@ -62,6 +62,54 @@
     };
     function gradientForTier(t) { return GRADIENTS[t] || GRADIENTS.normal; }
 
+    /* Compact piconero formatter — 12345 → "12k", 1.2M → "1.2M". */
+    function formatPcn(n) {
+        if (n == null || !isFinite(n) || n < 0) return '0';
+        if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+        if (n >= 1e3) return Math.round(n / 1e3) + 'k';
+        return String(Math.round(n));
+    }
+    function fmtFeeMedian(b) {
+        if (!b) return '~0 pcn/B';
+        var median = null;
+        if (b.median_fee_rate != null && isFinite(Number(b.median_fee_rate))) {
+            median = Number(b.median_fee_rate);
+        } else if (b.total_fees != null && b.block_weight) {
+            var tf = Number(b.total_fees), bw = Number(b.block_weight);
+            if (isFinite(tf) && isFinite(bw) && bw > 0) median = tf / bw;
+        }
+        if (median == null || !isFinite(median)) return '~0 pcn/B';
+        return '~' + formatPcn(median) + ' pcn/B';
+    }
+    function fmtFeeRange(b) {
+        if (!b) return '—';
+        var lo = Number(b.fee_rate_min), hi = Number(b.fee_rate_max);
+        if (!isFinite(lo) || !isFinite(hi) || lo < 0 || hi < 0) return '—';
+        return formatPcn(lo) + ' – ' + formatPcn(hi) + ' pcn/B';
+    }
+    function fmtXmrFees(atomic) {
+        if (atomic == null) return '—';
+        var a = Number(atomic);
+        if (!isFinite(a) || a < 0) return '—';
+        var xmr = a / 1e12;
+        if (xmr >= 1)    return xmr.toFixed(3);
+        if (xmr >= 0.01) return xmr.toFixed(4);
+        return xmr.toFixed(6);
+    }
+    /* Stable hue per pool name so each pool's dot is consistent across renders. */
+    function renderPoolBadge(poolName) {
+        var name = (poolName == null ? '' : String(poolName)).trim();
+        if (!name || name === 'Unknown' || name === '—') {
+            return '<span class="bp-pool-name">—</span>';
+        }
+        var sum = 0;
+        for (var i = 0; i < name.length; i++) sum = (sum + name.charCodeAt(i)) | 0;
+        var hue = ((sum % 360) + 360) % 360;
+        var safe = name.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return '<span class="bp-pool-dot" style="background:hsl(' + hue + ',60%,55%)"></span>' +
+               '<span class="bp-pool-name">' + safe + '</span>';
+    }
+
     function BlockParade(container, onBlockClick) {
         this.container    = container;
         this.onBlockClick = onBlockClick || null;
@@ -161,8 +209,9 @@
         overlay.className = 'bp-overlay';
         overlay.innerHTML =
             '<div class="bp-arrow" hidden>' +
-              '<span class="bp-arrow-glyph">▲</span>' +
-              '<span class="bp-arrow-label"></span>' +
+              '<div class="bp-arrow-line"></div>' +
+              '<div class="bp-arrow-tri"></div>' +
+              '<div class="bp-arrow-label"></div>' +
             '</div>' +
             '<div class="bp-dotline" hidden>' +
               '<span class="bp-dotline-label">10 CONF · UNLOCK</span>' +
@@ -197,48 +246,86 @@
         style.id = 'bp-css';
         style.textContent = [
             '.bp-outer{position:relative;overflow:visible}',
-            '.bp-wrap{overflow-x:auto;display:flex;align-items:center;gap:6px;padding:4px 0 8px;scrollbar-width:none}',
+            '.bp-outer::after{content:"";position:absolute;left:0;right:0;bottom:30px;border-bottom:1px dashed rgba(255,255,255,.12);pointer-events:none;z-index:0}',
+            '.bp-wrap{overflow-x:auto;overflow-y:visible;display:flex;align-items:flex-end;gap:6px;padding:4px 0 8px;scrollbar-width:none}',
             '.bp-wrap::-webkit-scrollbar{display:none}',
-            '.bp-pending-group,.bp-confirmed-group{display:flex;gap:6px;flex:0 0 auto}',
+            '.bp-pending-group,.bp-confirmed-group{display:flex;gap:6px;flex:0 0 auto;align-items:flex-end}',
             '.bp-divider{flex:0 0 auto;width:1px;height:220px;background:var(--border-default);margin:0 10px;position:relative}',
             '.bp-divider::before{content:"\\2195";position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:10px/1 "JetBrains Mono",monospace;color:var(--text-tertiary);background:var(--surface-0);padding:2px 1px}',
 
-            /* Blocks — shared */
-            '.bp-block{flex:0 0 128px;width:128px;min-height:210px;border-radius:8px;overflow:hidden;border:1px solid var(--border-subtle);background:var(--surface-1);display:flex;flex-direction:column;position:relative;transition:border-color .15s,transform .15s,box-shadow .15s}',
-            '.bp-block:hover{border-color:var(--border-default);transform:translateY(-2px)}',
+            /* Cell wrapper — holds height-above, block, pool-row */
+            '.bp-cell{flex:0 0 128px;display:flex;flex-direction:column;gap:4px}',
+            '.bp-height-above{font:700 11px/1 "JetBrains Mono",monospace;color:var(--blue);text-align:center}',
+            '.bp-cell-pending .bp-height-above{color:var(--text-muted)}',
+            '.bp-pool-row{display:flex;align-items:center;justify-content:center;gap:4px;min-height:12px;font:9px/1 "DM Mono",monospace;color:var(--text-muted)}',
+            '.bp-pool-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}',
+            '.bp-pool-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:110px}',
+
+            /* Blocks — shared (3D slanted top-left corner via clip-path pseudos) */
+            '.bp-block{position:relative;width:128px;min-height:200px;background:transparent;padding:10px 10px 8px;display:flex;flex-direction:column;overflow:visible;clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);transition:transform .15s}',
+            '.bp-block::before{content:"";position:absolute;inset:0;border:1px solid var(--border-subtle);background:var(--surface-1);clip-path:polygon(14px 0,100% 0,100% 100%,0 100%,0 14px);transition:border-color .15s,background .15s,box-shadow .15s,transform .15s;z-index:1}',
+            '.bp-block::after{content:"";position:absolute;top:0;left:0;width:20px;height:20px;background:linear-gradient(135deg,transparent 13px,var(--border-subtle) 13px,var(--border-subtle) 14.5px,transparent 14.5px);pointer-events:none;z-index:2;transition:background .15s}',
+            '.bp-block > *{position:relative;z-index:3}',
+            '.bp-block:hover::before{border-color:var(--border-default);transform:translateY(-1px)}',
             '.bp-block-new{animation:bp-slide-in .4s ease-out}',
             '@keyframes bp-slide-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}',
 
-            /* Confirmed */
+            /* Confirmed tier backgrounds (on ::before) */
             '.bp-block.is-confirmed{cursor:pointer}',
-            '.bp-block.is-confirmed .bp-fill-area{background:rgba(140,88,255,.05)}',
-            '.bp-fill-area{flex:1;position:relative;min-height:120px}',
-            '.bp-fill-bar{position:absolute;bottom:0;left:0;right:0;transition:height .5s ease-out,background .3s ease}',
-            '.bp-pool-badge{position:absolute;top:4px;left:5px;font:7px/1 "DM Mono",monospace;padding:1px 4px;border-radius:2px;background:rgba(255,102,0,.2);color:var(--xmr);letter-spacing:.04em}',
+            '.bp-block.is-confirmed.tier-quiet::before{background:linear-gradient(180deg,rgba(0,201,122,.04),rgba(0,201,122,.10))}',
+            '.bp-block.is-confirmed.tier-normal::before{background:linear-gradient(180deg,rgba(74,158,255,.04),rgba(74,158,255,.10))}',
+            '.bp-block.is-confirmed.tier-active::before{background:linear-gradient(180deg,rgba(255,209,0,.05),rgba(255,209,0,.12))}',
+            '.bp-block.is-confirmed.tier-busy::before{background:linear-gradient(180deg,rgba(255,102,0,.06),rgba(255,102,0,.16))}',
+            '.bp-block.is-confirmed.tier-congested::before{background:linear-gradient(180deg,rgba(216,54,66,.08),rgba(216,54,66,.20))}',
 
-            /* Pending — fee tier colors */
-            '.bp-block.is-pending{border-color:rgba(255,209,0,.35)}',
-            '.bp-block.is-pending.tier-low{border-color:rgba(0,201,122,.45)}',
-            '.bp-block.is-pending.tier-med{border-color:rgba(255,209,0,.55)}',
-            '.bp-block.is-pending.tier-high{border-color:rgba(255,102,0,.55)}',
-            '.bp-block.is-pending.tier-vhigh{border-color:rgba(255,90,90,.65)}',
-            '.bp-block.is-pending.is-far{opacity:.75}',
-            '.bp-pending-label{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font:9px/1 "DM Mono",monospace;color:var(--gold);opacity:.8;white-space:nowrap}',
+            /* Confirmed tier slant-edge colors (on ::after) */
+            '.bp-block.is-confirmed.tier-quiet::after{background:linear-gradient(135deg,transparent 13px,rgba(0,201,122,.55) 13px,rgba(0,201,122,.55) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-confirmed.tier-normal::after{background:linear-gradient(135deg,transparent 13px,rgba(74,158,255,.55) 13px,rgba(74,158,255,.55) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-confirmed.tier-active::after{background:linear-gradient(135deg,transparent 13px,rgba(255,209,0,.60) 13px,rgba(255,209,0,.60) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-confirmed.tier-busy::after{background:linear-gradient(135deg,transparent 13px,rgba(255,102,0,.60) 13px,rgba(255,102,0,.60) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-confirmed.tier-congested::after{background:linear-gradient(135deg,transparent 13px,rgba(216,54,66,.65) 13px,rgba(216,54,66,.65) 14.5px,transparent 14.5px)}',
 
-            /* Meta */
-            '.bp-meta{padding:6px 8px;display:flex;flex-direction:column;gap:2px}',
-            '.bp-height{font:600 11px/1 "JetBrains Mono","DM Mono",monospace;color:var(--text-primary)}',
-            '.bp-stats{font:9px/1 "DM Mono",monospace;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-            '.bp-age{font:9px/1 "DM Mono",monospace;color:var(--text-tertiary)}',
+            /* Pending tier backgrounds (on ::before) */
+            '.bp-block.is-pending.tier-low::before{background:linear-gradient(180deg,rgba(0,201,122,.05),rgba(0,201,122,.12))}',
+            '.bp-block.is-pending.tier-med::before{background:linear-gradient(180deg,rgba(255,209,0,.05),rgba(255,209,0,.14))}',
+            '.bp-block.is-pending.tier-high::before{background:linear-gradient(180deg,rgba(255,102,0,.06),rgba(255,102,0,.16))}',
+            '.bp-block.is-pending.tier-vhigh::before{background:linear-gradient(180deg,rgba(255,90,90,.08),rgba(255,90,90,.18))}',
+
+            /* Pending tier slant-edge colors (on ::after) */
+            '.bp-block.is-pending.tier-low::after{background:linear-gradient(135deg,transparent 13px,rgba(0,201,122,.55) 13px,rgba(0,201,122,.55) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-pending.tier-med::after{background:linear-gradient(135deg,transparent 13px,rgba(255,209,0,.60) 13px,rgba(255,209,0,.60) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-pending.tier-high::after{background:linear-gradient(135deg,transparent 13px,rgba(255,102,0,.60) 13px,rgba(255,102,0,.60) 14.5px,transparent 14.5px)}',
+            '.bp-block.is-pending.tier-vhigh::after{background:linear-gradient(135deg,transparent 13px,rgba(255,90,90,.65) 13px,rgba(255,90,90,.65) 14.5px,transparent 14.5px)}',
+
+            /* Next-to-mine bright highlight */
+            '.bp-block.is-pending.is-next-bright::before{background:linear-gradient(180deg,rgba(255,209,0,.12),rgba(255,209,0,.22));box-shadow:0 0 0 1px rgba(255,209,0,.25),0 0 18px rgba(255,209,0,.10)}',
+            '.bp-block.is-pending.is-next-bright .bp-fees-total{color:var(--gold)}',
+            '.bp-block.is-pending.is-far{opacity:.7}',
+
+            /* Content stack cells */
+            '.bp-fee-median{font:700 15px/1.1 "JetBrains Mono",monospace;color:var(--text-primary);margin-bottom:2px}',
+            '.bp-fee-range{font:10px/1.1 "DM Mono",monospace;color:var(--text-muted);margin-bottom:6px}',
+            '.bp-fees-total{font:600 11px/1.1 "JetBrains Mono",monospace;color:var(--xmr);margin-bottom:8px}',
+            '.bp-tx-count-big{font:700 18px/1 "JetBrains Mono",monospace;color:var(--text-primary);display:flex;align-items:baseline;gap:4px}',
+            '.bp-tx-count-big span{font:500 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.08em}',
+            '.bp-age{font:9px/1 "DM Mono",monospace;color:var(--text-tertiary);margin-top:auto}',
 
             /* Tracker overlay */
             '.bp-overlay{position:absolute;inset:0;overflow:visible;pointer-events:none}',
-            '.bp-arrow{position:absolute;pointer-events:none;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;transition:left .6s ease,top .2s ease}',
+            '.bp-arrow{position:absolute;pointer-events:none;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;transition:left .6s ease,top .2s ease}',
             '.bp-arrow[hidden]{display:none}',
-            '.bp-arrow-glyph{font:14px/1 "JetBrains Mono",monospace;color:var(--blue);text-shadow:0 0 8px rgba(74,158,255,.6)}',
-            '.bp-arrow-label{font:700 9px/1 "DM Mono",monospace;color:var(--blue);letter-spacing:.1em;margin-top:3px;white-space:nowrap}',
-            '.bp-arrow.is-confirmed .bp-arrow-glyph,.bp-arrow.is-confirmed .bp-arrow-label{color:var(--grn);text-shadow:0 0 8px rgba(0,201,122,.6)}',
-            '.bp-arrow.is-pending .bp-arrow-glyph,.bp-arrow.is-pending .bp-arrow-label{color:var(--gold);text-shadow:0 0 8px rgba(255,209,0,.6)}',
+            '.bp-arrow-line{width:1px;height:20px;background:repeating-linear-gradient(180deg,var(--blue) 0 2px,transparent 2px 4px)}',
+            '.bp-arrow-tri{width:0;height:0;border:7px solid transparent;border-top:0;border-bottom:10px solid var(--blue);filter:drop-shadow(0 0 4px rgba(74,158,255,.7));transform:rotate(180deg)}',
+            '.bp-arrow-label{font:700 9px/1 "DM Mono",monospace;color:var(--blue);letter-spacing:.1em;white-space:nowrap;padding:2px 6px;border:1px solid var(--blue);border-radius:3px;background:rgba(10,12,20,.75);margin-top:2px}',
+            '.bp-arrow.is-confirmed .bp-arrow-line{background:repeating-linear-gradient(180deg,var(--grn) 0 2px,transparent 2px 4px)}',
+            '.bp-arrow.is-confirmed .bp-arrow-tri{border-bottom-color:var(--grn);filter:drop-shadow(0 0 4px rgba(0,201,122,.7))}',
+            '.bp-arrow.is-confirmed .bp-arrow-label{color:var(--grn);border-color:var(--grn)}',
+            '.bp-arrow.is-pending .bp-arrow-line{background:repeating-linear-gradient(180deg,var(--gold) 0 2px,transparent 2px 4px)}',
+            '.bp-arrow.is-pending .bp-arrow-tri{border-bottom-color:var(--gold);filter:drop-shadow(0 0 4px rgba(255,209,0,.7))}',
+            '.bp-arrow.is-pending .bp-arrow-label{color:var(--gold);border-color:var(--gold)}',
+            '.bp-arrow.is-highlight .bp-arrow-line{background:repeating-linear-gradient(180deg,var(--xmr) 0 2px,transparent 2px 4px)}',
+            '.bp-arrow.is-highlight .bp-arrow-tri{border-bottom-color:var(--xmr);filter:drop-shadow(0 0 4px rgba(255,102,0,.7))}',
+            '.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);border-color:var(--xmr);box-shadow:0 0 10px rgba(255,102,0,.45)}',
 
             '.bp-dotline{position:absolute;top:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);transition:left .6s ease;pointer-events:none;width:0}',
             '.bp-dotline[hidden]{display:none}',
@@ -278,8 +365,6 @@
             '.bp-block.tier-busy .bp-height{color:var(--xmr)}',
             '.bp-block.tier-congested .bp-height{color:var(--red)}',
 
-            /* Highlight arrow (block view, not TX tracking) */
-            '.bp-arrow.is-highlight .bp-arrow-glyph,.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);text-shadow:0 0 8px rgba(255,102,0,.5)}',
             /* is-confirming mirrors the default blue tracking color (same as base) */
 
             /* Off-range hint — tracked/highlighted block not in visible range */
@@ -365,81 +450,73 @@
     };
 
     BlockParade.prototype._makeConfirmedBlock = function (b, isNew) {
-        var txCount = Number(b.tx_count) || 0;
-        var scale   = this._txScale || { max: 20 };
-        var pct     = Math.min(100, Math.round((txCount / scale.max) * 100));
-        var tier    = tierForTxCount(txCount);
-        var isP2P   = /p2pool/i.test(b.pool_name || '');
-
-        var el = document.createElement('div');
-        el.className = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
-        el.setAttribute('data-height', b.height);
-
-        el.innerHTML =
-            '<div class="bp-fill-area">' +
-              '<div class="bp-fill-bar" style="height:' + pct + '%;background:' + gradientForTier(tier) + '"></div>' +
-              (isP2P ? '<div class="bp-pool-badge">P2P</div>' : '') +
-            '</div>' +
-            '<div class="bp-meta">' +
-              '<div class="bp-height">#' + Number(b.height).toLocaleString() + '</div>' +
-              '<div class="bp-tx-count">' +
-                '<span class="bp-tx-num">' + txCount + '</span>' +
-                '<span class="bp-tx-lbl">txs</span>' +
-              '</div>' +
+        var cell = document.createElement('div');
+        cell.className = 'bp-cell bp-cell-confirmed';
+        cell.setAttribute('data-height', b.height);
+        var tier = tierForTxCount(b.tx_count);
+        var blockClass = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
+        cell.innerHTML =
+            '<div class="bp-height-above">#' + Number(b.height).toLocaleString() + '</div>' +
+            '<div class="' + blockClass + '">' +
+              '<div class="bp-fee-median">' + fmtFeeMedian(b) + '</div>' +
+              '<div class="bp-fee-range">' + fmtFeeRange(b) + '</div>' +
+              '<div class="bp-fees-total">' + fmtXmrFees(b.total_fees) + ' XMR</div>' +
+              '<div class="bp-tx-count-big">' + (Number(b.tx_count) || 0).toLocaleString() + '<span>TXS</span></div>' +
               '<div class="bp-age">' + fmtAgo(b.timestamp) + '</div>' +
-            '</div>';
-
+            '</div>' +
+            '<div class="bp-pool-row">' + renderPoolBadge(b.pool_name) + '</div>';
         var self = this;
-        el.addEventListener('click', function () {
+        cell.querySelector('.bp-block').addEventListener('click', function () {
             if (self.onBlockClick) self.onBlockClick(String(b.height));
         });
-        return el;
+        return cell;
     };
 
-    /* Update a persistent confirmed-block node in place. Age ticks each
-       refresh; tier/fill can shift when _txScale.max rebalances (e.g. a
-       very-busy block enters the window). */
-    BlockParade.prototype._updateConfirmedBlock = function (node, b) {
-        var age = node.querySelector('.bp-age');
+    /* Update a persistent confirmed-cell node in place. Age ticks each
+       refresh; tier class can shift if tx_count is updated. */
+    BlockParade.prototype._updateConfirmedBlock = function (cell, b) {
+        var age = cell.querySelector('.bp-age');
         if (age) age.textContent = fmtAgo(b.timestamp);
 
-        var txCount = Number(b.tx_count) || 0;
-        var scale = this._txScale || { max: 20 };
-        var pct = Math.min(100, Math.round((txCount / scale.max) * 100));
-        var tier = tierForTxCount(txCount);
-
-        node.classList.remove('tier-quiet', 'tier-normal', 'tier-active', 'tier-busy', 'tier-congested');
-        node.classList.add('tier-' + tier);
-
-        var fill = node.querySelector('.bp-fill-bar');
-        if (fill) {
-            fill.style.height = pct + '%';
-            fill.style.background = gradientForTier(tier);
+        var inner = cell.querySelector('.bp-block');
+        if (inner) {
+            var tier = tierForTxCount(b.tx_count);
+            inner.classList.remove('tier-quiet', 'tier-normal', 'tier-active', 'tier-busy', 'tier-congested');
+            inner.classList.add('tier-' + tier);
         }
-
-        var num = node.querySelector('.bp-tx-num');
-        if (num) num.textContent = txCount;
     };
 
     BlockParade.prototype._makePendingBlock = function (opts) {
-        var el = document.createElement('div');
-        el.className = 'bp-block is-pending tier-' + opts.tier +
-            (opts.isNext ? ' is-pending-next' : ' is-far');
-        el.setAttribute('data-height', opts.height);
+        var cell = document.createElement('div');
+        cell.className = 'bp-cell bp-cell-pending';
+        var heightStr = (typeof opts.height === 'number')
+            ? '~#' + Number(opts.height).toLocaleString()
+            : '~#' + opts.height;
+        cell.setAttribute('data-height', opts.height);
+        var isNext = opts.isNext === true;
+        var brightFar = isNext ? ' is-next-bright' : ' is-far';
+        var blockClass = 'bp-block is-pending tier-' + opts.tier + brightFar;
+        var feeMedianHtml  = opts.feeMedian != null ? fmtFeeMedian(opts.feeMedian) : '~0 pcn/B';
+        var feeRangeHtml   = opts.feeRange != null  ? fmtFeeRange(opts.feeRange)  : '—';
+        var feesTotalHtml  = opts.totalFees != null ? fmtXmrFees(opts.totalFees)  : '—';
+        var txCountHtml    = (opts.txCount != null)
+            ? (Number(opts.txCount) || 0).toLocaleString()
+            : '—';
+        var poolRowHtml = isNext
+            ? '<span class="bp-pool-name">⟳ awaiting</span>'
+            : '<span class="bp-pool-name"></span>';
 
-        var fill = opts.isNext ? Math.max(8, Math.min(100, opts.fillPct || 0)) : 6;
-        var html =
-            '<div class="bp-fill-area">' +
-              '<div class="bp-fill-bar" style="height:' + fill + '%;background:linear-gradient(0deg,var(--gold),rgba(255,209,0,.18))"></div>' +
-              '<div class="bp-pending-label">' + opts.label + '</div>' +
+        cell.innerHTML =
+            '<div class="bp-height-above">' + heightStr + '</div>' +
+            '<div class="' + blockClass + '">' +
+              '<div class="bp-fee-median">' + feeMedianHtml + '</div>' +
+              '<div class="bp-fee-range">' + feeRangeHtml + '</div>' +
+              '<div class="bp-fees-total">' + feesTotalHtml + ' XMR</div>' +
+              '<div class="bp-tx-count-big">' + txCountHtml + '<span>TXS</span></div>' +
+              '<div class="bp-age">' + (opts.eta || '') + '</div>' +
             '</div>' +
-            '<div class="bp-meta">' +
-              '<div class="bp-height" style="color:var(--gold)">~#' + Number(opts.height).toLocaleString() + '</div>' +
-              '<div class="bp-stats">' + (opts.txCount != null ? opts.txCount + ' txs' : '—') + '</div>' +
-              '<div class="bp-age" style="color:var(--gold)">' + opts.eta + '</div>' +
-            '</div>';
-        el.innerHTML = html;
-        return el;
+            '<div class="bp-pool-row">' + poolRowHtml + '</div>';
+        return cell;
     };
 
     BlockParade.prototype.render = function () {
@@ -530,10 +607,12 @@
         });
 
         /* Strip .bp-block-new after animation completes so re-renders don't
-           re-trigger. */
+           re-trigger. The class lives on the inner .bp-block (the cell is
+           the keyed-diff node). */
         setTimeout(function () {
             Object.keys(self._confirmedNodes).forEach(function (h) {
-                self._confirmedNodes[h].classList.remove('bp-block-new');
+                var inner = self._confirmedNodes[h].querySelector('.bp-block');
+                if (inner) inner.classList.remove('bp-block-new');
             });
         }, 450);
 
@@ -558,15 +637,15 @@
         var mode     = null;   /* 'pending' | 'confirming' | 'confirmed' | 'highlight' */
 
         if (this.trackedStatus === 'pending') {
-            targetEl = this.container.querySelector('.bp-block.is-pending-next');
+            targetEl = this.container.querySelector('.bp-block.is-pending.is-next-bright');
             mode = 'pending';
         } else if (this.trackedBlock) {
             target   = this.trackedBlock;
-            targetEl = this.container.querySelector('.bp-block[data-height="' + this.trackedBlock + '"]');
+            targetEl = this.container.querySelector('.bp-cell[data-height="' + this.trackedBlock + '"] .bp-block');
             mode     = this.trackedConfs >= CONF_REQ ? 'confirmed' : 'confirming';
         } else if (this._highlightedBlock) {
             target   = this._highlightedBlock;
-            targetEl = this.container.querySelector('.bp-block[data-height="' + this._highlightedBlock + '"]');
+            targetEl = this.container.querySelector('.bp-cell[data-height="' + this._highlightedBlock + '"] .bp-block');
             mode     = 'highlight';
         }
 
@@ -578,7 +657,7 @@
             arrow.classList.add('is-' + mode);
             var r = targetEl.getBoundingClientRect();
             arrow.style.left = (r.left + r.width / 2 - outerRect.left) + 'px';
-            arrow.style.top  = (r.bottom - outerRect.top + 6) + 'px';
+            arrow.style.top  = (r.bottom - outerRect.top + 2) + 'px';
 
             var label = arrow.querySelector('.bp-arrow-label');
             if (label) {
@@ -594,7 +673,7 @@
             dotline.hidden = true;
         } else {
             var tenthH  = this.trackedBlock + (CONF_REQ - 1);
-            var tenthEl = this.container.querySelector('.bp-block[data-height="' + tenthH + '"]');
+            var tenthEl = this.container.querySelector('.bp-cell[data-height="' + tenthH + '"] .bp-block');
             if (!tenthEl) {
                 dotline.hidden = true;
             } else {

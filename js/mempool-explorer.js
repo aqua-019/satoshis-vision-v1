@@ -19,6 +19,7 @@
         timer: null,
         lastTip: null
     };
+    var _feeUsd = { currentTx: null, subscribed: false };
     var XMR_BLOCK_TIME_S = 120;
 
     /* ── REST base (mirrors XmrRelayWS.restBase) ── */
@@ -310,30 +311,6 @@
         if (!node) return;
 
         var confirmed = !!tx.confirmed;
-        var bannerHtml;
-        if (confirmed) {
-            var heightTxt = tx.block_height != null ? fmtInt(tx.block_height) : '—';
-            var confsTxt = tx.confirmations != null ? (fmtInt(tx.confirmations) + ' confirmation' + (tx.confirmations === 1 ? '' : 's')) : '';
-            bannerHtml =
-                '<div class="exp-tx-banner is-confirmed">' +
-                  '<span>✅ <b>CONFIRMED</b> — Block ' +
-                    (tx.block_height != null ? '<a data-exp-goto-block="' + esc(tx.block_height) + '">#' + esc(heightTxt) + '</a>' : '#' + esc(heightTxt)) +
-                    (confsTxt ? '  ·  ' + esc(confsTxt) : '') +
-                  '</span>' +
-                  '<button type="button" class="exp-tx-track-btn is-tracking" id="exp-tx-track">' +
-                    '<span class="exp-track-icon">🔔</span> TRACKING · <span class="exp-track-toggle">✕ STOP</span>' +
-                  '</button>' +
-                '</div>';
-        } else {
-            var ageStr = tx.receive_time ? fmtAgo(tx.receive_time) : '—';
-            bannerHtml =
-                '<div class="exp-tx-banner is-unconfirmed">' +
-                  '<span>⏳ <b>UNCONFIRMED</b> — ' + esc(ageStr.replace(' ago', ' in mempool')) + '</span>' +
-                  '<button type="button" class="exp-tx-track-btn is-tracking" id="exp-tx-track">' +
-                    '<span class="exp-track-icon">🔔</span> TRACKING · <span class="exp-track-toggle">✕ STOP</span>' +
-                  '</button>' +
-                '</div>';
-        }
 
         var score = computePrivacyScore(tx);
         var comps = privacyComponents(tx);
@@ -353,14 +330,47 @@
         var outputsCount = tx.output_count || 0;
         var ringSize = tx.ring_size || 0;
 
+        var firstSeenStr = tx.receive_time ? fmtAgo(tx.receive_time).replace(' ago', '') : '—';
+        var etaStr;
+        if (confirmed) {
+            etaStr = 'Confirmed';
+        } else {
+            var _parade  = window._blockParade;
+            var _lastBlk = (_parade && _parade.blocks && _parade.blocks[0]) || null;
+            var _since   = (_lastBlk && _lastBlk.timestamp)
+                ? Math.max(0, Math.floor(Date.now() / 1000) - Number(_lastBlk.timestamp)) : 0;
+            var _etaSec  = Math.max(0, XMR_BLOCK_TIME_S - _since);
+            etaStr = '~' + Math.max(1, Math.round(_etaSec / 60)) + ' min';
+        }
+        var heightHtml = '—', confsTxt = '';
+        if (confirmed) {
+            var heightTxt = tx.block_height != null ? fmtInt(tx.block_height) : '—';
+            heightHtml = tx.block_height != null
+                ? '<a class="exp-tx-metalink" data-exp-goto-block="' + esc(tx.block_height) + '">#' + esc(heightTxt) + '</a>'
+                : '#' + esc(heightTxt);
+            confsTxt = tx.confirmations != null
+                ? (fmtInt(tx.confirmations) + ' conf' + (tx.confirmations === 1 ? '' : 's')) : '';
+        }
+
         node.innerHTML =
             '<button type="button" class="exp-btn-back" data-exp-back-detail>← Back</button>' +
-            bannerHtml +
 
-            '<div class="exp-hash-row">' +
-              '<span style="color:var(--text-tertiary);font-size:9px;letter-spacing:1.4px;text-transform:uppercase;">TXID</span>' +
-              '<span>' + esc(tx.txid) + '</span>' +
-              '<button type="button" class="exp-copy-btn" data-exp-copy="' + esc(tx.txid) + '">COPY</button>' +
+            '<div class="exp-tx-header">' +
+              '<div class="exp-tx-header-left">' +
+                '<h2 class="exp-tx-title">Transaction</h2>' +
+                '<span class="exp-tx-hash" title="' + esc(tx.txid) + '">' + esc(tx.txid) + '</span>' +
+                '<button type="button" class="exp-tx-copy-btn" data-exp-copy="' + esc(tx.txid) + '" aria-label="Copy TXID" title="Copy TXID">⧉</button>' +
+              '</div>' +
+              '<div class="exp-tx-header-right">' +
+                (confirmed
+                  ? '<span class="exp-tx-pill exp-tx-pill-confirmed">Confirmed</span>'
+                  : '<span class="exp-tx-pill exp-tx-pill-unconfirmed">Unconfirmed</span>'
+                ) +
+                /* Auto-tracking is on by default; click to STOP. */
+                '<button type="button" class="exp-tx-track-btn is-tracking" id="exp-tx-track">' +
+                  '<span class="exp-track-icon">🔔</span> TRACKING · <span class="exp-track-toggle">✕ STOP</span>' +
+                '</button>' +
+              '</div>' +
             '</div>' +
 
             '<div class="exp-tx-live" id="exp-tx-live">' +
@@ -404,22 +414,30 @@
                 '<div class="pbd-list" id="exp-tx-pbd"></div>' +
                 '<div class="exp-pscore-total"><span>Total</span><span><b>' + score + '</b> / 100</span></div>' +
               '</div>' +
-              '<div class="exp-tx-card">' +
-                '<h3>Transaction Details</h3>' +
-                '<dl class="exp-info" style="grid-template-columns:130px 1fr;margin-bottom:0">' +
-                  '<dt>Size</dt><dd>' + esc(fmtBytes(tx.blob_size)) + '</dd>' +
-                  '<dt>Fee</dt><dd>' + esc(fmtXmr(tx.fee)) + '</dd>' +
-                  '<dt>Fee Rate</dt><dd>' + esc(tx.fee_rate != null ? tx.fee_rate.toFixed(2) + ' piconero/byte' : '—') + '</dd>' +
-                  '<dt>Outputs</dt><dd>' + esc(fmtInt(outputsCount)) + ' <span style="color:var(--gold)">(amounts hidden)</span></dd>' +
-                  '<dt>Inputs</dt><dd>' + esc(fmtInt(inputsCount)) + ' key image' + (inputsCount === 1 ? '' : 's') + '</dd>' +
-                  '<dt>Ring Size</dt><dd>' + esc(fmtInt(ringSize)) + ' decoys/input</dd>' +
-                  '<dt>RingCT</dt><dd>' + esc(rctLabel(tx.rct_type)) + '</dd>' +
-                  '<dt>View Tags</dt><dd>' + (tx.has_view_tags ? 'Present' : 'Absent') + '</dd>' +
-                  '<dt>Unlock</dt><dd>' + ((tx.unlock_time || 0) === 0 ? 'None' : esc(fmtInt(tx.unlock_time))) + '</dd>' +
-                  '<dt>Relayed</dt><dd>' + (tx.relayed === false ? 'No' : 'Yes (Dandelion++)') + '</dd>' +
-                '</dl>' +
-              '</div>' +
             '</div>' +
+
+            '<section class="exp-tx-metagrid-wrap">' +
+              '<div class="exp-tx-metagrid">' +
+                (confirmed
+                  ? '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Included in block</div><div class="exp-tx-metaval">' +
+                    heightHtml + (confsTxt ? ' <span class="exp-tx-metasub">· ' + esc(confsTxt) + '</span>' : '') + '</div></div>'
+                  : '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">First seen</div><div class="exp-tx-metaval">' + esc(firstSeenStr) + '</div></div>') +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee</div><div class="exp-tx-metaval">' + esc(fmtXmr(tx.fee)) +
+                  ' <span class="exp-tx-metausd" id="exp-tx-fee-usd">$—</span></div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">ETA</div><div class="exp-tx-metaval">' + (confirmed ? 'Confirmed' : 'In ' + esc(etaStr)) + '</div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee rate</div><div class="exp-tx-metaval">' +
+                  esc(tx.fee_rate != null ? tx.fee_rate.toFixed(2) + ' pcn/B' : '—') + '</div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Size</div><div class="exp-tx-metaval">' + esc(fmtBytes(tx.blob_size)) + '</div></div>' +
+                '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Ring size</div><div class="exp-tx-metaval">' + esc(fmtInt(ringSize)) + ' decoys</div></div>' +
+              '</div>' +
+              '<div class="exp-tx-metafooter"><div class="exp-tx-metachips">' +
+                '<span class="exp-tx-chip exp-tx-chip-on">CLSAG</span>' +
+                '<span class="exp-tx-chip exp-tx-chip-on">BP+</span>' +
+                '<span class="exp-tx-chip ' + (tx.has_view_tags ? 'exp-tx-chip-on' : 'exp-tx-chip-off') + '">View Tags</span>' +
+                '<span class="exp-tx-chip ' + ((tx.unlock_time || 0) === 0 ? 'exp-tx-chip-on' : 'exp-tx-chip-off') + '">No Timelock</span>' +
+                (tx.relayed !== false ? '<span class="exp-tx-chip exp-tx-chip-on">Dandelion++</span>' : '') +
+              '</div></div>' +
+            '</section>' +
 
             '<div class="exp-tx-section" id="exp-tx-inputs-mount">' +
               '<h3>Inputs (' + esc(fmtInt(inputsCount)) + ')</h3>' +
@@ -506,6 +524,19 @@
                 if (cap) cap.textContent = 'This transaction uses ~' + size + ' bytes — ' + pct + '% smaller than the 2017 RingCT baseline.';
             }
         } catch (e) { if (window.console) console.warn('[m5] bp timeline failed', e); }
+
+        /* PriceService fee-USD wiring.
+           TODO: PriceService lacks unsubscribe — we register once per page load and
+           route all ticks to _feeUsd.currentTx. Tracking issue: add unsubscribe to
+           js/price-service.js and drop this guard. */
+        try {
+            _feeUsd.currentTx = tx;
+            updateFeeUsd();
+            if (!_feeUsd.subscribed && window.PriceService && typeof window.PriceService.subscribe === 'function') {
+                window.PriceService.subscribe(function () { updateFeeUsd(); });
+                _feeUsd.subscribed = true;
+            }
+        } catch (_) {}
 
         showView('tx');
         startTxLive(tx);
@@ -1404,6 +1435,27 @@
         var m = Math.floor(s / 60);
         var r = s % 60;
         return m + ':' + (r < 10 ? '0' : '') + r;
+    }
+
+    function fmtFeeUsd(xmrFee, xmrUsd) {
+        if (!isFinite(xmrFee) || !isFinite(xmrUsd) || xmrUsd <= 0) return '$—';
+        var usd = (Number(xmrFee) / 1e12) * Number(xmrUsd);
+        if (usd > 0 && usd < 0.01) return '< $0.01';
+        if (usd <= 0) return '$0.00';
+        return '$' + usd.toFixed(2);
+    }
+    function updateFeeUsd() {
+        var n = document.getElementById('exp-tx-fee-usd');
+        if (!n) return;
+        var tx = _feeUsd.currentTx;
+        if (!tx) return;
+        try {
+            var ps = window.PriceService;
+            if (!ps || !ps.data || !ps.data.xmr || typeof ps.data.xmr.usd !== 'number') {
+                n.textContent = '$—'; return;
+            }
+            n.textContent = fmtFeeUsd(tx.fee, ps.data.xmr.usd);
+        } catch (_) { n.textContent = '$—'; }
     }
 
     /* ── Public API ── */
