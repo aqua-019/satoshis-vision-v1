@@ -420,14 +420,12 @@
             var _etaSec  = Math.max(0, avgBlockIntervalS() - _since);
             etaStr = '~' + Math.max(1, Math.round(_etaSec / 60)) + ' min';
         }
-        var heightHtml = '—', confsTxt = '';
+        var heightHtml = '—';
         if (confirmed) {
             var heightTxt = tx.block_height != null ? fmtInt(tx.block_height) : '—';
             heightHtml = tx.block_height != null
                 ? '<a class="exp-tx-metalink" data-exp-goto-block="' + esc(tx.block_height) + '">#' + esc(heightTxt) + '</a>'
                 : '#' + esc(heightTxt);
-            confsTxt = tx.confirmations != null
-                ? (fmtInt(tx.confirmations) + ' conf' + (tx.confirmations === 1 ? '' : 's')) : '';
         }
 
         node.innerHTML =
@@ -455,7 +453,7 @@
               '<div class="exp-tx-metagrid">' +
                 (confirmed
                   ? '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Included in block</div><div class="exp-tx-metaval">' +
-                    heightHtml + (confsTxt ? ' <span class="exp-tx-metasub">· ' + esc(confsTxt) + '</span>' : '') + '</div></div>'
+                    heightHtml + '</div></div>'
                   : '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">' + esc(firstSeenLabel) + '</div><div class="exp-tx-metaval">' + esc(firstSeenStr) + '</div></div>') +
                 '<div class="exp-tx-metacell"><div class="exp-tx-metalbl">Fee</div><div class="exp-tx-metaval">' + esc(fmtXmr(tx.fee)) +
                   ' <span class="exp-tx-metausd" id="exp-tx-fee-usd">$—</span></div></div>' +
@@ -1523,6 +1521,25 @@
             unlockEtaS = remaining * avgBlock;
             statusLine = 'Connecting to network…';
             confClass = 'is-updating';
+        }
+
+        if (window._xmrDebug && _txLive.txid) {
+            console.log('[live.tick]', {
+                ts: new Date().toISOString().slice(11, 19),
+                txid8: (_txLive.txid || '').slice(0, 8),
+                blockHeight: _txLive.blockHeight,
+                tip: tip,
+                confs: confs,
+                remaining: remaining,
+                avgBlock: avgBlock,
+                sinceLastBlock: typeof sinceLastBlock !== 'undefined' ? sinceLastBlock : 'n/a',
+                nextEtaS: nextEtaS,
+                unlockEtaS: unlockEtaS,
+                statusLine: statusLine,
+                paradeRefreshAge: window._blockParade && window._blockParade._lastRefreshAt
+                    ? Math.floor((Date.now() - window._blockParade._lastRefreshAt) / 1000) + 's'
+                    : 'no parade'
+            });
         }
 
         setField('exp-tx-live-confs', confs, confClass);
