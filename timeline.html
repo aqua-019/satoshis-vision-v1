@@ -1,223 +1,568 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>xmr.irish — The Privacy Evolution Timeline</title>
+    <title>xmr.irish &mdash; The Privacy Evolution Timeline</title>
     <meta name="description" content="48 events across 18 years and 5 eras — from Satoshi's genesis block to the regulatory storm. Interactive, filterable, keyboard-navigable.">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d10.css">
-    <style>
-    .tl{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
-    .tl-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
-    .tl-nav em{color:var(--grn);font-style:normal;font-weight:600}.tl-nav span{color:var(--text-muted)}
-    .hero{padding:40px var(--space-page-x) 16px;text-align:center}
-    .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
-    .hero-t{font-size:28px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}
-    .hero-sub{font-size:12px;color:var(--text-secondary);max-width:540px;margin:0 auto 14px;line-height:1.6}
-    .hero-stats{display:flex;justify-content:center;gap:28px;flex-wrap:wrap;margin-bottom:12px}
-    .hs{text-align:center}.hs-v{font-size:24px;font-weight:600;color:var(--xmr)}.hs-l{font-size:8px;color:var(--text-tertiary);letter-spacing:1.5px;text-transform:uppercase}
-    .legend{display:flex;justify-content:center;gap:16px;flex-wrap:wrap;margin-bottom:8px}
-    .leg{display:flex;align-items:center;gap:5px;font-size:10px}.leg-d{width:10px;height:10px;border-radius:50%}
-    .leg-d.btc{background:#F7931A}.leg-d.xmr{background:var(--xmr)}.leg-d.cross{background:var(--cyan)}.leg-d.reg{background:#B44DFF}
-    .kbd-hint{text-align:center;font-size:9px;color:var(--text-tertiary);margin-bottom:8px}
-    .kbd-hint kbd{background:var(--surface-2);padding:1px 5px;border-radius:3px;font-size:8px}
-    .fbar{display:flex;justify-content:center;gap:4px;padding:12px var(--space-page-x);flex-wrap:wrap;position:sticky;top:52px;z-index:50;background:rgba(10,10,12,.95);backdrop-filter:blur(12px);border-bottom:1px solid var(--border-subtle)}
-    .fb{font-family:inherit;font-size:9px;padding:5px 14px;border:1px solid var(--border-default);background:transparent;color:var(--text-tertiary);border-radius:100px;cursor:pointer;text-transform:uppercase;letter-spacing:1px;transition:all .2s}
-    .fb:hover{border-color:var(--text-tertiary);color:var(--g3)}
-    .fb.active{background:var(--g1);color:var(--surface-0);border-color:var(--g1)}
-    .fb[data-f="btc"].active{background:#F7931A;border-color:#F7931A}
-    .fb[data-f="xmr"].active{background:var(--xmr);border-color:var(--xmr)}
-    .fb[data-f="crossover"].active{background:var(--cyan);border-color:var(--cyan);color:var(--surface-0)}
-    .fb[data-f="regulatory"].active{background:#B44DFF;border-color:#B44DFF}
-    .ecnt{text-align:center;padding:8px;font-size:9px;color:var(--text-tertiary)}.ecnt em{color:var(--xmr);font-style:normal}
-    .progress{position:fixed;top:52px;left:0;height:2px;background:linear-gradient(90deg,#F7931A,var(--xmr),var(--cyan));z-index:999;width:0%;transition:width .1s linear}
-    .tc{max-width:900px;margin:0 auto;padding:12px var(--space-page-x) 40px}
-    .timeline{position:relative;padding:16px 0}
-    .timeline::before{content:'';position:absolute;left:50%;transform:translateX(-50%);top:0;bottom:0;width:2px;background:linear-gradient(180deg,#F7931A 0%,var(--gold) 20%,var(--cyan) 45%,var(--xmr) 65%,#B44DFF 85%,var(--xmr) 100%);opacity:.5}
-    .era{text-align:center;padding:24px 0 16px;position:relative;clear:both}
-    .era:first-child{padding-top:8px}
-    .era-inner{display:inline-block;background:var(--surface-0);padding:4px 16px;position:relative;z-index:3}
-    .era-t{font-size:16px;font-weight:600;margin-bottom:2px}
-    .era-s{font-size:9px;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase}
-    .era.btc .era-t{color:#F7931A}.era.xmr .era-t{color:var(--xmr)}.era.crossover .era-t{color:var(--cyan)}.era.regulatory .era-t{color:#B44DFF}
-    .era.future .era-t{background:linear-gradient(135deg,var(--xmr),var(--cyan));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .ti{position:relative;width:calc(50% - 28px);padding:12px 14px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;cursor:pointer;transition:all .3s;margin-bottom:12px;opacity:0;transform:translateY(20px)}
-    .ti.vis{opacity:1;transform:translateY(0)}
-    .ti.hid{display:none!important}
-    .ti:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3);border-color:rgba(255,102,0,.15)}
-    .ti:nth-child(odd){margin-left:0;margin-right:auto;text-align:right}
-    .ti:nth-child(even){margin-left:auto;margin-right:0;text-align:left}
-    .td{position:absolute;width:12px;height:12px;border-radius:50%;top:14px;z-index:2;transition:transform .2s}
-    .ti:nth-child(odd) .td{right:-34px}.ti:nth-child(even) .td{left:-34px}
-    .ti:hover .td{transform:scale(1.4)}
-    .ti.btc .td{background:#F7931A;box-shadow:0 0 10px #F7931A}
-    .ti.xmr .td{background:var(--xmr);box-shadow:0 0 10px var(--xmr)}
-    .ti.crossover .td{background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
-    .ti.regulatory .td{background:#B44DFF;box-shadow:0 0 10px #B44DFF}
-    .ti.btc{border-left:2px solid #F7931A}.ti:nth-child(odd).btc{border-left:none;border-right:2px solid #F7931A}
-    .ti.xmr{border-left:2px solid var(--xmr)}.ti:nth-child(odd).xmr{border-left:none;border-right:2px solid var(--xmr)}
-    .ti.crossover{border-left:2px solid var(--cyan)}.ti:nth-child(odd).crossover{border-left:none;border-right:2px solid var(--cyan)}
-    .ti.regulatory{border-left:2px solid #B44DFF}.ti:nth-child(odd).regulatory{border-left:none;border-right:2px solid #B44DFF}
-    .ti-yr{font-size:9px;margin-bottom:3px}
-    .ti.btc .ti-yr{color:#F7931A}.ti.xmr .ti-yr{color:var(--xmr)}.ti.crossover .ti-yr{color:var(--cyan)}.ti.regulatory .ti-yr{color:#B44DFF}
-    .ti-t{font-size:12px;font-weight:600;margin-bottom:3px;line-height:1.3}
-    .ti-p{font-size:10px;color:var(--text-tertiary);line-height:1.4}
-    .ti-tag{display:inline-block;font-size:7px;text-transform:uppercase;letter-spacing:1px;padding:2px 6px;border-radius:3px;margin-top:4px;opacity:.7}
-    .ti.btc .ti-tag{background:rgba(247,147,26,.12);color:#F7931A}
-    .ti.xmr .ti-tag{background:rgba(255,102,0,.12);color:var(--xmr)}
-    .ti.crossover .ti-tag{background:rgba(0,212,255,.12);color:var(--cyan)}
-    .ti.regulatory .ti-tag{background:rgba(180,77,255,.12);color:#B44DFF}
-    .dp{position:fixed;bottom:0;left:0;right:0;background:var(--surface-2);border-top:2px solid #F7931A;padding:18px 20px;transform:translateY(100%);transition:transform .35s;z-index:100;max-height:45vh;overflow-y:auto}
-    .dp.open{transform:translateY(0)}
-    .dp.btc{border-top-color:#F7931A}.dp.xmr{border-top-color:var(--xmr)}.dp.crossover{border-top-color:var(--cyan)}.dp.regulatory{border-top-color:#B44DFF}
-    .dp-inner{max-width:760px;margin:0 auto}
-    .dp-hdr{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px}
-    .dp-t{font-size:16px;font-weight:600}
-    .dp-x{border:1px solid var(--border-default);color:var(--text-tertiary);font-size:14px;cursor:pointer;padding:2px 8px;border-radius:3px;background:transparent;font-family:inherit}
-    .dp-x:hover{color:var(--g1);border-color:var(--g1)}
-    .dp-date{font-size:10px;margin-bottom:8px}
-    .dp.btc .dp-date{color:#F7931A}.dp.xmr .dp-date{color:var(--xmr)}.dp.crossover .dp-date{color:var(--cyan)}.dp.regulatory .dp-date{color:#B44DFF}
-    .dp-body{font-size:11px;color:var(--text-tertiary);line-height:1.7}
-    .dp-nav{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border-default)}
-    .dp-nav-btn{font-family:inherit;font-size:9px;color:var(--text-tertiary);background:transparent;border:1px solid var(--border-default);padding:4px 12px;cursor:pointer;border-radius:3px;transition:all .2s}
-    .dp-nav-btn:hover{color:var(--g1);border-color:var(--g1)}
-    .dp-link{display:inline-block;color:var(--xmr);font-size:10px;text-decoration:none;margin-top:6px}.dp-link:hover{text-decoration:underline}
-    .sctop{position:fixed;bottom:16px;right:16px;width:36px;height:36px;border-radius:50%;background:var(--surface-1);border:1px solid var(--border-default);color:var(--text-tertiary);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:all .3s;z-index:90}
-    .sctop.vis{opacity:1;visibility:visible}.sctop:hover{background:var(--surface-2);color:var(--g1)}
-    .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.timeline::before{left:12px}.ti{width:calc(100% - 36px);margin-left:36px!important;margin-right:0!important;text-align:left!important;border-left:2px solid #F7931A!important;border-right:none!important}.ti.xmr{border-left-color:var(--xmr)!important}.ti.crossover{border-left-color:var(--cyan)!important}.ti.regulatory{border-left-color:#B44DFF!important}.ti .td{left:-28px!important;right:auto!important}.dp{max-height:60vh;padding:14px}.fbar{gap:3px;padding:8px}}
-    </style>
+    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/d10.css">
 </head>
 <body>
-<div class="page-offset tl">
+<div class="page-offset">
     <div id="nav-mount"></div>
-    <div class="tl-nav"><em>xmr.irish</em> <span>/</span> <em>timeline</em></div>
-    <div class="progress" id="prog"></div>
-    <div class="hero">
-        <div class="hero-ey">Interactive history</div>
-        <div class="hero-t">The Privacy Evolution Timeline</div>
-        <div class="hero-sub">From Satoshi's genesis block to the regulatory storm — trace every pivotal moment in the evolution of financial privacy.</div>
-        <div class="hero-stats"><div class="hs"><div class="hs-v">48</div><div class="hs-l">Events</div></div><div class="hs"><div class="hs-v">18</div><div class="hs-l">Years</div></div><div class="hs"><div class="hs-v">5</div><div class="hs-l">Eras</div></div></div>
-        <div class="legend"><div class="leg"><span class="leg-d btc"></span>Bitcoin</div><div class="leg"><span class="leg-d xmr"></span>Monero</div><div class="leg"><span class="leg-d cross"></span>Crossover</div><div class="leg"><span class="leg-d reg"></span>Regulatory</div></div>
-        <div class="kbd-hint"><kbd>↑</kbd> <kbd>↓</kbd> Navigate · <kbd>Enter</kbd> Select · <kbd>Esc</kbd> Close</div>
-    </div>
-    <div class="fbar">
-        <button class="fb active" data-f="all" onclick="setF('all')">All</button>
-        <button class="fb" data-f="btc" onclick="setF('btc')">Bitcoin</button>
-        <button class="fb" data-f="xmr" onclick="setF('xmr')">Monero</button>
-        <button class="fb" data-f="crossover" onclick="setF('crossover')">Crossover</button>
-        <button class="fb" data-f="regulatory" onclick="setF('regulatory')">Regulatory</button>
-    </div>
-    <div class="ecnt">Showing <em id="vcnt">48</em> of 48 events</div>
-    <div class="tc"><div class="timeline" id="timeline"></div></div>
-    <div class="dp" id="dp"><div class="dp-inner"><div class="dp-hdr"><div class="dp-t" id="dp-t">—</div><button class="dp-x" onclick="closeP()">×</button></div><div class="dp-date" id="dp-date">—</div><div class="dp-body" id="dp-body">—</div><a href="#" class="dp-link" id="dp-link" target="_blank" style="display:none">View Source →</a><div class="dp-nav"><button class="dp-nav-btn" onclick="navP(-1)">← Previous</button><button class="dp-nav-btn" onclick="navP(1)">Next →</button></div></div></div>
-    <button class="sctop" id="sctop" onclick="scrollTo({top:0,behavior:'smooth'})">↑</button>
-    <div class="ft">xmr.irish / timeline · 48 events · 18 years · privacy is not optional</div>
+    <div class="sub-nav-breadcrumb"><em>xmr.irish</em> <span>/</span> <em>timeline</em></div>
+
+    <main class="timeline-page">
+        <h1>The Privacy Evolution Timeline</h1>
+        <p class="lede">Interactive history. From Satoshi's genesis block to the regulatory storm &mdash; trace every pivotal moment in the evolution of financial privacy.</p>
+
+        <div class="timeline-stats">
+            <div><div class="timeline-stat-value">48</div><div class="timeline-stat-label">Events</div></div>
+            <div><div class="timeline-stat-value">18</div><div class="timeline-stat-label">Years</div></div>
+            <div><div class="timeline-stat-value">5</div><div class="timeline-stat-label">Eras</div></div>
+        </div>
+
+        <div class="timeline-legend">
+            <div class="timeline-legend-item"><span class="timeline-legend-dot legend-btc"></span>Bitcoin</div>
+            <div class="timeline-legend-item"><span class="timeline-legend-dot legend-xmr"></span>Monero</div>
+            <div class="timeline-legend-item"><span class="timeline-legend-dot legend-crossover"></span>Crossover</div>
+            <div class="timeline-legend-item"><span class="timeline-legend-dot legend-regulatory"></span>Regulatory</div>
+        </div>
+
+        <ol class="timeline-spine">
+
+            <li class="timeline-era">
+                <div class="timeline-era-label">2008 &mdash; 2011</div>
+                <div class="timeline-era-name">The Bitcoin Era</div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">October 31, 2008</div>
+                <div class="timeline-event-content">
+                    <h3>Bitcoin Whitepaper Published</h3>
+                    <p class="event-summary">Satoshi publishes 'Bitcoin: A Peer-to-Peer Electronic Cash System'</p>
+                    <p>Satoshi Nakamoto publishes the Bitcoin whitepaper to the Cryptography Mailing List. Section 10 on privacy warns about the limitations of address-based pseudonymity. Satoshi recommends using a new key pair for each transaction, but acknowledges this doesn't fully solve the privacy problem.</p>
+                    <span class="event-tag">Bitcoin</span>
+                    <span class="event-source"><a href="https://bitcoin.org/bitcoin.pdf" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">January 3, 2009</div>
+                <div class="timeline-event-content">
+                    <h3>Genesis Block Mined</h3>
+                    <p class="event-summary">'Chancellor on brink of second bailout for banks'</p>
+                    <p>Satoshi mines the Bitcoin genesis block (Block 0), embedding The Times headline as both a timestamp and a philosophical statement about the traditional financial system Bitcoin aims to disrupt. The genesis block's 50 BTC subsidy is permanently unspendable.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">January 12, 2009</div>
+                <div class="timeline-event-content">
+                    <h3>First Bitcoin Transaction</h3>
+                    <p class="event-summary">Satoshi sends 10 BTC to Hal Finney in Block 170</p>
+                    <p>The first Bitcoin transaction between two parties. Satoshi sends 10 BTC to cryptographer Hal Finney, who had been running one of the first Bitcoin nodes. Finney was the creator of the first reusable proof-of-work system.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">October 5, 2009</div>
+                <div class="timeline-event-content">
+                    <h3>First BTC Price Established</h3>
+                    <p class="event-summary">$0.00076 per BTC via New Liberty Standard</p>
+                    <p>New Liberty Standard publishes the first known Bitcoin exchange rate based on electricity cost to mine. This establishes Bitcoin as having measurable market value for the first time.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">May 22, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Bitcoin Pizza Day</h3>
+                    <p class="event-summary">10,000 BTC exchanged for two pizzas</p>
+                    <p>Laszlo Hanyecz completes the first known commercial Bitcoin transaction, paying 10,000 BTC for two Papa John's pizzas. Celebrated annually, it represents the pivotal moment where Bitcoin transitions from experiment to medium of exchange.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">July 7-8, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Satoshi's Anonymity Thread (#82)</h3>
+                    <p class="event-summary">Community debates Bitcoin's privacy limitations</p>
+                    <p>BitcoinTalk thread #82 titled 'Anonymity' &mdash; the community debates whether Bitcoin provides adequate privacy. Satoshi acknowledges the limitations. This marks one of the earliest serious discussions about Bitcoin's transparency problem.</p>
+                    <span class="event-tag">Bitcoin</span>
+                    <span class="event-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">July 17, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Mt. Gox Exchange Launches</h3>
+                    <p class="event-summary">The first major Bitcoin exchange goes live</p>
+                    <p>Jed McCaleb launches Mt. Gox as a Bitcoin trading platform. It would handle over 70% of all Bitcoin transactions at its peak before collapsing in 2014.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">August 10-13, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Satoshi's 'Not a Suggestion' Thread (#174)</h3>
+                    <p class="event-summary">Describes stealth addresses, ring signatures, hidden amounts</p>
+                    <p>Satoshi outlines cryptographic solutions that wouldn't exist for years: 'blinded variations of a public key' (stealth addresses), 'group signatures &mdash; signed but not know who' (ring signatures), and hiding transaction amounts. These exact features became Monero's core privacy layer.</p>
+                    <span class="event-tag">Bitcoin</span>
+                    <span class="event-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">August 15, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Value Overflow Bug</h3>
+                    <p class="event-summary">184 billion BTC created and patched within hours</p>
+                    <p>A critical integer overflow vulnerability creates 184 billion BTC. Satoshi and developers quickly patch it and fork the blockchain to reverse the fraudulent transaction. Demonstrates both vulnerability and rapid community response.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">December 5, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Satoshi's Last Public Post</h3>
+                    <p class="event-summary">'WikiLeaks has kicked the hornet's nest'</p>
+                    <p>Satoshi makes his final public statement warning about WikiLeaks attention. Reveals awareness that Bitcoin's transparent ledger makes it unsuitable for high-profile privacy needs.</p>
+                    <span class="event-tag">Bitcoin</span>
+                    <span class="event-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">December 12, 2010</div>
+                <div class="timeline-event-content">
+                    <h3>Satoshi's Last Known Activity</h3>
+                    <p class="event-summary">Final commits to Bitcoin codebase</p>
+                    <p>Satoshi's last known forum activity. He communicates only through private emails after this. His estimated 1.1 million BTC remains untouched to this day.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">April 23, 2011</div>
+                <div class="timeline-event-content">
+                    <h3>Satoshi's Final Email</h3>
+                    <p class="event-summary">'I've moved on to other things'</p>
+                    <p>In his last known communication, Satoshi writes to Mike Hearn: 'I've moved on to other things. It's in good hands with Gavin and everyone.' He disappears permanently.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">June 2011</div>
+                <div class="timeline-event-content">
+                    <h3>WikiLeaks Accepts Bitcoin</h3>
+                    <p class="event-summary">Satoshi had warned against this attention</p>
+                    <p>WikiLeaks begins accepting Bitcoin after being cut off from traditional payments. This validates Bitcoin as censorship-resistant money but puts it in government crosshairs. Bitcoin's transparent ledger makes donations fully traceable.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-era">
+                <div class="timeline-era-label">2012 &mdash; 2014</div>
+                <div class="timeline-era-name">CryptoNote Emerges</div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">July 4, 2012</div>
+                <div class="timeline-event-content">
+                    <h3>Bytecoin Launches</h3>
+                    <p class="event-summary">First CryptoNote implementation &mdash; premined ~80%</p>
+                    <p>Bytecoin launches as the first CryptoNote cryptocurrency with ring signatures and one-time addresses. However, ~80% was premined by insiders, motivating the creation of a fair-launch alternative.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">December 12, 2012</div>
+                <div class="timeline-event-content">
+                    <h3>CryptoNote v1 Whitepaper</h3>
+                    <p class="event-summary">Ring signatures and one-time addresses described</p>
+                    <p>Nicolas van Saberhagen publishes the CryptoNote v1 whitepaper, criticizing Bitcoin's transparent ledger and proposing ring signatures for sender privacy and one-time addresses for receiver privacy.</p>
+                    <span class="event-tag">Monero</span>
+                    <span class="event-source"><a href="https://cryptonote.org/whitepaper.pdf" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">March 2013</div>
+                <div class="timeline-event-content">
+                    <h3>CryptoNote v2 Whitepaper</h3>
+                    <p class="event-summary">Improved protocol with enhanced ring signatures</p>
+                    <p>CryptoNote v2 refines the protocol with improvements to ring signatures, a more robust one-time key derivation mechanism, and formalized unlinkability and untraceability properties.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">February 2013</div>
+                <div class="timeline-event-content">
+                    <h3>Bitcoin Hits $1,000</h3>
+                    <p class="event-summary">First time BTC reaches four figures</p>
+                    <p>Bitcoin's price touches $1,000 for the first time, bringing unprecedented media attention and drawing both investors and regulators to cryptocurrency.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">October 2013</div>
+                <div class="timeline-event-content">
+                    <h3>Silk Road Shut Down</h3>
+                    <p class="event-summary">FBI seizes 144,000 BTC</p>
+                    <p>The FBI shuts down Silk Road and arrests Ross Ulbricht. Investigation heavily relied on Bitcoin's transparent blockchain. Proves definitively that Bitcoin is pseudonymous, not anonymous.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="crossover">
+                <div class="timeline-event-date">2013-2014</div>
+                <div class="timeline-event-content">
+                    <h3>Chain Analysis Firms Founded</h3>
+                    <p class="event-summary">Chainalysis and Elliptic begin blockchain surveillance</p>
+                    <p>Chainalysis (2014) and Elliptic (2013) are founded, creating tools to trace Bitcoin transactions. They would sign contracts with dozens of government agencies, turning Bitcoin's ledger into a surveillance tool.</p>
+                    <span class="event-tag">Crossover</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="btc">
+                <div class="timeline-event-date">February 2014</div>
+                <div class="timeline-event-content">
+                    <h3>Mt. Gox Collapse</h3>
+                    <p class="event-summary">850,000 BTC lost in largest exchange hack</p>
+                    <p>Mt. Gox files for bankruptcy after ~850,000 BTC stolen. Accelerates the 'not your keys, not your coins' movement and push toward self-custody.</p>
+                    <span class="event-tag">Bitcoin</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">April 18, 2014</div>
+                <div class="timeline-event-content">
+                    <h3>Monero (BitMonero) Launched</h3>
+                    <p class="event-summary">Fair-launch fork without the premine</p>
+                    <p>Monero launches as a community fork of Bytecoin eliminating the deceptive premine. Implements ring signatures and stealth addresses from day one. Privacy mandatory and default for all transactions.</p>
+                    <span class="event-tag">Monero</span>
+                    <span class="event-source"><a href="https://getmonero.org" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">September 2014</div>
+                <div class="timeline-event-content">
+                    <h3>Monero Community Takeover</h3>
+                    <p class="event-summary">Decentralized governance begins</p>
+                    <p>Original creator 'thankful_for_today' ousted. Project rebranded from BitMonero to Monero. Governance shifts to decentralized community-driven model.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-era">
+                <div class="timeline-era-label">2017 &mdash; 2022</div>
+                <div class="timeline-era-name">The Privacy War</div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">January 10, 2017</div>
+                <div class="timeline-event-content">
+                    <h3>RingCT Activated</h3>
+                    <p class="event-summary">Transaction amounts now hidden by default</p>
+                    <p>Ring Confidential Transactions hide amounts using Pedersen commitments. Completes the privacy trifecta: hidden senders (ring signatures), hidden receivers (stealth addresses), hidden amounts (RingCT).</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="crossover">
+                <div class="timeline-event-date">May 2017</div>
+                <div class="timeline-event-content">
+                    <h3>WannaCry Ransomware</h3>
+                    <p class="event-summary">Attackers convert BTC proceeds to XMR</p>
+                    <p>WannaCry infects 200,000+ computers. Attackers convert Bitcoin proceeds to Monero to evade tracking, demonstrating real-world consequences of Bitcoin's traceability.</p>
+                    <span class="event-tag">Crossover</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">March 2018</div>
+                <div class="timeline-event-content">
+                    <h3>Bulletproofs Implemented</h3>
+                    <p class="event-summary">Transaction size reduced 80%</p>
+                    <p>Bulletproofs replace Borromean range proofs, reducing sizes by ~80% and cutting fees proportionally. Proves privacy and scalability aren't mutually exclusive.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">September 2018</div>
+                <div class="timeline-event-content">
+                    <h3>Sub-address System</h3>
+                    <p class="event-summary">Unlimited unique receiving addresses</p>
+                    <p>Users can generate unlimited unique receiving addresses from one wallet with no on-chain link between them. Dramatically improves user privacy.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">November 2019</div>
+                <div class="timeline-event-content">
+                    <h3>RandomX Activated</h3>
+                    <p class="event-summary">ASIC-resistant CPU mining goes live</p>
+                    <p>RandomX makes specialized mining hardware impractical. Ensures mining remains accessible to ordinary users with consumer CPUs, preserving decentralization.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="crossover">
+                <div class="timeline-event-date">July 2020</div>
+                <div class="timeline-event-content">
+                    <h3>CipherTrace Claims Partial Tracing</h3>
+                    <p class="event-summary">Claims disputed by researchers</p>
+                    <p>CipherTrace announces probabilistic Monero tracing tools under DHS contract. Privacy researchers dispute effectiveness. No reliable tracing demonstrated.</p>
+                    <span class="event-tag">Crossover</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">September 2020</div>
+                <div class="timeline-event-content">
+                    <h3>IRS Offers $625K Bounty</h3>
+                    <p class="event-summary">Government seeks to break Monero's privacy</p>
+                    <p>IRS offers $625,000 for Monero tracing tools. 22 companies apply. Chainalysis and Integra FEC selected. Implicitly validates Monero's privacy &mdash; if traceable, no bounty needed. Remains effectively unclaimed.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">October 2020</div>
+                <div class="timeline-event-content">
+                    <h3>CLSAG Signatures</h3>
+                    <p class="event-summary">Transaction size reduced another 25%</p>
+                    <p>CLSAG replaces MLSAG, reducing sizes by 25% and improving verification speed by 20%. Iterative improvement: smaller, faster, cheaper, same privacy.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">November 2020</div>
+                <div class="timeline-event-content">
+                    <h3>Chainalysis Wins IRS Contract</h3>
+                    <p class="event-summary">$22M for Monero tracing development</p>
+                    <p>Chainalysis wins IRS contract. Leaked training video later reveals reliance on exchange KYC data and metadata, not cryptographic breaks.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">April 2021</div>
+                <div class="timeline-event-content">
+                    <h3>Coinbase Refuses to List XMR</h3>
+                    <p class="event-summary">Regulatory concerns override user demand</p>
+                    <p>Coinbase publicly declines to list Monero despite user demand, citing compliance concerns. Marks a turning point where regulation meaningfully restricts privacy coin access.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">2021-2022</div>
+                <div class="timeline-event-content">
+                    <h3>Exchange Delisting Wave</h3>
+                    <p class="event-summary">Bittrex, Huobi, and others drop XMR</p>
+                    <p>Growing wave of exchanges delist Monero. Each cites compliance. Accelerates shift toward decentralized exchanges and P2P trading.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">August 2022</div>
+                <div class="timeline-event-content">
+                    <h3>Tail Emission Begins</h3>
+                    <p class="event-summary">0.6 XMR per block, forever</p>
+                    <p>Monero enters permanent tail emission: 0.6 XMR per block indefinitely. Unlike Bitcoin's eventual zero rewards, Monero ensures perpetual miner incentives and network security.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-era">
+                <div class="timeline-era-label">2022 &mdash; 2025</div>
+                <div class="timeline-era-name">The Regulatory Storm</div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">December 2022</div>
+                <div class="timeline-event-content">
+                    <h3>EU MiCA Regulation Passed</h3>
+                    <p class="event-summary">Comprehensive crypto framework adopted</p>
+                    <p>EU adopts Markets in Crypto-Assets regulation. Stringent traceability requirements make it extremely difficult for exchanges to support privacy coins within the EU.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">July 2023</div>
+                <div class="timeline-event-content">
+                    <h3>View Tags Implemented</h3>
+                    <p class="event-summary">40% wallet sync speedup</p>
+                    <p>One-byte view tags let wallets skip non-matching outputs during scanning, reducing sync time by ~40% with no privacy trade-offs.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">January 2024</div>
+                <div class="timeline-event-content">
+                    <h3>EU Bans Anonymous Crypto &gt;1000 EUR</h3>
+                    <p class="event-summary">Anti-money laundering targets privacy</p>
+                    <p>Updated AML regulation bans anonymous crypto payments exceeding 1,000 euros, effectively prohibiting privacy coin usage through regulated entities for non-trivial transactions.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">May 2024</div>
+                <div class="timeline-event-content">
+                    <h3>Binance Delists Monero</h3>
+                    <p class="event-summary">World's largest exchange removes XMR</p>
+                    <p>Binance delists Monero globally. Most significant delisting due to Binance's market dominance. XMR price recovers and surges, demonstrating independence from centralized exchanges.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">June 2024</div>
+                <div class="timeline-event-content">
+                    <h3>Dubai DFSA Bans Privacy Tokens</h3>
+                    <p class="event-summary">Major financial hub restricts privacy coins</p>
+                    <p>Dubai Financial Services Authority bans privacy tokens. Notable given Dubai's crypto-friendly positioning. Reflects growing global regulatory consensus.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="crossover">
+                <div class="timeline-event-date">November 2024</div>
+                <div class="timeline-event-content">
+                    <h3>Zcash Governance Crisis</h3>
+                    <p class="event-summary">ECC turmoil drives capital rotation to XMR</p>
+                    <p>Zcash faces governance crisis. Community fractures over project direction. Reinforces perception that Monero is the most reliable privacy cryptocurrency.</p>
+                    <span class="event-tag">Crossover</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">January 2025</div>
+                <div class="timeline-event-content">
+                    <h3>XMR Hits ~$800 ATH</h3>
+                    <p class="event-summary">Privacy demand surges despite delistings</p>
+                    <p>Monero reaches ~$800 amid surging demand. 73 delistings correlate with +195% price increase. Demonstrates that regulatory pressure cannot destroy demand for privacy.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">2024-2025</div>
+                <div class="timeline-event-content">
+                    <h3>73 Exchanges Delist XMR</h3>
+                    <p class="event-summary">Mass delistings; on-chain activity stays flat</p>
+                    <p>73+ exchanges delist Monero. Transaction volume remains stable or grows. P2P platforms, atomic swaps, and DEXs absorb volume. No company to sue, no CEO to arrest, no way to stop the protocol.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">2024-2025</div>
+                <div class="timeline-event-content">
+                    <h3>FCMP++ Development Begins</h3>
+                    <p class="event-summary">Full-chain membership proofs in progress</p>
+                    <p>Development begins on FCMP++, which will make every transaction anonymous among ALL transactions ever made. The entire chain becomes one massive anonymity set, making statistical analysis effectively impossible.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-era">
+                <div class="timeline-era-label">Building What Satoshi Envisioned</div>
+                <div class="timeline-era-name">2026+ The Future</div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">January 2026</div>
+                <div class="timeline-event-content">
+                    <h3>EU DAC8 Directive Activates</h3>
+                    <p class="event-summary">Crypto reporting to tax authorities across EU</p>
+                    <p>DAC8 takes effect, requiring crypto service providers to report transaction data to tax authorities across all EU member states. Most comprehensive crypto surveillance framework ever implemented.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="regulatory">
+                <div class="timeline-event-date">2026</div>
+                <div class="timeline-event-content">
+                    <h3>CLARITY Act &amp; GENIUS Act</h3>
+                    <p class="event-summary">US expands crypto reporting (Form 1099-DA)</p>
+                    <p>US expands reporting through CLARITY and GENIUS Acts, introducing Form 1099-DA. Creates comprehensive surveillance framework driving demand for privacy alternatives.</p>
+                    <span class="event-tag">Regulatory</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">Q2-Q3 2026</div>
+                <div class="timeline-event-content">
+                    <h3>FCMP++ Expected Deployment</h3>
+                    <p class="event-summary">Anonymity set: entire blockchain</p>
+                    <p>FCMP++ expected on mainnet. Every output in Monero's history becomes a potential decoy. Eliminates ring-size heuristic analysis entirely. Privacy guarantees orders of magnitude stronger.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">2026</div>
+                <div class="timeline-event-content">
+                    <h3>Cuprate Rust Node</h3>
+                    <p class="event-summary">Alternative node implementation advances</p>
+                    <p>Cuprate provides implementation diversity, reducing risk that a single bug affects all nodes. Rust's memory safety reduces attack surface.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+            <li class="timeline-event" data-type="xmr">
+                <div class="timeline-event-date">2026</div>
+                <div class="timeline-event-content">
+                    <h3>Seraphis &amp; Jamtis in Beta</h3>
+                    <p class="event-summary">Next-gen transaction protocol nears completion</p>
+                    <p>Seraphis redesigns transaction protocol. Jamtis provides new addressing with forward secrecy and tier-based wallet permissions. Most ambitious protocol evolution.</p>
+                    <span class="event-tag">Monero</span>
+                </div>
+            </li>
+
+        </ol>
+
+        <aside class="related-pages">
+            <h3>Related</h3>
+            <ul class="related-list">
+                <li><a href="/secrets">Secrets</a> &mdash; lesser-known facts</li>
+                <li><a href="/quotes">Quotes</a> &mdash; voices through time</li>
+                <li><a href="/privacy-architecture">Privacy Architecture</a></li>
+                <li><a href="/bottom-line">The Bottom Line</a></li>
+            </ul>
+        </aside>
+
+        <footer class="page-footer">xmr.irish / timeline &middot; 48 events &middot; 18 years &middot; privacy is not optional</footer>
+    </main>
 </div>
-<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
-<script>
-NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
-
-var E=[
-{era:"The Bitcoin Era",eraS:"2008 — 2011",eraT:"btc"},
-{d:"October 31, 2008",t:"Bitcoin Whitepaper Published",p:"Satoshi publishes 'Bitcoin: A Peer-to-Peer Electronic Cash System'",c:"Satoshi Nakamoto publishes the Bitcoin whitepaper to the Cryptography Mailing List. Section 10 on privacy warns about the limitations of address-based pseudonymity. Satoshi recommends using a new key pair for each transaction, but acknowledges this doesn't fully solve the privacy problem.",ty:"btc",l:"https://bitcoin.org/bitcoin.pdf"},
-{d:"January 3, 2009",t:"Genesis Block Mined",p:"'Chancellor on brink of second bailout for banks'",c:"Satoshi mines the Bitcoin genesis block (Block 0), embedding The Times headline as both a timestamp and a philosophical statement about the traditional financial system Bitcoin aims to disrupt. The genesis block's 50 BTC subsidy is permanently unspendable.",ty:"btc"},
-{d:"January 12, 2009",t:"First Bitcoin Transaction",p:"Satoshi sends 10 BTC to Hal Finney in Block 170",c:"The first Bitcoin transaction between two parties. Satoshi sends 10 BTC to cryptographer Hal Finney, who had been running one of the first Bitcoin nodes. Finney was the creator of the first reusable proof-of-work system.",ty:"btc"},
-{d:"October 5, 2009",t:"First BTC Price Established",p:"$0.00076 per BTC via New Liberty Standard",c:"New Liberty Standard publishes the first known Bitcoin exchange rate based on electricity cost to mine. This establishes Bitcoin as having measurable market value for the first time.",ty:"btc"},
-{d:"May 22, 2010",t:"Bitcoin Pizza Day",p:"10,000 BTC exchanged for two pizzas",c:"Laszlo Hanyecz completes the first known commercial Bitcoin transaction, paying 10,000 BTC for two Papa John's pizzas. Celebrated annually, it represents the pivotal moment where Bitcoin transitions from experiment to medium of exchange.",ty:"btc"},
-{d:"July 7-8, 2010",t:"Satoshi's Anonymity Thread (#82)",p:"Community debates Bitcoin's privacy limitations",c:"BitcoinTalk thread #82 titled 'Anonymity' — the community debates whether Bitcoin provides adequate privacy. Satoshi acknowledges the limitations. This marks one of the earliest serious discussions about Bitcoin's transparency problem.",ty:"btc",l:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"},
-{d:"July 17, 2010",t:"Mt. Gox Exchange Launches",p:"The first major Bitcoin exchange goes live",c:"Jed McCaleb launches Mt. Gox as a Bitcoin trading platform. It would handle over 70% of all Bitcoin transactions at its peak before collapsing in 2014.",ty:"btc"},
-{d:"August 10-13, 2010",t:"Satoshi's 'Not a Suggestion' Thread (#174)",p:"Describes stealth addresses, ring signatures, hidden amounts",c:"Satoshi outlines cryptographic solutions that wouldn't exist for years: 'blinded variations of a public key' (stealth addresses), 'group signatures — signed but not know who' (ring signatures), and hiding transaction amounts. These exact features became Monero's core privacy layer.",ty:"btc",l:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"},
-{d:"August 15, 2010",t:"Value Overflow Bug",p:"184 billion BTC created and patched within hours",c:"A critical integer overflow vulnerability creates 184 billion BTC. Satoshi and developers quickly patch it and fork the blockchain to reverse the fraudulent transaction. Demonstrates both vulnerability and rapid community response.",ty:"btc"},
-{d:"December 5, 2010",t:"Satoshi's Last Public Post",p:"'WikiLeaks has kicked the hornet's nest'",c:"Satoshi makes his final public statement warning about WikiLeaks attention. Reveals awareness that Bitcoin's transparent ledger makes it unsuitable for high-profile privacy needs.",ty:"btc",l:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"},
-{d:"December 12, 2010",t:"Satoshi's Last Known Activity",p:"Final commits to Bitcoin codebase",c:"Satoshi's last known forum activity. He communicates only through private emails after this. His estimated 1.1 million BTC remains untouched to this day.",ty:"btc"},
-{d:"April 23, 2011",t:"Satoshi's Final Email",p:"'I've moved on to other things'",c:"In his last known communication, Satoshi writes to Mike Hearn: 'I've moved on to other things. It's in good hands with Gavin and everyone.' He disappears permanently.",ty:"btc"},
-{d:"June 2011",t:"WikiLeaks Accepts Bitcoin",p:"Satoshi had warned against this attention",c:"WikiLeaks begins accepting Bitcoin after being cut off from traditional payments. This validates Bitcoin as censorship-resistant money but puts it in government crosshairs. Bitcoin's transparent ledger makes donations fully traceable.",ty:"btc"},
-{era:"CryptoNote Emerges",eraS:"2012 — 2014",eraT:"xmr"},
-{d:"July 4, 2012",t:"Bytecoin Launches",p:"First CryptoNote implementation — premined ~80%",c:"Bytecoin launches as the first CryptoNote cryptocurrency with ring signatures and one-time addresses. However, ~80% was premined by insiders, motivating the creation of a fair-launch alternative.",ty:"xmr"},
-{d:"December 12, 2012",t:"CryptoNote v1 Whitepaper",p:"Ring signatures and one-time addresses described",c:"Nicolas van Saberhagen publishes the CryptoNote v1 whitepaper, criticizing Bitcoin's transparent ledger and proposing ring signatures for sender privacy and one-time addresses for receiver privacy.",ty:"xmr",l:"https://cryptonote.org/whitepaper.pdf"},
-{d:"March 2013",t:"CryptoNote v2 Whitepaper",p:"Improved protocol with enhanced ring signatures",c:"CryptoNote v2 refines the protocol with improvements to ring signatures, a more robust one-time key derivation mechanism, and formalized unlinkability and untraceability properties.",ty:"xmr"},
-{d:"February 2013",t:"Bitcoin Hits $1,000",p:"First time BTC reaches four figures",c:"Bitcoin's price touches $1,000 for the first time, bringing unprecedented media attention and drawing both investors and regulators to cryptocurrency.",ty:"btc"},
-{d:"October 2013",t:"Silk Road Shut Down",p:"FBI seizes 144,000 BTC",c:"The FBI shuts down Silk Road and arrests Ross Ulbricht. Investigation heavily relied on Bitcoin's transparent blockchain. Proves definitively that Bitcoin is pseudonymous, not anonymous.",ty:"btc"},
-{d:"2013-2014",t:"Chain Analysis Firms Founded",p:"Chainalysis and Elliptic begin blockchain surveillance",c:"Chainalysis (2014) and Elliptic (2013) are founded, creating tools to trace Bitcoin transactions. They would sign contracts with dozens of government agencies, turning Bitcoin's ledger into a surveillance tool.",ty:"crossover"},
-{d:"February 2014",t:"Mt. Gox Collapse",p:"850,000 BTC lost in largest exchange hack",c:"Mt. Gox files for bankruptcy after ~850,000 BTC stolen. Accelerates the 'not your keys, not your coins' movement and push toward self-custody.",ty:"btc"},
-{d:"April 18, 2014",t:"Monero (BitMonero) Launched",p:"Fair-launch fork without the premine",c:"Monero launches as a community fork of Bytecoin eliminating the deceptive premine. Implements ring signatures and stealth addresses from day one. Privacy mandatory and default for all transactions.",ty:"xmr",l:"https://getmonero.org"},
-{d:"September 2014",t:"Monero Community Takeover",p:"Decentralized governance begins",c:"Original creator 'thankful_for_today' ousted. Project rebranded from BitMonero to Monero. Governance shifts to decentralized community-driven model.",ty:"xmr"},
-{era:"The Privacy War",eraS:"2017 — 2022",eraT:"crossover"},
-{d:"January 10, 2017",t:"RingCT Activated",p:"Transaction amounts now hidden by default",c:"Ring Confidential Transactions hide amounts using Pedersen commitments. Completes the privacy trifecta: hidden senders (ring signatures), hidden receivers (stealth addresses), hidden amounts (RingCT).",ty:"xmr"},
-{d:"May 2017",t:"WannaCry Ransomware",p:"Attackers convert BTC proceeds to XMR",c:"WannaCry infects 200,000+ computers. Attackers convert Bitcoin proceeds to Monero to evade tracking, demonstrating real-world consequences of Bitcoin's traceability.",ty:"crossover"},
-{d:"March 2018",t:"Bulletproofs Implemented",p:"Transaction size reduced 80%",c:"Bulletproofs replace Borromean range proofs, reducing sizes by ~80% and cutting fees proportionally. Proves privacy and scalability aren't mutually exclusive.",ty:"xmr"},
-{d:"September 2018",t:"Sub-address System",p:"Unlimited unique receiving addresses",c:"Users can generate unlimited unique receiving addresses from one wallet with no on-chain link between them. Dramatically improves user privacy.",ty:"xmr"},
-{d:"November 2019",t:"RandomX Activated",p:"ASIC-resistant CPU mining goes live",c:"RandomX makes specialized mining hardware impractical. Ensures mining remains accessible to ordinary users with consumer CPUs, preserving decentralization.",ty:"xmr"},
-{d:"July 2020",t:"CipherTrace Claims Partial Tracing",p:"Claims disputed by researchers",c:"CipherTrace announces probabilistic Monero tracing tools under DHS contract. Privacy researchers dispute effectiveness. No reliable tracing demonstrated.",ty:"crossover"},
-{d:"September 2020",t:"IRS Offers $625K Bounty",p:"Government seeks to break Monero's privacy",c:"IRS offers $625,000 for Monero tracing tools. 22 companies apply. Chainalysis and Integra FEC selected. Implicitly validates Monero's privacy — if traceable, no bounty needed. Remains effectively unclaimed.",ty:"regulatory"},
-{d:"October 2020",t:"CLSAG Signatures",p:"Transaction size reduced another 25%",c:"CLSAG replaces MLSAG, reducing sizes by 25% and improving verification speed by 20%. Iterative improvement: smaller, faster, cheaper, same privacy.",ty:"xmr"},
-{d:"November 2020",t:"Chainalysis Wins IRS Contract",p:"$22M for Monero tracing development",c:"Chainalysis wins IRS contract. Leaked training video later reveals reliance on exchange KYC data and metadata, not cryptographic breaks.",ty:"regulatory"},
-{d:"April 2021",t:"Coinbase Refuses to List XMR",p:"Regulatory concerns override user demand",c:"Coinbase publicly declines to list Monero despite user demand, citing compliance concerns. Marks a turning point where regulation meaningfully restricts privacy coin access.",ty:"regulatory"},
-{d:"2021-2022",t:"Exchange Delisting Wave",p:"Bittrex, Huobi, and others drop XMR",c:"Growing wave of exchanges delist Monero. Each cites compliance. Accelerates shift toward decentralized exchanges and P2P trading.",ty:"regulatory"},
-{d:"August 2022",t:"Tail Emission Begins",p:"0.6 XMR per block, forever",c:"Monero enters permanent tail emission: 0.6 XMR per block indefinitely. Unlike Bitcoin's eventual zero rewards, Monero ensures perpetual miner incentives and network security.",ty:"xmr"},
-{era:"The Regulatory Storm",eraS:"2022 — 2025",eraT:"regulatory"},
-{d:"December 2022",t:"EU MiCA Regulation Passed",p:"Comprehensive crypto framework adopted",c:"EU adopts Markets in Crypto-Assets regulation. Stringent traceability requirements make it extremely difficult for exchanges to support privacy coins within the EU.",ty:"regulatory"},
-{d:"July 2023",t:"View Tags Implemented",p:"40% wallet sync speedup",c:"One-byte view tags let wallets skip non-matching outputs during scanning, reducing sync time by ~40% with no privacy trade-offs.",ty:"xmr"},
-{d:"January 2024",t:"EU Bans Anonymous Crypto >1000 EUR",p:"Anti-money laundering targets privacy",c:"Updated AML regulation bans anonymous crypto payments exceeding 1,000 euros, effectively prohibiting privacy coin usage through regulated entities for non-trivial transactions.",ty:"regulatory"},
-{d:"May 2024",t:"Binance Delists Monero",p:"World's largest exchange removes XMR",c:"Binance delists Monero globally. Most significant delisting due to Binance's market dominance. XMR price recovers and surges, demonstrating independence from centralized exchanges.",ty:"regulatory"},
-{d:"June 2024",t:"Dubai DFSA Bans Privacy Tokens",p:"Major financial hub restricts privacy coins",c:"Dubai Financial Services Authority bans privacy tokens. Notable given Dubai's crypto-friendly positioning. Reflects growing global regulatory consensus.",ty:"regulatory"},
-{d:"November 2024",t:"Zcash Governance Crisis",p:"ECC turmoil drives capital rotation to XMR",c:"Zcash faces governance crisis. Community fractures over project direction. Reinforces perception that Monero is the most reliable privacy cryptocurrency.",ty:"crossover"},
-{d:"January 2025",t:"XMR Hits ~$800 ATH",p:"Privacy demand surges despite delistings",c:"Monero reaches ~$800 amid surging demand. 73 delistings correlate with +195% price increase. Demonstrates that regulatory pressure cannot destroy demand for privacy.",ty:"xmr"},
-{d:"2024-2025",t:"73 Exchanges Delist XMR",p:"Mass delistings; on-chain activity stays flat",c:"73+ exchanges delist Monero. Transaction volume remains stable or grows. P2P platforms, atomic swaps, and DEXs absorb volume. No company to sue, no CEO to arrest, no way to stop the protocol.",ty:"regulatory"},
-{d:"2024-2025",t:"FCMP++ Development Begins",p:"Full-chain membership proofs in progress",c:"Development begins on FCMP++, which will make every transaction anonymous among ALL transactions ever made. The entire chain becomes one massive anonymity set, making statistical analysis effectively impossible.",ty:"xmr"},
-{era:"2026+ The Future",eraS:"Building What Satoshi Envisioned",eraT:"future"},
-{d:"January 2026",t:"EU DAC8 Directive Activates",p:"Crypto reporting to tax authorities across EU",c:"DAC8 takes effect, requiring crypto service providers to report transaction data to tax authorities across all EU member states. Most comprehensive crypto surveillance framework ever implemented.",ty:"regulatory"},
-{d:"2026",t:"CLARITY Act & GENIUS Act",p:"US expands crypto reporting (Form 1099-DA)",c:"US expands reporting through CLARITY and GENIUS Acts, introducing Form 1099-DA. Creates comprehensive surveillance framework driving demand for privacy alternatives.",ty:"regulatory"},
-{d:"Q2-Q3 2026",t:"FCMP++ Expected Deployment",p:"Anonymity set: entire blockchain",c:"FCMP++ expected on mainnet. Every output in Monero's history becomes a potential decoy. Eliminates ring-size heuristic analysis entirely. Privacy guarantees orders of magnitude stronger.",ty:"xmr"},
-{d:"2026",t:"Cuprate Rust Node",p:"Alternative node implementation advances",c:"Cuprate provides implementation diversity, reducing risk that a single bug affects all nodes. Rust's memory safety reduces attack surface.",ty:"xmr"},
-{d:"2026",t:"Seraphis & Jamtis in Beta",p:"Next-gen transaction protocol nears completion",c:"Seraphis redesigns transaction protocol. Jamtis provides new addressing with forward secrecy and tier-based wallet permissions. Most ambitious protocol evolution.",ty:"xmr"}
-];
-
-var cIdx=-1,aFilter='all',visIdx=[],allEls=[];
-
-function render(){
-    var tl=document.getElementById('timeline'),html='',ei=0;
-    var tagL={btc:'Bitcoin',xmr:'Monero',crossover:'Crossover',regulatory:'Regulatory'};
-    E.forEach(function(item,i){
-        if(item.era){html+='<div class="era '+item.eraT+'" data-era><div class="era-inner"><div class="era-t">'+item.era+'</div><div class="era-s">'+item.eraS+'</div></div></div>';}
-        else{html+='<div class="ti '+item.ty+'" data-idx="'+i+'" data-ei="'+ei+'" data-ty="'+item.ty+'" onclick="openP('+i+')"><div class="td"></div><div class="ti-yr">'+item.d+'</div><div class="ti-t">'+item.t+'</div><div class="ti-p">'+item.p+'</div><span class="ti-tag">'+tagL[item.ty]+'</span></div>';ei++;}
-    });
-    tl.innerHTML=html;
-    allEls=Array.from(tl.querySelectorAll('.ti'));
-    updVis();initObs();
-}
-
-function setF(f){aFilter=f;document.querySelectorAll('.fb').forEach(function(b){b.classList.toggle('active',b.dataset.f===f)});
-    allEls.forEach(function(el){var ty=el.dataset.ty;el.classList.toggle('hid',f!=='all'&&ty!==f)});
-    document.querySelectorAll('.era').forEach(function(h){if(f==='all'){h.style.display=''}else{var n=h.nextElementSibling,has=false;while(n&&!n.dataset.era){if(n.classList.contains('ti')&&!n.classList.contains('hid')){has=true;break}n=n.nextElementSibling}h.style.display=has?'':'none'}});
-    updVis();closeP();document.getElementById('vcnt').textContent=visIdx.length;initObs()}
-
-function updVis(){visIdx=[];allEls.forEach(function(el){if(!el.classList.contains('hid'))visIdx.push(parseInt(el.dataset.idx))})}
-
-function openP(i){var e=E[i];if(!e||e.era)return;var dp=document.getElementById('dp');
-    allEls.forEach(function(el){el.classList.remove('active')});
-    var tel=allEls.find(function(el){return parseInt(el.dataset.idx)===i});if(tel){tel.classList.add('active');tel.scrollIntoView({behavior:'smooth',block:'center'})}
-    document.getElementById('dp-t').textContent=e.t;document.getElementById('dp-date').textContent=e.d;document.getElementById('dp-body').textContent=e.c;
-    var lk=document.getElementById('dp-link');if(e.l){lk.href=e.l;lk.style.display='inline-block'}else{lk.style.display='none'}
-    dp.className='dp open '+e.ty;cIdx=i}
-
-function closeP(){document.getElementById('dp').classList.remove('open');allEls.forEach(function(el){el.classList.remove('active')});cIdx=-1}
-
-function navP(dir){if(!visIdx.length)return;var pos=visIdx.indexOf(cIdx),next;
-    if(pos===-1)next=dir>0?0:visIdx.length-1;else{next=pos+dir;if(next<0)next=visIdx.length-1;if(next>=visIdx.length)next=0}
-    openP(visIdx[next])}
-
-function initObs(){var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('vis')})},{threshold:.1,rootMargin:'0px 0px -40px 0px'});
-    allEls.forEach(function(el){if(!el.classList.contains('hid')&&!el.classList.contains('vis'))obs.observe(el)});
-    document.querySelectorAll('.era').forEach(function(h){h.style.opacity='0';h.style.transform='translateY(15px)';h.style.transition='opacity .5s,transform .5s';
-        var eo=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)'}})},{threshold:.1});eo.observe(h)})}
-
-document.addEventListener('keydown',function(e){if(e.key==='ArrowDown'||e.key==='ArrowRight'){e.preventDefault();navP(1)}else if(e.key==='ArrowUp'||e.key==='ArrowLeft'){e.preventDefault();navP(-1)}else if(e.key==='Escape')closeP();else if(e.key==='Enter'&&cIdx===-1&&visIdx.length)openP(visIdx[0])});
-addEventListener('scroll',function(){var s=scrollY,h=document.documentElement.scrollHeight-innerHeight;document.getElementById('prog').style.width=(h>0?s/h*100:0)+'%';document.getElementById('sctop').classList.toggle('vis',s>500&&!document.getElementById('dp').classList.contains('open'))},{passive:true});
-
-render();
-</script>
-</body></html>
+<script src="/js/nav.js"></script>
+<script src="/js/price-service.js"></script>
+<script src="/js/monero-network.js"></script>
+<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+</body>
+</html>

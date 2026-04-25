@@ -1,134 +1,303 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
+    <meta charset="UTF-8">
+    <meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Satoshi Quote Archive</title>
     <meta name="description" content="30+ curated Satoshi Nakamoto quotes searchable by category. Weighted toward privacy discussions and Monero-predictive language.">
     <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/d10.css">
-    <style>
-    .qt{font-family:'JetBrains Mono','DM Mono',monospace;min-height:100vh}
-    .qt-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px}
-    .qt-nav em{color:var(--grn);font-style:normal;font-weight:600}.qt-nav span{color:var(--text-muted)}
-    .hero{padding:40px var(--space-page-x) 16px;text-align:center}
-    .hero-ey{font-size:9px;color:var(--xmr);letter-spacing:4px;text-transform:uppercase;margin-bottom:10px}
-    .hero-t{font-size:28px;font-weight:600;margin-bottom:8px;letter-spacing:-1px}
-    .hero-sub{font-size:12px;color:var(--text-secondary);max-width:500px;margin:0 auto;line-height:1.6}
-    .controls{max-width:1100px;margin:14px auto;padding:12px 16px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;position:sticky;top:52px;z-index:100}
-    .search-input{flex:1;min-width:180px;max-width:360px;padding:6px 12px;background:var(--surface-0);border:1px solid var(--border-default);border-radius:6px;color:var(--g1);font-size:11px;font-family:inherit}
-    .search-input:focus{border-color:var(--xmr);outline:none}
-    .search-input::placeholder{color:var(--text-muted)}
-    .fbtn{padding:4px 10px;border-radius:5px;border:1px solid var(--border-default);background:transparent;color:var(--text-tertiary);font-family:inherit;font-size:9px;cursor:pointer;transition:all .2s}
-    .fbtn:hover{border-color:var(--text-tertiary);color:var(--g3)}
-    .fbtn.active{border-color:rgba(255,102,0,.3);color:var(--xmr);background:rgba(255,102,0,.06)}
-    .fbtn.key-btn.active{border-color:rgba(255,215,0,.3);background:rgba(255,215,0,.06);color:var(--gold)}
-    .stats{font-size:9px;color:var(--text-tertiary);width:100%;text-align:center;margin-top:4px}
-    .qgrid{max-width:1100px;margin:0 auto;padding:16px var(--space-page-x);display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
-    .qcard{background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px;padding:14px;display:flex;flex-direction:column;position:relative;overflow:hidden;cursor:pointer;transition:border-color .2s}
-    .qcard:hover{border-color:rgba(255,102,0,.2)}
-    .qcard.key{border-color:rgba(255,215,0,.12);background:linear-gradient(135deg,rgba(255,215,0,.02),transparent)}
-    .qcard.privacy{border-color:rgba(255,102,0,.1)}
-    .qtext{font-size:11px;line-height:1.7;flex:1;margin-bottom:10px;color:var(--g3)}
-    .qmeta{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:4px;padding-top:8px;border-top:1px solid var(--border-subtle)}
-    .qsource{font-size:9px;color:var(--text-muted)}.qsource a{color:var(--xmr);text-decoration:none}.qsource a:hover{text-decoration:underline}
-    .qdate{font-size:9px;color:var(--text-muted)}
-    .qtag{padding:2px 6px;font-size:7px;text-transform:uppercase;letter-spacing:1px;border-radius:3px}
-    .qtag.privacy{background:rgba(255,102,0,.15);color:var(--xmr)}
-    .qtag.philosophy{background:rgba(247,147,26,.15);color:var(--gold)}
-    .qtag.technical{background:rgba(100,100,255,.15);color:#8888FF}
-    .qtag.economics{background:rgba(0,200,100,.15);color:#00D26A}
-    .qtag.security{background:rgba(255,71,87,.15);color:#FF4757}
-    .qtag.farewell{background:rgba(255,215,0,.15);color:var(--gold)}
-    .key-badge{position:absolute;top:6px;right:6px;font-size:7px;padding:2px 6px;background:var(--gold);color:var(--surface-0);border-radius:3px;font-weight:600}
-    .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.qgrid{grid-template-columns:1fr;padding:12px}.controls{padding:10px;top:52px}}
-    </style>
+    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/d10.css">
 </head>
 <body>
-<div class="page-offset qt">
+<div class="page-offset">
     <div id="nav-mount"></div>
-    <div class="qt-nav"><em>xmr.irish</em> <span>/</span> <em>quotes</em></div>
-    <div class="hero">
-        <div class="hero-ey">Complete archive · 30+ quotes</div>
-        <div class="hero-t">Satoshi Quote Collection</div>
-        <div class="hero-sub">Searchable by category. Weighted toward privacy discussions and Monero-predictive language. Key quotes highlighted.</div>
-    </div>
-    <div class="controls">
-        <input type="text" class="search-input" id="searchInput" placeholder="Search quotes...">
-        <button class="fbtn active" onclick="filterQ('all')">All</button>
-        <button class="fbtn" onclick="filterQ('privacy')">Privacy</button>
-        <button class="fbtn" onclick="filterQ('philosophy')">Philosophy</button>
-        <button class="fbtn" onclick="filterQ('technical')">Technical</button>
-        <button class="fbtn" onclick="filterQ('economics')">Economics</button>
-        <button class="fbtn" onclick="filterQ('farewell')">Farewell</button>
-        <button class="fbtn key-btn" id="keyBtn" onclick="toggleKey()">★ Key</button>
-        <button class="fbtn" onclick="randomQ()">Random</button>
-        <div class="stats" id="stats">Showing 30 quotes</div>
-    </div>
-    <div class="qgrid" id="qgrid"></div>
-    <div class="ft">xmr.irish / quotes · the words that started everything</div>
+    <div class="sub-nav-breadcrumb"><em>xmr.irish</em> <span>/</span> <em>quotes</em></div>
+
+    <main class="quotes-page">
+        <h1>Satoshi Quote Collection</h1>
+        <p class="lede">Complete archive · 30+ quotes. Searchable by category. Weighted toward privacy discussions and Monero-predictive language. Key quotes highlighted.</p>
+
+        <h2>Privacy</h2>
+        <div class="quotes-grid">
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments. Others could not tell the blinded public keys belong to the owner of the original public key."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #174 &middot; August 11, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"With group signatures, it is possible for something to be signed but not know who signed it."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #174 &middot; August 11, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to. A private key could have a counter so you can derive any number of random variations of the public key."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #174 &middot; August 11, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #174 &middot; August 10, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"If we have to hide transaction amounts, we'd need something like David Chaum's approach. Transactions would be split into standard denominations."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #174 &middot; August 13, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"For privacy, it's best to use new addresses for each transaction. Your client creates new addresses automatically, but you need to remember to use them."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #82 &middot; July 8, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"The possibility of a pseudo-anonymous currency is not on any regulatory radar at this point. When they notice Bitcoin, they'll focus on the normal KYC procedures at the exchange endpoints."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk Thread #82 &middot; July 8, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+        </div>
+
+        <h2>Philosophy</h2>
+        <div class="quotes-grid">
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"The root problem with conventional currency is all the trust that's required to make it work. The central bank must be trusted not to debase the currency, but the history of fiat currencies is full of breaches of that trust."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">P2P Foundation &middot; February 11, 2009</p>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"With e-currency based on cryptographic proof, without the need to trust a third party middleman, money can be secure and transactions effortless."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">P2P Foundation &middot; February 11, 2009</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"A lot of people automatically dismiss e-currency as a lost cause because of all the companies that failed since the 1990s. I hope it's obvious it was only the centrally controlled nature of those systems that doomed them."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">P2P Foundation &middot; February 11, 2009</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"If you don't believe me or don't get it, I don't have time to try to convince you, sorry."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; July 29, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"It's very attractive to the libertarian viewpoint if we can explain it properly. I'm better with code than with words though."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Email to Hal Finney &middot; November 2008</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"I am not Dorian Nakamoto."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">P2P Foundation (after 5 years of silence) &middot; March 7, 2014</p>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks"</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Genesis Block Coinbase &middot; January 3, 2009</p>
+                </div>
+            </article>
+        </div>
+
+        <h2>Technical</h2>
+        <div class="quotes-grid">
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"We have proposed a system for electronic transactions without relying on trust."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Bitcoin Whitepaper &middot; October 31, 2008</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; June 17, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Bitcoin Whitepaper &middot; October 31, 2008</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"The Bitcoin network might actually reduce spam by diverting zombie farms to generating bitcoins instead."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Cryptography Mailing List &middot; November 14, 2008</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"SHA-256 is very strong. It's not the same as the stepping from MD5 to SHA1. It can last several decades unless there's some massive breakthrough attack."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; June 14, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"I'm sure that in 20 years there will either be very large transaction volume or no volume."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; February 14, 2010</p>
+                </div>
+            </article>
+        </div>
+
+        <h2>Economics</h2>
+        <div class="quotes-grid">
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"Banks must be trusted to hold our money and transfer it electronically, but they lend it out in waves of credit bubbles with barely a fraction in reserve."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">P2P Foundation &middot; February 11, 2009</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; June 21, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"In a few decades when the reward gets too small, the transaction fee will become the main compensation for nodes."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; February 14, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"The price of any commodity tends to gravitate toward the production cost. If the price is below cost, then production slows down. If the price is above cost, profit can be made by generating and selling more."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; February 21, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"It might make sense just to get some in case it catches on. If enough people think the same way, that becomes a self fulfilling prophecy."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Cryptography Mailing List &middot; January 17, 2009</p>
+                </div>
+            </article>
+        </div>
+
+        <h2>Security</h2>
+        <div class="quotes-grid">
+            <article class="quote-card">
+                <p class="quote-text">"The software is not at all resistant to DoS attack. This is one improvement, but there are still more ways to attack than I can count."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; December 5, 2010</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"Imagine someone stole something from you. You can't get it back, but if you could, if it had a kill switch that could be remote triggered, would you do it?"</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; August 2010</p>
+                </div>
+            </article>
+        </div>
+
+        <h2>Farewell</h2>
+        <div class="quotes-grid">
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &mdash; Final Public Post &middot; December 5, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card is-key">
+                <span class="key-marker">&#9733; Key</span>
+                <p class="quote-text">"I've moved on to other things. It's in good hands with Gavin and everyone."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">Email to Mike Hearn &middot; April 23, 2011</p>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"It would have been nice to get this attention in any other context."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; December 5, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+            <article class="quote-card">
+                <p class="quote-text">"I make this appeal to WikiLeaks not to try to use Bitcoin. Bitcoin is a small beta community in its infancy. You would not stand to get more than pocket change, and the heat you would bring would likely destroy us at this stage."</p>
+                <div class="quote-attribution">
+                    <p class="quote-author">Satoshi Nakamoto</p>
+                    <p class="quote-context">BitcoinTalk &middot; December 5, 2010</p>
+                    <span class="quote-source"><a href="https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/" rel="noopener nofollow" target="_blank">View source &rarr;</a></span>
+                </div>
+            </article>
+        </div>
+
+        <aside class="related-pages">
+            <h3>Related</h3>
+            <ul class="related-list">
+                <li><a href="/bottom-line">The Bottom Line</a> &mdash; editorial argument</li>
+                <li><a href="/secrets">Secrets</a> &mdash; lesser-known facts</li>
+                <li><a href="/timeline">Timeline</a> &mdash; historical events</li>
+                <li><a href="/community">Community</a> &mdash; current voices</li>
+            </ul>
+        </aside>
+
+        <footer class="page-footer">xmr.irish / quotes &middot; the words that started everything</footer>
+    </main>
 </div>
-<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
-<script>
-NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
-
-var quotes=[
-{text:"What we need is a way to generate additional blinded variations of a public key. The blinded variations would have the same properties as a public key and could be used to receive payments. Others could not tell the blinded public keys belong to the owner of the original public key.",source:"BitcoinTalk Thread #174",date:"August 11, 2010",tag:"privacy",key:true,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"},
-{text:"With group signatures, it is possible for something to be signed but not know who signed it.",source:"BitcoinTalk Thread #174",date:"August 11, 2010",tag:"privacy",key:true,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"},
-{text:"The network would track a bunch of independent outpoints. It doesn't know what transactions or amounts they belong to. A private key could have a counter so you can derive any number of random variations of the public key.",source:"BitcoinTalk Thread #174",date:"August 11, 2010",tag:"privacy",key:true,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"},
-{text:"It's hard to think of how to apply zero-knowledge-proofs in this case. We're trying to prove the absence of something, which seems to require knowing all of something and that's a lot.",source:"BitcoinTalk Thread #174",date:"August 10, 2010",tag:"privacy",key:true,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"},
-{text:"If we have to hide transaction amounts, we'd need something like David Chaum's approach. Transactions would be split into standard denominations.",source:"BitcoinTalk Thread #174",date:"August 13, 2010",tag:"privacy",key:true,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/174/"},
-{text:"For privacy, it's best to use new addresses for each transaction. Your client creates new addresses automatically, but you need to remember to use them.",source:"BitcoinTalk Thread #82",date:"July 8, 2010",tag:"privacy",key:false,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"},
-{text:"The possibility of a pseudo-anonymous currency is not on any regulatory radar at this point. When they notice Bitcoin, they'll focus on the normal KYC procedures at the exchange endpoints.",source:"BitcoinTalk Thread #82",date:"July 8, 2010",tag:"privacy",key:false,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/82/"},
-{text:"The root problem with conventional currency is all the trust that's required to make it work. The central bank must be trusted not to debase the currency, but the history of fiat currencies is full of breaches of that trust.",source:"P2P Foundation",date:"February 11, 2009",tag:"philosophy",key:true},
-{text:"With e-currency based on cryptographic proof, without the need to trust a third party middleman, money can be secure and transactions effortless.",source:"P2P Foundation",date:"February 11, 2009",tag:"philosophy",key:true},
-{text:"A lot of people automatically dismiss e-currency as a lost cause because of all the companies that failed since the 1990s. I hope it's obvious it was only the centrally controlled nature of those systems that doomed them.",source:"P2P Foundation",date:"February 11, 2009",tag:"philosophy",key:false},
-{text:"If you don't believe me or don't get it, I don't have time to try to convince you, sorry.",source:"BitcoinTalk",date:"July 29, 2010",tag:"philosophy",key:false},
-{text:"It's very attractive to the libertarian viewpoint if we can explain it properly. I'm better with code than with words though.",source:"Email to Hal Finney",date:"November 2008",tag:"philosophy",key:false},
-{text:"I am not Dorian Nakamoto.",source:"P2P Foundation (after 5 years of silence)",date:"March 7, 2014",tag:"philosophy",key:false},
-{text:"The Times 03/Jan/2009 Chancellor on brink of second bailout for banks",source:"Genesis Block Coinbase",date:"January 3, 2009",tag:"philosophy",key:true},
-{text:"We have proposed a system for electronic transactions without relying on trust.",source:"Bitcoin Whitepaper",date:"October 31, 2008",tag:"technical",key:true},
-{text:"The nature of Bitcoin is such that once version 0.1 was released, the core design was set in stone for the rest of its lifetime.",source:"BitcoinTalk",date:"June 17, 2010",tag:"technical",key:false},
-{text:"As long as a majority of CPU power is controlled by nodes that are not cooperating to attack the network, they'll generate the longest chain and outpace attackers.",source:"Bitcoin Whitepaper",date:"October 31, 2008",tag:"technical",key:false},
-{text:"The Bitcoin network might actually reduce spam by diverting zombie farms to generating bitcoins instead.",source:"Cryptography Mailing List",date:"November 14, 2008",tag:"technical",key:false},
-{text:"SHA-256 is very strong. It's not the same as the stepping from MD5 to SHA1. It can last several decades unless there's some massive breakthrough attack.",source:"BitcoinTalk",date:"June 14, 2010",tag:"technical",key:false},
-{text:"I'm sure that in 20 years there will either be very large transaction volume or no volume.",source:"BitcoinTalk",date:"February 14, 2010",tag:"technical",key:false},
-{text:"Banks must be trusted to hold our money and transfer it electronically, but they lend it out in waves of credit bubbles with barely a fraction in reserve.",source:"P2P Foundation",date:"February 11, 2009",tag:"economics",key:true},
-{text:"Lost coins only make everyone else's coins worth slightly more. Think of it as a donation to everyone.",source:"BitcoinTalk",date:"June 21, 2010",tag:"economics",key:false},
-{text:"In a few decades when the reward gets too small, the transaction fee will become the main compensation for nodes.",source:"BitcoinTalk",date:"February 14, 2010",tag:"economics",key:false},
-{text:"The price of any commodity tends to gravitate toward the production cost. If the price is below cost, then production slows down. If the price is above cost, profit can be made by generating and selling more.",source:"BitcoinTalk",date:"February 21, 2010",tag:"economics",key:false},
-{text:"It might make sense just to get some in case it catches on. If enough people think the same way, that becomes a self fulfilling prophecy.",source:"Cryptography Mailing List",date:"January 17, 2009",tag:"economics",key:false},
-{text:"The software is not at all resistant to DoS attack. This is one improvement, but there are still more ways to attack than I can count.",source:"BitcoinTalk",date:"December 5, 2010",tag:"security",key:false},
-{text:"Imagine someone stole something from you. You can't get it back, but if you could, if it had a kill switch that could be remote triggered, would you do it?",source:"BitcoinTalk",date:"August 2010",tag:"security",key:false},
-{text:"WikiLeaks has kicked the hornet's nest, and the swarm is headed towards us.",source:"BitcoinTalk — Final Public Post",date:"December 5, 2010",tag:"farewell",key:true,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"},
-{text:"I've moved on to other things. It's in good hands with Gavin and everyone.",source:"Email to Mike Hearn",date:"April 23, 2011",tag:"farewell",key:true},
-{text:"It would have been nice to get this attention in any other context.",source:"BitcoinTalk",date:"December 5, 2010",tag:"farewell",key:false,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"},
-{text:"I make this appeal to WikiLeaks not to try to use Bitcoin. Bitcoin is a small beta community in its infancy. You would not stand to get more than pocket change, and the heat you would bring would likely destroy us at this stage.",source:"BitcoinTalk",date:"December 5, 2010",tag:"farewell",key:false,link:"https://satoshi.nakamotoinstitute.org/posts/bitcointalk/threads/241/"}
-];
-
-var currentFilter='all',showKeyOnly=false;
-
-function renderQ(){
-    var grid=document.getElementById('qgrid'),search=document.getElementById('searchInput').value.toLowerCase();
-    var filtered=quotes.filter(function(q){
-        var mf=currentFilter==='all'||q.tag===currentFilter;
-        var ms=q.text.toLowerCase().includes(search)||q.source.toLowerCase().includes(search)||q.tag.includes(search);
-        var mk=!showKeyOnly||q.key;
-        return mf&&ms&&mk;
-    });
-    filtered.sort(function(a,b){if(a.key!==b.key)return b.key-a.key;if(a.tag==='privacy'&&b.tag!=='privacy')return -1;if(b.tag==='privacy'&&a.tag!=='privacy')return 1;return 0});
-    grid.innerHTML=filtered.map(function(q){
-        return '<div class="qcard'+(q.key?' key':'')+' '+q.tag+'">'+(q.key?'<span class="key-badge">★ KEY</span>':'')+'<div class="qtext">"'+q.text+'"</div><div class="qmeta"><div><span class="qsource">'+(q.link?'<a href="'+q.link+'" target="_blank">'+q.source+' →</a>':q.source)+'</span><span class="qdate"> · '+q.date+'</span></div><span class="qtag '+q.tag+'">'+q.tag+'</span></div></div>';
-    }).join('');
-    document.getElementById('stats').textContent='Showing '+filtered.length+' of '+quotes.length+' quotes';
-}
-
-function filterQ(tag){currentFilter=tag;document.querySelectorAll('.fbtn').forEach(function(b){if(!b.classList.contains('key-btn'))b.classList.remove('active')});event.target.classList.add('active');renderQ()}
-function toggleKey(){showKeyOnly=!showKeyOnly;document.getElementById('keyBtn').classList.toggle('active',showKeyOnly);renderQ()}
-function randomQ(){var cards=document.querySelectorAll('.qcard');cards.forEach(function(c){c.style.opacity='0.2'});var ri=Math.floor(Math.random()*cards.length);cards[ri].style.opacity='1';cards[ri].scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){cards.forEach(function(c){c.style.opacity='1'})},2000)}
-document.getElementById('searchInput').addEventListener('input',renderQ);
-renderQ();
-</script>
-</body></html>
+<script src="/js/nav.js"></script>
+<script src="/js/price-service.js"></script>
+<script src="/js/monero-network.js"></script>
+<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+</body>
+</html>
