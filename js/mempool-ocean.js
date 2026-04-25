@@ -229,6 +229,10 @@
         this.stats.render(p);
         if (p.recent_txs) this.feed.render(p.recent_txs);
         this.projected.render(p.projected_block);
+        /* Pass recent_txs alongside the histogram so the depth chart can
+           rebucket into user-facing tiers (Low/Standard/Priority/Urgent/Express)
+           and compute true per-tier medians. */
+        if (this.depth && this.depth.setRecentTxs) this.depth.setRecentTxs(p.recent_txs || []);
         this.depth.setHistogram(p.fee_histogram || []);
         this.ocean.sync(p.recent_txs || []);
     };

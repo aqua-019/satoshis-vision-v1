@@ -22,10 +22,21 @@
                 { l: 'Median p/B', v: '—' }
             ];
         } else {
-            var oldest = p.recent_txs && p.recent_txs.length
-                ? p.recent_txs.reduce(function (a, t) { return Math.min(a, t.receive_time || Infinity); }, Infinity)
-                : 0;
-            var ageMs = oldest && oldest !== Infinity ? Date.now() - oldest * 1000 : 0;
+            /* Prefer the API's `oldest_tx_age_seconds`, derived server-side from
+               poolStats.oldest — covers the entire mempool, not just the 20
+               entries in `recent_txs`. Fall back to the recent-list scan if the
+               server didn't provide it. */
+            var ageMs = 0;
+            if (typeof p.oldest_tx_age_seconds === 'number' && p.oldest_tx_age_seconds > 0) {
+                ageMs = p.oldest_tx_age_seconds * 1000;
+            } else if (p.recent_txs && p.recent_txs.length) {
+                var oldest = p.recent_txs.reduce(function (a, t) {
+                    return Math.min(a, t.receive_time || Infinity);
+                }, Infinity);
+                if (oldest && oldest !== Infinity) {
+                    ageMs = Math.max(0, Date.now() - oldest * 1000);
+                }
+            }
             chips = [
                 { l: 'TXs',        v: fmt.int(p.tx_count) },
                 { l: 'Size',       v: fmt.bytes(p.bytes_total) },

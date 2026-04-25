@@ -121,16 +121,16 @@
 .mp-tt-row b{color:var(--text-primary);font-weight:500}
 .mp-tt-tier{font-size:9px;font-weight:700;letter-spacing:1.6px;margin-top:4px;text-transform:uppercase}
 
-/* Fee depth chart */
+/* Fee depth chart — DOM-based labeled tier bars (replaces canvas histogram). */
 .mp-depth{
     background:var(--surface-1);border:1px solid var(--border-subtle);
-    border-radius:10px;padding:10px;height:260px;margin-bottom:14px;
+    border-radius:10px;padding:10px 12px 14px;margin-bottom:14px;
 }
 .mp-depth-head{
     display:flex;justify-content:space-between;margin-bottom:4px;
     font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:var(--text-tertiary);
 }
-.mp-depth canvas{width:100%;height:calc(100% - 18px);display:block}
+.mp-depth canvas{display:none}
 
 /* Live TX feed */
 .mp-txfeed{
@@ -939,10 +939,10 @@
         <div class="mp-fee-hero" id="mp-fee-hero"></div>
         <div class="mp-proj-block" id="mp-proj-block"></div>
 
-        <!-- M5: OCEAN / CLOCK viz toggle -->
+        <!-- M5: OCEAN / CLOCK viz toggle (default = CLOCK; setViz() re-applies stored pref on boot) -->
         <div class="ocean-viz-toggle" role="tablist" aria-label="Mempool visualization mode">
-            <button class="viz-toggle-btn active" data-viz="ocean" role="tab" aria-selected="true">⬤ OCEAN</button>
-            <button class="viz-toggle-btn"        data-viz="clock" role="tab" aria-selected="false">⏱ CLOCK</button>
+            <button class="viz-toggle-btn"        data-viz="ocean" role="tab" aria-selected="false">⬤ OCEAN</button>
+            <button class="viz-toggle-btn active" data-viz="clock" role="tab" aria-selected="true">⏱ CLOCK</button>
         </div>
 
         <!-- M5: Dandelion++ indicator -->
@@ -963,13 +963,13 @@
             <p>Monero uses Dandelion++ to prevent observers from linking your IP address to your transactions. Your transaction travels privately to one peer (stem), then broadcasts publicly (fluff). Even if the fluff phase is observed, the origin IP cannot be determined.</p>
         </div>
 
-        <div class="mp-ocean" id="mp-ocean-viz">
+        <div class="mp-ocean" id="mp-ocean-viz" hidden>
             <canvas id="mp-ocean-canvas" aria-label="Live mempool transaction ocean"></canvas>
             <div class="mp-ocean-tip" id="mp-ocean-tip" hidden></div>
         </div>
 
-        <!-- M5: Mempool Clock (alternative to ocean bubbles) -->
-        <div id="mp-clock-viz" hidden>
+        <!-- M5: Mempool Clock (default visualization) -->
+        <div id="mp-clock-viz">
             <canvas id="mp-clock-canvas" aria-label="Mempool clock — radial visualization of pending transactions"></canvas>
             <div class="m5-clock-caption">
                 Transactions orbit the next block at center. Distance from center = blocks until likely confirmation. Colored by fee tier: red (priority) → orange (fast) → green (normal) → blue (economy).
@@ -977,8 +977,8 @@
         </div>
 
         <div class="mp-depth">
-            <div class="mp-depth-head"><span>FEE DEPTH</span><span>piconero/byte · bytes</span></div>
-            <canvas id="mp-depth-canvas" aria-label="Fee depth chart"></canvas>
+            <div class="mp-depth-head"><span>FEE DEPTH</span><span>by tier · % of mempool weight</span></div>
+            <canvas id="mp-depth-canvas" aria-label="Fee depth chart" hidden></canvas>
         </div>
         <div class="mp-txfeed" id="mp-txfeed"></div>
         <div class="mp-stats-row" id="mp-stats-row"></div>
@@ -1241,8 +1241,8 @@
         }
         if (!wireWs()) setTimeout(wireWs, 500);
 
-        // Initial viz preference
-        var storedViz = 'ocean';
+        // Initial viz preference — default = CLOCK; localStorage override wins.
+        var storedViz = 'clock';
         try {
             var s = localStorage.getItem(VIZ_KEY);
             if (s === 'clock' || s === 'ocean') storedViz = s;

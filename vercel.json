@@ -41,6 +41,9 @@
   "rewrites": [
     { "source": "/pool",             "destination": "/mempool-explorer.html" },
     { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },
+    { "source": "/mempool-explorer/tx/:txid",  "destination": "/mempool-explorer.html" },
+    { "source": "/mempool-explorer/block/:id", "destination": "/mempool-explorer.html" },
+    { "source": "/mempool-explorer",           "destination": "/mempool-explorer.html" },
     { "source": "/home",           "destination": "/" },
     { "source": "/archive",        "destination": "/bottom-line.html" },
     { "source": "/education",      "destination": "/btc-xmr-education.html" },
