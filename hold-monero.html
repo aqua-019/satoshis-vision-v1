@@ -164,8 +164,54 @@
     .tip{background:var(--surface-1);border-left:3px solid var(--xmr);border-radius:0 10px 10px 0;padding:14px}
     .tip-t{font-size:12px;font-weight:600;margin-bottom:4px}.tip-d{font-size:10px;color:var(--text-tertiary);line-height:1.5}
 
+    /* Hero live-price tile */
+    .hero-price-tile{display:inline-flex;align-items:baseline;gap:14px;margin-top:18px;padding:10px 18px;background:var(--surface-1);border:1px solid var(--border-subtle);border-radius:8px;font-family:'DM Mono',monospace}
+    .hero-price-label{font-size:9px;color:var(--text-tertiary);letter-spacing:2px;text-transform:uppercase}
+    .hero-price-value{font-size:18px;font-weight:600;color:var(--text-primary)}
+    .hero-price-change{font-size:11px;color:var(--text-tertiary)}
+
+    /* Atomic Swaps walkthrough */
+    .atomic{background:var(--surface-1);border:1px solid rgba(68,136,255,.12);border-radius:12px;padding:22px;position:relative;overflow:hidden}
+    .atomic::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),rgba(68,136,255,.3))}
+    .atomic-ey{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--blue);margin-bottom:8px}
+    .atomic-t{font-size:18px;font-weight:600;margin-bottom:10px}
+    .atomic-desc{font-size:12px;color:var(--text-tertiary);line-height:1.7;margin-bottom:16px;max-width:760px}
+    .atomic-desc a{color:var(--blue);text-decoration:none}.atomic-desc a:hover{text-decoration:underline}
+    .atomic-steps{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:12px 0 14px}
+    .as-step{padding:14px 10px;background:var(--surface-2);border-radius:8px;border-top:2px solid rgba(68,136,255,.25)}
+    .as-step-n{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--blue);margin-bottom:6px}
+    .as-step-t{font-size:11px;font-weight:600;margin-bottom:4px;color:var(--text-primary)}
+    .as-step-d{font-size:10px;color:var(--text-tertiary);line-height:1.5}
+    .atomic-caveat{font-size:11px;color:var(--text-tertiary);line-height:1.6;padding:10px 14px;border-left:2px solid var(--gold);background:rgba(255,215,0,.04);border-radius:0 6px 6px 0;margin-top:10px}
+    .atomic-caveat strong{color:var(--gold);font-weight:500}
+
+    /* Operational Security */
+    .opsec-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .opsec-card{background:var(--surface-1);border:1px solid var(--border-default);border-left:3px solid var(--xmr);border-radius:0 10px 10px 0;padding:16px 18px}
+    .opsec-card h4{font-size:13px;font-weight:600;margin:0 0 6px 0;color:var(--text-primary)}
+    .opsec-card p{font-size:11px;color:var(--text-tertiary);line-height:1.65;margin:0}
+    .opsec-card.network{border-left-color:var(--blue)}
+    .opsec-card.seed{border-left-color:var(--grn)}
+    .opsec-card.inherit{border-left-color:var(--gold)}
+    .opsec-card.compromise{border-left-color:var(--red)}
+
+    /* Holding Through Volatility close */
+    .volatility-close{background:var(--surface-1);border:1px solid var(--border-subtle);border-left:3px solid var(--xmr);border-radius:0 10px 10px 0;padding:18px 22px}
+    .volatility-close p{font-size:12px;color:var(--text-secondary);line-height:1.75;margin:0 0 10px 0}
+    .volatility-close p:last-child{margin-bottom:0}
+    .volatility-close em{color:var(--xmr);font-style:normal;font-weight:500}
+
+    /* Related pages aside */
+    .related-pages{padding:14px var(--space-page-x);border-top:1px solid var(--border-subtle)}
+    .related-pages-t{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px}
+    .related-pages ul{list-style:none;padding:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
+    .related-pages li{font-size:11px}
+    .related-pages a{color:var(--blue);text-decoration:none;padding:4px 10px;border:1px solid var(--border-subtle);border-radius:6px;display:inline-block;transition:border-color .2s}
+    .related-pages a:hover{border-color:rgba(68,136,255,.4)}
+    .related-pages a span{color:var(--text-tertiary);margin-left:6px;font-size:10px}
+
     .ft{padding:12px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:9px;color:var(--text-tertiary)}
-    @media(max-width:768px){.paths,.wallets,.exch,.exch-rank,.tips{grid-template-columns:1fr}.wagyu-grid{grid-template-columns:repeat(2,1fr)}.suppress-flow{grid-template-columns:1fr}.sf-arrow{transform:rotate(90deg)}.suppress-stats{grid-template-columns:1fr}.hm{padding-bottom:96px}}
+    @media(max-width:768px){.paths,.wallets,.exch,.exch-rank,.tips{grid-template-columns:1fr}.wagyu-grid{grid-template-columns:repeat(2,1fr)}.suppress-flow{grid-template-columns:1fr}.sf-arrow{transform:rotate(90deg)}.suppress-stats{grid-template-columns:1fr}.hm{padding-bottom:96px}.atomic-steps{grid-template-columns:1fr}.opsec-grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
@@ -176,6 +222,11 @@
         <div class="hero-ey">Buy · Mine · Learn · Self-custody</div>
         <div class="hero-t">Hold <em>Monero</em></div>
         <div class="hero-sub">Privacy is default. No mixing required. No transparent chain. Just send. Here's how to get started — and why how you acquire matters for the entire ecosystem.</div>
+        <div class="hero-price-tile" aria-live="polite">
+            <span class="hero-price-label">XMR / USD</span>
+            <span class="hero-price-value" data-price="xmr">—</span>
+            <span class="hero-price-change" data-price="xmr-change">—</span>
+        </div>
     </div>
 
     <!-- Three paths -->
@@ -424,6 +475,44 @@
         </div>
     </div>
 
+    <!-- Atomic Swaps walkthrough -->
+    <div class="sec" id="acquisition-atomic-swaps">
+        <div class="sec-h"><div class="sec-t">Atomic Swaps · trustless BTC ↔ XMR</div><div class="sec-s">Hash-time-locked contracts · no counterparty risk</div></div>
+        <div class="atomic">
+            <div class="atomic-ey">Trustless · Protocol-level</div>
+            <div class="atomic-t">How an atomic swap works — without a custodian</div>
+            <div class="atomic-desc">Atomic swaps remove the trust requirement entirely. You send Bitcoin into a hash-locked contract; you receive Monero in your own wallet. Either both legs of the swap complete, or neither does — there's no counterparty who can run with your funds. <a href="https://wagyu.xyz" rel="noopener nofollow" target="_blank">wagyu.xyz</a> runs the public reference implementation of BTC ↔ XMR atomic swaps based on the COMIT protocol; the interface walks you through each step with explicit confirmations.</div>
+            <div class="atomic-steps">
+                <div class="as-step">
+                    <div class="as-step-n">Step 01</div>
+                    <div class="as-step-t">Lock BTC</div>
+                    <div class="as-step-d">Your Bitcoin enters a hash-time-locked contract. Only revealing a secret can unlock it.</div>
+                </div>
+                <div class="as-step">
+                    <div class="as-step-n">Step 02</div>
+                    <div class="as-step-t">Maker locks XMR</div>
+                    <div class="as-step-d">The counterparty locks Monero in a similarly time-locked output, observable by you.</div>
+                </div>
+                <div class="as-step">
+                    <div class="as-step-n">Step 03</div>
+                    <div class="as-step-t">You claim XMR</div>
+                    <div class="as-step-d">You publish a transaction that reveals the secret, claiming the XMR.</div>
+                </div>
+                <div class="as-step">
+                    <div class="as-step-n">Step 04</div>
+                    <div class="as-step-t">Maker claims BTC</div>
+                    <div class="as-step-d">Now the secret is public on-chain; the maker uses it to claim your BTC.</div>
+                </div>
+                <div class="as-step">
+                    <div class="as-step-n">Step 05</div>
+                    <div class="as-step-t">Timelock failsafe</div>
+                    <div class="as-step-d">If the maker disappears, you reclaim your BTC after the timelock. No funds are stuck.</div>
+                </div>
+            </div>
+            <div class="atomic-caveat"><strong>Caveat:</strong> Atomic swap liquidity is thinner than centralized swap services. Spread can be wider; large swaps may take longer to find a counterparty. For amounts under ~1 BTC equivalent, this is rarely a problem.</div>
+        </div>
+    </div>
+
     <!-- Where to acquire -->
     <div class="sec">
         <div class="sec-h"><div class="sec-t">Where to acquire</div><div class="sec-s">Non-custodial · no KYC preferred · ranked by impact</div></div>
@@ -459,6 +548,50 @@
         </div>
     </div>
 
+    <!-- Operational Security -->
+    <div class="sec" id="opsec">
+        <div class="sec-h"><div class="sec-t">Operational Security · OpSec</div><div class="sec-s">Your wallet's privacy is what you make of it</div></div>
+        <div class="opsec-grid">
+            <div class="opsec-card network">
+                <h4>Network privacy</h4>
+                <p>The protocol's privacy is strong; your network's privacy is what you make of it. Run your wallet over Tor (Feather supports this directly) or I2P. If you're connecting to a public remote node, that node sees your IP. Run your own node when value warrants the operational overhead.</p>
+            </div>
+            <div class="opsec-card seed">
+                <h4>Seed phrase handling</h4>
+                <p>The 25-word Monero mnemonic IS your wallet. Anyone with the seed can spend everything in it. Common best practices: write it on metal (not paper), store geographically distributed copies, never digitize, never photograph, never read aloud where a microphone might pick it up.</p>
+            </div>
+            <div class="opsec-card inherit">
+                <h4>Inheritance planning</h4>
+                <p>If your XMR matters to people who would inherit it, document the recovery process clearly. Multisig with a trusted second party (lawyer, family member) is one approach. Sealed letters with portion of seed distributed across trusted parties is another. The hardest part of inheritance is balancing security against accessibility.</p>
+            </div>
+            <div class="opsec-card compromise">
+                <h4>What to do if compromised</h4>
+                <p>If you believe a wallet's seed has been exposed: create a new wallet immediately, send all funds to it, abandon the compromised one. Do not reuse a compromised wallet for any further transactions. The exposure may have already been used; the only safe assumption is that everything in the old wallet will be drained.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Holding Through Volatility — editorial close -->
+    <div class="sec" id="volatility">
+        <div class="sec-h"><div class="sec-t">Holding through volatility</div><div class="sec-s">The asset is volatile · the utility is constant</div></div>
+        <div class="volatility-close">
+            <p>Monero is volatile. Down 30% months happen. Down 60% years have happened. This is the cost of holding an asset whose value derives from its utility, whose utility derives from its privacy, and whose price discovery happens on thin venues subject to the suppression dynamics described above.</p>
+            <p>The framing that helps: <em>you're not holding a price chart. You're holding a tool</em> — a way to transact privately, to send value across borders without permission, to opt out of the surveillance infrastructure of conventional finance. The price reflects what the market thinks that's worth at any given moment. The utility is constant.</p>
+            <p>Hold what you can afford to forget about for five years. Don't margin. Don't lend. Don't put it on an exchange overnight. The asset class is young; the regulatory landscape is in motion; the only thing you fully control is your own custody.</p>
+        </div>
+    </div>
+
+    <aside class="related-pages" aria-label="Related pages">
+        <div class="related-pages-t">Related</div>
+        <ul>
+            <li><a href="/privacy-architecture">Privacy Architecture<span>protocol-level privacy</span></a></li>
+            <li><a href="/markets">Markets<span>live XMR price &amp; volume</span></a></li>
+            <li><a href="/mining">Mining<span>acquisition without buying</span></a></li>
+            <li><a href="/legal">Legal<span>jurisdictional context</span></a></li>
+            <li><a href="/community">Community<span>wallets &amp; resources</span></a></li>
+        </ul>
+    </aside>
+
     <div class="ft">xmr.irish / hold monero · privacy is default · not your keys, not your coins</div>
 </div>
 <div id="cta-bar" class="cta-bar" role="complementary" aria-label="Get XMR call to action">
@@ -467,140 +600,9 @@
     <a href="#wagyu" class="cta-btn cta-btn-secondary">Wagyu.xyz P2P</a>
     <button type="button" class="cta-dismiss" onclick="dismissCtaBar()" aria-label="Dismiss">×</button>
 </div>
-<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script>
+<script src="js/nav.js"></script><script src="js/price-service.js"></script><script src="js/monero-network.js"></script><script src="js/genui.js"></script><script src="js/hold-monero-charts.js"></script>
 <script>
 NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
-
-// Price suppression visualization — animated selling pressure loop (SLOWED)
-(function(){
-    var c=document.getElementById('suppress-viz');if(!c)return;
-    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H,t=0,visible=false,rafId=0;
-    function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
-    addEventListener('resize',resize);
-
-    var priceData=[],basePrice=340;
-    for(var i=0;i<200;i++){
-        var organic=Math.sin(i*0.03)*40+Math.sin(i*0.07)*20+Math.cos(i*0.01)*30;
-        var suppression=0;
-        if(i%18<4)suppression=-6-Math.random()*10;
-        basePrice=340+organic+suppression+Math.random()*5;
-        priceData.push(Math.max(200,basePrice));
-    }
-
-    function draw(){
-        ctx.clearRect(0,0,W,H);
-        var padding=20,chartW=W-padding*2,chartH=H-padding*2;
-        var min=Math.min.apply(null,priceData),max=Math.max.apply(null,priceData),range=max-min||1;
-
-        ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
-        for(var i=1;i<5;i++){var gy=padding+chartH*i/5;ctx.beginPath();ctx.moveTo(padding,gy);ctx.lineTo(W-padding,gy);ctx.stroke()}
-
-        // Price line
-        ctx.beginPath();
-        var offset=Math.floor(t*0.15)%priceData.length; // SLOWED: was 0.3, now 0.15
-        for(var i=0;i<Math.min(priceData.length,chartW);i++){
-            var idx=(i+offset)%priceData.length;
-            var x=padding+i/(priceData.length-1)*chartW;
-            var y=padding+chartH-(priceData[idx]-min)/range*chartH;
-            i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
-        }
-        ctx.strokeStyle='rgba(255,102,0,0.5)';ctx.lineWidth=1.5;ctx.stroke();
-
-        // Fill under
-        ctx.lineTo(W-padding,H-padding);ctx.lineTo(padding,H-padding);ctx.closePath();
-        var gd=ctx.createLinearGradient(0,0,0,H);
-        gd.addColorStop(0,'rgba(255,102,0,0.08)');gd.addColorStop(1,'transparent');
-        ctx.fillStyle=gd;ctx.fill();
-
-        // Selling pressure drops — SLOWED (was 1.5, now 0.7)
-        for(var i=0;i<8;i++){
-            var phase=((t*0.7+i*30)%150)/150;
-            var ax=W*0.15+i*W*0.09+Math.sin(i*2.3)*15;
-            var ay=padding+phase*chartH;
-            var fade=phase<0.2?phase/0.2:phase>0.7?1-(phase-0.7)/0.3:1;
-            ctx.beginPath();ctx.arc(ax,ay,2.5*fade,0,Math.PI*2);
-            ctx.fillStyle='rgba(255,71,87,'+(fade*0.45)+')';ctx.fill();
-            if(fade>0.2){ctx.beginPath();ctx.moveTo(ax,ay-10);ctx.lineTo(ax,ay);
-            ctx.strokeStyle='rgba(255,71,87,'+(fade*0.15)+')';ctx.lineWidth=1;ctx.stroke()}
-        }
-
-        // Suppression zones highlighted
-        for(var i=0;i<priceData.length;i++){
-            if(i%18<4){
-                var x=padding+i/(priceData.length-1)*chartW;
-                ctx.fillStyle='rgba(255,71,87,0.03)';
-                ctx.fillRect(x-1,padding,3,chartH);
-            }
-        }
-
-        ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(255,71,87,0.4)';ctx.textAlign='center';
-        ctx.fillText('SWAP DUMPS ↓',W*0.5,padding+12);
-        ctx.fillStyle='rgba(255,102,0,0.3)';
-        ctx.fillText('XMR PRICE',W-padding-30,padding+12);
-
-        t++;if(visible)rafId=requestAnimationFrame(draw);
-    }
-    requestAnimationFrame(function(){
-        resize();
-        if('IntersectionObserver' in window){
-            var io=new IntersectionObserver(function(entries){
-                entries.forEach(function(e){
-                    if(e.isIntersecting){if(!visible){visible=true;rafId=requestAnimationFrame(draw)}}
-                    else{visible=false;if(rafId)cancelAnimationFrame(rafId)}
-                });
-            },{threshold:0});
-            io.observe(c);
-        }else{visible=true;draw()}
-    });
-})();
-
-// Volume extraction visualization — second canvas
-(function(){
-    var c=document.getElementById('volume-viz');if(!c)return;
-    var ctx=c.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W,H;
-    function resize(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0);if(typeof draw==='function')draw()}
-    addEventListener('resize',resize);
-
-    // Generate 30 days of estimated swap volume + extraction
-    var days=30,volumes=[],extractions=[];
-    for(var i=0;i<days;i++){
-        var vol=8+Math.random()*6+Math.sin(i*0.5)*2;// $8-14M daily
-        volumes.push(vol);
-        extractions.push(vol*0.035);// 3.5% extraction
-    }
-    var maxVol=Math.max.apply(null,volumes);
-
-    function draw(){
-        ctx.clearRect(0,0,W,H);
-        var pad=24,bw=(W-pad*2)/days-2,chartH=H-pad*2;
-
-        // Grid
-        ctx.strokeStyle='rgba(255,255,255,0.03)';ctx.lineWidth=0.5;
-        for(var i=1;i<4;i++){var y=pad+chartH*i/4;ctx.beginPath();ctx.moveTo(pad,y);ctx.lineTo(W-pad,y);ctx.stroke()}
-
-        // Volume bars
-        for(var i=0;i<days;i++){
-            var x=pad+i*(bw+2);
-            var h=volumes[i]/maxVol*chartH;
-            var eh=extractions[i]/maxVol*chartH;
-
-            // Total volume (blue-ish)
-            ctx.fillStyle='rgba(68,136,255,0.15)';
-            ctx.fillRect(x,pad+chartH-h,bw,h);
-
-            // Extraction portion (red overlay on top)
-            ctx.fillStyle='rgba(255,71,87,0.35)';
-            ctx.fillRect(x,pad+chartH-h,bw,eh);
-        }
-
-        // Labels
-        ctx.font='8px JetBrains Mono,monospace';ctx.textAlign='center';
-        ctx.fillStyle='rgba(68,136,255,0.4)';ctx.fillText('SWAP VOLUME (30d)',W*0.35,pad+12);
-        ctx.fillStyle='rgba(255,71,87,0.5)';ctx.fillText('RED = EXTRACTION',W*0.7,pad+12);
-        ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillText('~$10M/day',pad+30,pad+chartH-10);
-    }
-    requestAnimationFrame(function(){resize()});
-})();
 
 // ChangeNOW widget pair detection via postMessage
 (function(){
@@ -691,12 +693,24 @@ function simulateSwap(){
     },3000);
 }
 
-// Listen for price to update swap rate display
+// Listen for price updates: swap-rate panel + hero price tile
+// PriceService.data shape: { btc:{usd,change24h,...}, xmr:{usd,change24h,...} }
 PriceService.subscribe(function(d){
-    if(d.monero&&d.bitcoin){
-        var rate=(d.bitcoin.usd/d.monero.usd).toFixed(4);
+    if(!d)return;
+    if(d.btc&&d.xmr&&d.btc.usd&&d.xmr.usd){
+        var rate=(d.btc.usd/d.xmr.usd).toFixed(4);
         var el=document.getElementById('sw-rate');
         if(el)el.textContent='1 BTC ≈ '+rate+' XMR';
+    }
+    if(d.xmr){
+        var pv=document.querySelector('[data-price="xmr"]');
+        if(pv&&d.xmr.usd!=null)pv.textContent='$'+d.xmr.usd.toFixed(2);
+        var pc=document.querySelector('[data-price="xmr-change"]');
+        if(pc&&d.xmr.change24h!=null){
+            var ch=d.xmr.change24h;
+            pc.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'% 24h';
+            pc.style.color=ch>=0?'var(--grn)':'var(--red)';
+        }
     }
 });
 
