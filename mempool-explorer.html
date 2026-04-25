@@ -83,7 +83,15 @@
 .mp-fee-card-rate{display:flex;align-items:baseline;gap:5px;margin-bottom:4px}
 .mp-fee-rate-val{font-size:22px;font-weight:600;color:var(--text-primary)}
 .mp-fee-rate-unit{font-size:11px;color:var(--text-tertiary);letter-spacing:1px}
+.mp-fee-card-cost{font-size:11px;color:var(--text-secondary);margin-bottom:4px;font-family:var(--font-mono)}
 .mp-fee-card-eta{font-size:10px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase}
+.mp-fee-tier-caption{
+    font-size:12px;color:var(--text-secondary);line-height:1.5;
+    margin:0 0 14px;padding:10px 14px;
+    border-left:2px solid rgba(255,102,0,.4);
+    background:rgba(255,102,0,.04);border-radius:0 4px 4px 0;
+}
+.mp-fee-tier-caption strong{color:var(--text-primary);font-family:var(--font-mono);font-weight:600}
 
 /* Projected block strip */
 .mp-proj-block{
@@ -1031,13 +1039,41 @@
     background:#0D0D0D;
     border:1px solid var(--border-subtle);
     border-radius:4px;
-    padding:8px;margin:0 0 12px;
+    padding:12px;margin:0 0 12px;
+}
+.m5-clock-grid{
+    display:grid;
+    grid-template-columns:1fr 220px;
+    gap:24px;
+    align-items:center;
 }
 #mp-clock-canvas{display:block;width:100%;height:260px}
+.m5-clock-legend{
+    display:flex;flex-direction:column;gap:10px;
+    font-family:var(--font-mono);
+}
+.m5-clock-legend-row{
+    display:grid;grid-template-columns:10px 70px 1fr;gap:8px;align-items:center;
+}
+.m5-clock-legend-dot{
+    width:10px;height:10px;border-radius:50%;display:inline-block;
+}
+.m5-clock-legend-label{
+    font-size:11px;font-weight:700;letter-spacing:.08em;
+    text-transform:uppercase;color:var(--text-primary);
+}
+.m5-clock-legend-desc{
+    font-size:11px;color:var(--text-secondary);line-height:1.4;
+}
 .m5-clock-caption{
-    margin-top:8px;
-    font-family:var(--font-mono);font-size:9.5px;
-    color:var(--text-muted);line-height:1.6;text-align:center;
+    margin-top:14px;
+    font-family:var(--font-mono);font-size:11.5px;
+    color:var(--text-secondary);line-height:1.6;text-align:left;
+    max-width:720px;
+}
+@media (max-width:768px){
+    .m5-clock-grid{grid-template-columns:1fr}
+    .m5-clock-caption{text-align:left}
 }
 
 /* --- Dandelion++ indicator --- */
@@ -1146,7 +1182,8 @@
     color:var(--text-secondary);letter-spacing:.08em;
     margin-bottom:8px;
 }
-.m5-chart-block canvas{display:block;width:100%}
+.m5-chart-block canvas:not([hidden]){display:block;width:100%}
+.m5-chart-block canvas[hidden]{display:none}
 .m5-chart-caption{
     margin-top:10px;
     font-family:var(--font-body);font-size:10.5px;
@@ -1154,7 +1191,7 @@
 }
 
 /* --- Real decoy age analysis (per-tx ring resolution via get_outs) --- */
-.exp-tx-decoy-mount{min-height:60px}
+.exp-tx-decoy-mount{min-height:0;height:auto;flex:0 0 auto}
 .exp-tx-decoy-loading{font-family:var(--font-mono);font-size:10.5px;color:var(--text-muted);padding:6px 0}
 .exp-tx-decoy-header{
     font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);
@@ -1221,6 +1258,9 @@
     <!-- OCEAN MODE ───────────────────────────────────────────────── -->
     <section class="mp-mode-panel" id="mp-panel-ocean" data-mode="ocean" role="tabpanel">
         <div class="mp-fee-hero" id="mp-fee-hero"></div>
+        <div class="mp-fee-tier-caption">
+            <strong>pcn/B</strong> = piconero per byte. One piconero is 10⁻¹² XMR — the smallest unit. Monero fees scale with transaction size in bytes; a typical 2-input transaction is ≈ 1.8 KB.
+        </div>
         <div class="mp-proj-block" id="mp-proj-block"></div>
 
         <!-- M5: OCEAN / CLOCK viz toggle (default = CLOCK; setViz() re-applies stored pref on boot) -->
@@ -1257,9 +1297,34 @@
 
         <!-- M5: Mempool Clock (default visualization) -->
         <div id="mp-clock-viz">
-            <canvas id="mp-clock-canvas" aria-label="Mempool clock — radial visualization of pending transactions"></canvas>
+            <div class="m5-clock-grid">
+                <canvas id="mp-clock-canvas" aria-label="Mempool clock — radial visualization of pending transactions"></canvas>
+                <div class="m5-clock-legend" aria-label="Fee-tier legend">
+                    <div class="m5-clock-legend-row">
+                        <span class="m5-clock-legend-dot" style="background:#FF4455"></span>
+                        <span class="m5-clock-legend-label">PRIORITY</span>
+                        <span class="m5-clock-legend-desc">Confirms in next block</span>
+                    </div>
+                    <div class="m5-clock-legend-row">
+                        <span class="m5-clock-legend-dot" style="background:#F26822"></span>
+                        <span class="m5-clock-legend-label">FAST</span>
+                        <span class="m5-clock-legend-desc">Within ~2 min</span>
+                    </div>
+                    <div class="m5-clock-legend-row">
+                        <span class="m5-clock-legend-dot" style="background:#00C97A"></span>
+                        <span class="m5-clock-legend-label">NORMAL</span>
+                        <span class="m5-clock-legend-desc">Within ~10 min</span>
+                    </div>
+                    <div class="m5-clock-legend-row">
+                        <span class="m5-clock-legend-dot" style="background:#3D8EFF"></span>
+                        <span class="m5-clock-legend-label">ECONOMY</span>
+                        <span class="m5-clock-legend-desc">~60 min or more</span>
+                    </div>
+                </div>
+            </div>
             <div class="m5-clock-caption">
-                Radial position = age of mempool entry (outer = oldest, inner = most recent). Distance from center = blocks until likely confirmation. Colored by fee tier: red (priority) → orange (fast) → green (normal) → blue (economy).
+                Each dot is one transaction in the mempool. Position toward the center indicates how soon it is likely to be confirmed.
+                Color reflects fee tier: red (priority) → orange (fast) → green (normal) → blue (economy).
             </div>
         </div>
 

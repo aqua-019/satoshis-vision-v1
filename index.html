@@ -639,7 +639,7 @@ setInterval(function(){
     setTimeout(function(){qText.textContent=quotes[qi].t;qAttr.textContent='— '+quotes[qi].a;qText.style.opacity=1;qAttr.style.opacity=1},400);
 },12000);
 
-function trackFromHome(){var h=document.getElementById('mp-tx-input').value.trim();if(h)window.location.href='mempool.html?tx='+h}
+function trackFromHome(){var h=document.getElementById('mp-tx-input').value.trim();if(h)window.location.href='/mempool-explorer?search='+encodeURIComponent(h)}
 document.getElementById('mp-tx-input').addEventListener('keydown',function(e){if(e.key==='Enter')trackFromHome()});
 
 /* ═══════════════════════════════════════════════════════════

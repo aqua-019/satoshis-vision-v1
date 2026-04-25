@@ -83,7 +83,15 @@
 .mp-fee-card-rate{display:flex;align-items:baseline;gap:5px;margin-bottom:4px}
 .mp-fee-rate-val{font-size:22px;font-weight:600;color:var(--text-primary)}
 .mp-fee-rate-unit{font-size:11px;color:var(--text-tertiary);letter-spacing:1px}
+.mp-fee-card-cost{font-size:11px;color:var(--text-secondary);margin-bottom:4px;font-family:var(--font-mono)}
 .mp-fee-card-eta{font-size:10px;color:var(--text-muted);letter-spacing:1.2px;text-transform:uppercase}
+.mp-fee-tier-caption{
+    font-size:12px;color:var(--text-secondary);line-height:1.5;
+    margin:0 0 14px;padding:10px 14px;
+    border-left:2px solid rgba(255,102,0,.4);
+    background:rgba(255,102,0,.04);border-radius:0 4px 4px 0;
+}
+.mp-fee-tier-caption strong{color:var(--text-primary);font-family:var(--font-mono);font-weight:600}
 
 /* Projected block strip */
 .mp-proj-block{
@@ -937,6 +945,9 @@
     <!-- OCEAN MODE ───────────────────────────────────────────────── -->
     <section class="mp-mode-panel" id="mp-panel-ocean" data-mode="ocean" role="tabpanel">
         <div class="mp-fee-hero" id="mp-fee-hero"></div>
+        <div class="mp-fee-tier-caption">
+            <strong>pcn/B</strong> = piconero per byte. One piconero is 10⁻¹² XMR — the smallest unit. Monero fees scale with transaction size in bytes; a typical 2-input transaction is ≈ 1.8 KB.
+        </div>
         <div class="mp-proj-block" id="mp-proj-block"></div>
 
         <!-- M5: OCEAN / CLOCK viz toggle (default = CLOCK; setViz() re-applies stored pref on boot) -->

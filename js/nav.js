@@ -27,7 +27,7 @@ const NavComponent = {
             <a href="https://x.com/aquaticXCP" class="shamrock-link" title="@AquaticXCP" target="_blank">
                 ${this.shamrockSVG}
             </a>
-            <a href="index.html" class="nav-logo"><span>xmr</span>.irish</a>
+            <a href="/" class="nav-logo"><span>xmr</span>.irish</a>
 
             <!-- Always-visible search (PROMPT C) -->
             <div class="nav-search" role="search">
@@ -45,37 +45,37 @@ const NavComponent = {
             </div>
 
             <div class="nav-links">
-                <a href="index.html" class="nav-link ${isActive('index')}">Home</a>
+                <a href="/" class="nav-link ${isActive('index')}">Home</a>
                 <a href="/mempool-explorer" class="nav-link ${mempoolActive}">Mempool</a>
                 <div class="dd-wrap">
                     <span class="nav-link ${isDropdownActive(['btc-xmr-education','timeline','quotes','secrets','future-outlook','privacy-architecture'])}">Education</span>
                     <div class="dd-menu">
-                        <a class="dd-item" href="privacy-architecture.html">Protocol visualizations</a>
-                        <a class="dd-item" href="btc-xmr-education.html">BTC vs XMR education</a>
-                        <a class="dd-item" href="timeline.html">Timeline</a>
-                        <a class="dd-item" href="quotes.html">Quote explorer</a>
-                        <a class="dd-item" href="secrets.html">Secret threads</a>
-                        <a class="dd-item" href="future-outlook.html">2027+ outlook</a>
+                        <a class="dd-item" href="/privacy-architecture">Protocol visualizations</a>
+                        <a class="dd-item" href="/btc-xmr-education">BTC vs XMR education</a>
+                        <a class="dd-item" href="/timeline">Timeline</a>
+                        <a class="dd-item" href="/quotes">Quote explorer</a>
+                        <a class="dd-item" href="/secrets">Secret threads</a>
+                        <a class="dd-item" href="/future-outlook">2027+ outlook</a>
                     </div>
                 </div>
                 <div class="dd-wrap">
                     <span class="nav-link ${isDropdownActive(['dashboard','markets','network','mining','legal']) || mempoolActive}">Dashboard</span>
                     <div class="dd-menu">
-                        <a class="dd-item" href="markets.html">Market dashboard</a>
-                        <a class="dd-item" href="network.html">Network statistics</a>
-                        <a class="dd-item" href="mining.html">Mining</a>
+                        <a class="dd-item" href="/markets">Market dashboard</a>
+                        <a class="dd-item" href="/network">Network statistics</a>
+                        <a class="dd-item" href="/mining">Mining</a>
                         <a class="dd-item" href="/mempool-explorer">Monero mempool</a>
-                        <a class="dd-item" href="legal.html">Legal status</a>
+                        <a class="dd-item" href="/legal">Legal status</a>
                     </div>
                 </div>
                 <div class="dd-wrap">
                     <span class="nav-link ${isDropdownActive(['hold-monero','bottom-line','community','ecosystem'])}">Monero</span>
                     <div class="dd-menu">
-                        <a class="dd-item" href="hold-monero.html">Hold XMR</a>
-                        <a class="dd-item" href="mining.html">Mine XMR</a>
-                        <a class="dd-item" href="bottom-line.html">XMR bottom line</a>
-                        <a class="dd-item" href="community.html">Community</a>
-                        <a class="dd-item" href="ecosystem.html">Ecosystem map</a>
+                        <a class="dd-item" href="/hold-monero">Hold XMR</a>
+                        <a class="dd-item" href="/mining">Mine XMR</a>
+                        <a class="dd-item" href="/bottom-line">XMR bottom line</a>
+                        <a class="dd-item" href="/community">Community</a>
+                        <a class="dd-item" href="/ecosystem">Ecosystem map</a>
                     </div>
                 </div>
             </div>
@@ -106,31 +106,31 @@ const NavComponent = {
             </button>
         </nav>
         <div class="mobile-menu" id="mobile-menu">
-            <a href="index.html" class="mm-link ${isActive('index')}">Home</a>
+            <a href="/" class="mm-link ${isActive('index')}">Home</a>
             <a href="/mempool-explorer" class="mm-link ${mempoolActive}">Mempool</a>
             <div class="mm-group">
                 <span class="mm-label">Education</span>
-                <a href="privacy-architecture.html" class="mm-link ${isActive('privacy-architecture')}">Protocol visualizations</a>
-                <a href="btc-xmr-education.html" class="mm-link ${isActive('btc-xmr-education')}">BTC vs XMR</a>
-                <a href="timeline.html" class="mm-link ${isActive('timeline')}">Timeline</a>
-                <a href="quotes.html" class="mm-link ${isActive('quotes')}">Quote explorer</a>
-                <a href="secrets.html" class="mm-link ${isActive('secrets')}">Secret threads</a>
-                <a href="future-outlook.html" class="mm-link ${isActive('future-outlook')}">2027+ outlook</a>
+                <a href="/privacy-architecture" class="mm-link ${isActive('privacy-architecture')}">Protocol visualizations</a>
+                <a href="/btc-xmr-education" class="mm-link ${isActive('btc-xmr-education')}">BTC vs XMR</a>
+                <a href="/timeline" class="mm-link ${isActive('timeline')}">Timeline</a>
+                <a href="/quotes" class="mm-link ${isActive('quotes')}">Quote explorer</a>
+                <a href="/secrets" class="mm-link ${isActive('secrets')}">Secret threads</a>
+                <a href="/future-outlook" class="mm-link ${isActive('future-outlook')}">2027+ outlook</a>
             </div>
             <div class="mm-group">
                 <span class="mm-label">Dashboard</span>
-                <a href="markets.html" class="mm-link ${isActive('markets')}">Markets</a>
-                <a href="network.html" class="mm-link ${isActive('network')}">Network</a>
-                <a href="mining.html" class="mm-link ${isActive('mining')}">Mining</a>
+                <a href="/markets" class="mm-link ${isActive('markets')}">Markets</a>
+                <a href="/network" class="mm-link ${isActive('network')}">Network</a>
+                <a href="/mining" class="mm-link ${isActive('mining')}">Mining</a>
                 <a href="/mempool-explorer" class="mm-link ${mempoolActive}">Mempool</a>
-                <a href="legal.html" class="mm-link ${isActive('legal')}">Legal status</a>
+                <a href="/legal" class="mm-link ${isActive('legal')}">Legal status</a>
             </div>
             <div class="mm-group">
                 <span class="mm-label">Monero</span>
-                <a href="hold-monero.html" class="mm-link ${isActive('hold-monero')}">Hold XMR</a>
-                <a href="bottom-line.html" class="mm-link ${isActive('bottom-line')}">XMR bottom line</a>
-                <a href="community.html" class="mm-link ${isActive('community')}">Community</a>
-                <a href="ecosystem.html" class="mm-link ${isActive('ecosystem')}">Ecosystem map</a>
+                <a href="/hold-monero" class="mm-link ${isActive('hold-monero')}">Hold XMR</a>
+                <a href="/bottom-line" class="mm-link ${isActive('bottom-line')}">XMR bottom line</a>
+                <a href="/community" class="mm-link ${isActive('community')}">Community</a>
+                <a href="/ecosystem" class="mm-link ${isActive('ecosystem')}">Ecosystem map</a>
             </div>
         </div>`;
 
@@ -157,6 +157,13 @@ const NavComponent = {
             });
         }
         this._wireSearch();
+
+        /* Bake price service start into nav inject so every page with the nav
+           has a live price ticker without needing per-page boot code. start()
+           is idempotent — safe to call here even if a page also calls it. */
+        if (window.PriceService && typeof window.PriceService.start === 'function') {
+            window.PriceService.start();
+        }
     },
 
     _wireSearch() {

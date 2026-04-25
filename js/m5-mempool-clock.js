@@ -123,14 +123,9 @@
         }
         ctx.setLineDash([]);
 
-        ctx.font = '8px ' + MONO_FONT;
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        for (var r2 = 0; r2 < RINGS.length; r2++) {
-            var ring2 = RINGS[r2];
-            ctx.fillStyle = ring2.labelColor;
-            ctx.fillText(ring2.label, cx + ring2.radius + 4, cy);
-        }
+        /* Tier labels are rendered as an external HTML legend (.m5-clock-legend)
+           rather than crammed onto the canvas — they overlapped at the right
+           edge when stacked at the same y. */
 
         /* ── Transaction dots ── */
         var txs = this.txs || [];
