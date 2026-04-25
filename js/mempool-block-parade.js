@@ -8,7 +8,7 @@
     'use strict';
 
     var REFRESH_MS    = 15000;
-    var MAX_CONFIRMED = 12;   /* API returns 15; render up to 12 so a 10-conf line has blocks on both sides */
+    var MAX_CONFIRMED = 18;   /* 9 confirming + 9 unlocked past the 10-conf line for visible flow */
     var PENDING_COUNT = 2;
     var CONF_REQ      = 10;
     var AVG_BLOCK_SEC = 120;   /* Monero ~2 min */
@@ -42,7 +42,10 @@
         return 'vhigh';
     }
 
-    function zoneForConfirmedIndex(i) { return i < 10 ? 'confirming' : 'unlocked'; }
+    /* Monero unlocks AT 10 confirmations. Block at index i has (i+1) confs.
+       i < 9  → confs 1..9 → still confirming (locked)
+       i >= 9 → confs 10+  → unlocked (spendable) */
+    function zoneForConfirmedIndex(i) { return i < 9 ? 'confirming' : 'unlocked'; }
     function fillHeightForTxCount(n) {
         n = Number(n) || 0;
         if (n <= 10) return 75;
@@ -313,6 +316,7 @@
             '.bp-block-new{animation:bp-slide-in .4s ease-out}',
             '@keyframes bp-slide-in{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}',
             '.bp-cell-confirmed{will-change:transform}',
+            '.bp-cell.bp-pre-unlock-gap{margin-right:22px}',
             '.bp-confs-label{font:600 10px/1 "DM Mono",monospace;color:rgba(var(--zone-rgb), var(--zone-label));margin-bottom:4px;letter-spacing:.04em;text-align:center}',
             '.bp-confs-label span{font-weight:400;color:var(--text-tertiary);text-transform:uppercase;font-size:8px;margin-left:1px}',
             '.bp-cell-pending .bp-confs-label{display:none}',
@@ -411,14 +415,50 @@
                 .catch(function () { return null; })
         ]).then(function (res) {
             var blocks  = res[0] || [];
-            self.topHeight = blocks.length ? blocks[0].height : 0;
+            var pending = res[1] || null;
+
+            /* Tip hysteresis: never accept a regression. Multi-node API cascade
+               can return out-of-sync tips; without this guard, confs flickers
+               as tips oscillate between nodes (e.g. user sees 1↔2↔1↔2). */
+            var newTip = blocks.length ? Number(blocks[0].height) : 0;
+            if (newTip > 0 && self.topHeight > 0 && newTip < self.topHeight) {
+                if (window._xmrDebug) {
+                    console.warn('[parade.refresh] rejected tip regression:',
+                        newTip, '<', self.topHeight);
+                }
+                /* Pending is volatile and not gated on tip — still update it. */
+                self.pending = pending;
+                self.render();
+                return;
+            }
+
+            self.topHeight = newTip;
             self.blocks    = blocks.slice(0, MAX_CONFIRMED);
-            self.pending   = res[1] || null;
+            self.pending   = pending;
+            self._lastRefreshAt = Date.now();   /* used by debug logs */
 
             if (self.trackedBlock && self.blocks.length) {
                 var tip = self.blocks[0].height;
-                self.trackedConfs  = Math.max(0, tip - self.trackedBlock + 1);
-                self.trackedStatus = self.trackedConfs >= CONF_REQ ? 'confirmed' : 'confirming';
+                var newConfs = Math.max(0, tip - self.trackedBlock + 1);
+                /* Confs hysteresis (defense-in-depth): if confs would go down,
+                   ignore. Belt-and-suspenders the topHeight guard above. */
+                if (newConfs >= self.trackedConfs) {
+                    self.trackedConfs  = newConfs;
+                    self.trackedStatus = self.trackedConfs >= CONF_REQ ? 'confirmed' : 'confirming';
+                }
+            }
+
+            if (window._xmrDebug) {
+                console.log('[parade.refresh]', {
+                    ts: new Date().toISOString().slice(11, 19),
+                    newTip: newTip,
+                    blocks_count: blocks.length,
+                    blocks_first3: blocks.slice(0, 3).map(function (b) {
+                        return { h: b.height, ts: b.timestamp, txs: b.tx_count };
+                    }),
+                    trackedBlock: self.trackedBlock,
+                    trackedConfs: self.trackedConfs
+                });
             }
 
             self.render();
@@ -476,6 +516,7 @@
         var zone = zoneForConfirmedIndex(indexInBlocks);
         var cell = document.createElement('div');
         cell.className = 'bp-cell bp-cell-confirmed zone-' + zone + (isNew ? ' bp-cell-new' : '');
+        if (indexInBlocks === 8) cell.classList.add('bp-pre-unlock-gap');
         cell.setAttribute('data-height', b.height);
         cell.dataset.zone = zone;
 
@@ -524,6 +565,10 @@
             cellNode.classList.add('zone-' + nextZone);
             cellNode.dataset.zone = nextZone;
         }
+        /* Slot 8 (the 9-conf block) gets the breathing-room margin. The same
+           DOM node may shift between slots across renders, so toggle every
+           time. */
+        cellNode.classList.toggle('bp-pre-unlock-gap', indexInBlocks === 8);
         var newConfs = (typeof indexInBlocks === 'number' ? indexInBlocks : 0) + 1;
         var confsLabel = cellNode.querySelector('.bp-confs-label');
         if (confsLabel && Number(confsLabel.dataset.confs) !== newConfs) {
@@ -688,31 +733,60 @@
             }
         });
 
-        /* FLIP step 2 (Last → Invert → Play): for each confirmed block whose
-           position changed, jump it back to its old visual position via transform,
-           then transition to identity in the next frame. */
+        /* FLIP step 2 (Last → Invert → Play). Critical ordering:
+           1. Call _positionOverlays() FIRST — while transforms are still
+              identity, getBoundingClientRect returns post-keyed-diff LAYOUT
+              positions (the correct new anchor positions for arrow/dotline).
+           2. THEN apply Invert (set transform on each shifted block to its
+              old visual position).
+           3. THEN force a synchronous reflow.
+           4. THEN in the next animation frame, Play (transition transform
+              back to identity).
+
+           If we reverse 1 and 2, _positionOverlays sees TRANSFORMED (= old)
+           positions. The dotline ends up positioned at the old anchor — which
+           combined with its own transition causes the visible "line moves
+           left by ~134px" bug the user reported. */
         requestAnimationFrame(function () {
+            /* 1. Position overlays based on post-layout positions (transforms
+                  not yet applied). */
+            self._positionOverlays();
+
+            /* 2. Invert: snap each existing block to its old visual position. */
+            var moving = [];
             Object.keys(self._confirmedNodes).forEach(function (h) {
                 var node = self._confirmedNodes[h];
                 var first = firstRects[h];
-                if (!first) return;   /* newly added — bp-cell-new keyframe handles it */
+                if (!first || !node.isConnected) return;
 
                 var last = node.getBoundingClientRect();
                 var dx = first.left - last.left;
                 if (Math.abs(dx) < 1) return;   /* didn't actually move */
 
-                /* Invert: instantly translate back to old position. */
                 node.style.transition = 'none';
                 node.style.transform = 'translate3d(' + dx + 'px, 0, 0)';
-
-                /* Play: in the next frame, remove the transform with a transition. */
-                requestAnimationFrame(function () {
-                    node.style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
-                    node.style.transform = 'translate3d(0, 0, 0)';
-                });
+                moving.push(node);
             });
 
-            self._positionOverlays();   /* read post-layout target for the arrow */
+            /* 3. Force a synchronous reflow so the browser commits the
+                  transition:none + transform:Xpx state before we change it
+                  again. Without this, the browser may batch the two
+                  transition mutations together and the Invert step animates
+                  silently. */
+            if (moving.length) void self.container.offsetWidth;
+
+            if (window._xmrDebug && moving.length) {
+                console.log('[parade.flip] moving', moving.length, 'blocks');
+            }
+
+            /* 4. Play: in the next animation frame, transition each moving
+                  block back to identity. */
+            requestAnimationFrame(function () {
+                for (var i = 0; i < moving.length; i++) {
+                    moving[i].style.transition = 'transform .55s cubic-bezier(.2,.8,.2,1)';
+                    moving[i].style.transform = 'translate3d(0, 0, 0)';
+                }
+            });
         });
     };
 
@@ -766,23 +840,29 @@
             }
         }
 
-        /* Position the 10-conf line between confirmed block #10 (counting from
-           the divider) and #11. That's `this.blocks[9]` and `this.blocks[10]`.
-           Visible whenever the parade has at least 10 confirmed blocks rendered. */
-        var anchorBlock = this.blocks && this.blocks.length >= 10 ? this.blocks[9] : null;
-        if (!anchorBlock) {
-            dotline.hidden = true;
+        /* Position the 10-conf line at the boundary between block at index 8
+           (9 confs) and block at index 9 (10 confs — the unlock threshold).
+
+           Slot-based math, NOT anchored to a specific block's bounding rect.
+           Slot 9 is always at the same group-relative X regardless of which
+           height occupies it. This is stable across re-renders even when the
+           keyed-diff swaps which physical block sits at slot 9. */
+        var BLOCK_W = 128;
+        var BLOCK_GAP = 6;
+        var BREATHING = 22;   /* matches .bp-pre-unlock-gap margin-right */
+
+        if (this.blocks && this.blocks.length >= 10 && confirmedGroup) {
+            var groupRect = confirmedGroup.getBoundingClientRect();
+            /* Up through slot 8: 9 blocks × width + 8 gaps. Then breathing
+               margin to the right of slot 8. Then 1 flex gap. Slot 9 starts
+               just past that. Center the line in the (BREATHING + GAP) span. */
+            var rightOfSlot8 = 9 * BLOCK_W + 8 * BLOCK_GAP;
+            var lineX = (groupRect.left - outerRect.left)
+                        + rightOfSlot8 + (BREATHING + BLOCK_GAP) / 2;
+            dotline.hidden = false;
+            dotline.style.transform = 'translate3d(' + lineX + 'px, 0, 0)';
         } else {
-            var anchorEl = this.container.querySelector(
-                '.bp-cell[data-height="' + anchorBlock.height + '"] .bp-block');
-            if (!anchorEl) {
-                dotline.hidden = true;
-            } else {
-                dotline.hidden = false;
-                var ar = anchorEl.getBoundingClientRect();
-                var dx = (ar.right - outerRect.left + 3);   /* 3px gap to the right of block #10 */
-                dotline.style.transform = 'translate3d(' + dx + 'px, 0, 0)';
-            }
+            dotline.hidden = true;
         }
 
         /* Off-range — target height known but not in visible blocks. The

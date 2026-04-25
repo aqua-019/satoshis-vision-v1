@@ -193,7 +193,7 @@ async function handleBlocks() {
   const info = await rpc('get_info');
   if (!info) return [];
   const height = info.height;
-  const promises = Array.from({length:15}, (_,i) =>
+  const promises = Array.from({length:22}, (_,i) =>
     rpc('get_block_header_by_height', { height: height - 1 - i })
   );
   const results = await Promise.all(promises);
