@@ -215,6 +215,21 @@
     .counter-arguments p { font-size:11px!important; line-height:1.7!important; color:var(--text-secondary); font-style:normal!important }
     .counter-arguments strong { color:var(--text-primary); font-weight:500 }
 
+    /* Spacing helpers (replace inline margin-top hacks) */
+    .mt-xs { margin-top: 0.5rem }
+    .mt-sm { margin-top: 0.75rem }
+    .mt-md { margin-top: 1rem }
+    .mt-lg { margin-top: 2rem }
+    .mt-xl { margin-top: 4rem }
+    /* Bulleted list inside callouts (formerly inline ul style) */
+    .callout-list { margin-top: 0.5rem; padding-left: 1.5rem; color: var(--g4) }
+    /* Manifesto callout — cyan accent variant */
+    .manifesto-callout.cyan { border-left-color: var(--crossover-cyan) }
+    /* Driver card border-left color variants */
+    .driver-card.grn { border-left-color: var(--grn) }
+    .driver-card.cyan { border-left-color: var(--crossover-cyan) }
+    .driver-card.purple { border-left-color: var(--privacy-purple) }
+
     /* Animation (kept minimal) */
     .fade-in { opacity:0; transform:translateY(10px); transition:opacity .5s ease,transform .5s ease }
     .fade-in.visible { opacity:1; transform:translateY(0) }
@@ -240,7 +255,7 @@
     </style>
 </head>
 <body>
-<div class="page-offset bl" style="min-height:100vh">
+<div class="page-offset bl">
     <div class="z1">
         <div id="nav-mount"></div>
         <div class="bl-nav">
@@ -408,7 +423,7 @@
                 <p>
                     <span class="highlight-text">Bitcoin gained $150+ billion in institutional investment by making itself traceable.</span> Every BTC transaction is permanently recorded on a public ledger. Chainalysis, TRM Labs, and government agencies can follow the flow of every satoshi. This is why the SEC approved Bitcoin ETFs — they can enforce surveillance-sharing agreements.
                 </p>
-                <p style="margin-top: 1rem;">
+                <p class="mt-md">
                     <span class="highlight-text">Monero is mathematically excluded from this system because its privacy actually works.</span> Ring signatures, stealth addresses, and RingCT make surveillance impossible at the protocol level. No blockchain intelligence tool can trace XMR transactions with certainty. This is not a bug to be fixed — it is the core feature that makes Monero valuable.
                 </p>
             </div>
@@ -693,7 +708,7 @@
                         <div class="data-callout">
                             <span class="metric">Bounty:</span> $625,000 per contractor • <span class="metric">Applicants:</span> 22 companies
                         </div>
-                        <div class="exclusion-callout" style="margin-top: 1rem;">
+                        <div class="exclusion-callout mt-md">
                             <h4>Why This Matters for TradFi</h4>
                             <p>The IRS bounty proves that blockchain intelligence tools — required for ETF approval and institutional custody — <strong>do not work on Monero</strong>. This is why no Monero ETF is structurally possible.</p>
                         </div>
@@ -737,7 +752,7 @@
                         <div class="data-callout">
                             <span class="metric">Government Holdings:</span> Started with 400 BTC • <span class="metric">Status (2025):</span> Bitcoin mandate made optional per IMF loan conditions
                         </div>
-                        <div class="tradfi-exclusion-box" style="margin-top: 1rem;">
+                        <div class="tradfi-exclusion-box mt-md">
                             <h4>Why Bitcoin, Not Monero?</h4>
                             <ul>
                                 <li>Bitcoin transactions can be audited by IMF, World Bank</li>
@@ -838,10 +853,10 @@
                         <div class="data-callout tradfi">
                             <span class="metric">Issuers:</span> BlackRock, Fidelity, Grayscale, ARK, VanEck, Invesco, Bitwise, Franklin, WisdomTree, Hashdex, Valkyrie
                         </div>
-                        <div class="exclusion-callout" style="margin-top: 1rem;">
+                        <div class="exclusion-callout mt-md">
                             <h4>Why No Monero ETF is Possible</h4>
                             <p>SEC approval required:</p>
-                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: var(--g4);">
+                            <ul class="callout-list">
                                 <li>Surveillance-sharing agreements — <strong>Impossible with XMR</strong></li>
                                 <li>Blockchain intelligence tool compatibility — <strong>Chainalysis doesn't work on XMR</strong></li>
                                 <li>AML/CFT compliance framework — <strong>Ring signatures prevent compliance</strong></li>
@@ -903,15 +918,15 @@
                         <div class="event-date">October 2024</div>
                         <h4 class="event-title">Chainalysis Training Video Leaked</h4>
                         <p class="event-description">Internal IRS training video reveals Chainalysis Monero analysis relies on external exchange data, IP correlation, and user operational security failures — <strong>not cryptographic breaks</strong>. Monero Research Lab responds: nothing exceeds known, mitigated capabilities.</p>
-                        <div class="exclusion-callout" style="margin-top: 1rem;">
+                        <div class="exclusion-callout mt-md">
                             <h4>What the Leak Revealed</h4>
                             <p>Chainalysis, the company with the $22M IRS contract, admits their Monero analysis is:</p>
-                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: var(--g4);">
+                            <ul class="callout-list">
                                 <li>"Probabilistic" not deterministic</li>
                                 <li>Dependent on exchange KYC data, not blockchain analysis</li>
                                 <li>Ineffective against users with proper operational security</li>
                             </ul>
-                            <p style="margin-top: 0.75rem;"><strong>This is why surveillance-sharing agreements cannot work with Monero.</strong></p>
+                            <p class="mt-sm"><strong>This is why surveillance-sharing agreements cannot work with Monero.</strong></p>
                         </div>
                     </div>
 
@@ -991,7 +1006,7 @@
                         <div class="data-callout tradfi">
                             <span class="metric">Initial Holdings:</span> ~200,000 BTC • <span class="metric">Value:</span> ~$17B • <span class="metric">Status:</span> Reserve asset (no sales)
                         </div>
-                        <div class="tradfi-exclusion-box" style="margin-top: 1rem;">
+                        <div class="tradfi-exclusion-box mt-md">
                             <h4>Why Only Bitcoin for Strategic Reserve?</h4>
                             <ul>
                                 <li>Government can verify holdings on public ledger</li>
@@ -1017,15 +1032,15 @@
                         <div class="data-callout tradfi">
                             <span class="metric">Vote:</span> 294-134 (bipartisan) • <span class="metric">Status:</span> Senate reconciliation pending
                         </div>
-                        <div class="exclusion-callout" style="margin-top: 1rem;">
+                        <div class="exclusion-callout mt-md">
                             <h4>CLARITY Act's AML Requirements</h4>
                             <p>The Act requires digital commodity exchanges to implement:</p>
-                            <ul style="margin-top: 0.5rem; padding-left: 1.5rem; color: var(--g4);">
+                            <ul class="callout-list">
                                 <li>Bank Secrecy Act compliance (KYC, transaction monitoring)</li>
                                 <li>Qualified Digital Asset Custodian standards</li>
                                 <li>Source of funds documentation</li>
                             </ul>
-                            <p style="margin-top: 0.75rem;"><strong>Monero cannot comply with these requirements by design.</strong></p>
+                            <p class="mt-sm"><strong>Monero cannot comply with these requirements by design.</strong></p>
                         </div>
                     </div>
 
@@ -1121,11 +1136,11 @@
                         <div class="event-date">January 30, 2026</div>
                         <h4 class="event-title">Two Monetary Paths Solidified</h4>
                         <p class="event-description">The divergence that began with Bitcoin's transparent ledger and Monero's privacy-by-default design reaches its logical conclusion. Bitcoin: $150B+ institutional investment, Strategic Reserve asset, regulatory clarity. Monero: 73 exchange delistings, zero institutional access, unbreakable privacy.</p>
-                        <div class="manifesto-callout" style="margin-top: 1rem; border-left-color: var(--crossover-cyan);">
+                        <div class="manifesto-callout cyan mt-md">
                             <h3>The Final Accounting</h3>
                             <p><strong>Bitcoin chose traceability</strong> — gained Wall Street, ETFs, corporate treasuries, Strategic Reserve status, and $2+ trillion market cap.</p>
-                            <p style="margin-top: 1rem;"><strong>Monero chose privacy</strong> — gained cryptographic certainty that no government, no corporation, no surveillance state can see your transactions.</p>
-                            <p style="margin-top: 1rem;"><span class="highlight-text">Both made the right choice for their respective purposes. The world needs both.</span></p>
+                            <p class="mt-md"><strong>Monero chose privacy</strong> — gained cryptographic certainty that no government, no corporation, no surveillance state can see your transactions.</p>
+                            <p class="mt-md"><span class="highlight-text">Both made the right choice for their respective purposes. The world needs both.</span></p>
                         </div>
                     </div>
                 </div>
@@ -1184,7 +1199,7 @@
                     <p class="evidence-text"><strong>That bounty remains stagnant and unfilled.</strong> No contractor has ever collected the full reward. No deterministic tracing tool was delivered. The 8-month deadline came and went. Years later, the challenge stands — unanswered.</p>
                     <p class="evidence-text">"You can't be as deterministic as Bitcoin. In tracing Monero, it's really more of a probabilistic game," admitted CipherTrace CEO Dave Jevans. "You can say: Well, I have 98% probability... or 78%... It takes a different approach."</p>
                     <span class="bounty-outcome disputed">Outcome: STAGNANT — Bounty Unfilled, No Deterministic Tracing Achieved</span>
-                    <p class="evidence-source">Source: <a href="https://decrypt.co/43451/irs-1-million-contracts-data-firms-crack-monero" target="_blank">Decrypt, October 2020</a></p>
+                    <p class="evidence-source">Source: <a href="https://decrypt.co/43451/irs-1-million-contracts-data-firms-crack-monero" target="_blank" rel="noopener nofollow">Decrypt, October 2020</a></p>
                 </div>
 
                 <div class="bounty-item">
@@ -1195,7 +1210,7 @@
                     <p class="evidence-text">A leaked 2024 IRS training video confirmed the failure. The presentation showed investigators relying on <strong>external exchange data, IP correlation, and user operational security mistakes</strong> — not cryptographic breaks. In other words: they can only trace Monero when the <em>user</em> makes an error, never when the <em>protocol</em> does. The Monero Research Lab responded that nothing in the presentation exceeded capabilities Monero developers had already identified and mitigated.</p>
                     <p class="evidence-text"><strong>The $22 million contract represents the government's desperation.</strong> They threw unlimited resources at the most well-funded blockchain surveillance company on the planet — and that company still cannot crack the math. The contract remains open. The privacy guarantees hold.</p>
                     <span class="bounty-outcome failed">Outcome: FAILURE — $22M Spent, No Cryptographic Break, Relies on External Data Only</span>
-                    <p class="evidence-source">Source: <a href="https://takebackourtech.org/irs-attempts-to-trace-monero-in-leaked-training-video-response-from-monero/" target="_blank">TakeBackOurTech, October 2024</a></p>
+                    <p class="evidence-source">Source: <a href="https://takebackourtech.org/irs-attempts-to-trace-monero-in-leaked-training-video-response-from-monero/" target="_blank" rel="noopener nofollow">TakeBackOurTech, October 2024</a></p>
                 </div>
 
                 <div class="bounty-item">
@@ -1204,7 +1219,7 @@
                     <p class="evidence-text">Blockchain analytics firm CipherTrace claimed to have created the "world's first Monero-tracing toolkit" for DHS. The announcement generated headlines.</p>
                     <p class="evidence-text"><strong>Reality:</strong> CipherTrace themselves admitted the tool only "laid the groundwork" and lacked wallet identification or exchange attribution. Monero security researcher Seth Simmons stated "nothing in the CipherTrace solution is beyond the capabilities of Monero developers already." The Monero community widely disputed the claims.</p>
                     <span class="bounty-outcome failed">Outcome: Claims Disputed — Tool Lacked Core Functionality</span>
-                    <p class="evidence-source">Source: <a href="https://beincrypto.com/irs-offers-625k-bounty-to-break-monero-or-lightning-network-privacy/" target="_blank">BeInCrypto, September 2020</a></p>
+                    <p class="evidence-source">Source: <a href="https://beincrypto.com/irs-offers-625k-bounty-to-break-monero-or-lightning-network-privacy/" target="_blank" rel="noopener nofollow">BeInCrypto, September 2020</a></p>
                 </div>
             </div>
         </section>
@@ -1261,7 +1276,7 @@
                 </div>
             </div>
 
-            <div class="manifesto-callout" style="margin-top: 1rem;">
+            <div class="manifesto-callout mt-md">
                 <h3>FCMP++ — The Coming Evolution (2026+)</h3>
                 <p>
                     <span class="highlight-text">Full-Chain Membership Proofs</span> will replace ring signatures with proofs spanning the entire blockchain. Instead of hiding among 16 outputs, each input will hide among <strong>100+ million outputs</strong>. The anonymity set expands from a crowd to the entire history of Monero. Currently in alpha stressnet testing, <span class="content-label opinion">Editorial</span> FCMP++ represents the next generation of cryptographic privacy.
@@ -1343,7 +1358,7 @@
                 </div>
             </div>
 
-            <div class="manifesto-callout" style="margin-top: 1rem;">
+            <div class="manifesto-callout mt-md">
                 <h3>The Paradox of Prohibition</h3>
                 <p>
                     <span class="highlight-text">The more Monero is banned, the higher its value rises.</span> This is not coincidence — it is proof of concept. Every delisting validates that Monero's privacy actually works. If it could be traced, regulators would keep it on exchanges as a honeypot. <span class="highlight-text">They delist it because they cannot see inside.</span>
@@ -1352,7 +1367,7 @@
         </section>
 
         <!-- FINAL THESIS -->
-        <div class="thesis-section fade-in" style="margin-top: 4rem;">
+        <div class="thesis-section fade-in mt-xl">
             <h2 class="thesis-title">THE FINAL WORD: Why This Matters</h2>
             <p class="thesis-text">
                 In 2025, <strong>97 countries</strong> implemented stricter compliance frameworks targeting privacy coins. A <strong>34% increase</strong> in regulatory actions occurred in a single year. And yet Monero's price rose 195%, its network processed 15,000-25,000 daily transactions, and its community grew stronger.
@@ -1492,15 +1507,15 @@
                 <h2 class="chapter-title">Technical Upgrades Making XMR Stronger</h2>
                 <div class="chapter-body">
                     <div class="driver-grid">
-                        <div class="driver-card" style="border-left-color: var(--grn);">
+                        <div class="driver-card grn">
                             <h4>FCMP++ (Q2-Q3 2026)</h4>
                             <p>Full-Chain Membership Proofs replace ring signatures with advanced membership proofs, expanding the anonymity set from 16 decoys to the <strong>entire blockchain</strong> — making chain analysis computationally impractical.</p>
                         </div>
-                        <div class="driver-card" style="border-left-color: var(--crossover-cyan);">
+                        <div class="driver-card cyan">
                             <h4>Cuprate Rust Node</h4>
                             <p>Sharply cuts sync times, allowing full nodes to run on modest hardware. Supports decentralization and makes network disruption attempts harder during periods of political or economic pressure.</p>
                         </div>
-                        <div class="driver-card" style="border-left-color: var(--privacy-purple);">
+                        <div class="driver-card purple">
                             <h4>Seraphis &amp; Jamtis</h4>
                             <p>Modernizes the transaction structure and adds human-readable addresses. Not speculative — in beta/audit phases right now.</p>
                         </div>
@@ -1523,7 +1538,7 @@
             </div>
 
             <!-- Future Final Word -->
-            <div class="thesis-section fade-in" style="margin-top: 2rem;">
+            <div class="thesis-section fade-in mt-lg">
                 <h2 class="thesis-title">The Convergence</h2>
                 <p class="thesis-text">
                     <strong>Regulation tightens.</strong> Surveillance expands. CBDCs launch. Chain analytics improves. Reporting mandates multiply. The tracked economy becomes inescapable.
@@ -1541,6 +1556,19 @@
             </div>
 
         </div><!-- End tab-future -->
+
+        <!-- Related pages -->
+        <aside class="related-pages sec">
+          <div class="sec-h"><div class="sec-t">Related</div><div class="sec-s">Cross-references</div></div>
+          <ul class="related-list">
+            <li><a href="/btc-xmr-education">Bitcoin vs Monero</a> — protocol-level comparison and history</li>
+            <li><a href="/privacy-architecture">Privacy architecture</a> — ring signatures, stealth addresses, RingCT</li>
+            <li><a href="/legal">Legal status</a> — jurisdictional overview of XMR regulation</li>
+            <li><a href="/hold-monero">Hold Monero</a> — practical custody and acquisition</li>
+            <li><a href="/timeline">Timeline</a> — full chronology of BTC/XMR milestones</li>
+            <li><a href="/future-outlook">Future outlook</a> — 2027+ regulatory and demand thesis</li>
+          </ul>
+        </aside>
 
     </main>
 
