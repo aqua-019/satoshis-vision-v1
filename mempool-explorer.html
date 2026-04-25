@@ -444,10 +444,9 @@
     background:rgba(74,158,255,.12);
     border:1px solid rgba(74,158,255,.5);
     color:var(--blue);
-    font-family:inherit;font-size:10.5px;
-    letter-spacing:1.4px;padding:6px 14px;
-    border-radius:5px;cursor:pointer;
-    transition:background .15s, border-color .15s, color .15s;
+    font-family:inherit;font-size:10.5px;letter-spacing:1.4px;
+    padding:6px 14px;border-radius:5px;cursor:pointer;
+    transition:background .15s,border-color .15s,color .15s;
 }
 .exp-tx-track-btn.is-tracking{
     background:rgba(74,158,255,.18);
@@ -455,11 +454,13 @@
     color:var(--blue);
 }
 .exp-tx-track-btn:hover:not(:disabled){
-    background:rgba(255,68,85,.12);border-color:var(--red);color:var(--red);
+    background:rgba(255,68,85,.12);
+    border-color:var(--red);
+    color:var(--red);
 }
-.exp-tx-track-btn:disabled{opacity:.55;cursor:not-allowed}
+.exp-tx-track-btn:disabled{opacity:.7;cursor:default}
 .exp-track-icon{margin-right:4px}
-.exp-track-toggle{color:var(--text-muted);font-size:9px;margin-left:6px}
+.exp-track-toggle{color:var(--text-muted);font-size:9px;margin-left:6px;letter-spacing:1.2px}
 .exp-tx-track-btn:hover:not(:disabled) .exp-track-toggle{color:var(--red)}
 
 /* TX two-column layout */
