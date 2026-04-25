@@ -375,7 +375,7 @@
         el.className = 'bp-block is-confirmed tier-' + tier + (isNew ? ' bp-block-new' : '');
         el.setAttribute('data-height', b.height);
 
-        var html =
+        el.innerHTML =
             '<div class="bp-fill-area">' +
               '<div class="bp-fill-bar" style="height:' + pct + '%;background:' + gradientForTier(tier) + '"></div>' +
               (isP2P ? '<div class="bp-pool-badge">P2P</div>' : '') +
@@ -388,7 +388,6 @@
               '</div>' +
               '<div class="bp-age">' + fmtAgo(b.timestamp) + '</div>' +
             '</div>';
-        el.innerHTML = html;
 
         var self = this;
         el.addEventListener('click', function () {
@@ -594,7 +593,7 @@
         if (!this.trackedBlock) {
             dotline.hidden = true;
         } else {
-            var tenthH = this.trackedBlock + (CONF_REQ - 1);
+            var tenthH  = this.trackedBlock + (CONF_REQ - 1);
             var tenthEl = this.container.querySelector('.bp-block[data-height="' + tenthH + '"]');
             if (!tenthEl) {
                 dotline.hidden = true;

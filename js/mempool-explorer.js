@@ -694,6 +694,7 @@
                 window._blockParade.clearHighlight();
             }
             stopTxLive();
+            txState.tracking = false;
             if (blockState.current) showView('block');
             else showView('recent');
         });
@@ -704,7 +705,6 @@
             loadBlockView(gb.getAttribute('data-exp-goto-block'));
         });
 
-        // Track button (unconfirmed only).
         var track = el('exp-tx-track');
         if (track) {
             track.addEventListener('click', function () {
