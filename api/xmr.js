@@ -189,25 +189,70 @@ async function handleFees() {
   };
 }
 
+/* Retry an RPC call up to N times when it returns null/throws.
+   The cascade itself handles upstream node failover; this layer
+   handles transient network errors and brief node desyncs. */
+async function rpcRetry(method, params, attempts = 3) {
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const result = await rpc(method, params);
+      if (result != null) return result;
+    } catch (err) {
+      if (i === attempts - 1) throw err;
+    }
+    /* Backoff between attempts: 100ms, 300ms, 600ms */
+    await new Promise(r => setTimeout(r, 100 * (1 + i * 2)));
+  }
+  return null;
+}
+
 async function handleBlocks() {
-  const info = await rpc('get_info');
-  if (!info) return [];
-  const height = info.height;
-  const promises = Array.from({length:22}, (_,i) =>
-    rpc('get_block_header_by_height', { height: height - 1 - i })
+  const info = await rpcRetry('get_info');
+  if (!info?.height) return [];
+  const tipHeight = info.height - 1;   /* `info.height` is next block to mine */
+
+  const want = 22;
+  const heights = [];
+  for (let i = 0; i < want; i++) heights.push(tipHeight - i);
+
+  /* First pass: parallel fetch with retry. */
+  const results = await Promise.all(
+    heights.map(h => rpcRetry('get_block_header_by_height', { height: h }))
   );
-  const results = await Promise.all(promises);
-  return results.map(r => {
-    if (!r?.block_header) return null;
-    const bh = r.block_header;
-    return {
-      height: bh.height, hash: bh.hash, prev_hash: bh.prev_hash,
-      timestamp: bh.timestamp, reward: bh.reward, difficulty: bh.difficulty,
-      block_weight: bh.block_weight || bh.block_size,
-      tx_count: bh.num_txes, pool_name: 'Unknown', pool_type: 'solo',
-      orphan: bh.orphan_status || false,
-    };
-  }).filter(Boolean);
+
+  /* Identify gaps and fill them sequentially. Sequential is OK because
+     the gap count is bounded by the parallel failure rate — typically
+     0-3 misses out of 22. */
+  const filled = [];
+  for (let i = 0; i < want; i++) {
+    if (results[i]?.block_header) {
+      filled.push(results[i].block_header);
+    } else {
+      const retry = await rpcRetry('get_block_header_by_height', { height: heights[i] }, 2);
+      if (retry?.block_header) filled.push(retry.block_header);
+    }
+  }
+
+  /* Deduplicate by height (defense in depth). */
+  const seen = new Set();
+  const unique = [];
+  for (const b of filled) {
+    if (!seen.has(b.height)) {
+      seen.add(b.height);
+      unique.push(b);
+    }
+  }
+
+  /* Sort height-desc to guarantee newest-first ordering. */
+  unique.sort((a, b) => b.height - a.height);
+
+  return unique.map(bh => ({
+    height: bh.height, hash: bh.hash, prev_hash: bh.prev_hash,
+    timestamp: bh.timestamp, reward: bh.reward, difficulty: bh.difficulty,
+    block_weight: bh.block_weight || bh.block_size,
+    tx_count: bh.num_txes, pool_name: 'Unknown', pool_type: 'solo',
+    orphan: bh.orphan_status || false,
+  }));
 }
 
 async function handleBlockDetail(hashOrHeight) {
@@ -493,6 +538,17 @@ module.exports = async function handler(req, res) {
     } else if (sub === 'blocks/tip') {
       const info = await rpc('get_info');
       data = info ? { height: info.height, hash: info.top_block_hash } : {};
+
+    } else if (sub === 'tip') {
+      /* Lightweight tip-watch endpoint. One RPC call vs handleBlocks's 22+.
+         Frontend polls this every 15s; only triggers a full blocks fetch
+         when the observed tip advances. */
+      const info = await rpcRetry('get_info');
+      data = {
+        height: info?.height ? info.height - 1 : 0,   /* tip = info.height - 1 */
+        target: info?.target || 120,
+        difficulty: info?.difficulty || 0,
+      };
 
     } else if (sub.startsWith('block/')) {
       const rest = sub.slice(6);  // everything after 'block/'

@@ -42,10 +42,8 @@
         return 'vhigh';
     }
 
-    /* Monero unlocks AT 10 confirmations. Block at index i has (i+1) confs.
-       i < 9  → confs 1..9 → still confirming (locked)
-       i >= 9 → confs 10+  → unlocked (spendable) */
-    function zoneForConfirmedIndex(i) { return i < 9 ? 'confirming' : 'unlocked'; }
+    /* Monero unlocks AT 10 confirmations. Zone is now derived from confs
+       (height delta to tip), not array index — see _makeConfirmedBlock. */
     function fillHeightForTxCount(n) {
         n = Number(n) || 0;
         if (n <= 10) return 75;
@@ -90,9 +88,10 @@
         var self = this;
         requestAnimationFrame(function () { self._scrollToTrackedBlock(); });
         /* If blocks haven't loaded yet, refresh now so the arrow doesn't sit
-           hidden for ~15s until the next interval tick. */
+           hidden for ~15s until the next interval tick. Use the heavy path
+           because we genuinely need block data, not just a tip ping. */
         if (!this.blocks || this.blocks.length === 0) {
-            this.refresh();
+            this._fullRefresh();
         }
     };
 
@@ -122,7 +121,11 @@
     BlockParade.prototype.start = function () {
         var self = this;
         if (this._timer) return;
-        this._timer = setInterval(function () { self.refresh(); }, REFRESH_MS);
+        /* Initial blocks load — populate the strip. Subsequent ticks are
+           lightweight tip polls; they only trigger a full refresh when the
+           chain advances. */
+        this._fullRefresh();
+        this._timer = setInterval(function () { self._tipPoll(); }, REFRESH_MS);
     };
 
     BlockParade.prototype.stop = function () {
@@ -349,7 +352,7 @@
 
             /* Tracker overlay */
             '.bp-overlay{position:absolute;inset:0;overflow:visible;pointer-events:none}',
-            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform .9s cubic-bezier(.32,.72,.25,1)}',
+            '.bp-arrow{position:absolute;top:0;left:0;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:2px;will-change:transform;transition:transform 1.4s cubic-bezier(.45,.85,.35,1)}',
             '.bp-arrow[hidden]{display:none}',
             '.bp-arrow.is-instant{transition:none}',
             '.bp-arrow-line{width:1px;height:20px;background:repeating-linear-gradient(180deg,var(--blue) 0 2px,transparent 2px 4px)}',
@@ -365,7 +368,7 @@
             '.bp-arrow.is-highlight .bp-arrow-tri{border-bottom-color:var(--xmr);filter:drop-shadow(0 0 4px rgba(255,102,0,.7))}',
             '.bp-arrow.is-highlight .bp-arrow-label{color:var(--xmr);border-color:var(--xmr);box-shadow:0 0 10px rgba(255,102,0,.45)}',
 
-            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform .9s cubic-bezier(.32,.72,.25,1);pointer-events:none;width:0}',
+            '.bp-dotline{position:absolute;top:0;left:0;bottom:0;border-left:2px dashed rgba(255,209,0,.55);will-change:transform;transition:transform 1.4s cubic-bezier(.45,.85,.35,1);pointer-events:none;width:0}',
             '.bp-dotline[hidden]{display:none}',
             '.bp-dotline.is-instant{transition:none}',
             '.bp-dotline-label{position:absolute;top:-22px;left:-28px;font:700 9px/1 "DM Mono",monospace;color:var(--gold);letter-spacing:.12em;white-space:nowrap;background:var(--surface-0);padding:3px 8px;border:1px solid rgba(255,209,0,.4);border-radius:3px;text-transform:uppercase;writing-mode:horizontal-tb;transform:none}',
@@ -395,7 +398,7 @@
             /* is-confirming mirrors the default blue tracking color (same as base) */
 
             /* Off-range hint — tracked/highlighted block not in visible range */
-            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform .9s cubic-bezier(.32,.72,.25,1)}',
+            '.bp-offscreen-hint{position:absolute;top:0;left:0;font:600 9px/1 "DM Mono",monospace;color:var(--text-tertiary);letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;padding:4px 8px;border-radius:4px;background:var(--surface-2);border:1px solid var(--border-subtle);pointer-events:none;will-change:transform;transition:transform 1.4s cubic-bezier(.45,.85,.35,1)}',
             '.bp-offscreen-hint[hidden]{display:none}',
             '.bp-offscreen-hint.is-instant{transition:none}',
             '.bp-offscreen-hint.is-visible{color:var(--xmr);border-color:rgba(255,102,0,.3)}',
@@ -405,7 +408,43 @@
         document.head.appendChild(style);
     };
 
+    /* Lightweight tip poll. Most ticks. Only triggers a full refresh when
+       the tip has advanced. Monero block time averages ~120s, so ~7 of every
+       8 polls observe no advance and do nothing — drastically reducing the
+       DOM churn that the user sees as "shimmering between renders". */
+    BlockParade.prototype._tipPoll = function () {
+        var self = this;
+        fetch('/api/xmr?_p=tip', { headers: { accept: 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) {
+                if (!data || !data.height) return;
+                var observedTip = Number(data.height);
+                if (window._xmrDebug) {
+                    console.log('[parade.tipPoll]', {
+                        ts: new Date().toISOString().slice(11, 19),
+                        observedTip: observedTip,
+                        currentTip: self.topHeight,
+                        advance: observedTip - self.topHeight
+                    });
+                }
+                if (observedTip > self.topHeight) {
+                    /* Tip advanced — do the full refresh + render. */
+                    self._fullRefresh();
+                }
+                /* If observedTip < self.topHeight: tip hysteresis (Prompt I)
+                   handles it — ignore. */
+            })
+            .catch(function () { /* network blip — try again next tick */ });
+    };
+
+    /* Public refresh() is now the tip poll. The 15s interval calls THIS,
+       not the heavy blocks fetch. setTracked() and start() trigger the
+       full path explicitly when needed. */
     BlockParade.prototype.refresh = function () {
+        this._tipPoll();
+    };
+
+    BlockParade.prototype._fullRefresh = function () {
         var self = this;
         Promise.all([
             fetch('/api/xmr/blocks', { headers: { accept: 'application/json' } })
@@ -520,20 +559,21 @@
     };
 
     BlockParade.prototype._makeConfirmedBlock = function (b, isNew, indexInBlocks) {
-        var zone = zoneForConfirmedIndex(indexInBlocks);
+        /* Compute confs from height delta to tip — robust to gaps in
+           this.blocks (which can occur if API failed to fetch some heights).
+           Index-based confs were wrong as soon as any height was missing. */
+        var confs = Math.max(1, this.topHeight - Number(b.height) + 1);
+        var zone = confs >= 10 ? 'unlocked' : 'confirming';
         var cell = document.createElement('div');
         cell.className = 'bp-cell bp-cell-confirmed zone-' + zone + (isNew ? ' bp-cell-new' : '');
-        if (indexInBlocks === 8) cell.classList.add('bp-pre-unlock-gap');
+        /* Block at confs == 9 (one below unlock threshold) gets the breathing margin. */
+        if (confs === 9) cell.classList.add('bp-pre-unlock-gap');
         cell.setAttribute('data-height', b.height);
         cell.dataset.zone = zone;
 
         var weightKb = b.block_weight ? (b.block_weight / 1024).toFixed(1) + ' KB' : '—';
         var rewardXmr = b.reward != null ? (Number(b.reward) / 1e12).toFixed(2) + ' XMR' : '—';
         var fillH = fillHeightForTxCount(b.tx_count);
-
-        /* Confirmation depth = position from the tip + 1. blocks[0] is the tip → 1 conf,
-           blocks[1] is one back → 2 confs, etc. */
-        var confs = (typeof indexInBlocks === 'number' ? indexInBlocks : 0) + 1;
 
         cell.innerHTML =
             '<div class="bp-height-above">#' + Number(b.height).toLocaleString() + '</div>' +
@@ -558,6 +598,12 @@
                 e.stopPropagation();
                 return;
             }
+            /* Prevent bubble to wrap's drag handlers, which can otherwise
+               re-trigger pan logic on simulated mouse events from touch. */
+            e.stopPropagation();
+            if (window._xmrDebug) {
+                console.log('[parade.blockClick]', { height: b.height });
+            }
             if (self.onBlockClick) self.onBlockClick(String(b.height));
         });
         return cell;
@@ -566,17 +612,18 @@
     /* Update a persistent confirmed-cell node in place. Compare-then-set
        to avoid redundant DOM mutations on the steady-state refresh. */
     BlockParade.prototype._updateConfirmedBlock = function (cellNode, b, indexInBlocks) {
-        var nextZone = zoneForConfirmedIndex(indexInBlocks);
+        /* Confs from height math — robust to gaps in this.blocks. */
+        var newConfs = Math.max(1, this.topHeight - Number(b.height) + 1);
+        var nextZone = newConfs >= 10 ? 'unlocked' : 'confirming';
         if (cellNode.dataset.zone !== nextZone) {
             cellNode.classList.remove('zone-confirming', 'zone-unlocked');
             cellNode.classList.add('zone-' + nextZone);
             cellNode.dataset.zone = nextZone;
         }
-        /* Slot 8 (the 9-conf block) gets the breathing-room margin. The same
-           DOM node may shift between slots across renders, so toggle every
-           time. */
-        cellNode.classList.toggle('bp-pre-unlock-gap', indexInBlocks === 8);
-        var newConfs = (typeof indexInBlocks === 'number' ? indexInBlocks : 0) + 1;
+        /* The 9-conf block (one below unlock threshold) gets the breathing-room
+           margin. The same DOM node may shift between confs across renders, so
+           toggle every time. */
+        cellNode.classList.toggle('bp-pre-unlock-gap', newConfs === 9);
         var confsLabel = cellNode.querySelector('.bp-confs-label');
         if (confsLabel && Number(confsLabel.dataset.confs) !== newConfs) {
             confsLabel.dataset.confs = String(newConfs);
@@ -827,7 +874,7 @@
                   block back to identity. */
             requestAnimationFrame(function () {
                 for (var i = 0; i < moving.length; i++) {
-                    moving[i].style.transition = 'transform .9s cubic-bezier(.32,.72,.25,1)';
+                    moving[i].style.transition = 'transform 1.4s cubic-bezier(.45,.85,.35,1)';
                     moving[i].style.transform = 'translate3d(0, 0, 0)';
                 }
             });
@@ -907,27 +954,38 @@
             self._lastArrowState = { mode: mode, transform: transformStr, label: labelText };
         }
 
-        /* Position the 10-conf line at the boundary between block at index 8
-           (9 confs) and block at index 9 (10 confs — the unlock threshold).
+        /* 10-conf line: anchor to the actual block where confs first reaches 10.
+           Height-based, NOT slot-based — the line sits at protocol meaning,
+           not at array slot. Robust to gaps in this.blocks: even if upstream
+           RPCs failed to fetch some heights, the line still tracks the real
+           unlock threshold by computing confs from height delta to the tip. */
+        if (this.blocks && this.blocks.length && confirmedGroup) {
+            var unlockBlock = null;
+            for (var i = 0; i < this.blocks.length; i++) {
+                var c = Math.max(1, this.topHeight - Number(this.blocks[i].height) + 1);
+                if (c >= 10) {
+                    unlockBlock = this.blocks[i];
+                    break;
+                }
+            }
 
-           Slot-based math, NOT anchored to a specific block's bounding rect.
-           Slot 9 is always at the same group-relative X regardless of which
-           height occupies it. This is stable across re-renders even when the
-           keyed-diff swaps which physical block sits at slot 9. */
-        var BLOCK_W = 128;
-        var BLOCK_GAP = 6;
-        var BREATHING = 22;   /* matches .bp-pre-unlock-gap margin-right */
-
-        if (this.blocks && this.blocks.length >= 10 && confirmedGroup) {
-            var groupRect = confirmedGroup.getBoundingClientRect();
-            /* Up through slot 8: 9 blocks × width + 8 gaps. Then breathing
-               margin to the right of slot 8. Then 1 flex gap. Slot 9 starts
-               just past that. Center the line in the (BREATHING + GAP) span. */
-            var rightOfSlot8 = 9 * BLOCK_W + 8 * BLOCK_GAP;
-            var lineX = (groupRect.left - outerRect.left)
-                        + rightOfSlot8 + (BREATHING + BLOCK_GAP) / 2;
-            dotline.hidden = false;
-            dotline.style.transform = 'translate3d(' + lineX + 'px, 0, 0)';
+            if (unlockBlock) {
+                var unlockEl = this.container.querySelector(
+                    '.bp-cell[data-height="' + unlockBlock.height + '"] .bp-block');
+                if (unlockEl) {
+                    var ur = unlockEl.getBoundingClientRect();
+                    /* Position the line just to the left of the unlock block,
+                       in the middle of any breathing-room gap. */
+                    var lineX = (ur.left - outerRect.left) - 14;
+                    dotline.hidden = false;
+                    dotline.style.transform = 'translate3d(' + lineX + 'px, 0, 0)';
+                } else {
+                    dotline.hidden = true;
+                }
+            } else {
+                /* No block has reached 10 confs yet — hide the line. */
+                dotline.hidden = true;
+            }
         } else {
             dotline.hidden = true;
         }
