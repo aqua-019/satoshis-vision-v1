@@ -53,7 +53,8 @@
     { "source": "/eco",            "destination": "/ecosystem.html" },
     { "source": "/law",            "destination": "/legal.html" },
     { "source": "/people",         "destination": "/community.html" },
-    { "source": "/privacy",        "destination": "/privacy-architecture.html" }
+    { "source": "/privacy",        "destination": "/privacy-architecture.html" },
+    { "source": "/protocol-simulations", "destination": "/protocol-simulations.html" }
   ],
   "redirects": [
     { "source": "/index.html",   "destination": "/", "permanent": true },
