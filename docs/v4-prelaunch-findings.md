@@ -2,7 +2,7 @@
 
 **Date started:** 2026-05-02
 **Date completed:** _in progress_
-**Status:** AWAITING AQUATIC REVIEW (Phase C gate)
+**Status:** PHASE D IN PROGRESS — most fixes applied; P-1 fonts blocked on sandbox network access
 **Branch:** `claude/phase6-prelaunch-qa-x9Sol`
 
 > Working artifact for Phase 6 (v4.0 pre-launch QA). Sections 2–8 audits
@@ -72,6 +72,49 @@
 
 ⏳ Awaiting Aquatic review of findings before Phase E (deployment).
 ⏳ Awaiting Aquatic sign-off before Phase F (ship-day actions).
+
+## Phase D progress (this branch)
+
+Aquatic-approved fixes applied as commits on `claude/phase6-prelaunch-qa-x9Sol`:
+
+| Finding | Status | Commit subject |
+|---|---|---|
+| P-3 CSP unused entries | ✅ FIXED | `fix(phase6): security + CSP cleanup + cache headers` |
+| P-4 missing HSTS | ✅ FIXED | (same commit) |
+| Pf-6 cache headers | ✅ FIXED | (same commit) |
+| P-7 ChangeNOW postMessage origin | ✅ FIXED | (same commit) |
+| A-4 7 pages missing h1 | ✅ FIXED | `fix(phase6/a11y): add h1 to 7 pages missing one` |
+| A-6 robots.txt + sitemap | ✅ FIXED | `fix(phase6/seo): add robots.txt + sitemap.xml` |
+| A-2 favicon + manifest | ✅ FIXED | `feat(phase6/a11y): favicon, skip-link, focus-visible, reduced-motion` |
+| A-3 skip-to-content link | ✅ FIXED | (same commit) |
+| Focus indicator | ✅ FIXED | (same commit) |
+| S-1 prefers-reduced-motion (CSS) | ✅ FIXED | (same commit) |
+| Pf-1 three.module.js minification | ⏭️ RECLASSIFIED PASS | Documented privacy decision in `js/vendor/README.md` — minified ESM not shipped by r128 upstream; CDN minified versions are third-party-transformed. Brotli wire size ~210 KB is comparable to minified+compressed. |
+| A-1 OG / Twitter meta site-wide | ✅ FIXED | `feat(phase6/seo): site-wide OG / Twitter meta` |
+| P-2 CoinGecko proxy | ✅ FIXED | `feat(phase6/privacy): proxy CoinGecko via /api/coingecko` |
+| S-1 reduced-motion (engine JS) | ✅ FIXED | `feat(phase6/sim-a11y): reduced-motion + aria-live + keyboard + dispose` |
+| S-2 aria-live phase announcer | ✅ FIXED | (same commit) |
+| S-3 keyboard nav (sim mount) | ✅ FIXED | (same commit) |
+| S-4 engine.destroy() | ✅ FIXED | (same commit) |
+| Pf-7 Sim 6 mobile particle scaling | ✅ FIXED | (same commit) |
+
+### Phase D blocker
+
+| Finding | Status | Reason |
+|---|---|---|
+| **P-1** Self-host fonts.bunny.net | 🟡 BLOCKED | Sandbox network policy denies outbound fetches to fonts.bunny.net (and unpkg/github raw). WOFF2 binaries must be fetched from a trusted source, then committed. **Two paths forward:** (a) Aquatic supplies the 5 font families as WOFF2 in `fonts/` from a local environment with network access; (b) revisit decision and ship as documented exception (the original DECIDE alternative). |
+| Pf-5 Font preload | ⏸️ BLOCKED ON P-1 | Preload target depends on whether fonts are local (preload `/fonts/*.woff2`) or stay third-party (preload `fonts.bunny.net` URLs). |
+
+### Items deferred to v5.0
+
+| # | Reason |
+|---|---|
+| A-5 (semantic landmarks) | Site-wide template refactor; out of Phase 6 scope. Partially mitigated by `id="main"` injection in `nav.js` for the skip-link target. |
+| Pf-2 (lazy-load sim modules) | Architecture change. |
+| Pf-3 (mempool render-blocking scripts) | Architecture change. |
+| Pf-4 (inline-CSS bloat extraction) | Architecture change. |
+| P-8 (`'unsafe-inline'` removal) | Externalize 19 inline scripts. |
+| og:image asset | Needs raster generation pipeline; Twitter `summary` (no image) ships now. |
 
 ---
 
