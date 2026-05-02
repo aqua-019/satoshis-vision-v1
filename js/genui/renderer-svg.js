@@ -86,6 +86,10 @@ export class SVGRenderer {
             case 'signature-trail': return this._createSignatureTrail(node);
             case 'ring-boundary': return this._createRingBoundary(node);
             case 'ghost-overlay': return this._createGhostOverlay(node);
+            case 'utxo-ocean':   return this._createUtxoOcean(node);
+            case 'curve-tree':   return this._createCurveTree(node);
+            case 'failed-marker': return this._createFailedMarker(node);
+            case 'html-overlay': return this._createHtmlOverlay(node);
             default:             return null;
         }
     }
@@ -405,6 +409,110 @@ export class SVGRenderer {
         if (node.y !== undefined) el.setAttribute('y', String(node.y));
     }
 
+    /* ---------------- Sim 6 (FCMP++) shape fallbacks ---------------- */
+
+    _createUtxoOcean(node) {
+        /* SVG can't match WebGL density. Cap at ~500 dots — sufficient for
+           the educational point at low fidelity. */
+        const group = document.createElementNS(SVG_NS, 'g');
+        const requested = node.count || 50000;
+        const count = Math.min(500, requested);
+        const fill = resolveCssColor(node.fill || 'rgba(255,102,0,0.4)', '#FF6600');
+        for (let i = 0; i < count; i++) {
+            const dot = document.createElementNS(SVG_NS, 'circle');
+            dot.setAttribute('cx', String(Math.random() * this.viewWidth));
+            dot.setAttribute('cy', String((0.05 + Math.random() * 0.85) * this.viewHeight));
+            dot.setAttribute('r', '1.6');
+            dot.setAttribute('fill', fill);
+            dot.setAttribute('opacity', String(0.3 + Math.random() * 0.4));
+            group.appendChild(dot);
+        }
+        group.setAttribute('opacity', String(node.opacity ?? 0));
+        return group;
+    }
+
+    _createCurveTree(node) {
+        /* Static branching tree, no animated reveal — Brief 6's reduced-motion
+           keyframe shows the tree assembled. */
+        const group = document.createElementNS(SVG_NS, 'g');
+        const depth = Math.max(2, Math.min(8, node.depth || 6));
+        const rootCx = node.rootCx ?? 0.78;
+        const rootCy = node.rootCy ?? 0.18;
+        const initialHalfWidth = 0.18;
+        const levelHeight = 0.08;
+        const stroke = resolveCssColor(node.stroke || 'rgba(255,102,0,0.55)', '#FF6600');
+        const strokeWidth = node.strokeWidth ?? 1;
+
+        const buildBranches = (level, parentCx, parentCy, halfWidth) => {
+            if (level >= depth) return;
+            const childYOffset = levelHeight * 0.85;
+            const childCxLeft = parentCx - halfWidth * 0.5;
+            const childCxRight = parentCx + halfWidth * 0.5;
+            const childCy = parentCy + childYOffset;
+
+            for (const to of [{ cx: childCxLeft, cy: childCy }, { cx: childCxRight, cy: childCy }]) {
+                const line = document.createElementNS(SVG_NS, 'line');
+                line.setAttribute('x1', String(parentCx * this.viewWidth));
+                line.setAttribute('y1', String(parentCy * this.viewHeight));
+                line.setAttribute('x2', String(to.cx * this.viewWidth));
+                line.setAttribute('y2', String(to.cy * this.viewHeight));
+                line.setAttribute('stroke', stroke);
+                line.setAttribute('stroke-width', String(strokeWidth));
+                group.appendChild(line);
+            }
+
+            buildBranches(level + 1, childCxLeft, childCy, halfWidth * 0.5);
+            buildBranches(level + 1, childCxRight, childCy, halfWidth * 0.5);
+        };
+        buildBranches(0, rootCx, rootCy, initialHalfWidth);
+
+        group.setAttribute('opacity', String(node.opacity ?? 0));
+        return group;
+    }
+
+    _createFailedMarker(node) {
+        /* SVG fallback has no tremor — a static gold ring. The reduced-motion
+           variant treats the failed identification as a still keyframe. */
+        const c = document.createElementNS(SVG_NS, 'circle');
+        c.setAttribute('r', String(node.r ?? 14));
+        c.setAttribute('fill', 'transparent');
+        c.setAttribute('stroke', resolveCssColor(node.stroke || 'var(--gold)', '#FFD700'));
+        c.setAttribute('stroke-width', String(node.strokeWidth ?? 2));
+        this._applyPosition(c, node);
+        c.setAttribute('opacity', String(node.opacity ?? 0));
+        return c;
+    }
+
+    _createHtmlOverlay(node) {
+        /* Render as SVG <text>. Multi-line content folds to single line. */
+        const text = document.createElementNS(SVG_NS, 'text');
+        text.setAttribute('font-family', resolveCssColor(node.fontFamily || 'monospace', 'monospace'));
+        text.setAttribute('font-size', node.fontSize || '14px');
+        text.setAttribute('fill', resolveCssColor(node.color || 'var(--text-primary)', '#EEE'));
+        text.setAttribute('opacity', String(node.opacity ?? 0));
+        text.setAttribute('text-anchor', 'middle');
+        text.setAttribute('dominant-baseline', 'middle');
+        text.setAttribute('x', String((node.cx ?? 0.5) * this.viewWidth));
+        text.setAttribute('y', String((node.cy ?? 0.5) * this.viewHeight));
+        text.dataset.template = node.template || 'generic';
+        this._renderHtmlOverlayText(text, node);
+        return text;
+    }
+
+    _renderHtmlOverlayText(el, node) {
+        const tpl = el.dataset.template;
+        if (tpl === 'chain-counter') {
+            const count = Math.floor(node.count || 0);
+            el.textContent = `${count.toLocaleString()} UTXOs on chain`;
+        } else if (tpl === 'outro-callout') {
+            el.textContent = 'Anonymity set: ~10⁸+';
+        } else {
+            el.textContent = '';
+        }
+    }
+
+    /* ---------------- end Sim 6 fallbacks ---------------- */
+
     updateNode(el, node) {
         if (node.type === 'circle' || node.type === 'ring') {
             if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
@@ -472,6 +580,17 @@ export class SVGRenderer {
         } else if (node.type === 'ghost-overlay') {
             const fade = node.fadeAmount ?? 0;
             el.setAttribute('opacity', String(fade * (node.opacity ?? 1)));
+        } else if (node.type === 'utxo-ocean' || node.type === 'curve-tree') {
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'failed-marker') {
+            if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
+            if (node.cy !== undefined) el.setAttribute('cy', String(node.cy * this.viewHeight));
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'html-overlay') {
+            if (node.cx !== undefined) el.setAttribute('x', String(node.cx * this.viewWidth));
+            if (node.cy !== undefined) el.setAttribute('y', String(node.cy * this.viewHeight));
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+            this._renderHtmlOverlayText(el, node);
         } else {
             if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
             if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
