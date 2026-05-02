@@ -44,12 +44,17 @@
         return 'priority';
     }
 
-    /* ── Constructor ── */
-    function M5MempoolClock(canvas) {
-        this.canvas   = canvas || null;
-        this.txs      = [];
-        this._raf     = 0;
-        this._running = false;
+    /* ── Constructor ──
+       opts.simplifyLabels: skip minor on-canvas labels on small screens
+       (currently the labels live in an external HTML legend, so this is
+       reserved for future use without a breaking constructor change). */
+    function M5MempoolClock(canvas, opts) {
+        this.canvas         = canvas || null;
+        this.txs            = [];
+        this._raf           = 0;
+        this._running       = false;
+        opts                = opts || {};
+        this.simplifyLabels = !!opts.simplifyLabels;
 
         /* bound tick so stop() can cancel the same identity */
         var self = this;
@@ -58,6 +63,18 @@
             self.render();
             self._raf = global.requestAnimationFrame(self._tick);
         };
+    }
+
+    /* Mobile viewport detection — prefer the shared MPChart helper if loaded,
+       fall back to matchMedia, fall back to innerWidth. */
+    function isMobileViewport() {
+        if (global.MPChart && global.MPChart.isMobileViewport) {
+            return global.MPChart.isMobileViewport();
+        }
+        if (global.matchMedia) {
+            return global.matchMedia('(max-width: 767px)').matches;
+        }
+        return (global.innerWidth || 1024) < 768;
     }
 
     /* ── update: replace list, cap at 500, re-render once ── */
@@ -93,7 +110,9 @@
 
         var dpr = Math.min(global.devicePixelRatio || 1, 2);
         var W = canvas.offsetWidth || (canvas.parentElement && canvas.parentElement.clientWidth) || 520;
-        var H = 260;
+        /* Phone-friendly: shorten the canvas so it doesn't dominate a 568px-tall iPhone SE viewport. */
+        var mobile = isMobileViewport();
+        var H = mobile ? (W < 360 ? 200 : 220) : 260;
 
         canvas.width  = W * dpr;
         canvas.height = H * dpr;
@@ -111,14 +130,18 @@
         var cx = W / 2;
         var cy = H / 2;
 
-        /* ── Guide rings (dashed) + tier labels ── */
+        /* ── Guide rings (dashed) + tier labels ──
+           On phones the canvas height shrinks so we scale the ring radii to
+           fit; on desktop the original 50/80/110/130 layout is preserved. */
+        var maxRingRadius = RINGS[RINGS.length - 1].radius;
+        var ringScale = mobile ? Math.min(1, ((H / 2) - 12) / maxRingRadius) : 1;
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 6]);
         for (var r = 0; r < RINGS.length; r++) {
             var ring = RINGS[r];
             ctx.strokeStyle = ring.stroke;
             ctx.beginPath();
-            ctx.arc(cx, cy, ring.radius, 0, Math.PI * 2);
+            ctx.arc(cx, cy, ring.radius * ringScale, 0, Math.PI * 2);
             ctx.stroke();
         }
         ctx.setLineDash([]);
@@ -142,7 +165,7 @@
                 var rJitter = Math.sin(i * 7.3) * 8;
                 var aJitter = Math.cos(i * 3.1) * 4;
 
-                var radius = 45 + (1 - ratePct) * 85 + rJitter;
+                var radius = (45 + (1 - ratePct) * 85) * ringScale + rJitter;
                 if (radius < 10) radius = 10;
 
                 var angle = (i / n) * Math.PI * 2 + (aJitter * Math.PI / 180);
@@ -168,6 +191,36 @@
         ctx.fillStyle = '#6b7280';
         ctx.font = '9px ' + MONO_FONT;
         ctx.fillText('pending', cx, cy + 14);
+    };
+
+    /* Re-render once on resize so the canvas dimensions and ring scale
+       follow viewport changes (e.g. mobile landscape rotation, browser
+       chrome show/hide). Throttled via requestAnimationFrame. */
+    M5MempoolClock.prototype._wireResize = function () {
+        if (this._resizeWired) return;
+        var self = this;
+        var pending = false;
+        var handler = function () {
+            if (pending) return;
+            pending = true;
+            global.requestAnimationFrame(function () {
+                pending = false;
+                self.render();
+            });
+        };
+        if (global.matchMedia) {
+            var mq = global.matchMedia('(max-width: 767px)');
+            if (mq.addEventListener) mq.addEventListener('change', handler);
+            else if (mq.addListener) mq.addListener(handler);
+        }
+        global.addEventListener('resize', handler);
+        this._resizeWired = true;
+    };
+
+    var _origUpdate = M5MempoolClock.prototype.update;
+    M5MempoolClock.prototype.update = function (txs) {
+        this._wireResize();
+        return _origUpdate.call(this, txs);
     };
 
     /* ── Export ── */
