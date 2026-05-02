@@ -62,7 +62,7 @@
             </a>
 
             <a class="simulation-card" data-sim-id="view-tag-matching" href="#view-tag-matching">
-                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <div class="simulation-card-status" data-status="ready">READY</div>
                 <h2 class="simulation-card-title">View Tag Matching</h2>
                 <p class="simulation-card-summary">
                     Compare wallet scan time with and without view tags — the 256× speedup
@@ -152,6 +152,7 @@
     <!-- Per-simulation modules register themselves with window.GenUI on import. -->
     <script type="module" src="/js/sims/decoy-selection.js"></script>
     <script type="module" src="/js/sims/dandelion-propagation.js"></script>
+    <script type="module" src="/js/sims/view-tag-matching.js"></script>
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {

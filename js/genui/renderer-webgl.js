@@ -219,6 +219,8 @@ export class WebGLRenderer {
             mesh = this._createParticleTrail(node);
         } else if (node.type === 'particle-burst') {
             mesh = this._createParticleBurst(node);
+        } else if (node.type === 'comparison-bar') {
+            mesh = this._createComparisonBar(node);
         }
 
         if (!mesh) return;
@@ -665,6 +667,45 @@ export class WebGLRenderer {
         }
     }
 
+    _createComparisonBar(node) {
+        /* Horizontal bar anchored at canvas-fraction node.anchorX, growing
+           rightward to width = node.barWidth (also in canvas-fraction units).
+           PlaneGeometry(1,1) is centered at origin; we set position.x to the
+           bar center and scale.x to the world-space bar width every frame. */
+        const heightWorld = (node.height || 0.04) * this.frustumHeight;
+        const geometry = new THREE.PlaneGeometry(1, heightWorld);
+        const parsed = parseColorWithAlpha(node.fill || node.color || 'var(--xmr)', '#FF6600');
+        const material = new THREE.MeshBasicMaterial({
+            color: parsed.color,
+            transparent: true,
+            opacity: (node.opacity ?? 1) * parsed.alpha
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData.barType = 'comparison-bar';
+        mesh.userData.height = node.height || 0.04;
+        mesh.userData.anchorX = node.anchorX ?? 0.10;
+        mesh.userData.colorAlpha = parsed.alpha;
+        mesh.userData.skipPosition = true;
+        return mesh;
+    }
+
+    _updateComparisonBar(mesh, node) {
+        const anchorX = mesh.userData.anchorX;
+        const barWidth = Math.max(0, node.barWidth ?? 0);
+
+        const centerCanvasX = anchorX + barWidth / 2;
+        const { x, y } = this.canvasToWorld(centerCanvasX, node.cy ?? 0.85);
+        mesh.position.set(x, y, 0);
+
+        const worldWidth = barWidth * this.frustumWidth;
+        mesh.scale.set(Math.max(1e-4, worldWidth), 1, 1);
+
+        if (mesh.material) {
+            const colorAlpha = mesh.userData.colorAlpha ?? 1;
+            mesh.material.opacity = (node.opacity ?? 1) * colorAlpha;
+        }
+    }
+
     updateMesh(node) {
         const mesh = this.actorMeshes.get(node.id);
         if (!mesh) return;
@@ -677,6 +718,12 @@ export class WebGLRenderer {
 
         if (node.type === 'particle-burst') {
             this._updateParticleBurst(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'comparison-bar') {
+            this._updateComparisonBar(mesh, node);
             this.updateOverlayElement(node);
             return;
         }
