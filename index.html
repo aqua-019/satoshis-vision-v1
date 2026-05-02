@@ -259,13 +259,13 @@
         <section class="hero">
             <noscript>
                 <div class="noscript-content">
-                    <p>Monero (XMR) is a privacy-focused cryptocurrency using ring signatures, stealth addresses, and RingCT to hide sender, receiver, and amount in every transaction. The network operates with a 0.6 XMR permanent block reward (tail emission), approximately 20,000 daily transactions, and has never had a confirmed transaction trace despite a $625,000 IRS bounty outstanding since 2020. Hashrate has reached all-time highs as of 2024. The upcoming FCMP++ upgrade will expand the anonymity set to 100M+ outputs.</p>
+                    <p>Monero (XMR) is a privacy-focused cryptocurrency using ring signatures, stealth addresses, and RingCT to hide sender, receiver, and amount in every transaction. The network operates with a 0.6 XMR permanent block reward (tail emission), approximately 20,000 daily transactions, and has never had a confirmed transaction trace despite a $625,000 IRS bounty outstanding since 2020. Hashrate has reached all-time highs as of 2024. The upcoming FCMP++ upgrade will expand the anonymity set to 150M+ outputs.</p>
                 </div>
             </noscript>
             <div>
                 <div class="hero-kicker">Privacy is not a feature. It is a right.</div>
                 <h1 class="hero-title">The case for <span>Monero</span></h1>
-                <p class="hero-sub">Ring-16, Dandelion++, tail emission at 0.6 XMR/block. FCMP++ incoming with 100M+ anonymity set. Hashrate at ATH. The network has never been stronger.</p>
+                <p class="hero-sub">Ring-16, Dandelion++, tail emission at 0.6 XMR/block. FCMP++ incoming with 150M+ anonymity set. Hashrate at ATH. The network has never been stronger.</p>
                 <div class="cta-row">
                     <a class="cta cta-primary" href="/hold-monero">Why hold XMR</a>
                     <a class="cta cta-secondary" href="/bottom-line">The bottom line thesis</a>
@@ -453,12 +453,12 @@
                         <div class="invest-val" style="color:var(--grn)">Unclaimed</div>
                     </div>
                 </a>
-                <a class="invest-card" id="inv-2" href="/future-outlook">
+                <a class="invest-card" id="inv-2" href="/fcmp">
                     <div class="invest-text">
                         <div class="invest-kicker" style="color:var(--cyan)">FCMP++</div>
-                        <div class="invest-title">100M+ anonymity set. Coming.</div>
-                        <div class="invest-desc">Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.</div>
-                        <div class="invest-val" style="color:var(--cyan)">100M+</div>
+                        <div class="invest-title">150M+ anonymity set. Coming.</div>
+                        <div class="invest-desc">Full Chain Membership Proofs expand from 16 to 150M+. Largest privacy upgrade ever.</div>
+                        <div class="invest-val" style="color:var(--cyan)">150M+</div>
                     </div>
                 </a>
             </div>
@@ -481,7 +481,7 @@
           <div class="cite-block">
             <span class="cite-source">Monero Research Lab</span>
             <span class="cite-date">2024</span>
-            <span class="cite-note">Full Chain Membership Proofs replace ring signatures. Anonymity set = full transaction output set (~100M+ once activated).</span>
+            <span class="cite-note">Full Chain Membership Proofs replace ring signatures. Anonymity set = full transaction output set (~150M+ once activated).</span>
             <a class="cite-link" href="https://github.com/monero-project/research-lab" target="_blank" rel="noopener noreferrer nofollow">MRL GitHub →</a>
           </div>
         </div>
@@ -587,7 +587,7 @@ var STATS=[
     {val:'—',label:'Mempool size',id:'mempool'},
     {val:'0.85%',label:'Annual inflation',id:'inflation'},
     {val:'~2 min',label:'Block time',id:'blocktime'},
-    {val:'100M+',label:'FCMP++ anonymity set',id:'fcmp'},
+    {val:'150M+',label:'FCMP++ anonymity set',id:'fcmp'},
     {val:'73',label:'Exchange delistings',id:'delistings'}
 ];
 var statPage=0,totalStatPages=Math.ceil(STATS.length/4);
@@ -652,7 +652,7 @@ var PILLARS=[
   [{kicker:'Dandelion++',title:'Invisible broadcast.',desc:'Transactions propagate through a stem phase before exploding into fluff — preventing IP-level deanonymization.',val:'IP Safe',color:'var(--xmr)',href:'privacy-architecture.html'},
    {kicker:'CLSAG signatures',title:'25% smaller. Same privacy.',desc:'Compact Linkable Spontaneous Anonymous Group signatures — optimized ring proofs without compromising anonymity.',val:'25%',color:'var(--grn)',href:'privacy-architecture.html'},
    {kicker:'View tags',title:'80% faster sync.',desc:'One-byte tags on outputs let wallets skip irrelevant transactions during scanning. Massive UX improvement.',val:'80%',color:'var(--cyan)',href:'privacy-architecture.html'}],
-  [{kicker:'FCMP++',title:'Full chain membership proofs.',desc:'Anonymity set expands from 16 decoys to the entire 100M+ output set. The largest privacy upgrade in Monero history.',val:'100M+',color:'var(--xmr)',href:'future-outlook.html'},
+  [{kicker:'FCMP++',title:'Full chain membership proofs.',desc:'Anonymity set expands from 16 decoys to the entire 150M+ output set. The largest privacy upgrade in Monero history.',val:'150M+',color:'var(--xmr)',href:'fcmp.html'},
    {kicker:'CryptoNote',title:'Where it all began.',desc:'The foundational protocol from Bytecoin research. Privacy-by-default at the protocol level, not as an afterthought.',val:'2014',color:'var(--grn)',href:'timeline.html'},
    {kicker:'Tail emission',title:'Security forever.',desc:'0.6 XMR per block in perpetuity. No halving death spiral. Miners are incentivized to secure the chain indefinitely.',val:'∞',color:'var(--cyan)',href:'btc-xmr-education.html'}]
 ];
@@ -673,7 +673,7 @@ setInterval(function(){pillarPage=(pillarPage+1)%PILLARS.length;renderPillars(pi
 var INVEST=[
   [{kicker:'Supply shock',title:'73 exchanges delisted. Supply tightened.',desc:'Demand moved P2P. Less supply + persistent demand = structural price support.',val:'73',color:'var(--xmr)',href:'bottom-line.html'},
    {kicker:'IRS bounty',title:'$625K bounty. Still unclaimed.',desc:'Most expensive public audit in crypto — Monero passed. No one collected since 2020.',val:'Unclaimed',color:'var(--grn)',href:'bottom-line.html'},
-   {kicker:'FCMP++',title:'100M+ anonymity set. Coming.',desc:'Full Chain Membership Proofs expand from 16 to 100M+. Largest privacy upgrade ever.',val:'100M+',color:'var(--cyan)',href:'future-outlook.html'}],
+   {kicker:'FCMP++',title:'150M+ anonymity set. Coming.',desc:'Full Chain Membership Proofs expand from 16 to 150M+. Largest privacy upgrade ever.',val:'150M+',color:'var(--cyan)',href:'fcmp.html'}],
   [{kicker:'Seraphis',title:'Next-generation transaction protocol.',desc:'Modular address framework replacing RingCT. Enables hardware wallet support and flexible membership proofs.',val:'2027+',color:'var(--xmr)',href:'future-outlook.html'},
    {kicker:'DEX era',title:'Atomic swaps go mainstream.',desc:'Haveno, cross-chain swaps, and decentralized on-ramps eliminate the need for centralized exchanges entirely.',val:'P2P',color:'var(--grn)',href:'future-outlook.html'},
    {kicker:'Regulatory proof',title:'Survived 73 delistings. Still growing.',desc:'Privacy demand is inelastic. Delistings drive P2P adoption and strengthen the decentralized network.',val:'Antifragile',color:'var(--cyan)',href:'bottom-line.html'}],

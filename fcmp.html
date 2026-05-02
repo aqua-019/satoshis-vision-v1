@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>xmr.irish — FCMP++ — Monero's upcoming privacy upgrade</title>
+    <meta name="description" content="FCMP++ (Full-Chain Membership Proofs) is Monero's upcoming privacy upgrade. Anonymity set jumps from 16 to 150M+. Currently in beta stressnet (May 2026). Mainnet activation tentatively mid-2026.">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/d10.css">
+    <style>
+    .fp{font-family:var(--font-body);min-height:100vh;color:var(--text-primary)}
+    .fp-nav{display:flex;align-items:center;padding:10px var(--space-page-x);border-bottom:1px solid var(--border-subtle);gap:12px;font-size:12px;font-family:var(--font-mono)}
+    .fp-nav em{color:var(--grn);font-style:normal;font-weight:600}.fp-nav span{color:var(--text-muted)}
+    .fp-hero{padding:60px var(--space-page-x) 28px;max-width:880px;margin:0 auto}
+    .fp-eyebrow{font-family:var(--font-mono);font-size:10px;letter-spacing:4px;color:var(--xmr);text-transform:uppercase;margin-bottom:14px}
+    .fp-title{font-family:var(--font-headline);font-size:clamp(32px,5.5vw,52px);font-weight:600;letter-spacing:-1.5px;line-height:1.05;margin-bottom:14px}
+    .fp-title em{color:var(--xmr);font-style:normal}
+    .fp-lede{font-family:var(--font-subhead);font-style:italic;font-size:clamp(15px,2vw,18px);color:var(--g3);line-height:1.55;max-width:680px}
+
+    /* Status callout */
+    .fp-status{max-width:880px;margin:8px auto 28px;padding:18px 22px;background:rgba(255,215,0,.04);border:1px solid rgba(255,215,0,.18);border-left:3px solid var(--gold);border-radius:10px;font-family:var(--font-mono);font-size:12px;line-height:1.7;color:var(--g2)}
+    .fp-status strong{color:var(--gold);font-weight:600;letter-spacing:.5px;text-transform:uppercase;font-size:10px;display:block;margin-bottom:6px}
+    .fp-status .fp-status-row{display:flex;flex-wrap:wrap;gap:18px}
+    .fp-status .fp-status-row span{display:inline-flex;gap:6px}
+    .fp-status .fp-status-row b{color:var(--g1);font-weight:500}
+    .fp-status .fp-status-note{margin-top:6px;color:var(--text-tertiary);font-size:11px}
+
+    /* Sections */
+    .fp-section{max-width:880px;margin:0 auto;padding:32px var(--space-page-x)}
+    .fp-section + .fp-section{border-top:1px solid var(--border-subtle)}
+    .fp-section h2{font-family:var(--font-headline);font-size:clamp(20px,3vw,28px);font-weight:600;letter-spacing:-.5px;margin-bottom:16px;color:var(--g1)}
+    .fp-section h2 em{color:var(--xmr);font-style:normal}
+    .fp-section p{font-size:14px;line-height:1.75;color:var(--g2);margin-bottom:14px;max-width:680px}
+    .fp-section p strong{color:var(--g1);font-weight:600}
+    .fp-section p code{font-family:var(--font-mono);font-size:12px;background:var(--surface-2);padding:1px 6px;border-radius:3px;color:var(--xmr-text)}
+
+    /* Big-number callout */
+    .fp-bignum{display:flex;gap:24px;margin:18px 0;padding:18px 20px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:12px;align-items:center;flex-wrap:wrap}
+    .fp-bignum .fp-bn{flex:1 1 130px;text-align:center;min-width:120px}
+    .fp-bignum .fp-bn-v{font-family:var(--font-data);font-size:clamp(22px,3vw,32px);font-weight:600;letter-spacing:-.5px;line-height:1.1}
+    .fp-bignum .fp-bn-l{font-family:var(--font-mono);font-size:9px;letter-spacing:2px;color:var(--text-tertiary);text-transform:uppercase;margin-top:4px}
+    .fp-bignum .fp-bn-arrow{font-family:var(--font-mono);font-size:18px;color:var(--text-tertiary)}
+    .fp-bignum .fp-bn.before .fp-bn-v{color:var(--text-secondary)}
+    .fp-bignum .fp-bn.after .fp-bn-v{color:var(--xmr)}
+
+    /* Feature list */
+    .fp-feats{list-style:none;padding:0;margin:14px 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+    .fp-feats li{padding:14px 16px;background:var(--surface-1);border:1px solid var(--border-default);border-radius:10px}
+    .fp-feats li strong{display:block;font-family:var(--font-mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--xmr);margin-bottom:6px}
+    .fp-feats li span{font-size:12px;line-height:1.6;color:var(--g3)}
+
+    /* Timeline */
+    .fp-tl{list-style:none;padding:0;margin:14px 0;display:flex;flex-direction:column;gap:8px}
+    .fp-tl li{display:grid;grid-template-columns:140px 1fr;gap:14px;padding:10px 14px;background:var(--surface-1);border:1px solid var(--border-default);border-left:2px solid var(--border-strong);border-radius:0 8px 8px 0;align-items:baseline}
+    .fp-tl li.now{border-left-color:var(--gold)}
+    .fp-tl li.future{border-left-color:var(--xmr)}
+    .fp-tl li .fp-tl-d{font-family:var(--font-mono);font-size:11px;color:var(--text-tertiary);letter-spacing:.5px}
+    .fp-tl li .fp-tl-t{font-size:13px;color:var(--g2);line-height:1.5}
+    .fp-tl li .fp-tl-t b{color:var(--g1);font-weight:600}
+
+    /* Sources */
+    .fp-sources{list-style:none;padding:0;margin:14px 0;display:flex;flex-direction:column;gap:6px;font-family:var(--font-mono);font-size:11px}
+    .fp-sources li{padding:6px 10px;border-left:2px solid var(--border-default);color:var(--text-tertiary);line-height:1.5;word-break:break-all}
+    .fp-sources li a{color:var(--blue);text-decoration:none}.fp-sources li a:hover{text-decoration:underline}
+    .fp-sources li b{color:var(--g3);font-weight:500;display:block;font-size:10px;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px;font-family:var(--font-mono)}
+
+    /* Cross-links */
+    .fp-cross{margin:24px auto;max-width:880px;padding:18px var(--space-page-x);text-align:center;font-size:12px;color:var(--text-tertiary)}
+    .fp-cross a{color:var(--xmr-text);text-decoration:none;margin:0 6px}.fp-cross a:hover{text-decoration:underline}
+
+    .fp-disclaim{font-size:11px;color:var(--text-tertiary);font-style:italic;margin-top:18px;line-height:1.6}
+
+    .fp-foot{padding:18px var(--space-page-x);border-top:1px solid var(--border-subtle);text-align:center;font-size:10px;color:var(--text-tertiary);font-family:var(--font-mono)}
+
+    @media(max-width:680px){
+      .fp-tl li{grid-template-columns:1fr}
+      .fp-bignum{gap:14px;padding:14px}
+      .fp-bignum .fp-bn-arrow{display:none}
+    }
+    </style>
+</head>
+<body>
+<div class="page-offset fp">
+    <div id="nav-mount"></div>
+    <div class="fp-nav"><em>xmr.irish</em> <span>/</span> <em>fcmp</em></div>
+
+    <header class="fp-hero">
+        <div class="fp-eyebrow">Monero's upcoming privacy upgrade</div>
+        <h1 class="fp-title"><em>FCMP++</em> — proofs that span the entire chain</h1>
+        <p class="fp-lede">Full-Chain Membership Proofs replace ring signatures with a cryptographic argument that the spender owns one of every Monero output ever created — without revealing which one.</p>
+    </header>
+
+    <div class="fp-status" role="note" aria-label="Activation status">
+        <strong>Status — May 2026</strong>
+        <div class="fp-status-row">
+            <span><b>Mainnet:</b> not yet activated</span>
+            <span><b>Alpha stressnet:</b> running since Oct 3, 2025</span>
+            <span><b>Beta stressnet:</b> launches May 6, 2026</span>
+            <span><b>Mainnet target:</b> tentatively mid-2026</span>
+        </div>
+        <div class="fp-status-note">Specific block height and final scaling parameters are decided on the beta stressnet. No specific mainnet activation date has been announced.</div>
+    </div>
+
+    <section class="fp-section">
+        <h2>What FCMP++ <em>does</em></h2>
+        <p>Today, when a Monero user spends an output, they sign a <strong>ring signature</strong> proving that they own one of <strong>16</strong> outputs — the real one plus 15 decoys selected by the wallet. The ring is small enough that statistical analysis can sometimes narrow down the real spender by studying decoy distributions.</p>
+        <p>FCMP++ replaces that 16-member ring with a single succinct proof that the spender owns one of <strong>every output ever created on Monero</strong>. The proof itself stays small (~2-3 KB) regardless of how large the chain grows, because it uses a logarithmic-size structure called a <strong>Curve Tree</strong>.</p>
+        <div class="fp-bignum" aria-label="Anonymity set comparison">
+            <div class="fp-bn before">
+                <div class="fp-bn-v">16</div>
+                <div class="fp-bn-l">Today (Ring signatures)</div>
+            </div>
+            <div class="fp-bn-arrow">→</div>
+            <div class="fp-bn after">
+                <div class="fp-bn-v">150,000,000+</div>
+                <div class="fp-bn-l">Once FCMP++ activates</div>
+            </div>
+        </div>
+        <p>Statistical de-anonymization that worked against 16-member rings simply has no signal to operate on when the anonymity set is the entire chain — and the chain grows every block.</p>
+    </section>
+
+    <section class="fp-section">
+        <h2>Why it matters</h2>
+        <p>For users, the surface change is invisible. Existing Monero addresses keep working. Wallets keep behaving the same way. Transactions keep settling in roughly two minutes.</p>
+        <p>What changes is the underlying cryptographic guarantee. Three things at once:</p>
+        <p><strong>The anonymity set becomes the entire chain.</strong> Every output ever created on Monero is a member of every input's anonymity set — not 16 selected decoys. Temporal heuristics (which output is "the real one" based on age) lose all power. Output poisoning (flooding known outputs to corrupt rings) loses all power. There are no rings.</p>
+        <p><strong>Forward secrecy against quantum adversaries.</strong> Transactions made under FCMP++ stay private even if a future quantum computer breaks the elliptic-curve discrete logarithm problem. A quantum attacker cannot retroactively trace these transactions.</p>
+        <p><strong>Backward compatibility.</strong> Existing 95-character Monero addresses remain valid forever. Users do not migrate funds. Sending to legacy addresses continues to work. The upgrade is invisible at the address layer.</p>
+    </section>
+
+    <section class="fp-section">
+        <h2>Bundled with <em>CARROT</em></h2>
+        <p>FCMP++ ships in the same hard fork as <strong>CARROT</strong>, a new addressing protocol maintained by jeffro256. CARROT becomes the default addressing protocol post-FCMP++, adding security and usability features at the wallet layer while remaining compatible with existing addresses.</p>
+        <p>The two upgrades are coordinated: FCMP++ rewires how spends are proved; CARROT rewires how addresses are derived. Together they constitute the largest privacy and addressing upgrade in Monero's history.</p>
+    </section>
+
+    <section class="fp-section">
+        <h2>Key features</h2>
+        <ul class="fp-feats">
+            <li><strong>150M+ anonymity set</strong><span>Every output on the chain is a member, not 16 selected decoys. Set grows every block.</span></li>
+            <li><strong>Forward secrecy</strong><span>Transactions stay private even against quantum adversaries who break ECDLP in the future.</span></li>
+            <li><strong>Backward compatibility</strong><span>Existing 95-character addresses remain valid. No wallet migration. No fund movement.</span></li>
+            <li><strong>~2-3 KB proofs</strong><span>Logarithmic proof size despite proving membership in 150M+ outputs. Bandwidth stays constant.</span></li>
+            <li><strong>Transaction chaining</strong><span>Enables Layer 2 constructions and atomic operations not previously possible on Monero.</span></li>
+            <li><strong>Independently audited</strong><span>Veridise audit completed in 2025; ongoing review through stressnet phases.</span></li>
+        </ul>
+    </section>
+
+    <section class="fp-section">
+        <h2>Cryptographic foundation</h2>
+        <p>FCMP++ rests on four pieces of recent cryptographic research:</p>
+        <p><strong>Curve Trees</strong> — a logarithmic-size membership proof structure. Proving membership in a set of size <code>N</code> takes a proof of size <code>O(log N)</code>. At <code>N = 150M+</code>, the proof is a few kilobytes.</p>
+        <p><strong>Generalized Bulletproofs</strong> — optimized inner-product arguments that compress the membership proof further while keeping verification cheap.</p>
+        <p><strong>Eagen's elliptic curve divisors</strong> — accelerated proof construction. The technique cut proof generation time on the stressnet by roughly 5x (a 128-input transaction went from ~5m30s to ~1m).</p>
+        <p><strong>Helios + Selene</strong> — a curve cycle towering Ed25519 (Monero's existing curve). The towered construction means FCMP++ inherits the existing Monero anonymity set rather than restarting from zero. Every output back to genesis is a member of every future ring.</p>
+    </section>
+
+    <section class="fp-section">
+        <h2>Status &amp; timeline</h2>
+        <ul class="fp-tl">
+            <li><span class="fp-tl-d">March 2024</span><span class="fp-tl-t">FCMP++ proposal published by <b>Luke Parker (kayabaNerve)</b>.</span></li>
+            <li><span class="fp-tl-d">April 2024</span><span class="fp-tl-t">Monero Foundation publishes the official FCMP++ explainer at getmonero.org.</span></li>
+            <li><span class="fp-tl-d">2024–2025</span><span class="fp-tl-t">Optimization contests for <b>helioselene</b> and <b>ec-divisors</b> deliver 95% / 22% speedups; Veridise audit conducted.</span></li>
+            <li class="now"><span class="fp-tl-d">Oct 3, 2025</span><span class="fp-tl-t"><b>Alpha stressnet</b> launches via testnet hard fork at block 2,847,330.</span></li>
+            <li class="now"><span class="fp-tl-d">Oct 2025 – Apr 2026</span><span class="fp-tl-t">Alpha versions <b>v1 → v1.6</b> ship with CARROT integration, RAM-usage and sync optimizations.</span></li>
+            <li class="now"><span class="fp-tl-d">Jan 8, 2026</span><span class="fp-tl-t">Design paper <b>v0.5.2</b> published (kayabaNerve/fcmp-plus-plus-paper).</span></li>
+            <li class="future"><span class="fp-tl-d">May 6, 2026</span><span class="fp-tl-t"><b>Beta stressnet</b> launches — final scaling decisions made here.</span></li>
+            <li class="future"><span class="fp-tl-d">Mid–late 2026</span><span class="fp-tl-t"><b>Mainnet hard fork</b> (tentative). Specific block height not yet confirmed.</span></li>
+        </ul>
+    </section>
+
+    <section class="fp-section">
+        <h2>What's still being built</h2>
+        <p>The stressnet exposes the full FCMP++ proof construction, but several user-facing wallet features still require additional integration before mainnet activation. As of stressnet release v1.6, the following are not yet supported:</p>
+        <ul class="fp-feats">
+            <li><strong>Watch-only wallets</strong><span>Cold-wallet workflows still being adapted to FCMP++ proof construction.</span></li>
+            <li><strong>Hardware wallets</strong><span>Ledger / Trezor integrations require FCMP++ proof support on-device.</span></li>
+            <li><strong>Multisig</strong><span>Multisig coordination protocol needs to be redesigned around FCMP++.</span></li>
+            <li><strong>Transaction proofs</strong><span>Proof-of-payment exports need to be reformulated for the new construction.</span></li>
+            <li><strong>Block explorer</strong><span>Public chain explorers will need updates to handle FCMP++ transaction structures.</span></li>
+        </ul>
+        <p class="fp-disclaim">These are wallet- and tooling-layer concerns, not protocol-layer concerns. The cryptographic core of FCMP++ is implemented and stress-tested; the remaining work is integration breadth.</p>
+    </section>
+
+    <section class="fp-section">
+        <h2>Sources</h2>
+        <p>This page is fact-checked against primary upstream sources. We do not cite crypto-news aggregators that have repeatedly published incorrect activation dates.</p>
+        <ul class="fp-sources">
+            <li><b>Stressnet releases</b><a href="https://github.com/seraphis-migration/monero/releases" rel="noopener nofollow" target="_blank">github.com/seraphis-migration/monero/releases</a></li>
+            <li><b>Hard-fork milestone tracker</b><a href="https://github.com/monero-project/monero/milestone/1" rel="noopener nofollow" target="_blank">github.com/monero-project/monero/milestone/1</a></li>
+            <li><b>Official Monero Foundation explainer</b><a href="https://www.getmonero.org/2024/04/27/fcmps.html" rel="noopener nofollow" target="_blank">getmonero.org/2024/04/27/fcmps.html</a></li>
+            <li><b>FCMP++ design paper</b><a href="https://github.com/kayabaNerve/fcmp-plus-plus-paper" rel="noopener nofollow" target="_blank">github.com/kayabaNerve/fcmp-plus-plus-paper</a></li>
+            <li><b>CARROT spec</b><a href="https://github.com/jeffro256/carrot" rel="noopener nofollow" target="_blank">github.com/jeffro256/carrot</a></li>
+            <li><b>Monero (XMR) — official Twitter</b><a href="https://x.com/monero" rel="noopener nofollow" target="_blank">@monero</a></li>
+            <li><b>Monero Research Lab — Twitter</b><a href="https://x.com/moneroresearchl" rel="noopener nofollow" target="_blank">@moneroresearchl</a></li>
+            <li><b>Monero Observer</b><a href="https://monero.observer" rel="noopener nofollow" target="_blank">monero.observer</a></li>
+            <li><b>The Monero Moon (community newsletter)</b><a href="https://www.themoneromoon.com" rel="noopener nofollow" target="_blank">themoneromoon.com</a></li>
+        </ul>
+    </section>
+
+    <div class="fp-cross">
+        Related on xmr.irish:
+        <a href="protocol-simulations.html#fcmp-implementation">Sim 6 — FCMP++ visualization</a> ·
+        <a href="privacy-architecture.html">Privacy architecture</a> ·
+        <a href="timeline.html">Timeline</a> ·
+        <a href="future-outlook.html">2027+ outlook</a>
+    </div>
+
+    <div class="fp-foot">xmr.irish / fcmp · canonical FCMP++ summary · last updated May 2, 2026</div>
+</div>
+<script src="js/nav.js"></script>
+<script src="js/price-service.js"></script>
+<script src="js/monero-network.js"></script>
+<script>NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();</script>
+</body></html>

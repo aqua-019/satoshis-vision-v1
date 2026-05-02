@@ -505,7 +505,7 @@ export class SVGRenderer {
             const count = Math.floor(node.count || 0);
             el.textContent = `${count.toLocaleString()} UTXOs on chain`;
         } else if (tpl === 'outro-callout') {
-            el.textContent = 'Anonymity set: ~10⁸+';
+            el.textContent = 'Anonymity set: 150M+';
         } else {
             el.textContent = '';
         }
