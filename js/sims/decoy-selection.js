@@ -128,16 +128,43 @@ function buildActors(ringSize) {
     return actors;
 }
 
-function ringMemberSpawnTransitions(ringSize, totalDurationMs, trueSpenderAgeDays, trueSpenderIndex, sampledAges) {
+function ringMemberSpawnTransitions(ringSize, totalDurationMs, trueSpenderAgeDays) {
     const transitions = [];
+    const placedPositions = [];
+    const trueSpenderIndex = Math.floor(Math.random() * ringSize);
+    let trueSpenderPosition = null;
+
+    const maxAttempts = 8;
+    const minDist = 0.06;
+
     for (let i = 0; i < ringSize; i++) {
         const ageS = i === trueSpenderIndex
             ? trueSpenderAgeDays * SECONDS_PER_DAY
-            : sampledAges[i];
+            : sampleLogNormalAge(7, 0.5);
         const ageDays = ageS / SECONDS_PER_DAY;
 
-        const xPos = ageToCanvasX(ageDays);
-        const yPos = 0.32 + ((i * 37) % 100) / 100 * 0.30;
+        let xPos, yPos;
+        let attempts = 0;
+        while (attempts < maxAttempts) {
+            xPos = ageToCanvasX(ageDays);
+            yPos = 0.18 + Math.random() * 0.50;
+
+            let tooClose = false;
+            for (const placed of placedPositions) {
+                const dx = xPos - placed.x;
+                const dy = yPos - placed.y;
+                if (Math.sqrt(dx * dx + dy * dy) < minDist) {
+                    tooClose = true;
+                    break;
+                }
+            }
+
+            if (!tooClose) break;
+            attempts++;
+        }
+
+        placedPositions.push({ x: xPos, y: yPos });
+        if (i === trueSpenderIndex) trueSpenderPosition = { x: xPos, y: yPos };
 
         const delayFraction = (i / Math.max(1, ringSize - 1));
         const delayMs = delayFraction * totalDurationMs * 0.7;
@@ -157,7 +184,8 @@ function ringMemberSpawnTransitions(ringSize, totalDurationMs, trueSpenderAgeDay
             delayMs
         });
     }
-    return transitions;
+
+    return { transitions, trueSpenderPosition };
 }
 
 function ringMemberObscureTransitions(ringSize) {
@@ -176,22 +204,11 @@ export function buildSpec(params = {}) {
     const ringSize = params.ringSize ?? 16;
     const spendOutputAge = params.spendOutputAge ?? 7;
 
-    /* Pick true spender deterministically per build so the highlight has
-       a stable target and we know which actor it should track. */
-    const trueSpenderIndex = Math.floor(Math.random() * ringSize);
-
-    /* Sample each non-spender age once at build time; transitions use these
-       so the same positions are reached on every frame. */
-    const sampledAges = new Array(ringSize);
-    for (let i = 0; i < ringSize; i++) {
-        sampledAges[i] = sampleLogNormalAge(7, 0.5);
-    }
-
-    const trueSpenderXY = (() => {
-        const x = ageToCanvasX(spendOutputAge);
-        const y = 0.32 + ((trueSpenderIndex * 37) % 100) / 100 * 0.30;
-        return { x, y };
-    })();
+    /* Sampling phase chooses the true spender, samples decoy ages, and
+       performs minimum-distance rejection placement in one pass. The
+       returned trueSpenderPosition is the actual placed (cx, cy) so the
+       gold-ring marker stays pinned to the true spender. */
+    const sampling = ringMemberSpawnTransitions(ringSize, 4500, spendOutputAge);
 
     return {
         id: 'decoy-selection',
@@ -263,7 +280,7 @@ export function buildSpec(params = {}) {
                     startMs: 3500,
                     durationMs: 4500,
                     description: '16 ring members chosen, mostly from recent outputs but a few from older ones.',
-                    transitions: ringMemberSpawnTransitions(ringSize, 4500, spendOutputAge, trueSpenderIndex, sampledAges)
+                    transitions: sampling.transitions
                 },
                 {
                     id: 'reveal-true-spender',
@@ -274,7 +291,12 @@ export function buildSpec(params = {}) {
                     transitions: [
                         {
                             actorId: 'true-spender-marker',
-                            targetState: { opacity: 1, scale: 1.3, cx: trueSpenderXY.x, cy: trueSpenderXY.y },
+                            targetState: {
+                                opacity: 1,
+                                scale: 1.3,
+                                cx: sampling.trueSpenderPosition.x,
+                                cy: sampling.trueSpenderPosition.y
+                            },
                             easing: 'cubic-bezier(.4,0,.6,1)'
                         }
                     ]
