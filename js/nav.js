@@ -48,8 +48,9 @@ const NavComponent = {
                 <a href="/" class="nav-link ${isActive('index')}">Home</a>
                 <a href="/mempool-explorer" class="nav-link ${mempoolActive}">Mempool</a>
                 <div class="dd-wrap">
-                    <span class="nav-link ${isDropdownActive(['btc-xmr-education','timeline','quotes','secrets','future-outlook','privacy-architecture'])}">Education</span>
+                    <span class="nav-link ${isDropdownActive(['btc-xmr-education','timeline','quotes','secrets','future-outlook','privacy-architecture','protocol-simulations'])}">Education</span>
                     <div class="dd-menu">
+                        <a class="dd-item" href="/protocol-simulations">Protocol simulations</a>
                         <a class="dd-item" href="/privacy-architecture">Protocol visualizations</a>
                         <a class="dd-item" href="/btc-xmr-education">BTC vs XMR education</a>
                         <a class="dd-item" href="/timeline">Timeline</a>
@@ -110,6 +111,7 @@ const NavComponent = {
             <a href="/mempool-explorer" class="mm-link ${mempoolActive}">Mempool</a>
             <div class="mm-group">
                 <span class="mm-label">Education</span>
+                <a href="/protocol-simulations" class="mm-link ${isActive('protocol-simulations')}">Protocol simulations</a>
                 <a href="/privacy-architecture" class="mm-link ${isActive('privacy-architecture')}">Protocol visualizations</a>
                 <a href="/btc-xmr-education" class="mm-link ${isActive('btc-xmr-education')}">BTC vs XMR</a>
                 <a href="/timeline" class="mm-link ${isActive('timeline')}">Timeline</a>

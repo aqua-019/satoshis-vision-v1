@@ -113,3 +113,8 @@
   from = "/swap"
   to = "/hold-monero.html"
   status = 200
+
+[[redirects]]
+  from = "/protocol-simulations"
+  to = "/protocol-simulations.html"
+  status = 200

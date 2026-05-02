@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>Protocol Simulations — xmr.irish</title>
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css2?family=DM+Mono:wght@400;500&family=Geologica:wght@400;500;700&family=Sora:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/d10.css">
+
+    <!-- Three.js importmap; loaded lazily by sim modules, NOT eagerly here -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "/js/vendor/three.module.min.js"
+        }
+    }
+    </script>
+</head>
+<body>
+    <div id="nav-mount"></div>
+    <div class="sub-nav-breadcrumb">xmr.irish / protocol-simulations</div>
+
+    <main class="page-content protocol-simulations-page">
+        <header class="page-hero">
+            <h1>Protocol Simulations</h1>
+            <p class="lede">
+                Five interactive visualizations of Monero's privacy primitives.
+                Each one runs in your browser — no data leaves your machine.
+                Click any card below to explore the mechanism in motion.
+            </p>
+        </header>
+
+        <section class="simulations-grid">
+            <a class="simulation-card" data-sim-id="decoy-selection" href="#decoy-selection">
+                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <h2 class="simulation-card-title">Decoy Selection</h2>
+                <p class="simulation-card-summary">
+                    Watch the algorithm sample 16 ring members from a log-normal age distribution.
+                    See why all 16 are statistically indistinguishable.
+                </p>
+                <div class="simulation-card-meta">
+                    <span class="simulation-card-tag">Ring signatures</span>
+                    <span class="simulation-card-tag">Sampling</span>
+                </div>
+            </a>
+
+            <a class="simulation-card" data-sim-id="dandelion-propagation" href="#dandelion-propagation">
+                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <h2 class="simulation-card-title">Dandelion++ Propagation</h2>
+                <p class="simulation-card-summary">
+                    Trace a transaction through stem-phase nodes before it broadcasts to the network.
+                    See where the originator gets lost.
+                </p>
+                <div class="simulation-card-meta">
+                    <span class="simulation-card-tag">Network privacy</span>
+                    <span class="simulation-card-tag">Mempool propagation</span>
+                </div>
+            </a>
+
+            <a class="simulation-card" data-sim-id="view-tag-matching" href="#view-tag-matching">
+                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <h2 class="simulation-card-title">View Tag Matching</h2>
+                <p class="simulation-card-summary">
+                    Compare wallet scan time with and without view tags — the 256× speedup
+                    that costs nothing in privacy.
+                </p>
+                <div class="simulation-card-meta">
+                    <span class="simulation-card-tag">Wallet sync</span>
+                    <span class="simulation-card-tag">2022 upgrade</span>
+                </div>
+            </a>
+
+            <a class="simulation-card" data-sim-id="ringct-construction" href="#ringct-construction">
+                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <h2 class="simulation-card-title">RingCT Signature Construction</h2>
+                <p class="simulation-card-summary">
+                    Watch a confidential transaction take shape: input, ring of decoys, blinded
+                    output commitments, range proof, signature.
+                </p>
+                <div class="simulation-card-meta">
+                    <span class="simulation-card-tag">RingCT</span>
+                    <span class="simulation-card-tag">CLSAG</span>
+                    <span class="simulation-card-tag">Bulletproofs+</span>
+                </div>
+            </a>
+
+            <a class="simulation-card" data-sim-id="stealth-address" href="#stealth-address">
+                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <h2 class="simulation-card-title">Stealth Address Derivation</h2>
+                <p class="simulation-card-summary">
+                    Alice and Bob compute the same secret without communicating.
+                    Watch a one-time address emerge that only Bob can recognize.
+                </p>
+                <div class="simulation-card-meta">
+                    <span class="simulation-card-tag">Stealth addresses</span>
+                    <span class="simulation-card-tag">Diffie-Hellman</span>
+                </div>
+            </a>
+        </section>
+
+        <section class="simulations-info">
+            <h2>About these simulations</h2>
+            <p>
+                Each simulation is a deterministic, browser-side animation that walks through
+                a specific Monero privacy mechanism. They use WebGL where supported and fall
+                back to SVG when not. None of them make network requests after the initial
+                page load — your browser does all the work.
+            </p>
+            <p>
+                These simulations are educational tools, not authoritative cryptographic references.
+                For implementation-level detail, see <a href="https://www.getmonero.org/resources/research-lab/" rel="noopener nofollow" target="_blank">Monero Research Lab publications</a>.
+                For protocol-architecture context, see <a href="/privacy-architecture">Privacy Architecture</a>.
+            </p>
+        </section>
+
+        <!-- Active simulation slot — Prompt T fills this for decoy-selection.
+             Other sims will follow the same pattern in their respective prompts. -->
+        <section id="active-simulation" class="active-simulation" hidden>
+            <div class="genui-canvas-container">
+                <canvas id="sim-canvas" class="genui-canvas"></canvas>
+                <div id="sim-overlay" class="genui-overlay"></div>
+            </div>
+            <div id="sim-controls" class="genui-controls"></div>
+            <div id="sim-inspector" class="genui-inspector" hidden></div>
+        </section>
+    </main>
+
+    <aside class="related-pages">
+        <h3>Related</h3>
+        <ul>
+            <li><a href="/privacy-architecture">Privacy Architecture</a></li>
+            <li><a href="/btc-xmr-education">Bitcoin vs. Monero</a></li>
+            <li><a href="/secrets">Secrets</a></li>
+            <li><a href="/timeline">Timeline</a></li>
+        </ul>
+    </aside>
+
+    <script src="/js/nav.js"></script>
+    <script src="/js/price-service.js"></script>
+
+    <!-- GenUI engine + renderers — loaded as ES modules -->
+    <script type="module" src="/js/genui/engine.js"></script>
+
+    <!-- Per-simulation modules will register themselves with window.GenUI when present.
+         For Prompt S, no sim modules exist yet — this is just scaffolding. -->
+    <!-- <script type="module" src="/js/sims/decoy-selection.js"></script> Phase 5: Prompt T -->
+
+    <script>NavComponent.inject('nav-mount');if(window.PriceService)PriceService.start();</script>
+</body>
+</html>
