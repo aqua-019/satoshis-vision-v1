@@ -162,8 +162,50 @@ export class SVGRenderer {
         path.setAttribute('stroke-width', String(node.strokeWidth ?? 2));
         path.setAttribute('fill', node.fill || 'none');
         path.setAttribute('opacity', String(node.opacity ?? 1));
-        path.setAttribute('d', this._buildDensityPath(node.drawProgress ?? 0, node.meanDays ?? 7, node.sigma ?? 0.5));
+        if (node.from && node.to) {
+            path.dataset.bezier = 'true';
+            this._applyBezierPath(path, node);
+        } else {
+            path.setAttribute('d', this._buildDensityPath(node.drawProgress ?? 0, node.meanDays ?? 7, node.sigma ?? 0.5));
+        }
         return path;
+    }
+
+    _applyBezierPath(el, node) {
+        const from = node.from;
+        const to = node.to;
+        const cp = node.controlPoint || {
+            cx: (from.cx + to.cx) / 2,
+            cy: Math.min(from.cy, to.cy) - 0.08
+        };
+        const fx = (from.cx * this.viewWidth).toFixed(2);
+        const fy = (from.cy * this.viewHeight).toFixed(2);
+        const cx = (cp.cx * this.viewWidth).toFixed(2);
+        const cy = (cp.cy * this.viewHeight).toFixed(2);
+        const tx = (to.cx * this.viewWidth).toFixed(2);
+        const ty = (to.cy * this.viewHeight).toFixed(2);
+        el.setAttribute('d', `M ${fx} ${fy} Q ${cx} ${cy} ${tx} ${ty}`);
+
+        /* Animate "drawing the line in" via stroke-dasharray. getTotalLength
+           requires DOM attachment; approximate the curve length with the
+           polyline length so progress lerps look right before mount. */
+        const N = 24;
+        let length = 0;
+        let prevX = from.cx, prevY = from.cy;
+        for (let i = 1; i <= N; i++) {
+            const t = i / N;
+            const omt = 1 - t;
+            const x = omt * omt * from.cx + 2 * omt * t * cp.cx + t * t * to.cx;
+            const y = omt * omt * from.cy + 2 * omt * t * cp.cy + t * t * to.cy;
+            const dx = (x - prevX) * this.viewWidth;
+            const dy = (y - prevY) * this.viewHeight;
+            length += Math.sqrt(dx * dx + dy * dy);
+            prevX = x;
+            prevY = y;
+        }
+        const progress = Math.max(0, Math.min(1, node.progress ?? 1));
+        el.setAttribute('stroke-dasharray', String(length.toFixed(2)));
+        el.setAttribute('stroke-dashoffset', String((length * (1 - progress)).toFixed(2)));
     }
 
     _buildDensityPath(progress, meanDays, sigma) {
@@ -404,7 +446,9 @@ export class SVGRenderer {
             if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
         } else if (node.type === 'path') {
             el.setAttribute('opacity', String(node.opacity ?? 1));
-            if (node.drawProgress !== undefined) {
+            if (el.dataset.bezier === 'true') {
+                if (node.from && node.to) this._applyBezierPath(el, node);
+            } else if (node.drawProgress !== undefined) {
                 el.setAttribute('d', this._buildDensityPath(node.drawProgress, node.meanDays ?? 7, node.sigma ?? 0.5));
             }
         } else if (node.type === 'pedersen-blob') {

@@ -28,7 +28,7 @@
         <header class="page-hero">
             <h1>Protocol Simulations</h1>
             <p class="lede">
-                Five interactive visualizations of Monero's privacy primitives.
+                Six interactive visualizations of Monero's privacy primitives.
                 Each one runs in your browser — no data leaves your machine.
                 Click any card below to explore the mechanism in motion.
             </p>
@@ -89,7 +89,7 @@
             </a>
 
             <a class="simulation-card" data-sim-id="stealth-address" href="#stealth-address">
-                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <div class="simulation-card-status" data-status="ready">READY</div>
                 <h2 class="simulation-card-title">Stealth Address Derivation</h2>
                 <p class="simulation-card-summary">
                     Alice and Bob compute the same secret without communicating.
@@ -98,6 +98,20 @@
                 <div class="simulation-card-meta">
                     <span class="simulation-card-tag">Stealth addresses</span>
                     <span class="simulation-card-tag">Diffie-Hellman</span>
+                </div>
+            </a>
+
+            <a class="simulation-card" data-sim-id="fcmp-implementation" href="#fcmp-implementation">
+                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <h2 class="simulation-card-title">FCMP++ Implementation</h2>
+                <p class="simulation-card-summary">
+                    See the anonymity set jump from 16 to ~10⁸. Watch the
+                    statistical attacks that worked against ring signatures
+                    fail against the entire chain.
+                </p>
+                <div class="simulation-card-meta">
+                    <span class="simulation-card-tag">Full-chain membership proofs</span>
+                    <span class="simulation-card-tag">Curve Trees</span>
                 </div>
             </a>
         </section>
@@ -154,6 +168,7 @@
     <script type="module" src="/js/sims/dandelion-propagation.js"></script>
     <script type="module" src="/js/sims/view-tag-matching.js"></script>
     <script type="module" src="/js/sims/ringct-construction.js"></script>
+    <script type="module" src="/js/sims/stealth-address.js"></script>
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {

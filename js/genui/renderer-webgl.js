@@ -314,7 +314,12 @@ export class WebGLRenderer {
         } else if (node.type === 'instanced-points') {
             mesh = this._createInstancedPoints(node);
         } else if (node.type === 'path') {
-            mesh = this._createDensityCurveLine(node);
+            /* Sim 5 introduced bezier paths (alice/bob ECDH beams, derivation arc).
+               When the spec ships from/controlPoint/to, build a bezier line;
+               otherwise fall back to the original density-curve implementation. */
+            mesh = (node.from && node.to)
+                ? this._createBezierLine(node)
+                : this._createDensityCurveLine(node);
         } else if (node.type === 'graph-edge') {
             mesh = this._createGraphEdges(node);
         } else if (node.type === 'particle-trail') {
@@ -519,6 +524,71 @@ export class WebGLRenderer {
         line.userData.curveSamples = N;
         line.userData.skipPosition = true;
         return line;
+    }
+
+    _createBezierLine(node) {
+        /* Quadratic-bezier polyline. The geometry is sampled into N segments
+           at creation; updateMesh resamples on each frame to stay correct if
+           from/controlPoint/to ever animate, and walks drawRange against
+           node.progress to "draw the line in" over time. */
+        const N = 120;
+        const positions = new Float32Array(N * 3);
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setDrawRange(0, 0);
+
+        const parsed = parseColorWithAlpha(node.stroke || 'var(--xmr)', '#FF6600');
+        const material = new THREE.LineBasicMaterial({
+            color: parsed.color,
+            transparent: true,
+            opacity: (node.opacity ?? 1) * parsed.alpha,
+            linewidth: node.strokeWidth || 2
+        });
+
+        const line = new THREE.Line(geometry, material);
+        line.userData.bezierLine = true;
+        line.userData.bezierSamples = N;
+        line.userData.colorAlpha = parsed.alpha;
+        line.userData.skipPosition = true;
+        return line;
+    }
+
+    _updateBezierLine(line, node) {
+        const N = line.userData.bezierSamples || 120;
+        const positions = line.geometry.attributes.position.array;
+        const from = node.from;
+        const to = node.to;
+        /* Default control point: midpoint, slightly biased toward the higher
+           of the two endpoints so the curve doesn't look like a straight line. */
+        const cp = node.controlPoint || {
+            cx: (from.cx + to.cx) / 2,
+            cy: Math.min(from.cy, to.cy) - 0.08
+        };
+
+        for (let i = 0; i < N; i++) {
+            const t = i / (N - 1);
+            const oneMinusT = 1 - t;
+            const cx = oneMinusT * oneMinusT * from.cx
+                     + 2 * oneMinusT * t * cp.cx
+                     + t * t * to.cx;
+            const cy = oneMinusT * oneMinusT * from.cy
+                     + 2 * oneMinusT * t * cp.cy
+                     + t * t * to.cy;
+            const { x, y } = this.canvasToWorld(cx, cy);
+            positions[i * 3] = x;
+            positions[i * 3 + 1] = y;
+            positions[i * 3 + 2] = 0;
+        }
+
+        const progress = Math.max(0, Math.min(1, node.progress ?? 1));
+        line.geometry.setDrawRange(0, Math.max(2, Math.floor(N * progress)));
+        line.geometry.attributes.position.needsUpdate = true;
+        line.geometry.computeBoundingSphere();
+
+        if (line.material) {
+            const colorAlpha = line.userData.colorAlpha ?? 1;
+            line.material.opacity = (node.opacity ?? 1) * colorAlpha;
+        }
     }
 
     _createGraphEdges(node) {
@@ -1216,8 +1286,12 @@ export class WebGLRenderer {
             }
         }
 
-        if (node.type === 'path' && node.drawProgress !== undefined) {
-            this._updateDensityCurve(mesh, node.drawProgress, node.meanDays ?? 7, node.sigma ?? 0.5);
+        if (node.type === 'path') {
+            if (mesh.userData && mesh.userData.bezierLine) {
+                this._updateBezierLine(mesh, node);
+            } else if (node.drawProgress !== undefined) {
+                this._updateDensityCurve(mesh, node.drawProgress, node.meanDays ?? 7, node.sigma ?? 0.5);
+            }
         }
 
         this.updateOverlayElement(node);
