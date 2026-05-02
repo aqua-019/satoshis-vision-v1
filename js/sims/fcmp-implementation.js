@@ -1,10 +1,14 @@
 /**
  * Sim 6: FCMP++ Implementation
  *
- * Educational goal: With FCMP++, every output ever created on the Monero
- * blockchain is a potential decoy — not just 16. Statistical attacks that
- * worked against ring signatures of size 16 simply don't apply when the
- * anonymity set is the entire chain.
+ * Educational goal: Once FCMP++ activates, every output ever created on the
+ * Monero blockchain becomes a member of every input's anonymity set — not 16
+ * selected decoys. Statistical attacks that work against 16-member rings have
+ * no signal to operate on when the anonymity set is the entire chain.
+ *
+ * Status (May 2026): FCMP++ is in beta stressnet (launching May 6, 2026).
+ * Mainnet activation is tentatively targeted for mid-2026. See
+ * docs/v4-fcmp-canonical-facts.md for the authoritative status snapshot.
  *
  * See docs/v4-phase5-simulations.md Brief 6 for the canonical spec.
  *
@@ -15,10 +19,12 @@
  * corresponding blocks in this file must be updated to match.
  */
 
-/* Reference for total UTXO count at v4.0 ship target. Pre-launch checklist
-   (Phase 6) will update this to actual mainnet UTXO count. Live RPC fetch is
+/* Approximate Monero output count as of January 2026 (sources: seraphis-migration/monero
+   release notes, kayabaNerve fcmp-plus-plus-paper). The figure is conservatively low —
+   sources cite 152-158M in early 2026 and the count grows monotonically. Update at
+   v4.0 ship time if a newer authoritative figure is available. Live RPC fetch is
    v5.0 territory per Brief 6 open question #1. */
-const STATIC_UTXO_COUNT = 105_000_000;
+const STATIC_UTXO_COUNT = 152_000_000;
 
 const RING_SIZE = 16;
 
@@ -127,8 +133,8 @@ function buildActors(layout, displayedUtxoCount, treeDepthShown) {
             displayedCount: displayedUtxoCount,
             parallaxDepth: 0,
             totalChainCount: STATIC_UTXO_COUNT.toLocaleString(),
-            anonymitySet: '~10⁸+',
-            displayNote: 'Rendered subset; the actual anonymity set is the full chain.'
+            anonymitySet: '150M+ (entire chain)',
+            displayNote: 'Each output on the Monero blockchain is a potential anonymity-set member under FCMP++. The on-screen rendering shows a representative subset.'
         },
         visualMapping: {
             shape: 'utxo-ocean',
@@ -174,8 +180,8 @@ function buildActors(layout, displayedUtxoCount, treeDepthShown) {
             cy: layout.treeRootPos.cy,
             depth: treeDepthShown,
             collapseProgress: 0,
-            setSize: '~10⁸+',
-            proofSize: '~few KB'
+            setSize: '150M+ outputs (entire chain)',
+            proofSize: '~2-3 KB'
         },
         visualMapping: {
             shape: 'curve-tree',
@@ -227,8 +233,8 @@ function buildActors(layout, displayedUtxoCount, treeDepthShown) {
             cy: layout.trueSpenderPosition.cy,
             r: 14,
             attemptCount: 0,
-            reason: 'Set cardinality is the entire chain',
-            anonymitySet: '~10⁸+'
+            reason: 'Anonymity set is the entire chain — no per-input decoy distribution to analyze.',
+            anonymitySet: '150M+ outputs'
         },
         visualMapping: {
             shape: 'failed-marker',
@@ -355,8 +361,8 @@ export function buildSpec(params = {}) {
     return {
         id: 'fcmp-implementation',
         title: 'FCMP++ Implementation',
-        subtitle: 'How the anonymity set jumps from 16 to ~10⁸',
-        educationalGoal: 'With FCMP++, every output ever created on the Monero blockchain is a potential decoy — not just 16. Statistical attacks that worked against ring signatures of size 16 simply don\'t apply when the anonymity set is the entire chain.',
+        subtitle: 'How the anonymity set jumps from 16 to 150M+',
+        educationalGoal: 'Once FCMP++ activates, every output ever created on the Monero blockchain becomes a member of every input\'s anonymity set — not 16 selected decoys. Statistical attacks that work against 16-member rings have no signal to operate on when the anonymity set is the entire chain.',
 
         actors: buildActors(layout, displayedUtxoCount, treeDepthShown),
 
@@ -413,7 +419,7 @@ export function buildSpec(params = {}) {
                     label: 'The anonymity set expands',
                     startMs: 5000,
                     durationMs: 4000,
-                    description: 'FCMP++: every output is a member.',
+                    description: 'FCMP++ proves membership in the entire chain.',
                     transitions: [
                         ...layout.ringPositions.map((_, i) => ({
                             actorId: `legacy-ring-${i}`,
@@ -465,7 +471,7 @@ export function buildSpec(params = {}) {
                     label: 'The old approach fails',
                     startMs: 12000,
                     durationMs: 4000,
-                    description: '1 in 16 is guessable. 1 in 100,000,000 is not.',
+                    description: '1 in 16 is guessable. 1 in 150,000,000 is not.',
                     transitions: failedMarkerTransitions(driftCandidates, 4000).concat([
                         {
                             actorId: 'legacy-spender-marker',
@@ -476,10 +482,10 @@ export function buildSpec(params = {}) {
                 },
                 {
                     id: 'outro',
-                    label: 'Anonymity set: ~10⁸+',
+                    label: 'Anonymity set: 150M+',
                     startMs: 16000,
                     durationMs: 2000,
-                    description: 'Statistical de-anonymization no longer applies.',
+                    description: 'Anonymity set: 150M+. Statistical de-anonymization no longer applies at this scale.',
                     transitions: [
                         {
                             actorId: 'outro-callout',

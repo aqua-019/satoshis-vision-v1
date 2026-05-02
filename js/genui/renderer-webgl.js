@@ -1512,7 +1512,7 @@ export class WebGLRenderer {
             const count = Math.floor(node.count || 0);
             el.innerHTML = `<strong style="font-size:1.15em">${count.toLocaleString()}</strong><br>UTXOs on chain`;
         } else if (mesh.template === 'outro-callout') {
-            el.innerHTML = '<strong>Anonymity set: ~10⁸+</strong><br><span style="opacity:.75;font-size:.8em">Statistical de-anonymization no longer applies.</span>';
+            el.innerHTML = '<strong>Anonymity set: 150M+</strong><br><span style="opacity:.75;font-size:.8em">Statistical de-anonymization no longer applies at this scale.</span>';
         }
     }
 

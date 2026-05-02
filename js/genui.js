@@ -264,9 +264,9 @@ const GenUI = {
             cta1.textContent = 'Mine on this device';
             cta1.href = 'mining.html';
             cta2.textContent = 'FCMP++ upgrade status';
-            cta2.href = 'future-outlook.html';
+            cta2.href = 'fcmp.html';
             if (cta3) { cta3.textContent = 'Network stats'; cta3.href = 'network.html'; cta3.style.display = ''; }
-            if (heroSub) heroSub.textContent = 'Ring-16, Dandelion++, tail emission at 0.6 XMR/block. FCMP++ incoming with 100M+ anonymity set. Hashrate at ATH. The network has never been stronger.';
+            if (heroSub) heroSub.textContent = 'Ring-16, Dandelion++, tail emission at 0.6 XMR/block. FCMP++ incoming with 150M+ anonymity set. Hashrate at ATH. The network has never been stronger.';
         } else {
             // intermediate — default as designed
             if (heroSub) heroSub.textContent = 'The only cryptocurrency where every transaction is private by default. No transparent chain. No tainted coins. No surveillance.';
