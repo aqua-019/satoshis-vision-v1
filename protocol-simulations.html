@@ -9,11 +9,13 @@
     <link href="https://fonts.bunny.net/css2?family=DM+Mono:wght@400;500&family=Geologica:wght@400;500;700&family=Sora:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/d10.css">
 
-    <!-- Three.js importmap; loaded lazily by sim modules, NOT eagerly here -->
+    <!-- Three.js importmap; loaded lazily by sim modules, NOT eagerly here.
+         r128 ships only an unminified ESM build (three.module.js) — the
+         minified ESM was added in later releases. -->
     <script type="importmap">
     {
         "imports": {
-            "three": "/js/vendor/three.module.min.js"
+            "three": "/js/vendor/three.module.js"
         }
     }
     </script>
@@ -34,7 +36,7 @@
 
         <section class="simulations-grid">
             <a class="simulation-card" data-sim-id="decoy-selection" href="#decoy-selection">
-                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <div class="simulation-card-status" data-status="ready">READY</div>
                 <h2 class="simulation-card-title">Decoy Selection</h2>
                 <p class="simulation-card-summary">
                     Watch the algorithm sample 16 ring members from a log-normal age distribution.
@@ -115,9 +117,13 @@
             </p>
         </section>
 
-        <!-- Active simulation slot — Prompt T fills this for decoy-selection.
-             Other sims will follow the same pattern in their respective prompts. -->
+        <!-- Active simulation slot — populated by sim modules on card click. -->
         <section id="active-simulation" class="active-simulation" hidden>
+            <div class="genui-phase-indicator">
+                <span class="genui-phase-name">—</span>
+                <div class="genui-phase-progress" style="--progress: 0%"></div>
+                <span class="genui-phase-description">Loading…</span>
+            </div>
             <div class="genui-canvas-container">
                 <canvas id="sim-canvas" class="genui-canvas"></canvas>
                 <div id="sim-overlay" class="genui-overlay"></div>
@@ -143,9 +149,120 @@
     <!-- GenUI engine + renderers — loaded as ES modules -->
     <script type="module" src="/js/genui/engine.js"></script>
 
-    <!-- Per-simulation modules will register themselves with window.GenUI when present.
-         For Prompt S, no sim modules exist yet — this is just scaffolding. -->
-    <!-- <script type="module" src="/js/sims/decoy-selection.js"></script> Phase 5: Prompt T -->
+    <!-- Per-simulation modules register themselves with window.GenUI on import. -->
+    <script type="module" src="/js/sims/decoy-selection.js"></script>
+
+    <script type="module">
+        document.addEventListener('DOMContentLoaded', () => {
+            const cards = document.querySelectorAll('.simulation-card');
+            const activeContainer = document.getElementById('active-simulation');
+            const controlsEl = document.getElementById('sim-controls');
+            if (!activeContainer) return;
+
+            let currentEngine = null;
+
+            function refreshCardStatuses(activeSimId) {
+                cards.forEach(card => {
+                    const status = card.querySelector('.simulation-card-status');
+                    if (!status) return;
+                    const simId = card.dataset.simId;
+                    const isRegistered = window.GenUI && window.GenUI.sims.has(simId);
+                    if (simId === activeSimId) {
+                        status.dataset.status = 'active';
+                        status.textContent = 'PLAYING';
+                    } else if (isRegistered) {
+                        status.dataset.status = 'ready';
+                        status.textContent = 'READY';
+                    } else {
+                        status.dataset.status = 'not-started';
+                        status.textContent = 'SOON';
+                    }
+                });
+            }
+
+            function loadSim(simId) {
+                if (currentEngine) {
+                    try { currentEngine.pause(); } catch (e) {}
+                    if (currentEngine.renderer && currentEngine.renderer.destroy) {
+                        try { currentEngine.renderer.destroy(); } catch (e) {}
+                    }
+                    currentEngine = null;
+                }
+
+                activeContainer.hidden = false;
+                currentEngine = window.GenUI.mount(simId, activeContainer);
+
+                renderControls(currentEngine, controlsEl);
+                refreshCardStatuses(simId);
+
+                activeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+
+            function renderControls(engine, container) {
+                if (!container) return;
+                container.innerHTML = '';
+                for (const param of engine.spec.parameters) {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'genui-control';
+
+                    const label = document.createElement('label');
+                    label.className = 'genui-control-label';
+                    label.textContent = param.label;
+                    label.htmlFor = `param-${param.id}`;
+                    wrapper.appendChild(label);
+
+                    const input = document.createElement('input');
+                    input.id = `param-${param.id}`;
+                    if (param.type === 'number') {
+                        input.type = 'range';
+                        input.min = param.min;
+                        input.max = param.max;
+                        input.step = param.step || 1;
+                        input.value = param.default;
+                    } else if (param.type === 'boolean') {
+                        input.type = 'checkbox';
+                        input.checked = !!param.default;
+                    }
+                    wrapper.appendChild(input);
+
+                    const valueEl = document.createElement('span');
+                    valueEl.className = 'genui-control-value';
+                    valueEl.textContent = param.type === 'boolean' ? (param.default ? 'on' : 'off') : param.default;
+                    wrapper.appendChild(valueEl);
+
+                    input.addEventListener('input', (e) => {
+                        const v = param.type === 'boolean' ? e.target.checked : Number(e.target.value);
+                        valueEl.textContent = param.type === 'boolean' ? (v ? 'on' : 'off') : v;
+                        engine.updateParameter(param.id, v);
+                    });
+
+                    container.appendChild(wrapper);
+                }
+            }
+
+            cards.forEach(card => {
+                card.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const simId = card.dataset.simId;
+                    if (window.GenUI && window.GenUI.sims.has(simId)) {
+                        loadSim(simId);
+                        history.replaceState(null, '', `#${simId}`);
+                    }
+                });
+            });
+
+            /* Initial status refresh — wait one tick for sim modules to register */
+            setTimeout(() => refreshCardStatuses(null), 0);
+
+            /* Deep-link: open sim if hash matches a registered id */
+            if (window.location.hash) {
+                const simId = window.location.hash.replace('#', '');
+                setTimeout(() => {
+                    if (window.GenUI && window.GenUI.sims.has(simId)) loadSim(simId);
+                }, 50);
+            }
+        });
+    </script>
 
     <script>NavComponent.inject('nav-mount');if(window.PriceService)PriceService.start();</script>
 </body>

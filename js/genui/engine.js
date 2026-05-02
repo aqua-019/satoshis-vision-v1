@@ -45,43 +45,174 @@ class GenUIEngine {
 
     /**
      * Step 3: scene materialization.
-     * Walks the scene's phases and computes actor states at each phase boundary.
-     * Returns a structure: { phases: [{ id, actorStates: { actorId: state } }] }
-     *
-     * Prompt T implements the actual phase-walk; Prompt S leaves a stub.
+     * Walks the scene's phases and computes the post-phase actor state for
+     * each phase by accumulating that phase's transitions on top of the
+     * running state. Result: each phase has a snapshot of every actor's
+     * state as of phase end.
      */
     materializeScene(paramContext) {
-        /* Stub: returns initial state for each actor across all phases.
-           Prompt T replaces this with the real phase-walk algorithm. */
-        return {
-            phases: this.spec.scene.phases.map(phase => ({
-                id: phase.id,
-                actorStates: Object.fromEntries(
-                    this.spec.actors.map(a => [a.id, { ...a.initialState }])
-                )
-            }))
+        const initialActorStates = Object.fromEntries(
+            this.spec.actors.map(a => [a.id, { ...a.initialState }])
+        );
+
+        const initial = {
+            id: '__initial',
+            startMs: 0,
+            durationMs: 0,
+            actorStates: JSON.parse(JSON.stringify(initialActorStates))
         };
+
+        let runningState = JSON.parse(JSON.stringify(initialActorStates));
+        const phases = [];
+
+        for (const phase of this.spec.scene.phases) {
+            for (const transition of phase.transitions) {
+                if (!runningState[transition.actorId]) continue;
+                runningState[transition.actorId] = {
+                    ...runningState[transition.actorId],
+                    ...transition.targetState
+                };
+            }
+            phases.push({
+                id: phase.id,
+                startMs: phase.startMs,
+                durationMs: phase.durationMs,
+                actorStates: JSON.parse(JSON.stringify(runningState))
+            });
+        }
+
+        return { initial, phases };
     }
 
     /**
      * Step 4: visual scene graph construction.
-     * Translates actor state into renderer-agnostic visual elements.
-     *
-     * Prompt T implements; Prompt S stubs.
+     * Picks the active phase for the current time, then builds a flat list of
+     * renderer-agnostic node descriptors merging actor visualMapping defaults
+     * with the active phase's actor state. The previous phase (or initial
+     * state) is also returned so step 5 can interpolate.
      */
     buildSceneGraph(materializedScene, currentTimeMs) {
-        /* Stub: returns empty scene graph. */
-        return { nodes: [] };
+        let activePhase = null;
+        let prevPhase = materializedScene.initial;
+
+        for (const phase of materializedScene.phases) {
+            if (currentTimeMs >= phase.startMs && currentTimeMs < (phase.startMs + phase.durationMs)) {
+                activePhase = phase;
+                break;
+            }
+            if (phase.startMs + phase.durationMs <= currentTimeMs) {
+                prevPhase = phase;
+            }
+        }
+
+        if (!activePhase) {
+            activePhase = materializedScene.phases[materializedScene.phases.length - 1];
+        }
+
+        const inspectorActorIds = new Set(
+            (this.spec.inspectors || []).map(i => i.triggerActorId)
+        );
+
+        const nodes = this.spec.actors.map(actor => {
+            const state = activePhase.actorStates[actor.id] || actor.initialState;
+            const attrs = actor.visualMapping.attrs || {};
+            return {
+                id: actor.id,
+                type: actor.visualMapping.shape,
+                ...attrs,
+                ...state,
+                labels: actor.visualMapping.labels || [],
+                webgl: actor.visualMapping.webgl || {},
+                role: actor.role,
+                interactive: inspectorActorIds.has(actor.id)
+            };
+        });
+
+        return { nodes, prevPhase, activePhase };
     }
 
     /**
      * Step 5: animation interpolation.
-     * Lerps actor attributes between keyframes to the current time.
-     *
-     * Prompt T implements; Prompt S stubs.
+     * For each node, lerp numeric attributes from the previous phase's
+     * snapshot toward the active phase's snapshot using the active phase's
+     * progress fraction. Per-actor delayMs offsets (used by sampling phase
+     * to stagger ring-member spawns) are honored: an actor's interpolation
+     * doesn't begin until its delay has elapsed.
      */
     interpolateAnimations(sceneGraph, currentTimeMs) {
+        const { prevPhase, activePhase } = sceneGraph;
+        if (!prevPhase || !activePhase) return sceneGraph;
+
+        const phaseElapsedMs = currentTimeMs - activePhase.startMs;
+        const delayMap = this._actorDelayMap(activePhase.id);
+
+        sceneGraph.nodes = sceneGraph.nodes.map(node => {
+            const fromState = prevPhase.actorStates[node.id] || node;
+            const toState = activePhase.actorStates[node.id] || node;
+            const delay = delayMap.get(node.id) || 0;
+
+            const localDuration = Math.max(1, activePhase.durationMs - delay);
+            const localElapsed = phaseElapsedMs - delay;
+            const t = activePhase.durationMs > 0
+                ? Math.min(1, Math.max(0, localElapsed / localDuration))
+                : 1;
+            const eased = this.applyEasing(t, this._easingFor(activePhase.id, node.id));
+
+            const interpolated = {};
+            const keys = new Set([...Object.keys(fromState), ...Object.keys(toState)]);
+            for (const key of keys) {
+                const from = fromState[key];
+                const to = toState[key];
+                if (typeof from === 'number' && typeof to === 'number') {
+                    interpolated[key] = from + (to - from) * eased;
+                } else if (to !== undefined) {
+                    interpolated[key] = to;
+                } else {
+                    interpolated[key] = from;
+                }
+            }
+            return { ...node, ...interpolated };
+        });
+
         return sceneGraph;
+    }
+
+    _actorDelayMap(phaseId) {
+        if (!this._delayCache) this._delayCache = new Map();
+        if (this._delayCache.has(phaseId)) return this._delayCache.get(phaseId);
+        const map = new Map();
+        const phase = this.spec.scene.phases.find(p => p.id === phaseId);
+        if (phase) {
+            for (const t of phase.transitions) {
+                if (typeof t.delayMs === 'number') map.set(t.actorId, t.delayMs);
+            }
+        }
+        this._delayCache.set(phaseId, map);
+        return map;
+    }
+
+    _easingFor(phaseId, actorId) {
+        const phase = this.spec.scene.phases.find(p => p.id === phaseId);
+        if (!phase) return 'cubic-bezier(.4,0,.2,1)';
+        const t = phase.transitions.find(tr => tr.actorId === actorId);
+        return (t && t.easing) || 'cubic-bezier(.4,0,.2,1)';
+    }
+
+    applyEasing(t, easing) {
+        if (!easing || easing === 'linear') return t;
+        if (easing.includes('ease-out') || easing.includes('cubic-bezier(.4,0,.2,1)')) {
+            return 1 - Math.pow(1 - t, 3);
+        }
+        if (easing.includes('ease-in')) {
+            return Math.pow(t, 3);
+        }
+        if (easing.includes('cubic-bezier(.4,0,.6,1)')) {
+            /* Symmetric ease — used for the true-spender pulse */
+            return t < 0.5
+                ? 4 * t * t * t
+                : 1 - Math.pow(-2 * t + 2, 3) / 2;
+        }
+        return 1 - Math.pow(1 - t, 3);
     }
 
     /**
@@ -109,11 +240,25 @@ class GenUIEngine {
 
     /**
      * Step 7: accessibility annotation.
-     * Adds aria-* attributes to interactive nodes.
-     *
-     * Prompt T implements per-node aria attribution; Prompt S returns the graph unchanged.
+     * Adds aria-label / role / tabindex hints to interactive nodes so the
+     * renderer can attach them to the corresponding overlay element.
      */
     annotateAccessibility(sceneGraph) {
+        sceneGraph.nodes = sceneGraph.nodes.map(node => {
+            if (!node.interactive) return node;
+
+            const inspector = (this.spec.inspectors || []).find(i => i.triggerActorId === node.id);
+            const ariaLabel = inspector
+                ? inspector.panelTitle
+                : `${node.role} ${node.id}`;
+
+            return {
+                ...node,
+                ariaLabel,
+                tabIndex: 0,
+                ariaRole: 'button'
+            };
+        });
         return sceneGraph;
     }
 
@@ -136,9 +281,8 @@ class GenUIEngine {
 
     /**
      * Step 9: DOM/scene patch.
-     * Compares scene graph to last frame's, applies minimal mutations.
-     *
-     * Prompt T implements per-renderer; Prompt S stubs.
+     * Hands the scene graph to the renderer (whichever was selected). The
+     * renderer is responsible for diffing against its own last state.
      */
     patchScene(sceneGraph) {
         if (this.renderer && typeof this.renderer.update === 'function') {
@@ -176,12 +320,55 @@ class GenUIEngine {
 
     /**
      * Step 11: inspector binding.
-     * Wires up hover/click → inspector panel for actors with inspectors defined.
-     *
-     * Prompt T implements; Prompt S stubs (binding happens after first render).
+     * For each actor with an inspector, find the renderer's overlay element
+     * and wire mouseenter/mouseleave/click/focus/blur to show/hide the
+     * inspector panel. Bindings are idempotent — once attached, we don't
+     * re-attach.
      */
     bindInspectors(sceneGraph) {
-        /* Stub */
+        if (!this.inspectorBindings) this.inspectorBindings = new Map();
+        if (!this.renderer || !this.renderer.getElementForActor) return;
+
+        if (!this.inspectorModule && !this.inspectorModulePending) {
+            this.inspectorModulePending = true;
+            import('./inspector.js').then(m => {
+                this.inspectorModule = m;
+                this.inspectorModulePending = false;
+            });
+            return;
+        }
+        if (!this.inspectorModule) return;
+
+        for (const node of sceneGraph.nodes) {
+            if (!node.interactive) continue;
+            if (this.inspectorBindings.has(node.id)) {
+                this.inspectorBindings.get(node.id).node = node;
+                continue;
+            }
+
+            const inspector = (this.spec.inspectors || []).find(i => i.triggerActorId === node.id);
+            if (!inspector) continue;
+
+            const el = this.renderer.getElementForActor(node.id);
+            if (!el) continue;
+
+            const binding = { node, inspector, el };
+
+            const show = () => {
+                this.inspectorModule.showInspector(binding.node, inspector.panelTitle, inspector.fields, el);
+            };
+            const hide = () => this.inspectorModule.hideInspector();
+
+            el.addEventListener('mouseenter', show);
+            el.addEventListener('mouseleave', hide);
+            el.addEventListener('focus', show);
+            el.addEventListener('blur', hide);
+            el.addEventListener('click', show);
+
+            binding.show = show;
+            binding.hide = hide;
+            this.inspectorBindings.set(node.id, binding);
+        }
     }
 
     /**
@@ -237,12 +424,8 @@ class GenUIEngine {
         sceneGraph = this.annotateAccessibility(sceneGraph);
         timings.a11y = performance.now() - ts7;
 
-        /* Step 8: select and (lazily) initialize renderer */
-        if (!this.renderer) {
-            const target = this.selectRenderer();
-            this.rendererTarget = target;
-            this.renderer = this.createRenderer(target);
-        }
+        /* Step 8: renderer dispatch — actual instantiation happens once in
+           initRenderer() so we don't fire dynamic imports per frame. */
 
         /* Step 9 */
         const ts9 = performance.now();
@@ -264,8 +447,9 @@ class GenUIEngine {
     }
 
     /**
-     * Lazy-instantiate the appropriate renderer.
-     * Prompt S provides the dispatch; renderer modules are loaded as ES modules.
+     * Lazy-instantiate the appropriate renderer. Renderer modules are
+     * imported as ES modules so SVG fallback users don't pay the Three.js
+     * download cost.
      */
     async createRenderer(target) {
         if (target === 'webgl') {
@@ -280,10 +464,34 @@ class GenUIEngine {
     }
 
     /**
-     * Start the playback loop. autoPlay=true on the spec triggers this on mount.
+     * Boot the renderer; run a single frame at t=0 so the user sees a
+     * static initial composition immediately (instead of black canvas
+     * until the first rAF tick).
      */
-    play() {
+    async initRenderer() {
+        if (this.renderer) return this.renderer;
+        const target = this.selectRenderer();
+        this.rendererTarget = target;
+        try {
+            this.renderer = await this.createRenderer(target);
+        } catch (err) {
+            console.warn('[GenUI] WebGL renderer failed to initialize, falling back to SVG', err);
+            const mod = await import('./renderer-svg.js');
+            this.rendererTarget = 'svg';
+            this.renderer = new mod.SVGRenderer(this.mountEl, this.spec);
+        }
+        this.runFrame(0);
+        return this.renderer;
+    }
+
+    /**
+     * Start the playback loop. autoPlay=true on the spec triggers this on
+     * mount. We always boot the renderer first; if it's already booted,
+     * play() is cheap.
+     */
+    async play() {
         if (this.isPlaying) return;
+        if (!this.renderer) await this.initRenderer();
         this.isPlaying = true;
         this.startTimeMs = performance.now() - this.currentTimeMs;
         this.tick();
@@ -319,13 +527,37 @@ class GenUIEngine {
 
     /**
      * Update a parameter value and re-render.
-     * Triggers a single-frame re-derivation, which propagates through steps 2-9.
+     * If the spec exposes __buildSpec, the spec is rebuilt with the new
+     * parameters so topology-affecting changes (e.g. ringSize) take effect.
+     * Orphaned actors are removed from the renderer; new actors will be
+     * created on the next frame.
      */
     updateParameter(paramId, value) {
         if (!(paramId in this.params)) {
             throw new Error(`Unknown parameter: ${paramId}`);
         }
         this.params[paramId] = value;
+
+        if (typeof this.spec.__buildSpec === 'function') {
+            const builder = this.spec.__buildSpec;
+            const newSpec = builder(this.params);
+            newSpec.__buildSpec = builder;
+            const validated = validateSpec(newSpec);
+
+            const oldIds = new Set(this.spec.actors.map(a => a.id));
+            const newIds = new Set(validated.actors.map(a => a.id));
+            const removed = [...oldIds].filter(id => !newIds.has(id));
+            if (this.renderer && this.renderer.removeActor) {
+                for (const id of removed) this.renderer.removeActor(id);
+            }
+            if (this.inspectorBindings) {
+                for (const id of removed) this.inspectorBindings.delete(id);
+            }
+
+            this.spec = validated;
+            this._delayCache = new Map();
+        }
+
         this.runFrame(this.currentTimeMs);
     }
 }
@@ -342,7 +574,10 @@ window.GenUI = window.GenUI || {
         const spec = this.sims.get(simId);
         if (!spec) throw new Error(`GenUI: unknown sim id "${simId}"`);
         const engine = new GenUIEngine(spec, mountEl);
-        if (spec.scene.autoPlay) engine.play();
+        /* Boot renderer asynchronously; play() awaits internally if needed. */
+        engine.initRenderer().then(() => {
+            if (spec.scene.autoPlay) engine.play();
+        });
         return engine;
     }
 };

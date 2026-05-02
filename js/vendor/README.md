@@ -2,24 +2,20 @@
 
 This directory contains third-party libraries vendored locally to comply with xmr.irish's privacy posture (zero third-party network requests).
 
-## three.module.min.js
+## three.module.js
 
 - **Project:** Three.js
-- **Version:** r128
+- **Version:** r128 (`REVISION = '128'`)
 - **License:** MIT
 - **Source:** https://github.com/mrdoob/three.js
-- **Vendored from:** https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.min.js (one-time fetch; not loaded at runtime)
-- **Used by:** GenUI WebGL renderer (`js/genui/renderer-webgl.js`)
+- **Vendored from:** the official npm tarball at `https://registry.npmjs.org/three/-/three-0.128.0.tgz`, file `package/build/three.module.js`
+- **Used by:** GenUI WebGL renderer (`js/genui/renderer-webgl.js`) via the importmap in `protocol-simulations.html`
 
-### Status: PENDING MANUAL FETCH
+### Why the unminified ESM build
 
-The build sandbox used for the foundation commit (Prompt S) does not have
-egress access to `cdnjs.cloudflare.com`. The actual `three.module.min.js`
-binary has not yet been committed. See `THREE_JS_PLACEHOLDER.md` in this
-directory for the manual fetch instructions. Until the binary is in place,
-the WebGL renderer (`js/genui/renderer-webgl.js`) parses fine but its
-`import * as THREE from 'three'` will 404 at runtime; the page shell never
-exercises that path because no simulation is mounted yet.
+Three.js r128 ships only an unminified ESM (`three.module.js`) — the minified ESM (`three.module.min.js`) was added to the official build pipeline in later releases. CDN distributions like cdnjs/jsdelivr/unpkg post-process r128 to produce `.min.js` themselves; using the canonical npm artifact here avoids depending on third-party transformations.
+
+The file is ~1.1 MB unminified. Compression at the HTTP layer (gzip/brotli) brings the wire size to roughly 200 KB, which is comparable to the minified+compressed alternative for r128. Future GenUI work can re-vendor a minified build if the file size becomes a measurable problem.
 
 ### Notes
 
@@ -37,4 +33,4 @@ of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction…
 ```
 
-Full license text bundled in three.module.min.js.
+Full license text bundled at the head of `three.module.js`.
