@@ -14,10 +14,23 @@
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
         { "key": "Referrer-Policy", "value": "no-referrer" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data: https://api.coingecko.com; connect-src 'self' https://api.coingecko.com https://xmrchain.net https://localmonero.co https://p2pool.io https://moneroocean.stream wss://relay.xmr.irish; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data:; connect-src 'self' https://api.coingecko.com; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
         }
+      ]
+    },
+    {
+      "source": "/(.*)\\.(?:js|mjs|css|woff|woff2|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico)$",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    },
+    {
+      "source": "/(.*)\\.html$",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
       ]
     },
     {

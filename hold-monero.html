@@ -611,7 +611,9 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
 
     // Listen for ChangeNOW widget postMessage events
     window.addEventListener('message',function(e){
-        // ChangeNOW widget sends messages about state changes
+        // Origin guard — only accept messages from ChangeNOW widget hosts
+        var origin=e.origin||'';
+        if(origin!=='https://changenow.io'&&origin!=='https://widget.changenow.io')return;
         if(!e.data)return;
         var data=e.data;
         // Try to parse if string
