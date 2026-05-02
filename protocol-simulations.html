@@ -213,9 +213,13 @@
 
             function loadSim(simId) {
                 if (currentEngine) {
-                    try { currentEngine.pause(); } catch (e) {}
-                    if (currentEngine.renderer && currentEngine.renderer.destroy) {
-                        try { currentEngine.renderer.destroy(); } catch (e) {}
+                    if (typeof currentEngine.destroy === 'function') {
+                        try { currentEngine.destroy(); } catch (e) {}
+                    } else {
+                        try { currentEngine.pause(); } catch (e) {}
+                        if (currentEngine.renderer && currentEngine.renderer.destroy) {
+                            try { currentEngine.renderer.destroy(); } catch (e) {}
+                        }
                     }
                     currentEngine = null;
                 }
@@ -227,6 +231,10 @@
                 refreshCardStatuses(simId);
 
                 activeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                /* Move keyboard focus into the sim so arrow keys / space work */
+                if (activeContainer.focus) {
+                    try { activeContainer.focus({ preventScroll: true }); } catch (e) {}
+                }
             }
 
             function renderControls(engine, container) {
