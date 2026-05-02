@@ -142,6 +142,18 @@ const NavComponent = {
             document.body.insertAdjacentHTML('afterbegin', html);
         }
 
+        // Skip-to-content link for keyboard / screen-reader users (WCAG 2.4.1)
+        if (!document.querySelector('.skip-link')) {
+            const skip = document.createElement('a');
+            skip.className = 'skip-link';
+            skip.href = '#main';
+            skip.textContent = 'Skip to main content';
+            document.body.insertAdjacentElement('afterbegin', skip);
+        }
+        // Tag the page-offset wrapper as the main landmark target
+        const pageOffset = document.querySelector('.page-offset');
+        if (pageOffset && !pageOffset.id) pageOffset.id = 'main';
+
         // Wire up hamburger toggle
         const hamburger = document.getElementById('nav-hamburger');
         const mobileMenu = document.getElementById('mobile-menu');

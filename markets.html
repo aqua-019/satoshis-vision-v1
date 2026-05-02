@@ -4,6 +4,18 @@
     <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Market Dashboard</title>
+    <meta name="description" content="Live Monero market dashboard — XMR/USD price, market cap, volume, multi-currency conversions, network statistics.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="xmr.irish">
+    <meta property="og:title" content="xmr.irish — Market Dashboard">
+    <meta property="og:description" content="Live Monero market dashboard — XMR/USD price, market cap, volume, multi-currency conversions, network statistics.">
+    <meta property="og:url" content="https://xmr.irish/markets">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="xmr.irish — Market Dashboard">
+    <meta name="twitter:description" content="Live Monero market dashboard — XMR/USD price, market cap, volume, multi-currency conversions, network statistics.">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/d10.css">
@@ -62,6 +74,7 @@
     <div id="nav-mount"></div>
     <div class="mk-nav"><div class="mk-brand"><em>xmr.irish</em> <span>/</span> <em>markets</em></div>
         <div class="mk-tabs"><a href="/markets" class="mk-tab active">Markets</a><a href="/network" class="mk-tab">Network</a><a href="/mining" class="mk-tab">Mining</a><a href="/mempool" class="mk-tab">Mempool</a></div></div>
+    <h1 class="sr-only">Monero markets dashboard</h1>
     <div class="hero"><div class="hero-ey">Monero · XMR/USD · Live</div>
         <div class="hero-price"><span class="sym">$</span><span id="hero-p">—</span></div>
         <div class="hero-chg" id="hero-chg" style="color:var(--text-tertiary)">loading...</div>
@@ -201,7 +214,7 @@ function mkDL(days,cnt){var labels=[],now=Date.now();for(var i=0;i<cnt;i++){var 
 function loadC(type,days,btn){
     if(btn){btn.closest('.chart-tabs').querySelectorAll('.ct').forEach(function(b){b.classList.remove('a')});btn.classList.add('a')}
     var lid=type==='xmr'?'xmr-load':'ratio-load';var le=document.getElementById(lid);if(le)le.style.display='block';
-    fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days='+days).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
+    fetch('/api/coingecko?path=coins/monero/market_chart&vs_currency=usd&days='+days).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
         if(type==='xmr'&&d.prices){var p=d.prices.map(function(x){return x[1]});var dl=mkDL(days,p.length);
             var s=drawC('xmr-chart',p,'#FF8533',{dl:dl});
             if(s){document.getElementById('xmr-hi').textContent='$'+s.max.toFixed(2);document.getElementById('xmr-lo').textContent='$'+s.min.toFixed(2);
@@ -209,7 +222,7 @@ function loadC(type,days,btn){
                 var e=document.getElementById('xmr-ch');e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';e.style.color=ch>=0?'var(--grn)':'var(--red)';
                 document.getElementById('xmr-pts').textContent=s.count}}
         if(type==='ratio'&&d.prices){setTimeout(function(){
-            fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){
+            fetch('/api/coingecko?path=coins/bitcoin/market_chart&vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){
                 if(bd.prices){var ratios=[],len=Math.min(d.prices.length,bd.prices.length);for(var i=0;i<len;i++)ratios.push(d.prices[i][1]/bd.prices[i][1]);
                     var dl=mkDL(days,ratios.length);var s=drawC('ratio-chart',ratios,'#FFD700',{isR:true,dl:dl});
                     if(s){document.getElementById('r-cur').textContent=ratios[ratios.length-1].toFixed(6);document.getElementById('r-hi').textContent=s.max.toFixed(6);

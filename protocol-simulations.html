@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="referrer" content="no-referrer">
     <title>Protocol Simulations — xmr.irish</title>
+    <meta name="description" content="Six interactive WebGL simulations of Monero's privacy protocol — decoy selection, Dandelion++ propagation, view-tag matching, RingCT, stealth addresses, FCMP++.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="xmr.irish">
+    <meta property="og:title" content="Protocol Simulations — xmr.irish">
+    <meta property="og:description" content="Six interactive WebGL simulations of Monero's privacy protocol — decoy selection, Dandelion++ propagation, view-tag matching, RingCT, stealth addresses, FCMP++.">
+    <meta property="og:url" content="https://xmr.irish/protocol-simulations">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="Protocol Simulations — xmr.irish">
+    <meta name="twitter:description" content="Six interactive WebGL simulations of Monero's privacy protocol — decoy selection, Dandelion++ propagation, view-tag matching, RingCT, stealth addresses, FCMP++.">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css2?family=DM+Mono:wght@400;500&family=Geologica:wght@400;500;700&family=Sora:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/d10.css">
@@ -201,9 +213,13 @@
 
             function loadSim(simId) {
                 if (currentEngine) {
-                    try { currentEngine.pause(); } catch (e) {}
-                    if (currentEngine.renderer && currentEngine.renderer.destroy) {
-                        try { currentEngine.renderer.destroy(); } catch (e) {}
+                    if (typeof currentEngine.destroy === 'function') {
+                        try { currentEngine.destroy(); } catch (e) {}
+                    } else {
+                        try { currentEngine.pause(); } catch (e) {}
+                        if (currentEngine.renderer && currentEngine.renderer.destroy) {
+                            try { currentEngine.renderer.destroy(); } catch (e) {}
+                        }
                     }
                     currentEngine = null;
                 }
@@ -215,6 +231,10 @@
                 refreshCardStatuses(simId);
 
                 activeContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                /* Move keyboard focus into the sim so arrow keys / space work */
+                if (activeContainer.focus) {
+                    try { activeContainer.focus({ preventScroll: true }); } catch (e) {}
+                }
             }
 
             function renderControls(engine, container) {

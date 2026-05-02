@@ -23,6 +23,8 @@ class GenUIEngine {
         this.renderer = null;
         this.lastSceneGraph = null;
         this.frameId = null;
+        this._lastAnnouncedPhaseId = null;
+        this._keydownHandler = null;
 
         /* Initialize parameter values from defaults */
         for (const param of this.spec.parameters) {
@@ -31,6 +33,81 @@ class GenUIEngine {
 
         /* Detect WebGL availability for Step 8 routing */
         this.webglAvailable = detectWebGLSupport();
+
+        /* WCAG 2.3.3 — honor prefers-reduced-motion. Reduced-motion users
+           get a single representative still keyframe (mid-scene) and no
+           rAF loop. They can still scrub via keyboard arrows. */
+        this.reducedMotion =
+            typeof window !== 'undefined' &&
+            typeof window.matchMedia === 'function' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        /* aria-live region for phase announcements (WCAG 4.1.3) */
+        this._setupA11y();
+    }
+
+    /**
+     * Set up accessibility scaffolding on the mount element:
+     *   - tabindex / role / aria-label so keyboard users can focus the sim
+     *   - aria-live region for phase-change announcements
+     *   - keydown handlers for play/pause/scrub/restart
+     */
+    _setupA11y() {
+        if (!this.mountEl) return;
+        this.mountEl.setAttribute('role', 'application');
+        this.mountEl.setAttribute('aria-label', this.spec.title || this.spec.id);
+        if (this.mountEl.tabIndex < 0) this.mountEl.tabIndex = 0;
+
+        let announcer = this.mountEl.querySelector('.genui-announcer');
+        if (!announcer) {
+            announcer = document.createElement('div');
+            announcer.className = 'genui-announcer sr-only';
+            announcer.setAttribute('aria-live', 'polite');
+            announcer.setAttribute('aria-atomic', 'true');
+            this.mountEl.appendChild(announcer);
+        }
+        this._announcer = announcer;
+
+        this._keydownHandler = (e) => this._handleKey(e);
+        this.mountEl.addEventListener('keydown', this._keydownHandler);
+    }
+
+    _handleKey(e) {
+        const phases = (this.spec.scene && this.spec.scene.phases) || [];
+        const totalMs = this.spec.scene.duration;
+        switch (e.key) {
+            case ' ':
+            case 'Spacebar':
+                e.preventDefault();
+                if (this.isPlaying) this.pause(); else this.play();
+                break;
+            case 'ArrowRight': {
+                e.preventDefault();
+                const next = phases.find(p => p.startMs > this.currentTimeMs);
+                this.currentTimeMs = next ? next.startMs : Math.min(this.currentTimeMs + 500, totalMs);
+                this.startTimeMs = performance.now() - this.currentTimeMs;
+                this.runFrame(this.currentTimeMs);
+                break;
+            }
+            case 'ArrowLeft': {
+                e.preventDefault();
+                const prev = [...phases].reverse().find(p => p.startMs < this.currentTimeMs - 1);
+                this.currentTimeMs = prev ? prev.startMs : 0;
+                this.startTimeMs = performance.now() - this.currentTimeMs;
+                this.runFrame(this.currentTimeMs);
+                break;
+            }
+            case 'Home':
+                e.preventDefault();
+                this.restart();
+                break;
+            case 'End':
+                e.preventDefault();
+                this.currentTimeMs = totalMs;
+                this.pause();
+                this.runFrame(this.currentTimeMs);
+                break;
+        }
     }
 
     /* Step 1: spec validation already happened in constructor */
@@ -316,6 +393,12 @@ class GenUIEngine {
             if (descEl) descEl.textContent = activePhase.description;
             if (progressEl) progressEl.style.setProperty('--progress', `${phaseProgress * 100}%`);
         }
+
+        /* Announce phase changes to screen readers (WCAG 4.1.3) */
+        if (this._announcer && activePhase.id !== this._lastAnnouncedPhaseId) {
+            this._announcer.textContent = `${activePhase.label}: ${activePhase.description || ''}`;
+            this._lastAnnouncedPhaseId = activePhase.id;
+        }
     }
 
     /**
@@ -492,6 +575,15 @@ class GenUIEngine {
     async play() {
         if (this.isPlaying) return;
         if (!this.renderer) await this.initRenderer();
+
+        /* WCAG 2.3.3 — reduced-motion users get a still keyframe instead
+           of an animated tick loop. They can scrub via arrow keys. */
+        if (this.reducedMotion) {
+            this.currentTimeMs = (this.spec.scene.duration || 0) / 2;
+            this.runFrame(this.currentTimeMs);
+            return;
+        }
+
         this.isPlaying = true;
         this.startTimeMs = performance.now() - this.currentTimeMs;
         this.tick();
@@ -559,6 +651,28 @@ class GenUIEngine {
         }
 
         this.runFrame(this.currentTimeMs);
+    }
+
+    /**
+     * Tear down the engine: pause, dispose the renderer, drop listeners
+     * and the announcer node. Called on scene switch by
+     * protocol-simulations.html so WebGL contexts and DOM overlays don't
+     * leak across card clicks.
+     */
+    destroy() {
+        try { this.pause(); } catch (_) {}
+        if (this.renderer && typeof this.renderer.destroy === 'function') {
+            try { this.renderer.destroy(); } catch (_) {}
+        }
+        this.renderer = null;
+        if (this.mountEl && this._keydownHandler) {
+            this.mountEl.removeEventListener('keydown', this._keydownHandler);
+            this._keydownHandler = null;
+        }
+        if (this._announcer && this._announcer.parentElement) {
+            this._announcer.parentElement.removeChild(this._announcer);
+        }
+        this._announcer = null;
     }
 }
 

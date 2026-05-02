@@ -4,6 +4,17 @@
     <meta charset="UTF-8"><meta name="referrer" content="no-referrer">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>xmr.irish — Hold Monero</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="xmr.irish">
+    <meta property="og:title" content="xmr.irish — Hold Monero">
+    <meta property="og:description" content="Get Monero: ChangeNOW instant swaps, Wagyu exchange-level pricing, wallet guide, self-custody best practices. Why swap systems suppress XMR price and how to fight back.">
+    <meta property="og:url" content="https://xmr.irish/hold-monero">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="xmr.irish — Hold Monero">
+    <meta name="twitter:description" content="Get Monero: ChangeNOW instant swaps, Wagyu exchange-level pricing, wallet guide, self-custody best practices. Why swap systems suppress XMR price and how to fight back.">
     <meta name="description" content="Get Monero: ChangeNOW instant swaps, Wagyu exchange-level pricing, wallet guide, self-custody best practices. Why swap systems suppress XMR price and how to fight back.">
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&family=DM+Mono:wght@300;400;500&family=Geologica:wght@100..900&family=Sora:wght@300;400;500&display=swap" rel="stylesheet">
@@ -220,7 +231,7 @@
     <div class="hm-nav"><em>xmr.irish</em> <span>/</span> <em>hold monero</em></div>
     <div class="hero">
         <div class="hero-ey">Buy · Mine · Learn · Self-custody</div>
-        <div class="hero-t">Hold <em>Monero</em></div>
+        <h1 class="hero-t">Hold <em>Monero</em></h1>
         <div class="hero-sub">Privacy is default. No mixing required. No transparent chain. Just send. Here's how to get started — and why how you acquire matters for the entire ecosystem.</div>
         <div class="hero-price-tile" aria-live="polite">
             <span class="hero-price-label">XMR / USD</span>
@@ -611,7 +622,9 @@ NavComponent.inject('nav-mount');PriceService.start();MoneroNetwork.start();
 
     // Listen for ChangeNOW widget postMessage events
     window.addEventListener('message',function(e){
-        // ChangeNOW widget sends messages about state changes
+        // Origin guard — only accept messages from ChangeNOW widget hosts
+        var origin=e.origin||'';
+        if(origin!=='https://changenow.io'&&origin!=='https://widget.changenow.io')return;
         if(!e.data)return;
         var data=e.data;
         // Try to parse if string

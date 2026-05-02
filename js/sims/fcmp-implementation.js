@@ -343,8 +343,22 @@ function failedMarkerTransitions(driftCandidates, totalDurationMs) {
     return transitions;
 }
 
+/**
+ * Mobile / low-memory devices stall when the InstancedMesh particle count
+ * climbs above ~20K. We default to 5K when we detect a small viewport so
+ * the sim is usable on phones; desktop users still get the full 50K out
+ * of the box. The "Displayed UTXOs" parameter remains adjustable.
+ */
+function _isLowEndViewport() {
+    if (typeof window === 'undefined') return false;
+    const w = window.innerWidth || 0;
+    const memGB = navigator.deviceMemory || 0;
+    return w <= 768 || (memGB > 0 && memGB <= 4);
+}
+
 export function buildSpec(params = {}) {
-    const displayedUtxoCount = params.displayedUtxoCount ?? 50000;
+    const _defaultUtxo = _isLowEndViewport() ? 5000 : 50000;
+    const displayedUtxoCount = params.displayedUtxoCount ?? _defaultUtxo;
     const showLegacyComparison = params.showLegacyComparison ?? true;
     const treeDepthShown = params.treeDepthShown ?? 6;
 
@@ -371,7 +385,7 @@ export function buildSpec(params = {}) {
                 id: 'displayedUtxoCount',
                 label: 'Displayed UTXOs',
                 type: 'choice',
-                default: '50000',
+                default: String(_defaultUtxo),
                 choices: [
                     { value: '5000', label: '5K' },
                     { value: '20000', label: '20K' },

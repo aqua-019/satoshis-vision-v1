@@ -27,7 +27,7 @@ const PriceService = {
         if (window._xmrDebug) console.log('[price] fetch start');
         try {
             const res = await fetch(
-                'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,monero,ethereum,solana,litecoin&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true'
+                '/api/coingecko?path=simple/price&ids=bitcoin,monero,ethereum,solana,litecoin&vs_currencies=usd&include_24hr_change=true&include_market_cap=true&include_24hr_vol=true'
             );
             if (window._xmrDebug) console.log('[price] response status', res.status);
             if (!res.ok) {
