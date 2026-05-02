@@ -193,6 +193,12 @@ export class WebGLRenderer {
             mesh = this._createInstancedPoints(node);
         } else if (node.type === 'path') {
             mesh = this._createDensityCurveLine(node);
+        } else if (node.type === 'graph-edge') {
+            mesh = this._createGraphEdges(node);
+        } else if (node.type === 'particle-trail') {
+            mesh = this._createParticleTrail(node);
+        } else if (node.type === 'particle-burst') {
+            mesh = this._createParticleBurst(node);
         }
 
         if (!mesh) return;
@@ -381,9 +387,258 @@ export class WebGLRenderer {
         return line;
     }
 
+    _createGraphEdges(node) {
+        const edges = node.edges || [];
+        const positions = new Float32Array(Math.max(1, edges.length) * 6);
+        const stemFlags = new Float32Array(Math.max(1, edges.length) * 2);
+
+        for (let i = 0; i < edges.length; i++) {
+            const e = edges[i];
+            const a = this.canvasToWorld(e.from.cx, e.from.cy);
+            const b = this.canvasToWorld(e.to.cx, e.to.cy);
+            positions[i * 6 + 0] = a.x;
+            positions[i * 6 + 1] = a.y;
+            positions[i * 6 + 2] = 0;
+            positions[i * 6 + 3] = b.x;
+            positions[i * 6 + 4] = b.y;
+            positions[i * 6 + 5] = 0;
+            const flag = e.isStem ? 1.0 : 0.0;
+            stemFlags[i * 2] = flag;
+            stemFlags[i * 2 + 1] = flag;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('isStem', new THREE.BufferAttribute(stemFlags, 1));
+
+        const baseColor = new THREE.Color(resolveCssColor(node.stroke || 'var(--xmr)', '#FF6600'));
+
+        const material = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute float isStem;
+                varying float vIsStem;
+                void main() {
+                    vIsStem = isStem;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                uniform float baseAlpha;
+                uniform float stemAlpha;
+                varying float vIsStem;
+                void main() {
+                    float alpha = mix(baseAlpha, stemAlpha, vIsStem);
+                    gl_FragColor = vec4(color, opacity * alpha);
+                }
+            `,
+            uniforms: {
+                color: { value: baseColor },
+                opacity: { value: node.opacity ?? 1 },
+                baseAlpha: { value: 0.18 },
+                stemAlpha: { value: 0.42 }
+            },
+            transparent: true,
+            depthWrite: false
+        });
+
+        const lineSegments = new THREE.LineSegments(geometry, material);
+        lineSegments.userData.skipPosition = true;
+        return lineSegments;
+    }
+
+    _createParticleTrail(node) {
+        const group = new THREE.Group();
+        group.userData.skipPosition = true;
+
+        const headGeom = new THREE.PlaneGeometry(0.12, 0.12);
+        const color = new THREE.Color(resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        const headMat = new THREE.ShaderMaterial({
+            vertexShader: glowVertexShader,
+            fragmentShader: glowFragmentShader,
+            uniforms: {
+                color: { value: color },
+                opacity: { value: node.opacity ?? 0 },
+                intensity: { value: 1.2 }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const headScale = ((node.r ?? 7) / 8) * 0.7;
+        const head = new THREE.Mesh(headGeom, headMat);
+        head.scale.set(headScale, headScale, 1);
+        group.add(head);
+
+        const trailLength = Math.max(2, node.trailLength || 12);
+        const trailPositions = new Float32Array(trailLength * 3);
+        const trailAlphas = new Float32Array(trailLength);
+        const trailGeom = new THREE.BufferGeometry();
+        trailGeom.setAttribute('position', new THREE.BufferAttribute(trailPositions, 3));
+        trailGeom.setAttribute('alpha', new THREE.BufferAttribute(trailAlphas, 1));
+
+        const trailMat = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute float alpha;
+                varying float vAlpha;
+                void main() {
+                    vAlpha = alpha;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                varying float vAlpha;
+                void main() {
+                    gl_FragColor = vec4(color, vAlpha * opacity);
+                }
+            `,
+            uniforms: {
+                color: { value: color },
+                opacity: { value: node.opacity ?? 0 }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const trail = new THREE.Line(trailGeom, trailMat);
+        group.add(trail);
+
+        group.userData.head = head;
+        group.userData.trail = trail;
+        group.userData.trailLength = trailLength;
+        group.userData.trailFade = node.trailFade ?? 0.85;
+        group.userData.trailHistory = [];
+        return group;
+    }
+
+    _updateParticleTrail(group, node) {
+        if (!group.userData.head) return;
+        const { x, y } = this.canvasToWorld(node.cx ?? 0.5, node.cy ?? 0.5);
+        const head = group.userData.head;
+        const trail = group.userData.trail;
+        const trailLength = group.userData.trailLength;
+        const fade = group.userData.trailFade;
+
+        head.position.set(x, y, 0);
+        head.material.uniforms.opacity.value = node.opacity ?? 1;
+
+        const history = group.userData.trailHistory;
+        const last = history[history.length - 1];
+        /* Only push when actually moved (avoids stale dense trail when paused). */
+        if (!last || Math.abs(last.x - x) > 1e-5 || Math.abs(last.y - y) > 1e-5) {
+            history.push({ x, y });
+            if (history.length > trailLength) history.shift();
+        }
+
+        const positions = trail.geometry.attributes.position.array;
+        const alphas = trail.geometry.attributes.alpha.array;
+        const len = history.length;
+        for (let i = 0; i < trailLength; i++) {
+            const histIdx = i + (trailLength - len);
+            const point = histIdx >= 0 ? history[histIdx] : history[0] || { x, y };
+            positions[i * 3] = point.x;
+            positions[i * 3 + 1] = point.y;
+            positions[i * 3 + 2] = 0;
+            const t = i / Math.max(1, trailLength - 1);
+            alphas[i] = Math.pow(t, 1 / Math.max(0.001, 1 - fade)) * 0.6;
+        }
+        trail.geometry.attributes.position.needsUpdate = true;
+        trail.geometry.attributes.alpha.needsUpdate = true;
+        trail.material.uniforms.opacity.value = node.opacity ?? 1;
+    }
+
+    _createParticleBurst(node) {
+        const particleCount = node.particleCount || 80;
+        const positions = new Float32Array(particleCount * 3);
+        const angles = new Float32Array(particleCount);
+        const speeds = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            angles[i] = Math.random() * Math.PI * 2;
+            speeds[i] = 0.6 + Math.random() * 0.8;
+            positions[i * 3] = 0;
+            positions[i * 3 + 1] = 0;
+            positions[i * 3 + 2] = 0;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('angle', new THREE.BufferAttribute(angles, 1));
+        geometry.setAttribute('speed', new THREE.BufferAttribute(speeds, 1));
+
+        const color = new THREE.Color(resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        const material = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute float angle;
+                attribute float speed;
+                uniform float radius;
+                uniform float pixelRatio;
+                void main() {
+                    vec3 displaced = position + vec3(cos(angle) * radius * speed,
+                                                     sin(angle) * radius * speed, 0.0);
+                    vec4 mv = modelViewMatrix * vec4(displaced, 1.0);
+                    gl_Position = projectionMatrix * mv;
+                    gl_PointSize = 4.0 * pixelRatio;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                uniform float radius;
+                void main() {
+                    vec2 c = gl_PointCoord - vec2(0.5);
+                    float d = length(c) * 2.0;
+                    float alpha = (1.0 - smoothstep(0.0, 1.0, d)) * opacity;
+                    /* Particles dim as they fly out (trailing burst) */
+                    alpha *= clamp(1.0 - radius * 1.4, 0.0, 1.0);
+                    gl_FragColor = vec4(color, alpha);
+                }
+            `,
+            uniforms: {
+                color: { value: color },
+                opacity: { value: node.opacity ?? 1 },
+                radius: { value: node.radius ?? 0 },
+                pixelRatio: { value: Math.min(2, window.devicePixelRatio || 1) }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const points = new THREE.Points(geometry, material);
+        points.userData.material = material;
+        return points;
+    }
+
+    _updateParticleBurst(mesh, node) {
+        if (node.cx !== undefined && node.cy !== undefined) {
+            const { x, y } = this.canvasToWorld(node.cx, node.cy);
+            mesh.position.set(x, y, 0);
+        }
+        if (mesh.userData.material) {
+            mesh.userData.material.uniforms.radius.value = node.radius ?? 0;
+            mesh.userData.material.uniforms.opacity.value = node.opacity ?? 1;
+        }
+    }
+
     updateMesh(node) {
         const mesh = this.actorMeshes.get(node.id);
         if (!mesh) return;
+
+        if (node.type === 'particle-trail') {
+            this._updateParticleTrail(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'particle-burst') {
+            this._updateParticleBurst(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
 
         if (node.cx !== undefined && node.cy !== undefined && !mesh.userData.skipPosition) {
             const { x, y } = this.canvasToWorld(node.cx, node.cy);
