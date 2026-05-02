@@ -49,7 +49,7 @@
             </a>
 
             <a class="simulation-card" data-sim-id="dandelion-propagation" href="#dandelion-propagation">
-                <div class="simulation-card-status" data-status="not-started">SOON</div>
+                <div class="simulation-card-status" data-status="ready">READY</div>
                 <h2 class="simulation-card-title">Dandelion++ Propagation</h2>
                 <p class="simulation-card-summary">
                     Trace a transaction through stem-phase nodes before it broadcasts to the network.
@@ -151,6 +151,7 @@
 
     <!-- Per-simulation modules register themselves with window.GenUI on import. -->
     <script type="module" src="/js/sims/decoy-selection.js"></script>
+    <script type="module" src="/js/sims/dandelion-propagation.js"></script>
 
     <script type="module">
         document.addEventListener('DOMContentLoaded', () => {
@@ -211,28 +212,57 @@
                     label.htmlFor = `param-${param.id}`;
                     wrapper.appendChild(label);
 
-                    const input = document.createElement('input');
-                    input.id = `param-${param.id}`;
-                    if (param.type === 'number') {
-                        input.type = 'range';
-                        input.min = param.min;
-                        input.max = param.max;
-                        input.step = param.step || 1;
-                        input.value = param.default;
-                    } else if (param.type === 'boolean') {
-                        input.type = 'checkbox';
-                        input.checked = !!param.default;
+                    let input;
+                    if (param.type === 'choice') {
+                        input = document.createElement('select');
+                        input.id = `param-${param.id}`;
+                        for (const c of (param.choices || [])) {
+                            const opt = document.createElement('option');
+                            opt.value = String(c.value);
+                            opt.textContent = c.label;
+                            if (c.value === param.default) opt.selected = true;
+                            input.appendChild(opt);
+                        }
+                    } else {
+                        input = document.createElement('input');
+                        input.id = `param-${param.id}`;
+                        if (param.type === 'number') {
+                            input.type = 'range';
+                            input.min = param.min;
+                            input.max = param.max;
+                            input.step = param.step || 1;
+                            input.value = param.default;
+                        } else if (param.type === 'boolean') {
+                            input.type = 'checkbox';
+                            input.checked = !!param.default;
+                        }
                     }
                     wrapper.appendChild(input);
 
                     const valueEl = document.createElement('span');
                     valueEl.className = 'genui-control-value';
-                    valueEl.textContent = param.type === 'boolean' ? (param.default ? 'on' : 'off') : param.default;
+                    if (param.type === 'boolean') valueEl.textContent = param.default ? 'on' : 'off';
+                    else if (param.type === 'choice') {
+                        const matched = (param.choices || []).find(c => c.value === param.default);
+                        valueEl.textContent = matched ? matched.label : String(param.default);
+                    } else {
+                        valueEl.textContent = param.default;
+                    }
                     wrapper.appendChild(valueEl);
 
-                    input.addEventListener('input', (e) => {
-                        const v = param.type === 'boolean' ? e.target.checked : Number(e.target.value);
-                        valueEl.textContent = param.type === 'boolean' ? (v ? 'on' : 'off') : v;
+                    const evt = param.type === 'choice' ? 'change' : 'input';
+                    input.addEventListener(evt, (e) => {
+                        let v;
+                        if (param.type === 'boolean') v = e.target.checked;
+                        else if (param.type === 'choice') v = Number(e.target.value);
+                        else v = Number(e.target.value);
+
+                        if (param.type === 'boolean') valueEl.textContent = v ? 'on' : 'off';
+                        else if (param.type === 'choice') {
+                            const matched = (param.choices || []).find(c => c.value === v);
+                            valueEl.textContent = matched ? matched.label : String(v);
+                        } else valueEl.textContent = v;
+
                         engine.updateParameter(param.id, v);
                     });
 

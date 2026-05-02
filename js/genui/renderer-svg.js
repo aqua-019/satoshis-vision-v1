@@ -77,6 +77,9 @@ export class SVGRenderer {
             case 'path':         return this._createPath(node);
             case 'rect':         return this._createRect(node);
             case 'text':         return this._createText(node);
+            case 'graph-edge':   return this._createGraphEdges(node);
+            case 'particle-trail': return this._createParticleTrail(node);
+            case 'particle-burst': return this._createParticleBurst(node);
             default:             return null;
         }
     }
@@ -185,6 +188,62 @@ export class SVGRenderer {
         return d.trim() || 'M0 0';
     }
 
+    _createGraphEdges(node) {
+        const group = document.createElementNS(SVG_NS, 'g');
+        const stroke = resolveCssColor(node.stroke || 'var(--xmr)', '#FF6600');
+        const stemStroke = resolveCssColor(node.stemStroke || node.stroke || 'var(--xmr)', '#FF6600');
+        const strokeWidth = node.strokeWidth ?? 1;
+        for (const e of (node.edges || [])) {
+            const line = document.createElementNS(SVG_NS, 'line');
+            line.setAttribute('x1', String(e.from.cx * this.viewWidth));
+            line.setAttribute('y1', String(e.from.cy * this.viewHeight));
+            line.setAttribute('x2', String(e.to.cx * this.viewWidth));
+            line.setAttribute('y2', String(e.to.cy * this.viewHeight));
+            line.setAttribute('stroke', e.isStem ? stemStroke : stroke);
+            line.setAttribute('stroke-width', String(strokeWidth));
+            line.setAttribute('opacity', String(e.isStem ? 0.42 : 0.18));
+            group.appendChild(line);
+        }
+        group.setAttribute('opacity', String(node.opacity ?? 0));
+        return group;
+    }
+
+    _createParticleTrail(node) {
+        /* SVG fallback: single dot — no trail. Documented degradation. */
+        const c = document.createElementNS(SVG_NS, 'circle');
+        c.setAttribute('r', String(node.r ?? 7));
+        c.setAttribute('fill', resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        c.setAttribute('cx', String((node.cx ?? 0.5) * this.viewWidth));
+        c.setAttribute('cy', String((node.cy ?? 0.5) * this.viewHeight));
+        c.setAttribute('opacity', String(node.opacity ?? 1));
+        return c;
+    }
+
+    _createParticleBurst(node) {
+        /* SVG fallback: static starburst of short lines. */
+        const group = document.createElementNS(SVG_NS, 'g');
+        const count = node.particleCount || 80;
+        const fill = resolveCssColor(node.fill || 'var(--xmr)', '#FF6600');
+        const cxPx = (node.cx ?? 0.5) * this.viewWidth;
+        const cyPx = (node.cy ?? 0.5) * this.viewHeight;
+        const r1 = 6;
+        const r2 = 32;
+        for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const line = document.createElementNS(SVG_NS, 'line');
+            line.setAttribute('x1', String(cxPx + Math.cos(angle) * r1));
+            line.setAttribute('y1', String(cyPx + Math.sin(angle) * r1));
+            line.setAttribute('x2', String(cxPx + Math.cos(angle) * r2));
+            line.setAttribute('y2', String(cyPx + Math.sin(angle) * r2));
+            line.setAttribute('stroke', fill);
+            line.setAttribute('stroke-width', '1');
+            line.setAttribute('opacity', '0.6');
+            group.appendChild(line);
+        }
+        group.setAttribute('opacity', String(node.opacity ?? 0));
+        return group;
+    }
+
     _createRect(node) {
         const r = document.createElementNS(SVG_NS, 'rect');
         if (node.x !== undefined) r.setAttribute('x', String(node.x));
@@ -221,7 +280,25 @@ export class SVGRenderer {
                 el.setAttribute('r', String(baseR));
             }
             if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
-        } else if (node.type === 'instanced' || node.type === 'instanced-points') {
+        } else if (node.type === 'instanced' || node.type === 'instanced-points' || node.type === 'graph-edge') {
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'particle-trail') {
+            if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
+            if (node.cy !== undefined) el.setAttribute('cy', String(node.cy * this.viewHeight));
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'particle-burst') {
+            /* Translate the whole starburst group to follow cx/cy. */
+            if (node.cx !== undefined && node.cy !== undefined) {
+                const tx = node.cx * this.viewWidth;
+                const ty = node.cy * this.viewHeight;
+                /* The static starburst was authored at the original cx/cy at creation time;
+                   apply a transform delta from that origin. We re-emit children rather than
+                   tracking the delta — simpler to set transform and let scale/translate compose. */
+                const baseScale = 1 + Math.max(0, node.radius ?? 0) * 4;
+                const cx0 = (node.cx ?? 0.5) * this.viewWidth;
+                const cy0 = (node.cy ?? 0.5) * this.viewHeight;
+                el.setAttribute('transform', `translate(${tx - cx0},${ty - cy0}) translate(${cx0},${cy0}) scale(${baseScale}) translate(${-cx0},${-cy0})`);
+            }
             if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
         } else if (node.type === 'path') {
             el.setAttribute('opacity', String(node.opacity ?? 1));
