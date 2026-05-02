@@ -338,9 +338,25 @@ export class WebGLRenderer {
             mesh = this._createRingBoundary(node);
         } else if (node.type === 'ghost-overlay') {
             mesh = this._createGhostOverlay(node);
+        } else if (node.type === 'utxo-ocean') {
+            mesh = this._createUtxoOcean(node);
+        } else if (node.type === 'curve-tree') {
+            mesh = this._createCurveTree(node);
+        } else if (node.type === 'failed-marker') {
+            mesh = this._createFailedMarker(node);
+        } else if (node.type === 'html-overlay') {
+            mesh = this._createHtmlOverlay(node);
         }
 
         if (!mesh) return;
+
+        /* HTML-overlay actors are DOM elements, not Three.js objects.
+           Skip both the generic position update and scene.add. */
+        if (mesh.isHtmlOverlay) {
+            this.actorMeshes.set(node.id, mesh);
+            this._updateHtmlOverlay(mesh, node);
+            return;
+        }
 
         if (node.cx !== undefined && node.cy !== undefined && !mesh.userData.skipPosition) {
             const { x, y } = this.canvasToWorld(node.cx, node.cy);
@@ -1209,6 +1225,299 @@ export class WebGLRenderer {
         mesh.userData.ghostMat.opacity = fadeAmount * ghostAlpha * (node.opacity ?? 1);
     }
 
+    /* ---------------- Sim 6 (FCMP++) shape types ---------------- */
+
+    _createUtxoOcean(node) {
+        /* InstancedMesh of small disc planes distributed across the canvas
+           with z-jitter for parallax. Density (50K default) plus additive
+           blending creates a luminous-ocean effect. Per-instance positions
+           and depth values are baked at creation; updateMesh only touches
+           uniforms (opacity, parallax). */
+        const count = Math.max(1, node.count || 50000);
+        const baseSize = 0.012;
+
+        const baseGeometry = new THREE.PlaneGeometry(1, 1);
+        const instancedGeo = new THREE.InstancedBufferGeometry();
+        instancedGeo.index = baseGeometry.index;
+        instancedGeo.attributes.position = baseGeometry.attributes.position;
+        instancedGeo.attributes.uv = baseGeometry.attributes.uv;
+
+        const offsets = new Float32Array(count * 3);
+        const depths = new Float32Array(count);
+
+        for (let i = 0; i < count; i++) {
+            const cx = Math.random();
+            const cy = 0.05 + Math.random() * 0.85;
+            const { x, y } = this.canvasToWorld(cx, cy);
+            offsets[i * 3] = x;
+            offsets[i * 3 + 1] = y;
+            offsets[i * 3 + 2] = (Math.random() - 0.5) * 0.05;
+            depths[i] = Math.random();
+        }
+
+        instancedGeo.setAttribute('instanceOffset', new THREE.InstancedBufferAttribute(offsets, 3));
+        instancedGeo.setAttribute('instanceDepth', new THREE.InstancedBufferAttribute(depths, 1));
+        instancedGeo.instanceCount = count;
+
+        const parsed = parseColorWithAlpha(node.fill || 'rgba(255,102,0,0.4)', '#FF6600');
+
+        const material = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute vec3 instanceOffset;
+                attribute float instanceDepth;
+                varying vec2 vUv;
+                varying float vDepth;
+                void main() {
+                    vUv = uv;
+                    vDepth = instanceDepth;
+                    vec3 pos = position + instanceOffset;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                uniform float parallaxDepth;
+                uniform float baseAlpha;
+                varying vec2 vUv;
+                varying float vDepth;
+                void main() {
+                    vec2 centered = vUv - vec2(0.5);
+                    float dist = length(centered) * 2.0;
+                    if (dist > 1.0) discard;
+                    float core = 1.0 - smoothstep(0.0, 0.55, dist);
+                    float halo = (1.0 - smoothstep(0.55, 1.0, dist)) * 0.5;
+                    float depthFade = mix(0.5, 1.0, vDepth);
+                    float a = (core + halo) * opacity * baseAlpha * depthFade;
+                    gl_FragColor = vec4(color, a);
+                }
+            `,
+            uniforms: {
+                color: { value: parsed.color },
+                opacity: { value: node.opacity ?? 0 },
+                parallaxDepth: { value: node.parallaxDepth ?? 0 },
+                baseAlpha: { value: parsed.alpha }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const mesh = new THREE.Mesh(instancedGeo, material);
+        mesh.scale.set(baseSize, baseSize, 1);
+        mesh.position.set(0, 0, 0);
+        mesh.userData.skipPosition = true;
+        mesh.userData.oceanMaterial = material;
+        return mesh;
+    }
+
+    _updateUtxoOcean(mesh, node) {
+        const mat = mesh.userData.oceanMaterial;
+        if (!mat) return;
+        mat.uniforms.opacity.value = node.opacity ?? 0;
+        mat.uniforms.parallaxDepth.value = node.parallaxDepth ?? 0;
+    }
+
+    _createCurveTree(node) {
+        /* Branching binary tree with leaves at the bottom and a single root
+           at the top. Brief 6: leaves animate upward into branches — so the
+           shader reveals high-level branches (leaves) at low collapseProgress
+           and the root last. Total branches at depth=6 is ~126 line segments. */
+        const depth = Math.max(2, Math.min(8, node.depth || 6));
+        const rootCx = node.rootCx ?? 0.78;
+        const rootCy = node.rootCy ?? 0.18;
+
+        const branches = [];
+        const initialHalfWidth = 0.18;
+        const levelHeight = 0.08;
+
+        const buildBranches = (level, parentCx, parentCy, halfWidth) => {
+            if (level >= depth) return;
+            const childYOffset = levelHeight * 0.85;
+            const childCxLeft = parentCx - halfWidth * 0.5;
+            const childCxRight = parentCx + halfWidth * 0.5;
+            const childCy = parentCy + childYOffset;
+
+            branches.push({ from: { cx: parentCx, cy: parentCy }, to: { cx: childCxLeft, cy: childCy }, level });
+            branches.push({ from: { cx: parentCx, cy: parentCy }, to: { cx: childCxRight, cy: childCy }, level });
+
+            buildBranches(level + 1, childCxLeft, childCy, halfWidth * 0.5);
+            buildBranches(level + 1, childCxRight, childCy, halfWidth * 0.5);
+        };
+        buildBranches(0, rootCx, rootCy, initialHalfWidth);
+
+        const positions = new Float32Array(branches.length * 6);
+        const branchLevels = new Float32Array(branches.length * 2);
+
+        for (let i = 0; i < branches.length; i++) {
+            const b = branches[i];
+            const fromW = this.canvasToWorld(b.from.cx, b.from.cy);
+            const toW = this.canvasToWorld(b.to.cx, b.to.cy);
+            positions[i * 6 + 0] = fromW.x;
+            positions[i * 6 + 1] = fromW.y;
+            positions[i * 6 + 2] = 0;
+            positions[i * 6 + 3] = toW.x;
+            positions[i * 6 + 4] = toW.y;
+            positions[i * 6 + 5] = 0;
+            const norm = b.level / Math.max(1, depth - 1);
+            branchLevels[i * 2] = norm;
+            branchLevels[i * 2 + 1] = norm;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('branchLevel', new THREE.BufferAttribute(branchLevels, 1));
+
+        const parsed = parseColorWithAlpha(node.stroke || 'rgba(255,102,0,0.55)', '#FF6600');
+
+        const material = new THREE.ShaderMaterial({
+            vertexShader: `
+                attribute float branchLevel;
+                uniform float collapseProgress;
+                varying float vLevelVisibility;
+                void main() {
+                    /* Invert the level so leaves (high level) reveal first
+                       and the root (low level) reveals last. */
+                    float threshold = 1.0 - branchLevel;
+                    vLevelVisibility = smoothstep(threshold - 0.15, threshold + 0.05, collapseProgress);
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                uniform float opacity;
+                uniform float baseAlpha;
+                varying float vLevelVisibility;
+                void main() {
+                    gl_FragColor = vec4(color, opacity * baseAlpha * vLevelVisibility);
+                }
+            `,
+            uniforms: {
+                color: { value: parsed.color },
+                opacity: { value: node.opacity ?? 0 },
+                collapseProgress: { value: node.collapseProgress ?? 0 },
+                baseAlpha: { value: parsed.alpha }
+            },
+            transparent: true,
+            depthWrite: false
+        });
+
+        const lines = new THREE.LineSegments(geometry, material);
+        lines.userData.skipPosition = true;
+        lines.userData.treeMaterial = material;
+        return lines;
+    }
+
+    _updateCurveTree(mesh, node) {
+        const mat = mesh.userData.treeMaterial;
+        if (!mat) return;
+        mat.uniforms.opacity.value = node.opacity ?? 0;
+        mat.uniforms.collapseProgress.value = node.collapseProgress ?? 0;
+    }
+
+    _createFailedMarker(node) {
+        /* Hollow gold ring (annulus). Same visual treatment as the
+           legacy-spender-marker, but updateMesh adds a subtle per-frame
+           tremor to communicate "the algorithm cannot decide." */
+        const r = node.r || 14;
+        const innerRadius = r * 0.005 * 1.3;
+        const outerRadius = r * 0.005 * 1.5;
+        const geometry = new THREE.RingGeometry(innerRadius, outerRadius, 48);
+        const parsed = parseColorWithAlpha(node.stroke || 'var(--gold)', '#FFD700');
+
+        const material = new THREE.MeshBasicMaterial({
+            color: parsed.color,
+            transparent: true,
+            opacity: (node.opacity ?? 0) * parsed.alpha,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.userData.skipPosition = true;
+        mesh.userData.failedMarkerMaterial = material;
+        mesh.userData.failedMarkerBaseAlpha = parsed.alpha;
+        mesh.userData.tremorSeed = Math.random() * 1000;
+        return mesh;
+    }
+
+    _updateFailedMarker(mesh, node) {
+        const mat = mesh.userData.failedMarkerMaterial;
+        if (!mat) return;
+        const baseAlpha = mesh.userData.failedMarkerBaseAlpha ?? 1;
+        mat.opacity = (node.opacity ?? 0) * baseAlpha;
+
+        /* Subtle tremor — ~0.5% of canvas. Reads as algorithmic
+           uncertainty, not as a buggy animation. */
+        const seed = mesh.userData.tremorSeed;
+        const t = performance.now() / 100;
+        const tremorX = Math.sin(t + seed) * 0.005;
+        const tremorY = Math.cos(t * 1.3 + seed) * 0.005;
+        const cx = (node.cx ?? 0.5) + tremorX;
+        const cy = (node.cy ?? 0.5) + tremorY;
+        const { x, y } = this.canvasToWorld(cx, cy);
+        mesh.position.set(x, y, 0);
+    }
+
+    _createHtmlOverlay(node) {
+        /* HTML overlay actors live in the .genui-overlay container as
+           DOM elements rather than Three.js meshes. createMesh recognizes
+           the wrapper via the isHtmlOverlay flag. */
+        if (!this.overlayEl) return null;
+
+        const div = document.createElement('div');
+        div.className = `genui-overlay-actor genui-html-overlay genui-html-overlay-${node.template || 'generic'}`;
+        div.dataset.actorId = node.id;
+        div.style.position = 'absolute';
+        div.style.transform = 'translate(-50%, -50%)';
+        div.style.pointerEvents = 'none';
+        div.style.opacity = String(node.opacity ?? 0);
+        div.style.textAlign = 'center';
+        div.style.lineHeight = '1.4';
+        if (node.fontFamily) {
+            div.style.fontFamily = node.fontFamily;
+        }
+        if (node.fontSize) {
+            div.style.fontSize = node.fontSize;
+        }
+        if (node.color) {
+            div.style.color = node.color;
+        }
+        if (node.interactive) {
+            div.setAttribute('role', node.ariaRole || 'button');
+            div.setAttribute('tabindex', String(node.tabIndex ?? 0));
+            div.setAttribute('aria-label', node.ariaLabel || node.id);
+            div.style.pointerEvents = 'auto';
+            div.style.cursor = 'pointer';
+        }
+
+        this.overlayEl.appendChild(div);
+
+        return {
+            isHtmlOverlay: true,
+            element: div,
+            template: node.template || 'generic'
+        };
+    }
+
+    _updateHtmlOverlay(mesh, node) {
+        const el = mesh.element;
+        if (!el) return;
+        el.style.opacity = String(node.opacity ?? 0);
+        if (node.cx !== undefined && node.cy !== undefined) {
+            el.style.left = `${node.cx * 100}%`;
+            el.style.top = `${node.cy * 100}%`;
+        }
+        if (mesh.template === 'chain-counter') {
+            const count = Math.floor(node.count || 0);
+            el.innerHTML = `<strong style="font-size:1.15em">${count.toLocaleString()}</strong><br>UTXOs on chain`;
+        } else if (mesh.template === 'outro-callout') {
+            el.innerHTML = '<strong>Anonymity set: ~10⁸+</strong><br><span style="opacity:.75;font-size:.8em">Statistical de-anonymization no longer applies.</span>';
+        }
+    }
+
+    /* ---------------- end Sim 6 shape types ---------------- */
+
     updateMesh(node) {
         const mesh = this.actorMeshes.get(node.id);
         if (!mesh) return;
@@ -1258,6 +1567,29 @@ export class WebGLRenderer {
         if (node.type === 'ghost-overlay') {
             this._updateGhostOverlay(mesh, node);
             this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'utxo-ocean') {
+            this._updateUtxoOcean(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'curve-tree') {
+            this._updateCurveTree(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'failed-marker') {
+            this._updateFailedMarker(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'html-overlay') {
+            this._updateHtmlOverlay(mesh, node);
             return;
         }
 
