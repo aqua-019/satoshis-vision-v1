@@ -448,6 +448,124 @@ None for v4.0. This is a pure walkthrough simulation. Phase 5 polish or v5.0 may
 
 ---
 
+# BRIEF 6 — Full-Chain Membership Proofs (FCMP++)
+
+## Educational goal
+
+> With FCMP++, every output ever created on the Monero blockchain is a potential decoy — not just 16. Statistical attacks that worked against ring signatures of size 16 simply don't apply when the anonymity set is the entire chain.
+
+## Why this simulation matters
+
+FCMP++ (Full-Chain Membership Proofs) is the most significant Monero privacy upgrade since RingCT itself. The shift from a 16-member ring to the entire UTXO set as the anonymity set is not an incremental privacy improvement — it is a phase change. Every output ever created becomes a potential decoy. Set cardinality jumps from ~16 to ~10⁸ (100,000,000+ and growing every block).
+
+This simulation lives in deliberate dialogue with Brief 1 (Decoy Selection). A user who watches Sim 1 first sees "16 of N" and forms a mental model of "decoys hide the spender." A user who then watches Sim 6 sees "all of N" and realizes the privacy guarantee just changed categorically. The two sims read as a before/after pair — Sim 1 is the RingCT era; Sim 6 is the FCMP++ era.
+
+The visual story is exceptional precisely because the contrast is stark: a sea of millions versus sixteen discrete points.
+
+## Why this is Brief 6 and not Brief 7+
+
+Of all candidate sixth-sim ideas — output binning, multisig wallet construction, atomic swap deep-dive, Triptych evolution timeline, Bulletproofs+ standalone — FCMP++ is uniquely:
+
+1. **Current.** Anyone visiting [xmr.irish](http://xmr.irish) in 2026 expecting up-to-date Monero protocol coverage should encounter FCMP++ prominently. None of the other candidates have comparable newsworthiness.
+2. **Categorically transformative.** A 6-million-fold increase in anonymity set size is not a footnote — it is the protocol upgrade.
+3. **Visually exceptional.** "16 dots versus a sea of millions" is a visual that lands before a single word of explanation is read.
+4. **Educationally synergistic.** Extends Brief 1's arc rather than competing with it. Users who watch in order get a stronger aggregate understanding.
+
+## Actors
+
+| Actor | Role | WebGL render | Initial state |
+|---|---|---|---|
+| `legacy-ring` (×16) | The 16 ring members from Brief 1, replayed as Phase 1 callback | Bright orange discs in a row, identical visual treatment to Brief 1's exit state | Phase 1 visible; fade during phase 2 |
+| `legacy-spender-marker` | The gold ring from Brief 1 trying (and failing) to identify the true spender | Pulsing gold ring around one of the 16 | Phase 1 visible; carries forward into phase 4 |
+| `utxo-ocean` | Representative subset of all chain UTXOs | InstancedMesh of ~50,000 dim points filling the canvas with parallax depth | Phase 2 fades in over 4 seconds |
+| `chain-counter` | Live count display showing total UTXOs | HTML overlay element with monospace numerals | Phase 2+ |
+| `curve-tree` | The Curve Trees membership-proof structure | Custom geometry: branching tree with leaves representing UTXOs and branches collapsing toward a single root | Phase 3 |
+| `proof-artifact` | The compact membership proof itself | Small bright glowing token at the tree's root | Phase 3 final state |
+| `failed-marker` | Phase 4's gold ring attempting to find the true spender in the ocean | Same gold-ring visual as Brief 1's marker, but disoriented — moves between candidates without settling, fades to nothing | Phase 4 only |
+| `outro-callout` | The final stat overlay | HTML text overlay showing "1 in 16" → "1 in 100,000,000+" comparison | Phase 5 |
+
+## Parameters
+
+| Parameter | Type | Default | Range | Effect |
+|---|---|---|---|---|
+| `displayedUtxoCount` | choice | "50K" | "5K" / "20K" / "50K" / "100K" | Number of representative dots in the ocean. Lets users on weaker hardware downsample. |
+| `showLegacyComparison` | boolean | true | — | Whether Phase 1 (the 16-member ring callback) plays. Default on for the educational arc; off for users who just want the FCMP++ visual. |
+| `treeDepthShown` | number | 6 | 4 → 8 | Number of levels rendered in the Curve Tree visualization. Visual flourish; doesn't affect cryptographic accuracy of the inspector. |
+
+## Scene timeline (total 18 seconds)
+
+| Phase | Start | Duration | What happens |
+|---|---|---|---|
+| `legacy-recap` | 0s | 5.0s | The 16 ring members from Brief 1 appear in a row. Gold marker pulses around one. Annotation: "Ring signatures: 16 decoys. RingCT era." Brief 1's visual language is reused exactly. |
+| `expansion` | 5.0s | 4.0s | The 16 members fade slightly but remain visible. Behind them, ~50,000 representative UTXO dots fade in from the periphery, filling the canvas with depth. The 16 are now swimming in an ocean. Title fades in: "FCMP++: every output is a member." Subtle annotation appears with chain-counter: "Total Monero UTXOs: ~100,000,000+." |
+| `proof-construction` | 9.0s | 3.0s | Curve Tree assembles in the background — leaves at the bottom representing UTXOs, branches converging upward through ~6 levels. Branches close in toward a single root over ~2.5s with cubic-out easing. At the root, a compact `proof-artifact` token materializes with a brief glow pulse. Annotation: "Curve Trees: a logarithmic-size proof of membership in the entire set." |
+| `failed-identification` | 12.0s | 4.0s | The Phase 1 gold marker tries to identify the true spender in the ocean. It begins where it was in the legacy ring, then drifts — circling candidates, briefly hovering, moving on. Each circle gets dimmer. After ~3 seconds, the marker dissolves entirely. Annotation: "1 in 16 is guessable. 1 in 100,000,000 is not." |
+| `outro` | 16.0s | 2.0s | Settle. UTXO ocean shimmers gently with subtle parallax. Final overlay: "Anonymity set: ~10⁸. Statistical de-anonymization no longer applies." Phase carries the chain-counter and the proof-artifact, which together communicate the post-FCMP++ state of the world. |
+
+## Visual treatment
+
+- **Legacy recap (phase 1)**: literally reuse Brief 1's visual vocabulary. Same spawn timing, same gold-marker pulse, same color tokens. Users who watched Sim 1 should feel an immediate "wait, I've seen this" moment of recognition. Users who didn't watch Sim 1 still get a coherent introduction to "the old way" before phase 2 reframes it.
+- **UTXO ocean (phase 2)**: this is the WebGL-defining visual of the simulation. InstancedMesh of ~50,000 small discs distributed across the canvas with subtle parallax depth (z-axis variation drives slight scale differences). Additive blending creates a luminous-density effect — bright in dense regions, sparse at the edges. The 16 legacy ring members remain visible but no longer feel special; they are just more dots. The educational point lands without any text.
+- **Chain counter (phase 2+)**: HTML overlay element, JetBrains Mono numerals counting up rapidly from 0 to a real-ish UTXO count over ~1.5 seconds, then settling. The settle target should reflect actual mainnet data — pull from a static value updated periodically (live RPC fetch is unnecessary; this is a flagship visual, not a data dashboard). For v4.0 ship target, set the count to the figure as of FCMP++ activation.
+- **Curve Tree (phase 3)**: tree-of-leaves geometry. Leaves at the bottom (~16 visible, representing the broader UTXO set abstractly), branches converging upward through ~6 levels (the `treeDepthShown` parameter). Branches use a slight glow shader. The convergence is *toward* a single root, not from it — leaves animate upward into branches. Easing: cubic-out over 2.5s. The collapse communicates "logarithmic proof size" without using the word "logarithmic" anywhere on screen.
+- **Proof artifact (phase 3 final)**: at the root of the collapsed tree, a small glowing token materializes — visually compact, almost geometric, distinct from the discs of the ocean. Communicates "the entire tree's worth of membership has been compressed into this small artifact." Roughly the same visual weight as a single ring member from Brief 1, deliberately — same protocol-level role.
+- **Failed identification (phase 4)**: the most important narrative beat. The gold marker from phase 1 attempts the identification gesture it succeeded with in Brief 1. It circles a candidate for ~700ms, doesn't settle, drifts to another, repeats. Each cycle the marker's opacity decreases by ~15%. After three or four failed attempts, it fades entirely. The visual is a deliberate contrast with Brief 1's confident reveal. Custom shader logic ensures the failure feels intentional rather than buggy — perhaps a slight tremor or jitter on each candidate to communicate "the algorithm cannot decide."
+- **Outro**: gentle parallax shimmer on the UTXO ocean. The proof artifact and chain counter remain visible — these are the two pieces of evidence the user takes away.
+
+## Inspectors (where the math lives)
+
+| Trigger | Panel content |
+|---|---|
+| Hover the `utxo-ocean` (any cluster) | "Total UTXOs on Monero: ~[count]. Every one is a potential ring member under FCMP++. The on-screen rendering shows a representative subset; the actual anonymity set is the full chain." |
+| Hover the `curve-tree` | "Curve Trees: a cryptographic accumulator. Proves membership in a set of size N with a proof of size O(log N). At N=10⁸, proof size is a few KB. Construction details live in the Monero Research Lab papers." |
+| Hover the `proof-artifact` | "FCMP++ proof. Replaces the CLSAG ring signature in RingCT. The transaction proves: (1) the spender owns one of the UTXOs in the set, (2) the spent UTXO has not been spent before, without revealing which UTXO it is." |
+| Hover the `failed-marker` (during phase 4) | "Statistical de-anonymization attacks against 16-member rings relied on probabilistic analysis of decoy distribution. With FCMP++, the anonymity set is the entire chain — those analyses have no signal to operate on." |
+| Hover any `legacy-ring` member (during phase 1) | Identical to Brief 1's ring-member inspector — output index, age. The familiar shape reinforces the callback. |
+| Hover the `chain-counter` | "Live count of UTXOs on the Monero blockchain. Each new block adds ~3-5 outputs on average. The anonymity set grows monotonically." |
+
+## Accessibility
+
+- **Keyboard navigation**: Tab walks legacy ring members, then ocean (one composite tab stop), curve tree, proof artifact, chain counter. Enter on any opens its inspector.
+- **Reduced-motion**: the four phases collapse to four still keyframes — (1) legacy ring with marker, (2) legacy ring fading into ocean, (3) tree assembled with proof artifact at root, (4) ocean with chain counter and outro overlay. No animated transitions. The educational story still reads.
+- **Narration** (especially well-suited to this sim because of the strong before/after structure):
+  - "The old way: ring signatures of size 16. The transaction's spender hides among 15 decoys."
+  - "Statistical analysis sometimes deanonymized these rings. Researchers could narrow the spender's identity."
+  - "FCMP++ changes the rule. The decoy set is now the entire blockchain — every output ever created."
+  - "A Curve Tree proves the spender is one of those outputs without revealing which one. The proof is a few kilobytes regardless of set size."
+  - "The same statistical attacks have no signal to work with anymore. A spender hides among one hundred million."
+- **Live region** announces phase transitions: "Phase 1: the old way. Phase 2: the anonymity set expands to the entire chain. Phase 3: a Curve Tree proves membership. Phase 4: the old identification approach now fails. Phase 5: anonymity set, one hundred million plus."
+
+## Cross-references to other simulations
+
+- **Phase 1 reuses Brief 1's visual language exactly.** When implementing, import or duplicate the relevant geometry/material setup from `js/sims/decoy-selection.js` so the visual feel is identical. This is the cross-sim consistency point that v5.0's polish pass should validate.
+- **Phase 2's UTXO ocean is conceptually adjacent to RingCT (Brief 4)'s decoy outputs flowing in from the chain spine.** The spawn vocabulary should feel related — both are "outputs from the chain entering the scene" — but Brief 6's ocean is denser and stays static rather than gathering into a ring container.
+- **Phase 4's failed marker is a deliberate inversion of Brief 1's successful reveal.** The visual contrast is the educational payload.
+
+## Verification
+
+- [ ] 60fps with default `displayedUtxoCount: 50K`
+- [ ] At `displayedUtxoCount: 100K`, drops to no less than 30fps
+- [ ] At `displayedUtxoCount: 5K`, runs at full 60fps with no visible quality loss for the educational point
+- [ ] Phase 1's ring members are visually identical to Brief 1's exit-state ring members (same color, same size, same glow)
+- [ ] Phase 2's ocean reads as overwhelming density, not as scattered confetti
+- [ ] Phase 3's Curve Tree convergence completes in ~2.5s and feels organic, not mechanical
+- [ ] Phase 4's failed marker reads as *failure to identify*, not as a buggy animation
+- [ ] The chain counter's settle value matches a real recent UTXO count from mainnet at time of v4.0 ship
+- [ ] Educational goal achievable in under 90 seconds of viewing
+- [ ] Inspector content is mathematically accurate (no hand-waving in the data layer)
+- [ ] Reduced-motion variant tells the same before/after story in still keyframes
+- [ ] With `showLegacyComparison: false`, phases 2-5 still form a coherent simulation; the FCMP++ visual stands on its own
+- [ ] Cross-sim consistency: a user who navigates from Sim 1 directly to Sim 6 experiences phase 1 of Sim 6 as a continuation, not a new scene
+
+## Open questions for implementation
+
+1. **UTXO count source.** Static value updated at v4.0 ship time, or live RPC fetch? Recommendation: static for v4.0 (privacy posture, no extra network calls). v5.0 may add live counter via the existing daemon RPC proxy in `api/monero.js` if the value feels stale.
+2. **FCMP++ activation date display.** When FCMP++ activates on mainnet (or has activated), the simulation should reference the activation height/date. Hard-code in the spec for v4.0; check before ship.
+3. **Curve Tree depth.** The `treeDepthShown` parameter controls visual depth. The actual Curve Tree depth depends on the chain size and tree branching factor — for educational purposes, 6 levels is sufficient and looks balanced. Match implementation to brief.
+4. **Marker drift behavior in phase 4.** The "tries to identify but fails" sequence requires careful timing tuning. The motion should feel uncertain, not random — a deliberate algorithmic search that comes up empty. Implementer's call on the exact easing curve.
+
+---
+
 ## Cross-cutting design choices
 
 These decisions apply uniformly across all five briefs:
