@@ -93,6 +93,26 @@ function resolveCssColor(c, fallback = '#FF6600') {
     return v || fallback;
 }
 
+/**
+ * Parse a CSS color (rgba/rgb/hex/var) into a THREE.Color plus a separate
+ * numeric alpha multiplier. THREE.Color silently drops the alpha channel
+ * from rgba strings, leading to opaque rendering — call this anywhere we
+ * feed a color string into a shader uniform whose alpha matters.
+ */
+function parseColorWithAlpha(c, fallback = '#FF6600') {
+    const resolved = resolveCssColor(c, fallback);
+    const m = typeof resolved === 'string'
+        ? resolved.match(/^rgba?\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*(?:,\s*([\d.]+)\s*)?\)$/i)
+        : null;
+    if (m) {
+        return {
+            color: new THREE.Color(+m[1] / 255, +m[2] / 255, +m[3] / 255),
+            alpha: m[4] !== undefined ? parseFloat(m[4]) : 1
+        };
+    }
+    return { color: new THREE.Color(resolved), alpha: 1 };
+}
+
 export class WebGLRenderer {
     constructor(mountEl, spec) {
         this.mountEl = mountEl;
@@ -411,7 +431,11 @@ export class WebGLRenderer {
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
         geometry.setAttribute('isStem', new THREE.BufferAttribute(stemFlags, 1));
 
-        const baseColor = new THREE.Color(resolveCssColor(node.stroke || 'var(--xmr)', '#FF6600'));
+        /* Spec uses rgba() strings for the dim baseline. THREE.Color drops
+           alpha — extract it explicitly and feed it into the opacity uniform
+           so the per-edge mix() stays multiplicative on top. */
+        const baseParsed = parseColorWithAlpha(node.stroke || 'var(--xmr)', '#FF6600');
+        const stemParsed = parseColorWithAlpha(node.stemStroke || node.stroke || 'var(--xmr)', '#FF6600');
 
         const material = new THREE.ShaderMaterial({
             vertexShader: `
@@ -434,10 +458,10 @@ export class WebGLRenderer {
                 }
             `,
             uniforms: {
-                color: { value: baseColor },
+                color: { value: baseParsed.color },
                 opacity: { value: node.opacity ?? 1 },
-                baseAlpha: { value: 0.18 },
-                stemAlpha: { value: 0.42 }
+                baseAlpha: { value: baseParsed.alpha },
+                stemAlpha: { value: stemParsed.alpha }
             },
             transparent: true,
             depthWrite: false
@@ -453,13 +477,14 @@ export class WebGLRenderer {
         group.userData.skipPosition = true;
 
         const headGeom = new THREE.PlaneGeometry(0.12, 0.12);
-        const color = new THREE.Color(resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        const parsed = parseColorWithAlpha(node.fill || 'var(--xmr)', '#FF6600');
+        const color = parsed.color;
         const headMat = new THREE.ShaderMaterial({
             vertexShader: glowVertexShader,
             fragmentShader: glowFragmentShader,
             uniforms: {
                 color: { value: color },
-                opacity: { value: node.opacity ?? 0 },
+                opacity: { value: (node.opacity ?? 0) * parsed.alpha },
                 intensity: { value: 1.2 }
             },
             transparent: true,
@@ -497,7 +522,7 @@ export class WebGLRenderer {
             `,
             uniforms: {
                 color: { value: color },
-                opacity: { value: node.opacity ?? 0 }
+                opacity: { value: (node.opacity ?? 0) * parsed.alpha }
             },
             transparent: true,
             blending: THREE.AdditiveBlending,
@@ -511,34 +536,48 @@ export class WebGLRenderer {
         group.userData.trailLength = trailLength;
         group.userData.trailFade = node.trailFade ?? 0.85;
         group.userData.trailHistory = [];
+        group.userData.colorAlpha = parsed.alpha;
         return group;
     }
 
     _updateParticleTrail(group, node) {
         if (!group.userData.head) return;
-        const { x, y } = this.canvasToWorld(node.cx ?? 0.5, node.cy ?? 0.5);
+
         const head = group.userData.head;
         const trail = group.userData.trail;
         const trailLength = group.userData.trailLength;
         const fade = group.userData.trailFade;
+        const history = group.userData.trailHistory;
+        const colorAlpha = group.userData.colorAlpha ?? 1;
+
+        /* When the actor has no position to record AND no history to draw,
+           skip — pre-spawn / post-fade frames have nothing to do. */
+        const hasPosition = node.cx !== undefined && node.cy !== undefined;
+        if (!hasPosition && history.length === 0) return;
+
+        const { x, y } = hasPosition
+            ? this.canvasToWorld(node.cx, node.cy)
+            : history[history.length - 1];
 
         head.position.set(x, y, 0);
-        head.material.uniforms.opacity.value = node.opacity ?? 1;
+        head.material.uniforms.opacity.value = (node.opacity ?? 1) * colorAlpha;
 
-        const history = group.userData.trailHistory;
         const last = history[history.length - 1];
         /* Only push when actually moved (avoids stale dense trail when paused). */
-        if (!last || Math.abs(last.x - x) > 1e-5 || Math.abs(last.y - y) > 1e-5) {
+        if (hasPosition && (!last || Math.abs(last.x - x) > 1e-5 || Math.abs(last.y - y) > 1e-5)) {
             history.push({ x, y });
             if (history.length > trailLength) history.shift();
         }
 
         const positions = trail.geometry.attributes.position.array;
         const alphas = trail.geometry.attributes.alpha.array;
-        const len = history.length;
         for (let i = 0; i < trailLength; i++) {
-            const histIdx = i + (trailLength - len);
-            const point = histIdx >= 0 ? history[histIdx] : history[0] || { x, y };
+            /* Pad the FIRST (trailLength - history.length) slots with the
+               oldest sample, then map the remaining slots to the history
+               in order. Defensive `||` chain guards against a future
+               regression rather than crashing. */
+            const histIdx = Math.max(0, history.length - trailLength + i);
+            const point = history[histIdx] || history[history.length - 1] || { x, y };
             positions[i * 3] = point.x;
             positions[i * 3 + 1] = point.y;
             positions[i * 3 + 2] = 0;
@@ -547,7 +586,7 @@ export class WebGLRenderer {
         }
         trail.geometry.attributes.position.needsUpdate = true;
         trail.geometry.attributes.alpha.needsUpdate = true;
-        trail.material.uniforms.opacity.value = node.opacity ?? 1;
+        trail.material.uniforms.opacity.value = (node.opacity ?? 1) * colorAlpha;
     }
 
     _createParticleBurst(node) {
@@ -569,7 +608,7 @@ export class WebGLRenderer {
         geometry.setAttribute('angle', new THREE.BufferAttribute(angles, 1));
         geometry.setAttribute('speed', new THREE.BufferAttribute(speeds, 1));
 
-        const color = new THREE.Color(resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        const parsed = parseColorWithAlpha(node.fill || 'var(--xmr)', '#FF6600');
         const material = new THREE.ShaderMaterial({
             vertexShader: `
                 attribute float angle;
@@ -598,8 +637,8 @@ export class WebGLRenderer {
                 }
             `,
             uniforms: {
-                color: { value: color },
-                opacity: { value: node.opacity ?? 1 },
+                color: { value: parsed.color },
+                opacity: { value: (node.opacity ?? 1) * parsed.alpha },
                 radius: { value: node.radius ?? 0 },
                 pixelRatio: { value: Math.min(2, window.devicePixelRatio || 1) }
             },
@@ -610,6 +649,7 @@ export class WebGLRenderer {
 
         const points = new THREE.Points(geometry, material);
         points.userData.material = material;
+        points.userData.colorAlpha = parsed.alpha;
         return points;
     }
 
@@ -619,8 +659,9 @@ export class WebGLRenderer {
             mesh.position.set(x, y, 0);
         }
         if (mesh.userData.material) {
+            const colorAlpha = mesh.userData.colorAlpha ?? 1;
             mesh.userData.material.uniforms.radius.value = node.radius ?? 0;
-            mesh.userData.material.uniforms.opacity.value = node.opacity ?? 1;
+            mesh.userData.material.uniforms.opacity.value = (node.opacity ?? 1) * colorAlpha;
         }
     }
 
