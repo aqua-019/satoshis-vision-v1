@@ -80,6 +80,7 @@ export class SVGRenderer {
             case 'graph-edge':   return this._createGraphEdges(node);
             case 'particle-trail': return this._createParticleTrail(node);
             case 'particle-burst': return this._createParticleBurst(node);
+            case 'comparison-bar': return this._createComparisonBar(node);
             default:             return null;
         }
     }
@@ -244,6 +245,22 @@ export class SVGRenderer {
         return group;
     }
 
+    _createComparisonBar(node) {
+        const r = document.createElementNS(SVG_NS, 'rect');
+        const anchorX = node.anchorX ?? 0.10;
+        const barWidth = Math.max(0, node.barWidth ?? 0);
+        const heightFrac = node.height ?? 0.04;
+        const cyFrac = node.cy ?? 0.85;
+        r.setAttribute('x', String(anchorX * this.viewWidth));
+        r.setAttribute('y', String((cyFrac - heightFrac / 2) * this.viewHeight));
+        r.setAttribute('width', String(barWidth * this.viewWidth));
+        r.setAttribute('height', String(heightFrac * this.viewHeight));
+        r.setAttribute('fill', resolveCssColor(node.fill || node.color || 'var(--xmr)', '#FF6600'));
+        r.setAttribute('opacity', String(node.opacity ?? 1));
+        r.dataset.barType = 'comparison-bar';
+        return r;
+    }
+
     _createRect(node) {
         const r = document.createElementNS(SVG_NS, 'rect');
         if (node.x !== undefined) r.setAttribute('x', String(node.x));
@@ -299,6 +316,16 @@ export class SVGRenderer {
                 const cy0 = (node.cy ?? 0.5) * this.viewHeight;
                 el.setAttribute('transform', `translate(${tx - cx0},${ty - cy0}) translate(${cx0},${cy0}) scale(${baseScale}) translate(${-cx0},${-cy0})`);
             }
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'comparison-bar') {
+            const anchorX = node.anchorX ?? 0.10;
+            const barWidth = Math.max(0, node.barWidth ?? 0);
+            const heightFrac = node.height ?? 0.04;
+            const cyFrac = node.cy ?? 0.85;
+            el.setAttribute('x', String(anchorX * this.viewWidth));
+            el.setAttribute('y', String((cyFrac - heightFrac / 2) * this.viewHeight));
+            el.setAttribute('width', String(barWidth * this.viewWidth));
+            el.setAttribute('height', String(heightFrac * this.viewHeight));
             if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
         } else if (node.type === 'path') {
             el.setAttribute('opacity', String(node.opacity ?? 1));
