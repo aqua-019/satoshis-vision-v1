@@ -2308,3 +2308,202 @@ canvas.constellation { position: absolute; top: 0; left: 0; width: 100%; height:
         max-width: calc(100vw - 32px);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   M2 MEMPOOL MOBILE RESPONSIVE — shared utilities used by:
+     mempool-explorer.html, mempool-ocean.html, mempool-mining.html
+   Desktop (≥1024px) styles in those pages remain unchanged.
+   ═══════════════════════════════════════════════════════════════════════ */
+:root {
+    --touch-target-min:   44px; /* Apple HIG */
+    --touch-target-comfy: 48px; /* Material */
+}
+
+/* Tap-area utility — applies to any inline interactive element on mobile */
+@media (max-width: 1023px) {
+    .mp-tap-area,
+    .mp-subnav .mp-mode-btn,
+    .ocean-viz-toggle .viz-toggle-btn,
+    .dand-expand,
+    .exp-btn-back,
+    .exp-nav-btn,
+    .exp-tx-track-btn,
+    .exp-search-bar button,
+    .exp-broadcast-cta,
+    .exp-txlist-load,
+    .exp-copy-btn {
+        min-height: var(--touch-target-min);
+        min-width: var(--touch-target-min);
+    }
+}
+
+/* Mobile transaction card list — substitutes for the desktop grid rows.
+   Components add `.mp-tx-card` markup behind a matchMedia branch. */
+.mp-tx-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    min-height: 64px;
+    cursor: pointer;
+    transition: background .12s, border-color .12s;
+}
+.mp-tx-card:active,
+.mp-tx-card:hover {
+    background: rgba(255,255,255,.025);
+    border-color: var(--border-default);
+}
+.mp-tx-card__primary {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+.mp-tx-card__id {
+    font-family: var(--font-mono,'DM Mono'),monospace;
+    font-size: 12px;
+    color: var(--blue);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+.mp-tx-card__age {
+    font-size: 10px;
+    color: var(--text-tertiary);
+    letter-spacing: .4px;
+    flex-shrink: 0;
+}
+.mp-tx-card__metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+.mp-tx-card__metric {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.mp-tx-card__metric .lbl {
+    font-size: 8.5px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+.mp-tx-card__metric .val {
+    font-family: var(--font-mono,'DM Mono'),monospace;
+    font-size: 11px;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.mp-tx-card__metric .val.tier {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 9px;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+}
+
+/* Collapsible sections (mobile-only). Native <details> for accessibility.
+   Desktop unfurls everything and hides the chevron. */
+.mp-collapsible {
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: var(--surface-1);
+    overflow: hidden;
+}
+.mp-collapsible > summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    min-height: var(--touch-target-comfy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+}
+.mp-collapsible > summary::-webkit-details-marker { display: none; }
+.mp-collapsible > summary::after {
+    content: '▾';
+    color: var(--text-tertiary);
+    font-size: 11px;
+    transition: transform .15s;
+}
+.mp-collapsible[open] > summary::after { transform: rotate(180deg); }
+.mp-collapsible__body {
+    padding: 0 16px 16px;
+}
+
+/* Desktop: unfurl all collapsibles, hide the chevron, behave like static panels */
+@media (min-width: 1024px) {
+    .mp-collapsible,
+    .mp-collapsible[open] {
+        background: transparent;
+        border: none;
+        border-radius: 0;
+        margin-bottom: 0;
+    }
+    .mp-collapsible > summary {
+        display: none;
+    }
+    .mp-collapsible__body {
+        padding: 0;
+    }
+    .mp-collapsible:not([open]) > .mp-collapsible__body {
+        display: block !important;
+    }
+}
+
+/* Tap-to-copy feedback (used on hash rows and tx ids) */
+.mp-tap-copy {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+.mp-tap-copy.is-copied {
+    color: var(--grn) !important;
+}
+.mp-tap-copy.is-copied::after {
+    content: ' ✓ Copied';
+    color: var(--grn);
+    font-size: 10px;
+    letter-spacing: 1px;
+    margin-left: 6px;
+}
+
+/* Mobile-only tooltip used for tap-to-inspect on charts */
+.mp-mobile-tooltip {
+    position: fixed;
+    z-index: 1000;
+    background: rgba(10,10,14,.96);
+    border: 1px solid var(--border-default);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 11px;
+    color: var(--text-primary);
+    box-shadow: 0 6px 24px rgba(0,0,0,.5);
+    max-width: calc(100vw - 24px);
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+    transform-origin: bottom center;
+    animation: mp-tip-in .15s ease-out;
+}
+@keyframes mp-tip-in {
+    from { opacity: 0; transform: translate(-50%, -90%); }
+    to   { opacity: 1; transform: translate(-50%, -100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .mp-mobile-tooltip { animation: none; }
+}

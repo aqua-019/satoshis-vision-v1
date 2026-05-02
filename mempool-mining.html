@@ -179,16 +179,34 @@
     .mp-fee-hero{grid-template-columns:repeat(2,1fr)}
     .mp-stats-row{grid-template-columns:repeat(3,1fr)}
 }
+/* Mobile (<768px): sub-nav stacks, mode buttons full-row tap targets,
+   TX feed swaps to card layout (rendered by mempool-ocean-feed.js). */
+@media(max-width:767px){
+    .mp-subnav{flex-wrap:wrap;gap:8px;padding:10px 14px}
+    .mp-brand{width:100%;font-size:11px}
+    .mp-modes{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .mp-mode-btn{
+        min-height:44px;padding:10px 12px;font-size:10px;
+        letter-spacing:1.4px;border-radius:8px;text-align:center;
+    }
+    .mp-conn-status{margin-left:0;width:100%;font-size:9.5px;letter-spacing:1.3px}
+    .mp-mode-panel{padding:14px var(--space-page-x) 24px}
+    .mp-txfeed-h{display:none}
+    .mp-txfeed.is-mobile .mp-txrow{display:none}
+    .mp-ocean{height:240px}
+    .mp-depth{padding-bottom:18px}
+    .mp-fee-card{min-height:88px;cursor:pointer}
+    .mp-fee-tier-caption{line-height:1.6;font-size:11.5px;padding:10px 12px}
+}
 @media(max-width:560px){
-    .mp-subnav{gap:8px;padding:8px 14px}
-    .mp-mode-btn{padding:5px 9px;font-size:9.5px;letter-spacing:1px}
-    .mp-conn-status{font-size:9px;margin-left:0;width:100%;justify-content:flex-start;border-top:1px solid var(--border-subtle);padding-top:6px}
     .mp-stats-row{grid-template-columns:repeat(2,1fr)}
-    .mp-txfeed-h,.mp-txrow{grid-template-columns:1.3fr .6fr 1fr .55fr}
-    .mp-txfeed-h .c-tier,.mp-txrow .c-tier,
-    .mp-txfeed-h .c-age,.mp-txrow .c-age{display:none}
-    .mp-ocean{height:260px}
-    .mp-depth{height:220px}
+    .mp-ocean{height:220px}
+}
+@media(max-width:380px){
+    .mp-fee-hero{grid-template-columns:1fr}
+    .mp-modes{grid-template-columns:1fr 1fr 1fr;gap:4px}
+    .mp-mode-btn{padding:10px 6px;font-size:9px;letter-spacing:1.1px}
+    .mp-ocean{height:200px}
 }
 
 /* ═══════════════════════════════════════════════════════════════

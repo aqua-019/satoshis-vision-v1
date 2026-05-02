@@ -179,16 +179,38 @@
     .mp-fee-hero{grid-template-columns:repeat(2,1fr)}
     .mp-stats-row{grid-template-columns:repeat(3,1fr)}
 }
+/* Mobile (<768px): sub-nav stacks, mode buttons full-row tap targets,
+   TX feed swaps to card layout (rendered by mempool-ocean-feed.js). */
+@media(max-width:767px){
+    .mp-subnav{flex-wrap:wrap;gap:8px;padding:10px 14px}
+    .mp-brand{width:100%;font-size:11px}
+    .mp-modes{width:100%;display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+    .mp-mode-btn{
+        min-height:44px;padding:10px 12px;font-size:10px;
+        letter-spacing:1.4px;border-radius:8px;text-align:center;
+    }
+    .mp-conn-status{margin-left:0;width:100%;font-size:9.5px;letter-spacing:1.3px}
+    .mp-mode-panel{padding:14px var(--space-page-x) 24px}
+    /* TX feed: hide grid header, the JS render branch switches to .mp-tx-card */
+    .mp-txfeed-h{display:none}
+    .mp-txfeed.is-mobile .mp-txrow{display:none}
+    /* Ocean + Clock canvases: cap heights on tighter phones */
+    .mp-ocean{height:240px}
+    .mp-depth{padding-bottom:18px}
+    /* Fee tier hero: ensure cards have generous tap area */
+    .mp-fee-card{min-height:88px;cursor:pointer}
+    /* Educational caption legibility */
+    .mp-fee-tier-caption{line-height:1.6;font-size:11.5px;padding:10px 12px}
+}
 @media(max-width:560px){
-    .mp-subnav{gap:8px;padding:8px 14px}
-    .mp-mode-btn{padding:5px 9px;font-size:9.5px;letter-spacing:1px}
-    .mp-conn-status{font-size:9px;margin-left:0;width:100%;justify-content:flex-start;border-top:1px solid var(--border-subtle);padding-top:6px}
     .mp-stats-row{grid-template-columns:repeat(2,1fr)}
-    .mp-txfeed-h,.mp-txrow{grid-template-columns:1.3fr .6fr 1fr .55fr}
-    .mp-txfeed-h .c-tier,.mp-txrow .c-tier,
-    .mp-txfeed-h .c-age,.mp-txrow .c-age{display:none}
-    .mp-ocean{height:260px}
-    .mp-depth{height:220px}
+    .mp-ocean{height:220px}
+}
+@media(max-width:380px){
+    .mp-fee-hero{grid-template-columns:1fr}
+    .mp-modes{grid-template-columns:1fr 1fr 1fr;gap:4px}
+    .mp-mode-btn{padding:10px 6px;font-size:9px;letter-spacing:1.1px}
+    .mp-ocean{height:200px}
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -301,6 +323,27 @@
     .exp-blocks-table td{padding:8px 6px}
     .exp-blocks-table td.c-diff,.exp-blocks-table th.c-diff,
     .exp-blocks-table td.c-reward,.exp-blocks-table th.c-reward{display:none}
+    /* Hash takes full row width on phones, prevents mid-hash wrap-and-crush */
+    .exp-blocks-table td.c-hash,.exp-blocks-table th.c-hash{display:none}
+    .exp-blocks-table tbody tr{min-height:44px}
+}
+/* Mobile search bar: input + button stack vertically */
+@media(max-width:480px){
+    .exp-search-bar{grid-template-columns:1fr;grid-row-gap:8px}
+    .exp-search-bar input{font-size:14px;padding:12px 14px;min-height:48px}
+    .exp-search-bar button{min-height:48px;width:100%;font-size:11px;padding:12px 14px}
+    .exp-search-hint{font-size:10.5px;line-height:1.5}
+}
+/* Mobile copy buttons: standard tap target with feedback */
+@media(max-width:1023px){
+    .exp-copy-btn{min-height:44px;min-width:44px;padding:10px 14px;font-size:10.5px;letter-spacing:1.3px}
+    .exp-copy-btn.ok::after{content:' ✓';margin-left:4px;font-size:11px}
+    .exp-hash-row{flex-wrap:wrap;gap:8px}
+    .exp-hash-row .exp-copy-btn{margin-left:auto}
+    .exp-nav-btn{min-height:44px;padding:10px 14px}
+    .exp-btn-back{min-height:44px;padding:10px 16px}
+    .exp-broadcast-cta{min-height:48px;padding:12px;display:flex;align-items:center;justify-content:center}
+    .exp-txlist-load{min-height:48px;padding:12px}
 }
 
 /* Block detail header */
@@ -437,6 +480,11 @@
     .exp-detail-head{flex-direction:column;gap:6px}
     .exp-txlist-row{grid-template-columns:1.3fr .6fr .7fr;font-size:10px}
     .exp-txlist-row .c-rate,.exp-txlist-row .c-ring{display:none}
+    .exp-tx-grid{grid-template-columns:1fr}
+    .exp-tx-banner{flex-direction:column;align-items:stretch;gap:8px}
+    .exp-tx-banner .exp-tx-track-btn{width:100%;min-height:44px;text-align:center}
+    .exp-ring-wrap{height:200px}
+    .exp-tx-live-grid{grid-template-columns:repeat(2,1fr)}
 }
 
 /* TX detail — status banners */
@@ -1074,6 +1122,13 @@
 @media (max-width:768px){
     .m5-clock-grid{grid-template-columns:1fr}
     .m5-clock-caption{text-align:left}
+    #mp-clock-canvas{height:220px}
+}
+@media (max-width:500px){
+    #mp-clock-canvas{height:200px}
+    .m5-clock-legend{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .m5-clock-legend-row{grid-template-columns:10px 1fr;font-size:10.5px}
+    .m5-clock-legend-desc{display:none}
 }
 
 /* --- Dandelion++ indicator --- */

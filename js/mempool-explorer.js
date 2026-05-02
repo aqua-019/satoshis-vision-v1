@@ -1075,7 +1075,13 @@
     }
 
     /* ── Block detail view ── */
-    var blockState = { current: null, txPage: 0, txPageSize: 25, txLoaded: [] };
+    /* Smaller initial page on phones — tighter scroll, faster first paint. */
+    function _isMobileViewport() {
+        if (window.MPChart && window.MPChart.isMobileViewport) return window.MPChart.isMobileViewport();
+        if (global.matchMedia) return global.matchMedia('(max-width: 767px)').matches;
+        return (global.innerWidth || 1024) < 768;
+    }
+    var blockState = { current: null, txPage: 0, txPageSize: _isMobileViewport() ? 10 : 25, txLoaded: [] };
 
     function hardForkLabel(v) {
         // Monero hard fork milestones (abbreviated).
