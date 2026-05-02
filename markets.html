@@ -214,7 +214,7 @@ function mkDL(days,cnt){var labels=[],now=Date.now();for(var i=0;i<cnt;i++){var 
 function loadC(type,days,btn){
     if(btn){btn.closest('.chart-tabs').querySelectorAll('.ct').forEach(function(b){b.classList.remove('a')});btn.classList.add('a')}
     var lid=type==='xmr'?'xmr-load':'ratio-load';var le=document.getElementById(lid);if(le)le.style.display='block';
-    fetch('https://api.coingecko.com/api/v3/coins/monero/market_chart?vs_currency=usd&days='+days).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
+    fetch('/api/coingecko?path=coins/monero/market_chart&vs_currency=usd&days='+days).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){
         if(type==='xmr'&&d.prices){var p=d.prices.map(function(x){return x[1]});var dl=mkDL(days,p.length);
             var s=drawC('xmr-chart',p,'#FF8533',{dl:dl});
             if(s){document.getElementById('xmr-hi').textContent='$'+s.max.toFixed(2);document.getElementById('xmr-lo').textContent='$'+s.min.toFixed(2);
@@ -222,7 +222,7 @@ function loadC(type,days,btn){
                 var e=document.getElementById('xmr-ch');e.textContent=(ch>=0?'+':'')+ch.toFixed(2)+'%';e.style.color=ch>=0?'var(--grn)':'var(--red)';
                 document.getElementById('xmr-pts').textContent=s.count}}
         if(type==='ratio'&&d.prices){setTimeout(function(){
-            fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){
+            fetch('/api/coingecko?path=coins/bitcoin/market_chart&vs_currency=usd&days='+days).then(function(r){return r.json()}).then(function(bd){
                 if(bd.prices){var ratios=[],len=Math.min(d.prices.length,bd.prices.length);for(var i=0;i<len;i++)ratios.push(d.prices[i][1]/bd.prices[i][1]);
                     var dl=mkDL(days,ratios.length);var s=drawC('ratio-chart',ratios,'#FFD700',{isR:true,dl:dl});
                     if(s){document.getElementById('r-cur').textContent=ratios[ratios.length-1].toFixed(6);document.getElementById('r-hi').textContent=s.max.toFixed(6);
