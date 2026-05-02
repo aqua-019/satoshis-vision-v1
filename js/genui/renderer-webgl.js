@@ -84,6 +84,108 @@ const instancedPointsFragmentShader = `
     }
 `;
 
+/* Pedersen-blob shader — used for output commitments in Sim 4.
+   Simplex-noise distortion of the base color visually conveys "value
+   hidden behind a cryptographic commitment" without showing the math. */
+const pedersenVertexShader = `
+    varying vec2 vUv;
+    void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+/* GLSL simplex noise — Ashima version, public domain (compact 2D variant). */
+const pedersenFragmentShader = `
+    uniform vec3 color;
+    uniform float opacity;
+    uniform float time;
+    uniform float blobPhase;
+    varying vec2 vUv;
+
+    vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec2 mod289v2(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
+    vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
+    float snoise(vec2 v) {
+        const vec4 C = vec4(0.211324865405187, 0.366025403784439,
+                           -0.577350269189626, 0.024390243902439);
+        vec2 i  = floor(v + dot(v, C.yy));
+        vec2 x0 = v - i + dot(i, C.xx);
+        vec2 i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
+        vec4 x12 = x0.xyxy + C.xxzz;
+        x12.xy -= i1;
+        i = mod289v2(i);
+        vec3 p = permute(permute(i.y + vec3(0.0, i1.y, 1.0))
+                       + i.x + vec3(0.0, i1.x, 1.0));
+        vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x12.xy, x12.xy),
+                                dot(x12.zw, x12.zw)), 0.0);
+        m = m * m;
+        m = m * m;
+        vec3 x = 2.0 * fract(p * C.www) - 1.0;
+        vec3 h = abs(x) - 0.5;
+        vec3 ox = floor(x + 0.5);
+        vec3 a0 = x - ox;
+        m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
+        vec3 g;
+        g.x  = a0.x  * x0.x  + h.x  * x0.y;
+        g.yz = a0.yz * x12.xz + h.yz * x12.yw;
+        return 130.0 * dot(m, g);
+    }
+
+    void main() {
+        vec2 centered = vUv - vec2(0.5);
+        float dist = length(centered) * 2.0;
+        if (dist > 1.0) discard;
+
+        /* Base disc with soft falloff */
+        float disc = 1.0 - smoothstep(0.55, 1.0, dist);
+
+        /* Two octaves of simplex noise, animating slowly */
+        float n1 = snoise(vUv * 4.5 + vec2(time * 0.35, time * 0.22));
+        float n2 = snoise(vUv * 9.0 - vec2(time * 0.18, time * 0.31)) * 0.5;
+        float noise = (n1 + n2) * 0.5;
+
+        /* blobPhase animates the distortion intensity in over phase 4 */
+        float distortion = 0.55 + 0.45 * (noise * 0.5 + 0.5);
+        float intensity = mix(1.0, distortion, clamp(blobPhase, 0.0, 1.0));
+
+        float alpha = disc * opacity;
+        /* Subtle dark "veins" punch the surface as noise dips */
+        float darken = clamp(0.5 + 0.5 * intensity, 0.4, 1.0);
+        gl_FragColor = vec4(color * darken, alpha);
+    }
+`;
+
+/* CLSAG signature-trail shader — particle positions are static along a
+   precomputed path; alpha is computed per-particle based on its phase
+   relative to the moving leading edge. */
+const signatureTrailVertexShader = `
+    attribute float phase;
+    uniform float pathProgress;
+    uniform float trailLengthFrac;
+    uniform float pixelRatio;
+    varying float vAlpha;
+    void main() {
+        float dist = mod(pathProgress - phase + 1.0, 1.0);
+        float t = clamp(1.0 - dist / max(trailLengthFrac, 0.001), 0.0, 1.0);
+        vAlpha = pow(t, 2.0);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        gl_PointSize = 5.0 * pixelRatio;
+    }
+`;
+
+const signatureTrailFragmentShader = `
+    uniform vec3 color;
+    uniform float opacity;
+    varying float vAlpha;
+    void main() {
+        vec2 c = gl_PointCoord - vec2(0.5);
+        float d = length(c) * 2.0;
+        float disc = 1.0 - smoothstep(0.0, 1.0, d);
+        gl_FragColor = vec4(color, disc * vAlpha * opacity);
+    }
+`;
+
 function resolveCssColor(c, fallback = '#FF6600') {
     if (typeof c !== 'string') return fallback;
     const match = c.match(/^var\((--[a-z0-9-]+)\)$/i);
@@ -221,6 +323,16 @@ export class WebGLRenderer {
             mesh = this._createParticleBurst(node);
         } else if (node.type === 'comparison-bar') {
             mesh = this._createComparisonBar(node);
+        } else if (node.type === 'pedersen-blob') {
+            mesh = this._createPedersenBlob(node);
+        } else if (node.type === 'range-proof-band') {
+            mesh = this._createRangeProofBand(node);
+        } else if (node.type === 'signature-trail') {
+            mesh = this._createSignatureTrail(node);
+        } else if (node.type === 'ring-boundary') {
+            mesh = this._createRingBoundary(node);
+        } else if (node.type === 'ghost-overlay') {
+            mesh = this._createGhostOverlay(node);
         }
 
         if (!mesh) return;
@@ -706,6 +818,327 @@ export class WebGLRenderer {
         }
     }
 
+    _createPedersenBlob(node) {
+        const geometry = new THREE.PlaneGeometry(0.12, 0.12);
+        const parsed = parseColorWithAlpha(node.fill || 'var(--xmr)', '#FF6600');
+        const material = new THREE.ShaderMaterial({
+            vertexShader: pedersenVertexShader,
+            fragmentShader: pedersenFragmentShader,
+            uniforms: {
+                color: { value: parsed.color },
+                opacity: { value: (node.opacity ?? 1) * parsed.alpha },
+                time: { value: 0 },
+                blobPhase: { value: node.blobPhase ?? 0 }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const mesh = new THREE.Mesh(geometry, material);
+        const r = node.r ?? 18;
+        const scale = (r / 8) * 0.7;
+        mesh.scale.set(scale, scale, 1);
+        mesh.userData.pedersenMaterial = material;
+        mesh.userData.colorAlpha = parsed.alpha;
+        return mesh;
+    }
+
+    _updatePedersenBlob(mesh, node) {
+        if (node.cx !== undefined && node.cy !== undefined) {
+            const { x, y } = this.canvasToWorld(node.cx, node.cy);
+            mesh.position.set(x, y, 0);
+        }
+        if (node.r !== undefined) {
+            const scale = (node.r / 8) * 0.7;
+            mesh.scale.set(scale, scale, 1);
+        }
+        const mat = mesh.userData.pedersenMaterial;
+        if (!mat) return;
+        const colorAlpha = mesh.userData.colorAlpha ?? 1;
+        mat.uniforms.opacity.value = (node.opacity ?? 1) * colorAlpha;
+        mat.uniforms.time.value = (performance.now() / 1000);
+        mat.uniforms.blobPhase.value = node.blobPhase ?? 0;
+    }
+
+    _createRangeProofBand(node) {
+        /* Group: a base bar + 3 concentric pulse rings overlaid. */
+        const group = new THREE.Group();
+        group.userData.skipPosition = true;
+
+        const widthCanvas = node.width || 0.30;
+        const heightCanvas = node.height || 0.06;
+        const widthWorld = widthCanvas * this.frustumWidth;
+        const heightWorld = heightCanvas * this.frustumHeight;
+
+        const barGeom = new THREE.PlaneGeometry(widthWorld, heightWorld);
+        const barParsed = parseColorWithAlpha(node.fill || 'rgba(255,102,0,0.18)', '#FF6600');
+        const barMat = new THREE.MeshBasicMaterial({
+            color: barParsed.color,
+            transparent: true,
+            opacity: (node.opacity ?? 1) * barParsed.alpha
+        });
+        const bar = new THREE.Mesh(barGeom, barMat);
+        group.add(bar);
+
+        const ringMeshes = [];
+        const ringParsed = parseColorWithAlpha(node.stroke || 'var(--xmr)', '#FF6600');
+        const baseRingRadius = heightWorld * 0.5;
+        for (let i = 0; i < 3; i++) {
+            const ringGeom = new THREE.RingGeometry(baseRingRadius * 0.92, baseRingRadius, 48);
+            const ringMat = new THREE.MeshBasicMaterial({
+                color: ringParsed.color,
+                transparent: true,
+                opacity: 0.6,
+                side: THREE.DoubleSide,
+                depthWrite: false
+            });
+            const ring = new THREE.Mesh(ringGeom, ringMat);
+            group.add(ring);
+            ringMeshes.push(ring);
+        }
+
+        group.userData.bar = bar;
+        group.userData.barMat = barMat;
+        group.userData.barAlpha = barParsed.alpha;
+        group.userData.rings = ringMeshes;
+        group.userData.bandType = 'range-proof-band';
+        return group;
+    }
+
+    _updateRangeProofBand(mesh, node) {
+        if (node.cx !== undefined && node.cy !== undefined) {
+            const { x, y } = this.canvasToWorld(node.cx, node.cy);
+            mesh.position.set(x, y, 0);
+        }
+
+        const opacity = node.opacity ?? 1;
+        const barAlpha = mesh.userData.barAlpha ?? 1;
+        if (mesh.userData.barMat) {
+            mesh.userData.barMat.opacity = opacity * barAlpha;
+        }
+
+        const pulsePhase = node.pulsePhase ?? 0;
+        const t = (performance.now() / 1000) % 2;
+        const rings = mesh.userData.rings || [];
+        for (let i = 0; i < rings.length; i++) {
+            const ring = rings[i];
+            const stagger = i * 0.55;
+            const localT = (t + stagger) % 2;
+            const norm = localT / 2;
+            const scale = 1 + norm * 6 * pulsePhase;
+            ring.scale.set(scale, scale, 1);
+            ring.material.opacity = (1 - norm) * 0.65 * pulsePhase * opacity;
+        }
+    }
+
+    _createSignatureTrail(node) {
+        const particleCount = node.particleCount || 80;
+        const positions = new Float32Array(particleCount * 3);
+        const phases = new Float32Array(particleCount);
+
+        for (let i = 0; i < particleCount; i++) {
+            phases[i] = i / particleCount;
+            positions[i * 3] = 0;
+            positions[i * 3 + 1] = 0;
+            positions[i * 3 + 2] = 0;
+        }
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+        geometry.setAttribute('phase', new THREE.BufferAttribute(phases, 1));
+
+        const parsed = parseColorWithAlpha(node.fill || 'var(--xmr)', '#FF6600');
+        const material = new THREE.ShaderMaterial({
+            vertexShader: signatureTrailVertexShader,
+            fragmentShader: signatureTrailFragmentShader,
+            uniforms: {
+                color: { value: parsed.color },
+                opacity: { value: (node.opacity ?? 1) * parsed.alpha },
+                pathProgress: { value: node.pathProgress ?? 0 },
+                trailLengthFrac: { value: 0.18 },
+                pixelRatio: { value: Math.min(2, window.devicePixelRatio || 1) }
+            },
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+
+        const points = new THREE.Points(geometry, material);
+        points.userData.skipPosition = true;
+        points.userData.signatureMaterial = material;
+        points.userData.particleCount = particleCount;
+        points.userData.colorAlpha = parsed.alpha;
+        points.userData.pathSamplesNeeded = true;
+        return points;
+    }
+
+    _buildSignatureTrailPath(particleCount) {
+        /* The trail visits each ring member, then each output, then loops
+           back to the first ring member. Ring positions are read from the
+           gather-ring phase's transitions because the actor initialState
+           holds off-screen spawn coords. */
+        const ringFinalPositions = [];
+        const outputPositions = [];
+
+        const gatherPhase = this.spec.scene.phases.find(p => p.id === 'gather-ring');
+        if (gatherPhase) {
+            const indexed = [];
+            for (const t of gatherPhase.transitions) {
+                if (t.actorId.startsWith('ring-member-')) {
+                    const idx = parseInt(t.actorId.slice('ring-member-'.length), 10);
+                    indexed.push({
+                        idx,
+                        cx: t.targetState.cx,
+                        cy: t.targetState.cy
+                    });
+                }
+            }
+            indexed.sort((a, b) => a.idx - b.idx);
+            for (const p of indexed) ringFinalPositions.push({ cx: p.cx, cy: p.cy });
+        }
+
+        for (const actor of this.spec.actors) {
+            if (actor.role === 'output') {
+                outputPositions.push({
+                    cx: actor.initialState.cx,
+                    cy: actor.initialState.cy
+                });
+            }
+        }
+
+        if (ringFinalPositions.length === 0) {
+            const samples = [];
+            for (let i = 0; i < particleCount; i++) samples.push({ x: 0, y: 0 });
+            return samples;
+        }
+
+        const waypoints = [
+            ...ringFinalPositions,
+            ...outputPositions,
+            ringFinalPositions[0]
+        ];
+
+        const segLengths = [];
+        let totalLength = 0;
+        for (let i = 0; i < waypoints.length - 1; i++) {
+            const dx = waypoints[i + 1].cx - waypoints[i].cx;
+            const dy = waypoints[i + 1].cy - waypoints[i].cy;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            segLengths.push(len);
+            totalLength += len;
+        }
+
+        const samples = [];
+        for (let i = 0; i < particleCount; i++) {
+            const t = i / particleCount;
+            let targetDist = t * totalLength;
+            let segIdx = 0;
+            let acc = 0;
+            while (segIdx < segLengths.length - 1 && acc + segLengths[segIdx] < targetDist) {
+                acc += segLengths[segIdx];
+                segIdx++;
+            }
+            const localT = segLengths[segIdx] > 0
+                ? (targetDist - acc) / segLengths[segIdx]
+                : 0;
+            const a = waypoints[segIdx];
+            const b = waypoints[segIdx + 1];
+            const cx = a.cx + (b.cx - a.cx) * localT;
+            const cy = a.cy + (b.cy - a.cy) * localT;
+            const world = this.canvasToWorld(cx, cy);
+            samples.push({ x: world.x, y: world.y });
+        }
+
+        return samples;
+    }
+
+    _updateSignatureTrail(mesh, node) {
+        if (mesh.userData.pathSamplesNeeded) {
+            const samples = this._buildSignatureTrailPath(mesh.userData.particleCount);
+            const positions = mesh.geometry.attributes.position.array;
+            for (let i = 0; i < samples.length; i++) {
+                positions[i * 3] = samples[i].x;
+                positions[i * 3 + 1] = samples[i].y;
+                positions[i * 3 + 2] = 0;
+            }
+            mesh.geometry.attributes.position.needsUpdate = true;
+            mesh.userData.pathSamplesNeeded = false;
+        }
+        const mat = mesh.userData.signatureMaterial;
+        if (!mat) return;
+        const colorAlpha = mesh.userData.colorAlpha ?? 1;
+        mat.uniforms.opacity.value = (node.opacity ?? 1) * colorAlpha;
+        mat.uniforms.pathProgress.value = node.pathProgress ?? 0;
+    }
+
+    _createRingBoundary(node) {
+        const ringGeom = new THREE.RingGeometry(0.95, 1.0, 64, 1, 0, Math.PI * 2);
+        const parsed = parseColorWithAlpha(node.stroke || 'var(--xmr)', '#FF6600');
+        const ringMat = new THREE.MeshBasicMaterial({
+            color: parsed.color,
+            transparent: true,
+            opacity: (node.opacity ?? 0) * parsed.alpha,
+            side: THREE.DoubleSide,
+            depthWrite: false
+        });
+        const mesh = new THREE.Mesh(ringGeom, ringMat);
+        const radiusCanvas = node.radius ?? 0.225;
+        mesh.scale.set(
+            radiusCanvas * this.frustumWidth,
+            radiusCanvas * this.frustumHeight,
+            1
+        );
+        mesh.userData.ringMat = ringMat;
+        mesh.userData.colorAlpha = parsed.alpha;
+        mesh.userData.radiusCanvas = radiusCanvas;
+        return mesh;
+    }
+
+    _updateRingBoundary(mesh, node) {
+        if (node.cx !== undefined && node.cy !== undefined) {
+            const { x, y } = this.canvasToWorld(node.cx, node.cy);
+            mesh.position.set(x, y, 0);
+        }
+        if (node.radius !== undefined && node.radius !== mesh.userData.radiusCanvas) {
+            mesh.userData.radiusCanvas = node.radius;
+            mesh.scale.set(
+                node.radius * this.frustumWidth,
+                node.radius * this.frustumHeight,
+                1
+            );
+        }
+        if (mesh.userData.ringMat) {
+            const colorAlpha = mesh.userData.colorAlpha ?? 1;
+            const seal = node.sealProgress ?? 1;
+            mesh.userData.ringMat.opacity = (node.opacity ?? 1) * colorAlpha * seal;
+        }
+    }
+
+    _createGhostOverlay(node) {
+        const geom = new THREE.PlaneGeometry(this.frustumWidth, this.frustumHeight);
+        const parsed = parseColorWithAlpha(node.fill || 'rgba(8,8,10,0.7)', '#08080a');
+        const mat = new THREE.MeshBasicMaterial({
+            color: parsed.color,
+            transparent: true,
+            opacity: 0,
+            depthWrite: false
+        });
+        const mesh = new THREE.Mesh(geom, mat);
+        /* Render in front of everything else (other actors are at z=0) */
+        mesh.position.set(0, 0, 1);
+        mesh.userData.skipPosition = true;
+        mesh.userData.ghostMat = mat;
+        mesh.userData.ghostAlpha = parsed.alpha;
+        return mesh;
+    }
+
+    _updateGhostOverlay(mesh, node) {
+        if (!mesh.userData.ghostMat) return;
+        const fadeAmount = node.fadeAmount ?? 0;
+        const ghostAlpha = mesh.userData.ghostAlpha ?? 1;
+        mesh.userData.ghostMat.opacity = fadeAmount * ghostAlpha * (node.opacity ?? 1);
+    }
+
     updateMesh(node) {
         const mesh = this.actorMeshes.get(node.id);
         if (!mesh) return;
@@ -724,6 +1157,36 @@ export class WebGLRenderer {
 
         if (node.type === 'comparison-bar') {
             this._updateComparisonBar(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'pedersen-blob') {
+            this._updatePedersenBlob(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'range-proof-band') {
+            this._updateRangeProofBand(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'signature-trail') {
+            this._updateSignatureTrail(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'ring-boundary') {
+            this._updateRingBoundary(mesh, node);
+            this.updateOverlayElement(node);
+            return;
+        }
+
+        if (node.type === 'ghost-overlay') {
+            this._updateGhostOverlay(mesh, node);
             this.updateOverlayElement(node);
             return;
         }
