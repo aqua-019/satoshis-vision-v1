@@ -81,6 +81,11 @@ export class SVGRenderer {
             case 'particle-trail': return this._createParticleTrail(node);
             case 'particle-burst': return this._createParticleBurst(node);
             case 'comparison-bar': return this._createComparisonBar(node);
+            case 'pedersen-blob': return this._createPedersenBlob(node);
+            case 'range-proof-band': return this._createRangeProofBand(node);
+            case 'signature-trail': return this._createSignatureTrail(node);
+            case 'ring-boundary': return this._createRingBoundary(node);
+            case 'ghost-overlay': return this._createGhostOverlay(node);
             default:             return null;
         }
     }
@@ -261,6 +266,76 @@ export class SVGRenderer {
         return r;
     }
 
+    _createPedersenBlob(node) {
+        /* SVG fallback: a plain disc — no shader noise, but the colour stays right. */
+        const c = document.createElementNS(SVG_NS, 'circle');
+        c.setAttribute('r', String(node.r ?? 18));
+        c.setAttribute('fill', resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        c.setAttribute('cx', String((node.cx ?? 0.5) * this.viewWidth));
+        c.setAttribute('cy', String((node.cy ?? 0.5) * this.viewHeight));
+        c.setAttribute('opacity', String(node.opacity ?? 1));
+        return c;
+    }
+
+    _createRangeProofBand(node) {
+        const group = document.createElementNS(SVG_NS, 'g');
+        const widthFrac = node.width || 0.30;
+        const heightFrac = node.height || 0.06;
+        const cxFrac = node.cx ?? 0.78;
+        const cyFrac = node.cy ?? 0.84;
+        const rect = document.createElementNS(SVG_NS, 'rect');
+        rect.setAttribute('x', String((cxFrac - widthFrac / 2) * this.viewWidth));
+        rect.setAttribute('y', String((cyFrac - heightFrac / 2) * this.viewHeight));
+        rect.setAttribute('width', String(widthFrac * this.viewWidth));
+        rect.setAttribute('height', String(heightFrac * this.viewHeight));
+        rect.setAttribute('fill', resolveCssColor(node.fill || 'rgba(255,102,0,0.18)', '#FF6600'));
+        rect.setAttribute('stroke', resolveCssColor(node.stroke || 'var(--xmr)', '#FF6600'));
+        rect.setAttribute('stroke-width', '1');
+        group.appendChild(rect);
+        group.setAttribute('opacity', String(node.opacity ?? 0));
+        group.dataset.bandType = 'range-proof-band';
+        return group;
+    }
+
+    _createSignatureTrail(node) {
+        /* SVG fallback: static dotted line — no animation. */
+        const line = document.createElementNS(SVG_NS, 'line');
+        line.setAttribute('x1', String(0.42 * this.viewWidth));
+        line.setAttribute('y1', String(0.50 * this.viewHeight));
+        line.setAttribute('x2', String(0.78 * this.viewWidth));
+        line.setAttribute('y2', String(0.40 * this.viewHeight));
+        line.setAttribute('stroke', resolveCssColor(node.fill || 'var(--xmr)', '#FF6600'));
+        line.setAttribute('stroke-width', '1.5');
+        line.setAttribute('stroke-dasharray', '4,4');
+        line.setAttribute('opacity', String(node.opacity ?? 0));
+        return line;
+    }
+
+    _createRingBoundary(node) {
+        const c = document.createElementNS(SVG_NS, 'ellipse');
+        c.setAttribute('cx', String((node.cx ?? 0.5) * this.viewWidth));
+        c.setAttribute('cy', String((node.cy ?? 0.5) * this.viewHeight));
+        c.setAttribute('rx', String((node.radius ?? 0.225) * this.viewWidth));
+        c.setAttribute('ry', String((node.radius ?? 0.225) * this.viewHeight));
+        c.setAttribute('fill', 'none');
+        c.setAttribute('stroke', resolveCssColor(node.stroke || 'var(--xmr)', '#FF6600'));
+        c.setAttribute('stroke-width', String(node.strokeWidth ?? 2));
+        c.setAttribute('opacity', String((node.opacity ?? 0) * (node.sealProgress ?? 1)));
+        return c;
+    }
+
+    _createGhostOverlay(node) {
+        const r = document.createElementNS(SVG_NS, 'rect');
+        r.setAttribute('x', '0');
+        r.setAttribute('y', '0');
+        r.setAttribute('width', '100%');
+        r.setAttribute('height', '100%');
+        r.setAttribute('fill', resolveCssColor(node.fill || 'rgba(8,8,10,0.7)', '#08080a'));
+        r.setAttribute('opacity', String((node.fadeAmount ?? 0) * (node.opacity ?? 1)));
+        r.dataset.bandType = 'ghost-overlay';
+        return r;
+    }
+
     _createRect(node) {
         const r = document.createElementNS(SVG_NS, 'rect');
         if (node.x !== undefined) r.setAttribute('x', String(node.x));
@@ -332,6 +407,27 @@ export class SVGRenderer {
             if (node.drawProgress !== undefined) {
                 el.setAttribute('d', this._buildDensityPath(node.drawProgress, node.meanDays ?? 7, node.sigma ?? 0.5));
             }
+        } else if (node.type === 'pedersen-blob') {
+            if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
+            if (node.cy !== undefined) el.setAttribute('cy', String(node.cy * this.viewHeight));
+            if (node.r !== undefined) el.setAttribute('r', String(node.r));
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'range-proof-band') {
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'signature-trail') {
+            if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
+        } else if (node.type === 'ring-boundary') {
+            if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
+            if (node.cy !== undefined) el.setAttribute('cy', String(node.cy * this.viewHeight));
+            if (node.radius !== undefined) {
+                el.setAttribute('rx', String(node.radius * this.viewWidth));
+                el.setAttribute('ry', String(node.radius * this.viewHeight));
+            }
+            const seal = node.sealProgress ?? 1;
+            el.setAttribute('opacity', String((node.opacity ?? 1) * seal));
+        } else if (node.type === 'ghost-overlay') {
+            const fade = node.fadeAmount ?? 0;
+            el.setAttribute('opacity', String(fade * (node.opacity ?? 1)));
         } else {
             if (node.opacity !== undefined) el.setAttribute('opacity', String(node.opacity));
             if (node.cx !== undefined) el.setAttribute('cx', String(node.cx * this.viewWidth));
