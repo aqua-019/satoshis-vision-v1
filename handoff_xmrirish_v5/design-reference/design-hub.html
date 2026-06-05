@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>xmr.irish · five01 · v5.0.1 design hub</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Geist:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="five01/styles.css" />
+  <style>
+    html, body, #root { height: 100%; }
+    body { background: #050505; color: #f6f1e7; font-family: "Geist", system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React + Babel (pinned w/ integrity) -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <!-- five01 — starter scaffolds -->
+  <script type="text/babel" src="five01/lib/design-canvas.jsx"></script>
+  <script type="text/babel" src="five01/lib/tweaks-panel.jsx"></script>
+
+  <!-- five01 — shared atoms + data hook -->
+  <script type="text/babel" src="five01/src/shared.jsx"></script>
+
+  <!-- five01 — mempool surfaces (5 directions) -->
+  <script type="text/babel" src="five01/src/mempool/reactor.jsx"></script>
+  <script type="text/babel" src="five01/src/mempool/bridge.jsx"></script>
+  <script type="text/babel" src="five01/src/mempool/sediment.jsx"></script>
+  <script type="text/babel" src="five01/src/mempool/constellation.jsx"></script>
+  <script type="text/babel" src="five01/src/mempool/terminal.jsx"></script>
+
+  <!-- five01 — protocol simulations (6 metaphor-driven explainers) -->
+  <script type="text/babel" src="five01/src/protocols/decoy-selection.jsx"></script>
+  <script type="text/babel" src="five01/src/protocols/dandelion.jsx"></script>
+  <script type="text/babel" src="five01/src/protocols/view-tags.jsx"></script>
+  <script type="text/babel" src="five01/src/protocols/ringct.jsx"></script>
+  <script type="text/babel" src="five01/src/protocols/stealth.jsx"></script>
+  <script type="text/babel" src="five01/src/protocols/fcmp.jsx"></script>
+
+  <!-- five01 — mount -->
+  <script type="text/babel" src="five01/src/app.jsx"></script>
+</body>
+</html>
