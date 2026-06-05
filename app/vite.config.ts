@@ -25,5 +25,24 @@ export default defineConfig({
       },
     },
   },
-  server: { port: 5173, host: true },
+  // Dev-only proxy: forward /api and /ws to a live v4 origin so `npm run dev`
+  // exercises the real endpoints SAME-ORIGIN (no CORS, no browser→third-party).
+  // Production serves /api same-origin from the Vercel functions, so no proxy
+  // is needed there. Override the target with VITE_API_ORIGIN.
+  server: (() => {
+    const apiOrigin = process.env.VITE_API_ORIGIN ?? "https://xmr.irish";
+    return {
+      port: 5173,
+      host: true,
+      proxy: {
+        "/api": { target: apiOrigin, changeOrigin: true, secure: true },
+        "/ws": {
+          target: apiOrigin.replace(/^http/, "ws"),
+          ws: true,
+          changeOrigin: true,
+          secure: true,
+        },
+      },
+    };
+  })(),
 });

@@ -47,7 +47,7 @@ export function NavTop() {
       <div className="ticker-strip">
         <span className="pill live">
           <span className="led pulse" />
-          {data.source === "coingecko" ? "LIVE" : "SIM"}
+          {data.source === "rpc" || data.source === "ws" ? "LIVE" : "SIM"}
         </span>
         <span className="tk dim">
           XMR <b className="acc">${data.price.toFixed(2)}</b>
