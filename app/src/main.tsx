@@ -10,15 +10,21 @@ import { createRoot } from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 
 import { App } from "./App";
+import { useXmrIrishFeed } from "./data/xmrirish-feed";
 import "./styles.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element in index.html");
 
+// Simulated stays the dev default. The live xmr.irish feed activates only when
+// VITE_LIVE_DATA is set (and in production builds). With no env, `useFeed` is
+// undefined and <DataProvider> falls back to the built-in simulator.
+const useFeed = import.meta.env.VITE_LIVE_DATA ? useXmrIrishFeed : undefined;
+
 createRoot(root).render(
   <React.StrictMode>
     <BrowserRouter>
-      <App />
+      <App useFeed={useFeed} />
     </BrowserRouter>
   </React.StrictMode>
 );

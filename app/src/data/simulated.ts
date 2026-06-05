@@ -116,6 +116,15 @@ function initialState(): MoneroLive {
 }
 
 /**
+ * SIM_SEED — a single, module-load-time snapshot of the simulated shape.
+ *
+ * The live feed (`useXmrIrishFeed`) seeds its initial state from this so the
+ * first paint is never empty, and any field v4 doesn't expose can be carried
+ * over verbatim (peers list, sparkline series, etc.) instead of flashing NaN.
+ */
+export const SIM_SEED: MoneroLive = initialState();
+
+/**
  * useSimulatedMoneroLive — drop-in hook that yields a live-feeling MoneroLive.
  *
  * Cadence:
