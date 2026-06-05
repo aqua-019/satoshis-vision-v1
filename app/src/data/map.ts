@@ -14,8 +14,7 @@
  *  - prices USD, ages SECONDS, hashrate H/s, difficulty raw int
  */
 
-import type { Block, DataSource, MoneroLive, Pool, Tx } from "./types";
-import { POOLS } from "./simulated";
+import type { Block, DataSource, MoneroLive, Tx } from "./types";
 
 /** 1 XMR = 1e12 piconero. */
 const PICO = 1e12;
@@ -70,8 +69,6 @@ interface RpcInfo {
   target?: number;
   top_block_hash?: string;
   major_version?: number;
-  incoming_connections_count?: number;
-  outgoing_connections_count?: number;
 }
 
 interface XmrNetwork {
@@ -79,9 +76,6 @@ interface XmrNetwork {
   difficulty?: number;
   hashrate_ghs?: number;
   target_seconds?: number;
-  peer_count?: number;
-  incoming_peers?: number;
-  outgoing_peers?: number;
   top_block_hash?: string;
   major_version?: number;
 }
@@ -113,10 +107,6 @@ interface XmrBlock {
   pool_name?: string;
 }
 
-interface XmrPools {
-  pools?: { name?: string; type?: string; percentage?: number; url?: string | null }[];
-}
-
 interface CgPrice {
   monero?: { usd?: number; usd_24h_change?: number };
   bitcoin?: { usd?: number; usd_24h_change?: number };
@@ -124,7 +114,9 @@ interface CgPrice {
 
 // ── field mappers ───────────────────────────────────────────────────
 
-/** monerod get_info (JSON-RPC `result`) → network/meta fields. */
+/** monerod get_info (JSON-RPC `result`) → network/meta fields.
+ *  Peer counts are NOT taken from here — the deployed feed has no reliable
+ *  peer source, so peerIn/peerOut carry the SIM_SEED values. */
 export function mapInfo(raw: RpcInfo, prev: MoneroLive): Partial<MoneroLive> {
   const r = raw.result ?? raw;
   const target = num(r.target, prev.blockTarget);
@@ -138,12 +130,12 @@ export function mapInfo(raw: RpcInfo, prev: MoneroLive): Partial<MoneroLive> {
     hashrate: target > 0 ? difficulty / target : prev.hashrate,
     hardfork: hardforkLabel(major) ?? prev.hardfork,
     protocol: major ? `v${major}` : prev.protocol,
-    peerIn: num(r.incoming_connections_count, prev.peerIn),
-    peerOut: num(r.outgoing_connections_count, prev.peerOut),
   };
 }
 
-/** /api/xmr/network → network fields (complements/falls back to get_info). */
+/** /api/xmr/network → network fields (complements/falls back to get_info).
+ *  hashrate is H/s = hashrate_ghs * 1e9. Peer counts carry SIM_SEED (the
+ *  deployed /api/xmr/network does not expose them). */
 export function mapNetwork(net: XmrNetwork, prev: MoneroLive): Partial<MoneroLive> {
   const target = num(net.target_seconds, prev.blockTarget);
   const difficulty = num(net.difficulty, prev.difficulty);
@@ -154,8 +146,6 @@ export function mapNetwork(net: XmrNetwork, prev: MoneroLive): Partial<MoneroLiv
     difficulty,
     blockTarget: target,
     hashrate: Number.isFinite(hashrate) ? hashrate : prev.hashrate,
-    peerIn: num(net.incoming_peers, prev.peerIn),
-    peerOut: num(net.outgoing_peers, prev.peerOut),
     hardfork: hardforkLabel(major) ?? prev.hardfork,
     protocol: major ? `v${major}` : prev.protocol,
   };
@@ -222,33 +212,8 @@ export function mapBlocks(arr: XmrBlock[], prev: MoneroLive): Partial<MoneroLive
   return { blocks: sorted.slice(0, BLOCKS_CAP).map((b) => toBlock(b, tip)) };
 }
 
-/** /api/xmr/mining/pools → poolDist[] (reuses the seed palette by name). */
-export function mapPools(p: XmrPools, prev: MoneroLive): Partial<MoneroLive> {
-  if (!p || !Array.isArray(p.pools) || !p.pools.length) return { poolDist: prev.poolDist };
-  const palette = new Map(POOLS.map((pool) => [pool.name, pool]));
-  const poolDist: Pool[] = p.pools
-    .filter((pool) => pool && pool.name)
-    .map((pool) => {
-      const known = palette.get(pool.name as string);
-      const type = (pool.type === "decentralized" || pool.type === "solo" ? pool.type : "centralized") as Pool["type"];
-      return {
-        name: pool.name as string,
-        share: num(pool.percentage, 0) / 100,
-        fee: known?.fee ?? 0,
-        type: known?.type ?? type,
-        rec: known?.rec ?? pool.name === "P2Pool",
-        color: known?.color ?? colorFor(pool.name as string),
-      };
-    });
-  return { poolDist: poolDist.length ? poolDist : prev.poolDist };
-}
-
-/** Stable display colour for an unknown pool name. */
-function colorFor(name: string): string {
-  let h = 0;
-  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) % 360;
-  return `hsl(${h} 70% 60%)`;
-}
+// poolDist[] has no live source on the deployed backend — it always carries
+// the SIM_SEED pool distribution (see mapToMoneroLive: it is never overwritten).
 
 /** /api/coingecko (simple/price) → market fields + appended priceSeries. */
 export function mapMarket(cg: CgPrice, prev: MoneroLive): Partial<MoneroLive> {
@@ -273,7 +238,6 @@ export interface SnapshotSources {
   network?: XmrNetwork | null;
   mempool?: XmrMempool | null;
   blocks?: XmrBlock[] | null;
-  pools?: XmrPools | null;
   market?: CgPrice | null;
 }
 
@@ -281,17 +245,17 @@ export interface SnapshotSources {
  * Fold a polled snapshot onto the previous MoneroLive state.
  *
  * Only the sources that actually returned are applied; everything else is
- * carried from `prev` (peers[] always carries — v4 exposes no peer-list route).
+ * carried from `prev` — peers[], poolDist[], peerIn, peerOut have no live
+ * source on the deployed backend, so they always carry the SIM_SEED values.
  * `source`/`live` are set by the caller to stay truthful at each degrade step.
  */
 export function mapToMoneroLive(prev: MoneroLive, src: SnapshotSources, source: DataSource): MoneroLive {
   let next: MoneroLive = { ...prev };
 
   if (src.network) next = { ...next, ...mapNetwork(src.network, next) };
-  if (src.info) next = { ...next, ...mapInfo(src.info, next) }; // get_info wins (has nonce + live conn counts)
+  if (src.info) next = { ...next, ...mapInfo(src.info, next) }; // get_info refines height/difficulty/target
   if (src.mempool) next = { ...next, ...mapMempool(src.mempool, next) };
   if (src.blocks) next = { ...next, ...mapBlocks(src.blocks, next) };
-  if (src.pools) next = { ...next, ...mapPools(src.pools, next) };
   if (src.market) next = { ...next, ...mapMarket(src.market, next) };
 
   // roll the hashrate sparkline forward with each real sample
