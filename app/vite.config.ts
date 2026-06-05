@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { fileURLToPath } from "node:url";
 
 // Static-export friendly Vite config.
 // Goals:
@@ -10,6 +11,7 @@ import react from "@vitejs/plugin-react";
 // Override `base` to a sub-path if you embed the build under /v5/ etc.
 export default defineConfig({
   plugins: [react()],
+  resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) } },
   base: process.env.VITE_BASE ?? "/",
   build: {
     target: "es2022",
