@@ -82,7 +82,10 @@ export function useXmrIrishFeed(): MoneroLive {
 
     // 1. Snapshot over v4's existing proxies (same-origin).
     async function snapshot() {
-      const [info, network, mempool, blocks, pools, market] = await Promise.all([
+      // Deployed /api/xmr/* exposes ONLY network, mempool, blocks (mining/pools,
+      // stats, peers, tx, etc. 404) — so we never call them. poolDist/peers carry
+      // SIM_SEED. get_info (/api/monero) and the CoinGecko proxy are same-origin too.
+      const [info, network, mempool, blocks, market] = await Promise.all([
         getJSON("/api/monero", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -91,7 +94,6 @@ export function useXmrIrishFeed(): MoneroLive {
         getJSON("/api/xmr/network"),
         getJSON("/api/xmr/mempool"),
         getJSON("/api/xmr/blocks?limit=14"),
-        getJSON("/api/xmr/mining/pools"),
         getJSON(COINGECKO),
       ]);
       if (!alive) return;
@@ -101,11 +103,10 @@ export function useXmrIrishFeed(): MoneroLive {
         network: network as SnapshotSources["network"],
         mempool: mempool as SnapshotSources["mempool"],
         blocks: blocks as SnapshotSources["blocks"],
-        pools: pools as SnapshotSources["pools"],
         market: market as SnapshotSources["market"],
       };
 
-      const gotChain = info || network || mempool || blocks || pools;
+      const gotChain = info || network || mempool || blocks;
       if (gotChain) {
         // chain data is reaching us → "rpc" (or "ws" once a socket message lands)
         setState((s) => mapToMoneroLive(s, src, s.source === "ws" ? "ws" : "rpc"));
