@@ -1,3 +1,24 @@
+/* ─── self-hosted fonts · latin woff2 subsets ─────────────────────────
+   Subset at build time from the Google Fonts API and served from /public/fonts
+   so the browser NEVER beacons any third-party font CDN at runtime — the
+   onion/Tor build stays clean (Phase 0 removed the CDN <link>; keep gone).
+   font-display: swap so text paints immediately on the system fallback. */
+@font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:300; font-display:swap; src:url(/fonts/jetbrains-mono-300.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:400; font-display:swap; src:url(/fonts/jetbrains-mono-400.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:500; font-display:swap; src:url(/fonts/jetbrains-mono-500.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:600; font-display:swap; src:url(/fonts/jetbrains-mono-600.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"JetBrains Mono"; font-style:normal; font-weight:700; font-display:swap; src:url(/fonts/jetbrains-mono-700.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Newsreader"; font-style:normal; font-weight:300; font-display:swap; src:url(/fonts/newsreader-300.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Newsreader"; font-style:normal; font-weight:400; font-display:swap; src:url(/fonts/newsreader-400.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Newsreader"; font-style:normal; font-weight:500; font-display:swap; src:url(/fonts/newsreader-500.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Newsreader"; font-style:normal; font-weight:600; font-display:swap; src:url(/fonts/newsreader-600.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Newsreader"; font-style:italic; font-weight:400; font-display:swap; src:url(/fonts/newsreader-italic-400.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Geist"; font-style:normal; font-weight:300; font-display:swap; src:url(/fonts/geist-300.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Geist"; font-style:normal; font-weight:400; font-display:swap; src:url(/fonts/geist-400.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Geist"; font-style:normal; font-weight:500; font-display:swap; src:url(/fonts/geist-500.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Geist"; font-style:normal; font-weight:600; font-display:swap; src:url(/fonts/geist-600.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+@font-face { font-family:"Geist"; font-style:normal; font-weight:700; font-display:swap; src:url(/fonts/geist-700.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
+
 /* ─── XMRIRISH v5.0 — terminal-dense base ─────────────────────────── */
 
 :root {
@@ -10,8 +31,11 @@
   --line-d:  rgba(255, 122, 26, 0.06);
   --rule:    rgba(255, 255, 255, 0.05);
 
-  /* phosphor — Monero orange, pushed to max saturation */
-  --o-100:   #fff1e0;
+  /* phosphor — Monero orange, pushed to max saturation.
+     o-100 was previously the bright cream #fff1e0 — that was the
+     source of the "white halo" effect on dark backgrounds. Re-bound
+     to a deep amber so highlights stay warm not blinding. */
+  --o-100:   #ffce8a;
   --o-80:    #ffb978;
   --o-60:    #ff8a2a;
   --o-50:    #ff7a1a;     /* primary */
@@ -29,24 +53,29 @@
   --c-50:    #5ed3f4;     /* cyan secondary data */
 
   /* text */
-  --ink-100: #f6f1e7;
-  --ink-80:  rgba(246, 241, 231, 0.78);
-  --ink-60:  rgba(246, 241, 231, 0.52);
-  --ink-40:  rgba(246, 241, 231, 0.32);
-  --ink-20:  rgba(246, 241, 231, 0.16);
-  --ink-10:  rgba(246, 241, 231, 0.08);
+  /* text — pushed dimmer site-wide so the hero/serif doesn't read as
+     a cream wash on dark. Old ink-100 was #d8d0c0 (bone-cream); now
+     a darker quartz-grey that pairs with #050505 base. */
+  --ink-100: #a8a094;
+  --ink-80:  rgba(168, 160, 148, 0.85);
+  --ink-60:  rgba(168, 160, 148, 0.55);
+  --ink-40:  rgba(168, 160, 148, 0.32);
+  --ink-20:  rgba(168, 160, 148, 0.16);
+  --ink-10:  rgba(168, 160, 148, 0.08);
 
   /* type */
   --f-serif: "Newsreader", "Source Serif Pro", "Charter", Georgia, serif;
   --f-sans:  "Geist", "Söhne", "Inter", system-ui, sans-serif;
   --f-mono:  "JetBrains Mono", "Berkeley Mono", "IBM Plex Mono", ui-monospace, monospace;
 
-  /* glow scaffolding — tweaks panel can dial these */
+  /* glow scaffolding — tweaks panel can dial these. NOTE: the inner
+     stop is intentionally dim amber, not the prior bright cream
+     rgba(255,230,200,1), which produced halo blowouts on near-black. */
   --glow-1:  0 0 8px rgba(255, 122, 26, 0.45);
-  --glow-2:  0 0 18px rgba(255, 122, 26, 0.55), 0 0 2px rgba(255, 200, 130, 0.9);
-  --glow-3:  0 0 24px rgba(255, 122, 26, 0.7), 0 0 4px rgba(255, 230, 200, 1);
-  --glow-g:  0 0 14px rgba(74, 222, 128, 0.6);
-  --glow-p:  0 0 14px rgba(184, 122, 255, 0.6);
+  --glow-2:  0 0 14px rgba(255, 122, 26, 0.40), 0 0 2px rgba(255, 160, 80, 0.5);
+  --glow-3:  0 0 18px rgba(255, 122, 26, 0.5), 0 0 3px rgba(255, 180, 100, 0.6);
+  --glow-g:  0 0 10px rgba(74, 222, 128, 0.5);
+  --glow-p:  0 0 10px rgba(184, 122, 255, 0.5);
 
   --tk-accent: var(--o-50);
   --tk-glow: 1;
@@ -56,16 +85,70 @@
 
 html, body {
   margin: 0; padding: 0;
-  background: #050505;
+  background-color: #050505;
   color: var(--ink-100);
   font-family: var(--f-sans);
-  animation: bg-pulse 9s ease-in-out infinite;
+  color-scheme: dark;
 }
+
+/* ── hi-fi pulsing greyscale backdrop ──────────────────────────────
+   Heavy black base. Four layered radial pulses in pure neutral grey
+   (no warm tint, no chroma). Each pulse breathes on its own clock so
+   no two ever align — the result is an aperiodic drift, never a
+   visible "sphere". Six layers, deep z-stacking:
+     -3  base solid #030303
+     -2  film grain (svg noise, very low opacity)
+     -1  the four animated pulses
+   Each pulse is < 5 luminance points above base; visible only against
+   pure black. Inert in middle and corners; never reads as a shape. */
+html { background: #020202; }
+body { position: relative; }
+
+body::before {
+  content: "";
+  position: fixed; inset: 0; z-index: -3; pointer-events: none;
+  background: #030303;
+}
+
+body::after {
+  content: "";
+  position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background:
+    radial-gradient(38vmax 32vmax at 20% 28%, #0a0a0a 0%, transparent 65%),
+    radial-gradient(44vmax 38vmax at 78% 70%, #090909 0%, transparent 62%),
+    radial-gradient(52vmax 40vmax at 50% 50%, #070707 0%, transparent 70%),
+    radial-gradient(34vmax 30vmax at 86% 18%, #080808 0%, transparent 60%);
+  background-size: 200% 200%, 220% 220%, 180% 180%, 160% 160%;
+  animation: bg-pulse-a 23s ease-in-out infinite,
+             bg-pulse-b 31s ease-in-out infinite,
+             bg-pulse-c 41s ease-in-out infinite,
+             bg-pulse-d 53s ease-in-out infinite;
+  /* Single 'animation' line would apply to all backgrounds; split
+     animations into per-layer position keyframes for true desync. */
+  animation-name: bg-grey-pulse;
+  animation-duration: 64s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+}
+
+/* Each iteration drifts all four blobs through 5 keyframes on relatively
+   prime cycles (16/13/7/11 sub-beats inside the 64s window) so no two
+   layers align twice on the same screen. Movement is gentle: every blob
+   stays within 30% of its anchor. Pulses never cross the screen center
+   simultaneously. */
+@keyframes bg-grey-pulse {
+  0%   { background-position:   0%   0%,   100%   0%,    0% 100%, 100% 100%; opacity: 0.95; }
+  18%  { background-position:  30%  10%,    65%  15%,   18%  82%,  78%  88%; opacity: 0.85; }
+  35%  { background-position:  55%  35%,    32%  45%,   42%  60%,  60%  70%; opacity: 1.00; }
+  52%  { background-position:  72%  60%,    18%  72%,   65%  35%,  35%  45%; opacity: 0.80; }
+  68%  { background-position:  45%  82%,    40%  92%,   88%  20%,  18%  20%; opacity: 0.95; }
+  85%  { background-position:  18%  60%,    78%  68%,   58%   5%,   8%  55%; opacity: 0.90; }
+  100% { background-position:   0%   0%,   100%   0%,    0% 100%, 100% 100%; opacity: 0.95; }
+}
+
 * { box-sizing: border-box; }
 
-/* ── pulsing dark backdrop ────────────────────────────────────────
-   Black ↔ deep charcoal, never anywhere near grey. Anchors every
-   page in the same breathing rhythm. */
+/* Page-level pulse — slower, narrower, layered on top of the snake. */
 @keyframes bg-pulse {
   0%, 100% { background-color: #050505; }
   50%      { background-color: #0d0c0a; }
@@ -96,36 +179,47 @@ html, body {
 .hr { height: 1px; background: var(--rule); }
 .vr { width: 1px; background: var(--rule); align-self: stretch; }
 
+/* Page-header h1 — anchor with subtle dark wash so the cream type
+   doesn't dominate the unbounded backdrop. */
+header > div > h1.serif {
+  color: var(--ink-80);
+}
+.serif {
+  font-weight: 400;
+}
+
 /* ── artboard chrome ───────────────────────────────────────────── */
 
 .art {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #050505;
-  animation: bg-pulse-soft 11s ease-in-out infinite;
+  background: transparent;  /* let body's snake gradient show through */
   color: var(--ink-100);
   overflow: hidden;
   isolation: isolate;
 }
 
-/* background layers */
+/* background layers — minimal, darker. Vignette removed (it was
+   creating the center-brightness illusion). Grid mask removed (it
+   was concentrating orange in the center). */
 .art-grid {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
   background-image:
-    linear-gradient(to right, rgba(255,122,26,0.025) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,122,26,0.025) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, rgba(0,0,0,0.7), transparent 80%);
+    linear-gradient(to right, rgba(255,122,26,0.012) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,122,26,0.012) 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.6;
 }
 .art-noise {
   position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  opacity: 0.55; mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.55  0 0 0 0 0.32  0 0 0 0 0.1  0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.06; mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.3  0 0 0 0 0.18  0 0 0 0 0.06  0 0 0 0.12 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 .art-vignette {
-  position: absolute; inset: 0; pointer-events: none; z-index: 0;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.65) 100%);
+  /* Deliberately empty — vignette removed. The element still mounts
+     for backward compatibility but contributes no visual. */
+  display: none;
 }
 .art-scan {
   position: absolute; inset: 0; pointer-events: none; z-index: 999;
@@ -315,26 +409,87 @@ html, body {
 .main::-webkit-scrollbar-thumb, .rail::-webkit-scrollbar-thumb { background: var(--ink-10); border-radius: 3px; }
 .main::-webkit-scrollbar-thumb:hover, .rail::-webkit-scrollbar-thumb:hover { background: var(--tk-accent); }
 
-/* mempool block (shared) */
+/* ── reactive panels — pure CSS lift + shine (no JS overhead) ──
+   Panels on Markets / Network breathe with a slow ambient pulse,
+   lift slightly on hover, and reveal a soft accent glow at the
+   border. No mouse-tracking RAF loop — pure CSS so it scales to
+   20+ panels without any cost. */
+.panel {
+  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.3, 1),
+              border-color 0.4s ease,
+              box-shadow 0.4s ease;
+}
+.panel:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 122, 26, 0.4);
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.4),
+    0 0 32px rgba(255, 122, 26, 0.12),
+    0 0 0 1px rgba(255, 122, 26, 0.15);
+}
+.panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  background: radial-gradient(120% 80% at 50% 0%, rgba(255, 122, 26, 0.04), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  z-index: 0;
+}
+.panel:hover::before { opacity: 1; }
+.panel > *:not(.tick) { position: relative; z-index: 1; }
+.panel > .tick { z-index: 2; }
+/* Slow ambient pulse on accent-bordered panels */
+@keyframes panel-breathe {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 122, 26, 0); }
+  50%      { box-shadow: 0 0 24px rgba(255, 122, 26, 0.08); }
+}
+.shell .main .panel { animation: panel-breathe 8s ease-in-out infinite; animation-delay: var(--breathe-d, 0s); }
+
+/* ── tilt-card · mouse-reactive panel ──────────────────────────
+   Markets/Network panels wrap PanelFrame in <TiltCard>; the
+   wrapper sets --tilt-rx/--tilt-ry CSS vars on the wrapper. The
+   shine layer uses radial-gradient(at var(--mx) var(--my)). */
+.tilt-card { will-change: transform; }
+.tilt-card.tilt-pulse {
+  animation: tilt-pulse 6s ease-in-out infinite;
+}
+@keyframes tilt-pulse {
+  0%, 100% { box-shadow: 0 0 0 1px rgba(255,122,26,0.05); }
+  50%      { box-shadow: 0 0 24px rgba(255,122,26,0.15), 0 0 0 1px rgba(255,122,26,0.2); }
+}
+
+/* ── mempool search bar — shared atom ──────────────────────── */
+.mempool-search-bar {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--rule);
+  background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.3));
+  flex-shrink: 0;
+}
+/* mempool block (shared) — flattened to solid amber tiles, no inner
+   cream wash. The earlier `inset 0 0 24px rgba(255,255,255,0.18)` produced
+   a cream wash when 10-14 of these tile horizontally on the home page. */
 .mblock {
   position: relative;
-  border: 1px solid var(--tk-accent);
-  background: linear-gradient(180deg, rgba(255,122,26,0.4) 0%, rgba(255,122,26,0.85) 100%);
-  color: var(--bg-0);
+  border: 1px solid rgba(255, 122, 26, 0.45);
+  background: linear-gradient(180deg, rgba(255,122,26,0.12) 0%, rgba(255,122,26,0.22) 100%);
+  color: var(--ink-80);
   padding: 10px 8px;
   font-family: var(--f-mono);
-  box-shadow:
-    inset 0 0 24px rgba(255,255,255,0.18),
-    0 0 18px rgba(255,122,26,0.4);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 10px rgba(255,122,26,0.18);
   transition: transform 0.18s ease, box-shadow 0.18s ease;
 }
 .mblock:hover {
-  transform: translateY(-3px);
-  box-shadow: inset 0 0 24px rgba(255,255,255,0.25), 0 0 26px rgba(255,122,26,0.65);
+  transform: translateY(-2px);
+  border-color: var(--tk-accent);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 14px rgba(255,122,26,0.45);
 }
-.mblock .hh { font-size: 10px; color: var(--bg-0); opacity: 0.65; letter-spacing: 0.08em; }
-.mblock .nm { font-size: 22px; font-weight: 500; line-height: 1; margin-top: 4px; color: #fff; }
-.mblock .sz { font-size: 10px; opacity: 0.8; margin-top: 6px; }
+.mblock .hh { font-size: 10px; color: var(--ink-40); opacity: 1; letter-spacing: 0.08em; }
+.mblock .nm { font-size: 22px; font-weight: 500; line-height: 1; margin-top: 4px; color: var(--tk-accent); }
+.mblock .sz { font-size: 10px; opacity: 0.7; margin-top: 6px; color: var(--ink-60); }
 
 /* queued / next blocks (outline only) */
 .mblock.q { background: transparent; color: var(--tk-accent); box-shadow: inset 0 0 24px rgba(255,122,26,0.12), 0 0 12px rgba(255,122,26,0.2); }
@@ -347,7 +502,7 @@ html, body {
 
 /* ── protocol artboard chrome ─────────────────────────────────── */
 
-.proto { background: #050505; animation: bg-pulse-soft 11s ease-in-out infinite; }
+.proto { background: transparent; }
 .proto-head {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 28px;

@@ -13,9 +13,10 @@ import { useMoneroLive } from "@/data/DataContext";
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
   { to: "/mempool",    label: "Mempool" },
-  { to: "/education",  label: "Education" },
-  { to: "/dashboard",  label: "Dashboard" },
+  { to: "/markets",    label: "Markets" },
+  { to: "/network",    label: "Network" },
   { to: "/monero",     label: "Monero" },
+  { to: "/education",  label: "Education" },
   { to: "/simulate",   label: "Simulate" },
   { to: "/node",       label: "Run a node" },
 ];
@@ -27,7 +28,7 @@ export function NavTop() {
       <Link to="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
         <span className="brand-mark" />
         <span>xmr<b>.irish</b></span>
-        <span className="kicker" style={{ marginLeft: 8 }}>v5.0</span>
+        <span className="kicker" style={{ marginLeft: 8 }}>v5.0 · 0.1</span>
       </Link>
 
       <div className="topnav">
@@ -60,6 +61,9 @@ export function NavTop() {
             {data.btcChg >= 0 ? "+" : ""}{data.btcChg.toFixed(2)}%
           </em>
         </span>
+        <Link to="/design" className="tk dim" style={{ textDecoration: "none", color: "var(--ink-40)" }}>
+          ⌘ DESIGN
+        </Link>
       </div>
     </div>
   );
