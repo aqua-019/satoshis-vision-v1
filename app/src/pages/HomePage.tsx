@@ -27,7 +27,7 @@ export function HomePage() {
             <h1 className="serif" style={{ margin: 0, fontSize: 72, lineHeight: 1.02, fontWeight: 400, letterSpacing: "-0.015em", color: "var(--ink-100)" }}>
               Every Monero output<br />
               is hiding <em style={{ color: "var(--tk-accent)", fontStyle: "normal", textShadow: "var(--glow-2)" }}>somewhere</em><br />
-              in this cloud.
+              in <em style={{ color: "var(--p-50)", fontStyle: "normal", textShadow: "var(--glow-2)" }}>this cloud</em>.
             </h1>
             <p className="mono dim" style={{ margin: 0, maxWidth: "52ch", fontSize: 13, lineHeight: 1.7, letterSpacing: "0.02em" }}>
               An anonymity set of <b style={{ color: "var(--p-50)" }}>150,000,000+</b> outputs.
@@ -84,10 +84,11 @@ export function HomePage() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
             {[
               { to: "/mempool",   t: "Mempool",   d: "5 visualisations. Reactor · Bridge · Sediment · Constellation · Terminal.", c: "var(--tk-accent)" },
-              { to: "/education", t: "Education", d: "Six metaphor-driven protocol simulators. Decoy, Dandelion++, view tags, RingCT, stealth, FCMP++.", c: "var(--p-50)" },
-              { to: "/dashboard", t: "Dashboard", d: "Hashrate, pools, peers, difficulty curve, fork-readiness. The numbers, with HUDs.", c: "var(--c-50)" },
+              { to: "/markets",   t: "Markets",   d: "Spot price, volume, order-book depth, the XMR/BTC ratio. Where XMR trades.", c: "var(--c-50)" },
+              { to: "/network",   t: "Network",   d: "Pools, peers, hashrate, difficulty, fork readiness. The raw chain telemetry.", c: "var(--y-50)" },
               { to: "/monero",    t: "Monero",    d: "Origin story, tail emission, the eternal hearth. Why this coin won't die.", c: "var(--g-50)" },
-              { to: "/simulate",  t: "Simulate",  d: "Run any protocol with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--p-50)" },
+              { to: "/education", t: "Education", d: "Six metaphor-driven protocol simulators. Decoy, Dandelion++, view tags, RingCT, stealth, FCMP++.", c: "var(--p-50)" },
+              { to: "/simulate",  t: "Simulate",  d: "Run any protocol with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--tk-accent)" },
               { to: "/node",      t: "Run a node", d: "monerod in one command. Tor + I2P optional. Free seed peers.", c: "var(--y-50)" },
             ].map((s) => (
               <Card key={s.to} onClick={() => navigate(s.to)} style={{ padding: 14 }}>
