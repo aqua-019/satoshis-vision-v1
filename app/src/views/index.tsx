@@ -24,6 +24,7 @@
 import * as React from "react";
 import { Card } from "@/design/primitives";
 import type { MoneroLive } from "@/data/types";
+import { ReactorView } from "@/mempool/reactor";
 
 export interface ViewProps {
   data: MoneroLive;
@@ -62,8 +63,8 @@ export interface MempoolViewMeta {
 }
 
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
-  { id: "reactor",       label: "Reactor",       sub: "3D iso · hex lattice · ring fan",  star: true,
-    Component: stub("Reactor", "3D iso block stack, hex-grid mempool, ring-signature fan.") },
+  { id: "reactor",       label: "Reactor",       sub: "orbital core · block forge · fee rivers",  star: true,
+    Component: ReactorView },
   { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",
     Component: stub("Operations Bridge", "Bloomberg-meets-NASA layout of 12 telemetry panes.") },
   { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",
