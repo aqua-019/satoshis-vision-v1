@@ -21,8 +21,29 @@ const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/node",       label: "Run a node" },
 ];
 
+const NAV_MENU_ID = "navtop-menu";
+
 export function NavTop() {
   const data = useMoneroLive();
+  const [menu, setMenu] = React.useState(false);
+  const toggleRef = React.useRef<HTMLButtonElement>(null);
+  const navRef = React.useRef<HTMLElement>(null);
+
+  // Escape closes the drawer; focus management mirrors a standard disclosure
+  // menu (focus into the drawer on open, back to the trigger on close).
+  React.useEffect(() => {
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
+    document.addEventListener("keydown", onKey);
+    navRef.current?.querySelector<HTMLElement>("a")?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menu]);
+
+  const closeMenu = () => {
+    setMenu(false);
+    toggleRef.current?.focus();
+  };
+
   return (
     <div className="topbar">
       <Link to="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
@@ -31,18 +52,23 @@ export function NavTop() {
         <span className="kicker" style={{ marginLeft: 8 }}>v5.0 · 0.1</span>
       </Link>
 
-      <div className="topnav">
+      <nav
+        ref={navRef}
+        id={NAV_MENU_ID}
+        className={"topnav" + (menu ? " is-open" : "")}
+      >
         {NAV.map((n) => (
           <NavLink
             key={n.to}
             to={n.to}
             end={n.to === "/"}
+            onClick={() => setMenu(false)}
             className={({ isActive }) => (isActive ? "on" : "")}
           >
             {n.label}
           </NavLink>
         ))}
-      </div>
+      </nav>
 
       <div className="ticker-strip">
         <span className="pill live">
@@ -55,16 +81,28 @@ export function NavTop() {
             {data.change24h >= 0 ? "+" : ""}{data.change24h.toFixed(2)}%
           </em>
         </span>
-        <span className="tk dim">
+        <span className="tk dim tk--btc">
           BTC <b>${Math.round(data.btc).toLocaleString()}</b>
           <em className={data.btcChg < 0 ? "dn" : ""}>
             {data.btcChg >= 0 ? "+" : ""}{data.btcChg.toFixed(2)}%
           </em>
         </span>
-        <Link to="/design" className="tk dim" style={{ textDecoration: "none" }}>
+        <Link to="/design" className="tk dim tk--design" style={{ textDecoration: "none" }}>
           ⌘ DESIGN
         </Link>
       </div>
+
+      <button
+        ref={toggleRef}
+        type="button"
+        className="navtop-toggle"
+        aria-label={menu ? "Close menu" : "Open menu"}
+        aria-expanded={menu}
+        aria-controls={NAV_MENU_ID}
+        onClick={() => (menu ? closeMenu() : setMenu(true))}
+      >
+        {menu ? "✕" : "☰"}
+      </button>
     </div>
   );
 }

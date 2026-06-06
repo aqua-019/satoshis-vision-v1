@@ -24,54 +24,82 @@ export function MempoolPage() {
   const meta = MEMPOOL_VIEWS.find((v) => v.id === active)!;
   const View = meta.Component;
 
+  // Mobile: the switcher is a collapsible dropdown. On desktop CSS keeps the
+  // list always shown (the trigger is hidden), so this state is inert there.
+  const [open, setOpen] = React.useState(false);
+  const switcherRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   return (
     <AppShell fluid bg={{ intensity: "calm" }}>
-      <div style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <div className="mp-shell">
         {/* breadcrumb — page chrome */}
         <div style={{ padding: "10px 20px 0" }}>
           <Crumbs items={["xmr.irish", "mempool", "explorer", meta.label]} />
         </div>
 
-        {/* active view fills the remaining height and scrolls internally */}
-        <div style={{ flex: 1, minHeight: 0, display: "flex" }}>
-          <View data={data} bg={{ intensity: "calm" }} />
+        {/* View switcher — fixed top-right on desktop; inline dropdown on mobile.
+            Rendered before the view so position:fixed (desktop) is out of flow
+            and position:static (mobile) lands it inline under the breadcrumb. */}
+        <div className="mp-switcher" ref={switcherRef}>
+          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · 6 views</div>
+          <button
+            type="button"
+            className="mp-switcher__trigger"
+            aria-expanded={open}
+            aria-controls="mp-view-list"
+            onClick={() => setOpen((o) => !o)}
+          >
+            <span>View · {meta.label}</span>
+            <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+          </button>
+          <div id="mp-view-list" className={"mp-switcher__list" + (open ? " is-open" : "")}>
+            {MEMPOOL_VIEWS.map((it) => {
+              const on = it.id === active;
+              return (
+                <button
+                  key={it.id}
+                  type="button"
+                  onClick={() => { setParams({ v: it.id }); setOpen(false); }}
+                  style={{
+                    appearance: "none", cursor: "pointer",
+                    background: on ? "rgba(255,122,26,0.08)" : "transparent",
+                    border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),
+                    color: on ? "var(--tk-accent)" : "var(--ink-80)",
+                    padding: "6px 10px",
+                    fontFamily: "var(--f-mono)", fontSize: 10.5,
+                    letterSpacing: "0.1em", textTransform: "uppercase",
+                    boxShadow: on ? "var(--glow-1)" : "none",
+                    display: "flex", flexDirection: "column", gap: 1, textAlign: "left",
+                  }}
+                >
+                  <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                    {it.star ? <span style={{ color: "var(--tk-accent)" }}>★</span> : null}
+                    {it.label}
+                  </span>
+                  <span style={{ fontSize: 9, color: "var(--ink-40)", letterSpacing: "0.04em", textTransform: "none" }}>{it.sub}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Floating view switcher — fixed, top-right */}
-        <div style={{
-          position: "fixed", top: 60, right: 16, zIndex: 50,
-          padding: 10, background: "rgba(5,5,5,0.86)", backdropFilter: "blur(8px)",
-          border: "1px solid var(--rule)", borderRadius: 2,
-          display: "flex", flexDirection: "column", gap: 6, maxWidth: 220,
-        }}>
-          <div className="kicker" style={{ marginBottom: 2 }}>Mempool view · 6 views</div>
-          {MEMPOOL_VIEWS.map((it) => {
-            const on = it.id === active;
-            return (
-              <button
-                key={it.id}
-                type="button"
-                onClick={() => setParams({ v: it.id })}
-                style={{
-                  appearance: "none", cursor: "pointer",
-                  background: on ? "rgba(255,122,26,0.08)" : "transparent",
-                  border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),
-                  color: on ? "var(--tk-accent)" : "var(--ink-80)",
-                  padding: "6px 10px",
-                  fontFamily: "var(--f-mono)", fontSize: 10.5,
-                  letterSpacing: "0.1em", textTransform: "uppercase",
-                  boxShadow: on ? "var(--glow-1)" : "none",
-                  display: "flex", flexDirection: "column", gap: 1, textAlign: "left",
-                }}
-              >
-                <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {it.star ? <span style={{ color: "var(--tk-accent)" }}>★</span> : null}
-                  {it.label}
-                </span>
-                <span style={{ fontSize: 9, color: "var(--ink-40)", letterSpacing: "0.04em", textTransform: "none" }}>{it.sub}</span>
-              </button>
-            );
-          })}
+        {/* active view fills the remaining height and scrolls internally */}
+        <div className="mp-view">
+          <View data={data} bg={{ intensity: "calm" }} />
         </div>
       </div>
     </AppShell>
