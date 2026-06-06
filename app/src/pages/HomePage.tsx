@@ -24,7 +24,7 @@ export function HomePage() {
         <section style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 48, alignItems: "stretch" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 18, paddingTop: 18 }}>
             <div className="kicker">a privacy network · since 2014</div>
-            <h1 className="serif" style={{ margin: 0, fontSize: 72, lineHeight: 1.02, fontWeight: 400, letterSpacing: "-0.015em", color: "var(--ink-100)" }}>
+            <h1 className="serif" style={{ margin: 0, fontSize: 34, lineHeight: 1.12, fontWeight: 400, letterSpacing: "-0.01em", color: "var(--ink-80)", maxWidth: "22ch" }}>
               Every Monero output<br />
               is hiding <em style={{ color: "var(--tk-accent)", fontStyle: "normal", textShadow: "var(--glow-2)" }}>somewhere</em><br />
               in <em style={{ color: "var(--p-50)", fontStyle: "normal", textShadow: "var(--glow-2)" }}>this cloud</em>.
