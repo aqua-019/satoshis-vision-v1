@@ -23,13 +23,13 @@ export interface AppShellProps {
 
 export function AppShell({ hideRail, fluid, scan, bg, children }: AppShellProps) {
   return (
-    <div className={"art " + (scan ? "scan-on" : "")} style={{ position: "relative", width: "100vw", height: "100vh" }}>
+    <div className={"art " + (scan ? "scan-on" : "")} style={{ position: "relative" }}>
       <ArtBackground intensity={bg?.intensity || "calm"} scan={scan ?? bg?.scan} />
       <div className="art-stage" style={{ height: "100%" }}>
         <NavTop />
         <div className="shell" style={hideRail ? { gridTemplateColumns: "1fr" } : undefined}>
           {hideRail ? null : <NetRail />}
-          <main className="main" style={fluid ? { padding: 0, overflow: "hidden" } : undefined}>
+          <main className={"main" + (fluid ? " main--fluid" : "")}>
             {children}
           </main>
         </div>
