@@ -37,6 +37,7 @@ export function App({ useFeed }: AppProps = {}) {
         <Route path="/markets"   element={<MarketsPage />} />
         <Route path="/network"   element={<NetworkPage />} />
         <Route path="/education" element={<EducationPage />} />
+        <Route path="/education/:tab" element={<EducationPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/monero"    element={<MoneroPage />} />
         <Route path="/monero/:tab" element={<MoneroPage />} />
