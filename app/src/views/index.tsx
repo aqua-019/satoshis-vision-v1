@@ -29,6 +29,7 @@ import { BridgeView } from "@/mempool/bridge";
 import { SedimentView } from "@/mempool/sediment";
 import { ConstellationView } from "@/mempool/constellation";
 import { TerminalHubView } from "@/mempool/terminal";
+import { ClassicView } from "@/mempool/classic";
 
 export interface ViewProps {
   data: MoneroLive;
@@ -77,6 +78,8 @@ export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
     Component: ConstellationView },
   { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
     Component: TerminalHubView },
+  { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: false,
+    Component: ClassicView },
 ];
 
 // ── Protocol simulations ───────────────────────────────────────

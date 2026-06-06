@@ -11,6 +11,7 @@ import { Routes, Route } from "react-router-dom";
 import { DataProvider } from "@/data/DataContext";
 import { HomePage } from "@/pages/HomePage";
 import { MempoolPage } from "@/pages/MempoolPage";
+import { MempoolTxPage } from "@/pages/MempoolTxPage";
 import { MarketsPage } from "@/pages/MarketsPage";
 import { NetworkPage } from "@/pages/NetworkPage";
 import { EducationPage } from "@/pages/EducationPage";
@@ -32,6 +33,7 @@ export function App({ useFeed }: AppProps = {}) {
       <Routes>
         <Route path="/"          element={<HomePage />} />
         <Route path="/mempool"   element={<MempoolPage />} />
+        <Route path="/mempool/tx/:txid" element={<MempoolTxPage />} />
         <Route path="/markets"   element={<MarketsPage />} />
         <Route path="/network"   element={<NetworkPage />} />
         <Route path="/education" element={<EducationPage />} />

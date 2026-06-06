@@ -44,7 +44,7 @@ export function MempoolPage() {
           border: "1px solid var(--rule)", borderRadius: 2,
           display: "flex", flexDirection: "column", gap: 6, maxWidth: 220,
         }}>
-          <div className="kicker" style={{ marginBottom: 2 }}>Mempool view · 5 directions</div>
+          <div className="kicker" style={{ marginBottom: 2 }}>Mempool view · 6 views</div>
           {MEMPOOL_VIEWS.map((it) => {
             const on = it.id === active;
             return (
