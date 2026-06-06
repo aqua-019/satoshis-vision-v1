@@ -22,7 +22,6 @@
  */
 
 import * as React from "react";
-import { Card } from "@/design/primitives";
 import type { MoneroLive } from "@/data/types";
 import { ReactorView } from "@/mempool/reactor";
 import { BridgeView } from "@/mempool/bridge";
@@ -30,6 +29,12 @@ import { SedimentView } from "@/mempool/sediment";
 import { ConstellationView } from "@/mempool/constellation";
 import { TerminalHubView } from "@/mempool/terminal";
 import { ClassicView } from "@/mempool/classic";
+import { DecoySelectionView } from "@/protocols/decoy-selection";
+import { DandelionView } from "@/protocols/dandelion";
+import { ViewTagsView } from "@/protocols/view-tags";
+import { RingctView } from "@/protocols/ringct";
+import { StealthView } from "@/protocols/stealth";
+import { FcmpView } from "@/protocols/fcmp";
 
 export interface ViewProps {
   data: MoneroLive;
@@ -37,25 +42,6 @@ export interface ViewProps {
 }
 
 export type ViewComponent = React.ComponentType<ViewProps>;
-
-/** Placeholder until you run `npm run port`. */
-function Placeholder({ name, sub }: { name: string; sub: string }) {
-  return (
-    <div style={{ padding: 48, display: "grid", placeItems: "center", height: "100%" }}>
-      <Card style={{ padding: 32, maxWidth: 600 }}>
-        <div className="kicker">View not yet ported</div>
-        <h2 className="serif" style={{ margin: "10px 0", fontSize: 30, color: "var(--ink-100)" }}>{name}</h2>
-        <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.6 }}>{sub}</p>
-        <p className="mono" style={{ fontSize: 11, marginTop: 16, color: "var(--tk-accent)" }}>
-          $ npm run port
-        </p>
-      </Card>
-    </div>
-  );
-}
-
-const stub = (name: string, sub: string): ViewComponent => () =>
-  <Placeholder name={name} sub={sub} />;
 
 // ── Mempool views ──────────────────────────────────────────────
 
@@ -96,20 +82,20 @@ export interface ProtocolMeta {
 export const PROTOCOL_VIEWS: ProtocolMeta[] = [
   { id: "decoy",     label: "Decoy selection", kicker: "Time tide",         tone: "acc",
     sub: "Log-normal decoy sampling across the blockchain timeline.",
-    Component: stub("Decoy selection", "Log-normal sampling of decoys across recent blocks.") },
+    Component: DecoySelectionView },
   { id: "dandelion", label: "Dandelion++",     kicker: "Botanical bloom",   tone: "priv",
     sub: "Stem-then-fluff propagation. Hides the origin peer.",
-    Component: stub("Dandelion++", "A stem grows hop-by-hop, then bursts into 360° gossip.") },
+    Component: DandelionView },
   { id: "viewtags",  label: "View tags",       kicker: "Lighthouse in fog", tone: "acc",
     sub: "256× wallet scan acceleration with a 1-byte hint.",
-    Component: stub("View tags", "1-byte tag accelerates wallet scan by 256×.") },
+    Component: ViewTagsView },
   { id: "ringct",    label: "RingCT",          kicker: "Assembly line",     tone: "acc",
     sub: "Five cryptographic stations: from output to confidential tx.",
-    Component: stub("RingCT", "Five cryptographic stations producing a confidential tx.") },
+    Component: RingctView },
   { id: "stealth",   label: "Stealth address", kicker: "Two-key chamber",   tone: "priv",
     sub: "Diffie-Hellman exchange across silent rooms.",
-    Component: stub("Stealth address", "DH exchange producing a one-time output address.") },
+    Component: StealthView },
   { id: "fcmp",      label: "FCMP++",          kicker: "Murmuration",       tone: "priv",
     sub: "Ring of 16 → anonymity set of 150M+ outputs.",
-    Component: stub("FCMP++", "Murmuration of 150M+ outputs — the anonymity set explodes.") },
+    Component: FcmpView },
 ];
