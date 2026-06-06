@@ -27,6 +27,8 @@ export const MONERO_TABS: readonly MoneroTabMeta[] = [
   { id: "comparison", label: "vs Bitcoin" },
   { id: "attacks", label: "Attacks survived" },
   { id: "future", label: "Future" },
+  { id: "bottomline", label: "Bottom Line" },
+  { id: "outlook", label: "2027+ Outlook" },
 ];
 
 /** Resolve a (possibly undefined) :tab param to a valid tab id, defaulting to overview. */
