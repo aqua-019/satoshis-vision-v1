@@ -789,7 +789,9 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   /* ── v5.0.3 responsive utility classes (mobile reshape) ─────────── */
   .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }  /* 6/4/3 → 2, never 1 */
   .col-2, .col-3 { grid-template-columns: 1fr !important; gap: 12px; }       /* genuine content stacks */
-  .table-scroll { overflow-x: auto; }
+  /* override the inline overflow:hidden on BottomLineTab's table so it swipes
+     inside its own box (a scroll container also contributes 0 to page width) */
+  .table-scroll { overflow-x: auto !important; overflow-y: hidden; }
   .ob-row { grid-template-columns: auto 1fr auto !important; }               /* order-book stays horizontal */
   .ob-side { max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; }  /* depth scrolls in its box */
   .edu-cols { columns: 1; }                                                  /* quote cards single column */
@@ -807,9 +809,26 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   .edu-head, .edu-head .kicker, .edu-head h1, .edu-head .serif, .edu-head p { text-align: center; }
   .edu-chips { justify-content: center; flex-wrap: wrap; margin-left: 0 !important; }
 
-  /* P5 — mempool pan + pinch-zoom canvas: render at desktop width, user swipes */
-  .mp-canvas-scroll { overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
-  .mp-canvas-scroll > * { min-width: 900px !important; }
+  /* EduChapter <h2> is inline fontSize:38 (bottom-line/outlook/education tabs) —
+     shrink on mobile + allow long words to wrap. !important beats the inline style. */
+  .edu-head h2 { font-size: 24px !important; line-height: 1.18 !important; }
+
+  /* belt-and-suspenders: never let one long word force the page wider than viewport */
+  .main, .main * { overflow-wrap: anywhere; }
+
+  /* P5 — mempool pan + pinch-zoom canvas: definite 100vw scroll box → pans internally.
+     The old rule had no width, so the 900px child expanded the page instead of
+     overflowing inside the box (no scroll region, content stuck at the left edge). */
+  .mp-canvas-scroll {
+    width: 100vw;                                                  /* definite width, independent of ancestors */
+    margin-left:  calc(-1 * (16px + env(safe-area-inset-left)));   /* cancel .main--fluid 16px padding → viewport edge */
+    margin-right: calc(-1 * (16px + env(safe-area-inset-right)));
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+  .mp-canvas-scroll > * { width: max-content; min-width: 900px !important; max-width: none !important; }
 
   /* FIX 3 — simulators: stack the artboard, move badges below the title, give the
      canvas room, restack the side panel. (.proto-* are classes, no TSX needed.) */
