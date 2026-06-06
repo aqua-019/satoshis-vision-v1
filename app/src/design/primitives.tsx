@@ -105,7 +105,8 @@ export function Sparkline({
   const d = "M" + points.map((p) => p.join(",")).join(" L ");
   const f = d + ` L ${width},${height} L 0,${height} Z`;
   return (
-    <svg width={width} height={height} style={{ display: "block" }}>
+    <svg viewBox={`0 0 ${width} ${height}`} width="100%" preserveAspectRatio="none"
+         style={{ display: "block", maxWidth: width, height: "auto" }}>
       {fill ? <path d={f} fill={color} opacity={area} /> : null}
       <path d={d} fill="none" stroke={color} strokeWidth="1.2" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
       {dots ? points.filter((_, i) => i % 12 === 0).map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="1.2" fill={color} />) : null}

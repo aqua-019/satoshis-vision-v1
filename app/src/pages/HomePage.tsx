@@ -16,7 +16,7 @@ export function HomePage() {
 
   return (
     <AppShell hideRail bg={{ intensity: "busy" }}>
-      <div style={{ padding: "32px 48px 48px", display: "flex", flexDirection: "column", gap: 36, maxWidth: 1600, margin: "0 auto", width: "100%" }}>
+      <div className="home-hero" style={{ padding: "32px 48px 48px", display: "flex", flexDirection: "column", gap: 36, maxWidth: 1600, margin: "0 auto", width: "100%" }}>
 
         <Crumbs items={["xmr.irish", "v5.0", "home"]} status="Network nominal" />
 

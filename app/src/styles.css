@@ -643,13 +643,16 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
    Engine targets: WebKit (iOS Safari/Chrome/Brave) + Blink (Android).
    ══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  /* ── scroll model: the BODY becomes the scroll container ───────── */
+  /* ── scroll model: the VIEWPORT scrolls the document ──────────────
+     Do NOT make <body> an overflow-x:hidden scroll container — on iOS that
+     silently disables touch scrolling inside nested overflow-x:auto boxes
+     (the mempool canvas). Let the viewport scroll the document; clip the
+     page horizontally with `clip`, which guards overflow WITHOUT creating a
+     scroll container, so nested horizontal panning works. */
   html, body {
     height: auto;
-    overflow-y: auto;
-    overflow-x: hidden;                 /* horizontal-overflow guard */
-    overscroll-behavior-y: contain;
-    -webkit-overflow-scrolling: touch;  /* iOS momentum */
+    overflow-x: clip;
+    overflow-y: visible;
   }
   .art {
     width: 100%;
@@ -657,7 +660,8 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
     min-height: 100vh;                  /* base */
     min-height: -webkit-fill-available; /* older iOS */
     min-height: 100dvh;                 /* modern — dodges the iOS URL bar */
-    overflow: visible;
+    overflow-x: clip;                   /* clip horizontally without a scroll container */
+    overflow-y: visible;
   }
   .art-stage { height: auto; }
   .main, .main--fluid {
@@ -788,6 +792,10 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
 
   /* ── v5.0.3 responsive utility classes (mobile reshape) ─────────── */
   .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }  /* 6/4/3 → 2, never 1 */
+  /* P2 — Network: share-rows rendered as .keep-cols INSIDE a .kpi-grid must fit
+     their cell (name already ellipsis-truncates). Real wide tables keep their
+     .keep-cols max-content + swipe because they live in .table-scroll, not a grid. */
+  .kpi-grid .keep-cols { min-width: 0 !important; }
   .col-2, .col-3 { grid-template-columns: 1fr !important; gap: 12px; }       /* genuine content stacks */
   /* override the inline overflow:hidden on BottomLineTab's table so it swipes
      inside its own box (a scroll container also contributes 0 to page width) */
@@ -816,6 +824,10 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   /* belt-and-suspenders: never let one long word force the page wider than viewport */
   .main, .main * { overflow-wrap: anywhere; }
 
+  /* P3 — Home: drop the wide hero padding; the 1.4fr/1fr grid already stacks via
+     the blanket collapse, this just lets the body copy wrap edge-to-edge. */
+  .home-hero { padding: 16px !important; gap: 24px !important; }
+
   /* P5 — mempool pan + pinch-zoom canvas: definite 100vw scroll box → pans internally.
      The old rule had no width, so the 900px child expanded the page instead of
      overflowing inside the box (no scroll region, content stuck at the left edge). */
@@ -824,11 +836,10 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
     margin-left:  calc(-1 * (16px + env(safe-area-inset-left)));   /* cancel .main--fluid 16px padding → viewport edge */
     margin-right: calc(-1 * (16px + env(safe-area-inset-right)));
     overflow-x: auto;
-    overflow-y: visible;
-    -webkit-overflow-scrolling: touch;
+    overflow-y: hidden;           /* single-axis; height is auto so nothing is vertically clipped */
     overscroll-behavior-x: contain;
   }
-  .mp-canvas-scroll > * { width: max-content; min-width: 900px !important; max-width: none !important; }
+  .mp-canvas-scroll > * { width: 900px; min-width: 900px !important; max-width: none !important; }
 
   /* FIX 3 — simulators: stack the artboard, move badges below the title, give the
      canvas room, restack the side panel. (.proto-* are classes, no TSX needed.) */
