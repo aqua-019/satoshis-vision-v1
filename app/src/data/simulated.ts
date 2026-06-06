@@ -140,7 +140,7 @@ export function useSimulatedMoneroLive(): MoneroLive {
     const fetchPrice = async () => {
       try {
         const r = await fetch(
-          "https://api.coingecko.com/api/v3/simple/price?ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true"
+          "/api/coingecko?path=simple/price&ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true"
         );
         if (!r.ok) throw new Error("CG " + r.status);
         const d = await r.json();

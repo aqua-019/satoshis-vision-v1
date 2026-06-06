@@ -3,79 +3,31 @@
   "version": 2,
   "name": "satoshis-vision",
   "public": true,
-  "cleanUrls": true,
   "trailingSlash": false,
+  "installCommand": "cd app && npm ci",
+  "buildCommand": "cd app && VITE_LIVE_DATA=1 npm run build",
+  "outputDirectory": "app/dist",
   "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        { "key": "X-Frame-Options", "value": "DENY" },
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-XSS-Protection", "value": "1; mode=block" },
-        { "key": "Referrer-Policy", "value": "no-referrer" },
-        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
-        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
-        {
-          "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.bunny.net; img-src 'self' data:; connect-src 'self'; font-src 'self' https://fonts.bunny.net; frame-src https://changenow.io https://widget.changenow.io https://wagyu.xyz; object-src 'none'; base-uri 'self';"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).(js|mjs|css|woff|woff2|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico)",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
-      ]
-    },
-    {
-      "source": "/(.*).html",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
-      ]
-    },
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
-        { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
-        { "key": "Cache-Control", "value": "no-store" }
-      ]
-    }
+    { "source": "/(.*)", "headers": [
+      { "key": "X-Frame-Options", "value": "DENY" },
+      { "key": "X-Content-Type-Options", "value": "nosniff" },
+      { "key": "X-XSS-Protection", "value": "1; mode=block" },
+      { "key": "Referrer-Policy", "value": "no-referrer" },
+      { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(), payment=()" },
+      { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains; preload" },
+      { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; base-uri 'self';" }
+    ]},
+    { "source": "/(.*).(js|mjs|css|woff|woff2|ttf|otf|eot|svg|png|jpg|jpeg|gif|webp|ico)", "headers": [ { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" } ] },
+    { "source": "/api/(.*)", "headers": [
+      { "key": "Access-Control-Allow-Origin", "value": "*" },
+      { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
+      { "key": "Access-Control-Allow-Headers", "value": "Content-Type" },
+      { "key": "Cache-Control", "value": "no-store" }
+    ]}
   ],
-  "functions": {
-    "api/monero.js": {
-      "maxDuration": 15
-    },
-    "api/xmr.js": {
-      "maxDuration": 30
-    }
-  },
+  "functions": { "api/monero.js": { "maxDuration": 15 }, "api/xmr.js": { "maxDuration": 30 } },
   "rewrites": [
-    { "source": "/pool",             "destination": "/mempool-explorer.html" },
     { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },
-    { "source": "/mempool-explorer/tx/:txid",  "destination": "/mempool-explorer.html" },
-    { "source": "/mempool-explorer/block/:id", "destination": "/mempool-explorer.html" },
-    { "source": "/mempool-explorer",           "destination": "/mempool-explorer.html" },
-    { "source": "/home",           "destination": "/" },
-    { "source": "/archive",        "destination": "/bottom-line.html" },
-    { "source": "/education",      "destination": "/btc-xmr-education.html" },
-    { "source": "/mine",           "destination": "/mining.html" },
-    { "source": "/net",            "destination": "/network.html" },
-    { "source": "/market",         "destination": "/markets.html" },
-    { "source": "/eco",            "destination": "/ecosystem.html" },
-    { "source": "/law",            "destination": "/legal.html" },
-    { "source": "/people",         "destination": "/community.html" },
-    { "source": "/privacy",        "destination": "/privacy-architecture.html" },
-    { "source": "/protocol-simulations", "destination": "/protocol-simulations.html" },
-    { "source": "/fcmp",           "destination": "/fcmp.html" }
-  ],
-  "redirects": [
-    { "source": "/index.html",   "destination": "/", "permanent": true },
-    { "source": "/mempool.html", "destination": "/mempool-explorer", "permanent": true },
-    { "source": "/mempool/explorer", "destination": "/mempool-explorer", "permanent": false },
-    { "source": "/mempool/ocean",    "destination": "/mempool-ocean",    "permanent": false },
-    { "source": "/mempool/mining",   "destination": "/mempool-mining",   "permanent": false },
-    { "source": "/mempool",          "destination": "/mempool-explorer", "permanent": false }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
