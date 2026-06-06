@@ -742,4 +742,31 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   .mp-switcher__list { display: none; }
   .mp-switcher__list.is-open { display: flex; }
   .mp-switcher__list button { min-height: 44px; }
+
+  /* ── v5.0.2 mobile hotfix: nav reachability, overflow, simulators ── */
+
+  /* FIX 1 — restore the nav: re-scope the ticker-hide above the base specificity,
+     and let the bar wrap so the hamburger can never be clipped off the edge. */
+  .ticker-strip .tk--btc,
+  .ticker-strip .tk--design { display: none; }
+  .topbar { flex-wrap: wrap; row-gap: 8px; }
+
+  /* FIX 2 — kill page-body horizontal overflow (also restores vertical scroll on
+     iOS). Offending layouts are INLINE, so !important is required. */
+  .main [style*="grid-template-columns"],
+  .proto-body [style*="grid-template-columns"],
+  .proto-panel [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+  .main *, .proto-body * { min-width: 0 !important; }          /* let grid/flex children shrink */
+  .main svg, .main canvas, .main img { max-width: 100%; height: auto; }
+  .main [style*="padding: 32px 48px"] { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* FIX 3 — simulators: stack the artboard, move badges below the title, give the
+     canvas room, restack the side panel. (.proto-* are classes, no TSX needed.) */
+  .proto-head { flex-direction: column; align-items: flex-start; gap: 12px; padding: 14px 16px; }
+  .proto-head .r { flex-wrap: wrap; }
+  .proto-head .title { font-size: 24px; }
+  .proto-body { grid-template-columns: 1fr; }
+  .proto-stage { overflow: visible; padding: 16px; min-height: 56vh; }
+  .proto-panel { border-left: none; border-top: 1px solid var(--rule);
+                 background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent); }
 }
