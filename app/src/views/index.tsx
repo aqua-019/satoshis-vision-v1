@@ -55,7 +55,7 @@ export interface MempoolViewMeta {
 }
 
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
-  { id: "reactor",       label: "Reactor",       sub: "orbital core · block forge · fee rivers",  star: true,
+  { id: "reactor",       label: "Reactor",       sub: "3D iso · hex lattice · ring fan",  star: false,
     Component: ReactorView },
   { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",            star: false,
     Component: BridgeView },
@@ -65,7 +65,7 @@ export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
     Component: ConstellationView },
   { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
     Component: TerminalHubView },
-  { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: false,
+  { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: true,
     Component: ClassicView },
 ];
 

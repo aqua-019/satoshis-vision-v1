@@ -20,7 +20,7 @@ import { MEMPOOL_VIEWS } from "@/views";
 export function MempoolPage() {
   const data = useMoneroLive();
   const [params, setParams] = useSearchParams();
-  const active = MEMPOOL_VIEWS.find((v) => v.id === params.get("v"))?.id ?? "reactor";
+  const active = MEMPOOL_VIEWS.find((v) => v.id === params.get("v"))?.id ?? "classic";
   const meta = MEMPOOL_VIEWS.find((v) => v.id === active)!;
   const View = meta.Component;
 
