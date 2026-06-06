@@ -61,7 +61,7 @@ export function NavTop() {
             {data.btcChg >= 0 ? "+" : ""}{data.btcChg.toFixed(2)}%
           </em>
         </span>
-        <Link to="/design" className="tk dim" style={{ textDecoration: "none", color: "var(--ink-40)" }}>
+        <Link to="/design" className="tk dim" style={{ textDecoration: "none" }}>
           ⌘ DESIGN
         </Link>
       </div>
