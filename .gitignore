@@ -47,3 +47,6 @@ yarn-error.log*
 
 # Claude Code local agent scratch (worktrees, plans, etc.)
 .claude/
+
+# Phase 1 design reference (never commit on this branch)
+handoff_xmrirish_v5/
