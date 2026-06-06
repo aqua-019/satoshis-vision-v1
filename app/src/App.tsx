@@ -15,7 +15,6 @@ import { MempoolTxPage } from "@/pages/MempoolTxPage";
 import { MarketsPage } from "@/pages/MarketsPage";
 import { NetworkPage } from "@/pages/NetworkPage";
 import { EducationPage } from "@/pages/EducationPage";
-import { DashboardPage } from "@/pages/DashboardPage";
 import { MoneroPage } from "@/pages/MoneroPage";
 import { SimulatePage } from "@/pages/SimulatePage";
 import { NodePage } from "@/pages/NodePage";
@@ -38,7 +37,6 @@ export function App({ useFeed }: AppProps = {}) {
         <Route path="/network"   element={<NetworkPage />} />
         <Route path="/education" element={<EducationPage />} />
         <Route path="/education/:tab" element={<EducationPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/monero"    element={<MoneroPage />} />
         <Route path="/monero/:tab" element={<MoneroPage />} />
         <Route path="/simulate"  element={<SimulatePage />} />
