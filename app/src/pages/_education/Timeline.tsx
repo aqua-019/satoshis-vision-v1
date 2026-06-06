@@ -115,9 +115,11 @@ export function EduTimeline({ data }: { data: MoneroLive }) {
   const total = TL_ERAS.reduce((a, e) => a + e.events.length, 0);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
-      <PageHeader kicker="Interactive history"
-        title='The Privacy Evolution <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">Timeline</em>'
-        sub="From Satoshi's genesis block to the regulatory storm — every pivotal moment in the evolution of financial privacy." />
+      <div className="edu-head">
+        <PageHeader kicker="Interactive history"
+          title='The Privacy Evolution <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">Timeline</em>'
+          sub="From Satoshi's genesis block to the regulatory storm — every pivotal moment in the evolution of financial privacy." />
+      </div>
 
       <section style={{ display: "flex", gap: 28, alignItems: "center", flexWrap: "wrap" }}>
         {([[total, "Events"], [18, "Years"], [5, "Eras"]] as [number, string][]).map(([v, k], i) => (
@@ -126,7 +128,7 @@ export function EduTimeline({ data }: { data: MoneroLive }) {
             <span className="kicker">{k}</span>
           </div>
         ))}
-        <div style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <div className="edu-chips" style={{ marginLeft: "auto", display: "flex", gap: 6, flexWrap: "wrap" }}>
           {["all", ...Object.keys(TL_CAT)].map((k) => {
             const on = filter === k;
             const color = k === "all" ? "var(--ink-100)" : TL_CAT[k as TlCat].color;

@@ -15,9 +15,8 @@
     "allowJs": false,
     "esModuleInterop": true,
     "useDefineForClassFields": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],

@@ -79,11 +79,13 @@ export function EduQuotes() {
   const shown = QUOTES.filter((q) => cat === "all" || q.c === cat);
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-      <PageHeader kicker={"Complete archive · " + QUOTES.length + " quotes"}
-        title='Satoshi, in <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">his own words</em>'
-        sub="Primary-source forum posts and emails — weighted toward the privacy discussions that predicted Monero's core design." />
+      <div className="edu-head">
+        <PageHeader kicker={"Complete archive · " + QUOTES.length + " quotes"}
+          title='Satoshi, in <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">his own words</em>'
+          sub="Primary-source forum posts and emails — weighted toward the privacy discussions that predicted Monero's core design." />
+      </div>
 
-      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+      <div className="edu-chips" style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {Q_CATS.map((k) => {
           const on = cat === k;
           const n = k === "all" ? QUOTES.length : QUOTES.filter((q) => q.c === k).length;
@@ -99,7 +101,7 @@ export function EduQuotes() {
         })}
       </div>
 
-      <div style={{ columns: 2, columnGap: 14 }}>
+      <div className="edu-cols">
         {shown.map((q, i) => <QuoteCard key={i} q={q} />)}
       </div>
     </div>

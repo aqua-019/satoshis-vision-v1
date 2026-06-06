@@ -41,7 +41,8 @@ export function VsBitcoinTab(_props: MoneroTabProps) {
         sub="Bitcoin chose transparency and scarcity. Monero chose privacy and predictability. Both can be right. Both have tradeoffs."
       />
       <Card style={{ padding: 0, overflow: "hidden" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr 1fr", gap: 0 }}>
+        <div className="table-scroll">
+        <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr 1fr", gap: 0 }}>
           {["Property", "XMR", "BTC", "Note"].map((h) => (
             <div key={h} className="kicker" style={{ padding: "12px 16px", background: "rgba(255,122,26,0.04)", borderBottom: "1px solid var(--rule)" }}>{h}</div>
           ))}
@@ -53,6 +54,7 @@ export function VsBitcoinTab(_props: MoneroTabProps) {
               <div className="mono dim" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: 11, lineHeight: 1.55 }}>{r.note}</div>
             </React.Fragment>
           ))}
+        </div>
         </div>
       </Card>
     </div>

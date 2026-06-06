@@ -16,7 +16,7 @@ export interface EduChapterProps {
 
 export function EduChapter({ n, kicker, title, sub }: EduChapterProps) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "8px 0 2px" }}>
+    <div className="edu-head" style={{ display: "flex", flexDirection: "column", gap: 10, padding: "8px 0 2px" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <span className="mono" style={{ fontSize: 11, letterSpacing: "0.22em", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{n}</span>
         <span style={{ height: 1, flex: 1, background: "linear-gradient(to right, var(--tk-accent), transparent)", opacity: 0.4 }} />
