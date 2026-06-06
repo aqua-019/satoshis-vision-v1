@@ -25,6 +25,10 @@ import * as React from "react";
 import { Card } from "@/design/primitives";
 import type { MoneroLive } from "@/data/types";
 import { ReactorView } from "@/mempool/reactor";
+import { BridgeView } from "@/mempool/bridge";
+import { SedimentView } from "@/mempool/sediment";
+import { ConstellationView } from "@/mempool/constellation";
+import { TerminalHubView } from "@/mempool/terminal";
 
 export interface ViewProps {
   data: MoneroLive;
@@ -65,14 +69,14 @@ export interface MempoolViewMeta {
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
   { id: "reactor",       label: "Reactor",       sub: "orbital core · block forge · fee rivers",  star: true,
     Component: ReactorView },
-  { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",
-    Component: stub("Operations Bridge", "Bloomberg-meets-NASA layout of 12 telemetry panes.") },
-  { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",
-    Component: stub("Sediment", "Vertical core-sample tube. Heavier transactions sink.") },
-  { id: "constellation", label: "Constellation", sub: "luminous network sphere",
-    Component: stub("Constellation", "Globe-shaped peer-graph of the live Monero P2P mesh.") },
-  { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",
-    Component: stub("Terminal Hub", "CLI-first view: streaming monerod tail with parsed events.") },
+  { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",            star: false,
+    Component: BridgeView },
+  { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",         star: false,
+    Component: SedimentView },
+  { id: "constellation", label: "Constellation", sub: "luminous network sphere",           star: false,
+    Component: ConstellationView },
+  { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
+    Component: TerminalHubView },
 ];
 
 // ── Protocol simulations ───────────────────────────────────────

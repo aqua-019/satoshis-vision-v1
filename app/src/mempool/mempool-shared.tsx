@@ -2,14 +2,16 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import type { MoneroLive, Block } from "@/data/types";
+import { TxDetailPanel, BlockDetailPanel } from "@/mempool/reactor";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
 //
 // Every mempool surface (Reactor, Classic, Bridge, Sediment, Constellation,
 // Terminal) gets the same search behaviour: paste a 64-char txid or a block
-// height. The detail-routing component (TrackingDetail → FullTxDetail /
-// FullBlockDetail) depends on the tx-detail inspectors that land in Phase 4c;
-// it will be re-added then.
+// height. The shared detail routing (MempoolTrackingDetail, below) renders the
+// tracking result through the Reactor-owned TxDetailPanel / BlockDetailPanel.
+// It is fully self-contained and deterministic — no /api/tx (404s on the
+// backend) and ZERO dependency on the Phase 4c tx-detail inspectors.
 
 type SearchQuery = { kind: "tx"; id: string } | { kind: "block"; height: number };
 type Tracking =
@@ -81,4 +83,90 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
       </button>
     </form>
   );
+}
+
+// ── Shared tracking detail ─────────────────────────────────────
+//
+// `useMempoolTracking` returns an id-only tracking result; the Reactor-owned
+// TxDetailPanel expects a fully-resolved tx. `buildTrackedTx` deterministically
+// simulates that tx from the txid (mirrors Reactor's internal lookup) so every
+// non-Reactor surface (Bridge / Sediment / Constellation) can reuse the same
+// detail panels. Deterministic + simulated: no network, no tx-detail/4c import.
+
+interface TrackedTx {
+  id: string;
+  size: number;
+  fee: number;
+  perB: number;
+  ringSize: number;
+  inputs: number;
+  outputs: number;
+  blockHeight: number | null;
+  confirmations: number;
+  status: string;
+  eta: string;
+  timelock: number;
+  privacy: number;
+}
+
+function buildTrackedTx(txid: string, data: MoneroLive): TrackedTx {
+  const intHash = Array.from(txid).reduce((a, c) => (a + c.charCodeAt(0)) >>> 0, 0);
+  const inMempool = (intHash & 3) === 0;
+  if (inMempool && data.mempool.length) {
+    const t = data.mempool[intHash % data.mempool.length];
+    return {
+      id: txid,
+      size: t.size,
+      fee: t.fee,
+      perB: t.perB,
+      ringSize: 16,
+      inputs: t.inputs,
+      outputs: t.outputs,
+      blockHeight: null,
+      confirmations: 0,
+      status: "in mempool",
+      eta: "~" + (1 + (intHash % 3)) + " min until block",
+      timelock: 0,
+      privacy: 90,
+    };
+  }
+  const idx = intHash % Math.max(1, Math.min(8, data.blocks.length));
+  const block = data.blocks[idx];
+  return {
+    id: txid,
+    size: 1500 + (intHash % 3000),
+    fee: 0.0011 + (intHash % 9000) / 1e10,
+    perB: 600000 + (intHash % 200000),
+    ringSize: 16,
+    inputs: 1 + (intHash % 2),
+    outputs: 2,
+    blockHeight: block ? block.height : null,
+    confirmations: block ? block.conf : 0,
+    status: block && block.conf >= 10 ? "fully unlocked" : "confirming",
+    eta: block && block.conf >= 10 ? "Confirmed" : "~" + ((10 - (block ? block.conf : 0)) * 2) + " min until unlock",
+    timelock: 0,
+    privacy: 90,
+  };
+}
+
+/**
+ * MempoolTrackingDetail — drop-in replacement for the legacy `window.TrackingDetail`.
+ * Renders the active tracking result through the Reactor-owned detail panels.
+ * `onPickTx` is accepted for call-site parity with the legacy component; the
+ * current panels don't surface a tx picker, so it is intentionally unused.
+ */
+export function MempoolTrackingDetail({ tracking, data, onBack }: {
+  tracking: Tracking;
+  data: MoneroLive;
+  onBack: () => void;
+  onPickTx?: (id: string) => void;
+}) {
+  if (!tracking) return null;
+  if (tracking.kind === "tx") {
+    return <TxDetailPanel tx={buildTrackedTx(tracking.id, data)} onBack={onBack} />;
+  }
+  const block =
+    tracking.block ?? data.blocks.find((b) => b.height === tracking.height) ?? data.blocks[0];
+  if (!block) return null;
+  return <BlockDetailPanel block={block} onBack={onBack} />;
 }
