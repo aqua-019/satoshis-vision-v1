@@ -40,14 +40,14 @@ function BtmDivergence() {
     </div>
   );
   return (
-    <div style={{ border: "1px solid var(--rule)", borderRadius: 3, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", background: "rgba(255,122,26,0.05)", borderBottom: "1px solid var(--rule)" }}>
+    <div className="table-scroll" style={{ border: "1px solid var(--rule)", borderRadius: 3, overflow: "hidden" }}>
+      <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", background: "rgba(255,122,26,0.05)", borderBottom: "1px solid var(--rule)" }}>
         <div className="kicker" style={{ padding: "12px 14px" }}>TradFi requirement</div>
         <div className="kicker" style={{ padding: "12px 14px", color: "var(--c-50)" }}>Bitcoin</div>
         <div className="kicker" style={{ padding: "12px 14px", color: "var(--tk-accent)" }}>Monero</div>
       </div>
       {ROWS.map((r, i) => (
-        <div key={i} style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", borderBottom: i < ROWS.length - 1 ? "1px solid var(--rule)" : "none", background: i === ROWS.length - 1 ? "rgba(255,122,26,0.04)" : "transparent" }}>
+        <div key={i} className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", borderBottom: i < ROWS.length - 1 ? "1px solid var(--rule)" : "none", background: i === ROWS.length - 1 ? "rgba(255,122,26,0.04)" : "transparent" }}>
           <div className="mono" style={{ padding: "11px 14px", fontSize: 11.5, color: "var(--ink-60)", letterSpacing: "0.04em", textTransform: "uppercase", alignSelf: "center" }}>{r[0]}</div>
           {cell(r[1], r[2], false)}
           {cell(r[3], r[4], r[4])}
@@ -131,7 +131,7 @@ export function BottomLineTab({ data }: MoneroTabProps) {
         title='The <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">Bottom Line</em>'
         sub="A record of government attempts to break Monero, the billions spent in failure, and the structural case for private money in an age of total surveillance." />
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      <section className="kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 10 }}>
         <BtmStat v="$625K+" k="IRS bounty (2020)" />
         <BtmStat v="0" k="Successful traces" tone="var(--g-50)" />
         <BtmStat v="73" k="Exchange delistings (2025)" tone="var(--y-50)" />

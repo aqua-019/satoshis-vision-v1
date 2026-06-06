@@ -225,7 +225,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
       {/* ── EXISTING CYCLE TABLE (kept for chart-watchers) ── */}
       <Card style={{ padding: 22 }}>
         <div className="kicker">Cycle highs · marked</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginTop: 14, fontSize: 12 }} className="mono">
+        <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 10, marginTop: 14, fontSize: 12 }}>
           {CYCLE_HIGHS.map((c) => (
             <div key={c.cyc} style={{ padding: 12, border: "1px solid var(--rule)", borderRadius: 2 }}>
               <div className="kicker" style={{ color: "var(--tk-accent)" }}>{c.cyc}</div>

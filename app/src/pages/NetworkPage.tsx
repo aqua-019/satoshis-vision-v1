@@ -249,7 +249,7 @@ export function NetworkPage() {
       />
 
       {/* KPI row */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+      <section className="kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 10 }}>
         <Stat k="Block height" v={data.height.toLocaleString()} sub="live" tone="acc" />
         <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub="vs 5.8 last wk" />
         <Stat k="Difficulty" v={`${(data.difficulty / 1e9).toFixed(2)}G`} sub="adj every 720" />
@@ -281,9 +281,9 @@ export function NetworkPage() {
       <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 12 }}>
         <PanelFrame title="Peer geography · live sample" right={<span>11 buckets · {PEER_GEO.reduce((a, p) => a + p[4], 0)} total</span>}>
           <GeoMap />
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6, marginTop: 10, fontSize: 10.5 }} className="mono">
+          <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 6, marginTop: 10, fontSize: 10.5 }}>
             {PEER_GEO.map(([code, name, _lon, _lat, count, color]) => (
-              <div key={code} style={{ display: "grid", gridTemplateColumns: "8px 1fr 30px", gap: 4, alignItems: "center" }}>
+              <div key={code} className="keep-cols" style={{ display: "grid", gridTemplateColumns: "8px 1fr 30px", gap: 4, alignItems: "center" }}>
                 <span style={{ width: 6, height: 6, borderRadius: 3, background: color, boxShadow: `0 0 4px ${color}` }} />
                 <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={name}>{name}</span>
                 <span style={{ textAlign: "right" }}>{count}</span>
@@ -305,8 +305,9 @@ export function NetworkPage() {
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title="Pool distribution" right={<span>last 24h shares</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="table-scroll" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {data.poolDist.map((p) => (
-              <div key={p.name} style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px 70px", gap: 10, alignItems: "center", fontSize: 11 }} className="mono">
+              <div key={p.name} style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px 70px", gap: 10, alignItems: "center", fontSize: 11 }} className="mono keep-cols">
                 <span style={{ color: "var(--ink-80)" }}>
                   <span className="led" style={{ background: p.color, boxShadow: `0 0 6px ${p.color}` }} />
                   {p.name}
@@ -318,6 +319,7 @@ export function NetworkPage() {
                 <span style={{ color: p.rec ? "var(--g-50)" : "var(--ink-40)", textTransform: "uppercase", fontSize: 9.5, letterSpacing: "0.12em" }}>{p.type}</span>
               </div>
             ))}
+            </div>
             <p className="mono dim" style={{ fontSize: 10.5, marginTop: 8, color: "var(--ink-40)" }}>
               HHI {Math.round(data.poolDist.reduce((a, p) => a + Math.pow(p.share * 100, 2), 0))} · "moderately concentrated" (≥1500 = concentrated)
             </p>
@@ -326,8 +328,9 @@ export function NetworkPage() {
 
         <PanelFrame title="monerod version distribution" right={<span>fork readiness</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <div className="table-scroll" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {NODE_VERSIONS.map((n) => (
-              <div key={n.v} style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 110px", gap: 10, alignItems: "center", fontSize: 11 }} className="mono">
+              <div key={n.v} style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 110px", gap: 10, alignItems: "center", fontSize: 11 }} className="mono keep-cols">
                 <span style={{ color: n.ready ? "var(--ink-100)" : "var(--ink-40)" }}>{n.v}</span>
                 <span style={{ height: 8, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
                   <span style={{ position: "absolute", inset: "0 auto 0 0", width: (n.share * 100).toFixed(1) + "%", background: n.color, boxShadow: `0 0 4px ${n.color}` }} />
@@ -336,6 +339,7 @@ export function NetworkPage() {
                 <span style={{ color: n.color, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", textAlign: "right" }}>{n.status}</span>
               </div>
             ))}
+            </div>
             <p className="mono dim" style={{ fontSize: 10.5, marginTop: 8, color: "var(--ink-40)" }}>
               Fork-ready (FCMP++ Q3): <b className="up">{Math.round(NODE_VERSIONS.filter((n) => n.ready).reduce((a, n) => a + n.share, 0) * 100)}%</b>
               · target ≥85% before activation
@@ -387,7 +391,8 @@ export function NetworkPage() {
 
       {/* Recent blocks table */}
       <PanelFrame title="Recent blocks" right={<span>height ↓</span>}>
-        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: 11 }} className="mono">
+        <div className="table-scroll">
+        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: 11 }} className="mono keep-cols">
           {["#", "Hash", "Txs", "Size", "Reward", "Pool", "Age"].map((h, i) => (
             <div key={i} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6, marginBottom: 2 }}>{h}</div>
           ))}
@@ -402,6 +407,7 @@ export function NetworkPage() {
               <span className="dim">{Math.floor(b.age / 60)}m{b.age % 60}s</span>
             </React.Fragment>
           ))}
+        </div>
         </div>
       </PanelFrame>
     </AppShell>

@@ -98,8 +98,10 @@ export function MempoolPage() {
         </div>
 
         {/* active view fills the remaining height and scrolls internally */}
-        <div className="mp-view">
-          <View data={data} bg={{ intensity: "calm" }} />
+        <div className="mp-canvas-scroll">
+          <div className="mp-view">
+            <View data={data} bg={{ intensity: "calm" }} />
+          </div>
         </div>
       </div>
     </AppShell>

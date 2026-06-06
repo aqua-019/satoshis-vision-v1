@@ -323,6 +323,20 @@ header > div > h1.serif {
 .crumbs b { color: var(--tk-accent); text-shadow: var(--glow-1); font-weight: 500; }
 .crumbs s { text-decoration: none; color: var(--ink-20); }
 
+/* ── responsive layout utilities (v5.0.3) ─────────────────────────
+   Desktop defaults; the @media(max-width:768px) block reshapes them.
+   These replace per-page inline grid-template-columns so a class rule
+   (not an inline-attribute selector) governs the mobile collapse. */
+.kpi-grid { display: grid; grid-template-columns: repeat(var(--kpi-cols, 6), 1fr); gap: 10px; }
+.col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.col-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+/* order-book level row — stays multi-column on mobile (exempt from the
+   blanket collapse below): price · cumulative-depth bar · size. */
+.ob-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
+/* education intro header + chip row centering hooks (mobile only) */
+.edu-cols { columns: 2; column-gap: 14px; }
+
 /* ── data atoms ──────────────────────────────────────────────── */
 
 .stat { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--ink-10); border-radius: 3px; background: rgba(0,0,0,0.3); }
@@ -752,13 +766,50 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   .topbar { flex-wrap: wrap; row-gap: 8px; }
 
   /* FIX 2 — kill page-body horizontal overflow (also restores vertical scroll on
-     iOS). Offending layouts are INLINE, so !important is required. */
-  .main [style*="grid-template-columns"],
-  .proto-body [style*="grid-template-columns"],
+     iOS). Offending layouts are INLINE, so !important is required.
+     v5.0.3: this is now a FALLBACK only — un-migrated inline grids still collapse,
+     but the responsive utility classes (.kpi-grid/.col-2/.col-3) and the
+     exemptions (.ob-row, .table-scroll children, .mp-canvas-scroll) are excluded
+     so the real responsive system wins. */
+  /* The blanket grid collapse excludes: the responsive utility classes, any grid
+     explicitly marked .keep-cols (wide tables that scroll horizontally instead),
+     and everything inside the mempool pan canvas (kept at desktop proportions). */
+  .main [style*="grid-template-columns"]:not(.kpi-grid):not(.col-2):not(.col-3):not(.ob-row):not(.keep-cols):not(.mp-canvas-scroll *),
+  .proto-body [style*="grid-template-columns"]:not(.mp-canvas-scroll *),
   .proto-panel [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
   .main *, .proto-body * { min-width: 0 !important; }          /* let grid/flex children shrink */
+  /* re-assert min-width exemptions AFTER the blanket (equal specificity → later wins) */
+  .table-scroll > *, .keep-cols { min-width: max-content !important; }   /* wide tables keep columns; user swipes */
+  .mp-canvas-scroll * { min-width: revert !important; }                  /* undo the 0 inside the canvas */
+  .mp-canvas-scroll > * { min-width: 900px !important; }                 /* desktop proportions for the view */
   .main svg, .main canvas, .main img { max-width: 100%; height: auto; }
+  .mp-canvas-scroll svg, .mp-canvas-scroll canvas { max-width: none; }   /* but let the canvas overflow & pan */
   .main [style*="padding: 32px 48px"] { padding-left: 16px !important; padding-right: 16px !important; }
+
+  /* ── v5.0.3 responsive utility classes (mobile reshape) ─────────── */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }  /* 6/4/3 → 2, never 1 */
+  .col-2, .col-3 { grid-template-columns: 1fr !important; gap: 12px; }       /* genuine content stacks */
+  .table-scroll { overflow-x: auto; }
+  .ob-row { grid-template-columns: auto 1fr auto !important; }               /* order-book stays horizontal */
+  .ob-side { max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; }  /* depth scrolls in its box */
+  .edu-cols { columns: 1; }                                                  /* quote cards single column */
+  /* tighten boxes to reduce page height */
+  .main { padding: 12px 14px; }
+  .card, [class*="panel"] { padding: 14px !important; }
+  .panel-b { padding: 12px !important; }
+
+  /* P2 — breadcrumb status drops to its own line; header content wraps */
+  .crumbs { flex-wrap: wrap; row-gap: 4px; }
+  .crumbs > span[style*="margin-left"] { margin-left: 0 !important; flex-basis: 100%; }
+  .main header { flex-wrap: wrap; row-gap: 10px; }
+
+  /* P4 — education intro header + chips centered (body stays left) */
+  .edu-head, .edu-head .kicker, .edu-head h1, .edu-head .serif, .edu-head p { text-align: center; }
+  .edu-chips { justify-content: center; flex-wrap: wrap; margin-left: 0 !important; }
+
+  /* P5 — mempool pan + pinch-zoom canvas: render at desktop width, user swipes */
+  .mp-canvas-scroll { overflow: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+  .mp-canvas-scroll > * { min-width: 900px !important; }
 
   /* FIX 3 — simulators: stack the artboard, move badges below the title, give the
      canvas room, restack the side panel. (.proto-* are classes, no TSX needed.) */

@@ -10,13 +10,15 @@ import { EduChapter, EduMilestone, EduPullquote } from "./EduAtoms";
 function JrnHero({ navigate }: { navigate: (to: string) => void }) {
   return (
     <section style={{ position: "relative", padding: "30px 0 18px", display: "flex", flexDirection: "column", gap: 18 }}>
-      <div className="kicker" style={{ color: "var(--tk-accent)" }}>An educational journey through digital money</div>
-      <h1 className="serif" style={{ margin: 0, fontSize: 64, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.02, color: "var(--ink-100)" }}>
-        The Genesis of <em style={{ color: "var(--tk-accent)", textShadow: "var(--glow-2)", fontStyle: "normal" }}>Privacy</em>
-      </h1>
-      <p className="serif" style={{ margin: 0, maxWidth: "64ch", fontSize: 21, lineHeight: 1.5, color: "var(--ink-80)" }}>
-        A deep dive into two revolutionary currencies — and the philosophical thread that connects them. From a message buried in the genesis block to a coin that refuses to know who you are.
-      </p>
+      <div className="edu-head" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+        <div className="kicker" style={{ color: "var(--tk-accent)" }}>An educational journey through digital money</div>
+        <h1 className="serif" style={{ margin: 0, fontSize: 64, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.02, color: "var(--ink-100)" }}>
+          The Genesis of <em style={{ color: "var(--tk-accent)", textShadow: "var(--glow-2)", fontStyle: "normal" }}>Privacy</em>
+        </h1>
+        <p className="serif" style={{ margin: 0, maxWidth: "64ch", fontSize: 21, lineHeight: 1.5, color: "var(--ink-80)" }}>
+          A deep dive into two revolutionary currencies — and the philosophical thread that connects them. From a message buried in the genesis block to a coin that refuses to know who you are.
+        </p>
+      </div>
       <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
         <button type="button" className="proto-btn" style={{ borderColor: "var(--tk-accent)", color: "var(--tk-accent)", boxShadow: "var(--glow-1)", padding: "9px 16px" }}
           onClick={() => navigate("/education/timeline")}>Open the timeline →</button>

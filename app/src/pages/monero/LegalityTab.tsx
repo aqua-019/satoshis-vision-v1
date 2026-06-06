@@ -102,7 +102,7 @@ function LegalityRow({ row, open, onToggle }: LegalityRowProps) {
   };
   return (
     <div style={{ border: "1px solid var(--rule)", borderRadius: 3, overflow: "hidden" }}>
-      <button type="button" onClick={onToggle}
+      <button type="button" onClick={onToggle} className="keep-cols"
         style={{
           appearance: "none", cursor: "pointer", width: "100%", background: open ? "rgba(255,122,26,0.05)" : "transparent",
           border: 0, padding: "12px 16px", color: "inherit", textAlign: "left",
@@ -167,18 +167,20 @@ export function LegalityTab(_props: MoneroTabProps) {
             <div className="kicker">Country × activity matrix</div>
             <div className="mono dim" style={{ fontSize: 11.5, marginTop: 4 }}>{LEGALITY_MATRIX.length} jurisdictions · click any row to expand</div>
           </div>
-          <div className="mono" style={{ display: "grid", gridTemplateColumns: "32px 1.4fr repeat(5, 1fr) 24px", gap: 10, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", minWidth: 720 }}>
+          <div className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "32px 1.4fr repeat(5, 1fr) 24px", gap: 10, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", minWidth: 720 }}>
             <span></span><span>Country</span>
             <span>Hold</span><span>CEX</span><span>P2P</span><span>Mine</span><span>Pay</span><span></span>
           </div>
         </div>
 
+        <div className="table-scroll">
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           {LEGALITY_MATRIX.map((row, i) => (
             <LegalityRow key={row.n} row={row}
               open={open === i}
               onToggle={() => setOpen(open === i ? null : i)} />
           ))}
+        </div>
         </div>
 
         <p className="mono dim" style={{ fontSize: 10.5, marginTop: 14, lineHeight: 1.5 }}>

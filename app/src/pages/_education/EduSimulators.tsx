@@ -24,11 +24,13 @@ export function EduSimulators({ navigate }: EduSimulatorsProps) {
   const total = PROTOCOL_PRIMITIVES.length + PROTOCOL_METAPHORS.length;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
-      <PageHeader
-        kicker={"Interactive · " + total + " protocol simulators"}
-        title='See the cryptography <em style="color:var(--p-50);text-shadow:var(--glow-p);font-style:normal">move</em>.'
-        sub="Every privacy primitive in the Monero stack, rendered as a metaphor you can run. Open any one full-bleed in the simulator."
-      />
+      <div className="edu-head">
+        <PageHeader
+          kicker={"Interactive · " + total + " protocol simulators"}
+          title='See the cryptography <em style="color:var(--p-50);text-shadow:var(--glow-p);font-style:normal">move</em>.'
+          sub="Every privacy primitive in the Monero stack, rendered as a metaphor you can run. Open any one full-bleed in the simulator."
+        />
+      </div>
       {GROUPS.map(({ group, items }) => (
         <section key={group} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="kicker">{group}</div>

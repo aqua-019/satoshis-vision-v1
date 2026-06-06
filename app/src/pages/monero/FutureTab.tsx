@@ -95,7 +95,7 @@ export function FutureTab(_props: MoneroTabProps) {
             </div>
             <p className="serif" style={{ margin: "10px 0", fontSize: 17, lineHeight: 1.4, color: "var(--ink-100)", fontWeight: 400 }}>{u.head}</p>
             <p className="mono dim" style={{ margin: "0 0 14px", fontSize: 11.5, lineHeight: 1.7 }}>{u.body}</p>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, paddingTop: 12, borderTop: "1px dashed var(--ink-10)" }}>
+            <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 8, paddingTop: 12, borderTop: "1px dashed var(--ink-10)" }}>
               {u.metrics.map(([k, v]: readonly [string, string]) => (
                 <div key={k}>
                   <div className="kicker" style={{ marginBottom: 4 }}>{k}</div>

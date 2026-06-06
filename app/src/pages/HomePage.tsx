@@ -56,7 +56,7 @@ export function HomePage() {
               </div>
             </div>
             <Sparkline data={data.priceSeries.slice(-90)} width={420} height={90} />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 3, gap: 8 }}>
               <Stat k="Block height" v={data.height.toLocaleString()} sub="live" tone="acc" />
               <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub="2:00 target" />
               <Stat k="Mempool" v={`${data.mempool.length} tx`} sub={fmtBytes(memBytes)} />
@@ -67,7 +67,8 @@ export function HomePage() {
         {/* Recent blocks ribbon */}
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="kicker">Recent blocks · last {data.blocks.length}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(14, 1fr)", gap: 8 }}>
+          <div className="table-scroll">
+          <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "repeat(14, 1fr)", gap: 8 }}>
             {data.blocks.slice(0, 14).map((b) => (
               <div key={b.height} className="mblock">
                 <div className="hh">#{b.height.toString().slice(-5)}</div>
@@ -76,12 +77,13 @@ export function HomePage() {
               </div>
             ))}
           </div>
+          </div>
         </section>
 
         {/* Surfaces grid */}
         <section>
           <div className="kicker" style={{ marginBottom: 12 }}>The site · 7 surfaces</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
+          <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 12 }}>
             {[
               { to: "/mempool",   t: "Mempool",   d: "5 visualisations. Reactor · Bridge · Sediment · Constellation · Terminal.", c: "var(--tk-accent)" },
               { to: "/markets",   t: "Markets",   d: "Spot price, volume, order-book depth, the XMR/BTC ratio. Where XMR trades.", c: "var(--c-50)" },
