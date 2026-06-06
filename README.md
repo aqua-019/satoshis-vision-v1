@@ -1,141 +1,67 @@
-# Satoshi's Vision Archive
+# xmr.irish v5 — integration handoff
 
-An educational website exploring the evolution from Bitcoin to Monero, documenting Satoshi Nakamoto's writings on privacy and the divergent paths of transparent vs. private cryptocurrency.
+A self-contained package for taking the **xmr.irish v5.0 design** into
+claude.ai / Claude Code and **migrating the live site to it** (React 18 + Vite +
+TypeScript), all seven surfaces, on the existing data backend.
 
-![Bitcoin](https://img.shields.io/badge/Bitcoin-F7931A?style=flat&logo=bitcoin&logoColor=white)
-![Monero](https://img.shields.io/badge/Monero-FF6600?style=flat&logo=monero&logoColor=white)
-
-## 🌐 Live Demo
-
-Deploy to any static hosting platform:
-- **Netlify**: Drag & drop or connect repo
-- **Vercel**: One-click deploy
-- **GitHub Pages**: Enable in repo settings
+> **New here? Open [`START_HERE.md`](START_HERE.md) first.** It has the
+> paste-ready kickoff prompt for claude.ai.
 
 ---
 
-## 📁 Project Structure
+## Read in this order
+
+1. **[`START_HERE.md`](START_HERE.md)** — how to use this bundle + the kickoff prompt.
+2. **[`V5_FULL_AUDIT.md`](V5_FULL_AUDIT.md)** — ⚠ **read this if you already started.** A deep, surface-by-surface diff: what the shipped build has vs the `repo/` skeleton, and how to close every gap.
+3. **[`UPDATED-additions/SUPPLEMENTARY_DETAIL.md`](UPDATED-additions/SUPPLEMENTARY_DETAIL.md)** — the expansive, component-by-component breakdown of every surface (Home, all 6 mempool views, Markets, Network, Monero, Education, Simulate, Run-a-node).
+4. **[`UPDATED-additions/MISSING_IN_V5.md`](UPDATED-additions/MISSING_IN_V5.md)** — the focused "what's missing from the skeleton + the code to add it" guide.
+5. **[`INTEGRATION_BRIEF.md`](INTEGRATION_BRIEF.md)** — the v4→v5 migration plan, phased.
+6. **[`DATA_LAYER.md`](DATA_LAYER.md)** — reuse v4's API/proxy/relay + optimized v5 data design.
+
+## Contents
 
 ```
-satoshis-vision/
-├── index.html              # Splash page - Privacy Evolution overview
-├── bottom-line.html        # The Bottom Line - Complete BTC/XMR analysis
-│                           # ├── TradFi Comparison Table
-│                           # ├── Full Timeline (2008-2027)
-│                           # ├── Government Bounties
-│                           # ├── Cryptographic Architecture
-│                           # └── Exchange Delistings
-├── hold-monero.html        # Hold Monero - Wagyu + ChangeNOW integration
-├── btc-xmr-education.html  # Educational comparison infographics
-├── quotes.html             # Satoshi Quote Explorer (18 curated quotes)
-├── secrets.html            # Satoshi's Privacy Secrets
-├── timeline.html           # Visual Timeline
-├── vercel.json             # Vercel configuration
-├── netlify.toml            # Netlify configuration
-├── .gitignore              # Git ignore rules
-├── LICENSE                 # MIT License
-└── README.md               # This file
+handoff_xmrirish_v5/
+├── START_HERE.md            ← read first — kickoff prompt for claude.ai
+├── V5_FULL_AUDIT.md         ← ⚠ deep gap analysis: shipped build vs skeleton
+├── INTEGRATION_BRIEF.md     ← full migration plan (phases, surfaces, git flow)
+├── DATA_LAYER.md            ← data backend: reuse v4 + optimize for v5
+├── README.md               ← this file
+│
+├── UPDATED-additions/        ← ★ THE FIX for the under-specified first handoff
+│   ├── SUPPLEMENTARY_DETAIL.md    expansive per-surface component breakdown
+│   ├── MISSING_IN_V5.md           what the skeleton lacks + how to add it
+│   ├── full-source/               1:1 copy of the shipped source, by surface
+│   ├── legacy-dropin/             the JSX missing from repo/legacy/ (port these)
+│   ├── app01-source/              the entire content layer (Monero/Education/…)
+│   └── to-add/                    NET-NEW TypeScript (App.tsx, data hook, pages, registry)
+│
+├── design-reference/        ← VISUAL + BEHAVIORAL GROUND TRUTH
+│   ├── index.html              the runnable v5 0.1 UI (all surfaces, hash-routed)
+│   ├── design-hub.html         pan/zoom design canvas (mempool dirs + protocol sims)
+│   └── five01/                 the actual source the HTML loads
+│
+├── repo/                    ← DESTINATION SCAFFOLD (Vite + React 18 + TS, behind five01)
+└── screenshots/             ← 11 pixel targets, one per surface
 ```
 
----
+## The one thing to remember
 
-## 🚀 Deployment Instructions
+- **`design-reference/five01/` is the spec.** It's what renders the screenshots.
+- **`repo/` is the destination.** It's a skeleton, deliberately behind five01.
+- **When they disagree, five01 wins.** Port *from* five01 *into* repo's structure.
 
-### Option 1: Netlify (Recommended)
+## How to preview the design locally
 
-**Drag & Drop:**
-1. Go to [app.netlify.com/drop](https://app.netlify.com/drop)
-2. Drag the `satoshis-vision-deploy` folder
-3. Done! Get your URL instantly
+Open `design-reference/index.html` in a browser — no build, no install. It runs
+the full 0.1 UI on a simulated feed (live XMR/BTC price via CoinGecko if the
+network allows). Navigate the top nav to see every surface.
 
-**From GitHub:**
-1. Push this repo to GitHub
-2. Connect to Netlify
-3. Build settings auto-configured via `netlify.toml`
+## Target
 
----
-
-### Option 2: Vercel
-
-**From GitHub:**
-1. Push this repo to GitHub
-2. Import to [vercel.com/new](https://vercel.com/new)
-3. Settings auto-configured via `vercel.json`
-
-**CLI Deploy:**
-```bash
-npm i -g vercel
-cd satoshis-vision-deploy
-vercel
-```
-
----
-
-### Option 3: GitHub Pages
-
-1. Create new GitHub repository
-2. Upload all files from this folder
-3. Go to **Settings → Pages**
-4. Source: **Deploy from a branch**
-5. Branch: **main** / Folder: **/ (root)**
-6. Save → Wait 2-3 minutes
-7. Your site: `https://[username].github.io/[repo-name]`
-
----
-
-## 📄 Pages Overview
-
-| Page | Description |
-|------|-------------|
-| **index.html** | Splash page with privacy evolution narrative |
-| **bottom-line.html** | Comprehensive analysis: timeline, bounties, delistings |
-| **hold-monero.html** | Exchange widget demo (Wagyu + ChangeNOW) |
-| **btc-xmr-education.html** | Visual infographics comparing BTC vs XMR |
-| **quotes.html** | Interactive Satoshi quote explorer |
-| **secrets.html** | Deep dive into Satoshi's privacy writings |
-| **timeline.html** | Historical milestones visualization |
-
----
-
-## ⚠️ Legal Disclaimers
-
-```
-FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY
-
-• This website documents publicly available information
-• NOT financial, legal, or investment advice
-• No endorsement of any cryptocurrency or financial product
-• Third-party exchange widgets are for demonstration only
-• Users are responsible for compliance with local regulations
-• The creators assume no liability for use or misuse
-```
-
----
-
-## 🛡️ Security Headers
-
-Both `netlify.toml` and `vercel.json` include security headers:
-- `X-Frame-Options: DENY`
-- `X-Content-Type-Options: nosniff`
-- `X-XSS-Protection: 1; mode=block`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-
----
-
-## 📜 License
-
-MIT License - See [LICENSE](LICENSE) file
-
----
-
-## 🔗 External Resources
-
-- [GetMonero.org](https://www.getmonero.org/) - Official Monero site
-- [Bitcoin.org](https://bitcoin.org/) - Official Bitcoin site
-- [Nakamoto Institute](https://nakamotoinstitute.org/) - Satoshi's writings
-- [Monero Research Lab](https://www.getmonero.org/resources/research-lab/)
-
----
-
-*"Privacy is not a crime. It is a right."*
-— The Monero Community
+- **Repo:** `github.com/aqua-019/satoshis-vision-v1`, branch `v5-migration`.
+- **Stack move:** vanilla JS / no-build  →  React 18 + Vite + TypeScript.
+- **Data:** unchanged backend — v4's `/api/*` proxies + optional Node relay,
+  reached through one `useMoneroLive()` hook. (Upgrades in `DATA_LAYER.md` §C.)
+- **Must preserve:** no analytics/trackers, no direct RPC from the browser, the
+  CSP + security headers in `vercel.json`, and static-export / `.onion` support.
