@@ -1,7 +1,7 @@
 /**
  * views/index.tsx — registry for the heavy view-engine components.
  *
- * 5 mempool surfaces and 6 protocol simulators live in src/mempool/*.tsx and
+ * 5 mempool surfaces and 14 protocol simulators live in src/mempool/*.tsx and
  * src/protocols/*.tsx — but until you run `npm run port`, they don't exist
  * yet. This registry returns a clean "needs porting" placeholder so the
  * skeleton builds and runs immediately.
@@ -35,6 +35,7 @@ import { ViewTagsView } from "@/protocols/view-tags";
 import { RingctView } from "@/protocols/ringct";
 import { StealthView } from "@/protocols/stealth";
 import { FcmpView } from "@/protocols/fcmp";
+import { HearthView, MetronomeView, SiloView, ThermostatView, AuctionView, SkylineView, BloodhoundView, BalanceView } from "@/protocols/metaphors";
 
 export interface ViewProps {
   data: MoneroLive;
@@ -79,18 +80,18 @@ export interface ProtocolMeta {
   Component: ViewComponent;
 }
 
-export const PROTOCOL_VIEWS: ProtocolMeta[] = [
+export const PROTOCOL_PRIMITIVES: ProtocolMeta[] = [
   { id: "decoy",     label: "Decoy selection", kicker: "Time tide",         tone: "acc",
-    sub: "Log-normal decoy sampling across the blockchain timeline.",
+    sub: "Log-normal decoy sampling across the timeline.",
     Component: DecoySelectionView },
   { id: "dandelion", label: "Dandelion++",     kicker: "Botanical bloom",   tone: "priv",
-    sub: "Stem-then-fluff propagation. Hides the origin peer.",
+    sub: "Stem-then-fluff propagation hides the origin peer.",
     Component: DandelionView },
   { id: "viewtags",  label: "View tags",       kicker: "Lighthouse in fog", tone: "acc",
     sub: "256× wallet scan acceleration with a 1-byte hint.",
     Component: ViewTagsView },
   { id: "ringct",    label: "RingCT",          kicker: "Assembly line",     tone: "acc",
-    sub: "Five cryptographic stations: from output to confidential tx.",
+    sub: "Output → confidential tx in five stations.",
     Component: RingctView },
   { id: "stealth",   label: "Stealth address", kicker: "Two-key chamber",   tone: "priv",
     sub: "Diffie-Hellman exchange across silent rooms.",
@@ -99,3 +100,32 @@ export const PROTOCOL_VIEWS: ProtocolMeta[] = [
     sub: "Ring of 16 → anonymity set of 150M+ outputs.",
     Component: FcmpView },
 ];
+
+export const PROTOCOL_METAPHORS: ProtocolMeta[] = [
+  { id: "hearth",     label: "Eternal hearth", kicker: "Tail emission",          tone: "acc",
+    sub: "Volumetric flame — subsidy vs tail over 50 years.",
+    Component: HearthView },
+  { id: "metronome",  label: "Metronome",      kicker: "Block target",           tone: "acc",
+    sub: "The 2-minute block heartbeat.",
+    Component: MetronomeView },
+  { id: "silo",       label: "Grain silo",     kicker: "Monetary policy",        tone: "priv",
+    sub: "BTC fixed cap vs XMR perpetual faucet.",
+    Component: SiloView },
+  { id: "thermostat", label: "Thermostat",     kicker: "Difficulty adjustment",  tone: "acc",
+    sub: "Two needles tracking toward target.",
+    Component: ThermostatView },
+  { id: "auction",    label: "Auction",        kicker: "Mempool fees",           tone: "acc",
+    sub: "Bidding paddles set the fee market.",
+    Component: AuctionView },
+  { id: "skyline",    label: "Skyline",        kicker: "Pool decentralization",  tone: "priv",
+    sub: "City skyline + HHI concentration index.",
+    Component: SkylineView },
+  { id: "bloodhound", label: "Bloodhound",     kicker: "Privacy attacks",        tone: "priv",
+    sub: "A hound losing the scent.",
+    Component: BloodhoundView },
+  { id: "balance",    label: "Balance",        kicker: "Confidential amounts",   tone: "priv",
+    sub: "Sealed envelope on a balance scale.",
+    Component: BalanceView },
+];
+
+export const PROTOCOL_VIEWS: ProtocolMeta[] = [...PROTOCOL_PRIMITIVES, ...PROTOCOL_METAPHORS];
