@@ -3,6 +3,7 @@
 import * as React from "react";
 import type { MoneroLive, Block } from "@/data/types";
 import { TxDetailPanel, BlockDetailPanel } from "@/mempool/reactor";
+import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
 //
@@ -15,7 +16,7 @@ import { TxDetailPanel, BlockDetailPanel } from "@/mempool/reactor";
 
 type SearchQuery = { kind: "tx"; id: string } | { kind: "block"; height: number };
 type Tracking =
-  | { kind: "tx"; id: string }
+  | { kind: "tx"; id: string; blockHeight: number | null }
   | { kind: "block"; height: number; block?: Block }
   | null;
 
@@ -24,7 +25,8 @@ export function useMempoolTracking(data: MoneroLive) {
 
   const onSearch = React.useCallback((q: SearchQuery) => {
     if (q.kind === "tx") {
-      setTracking({ kind: "tx", id: q.id });
+      // Pin the block height ONCE; confirmations derive live at render.
+      setTracking({ kind: "tx", id: q.id, blockHeight: pinTxBlockHeight(q.id, data) });
     } else {
       const block = data.blocks.find((b) => b.height === q.height);
       setTracking({ kind: "block", height: q.height, block });
@@ -109,19 +111,22 @@ interface TrackedTx {
   privacy: number;
 }
 
-function buildTrackedTx(txid: string, data: MoneroLive): TrackedTx {
+// `pinnedHeight` is the tx's block height pinned ONCE at track time (mempool/conf.ts):
+//   • null   → tx is in the mempool (unconfirmed)
+//   • number → the ABSOLUTE block height the tx was pinned to
+// Confirmations are derived LIVE from that pinned height + the current tip, never frozen.
+function buildTrackedTx(txid: string, data: MoneroLive, pinnedHeight: number | null): TrackedTx {
   const intHash = Array.from(txid).reduce((a, c) => (a + c.charCodeAt(0)) >>> 0, 0);
-  const inMempool = (intHash & 3) === 0;
-  if (inMempool && data.mempool.length) {
-    const t = data.mempool[intHash % data.mempool.length];
+  if (pinnedHeight === null) {
+    const t = data.mempool.length ? data.mempool[intHash % data.mempool.length] : null;
     return {
       id: txid,
-      size: t.size,
-      fee: t.fee,
-      perB: t.perB,
+      size: t ? t.size : 1500 + (intHash % 3000),
+      fee: t ? t.fee : 0.0011 + (intHash % 9000) / 1e10,
+      perB: t ? t.perB : 600000 + (intHash % 200000),
       ringSize: 16,
-      inputs: t.inputs,
-      outputs: t.outputs,
+      inputs: t ? t.inputs : 1 + (intHash % 2),
+      outputs: t ? t.outputs : 2,
       blockHeight: null,
       confirmations: 0,
       status: "in mempool",
@@ -130,8 +135,7 @@ function buildTrackedTx(txid: string, data: MoneroLive): TrackedTx {
       privacy: 90,
     };
   }
-  const idx = intHash % Math.max(1, Math.min(8, data.blocks.length));
-  const block = data.blocks[idx];
+  const confirmations = liveConf(pinnedHeight, data.height);
   return {
     id: txid,
     size: 1500 + (intHash % 3000),
@@ -140,10 +144,10 @@ function buildTrackedTx(txid: string, data: MoneroLive): TrackedTx {
     ringSize: 16,
     inputs: 1 + (intHash % 2),
     outputs: 2,
-    blockHeight: block ? block.height : null,
-    confirmations: block ? block.conf : 0,
-    status: block && block.conf >= 10 ? "fully unlocked" : "confirming",
-    eta: block && block.conf >= 10 ? "Confirmed" : "~" + ((10 - (block ? block.conf : 0)) * 2) + " min until unlock",
+    blockHeight: pinnedHeight,
+    confirmations,
+    status: confirmations >= 10 ? "fully unlocked" : "confirming",
+    eta: confirmations >= 10 ? "Confirmed" : "~" + ((10 - confirmations) * 2) + " min until unlock",
     timelock: 0,
     privacy: 90,
   };
@@ -163,7 +167,7 @@ export function MempoolTrackingDetail({ tracking, data, onBack }: {
 }) {
   if (!tracking) return null;
   if (tracking.kind === "tx") {
-    return <TxDetailPanel tx={buildTrackedTx(tracking.id, data)} onBack={onBack} />;
+    return <TxDetailPanel tx={buildTrackedTx(tracking.id, data, tracking.blockHeight)} onBack={onBack} />;
   }
   const block =
     tracking.block ?? data.blocks.find((b) => b.height === tracking.height) ?? data.blocks[0];

@@ -782,6 +782,7 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   .proto-body [style*="grid-template-columns"]:not(.mp-canvas-scroll *),
   .proto-panel [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
   .main *, .proto-body * { min-width: 0 !important; }          /* let grid/flex children shrink */
+  main.main { min-width: 0; }   /* complete the v5.0.2 `.main *{min-width:0}` — let the grid item itself shrink to the 1fr track (Monero page: 998 → 390) */
   /* re-assert min-width exemptions AFTER the blanket (equal specificity → later wins) */
   .table-scroll > *, .keep-cols { min-width: max-content !important; }   /* wide tables keep columns; user swipes */
   .mp-canvas-scroll * { min-width: revert !important; }                  /* undo the 0 inside the canvas */
@@ -789,6 +790,7 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   .main svg, .main canvas, .main img { max-width: 100%; height: auto; }
   .mp-canvas-scroll svg, .mp-canvas-scroll canvas { max-width: none; }   /* but let the canvas overflow & pan */
   .main [style*="padding: 32px 48px"] { padding-left: 16px !important; padding-right: 16px !important; }
+  [style*="padding: 20px 48px 60px"] { padding-left: 16px !important; padding-right: 16px !important; }  /* Monero + deep-link tx container — widen the text column */
 
   /* ── v5.0.3 responsive utility classes (mobile reshape) ─────────── */
   .kpi-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }  /* 6/4/3 → 2, never 1 */

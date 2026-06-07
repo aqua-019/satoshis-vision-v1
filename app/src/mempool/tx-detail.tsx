@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Stat } from "@/design/primitives";
 import type { MoneroLive, Block } from "@/data/types";
+import { isMempoolTx, pinTxBlockHeight, liveConf } from "@/mempool/conf";
 
 // tx-detail.jsx — full-fidelity Monero transaction + block inspectors.
 //
@@ -27,13 +28,22 @@ function _seedRng(seed: number) {
 function _hex(len: number, rng: () => number) { let o = ""; for (let i = 0; i < len; i++) o += "0123456789abcdef"[(rng() * 16) | 0]; return o; }
 
 // Build a complete TX object from a 64-char id. Idempotent.
-export function txSynthFromId(txid: string, data: MoneroLive) {
+//
+// `pinnedHeight` is the tx's pinned block height (see mempool/conf.ts):
+//   • undefined → no external pin; pin from the current snapshot (deep-links/legacy)
+//   • null      → tx is in the mempool (unconfirmed)
+//   • number    → the ABSOLUTE block height the tx was pinned to at track time
+// Confirmations are ALWAYS derived live from the pinned height + current tip, so
+// the detail panel can never disagree with the ribbon arrow.
+export function txSynthFromId(txid: string, data: MoneroLive, pinnedHeight?: number | null) {
   const h = _hash32(txid);
   const rng = _seedRng(h);
-  const inMempool = (h & 7) === 0;
-  const blockIdx = inMempool ? -1 : (h % Math.min(data.blocks.length, 9));
-  const block = blockIdx >= 0 ? data.blocks[blockIdx] : null;
-  const conf = block ? block.conf : 0;
+  const inMempool = pinnedHeight === undefined ? isMempoolTx(txid) : pinnedHeight === null;
+  const blockHeight = inMempool
+    ? null
+    : (pinnedHeight === undefined ? pinTxBlockHeight(txid, data) : pinnedHeight);
+  const block = blockHeight != null ? (data.blocks.find((b) => b.height === blockHeight) ?? null) : null;
+  const conf = liveConf(blockHeight, data.height);
 
   const inputs = 1 + ((h >> 3) & 3); // 1..4
   const outputs = 2 + ((h >> 5) & 1); // 2 or 3 (2 is typical)
@@ -60,11 +70,11 @@ export function txSynthFromId(txid: string, data: MoneroLive) {
     ring_size: 16,
     n_inputs: inputs,
     n_outputs: outputs,
-    block_height: block ? block.height : null,
+    block_height: blockHeight,
     block_hash: block ? block.hash : null,
-    block_age_s: block ? block.age : Math.floor(rng() * 110),
+    block_age_s: block ? block.age : (blockHeight != null ? conf * 120 : Math.floor(rng() * 110)),
     confirmations: conf,
-    age_seconds: block ? block.age : Math.floor(rng() * 110),
+    age_seconds: block ? block.age : (blockHeight != null ? conf * 120 : Math.floor(rng() * 110)),
     in_mempool: inMempool,
 
     // Mempool-only fields
@@ -75,14 +85,14 @@ export function txSynthFromId(txid: string, data: MoneroLive) {
     privacy_score: 92 + Math.floor(rng() * 8), // 92..99
     inputs_detail: Array.from({ length: inputs }, () => {
       const offs = [];
-      const baseHeight = (block?.height ?? data.height) - Math.floor(rng() * 1000);
+      const baseHeight = (block?.height ?? blockHeight ?? data.height) - Math.floor(rng() * 1000);
       let cursor = baseHeight - Math.floor(rng() * 800000);
       for (let i = 0; i < 16; i++) {
         cursor += 1 + Math.floor(Math.pow(rng(), 3) * 240000);
         offs.push({
           out_index: cursor,
-          age_blocks: (block?.height ?? data.height) - cursor,
-          age_days: +(((block?.height ?? data.height) - cursor) * 120 / 86400).toFixed(1),
+          age_blocks: (block?.height ?? blockHeight ?? data.height) - cursor,
+          age_days: +(((block?.height ?? blockHeight ?? data.height) - cursor) * 120 / 86400).toFixed(1),
         });
       }
       return {
@@ -99,7 +109,7 @@ export function txSynthFromId(txid: string, data: MoneroLive) {
       view_tag: _hex(2, rng),
       amount_hidden: true,
       amount_commitment: _hex(64, rng),
-      output_index_global: (block?.height ?? data.height) * 80 + i,
+      output_index_global: (block?.height ?? blockHeight ?? data.height) * 80 + i,
     })),
 
     proofs: {
