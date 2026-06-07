@@ -318,7 +318,7 @@ export function ConstellationView({ data }: ViewProps) {
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
         <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> Rotating mesh · {data.peers.length} peers visible
+          <span className="led pulse" /> Rotating mesh · {data.peers.length} peers visible · illustrative
         </span>
       </div>
       {tracking ? (

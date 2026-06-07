@@ -351,6 +351,8 @@ header > div > h1.serif {
 .pill.live { border-color: var(--g-50); color: var(--g-50); text-shadow: var(--glow-g); }
 .pill.warn { border-color: var(--y-50); color: var(--y-50); }
 .pill.acc { border-color: var(--tk-accent); color: var(--tk-accent); text-shadow: var(--glow-1); }
+/* one-shot flash for the per-mempool heartbeat LED — replays on each new poll */
+@keyframes mp-beat { 0% { opacity: 0.4; transform: scale(0.9); } 45% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
 
 .hash { font-family: var(--f-mono); color: var(--c-50); }
 .hash:hover { text-shadow: 0 0 8px var(--c-50); cursor: pointer; }
@@ -483,6 +485,15 @@ header > div > h1.serif {
    These base rules reproduce the previous inline desktop values exactly. */
 .mp-shell { position: relative; height: 100%; display: flex; flex-direction: column; min-height: 0; }
 .mp-view  { flex: 1; min-height: 0; display: flex; }
+/* Desktop: make .mp-canvas-scroll the scroll container (it fills the remaining
+   height in the .mp-shell flex column because the switcher is position:fixed /
+   out of flow), and let .mp-view shrink-wrap its content so wide/tall views
+   (reactor 1670px, sediment 2279×2495) expose their true size and scroll on
+   both axes. The @media (max-width:768px) block below owns phones. */
+@media (min-width: 769px) {
+  .mp-canvas-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
+  .mp-view { display: block; width: max-content; min-width: 100%; }
+}
 .mp-switcher {
   position: fixed; top: 60px; right: 16px; z-index: 50;
   padding: 10px;

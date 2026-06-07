@@ -6,6 +6,7 @@ import type { MoneroLive, Tx } from "@/data/types";
 import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
 import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
+import { useTick } from "@/design/ArtBackground";
 
 interface ViewProps {
   data: MoneroLive;
@@ -26,6 +27,24 @@ interface ViewProps {
 // "+M:SS overdue" in caution-yellow.
 
 const CLASSIC_BLOCK_TARGET = 120; // seconds
+
+const fmtMMSS = (sec: number): string => {
+  const s = Math.max(0, Math.round(sec));
+  return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+};
+
+// ClassicEta — a per-second countdown to the next block, isolated so only this
+// text re-renders each second (the ribbon + FLIP glide are untouched). Honest to
+// Monero's ~2-min cadence: interpolates "seconds since the tip's block" from the
+// last data update, so the number visibly moves even when no block has landed,
+// and resets toward ~2:00 when a real block arrives. `offsetSec` shifts the
+// QUEUED card one block-target further out than the imminent NEXT card.
+function ClassicEta({ tipAge, lastUpdate, offsetSec = 0 }: { tipAge: number; lastUpdate: number; offsetSec?: number }) {
+  useTick(1000);
+  const sinceTip = tipAge + Math.floor((Date.now() - lastUpdate) / 1000);
+  const remain = Math.max(0, CLASSIC_BLOCK_TARGET - sinceTip) + offsetSec;
+  return <>{fmtMMSS(remain)}</>;
+}
 
 // A tracked tx pins its block height ONCE at search time (see mempool/conf.ts);
 // the ribbon highlight and the detail panel both derive confirmations live from
@@ -71,7 +90,7 @@ export function ClassicSearch({ onSearch }: any) {
 
 /* ── flatter block ribbon ─────────────────────────────────── */
 
-export function ClassicBlock({ block, status, confLabel, trackedHere, onClick, glideKey }: any) {
+export function ClassicBlock({ block, status, confLabel, trackedHere, onClick, glideKey, etaNode }: any) {
   const isQueued = status === "queued" || status === "next";
   return (
     <div
@@ -119,7 +138,7 @@ export function ClassicBlock({ block, status, confLabel, trackedHere, onClick, g
           {isQueued ? (
             <>
               <div>—</div>
-              <div>In ~{block.eta || "2 min"}</div>
+              <div>In ~{etaNode || block.eta || "2 min"}</div>
             </>
           ) : (
             <>
@@ -158,6 +177,12 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
   const trackedConf = trackedHeight != null ? liveConf(trackedHeight, data.height) : null;
 
+  // Seconds since the newest block, for the live next-block countdown.
+  const tipAge = data.blocks?.[0]?.age || 0;
+  // The 10th confirmation is the unlock point — find that block's slot so we can
+  // drop a single vertical UNLOCK divider in the gap immediately before it.
+  const dividerIndex = ribbon.findIndex((r) => r.status !== "queued" && r.status !== "next" && r.b.conf === 10);
+
   // Glide the row when the tip advances (FLIP). The tracked ▲ arrow is a child
   // of ClassicBlock, so it travels with its block automatically.
   const glideRef = useRibbonGlide(data.height);
@@ -167,34 +192,40 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
       <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 12 }}>
         {ribbon.map((r, i) => {
           const confirmed = r.status !== "queued" && r.status !== "next";
+          // Live next-block countdown on the QUEUED/NEXT cards (ticks each second
+          // via ClassicEta's own useTick — the ribbon itself does not re-render).
+          const etaNode =
+            r.status === "next" ? <ClassicEta tipAge={tipAge} lastUpdate={data.lastUpdate} /> :
+            r.status === "queued" ? <ClassicEta tipAge={tipAge} lastUpdate={data.lastUpdate} offsetSec={CLASSIC_BLOCK_TARGET} /> :
+            undefined;
           return (
-            <ClassicBlock
-              // Confirmed blocks: stable identity by height (so React reuses the
-              // DOM node across the shift — a FLIP prerequisite). Queued/next
-              // placeholders keep an index key and do not glide.
-              key={confirmed ? "b" + r.b.height : "q" + i}
-              glideKey={confirmed ? r.b.height : undefined}
-              block={r.b}
-              status={r.status}
-              confLabel={r.confLabel}
-              trackedHere={trackedHeight && r.b.height === trackedHeight ? (trackedConf + "/10") : null}
-              onClick={() => confirmed && onSelectBlock?.(r.b.height)}
-            />
+            // Confirmed blocks: stable identity by height (so React reuses the DOM
+            // node across the shift — a FLIP prerequisite). Queued/next placeholders
+            // keep an index key and do not glide. The UNLOCK divider is a static
+            // flex sibling with no data-glide-key, so it's invisible to the glide.
+            <React.Fragment key={confirmed ? "b" + r.b.height : "q" + i}>
+              {i === dividerIndex ? (
+                <div aria-hidden style={{ alignSelf: "stretch", flex: "0 0 auto", display: "flex",
+                     flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 4px" }}>
+                  <div style={{ width: 2, flex: 1, borderRadius: 1,
+                       background: "linear-gradient(180deg, rgba(255,212,0,0.12), rgba(255,212,0,0.85), rgba(255,212,0,0.12))",
+                       boxShadow: "0 0 8px rgba(255,212,0,0.5)" }} />
+                  <div className="mono" style={{ fontSize: 8, letterSpacing: "0.14em", color: "var(--y-50)",
+                       writingMode: "vertical-rl", transform: "rotate(180deg)" }}>UNLOCK</div>
+                </div>
+              ) : null}
+              <ClassicBlock
+                glideKey={confirmed ? r.b.height : undefined}
+                block={r.b}
+                status={r.status}
+                confLabel={r.confLabel}
+                etaNode={etaNode}
+                trackedHere={trackedHeight && r.b.height === trackedHeight ? (trackedConf + "/10") : null}
+                onClick={() => confirmed && onSelectBlock?.(r.b.height)}
+              />
+            </React.Fragment>
           );
         })}
-      </div>
-      {/* Unlock line + label */}
-      <div style={{ position: "absolute", left: 20, right: 20, bottom: 6, height: 14, pointerEvents: "none" }}>
-        <div style={{
-          position: "absolute", left: 0, right: 100, top: 4, height: 2,
-          background: "linear-gradient(to right, rgba(255,212,0,0.15), rgba(255,212,0,0.6) 24%, rgba(255,212,0,0.6) 90%, rgba(255,212,0,0.35))",
-        }} />
-        <div className="mono" style={{
-          position: "absolute", right: 0, top: -16, fontSize: 9.5, letterSpacing: "0.14em",
-          color: "var(--y-50)", padding: "3px 8px",
-          border: "1px solid rgba(255,212,0,0.55)", background: "rgba(0,0,0,0.7)",
-          borderRadius: 3,
-        }}>10 CONF · UNLOCK</div>
       </div>
     </div>
   );

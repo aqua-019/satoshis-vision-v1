@@ -16,6 +16,7 @@ import { AppShell } from "@/layout/AppShell";
 import { Crumbs } from "@/design/primitives";
 import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
+import { MempoolHeartbeat } from "@/mempool/mempool-shared";
 
 export function MempoolPage() {
   const data = useMoneroLive();
@@ -61,9 +62,10 @@ export function MempoolPage() {
   return (
     <AppShell fluid bg={{ intensity: "calm" }}>
       <div className="mp-shell">
-        {/* breadcrumb — page chrome */}
-        <div style={{ padding: "10px 20px 0" }}>
+        {/* breadcrumb — page chrome; heartbeat surfaces per-second feed liveness */}
+        <div style={{ padding: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <Crumbs items={["xmr.irish", "mempool", "explorer", meta.label]} />
+          <MempoolHeartbeat data={data} />
         </div>
 
         {/* View switcher — fixed top-right on desktop; inline dropdown on mobile.

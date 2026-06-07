@@ -15,6 +15,7 @@
  */
 
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { Stat, PanelFrame, Crumbs, Pill, Sparkline, MiniBar } from "@/design/primitives";
 import { fmtBytes, shortHash } from "@/data/types";
@@ -253,7 +254,7 @@ export function NetworkPage() {
         <Stat k="Block height" v={data.height.toLocaleString()} sub="live" tone="acc" />
         <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub="vs 5.8 last wk" />
         <Stat k="Difficulty" v={`${(data.difficulty / 1e9).toFixed(2)}G`} sub="adj every 720" />
-        <Stat k="Peers (sample)" v={data.peers.length} sub={`${data.peerOut} out · ${data.peerIn} in`} />
+        <Stat k="Peers (sample)" v={data.peers.length} sub="illustrative · not live" />
         <Stat k="Mempool" v={`${data.mempool.length} tx`} sub={fmtBytes(data.mempool.reduce((a, t) => a + t.size, 0))} />
         <Stat k="Fork" v="v16" sub="FCMP++ Q3" tone="p" />
       </section>
@@ -279,7 +280,7 @@ export function NetworkPage() {
 
       {/* Geo map + fee histogram */}
       <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 12 }}>
-        <PanelFrame title="Peer geography · live sample" right={<span>11 buckets · {PEER_GEO.reduce((a, p) => a + p[4], 0)} total</span>}>
+        <PanelFrame title="Peer geography · illustrative" right={<span>11 buckets · {PEER_GEO.reduce((a, p) => a + p[4], 0)} total</span>}>
           <GeoMap />
           <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 6, marginTop: 10, fontSize: 10.5 }}>
             {PEER_GEO.map(([code, name, _lon, _lat, count, color]) => (
@@ -303,25 +304,20 @@ export function NetworkPage() {
 
       {/* Pool distribution + Version distribution */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title="Pool distribution" right={<span>last 24h shares</span>}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div className="table-scroll" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {data.poolDist.map((p) => (
-              <div key={p.name} style={{ display: "grid", gridTemplateColumns: "160px 1fr 80px 70px", gap: 10, alignItems: "center", fontSize: 11 }} className="mono keep-cols">
-                <span style={{ color: "var(--ink-80)" }}>
-                  <span className="led" style={{ background: p.color, boxShadow: `0 0 6px ${p.color}` }} />
-                  {p.name}
-                </span>
-                <span style={{ height: 8, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
-                  <span style={{ position: "absolute", inset: "0 auto 0 0", width: (p.share * 100).toFixed(1) + "%", background: p.color, boxShadow: `0 0 6px ${p.color}` }} />
-                </span>
-                <span className="dim" style={{ textAlign: "right" }}>{(p.share * 100).toFixed(1)}%</span>
-                <span style={{ color: p.rec ? "var(--g-50)" : "var(--ink-40)", textTransform: "uppercase", fontSize: 9.5, letterSpacing: "0.12em" }}>{p.type}</span>
-              </div>
-            ))}
+        <PanelFrame title="Pool attribution" right={<span className="dim">unattributed</span>}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, fontFamily: "var(--f-mono)" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+              <span style={{ fontSize: 26, color: "var(--ink-100)" }}>
+                {data.blocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.length}
+              </span>
+              <span className="dim" style={{ fontSize: 11 }}>recent blocks report pool "Unknown"</span>
             </div>
-            <p className="mono dim" style={{ fontSize: 10.5, marginTop: 8, color: "var(--ink-40)" }}>
-              HHI {Math.round(data.poolDist.reduce((a, p) => a + Math.pow(p.share * 100, 2), 0))} · "moderately concentrated" (≥1500 = concentrated)
+            <p className="mono dim" style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-40)" }}>
+              Monero coinbase transactions don't tag the mining pool, and this deployment
+              queries no third-party pool API (privacy invariant), so per-pool share can't be
+              measured on-chain. The decentralization concept — including the HHI concentration
+              index — is explained in the <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link> as
+              an explicitly illustrative visual.
             </p>
           </div>
         </PanelFrame>
@@ -350,7 +346,7 @@ export function NetworkPage() {
 
       {/* Peer list + Tor/I2P + Recent blocks */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title={`Peers · sample · ${data.peers.length}`} right={<span>top 10 by latency</span>}>
+        <PanelFrame title={`Peers · sample · ${data.peers.length}`} right={<span className="dim">illustrative · not node-sourced</span>}>
           <div className="peerlist" style={{ fontSize: 11 }}>
             {data.peers.map((p, i) => (
               <div className="row" key={i} style={{ gridTemplateColumns: "14px 1fr 60px 50px 60px" }}>
@@ -362,6 +358,9 @@ export function NetworkPage() {
               </div>
             ))}
           </div>
+          <p className="mono dim" style={{ fontSize: 10, marginTop: 8, color: "var(--ink-40)" }}>
+            This deployment's node doesn't expose its peer list — these rows are illustrative, not live peer telemetry.
+          </p>
         </PanelFrame>
 
         <PanelFrame title="Tor / I2P share of peers" right={<span>privacy at network layer</span>}>

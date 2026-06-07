@@ -29,7 +29,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6>Local node</h6>
+        <h6>Local node · illustrative</h6>
         <KV k={<><span className="led" />Synced</>} v={<span className="up">100.00%</span>} />
         <KV k="Peers in / out" v={`${data.peerIn} / ${data.peerOut}`} />
         <KV k="Bandwidth"      v="12.4 / 8.1 KB/s" />
@@ -38,7 +38,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6>Peers · 12</h6>
+        <h6>Peers · illustrative</h6>
         <div className="peerlist">
           {data.peers.slice(0, 10).map((p, i) => (
             <div className="row" key={i}>
