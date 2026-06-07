@@ -5,10 +5,13 @@ import { fmtBytes, shortHash as ShortHash, randHex } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
 import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
+import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 
 interface ViewProps {
   data: MoneroLive;
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
+  focusBlock?: number | null;
+  onClearFocus?: () => void;
 }
 
 // classic.jsx — CLASSIC · cleaner / sleeker take on the v4 mempool-explorer.
@@ -68,13 +71,18 @@ export function ClassicSearch({ onSearch }: any) {
 
 /* ── flatter block ribbon ─────────────────────────────────── */
 
-export function ClassicBlock({ block, status, confLabel, trackedHere, onClick }: any) {
+export function ClassicBlock({ block, status, confLabel, trackedHere, onClick, glideKey }: any) {
   const isQueued = status === "queued" || status === "next";
   return (
-    <div onClick={onClick} style={{
-      display: "flex", flexDirection: "column", gap: 6,
-      cursor: onClick ? "pointer" : "default", minWidth: 108,
-    }}>
+    <div
+      onClick={onClick}
+      data-glide-key={glideKey}
+      className={glideKey != null ? "glide-block" : undefined}
+      style={{
+        display: "flex", flexDirection: "column", gap: 6,
+        cursor: onClick ? "pointer" : "default", minWidth: 108,
+      }}
+    >
       <div style={{ padding: "0 2px" }}>
         <div className="mono" style={{ fontSize: 11, color: isQueued ? "var(--ink-40)" : "var(--ink-100)" }}>
           {isQueued ? "~" + block.height : "#" + block.height.toLocaleString()}
@@ -150,19 +158,30 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
   const trackedConf = trackedHeight != null ? liveConf(trackedHeight, data.height) : null;
 
+  // Glide the row when the tip advances (FLIP). The tracked ▲ arrow is a child
+  // of ClassicBlock, so it travels with its block automatically.
+  const glideRef = useRibbonGlide(data.height);
+
   return (
     <div style={{ position: "relative", padding: "18px 20px 30px" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 12 }}>
-        {ribbon.map((r, i) => (
-          <ClassicBlock
-            key={r.b.height + "-" + i}
-            block={r.b}
-            status={r.status}
-            confLabel={r.confLabel}
-            trackedHere={trackedHeight && r.b.height === trackedHeight ? (trackedConf + "/10") : null}
-            onClick={() => r.status !== "queued" && r.status !== "next" && onSelectBlock?.(r.b.height)}
-          />
-        ))}
+      <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 12 }}>
+        {ribbon.map((r, i) => {
+          const confirmed = r.status !== "queued" && r.status !== "next";
+          return (
+            <ClassicBlock
+              // Confirmed blocks: stable identity by height (so React reuses the
+              // DOM node across the shift — a FLIP prerequisite). Queued/next
+              // placeholders keep an index key and do not glide.
+              key={confirmed ? "b" + r.b.height : "q" + i}
+              glideKey={confirmed ? r.b.height : undefined}
+              block={r.b}
+              status={r.status}
+              confLabel={r.confLabel}
+              trackedHere={trackedHeight && r.b.height === trackedHeight ? (trackedConf + "/10") : null}
+              onClick={() => confirmed && onSelectBlock?.(r.b.height)}
+            />
+          );
+        })}
       </div>
       {/* Unlock line + label */}
       <div style={{ position: "absolute", left: 20, right: 20, bottom: 6, height: 14, pointerEvents: "none" }}>
@@ -378,7 +397,7 @@ export function DetailItem({ k, v, tone }: any) {
 
 /* ── CLASSIC VIEW · root ──────────────────────────────────── */
 
-export function ClassicView({ data }: ViewProps) {
+export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
   const [tracking, setTracking] = React.useState<any>(null);
 
   const onSearch = ({ kind, id, height }: { kind: string; id?: string; height?: number }) => {
@@ -386,11 +405,19 @@ export function ClassicView({ data }: ViewProps) {
       // Pin the block height ONCE; confirmations derive live at render.
       setTracking({ kind: "tx", id, blockHeight: pinTxBlockHeight(id!, data) });
     } else if (kind === "block") {
-      const block = data.blocks.find((b) => b.height === height);
+      // Fall back to a synthesized stub when the height is outside the current
+      // window, so the detail panel (and its Back button) always render rather
+      // than a dead state. The re-resolve effect upgrades it if it enters view.
+      const block =
+        data.blocks.find((b) => b.height === height) ??
+        { height: height!, hash: "—", txs: 0, sizeKB: 0, reward: 0, difficulty: 0, pool: "—", age: 0, conf: Math.max(0, data.height - height!) };
       setTracking({ kind: "block", height, block });
     }
   };
-  const clear = () => setTracking(null);
+  const clear = () => {
+    setTracking(null);
+    onClearFocus?.();
+  };
 
   React.useEffect(() => {
     // Only re-resolve a tracked BLOCK; a tracked tx keeps its pinned height and
@@ -400,6 +427,18 @@ export function ClassicView({ data }: ViewProps) {
     }
     // eslint-disable-next-line
   }, [data.height, data.blocks]);
+
+  // Deep-link: open the block detail for ?block=<height>. Fires only when
+  // focusBlock CHANGES (a ref guards repeats / StrictMode); resets on clear so
+  // the same block can be re-opened later.
+  const lastFocus = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (focusBlock == null) { lastFocus.current = null; return; }
+    if (focusBlock === lastFocus.current) return;
+    lastFocus.current = focusBlock;
+    onSearch({ kind: "block", height: focusBlock });
+    // eslint-disable-next-line
+  }, [focusBlock]);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>

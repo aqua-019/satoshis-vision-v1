@@ -18,7 +18,6 @@ import { EducationPage } from "@/pages/EducationPage";
 import { MoneroPage } from "@/pages/MoneroPage";
 import { SimulatePage } from "@/pages/SimulatePage";
 import { NodePage } from "@/pages/NodePage";
-import { DesignPage } from "@/pages/DesignPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 export interface AppProps {
@@ -41,7 +40,6 @@ export function App({ useFeed }: AppProps = {}) {
         <Route path="/monero/:tab" element={<MoneroPage />} />
         <Route path="/simulate"  element={<SimulatePage />} />
         <Route path="/node"      element={<NodePage />} />
-        <Route path="/design"    element={<DesignPage />} />
         <Route path="*"          element={<NotFoundPage />} />
       </Routes>
     </DataProvider>
