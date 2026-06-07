@@ -17,10 +17,10 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { AppShell, PageHeader } from "@/layout/AppShell";
-import { Stat, PanelFrame, Crumbs, Pill, Sparkline, MiniBar } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs, Pill } from "@/design/primitives";
+import { AreaSeries, BarSeries } from "./markets/charts";
 import { fmtBytes, shortHash } from "@/data/types";
 import { useMoneroLive } from "@/data/DataContext";
-import type { MoneroLive } from "@/data/types";
 
 // ── prefers-reduced-motion ──
 function usePrefersReducedMotion(): boolean {
@@ -174,56 +174,60 @@ function GeoMap({ width = 760, height = 380 }: { width?: number; height?: number
   );
 }
 
-function DifficultyCurve({ data, width = 560, height = 180 }: { data: MoneroLive; width?: number; height?: number }) {
-  // Synthesise 168 points of difficulty drift around current
-  const points = React.useMemo(() => {
-    const out: number[] = [];
-    let d = data.difficulty * 0.93;
-    for (let i = 0; i < 168; i++) {
-      d += (data.difficulty - d) * 0.03 + (Math.random() - 0.5) * 4e9;
-      out.push(d);
-    }
-    out[out.length - 1] = data.difficulty;
-    return out;
-  }, [data.difficulty]);
-  return <Sparkline data={points} width={width} height={height} color="var(--p-50)" area={0.2} />;
+/** Median of a numeric series (ignores non-finite). */
+function median(nums: number[]): number {
+  const a = nums.filter(Number.isFinite).sort((x, y) => x - y);
+  if (!a.length) return 0;
+  const m = a.length >> 1;
+  return a.length % 2 ? a[m] : (a[m - 1] + a[m]) / 2;
 }
 
-function BlockFullness({ data, width = 560, height = 180 }: { data: MoneroLive; width?: number; height?: number }) {
-  // Each block's tx-count interpreted as % full (assume cap ~250 tx)
-  const cap = 250;
-  const fullness = React.useMemo(() => {
-    return data.blocks.slice(0, 60).reverse().map((b) => Math.min(1, b.txs / cap));
-  }, [data.blocks]);
-  const w = width / fullness.length;
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: "block", maxWidth: width }}>
-      {[0.25, 0.5, 0.75].map((t) => (
-        <line key={t} x1="0" y1={height * t} x2={width} y2={height * t} stroke="rgba(255,255,255,0.04)" strokeDasharray="2 4" />
-      ))}
-      {fullness.map((f, i) => {
-        const h = f * (height - 2);
-        const hue = 30 + f * 30; // amber → green-ish at high
-        return (
-          <rect key={i} x={i * w + 0.5} y={height - h}
-            width={Math.max(1, w - 1)} height={h}
-            fill={`hsla(${hue}, 80%, ${42 + f * 10}%, 0.7)`} />
-        );
-      })}
-      <text x={4} y={12} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.1em">100% FULL</text>
-      <text x={4} y={height - 4} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.1em">EMPTY</text>
-    </svg>
-  );
+/** Compact piconero/B axis label (e.g. 20k, 1.2M). */
+function fmtPcnB(v: number): string {
+  if (v >= 1e6) return (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M";
+  if (v >= 1e3) return (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + "k";
+  return String(Math.round(v));
 }
 
-function MempoolSizeOverTime({ data, width = 560, height = 180 }: { data: MoneroLive; width?: number; height?: number }) {
-  const pts = React.useMemo(() => {
-    const base = data.mempool.length;
-    return Array.from({ length: 96 }, (_, i) =>
-      Math.max(2, base + Math.sin(i * 0.18) * 14 + Math.cos(i * 0.07) * 8 + (Math.random() - 0.5) * 6)
-    );
-  }, [data.mempool.length]);
-  return <Sparkline data={pts} width={width} height={height} color="var(--c-50)" area={0.2} dots />;
+/** Bin real per-tx fee rates (Tx.perB, piconero/B) into a histogram with real
+ *  bin-edge labels. Log-spaced when the range spans >10×, else linear. Returns
+ *  empty arrays when the mempool sample is too small to bin honestly. */
+function feeRateHistogram(perB: number[], bins = 10): { counts: number[]; labels: string[] } {
+  const vals = perB.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
+  if (vals.length < 4) return { counts: [], labels: [] };
+  const min = vals[0], max = vals[vals.length - 1];
+  if (max <= min) return { counts: [vals.length], labels: [fmtPcnB(min)] };
+  const useLog = max / Math.max(1, min) > 10;
+  const edges: number[] = [];
+  for (let i = 0; i <= bins; i++) {
+    const f = i / bins;
+    edges.push(useLog ? min * Math.pow(max / min, f) : min + (max - min) * f);
+  }
+  const counts = new Array(bins).fill(0);
+  for (const v of vals) {
+    let b = bins - 1;
+    for (let i = 0; i < bins; i++) { if (v < edges[i + 1]) { b = i; break; } }
+    counts[b]++;
+  }
+  return { counts, labels: counts.map((_, i) => fmtPcnB(edges[i])) };
+}
+
+/** Accumulate a session rolling buffer: append `sample` whenever `key` changes,
+ *  capped at `cap`. The ref-guard dedupes React StrictMode's double-invoke and
+ *  ignores no-op re-renders where `key` is unchanged. */
+function useSessionSeries(sample: number, key: number, cap = 120): number[] {
+  const [buf, setBuf] = React.useState<number[]>(() => [sample]);
+  const lastKey = React.useRef(key);
+  React.useEffect(() => {
+    if (lastKey.current === key) return;
+    lastKey.current = key;
+    setBuf((prev) => {
+      const next = prev.length >= cap ? prev.slice(prev.length - cap + 1) : prev.slice();
+      next.push(sample);
+      return next;
+    });
+  }, [key, sample, cap]);
+  return buf;
 }
 
 // monerod versions and shares
@@ -239,6 +243,23 @@ const NODE_VERSIONS = [
 
 export function NetworkPage() {
   const data = useMoneroLive();
+  const sim = data.source === "simulated";
+
+  // Real, honestly-windowed series for the network charts (no synthesis).
+  // hashSeries is the rolling buffer of real hashrate samples; pin its last point
+  // to the live reading so the current-value pill always equals data.hashrate
+  // (already true under the live feed, which pushes data.hashrate each tick).
+  const hashSeries = data.hashSeries.length ? [...data.hashSeries.slice(0, -1), data.hashrate] : [data.hashrate];
+  const mempoolBuf = useSessionSeries(data.mempool.length, data.lastUpdate);
+  const diffSeries = data.blocks.map((b) => b.difficulty).reverse();          // oldest → newest
+  const blockSizes = data.blocks.map((b) => b.sizeKB);
+  const FULL_CAP_FLOOR_KB = 600;                                              // ~2× the 300 KB penalty-free median floor
+  const fullCap = Math.max(FULL_CAP_FLOOR_KB, 2 * median(blockSizes));
+  const fullness = data.blocks.map((b) => Math.min(1, b.sizeKB / fullCap)).reverse();
+  const feeHist = feeRateHistogram(data.mempool.map((t) => t.perB));
+  const sortedPerB = data.mempool.map((t) => t.perB).sort((a, b) => a - b);
+  const medPerB = sortedPerB.length ? sortedPerB[Math.floor(sortedPerB.length / 2)] : 0;
+
   return (
     <AppShell bg={{ intensity: "calm" }}>
       <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · ${data.peers.length} peers`} />
@@ -252,7 +273,7 @@ export function NetworkPage() {
       {/* KPI row */}
       <section className="kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 10 }}>
         <Stat k="Block height" v={data.height.toLocaleString()} sub="live" tone="acc" />
-        <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub="vs 5.8 last wk" />
+        <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub={sim ? "sim feed" : "live"} />
         <Stat k="Difficulty" v={`${(data.difficulty / 1e9).toFixed(2)}G`} sub="adj every 720" />
         <Stat k="Peers (sample)" v={data.peers.length} sub="illustrative · not live" />
         <Stat k="Mempool" v={`${data.mempool.length} tx`} sub={fmtBytes(data.mempool.reduce((a, t) => a + t.size, 0))} />
@@ -261,20 +282,28 @@ export function NetworkPage() {
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title="Hashrate · 7d" right={<span>GH/s</span>}>
-          <Sparkline data={data.hashSeries} width={560} height={180} color="var(--tk-accent)" area={0.2} dots />
+        <PanelFrame title={`Hashrate · session · ${hashSeries.length} samples`} right={<span>GH/s</span>}>
+          <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
+            baseline="auto" xLabels={false} sim={sim}
+            format={(v) => (v / 1e9).toFixed(2)} />
         </PanelFrame>
-        <PanelFrame title="Difficulty · 7d" right={<span>Δ {(data.difficulty / 1e9).toFixed(2)}G</span>}>
-          <DifficultyCurve data={data} />
+        <PanelFrame title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>Δ {(data.difficulty / 1e9).toFixed(2)}G</span>}>
+          <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
+            baseline="auto" xLabels={false} sim={sim}
+            format={(v) => (v / 1e9).toFixed(2) + "G"} />
         </PanelFrame>
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title="Mempool size · last 96 ticks" right={<span>{data.mempool.length} tx now</span>}>
-          <MempoolSizeOverTime data={data} />
+        <PanelFrame title={`Mempool size · session · ${mempoolBuf.length} sample${mempoolBuf.length === 1 ? "" : "s"}`} right={<span>{data.mempool.length} tx now</span>}>
+          <AreaSeries data={mempoolBuf} height={180} color="var(--c-50)"
+            baseline="zero" xLabels={false} sim={sim}
+            format={(v) => String(Math.round(v))} />
         </PanelFrame>
-        <PanelFrame title="Block fullness · last 60 blocks" right={<span>cap ~250 tx</span>}>
-          <BlockFullness data={data} />
+        <PanelFrame title={`Block fullness · last ${fullness.length} blocks`} right={<span>cap ≈ {fullCap.toFixed(0)} KB</span>}>
+          <BarSeries data={fullness} height={180} color="var(--tk-accent)"
+            baseline="zero" sim={sim} endLabels={["older", "newer"]}
+            format={(v) => (v * 100).toFixed(0) + "%"} />
         </PanelFrame>
       </section>
 
@@ -294,10 +323,16 @@ export function NetworkPage() {
         </PanelFrame>
 
         <PanelFrame title="Fee histogram" right={<span>piconero / B</span>}>
-          <MiniBar data={data.feeHist} width={420} height={180} color="var(--p-50)" />
+          {feeHist.counts.length ? (
+            <BarSeries data={feeHist.counts} labels={feeHist.labels} height={180} color="var(--p-50)"
+              baseline="zero" sim={sim} format={(v) => String(Math.round(v))} />
+          ) : (
+            <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={180} color="var(--p-50)"
+              baseline="zero" sim={sim} format={(v) => String(Math.round(v))} />
+          )}
           <p className="mono dim" style={{ fontSize: 11, marginTop: 6 }}>
-            Median fee: <b className="acc">~{Math.round(data.feeHist.reduce((a, b) => a + b, 0) / data.feeHist.length)} pico/B</b>
-            <br />Avg tx fee at current rate: <b className="acc">$0.0018</b>
+            Median fee rate: <b className="acc">~{Math.round(medPerB).toLocaleString()} pcn/B</b>
+            {data.mempool.length ? <> · over <b className="acc">{data.mempool.length}</b> mempool tx</> : null}
           </p>
         </PanelFrame>
       </section>

@@ -17,7 +17,7 @@
 import * as React from "react";
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
-import { Stat, PanelFrame, Crumbs, Sparkline } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs } from "@/design/primitives";
 import {
   useMarketHistory,
   RANGE_DAYS,
@@ -26,7 +26,7 @@ import {
   type SeriesResult,
   type LineSeries,
 } from "@/data/useMarketHistory";
-import { CandleChart, MultiLine } from "./markets/charts";
+import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 
 /** Source label for a single series. */
 function SourceBadge({ status, prefix }: { status: SeriesStatus; prefix?: string }) {
@@ -167,13 +167,29 @@ export function MarketsPage() {
       {/* XMR/BTC ratio + Privacy peer group */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={`${(lastRatio * 1e5).toFixed(2)} sat`} />}>
-          <Sparkline data={xmrBtcSeries} width={460} height={220} color="var(--tk-accent)" area={0.18} dots />
+          <AreaSeries data={xmrBtcSeries} days={days} height={220}
+            color="var(--tk-accent)" baseline="auto"
+            format={(v) => (v * 1e5).toFixed(0) + " sat"}
+            sim={hist.xmrBtc.status === "sim"} />
           <p className="mono dim" style={{ marginTop: 8, fontSize: 11 }}>
             Floor: <b className="acc">{(ratioFloor * 1e5).toFixed(2)} sat</b> · Peak: <b className="acc">{(ratioPeak * 1e5).toFixed(2)} sat</b>
           </p>
         </PanelFrame>
         <PanelFrame title={`Privacy peer group · normalized · ${range}`} right={<GroupBadge result={hist.peers} />}>
-          <MultiLine series={peerSeries} days={days} height={240} />
+          <MultiLine series={peerSeries} days={days} height={200} labels={false} />
+          <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: 10.5 }}>
+            {peerSeries.map((s) => {
+              const base = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
+              const lastPct = (s.data[s.data.length - 1] / base - 1) * 100;
+              return (
+                <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
+                  <span className="dim">{s.label}</span>
+                  <b style={{ color: s.color }}>{(lastPct >= 0 ? "+" : "") + lastPct.toFixed(1)}%{s.status === "sim" ? " ·sim" : ""}</b>
+                </span>
+              );
+            })}
+          </div>
         </PanelFrame>
       </section>
 
