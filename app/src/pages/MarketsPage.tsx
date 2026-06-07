@@ -50,7 +50,9 @@ export function MarketsPage() {
   const days = RANGE_DAYS[range];
 
   // REAL market history (CoinGecko via /api/coingecko), with per-series fallback.
-  const hist = useMarketHistory(days);
+  // Thread live spot in so a transient OHLC failure seeds the synthetic fallback
+  // near the real price (XMR/USD, XMR/BTC, BTC/USD) instead of a stale baseline.
+  const hist = useMarketHistory(days, { xmrUsd: data.price, xmrBtc: data.btcRatio, btcUsd: data.btc });
   const xmrCandles = hist.xmrCandles.data;
   const xmrBtcSeries = hist.xmrBtc.data;
   const peerSeries = hist.peers.data;
