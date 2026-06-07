@@ -4,7 +4,7 @@
  * Independent of the global DataProvider/useMoneroLive() (which stays the source
  * of live spot KPIs). This hook owns all OHLC / line / volume history, fetched
  * through the same-origin /api/coingecko proxy (privacy invariant: the browser
- * never touches api.coingecko.com directly, no third-party chart libs).
+ * never touches the CoinGecko API host directly, no third-party chart libs).
  *
  * Real series are labelled "live"; any series whose fetch fails falls back to a
  * synthetic random-walk for THAT series only, labelled "sim". Never blank — the

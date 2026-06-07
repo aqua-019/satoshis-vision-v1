@@ -24,6 +24,21 @@ export function MempoolPage() {
   const meta = MEMPOOL_VIEWS.find((v) => v.id === active)!;
   const View = meta.Component;
 
+  // Deep-link: /mempool?v=classic&block=<height> opens that block's detail in
+  // the active view. clearFocus drops ?block (keeping ?v) when the panel closes.
+  const blockRaw = params.get("block");
+  const focusBlock = blockRaw != null && /^\d{1,8}$/.test(blockRaw) ? parseInt(blockRaw, 10) : null;
+  const clearFocus = React.useCallback(() => {
+    setParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        next.delete("block");
+        return next;
+      },
+      { replace: true },
+    );
+  }, [setParams]);
+
   // Mobile: the switcher is a collapsible dropdown. On desktop CSS keeps the
   // list always shown (the trigger is hidden), so this state is inert there.
   const [open, setOpen] = React.useState(false);
@@ -100,7 +115,7 @@ export function MempoolPage() {
         {/* active view fills the remaining height and scrolls internally */}
         <div className="mp-canvas-scroll">
           <div className="mp-view">
-            <View data={data} bg={{ intensity: "calm" }} />
+            <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
           </div>
         </div>
       </div>

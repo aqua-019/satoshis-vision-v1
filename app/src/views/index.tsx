@@ -36,10 +36,15 @@ import { RingctView } from "@/protocols/ringct";
 import { StealthView } from "@/protocols/stealth";
 import { FcmpView } from "@/protocols/fcmp";
 import { HearthView, MetronomeView, SiloView, ThermostatView, AuctionView, SkylineView, BloodhoundView, BalanceView } from "@/protocols/metaphors";
+import { LighthouseView } from "@/protocols/lighthouse";
 
 export interface ViewProps {
   data: MoneroLive;
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
+  /** Deep-link target block height (e.g. /mempool?block=123). Views may ignore. */
+  focusBlock?: number | null;
+  /** Called when a view's detail panel closes, so the page can drop ?block. */
+  onClearFocus?: () => void;
 }
 
 export type ViewComponent = React.ComponentType<ViewProps>;
@@ -114,6 +119,9 @@ export const PROTOCOL_METAPHORS: ProtocolMeta[] = [
   { id: "thermostat", label: "Thermostat",     kicker: "Difficulty adjustment",  tone: "acc",
     sub: "Two needles tracking toward target.",
     Component: ThermostatView },
+  { id: "lighthouse", label: "Lighthouse",     kicker: "Hashrate rotation",      tone: "acc",
+    sub: "Sweep speed = hashrate; difficulty keeps the rhythm at 2:00.",
+    Component: LighthouseView },
   { id: "auction",    label: "Auction",        kicker: "Mempool fees",           tone: "acc",
     sub: "Bidding paddles set the fee market.",
     Component: AuctionView },

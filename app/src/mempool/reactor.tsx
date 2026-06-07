@@ -19,10 +19,13 @@ import { fmtBytes, fmtFee, shortHash as ShortHash, randHex } from "@/data/types"
 import type { MoneroLive, Tx, Block, Pool } from "@/data/types";
 import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
 import { pinTxBlockHeight } from "@/mempool/conf";
+import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 
 interface ViewProps {
   data: MoneroLive;
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
+  focusBlock?: number | null;
+  onClearFocus?: () => void;
 }
 
 // Deterministic, in-memory simulated tx shape used by the exported TxDetailPanel
@@ -290,15 +293,23 @@ function PoolDonut({ pools, netGh }: { pools: Pool[]; netGh: string }) {
    FullTxDetail / FullBlockDetail inspectors from tx-detail.
    ────────────────────────────────────────────────────────────── */
 
-export function ReactorView({ data }: ViewProps) {
+export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
   const [tracking, setTracking] = React.useState<Tracking>(null);
+  // Declared unconditionally (above the early returns) for stable hook order.
+  const glideRef = useRibbonGlide(data.height);
 
   const onPickTx = (id: string) => setTracking({ kind: "tx", id, blockHeight: pinTxBlockHeight(id, data) });
   const onSelectBlock = (height: number) => {
-    const block = data.blocks.find((b) => b.height === height);
+    // Stub fallback for out-of-window heights so the panel always renders.
+    const block =
+      data.blocks.find((b) => b.height === height) ??
+      { height, hash: "—", txs: 0, sizeKB: 0, reward: 0, difficulty: 0, pool: "—", age: 0, conf: Math.max(0, data.height - height) };
     setTracking({ kind: "block", height, block });
   };
-  const clearTracking = () => setTracking(null);
+  const clearTracking = () => {
+    setTracking(null);
+    onClearFocus?.();
+  };
 
   // Keep a tracked block fresh as data ticks (confirmations grow).
   React.useEffect(() => {
@@ -309,6 +320,16 @@ export function ReactorView({ data }: ViewProps) {
       return t;
     });
   }, [data.blocks]);
+
+  // Deep-link: open the block detail for ?block=<height> (fires only on change).
+  const lastFocus = React.useRef<number | null>(null);
+  React.useEffect(() => {
+    if (focusBlock == null) { lastFocus.current = null; return; }
+    if (focusBlock === lastFocus.current) return;
+    lastFocus.current = focusBlock;
+    onSelectBlock(focusBlock);
+    // eslint-disable-next-line
+  }, [focusBlock]);
 
   // Tracking drilldown replaces the dashboard (same pattern as Classic).
   if (tracking?.kind === "tx") {
@@ -338,7 +359,7 @@ export function ReactorView({ data }: ViewProps) {
             title={<><span>● Block stream</span><span className="dim2">queued ⟶ confirmed</span></>}
             right={<><span>FEE-SORTED</span><span className="acc">▣ AUTO-SCROLL</span></>}
           >
-            <div style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "8px 4px" }}>
+            <div ref={glideRef} style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "8px 4px" }}>
               {/* queued + next placeholders */}
               <div className="mblock q" style={{ width: 70, minHeight: 200, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                 <div>
@@ -356,7 +377,7 @@ export function ReactorView({ data }: ViewProps) {
               {data.blocks.slice(0, 10).map((b, i) => {
                 const h = 130 + Math.min(120, (b.txs / 140) * 120);
                 return (
-                  <div key={b.height} className="mblock" onClick={() => onSelectBlock(b.height)}
+                  <div key={b.height} data-glide-key={b.height} className="mblock glide-block" onClick={() => onSelectBlock(b.height)}
                     style={{ width: 96, minHeight: h, display: "flex", flexDirection: "column", justifyContent: "space-between", opacity: 1 - i * 0.04, cursor: "pointer" }}>
                     <div>
                       <div className="hh">#{b.height.toLocaleString()}</div>

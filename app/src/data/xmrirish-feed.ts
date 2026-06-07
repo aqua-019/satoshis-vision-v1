@@ -14,7 +14,7 @@
  *
  * Privacy invariant: the browser only ever talks to same-origin /api/* (and the
  * relay WS). The dev proxy (vite.config.ts) keeps `npm run dev` same-origin too.
- * It never reaches a Monero RPC node or coingecko.com directly.
+ * It never reaches a Monero RPC node or the CoinGecko API host directly.
  */
 
 import * as React from "react";

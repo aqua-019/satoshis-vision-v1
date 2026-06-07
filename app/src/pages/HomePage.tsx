@@ -70,11 +70,17 @@ export function HomePage() {
           <div className="table-scroll">
           <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "repeat(14, 1fr)", gap: 8 }}>
             {data.blocks.slice(0, 14).map((b) => (
-              <div key={b.height} className="mblock">
+              <Link
+                key={b.height}
+                to={`/mempool?v=classic&block=${b.height}`}
+                className="mblock"
+                style={{ textDecoration: "none", color: "inherit", display: "block" }}
+                aria-label={`Block ${b.height}, ${b.txs} transactions — open in mempool`}
+              >
                 <div className="hh">#{b.height.toString().slice(-5)}</div>
                 <div className="nm">{b.txs}</div>
                 <div className="sz">{b.sizeKB.toFixed(1)}KB · {b.pool.split(" ")[0]}</div>
-              </div>
+              </Link>
             ))}
           </div>
           </div>

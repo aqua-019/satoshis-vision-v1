@@ -35,7 +35,7 @@ if (!(m.clientW <= 420 && m.scrollW >= 850 && m.left > 50)) { console.log('❌ m
 
 // 2) No page-level horizontal overflow on key routes (incl. the Monero/Bottom-Line
 //    page that v5.0.5 left rendering its <main> 998px wide and clipped).
-for (const r of ['/', '/network', '/markets', '/mempool', '/monero', '/monero/bottomline', '/education']) {
+for (const r of ['/', '/network', '/markets', '/mempool', '/simulate', '/monero', '/monero/bottomline', '/education']) {
   await p.goto(base + r, { waitUntil: 'networkidle' });
   const o = await p.evaluate(() => {
     const main = document.querySelector('main.main');
