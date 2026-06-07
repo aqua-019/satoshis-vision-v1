@@ -4,6 +4,7 @@ import * as React from "react";
 import { fmtBytes, shortHash as ShortHash, randHex } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
+import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
 
 interface ViewProps {
   data: MoneroLive;
@@ -23,34 +24,9 @@ interface ViewProps {
 
 const CLASSIC_BLOCK_TARGET = 120; // seconds
 
-function classicLookupTx(txid: string, data: MoneroLive) {
-  // mirror of reactor's lookupTx, scoped here so this file works standalone
-  const intHash = Array.from(txid).reduce((a, c) => (a + c.charCodeAt(0)) >>> 0, 0);
-  const inMempool = (intHash & 3) === 0;
-  if (inMempool && data.mempool.length) {
-    const t = data.mempool[intHash % data.mempool.length];
-    return {
-      id: txid, size: t.size, fee: t.fee, perB: t.perB, ringSize: 16,
-      inputs: t.inputs, outputs: t.outputs, blockHeight: null,
-      confirmations: 0, status: "in mempool",
-      eta: "~" + (1 + (intHash % 3)) + " min until block",
-      timelock: 0, privacy: 90,
-    };
-  }
-  const idx = intHash % Math.min(8, data.blocks.length);
-  const block = data.blocks[idx];
-  return {
-    id: txid, size: 1500 + (intHash % 3000),
-    fee: 0.0011 + (intHash % 9000) / 1e10,
-    perB: 600000 + (intHash % 200000), ringSize: 16,
-    inputs: 1 + (intHash % 2), outputs: 2,
-    blockHeight: block.height,
-    confirmations: block.conf,
-    status: block.conf >= 10 ? "fully unlocked" : "confirming",
-    eta: block.conf >= 10 ? "Confirmed" : "~" + ((10 - block.conf) * 2) + " min until unlock",
-    timelock: 0, privacy: 90,
-  };
-}
+// A tracked tx pins its block height ONCE at search time (see mempool/conf.ts);
+// the ribbon highlight and the detail panel both derive confirmations live from
+// that pinned height + the current tip, so they can never disagree.
 
 /* ── clean search bar ─────────────────────────────────────── */
 
@@ -171,8 +147,8 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
     ...past.map((b: any, i: number) => ({ b, status: i === 0 ? "current" : "past", confLabel: b.conf + (b.conf === 1 ? " confirmation" : " confirmations") })),
   ];
 
-  const trackedHeight = tracking?.tx?.blockHeight ?? null;
-  const trackedConf = tracking?.tx?.confirmations ?? null;
+  const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
+  const trackedConf = trackedHeight != null ? liveConf(trackedHeight, data.height) : null;
 
   return (
     <div style={{ position: "relative", padding: "18px 20px 30px" }}>
@@ -407,7 +383,8 @@ export function ClassicView({ data }: ViewProps) {
 
   const onSearch = ({ kind, id, height }: { kind: string; id?: string; height?: number }) => {
     if (kind === "tx") {
-      setTracking({ kind: "tx", id, tx: classicLookupTx(id!, data) });
+      // Pin the block height ONCE; confirmations derive live at render.
+      setTracking({ kind: "tx", id, blockHeight: pinTxBlockHeight(id!, data) });
     } else if (kind === "block") {
       const block = data.blocks.find((b) => b.height === height);
       setTracking({ kind: "block", height, block });
@@ -416,13 +393,13 @@ export function ClassicView({ data }: ViewProps) {
   const clear = () => setTracking(null);
 
   React.useEffect(() => {
-    if (tracking?.kind === "tx") {
-      setTracking((t: any) => ({ ...t, tx: classicLookupTx(t.id, data) }));
-    } else if (tracking?.kind === "block") {
+    // Only re-resolve a tracked BLOCK; a tracked tx keeps its pinned height and
+    // re-derives confirmations live from `data` on each render (no re-pin).
+    if (tracking?.kind === "block") {
       setTracking((t: any) => ({ ...t, block: data.blocks.find((b) => b.height === t.height) ?? t.block }));
     }
     // eslint-disable-next-line
-  }, [data.height, data.mempool.length]);
+  }, [data.height, data.blocks]);
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
@@ -436,7 +413,7 @@ export function ClassicView({ data }: ViewProps) {
       <ClassicRibbon data={data} tracking={tracking} onSelectBlock={(h: number) => onSearch({ kind: "block", height: h })} />
       <div className="main" style={{ overflow: "auto", padding: 0 }}>
         {tracking?.kind === "tx" ? (
-          <FullTxDetail tx={txSynthFromId(tracking.id, data)} onBack={clear} />
+          <FullTxDetail tx={txSynthFromId(tracking.id, data, tracking.blockHeight)} onBack={clear} />
         ) : tracking?.kind === "block" && tracking.block ? (
           <FullBlockDetail block={blockSynth(tracking.block, data)} onBack={clear} onPickTx={(id: string) => onSearch({ kind: "tx", id })} />
         ) : (

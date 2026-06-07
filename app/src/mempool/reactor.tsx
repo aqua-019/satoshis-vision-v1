@@ -18,6 +18,7 @@ import { Pill, PanelFrame, MiniBar } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash, randHex } from "@/data/types";
 import type { MoneroLive, Tx, Block, Pool } from "@/data/types";
 import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
+import { pinTxBlockHeight } from "@/mempool/conf";
 
 interface ViewProps {
   data: MoneroLive;
@@ -43,7 +44,7 @@ interface ReactorTx {
 }
 
 type Tracking =
-  | { kind: "tx"; id: string }
+  | { kind: "tx"; id: string; blockHeight: number | null }
   | { kind: "block"; height: number; block?: Block }
   | null;
 
@@ -292,7 +293,7 @@ function PoolDonut({ pools, netGh }: { pools: Pool[]; netGh: string }) {
 export function ReactorView({ data }: ViewProps) {
   const [tracking, setTracking] = React.useState<Tracking>(null);
 
-  const onPickTx = (id: string) => setTracking({ kind: "tx", id });
+  const onPickTx = (id: string) => setTracking({ kind: "tx", id, blockHeight: pinTxBlockHeight(id, data) });
   const onSelectBlock = (height: number) => {
     const block = data.blocks.find((b) => b.height === height);
     setTracking({ kind: "block", height, block });
@@ -313,7 +314,7 @@ export function ReactorView({ data }: ViewProps) {
   if (tracking?.kind === "tx") {
     return (
       <div className="main" style={{ overflow: "auto", padding: 0 }}>
-        <FullTxDetail tx={txSynthFromId(tracking.id, data)} onBack={clearTracking} />
+        <FullTxDetail tx={txSynthFromId(tracking.id, data, tracking.blockHeight)} onBack={clearTracking} />
       </div>
     );
   }
