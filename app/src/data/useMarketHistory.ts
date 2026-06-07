@@ -60,6 +60,16 @@ export interface MarketHistory {
 export const RANGE_DAYS = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365 } as const;
 export type RangeKey = keyof typeof RANGE_DAYS;
 
+/** Live spot prices threaded in from the consumer (useMoneroLive) so a transient
+ *  CoinGecko failure seeds the synthetic fallback near the real price, not a stale
+ *  hardcoded baseline. All optional — omit and the SYNTH_ANCHOR defaults apply. */
+export interface SpotSeed { xmrUsd?: number; xmrBtc?: number; btcUsd?: number }
+
+/** Use a live spot as the synthetic seed when it's a usable positive number,
+ *  otherwise fall back to the hardcoded anchor. */
+export const seedOr = (v: number | undefined, fallback: number): number =>
+  (typeof v === "number" && isFinite(v) && v > 0 ? v : fallback);
+
 /* ── granularity helpers (mirror CoinGecko's ohlc buckets) ─────────── */
 
 /** Label for the candle granularity CoinGecko returns at a given range. */
@@ -110,14 +120,14 @@ export function genCandles(n: number, start: number, vol: number, days: number):
   return out;
 }
 
-function simCandles(days: number): Candle[] {
+export function simCandles(days: number, start?: number): Candle[] {
   const [s, v] = SYNTH_ANCHOR.monero;
-  return genCandles(synthCount(days), s, v, days);
+  return genCandles(synthCount(days), seedOr(start, s), v, days);
 }
 
-function simLineData(coin: string, days: number): number[] {
+export function simLineData(coin: string, days: number, start?: number): number[] {
   const [s, v] = SYNTH_ANCHOR[coin] ?? [100, 3];
-  return genCandles(synthCount(days), s, v, days).map((c) => c.c);
+  return genCandles(synthCount(days), seedOr(start, s), v, days).map((c) => c.c);
 }
 
 /* ── in-memory cache (module scope; survives strict-mode remount) ───── */
@@ -231,14 +241,14 @@ function initialGroup(ids: readonly CoinDef[], days: number): LineSeries[] {
   return ids.map(([label, id, color]) => ({ label, color, status: "loading" as SeriesStatus, data: simLineData(id, days) }));
 }
 
-function initialHistory(days: number): MarketHistory {
+function initialHistory(days: number, spot?: SpotSeed): MarketHistory {
   const gl = granLabel(days);
   return {
     loading: true,
     days,
-    xmrCandles: { data: simCandles(days), status: "loading", granularityLabel: gl },
-    xmrBtc: { data: genCandles(synthCount(days), 0.0035, 0.00008, days).map((c) => c.c), status: "loading", granularityLabel: gl },
-    btcLine: { data: simLineData("bitcoin", days), status: "loading", granularityLabel: gl },
+    xmrCandles: { data: simCandles(days, spot?.xmrUsd), status: "loading", granularityLabel: gl },
+    xmrBtc: { data: genCandles(synthCount(days), seedOr(spot?.xmrBtc, 0.0035), 0.00008, days).map((c) => c.c), status: "loading", granularityLabel: gl },
+    btcLine: { data: simLineData("bitcoin", days, spot?.btcUsd), status: "loading", granularityLabel: gl },
     peers: { data: initialGroup(PEER_GROUP, days), status: "loading", granularityLabel: gl },
     top: { data: initialGroup(TOP_GROUP, days), status: "loading", granularityLabel: gl },
   };
@@ -246,13 +256,18 @@ function initialHistory(days: number): MarketHistory {
 
 /* ── the hook ──────────────────────────────────────────────────────── */
 
-export function useMarketHistory(days: number): MarketHistory {
-  const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days));
+export function useMarketHistory(days: number, spot?: SpotSeed): MarketHistory {
+  // Keep the latest spot readable inside the effect WITHOUT adding it to the deps —
+  // spot ticks every couple seconds, and re-running the effect would flash the
+  // skeleton and re-issue fetches. The catch handlers read spotRef at failure time.
+  const spotRef = React.useRef(spot);
+  spotRef.current = spot;
+  const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days, spot));
 
   React.useEffect(() => {
     let alive = true;
     const gl = granLabel(days);
-    setState(initialHistory(days)); // reset skeleton for the new range
+    setState(initialHistory(days, spotRef.current)); // reset skeleton for the new range
     const set = (patch: Partial<MarketHistory>) => {
       if (alive) setState((s) => ({ ...s, ...patch }));
     };
@@ -268,19 +283,19 @@ export function useMarketHistory(days: number): MarketHistory {
         ]);
         set({ xmrCandles: { data: attachVolume(candles, chart.volumes), status: "live", granularityLabel: gl } });
       } catch {
-        set({ xmrCandles: { data: simCandles(days), status: "sim", granularityLabel: gl } });
+        set({ xmrCandles: { data: simCandles(days, spotRef.current?.xmrUsd), status: "sim", granularityLabel: gl } });
       }
     })();
 
     // XMR/BTC ratio
     const pBtc = fetchChart("monero", "btc", days)
       .then((r) => set({ xmrBtc: { data: r.prices.map((p) => p[1]), status: "live", granularityLabel: gl } }))
-      .catch(() => set({ xmrBtc: { data: genCandles(synthCount(days), 0.0035, 0.00008, days).map((c) => c.c), status: "sim", granularityLabel: gl } }));
+      .catch(() => set({ xmrBtc: { data: genCandles(synthCount(days), seedOr(spotRef.current?.xmrBtc, 0.0035), 0.00008, days).map((c) => c.c), status: "sim", granularityLabel: gl } }));
 
     // BTC/USD line
     const pBtcLine = fetchChart("bitcoin", "usd", days)
       .then((r) => set({ btcLine: { data: r.prices.map((p) => p[1]), status: "live", granularityLabel: gl } }))
-      .catch(() => set({ btcLine: { data: simLineData("bitcoin", days), status: "sim", granularityLabel: gl } }));
+      .catch(() => set({ btcLine: { data: simLineData("bitcoin", days, spotRef.current?.btcUsd), status: "sim", granularityLabel: gl } }));
 
     // peer + top groups, staggered (top delayed to ease free-tier rate caps)
     const pPeers = fetchGroup(PEER_GROUP, "usd", days, 0).then((d) =>

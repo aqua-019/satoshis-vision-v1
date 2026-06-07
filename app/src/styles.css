@@ -314,7 +314,7 @@ header > div > h1.serif {
 
 /* ── main column ─────────────────────────────────────────────── */
 
-.main { padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow: hidden; }
+.main { padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; min-height: 0; overflow-y: auto; overflow-x: hidden; }
 /* full-bleed main (AppShell `fluid` prop) — was an inline style; classed so a
    media query can win on mobile. Reproduces the old inline values exactly. */
 .main--fluid { padding: 0; overflow: hidden; }
@@ -491,10 +491,22 @@ header > div > h1.serif {
   border: 1px solid var(--rule); border-radius: 2px;
   display: flex; flex-direction: column; gap: 6px; max-width: 220px;
 }
-.mp-switcher__list { display: flex; flex-direction: column; gap: 6px; }
-/* mobile-only controls — hidden on desktop (revealed inside the media query) */
+.mp-switcher__list { display: none; flex-direction: column; gap: 6px; }
+.mp-switcher__list.is-open { display: flex; }
+/* navtop toggle is mobile-only — hidden on desktop (revealed inside the media query) */
 .navtop-toggle { display: none; }
-.mp-switcher__trigger { display: none; }
+/* desktop view switcher: a compact collapsible pill (mobile @media bumps it to a
+   44px touch target). The list stays collapsed until the trigger toggles .is-open. */
+.mp-switcher__trigger {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  appearance: none; cursor: pointer;
+  background: rgba(255,122,26,0.06);
+  border: 1px solid var(--tk-accent); border-radius: 2px;
+  color: var(--tk-accent);
+  padding: 7px 10px;
+  font-family: var(--f-mono); font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
 
 /* ── mempool search bar — shared atom ──────────────────────── */
 .mempool-search-bar {
