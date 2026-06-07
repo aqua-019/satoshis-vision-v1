@@ -63,12 +63,14 @@ export function useRibbonGlide(depKey: unknown) {
     }
 
     let animatedAny = false;
+    const entering: HTMLElement[] = [];
     for (const el of nodes) {
       const k = el.dataset.glideKey;
       if (k == null) continue;
       const first = prev.current.get(k);
       const now = last.get(k);
-      if (!first || !now) continue; // newly added / removed → no glide
+      if (!now) continue;
+      if (!first) { entering.push(el); continue; } // newly added → slide/fade in from the head
       const dx = first.left - now.left;
       if (dx === 0) continue;
       // INVERT — kill the transition and offset back to the old position.
@@ -78,6 +80,17 @@ export function useRibbonGlide(depKey: unknown) {
     }
 
     prev.current = last;
+
+    // Incoming head block(s): glide/fade in from the head rather than popping.
+    // useLayoutEffect runs before paint, so the keyframe starts from its `from`
+    // state on the first frame. The class is removed on animationend so the next
+    // tip can re-trigger it. (Skipped under reduced motion via the early return.)
+    for (const el of entering) {
+      el.classList.add("glide-enter");
+      const clear = () => { el.classList.remove("glide-enter"); el.removeEventListener("animationend", clear); };
+      el.addEventListener("animationend", clear);
+    }
+
     if (!animatedAny) return;
 
     // PLAY — double rAF guarantees the browser paints the inverted positions
