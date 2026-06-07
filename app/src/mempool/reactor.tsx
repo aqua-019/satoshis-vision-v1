@@ -14,9 +14,10 @@
 // Drilldown: clicking a tx row or a block opens the rich FullTxDetail /
 // FullBlockDetail inspectors from tx-detail. All lookups SIMULATED — no /api/tx.
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { Pill, PanelFrame, MiniBar } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash, randHex } from "@/data/types";
-import type { MoneroLive, Tx, Block, Pool } from "@/data/types";
+import type { MoneroLive, Tx, Block } from "@/data/types";
 import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
 import { pinTxBlockHeight } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
@@ -255,36 +256,6 @@ function RingSigFan() {
   );
 }
 
-/* ── pool-distribution donut ── */
-function PoolDonut({ pools, netGh }: { pools: Pool[]; netGh: string }) {
-  const cx = 70, cy = 70, r = 56, w = 18;
-  let acc = 0;
-  return (
-    <svg width={140} height={140} viewBox="0 0 140 140">
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={w} />
-      {pools.map((p, i) => {
-        const a0 = acc * Math.PI * 2 - Math.PI / 2;
-        acc += p.share;
-        const a1 = acc * Math.PI * 2 - Math.PI / 2;
-        const x0 = cx + Math.cos(a0) * r, y0 = cy + Math.sin(a0) * r;
-        const x1 = cx + Math.cos(a1) * r, y1 = cy + Math.sin(a1) * r;
-        const large = p.share > 0.5 ? 1 : 0;
-        return (
-          <path key={i} d={`M ${x0} ${y0} A ${r} ${r} 0 ${large} 1 ${x1} ${y1}`}
-            fill="none" stroke={p.color} strokeWidth={w}
-            style={{ filter: `drop-shadow(0 0 4px ${p.color})` }} />
-        );
-      })}
-      <text x={cx} y={cy} textAnchor="middle" dominantBaseline="middle" fontFamily="var(--f-mono)" fontSize="20" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 8px var(--tk-accent))" }}>
-        {netGh}
-      </text>
-      <text x={cx} y={cy + 16} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)" letterSpacing="0.15em">
-        GH/s · NET
-      </text>
-    </svg>
-  );
-}
-
 /* ──────────────────────────────────────────────────────────────
    REACTOR VIEW · root
    Chrome stripped (MIGRATION §5): no .art wrapper, no ArtBackground,
@@ -434,18 +405,22 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             <div className="kv" style={{ fontSize: 10 }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
             <div className="kv" style={{ fontSize: 10 }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
           </PanelFrame>
-          <PanelFrame title="Pool distribution · 24h" right={<span className="acc">DECENTRALIZATION ↗</span>}>
-            <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-              <PoolDonut pools={data.poolDist} netGh={netGh} />
-              <div style={{ flex: 1, fontFamily: "var(--f-mono)", fontSize: 10 }}>
-                {data.poolDist.map((p, i) => (
-                  <div key={i} style={{ display: "grid", gridTemplateColumns: "10px 1fr auto", gap: 6, padding: "2px 0", alignItems: "center" }}>
-                    <span style={{ width: 8, height: 8, background: p.color, borderRadius: 2, boxShadow: `0 0 6px ${p.color}` }} />
-                    <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.name}</span>
-                    <span className={p.rec ? "acc" : ""}>{(p.share * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
+          <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
+            <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.55 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
+                  {data.blocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.length}
+                </span>
+                <span className="dim">recent blocks · pool unknown</span>
               </div>
+              <p className="dim" style={{ marginTop: 8, fontSize: 10, color: "var(--ink-40)" }}>
+                Monero coinbases don't tag pools — the node reports every block as
+                unattributed, so per-pool share can't be measured on-chain. Live network
+                hashrate: <span className="acc">{netGh} GH/s</span>.
+              </p>
+              <Link to="/simulate?p=skyline" className="acc" style={{ fontSize: 10 }}>
+                Decentralization &amp; HHI → Skyline simulator
+              </Link>
             </div>
           </PanelFrame>
         </div>

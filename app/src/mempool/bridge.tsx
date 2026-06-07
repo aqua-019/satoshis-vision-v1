@@ -1,6 +1,7 @@
 // AUTO-PORTED from bridge.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { useTick } from "@/design/ArtBackground";
 import { Stat } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
@@ -122,7 +123,7 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
       {/* you (centre) */}
       <circle cx={cx} cy={cy} r="4" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 5px var(--tk-accent))" }} />
       <text x={cx} y={cy - 9} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)" letterSpacing="0.16em">NODE</text>
-      <text x="12" y="18" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.16em">PPI · 12 PEERS · RANGE = LATENCY</text>
+      <text x="12" y="18" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.16em">PPI · PEERS (SIM) · RANGE = LATENCY</text>
     </svg>
   );
 }
@@ -171,15 +172,15 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
   );
 }
 
-export function BrgGaugeBank({ data }: { data: MoneroLive }) {
-  // Decentralisation = 1 - HHI of pool shares (higher is healthier).
-  const hhi = data.poolDist.reduce((a, p) => a + p.share * p.share, 0);
-  const decentr = Math.round((1 - hhi) * 100);
+export function BrgGaugeBank(_props: { data: MoneroLive }) {
+  // Protocol-status indicators (illustrative). The former DECENTRALISATION gauge
+  // was derived from fabricated pool shares (the node exposes no pool attribution),
+  // so it's replaced by RINGCT — true status: every Monero tx is RingCT.
   return (
     <BrgCard title="Instrument bank · network health" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> nominal</>}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
         <BrgGauge value={100} label="SYNC" color="var(--g-50)" />
-        <BrgGauge value={decentr} label="DECENTRALISATION" color="var(--c-50)" />
+        <BrgGauge value={100} label="RINGCT" color="var(--c-50)" />
         <BrgGauge value={94} label="PRIVACY · ANON" color="var(--p-50)" />
         <BrgGauge value={72} label="FCMP++ READY" color="var(--tk-accent)" />
       </div>
@@ -274,24 +275,20 @@ export function BrgBlockCadence({ data }: { data: MoneroLive }) {
   );
 }
 
-/* ── pool concentration bars + HHI ──────────────────────────── */
+/* ── pool attribution (honest: node exposes no pool data) ───── */
 export function BrgPoolDist({ data }: { data: MoneroLive }) {
-  const hhi = data.poolDist.reduce((a, p) => a + p.share * p.share, 0);
-  const pools = [...data.poolDist].sort((a, b) => b.share - a.share);
+  const unattributed = data.blocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
   return (
-    <BrgCard title="Pool concentration · 24h" right={<span>HHI <b className="acc">{(hhi * 1e4).toFixed(0)}</b></span>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        {pools.map((p, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "96px 1fr 44px", gap: 10, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10 }}>
-            <span style={{ display: "flex", alignItems: "center", gap: 6, color: p.rec ? "var(--tk-accent)" : "var(--ink-60)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              <span style={{ width: 6, height: 6, borderRadius: 1, background: p.color, boxShadow: `0 0 4px ${p.color}`, flex: "none" }} />{p.name}
-            </span>
-            <div style={{ height: 8, background: "rgba(255,255,255,0.04)", borderRadius: 4, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: (p.share * 100).toFixed(1) + "%", background: p.color, boxShadow: `0 0 6px ${p.color}`, borderRadius: 4, transition: "width 0.6s ease" }} />
-            </div>
-            <span style={{ textAlign: "right", color: "var(--ink-100)" }}>{(p.share * 100).toFixed(1)}%</span>
-          </div>
-        ))}
+    <BrgCard title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontSize: 20, color: "var(--ink-100)" }}>{unattributed}/{data.blocks.length}</span>
+          <span className="dim">recent blocks · pool unknown</span>
+        </div>
+        <span className="dim" style={{ color: "var(--ink-40)" }}>
+          Monero coinbases don't tag pools, so per-pool share isn't measurable on-chain.
+          Decentralization &amp; HHI live in the <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
+        </span>
       </div>
     </BrgCard>
   );

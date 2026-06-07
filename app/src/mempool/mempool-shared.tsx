@@ -4,6 +4,7 @@ import * as React from "react";
 import type { MoneroLive, Block } from "@/data/types";
 import { TxDetailPanel, BlockDetailPanel } from "@/mempool/reactor";
 import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
+import { useTick } from "@/design/ArtBackground";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
 //
@@ -19,6 +20,33 @@ type Tracking =
   | { kind: "tx"; id: string; blockHeight: number | null }
   | { kind: "block"; height: number; block?: Block }
   | null;
+
+// MempoolHeartbeat — a per-mempool liveness chip. Real Monero blocks are ~2 min
+// apart, so the block ribbon is legitimately quiet between them; this gives the
+// user a per-second signal the feed is alive. `useTick(1000)` re-renders it each
+// second to advance "updated Ns ago"; the LED is keyed on `lastUpdate` so it
+// remounts (replaying the one-shot `mp-beat` flash) exactly when a new poll lands,
+// not every second. Shows SIM when no external source is reaching us.
+export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
+  useTick(1000);
+  const live = data.live;
+  const ageSec = Math.max(0, Math.round((Date.now() - data.lastUpdate) / 1000));
+  return (
+    <span
+      className={"pill" + (live ? " live" : "")}
+      title={live ? "Feed polling ~every 2.5s · source: " + data.source : "Showing seed data — no external source reaching the browser"}
+    >
+      <span
+        key={data.lastUpdate}
+        className="led"
+        style={live
+          ? { animation: "mp-beat 0.5s ease-out" }
+          : { background: "var(--ink-40)", boxShadow: "none" }}
+      />
+      {live ? <>LIVE · updated {ageSec}s ago</> : "SIM"}
+    </span>
+  );
+}
 
 export function useMempoolTracking(data: MoneroLive) {
   const [tracking, setTracking] = React.useState<Tracking>(null);

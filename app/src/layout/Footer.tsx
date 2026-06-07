@@ -13,7 +13,7 @@ export function Footer() {
       <span><span className="blink">●</span> NETWORK NOMINAL</span>
       <span>HEIGHT <b className="acc" style={{ color: "var(--tk-accent)" }}>{data.height.toLocaleString()}</b></span>
       <span>HASH {(data.hashrate / 1e9).toFixed(2)} GH/s</span>
-      <span>PEERS {data.peers.length}</span>
+      <span>PEERS {data.peers.length} <span style={{ opacity: 0.5 }}>sim</span></span>
       <span>MEMPOOL {data.mempool.length}</span>
       <span>RING 16</span>
       <span>FORK v16 · FCMP++ Q3</span>

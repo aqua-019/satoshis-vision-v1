@@ -230,7 +230,7 @@ export function TerminalHubView({ data }: ViewProps) {
               <PanelFrame title="$ awk · fee distribution">
                 <TermFeeHisto data={data} />
               </PanelFrame>
-              <PanelFrame title="$ peer · top 10 by latency">
+              <PanelFrame title="$ peer · top 10 by latency · illustrative">
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.45, color: "var(--ink-80)" }}>
 {data.peers.slice(0, 10).map((p, i) => `${pad(i + 1, 2)} ${p.ip.padEnd(22, " ").slice(0, 22)} ${String(p.lat).padStart(4, " ")}ms ${p.cnt}`).join("\n")}
                 </pre>

@@ -759,12 +759,12 @@ export function SkylineView({ data, bg }: ViewProps) {
       label="M6 · Skyline"
       kicker="MONERO PROTOCOL · 12 · POOL DECENTRALIZATION"
       title='A skyline of <em>mining pools</em>. The cathedral is the goal.'
-      sub="Each pool is a building, height = hashrate share. Tall red towers are centralized custodial pools. The cathedral is P2Pool — decentralized, no fee, no operator."
-      badges={[{ label: "P2Pool ↑", tone: "ready" }, { label: "HHI tracked", tone: "" }, { label: "Ready", tone: "ready" }]}
+      sub="Each pool is a building, height = hashrate share. Tall red towers are centralized custodial pools. The cathedral is P2Pool — decentralized, no fee, no operator. Pool shares here are illustrative: Monero coinbases don't tag pools, so distribution can't be measured on-chain."
+      badges={[{ label: "P2Pool ↑", tone: "ready" }, { label: "HHI · illustrative", tone: "" }, { label: "Educational", tone: "ready" }]}
       bg={bg}
       stage={<><SkylineStage poolDist={data.poolDist} />
         <div style={{ marginTop: 18, display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-          <Stat k="POOLS TRACKED" v={data.poolDist.length} sub="last 24h" />
+          <Stat k="POOLS TRACKED" v={data.poolDist.length} sub="illustrative" />
           <Stat k="P2POOL SHARE" v={((data.poolDist.find(p => p.name === "P2Pool")?.share ?? 0) * 100).toFixed(1) + "%"} sub="decentralized" tone="g" />
           <Stat k="TOP-3 SHARE" v={Math.round([...data.poolDist].sort((a,b)=>b.share-a.share).slice(0,3).reduce((a,p)=>a+p.share*100,0)) + "%"} sub="centralized" tone="dn" />
           <Stat k="HHI" v={Math.round(data.poolDist.reduce((a, p) => a + Math.pow(p.share * 100, 2), 0)).toLocaleString()} sub="concentration" tone="acc" />
@@ -776,7 +776,8 @@ export function SkylineView({ data, bg }: ViewProps) {
           <p className="lede">The Herfindahl-Hirschman Index measures market concentration. Sub-1,500 is competitive; over 2,500 is concentrated.</p>
           <div className="body">
             Monero's skyline rotates over months. A pool dominates, miners migrate, a competitor rises. P2Pool sits at the center because it's the one structure that doesn't compete — it lets thousands of solo miners pool their hashes without giving up custody.<br /><br />
-            <b className="acc">Goal:</b> P2Pool over 50%. <b className="dn">Risk:</b> any single pool over 33%.
+            <b className="acc">Goal:</b> P2Pool over 50%. <b className="dn">Risk:</b> any single pool over 33%.<br /><br />
+            <span className="dim">The per-pool shares shown are illustrative, not live measurement: Monero coinbase transactions don't identify the mining pool, and this site queries no third-party pool API, so on-chain pool distribution is unknowable.</span>
           </div>
         </>
       }

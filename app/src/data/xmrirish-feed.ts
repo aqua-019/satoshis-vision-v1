@@ -58,12 +58,18 @@ async function getJSON<T>(url: string, init?: RequestInit): Promise<T | null> {
   }
 }
 
-/** Resolve the relay WebSocket URL (same-origin /ws unless overridden). */
+/**
+ * Resolve the relay WebSocket URL — ONLY when VITE_RELAY_WS is explicitly set.
+ *
+ * This deployment has no relay (`wss://…/ws` returns 502), and auto-deriving a
+ * same-origin `/ws` made the browser open a dead socket on every load, logging a
+ * handshake error and leaving polling fragilely gated on the WS `onclose`. With
+ * no override we return null → the caller polls unconditionally (zero WS errors).
+ * Set VITE_RELAY_WS to opt back into the live socket where a relay actually runs.
+ */
 function relayWsUrl(): string | null {
   const override = import.meta.env.VITE_RELAY_WS as string | undefined;
-  if (override) return override;
-  if (typeof location === "undefined") return null;
-  return location.origin.replace(/^http/, "ws") + "/ws";
+  return override && override.trim() ? override : null;
 }
 
 export function useXmrIrishFeed(): MoneroLive {
@@ -124,12 +130,14 @@ export function useXmrIrishFeed(): MoneroLive {
       poll = setInterval(snapshot, POLL_MS);
     }
 
-    // 2. Prime immediately, then 3. try the relay WS, else poll.
-    void snapshot();
-
+    // 2. Try the relay WS when explicitly configured, else poll. Each path owns
+    //    exactly one immediate snapshot (the WS path primes here; the polling path
+    //    primes inside startPolling), so first paint upgrades from the seed without
+    //    a redundant double-fetch.
     const url = relayWsUrl();
     if (url) {
       try {
+        void snapshot();
         ws = new WebSocket(url);
         ws.onopen = () => {
           ws?.send(JSON.stringify({ action: "want", data: ["mempool", "blocks", "fees", "network"] }));
