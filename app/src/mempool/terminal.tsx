@@ -4,6 +4,7 @@ import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
 import { PanelFrame } from "@/design/primitives";
 import { fmtBytes } from "@/data/types";
+import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import type { MoneroLive, Block } from "@/data/types";
 
 interface ViewProps {
@@ -182,8 +183,19 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
 
 export function TerminalHubView({ data }: ViewProps) {
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
+  // Shared tracking — same hook + detail (confOf) as every other view.
+  const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
+      <div className="mempool-search-bar">
+        <MempoolSearchBar onSearch={onSearch} />
+        <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="led pulse" /> monerod tail · Block {data.height.toLocaleString()} · {data.mempool.length} mempool
+        </span>
+      </div>
+      {tracking ? (
+        <MempoolTrackingDetail tracking={tracking} data={data} onBack={clearTracking} onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })} />
+      ) : (
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 14, padding: "16px 20px 40px" }}>
         <div>
 
@@ -306,7 +318,8 @@ $ print_height`}
             </div>
           </aside>
         </div>
-      </div>
+      )}
+    </div>
   );
 }
 

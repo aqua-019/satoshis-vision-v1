@@ -17,6 +17,7 @@ import { Crumbs } from "@/design/primitives";
 import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
 import { MempoolHeartbeat } from "@/mempool/mempool-shared";
+import { useDragPan } from "@/mempool/useDragPan";
 
 export function MempoolPage() {
   const data = useMoneroLive();
@@ -39,6 +40,9 @@ export function MempoolPage() {
       { replace: true },
     );
   }, [setParams]);
+
+  // Drag-to-pan the canvas (P4); scrollbar is hidden in CSS, wheel still scrolls.
+  const panRef = useDragPan<HTMLDivElement>();
 
   // Mobile: the switcher is a collapsible dropdown. On desktop CSS keeps the
   // list always shown (the trigger is hidden), so this state is inert there.
@@ -115,7 +119,7 @@ export function MempoolPage() {
         </div>
 
         {/* active view fills the remaining height and scrolls internally */}
-        <div className="mp-canvas-scroll">
+        <div className="mp-canvas-scroll" ref={panRef}>
           <div className="mp-view">
             <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
           </div>

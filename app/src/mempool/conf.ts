@@ -53,3 +53,27 @@ export function pinTxBlockHeight(id: string, data: MoneroLive): number | null {
 export function liveConf(blockHeight: number | null, tipHeight: number): number {
   return blockHeight == null ? 0 : Math.max(1, tipHeight - blockHeight + 1);
 }
+
+/**
+ * The single canonical tip for counting confirmations: the newest CONFIRMED
+ * block height. This MUST be the same tip map.ts mapBlocks() uses for
+ * toBlock().conf (data.blocks[0].height) — NOT data.height.
+ *
+ * data.height is monerod get_info.height = chain length = newest block + 1, so
+ * using it as the tip yields a confirmation count that is +1 vs the ribbon block
+ * label. chainTip() resolves that off-by-one by always counting from the newest
+ * block. It falls back to data.height only before any blocks have loaded.
+ */
+export function chainTip(data: MoneroLive): number {
+  return data.blocks[0]?.height ?? data.height;
+}
+
+/**
+ * Confirmations for a (pinned) block height against the canonical tip — the ONE
+ * accessor every mempool surface must use. By construction this equals
+ * map.ts toBlock().conf for any confirmed block, so the ribbon label, the
+ * tracked-arrow badge, and the tx-detail panel can never disagree.
+ */
+export function confOf(blockHeight: number | null, data: MoneroLive): number {
+  return liveConf(blockHeight, chainTip(data));
+}

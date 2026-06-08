@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Stat } from "@/design/primitives";
 import type { MoneroLive, Block } from "@/data/types";
-import { isMempoolTx, pinTxBlockHeight, liveConf } from "@/mempool/conf";
+import { isMempoolTx, pinTxBlockHeight, confOf } from "@/mempool/conf";
 
 // tx-detail.jsx — full-fidelity Monero transaction + block inspectors.
 //
@@ -43,7 +43,8 @@ export function txSynthFromId(txid: string, data: MoneroLive, pinnedHeight?: num
     ? null
     : (pinnedHeight === undefined ? pinTxBlockHeight(txid, data) : pinnedHeight);
   const block = blockHeight != null ? (data.blocks.find((b) => b.height === blockHeight) ?? null) : null;
-  const conf = liveConf(blockHeight, data.height);
+  // Confirmations come from the ONE accessor (newest-block tip), never data.height.
+  const conf = confOf(blockHeight, data);
 
   const inputs = 1 + ((h >> 3) & 3); // 1..4
   const outputs = 2 + ((h >> 5) & 1); // 2 or 3 (2 is typical)
@@ -508,7 +509,7 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
 
 /* ─── FULL BLOCK DETAIL ────────────────────────────────────────── */
 
-export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock; onBack?: () => void; onPickTx?: (id: string) => void }) {
+export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock; onBack?: () => void; onPickTx?: (id: string, blockHeight: number) => void }) {
   const [showJson, setShowJson] = React.useState(false);
   const data = block;
 
@@ -583,7 +584,8 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock
         right={<span>showing {Math.min(block.txs, 24)}{block.txs_remaining ? " · " + block.txs_remaining + " more" : ""}</span>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           {block.txs_in_block.map((id, i) => (
-            <button key={i} onClick={() => onPickTx?.(id)}
+            // Thread the REAL block height so the tx pins to THIS block (no hash hop).
+            <button key={i} onClick={() => onPickTx?.(id, block.height)}
               style={{ appearance: "none", cursor: "pointer", textAlign: "left",
                 display: "grid", gridTemplateColumns: "32px 1fr auto", gap: 12, alignItems: "center",
                 padding: "8px 12px", background: "transparent",

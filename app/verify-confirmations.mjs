@@ -11,7 +11,7 @@
 // Run: node verify-confirmations.mjs   (Node ≥22.18 strips the type-only imports)
 
 import { mapBlocks } from './src/data/map.ts';
-import { pinTxBlockHeight, liveConf, isMempoolTx } from './src/mempool/conf.ts';
+import { pinTxBlockHeight, confOf, chainTip, isMempoolTx } from './src/mempool/conf.ts';
 
 const H0 = 3_676_070;
 const TICKS = 14;          // advance enough to push some pins off the 14-block window
@@ -28,7 +28,12 @@ let raw = Array.from({ length: 14 }, (_, i) => ({
 
 const deriveData = (rawArr) => {
   const { blocks } = mapBlocks(rawArr, { height: rawArr[0].height, blocks: [] });
-  return { height: blocks[0].height, blocks };
+  // PRODUCTION TRUTH: monerod get_info.height = chain length = newest block + 1.
+  // Modelling that here (height = blocks[0].height + 1) is what makes this guard
+  // able to catch the off-by-one. The bug was invisible to the old test because
+  // it set height === blocks[0].height (as the SIM seed does), where the
+  // data.height-based count happened to match the newest-block label.
+  return { height: blocks[0].height + 1, blocks };
 };
 
 let data = deriveData(raw);
@@ -43,7 +48,7 @@ const tracked = txids.map((id) => ({
   id,
   pinned: pinTxBlockHeight(id, data),
   inMempool: isMempoolTx(id),
-  confSeen: liveConf(pinTxBlockHeight(id, data), data.height),
+  confSeen: confOf(pinTxBlockHeight(id, data), data),
 }));
 
 let fail = false;
@@ -52,21 +57,22 @@ const ok = (cond, msg) => { console.log((cond ? '✅ PASS' : '❌ FAIL') + ' —
 console.log(`\nInitial tip #${data.height}. Pinned ${tracked.filter(t => t.pinned != null).length}/${tracked.length} txs to a block, rest in mempool.\n`);
 
 for (let tick = 0; tick <= TICKS; tick++) {
-  const tip = data.height;
+  const tip = chainTip(data);          // canonical tip = newest CONFIRMED block height
+  const getInfoHeight = data.height;   // = newest + 1 (the value the bug used as a tip)
   for (const t of tracked) {
     if (t.pinned == null) {
-      ok(liveConf(t.pinned, tip) === 0 && t.inMempool, `tx ${t.id.slice(0, 8)} mempool → 0 conf @tip#${tip}`);
+      ok(confOf(t.pinned, data) === 0 && t.inMempool, `tx ${t.id.slice(0, 8)} mempool → 0 conf @tip#${tip}`);
       continue;
     }
-    // (a) ribbon arrow vs detail panel: both derive from the SAME pinned height + tip.
-    const ribbonConf = liveConf(t.pinned, tip);   // ClassicRibbon trackedConf
-    const detailConf = liveConf(t.pinned, tip);   // txSynthFromId / buildTrackedTx confirmations
+    // (a) ribbon arrow vs detail panel: both go through the ONE accessor confOf.
+    const ribbonConf = confOf(t.pinned, data);   // ClassicRibbon/Reactor trackedConf badge
+    const detailConf = confOf(t.pinned, data);   // txSynthFromId confirmations (tx-detail panel)
     ok(ribbonConf === detailConf, `tx ${t.id.slice(0, 8)} detail===ribbon (${detailConf}) @tip#${tip}`);
 
-    // (b) the live formula matches map.ts exactly.
-    ok(ribbonConf === Math.max(1, tip - t.pinned + 1), `tx ${t.id.slice(0, 8)} liveConf===map.ts formula @tip#${tip}`);
+    // (b) confOf matches map.ts toBlock() exactly (newest-block tip).
+    ok(ribbonConf === Math.max(1, tip - t.pinned + 1), `tx ${t.id.slice(0, 8)} confOf===map.ts formula @tip#${tip}`);
 
-    // (c) while still on the 10/14-block ribbon, the highlighted block's OWN label === the tx's conf.
+    // (c) the highlighted block's OWN label (map.ts) === the tx's conf — the cross-surface guard.
     const blk = blockByHeight(data, t.pinned);
     if (blk) ok(blk.conf === ribbonConf, `tx ${t.id.slice(0, 8)} arrow-block label(${blk.conf})===conf(${ribbonConf}) @tip#${tip}`);
 
@@ -75,6 +81,13 @@ for (let tick = 0; tick <= TICKS; tick++) {
     const expectedDelta = tick === 0 ? 0 : 1;
     ok(ribbonConf - t.confSeen === expectedDelta, `tx ${t.id.slice(0, 8)} conf +${expectedDelta} per block (${t.confSeen}→${ribbonConf})`);
     t.confSeen = ribbonConf;
+
+    // (e) regression lock: confOf counts from the newest block, NOT get_info.height.
+    // The old derivation (liveConf vs data.height) was exactly +1 — assert confOf is
+    // the newest-block count and that the get_info-based count would have been +1.
+    ok(detailConf === Math.max(1, tip - t.pinned + 1) &&
+       Math.max(1, getInfoHeight - t.pinned + 1) === detailConf + 1,
+       `tx ${t.id.slice(0, 8)} confOf(${detailConf}) counts from newest block, not get_info+1 (${Math.max(1, getInfoHeight - t.pinned + 1)})`);
   }
 
   // advance one block (mirrors simulated.ts block tick; map.ts re-derives every conf live).
@@ -83,9 +96,9 @@ for (let tick = 0; tick <= TICKS; tick++) {
 }
 
 // Final sanity: a pin that has scrolled off the window still reports a live ≥10 count.
-const off = tracked.find((t) => t.pinned != null && data.height - t.pinned >= 14);
-if (off) ok(liveConf(off.pinned, data.height) >= 10 && blockByHeight(data, off.pinned) === null,
-  `scrolled-off tx ${off.id.slice(0, 8)} → live ${liveConf(off.pinned, data.height)} conf, gone from ribbon`);
+const off = tracked.find((t) => t.pinned != null && chainTip(data) - t.pinned >= 14);
+if (off) ok(confOf(off.pinned, data) >= 10 && blockByHeight(data, off.pinned) === null,
+  `scrolled-off tx ${off.id.slice(0, 8)} → live ${confOf(off.pinned, data)} conf, gone from ribbon`);
 
 console.log('\n' + (fail ? '❌ CONFIRMATION INVARIANT FAILED' : '✅ ALL CONFIRMATION ASSERTIONS PASSED'));
 process.exit(fail ? 1 : 0);

@@ -338,9 +338,9 @@ export function SedimentView({ data }: ViewProps) {
         </span>
       </div>
       {tracking ? (
-        <MempoolTrackingDetail tracking={tracking} data={data} onBack={clearTracking} onPickTx={(id) => onSearch({ kind: "tx", id })} />
+        <MempoolTrackingDetail tracking={tracking} data={data} onBack={clearTracking} onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })} />
       ) : (
-        <SedOverview data={data} onPickTx={(id) => onSearch({ kind: "tx", id })} />
+        <SedOverview data={data} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
       )}
     </div>
   );
