@@ -500,6 +500,24 @@ header > div > h1.serif {
 .mp-canvas-scroll { scrollbar-width: none; -ms-overflow-style: none; cursor: grab; }
 .mp-canvas-scroll::-webkit-scrollbar { width: 0; height: 0; display: none; }
 .mp-canvas-scroll.is-grabbing { cursor: grabbing; user-select: none; }
+/* P1 fit-to-view (unconditional — applies at desktop AND mobile). .mp-view--fit is
+   sized inline to the SCALED box and clips the unscaled .mp-fit, so .mp-canvas-scroll
+   only ever sees the scaled bounds (no phantom scrollbar). .mp-fit holds the
+   natural-width content (width:max-content ⇒ offsetWidth = true natural width on every
+   viewport) and is shrunk by transform:scale (set inline). The transition smooths the
+   fit/100% toggle; live re-fits move sub-pixel so the easing is imperceptible there.
+   Disabled under prefers-reduced-motion (see the reduce block below). */
+.mp-view--fit { display: block; overflow: hidden; }
+.mp-fit { width: max-content; transform-origin: top left; transition: transform 0.25s ease; }
+/* fit / 100% zoom toggle in the mempool chrome */
+.mp-zoom { display: inline-flex; border: 1px solid var(--ink-10); border-radius: 2px; overflow: hidden; }
+.mp-zoom__btn {
+  appearance: none; cursor: pointer; background: transparent; border: 0;
+  color: var(--ink-60); font-family: var(--f-mono); font-size: 10px;
+  letter-spacing: 0.1em; text-transform: uppercase; padding: 5px 9px; min-height: 28px;
+}
+.mp-zoom__btn + .mp-zoom__btn { border-left: 1px solid var(--ink-10); }
+.mp-zoom__btn.is-on { background: rgba(255,122,26,0.08); color: var(--tk-accent); box-shadow: var(--glow-1); }
 .mp-switcher {
   position: fixed; top: 60px; right: 16px; z-index: 50;
   padding: 10px;
@@ -579,6 +597,7 @@ header > div > h1.serif {
 @media (prefers-reduced-motion: reduce) {
   .glide-block { transition: none; }
   .glide-enter { animation: none; }
+  .mp-fit { transition: none; }
 }
 
 /* queued / next blocks (outline only) */
@@ -840,7 +859,7 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
   /* re-assert min-width exemptions AFTER the blanket (equal specificity → later wins) */
   .table-scroll > *, .keep-cols { min-width: max-content !important; }   /* wide tables keep columns; user swipes */
   .mp-canvas-scroll * { min-width: revert !important; }                  /* undo the 0 inside the canvas */
-  .mp-canvas-scroll > * { min-width: 900px !important; }                 /* desktop proportions for the view */
+  .mp-canvas-scroll > *:not(.mp-view--fit) { min-width: 900px !important; } /* desktop proportions for non-fit views */
   .main svg, .main canvas, .main img { max-width: 100%; height: auto; }
   .mp-canvas-scroll svg, .mp-canvas-scroll canvas { max-width: none; }   /* but let the canvas overflow & pan */
   .main [style*="padding: 32px 48px"] { padding-left: 16px !important; padding-right: 16px !important; }
@@ -895,7 +914,14 @@ button.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
     overflow-y: hidden;           /* single-axis; height is auto so nothing is vertically clipped */
     overscroll-behavior-x: contain;
   }
-  .mp-canvas-scroll > * { width: 900px; min-width: 900px !important; max-width: none !important; }
+  .mp-canvas-scroll > *:not(.mp-view--fit) { width: 900px; min-width: 900px !important; max-width: none !important; }
+  /* P1 fit-to-view on mobile: .mp-view--fit takes the hook's inline scaled width/height
+     (≈100vw wide, scaled down) so the view reads "whole and small" and the page scrolls
+     vertically through it — instead of the 900px horizontal-pan slice. .mp-fit keeps its
+     base width:max-content so the hook measures the TRUE natural width and scales it to
+     fit (no clipping). The desktop-proportion grids inside are preserved by the
+     `.mp-canvas-scroll * { min-width: revert }` rule above. */
+  .mp-canvas-scroll > .mp-view--fit { max-width: 100vw; }
 
   /* FIX 3 — simulators: stack the artboard, move badges below the title, give the
      canvas room, restack the side panel. (.proto-* are classes, no TSX needed.) */

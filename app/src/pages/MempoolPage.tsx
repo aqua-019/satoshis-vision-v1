@@ -18,6 +18,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
 import { MempoolHeartbeat } from "@/mempool/mempool-shared";
 import { useDragPan } from "@/mempool/useDragPan";
+import { FitView } from "@/mempool/FitView";
 
 export function MempoolPage() {
   const data = useMoneroLive();
@@ -44,6 +45,13 @@ export function MempoolPage() {
   // Drag-to-pan the canvas (P4); scrollbar is hidden in CSS, wheel still scrolls.
   const panRef = useDragPan<HTMLDivElement>();
 
+  // Fit-to-view (P1): the wide canvas views load scaled to the canvas width. The
+  // "fit / 100%" toggle lets power users jump to actual size and pan; default = fit.
+  // Reset to fit whenever the active view changes so switching never strands you at
+  // 100% on a huge view.
+  const [zoom, setZoom] = React.useState<"fit" | "100">("fit");
+  React.useEffect(() => { setZoom("fit"); }, [active]);
+
   // Mobile: the switcher is a collapsible dropdown. On desktop CSS keeps the
   // list always shown (the trigger is hidden), so this state is inert there.
   const [open, setOpen] = React.useState(false);
@@ -68,7 +76,26 @@ export function MempoolPage() {
       <div className="mp-shell">
         {/* breadcrumb — page chrome; heartbeat surfaces per-second feed liveness */}
         <div style={{ padding: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          <Crumbs items={["xmr.irish", "mempool", "explorer", meta.label]} />
+          {/* breadcrumb + fit/100% zoom toggle on the LEFT (the fixed .mp-switcher
+              occupies the top-right, so the toggle must not live in the right group). */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <Crumbs items={["xmr.irish", "mempool", "explorer", meta.label]} />
+            {meta.fit ? (
+              <div className="mp-zoom" role="group" aria-label="Zoom">
+                {(["fit", "100"] as const).map((z) => (
+                  <button
+                    key={z}
+                    type="button"
+                    aria-pressed={zoom === z}
+                    className={"mp-zoom__btn" + (zoom === z ? " is-on" : "")}
+                    onClick={() => setZoom(z)}
+                  >
+                    {z === "fit" ? "Fit" : "100%"}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
           <MempoolHeartbeat data={data} />
         </div>
 
@@ -118,11 +145,19 @@ export function MempoolPage() {
           </div>
         </div>
 
-        {/* active view fills the remaining height and scrolls internally */}
+        {/* active view fills the remaining height and scrolls internally. Fit-enabled
+            views (reactor/bridge/sediment/constellation) load scaled to the canvas
+            width via <FitView>; classic/terminal keep their natural layout. */}
         <div className="mp-canvas-scroll" ref={panRef}>
-          <div className="mp-view">
-            <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-          </div>
+          {meta.fit ? (
+            <FitView scrollRef={panRef} mode={zoom}>
+              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+            </FitView>
+          ) : (
+            <div className="mp-view">
+              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

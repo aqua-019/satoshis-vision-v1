@@ -261,6 +261,19 @@ export function NetworkPage() {
   const feeHist = feeRateHistogram(data.mempool.map((t) => t.perB));
   const sortedPerB = data.mempool.map((t) => t.perB).sort((a, b) => a - b);
   const medPerB = sortedPerB.length ? sortedPerB[Math.floor(sortedPerB.length / 2)] : 0;
+  // Median BUCKET index (cumulative-50% crossing) for the on-chart fee marker (P3).
+  const medBucket = (() => {
+    const c = feeHist.counts;
+    const total = c.reduce((a, b) => a + b, 0);
+    if (!total) return -1;
+    let acc = 0;
+    for (let i = 0; i < c.length; i++) { acc += c[i]; if (acc >= total / 2) return i; }
+    return c.length - 1;
+  })();
+  // Pool attribution (P2): Monero coinbase outputs are stealth addresses, so every
+  // block's pool reads "Unknown" from the node alone — this is the honest signal.
+  const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
+  const unattributedPct = recentBlocks.length ? Math.round((unattributed / recentBlocks.length) * 100) : 0;
 
   return (
     <AppShell bg={{ intensity: "calm" }}>
@@ -309,8 +322,9 @@ export function NetworkPage() {
         </PanelFrame>
       </section>
 
-      {/* Geo map + fee histogram */}
-      <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 12 }}>
+      {/* Geo map + fee histogram — top-align so the fee panel hugs its chart instead
+          of stretching to the taller geo panel (no large empty margin under the bars). */}
+      <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 12, alignItems: "start" }}>
         <PanelFrame title="Peer geography · illustrative" right={<span>11 buckets · {PEER_GEO.reduce((a, p) => a + p[4], 0)} total</span>}>
           <GeoMap />
           <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 6, marginTop: 10, fontSize: 10.5 }}>
@@ -324,17 +338,19 @@ export function NetworkPage() {
           </div>
         </PanelFrame>
 
-        <PanelFrame title="Fee histogram" right={<span>piconero / B</span>}>
+        <PanelFrame title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
-            <BarSeries data={feeHist.counts} labels={feeHist.labels} height={180} color="var(--p-50)"
-              baseline="zero" sim={sim} format={(v) => String(Math.round(v))} />
+            <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
+              baseline="zero" sim={sim} format={(v) => String(Math.round(v))}
+              marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
           ) : (
-            <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={180} color="var(--p-50)"
+            <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
               baseline="zero" sim={sim} format={(v) => String(Math.round(v))} />
           )}
-          <p className="mono dim" style={{ fontSize: 11, marginTop: 6 }}>
-            Median fee rate: <b className="acc">~{Math.round(medPerB).toLocaleString()} pcn/B</b>
-            {data.mempool.length ? <> · over <b className="acc">{data.mempool.length}</b> mempool tx</> : null}
+          <p className="mono dim" style={{ fontSize: 10.5, marginTop: 6, color: "var(--ink-40)" }}>
+            {data.mempool.length
+              ? <>Over <b className="acc">{data.mempool.length}</b> mempool tx · median fee marked on-chart</>
+              : <>Awaiting mempool sample</>}
           </p>
         </PanelFrame>
       </section>
@@ -342,19 +358,26 @@ export function NetworkPage() {
       {/* Pool distribution + Version distribution */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title="Pool attribution" right={<span className="dim">unattributed</span>}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10, fontFamily: "var(--f-mono)" }}>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-              <span style={{ fontSize: 26, color: "var(--ink-100)" }}>
-                {recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{recentBlocks.length}
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
+            {/* lead with the real signal as a compact stat, not a paragraph */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <span style={{ fontSize: 26, color: "var(--ink-100)" }}>{unattributedPct}%</span>
+              <span className="dim" style={{ fontSize: 11 }}>
+                unattributed · {unattributed}/{recentBlocks.length} recent blocks report pool "Unknown"
               </span>
-              <span className="dim" style={{ fontSize: 11 }}>recent blocks report pool "Unknown"</span>
             </div>
-            <p className="mono dim" style={{ fontSize: 11, lineHeight: 1.6, color: "var(--ink-40)" }}>
-              Monero coinbase transactions don't tag the mining pool, and this deployment
-              queries no third-party pool API (privacy invariant), so per-pool share can't be
-              measured on-chain. The decentralization concept — including the HHI concentration
-              index — is explained in the <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link> as
-              an explicitly illustrative visual.
+            {/* single full-width bar, matching the Tor/I2P share idiom below */}
+            <div style={{ height: 14, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
+              <div style={{ position: "absolute", inset: "0 auto 0 0", width: unattributedPct + "%", background: "var(--ink-40)", opacity: 0.5, boxShadow: "0 0 8px var(--ink-40)" }} />
+            </div>
+            {/* one-line caption: the why lives in a hover tooltip; Skyline link stays visible */}
+            <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+              Coinbase outputs are one-time stealth addresses — pools can't be matched on-chain{" "}
+              <span
+                title="Real explorers show pool names from a maintained dataset of coinbase tx_extra signatures, or a third-party pool API. Both are off-limits here: a bundled list goes stale and is partial, and an API would break the zero-third-party privacy invariant. So 'Unknown' from the node alone is the honest representation."
+                style={{ cursor: "help", color: "var(--ink-60)", borderBottom: "1px dotted var(--ink-40)" }}
+              >why ⓘ</span>. HHI concentration is explored in the{" "}
+              <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
             </p>
           </div>
         </PanelFrame>
