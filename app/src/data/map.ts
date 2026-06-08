@@ -20,8 +20,8 @@ import type { Block, DataSource, MoneroLive, Tx } from "./types";
 const PICO = 1e12;
 /** sparkline series length, matching the simulated seed. */
 const SERIES_CAP = 168;
-/** how many recent blocks the renderers expect. */
-const BLOCKS_CAP = 14;
+/** how many recent blocks the renderers expect (Sediment renders up to this many strata). */
+export const BLOCKS_CAP = 100;
 
 const nowSec = () => Math.floor(Date.now() / 1000);
 const num = (v: unknown, fallback: number): number =>

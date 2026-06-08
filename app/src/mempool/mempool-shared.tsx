@@ -2,8 +2,8 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import type { MoneroLive, Block } from "@/data/types";
-import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
-import { pinTxBlockHeight, confOf } from "@/mempool/conf";
+import { LiveTxDetail, LiveBlockDetail } from "@/mempool/tx-detail";
+import { pinTxBlockHeight } from "@/mempool/conf";
 import { useTick } from "@/design/ArtBackground";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
@@ -11,9 +11,10 @@ import { useTick } from "@/design/ArtBackground";
 // Every mempool surface (Reactor, Classic, Bridge, Sediment, Constellation,
 // Terminal) gets the same search behaviour: paste a 64-char txid or a block
 // height. The shared detail routing (MempoolTrackingDetail, below) renders the
-// tracking result through the Reactor-owned TxDetailPanel / BlockDetailPanel.
-// It is fully self-contained and deterministic — no /api/tx (404s on the
-// backend) and ZERO dependency on the Phase 4c tx-detail inspectors.
+// tracking result through the REAL-data inspectors (LiveTxDetail / LiveBlockDetail
+// in tx-detail.tsx), which fetch /api/xmr/tx and /api/xmr/block from the node and
+// own their loading / error / placeholder states. Confirmations derive from the
+// single confOf accessor, fed the real block height the node reports.
 
 type SearchQuery =
   | { kind: "tx"; id: string; blockHeight?: number | null }
@@ -126,11 +127,11 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
 //
 // ONE tracking detail for every mempool surface (Classic, Reactor, Bridge,
 // Sediment, Constellation, Terminal) and the /mempool/tx deep-link. It renders
-// the RICH tx-detail inspectors (FullTxDetail / FullBlockDetail) — the same ones
-// the deep-link uses — and derives confirmations from confOf (the single
-// newest-block tip), so the ribbon label, the tracked arrow, and this panel can
-// never disagree. The tx's block height is pinned ONCE (useMempoolTracking
-// onSearch) and threaded through txSynthFromId; it never re-derives from the hash.
+// the REAL-data inspectors (LiveTxDetail / LiveBlockDetail), which fetch the tx /
+// block from the node and own loading / error / placeholder states. Confirmations
+// derive from confOf fed the real height, so the ribbon label, the tracked arrow,
+// and this panel can never disagree. The pinned height (useMempoolTracking
+// onSearch) is the optimistic seed shown while the node fetch is in flight.
 export function MempoolTrackingDetail({ tracking, data, onBack, onPickTx }: {
   tracking: Tracking;
   data: MoneroLive;
@@ -139,28 +140,13 @@ export function MempoolTrackingDetail({ tracking, data, onBack, onPickTx }: {
 }) {
   if (!tracking) return null;
   if (tracking.kind === "tx") {
-    const tx = txSynthFromId(tracking.id, data, tracking.blockHeight);
-    if (import.meta.env.DEV) {
-      // Invariant guard (P1d): the detail reports the block it was opened from,
-      // and a confirmation count equal to confOf(pinnedHeight) — no off-by-one.
-      console.assert(
-        tx.block_height === tracking.blockHeight,
-        `[mempool] tracked tx block_height ${tx.block_height} !== pinned ${tracking.blockHeight}`,
-      );
-      console.assert(
-        tx.confirmations === confOf(tracking.blockHeight, data),
-        `[mempool] tracked tx conf ${tx.confirmations} !== confOf ${confOf(tracking.blockHeight, data)}`,
-      );
-    }
-    return <FullTxDetail tx={tx} onBack={onBack} />;
+    return <LiveTxDetail txid={tracking.id} data={data} pinnedHeight={tracking.blockHeight} onBack={onBack} />;
   }
-  const block =
-    tracking.block ?? data.blocks.find((b) => b.height === tracking.height) ?? data.blocks[0];
-  if (!block) return null;
   // Clicking a tx inside the block pins it to THIS block height (no hash hop).
   return (
-    <FullBlockDetail
-      block={blockSynth(block, data)}
+    <LiveBlockDetail
+      height={tracking.height}
+      data={data}
       onBack={onBack}
       onPickTx={(id, h) => onPickTx?.(id, h)}
     />

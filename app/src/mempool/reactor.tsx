@@ -411,7 +411,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.55 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
-                  {data.blocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.length}
+                  {data.blocks.slice(0, 14).filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.slice(0, 14).length}
                 </span>
                 <span className="dim">recent blocks · pool unknown</span>
               </div>

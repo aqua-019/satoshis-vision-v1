@@ -251,11 +251,13 @@ export function NetworkPage() {
   // (already true under the live feed, which pushes data.hashrate each tick).
   const hashSeries = data.hashSeries.length ? [...data.hashSeries.slice(0, -1), data.hashrate] : [data.hashrate];
   const mempoolBuf = useSessionSeries(data.mempool.length, data.lastUpdate);
-  const diffSeries = data.blocks.map((b) => b.difficulty).reverse();          // oldest → newest
-  const blockSizes = data.blocks.map((b) => b.sizeKB);
+  // BLOCKS_CAP is now 100 (Sediment); these mini-charts intentionally keep the recent 14-block window.
+  const recentBlocks = data.blocks.slice(0, 14);
+  const diffSeries = recentBlocks.map((b) => b.difficulty).reverse();          // oldest → newest
+  const blockSizes = recentBlocks.map((b) => b.sizeKB);
   const FULL_CAP_FLOOR_KB = 600;                                              // ~2× the 300 KB penalty-free median floor
   const fullCap = Math.max(FULL_CAP_FLOOR_KB, 2 * median(blockSizes));
-  const fullness = data.blocks.map((b) => Math.min(1, b.sizeKB / fullCap)).reverse();
+  const fullness = recentBlocks.map((b) => Math.min(1, b.sizeKB / fullCap)).reverse();
   const feeHist = feeRateHistogram(data.mempool.map((t) => t.perB));
   const sortedPerB = data.mempool.map((t) => t.perB).sort((a, b) => a - b);
   const medPerB = sortedPerB.length ? sortedPerB[Math.floor(sortedPerB.length / 2)] : 0;
@@ -343,7 +345,7 @@ export function NetworkPage() {
           <div style={{ display: "flex", flexDirection: "column", gap: 10, fontFamily: "var(--f-mono)" }}>
             <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
               <span style={{ fontSize: 26, color: "var(--ink-100)" }}>
-                {data.blocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.length}
+                {recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{recentBlocks.length}
               </span>
               <span className="dim" style={{ fontSize: 11 }}>recent blocks report pool "Unknown"</span>
             </div>
