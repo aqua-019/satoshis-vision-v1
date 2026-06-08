@@ -37,6 +37,8 @@ declare global {
     readonly VITE_LIVE_DATA?: string;
     readonly VITE_RELAY_WS?: string;
     readonly VITE_API_ORIGIN?: string;
+    /** Vite built-in: true in `vite dev`, false in production builds. */
+    readonly DEV: boolean;
   }
   interface ImportMeta {
     readonly env: ImportMetaEnv;

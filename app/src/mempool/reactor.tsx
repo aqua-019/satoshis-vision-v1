@@ -18,8 +18,8 @@ import { Link } from "react-router-dom";
 import { Pill, PanelFrame, MiniBar } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash, randHex } from "@/data/types";
 import type { MoneroLive, Tx, Block } from "@/data/types";
-import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
-import { pinTxBlockHeight } from "@/mempool/conf";
+import { useMempoolTracking, MempoolTrackingDetail, MempoolSearchBar } from "@/mempool/mempool-shared";
+import { confOf } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 
 interface ViewProps {
@@ -123,8 +123,11 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
 }) {
   const showing = blocks.slice(0, 10);
   return (
-    <div style={{ position: "relative", width: w, height: h, perspective: "1200px", perspectiveOrigin: "30% 30%" }}>
-      <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", transform: "rotateX(54deg) rotateZ(-38deg) translateZ(-80px)" }}>
+    // overflow:hidden makes the box authoritative — the 3D stack can never bleed
+    // out of w×h onto the neighbouring Pool-attribution panel (P3). The inner
+    // stage is scaled/centred so the full "last 10" stays inside those bounds.
+    <div style={{ position: "relative", width: "100%", maxWidth: w, height: h, margin: "0 auto", overflow: "hidden", perspective: "1200px", perspectiveOrigin: "50% 42%" }}>
+      <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", transform: "translate(-6%, 4%) scale(0.62) rotateX(54deg) rotateZ(-38deg) translateZ(-80px)", transformOrigin: "50% 50%" }}>
         {showing.map((b, i) => {
           const z = i * -28;
           const size = 100;
@@ -265,32 +268,15 @@ function RingSigFan() {
    ────────────────────────────────────────────────────────────── */
 
 export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
-  const [tracking, setTracking] = React.useState<Tracking>(null);
-  // Declared unconditionally (above the early returns) for stable hook order.
+  // Shared tracking — the SAME hook + detail as every other view; confOf everywhere.
+  const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
+  // Declared unconditionally for stable hook order.
   const glideRef = useRibbonGlide(data.height);
 
-  const onPickTx = (id: string) => setTracking({ kind: "tx", id, blockHeight: pinTxBlockHeight(id, data) });
-  const onSelectBlock = (height: number) => {
-    // Stub fallback for out-of-window heights so the panel always renders.
-    const block =
-      data.blocks.find((b) => b.height === height) ??
-      { height, hash: "—", txs: 0, sizeKB: 0, reward: 0, difficulty: 0, pool: "—", age: 0, conf: Math.max(0, data.height - height) };
-    setTracking({ kind: "block", height, block });
-  };
-  const clearTracking = () => {
-    setTracking(null);
-    onClearFocus?.();
-  };
-
-  // Keep a tracked block fresh as data ticks (confirmations grow).
-  React.useEffect(() => {
-    setTracking((t) => {
-      if (t?.kind === "block") {
-        return { ...t, block: data.blocks.find((b) => b.height === t.height) ?? t.block };
-      }
-      return t;
-    });
-  }, [data.blocks]);
+  const clear = () => { clearTracking(); onClearFocus?.(); };
+  const onSelectBlock = (height: number) => onSearch({ kind: "block", height });
+  // Live-feed rows are mempool txs → pin null (unconfirmed).
+  const onPickTx = (id: string) => onSearch({ kind: "tx", id, blockHeight: null });
 
   // Deep-link: open the block detail for ?block=<height> (fires only on change).
   const lastFocus = React.useRef<number | null>(null);
@@ -302,27 +288,23 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
     // eslint-disable-next-line
   }, [focusBlock]);
 
-  // Tracking drilldown replaces the dashboard (same pattern as Classic).
-  if (tracking?.kind === "tx") {
-    return (
-      <div className="main" style={{ overflow: "auto", padding: 0 }}>
-        <FullTxDetail tx={txSynthFromId(tracking.id, data, tracking.blockHeight)} onBack={clearTracking} />
-      </div>
-    );
-  }
-  if (tracking?.kind === "block" && tracking.block) {
-    return (
-      <div className="main" style={{ overflow: "auto", padding: 0 }}>
-        <FullBlockDetail block={blockSynth(tracking.block, data)} onBack={clearTracking} onPickTx={onPickTx} />
-      </div>
-    );
-  }
-
   const netGh = (data.hashrate / 1e9).toFixed(2);
+  // Tracked tx: the ▲ rides the block where height === pinned; badge === confOf,
+  // which equals that block's own CONF label in the stream.
+  const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
+  const trackedConf = trackedHeight != null ? confOf(trackedHeight, data) : null;
 
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "16px 20px 40px" }}>
+
+        {/* search + live status */}
+        <div className="mempool-search-bar">
+          <MempoolSearchBar onSearch={onSearch} />
+          <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+            <span className="led pulse" /> Reactor · Block {data.height.toLocaleString()} · {data.mempool.length} mempool
+          </span>
+        </div>
 
         {/* hero: block stream + iso stack */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, minHeight: 320 }}>
@@ -347,9 +329,12 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
               {/* confirmed blocks — heights scale to txs, clickable → block detail */}
               {data.blocks.slice(0, 10).map((b, i) => {
                 const h = 130 + Math.min(120, (b.txs / 140) * 120);
+                const isTracked = trackedHeight != null && b.height === trackedHeight;
                 return (
                   <div key={b.height} data-glide-key={b.height} className="mblock glide-block" onClick={() => onSelectBlock(b.height)}
-                    style={{ width: 96, minHeight: h, display: "flex", flexDirection: "column", justifyContent: "space-between", opacity: 1 - i * 0.04, cursor: "pointer" }}>
+                    style={{ width: 96, minHeight: h, display: "flex", flexDirection: "column", justifyContent: "space-between", opacity: 1 - i * 0.04, cursor: "pointer",
+                      boxShadow: isTracked ? "0 0 14px rgba(255,212,0,0.55)" : undefined,
+                      outline: isTracked ? "1.5px solid var(--y-50)" : undefined, outlineOffset: -1 }}>
                     <div>
                       <div className="hh">#{b.height.toLocaleString()}</div>
                       <div className="hh" style={{ fontSize: 9 }}>{b.conf} CONF</div>
@@ -358,6 +343,12 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                       <div className="nm">{b.txs}</div>
                       <div className="sz">{b.sizeKB.toFixed(1)} KB</div>
                       <div className="sz">{b.age < 60 ? b.age + "s ago" : Math.floor(b.age / 60) + "m ago"}</div>
+                      {isTracked ? (
+                        <div className="mono" style={{ marginTop: 4, color: "var(--y-50)", fontSize: 9.5, lineHeight: 1.15, textAlign: "center" }}>
+                          <div style={{ fontSize: 12 }}>▲</div>
+                          <div style={{ border: "1px solid var(--y-50)", borderRadius: 4, padding: "1px 5px", marginTop: 1, display: "inline-block" }}>{trackedConf}/10</div>
+                        </div>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -376,10 +367,21 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             </div>
           </PanelFrame>
           <PanelFrame title="Iso stack · last 10" right={<>BLOCK GEOMETRY</>}>
-            <IsoBlockStack blocks={data.blocks} w={356} h={310} onSelectBlock={onSelectBlock} />
+            <IsoBlockStack blocks={data.blocks} w={340} h={300} onSelectBlock={onSelectBlock} />
           </PanelFrame>
         </div>
 
+        {/* Tracking drilldown renders BELOW the hero so the tracked ▲ stays
+            visible on its block in the stream above (shared detail + confOf). */}
+        {tracking ? (
+          <MempoolTrackingDetail
+            tracking={tracking}
+            data={data}
+            onBack={clear}
+            onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })}
+          />
+        ) : (
+        <>
         {/* hex mempool grid + ring sig + pool distribution */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: 14, minHeight: 360 }}>
           <PanelFrame
@@ -455,6 +457,8 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             ))}
           </div>
         </PanelFrame>
+        </>
+        )}
 
       </div>
     </div>
@@ -462,9 +466,13 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
 }
 
 /* ──────────────────────────────────────────────────────────────
-   EXPORT CONTRACT — consumed by mempool-shared.tsx (and transitively by
-   bridge / sediment / constellation). Keep these two panels exported with
-   their existing signatures so those views compile UNCHANGED.
+   DEPRECATED detail panels (v5.0.11). Every mempool surface — including
+   Reactor — now routes tracking through mempool-shared's MempoolTrackingDetail,
+   which renders the rich FullTxDetail / FullBlockDetail with confirmations from
+   confOf (the single newest-block tip). These smaller panels are retained only
+   so any external import keeps compiling; do NOT wire new surfaces to them — the
+   local ReactorConfirmationPanel derives its own count and must not become a
+   divergent confirmation source again.
    ────────────────────────────────────────────────────────────── */
 
 function Detail({ k, v, sub, tone }: { k: React.ReactNode; v: React.ReactNode; sub?: React.ReactNode; tone?: string }) {

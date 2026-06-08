@@ -2,8 +2,8 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import type { MoneroLive, Block } from "@/data/types";
-import { TxDetailPanel, BlockDetailPanel } from "@/mempool/reactor";
-import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
+import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
+import { pinTxBlockHeight, confOf } from "@/mempool/conf";
 import { useTick } from "@/design/ArtBackground";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
@@ -15,7 +15,9 @@ import { useTick } from "@/design/ArtBackground";
 // It is fully self-contained and deterministic — no /api/tx (404s on the
 // backend) and ZERO dependency on the Phase 4c tx-detail inspectors.
 
-type SearchQuery = { kind: "tx"; id: string } | { kind: "block"; height: number };
+type SearchQuery =
+  | { kind: "tx"; id: string; blockHeight?: number | null }
+  | { kind: "block"; height: number };
 type Tracking =
   | { kind: "tx"; id: string; blockHeight: number | null }
   | { kind: "block"; height: number; block?: Block }
@@ -53,8 +55,13 @@ export function useMempoolTracking(data: MoneroLive) {
 
   const onSearch = React.useCallback((q: SearchQuery) => {
     if (q.kind === "tx") {
-      // Pin the block height ONCE; confirmations derive live at render.
-      setTracking({ kind: "tx", id: q.id, blockHeight: pinTxBlockHeight(q.id, data) });
+      // Resolve the pin ONCE, here, and store only the height — it never hops:
+      //   • number    → clicked from a confirmed block (pin to it; confirmed)
+      //   • null       → clicked from a mempool list (unconfirmed)
+      //   • undefined → raw txid typed in the search box → resolve from snapshot
+      // Confirmations then derive live (confOf) on every render.
+      const blockHeight = q.blockHeight === undefined ? pinTxBlockHeight(q.id, data) : q.blockHeight;
+      setTracking({ kind: "tx", id: q.id, blockHeight });
     } else {
       const block = data.blocks.find((b) => b.height === q.height);
       setTracking({ kind: "block", height: q.height, block });
@@ -117,88 +124,45 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
 
 // ── Shared tracking detail ─────────────────────────────────────
 //
-// `useMempoolTracking` returns an id-only tracking result; the Reactor-owned
-// TxDetailPanel expects a fully-resolved tx. `buildTrackedTx` deterministically
-// simulates that tx from the txid (mirrors Reactor's internal lookup) so every
-// non-Reactor surface (Bridge / Sediment / Constellation) can reuse the same
-// detail panels. Deterministic + simulated: no network, no tx-detail/4c import.
-
-interface TrackedTx {
-  id: string;
-  size: number;
-  fee: number;
-  perB: number;
-  ringSize: number;
-  inputs: number;
-  outputs: number;
-  blockHeight: number | null;
-  confirmations: number;
-  status: string;
-  eta: string;
-  timelock: number;
-  privacy: number;
-}
-
-// `pinnedHeight` is the tx's block height pinned ONCE at track time (mempool/conf.ts):
-//   • null   → tx is in the mempool (unconfirmed)
-//   • number → the ABSOLUTE block height the tx was pinned to
-// Confirmations are derived LIVE from that pinned height + the current tip, never frozen.
-function buildTrackedTx(txid: string, data: MoneroLive, pinnedHeight: number | null): TrackedTx {
-  const intHash = Array.from(txid).reduce((a, c) => (a + c.charCodeAt(0)) >>> 0, 0);
-  if (pinnedHeight === null) {
-    const t = data.mempool.length ? data.mempool[intHash % data.mempool.length] : null;
-    return {
-      id: txid,
-      size: t ? t.size : 1500 + (intHash % 3000),
-      fee: t ? t.fee : 0.0011 + (intHash % 9000) / 1e10,
-      perB: t ? t.perB : 600000 + (intHash % 200000),
-      ringSize: 16,
-      inputs: t ? t.inputs : 1 + (intHash % 2),
-      outputs: t ? t.outputs : 2,
-      blockHeight: null,
-      confirmations: 0,
-      status: "in mempool",
-      eta: "~" + (1 + (intHash % 3)) + " min until block",
-      timelock: 0,
-      privacy: 90,
-    };
-  }
-  const confirmations = liveConf(pinnedHeight, data.height);
-  return {
-    id: txid,
-    size: 1500 + (intHash % 3000),
-    fee: 0.0011 + (intHash % 9000) / 1e10,
-    perB: 600000 + (intHash % 200000),
-    ringSize: 16,
-    inputs: 1 + (intHash % 2),
-    outputs: 2,
-    blockHeight: pinnedHeight,
-    confirmations,
-    status: confirmations >= 10 ? "fully unlocked" : "confirming",
-    eta: confirmations >= 10 ? "Confirmed" : "~" + ((10 - confirmations) * 2) + " min until unlock",
-    timelock: 0,
-    privacy: 90,
-  };
-}
-
-/**
- * MempoolTrackingDetail — drop-in replacement for the legacy `window.TrackingDetail`.
- * Renders the active tracking result through the Reactor-owned detail panels.
- * `onPickTx` is accepted for call-site parity with the legacy component; the
- * current panels don't surface a tx picker, so it is intentionally unused.
- */
-export function MempoolTrackingDetail({ tracking, data, onBack }: {
+// ONE tracking detail for every mempool surface (Classic, Reactor, Bridge,
+// Sediment, Constellation, Terminal) and the /mempool/tx deep-link. It renders
+// the RICH tx-detail inspectors (FullTxDetail / FullBlockDetail) — the same ones
+// the deep-link uses — and derives confirmations from confOf (the single
+// newest-block tip), so the ribbon label, the tracked arrow, and this panel can
+// never disagree. The tx's block height is pinned ONCE (useMempoolTracking
+// onSearch) and threaded through txSynthFromId; it never re-derives from the hash.
+export function MempoolTrackingDetail({ tracking, data, onBack, onPickTx }: {
   tracking: Tracking;
   data: MoneroLive;
   onBack: () => void;
-  onPickTx?: (id: string) => void;
+  onPickTx?: (id: string, blockHeight?: number | null) => void;
 }) {
   if (!tracking) return null;
   if (tracking.kind === "tx") {
-    return <TxDetailPanel tx={buildTrackedTx(tracking.id, data, tracking.blockHeight)} onBack={onBack} />;
+    const tx = txSynthFromId(tracking.id, data, tracking.blockHeight);
+    if (import.meta.env.DEV) {
+      // Invariant guard (P1d): the detail reports the block it was opened from,
+      // and a confirmation count equal to confOf(pinnedHeight) — no off-by-one.
+      console.assert(
+        tx.block_height === tracking.blockHeight,
+        `[mempool] tracked tx block_height ${tx.block_height} !== pinned ${tracking.blockHeight}`,
+      );
+      console.assert(
+        tx.confirmations === confOf(tracking.blockHeight, data),
+        `[mempool] tracked tx conf ${tx.confirmations} !== confOf ${confOf(tracking.blockHeight, data)}`,
+      );
+    }
+    return <FullTxDetail tx={tx} onBack={onBack} />;
   }
   const block =
     tracking.block ?? data.blocks.find((b) => b.height === tracking.height) ?? data.blocks[0];
   if (!block) return null;
-  return <BlockDetailPanel block={block} onBack={onBack} />;
+  // Clicking a tx inside the block pins it to THIS block height (no hash hop).
+  return (
+    <FullBlockDetail
+      block={blockSynth(block, data)}
+      onBack={onBack}
+      onPickTx={(id, h) => onPickTx?.(id, h)}
+    />
+  );
 }

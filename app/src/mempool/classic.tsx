@@ -3,8 +3,8 @@
 import * as React from "react";
 import { fmtBytes, shortHash as ShortHash, randHex } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
-import { FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth } from "@/mempool/tx-detail";
-import { pinTxBlockHeight, liveConf } from "@/mempool/conf";
+import { useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { confOf } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 import { useTick } from "@/design/ArtBackground";
 
@@ -175,7 +175,7 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   ];
 
   const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
-  const trackedConf = trackedHeight != null ? liveConf(trackedHeight, data.height) : null;
+  const trackedConf = trackedHeight != null ? confOf(trackedHeight, data) : null;
 
   // Seconds since the newest block, for the live next-block countdown.
   const tipAge = data.blocks?.[0]?.age || 0;
@@ -429,35 +429,14 @@ export function DetailItem({ k, v, tone }: any) {
 /* ── CLASSIC VIEW · root ──────────────────────────────────── */
 
 export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
-  const [tracking, setTracking] = React.useState<any>(null);
-
-  const onSearch = ({ kind, id, height }: { kind: string; id?: string; height?: number }) => {
-    if (kind === "tx") {
-      // Pin the block height ONCE; confirmations derive live at render.
-      setTracking({ kind: "tx", id, blockHeight: pinTxBlockHeight(id!, data) });
-    } else if (kind === "block") {
-      // Fall back to a synthesized stub when the height is outside the current
-      // window, so the detail panel (and its Back button) always render rather
-      // than a dead state. The re-resolve effect upgrades it if it enters view.
-      const block =
-        data.blocks.find((b) => b.height === height) ??
-        { height: height!, hash: "—", txs: 0, sizeKB: 0, reward: 0, difficulty: 0, pool: "—", age: 0, conf: Math.max(0, data.height - height!) };
-      setTracking({ kind: "block", height, block });
-    }
-  };
+  // Shared tracking — the SAME hook + detail every other view uses. The pin is
+  // resolved once (onSearch) and confirmations derive live via confOf, so the
+  // ribbon arrow and the detail panel always read one number.
+  const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
   const clear = () => {
-    setTracking(null);
+    clearTracking();
     onClearFocus?.();
   };
-
-  React.useEffect(() => {
-    // Only re-resolve a tracked BLOCK; a tracked tx keeps its pinned height and
-    // re-derives confirmations live from `data` on each render (no re-pin).
-    if (tracking?.kind === "block") {
-      setTracking((t: any) => ({ ...t, block: data.blocks.find((b) => b.height === t.height) ?? t.block }));
-    }
-    // eslint-disable-next-line
-  }, [data.height, data.blocks]);
 
   // Deep-link: open the block detail for ?block=<height>. Fires only when
   // focusBlock CHANGES (a ref guards repeats / StrictMode); resets on clear so
@@ -480,14 +459,19 @@ export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
           <span className="led pulse" /> Block {data.height.toLocaleString()} · Live
         </span>
       </div>
+      {/* Ribbon stays mounted while tracking, so the tracked ▲ rides its block
+          alongside the detail panel below (both read confOf). */}
       <ClassicRibbon data={data} tracking={tracking} onSelectBlock={(h: number) => onSearch({ kind: "block", height: h })} />
       <div className="main" style={{ overflow: "auto", padding: 0 }}>
-        {tracking?.kind === "tx" ? (
-          <FullTxDetail tx={txSynthFromId(tracking.id, data, tracking.blockHeight)} onBack={clear} />
-        ) : tracking?.kind === "block" && tracking.block ? (
-          <FullBlockDetail block={blockSynth(tracking.block, data)} onBack={clear} onPickTx={(id: string) => onSearch({ kind: "tx", id })} />
+        {tracking ? (
+          <MempoolTrackingDetail
+            tracking={tracking}
+            data={data}
+            onBack={clear}
+            onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })}
+          />
         ) : (
-          <ClassicLanding data={data} onPickTx={(id: string) => onSearch({ kind: "tx", id })} />
+          <ClassicLanding data={data} onPickTx={(id: string) => onSearch({ kind: "tx", id, blockHeight: null })} />
         )}
       </div>
     </div>
