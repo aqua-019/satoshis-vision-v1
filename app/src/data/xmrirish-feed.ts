@@ -20,6 +20,7 @@
 import * as React from "react";
 import type { MoneroLive } from "./types";
 import { SIM_SEED } from "./simulated";
+import { getJSON } from "./http";
 import {
   applyWsBlock,
   applyWsMempool,
@@ -48,17 +49,6 @@ declare global {
 const POLL_MS = 2500;
 const COINGECKO =
   "/api/coingecko?path=simple/price&ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true";
-
-/** GET helper that resolves to parsed JSON or null (never throws). */
-async function getJSON<T>(url: string, init?: RequestInit): Promise<T | null> {
-  try {
-    const r = await fetch(url, init);
-    if (!r.ok) return null;
-    return (await r.json()) as T;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Resolve the relay WebSocket URL — ONLY when VITE_RELAY_WS is explicitly set.
@@ -101,7 +91,7 @@ export function useXmrIrishFeed(): MoneroLive {
         }),
         getJSON("/api/xmr/network"),
         getJSON("/api/xmr/mempool"),
-        getJSON("/api/xmr/blocks?limit=14"),
+        getJSON("/api/xmr/blocks?limit=100"),
         getJSON(COINGECKO),
       ]);
       if (!alive) return;

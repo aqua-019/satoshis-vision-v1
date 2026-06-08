@@ -277,12 +277,13 @@ export function BrgBlockCadence({ data }: { data: MoneroLive }) {
 
 /* ── pool attribution (honest: node exposes no pool data) ───── */
 export function BrgPoolDist({ data }: { data: MoneroLive }) {
-  const unattributed = data.blocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
+  const recentBlocks = data.blocks.slice(0, 14);
+  const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
   return (
     <BrgCard title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span style={{ fontSize: 20, color: "var(--ink-100)" }}>{unattributed}/{data.blocks.length}</span>
+          <span style={{ fontSize: 20, color: "var(--ink-100)" }}>{unattributed}/{recentBlocks.length}</span>
           <span className="dim">recent blocks · pool unknown</span>
         </div>
         <span className="dim" style={{ color: "var(--ink-40)" }}>

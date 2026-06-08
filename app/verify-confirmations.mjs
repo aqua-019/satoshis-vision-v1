@@ -10,11 +10,11 @@
 //
 // Run: node verify-confirmations.mjs   (Node ≥22.18 strips the type-only imports)
 
-import { mapBlocks } from './src/data/map.ts';
+import { mapBlocks, BLOCKS_CAP } from './src/data/map.ts';
 import { pinTxBlockHeight, confOf, chainTip, isMempoolTx } from './src/mempool/conf.ts';
 
 const H0 = 3_676_070;
-const TICKS = 14;          // advance enough to push some pins off the 14-block window
+const TICKS = BLOCKS_CAP + 6;   // advance enough to push some pins off the BLOCKS_CAP-block window
 const COUNTS = [4, 17, 22, 39, 103, 7, 9, 47, 6, 140, 12, 18, 24, 11];
 
 let hashCounter = 1;
@@ -96,7 +96,7 @@ for (let tick = 0; tick <= TICKS; tick++) {
 }
 
 // Final sanity: a pin that has scrolled off the window still reports a live ≥10 count.
-const off = tracked.find((t) => t.pinned != null && chainTip(data) - t.pinned >= 14);
+const off = tracked.find((t) => t.pinned != null && chainTip(data) - t.pinned >= BLOCKS_CAP);
 if (off) ok(confOf(off.pinned, data) >= 10 && blockByHeight(data, off.pinned) === null,
   `scrolled-off tx ${off.id.slice(0, 8)} → live ${confOf(off.pinned, data)} conf, gone from ribbon`);
 

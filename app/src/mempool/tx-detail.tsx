@@ -1,177 +1,26 @@
-// AUTO-PORTED from mempool/tx-detail.jsx
-// Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
+// mempool/tx-detail.tsx — full-fidelity Monero transaction + block inspectors,
+// driven by REAL node data (api/xmr.js → monerod get_transactions / get_block /
+// get_outs). Every figure on screen is either real from the node or explicitly
+// labelled "illustrative". Amounts are hidden by RingCT and are never a number.
+//
+// Confirmations come from the ONE accessor `confOf` (mempool/conf.ts), fed the
+// REAL block height the node reports — so a txid copied into a public explorer
+// matches the block height + confirmation count shown here.
+//
+// The synthesised path (former txSynthFromId/blockSynth) is gone: data fetching
+// lives in mempool/live-detail.ts; this module renders it with explicit
+// loading / error / placeholder states.
+
 import * as React from "react";
 import { Stat } from "@/design/primitives";
-import type { MoneroLive, Block } from "@/data/types";
-import { isMempoolTx, pinTxBlockHeight, confOf } from "@/mempool/conf";
-
-// tx-detail.jsx — full-fidelity Monero transaction + block inspectors.
-//
-// Exports to window: FullTxDetail, FullBlockDetail, txSynthFromId, blockSynth.
-//
-// Schema mirrors monerod RPC `get_transactions`, `get_block`, `get_block_header`.
-// All "live" fields are deterministic-from-txid so the panel reads consistently
-// across re-renders; replace synth helpers with real RPC results when wiring
-// up the node feed (see DATA.md).
-
-/* ─── deterministic synth helpers ──────────────────────────────── */
-
-function _hash32(s: string) {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = (h * 16777619) >>> 0; }
-  return h;
-}
-function _seedRng(seed: number) {
-  let s = seed || 1;
-  return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 0xffffffff; };
-}
-function _hex(len: number, rng: () => number) { let o = ""; for (let i = 0; i < len; i++) o += "0123456789abcdef"[(rng() * 16) | 0]; return o; }
-
-// Build a complete TX object from a 64-char id. Idempotent.
-//
-// `pinnedHeight` is the tx's pinned block height (see mempool/conf.ts):
-//   • undefined → no external pin; pin from the current snapshot (deep-links/legacy)
-//   • null      → tx is in the mempool (unconfirmed)
-//   • number    → the ABSOLUTE block height the tx was pinned to at track time
-// Confirmations are ALWAYS derived live from the pinned height + current tip, so
-// the detail panel can never disagree with the ribbon arrow.
-export function txSynthFromId(txid: string, data: MoneroLive, pinnedHeight?: number | null) {
-  const h = _hash32(txid);
-  const rng = _seedRng(h);
-  const inMempool = pinnedHeight === undefined ? isMempoolTx(txid) : pinnedHeight === null;
-  const blockHeight = inMempool
-    ? null
-    : (pinnedHeight === undefined ? pinTxBlockHeight(txid, data) : pinnedHeight);
-  const block = blockHeight != null ? (data.blocks.find((b) => b.height === blockHeight) ?? null) : null;
-  // Confirmations come from the ONE accessor (newest-block tip), never data.height.
-  const conf = confOf(blockHeight, data);
-
-  const inputs = 1 + ((h >> 3) & 3); // 1..4
-  const outputs = 2 + ((h >> 5) & 1); // 2 or 3 (2 is typical)
-  const sizeBytes = 1400 + Math.floor(rng() * 2200);
-  const fee = +(0.000005 + rng() * 0.000095).toFixed(7);
-  const perB = +(fee / sizeBytes * 1e12).toFixed(2);
-  const weight = sizeBytes + Math.floor(rng() * 100);
-
-  return {
-    id: txid,
-    version: 2,
-    rct_type: 6,                      // 6 = CLSAG + BP+
-    rct_type_label: "CLSAG + BP+",
-    unlock_time: 0,
-    extra_size: 33 + (h & 7),
-    extra_hex: "01" + _hex(64, rng) + ((h & 1) ? "02090103" + _hex(14, rng) : ""),
-    extra_pubkey: _hex(64, rng),
-    extra_payment_id: (h & 1) ? _hex(16, rng) : null,
-    extra_additional_pubkeys: outputs > 2 ? Array.from({ length: outputs - 1 }, () => _hex(64, rng)) : [],
-    size_bytes: sizeBytes,
-    weight,
-    fee,
-    fee_pcn_per_b: perB,
-    ring_size: 16,
-    n_inputs: inputs,
-    n_outputs: outputs,
-    block_height: blockHeight,
-    block_hash: block ? block.hash : null,
-    block_age_s: block ? block.age : (blockHeight != null ? conf * 120 : Math.floor(rng() * 110)),
-    confirmations: conf,
-    age_seconds: block ? block.age : (blockHeight != null ? conf * 120 : Math.floor(rng() * 110)),
-    in_mempool: inMempool,
-
-    // Mempool-only fields
-    relayed_to_n_peers: inMempool ? 8 + Math.floor(rng() * 14) : null,
-    propagation_ms: inMempool ? 120 + Math.floor(rng() * 880) : null,
-    first_seen_iso: inMempool ? new Date(Date.now() - Math.floor(rng() * 110_000)).toISOString() : null,
-
-    privacy_score: 92 + Math.floor(rng() * 8), // 92..99
-    inputs_detail: Array.from({ length: inputs }, () => {
-      const offs = [];
-      const baseHeight = (block?.height ?? blockHeight ?? data.height) - Math.floor(rng() * 1000);
-      let cursor = baseHeight - Math.floor(rng() * 800000);
-      for (let i = 0; i < 16; i++) {
-        cursor += 1 + Math.floor(Math.pow(rng(), 3) * 240000);
-        offs.push({
-          out_index: cursor,
-          age_blocks: (block?.height ?? blockHeight ?? data.height) - cursor,
-          age_days: +(((block?.height ?? blockHeight ?? data.height) - cursor) * 120 / 86400).toFixed(1),
-        });
-      }
-      return {
-        key_image: _hex(64, rng),
-        ring_offsets: offs,                  // 16 offsets
-        amount_hidden: true,                 // RingCT
-        pseudo_output_commitment: _hex(64, rng),
-        ringct_clsag_size: 1540 + Math.floor(rng() * 60),
-      };
-    }),
-    outputs_detail: Array.from({ length: outputs }, (_, i) => ({
-      stealth_address: _hex(64, rng),
-      output_pubkey: _hex(64, rng),
-      view_tag: _hex(2, rng),
-      amount_hidden: true,
-      amount_commitment: _hex(64, rng),
-      output_index_global: (block?.height ?? blockHeight ?? data.height) * 80 + i,
-    })),
-
-    proofs: {
-      clsag_signature: { size_bytes: inputs * 1540 + 32, layers: 16 },
-      bulletproofs_plus: { size_bytes: outputs * 96 + 576, range_proof_bits: 64 },
-    },
-
-    rpc_endpoints: {
-      get_transactions: `POST /get_transactions { "txs_hashes": ["${txid}"], "decode_as_json": true }`,
-      get_transaction_pool_hashes_bin: inMempool ? "POST /get_transaction_pool_hashes.bin" : null,
-    },
-  };
-}
-export type SynthTx = ReturnType<typeof txSynthFromId>;
-
-// Build a richer Block object from a base block.
-export function blockSynth(block: Block, data: MoneroLive) {
-  const h = _hash32(block.hash || String(block.height));
-  const rng = _seedRng(h);
-
-  const prevBlock = data.blocks.find((b) => b.height === block.height - 1);
-  const minorVersion = 16;
-  const majorVersion = 16;
-  const median_block_size = 300 + Math.floor(rng() * 500); // KB
-  const txCount = block.txs;
-  const totalFees = +(txCount * (0.000005 + rng() * 0.00007)).toFixed(7);
-
-  return {
-    ...block,
-    prev_hash: prevBlock?.hash || _hex(64, rng),
-    merkle_root: _hex(64, rng),
-    nonce: Math.floor(rng() * 0xffffffff),
-    timestamp: Math.floor(Date.now() / 1000) - block.age,
-    timestamp_iso: new Date((Date.now() - block.age * 1000)).toISOString(),
-    major_version: majorVersion,
-    minor_version: minorVersion,
-    hardfork_label: "v16 · CLSAG + BP+",
-    randomx_seed_hash: _hex(64, rng),
-    randomx_seed_height: Math.floor(block.height / 2048) * 2048,
-    cumulative_difficulty: (block.difficulty * (block.height - 1000) + rng() * 1e12).toFixed(0),
-    long_term_weight: Math.floor(block.sizeKB * 1024 * 1.1),
-    weight_bytes: Math.floor(block.sizeKB * 1024),
-    median_block_size_kb: median_block_size,
-    fullness_pct: +Math.min(100, (block.sizeKB / median_block_size) * 100).toFixed(1),
-    total_fees: totalFees,
-    miner_tx_hash: _hex(64, rng),
-    miner_address_short: _hex(8, rng) + "…" + _hex(6, rng),
-    coinbase_reward: block.reward,
-    txs_in_block: Array.from({ length: Math.min(txCount, 24) }, () => _hex(64, rng)),
-    txs_remaining: Math.max(0, txCount - 24),
-
-    rpc_endpoints: {
-      get_block: `POST /get_block { "height": ${block.height} }`,
-      get_block_header_by_height: `POST /get_block_header_by_height { "height": ${block.height} }`,
-    },
-  };
-}
-export type SynthBlock = ReturnType<typeof blockSynth>;
-
-
-
+import {
+  useLiveTx,
+  useLiveBlock,
+  useLiveDecoys,
+  type RealTxView,
+  type RealBlockView,
+} from "@/mempool/live-detail";
+import type { MoneroLive } from "@/data/types";
 
 /* ─── shared atoms ─────────────────────────────────────────────── */
 
@@ -228,25 +77,123 @@ function PrivacyBadges() {
   ));
 }
 
+/** A small banner marking a block of content as illustrative / not a node figure. */
+function IllustrativeNote({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mono" style={{ fontSize: 10.5, color: "var(--ink-40)", letterSpacing: "0.04em",
+      border: "1px dashed var(--ink-20)", borderRadius: 3, padding: "6px 10px", marginBottom: 10,
+      display: "flex", alignItems: "center", gap: 8 }}>
+      <span style={{ color: "var(--ink-60)" }}>ⓘ ILLUSTRATIVE</span>
+      <span style={{ color: "var(--ink-60)" }}>{children}</span>
+    </div>
+  );
+}
+
+const BackBtn = ({ onBack }: { onBack?: () => void }) => onBack ? (
+  <button type="button" onClick={onBack}
+    style={{ appearance: "none", cursor: "pointer", background: "transparent",
+      border: "1px solid var(--ink-20)", color: "var(--ink-60)",
+      padding: "5px 12px", borderRadius: 3,
+      fontFamily: "var(--f-mono)", fontSize: 11, marginBottom: 18 }}>← Back</button>
+) : null;
+
+const fmtKB = (b: number | null) => b == null ? "—" : (b / 1024).toFixed(2);
+const fmtAge = (s: number | null) => s == null ? "—" : s < 60 ? s + "s" : Math.floor(s / 60) + "m " + (s % 60) + "s";
+
+/* ─── stateful wrappers (loading / error / ready) ──────────────── */
+
+export function LiveTxDetail({ txid, data, pinnedHeight, onBack }: {
+  txid: string;
+  data: MoneroLive;
+  pinnedHeight?: number | null;
+  onBack?: () => void;
+}) {
+  const { status, tx, optimisticConf, optimisticHeight } = useLiveTx(txid, data, pinnedHeight);
+  if (status === "loading") {
+    return (
+      <div style={{ padding: "20px 28px 60px" }}>
+        <BackBtn onBack={onBack} />
+        <div className="kicker">Transaction</div>
+        <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
+        <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="led pulse" /> resolving from node…
+          <span style={{ color: "var(--ink-40)" }}>
+            {optimisticHeight != null ? `pinned to block #${optimisticHeight.toLocaleString()} · ~${optimisticConf} conf` : "pending / mempool"}
+          </span>
+        </div>
+      </div>
+    );
+  }
+  if (status === "error" || !tx) {
+    return (
+      <div style={{ padding: "20px 28px 60px" }}>
+        <BackBtn onBack={onBack} />
+        <div className="kicker">Transaction</div>
+        <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
+        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
+          <div className="mono" style={{ fontSize: 12.5, color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
+          <div className="mono dim" style={{ fontSize: 11, lineHeight: 1.6 }}>
+            The node did not return this transaction. It may be too recent to have propagated, pruned,
+            or the RPC relay is unreachable from this browser. No data is shown rather than invented values.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return <FullTxDetail tx={tx} onBack={onBack} />;
+}
+
+export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
+  height: number;
+  data: MoneroLive;
+  onBack?: () => void;
+  onPickTx?: (id: string, blockHeight: number) => void;
+}) {
+  const { status, block } = useLiveBlock(height, data);
+  if (status === "loading") {
+    return (
+      <div style={{ padding: "20px 28px 60px" }}>
+        <BackBtn onBack={onBack} />
+        <div className="kicker">Block</div>
+        <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
+        <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="led pulse" /> resolving from node…
+        </div>
+      </div>
+    );
+  }
+  if (status === "error" || !block) {
+    return (
+      <div style={{ padding: "20px 28px 60px" }}>
+        <BackBtn onBack={onBack} />
+        <div className="kicker">Block</div>
+        <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
+        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
+          <div className="mono" style={{ fontSize: 12.5, color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
+          <div className="mono dim" style={{ fontSize: 11, lineHeight: 1.6 }}>
+            The node did not return this block. The RPC relay may be unreachable from this browser.
+            No data is shown rather than invented values.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return <FullBlockDetail block={block} onBack={onBack} onPickTx={onPickTx} />;
+}
+
 /* ─── FULL TX DETAIL ───────────────────────────────────────────── */
 
-export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void }) {
+export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => void }) {
   const [showJson, setShowJson] = React.useState(false);
   const [openIn, setOpenIn] = React.useState(0);
+  const [wantDecoys, setWantDecoys] = React.useState(false);
+  const decoys = useLiveDecoys(tx.id, wantDecoys);
 
-  // Decoy age distribution for the histogram (collapse all inputs)
-  const allAges = tx.inputs_detail.flatMap((i) => i.ring_offsets.map((o) => o.age_days));
-  const maxAge = Math.max(...allAges, 1);
+  const remaining = Math.max(0, 10 - tx.confirmations);
 
   return (
     <div style={{ padding: "20px 28px 60px" }}>
-      {onBack ? (
-        <button type="button" onClick={onBack}
-          style={{ appearance: "none", cursor: "pointer", background: "transparent",
-            border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-            padding: "5px 12px", borderRadius: 3,
-            fontFamily: "var(--f-mono)", fontSize: 11, marginBottom: 18 }}>← Back</button>
-      ) : null}
+      <BackBtn onBack={onBack} />
 
       {/* Header */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "flex-start", paddingBottom: 18, borderBottom: "1px solid var(--rule)" }}>
@@ -256,14 +203,14 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
           <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--ink-60)", flexWrap: "wrap" }}>
             <span>v{tx.version}</span>
             <span>·</span>
-            <span>rct_type: <b style={{ color: "var(--p-50)" }}>{tx.rct_type}</b> ({tx.rct_type_label})</span>
+            <span>rct_type: <b style={{ color: "var(--p-50)" }}>{tx.rctType}</b> ({tx.rctTypeLabel})</span>
             <span>·</span>
-            <span>{tx.in_mempool ? "in mempool" : "in block " + tx.block_height!.toLocaleString()}</span>
-            {tx.in_mempool ? <><span>·</span><span>seen {Math.floor((Date.now() - new Date(tx.first_seen_iso!).getTime()) / 1000)}s ago</span></> : null}
+            <span>{tx.inMempool ? "in mempool" : "in block " + tx.blockHeight!.toLocaleString()}</span>
+            {tx.inMempool && tx.firstSeen ? <><span>·</span><span>seen {Math.max(0, Math.floor(Date.now() / 1000) - tx.firstSeen)}s ago</span></> : null}
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-          {tx.in_mempool ? (
+          {tx.inMempool ? (
             <span className="pill warn"><span className="led pulse" />MEMPOOL</span>
           ) : tx.confirmations >= 10 ? (
             <span className="pill live"><span className="led pulse" />UNLOCKED</span>
@@ -274,28 +221,28 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
         </div>
       </div>
 
-      {/* Six KPI tiles */}
-      <Section title="Summary" kicker="Top-line">
+      {/* KPI tiles (all real; size/fee null → "—") */}
+      <Section title="Summary" kicker="Top-line · from node">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
-          <Stat k="Fee" v={tx.fee.toFixed(7)} sub="XMR" tone="acc" />
-          <Stat k="Fee rate" v={tx.fee_pcn_per_b.toFixed(2)} sub="piconero / B" />
-          <Stat k="Size" v={(tx.size_bytes / 1024).toFixed(2)} sub="KB" />
-          <Stat k="Weight" v={(tx.weight / 1024).toFixed(2)} sub="KB" />
-          <Stat k="Inputs" v={tx.n_inputs} sub="× ring 16" />
-          <Stat k="Outputs" v={tx.n_outputs} sub="one-time" />
+          <Stat k="Fee" v={tx.fee != null ? tx.fee.toFixed(7) : "—"} sub="XMR" tone="acc" />
+          <Stat k="Fee rate" v={tx.feePerB != null ? tx.feePerB.toFixed(2) : "—"} sub="piconero / B" />
+          <Stat k="Size" v={fmtKB(tx.sizeBytes)} sub="KB" />
+          <Stat k="Ring size" v={tx.ringSize} sub="members" tone="p" />
+          <Stat k="Inputs" v={tx.inputs.length || tx.outputs.length ? tx.inputs.length : "—"} sub={"× ring " + tx.ringSize} />
+          <Stat k="Outputs" v={tx.outputs.length || "—"} sub="one-time" />
         </div>
       </Section>
 
-      {/* Privacy strip */}
+      {/* Privacy strip — protocol facts, NO fabricated score */}
       <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginTop: 18, border: "1px solid var(--g-50)", background: "rgba(74,222,128,0.05)", borderRadius: 4 }}>
         <span style={{ color: "var(--g-50)", fontSize: 22, lineHeight: 1 }}>✓</span>
         <div>
           <div className="mono" style={{ fontSize: 12, color: "var(--ink-100)" }}>
-            Privacy <b className="up" style={{ fontSize: 16, marginLeft: 6 }}>{tx.privacy_score}/100</b>
-            <span className="up" style={{ marginLeft: 8, fontSize: 10.5, letterSpacing: "0.12em" }}>STRONG</span>
+            Monero protocol privacy
+            <span className="up" style={{ marginLeft: 8, fontSize: 10.5, letterSpacing: "0.12em" }}>ALWAYS-ON</span>
           </div>
           <div className="mono dim" style={{ fontSize: 10.5, marginTop: 4, letterSpacing: "0.04em" }}>
-            All primitives engaged · sender hidden · recipient hidden · amount hidden
+            sender hidden (ring signature) · recipient hidden (stealth address) · amount hidden (RingCT)
           </div>
         </div>
         <div style={{ flex: 1 }} />
@@ -307,9 +254,9 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
         right={<span><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 6px var(--g-50)" }} />LIVE</span>}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
           <Stat k="of 10 confirmations" v={tx.confirmations} tone="acc" big />
-          <Stat k="Blocks remaining" v={Math.max(0, 10 - tx.confirmations)} big />
-          <Stat k="Until next conf" v={"~" + (tx.in_mempool ? "2:00" : "1:42")} big />
-          <Stat k="Until full unlock" v={"~" + Math.max(0, 10 - tx.confirmations) * 2 + ":00"} big />
+          <Stat k="Blocks remaining" v={remaining} big />
+          <Stat k="Per-block target" v="~2:00" big />
+          <Stat k="Until full unlock" v={"~" + remaining * 2 + ":00"} big />
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 18, marginBottom: 6 }}>
           {Array.from({ length: 11 }).map((_, i) => {
@@ -326,46 +273,41 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
           })}
         </div>
         <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6 }}>
-          <span>{tx.confirmations} of 10 — {Math.max(0, 10 - tx.confirmations)} more until unlock</span>
-          <span>updated just now</span>
+          <span>{tx.confirmations} of 10 — {remaining} more until unlock</span>
+          <span>~2 min/block target · updated live</span>
         </div>
       </Section>
 
-      {/* Mempool propagation (if mempool) */}
-      {tx.in_mempool ? (
-        <Section title="Mempool propagation" kicker="Dandelion++ stem + fluff">
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
-            <Stat k="Relayed to" v={tx.relayed_to_n_peers + " peers"} tone="acc" />
-            <Stat k="First-seen latency" v={tx.propagation_ms + " ms"} />
-            <Stat k="Origin obscurity" v="hidden" sub="Dandelion++" tone="p" />
+      {/* Mempool first-seen (real receive_time only; no fabricated peers/propagation) */}
+      {tx.inMempool ? (
+        <Section title="Mempool" kicker="Dandelion++ stem + fluff">
+          <DKV k="First seen (this node)" v={tx.firstSeen ? new Date(tx.firstSeen * 1000).toISOString() : "—"} mono />
+          <div className="mono dim" style={{ fontSize: 10.5, marginTop: 8, lineHeight: 1.55 }}>
+            Origin IP is obscured by Dandelion++ (stem then fluff). Per-peer relay counts and propagation
+            latency are not exposed by the node RPC and are not shown.
           </div>
-          <DKV k="First seen (this node)" v={tx.first_seen_iso} mono />
         </Section>
       ) : null}
 
-      {/* Extra field */}
-      <Section title="tx_extra" kicker="On-chain metadata" right={<span>{tx.extra_size} bytes</span>}>
-        <DKV k="tx_pubkey" v={tx.extra_pubkey} tone="cyan" copy={tx.extra_pubkey} />
-        {tx.extra_additional_pubkeys.length ? (
-          <DKV k={`additional_pubkeys [${tx.extra_additional_pubkeys.length}]`}
-            v={tx.extra_additional_pubkeys.map((k, i) => <div key={i} style={{ marginBottom: 4 }}>{i}: {k}</div>)} />
-        ) : null}
-        {tx.extra_payment_id ? (
-          <DKV k="encrypted_payment_id" v={tx.extra_payment_id} tone="purple" copy={tx.extra_payment_id} />
-        ) : <DKV k="payment_id" v="(none — modern wallet)" tone="dim" />}
-        <DKV k="raw_extra_hex"
-          v={<code style={{ fontSize: 10.5, color: "var(--ink-60)", display: "block", padding: 10, background: "rgba(0,0,0,0.4)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extra_hex}</code>}
-          copy={tx.extra_hex} />
+      {/* tx_extra — raw hex is real; parsed sub-fields are not decoded here */}
+      <Section title="tx_extra" kicker="On-chain metadata" right={<span>{tx.extraSize} bytes</span>}>
+        {tx.extraHex ? (
+          <DKV k="raw_extra_hex"
+            v={<code style={{ fontSize: 10.5, color: "var(--ink-60)", display: "block", padding: 10, background: "rgba(0,0,0,0.4)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
+            copy={tx.extraHex} />
+        ) : <DKV k="raw_extra_hex" v="(empty)" tone="dim" />}
+        <div className="mono dim" style={{ fontSize: 10.5, marginTop: 6 }}>
+          tx_pubkey / payment_id live inside this blob; they are not decoded client-side.
+        </div>
       </Section>
 
       {/* Inputs */}
-      <Section title={`Inputs · ${tx.n_inputs}`} kicker="Ring signatures (CLSAG)"
-        right={<span>{tx.ring_size}-member ring · amount hidden</span>}>
+      <Section title={`Inputs · ${tx.inputs.length}`} kicker="Ring signatures (CLSAG)"
+        right={<span>{tx.ringSize}-member ring · amount hidden</span>}>
 
-        {/* Input switcher tabs */}
-        {tx.inputs_detail.length > 1 ? (
-          <div style={{ display: "flex", gap: 6, marginBottom: 10 }}>
-            {tx.inputs_detail.map((_, i) => (
+        {tx.inputs.length > 1 ? (
+          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+            {tx.inputs.map((_, i) => (
               <button key={i} onClick={() => setOpenIn(i)}
                 style={{
                   appearance: "none", cursor: "pointer", padding: "5px 10px",
@@ -379,113 +321,115 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
         ) : null}
 
         {(() => {
-          const inp = tx.inputs_detail[openIn] || tx.inputs_detail[0];
+          const inp = tx.inputs[openIn] || tx.inputs[0];
+          if (!inp) return <div className="mono dim" style={{ fontSize: 11 }}>No inputs returned.</div>;
+          const decoyInput = decoys.inputs?.find((d) => d.inputIdx === openIn);
           return (
             <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
-              <DKV k="key_image" v={inp.key_image} tone="cyan" copy={inp.key_image} />
-              <DKV k="pseudo_output_commitment" v={inp.pseudo_output_commitment} tone="cyan" copy={inp.pseudo_output_commitment} />
+              <DKV k="key_image" v={inp.keyImage} tone="cyan" copy={inp.keyImage} />
               <DKV k="amount" v="HIDDEN (Pedersen commitment)" tone="dim" />
-              <DKV k="clsag_signature size" v={inp.ringct_clsag_size + " bytes"} />
-              <DKV k="ring members" v={`${inp.ring_offsets.length} · one is the real spender, 15 are decoys`} />
+              <DKV k="ring members" v={`${inp.ringMembers} · one is the real spender, ${Math.max(0, inp.ringMembers - 1)} are decoys`} />
+              <DKV k="key_offsets (relative)" v={inp.keyOffsets.length ? inp.keyOffsets.join(", ") : "—"} mono />
 
-              {/* Ring decoy age list */}
+              {/* Real ring decoy ages (lazy — extra RPC via /api/xmr/decoys) */}
               <div style={{ marginTop: 14 }}>
-                <div className="kicker" style={{ marginBottom: 8 }}>Ring decoys · output indexes &amp; ages</div>
-                <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px", gap: 8, fontFamily: "var(--f-mono)", fontSize: 11 }}>
-                  <span className="kicker">#</span>
-                  <span className="kicker">Global output index</span>
-                  <span className="kicker">Age (blocks)</span>
-                  <span className="kicker">Age (days)</span>
-                  {inp.ring_offsets.map((o, i) => (
-                    <React.Fragment key={i}>
-                      <span className="dim">{String(i).padStart(2, "0")}</span>
-                      <span style={{ color: "var(--c-50)" }}>{o.out_index.toLocaleString()}</span>
-                      <span className="dim">{o.age_blocks.toLocaleString()}</span>
-                      <span className="dim">{o.age_days}d</span>
-                    </React.Fragment>
-                  ))}
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 12 }}>
+                  <div className="kicker">Ring decoys · real on-chain ages</div>
+                  {!wantDecoys ? (
+                    <button type="button" onClick={() => setWantDecoys(true)}
+                      style={{ appearance: "none", cursor: "pointer", background: "transparent",
+                        border: "1px solid var(--ink-20)", color: "var(--ink-60)", padding: "4px 10px",
+                        borderRadius: 3, fontFamily: "var(--f-mono)", fontSize: 10 }}>
+                      ▶ Resolve ring ages (extra RPC)
+                    </button>
+                  ) : decoys.status === "loading" ? (
+                    <span className="mono dim" style={{ fontSize: 10 }}>resolving…</span>
+                  ) : null}
                 </div>
+
+                {decoys.status === "error" ? (
+                  <div className="mono dim" style={{ fontSize: 10.5 }}>decoy ages unavailable from node</div>
+                ) : decoyInput && decoyInput.ring.length ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px 70px", gap: 8, fontFamily: "var(--f-mono)", fontSize: 11 }}>
+                    <span className="kicker">#</span>
+                    <span className="kicker">Block height</span>
+                    <span className="kicker">Age (blocks)</span>
+                    <span className="kicker">Age (days)</span>
+                    <span className="kicker">Unlocked</span>
+                    {decoyInput.ring.map((m) => (
+                      <React.Fragment key={m.ringIdx}>
+                        <span className="dim">{String(m.ringIdx).padStart(2, "0")}</span>
+                        <span style={{ color: "var(--c-50)" }}>{m.blockHeight != null ? m.blockHeight.toLocaleString() : "—"}</span>
+                        <span className="dim">{m.ageBlocks != null ? m.ageBlocks.toLocaleString() : "—"}</span>
+                        <span className="dim">{m.ageDays != null ? m.ageDays + "d" : "—"}</span>
+                        <span className="dim">{m.unlocked ? "yes" : "no"}</span>
+                      </React.Fragment>
+                    ))}
+                  </div>
+                ) : wantDecoys && decoys.status === "ready" ? (
+                  <div className="mono dim" style={{ fontSize: 10.5 }}>no ring data for this input</div>
+                ) : (
+                  <div className="mono dim" style={{ fontSize: 10.5 }}>
+                    Ring-member ages resolve each decoy's on-chain output to its block height (one batched /get_outs call).
+                  </div>
+                )}
               </div>
             </div>
           );
         })()}
-
-        {/* Decoy age distribution histogram across ALL inputs */}
-        <div style={{ marginTop: 16, padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.2)" }}>
-          <div className="kicker" style={{ marginBottom: 8 }}>Decoy age distribution · all inputs · log-normal expected</div>
-          <svg width="100%" height="64" viewBox="0 0 600 64" preserveAspectRatio="none">
-            {(() => {
-              const bins = 30;
-              const hist = new Array(bins).fill(0);
-              for (const a of allAges) {
-                const bin = Math.min(bins - 1, Math.floor((a / maxAge) * bins));
-                hist[bin]++;
-              }
-              const maxBin = Math.max(...hist, 1);
-              const w = 600 / bins;
-              return hist.map((c, i) => {
-                const h = (c / maxBin) * 56;
-                return <rect key={i} x={i * w + 1} y={62 - h} width={w - 2} height={h}
-                  fill="var(--tk-accent)" opacity={0.4 + (c / maxBin) * 0.6} />;
-              });
-            })()}
-          </svg>
-          <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5, marginTop: 4 }}>
-            <span>recent</span>
-            <span>{maxAge.toFixed(0)} days back ⟶</span>
-          </div>
-        </div>
       </Section>
 
       {/* Outputs */}
-      <Section title={`Outputs · ${tx.n_outputs}`} kicker="Stealth addresses · one-time"
+      <Section title={`Outputs · ${tx.outputs.length}`} kicker="Stealth addresses · one-time"
         right={<span>view tag · 1 byte · 256× scan</span>}>
         <div style={{ display: "grid", gap: 10 }}>
-          {tx.outputs_detail.map((o, i) => (
+          {tx.outputs.map((o, i) => (
             <div key={i} style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
                 <div className="kicker" style={{ color: "var(--p-50)" }}>Output #{i}</div>
-                <div className="mono dim" style={{ fontSize: 10.5 }}>global index #{o.output_index_global.toLocaleString()}</div>
               </div>
-              <DKV k="stealth_address" v={o.stealth_address} tone="purple" copy={o.stealth_address} />
-              <DKV k="output_pubkey" v={o.output_pubkey} tone="cyan" copy={o.output_pubkey} />
-              <DKV k="amount_commitment" v={o.amount_commitment} tone="cyan" copy={o.amount_commitment} />
-              <DKV k="view_tag" v={<><b style={{ color: "var(--tk-accent)" }}>0x{o.view_tag}</b> <span className="dim" style={{ marginLeft: 8, fontSize: 11 }}>· 1 byte · scan acceleration</span></>} />
+              <DKV k="stealth_address" v={o.stealthKey || "—"} tone="purple" copy={o.stealthKey || undefined} />
+              <DKV k="view_tag" v={o.viewTag ? <><b style={{ color: "var(--tk-accent)" }}>0x{o.viewTag}</b> <span className="dim" style={{ marginLeft: 8, fontSize: 11 }}>· 1 byte · scan acceleration</span></> : "—"} />
               <DKV k="amount" v="HIDDEN (Pedersen commitment)" tone="dim" />
             </div>
           ))}
+          {!tx.outputs.length ? <div className="mono dim" style={{ fontSize: 11 }}>No outputs returned.</div> : null}
         </div>
       </Section>
 
-      {/* Proofs */}
-      <Section title="Cryptographic proofs" kicker="Verified on-chain">
+      {/* Proofs — explanatory only; the byte-sizes are NOT node figures */}
+      <Section title="Cryptographic proofs" kicker="Verified on-chain · illustrative">
+        <IllustrativeNote>concept cards — the node RPC does not break out per-proof byte sizes</IllustrativeNote>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">CLSAG · ring signature</div>
-            <div className="mono" style={{ fontSize: 22, color: "var(--tk-accent)", marginTop: 6 }}>{tx.proofs.clsag_signature.size_bytes.toLocaleString()} <span className="dim" style={{ fontSize: 10.5 }}>bytes</span></div>
             <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.55 }}>
-              Each of {tx.n_inputs} input{tx.n_inputs > 1 ? "s" : ""} proves "this is one of the {tx.ring_size} keys" without saying which. {tx.proofs.clsag_signature.layers}-layer signature.
+              Each of {tx.inputs.length} input{tx.inputs.length === 1 ? "" : "s"} proves "this is one of the {tx.ringSize} keys" without revealing which — the spender is hidden in the ring.
             </p>
           </div>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">Bulletproofs+ · range proof</div>
-            <div className="mono" style={{ fontSize: 22, color: "var(--p-50)", marginTop: 6 }}>{tx.proofs.bulletproofs_plus.size_bytes.toLocaleString()} <span className="dim" style={{ fontSize: 10.5 }}>bytes</span></div>
             <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.55 }}>
-              Proves all {tx.n_outputs} amounts are in [0, 2<sup>{tx.proofs.bulletproofs_plus.range_proof_bits}</sup>) without revealing values. Logarithmic verification.
+              Proves all {tx.outputs.length} output amounts are in range without revealing the values. Logarithmic verification.
             </p>
           </div>
         </div>
       </Section>
 
       {/* Block context (if mined) */}
-      {!tx.in_mempool && tx.block_hash ? (
-        <Section title={`Block · #${tx.block_height!.toLocaleString()}`} kicker="Inclusion context">
-          <DKV k="block_hash" v={tx.block_hash} tone="cyan" copy={tx.block_hash} />
-          <DKV k="block age" v={Math.floor(tx.block_age_s / 60) + "m " + (tx.block_age_s % 60) + "s"} />
+      {!tx.inMempool && tx.blockHash ? (
+        <Section title={`Block · #${tx.blockHeight!.toLocaleString()}`} kicker="Inclusion context">
+          <DKV k="block_hash" v={tx.blockHash} tone="cyan" copy={tx.blockHash} />
+          <DKV k="block age" v={fmtAge(tx.ageSeconds)} />
+          <DKV k="unlock_time" v={tx.unlockTime === 0 ? "0 (spendable at 10 confs)" : String(tx.unlockTime)} />
         </Section>
-      ) : null}
+      ) : (
+        <Section title="Lock" kicker="Spendability">
+          <DKV k="unlock_time" v={tx.unlockTime === 0 ? "0 (default)" : String(tx.unlockTime)} />
+        </Section>
+      )}
 
-      {/* Raw RPC JSON toggle */}
+      {/* Raw RPC JSON toggle — dumps the REAL mapped object */}
       <Section title="Raw RPC" kicker="monerod · get_transactions">
         <button type="button" onClick={() => setShowJson((s) => !s)}
           style={{ appearance: "none", cursor: "pointer", background: "transparent",
@@ -499,29 +443,30 @@ export function FullTxDetail({ tx, onBack }: { tx: SynthTx; onBack?: () => void 
 {JSON.stringify(tx, null, 2)}
           </pre>
         ) : null}
-        <DKV k="rpc call" v={<code style={{ color: "var(--ink-80)" }}>{tx.rpc_endpoints.get_transactions}</code>} />
+        <DKV k="rpc call" v={<code style={{ color: "var(--ink-80)" }}>{`POST /get_transactions { "txs_hashes": ["${tx.id}"], "decode_as_json": true }`}</code>} />
       </Section>
     </div>
   );
 }
 
-
-
 /* ─── FULL BLOCK DETAIL ────────────────────────────────────────── */
 
-export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock; onBack?: () => void; onPickTx?: (id: string, blockHeight: number) => void }) {
+const BLOCK_TX_RENDER_CAP = 50;
+
+export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockView; onBack?: () => void; onPickTx?: (id: string, blockHeight: number) => void }) {
   const [showJson, setShowJson] = React.useState(false);
-  const data = block;
+
+  // Coinbase first, then real non-coinbase hashes (render-capped for performance).
+  const rows: { id: string; coinbase: boolean }[] = [
+    { id: block.coinbaseTxHash, coinbase: true },
+    ...block.txHashes.map((id) => ({ id, coinbase: false })),
+  ];
+  const shown = rows.slice(0, BLOCK_TX_RENDER_CAP);
+  const remaining = Math.max(0, rows.length - shown.length);
 
   return (
     <div style={{ padding: "20px 28px 60px" }}>
-      {onBack ? (
-        <button type="button" onClick={onBack}
-          style={{ appearance: "none", cursor: "pointer", background: "transparent",
-            border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-            padding: "5px 12px", borderRadius: 3,
-            fontFamily: "var(--f-mono)", fontSize: 11, marginBottom: 18 }}>← Back</button>
-      ) : null}
+      <BackBtn onBack={onBack} />
 
       {/* Header */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "flex-start", paddingBottom: 18, borderBottom: "1px solid var(--rule)" }}>
@@ -530,39 +475,36 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock
           <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>#{block.height.toLocaleString()}</h2>
           <div className="mono" style={{ fontSize: 12.5, color: "var(--c-50)", marginTop: 8, wordBreak: "break-all" }}>{block.hash}</div>
           <div className="mono dim" style={{ fontSize: 11, marginTop: 8 }}>
-            Mined by <b style={{ color: "var(--ink-100)" }}>{block.pool}</b> · {block.timestamp_iso} · {Math.floor(block.age / 60)}m{block.age % 60}s ago
+            Mined by <b style={{ color: "var(--ink-100)" }}>{block.pool}</b> · {block.timestampIso} · {fmtAge(block.ageSeconds)} ago
           </div>
         </div>
-        <span className="pill live"><span className="led pulse" />{block.conf} confirmations</span>
+        <span className="pill live"><span className="led pulse" />{block.confirmations} confirmations</span>
       </div>
 
       {/* KPI tiles */}
-      <Section title="Block summary" kicker="At a glance">
+      <Section title="Block summary" kicker="At a glance · from node">
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
-          <Stat k="Transactions" v={block.txs} tone="acc" />
-          <Stat k="Total size" v={block.sizeKB.toFixed(1)} sub="KB" />
-          <Stat k="Weight" v={(block.weight_bytes / 1024).toFixed(1)} sub="KB" />
-          <Stat k="Fullness" v={block.fullness_pct + "%"} sub={"vs " + block.median_block_size_kb + "KB median"} />
-          <Stat k="Reward" v={block.coinbase_reward.toFixed(4)} sub="XMR" />
-          <Stat k="Total fees" v={block.total_fees.toFixed(6)} sub="XMR" />
+          <Stat k="Transactions" v={block.txCount} tone="acc" />
+          <Stat k="Weight" v={(block.weightBytes / 1024).toFixed(1)} sub="KB" />
+          <Stat k="Fullness" v={block.fullnessPct != null ? block.fullnessPct + "%" : "—"} sub={"vs " + (block.weightLimit / 1024).toFixed(0) + "KB limit"} />
+          <Stat k="Reward" v={block.reward != null ? block.reward.toFixed(4) : "—"} sub="XMR" />
+          <Stat k="Difficulty" v={(block.difficulty / 1e9).toFixed(2)} sub="G" />
+          <Stat k="Long-term wt" v={(block.longTermWeight / 1024).toFixed(1)} sub="KB" />
         </div>
       </Section>
 
-      {/* Mining details */}
+      {/* Mining */}
       <Section title="Mining" kicker="RandomX · proof of work">
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <DKV k="pool" v={block.pool} tone="acc" />
-            <DKV k="miner_address" v={block.miner_address_short} tone="cyan" />
-            <DKV k="miner_tx_hash" v={block.miner_tx_hash} tone="cyan" copy={block.miner_tx_hash} />
-            <DKV k="coinbase_reward" v={block.coinbase_reward.toFixed(7) + " XMR"} tone="acc" />
+            <DKV k="miner_tx_hash" v={block.minerTxHash} tone="cyan" copy={block.minerTxHash} />
+            <DKV k="reward" v={block.reward != null ? block.reward.toFixed(7) + " XMR" : "—"} tone="acc" />
           </div>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <DKV k="difficulty" v={(block.difficulty / 1e9).toFixed(2) + "G"} />
-            <DKV k="cumulative_difficulty" v={(BigInt(block.cumulative_difficulty) / 1_000_000_000_000n).toString() + "T"} mono />
-            <DKV k="randomx_seed" v={block.randomx_seed_hash} tone="cyan" copy={block.randomx_seed_hash} />
-            <DKV k="seed_height" v={block.randomx_seed_height.toLocaleString()} />
             <DKV k="nonce" v={block.nonce.toLocaleString()} />
+            <DKV k="hardfork" v={block.hardforkLabel} tone="acc" />
           </div>
         </div>
       </Section>
@@ -571,38 +513,36 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock
       <Section title="Block header" kicker="Chain linkage">
         <DKV k="height" v={block.height.toLocaleString()} tone="acc" />
         <DKV k="hash" v={block.hash} tone="cyan" copy={block.hash} />
-        <DKV k="prev_hash" v={block.prev_hash} tone="cyan" copy={block.prev_hash} />
-        <DKV k="merkle_root" v={block.merkle_root} tone="cyan" copy={block.merkle_root} />
-        <DKV k="major_version / minor_version" v={`${block.major_version} / ${block.minor_version}`} />
-        <DKV k="hardfork" v={block.hardfork_label} tone="acc" />
-        <DKV k="timestamp" v={block.timestamp + " · " + block.timestamp_iso} />
-        <DKV k="weight (long-term)" v={(block.long_term_weight / 1024).toFixed(1) + " KB"} />
+        <DKV k="prev_hash" v={block.prevHash} tone="cyan" copy={block.prevHash} />
+        <DKV k="major_version / minor_version" v={`${block.majorVersion} / ${block.minorVersion}`} />
+        <DKV k="timestamp" v={block.timestamp + " · " + block.timestampIso} />
+        <DKV k="weight" v={(block.weightBytes / 1024).toFixed(1) + " KB"} />
       </Section>
 
-      {/* TX list */}
-      <Section title={`Transactions · ${block.txs}`} kicker="Included in this block"
-        right={<span>showing {Math.min(block.txs, 24)}{block.txs_remaining ? " · " + block.txs_remaining + " more" : ""}</span>}>
+      {/* TX list — REAL coinbase + tx_hashes */}
+      <Section title={`Transactions · ${block.txCount}`} kicker="Included in this block"
+        right={<span>showing {shown.length}{remaining ? " · " + remaining + " more" : ""}</span>}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {block.txs_in_block.map((id, i) => (
+          {shown.map((row, i) => (
             // Thread the REAL block height so the tx pins to THIS block (no hash hop).
-            <button key={i} onClick={() => onPickTx?.(id, block.height)}
+            <button key={row.id + i} onClick={() => onPickTx?.(row.id, block.height)}
               style={{ appearance: "none", cursor: "pointer", textAlign: "left",
-                display: "grid", gridTemplateColumns: "32px 1fr auto", gap: 12, alignItems: "center",
+                display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center",
                 padding: "8px 12px", background: "transparent",
-                border: "1px solid var(--ink-10)", borderRadius: 3,
+                border: "1px solid " + (row.coinbase ? "var(--tk-accent)" : "var(--ink-10)"), borderRadius: 3,
                 color: "var(--ink-100)", fontFamily: "var(--f-mono)", fontSize: 11.5,
                 transition: "background 0.12s",
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.05)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-              <span className="dim">{String(i).padStart(2, "0")}</span>
-              <span style={{ color: "var(--c-50)", wordBreak: "break-all" }}>{id}</span>
+              <span className={row.coinbase ? "acc" : "dim"} style={{ fontSize: 9.5 }}>{row.coinbase ? "COINBASE" : String(i).padStart(2, "0")}</span>
+              <span style={{ color: "var(--c-50)", wordBreak: "break-all" }}>{row.id}</span>
               <span className="dim">↗</span>
             </button>
           ))}
-          {block.txs_remaining ? (
+          {remaining ? (
             <div className="mono dim" style={{ padding: "8px 12px", fontSize: 11, fontStyle: "italic" }}>
-              + {block.txs_remaining} more txs in this block (truncated for display)
+              + {remaining} more txs in this block (truncated for display)
             </div>
           ) : null}
         </div>
@@ -622,10 +562,8 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: SynthBlock
 {JSON.stringify(block, null, 2)}
           </pre>
         ) : null}
-        <DKV k="rpc call" v={<code style={{ color: "var(--ink-80)" }}>{block.rpc_endpoints.get_block}</code>} />
+        <DKV k="rpc call" v={<code style={{ color: "var(--ink-80)" }}>{`POST /get_block { "height": ${block.height} }`}</code>} />
       </Section>
     </div>
   );
 }
-
-

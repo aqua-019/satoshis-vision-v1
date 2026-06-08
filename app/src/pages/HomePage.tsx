@@ -66,7 +66,7 @@ export function HomePage() {
 
         {/* Recent blocks ribbon */}
         <section style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <div className="kicker">Recent blocks · last {data.blocks.length}</div>
+          <div className="kicker">Recent blocks · last {data.blocks.slice(0, 14).length}</div>
           <div className="table-scroll">
           <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "repeat(14, 1fr)", gap: 8 }}>
             {data.blocks.slice(0, 14).map((b) => (

@@ -5,7 +5,10 @@ import { useTick } from "@/design/ArtBackground";
 import { Stat, Sparkline } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { AreaSeries, BarSeries } from "@/pages/markets/charts";
 import type { MoneroLive } from "@/data/types";
+
+export const BLOCKS_CAP = 100;
 
 interface ViewProps {
   data: MoneroLive;
@@ -41,10 +44,10 @@ export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: nu
   const txs = data.mempool.slice(0, 70);
   const max = Math.max(...txs.map((t) => t.perB), 1);
   const memH = h * 0.56;
-  const blocks = data.blocks.slice(0, 10);
+  const blocks = data.blocks.slice(0, 12);
 
   return (
-    <div style={{ position: "relative", width: w, height: h, marginLeft: 78, flex: "none" }}>
+    <div style={{ position: "relative", width: w, height: h, maxWidth: "100%", marginLeft: "clamp(8px, 4vw, 78px)", flex: "none", boxSizing: "border-box" }}>
       {/* mouth label */}
       <div style={{ position: "absolute", top: -26, left: 0, right: 0, textAlign: "center", fontFamily: "var(--f-mono)", fontSize: 9.5, letterSpacing: "0.2em", color: "var(--ink-40)" }}>
         ▼ INCOMING · STEM ⟶ FLUFF
@@ -189,13 +192,24 @@ function SedRingFan() {
 
 /* ── stratigraphy log — confirmed blocks as a depth core ────── */
 export function SedStrataLog({ data }: { data: MoneroLive }) {
-  const blocks = data.blocks.slice(0, 10);
+  const blocks = data.blocks.slice(0, BLOCKS_CAP);
   const maxTx = Math.max(...blocks.map((b) => b.txs), 1);
   return (
-    <SedCard title="Stratigraphy log · 10 strata" right={<span className="acc">surface → unlock</span>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+    <SedCard title={"Stratigraphy log · " + blocks.length + " strata"} right={<span className="acc">surface → unlock</span>}>
+      {/* top pane — markets-grade tx-count-per-stratum bars (oldest → newest) */}
+      <BarSeries
+        data={blocks.slice().reverse().map((b) => b.txs)}
+        labels={blocks.slice().reverse().map((b) => "#" + b.height)}
+        format={(v) => v + " tx"}
+        color="var(--tk-accent)"
+        baseline="zero"
+        height={150}
+      />
+
+      {/* bottom pane — scrollable per-stratum log over all blocks */}
+      <div style={{ maxHeight: 300, overflowY: "auto", marginTop: 12, display: "flex", flexDirection: "column", gap: 3 }}>
         {blocks.map((b, i) => (
-          <div key={b.height} style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10 }}>
+          <div key={b.height} style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10, opacity: Math.max(0.25, 0.9 - i * 0.05) }}>
             <span className="dim2" style={{ fontSize: 9 }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
             <span style={{ color: i === 0 ? "var(--tk-accent)" : "var(--ink-60)" }}>#{b.height.toLocaleString()}</span>
             <div style={{ height: 9, background: "rgba(255,255,255,0.04)", borderRadius: 2, overflow: "hidden" }}>
@@ -211,26 +225,16 @@ export function SedStrataLog({ data }: { data: MoneroLive }) {
 
 /* ── fee depth-profile ──────────────────────────────────────── */
 export function SedFeeProfile({ data }: { data: MoneroLive }) {
-  const W = 300, H = 188, padL = 26, padR = 30, padT = 12, padB = 16;
-  const iw = W - padL - padR, ih = H - padT - padB;
-  // sorted fee/B from high (surface) to low (depth)
-  const fees = data.mempool.map((t) => t.perB).sort((a, b) => b - a);
-  const max = Math.max(...fees, 1);
-  const pts = fees.length ? fees.map((v, i) => [padL + (v / max) * iw, padT + (i / (fees.length - 1)) * ih]) : [[padL, padT]];
-  const path = "M" + pts.map(([x, y]) => x.toFixed(1) + "," + y.toFixed(1)).join(" L ");
-  const area = path + ` L ${padL},${padT + ih} L ${padL},${padT} Z`;
+  const fees = data.mempool.map((t) => t.perB).sort((a, b) => b - a); // high→low
   return (
-    <SedCard title="Fee depth-profile" right={<span className="dim">surface = high fee</span>}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
-        <defs><linearGradient id="sed-prof" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="rgba(255,122,26,0)" /><stop offset="100%" stopColor="rgba(255,122,26,0.35)" /></linearGradient></defs>
-        {[0, 0.5, 1].map((t) => <line key={t} x1={padL} x2={W - padR} y1={padT + ih * t} y2={padT + ih * t} stroke="rgba(255,255,255,0.04)" strokeDasharray="2 3" />)}
-        <path d={area} fill="url(#sed-prof)" />
-        <path d={path} fill="none" stroke="var(--tk-accent)" strokeWidth="1.4" style={{ filter: "drop-shadow(0 0 3px var(--tk-accent))" }} />
-        <text x={padL} y={H - 4} fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">low</text>
-        <text x={W - padR} y={H - 4} textAnchor="end" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">high p/B</text>
-        <text x={W - 4} y={padT + 6} textAnchor="end" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">▲ surface</text>
-        <text x={W - 4} y={padT + ih} textAnchor="end" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">▼ depth</text>
-      </svg>
+    <SedCard title="Fee depth-profile" right={<span className="dim">high → low p/B</span>}>
+      {fees.length ? (
+        <AreaSeries data={fees} xLabels={false} markers baseline="zero"
+          color="var(--tk-accent)" height={188}
+          format={(v) => Math.round(v).toLocaleString() + " p/B"} />
+      ) : (
+        <div className="mono dim" style={{ padding: 24, textAlign: "center", fontSize: 11 }}>mempool empty</div>
+      )}
     </SedCard>
   );
 }
@@ -298,9 +302,9 @@ export function SedOverview({ data, onPickTx }: { data: MoneroLive; onPickTx: (i
         <Stat k="TIP" v={"#" + (data.height % 1000)} sub={"#" + data.height.toLocaleString()} />
       </section>
 
-      <section style={{ display: "flex", gap: 24, alignItems: "stretch" }}>
+      <section style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "stretch" }}>
         <SedColumn data={data} />
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 14, marginLeft: 70 }}>
+        <div style={{ flex: "1 1 360px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14, marginLeft: "clamp(0px, 4vw, 70px)" }}>
           <SedCard title="How to read this core" pad="14px 16px">
             <div style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.34, color: "var(--ink-100)", marginBottom: 8 }}>A cross-section of the mempool, drawn as a sample column.</div>
             <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--ink-60)", lineHeight: 1.55 }}>

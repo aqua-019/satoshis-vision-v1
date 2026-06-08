@@ -170,7 +170,7 @@ async function handleMempool() {
     bytes_total: poolStats.bytes_total || txs.reduce((s,t) => s+t.blob_size, 0),
     fees_total: poolStats.fee_total || txs.reduce((s,t) => s+t.fee, 0),
     fee_histogram: feeHistogram,
-    recent_txs: txs.slice(0,20),
+    recent_txs: txs.slice(0,100),
     projected_block: projectedBlock,
     median_fee_rate: medianFeeRate,
     p98_fee_rate: p98FeeRate,
@@ -207,46 +207,18 @@ async function rpcRetry(method, params, attempts = 3) {
   return null;
 }
 
-async function handleBlocks() {
+async function handleBlocks(limit) {
+  const want = Math.max(1, Math.min(100, parseInt(limit, 10) || 22));
   const info = await rpcRetry('get_info');
   if (!info?.height) return [];
-  const tipHeight = info.height - 1;   /* `info.height` is next block to mine */
-
-  const want = 22;
-  const heights = [];
-  for (let i = 0; i < want; i++) heights.push(tipHeight - i);
-
-  /* First pass: parallel fetch with retry. */
-  const results = await Promise.all(
-    heights.map(h => rpcRetry('get_block_header_by_height', { height: h }))
-  );
-
-  /* Identify gaps and fill them sequentially. Sequential is OK because
-     the gap count is bounded by the parallel failure rate — typically
-     0-3 misses out of 22. */
-  const filled = [];
-  for (let i = 0; i < want; i++) {
-    if (results[i]?.block_header) {
-      filled.push(results[i].block_header);
-    } else {
-      const retry = await rpcRetry('get_block_header_by_height', { height: heights[i] }, 2);
-      if (retry?.block_header) filled.push(retry.block_header);
-    }
-  }
-
-  /* Deduplicate by height (defense in depth). */
-  const seen = new Set();
-  const unique = [];
-  for (const b of filled) {
-    if (!seen.has(b.height)) {
-      seen.add(b.height);
-      unique.push(b);
-    }
-  }
-
-  /* Sort height-desc to guarantee newest-first ordering. */
+  const tip = info.height - 1;
+  const range = await rpcRetry('get_block_headers_range',
+    { start_height: Math.max(0, tip - want + 1), end_height: tip });
+  let headers = (range?.headers || []).slice();
+  // dedupe by height + newest-first
+  const seen = new Set(); const unique = [];
+  for (const bh of headers) { if (!seen.has(bh.height)) { seen.add(bh.height); unique.push(bh); } }
   unique.sort((a, b) => b.height - a.height);
-
   return unique.map(bh => ({
     height: bh.height, hash: bh.hash, prev_hash: bh.prev_hash,
     timestamp: bh.timestamp, reward: bh.reward, difficulty: bh.difficulty,
@@ -285,33 +257,21 @@ async function handleBlockDetail(hashOrHeight) {
   };
 }
 
-async function handleTx(txid) {
-  const res = await (async () => {
-    for (const node of NODES) {
-      try {
-        const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 6000);
-        const r = await fetch(`${node}/get_transactions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ txs_hashes: [txid], decode_as_json: true }),
-          signal: ctrl.signal,
-        });
-        clearTimeout(timer);
-        if (!r.ok) continue;
-        const data = await r.json();
-        const list = data?.txs || data?.txs_as_json || [];
-        if (list.length > 0) return data;
-      } catch (_) {}
-    }
-    return null;
-  })();
+/* Compute the real tx size in bytes from a monerod get_transactions entry.
+   monerod does NOT return a per-tx `block_size`, so we derive size from the
+   hex blob. Returns null when no blob is available — NEVER the old 1847
+   fallback constant (which silently corrupted fee_rate). */
+function txSizeFromEntry(raw) {
+  if (raw && typeof raw.as_hex === 'string' && raw.as_hex.length) return Math.floor(raw.as_hex.length / 2);
+  const p = ((raw && raw.pruned_as_hex) || '').length + ((raw && raw.prunable_as_hex) || '').length;
+  return p ? Math.floor(p / 2) : null;   // null => "unavailable", NEVER 1847
+}
 
-  const txList = res?.txs || res?.txs_as_json || [];
-  if (!txList.length) return null;
-  const raw = txList[0];
+/* Pure parser for a single monerod get_transactions tx entry → API shape.
+   Extracted from handleTx so it can be unit-tested without network access. */
+function parseTransaction(raw, txid) {
   const txJson = typeof raw.as_json === 'string' ? JSON.parse(raw.as_json) : (raw.as_json || {});
-  const rate = (txJson.rct_signatures?.txnFee || 0) / (raw.block_size || 1847);
+  const sizeBytes = txSizeFromEntry(raw);
 
   const inputs = (txJson.vin || []).map(v => ({
     key_image: v.key?.k_image || '',
@@ -341,9 +301,9 @@ async function handleTx(txid) {
     /* monerod returns `received_timestamp` (with the `d`), not `receive_time`. */
     receive_time: raw.received_timestamp != null ? raw.received_timestamp : null,
 
-    blob_size: raw.block_size || 1847,
+    blob_size: sizeBytes,
     fee: txJson.rct_signatures?.txnFee || 0,
-    fee_rate: rate,
+    fee_rate: sizeBytes ? (txJson.rct_signatures?.txnFee || 0) / sizeBytes : null,
     ring_size: inputs[0]?.ring_member_count || 16,
     rct_type: txJson.rct_signatures?.type || 6,
     has_view_tags: !!(txJson.vout?.[0]?.target?.tagged_key),
@@ -356,6 +316,33 @@ async function handleTx(txid) {
       ? Buffer.from(txJson.extra).toString('hex')
       : (txJson.extra || ''),
   };
+}
+
+async function handleTx(txid) {
+  const res = await (async () => {
+    for (const node of NODES) {
+      try {
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const r = await fetch(`${node}/get_transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ txs_hashes: [txid], decode_as_json: true }),
+          signal: ctrl.signal,
+        });
+        clearTimeout(timer);
+        if (!r.ok) continue;
+        const data = await r.json();
+        const list = data?.txs || data?.txs_as_json || [];
+        if (list.length > 0) return data;
+      } catch (_) {}
+    }
+    return null;
+  })();
+
+  const txList = res?.txs || res?.txs_as_json || [];
+  if (!txList.length) return null;
+  return parseTransaction(txList[0], txid);
 }
 
 async function handleNetwork() {
@@ -534,7 +521,7 @@ module.exports = async function handler(req, res) {
       data = m.projected_block;
 
     } else if (sub === 'blocks') {
-      data = await handleBlocks();
+      data = await handleBlocks(qs.limit);
 
     } else if (sub === 'blocks/tip') {
       const info = await rpc('get_info');
@@ -605,7 +592,8 @@ module.exports = async function handler(req, res) {
         const total    = allTxs.length;
         const pageSlice = allTxs.slice(page * limit, page * limit + limit);
         data = { tx_hashes: pageSlice, total, page, limit,
-                 block_height: block.height, block_hash: block.hash };
+                 block_height: block.height, block_hash: block.hash,
+                 miner_tx_hash: page === 0 ? block.miner_tx_hash : null };
       } else {
         // Block detail: /block/HASH  or  /block/HEIGHT
         data = await handleBlockDetail(rest);
@@ -841,6 +829,13 @@ module.exports = async function handler(req, res) {
       res.status(404).json({ error: `Unknown endpoint: /api/xmr/${sub}` }); return;
     }
 
+    /* Brief edge caching for the heavy read routes. Best-effort: lets the
+       Vercel CDN serve repeated polls from cache and revalidate in the
+       background. Other routes keep the default no-store header. */
+    if (sub === 'blocks' || sub === '' || sub === 'mempool' || sub.startsWith('tx/')) {
+      res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
+    }
+
     res.status(200).json(data);
 
   } catch (err) {
@@ -848,3 +843,6 @@ module.exports = async function handler(req, res) {
     res.status(500).json({ error: 'Internal server error', detail: err.message });
   }
 };
+
+module.exports.parseTransaction = parseTransaction;
+module.exports.txSizeFromEntry = txSizeFromEntry;
