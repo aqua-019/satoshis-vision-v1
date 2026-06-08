@@ -56,17 +56,21 @@ export interface MempoolViewMeta {
   label: string;
   sub: string;
   star?: boolean;
+  /** Default to a fit-to-canvas-width scale on load (P1). The wide canvas views
+   *  (reactor/bridge/sediment/constellation) opt in; Classic's intentional block
+   *  ribbon and Terminal are excluded. */
+  fit?: boolean;
   Component: ViewComponent;
 }
 
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
-  { id: "reactor",       label: "Reactor",       sub: "3D iso · hex lattice · ring fan",  star: false,
+  { id: "reactor",       label: "Reactor",       sub: "3D iso · hex lattice · ring fan",  star: false, fit: true,
     Component: ReactorView },
-  { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",            star: false,
+  { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",            star: false, fit: true,
     Component: BridgeView },
-  { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",         star: false,
+  { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",         star: false, fit: true,
     Component: SedimentView },
-  { id: "constellation", label: "Constellation", sub: "luminous network sphere",           star: false,
+  { id: "constellation", label: "Constellation", sub: "luminous network sphere",           star: false, fit: true,
     Component: ConstellationView },
   { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
     Component: TerminalHubView },

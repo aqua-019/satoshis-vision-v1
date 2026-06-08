@@ -2,7 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
-import { Stat, Sparkline } from "@/design/primitives";
+import { Stat } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
@@ -251,7 +251,8 @@ export function SedClearance({ data }: { data: MoneroLive }) {
         <span className="mono acc glow" style={{ fontSize: 24, fontWeight: 500 }}>{data.mempool.length}</span>
         <span className="mono dim" style={{ fontSize: 10 }}>tx suspended</span>
       </div>
-      <Sparkline data={series} width={268} height={56} color="var(--tk-accent)" area={0.28} />
+      <AreaSeries data={series} height={84} color="var(--tk-accent)" baseline="zero"
+        xLabels={false} markers={false} format={(v) => String(Math.round(v))} />
       <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5, color: "var(--ink-40)", marginTop: 6 }}>
         <span>median 84 p/B</span><span>P90 246 p/B</span><span>next ≈1:54</span>
       </div>

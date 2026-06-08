@@ -550,6 +550,9 @@ export interface BarSeriesProps {
   format?: (v: number) => string;
   baseline?: "auto" | "zero";
   sim?: boolean;
+  /** optional on-chart vertical marker at a fractional bucket index (e.g. the
+   *  median fee bucket). Drawn at the center of bucket `index`. */
+  marker?: { index: number; label?: string };
 }
 
 export function BarSeries({
@@ -563,6 +566,7 @@ export function BarSeries({
   format = (v) => String(Math.round(v)),
   baseline = "zero",
   sim = false,
+  marker,
 }: BarSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
@@ -644,6 +648,23 @@ export function BarSeries({
           );
         })}
       </g>
+
+      {/* optional median (or other) marker, anchored to a bucket center */}
+      {marker && marker.index >= 0 && marker.index <= n ? (() => {
+        const mx = padL + (marker.index + 0.5) * slot;
+        const nearRight = mx > padL + innerW - 64;
+        return (
+          <g pointerEvents="none">
+            <line x1={mx} y1={padT} x2={mx} y2={padT + innerH}
+              stroke="var(--tk-accent)" strokeWidth="1" strokeDasharray="4 3" opacity={0.85} />
+            {marker.label ? (
+              <text x={nearRight ? mx - 4 : mx + 4} y={padT + 10}
+                textAnchor={nearRight ? "end" : "start"}
+                fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)">{marker.label}</text>
+            ) : null}
+          </g>
+        );
+      })() : null}
 
       {sim ? (
         <text x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">SIM</text>
