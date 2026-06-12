@@ -4,21 +4,45 @@ import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
 import { Stat } from "@/design/primitives";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
-import type { MoneroLive, Block, Peer } from "@/data/types";
+import type { MoneroLive, Tx } from "@/data/types";
+import { fmtBytes, shortHash } from "@/data/types";
+import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
+import { useFeedEvents, type FeedEvent } from "@/data/useFeedEvents";
 
 interface ViewProps {
   data: MoneroLive;
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
 }
 
-// constellation.jsx — CONSTELLATION · hi-fi global propagation
+// constellation.jsx — CONSTELLATION · hi-fi live mempool
 //
-// The P2P network as a luminous rotating sphere: peers as points, propagation
-// as great-circle arcs, the active Dandelion++ stem as a glowing path. Around
-// it: a live hop tracker, a peer-latency polar radar, an auto-tailing
-// propagation log, and animated geo / client-version instruments.
+// The mempool as a luminous rotating sphere: every point is a REAL unconfirmed
+// tx from the node — positions are hash-derived from the txid (stable, honest
+// decoration), size/glow/color come from the real fee rate. Around it: a
+// newest-tx card, an age-vs-fee polar radar, a live feed-event log, and
+// fee-tier distribution instruments. Subjects are live node data throughout;
+// only coordinates and rotation are procedural.
 //
 // All helpers prefixed `Con` to avoid shared-scope collisions.
+
+/** Fee-tier colors, slow → fastest. */
+const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"];
+const tierColor = (i: number): string => (i >= 0 && i < 4 ? TIER_COLORS[i] : "var(--tk-accent)");
+
+/** Median fee rate (piconero/B) of the pool — null when empty. */
+function medianPerB(txs: Tx[]): number | null {
+  if (!txs.length) return null;
+  const s = txs.map((t) => t.perB).sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+/** Newest = smallest age (seconds since arrival). */
+const newestFirst = (txs: Tx[]): Tx[] => [...txs].sort((a, b) => a.age - b.age);
+
+/** Seconds → m:ss (block target display). */
+const fmtTargetSec = (t: number): string =>
+  t > 0 ? `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, "0")}` : "—";
 
 export function ConCard({ title, right, children, pad = "14px 16px", style }: any) {
   return (
@@ -34,25 +58,34 @@ export function ConCard({ title, right, children, pad = "14px 16px", style }: an
   );
 }
 
-/* ── rotating propagation sphere ────────────────────────────── */
-export function ConSphere({ size = 460 }: any) {
+/* ── rotating mempool sphere ────────────────────────────────────
+   Points = the newest ≤60 real mempool txs. lat/lon are hash-derived
+   from each txid (two independent stable units), so a tx keeps its spot
+   for its whole pool lifetime. Radius/glow scale with real perB. */
+export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers: number[]; ready: boolean; size?: number }) {
   const tick = useTick(50);
   const cx = size / 2, cy = size / 2, r = size / 2 - 26;
 
-  const peers = React.useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < 110; i++) {
-      arr.push({ lat: (Math.random() - 0.5) * Math.PI, lon: Math.random() * Math.PI * 2, old: Math.random() < 0.16 });
-    }
-    return arr;
-  }, []);
-  const stem = React.useMemo(() => Array.from({ length: 10 }, () => ({ lat: (Math.random() - 0.5) * Math.PI, lon: Math.random() * Math.PI * 2 })), []);
-  const arcs = React.useMemo(() => Array.from({ length: 18 }, (_, i) => ({
-    a: { lat: (Math.random() - 0.5) * Math.PI, lon: Math.random() * Math.PI * 2 },
-    b: { lat: (Math.random() - 0.5) * Math.PI, lon: Math.random() * Math.PI * 2 },
-    progress: Math.random(), speed: 0.005 + Math.random() * 0.012, kind: i % 3 === 0 ? "stem" : "fluff",
-  })), []);
-  arcs.forEach((a) => { a.progress = (a.progress + a.speed) % 1; });
+  const pts = React.useMemo(() => {
+    const sample = newestFirst(txs).slice(0, Math.min(60, txs.length));
+    return sample.map((t) => ({
+      id: t.id,
+      lat: (hashToUnit(t.id) - 0.5) * 160 * (Math.PI / 180),
+      lon: (hashToUnit(t.id + "·") * 360 - 180) * (Math.PI / 180),
+      perB: t.perB,
+    }));
+  }, [txs]);
+  const maxPerB = pts.reduce((m, p) => Math.max(m, p.perB), 0) || 1;
+
+  // Decorative arcs between pairs of REAL tx points; partners picked by txid hash.
+  const arcs = React.useMemo(() => {
+    if (pts.length < 2) return [];
+    return pts.slice(0, Math.min(18, Math.floor(pts.length / 2))).map((p, i) => {
+      let j = (i + 1 + Math.floor(hashToUnit(p.id + "→") * (pts.length - 1))) % pts.length;
+      if (j === i) j = (i + 1) % pts.length;
+      return { a: p, b: pts[j], u: hashToUnit(p.id + "⇄") };
+    });
+  }, [pts]);
 
   const rot = (tick * 0.008) % (Math.PI * 2);
   const project = (lat: number, lon: number) => {
@@ -66,7 +99,6 @@ export function ConSphere({ size = 460 }: any) {
         <radialGradient id="con-sph" cx="40%" cy="35%"><stop offset="0%" stopColor="rgba(255,180,80,0.18)" /><stop offset="55%" stopColor="rgba(255,122,26,0.06)" /><stop offset="100%" stopColor="rgba(0,0,0,0.7)" /></radialGradient>
         <radialGradient id="con-atmo"><stop offset="60%" stopColor="rgba(255,122,26,0)" /><stop offset="100%" stopColor="rgba(255,122,26,0.32)" /></radialGradient>
         <linearGradient id="con-arc" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="rgba(255,200,120,0)" /><stop offset="50%" stopColor="rgba(255,200,120,1)" /><stop offset="100%" stopColor="rgba(255,122,26,0)" /></linearGradient>
-        <linearGradient id="con-arcp" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="rgba(184,122,255,0)" /><stop offset="50%" stopColor="rgba(184,122,255,1)" /><stop offset="100%" stopColor="rgba(184,122,255,0)" /></linearGradient>
       </defs>
       <circle cx={cx} cy={cy} r={r + 14} fill="url(#con-atmo)" opacity="0.7" />
       <circle cx={cx} cy={cy} r={r} fill="url(#con-sph)" stroke="rgba(255,122,26,0.25)" strokeWidth="0.5" />
@@ -78,84 +110,83 @@ export function ConSphere({ size = 460 }: any) {
       {[0, 30, 60, 90, 120, 150].map((deg, i) => (
         <ellipse key={i} cx={cx} cy={cy} rx={Math.max(1, Math.abs(Math.sin((deg + rot * 180 / Math.PI) * Math.PI / 180)) * r)} ry={r} fill="none" stroke="rgba(255,122,26,0.09)" strokeWidth="0.5" />
       ))}
-      {/* peers */}
-      {peers.map((p, i) => {
+      {/* real mempool txs */}
+      {pts.map((p) => {
         const pr = project(p.lat, p.lon);
         if (pr.z < -0.1) return null;
         const opacity = Math.max(0.15, (pr.z + 1) / 2);
-        const color = p.old ? "var(--y-50)" : "var(--tk-accent)";
-        return <circle key={i} cx={pr.x} cy={pr.y} r={Math.max(0.8, 1 + pr.z * 1.6)} fill={color} opacity={opacity} style={pr.z > 0.5 ? { filter: `drop-shadow(0 0 4px ${color})` } : undefined} />;
+        const rel = p.perB / maxPerB;
+        const color = tierColor(feeTierIndex(p.perB, tiers));
+        const rad = Math.max(0.9, (1 + rel * 2.4) * (0.7 + 0.3 * ((pr.z + 1) / 2)));
+        return (
+          <circle key={p.id} cx={pr.x} cy={pr.y} r={rad} fill={color} opacity={opacity}
+            style={rel > 0.6 || pr.z > 0.5 ? { filter: `drop-shadow(0 0 ${(3 + rel * 4).toFixed(1)}px ${color})` } : undefined} />
+        );
       })}
-      {/* stem path */}
-      {stem.map((s, i) => {
-        if (i === stem.length - 1) return null;
-        const a = project(s.lat, s.lon), b = project(stem[i + 1].lat, stem[i + 1].lon);
-        const active = i === (Math.floor(tick / 18) % 9);
-        return <path key={i} d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - 28} ${b.x} ${b.y}`} fill="none" stroke={active ? "url(#con-arcp)" : "rgba(184,122,255,0.25)"} strokeWidth={active ? 2 : 0.8} style={active ? { filter: "drop-shadow(0 0 6px #b87aff)" } : undefined} />;
-      })}
-      {/* propagation arcs */}
+      {/* decorative arcs between real tx points */}
       {arcs.map((arc, i) => {
         const a = project(arc.a.lat, arc.a.lon), b = project(arc.b.lat, arc.b.lon);
-        return <path key={i} d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - 56} ${b.x} ${b.y}`} fill="none" stroke={arc.kind === "stem" ? "url(#con-arcp)" : "url(#con-arc)"} strokeWidth="1" opacity="0.55" strokeDasharray="56 230" strokeDashoffset={-arc.progress * 286} />;
+        const progress = (tick * (0.006 + arc.u * 0.01) + arc.u) % 1;
+        return <path key={i} d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - 56} ${b.x} ${b.y}`} fill="none" stroke="url(#con-arc)" strokeWidth="1" opacity="0.55" strokeDasharray="56 230" strokeDashoffset={-progress * 286} />;
       })}
-      {/* originator pulse */}
-      {(() => { const o = project(stem[0].lat, stem[0].lon); return (
-        <g><circle cx={o.x} cy={o.y} r="10" fill="none" stroke="#b87aff" strokeWidth="1"><animate attributeName="r" values="6;22;6" dur="2.6s" repeatCount="indefinite" /><animate attributeName="opacity" values="1;0;1" dur="2.6s" repeatCount="indefinite" /></circle><circle cx={o.x} cy={o.y} r="3" fill="#b87aff" style={{ filter: "drop-shadow(0 0 8px #b87aff)" }} /></g>
-      ); })()}
       {/* reticle */}
       <g stroke="var(--tk-accent)" fill="none" strokeWidth="0.5" opacity="0.5">
         <line x1={cx - r - 20} y1={cy} x2={cx - r - 5} y2={cy} /><line x1={cx + r + 5} y1={cy} x2={cx + r + 20} y2={cy} />
         <line x1={cx} y1={cy - r - 20} x2={cx} y2={cy - r - 5} /><line x1={cx} y1={cy + r + 5} x2={cx} y2={cy + r + 20} />
         <circle cx={cx} cy={cy} r={r + 7} strokeDasharray="2 8" />
       </g>
-      <text x={cx} y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--tk-accent)" letterSpacing="0.18em" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>MONERO P2P · 4,217 NODES</text>
-      <text x={cx} y={size - 8} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.14em">◀ DANDELION++ STEM · FLUFF p=0.10 ▶</text>
+      <text x={cx} y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--tk-accent)" letterSpacing="0.18em" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>
+        {ready ? `MEMPOOL · ${txs.length} TX · LIVE` : "MEMPOOL · AWAITING FEED"}
+      </text>
+      <text x={cx} y={size - 8} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.14em">POSITIONS HASH-DERIVED · SUBJECTS LIVE FROM NODE</text>
     </svg>
   );
 }
 
-/* ── animated active-stem hop tracker ───────────────────────── */
-function ConStemTracker() {
-  const tick = useTick(1500);
-  const cur = tick % 10;
-  const hops = ["94.130.157.81", "5.9.84.122", "138.201.131.49", "108.61.176.10", "176.9.34.221", "37.187.74.171", "212.83.175.67", "159.203.62.18", "65.21.187.214", "node.rino.io"];
+/* ── newest mempool tx card ─────────────────────────────────── */
+function ConNewestTx({ data }: { data: MoneroLive }) {
+  const tx = data.ready && data.mempool.length ? newestFirst(data.mempool)[0] : null;
+  const tierIdx = tx ? feeTierIndex(tx.perB, data.feeTiers) : -1;
   return (
-    <ConCard title="Active stem · live" right={<span className="acc" style={{ color: "var(--p-50)" }}>HOP {cur + 1}/10</span>}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: 4, marginBottom: 12 }}>
-        {Array.from({ length: 10 }).map((_, i) => (
-          <div key={i} style={{ height: 30, display: "grid", placeItems: "center", fontFamily: "var(--f-mono)", fontSize: 9,
-            background: i < cur ? "linear-gradient(180deg, rgba(184,122,255,0.45), rgba(184,122,255,0.18))" : i === cur ? "rgba(184,122,255,0.25)" : "rgba(255,255,255,0.04)",
-            border: i === cur ? "1px solid #b87aff" : "1px solid var(--ink-10)",
-            boxShadow: i === cur ? "0 0 12px #b87aff" : "none",
-            color: i <= cur ? "#fff" : "var(--ink-40)", transition: "all 0.4s ease" }}>{i + 1}</div>
-        ))}
-      </div>
-      <div className="kv"><span className="k">Originator</span><span className="v" style={{ color: "var(--p-50)" }}>{hops[0]}</span></div>
-      <div className="kv"><span className="k">Current hop</span><span className="v acc">{hops[cur]}</span></div>
-      <div className="kv"><span className="k">Fluff p</span><span className="v">0.10 · stays stem</span></div>
-      <div className="kv"><span className="k">Embargo</span><span className="v">{39 - cur * 3}s</span></div>
-      <div className="kv"><span className="k">Anon set</span><span className="v" style={{ color: "var(--p-50)" }}>152.8 M</span></div>
+    <ConCard title="Newest tx · mempool" right={tx ? <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> from node</> : <span className="dim">from node</span>}>
+      {tx ? (
+        <>
+          <div className="mono" style={{ fontSize: 12, color: "var(--c-50)", marginBottom: 10, letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
+          <div className="kv"><span className="k">Fee</span><span className="v acc">{tx.fee.toFixed(6)} XMR</span></div>
+          <div className="kv"><span className="k">Size</span><span className="v">{fmtBytes(tx.size)}</span></div>
+          <div className="kv"><span className="k">Rate</span><span className="v">{Math.round(tx.perB)} pcn/B</span></div>
+          <div className="kv"><span className="k">Ring</span><span className="v">{tx.ringSize}</span></div>
+          <div className="kv"><span className="k">Age</span><span className="v">{tx.age}s</span></div>
+          <div className="kv"><span className="k">Tier</span><span className="v" style={{ color: tierColor(tierIdx) }}>{tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx] : "—"}</span></div>
+        </>
+      ) : (
+        <div className="mono dim" style={{ fontSize: 11, padding: "18px 0", textAlign: "center" }}>awaiting mempool…</div>
+      )}
     </ConCard>
   );
 }
 
-/* ── peer-latency polar radar ───────────────────────────────── */
-export function ConLatencyRadar({ data }: { data: MoneroLive }) {
+/* ── mempool polar radar · age vs fee ───────────────────────────
+   One dot per real tx (cap 60). Bearing is hash-derived from the txid,
+   radius is real age (newest at center), color is the real fee tier. */
+export function ConMempoolRadar({ data }: { data: MoneroLive }) {
   const W = 220, c = W / 2, R = c - 14;
-  const peers: Peer[] = data.peers;
-  const maxLat = 160;
+  const txs = data.ready ? data.mempool.slice(0, 60) : [];
+  const maxAge = Math.max(1, ...txs.map((t) => t.age));
   return (
-    <ConCard title="Peer latency · polar" right={<span className="dim">ms by bearing</span>}>
+    <ConCard title="Mempool polar · age vs fee" right={<span className="dim">{txs.length ? `${txs.length} tx` : "—"}</span>}>
       <svg viewBox={`0 0 ${W} ${W}`} width="100%" style={{ display: "block", maxWidth: 220, margin: "0 auto" }}>
         {[0.33, 0.66, 1].map((f, i) => <circle key={i} cx={c} cy={c} r={R * f} fill="none" stroke="rgba(255,122,26,0.14)" strokeWidth="1" strokeDasharray={i === 2 ? "none" : "2 5"} />)}
-        {[40, 80, 120].map((v, i) => <text key={i} x={c + 3} y={c - R * ((i + 1) / 3) + 9} fontFamily="var(--f-mono)" fontSize="7" fill="var(--ink-40)">{v}ms</text>)}
-        {peers.map((p, i) => {
-          const ang = (i / peers.length) * Math.PI * 2 - Math.PI / 2;
-          const rad = Math.min(R, (p.lat / maxLat) * R);
+        {txs.length ? [0.33, 0.66, 1].map((f, i) => (
+          <text key={i} x={c + 3} y={c - R * f + 9} fontFamily="var(--f-mono)" fontSize="7" fill="var(--ink-40)">{Math.round(maxAge * f)}s</text>
+        )) : null}
+        {txs.map((t) => {
+          const ang = hashToUnit(t.id) * Math.PI * 2;
+          const rad = Math.min(R, (t.age / maxAge) * R);
           const x = c + Math.cos(ang) * rad, y = c + Math.sin(ang) * rad;
-          const color = p.lat < 60 ? "var(--g-50)" : p.lat < 100 ? "var(--y-50)" : "var(--r-50)";
+          const color = tierColor(feeTierIndex(t.perB, data.feeTiers));
           return (
-            <g key={i}>
+            <g key={t.id}>
               <line x1={c} y1={c} x2={c + Math.cos(ang) * R} y2={c + Math.sin(ang) * R} stroke="rgba(255,255,255,0.04)" strokeWidth="0.5" />
               <circle cx={x} cy={y} r="3" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
             </g>
@@ -167,59 +198,69 @@ export function ConLatencyRadar({ data }: { data: MoneroLive }) {
   );
 }
 
-/* ── live propagation log ───────────────────────────────────── */
-function ConPropLog() {
-  const tmpl = [
-    ["STEM-FORWARD", "p", "h={h} → 5.9.84.122:18080", "lat {l}ms"],
-    ["TX-RECV", "g", "65.21.187.214 ⟶ stem h0", "ring 16"],
-    ["FLUFF-GOSSIP", "acc", "94.130.157.81 → {n} peers", "embargo {e}s"],
-    ["BLOCK-SOLVE", "acc", "#3,676,0{b} · P2Pool", "0.601 XMR"],
-    ["PEER-OUT", "dim", "212.83.175.67 conn", "v0.18.4.0"],
-    ["TX-CONFIRM", "g", "block incl. {n} tx", "1 conf"],
-    ["STEM-FORWARD", "p", "h={h} → 159.203.62.18", "lat {l}ms"],
-  ];
-  const ts = () => new Date().toISOString().slice(11, 23);
-  const fill = (s: string) => s.replace("{h}", String(1 + (Math.random() * 9 | 0))).replace("{l}", String(38 + (Math.random() * 90 | 0))).replace("{n}", String(6 + (Math.random() * 8 | 0))).replace("{e}", String(30 + (Math.random() * 12 | 0))).replace("{b}", String(60 + (Math.random() * 9 | 0)));
-  const mk = () => { const t = tmpl[Math.floor(Math.random() * tmpl.length)]; return { ts: ts(), ev: t[0], tone: t[1], msg: fill(t[2]), meta: fill(t[3]), id: Math.random() }; };
-  const [rows, setRows] = React.useState(() => Array.from({ length: 11 }, mk));
-  React.useEffect(() => { const id = setInterval(() => setRows((r) => [mk(), ...r].slice(0, 11)), 1600); return () => clearInterval(id); }, []);
-  const col: Record<string, string> = { p: "var(--p-50)", acc: "var(--tk-accent)", g: "var(--g-50)", dim: "var(--ink-60)" };
+/* ── live feed-event log ────────────────────────────────────────
+   Rows come straight from useFeedEvents: new blocks, newly-seen txs,
+   txs leaving the pool, stale/recover edges. Nothing synthesized. */
+const LOG_TONE: Record<FeedEvent["kind"], string> = {
+  block: "var(--tk-accent)",
+  tx: "var(--g-50)",
+  txdrop: "var(--c-50)",
+  stale: "var(--r-50)",
+  recover: "var(--g-50)",
+};
+
+function logRow(e: FeedEvent): { key: string; ev: string; msg: string; meta: string } {
+  switch (e.kind) {
+    case "block": return { key: `b-${e.hash}`, ev: "BLOCK", msg: `#${e.height} · ${e.txs} tx · ${e.sizeKB.toFixed(1)} KB`, meta: `${e.reward.toFixed(3)} XMR` };
+    case "tx": return { key: `t-${e.id}`, ev: "TX-RECV", msg: `${e.id.slice(0, 10)}… · ${Math.round(e.perB)} pcn/B`, meta: fmtBytes(e.size) };
+    case "txdrop": return { key: `d-${e.ts}`, ev: "TX-MINED", msg: `${e.count} left pool`, meta: "" };
+    case "stale": return { key: `s-${e.ts}`, ev: "STALE", msg: "feed degraded · retrying", meta: "" };
+    case "recover": return { key: `r-${e.ts}`, ev: "RECOVER", msg: "feed restored", meta: "" };
+  }
+}
+
+function ConPropLog({ data }: { data: MoneroLive }) {
+  const events = useFeedEvents(data, 11);
   return (
-    <ConCard title="Propagation log · tail" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> −f</>}>
+    <ConCard title="Feed log · tail" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> −f</>}>
       <div style={{ fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.55 }}>
-        {rows.map((l) => (
-          <div key={l.id} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)", animation: "con-slidein 0.4s ease" }}>
-            <span className="dim2">{l.ts}</span>
-            <span style={{ color: col[l.tone] }}>{l.ev}</span>
-            <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.msg}</span>
-            <span className="dim2" style={{ textAlign: "right" }}>{l.meta}</span>
-          </div>
-        ))}
+        {events.length ? events.map((e) => {
+          const row = logRow(e);
+          return (
+            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)", animation: "con-slidein 0.4s ease" }}>
+              <span className="dim2">{new Date(e.ts).toISOString().slice(11, 23)}</span>
+              <span style={{ color: LOG_TONE[e.kind] }}>{row.ev}</span>
+              <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.msg}</span>
+              <span className="dim2" style={{ textAlign: "right" }}>{row.meta}</span>
+            </div>
+          );
+        }) : (
+          <div className="dim2" style={{ padding: "6px 0" }}>awaiting feed events…</div>
+        )}
       </div>
       <style>{`@keyframes con-slidein { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }`}</style>
     </ConCard>
   );
 }
 
-/* ── animated geographic distribution ───────────────────────── */
-function ConGeoBars() {
-  const geo = [
-    ["DE", "Germany", 24.3, "var(--tk-accent)"], ["US", "United States", 19.8, "var(--c-50)"],
-    ["FR", "France", 11.2, "var(--g-50)"], ["NL", "Netherlands", 7.4, "var(--p-50)"],
-    ["FI", "Finland", 5.6, "var(--y-50)"], ["JP", "Japan", 4.1, "var(--r-50)"],
-    ["??", "Tor / I2P (hidden)", 21.2, "rgba(168,160,148,0.5)"],
-  ];
+/* ── fee-tier distribution bars ─────────────────────────────────
+   Counts of real mempool txs per node fee tier (slow → fastest). */
+function ConFeeTierBars({ data }: { data: MoneroLive }) {
+  const ok = data.ready && data.feeTiers.length === 4;
+  const counts = [0, 0, 0, 0];
+  if (ok) for (const t of data.mempool) { const i = feeTierIndex(t.perB, data.feeTiers); if (i >= 0) counts[i]++; }
+  const max = Math.max(1, ...counts);
   return (
-    <ConCard title="Geographic distribution" right={<span className="acc">4,217 visible</span>}>
+    <ConCard title="Fee tiers · mempool distribution" right={<span className="acc">{ok ? `${data.mempool.length} tx` : "—"}</span>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-        {geo.map(([c, n, p, color], i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "22px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10 }}>
-            <span className="dim2">{c}</span>
-            <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{n}</span>
+        {FEE_TIER_LABELS.map((label, i) => (
+          <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10 }}>
+            <span className="dim2">{label}</span>
+            <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ok ? `${data.feeTiers[i].toLocaleString()} pcn/B` : "—"}</span>
             <div style={{ height: 7, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: p + "%", background: color, boxShadow: `0 0 6px ${color}`, borderRadius: 3, transition: "width 0.8s ease" }} />
+              <div style={{ height: "100%", width: ok ? `${(counts[i] / max) * 100}%` : "0%", background: TIER_COLORS[i], boxShadow: ok ? `0 0 6px ${TIER_COLORS[i]}` : "none", borderRadius: 3, transition: "width 0.8s ease" }} />
             </div>
-            <span style={{ textAlign: "right", color: "var(--ink-100)" }}>{p}%</span>
+            <span style={{ textAlign: "right", color: ok ? "var(--ink-100)" : "var(--ink-40)" }}>{ok ? counts[i] : "—"}</span>
           </div>
         ))}
       </div>
@@ -227,34 +268,38 @@ function ConGeoBars() {
   );
 }
 
-/* ── client-version donut ───────────────────────────────────── */
-function ConVersionDonut() {
-  const segs: [string, number, string][] = [["0.18.4.0", 83.2, "var(--tk-accent)"], ["0.18.3.4", 14.1, "var(--y-50)"], ["older", 2.7, "var(--r-50)"]];
+/* ── mempool bytes-by-fee-tier donut ────────────────────────── */
+function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
   const cx = 70, cy = 70, r = 52, sw = 16, circ = 2 * Math.PI * r;
+  const ok = data.ready && data.feeTiers.length === 4 && data.mempool.length > 0;
+  const bytes = [0, 0, 0, 0];
+  let totalBytes = 0;
+  if (ok) for (const t of data.mempool) { const i = feeTierIndex(t.perB, data.feeTiers); if (i >= 0) { bytes[i] += t.size; totalBytes += t.size; } }
+  const med = data.ready ? medianPerB(data.mempool) : null;
   let acc = 0;
   return (
-    <ConCard title="Client versions" right={<span className="acc">majority synced</span>}>
+    <ConCard title="Mempool · bytes by fee tier" right={<span className="acc">{ok ? fmtBytes(totalBytes) : "—"}</span>}>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <svg viewBox="0 0 140 140" width="124" height="124">
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={sw} />
-          {segs.map(([l, p, color], i) => {
-            const len = (p / 100) * circ;
-            const el = <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={color} strokeWidth={sw} strokeDasharray={len + " " + (circ - len)} strokeDashoffset={-acc} transform={`rotate(-90 ${cx} ${cy})`} style={{ filter: `drop-shadow(0 0 4px ${color})` }} />;
+          {ok && totalBytes > 0 ? FEE_TIER_LABELS.map((label, i) => {
+            const len = (bytes[i] / totalBytes) * circ;
+            const el = <circle key={label} cx={cx} cy={cy} r={r} fill="none" stroke={TIER_COLORS[i]} strokeWidth={sw} strokeDasharray={len + " " + (circ - len)} strokeDashoffset={-acc} transform={`rotate(-90 ${cx} ${cy})`} style={{ filter: `drop-shadow(0 0 4px ${TIER_COLORS[i]})` }} />;
             acc += len; return el;
-          })}
-          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="16" fontWeight="500" fill="var(--tk-accent)">83%</text>
-          <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="7.5" fill="var(--ink-40)" letterSpacing="0.12em">FLUORINE</text>
+          }) : null}
+          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="16" fontWeight="500" fill="var(--tk-accent)">{data.ready ? data.mempool.length : "—"}</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="7.5" fill="var(--ink-40)" letterSpacing="0.12em">TX IN POOL</text>
         </svg>
         <div style={{ flex: 1 }}>
-          {segs.map(([l, p, color], i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, padding: "3px 0" }}>
-              <span style={{ width: 8, height: 8, borderRadius: 2, background: color, boxShadow: `0 0 4px ${color}` }} />
-              <span className="dim" style={{ flex: 1 }}>{l}</span>
-              <span className="acc">{p}%</span>
+          {FEE_TIER_LABELS.map((label, i) => (
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, padding: "3px 0" }}>
+              <span style={{ width: 8, height: 8, borderRadius: 2, background: TIER_COLORS[i], boxShadow: `0 0 4px ${TIER_COLORS[i]}` }} />
+              <span className="dim" style={{ flex: 1 }}>{label}</span>
+              <span className="acc">{ok && totalBytes > 0 ? `${((bytes[i] / totalBytes) * 100).toFixed(1)}%` : "—"}</span>
             </div>
           ))}
-          <div className="kv" style={{ marginTop: 6 }}><span className="k">Tor exit</span><span className="v" style={{ color: "var(--p-50)" }}>14.8%</span></div>
-          <div className="kv"><span className="k">I2P</span><span className="v" style={{ color: "var(--p-50)" }}>6.4%</span></div>
+          <div className="kv" style={{ marginTop: 6 }}><span className="k">Median rate</span><span className="v">{med != null ? `${Math.round(med)} pcn/B` : "—"}</span></div>
+          <div className="kv"><span className="k">Pool bytes</span><span className="v">{ok ? fmtBytes(totalBytes) : "—"}</span></div>
         </div>
       </div>
     </ConCard>
@@ -264,11 +309,9 @@ function ConVersionDonut() {
 /* ── block stream strip ─────────────────────────────────────── */
 export function ConBlockStream({ data }: { data: MoneroLive }) {
   return (
-    <ConCard title="Block stream" right={<span className="acc">+2 queued</span>}>
+    <ConCard title="Block stream" right={<span className="acc">{data.ready ? `tip #${data.height.toLocaleString()}` : "—"}</span>}>
       <div style={{ display: "flex", gap: 4, height: 96, alignItems: "flex-end" }}>
-        <div className="mblock q" style={{ width: 42, height: 72 }}><div className="hh">~+2</div><div className="nm" style={{ fontSize: 12 }}>Q</div></div>
-        <div className="mblock q" style={{ width: 42, height: 78 }}><div className="hh">~+1</div><div className="nm" style={{ fontSize: 12 }}>NXT</div></div>
-        {data.blocks.slice(0, 8).map((b) => (
+        {data.blocks.slice(0, 10).map((b) => (
           <div className="mblock" key={b.height} style={{ width: 42, height: 58 + Math.min(34, (b.txs / 140) * 34) }}>
             <div className="hh" style={{ fontSize: 8 }}>{b.conf}c</div>
             <div className="nm" style={{ fontSize: 12 }}>{b.txs}</div>
@@ -280,31 +323,35 @@ export function ConBlockStream({ data }: { data: MoneroLive }) {
 }
 
 export function ConOverview({ data }: { data: MoneroLive }) {
+  const ready = data.ready;
+  const poolBytes = data.mempool.reduce((s, t) => s + t.size, 0);
+  const med = medianPerB(data.mempool);
+  const minAge = data.mempool.length ? Math.min(...data.mempool.map((t) => t.age)) : null;
   return (
     <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
       <section style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, alignItems: "start" }}>
-        <ConCard title="Global propagation · live mesh" right={<span className="acc" style={{ color: "var(--p-50)" }}>DANDELION++ ACTIVE</span>} style={{ display: "flex", flexDirection: "column" }}>
-          <ConSphere size={460} />
+        <ConCard title="Mempool constellation · live" right={<span className="dim">positions hash-derived</span>} style={{ display: "flex", flexDirection: "column" }}>
+          <ConSphere txs={data.mempool} tiers={data.feeTiers} ready={ready} size={460} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginTop: 8 }}>
-            <Stat k="REACHABLE" v="4,217" sub="dec 26" />
-            <Stat k="V0.18.4" v="83.2%" sub="majority" tone="acc" />
-            <Stat k="V0.18.3" v="14.1%" sub="lag" />
-            <Stat k="TOR" v="14.8%" sub="anon" tone="p" />
-            <Stat k="I2P" v="6.4%" sub="anon" tone="p" />
-            <Stat k="CLEARNET" v="78.8%" />
+            <Stat k="MEMPOOL" v={ready ? String(data.mempool.length) : "—"} sub="txs" tone="acc" />
+            <Stat k="BYTES" v={ready ? fmtBytes(poolBytes) : "—"} sub="pool" />
+            <Stat k="MEDIAN" v={ready && med != null ? String(Math.round(med)) : "—"} sub="pcn/B" />
+            <Stat k="NEWEST" v={ready && minAge != null ? `${minAge}s` : "—"} sub="age" />
+            <Stat k="BLOCK" v={ready ? `#${data.height.toLocaleString()}` : "—"} sub="tip" />
+            <Stat k="TARGET" v={ready ? fmtTargetSec(data.blockTarget) : "—"} sub="block time" />
           </div>
         </ConCard>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-          <ConStemTracker />
-          <ConLatencyRadar data={data} />
+          <ConNewestTx data={data} />
+          <ConMempoolRadar data={data} />
         </div>
       </section>
 
-      <ConPropLog />
+      <ConPropLog data={data} />
 
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
-        <ConGeoBars />
-        <ConVersionDonut />
+        <ConFeeTierBars data={data} />
+        <ConFeeBytesDonut data={data} />
         <ConBlockStream data={data} />
       </section>
     </div>
@@ -318,7 +365,7 @@ export function ConstellationView({ data }: ViewProps) {
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
         <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> Rotating mesh · {data.peers.length} peers visible · illustrative
+          <span className="led pulse" /> Rotating mesh · {Math.min(60, data.mempool.length)} mempool txs · live
         </span>
       </div>
       {tracking ? (
@@ -329,5 +376,3 @@ export function ConstellationView({ data }: ViewProps) {
     </div>
   );
 }
-
-

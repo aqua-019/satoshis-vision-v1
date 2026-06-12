@@ -5,8 +5,10 @@ import { Link } from "react-router-dom";
 import { useTick } from "@/design/ArtBackground";
 import { Stat } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
+import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
+import { useFeedEvents } from "@/data/useFeedEvents";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
-import type { MoneroLive, Peer } from "@/data/types";
+import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
   data: MoneroLive;
@@ -16,12 +18,16 @@ interface ViewProps {
 // bridge.jsx — OPERATIONS BRIDGE · hi-fi mission control
 //
 // "Bloomberg-meets-NASA." A flight-deck of live instruments: a PPI radar
-// sweeping the peer mesh, a bank of easing gauges, a fee oscilloscope, a
-// block-cadence countdown, pool-concentration bars and a scrolling alert
-// tape — all driven by window.useMoneroLive() and the shared tracking flow.
+// sweeping the live mempool, a bank of easing gauges over real node health,
+// a fee oscilloscope, a block-cadence countdown, pool attribution and a
+// scrolling alert tape — every number comes from the live MoneroLive feed.
+// Chain figures gate on data.ready, market figures on data.marketReady.
 //
 // Every helper is prefixed `Brg` so it can't collide with Reactor / Terminal
 // / monero-pages in the shared babel global scope.
+
+/* fee-tier chip/blip colors, slow → fastest */
+const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"];
 
 /* ── card chrome shared by all bridge instruments ───────────── */
 export function BrgCard({ title, right, children, pad = "14px 16px", style }: any) {
@@ -38,25 +44,25 @@ export function BrgCard({ title, right, children, pad = "14px 16px", style }: an
   );
 }
 
-/* ── PPI radar — peers as blips, sweep arm lights them as it passes ── */
+/* ── PPI radar — live mempool txs as blips, sweep arm lights them ── */
 export function BrgRadar({ data }: { data: MoneroLive }) {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
   const cx = 150, cy = 150, R = 132;
 
-  // Stable polar position per peer: angle from ip hash, range from latency.
+  // Stable polar position per tx: angle from txid hash, range from age
+  // (newer = nearer centre). Blip color by real fee tier.
   const blips = React.useMemo(() => {
-    return data.peers.map((p: Peer) => {
-      const seed = Array.from(p.ip).reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-      const ang = (seed % 360) * Math.PI / 180;
-      const range = 0.32 + Math.min(0.62, p.lat / 200);  // closer latency = nearer centre
-      return { ang, r: range * R, lat: p.lat, cnt: p.cnt, ip: p.ip,
-        color: p.lat < 60 ? "var(--g-50)" : p.lat < 100 ? "var(--y-50)" : "var(--r-50)" };
+    return data.mempool.slice(0, 60).map((t) => {
+      const ang = hashToUnit(t.id) * Math.PI * 2;
+      const range = 0.32 + Math.min(0.62, t.age / 600);
+      const tier = feeTierIndex(t.perB, data.feeTiers);
+      return { ang, r: range * R, color: tier >= 0 ? TIER_COLORS[tier] : "var(--ink-40)" };
     });
-  }, [data.peers]);
+  }, [data.mempool, data.feeTiers]);
 
   const blipRefs = React.useRef<(SVGCircleElement | null)[]>([]);
   React.useEffect(() => {
-    let raf = 0, prev = -1;
+    let raf = 0;
     const t0 = performance.now();
     const PERIOD = 4.2; // seconds per revolution
     const tick = () => {
@@ -114,7 +120,7 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
         <path d={`M ${cx} ${cy} L ${cx + R} ${cy} A ${R} ${R} 0 0 0 ${cx + R * Math.cos(-0.9)} ${cy + R * Math.sin(-0.9)} Z`} fill="url(#brg-wedge)" />
         <line x1={cx} y1={cy} x2={cx + R} y2={cy} stroke="var(--tk-accent)" strokeWidth="1.4" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }} />
       </g>
-      {/* peer blips */}
+      {/* mempool tx blips */}
       {blips.map((b, i) => (
         <circle key={i} ref={(n) => { blipRefs.current[i] = n; }}
           cx={cx + Math.cos(b.ang) * b.r} cy={cy + Math.sin(b.ang) * b.r}
@@ -123,7 +129,7 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
       {/* you (centre) */}
       <circle cx={cx} cy={cy} r="4" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 5px var(--tk-accent))" }} />
       <text x={cx} y={cy - 9} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)" letterSpacing="0.16em">NODE</text>
-      <text x="12" y="18" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.16em">PPI · PEERS (SIM) · RANGE = LATENCY</text>
+      <text x="12" y="18" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.16em">PPI · MEMPOOL TX · LIVE · RANGE = AGE</text>
     </svg>
   );
 }
@@ -172,17 +178,28 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
   );
 }
 
-export function BrgGaugeBank(_props: { data: MoneroLive }) {
-  // Protocol-status indicators (illustrative). The former DECENTRALISATION gauge
-  // was derived from fabricated pool shares (the node exposes no pool attribution),
-  // so it's replaced by RINGCT — true status: every Monero tx is RingCT.
+export function BrgGaugeBank({ data }: { data: MoneroLive }) {
+  // Real node-health gauges, all 0/dim until the first chain snapshot lands:
+  //  SYNC      — daemon's synchronized flag
+  //  FORK      — current hard-fork major version vs the v16 ruleset
+  //  WEIGHT    — median block weight vs the dynamic limit (penalty-zone proximity)
+  //  FEE FLOOR — slow tier as a fraction of the normal tier
+  const ready = data.ready;
+  const sync = ready && data.synchronized ? 100 : 0;
+  const fork = ready && data.majorVersion >= 16 ? 100 : 0;
+  const weight = ready && data.blockWeightLimit > 0
+    ? Math.min(100, Math.round(data.blockWeightMedian / data.blockWeightLimit * 100)) : 0;
+  const feeFloor = ready && data.feeTiers.length === 4 && data.feeTiers[1] > 0
+    ? Math.min(100, Math.round(data.feeTiers[0] / data.feeTiers[1] * 100)) : 0;
   return (
-    <BrgCard title="Instrument bank · network health" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> nominal</>}>
+    <BrgCard title="Instrument bank · node health" right={ready
+      ? <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> live</>
+      : <span className="dim">awaiting node</span>}>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
-        <BrgGauge value={100} label="SYNC" color="var(--g-50)" />
-        <BrgGauge value={100} label="RINGCT" color="var(--c-50)" />
-        <BrgGauge value={94} label="PRIVACY · ANON" color="var(--p-50)" />
-        <BrgGauge value={72} label="FCMP++ READY" color="var(--tk-accent)" />
+        <BrgGauge value={sync} label="SYNC" color="var(--g-50)" />
+        <BrgGauge value={fork} label={`FORK v${data.majorVersion || "—"}`} color="var(--c-50)" />
+        <BrgGauge value={weight} label="WEIGHT · MEDIAN/LIMIT" color="var(--tk-accent)" />
+        <BrgGauge value={feeFloor} label="FEE FLOOR / NORMAL" color="var(--p-50)" />
       </div>
     </BrgCard>
   );
@@ -235,39 +252,52 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
   );
 }
 
-/* ── block-cadence — countdown ring + last-10 interval bars ─── */
+/* ── block-cadence — countdown ring + real recent interval bars ─── */
 export function BrgBlockCadence({ data }: { data: MoneroLive }) {
   const [now, setNow] = React.useState(Date.now());
   React.useEffect(() => { const id = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(id); }, []);
   const TARGET = 120;
-  const elapsed = (data.blocks?.[0]?.age || 0) + Math.floor((now - data.lastUpdate) / 1000);
-  const overdue = elapsed > TARGET;
+  const elapsed = data.ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - data.lastUpdate) / 1000)) : 0;
+  const overdue = data.ready && elapsed > TARGET;
   const pct = Math.min(1, elapsed / TARGET);
   const ring = 2 * Math.PI * 34, dash = ring * pct;
   const tone = overdue ? "var(--y-50)" : "var(--tk-accent)";
+
+  // Real intervals between consecutive recent blocks (age deltas). Miner
+  // timestamps are non-monotonic, so clamp each delta to [0, 1800]s.
+  const ivs = React.useMemo(() => {
+    const bs = data.blocks.slice(0, 11);
+    const out: number[] = [];
+    for (let i = 0; i + 1 < bs.length; i++) out.push(Math.max(0, Math.min(1800, bs[i + 1].age - bs[i].age)));
+    return out;
+  }, [data.blocks]);
+  const mu = ivs.length ? Math.round(ivs.reduce((a, b) => a + b, 0) / ivs.length) : null;
+  const hiIv = Math.max(TARGET * 2, ...ivs);
+
   return (
-    <BrgCard title="Block cadence · 2:00 target" right={overdue
-      ? <span style={{ color: "var(--y-50)" }}>OVERDUE</span>
-      : <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> locked</>}>
+    <BrgCard title="Block cadence · 2:00 target" right={!data.ready
+      ? <span className="dim">awaiting node</span>
+      : overdue
+        ? <span style={{ color: "var(--y-50)" }}>OVERDUE</span>
+        : <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> locked</>}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <svg viewBox="0 0 90 90" width="90" height="90">
           <circle cx="45" cy="45" r="34" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
           <circle cx="45" cy="45" r="34" fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round"
             strokeDasharray={dash + " " + (ring - dash)} transform="rotate(-90 45 45)" style={{ filter: `drop-shadow(0 0 4px ${tone})` }} />
           <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
-          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{Math.floor(elapsed / 60)}:{String(elapsed % 60).padStart(2, "0")}</text>
+          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
         </svg>
         <div style={{ flex: 1 }}>
-          <div className="mono dim" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last 10 intervals</div>
+          <div className="mono dim" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 38 }}>
-            {data.blocks.slice(0, 10).reverse().map((b, i) => {
-              const iv = Math.max(40, Math.min(220, 90 + ((b.height * 37) % 90)));
+            {ivs.slice().reverse().map((iv, i) => {
               const over = iv > TARGET;
-              return <div key={i} title={iv + "s"} style={{ flex: 1, height: (iv / 220 * 38).toFixed(0) + "px", background: over ? "var(--y-50)" : "var(--tk-accent)", opacity: 0.55 + i * 0.045, boxShadow: over ? "0 0 5px var(--y-50)" : "0 0 4px var(--tk-accent)" }} />;
+              return <div key={i} title={iv + "s"} style={{ flex: 1, height: Math.max(2, Math.round(iv / hiIv * 38)) + "px", background: over ? "var(--y-50)" : "var(--tk-accent)", opacity: 0.55 + i * 0.045, boxShadow: over ? "0 0 5px var(--y-50)" : "0 0 4px var(--tk-accent)" }} />;
             })}
           </div>
           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--ink-40)", marginTop: 5 }}>
-            <span>#{data.height.toLocaleString()}</span><span>μ 122s</span><span>reorg NIL</span>
+            <span>#{data.ready ? data.height.toLocaleString() : "—"}</span><span>μ {mu != null ? mu + "s" : "—"}</span><span>alt {data.ready ? data.altBlocksCount : "—"}</span>
           </div>
         </div>
       </div>
@@ -295,31 +325,73 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
   );
 }
 
-/* ── scrolling mission-control alert tape ───────────────────── */
+/* ── scrolling mission-control alert tape — real feed conditions only ── */
+type BrgAlertRow = { lvl: string; tone: string; msg: string; ts: string; t: number };
+
 export function BrgAlertTape({ data }: { data: MoneroLive }) {
-  const seed = [
-    ["NOMINAL", "g", "Chain tip advanced to #" + data.height.toLocaleString()],
-    ["TXPOOL", "acc", "Mempool depth " + data.mempool.length + " tx · " + fmtBytes(data.mempool.reduce((a, t) => a + t.size, 0))],
-    ["DANDELION", "p", "Stem path armed · 10 hops · embargo 39s"],
-    ["NOMINAL", "g", "Peer mesh stable · 12 outbound · 0 stalled"],
-    ["FCMP++", "acc", "Readiness gauge holding at 72% · membership proof draft 4"],
-    ["WATCH", "y", "Block cadence within tolerance · μ 122s"],
-    ["PRIVACY", "p", "Ring size 16 · CLSAG + Bulletproofs+ verified"],
-  ];
-  const [rows, setRows] = React.useState(() => seed.map((s, i) => ({ ...mk(s), t: i })));
-  function mk(s: string[]) { const d = new Date(); return { lvl: s[0], tone: s[1], msg: s[2], ts: d.toISOString().slice(11, 19) }; }
+  const events = useFeedEvents(data, 20);
+  const [rows, setRows] = React.useState<BrgAlertRow[]>([]);
+  const seq = React.useRef(0);
+  const mk = React.useCallback((lvl: string, tone: string, msg: string, ms: number): BrgAlertRow =>
+    ({ lvl, tone, msg, ts: new Date(ms).toISOString().slice(11, 19), t: seq.current++ }), []);
+
+  // Block / stale / recover alerts from the real event stream (object identity
+  // marks which events have already been turned into tape rows).
+  const seenRef = React.useRef<Set<unknown>>(new Set());
   React.useEffect(() => {
-    let n = 100;
-    const id = setInterval(() => {
-      setRows((r) => [{ ...mk(seed[Math.floor(Math.random() * seed.length)]), t: n++ }, ...r].slice(0, 7));
-    }, 2600);
-    return () => clearInterval(id);
-  }, []);
+    const fresh: BrgAlertRow[] = [];
+    for (const ev of events) {            // events arrive newest-first
+      if (seenRef.current.has(ev)) continue;
+      if (ev.kind === "block") fresh.push(mk("NOMINAL", "g", `chain tip → #${ev.height.toLocaleString()} (${ev.txs} tx)`, ev.ts));
+      else if (ev.kind === "stale") fresh.push(mk("WATCH", "y", "feed stale · reconnecting", ev.ts));
+      else if (ev.kind === "recover") fresh.push(mk("NOMINAL", "g", "feed recovered", ev.ts));
+    }
+    seenRef.current = new Set(events);
+    if (fresh.length) setRows((r) => [...fresh, ...r].slice(0, 7));
+  }, [events, mk]);
+
+  // Threshold alerts diffed against the previous tick's real values.
+  const prevRef = React.useRef<{ poolLen: number | null; feeFloor: number | null; weightHot: boolean }>({ poolLen: null, feeFloor: null, weightHot: false });
+  React.useEffect(() => {
+    if (!data.ready) return;
+    const fresh: BrgAlertRow[] = [];
+    const now = Date.now();
+    const p = prevRef.current;
+
+    const len = data.mempool.length;
+    if (p.poolLen != null && [50, 100, 200].some((th) => p.poolLen! < th && len >= th)) {
+      fresh.push(mk("TXPOOL", "acc", `mempool depth ${len} tx`, now));
+    }
+    p.poolLen = len;
+
+    if (data.blockWeightLimit > 0 && data.blockWeightMedian > 0) {
+      const ratio = data.blockWeightMedian / data.blockWeightLimit;
+      if (ratio >= 0.8 && !p.weightHot) {
+        fresh.push(mk("WATCH", "y", `weight median ${Math.round(ratio * 100)}% of limit`, now));
+        p.weightHot = true;
+      } else if (ratio < 0.8) p.weightHot = false;
+    }
+
+    if (data.feeTiers.length === 4) {
+      const floor = data.feeTiers[0];
+      if (p.feeFloor != null && floor !== p.feeFloor) {
+        fresh.push(mk("FEES", "p", `fee floor → ${Math.round(floor).toLocaleString()} pcn/B`, now));
+      }
+      p.feeFloor = floor;
+    }
+
+    if (fresh.length) setRows((r) => [...fresh, ...r].slice(0, 7));
+    // Diff once per successful feed tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.lastUpdate, data.ready]);
+
   const col: Record<string, string> = { g: "var(--g-50)", acc: "var(--tk-accent)", p: "var(--p-50)", y: "var(--y-50)" };
   return (
     <BrgCard title="Alert tape · live" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> −f</>}>
       <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.5 }}>
-        {rows.map((r) => (
+        {rows.length === 0 ? (
+          <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
+        ) : rows.map((r) => (
           <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)", animation: "brg-slidein 0.4s ease" }}>
             <span className="dim2">{r.ts}</span>
             <span style={{ color: col[r.tone] }}>{r.lvl}</span>
@@ -335,24 +407,25 @@ export function BrgAlertTape({ data }: { data: MoneroLive }) {
 /* ── live tx console feed ───────────────────────────────────── */
 export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (id: string) => void }) {
   const rows = data.mempool.slice(0, 12);
-  const phase = (i: number) => i % 4 === 0 ? ["STEM", "var(--p-50)"] : i % 4 === 1 ? ["QUEUE", "var(--y-50)"] : i % 4 === 2 ? ["FLUFF", "var(--tk-accent)"] : ["POOL", "var(--c-50)"];
   return (
-    <BrgCard title={"Transaction console · " + rows.length + " of " + data.mempool.length} right={<span className="acc">DANDELION++ STEM ◇ FLUFF</span>}>
+    <BrgCard title={"Transaction console · " + rows.length + " of " + data.mempool.length} right={<span className="acc">FEE TIER · LIVE</span>}>
       <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
-        <span>SEQ</span><span>PHASE</span><span>TXID</span><span>SIZE</span><span>FEE/B</span><span>RING</span><span>AGE</span>
+        <span>SEQ</span><span>TIER</span><span>TXID</span><span>SIZE</span><span>FEE/B</span><span>RING</span><span>AGE</span>
       </div>
       {rows.map((t, i) => {
-        const [ph, pc] = phase(i);
+        const tier = feeTierIndex(t.perB, data.feeTiers);
+        const label = tier >= 0 ? FEE_TIER_LABELS[tier].toUpperCase() : "—";
+        const tc = tier >= 0 ? TIER_COLORS[tier] : "var(--ink-40)";
         return (
           <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: 11, padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
             onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.07)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
             <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
-            <span style={{ color: pc, border: "1px solid " + pc, borderRadius: 2, fontSize: 8.5, padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{ph}</span>
+            <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: 8.5, padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
             <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
             <span className="dim">{fmtBytes(t.size)}</span>
             <span className="acc">{Math.round(t.perB).toLocaleString()}</span>
-            <span className="dim">16</span>
+            <span className="dim">{t.ringSize}</span>
             <span className="dim2">{t.age}s</span>
           </div>
         );
@@ -364,21 +437,22 @@ export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (
 /* ── overview composition ───────────────────────────────────── */
 export function BrgOverview({ data, onPickTx }: { data: MoneroLive; onPickTx: (id: string) => void }) {
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
+  const ready = data.ready, mkt = data.marketReady;
   return (
     <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
       <section style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 8 }}>
-        <Stat k="HEIGHT" v={data.height.toLocaleString()} sub="live" tone="acc" />
-        <Stat k="HASHRATE" v={(data.hashrate / 1e9).toFixed(2) + " GH"} sub="2:00 tgt" />
-        <Stat k="DIFFICULTY" v={(data.difficulty / 1e9).toFixed(2) + "G"} />
-        <Stat k="MEMPOOL" v={data.mempool.length} sub={fmtBytes(memBytes)} />
-        <Stat k="XMR/USD" v={"$" + data.price.toFixed(2)} sub={(data.change24h >= 0 ? "+" : "") + data.change24h.toFixed(2) + "%"} tone={data.change24h >= 0 ? "g" : "dn"} />
-        <Stat k="XMR/BTC" v={data.btcRatio.toFixed(6)} />
+        <Stat k="HEIGHT" v={ready ? data.height.toLocaleString() : "—"} sub="live" tone="acc" />
+        <Stat k="HASHRATE" v={ready ? (data.hashrate / 1e9).toFixed(2) + " GH" : "—"} sub="2:00 tgt" />
+        <Stat k="DIFFICULTY" v={ready ? (data.difficulty / 1e9).toFixed(2) + "G" : "—"} />
+        <Stat k="MEMPOOL" v={ready ? data.mempool.length : "—"} sub={ready ? fmtBytes(memBytes) : undefined} />
+        <Stat k="XMR/USD" v={mkt ? "$" + data.price.toFixed(2) : "—"} sub={mkt ? (data.change24h >= 0 ? "+" : "") + data.change24h.toFixed(2) + "%" : undefined} tone={mkt ? (data.change24h >= 0 ? "g" : "dn") : undefined} />
+        <Stat k="XMR/BTC" v={mkt ? data.btcRatio.toFixed(6) : "—"} />
         <Stat k="RING" v="16" sub="CLSAG" tone="p" />
-        <Stat k="FORK" v="v16" sub="FCMP++ Q3" tone="p" />
+        <Stat k="FORK" v={`v${data.majorVersion || "—"}`} sub={ready ? data.nettype || undefined : undefined} tone="p" />
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 14, alignItems: "stretch" }}>
-        <BrgCard title="Peer radar · PPI scope" right={<span className="acc">SWEEP 4.2s</span>} style={{ display: "flex", flexDirection: "column" }}>
+        <BrgCard title="Mempool radar · PPI scope" right={<span className="acc">SWEEP 4.2s</span>} style={{ display: "flex", flexDirection: "column" }}>
           <BrgRadar data={data} />
         </BrgCard>
         <BrgGaugeBank data={data} />
@@ -406,7 +480,7 @@ export function BridgeView({ data }: ViewProps) {
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
         <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> MISSION CONTROL · Block {data.height.toLocaleString()} · {data.mempool.length} mempool
+          <span className="led pulse" /> MISSION CONTROL · Block {data.ready ? data.height.toLocaleString() : "—"} · {data.ready ? data.mempool.length : "—"} mempool
         </span>
       </div>
       {tracking ? (
@@ -417,5 +491,3 @@ export function BridgeView({ data }: ViewProps) {
     </div>
   );
 }
-
-

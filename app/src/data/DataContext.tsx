@@ -1,8 +1,9 @@
 /**
  * data/DataContext.tsx — pluggable provider for MoneroLive.
  *
- * Every view reads via `useMoneroLive()`. The default `<DataProvider>` runs
- * the simulated feed; pass `useFeed` to swap in your live source.
+ * Every view reads via `useMoneroLive()`. The default `<DataProvider>` runs the
+ * real xmr.irish feed (`useXmrIrishFeed` — same-origin /api/* polling); pass
+ * `useFeed` to swap in another live source (a host runtime, a relay, a worker).
  *
  * Drop-in for claude.ai / your worker:
  *
@@ -15,25 +16,26 @@
  *
  * Your hook MUST return a MoneroLive shape (see types.ts). It can subscribe
  * to a websocket, poll an RPC, or anything else — as long as it yields a
- * stable object each render.
+ * stable object each render and keeps `ready`/`marketReady`/`stale` truthful.
  *
  * Read README.md → "Plugging live data" for the suggested REST + WS surface.
  */
 
 import * as React from "react";
 import type { MoneroLive } from "./types";
-import { useSimulatedMoneroLive } from "./simulated";
+import { useXmrIrishFeed } from "./xmrirish-feed";
 
 const Ctx = React.createContext<MoneroLive | null>(null);
 
 export interface DataProviderProps {
-  /** Provide your own hook to swap in real live data. Defaults to simulated. */
+  /** Provide your own hook to swap in another live source. Defaults to the
+   *  real xmr.irish feed. */
   useFeed?: () => MoneroLive;
   children: React.ReactNode;
 }
 
 export function DataProvider({ useFeed, children }: DataProviderProps) {
-  const hook = useFeed ?? useSimulatedMoneroLive;
+  const hook = useFeed ?? useXmrIrishFeed;
   const data = hook();
   return <Ctx.Provider value={data}>{children}</Ctx.Provider>;
 }

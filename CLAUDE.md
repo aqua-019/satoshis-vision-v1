@@ -116,6 +116,17 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
   Use this section to leave notes for future sessions.
   Format: **YYYY-MM-DD**: Note content
 -->
+- **2026-06-12**: v5.0.14 "ALL-REAL DATA" (app/ + api/): removed every simulated/illustrative
+  data surface outside `app/src/protocols/**` (the educational simulators, now code-split into
+  their own lazy chunk via /simulate). Deleted `app/src/data/simulated.ts`; the feed boots with
+  skeletons ("CONNECTING"), shows only node/CoinGecko numbers, and degrades to last-good +
+  "STALE · reconnecting" (never synthesis). Peer panels removed (restricted public RPC can't
+  see peers) and replaced with real panels: fee tiers, remote-node meta, block intervals,
+  block weight, chain totals. Markets: synthetic candle fallback → localStorage stale-cache;
+  real per-exchange volume/spread via new CG tickers proxy path; mock order book → real
+  liquidity-by-venue. New guards: verify-stale.mjs, verify-allreal-dom.mjs (Playwright,
+  mocked-network boot/stale/cache scenarios). Live-origin checks run externally (sandbox
+  egress blocks xmr.irish).
 - **2026-03-11**: Added dynamic layers — PriceService, WidgetLoader, SwapTracker, LiveRate.
   ChangeNOW widget kept (not custom API) due to liability concerns. Iframes now lazy-loaded.
   Backend evaluation documented: Railway + PostgreSQL recommended if dynamic features expand.

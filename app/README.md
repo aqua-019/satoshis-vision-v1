@@ -21,7 +21,7 @@ repo/
 │   ├── styles.css            terminal-CRT base + protocol chrome
 │   ├── data/                 ◆ the seam for live data
 │   │   ├── types.ts            MoneroLive — the stable wire shape
-│   │   ├── simulated.ts        default in-browser feed (CoinGecko + sim)
+│   │   ├── xmrirish-feed.ts    default feed (same-origin /api/* polling)
 │   │   └── DataContext.tsx     <DataProvider useFeed={…}>
 │   ├── layout/               NavTop, NetRail, Footer, AppShell, PageHeader
 │   ├── design/               primitives, ParticleField, ArtBackground, ProtoArtboard
@@ -47,7 +47,8 @@ npm install
 npm run dev
 ```
 
-You'll land on the home page with the simulated feed. Open `/mempool`,
+You'll land on the home page with the live feed (the dev server proxies
+`/api/*` to the production origin). Open `/mempool`,
 `/education`, `/dashboard`, `/simulate`, etc. The 5 mempool surfaces
 and 6 protocol simulators show "needs porting" stubs until you run:
 
@@ -78,11 +79,12 @@ Your hook must return the `MoneroLive` shape (see `src/data/types.ts`).
 Everything else (sparklines, mempool grids, peer lists, dashboards)
 follows automatically — no other change required.
 
-If you don't supply `useFeed`, the simulated feed runs. It polls
-CoinGecko for live XMR/BTC prices (CORS-open, no key) and simulates
-mempool + block ticks every 2.2s / 30s. Realistic shape, never lies
-about its source — `data.source === "simulated"` until your worker
-replaces it.
+If you don't supply `useFeed`, the real xmr.irish feed runs: it polls
+the same-origin `/api/monero`, `/api/xmr/*`, and `/api/coingecko`
+proxies every 2.5s. First paint shows skeletons until real data lands
+(`data.ready` / `data.marketReady`), and on poll failure the last-good
+snapshot is kept with `data.stale === true` — the UI never shows a
+number that didn't come from the node or CoinGecko.
 
 ### Suggested host endpoints (if you're building from scratch)
 
@@ -94,7 +96,7 @@ GET  /api/block/:height      → Block
 ```
 
 Then your hook becomes ~30 lines of `fetch` + `WebSocket` wiring. See
-`legacy/shared.jsx` for the simulated-feed reference implementation.
+`src/data/xmrirish-feed.ts` for the reference implementation.
 
 ---
 
@@ -134,8 +136,6 @@ The default build:
 - Public Monero RPC nodes generally don't serve `Access-Control-Allow-Origin`.
   Run a thin edge proxy and point your `useFeed` hook at it. See
   `DATA.md` in the source project.
-- The simulated feed is for design preview. Don't ship to production
-  without `useFeed`.
 - Tweaks panel from the design hub is **not** in this repo — it's a
   design-time concern. The hub lives at the v5 design-hub URL.
 

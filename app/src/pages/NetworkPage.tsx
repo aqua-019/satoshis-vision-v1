@@ -1,17 +1,17 @@
 /**
- * pages/NetworkPage.tsx — Network telemetry surface.
+ * pages/NetworkPage.tsx — Network telemetry surface (all-real data).
  *
- * Pools + peers + geo map + recent blocks + hashrate sparkline + difficulty curve
- * + block fullness + fee histogram + mempool size over time + version distribution
- * + Tor/I2P share.
+ * Recent blocks + hashrate sparkline + difficulty curve + block fullness
+ * + fee histogram + mempool size over time + block-interval histogram
+ * + pool attribution + remote-node / chain-meta readouts + block-weight
+ * median-vs-limit bar.
  *
- * Standalone page: owns its <AppShell> chrome. All data sourced from
- * `useMoneroLive()` except geo (PEER_GEO) + version distribution (NODE_VERSIONS) +
- * Tor/I2P shares, which are static illustrative lookups here (those endpoints 404).
- *
- * The GeoMap's propagation arcs + peer pulses respect prefers-reduced-motion:
- * reduced motion shows the static end-state (arc routes + peer markers) rather
- * than blank.
+ * Standalone page: owns its <AppShell> chrome. Every number on this page
+ * comes from `useMoneroLive()` — node RPC via the public-node cascade plus
+ * CoinGecko for market data elsewhere. Chain values render "—" until the
+ * first snapshot lands (`data.ready`); if polling fails after a healthy
+ * start, the header pill flips to STALE · RECONNECTING and the charts dim
+ * (`data.stale`). Nothing on this page is synthesized or hard-coded.
  */
 
 import * as React from "react";
@@ -19,160 +19,9 @@ import { Link } from "react-router-dom";
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { Stat, PanelFrame, Crumbs, Pill } from "@/design/primitives";
 import { AreaSeries, BarSeries } from "./markets/charts";
-import { fmtBytes, shortHash } from "@/data/types";
+import { fmtN, fmtBytes, shortHash } from "@/data/types";
+import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
-
-// ── prefers-reduced-motion ──
-function usePrefersReducedMotion(): boolean {
-  const [reduce, setReduce] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setReduce(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduce;
-}
-
-// ── world-map silhouette (low-fi, recognisable) ──
-const WORLD_DOTS: [number, number][] = (() => {
-  // A coarse silhouette of continents using a few dozen anchor coords.
-  // Lon range -180..180 → x 0..100; Lat range -60..75 → y 100..0 inverted.
-  const pts: [number, number][] = [
-    // North America
-    [-130, 55], [-120, 50], [-110, 55], [-100, 60], [-95, 50], [-95, 45], [-95, 40], [-85, 45], [-80, 40], [-75, 45],
-    [-115, 40], [-110, 35], [-100, 30], [-90, 30], [-80, 28], [-115, 32],
-    // Central America
-    [-95, 18], [-90, 15], [-85, 12], [-78, 10],
-    // South America
-    [-70, 5], [-75, -5], [-72, -15], [-70, -25], [-65, -35], [-60, -40], [-55, -30], [-50, -20], [-45, -10], [-60, -5],
-    // Europe
-    [-5, 40], [0, 42], [5, 45], [10, 45], [15, 47], [20, 48], [25, 55], [30, 60], [20, 60], [15, 52], [10, 50], [2, 48],
-    [-3, 50], [-8, 53], [12, 55],
-    // Africa
-    [0, 15], [5, 10], [10, 5], [15, 0], [20, -5], [25, -15], [30, -25], [20, -30], [18, -20], [8, -5], [35, 5], [40, 10],
-    [0, 25], [10, 25], [20, 28], [30, 28],
-    // Middle East / Russia
-    [40, 35], [45, 40], [50, 40], [60, 55], [80, 55], [100, 55], [120, 55], [140, 60], [35, 55], [55, 60], [70, 60], [90, 60], [110, 60], [130, 55],
-    // South / SE Asia
-    [70, 20], [75, 15], [80, 12], [85, 20], [95, 22], [100, 15], [105, 10], [110, 5], [115, 0], [120, -3],
-    // East Asia
-    [115, 30], [120, 30], [125, 35], [130, 38], [135, 35], [125, 25],
-    // Oceania
-    [125, -15], [135, -22], [145, -25], [150, -28], [145, -35], [150, -32], [170, -40],
-    // Japan
-    [138, 36], [142, 42], [140, 32],
-    // Iceland / Northern fringes
-    [-20, 65], [-15, 64], [15, 65], [25, 68],
-  ];
-  return pts.map(([lon, lat]) => [(lon + 180) / 360 * 100, (75 - lat) / 135 * 100]);
-})();
-
-const PEER_GEO: [string, string, number, number, number, string][] = [
-  // [country code, name, lon, lat, count, color]
-  ["DE", "Germany", 10.0, 51.0, 187, "#ff7a1a"],
-  ["US", "United States", -98.0, 39.0, 162, "#5ed3f4"],
-  ["FR", "France", 2.0, 46.0, 84, "#4ade80"],
-  ["NL", "Netherlands", 5.5, 52.0, 71, "#b87aff"],
-  ["GB", "United Kingdom", -2.0, 54.0, 62, "#ffd400"],
-  ["FI", "Finland", 26.0, 63.0, 44, "#ff4d6d"],
-  ["CA", "Canada", -105.0, 56.0, 38, "#ff7a1a"],
-  ["AU", "Australia", 133.0, -25.0, 35, "#5ed3f4"],
-  ["JP", "Japan", 138.0, 36.0, 29, "#4ade80"],
-  ["BR", "Brazil", -55.0, -10.0, 21, "#b87aff"],
-  ["??", "Tor / I2P", -160.0, -45.0, 188, "rgba(255,255,255,0.55)"], // anchored offshore SW
-];
-
-function GeoMap({ width = 760, height = 380 }: { width?: number; height?: number }) {
-  const reduce = usePrefersReducedMotion();
-  return (
-    <svg viewBox="0 0 100 56" width="100%" style={{ display: "block", maxWidth: width, maxHeight: height }}>
-      <defs>
-        <radialGradient id="net-glow" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,122,26,0.25)" />
-          <stop offset="100%" stopColor="rgba(255,122,26,0)" />
-        </radialGradient>
-        <linearGradient id="net-arc" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(255,122,26,0)" />
-          <stop offset="50%" stopColor="rgba(255,122,26,0.9)" />
-          <stop offset="100%" stopColor="rgba(255,122,26,0)" />
-        </linearGradient>
-      </defs>
-      {/* graticule */}
-      {[-60, -30, 0, 30, 60].map((lat) => (
-        <line key={lat} x1="0" y1={(75 - lat) / 135 * 100 * 0.56}
-          x2="100" y2={(75 - lat) / 135 * 100 * 0.56}
-          stroke="rgba(255,122,26,0.04)" strokeWidth="0.1" />
-      ))}
-      {[0, 30, 60, 90, 120, 150, 180, -30, -60, -90, -120, -150].map((lon) => (
-        <line key={lon} x1={(lon + 180) / 360 * 100} y1="0"
-          x2={(lon + 180) / 360 * 100} y2="56"
-          stroke="rgba(255,122,26,0.04)" strokeWidth="0.1" />
-      ))}
-      {/* continent silhouette */}
-      {WORLD_DOTS.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y * 0.56} r="0.35" fill="rgba(255,255,255,0.16)" />
-      ))}
-
-      {/* PROPAGATION ARCS — every ~6s a tx fans out from a major hub to peers */}
-      {(() => {
-        const hubs: [number, number][] = [
-          [(10 + 180) / 360 * 100, (75 - 51) / 135 * 100 * 0.56],   // DE
-          [(-98 + 180) / 360 * 100, (75 - 39) / 135 * 100 * 0.56],  // US
-          [(138 + 180) / 360 * 100, (75 - 36) / 135 * 100 * 0.56],  // JP
-        ];
-        const targets: [number, number][] = PEER_GEO.map(([_c, _n, lon, lat]) => [(lon + 180) / 360 * 100, (75 - lat) / 135 * 100 * 0.56]);
-        const lines: React.ReactElement[] = [];
-        hubs.forEach((h, hi) => {
-          targets.forEach(([tx, ty], ti) => {
-            if (Math.abs(tx - h[0]) < 1 && Math.abs(ty - h[1]) < 1) return;
-            const mx = (h[0] + tx) / 2;
-            const my = Math.min(h[1], ty) - Math.abs(tx - h[0]) * 0.12 - 2;
-            const d = `M${h[0]},${h[1]} Q${mx},${my} ${tx},${ty}`;
-            const dur = 3 + (hi + ti) % 5 + (ti % 3);
-            const delay = -((hi * 1.7 + ti * 0.6) % 8);
-            lines.push(
-              <g key={hi + "-" + ti}>
-                <path d={d} fill="none" stroke="rgba(255,122,26,0.06)" strokeWidth="0.1" />
-                {!reduce && (
-                  <circle r="0.45" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 1px var(--tk-accent))" }}>
-                    <animateMotion dur={dur + "s"} repeatCount="indefinite" begin={delay + "s"} path={d} rotate="auto" />
-                    <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur={dur + "s"} repeatCount="indefinite" begin={delay + "s"} />
-                  </circle>
-                )}
-              </g>
-            );
-          });
-        });
-        return lines;
-      })()}
-
-      {/* peers */}
-      {PEER_GEO.map(([code, _name, lon, lat, count, color], i) => {
-        const x = (lon + 180) / 360 * 100;
-        const y = (75 - lat) / 135 * 100 * 0.56;
-        const r = Math.max(0.6, Math.sqrt(count) / 8);
-        return (
-          <g key={i}>
-            {/* pulsing ring */}
-            <circle cx={x} cy={y} r={r * 1.5} fill="none" stroke={color} strokeWidth="0.15" opacity="0.6">
-              {!reduce && <animate attributeName="r" values={`${r * 1.5};${r * 4};${r * 1.5}`} dur={(3 + i * 0.3) + "s"} repeatCount="indefinite" />}
-              {!reduce && <animate attributeName="opacity" values="0.6;0;0.6" dur={(3 + i * 0.3) + "s"} repeatCount="indefinite" />}
-            </circle>
-            <circle cx={x} cy={y} r={r * 1.8} fill={color} opacity="0.14" />
-            <circle cx={x} cy={y} r={r} fill={color} style={{ filter: `drop-shadow(0 0 0.5px ${color})` }}>
-              {!reduce && <animate attributeName="opacity" values="0.95;0.5;0.95" dur={(2 + i * 0.2) + "s"} repeatCount="indefinite" />}
-            </circle>
-            <text x={x + r + 0.5} y={y + 0.6} fontFamily="var(--f-mono)" fontSize="1.5" fill="var(--ink-40)" letterSpacing="0.05em">
-              {code}·{count}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
 
 /** Median of a numeric series (ignores non-finite). */
 function median(nums: number[]): number {
@@ -187,6 +36,12 @@ function fmtPcnB(v: number): string {
   if (v >= 1e6) return (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M";
   if (v >= 1e3) return (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + "k";
   return String(Math.round(v));
+}
+
+/** Compact seconds label for interval bin edges (e.g. 45s, 2.5m, 12m). */
+function fmtSecs(s: number): string {
+  if (s >= 120) return (s / 60).toFixed(s >= 600 ? 0 : 1) + "m";
+  return Math.round(s) + "s";
 }
 
 /** Bin real per-tx fee rates (Tx.perB, piconero/B) into a histogram with real
@@ -212,6 +67,30 @@ function feeRateHistogram(perB: number[], bins = 10): { counts: number[]; labels
   return { counts, labels: counts.map((_, i) => fmtPcnB(edges[i])) };
 }
 
+/** Bin real block intervals (seconds) into a linear histogram with real
+ *  second-valued bin-edge labels, plus the median bin index for the on-chart
+ *  marker. Returns empty arrays when the sample is too small to bin honestly. */
+function intervalHistogram(intervals: number[], bins = 12): {
+  counts: number[]; labels: string[]; medBin: number; med: number; mean: number;
+} {
+  if (intervals.length < 4) return { counts: [], labels: [], medBin: -1, med: 0, mean: 0 };
+  const sorted = [...intervals].sort((a, b) => a - b);
+  const lo = sorted[0];
+  const span = Math.max(1, sorted[sorted.length - 1] - lo);
+  const counts = new Array(bins).fill(0);
+  const binOf = (v: number) => Math.min(bins - 1, Math.max(0, Math.floor(((v - lo) / span) * bins)));
+  for (const v of intervals) counts[binOf(v)]++;
+  const med = median(intervals);
+  const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+  return {
+    counts,
+    labels: counts.map((_, i) => fmtSecs(lo + (i / bins) * span)),
+    medBin: binOf(med),
+    med,
+    mean,
+  };
+}
+
 /** Accumulate a session rolling buffer: append `sample` whenever `key` changes,
  *  capped at `cap`. The ref-guard dedupes React StrictMode's double-invoke and
  *  ignores no-op re-renders where `key` is unchanged. */
@@ -230,27 +109,37 @@ function useSessionSeries(sample: number, key: number, cap = 120): number[] {
   return buf;
 }
 
-// monerod versions and shares
-const NODE_VERSIONS = [
-  { v: "0.18.4.0", share: 0.642, status: "current", ready: true, color: "var(--g-50)" },
-  { v: "0.18.3.4", share: 0.224, status: "current-1", ready: true, color: "var(--tk-accent)" },
-  { v: "0.18.3.3", share: 0.078, status: "current-2", ready: true, color: "var(--y-50)" },
-  { v: "0.18.2.x", share: 0.034, status: "current-3", ready: false, color: "var(--y-50)" },
-  { v: "0.18.1.x", share: 0.012, status: "stale", ready: false, color: "var(--r-50)" },
-  { v: "0.17.x", share: 0.006, status: "fork-only", ready: false, color: "var(--r-50)" },
-  { v: "Older", share: 0.004, status: "fork-only", ready: false, color: "var(--ink-40)" },
-];
+/** Mono key/value grid rows — the same idiom as the recent-blocks table. */
+function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
+  return (
+    <div className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: "9px 10px", fontSize: 11, alignItems: "center" }}>
+      {rows.map(([k, v], i) => (
+        <React.Fragment key={i}>
+          <span className="dim">{k}</span>
+          <span style={{ textAlign: "right", color: "var(--ink-80)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v}</span>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
 
 export function NetworkPage() {
   const data = useMoneroLive();
-  const sim = data.source === "simulated";
+  const ready = data.ready;
 
   // Real, honestly-windowed series for the network charts (no synthesis).
   // hashSeries is the rolling buffer of real hashrate samples; pin its last point
   // to the live reading so the current-value pill always equals data.hashrate
   // (already true under the live feed, which pushes data.hashrate each tick).
-  const hashSeries = data.hashSeries.length ? [...data.hashSeries.slice(0, -1), data.hashrate] : [data.hashrate];
+  // Empty until the first snapshot lands — the charts render nothing, not zeros.
+  const hashSeries = ready
+    ? (data.hashSeries.length ? [...data.hashSeries.slice(0, -1), data.hashrate] : [data.hashrate])
+    : [];
   const mempoolBuf = useSessionSeries(data.mempool.length, data.lastUpdate);
+  // If this page mounted before the first snapshot, the buffer's mount-time seed
+  // was a placeholder zero, not a reading — drop it rather than chart it.
+  const seededPreReady = React.useRef(!ready);
+  const mempoolSeries = ready ? (seededPreReady.current ? mempoolBuf.slice(1) : mempoolBuf) : [];
   // BLOCKS_CAP is now 100 (Sediment); these mini-charts intentionally keep the recent 14-block window.
   const recentBlocks = data.blocks.slice(0, 14);
   const diffSeries = recentBlocks.map((b) => b.difficulty).reverse();          // oldest → newest
@@ -270,82 +159,119 @@ export function NetworkPage() {
     for (let i = 0; i < c.length; i++) { acc += c[i]; if (acc >= total / 2) return i; }
     return c.length - 1;
   })();
+  // Block intervals from the real block sample (newest-first): the gap between a
+  // block and its parent is blocks[i+1].age - blocks[i].age (older minus newer).
+  // Miner timestamps are non-monotonic, so filter to a sane 5..1800 s window
+  // rather than trusting raw deltas.
+  const intervals: number[] = [];
+  for (let i = 0; i + 1 < data.blocks.length; i++) {
+    const iv = data.blocks[i + 1].age - data.blocks[i].age;
+    if (Number.isFinite(iv) && iv >= 5 && iv <= 1800) intervals.push(iv);
+  }
+  const ivHist = intervalHistogram(intervals);
   // Pool attribution (P2): Monero coinbase outputs are stealth addresses, so every
   // block's pool reads "Unknown" from the node alone — this is the honest signal.
   const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
   const unattributedPct = recentBlocks.length ? Math.round((unattributed / recentBlocks.length) * 100) : 0;
+  const t = data.feeTiers;
+  const weightKnown = ready && data.blockWeightMedian > 0 && data.blockWeightLimit > 0;
 
   return (
     <AppShell bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · ${data.peers.length} peers`} />
+      <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
       <PageHeader
         kicker="Network telemetry · live"
         title='Network — <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">the numbers</em>.'
-        sub="Pools, peers, blocks, hashrate, difficulty, fork readiness. The raw telemetry for the chain you trust."
-        right={<><Pill tone="live" dot>LIVE</Pill><Pill>UPDATED {new Date(data.lastUpdate).toISOString().slice(11, 19)}</Pill></>}
+        sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
+        right={<>
+          {data.stale
+            ? <Pill tone="warn" dot>STALE · RECONNECTING</Pill>
+            : ready
+              ? <Pill tone="live" dot>LIVE</Pill>
+              : <Pill dot>CONNECTING</Pill>}
+          <Pill>UPDATED {data.lastUpdate > 0 ? new Date(data.lastUpdate).toISOString().slice(11, 19) : "—"}</Pill>
+        </>}
       />
 
       {/* KPI row */}
       <section className="kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 10 }}>
-        <Stat k="Block height" v={data.height.toLocaleString()} sub="live" tone="acc" />
-        <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub={sim ? "sim feed" : "live"} />
-        <Stat k="Difficulty" v={`${(data.difficulty / 1e9).toFixed(2)}G`} sub="adj every 720" />
-        <Stat k="Peers (sample)" v={data.peers.length} sub="illustrative · not live" />
-        <Stat k="Mempool" v={`${data.mempool.length} tx`} sub={fmtBytes(data.mempool.reduce((a, t) => a + t.size, 0))} />
-        <Stat k="Fork" v="v16" sub="FCMP++ Q3" tone="p" />
+        <Stat k="Block height" v={ready ? data.height.toLocaleString() : "—"} sub="live" tone="acc" />
+        <Stat k="Hashrate" v={ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} sub="live" />
+        <Stat k="Difficulty" v={ready ? `${(data.difficulty / 1e9).toFixed(2)}G` : "—"} sub="adj every 720" />
+        <Stat k="Total txs" v={ready ? fmtN(data.txCountTotal) : "—"} sub="all-time" />
+        <Stat k="Mempool" v={ready ? `${data.mempool.length} tx` : "—"} sub={ready ? fmtBytes(data.mempool.reduce((a, x) => a + x.size, 0)) : "—"} />
+        <Stat k="Fork" v={data.majorVersion ? `v${data.majorVersion}` : "—"} sub="FCMP++ Q3" tone="p" />
       </section>
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title={`Hashrate · session · ${hashSeries.length} samples`} right={<span>GH/s</span>}>
-          <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
-            baseline="auto" xLabels={false} sim={sim}
-            format={(v) => (v / 1e9).toFixed(2)} />
+        <PanelFrame title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
+          {hashSeries.length ? (
+            <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
+              baseline="auto" xLabels={false} stale={data.stale}
+              format={(v) => (v / 1e9).toFixed(2)} />
+          ) : (
+            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting chain sample</p>
+          )}
         </PanelFrame>
-        <PanelFrame title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>Δ {(data.difficulty / 1e9).toFixed(2)}G</span>}>
-          <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
-            baseline="auto" xLabels={false} sim={sim}
-            format={(v) => (v / 1e9).toFixed(2) + "G"} />
+        <PanelFrame title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
+          {diffSeries.length ? (
+            <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
+              baseline="auto" xLabels={false} stale={data.stale}
+              format={(v) => (v / 1e9).toFixed(2) + "G"} />
+          ) : (
+            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting block sample</p>
+          )}
         </PanelFrame>
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title={`Mempool size · session · ${mempoolBuf.length} sample${mempoolBuf.length === 1 ? "" : "s"}`} right={<span>{data.mempool.length} tx now</span>}>
-          <AreaSeries data={mempoolBuf} height={180} color="var(--c-50)"
-            baseline="zero" xLabels={false} sim={sim}
-            format={(v) => String(Math.round(v))} />
+        <PanelFrame title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
+          {mempoolSeries.length ? (
+            <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
+              baseline="zero" xLabels={false} stale={data.stale}
+              format={(v) => String(Math.round(v))} />
+          ) : (
+            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting mempool sample</p>
+          )}
         </PanelFrame>
-        <PanelFrame title={`Block fullness · last ${fullness.length} blocks`} right={<span>cap ≈ {fullCap.toFixed(0)} KB</span>}>
-          <BarSeries data={fullness} height={180} color="var(--tk-accent)"
-            baseline="zero" sim={sim} endLabels={["older", "newer"]}
-            format={(v) => (v * 100).toFixed(0) + "%"} />
+        <PanelFrame title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
+          {fullness.length ? (
+            <BarSeries data={fullness} height={180} color="var(--tk-accent)"
+              baseline="zero" stale={data.stale} endLabels={["older", "newer"]}
+              format={(v) => (v * 100).toFixed(0) + "%"} />
+          ) : (
+            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting block sample</p>
+          )}
         </PanelFrame>
       </section>
 
-      {/* Geo map + fee histogram — top-align so the fee panel hugs its chart instead
-          of stretching to the taller geo panel (no large empty margin under the bars). */}
-      <section style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: 12, alignItems: "start" }}>
-        <PanelFrame title="Peer geography · illustrative" right={<span>11 buckets · {PEER_GEO.reduce((a, p) => a + p[4], 0)} total</span>}>
-          <GeoMap />
-          <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 6, marginTop: 10, fontSize: 10.5 }}>
-            {PEER_GEO.map(([code, name, _lon, _lat, count, color]) => (
-              <div key={code} className="keep-cols" style={{ display: "grid", gridTemplateColumns: "8px 1fr 30px", gap: 4, alignItems: "center" }}>
-                <span style={{ width: 6, height: 6, borderRadius: 3, background: color, boxShadow: `0 0 4px ${color}` }} />
-                <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={name}>{name}</span>
-                <span style={{ textAlign: "right" }}>{count}</span>
-              </div>
-            ))}
-          </div>
+      {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
+        <PanelFrame title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
+          {ivHist.counts.length ? (
+            <>
+              <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
+                baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
+                marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
+              <p className="mono dim" style={{ fontSize: 10.5, marginTop: 6, color: "var(--ink-40)" }}>
+                μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
+                · timestamps are miner-set, filtered to 5–1800 s
+              </p>
+            </>
+          ) : (
+            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting block sample</p>
+          )}
         </PanelFrame>
 
         <PanelFrame title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
             <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
-              baseline="zero" sim={sim} format={(v) => String(Math.round(v))}
+              baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
               marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
           ) : (
             <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
-              baseline="zero" sim={sim} format={(v) => String(Math.round(v))} />
+              baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))} />
           )}
           <p className="mono dim" style={{ fontSize: 10.5, marginTop: 6, color: "var(--ink-40)" }}>
             {data.mempool.length
@@ -355,20 +281,24 @@ export function NetworkPage() {
         </PanelFrame>
       </section>
 
-      {/* Pool distribution + Version distribution */}
+      {/* Pool attribution + Remote node */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title="Pool attribution" right={<span className="dim">unattributed</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             {/* lead with the real signal as a compact stat, not a paragraph */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <span style={{ fontSize: 26, color: "var(--ink-100)" }}>{unattributedPct}%</span>
+              <span style={{ fontSize: 26, color: "var(--ink-100)" }}>{recentBlocks.length ? `${unattributedPct}%` : "—"}</span>
               <span className="dim" style={{ fontSize: 11 }}>
-                unattributed · {unattributed}/{recentBlocks.length} recent blocks report pool "Unknown"
+                {recentBlocks.length
+                  ? <>unattributed · {unattributed}/{recentBlocks.length} recent blocks report pool "Unknown"</>
+                  : <>awaiting block sample</>}
               </span>
             </div>
-            {/* single full-width bar, matching the Tor/I2P share idiom below */}
+            {/* single full-width bar, matching the block-weight idiom below */}
             <div style={{ height: 14, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
-              <div style={{ position: "absolute", inset: "0 auto 0 0", width: unattributedPct + "%", background: "var(--ink-40)", opacity: 0.5, boxShadow: "0 0 8px var(--ink-40)" }} />
+              {recentBlocks.length ? (
+                <div style={{ position: "absolute", inset: "0 auto 0 0", width: unattributedPct + "%", background: "var(--ink-40)", opacity: 0.5, boxShadow: "0 0 8px var(--ink-40)" }} />
+              ) : null}
             </div>
             {/* one-line caption: the why lives in a hover tooltip; Skyline link stays visible */}
             <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
@@ -382,69 +312,54 @@ export function NetworkPage() {
           </div>
         </PanelFrame>
 
-        <PanelFrame title="monerod version distribution" right={<span>fork readiness</span>}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <div className="table-scroll" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {NODE_VERSIONS.map((n) => (
-              <div key={n.v} style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 110px", gap: 10, alignItems: "center", fontSize: 11 }} className="mono keep-cols">
-                <span style={{ color: n.ready ? "var(--ink-100)" : "var(--ink-40)" }}>{n.v}</span>
-                <span style={{ height: 8, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
-                  <span style={{ position: "absolute", inset: "0 auto 0 0", width: (n.share * 100).toFixed(1) + "%", background: n.color, boxShadow: `0 0 4px ${n.color}` }} />
-                </span>
-                <span className="dim" style={{ textAlign: "right" }}>{(n.share * 100).toFixed(1)}%</span>
-                <span style={{ color: n.color, fontSize: 9.5, letterSpacing: "0.12em", textTransform: "uppercase", textAlign: "right" }}>{n.status}</span>
-              </div>
-            ))}
-            </div>
-            <p className="mono dim" style={{ fontSize: 10.5, marginTop: 8, color: "var(--ink-40)" }}>
-              Fork-ready (FCMP++ Q3): <b className="up">{Math.round(NODE_VERSIONS.filter((n) => n.ready).reduce((a, n) => a + n.share, 0) * 100)}%</b>
-              · target ≥85% before activation
-            </p>
-          </div>
+        <PanelFrame title="Remote node · live" right={<span className="dim">public-node cascade</span>}>
+          <KVRows rows={[
+            ["Daemon", ready && data.version ? data.version : "—"],
+            ["Network", ready && data.nettype ? data.nettype : "—"],
+            ["DB size", ready && data.databaseSize > 0 ? `${(data.databaseSize / 1e9).toFixed(1)} GB` : "—"],
+            ["Synchronized", ready
+              ? (data.synchronized
+                ? <span style={{ color: "var(--g-50)" }}>✓ synchronized</span>
+                : <span style={{ color: "var(--y-50)" }}>syncing</span>)
+              : "—"],
+            ["Top block", ready ? shortHash(data.topBlockHash) : "—"],
+            ["Alt blocks", ready ? String(data.altBlocksCount) : "—"],
+          ]} />
         </PanelFrame>
       </section>
 
-      {/* Peer list + Tor/I2P + Recent blocks */}
+      {/* Chain meta + Block weight */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title={`Peers · sample · ${data.peers.length}`} right={<span className="dim">illustrative · not node-sourced</span>}>
-          <div className="peerlist" style={{ fontSize: 11 }}>
-            {data.peers.map((p, i) => (
-              <div className="row" key={i} style={{ gridTemplateColumns: "14px 1fr 60px 50px 60px" }}>
-                <span className={"led " + (p.lat < 60 ? "" : p.lat < 100 ? "q" : "o")} style={{ width: 5, height: 5 }} />
-                <span style={{ color: "var(--ink-80)" }}>{p.ip}</span>
-                <span className="dim">{p.cnt}</span>
-                <span className="dim">{p.lat}ms</span>
-                <span className="dim">#{p.h}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mono dim" style={{ fontSize: 10, marginTop: 8, color: "var(--ink-40)" }}>
-            This deployment's node doesn't expose its peer list — these rows are illustrative, not live peer telemetry.
-          </p>
+        <PanelFrame title="Chain meta · live" right={<span className="dim">node-reported</span>}>
+          <KVRows rows={[
+            ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
+            ["Adjusted time", ready && data.adjustedTime > 0 ? new Date(data.adjustedTime * 1000).toISOString().slice(11, 19) + " UTC" : "—"],
+            ["Nettype", ready && data.nettype ? data.nettype : "—"],
+            ["Txs all-time", ready ? fmtN(data.txCountTotal) : "—"],
+            ["Fee tiers", ready && t.length === 4
+              ? <span title={FEE_TIER_LABELS.join(" / ")}>{`${fmtPcnB(t[0])}/${fmtPcnB(t[1])}/${fmtPcnB(t[2])}/${fmtPcnB(t[3])} pcn/B`}</span>
+              : "—"],
+          ]} />
         </PanelFrame>
 
-        <PanelFrame title="Tor / I2P share of peers" right={<span>privacy at network layer</span>}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {[
-              { name: "Clearnet (IPv4 + IPv6)", share: 0.612, color: "var(--ink-60)" },
-              { name: "Tor (.onion)", share: 0.286, color: "var(--p-50)" },
-              { name: "I2P (.b32.i2p)", share: 0.094, color: "var(--c-50)" },
-              { name: "Unknown / hybrid", share: 0.008, color: "var(--ink-40)" },
-            ].map((r) => (
-              <div key={r.name}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontFamily: "var(--f-mono)" }}>
-                  <span style={{ color: r.color }}>{r.name}</span>
-                  <span style={{ color: r.color }}>{(r.share * 100).toFixed(1)}%</span>
-                </div>
-                <div style={{ height: 14, background: "var(--ink-10)", marginTop: 4, position: "relative", borderRadius: 1 }}>
-                  <div style={{ position: "absolute", inset: "0 auto 0 0", width: (r.share * 100).toFixed(1) + "%", background: r.color, opacity: 0.5, boxShadow: `0 0 8px ${r.color}` }} />
-                </div>
-              </div>
-            ))}
+        <PanelFrame title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+              <span style={{ color: "var(--tk-accent)" }}>median {ready && data.blockWeightMedian > 0 ? fmtBytes(data.blockWeightMedian) : "—"}</span>
+              <span className="dim">limit {ready && data.blockWeightLimit > 0 ? fmtBytes(data.blockWeightLimit) : "—"}</span>
+            </div>
+            {/* single full-width bar: median weight as a fraction of the dynamic limit */}
+            <div style={{ height: 14, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
+              {weightKnown ? (
+                <div style={{ position: "absolute", inset: "0 auto 0 0", width: Math.min(100, (data.blockWeightMedian / data.blockWeightLimit) * 100).toFixed(1) + "%", background: "var(--tk-accent)", opacity: 0.5, boxShadow: "0 0 8px var(--tk-accent)" }} />
+              ) : null}
+            </div>
+            <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+              Monero's block size is dynamic: blocks above the median weight enter the penalty
+              zone and pay a quadratic coinbase-reward penalty, and the node's dynamic limit
+              is 2× the median — so the limit grows only as sustained demand lifts the median.
+            </p>
           </div>
-          <p className="mono dim" style={{ fontSize: 10.5, marginTop: 12, color: "var(--ink-40)" }}>
-            38.0% of peers route through Tor or I2P. Highest of any major coin.
-          </p>
         </PanelFrame>
       </section>
 

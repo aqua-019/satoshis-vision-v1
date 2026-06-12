@@ -9,15 +9,17 @@
 //   - Hex-lattice mempool grid (one cell = one tx, colour = fee/byte) + fee/B histogram
 //   - CLSAG ring-16 signature fan + anonymity-set readout
 //   - Pool-distribution donut
-//   - Live tx feed (STEM → FLUFF / Dandelion++)
+//   - Live tx feed (fee-tier tagged, newest first)
 //
-// Drilldown: clicking a tx row or a block opens the rich FullTxDetail /
-// FullBlockDetail inspectors from tx-detail. All lookups SIMULATED — no /api/tx.
+// Drilldown: clicking a tx row or a block routes tracking through
+// mempool-shared's MempoolTrackingDetail, which renders the rich live
+// FullTxDetail / FullBlockDetail inspectors (real /api/tx lookups).
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { Pill, PanelFrame, MiniBar } from "@/design/primitives";
-import { fmtBytes, fmtFee, shortHash as ShortHash, randHex } from "@/data/types";
+import { PanelFrame, MiniBar } from "@/design/primitives";
+import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx, Block } from "@/data/types";
+import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useMempoolTracking, MempoolTrackingDetail, MempoolSearchBar } from "@/mempool/mempool-shared";
 import { confOf } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
@@ -27,24 +29,6 @@ interface ViewProps {
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
   focusBlock?: number | null;
   onClearFocus?: () => void;
-}
-
-// Deterministic, in-memory simulated tx shape used by the exported TxDetailPanel
-// (consumed by mempool-shared.tsx). No /api/tx wiring.
-interface ReactorTx {
-  id: string;
-  size: number;
-  fee: number;
-  perB: number;
-  ringSize: number;
-  inputs: number;
-  outputs: number;
-  blockHeight: number | null;
-  confirmations: number;
-  status: string;
-  eta: string;
-  timelock: number;
-  privacy: number;
 }
 
 type Tracking =
@@ -429,22 +413,25 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
 
         {/* live tx feed */}
         <PanelFrame
-          title={<><span>● Live tx feed</span><span className="dim2">stem ⟶ fluff</span></>}
-          right={<><span>STREAM ACTIVE</span><span className="acc">DANDELION++</span></>}
+          title={<><span>● Live tx feed</span><span className="dim2">newest first</span></>}
+          right={<><span>STREAM ACTIVE</span><span className="acc">FEE TIER · LIVE</span></>}
         >
           <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: 11 }}>
-            <div className="kicker">PHASE</div>
+            <div className="kicker">TIER</div>
             <div className="kicker">TXID</div>
             <div className="kicker">SIZE</div>
             <div className="kicker">FEE</div>
             <div className="kicker">FEE/B</div>
             <div className="kicker">RING</div>
             <div className="kicker">AGE</div>
-            {data.mempool.slice(0, 7).map((tx, i) => (
+            {data.mempool.slice(0, 7).map((tx) => {
+              const tierIdx = feeTierIndex(tx.perB, data.feeTiers);
+              const tierColors = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"];
+              return (
               <React.Fragment key={tx.id}>
                 <div onClick={() => onPickTx(tx.id)} style={{ cursor: "pointer" }}>
-                  <span className={"pill " + (i % 3 === 0 ? "acc" : "")} style={{ padding: "2px 6px", fontSize: 9 }}>
-                    {i % 3 === 0 ? "STEM · h4" : i % 3 === 1 ? "FLUFF · gossip" : "MEMPOOL"}
+                  <span className="pill" style={{ padding: "2px 6px", fontSize: 9, color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
+                    {tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx].toUpperCase() : "—"}
                   </span>
                 </div>
                 <div className="hash" onClick={() => onPickTx(tx.id)} style={{ fontSize: 10.5, cursor: "pointer" }}>{tx.id.slice(0, 12)}…{tx.id.slice(-10)}</div>
@@ -454,209 +441,14 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 <div className="dim">ring:16</div>
                 <div className="dim">{tx.age}s</div>
               </React.Fragment>
-            ))}
+              );
+            })}
           </div>
         </PanelFrame>
         </>
         )}
 
       </div>
-    </div>
-  );
-}
-
-/* ──────────────────────────────────────────────────────────────
-   DEPRECATED detail panels (v5.0.11). Every mempool surface — including
-   Reactor — now routes tracking through mempool-shared's MempoolTrackingDetail,
-   which renders the rich FullTxDetail / FullBlockDetail with confirmations from
-   confOf (the single newest-block tip). These smaller panels are retained only
-   so any external import keeps compiling; do NOT wire new surfaces to them — the
-   local ReactorConfirmationPanel derives its own count and must not become a
-   divergent confirmation source again.
-   ────────────────────────────────────────────────────────────── */
-
-function Detail({ k, v, sub, tone }: { k: React.ReactNode; v: React.ReactNode; sub?: React.ReactNode; tone?: string }) {
-  return (
-    <div>
-      <div className="kicker">{k}</div>
-      <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 17, marginTop: 4 }}>{v}</div>
-      {sub ? <div className="mono dim" style={{ fontSize: 10.5, marginTop: 2 }}>{sub}</div> : null}
-    </div>
-  );
-}
-
-function BigKpi({ k, v, tone }: { k: React.ReactNode; v: React.ReactNode; tone?: string }) {
-  return (
-    <div style={{ padding: "14px 16px", border: "1px solid var(--rule)", borderRadius: 2, background: "rgba(0,0,0,0.3)" }}>
-      <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 28, fontWeight: 500, lineHeight: 1, textShadow: tone === "acc" ? "var(--glow-1)" : "none", color: tone === "warn" ? "var(--y-50)" : undefined }}>{v}</div>
-      <div className="kicker" style={{ marginTop: 6 }}>{k}</div>
-    </div>
-  );
-}
-
-/* ── Reactor's confirmation panel — same overdue logic as Classic ── */
-const REACTOR_BLOCK_TARGET = 120;
-function ReactorConfirmationPanel({ tx }: { tx: ReactorTx }) {
-  const confRef = React.useRef(tx.confirmations ?? 0);
-  const sinceRef = React.useRef(Date.now());
-  React.useEffect(() => {
-    if (tx.confirmations !== confRef.current) {
-      confRef.current = tx.confirmations;
-      sinceRef.current = Date.now();
-    }
-  }, [tx.confirmations]);
-
-  const [now, setNow] = React.useState(Date.now());
-  React.useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const conf = tx.confirmations ?? 0;
-  const elapsed = Math.floor((now - sinceRef.current) / 1000);
-  const overdue = elapsed > REACTOR_BLOCK_TARGET;
-  const secsToNext = Math.max(0, REACTOR_BLOCK_TARGET - elapsed);
-  const nextTxt = overdue
-    ? "+" + Math.floor((elapsed - REACTOR_BLOCK_TARGET) / 60) + ":" + String((elapsed - REACTOR_BLOCK_TARGET) % 60).padStart(2, "0") + " overdue"
-    : "~" + Math.floor(secsToNext / 60) + ":" + String(secsToNext % 60).padStart(2, "0");
-  const unlockSecs = Math.max(0, (10 - conf) * REACTOR_BLOCK_TARGET - (overdue ? 0 : elapsed));
-  const unlockTxt = "~" + Math.floor(unlockSecs / 60) + ":" + String(unlockSecs % 60).padStart(2, "0");
-
-  return (
-    <PanelFrame title="Confirmation status" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 6px var(--g-50)" }} /> LIVE</>}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12 }}>
-        <BigKpi k="of 10 confirmations" v={conf} tone="acc" />
-        <BigKpi k="Blocks remaining" v={Math.max(0, 10 - conf)} />
-        <BigKpi k="Until next confirmation" v={nextTxt} tone={overdue ? "warn" : ""} />
-        <BigKpi k="Until full unlock (10/10)" v={unlockTxt} />
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 18, marginBottom: 6 }}>
-        {Array.from({ length: 11 }).map((_, i) => {
-          const reached = i <= conf;
-          return (
-            <React.Fragment key={i}>
-              {i > 0 ? (
-                <div style={{ flex: 1, height: 2, background: reached ? "var(--c-50)" : "var(--ink-10)", boxShadow: reached ? "0 0 4px var(--c-50)" : "none" }} />
-              ) : null}
-              <div style={{
-                width: 12, height: 12, borderRadius: 6,
-                background: reached ? "var(--c-50)" : "transparent",
-                border: "1px solid " + (reached ? "var(--c-50)" : "var(--ink-20)"),
-                boxShadow: reached ? "0 0 6px var(--c-50)" : "none",
-              }} />
-            </React.Fragment>
-          );
-        })}
-      </div>
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--ink-40)", marginTop: 6, flexWrap: "wrap", gap: 12 }}>
-        <span>{conf} of 10 · {Math.max(0, 10 - conf)} more until unlock</span>
-        <span>{conf >= 10 ? "Unlocked ✓" : "Confirming · " + conf + " of 10"}</span>
-        <span>updated just now</span>
-      </div>
-    </PanelFrame>
-  );
-}
-
-/* ── transaction detail panel (small) — EXPORT CONTRACT ──
-   Keep the signature `{ tx: ReactorTx; onBack: () => void }` stable. */
-export function TxDetailPanel({ tx, onBack }: { tx: ReactorTx; onBack: () => void }) {
-  const [tracking, setTracking] = React.useState(true);
-  if (!tx) return null;
-
-  const isConfirmed = (tx.confirmations ?? 0) >= 10;
-  return (
-    <div style={{ padding: "20px 24px 40px", borderTop: "1px solid var(--rule)", background: "rgba(0,0,0,0.4)" }}>
-
-      <button type="button" onClick={onBack} className="proto-btn"
-        style={{ padding: "5px 10px", fontSize: 10, borderColor: "var(--ink-20)", color: "var(--ink-60)", boxShadow: "none", marginBottom: 14 }}>
-        ← BACK
-      </button>
-
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, paddingBottom: 14, borderBottom: "1px solid var(--rule)", marginBottom: 14 }}>
-        <div>
-          <h2 className="serif" style={{ margin: 0, fontSize: 28, fontWeight: 400, color: "var(--ink-100)" }}>Transaction</h2>
-          <div className="mono" style={{ fontSize: 12, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all", maxWidth: "92ch" }}>{tx.id}</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button type="button" className="proto-btn" style={{ padding: "4px 8px", fontSize: 10, borderColor: "var(--ink-20)", color: "var(--ink-60)", boxShadow: "none" }}
-            onClick={() => { try { navigator.clipboard.writeText(tx.id); } catch (e) { /* ignore */ } }}>⧉</button>
-          <Pill tone={isConfirmed ? "live" : "warn"} dot>{isConfirmed ? "Confirmed" : "Confirming"}</Pill>
-          <button type="button" onClick={() => setTracking((v) => !v)} className="proto-btn"
-            style={{ padding: "4px 10px", fontSize: 10, borderColor: tracking ? "var(--y-50)" : "var(--ink-20)", color: tracking ? "var(--y-50)" : "var(--ink-60)", boxShadow: tracking ? "0 0 6px rgba(255,212,0,0.35)" : "none" }}>
-            {tracking ? "● TRACKING" : "▶ TRACK"}
-          </button>
-        </div>
-      </div>
-
-      {/* Stats row */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 18 }}>
-        <Detail k="Included in block" v={tx.blockHeight ? "#" + tx.blockHeight.toLocaleString() : "Pending"} tone="acc" />
-        <Detail k="Fee" v={tx.fee.toFixed(7) + " XMR"} sub="$—" tone="acc" />
-        <Detail k="ETA" v={tx.eta} />
-        <Detail k="Fee rate" v={tx.perB.toFixed(2) + " pcn/B"} />
-        <Detail k="Size" v={(tx.size / 1024).toFixed(1) + " KB"} />
-        <Detail k="Ring size" v={tx.ringSize + " decoys"} />
-      </section>
-
-      {/* Privacy badges */}
-      <section style={{ display: "flex", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
-        {[
-          { l: "CLSAG" },
-          { l: "BP+" },
-          { l: "View Tags" },
-          { l: "No Timelock" },
-          { l: "Dandelion++" },
-        ].map((b) => (
-          <span key={b.l} className="proto-badge ready" style={{ background: "rgba(74,222,128,0.06)" }}>{b.l}</span>
-        ))}
-      </section>
-
-      {/* Confirmation status */}
-      <ReactorConfirmationPanel tx={tx} />
-
-      {/* Privacy strength bar */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", marginTop: 14, border: "1px solid var(--g-50)", background: "rgba(74,222,128,0.04)" }}>
-        <span style={{ color: "var(--g-50)", fontSize: 18 }}>✓</span>
-        <div className="mono" style={{ fontSize: 11, color: "var(--ink-100)" }}>
-          Privacy <b className="up" style={{ fontSize: 13 }}>{tx.privacy}/100</b> <span className="up">STRONG</span>
-          <span className="dim" style={{ marginLeft: 16 }}>CLSAG · BP+ · 16 ring · View Tags · No Timelock</span>
-        </div>
-        <span style={{ marginLeft: "auto", color: "var(--ink-40)" }}>▾</span>
-      </div>
-
-      {/* Inputs */}
-      <PanelFrame title={`Inputs (${tx.inputs})`} right={<span>Ring 16 · Pedersen commitments</span>} style={{ marginTop: 14 }}>
-        {Array.from({ length: tx.inputs }).map((_, i) => (
-          <div key={i} style={{ padding: "12px 0", borderBottom: i < tx.inputs - 1 ? "1px dashed var(--ink-10)" : "none" }}>
-            <div className="mono dim" style={{ fontSize: 10.5, letterSpacing: "0.06em" }}>Input {i} — Key Image</div>
-            <div className="mono" style={{ fontSize: 11, color: "var(--c-50)", marginTop: 4, wordBreak: "break-all" }}>{randHex(64)}</div>
-            <div className="mono dim" style={{ fontSize: 10.5, marginTop: 6 }}>
-              Ring: <b style={{ color: "var(--ink-100)" }}>16 members</b> · Amount: <b style={{ color: "var(--y-50)" }}>HIDDEN</b> (Pedersen commitment)
-            </div>
-            <a href="#/education" className="mono dim" style={{ fontSize: 10.5, marginTop: 4, display: "inline-block", color: "var(--c-50)", textDecoration: "underline", textDecorationStyle: "dotted" }}>What is a key image?</a>
-          </div>
-        ))}
-      </PanelFrame>
-    </div>
-  );
-}
-
-/* ── block detail panel (small) — EXPORT CONTRACT ──
-   Keep the signature `{ block: Block; onBack: () => void }` stable. */
-export function BlockDetailPanel({ block, onBack }: { block: Block; onBack: () => void }) {
-  return (
-    <div style={{ padding: "20px 24px 40px" }}>
-      <button type="button" onClick={onBack} className="proto-btn" style={{ padding: "5px 10px", fontSize: 10, borderColor: "var(--ink-20)", color: "var(--ink-60)", boxShadow: "none", marginBottom: 14 }}>← BACK</button>
-      <h2 className="serif" style={{ margin: 0, fontSize: 28, fontWeight: 400, color: "var(--ink-100)" }}>Block #{block.height.toLocaleString()}</h2>
-      <div className="mono" style={{ fontSize: 12, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all", maxWidth: "92ch" }}>{block.hash}</div>
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 18 }}>
-        <Detail k="Txs" v={block.txs} tone="acc" />
-        <Detail k="Size" v={block.sizeKB.toFixed(1) + " KB"} />
-        <Detail k="Reward" v={block.reward.toFixed(3) + " XMR"} />
-        <Detail k="Pool" v={block.pool} />
-        <Detail k="Confirmations" v={block.conf} tone="acc" />
-      </section>
     </div>
   );
 }

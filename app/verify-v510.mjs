@@ -12,7 +12,9 @@
 //   4. Mobile (390): every upgraded chart scales to width — no full-page
 //      horizontal scroll on /network or /markets.
 //
-// Run against `npm run preview` (built WITHOUT VITE_LIVE_DATA → simulated feed,
+// HISTORICAL GATE (pre-v5.0.14): written against the deterministic seed feed,
+// which no longer exists (the app is all-real; see verify-allreal-dom.mjs).
+// Run against `npm run preview` (mock /api/* first,
 // deterministic, no network):
 //   npm run build && (npm run preview &) && sleep 2 && node verify-v510.mjs
 import { webkit, chromium } from "playwright";

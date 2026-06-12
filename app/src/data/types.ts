@@ -44,7 +44,7 @@ export interface Block {
   /** coinbase reward in XMR */
   reward: number;
   difficulty: number;
-  /** pool name; renderers match against the `poolDist` array */
+  /** pool name as reported by the backend; "Unknown" when unattributable */
   pool: string;
   /** age in seconds */
   age: number;
@@ -52,33 +52,7 @@ export interface Block {
   conf: number;
 }
 
-export interface Peer {
-  ip: string;
-  port: number;
-  /** peer's reported height */
-  h: number;
-  /** monerod version string */
-  agent: string;
-  /** round-trip latency in ms */
-  lat: number;
-  /** 2-letter ISO country code, or "??" if unknown */
-  cnt: string;
-}
-
-export interface Pool {
-  name: string;
-  /** fraction of last-24h shares, 0..1 */
-  share: number;
-  /** pool fee, 0..1 */
-  fee: number;
-  type: "decentralized" | "centralized" | "solo";
-  /** recommended in our UI */
-  rec: boolean;
-  /** display hex */
-  color: string;
-}
-
-export type DataSource = "simulated" | "coingecko" | "rpc" | "ws" | "host";
+export type DataSource = "coingecko" | "rpc" | "ws" | "host";
 
 export interface MoneroLive {
   // ── network ──
@@ -86,17 +60,34 @@ export interface MoneroLive {
   /** H/s */
   hashrate: number;
   difficulty: number;
-  nonce: number;
   hardfork: string;
   protocol: string;
   /** target seconds between blocks */
   blockTarget: number;
 
-  // ── pools / peers ──
-  peers: Peer[];
-  peerIn: number;
-  peerOut: number;
-  poolDist: Pool[];
+  // ── node / chain meta (from /api/xmr/network) ──
+  /** daemon version string, e.g. "0.18.3.4" ("" until known) */
+  version: string;
+  /** current hard-fork major version (0 until known) */
+  majorVersion: number;
+  /** fee estimate tiers [slow, normal, fast, fastest] in piconero/B ([] until known) */
+  feeTiers: number[];
+  /** total transactions on chain, all-time */
+  txCountTotal: number;
+  topBlockHash: string;
+  altBlocksCount: number;
+  randomxSeedHash: string;
+  /** dynamic block weight limit in bytes */
+  blockWeightLimit: number;
+  /** median block weight in bytes */
+  blockWeightMedian: number;
+  /** node database size in bytes */
+  databaseSize: number;
+  synchronized: boolean;
+  /** "mainnet" | "testnet" | "stagenet" ("" until known) */
+  nettype: string;
+  /** network-adjusted unix time in seconds */
+  adjustedTime: number;
 
   // ── mempool / chain ──
   mempool: Tx[];
@@ -121,9 +112,16 @@ export interface MoneroLive {
 
   // ── meta ──
   source: DataSource;
+  /** time of the last SUCCESSFUL update (0 until the first one lands) */
   lastUpdate: number;
-  /** true when at least one external data source is reaching us */
+  /** true when the feed is healthy (= ready && !stale) */
   live: boolean;
+  /** first successful chain snapshot has landed — gate chain numbers on this */
+  ready: boolean;
+  /** first successful market (CoinGecko) response has landed — gate prices on this */
+  marketReady: boolean;
+  /** the feed was live, then repeated polls failed — values are last-good */
+  stale: boolean;
 }
 
 // ── helpers ──────────────────────────────────────────────────────

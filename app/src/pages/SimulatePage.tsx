@@ -8,7 +8,7 @@
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
-import { PROTOCOL_VIEWS } from "@/views";
+import { PROTOCOL_VIEWS } from "@/views/protocols";
 import { AppShell } from "@/layout/AppShell";
 import { Crumbs } from "@/design/primitives";
 
@@ -58,3 +58,5 @@ export function SimulatePage() {
     </AppShell>
   );
 }
+
+export default SimulatePage;

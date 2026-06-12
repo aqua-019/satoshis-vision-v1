@@ -5,8 +5,10 @@
 //   4. /mempool?v=classic&block=<real height> opens that block's detail panel
 //   5. Classic & Reactor ribbon tiles carry a transform transition + numeric data-glide-key
 //
-// Run against `npm run preview` (built WITHOUT VITE_LIVE_DATA so the simulated
-// feed runs — deterministic, no network, no WS/fetch console noise):
+// HISTORICAL GATE (pre-v5.0.14): written against the deterministic in-browser
+// seed feed, which no longer exists — the app is all-real now. Kept for the
+// record; the current DOM gate is verify-allreal-dom.mjs. To re-run, mock
+// /api/* at the page level first:
 //   npm run build && (npm run preview &) && sleep 2 && node verify-v508.mjs
 import { webkit, chromium } from "playwright";
 import { existsSync, readdirSync } from "node:fs";

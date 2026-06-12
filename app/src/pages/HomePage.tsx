@@ -46,20 +46,26 @@ export function HomePage() {
           <Card style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
               <div className="kicker">Live · {data.source}</div>
-              <Pill tone="live" dot>SYNCED</Pill>
+              {!data.ready && !data.marketReady
+                ? <Pill>CONNECTING</Pill>
+                : data.stale
+                  ? <Pill tone="warn" dot>STALE · reconnecting</Pill>
+                  : <Pill tone="live" dot>SYNCED</Pill>}
             </div>
             <div>
               <div className="mono dim" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>XMR / USD</div>
-              <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>${data.price.toFixed(2)}</div>
+              <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>{data.marketReady ? `$${data.price.toFixed(2)}` : "—"}</div>
               <div className="mono" style={{ marginTop: 6, fontSize: 12, color: data.change24h >= 0 ? "var(--g-50)" : "var(--r-50)" }}>
-                {data.change24h >= 0 ? "▲" : "▼"} {Math.abs(data.change24h).toFixed(2)}% · 24h
+                {data.marketReady ? <>{data.change24h >= 0 ? "▲" : "▼"} {Math.abs(data.change24h).toFixed(2)}% · 24h</> : "—"}
               </div>
             </div>
-            <Sparkline data={data.priceSeries.slice(-90)} width={420} height={90} />
+            {data.priceSeries.length > 1 && (
+              <Sparkline data={data.priceSeries.slice(-90)} width={420} height={90} />
+            )}
             <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 3, gap: 8 }}>
-              <Stat k="Block height" v={data.height.toLocaleString()} sub="live" tone="acc" />
-              <Stat k="Hashrate" v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} sub="2:00 target" />
-              <Stat k="Mempool" v={`${data.mempool.length} tx`} sub={fmtBytes(memBytes)} />
+              <Stat k="Block height" v={data.ready ? data.height.toLocaleString() : "—"} sub="live" tone="acc" />
+              <Stat k="Hashrate" v={data.ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} sub="2:00 target" />
+              <Stat k="Mempool" v={data.ready ? `${data.mempool.length} tx` : "—"} sub={data.ready ? fmtBytes(memBytes) : "—"} />
             </div>
           </Card>
         </section>
