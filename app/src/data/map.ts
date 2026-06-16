@@ -4,8 +4,9 @@
  * These functions are side-effect-free. They take the raw JSON returned by
  * v4's existing proxies (`/api/monero` get_info, `/api/xmr/*`, `/api/coingecko`)
  * or the relay WebSocket payloads, and fold them onto a previous MoneroLive
- * snapshot — so a field v4 doesn't expose is *carried* from the prior state
- * (ultimately SIM_SEED), never left NaN/undefined. The UI must never flash empty.
+ * snapshot — a field a given response doesn't include is *carried* from the
+ * prior state, never left NaN/undefined. Surfaces gate number rendering on
+ * `data.ready` / `data.marketReady`, so carried boot zeros are never shown.
  *
  * Units honoured exactly (see types.ts):
  *  - mempool/block sizes that v4 gives in BYTES stay bytes; Block.sizeKB is KB
@@ -18,7 +19,7 @@ import type { Block, DataSource, MoneroLive, Tx } from "./types";
 
 /** 1 XMR = 1e12 piconero. */
 const PICO = 1e12;
-/** sparkline series length, matching the simulated seed. */
+/** sparkline series length. */
 const SERIES_CAP = 168;
 /** how many recent blocks the renderers expect (Sediment renders up to this many strata). */
 export const BLOCKS_CAP = 100;
@@ -27,14 +28,29 @@ const nowSec = () => Math.floor(Date.now() / 1000);
 const num = (v: unknown, fallback: number): number =>
   typeof v === "number" && Number.isFinite(v) ? v : fallback;
 
-/** Deterministic [0,1) drawn from a txid so per-tx styling is stable. */
-function hashToUnit(id: string): number {
+/** Deterministic [0,1) drawn from a txid so per-tx styling/positions are stable.
+ *  Exported: visual surfaces use it to derive stable coordinates from real ids. */
+export function hashToUnit(id: string): number {
   let h = 2166136261 >>> 0;
   for (let i = 0; i < id.length; i++) {
     h ^= id.charCodeAt(i);
     h = Math.imul(h, 16777619) >>> 0;
   }
   return (h >>> 8) / (1 << 24);
+}
+
+/** Labels for get_fee_estimate's 4 tiers, slow → fastest. */
+export const FEE_TIER_LABELS = ["slow", "normal", "fast", "fastest"] as const;
+
+/** Classify a real fee rate (piconero/B) against the node's 4 fee tiers.
+ *  Returns 0..3 (slow..fastest), or -1 when tiers are unknown/malformed —
+ *  callers render "—" in that case. */
+export function feeTierIndex(perB: number, tiers: number[]): number {
+  if (!Array.isArray(tiers) || tiers.length !== 4 || !Number.isFinite(perB)) return -1;
+  if (perB < tiers[1]) return 0;
+  if (perB < tiers[2]) return 1;
+  if (perB < tiers[3]) return 2;
+  return 3;
 }
 
 /** Human protocol/hardfork labels keyed off monerod's major_version. */
@@ -65,7 +81,6 @@ interface RpcInfo {
   result?: RpcInfo;
   height?: number;
   difficulty?: number;
-  nonce?: number;
   target?: number;
   top_block_hash?: string;
   major_version?: number;
@@ -78,6 +93,17 @@ interface XmrNetwork {
   target_seconds?: number;
   top_block_hash?: string;
   major_version?: number;
+  version?: string;
+  fee_tiers?: number[];
+  tx_count_total?: number;
+  alt_blocks_count?: number;
+  randomx_seed_hash?: string;
+  block_weight_limit?: number;
+  block_weight_median?: number;
+  database_size?: number;
+  synchronized?: boolean;
+  nettype?: string;
+  adjusted_time?: number;
 }
 
 interface XmrRecentTx {
@@ -115,8 +141,9 @@ interface CgPrice {
 // ── field mappers ───────────────────────────────────────────────────
 
 /** monerod get_info (JSON-RPC `result`) → network/meta fields.
- *  Peer counts are NOT taken from here — the deployed feed has no reliable
- *  peer source, so peerIn/peerOut carry the SIM_SEED values. */
+ *  Peer counts are never mapped — the public-node cascade runs restricted RPC
+ *  (all peer counts read 0, per-peer lists are admin-only), so no peer surface
+ *  exists anywhere in the app. */
 export function mapInfo(raw: RpcInfo, prev: MoneroLive): Partial<MoneroLive> {
   const r = raw.result ?? raw;
   const target = num(r.target, prev.blockTarget);
@@ -125,7 +152,6 @@ export function mapInfo(raw: RpcInfo, prev: MoneroLive): Partial<MoneroLive> {
   return {
     height: num(r.height, prev.height),
     difficulty,
-    nonce: num(r.nonce, prev.nonce),
     blockTarget: target,
     hashrate: target > 0 ? difficulty / target : prev.hashrate,
     hardfork: hardforkLabel(major) ?? prev.hardfork,
@@ -133,9 +159,8 @@ export function mapInfo(raw: RpcInfo, prev: MoneroLive): Partial<MoneroLive> {
   };
 }
 
-/** /api/xmr/network → network fields (complements/falls back to get_info).
- *  hashrate is H/s = hashrate_ghs * 1e9. Peer counts carry SIM_SEED (the
- *  deployed /api/xmr/network does not expose them). */
+/** /api/xmr/network → network + node/chain meta fields (complements get_info).
+ *  hashrate is H/s = hashrate_ghs * 1e9. */
 export function mapNetwork(net: XmrNetwork, prev: MoneroLive): Partial<MoneroLive> {
   const target = num(net.target_seconds, prev.blockTarget);
   const difficulty = num(net.difficulty, prev.difficulty);
@@ -148,6 +173,19 @@ export function mapNetwork(net: XmrNetwork, prev: MoneroLive): Partial<MoneroLiv
     hashrate: Number.isFinite(hashrate) ? hashrate : prev.hashrate,
     hardfork: hardforkLabel(major) ?? prev.hardfork,
     protocol: major ? `v${major}` : prev.protocol,
+    version: net.version || prev.version,
+    majorVersion: num(major, prev.majorVersion),
+    feeTiers: Array.isArray(net.fee_tiers) && net.fee_tiers.length ? net.fee_tiers : prev.feeTiers,
+    txCountTotal: num(net.tx_count_total, prev.txCountTotal),
+    topBlockHash: net.top_block_hash || prev.topBlockHash,
+    altBlocksCount: num(net.alt_blocks_count, prev.altBlocksCount),
+    randomxSeedHash: net.randomx_seed_hash || prev.randomxSeedHash,
+    blockWeightLimit: num(net.block_weight_limit, prev.blockWeightLimit),
+    blockWeightMedian: num(net.block_weight_median, prev.blockWeightMedian),
+    databaseSize: num(net.database_size, prev.databaseSize),
+    synchronized: net.synchronized ?? prev.synchronized,
+    nettype: net.nettype || prev.nettype,
+    adjustedTime: num(net.adjusted_time, prev.adjustedTime),
   };
 }
 
@@ -212,9 +250,6 @@ export function mapBlocks(arr: XmrBlock[], prev: MoneroLive): Partial<MoneroLive
   return { blocks: sorted.slice(0, BLOCKS_CAP).map((b) => toBlock(b, tip)) };
 }
 
-// poolDist[] has no live source on the deployed backend — it always carries
-// the SIM_SEED pool distribution (see mapToMoneroLive: it is never overwritten).
-
 /** /api/coingecko (simple/price) → market fields + appended priceSeries. */
 export function mapMarket(cg: CgPrice, prev: MoneroLive): Partial<MoneroLive> {
   const xmr = cg.monero?.usd;
@@ -245,9 +280,9 @@ export interface SnapshotSources {
  * Fold a polled snapshot onto the previous MoneroLive state.
  *
  * Only the sources that actually returned are applied; everything else is
- * carried from `prev` — peers[], poolDist[], peerIn, peerOut have no live
- * source on the deployed backend, so they always carry the SIM_SEED values.
- * `source`/`live` are set by the caller to stay truthful at each degrade step.
+ * carried from `prev`. This sets `source`/`live`/`lastUpdate`; the feed hook
+ * spreads `ready`/`marketReady`/`stale` AFTER this result so the meta flags
+ * stay truthful at every degrade step.
  */
 export function mapToMoneroLive(prev: MoneroLive, src: SnapshotSources, source: DataSource): MoneroLive {
   let next: MoneroLive = { ...prev };

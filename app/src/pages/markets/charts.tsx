@@ -124,7 +124,7 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
   const [cross, setCross] = React.useState<number | null>(null);
 
   if (!candles?.length) return null;
-  const sim = status === "sim";
+  const stale = status === "stale";
   const W = VB_W;
   const padL = 54, padR = 66, padT = 14;
   const volH = Math.max(28, Math.round(height * 0.16));
@@ -198,7 +198,7 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
       <text x={padL + 4} y={py(avg) - 4} fontFamily="var(--f-mono)" fontSize="9.5" fill={AXIS}>avg {fmtPrice(avg)}</text>
 
       {/* candles */}
-      <g opacity={sim ? 0.5 : 1}>
+      <g opacity={stale ? 0.5 : 1}>
         {candles.map((c, i) => {
           const up = c.c >= c.o;
           const x = cx(i);
@@ -216,7 +216,7 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
       {/* volume sub-bars (aligned 1:1 under candles) */}
       <line x1={padL} y1={volTop + volH} x2={padL + innerW} y2={volTop + volH} stroke={GRID} />
       <text x={padL - 8} y={volTop + 9} textAnchor="end" fontFamily="var(--f-mono)" fontSize="8.5" fill={AXIS}>VOL</text>
-      <g opacity={sim ? 0.35 : 0.55}>
+      <g opacity={stale ? 0.35 : 0.55}>
         {candles.map((c, i) => {
           if (!c.v) return null;
           const up = c.c >= c.o;
@@ -247,8 +247,8 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
         </text>
       </g>
 
-      {sim ? (
-        <text x={W / 2} y={padT + priceH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">SIM</text>
+      {stale ? (
+        <text x={W / 2} y={padT + priceH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
       ) : null}
 
       {/* crosshair + readout */}
@@ -336,15 +336,15 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
         const pts = s.n.map((v, i) => [xOf(i, len), y(v)] as [number, number]);
         const line = smoothPath(pts);
         const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
-        const isSim = s.status === "sim";
+        const isStale = s.status === "stale";
         const lastV = s.n[len - 1];
         return (
-          <g key={si} opacity={isSim ? 0.6 : 1}>
+          <g key={si} opacity={isStale ? 0.6 : 1}>
             <path d={area} fill={`url(#ml-grad-${si})`} stroke="none" />
-            <path d={line} fill="none" stroke={s.color} strokeWidth={isSim ? 1.1 : 1.5} strokeDasharray={isSim ? "4 3" : undefined} style={{ filter: `drop-shadow(0 0 2px ${s.color})` }} />
+            <path d={line} fill="none" stroke={s.color} strokeWidth={isStale ? 1.1 : 1.5} strokeDasharray={isStale ? "4 3" : undefined} style={{ filter: `drop-shadow(0 0 2px ${s.color})` }} />
             {labels ? (
               <text x={padL + innerW + 5} y={y(lastV) + 3} fontFamily="var(--f-mono)" fontSize="10" fill={s.color}>
-                {s.label} {(lastV >= 0 ? "+" : "") + lastV.toFixed(1)}%{isSim ? " ·sim" : ""}
+                {s.label} {(lastV >= 0 ? "+" : "") + lastV.toFixed(1)}%{isStale ? " ·stale" : ""}
               </text>
             ) : null}
           </g>
@@ -373,8 +373,8 @@ export interface AreaSeriesProps {
   format?: (v: number) => string;
   /** "auto" = tight min/max ±8% pad; "zero" = include 0. */
   baseline?: "auto" | "zero";
-  /** dim + "SIM" watermark, mirroring CandleChart's sim treatment. */
-  sim?: boolean;
+  /** dim + "STALE" watermark, mirroring CandleChart's stale treatment. */
+  stale?: boolean;
   /** subtle high/low dot markers on the line. */
   markers?: boolean;
   /** x-axis date labels. */
@@ -389,7 +389,7 @@ export function AreaSeries({
   color = "var(--tk-accent)",
   format = (v) => String(Math.round(v)),
   baseline = "auto",
-  sim = false,
+  stale = false,
   markers = true,
   xLabels = true,
 }: AreaSeriesProps) {
@@ -480,7 +480,7 @@ export function AreaSeries({
       ) : null)) : null}
 
       {/* area + line */}
-      <g opacity={sim ? 0.5 : 1}>
+      <g opacity={stale ? 0.5 : 1}>
         <path d={area} fill={`url(#${gradId})`} stroke="none" />
         <path d={line} fill="none" stroke={color} strokeWidth="1.6" style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
       </g>
@@ -511,8 +511,8 @@ export function AreaSeries({
         </g>
       ) : null}
 
-      {sim ? (
-        <text x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">SIM</text>
+      {stale ? (
+        <text x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
       ) : null}
 
       {/* crosshair + readout */}
@@ -549,7 +549,7 @@ export interface BarSeriesProps {
   color?: string;
   format?: (v: number) => string;
   baseline?: "auto" | "zero";
-  sim?: boolean;
+  stale?: boolean;
   /** optional on-chart vertical marker at a fractional bucket index (e.g. the
    *  median fee bucket). Drawn at the center of bucket `index`. */
   marker?: { index: number; label?: string };
@@ -565,7 +565,7 @@ export function BarSeries({
   color = "var(--p-50)",
   format = (v) => String(Math.round(v)),
   baseline = "zero",
-  sim = false,
+  stale = false,
   marker,
 }: BarSeriesProps) {
   const reduced = useReducedMotion();
@@ -635,7 +635,7 @@ export function BarSeries({
       ) : null)) : null}
 
       {/* bars */}
-      <g opacity={sim ? 0.5 : 1}>
+      <g opacity={stale ? 0.5 : 1}>
         {data.map((v, i) => {
           const y = py(v);
           const h = Math.max(0, baseY - y);
@@ -666,8 +666,8 @@ export function BarSeries({
         );
       })() : null}
 
-      {sim ? (
-        <text x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">SIM</text>
+      {stale ? (
+        <text x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
       ) : null}
 
       {/* hover readout */}

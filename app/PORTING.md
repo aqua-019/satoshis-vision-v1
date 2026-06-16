@@ -26,7 +26,8 @@ function useHostFeed(): MoneroLive {
 ```
 
 Anywhere your runtime already has a Monero data layer, this is where it
-plugs in. The simulated feed is dead-weight in production.
+plugs in. The default feed (`xmrirish-feed.ts`) polls same-origin
+`/api/*` proxies — supply `useFeed` to replace it.
 
 ### 2. Routing (`@/App`)
 
@@ -145,6 +146,6 @@ For .onion / static-only hosts, swap `BrowserRouter` → `HashRouter` in
 - **Edit mode wiring** — same reason.
 - **Service workers / offline cache** — host's responsibility.
 - **Analytics** — Monero is a privacy site. None.
-- **CoinGecko in production** — yes for the simulated feed, but your
-  `useFeed` hook should proxy it through your edge so users on Tor
-  don't hit `coingecko.com` directly.
+- **CoinGecko in production** — the default feed reaches it only via
+  the same-origin `/api/coingecko` proxy; a custom `useFeed` hook
+  should do the same so users on Tor never hit `coingecko.com` directly.

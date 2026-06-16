@@ -6,9 +6,12 @@
  * through the same-origin /api/coingecko proxy (privacy invariant: the browser
  * never touches the CoinGecko API host directly, no third-party chart libs).
  *
- * Real series are labelled "live"; any series whose fetch fails falls back to a
- * synthetic random-walk for THAT series only, labelled "sim". Never blank — the
- * initial state is a non-empty loading skeleton.
+ * No synthesis, ever. Each series is:
+ *   "live"    — the fetch succeeded this session;
+ *   "stale"   — the fetch failed, showing the last-good response from the
+ *               localStorage cache (≤7 days old) with a STALE badge;
+ *   "loading" — no data yet (first visit + fetch failing); charts render their
+ *               empty state and the hook keeps retrying every 45 s.
  */
 
 import * as React from "react";
@@ -24,7 +27,7 @@ export interface Candle {
   v: number;
 }
 
-export type SeriesStatus = "live" | "sim" | "loading";
+export type SeriesStatus = "live" | "stale" | "loading";
 
 export interface SeriesResult<T> {
   data: T;
@@ -60,16 +63,6 @@ export interface MarketHistory {
 export const RANGE_DAYS = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365 } as const;
 export type RangeKey = keyof typeof RANGE_DAYS;
 
-/** Live spot prices threaded in from the consumer (useMoneroLive) so a transient
- *  CoinGecko failure seeds the synthetic fallback near the real price, not a stale
- *  hardcoded baseline. All optional — omit and the SYNTH_ANCHOR defaults apply. */
-export interface SpotSeed { xmrUsd?: number; xmrBtc?: number; btcUsd?: number }
-
-/** Use a live spot as the synthetic seed when it's a usable positive number,
- *  otherwise fall back to the hardcoded anchor. */
-export const seedOr = (v: number | undefined, fallback: number): number =>
-  (typeof v === "number" && isFinite(v) && v > 0 ? v : fallback);
-
 /* ── granularity helpers (mirror CoinGecko's ohlc buckets) ─────────── */
 
 /** Label for the candle granularity CoinGecko returns at a given range. */
@@ -79,58 +72,74 @@ function granLabel(days: number): string {
   return "4d";
 }
 
-/** Approximate candle count for a range — used to size synthetic fallbacks. */
-function synthCount(days: number): number {
-  if (days <= 1) return 48;        // 30m
-  if (days <= 30) return days * 6; // 4h  → 7d≈42, 30d≈180
-  return Math.ceil(days / 4);      // 4d  → 90d≈23, 365d≈92
+/* ── last-good cache (localStorage; survives reloads/outages) ──────── */
+
+export const LS_PREFIX = "mh:v1:";
+/** Entries older than this are treated as absent — a week-old chart is no
+ *  longer a useful stand-in. */
+export const LS_MAX_AGE_MS = 7 * 86_400_000;
+
+export interface CachedSeries<T> {
+  at: number;
+  data: T;
 }
 
-/* ── synthetic fallback (per-series, only on failure) ──────────────── */
+export const cacheKey = (kind: string, coin: string, vs: string, days: number): string =>
+  `${LS_PREFIX}${kind}|${coin}|${vs}|${days}`;
 
-const SYNTH_ANCHOR: Record<string, [start: number, vol: number]> = {
-  monero: [160, 4],
-  bitcoin: [60000, 1500],
-  zcash: [30, 0.9],
-  dash: [25, 0.9],
-  "pirate-chain": [0.18, 0.008],
-  ethereum: [2800, 75],
-  solana: [145, 6],
-  binancecoin: [580, 18],
-  ripple: [2.4, 0.15],
-  cardano: [0.62, 0.04],
-};
+type ReadableStore = Pick<Storage, "getItem">;
+type WritableStore = Pick<Storage, "setItem">;
 
-/** Synthetic OHLC random-walk, timestamps spread across `days`. */
-export function genCandles(n: number, start: number, vol: number, days: number): Candle[] {
-  const out: Candle[] = [];
-  let p = start;
-  const now = Date.now();
-  const stepMs = (days * 86_400_000) / Math.max(1, n);
-  for (let i = 0; i < n; i++) {
-    const drift = (Math.random() - 0.48) * vol;
-    const o = p;
-    const c = Math.max(0.0001, p + drift);
-    const range = Math.abs(drift) + vol * 0.5;
-    const h = Math.max(o, c) + Math.random() * range;
-    const l = Math.min(o, c) - Math.random() * range;
-    out.push({ t: now - (n - i) * stepMs, o, h, l, c, v: 1e6 * (0.5 + Math.random() * 1.4) });
-    p = c;
+/** Parse a cached entry; corrupt JSON, wrong shape, or expiry all → null. */
+export function readCache<T>(store: ReadableStore | null, key: string, now = Date.now()): CachedSeries<T> | null {
+  if (!store) return null;
+  try {
+    const raw = store.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as CachedSeries<T>;
+    if (typeof parsed?.at !== "number" || parsed.data == null) return null;
+    if (now - parsed.at > LS_MAX_AGE_MS) return null;
+    return parsed;
+  } catch {
+    return null;
   }
-  return out;
 }
 
-export function simCandles(days: number, start?: number): Candle[] {
-  const [s, v] = SYNTH_ANCHOR.monero;
-  return genCandles(synthCount(days), seedOr(start, s), v, days);
+/** Write a cached entry; quota/private-mode failures are swallowed. */
+export function writeCache<T>(store: WritableStore | null, key: string, data: T, now = Date.now()): void {
+  if (!store) return;
+  try {
+    store.setItem(key, JSON.stringify({ at: now, data }));
+  } catch {
+    /* quota exceeded / private mode — cache is best-effort */
+  }
 }
 
-export function simLineData(coin: string, days: number, start?: number): number[] {
-  const [s, v] = SYNTH_ANCHOR[coin] ?? [100, 3];
-  return genCandles(synthCount(days), seedOr(start, s), v, days).map((c) => c.c);
+function safeStore(): Storage | null {
+  try {
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
+  }
 }
 
-/* ── in-memory cache (module scope; survives strict-mode remount) ───── */
+/** In-memory last-good values (survive within the session even if localStorage
+ *  is unavailable). Keyed identically to the localStorage entries. */
+const lastGood = new Map<string, unknown>();
+
+function keep<T>(key: string, data: T): T {
+  lastGood.set(key, data);
+  writeCache(safeStore(), key, data);
+  return data;
+}
+
+function recall<T>(key: string): T | null {
+  if (lastGood.has(key)) return lastGood.get(key) as T;
+  const hit = readCache<T>(safeStore(), key);
+  return hit ? hit.data : null;
+}
+
+/* ── in-memory promise cache (module scope; survives strict-mode remount) ── */
 
 interface CacheEntry { promise: Promise<unknown>; at: number }
 const CACHE = new Map<string, CacheEntry>();
@@ -188,10 +197,6 @@ function attachVolume(candles: Candle[], volumes: [number, number][]): Candle[] 
   });
 }
 
-function lineOf(label: string, color: string, prices: [number, number][], status: SeriesStatus): LineSeries {
-  return { label, color, status, data: prices.map((p) => p[1]), t: prices.map((p) => p[0]) };
-}
-
 /* ── coin groups (label, CoinGecko id, color) ──────────────────────── */
 
 type CoinDef = readonly [label: string, id: string, color: string];
@@ -215,64 +220,95 @@ const TOP_GROUP: readonly CoinDef[] = [
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
+interface CachedLine { data: number[]; t?: number[] }
+
 /** Fetch a group's market_chart lines, staggered to respect CG free-tier; each
- *  id that fails becomes its own "sim" line. */
+ *  id that fails falls back to ITS OWN last-good cache ("stale"), or an empty
+ *  "loading" line when no cache exists. */
 async function fetchGroup(ids: readonly CoinDef[], vs: string, days: number, startDelay = 0): Promise<LineSeries[]> {
   if (startDelay) await sleep(startDelay);
   const out: LineSeries[] = [];
   for (let i = 0; i < ids.length; i++) {
     const [label, id, color] = ids[i];
+    const key = cacheKey("chart", id, vs, days);
     if (i > 0) await sleep(250);
     try {
       const { prices } = await fetchChart(id, vs, days);
-      out.push(lineOf(label, color, prices, "live"));
+      const line: CachedLine = { data: prices.map((p) => p[1]), t: prices.map((p) => p[0]) };
+      keep(key, line);
+      out.push({ label, color, status: "live", ...line });
     } catch {
-      out.push({ label, color, status: "sim", data: simLineData(id, days) });
+      const hit = recall<CachedLine>(key);
+      out.push(hit
+        ? { label, color, status: "stale", ...hit }
+        : { label, color, status: "loading", data: [] });
     }
   }
   return out;
 }
 
-function groupStatus(g: LineSeries[]): SeriesStatus {
-  return g.some((s) => s.status === "live") ? "live" : "sim";
+/** "live" if anything is live; else "stale" if anything has last-good data;
+ *  else still loading. */
+export function groupStatus(g: { status: SeriesStatus }[]): SeriesStatus {
+  if (g.some((s) => s.status === "live")) return "live";
+  if (g.some((s) => s.status === "stale")) return "stale";
+  return "loading";
 }
 
-function initialGroup(ids: readonly CoinDef[], days: number): LineSeries[] {
-  return ids.map(([label, id, color]) => ({ label, color, status: "loading" as SeriesStatus, data: simLineData(id, days) }));
+function hydrate<T>(key: string, empty: T, gl: string): SeriesResult<T> {
+  const hit = recall<T>(key);
+  return hit
+    ? { data: hit, status: "stale", granularityLabel: gl }
+    : { data: empty, status: "loading", granularityLabel: gl };
 }
 
-function initialHistory(days: number, spot?: SpotSeed): MarketHistory {
+function initialHistory(days: number): MarketHistory {
   const gl = granLabel(days);
+  const lines = (ids: readonly CoinDef[]): SeriesResult<LineSeries[]> => {
+    const data = ids.map(([label, id, color]): LineSeries => {
+      const hit = recall<CachedLine>(cacheKey("chart", id, "usd", days));
+      return hit
+        ? { label, color, status: "stale", ...hit }
+        : { label, color, status: "loading", data: [] };
+    });
+    return { data, status: groupStatus(data), granularityLabel: gl };
+  };
   return {
     loading: true,
     days,
-    xmrCandles: { data: simCandles(days, spot?.xmrUsd), status: "loading", granularityLabel: gl },
-    xmrBtc: { data: genCandles(synthCount(days), seedOr(spot?.xmrBtc, 0.0035), 0.00008, days).map((c) => c.c), status: "loading", granularityLabel: gl },
-    btcLine: { data: simLineData("bitcoin", days, spot?.btcUsd), status: "loading", granularityLabel: gl },
-    peers: { data: initialGroup(PEER_GROUP, days), status: "loading", granularityLabel: gl },
-    top: { data: initialGroup(TOP_GROUP, days), status: "loading", granularityLabel: gl },
+    xmrCandles: hydrate<Candle[]>(cacheKey("ohlc", "monero", "usd", days), [], gl),
+    xmrBtc: hydrate<number[]>(cacheKey("ratio", "monero", "btc", days), [], gl),
+    btcLine: hydrate<number[]>(cacheKey("line", "bitcoin", "usd", days), [], gl),
+    peers: lines(PEER_GROUP),
+    top: lines(TOP_GROUP),
   };
 }
 
 /* ── the hook ──────────────────────────────────────────────────────── */
 
-export function useMarketHistory(days: number, spot?: SpotSeed): MarketHistory {
-  // Keep the latest spot readable inside the effect WITHOUT adding it to the deps —
-  // spot ticks every couple seconds, and re-running the effect would flash the
-  // skeleton and re-issue fetches. The catch handlers read spotRef at failure time.
-  const spotRef = React.useRef(spot);
-  spotRef.current = spot;
-  const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days, spot));
+/** How long after a non-fully-live settle before refetching. */
+const RETRY_MS = 45_000;
+
+export function useMarketHistory(days: number): MarketHistory {
+  const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days));
+  const [retryNonce, setRetryNonce] = React.useState(0);
+  const lastDaysRef = React.useRef(days);
 
   React.useEffect(() => {
     let alive = true;
     const gl = granLabel(days);
-    setState(initialHistory(days, spotRef.current)); // reset skeleton for the new range
+    // Reset to the (cache-hydrated) skeleton only when the RANGE changes;
+    // retry runs keep whatever is on screen and upgrade series in place.
+    if (lastDaysRef.current !== days) {
+      lastDaysRef.current = days;
+      setState(initialHistory(days));
+    }
     const set = (patch: Partial<MarketHistory>) => {
       if (alive) setState((s) => ({ ...s, ...patch }));
     };
 
     // XMR/USD candles + aligned volume
+    const kCandles = cacheKey("ohlc", "monero", "usd", days);
     const pCandles = (async () => {
       try {
         const [candles, chart] = await Promise.all([
@@ -281,21 +317,31 @@ export function useMarketHistory(days: number, spot?: SpotSeed): MarketHistory {
             (): ChartData => ({ prices: [], volumes: [] }),
           ),
         ]);
-        set({ xmrCandles: { data: attachVolume(candles, chart.volumes), status: "live", granularityLabel: gl } });
+        set({ xmrCandles: { data: keep(kCandles, attachVolume(candles, chart.volumes)), status: "live", granularityLabel: gl } });
       } catch {
-        set({ xmrCandles: { data: simCandles(days, spotRef.current?.xmrUsd), status: "sim", granularityLabel: gl } });
+        const hit = recall<Candle[]>(kCandles);
+        if (hit) set({ xmrCandles: { data: hit, status: "stale", granularityLabel: gl } });
+        // no cache → leave the current (loading) entry; the retry timer re-runs us
       }
     })();
 
     // XMR/BTC ratio
+    const kRatio = cacheKey("ratio", "monero", "btc", days);
     const pBtc = fetchChart("monero", "btc", days)
-      .then((r) => set({ xmrBtc: { data: r.prices.map((p) => p[1]), status: "live", granularityLabel: gl } }))
-      .catch(() => set({ xmrBtc: { data: genCandles(synthCount(days), seedOr(spotRef.current?.xmrBtc, 0.0035), 0.00008, days).map((c) => c.c), status: "sim", granularityLabel: gl } }));
+      .then((r) => set({ xmrBtc: { data: keep(kRatio, r.prices.map((p) => p[1])), status: "live", granularityLabel: gl } }))
+      .catch(() => {
+        const hit = recall<number[]>(kRatio);
+        if (hit) set({ xmrBtc: { data: hit, status: "stale", granularityLabel: gl } });
+      });
 
     // BTC/USD line
+    const kBtcLine = cacheKey("line", "bitcoin", "usd", days);
     const pBtcLine = fetchChart("bitcoin", "usd", days)
-      .then((r) => set({ btcLine: { data: r.prices.map((p) => p[1]), status: "live", granularityLabel: gl } }))
-      .catch(() => set({ btcLine: { data: simLineData("bitcoin", days, spotRef.current?.btcUsd), status: "sim", granularityLabel: gl } }));
+      .then((r) => set({ btcLine: { data: keep(kBtcLine, r.prices.map((p) => p[1])), status: "live", granularityLabel: gl } }))
+      .catch(() => {
+        const hit = recall<number[]>(kBtcLine);
+        if (hit) set({ btcLine: { data: hit, status: "stale", granularityLabel: gl } });
+      });
 
     // peer + top groups, staggered (top delayed to ease free-tier rate caps)
     const pPeers = fetchGroup(PEER_GROUP, "usd", days, 0).then((d) =>
@@ -308,7 +354,18 @@ export function useMarketHistory(days: number, spot?: SpotSeed): MarketHistory {
     });
 
     return () => { alive = false; };
-  }, [days]);
+  }, [days, retryNonce]);
+
+  // While anything is not yet "live", schedule a quiet refetch. The timer
+  // re-arms off `state` (each settle re-runs this effect) and is cleaned up on
+  // unmount/range change, so StrictMode double-mount can't double-fire it.
+  React.useEffect(() => {
+    if (state.loading) return;
+    const statuses = [state.xmrCandles.status, state.xmrBtc.status, state.btcLine.status, state.peers.status, state.top.status];
+    if (statuses.every((s) => s === "live")) return;
+    const id = setTimeout(() => setRetryNonce((n) => n + 1), RETRY_MS);
+    return () => clearTimeout(id);
+  }, [state]);
 
   return state;
 }

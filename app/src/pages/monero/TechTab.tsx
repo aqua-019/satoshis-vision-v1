@@ -27,7 +27,7 @@ function EmissionCurve() {
   const W = 900, H = 220;
   const padL = 40, padR = 20, padT = 14, padB = 30;
   const innerW = W - padL - padR, innerH = H - padT - padB;
-  // 100 years of simulated emission curve
+  // 100 years of emission computed from the protocol's emission formula
   const years = 100;
   const pts: Array<{ y: number; supply: number; emit: number }> = [];
   let supply = 0;

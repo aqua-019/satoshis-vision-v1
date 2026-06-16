@@ -1,27 +1,29 @@
 /**
  * pages/_education/EduSimulators.tsx — /education/simulators
  *
- * Cards for every protocol simulator in the registry. READS the PROTOCOL_VIEWS
- * registry (split into primitives + metaphors) READ-ONLY and links each card to
- * /simulate?p=<id>. Tone color per p.tone (priv = purple, else orange).
+ * Cards for every protocol simulator. READS the pure-data meta arrays from
+ * views/protocol-meta.ts (split into primitives + metaphors) READ-ONLY and
+ * links each card to /simulate?p=<id> — it never imports the simulator
+ * components themselves, so @/protocols/* stays out of this chunk. Tone color
+ * per p.tone (priv = purple, else orange).
  */
 
 import * as React from "react";
 import { PageHeader } from "@/layout/AppShell";
 import { Card } from "@/design/primitives";
-import { PROTOCOL_PRIMITIVES, PROTOCOL_METAPHORS, type ProtocolMeta } from "@/views";
+import { PROTOCOL_PRIMITIVES_META, PROTOCOL_METAPHORS_META, type ProtocolMetaBase } from "@/views/protocol-meta";
 
 export interface EduSimulatorsProps {
   navigate: (to: string) => void;
 }
 
-const GROUPS: { group: string; items: ProtocolMeta[] }[] = [
-  { group: "Privacy primitives", items: PROTOCOL_PRIMITIVES },
-  { group: "Metaphors & economics", items: PROTOCOL_METAPHORS },
+const GROUPS: { group: string; items: ProtocolMetaBase[] }[] = [
+  { group: "Privacy primitives", items: PROTOCOL_PRIMITIVES_META },
+  { group: "Metaphors & economics", items: PROTOCOL_METAPHORS_META },
 ];
 
 export function EduSimulators({ navigate }: EduSimulatorsProps) {
-  const total = PROTOCOL_PRIMITIVES.length + PROTOCOL_METAPHORS.length;
+  const total = PROTOCOL_PRIMITIVES_META.length + PROTOCOL_METAPHORS_META.length;
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 26 }}>
       <div className="edu-head">

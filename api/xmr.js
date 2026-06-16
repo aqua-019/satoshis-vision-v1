@@ -346,10 +346,11 @@ async function handleTx(txid) {
 }
 
 async function handleNetwork() {
-  const [info, feeEst, minerData] = await Promise.all([
+  const [info, feeEst, minerData, hardFork] = await Promise.all([
     rpc('get_info'),
     rpc('get_fee_estimate'),
     rpc('get_miner_data'),
+    rpc('hard_fork_info'),
   ]);
   if (!info) return null;
   return {
@@ -367,9 +368,15 @@ async function handleNetwork() {
     top_block_hash: info.top_block_hash || '',
     alt_blocks_count: info.alt_blocks_count || 0,
     version: info.version || '0.18.3.4',
-    major_version: 16,
+    // hard_fork_info is the authoritative source; 16 (current mainnet fork) only
+    // covers the rare case where every node's hard_fork_info call failed.
+    major_version: hardFork?.version || 16,
     fee_tiers: feeEst?.fees || [20000, 80000, 320000, 4000000],
     randomx_seed_hash: minerData?.seed_hash || '',
+    database_size: info.database_size || 0,
+    synchronized: !!info.synchronized,
+    nettype: info.nettype || 'mainnet',
+    adjusted_time: info.adjusted_time || 0,
   };
 }
 

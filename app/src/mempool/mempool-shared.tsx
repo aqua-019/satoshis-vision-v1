@@ -29,24 +29,36 @@ type Tracking =
 // user a per-second signal the feed is alive. `useTick(1000)` re-renders it each
 // second to advance "updated Ns ago"; the LED is keyed on `lastUpdate` so it
 // remounts (replaying the one-shot `mp-beat` flash) exactly when a new poll lands,
-// not every second. Shows SIM when no external source is reaching us.
+// not every second. Three states: CONNECTING… (no node snapshot yet), STALE
+// (feed was live then polls started failing — values shown are last-good), and
+// LIVE (healthy feed).
 export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
   useTick(1000);
-  const live = data.live;
   const ageSec = Math.max(0, Math.round((Date.now() - data.lastUpdate) / 1000));
+  if (!data.ready) {
+    return (
+      <span className="pill" title="Waiting for the first node snapshot">
+        <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+        CONNECTING…
+      </span>
+    );
+  }
+  if (data.stale) {
+    return (
+      <span className="pill" title={`Last good snapshot ${ageSec}s ago · retrying every 2.5s`}>
+        <span className="led" style={{ background: "var(--y-50)", boxShadow: "0 0 6px var(--y-50)" }} />
+        STALE · reconnecting
+      </span>
+    );
+  }
   return (
-    <span
-      className={"pill" + (live ? " live" : "")}
-      title={live ? "Feed polling ~every 2.5s · source: " + data.source : "Showing seed data — no external source reaching the browser"}
-    >
+    <span className="pill live" title={"Feed polling ~every 2.5s · source: " + data.source}>
       <span
         key={data.lastUpdate}
         className="led"
-        style={live
-          ? { animation: "mp-beat 0.5s ease-out" }
-          : { background: "var(--ink-40)", boxShadow: "none" }}
+        style={{ animation: "mp-beat 0.5s ease-out" }}
       />
-      {live ? <>LIVE · updated {ageSec}s ago</> : "SIM"}
+      LIVE · updated {ageSec}s ago
     </span>
   );
 }

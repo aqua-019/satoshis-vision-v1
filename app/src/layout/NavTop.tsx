@@ -71,20 +71,32 @@ export function NavTop() {
       </nav>
 
       <div className="ticker-strip">
-        <span className="pill live">
-          <span className="led pulse" />
-          {data.source === "rpc" || data.source === "ws" ? "LIVE" : "SIM"}
-        </span>
+        {!data.ready && !data.marketReady ? (
+          <span className="pill">
+            <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+            CONNECTING
+          </span>
+        ) : data.stale ? (
+          <span className="pill">
+            <span className="led pulse" style={{ background: "var(--y-50)" }} />
+            STALE · reconnecting
+          </span>
+        ) : (
+          <span className="pill live">
+            <span className="led pulse" />
+            LIVE
+          </span>
+        )}
         <span className="tk dim">
-          XMR <b className="acc">${data.price.toFixed(2)}</b>
+          XMR <b className="acc">{data.marketReady ? `$${data.price.toFixed(2)}` : "—"}</b>
           <em className={data.change24h < 0 ? "dn" : ""}>
-            {data.change24h >= 0 ? "+" : ""}{data.change24h.toFixed(2)}%
+            {data.marketReady ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}%` : "—"}
           </em>
         </span>
         <span className="tk dim tk--btc">
-          BTC <b>${Math.round(data.btc).toLocaleString()}</b>
+          BTC <b>{data.marketReady ? `$${Math.round(data.btc).toLocaleString()}` : "—"}</b>
           <em className={data.btcChg < 0 ? "dn" : ""}>
-            {data.btcChg >= 0 ? "+" : ""}{data.btcChg.toFixed(2)}%
+            {data.marketReady ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
           </em>
         </span>
       </div>

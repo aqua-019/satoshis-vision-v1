@@ -1,7 +1,7 @@
 // mempool/tx-detail.tsx — full-fidelity Monero transaction + block inspectors,
 // driven by REAL node data (api/xmr.js → monerod get_transactions / get_block /
-// get_outs). Every figure on screen is either real from the node or explicitly
-// labelled "illustrative". Amounts are hidden by RingCT and are never a number.
+// get_outs). Every figure on screen comes from the node. Amounts are hidden by
+// RingCT and are never a number.
 //
 // Confirmations come from the ONE accessor `confOf` (mempool/conf.ts), fed the
 // REAL block height the node reports — so a txid copied into a public explorer
@@ -75,18 +75,6 @@ function PrivacyBadges() {
       fontFamily: "var(--f-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
     }}>{b}</span>
   ));
-}
-
-/** A small banner marking a block of content as illustrative / not a node figure. */
-function IllustrativeNote({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mono" style={{ fontSize: 10.5, color: "var(--ink-40)", letterSpacing: "0.04em",
-      border: "1px dashed var(--ink-20)", borderRadius: 3, padding: "6px 10px", marginBottom: 10,
-      display: "flex", alignItems: "center", gap: 8 }}>
-      <span style={{ color: "var(--ink-60)" }}>ⓘ ILLUSTRATIVE</span>
-      <span style={{ color: "var(--ink-60)" }}>{children}</span>
-    </div>
-  );
 }
 
 const BackBtn = ({ onBack }: { onBack?: () => void }) => onBack ? (
@@ -397,9 +385,19 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
         </div>
       </Section>
 
-      {/* Proofs — explanatory only; the byte-sizes are NOT node figures */}
-      <Section title="Cryptographic proofs" kicker="Verified on-chain · illustrative">
-        <IllustrativeNote>concept cards — the node RPC does not break out per-proof byte sizes</IllustrativeNote>
+      {/* Proof system — real per-tx fields from the node, plus concept cards
+          explaining the proof components (the node RPC does not break out
+          per-proof byte sizes, so none are shown). */}
+      <Section title="Proof system" kicker="On-chain components">
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 24, marginBottom: 14 }}>
+          <DKV k="rct_type" v={tx.rctTypeLabel} tone="purple" />
+          <DKV k="ring_size" v={tx.ringSize} />
+          <DKV k="tx_version" v={"v" + tx.version} />
+          <DKV k="inputs / outputs" v={tx.inputs.length + " / " + tx.outputs.length} />
+          <DKV k="size" v={tx.sizeBytes != null ? tx.sizeBytes.toLocaleString() + " B" : "—"} />
+          <DKV k="fee_rate" v={tx.feePerB != null ? tx.feePerB.toFixed(2) + " pcn/B" : "—"} />
+          <DKV k="view_tags" v={tx.outputs[0]?.viewTag ? "✓ present" : "—"} tone={tx.outputs[0]?.viewTag ? "acc" : "dim"} />
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">CLSAG · ring signature</div>

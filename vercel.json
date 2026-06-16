@@ -5,7 +5,7 @@
   "public": true,
   "trailingSlash": false,
   "installCommand": "cd app && npm ci",
-  "buildCommand": "cd app && VITE_LIVE_DATA=1 npm run build",
+  "buildCommand": "cd app && npm run build",
   "outputDirectory": "app/dist",
   "headers": [
     { "source": "/(.*)", "headers": [

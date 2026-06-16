@@ -16,9 +16,12 @@ import { MarketsPage } from "@/pages/MarketsPage";
 import { NetworkPage } from "@/pages/NetworkPage";
 import { EducationPage } from "@/pages/EducationPage";
 import { MoneroPage } from "@/pages/MoneroPage";
-import { SimulatePage } from "@/pages/SimulatePage";
 import { NodePage } from "@/pages/NodePage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
+
+// Lazy-loaded: /simulate pulls in all of @/protocols/** (the 15 educational
+// simulators), which Vite splits into its own chunk via this dynamic import.
+const SimulatePage = React.lazy(() => import("@/pages/SimulatePage"));
 
 export interface AppProps {
   /** Swap in your own MoneroLive hook from the host runtime. */
@@ -38,7 +41,7 @@ export function App({ useFeed }: AppProps = {}) {
         <Route path="/education/:tab" element={<EducationPage />} />
         <Route path="/monero"    element={<MoneroPage />} />
         <Route path="/monero/:tab" element={<MoneroPage />} />
-        <Route path="/simulate"  element={<SimulatePage />} />
+        <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
         <Route path="/node"      element={<NodePage />} />
         <Route path="*"          element={<NotFoundPage />} />
       </Routes>

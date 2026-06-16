@@ -1,12 +1,14 @@
 /**
  * layout/NetRail.tsx — persistent left-rail telemetry.
- * Shows network, local-node, peers (top 10), and a market block.
+ * Shows network, remote-node, fee-tier, and market blocks — all real data
+ * from the node / CoinGecko. Values render "—" until the feed is ready.
  */
 
 import * as React from "react";
 import { useMoneroLive } from "@/data/DataContext";
 import { Sparkline } from "@/design/primitives";
-import { fmtBytes } from "@/data/types";
+import { fmtBytes, fmtN, shortHash } from "@/data/types";
+import { FEE_TIER_LABELS } from "@/data/map";
 
 export interface NetRailProps {
   /** Optional extra blocks to render below the standard set. */
@@ -16,59 +18,73 @@ export interface NetRailProps {
 export function NetRail({ extra }: NetRailProps) {
   const data = useMoneroLive();
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
+  const ready = data.ready;
+  const t = data.blockTarget;
+  const tiers = data.feeTiers;
   return (
     <aside className="rail">
       <div className="rail-block">
         <h6>Network · live</h6>
-        <KV k={<><span className="led pulse" />Block height</>} v={data.height.toLocaleString()} accent />
-        <KV k="Hashrate"      v={`${(data.hashrate / 1e9).toFixed(2)} GH/s`} />
-        <KV k="Difficulty"    v={`${(data.difficulty / 1e9).toFixed(2)}G`} />
-        <KV k="Block target"  v="2:00 min" />
-        <KV k="Mempool depth" v={`${data.mempool.length} tx`} accent />
-        <KV k="Hard fork"     v="v16" />
+        <KV k={<><span className="led pulse" />Block height</>} v={ready ? data.height.toLocaleString() : "—"} accent />
+        <KV k="Hashrate"      v={ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} />
+        <KV k="Difficulty"    v={ready ? `${(data.difficulty / 1e9).toFixed(2)}G` : "—"} />
+        <KV k="Block target"  v={ready ? `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")} min` : "—"} />
+        <KV k="Mempool depth" v={ready ? `${data.mempool.length} tx` : "—"} accent />
+        <KV k="Hard fork"     v={data.majorVersion ? `v${data.majorVersion}` : "—"} />
       </div>
 
       <div className="rail-block">
-        <h6>Local node · illustrative</h6>
-        <KV k={<><span className="led" />Synced</>} v={<span className="up">100.00%</span>} />
-        <KV k="Peers in / out" v={`${data.peerIn} / ${data.peerOut}`} />
-        <KV k="Bandwidth"      v="12.4 / 8.1 KB/s" />
-        <KV k="RPC port"       v="18089" />
-        <KV k="Tx pool"        v={`${data.mempool.length} · ${fmtBytes(memBytes)}`} />
+        <h6>Remote node · live</h6>
+        <KV k="Daemon"     v={data.version || "—"} />
+        <KV k="Network"    v={data.nettype || "—"} />
+        <KV k="DB size"    v={data.databaseSize ? `${(data.databaseSize / 1e9).toFixed(1)} GB` : "—"} />
+        <KV k={<><span className="led" />Sync</>} v={ready ? (data.synchronized ? <span className="up">✓ synced</span> : <span>syncing</span>) : "—"} />
+        <KV k="Top block"  v={shortHash(data.topBlockHash)} />
+        <KV k="Alt blocks" v={ready ? data.altBlocksCount.toLocaleString() : "—"} />
+        <KV k="Tx pool"    v={ready ? `${data.mempool.length} · ${fmtBytes(memBytes)}` : "—"} />
       </div>
 
       <div className="rail-block">
-        <h6>Peers · illustrative</h6>
-        <div className="peerlist">
-          {data.peers.slice(0, 10).map((p, i) => (
-            <div className="row" key={i}>
-              <span className={"led " + (p.lat < 60 ? "" : p.lat < 100 ? "q" : "o")} style={{ width: 5, height: 5 }} />
-              <span title={p.ip}>{p.ip}</span>
-              <span>{p.lat}ms</span>
-            </div>
-          ))}
-        </div>
+        <h6>Fee tiers · live</h6>
+        {FEE_TIER_LABELS.map((label, i) => (
+          <KV
+            key={label}
+            k={label}
+            v={tiers.length === 4 ? (
+              <>
+                {tiers[i].toLocaleString()} pcn/B
+                <span className="dim2" style={{ marginLeft: 4 }}>· {(tiers[i] * 1000 / 1e12).toFixed(5)} XMR/kB</span>
+              </>
+            ) : "—"}
+          />
+        ))}
+        <KV k="Txs all-time" v={ready ? fmtN(data.txCountTotal) : "—"} accent />
       </div>
 
       <div className="rail-block">
         <h6>Market · live · CG</h6>
-        <KV k="XMR/USD" v={`$${data.price.toFixed(2)}`} accent />
-        <KV k="24h Δ" v={
+        <KV k="XMR/USD" v={data.marketReady ? `$${data.price.toFixed(2)}` : "—"} accent />
+        <KV k="24h Δ" v={data.marketReady ? (
           <span className={data.change24h >= 0 ? "up" : "dn"}>
             {data.change24h >= 0 ? "+" : ""}{data.change24h.toFixed(2)}%
           </span>
-        } />
-        <KV k="XMR/BTC" v={data.btcRatio.toFixed(6)} />
-        <div style={{ marginTop: 6 }}>
-          <Sparkline data={data.priceSeries.slice(-56)} width={224} height={36} />
-        </div>
+        ) : "—"} />
+        <KV k="XMR/BTC" v={data.marketReady ? data.btcRatio.toFixed(6) : "—"} />
+        {data.priceSeries.length > 1 && (
+          <div style={{ marginTop: 6 }}>
+            <Sparkline data={data.priceSeries.slice(-56)} width={224} height={36} />
+          </div>
+        )}
       </div>
 
       {extra}
 
       <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: 10 }}>
-        Source: <span className="acc">{data.source}</span> · <span style={{ animation: "blink 0.9s steps(2,end) infinite" }}>● live</span>
-        <div style={{ marginTop: 4 }}>{new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC</div>
+        Source: <span className="acc">{data.source}</span> ·{" "}
+        {data.stale
+          ? <span style={{ color: "var(--y-50)", animation: "blink 0.9s steps(2,end) infinite" }}>STALE · reconnecting</span>
+          : <span style={{ animation: "blink 0.9s steps(2,end) infinite" }}>● live</span>}
+        <div style={{ marginTop: 4 }}>{data.lastUpdate ? `${new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC` : "—"}</div>
       </div>
     </aside>
   );

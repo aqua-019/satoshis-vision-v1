@@ -1,7 +1,7 @@
 // AUTO-PORTED from mempool/classic.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { fmtBytes, shortHash as ShortHash, randHex } from "@/data/types";
+import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import { confOf } from "@/mempool/conf";
@@ -231,191 +231,6 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   );
 }
 
-/* ── confirmation panel — with "overdue" state ─────────────── */
-
-export function ClassicConfirmationPanel({ tx, confChangedAt }: any) {
-  const [now, setNow] = React.useState(Date.now());
-  React.useEffect(() => {
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, []);
-
-  const conf = tx.confirmations ?? 0;
-  const elapsed = Math.floor((now - confChangedAt) / 1000);
-  const overdue = elapsed > CLASSIC_BLOCK_TARGET;
-  const secsToNext = Math.max(0, CLASSIC_BLOCK_TARGET - elapsed);
-  const sinceTxt = overdue
-    ? "+" + Math.floor((elapsed - CLASSIC_BLOCK_TARGET) / 60) + ":" + String((elapsed - CLASSIC_BLOCK_TARGET) % 60).padStart(2, "0") + " overdue"
-    : "~" + Math.floor(secsToNext / 60) + ":" + String(secsToNext % 60).padStart(2, "0");
-  const unlockSecs = Math.max(0, (10 - conf) * CLASSIC_BLOCK_TARGET - (overdue ? 0 : elapsed));
-  const unlockTxt = "~" + Math.floor(unlockSecs / 60) + ":" + String(unlockSecs % 60).padStart(2, "0");
-
-  return (
-    <div style={{ border: "1px solid var(--rule)", borderRadius: 8, padding: "16px 18px", background: "rgba(0,0,0,0.35)" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div className="mono" style={{ fontSize: 11, color: "var(--ink-80)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Confirmation status</div>
-        <span className="mono" style={{ fontSize: 10.5, color: "var(--g-50)" }}>
-          <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 6px var(--g-50)" }} /> LIVE
-        </span>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
-        <ClassicKpi
-          big={conf}
-          k="of 10 confirmations"
-          tone="acc"
-        />
-        <ClassicKpi
-          big={Math.max(0, 10 - conf)}
-          k="blocks remaining"
-        />
-        <ClassicKpi
-          big={sinceTxt}
-          k="until next confirmation"
-          tone={overdue ? "warn" : ""}
-          fontSize={overdue ? 22 : 26}
-        />
-        <ClassicKpi
-          big={unlockTxt}
-          k="until full unlock (10/10)"
-          fontSize={26}
-        />
-      </div>
-
-      {/* timeline of 10 dots */}
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 22 }}>
-        {Array.from({ length: 11 }).map((_, i) => {
-          const reached = i <= conf;
-          return (
-            <React.Fragment key={i}>
-              {i > 0 ? (
-                <div style={{ flex: 1, height: 2, background: reached ? "var(--c-50)" : "rgba(255,255,255,0.06)" }} />
-              ) : null}
-              <div style={{
-                width: 12, height: 12, borderRadius: 6,
-                background: reached ? "var(--c-50)" : "transparent",
-                border: "1px solid " + (reached ? "var(--c-50)" : "var(--ink-20)"),
-                boxShadow: reached ? "0 0 4px rgba(94,211,244,0.55)" : "none",
-              }} />
-            </React.Fragment>
-          );
-        })}
-      </div>
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "var(--ink-40)", marginTop: 8, flexWrap: "wrap", gap: 12 }}>
-        <span>{conf} of 10 — {Math.max(0, 10 - conf)} more until unlock</span>
-        <span>{conf >= 10 ? "Unlocked ✓" : "Confirming · " + conf + " of 10"}</span>
-        <span>updated just now</span>
-      </div>
-    </div>
-  );
-}
-
-export function ClassicKpi({ big, k, tone, fontSize = 28 }: any) {
-  return (
-    <div>
-      <div className={"mono " + (tone === "acc" ? "acc" : tone === "warn" ? "" : "")}
-        style={{
-          fontSize, fontWeight: 500, lineHeight: 1,
-          color: tone === "acc" ? "var(--tk-accent)"
-            : tone === "warn" ? "var(--y-50)"
-            : "var(--ink-100)",
-          textShadow: tone === "acc" ? "var(--glow-1)" : tone === "warn" ? "0 0 6px rgba(255,212,0,0.45)" : "none",
-        }}>{big}</div>
-      <div className="kicker" style={{ marginTop: 6 }}>{k}</div>
-    </div>
-  );
-}
-
-/* ── transaction detail (clean) ───────────────────────────── */
-
-export function ClassicTxDetail({ tx, onBack }: any) {
-  const confChangedAtRef = React.useRef(Date.now());
-  const lastConfRef = React.useRef(tx.confirmations ?? 0);
-  React.useEffect(() => {
-    if (tx.confirmations !== lastConfRef.current) {
-      lastConfRef.current = tx.confirmations;
-      confChangedAtRef.current = Date.now();
-    }
-  }, [tx.confirmations]);
-
-  const isConfirmed = (tx.confirmations ?? 0) >= 10;
-  return (
-    <div style={{ padding: "24px 28px 60px", borderTop: "1px solid var(--rule)" }}>
-
-      <button type="button" onClick={onBack}
-        style={{ appearance: "none", cursor: "pointer", background: "transparent",
-          border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-          padding: "5px 12px", borderRadius: 4,
-          fontFamily: "var(--f-mono)", fontSize: 11,
-          marginBottom: 18,
-        }}>← Back</button>
-
-      {/* header */}
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, paddingBottom: 14, borderBottom: "1px solid var(--rule)" }}>
-        <div style={{ minWidth: 0 }}>
-          <h2 className="serif" style={{ margin: 0, fontSize: 26, fontWeight: 400, color: "var(--ink-100)" }}>Transaction</h2>
-          <div className="mono" style={{ fontSize: 12, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{tx.id}</div>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <span className={"pill " + (isConfirmed ? "live" : "warn")}>
-            <span className="led pulse" />
-            {isConfirmed ? "Confirmed" : "Confirming"}
-          </span>
-        </div>
-      </div>
-
-      {/* stat grid */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 24, padding: "20px 0", borderBottom: "1px solid var(--rule)", marginBottom: 22 }}>
-        <DetailItem k="Included in block" v={tx.blockHeight ? "#" + tx.blockHeight.toLocaleString() : "Pending"} tone="acc" />
-        <DetailItem k="Fee" v={tx.fee.toFixed(7) + " XMR"} tone="acc" />
-        <DetailItem k="ETA" v={tx.eta} />
-        <DetailItem k="Fee rate" v={tx.perB.toFixed(2) + " piconero / B"} />
-        <DetailItem k="Size" v={(tx.size / 1024).toFixed(1) + " KB"} />
-        <DetailItem k="Ring size" v={tx.ringSize + " decoys"} />
-      </section>
-
-      {/* badges */}
-      <section style={{ display: "flex", gap: 8, marginBottom: 22, flexWrap: "wrap" }}>
-        {["CLSAG", "BP+", "View Tags", "No Timelock", "Dandelion++"].map((l) => (
-          <span key={l} style={{
-            padding: "5px 12px",
-            border: "1px solid var(--g-50)", color: "var(--g-50)",
-            background: "rgba(74,222,128,0.06)",
-            borderRadius: 4,
-            fontFamily: "var(--f-mono)", fontSize: 10.5, letterSpacing: "0.08em", textTransform: "uppercase",
-          }}>{l}</span>
-        ))}
-      </section>
-
-      <ClassicConfirmationPanel tx={tx} confChangedAt={confChangedAtRef.current} />
-
-      {/* privacy strip */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", marginTop: 14, border: "1px solid var(--g-50)", background: "rgba(74,222,128,0.06)", borderRadius: 6 }}>
-        <span style={{ color: "var(--g-50)", fontSize: 18 }}>✓</span>
-        <div className="mono" style={{ fontSize: 12, color: "var(--ink-100)" }}>
-          Privacy <b className="up" style={{ fontSize: 14 }}>{tx.privacy}/100</b> <span className="up">STRONG</span>
-          <span className="dim" style={{ marginLeft: 18 }}>CLSAG · BP+ · 16 ring · View Tags · No Timelock</span>
-        </div>
-      </div>
-
-      {/* inputs */}
-      <div style={{ marginTop: 22 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <h3 className="mono" style={{ margin: 0, fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-80)" }}>Inputs ({tx.inputs})</h3>
-          <span className="mono dim" style={{ fontSize: 10.5 }}>Ring 16 · Pedersen commitments</span>
-        </div>
-        {Array.from({ length: tx.inputs }).map((_, i) => (
-          <div key={i} style={{ padding: 16, border: "1px solid var(--rule)", borderRadius: 6, marginBottom: 8 }}>
-            <div className="mono dim" style={{ fontSize: 10.5, letterSpacing: "0.06em" }}>Input {i} — Key Image</div>
-            <div className="mono" style={{ fontSize: 11.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{randHex(64)}</div>
-            <div className="mono dim" style={{ fontSize: 10.5, marginTop: 8 }}>
-              Ring: <b style={{ color: "var(--ink-100)" }}>16 members</b> · Amount: <b style={{ color: "var(--y-50)" }}>HIDDEN</b> (Pedersen commitment)
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 export function DetailItem({ k, v, tone }: any) {
   return (
@@ -513,8 +328,7 @@ const CLASSIC_TIERS = [
 ];
 
 // Quartile-based thresholds computed from the live mempool, so bucketing
-// always produces a sensible distribution regardless of simulated/real
-// scale (sim data is ~2k–60k pcn/B; real Monero is similar order).
+// always produces a sensible distribution at any fee scale.
 function classicComputeThresholds(mempool: Tx[]) {
   if (!mempool.length) return [800000, 600000, 400000];
   const sorted = mempool.map((t) => t.perB).sort((a, b) => b - a);

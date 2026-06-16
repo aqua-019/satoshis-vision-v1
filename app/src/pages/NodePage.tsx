@@ -90,7 +90,7 @@ export function NodePage() {
           <div className="kicker">After sync · sanity check</div>
           <div className="mono" style={{ marginTop: 10, fontSize: 12, lineHeight: 1.8, color: "var(--ink-80)" }}>
             <div><span style={{ color: "var(--c-50)" }}>$</span> curl <span style={{ color: "var(--ink-100)" }}>http://localhost:18089/get_info</span> | jq <span style={{ color: "var(--g-50)" }}>'.height, .target, .nettype'</span></div>
-            <div className="dim" style={{ marginTop: 6 }}>Expected: <span className="acc">{data.height.toLocaleString()}</span> · 120 · "mainnet"</div>
+            <div className="dim" style={{ marginTop: 6 }}>Expected: <span className="acc">{data.ready ? data.height.toLocaleString() : "—"}</span> · 120 · "mainnet"</div>
           </div>
         </Card>
       </div>

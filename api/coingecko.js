@@ -8,31 +8,39 @@
      - simple/price                      (spot price + 24h change)
      - coins/<id>/market_chart           (price line + total_volumes, any coin)
      - coins/<id>/ohlc                   (real OHLC candles, any coin)
+     - coins/<id>/tickers                (real per-exchange volume/spread)
    The <id> is restricted to [a-z0-9-]+ (no slashes), so the proxy can only
-   reach /coins/<id>/{market_chart,ohlc} — no arbitrary upstream traversal.
+   reach /coins/<id>/{market_chart,ohlc,tickers} — no arbitrary upstream traversal.
 
    Usage:
      /api/coingecko?path=simple/price&ids=bitcoin,monero&vs_currencies=usd
      /api/coingecko?path=coins/monero/market_chart&vs_currency=usd&days=30
      /api/coingecko?path=coins/monero/ohlc&vs_currency=usd&days=30
+     /api/coingecko?path=coins/monero/tickers
    ═══════════════════════════════════════════════════════════════ */
 
 const ALLOWED = [
     /^simple\/price$/,
     /^coins\/[a-z0-9-]+\/market_chart$/,  // any coin id, vs_currency=usd|btc
     /^coins\/[a-z0-9-]+\/ohlc$/,          // real OHLC candles
+    /^coins\/[a-z0-9-]+\/tickers$/,       // real per-exchange volume/spread
 ];
 
 // History endpoints are slow-moving → cache far harder than spot.
 const HISTORY_RX = /^coins\/[a-z0-9-]+\/(market_chart|ohlc)$/;
 const SPOT_RX = /^simple\/price$/;
+const TICKERS_RX = /^coins\/[a-z0-9-]+\/tickers$/;
 
-// Last-known spot cache. CoinGecko's free tier 429s on shared IPs under load; when
-// that happens we serve the most recent good price (within TTL) as a 200 so the UI
-// never blanks. Module scope survives within a warm serverless instance; keyed by
-// the full upstream URL so ids/vs_currencies variants don't collide.
-const SPOT_TTL_MS = 5 * 60 * 1000;
-const spotCache = new Map();
+// Last-known-good cache. CoinGecko's free tier 429s on shared IPs under load; when
+// that happens we serve the most recent good response (within a per-class TTL) as a
+// 200 so the UI never blanks — the client renders it with a STALE badge. Module
+// scope survives within a warm serverless instance; keyed by the full upstream URL
+// so ids/vs_currencies variants don't collide.
+const staleTtlMs = (path) =>
+    SPOT_RX.test(path) ? 5 * 60 * 1000
+    : TICKERS_RX.test(path) ? 15 * 60 * 1000
+    : 30 * 60 * 1000; // market_chart / ohlc
+const lastGoodCache = new Map();
 
 export default async function handler(req, res) {
     const path = (req.query.path || '').toString();
@@ -46,15 +54,14 @@ export default async function handler(req, res) {
         url.searchParams.set(k, Array.isArray(v) ? v.join(',') : v);
     }
 
-    const isSpot = SPOT_RX.test(path);
     const cacheKey = url.toString();
 
-    // Serve the last-known spot price (within TTL) with a 200 instead of an error,
-    // so a throttle/outage never blanks the price. Returns true if it responded.
+    // Serve the last-known-good response (within the path-class TTL) with a 200
+    // instead of an error, so a throttle/outage never blanks any series. Returns
+    // true if it responded.
     const serveStale = (reason) => {
-        if (!isSpot) return false;
-        const hit = spotCache.get(cacheKey);
-        if (hit && Date.now() - hit.at < SPOT_TTL_MS) {
+        const hit = lastGoodCache.get(cacheKey);
+        if (hit && Date.now() - hit.at < staleTtlMs(path)) {
             res.setHeader('X-Cache', 'stale');
             res.setHeader('X-Cache-Reason', reason);
             res.setHeader('Cache-Control', 'public, max-age=15');
@@ -70,7 +77,7 @@ export default async function handler(req, res) {
             signal: AbortSignal.timeout(12000),
         });
         if (!upstream.ok) {
-            // 429 (or any upstream error) on spot → fall back to last-known price.
+            // 429 (or any upstream error) → fall back to the last-known-good body.
             if (serveStale('upstream-' + upstream.status)) return;
             return res.status(upstream.status).json({
                 error: 'upstream',
@@ -78,11 +85,13 @@ export default async function handler(req, res) {
             });
         }
         const data = await upstream.json();
-        if (isSpot) spotCache.set(cacheKey, { data, at: Date.now() });
+        lastGoodCache.set(cacheKey, { data, at: Date.now() });
         // Edge cache — CoinGecko free-tier rate limits are tight. History is
-        // slow-moving so it caches harder; spot stays fresh.
+        // slow-moving so it caches harder; tickers sit in between; spot stays fresh.
         if (HISTORY_RX.test(path)) {
             res.setHeader('Cache-Control', 'public, s-maxage=300, max-age=120');
+        } else if (TICKERS_RX.test(path)) {
+            res.setHeader('Cache-Control', 'public, s-maxage=120, max-age=60');
         } else {
             res.setHeader('Cache-Control', 'public, s-maxage=60, max-age=30');
         }

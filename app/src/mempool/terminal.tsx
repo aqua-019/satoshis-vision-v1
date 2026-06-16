@@ -3,7 +3,10 @@
 import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
 import { PanelFrame } from "@/design/primitives";
-import { fmtBytes } from "@/data/types";
+import { fmtBytes, fmtN, shortHash } from "@/data/types";
+import { FEE_TIER_LABELS } from "@/data/map";
+import { useFeedEvents } from "@/data/useFeedEvents";
+import type { FeedEvent } from "@/data/useFeedEvents";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import type { MoneroLive, Block } from "@/data/types";
 
@@ -15,27 +18,42 @@ interface ViewProps {
 // Left-pad a number to a fixed width for the ASCII status panel.
 const pad = (n: number, w: number) => String(n).padStart(w, " ");
 
+/** Tier colors, slow → fastest. */
+const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"] as const;
+
+/** GB string from a real byte count; "—" until the node has reported it. */
+const dbGB = (data: MoneroLive) =>
+  data.ready && data.databaseSize ? (data.databaseSize / 1e9).toFixed(1) + " GB" : "—";
+
 // terminal.jsx — TERMINAL HUB · hi-fi CLI
 //
-// The "I run my own node" power-user surface. A self-typing command palette,
-// a live auto-tailing monerod log, a reactive ASCII block stream, a live ASCII
-// fee histogram, compact radial gauges and a wallet/privacy rail. Scanlines on.
+// The "I run my own node" power-user surface. A self-typing command palette
+// fed by live RPC data, an auto-tailing log derived from real feed diffs,
+// a reactive ASCII block stream, a live ASCII fee histogram, compact radial
+// gauges and a node/fee/chain rail. Scanlines on. Every number rendered here
+// comes from the daemon feed; unknowns render "—" until data.ready.
 //
 // All helpers prefixed `Term` to avoid shared-scope collisions.
 
-/* ── self-typing command palette ────────────────────────────── */
-function TermPalette() {
-  const cmds = React.useMemo(() => [
-    { q: "get_block 3676070", rows: [["BLOCK", "#3,676,070", "0.601 XMR · 4 tx · 6.8 KB · P2Pool"]] },
-    { q: "get_transactions 5e27cfc8", rows: [["TX", "5e27cfc8…de2263", "1.8 KB · 0.0004928 XMR · ring 16"]] },
-    { q: "print_pl", rows: [["PEER", "65.21.187.214:18080", "DE · 42ms · monerod 0.18.4.0"], ["PEER", "5.9.84.122:18080", "DE · 51ms · 0.18.4.0"]] },
-    { q: "search dandelion", rows: [["TOPIC", "Dandelion++", "stem→fluff propagation"], ["TOPIC", "FCMP++", "full-chain membership proofs"]] },
-  ], []);
+/* ── self-typing command palette (real RPC outputs) ─────────── */
+function TermPalette({ data }: { data: MoneroLive }) {
+  const cmds = React.useMemo(() => {
+    if (!data.ready) return [] as { q: string; rows: string[][] }[];
+    const b = data.blocks[0];
+    const pool = data.mempool.slice(0, 2);
+    return [
+      { q: "get_info", rows: [["INFO", `height ${data.height.toLocaleString()}`, `diff ${data.difficulty.toLocaleString()}`]] },
+      { q: "get_last_block_header", rows: [b ? ["BLOCK", `#${b.height.toLocaleString()} ${shortHash(b.hash)}`, `txs=${b.txs}`] : ["BLOCK", "—", ""]] },
+      { q: "get_fee_estimate", rows: [["FEE", data.feeTiers.length === 4 ? data.feeTiers.map((t) => Math.round(t)).join(" / ") : "—", "pcn/B · slow→fastest"]] },
+      { q: "print_pool", rows: pool.length ? pool.map((t) => ["TX", shortHash(t.id), `${Math.round(t.perB)} pcn/B · ${t.size} B`]) : [["POOL", "—", "pool empty"]] },
+    ];
+  }, [data.ready, data.height, data.difficulty, data.mempool, data.blocks, data.feeTiers]);
   const [ci, setCi] = React.useState(0);
   const [typed, setTyped] = React.useState("");
   const [phase, setPhase] = React.useState("typing"); // typing → hold → clearing
   React.useEffect(() => {
-    const full = cmds[ci].q;
+    if (!cmds.length) return;
+    const full = cmds[ci % cmds.length].q;
     let to: ReturnType<typeof setTimeout> | undefined;
     if (phase === "typing") {
       if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), 55 + Math.random() * 60);
@@ -48,7 +66,7 @@ function TermPalette() {
     }
     return () => clearTimeout(to);
   }, [typed, phase, ci, cmds]);
-  const showResults = phase === "hold";
+  const showResults = phase === "hold" && cmds.length > 0;
   return (
     <div style={{ border: "1px solid var(--tk-accent)", background: "rgba(0,0,0,0.65)", boxShadow: "0 0 24px rgba(255,122,26,0.22), inset 0 0 30px rgba(255,122,26,0.05)", borderRadius: 4 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: 13 }}>
@@ -58,7 +76,7 @@ function TermPalette() {
         <span style={{ marginLeft: "auto", color: "var(--ink-40)", fontSize: 10 }}>⌘K · ESC</span>
       </div>
       <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: 11.5, minHeight: 96 }}>
-        {(showResults ? cmds[ci].rows : []).map((r, i) => (
+        {(showResults ? cmds[ci % cmds.length].rows : []).map((r, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "rgba(255,122,26,0.12)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein 0.25s ease" }}>
             <span className="dim2" style={{ fontSize: 9, letterSpacing: "0.1em" }}>{r[0]}</span>
             <span className={i === 0 ? "acc" : ""}>{r[1]}</span>
@@ -66,7 +84,7 @@ function TermPalette() {
             <span className="dim2" style={{ textAlign: "right" }}>{i === 0 ? "↵" : ""}</span>
           </div>
         ))}
-        {!showResults ? <div className="dim2" style={{ padding: "30px 8px", textAlign: "center", letterSpacing: "0.14em" }}>{phase === "typing" ? "querying daemon…" : "—"}</div> : null}
+        {!showResults ? <div className="dim2" style={{ padding: "30px 8px", textAlign: "center", letterSpacing: "0.14em" }}>{!cmds.length || phase === "typing" ? "querying daemon…" : "—"}</div> : null}
       </div>
       <style>{`@keyframes term-blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } } @keyframes term-slidein { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }`}</style>
     </div>
@@ -109,39 +127,35 @@ export function TermAsciiBlocks({ data }: { data: MoneroLive }) {
   );
 }
 
-/* ── live auto-tailing monerod log ──────────────────────────── */
-function TermLiveLog() {
-  const tmpl = [
-    ["I", "txpool", "Transaction added to pool: txid=<{hx}…{hx2}> size={sz} fee=0.000{f} XMR"],
-    ["I", "p2p", "Received TX from peer 5.9.84.122:18080, stem hop={h} weight=1.8KB"],
-    ["I", "dand", "Stem→Fluff p=0.{p} ≥ 0.10 fail · stays stem, forwarding"],
-    ["I", "p2p", "Forwarded stem tx <{hx}…> → 138.201.131.49:18080 h={h}"],
-    ["I", "p2p", "New outgoing peer 212.83.175.67:18080 agent=monerod/0.18.4.0"],
-    ["W", "rpc", "Slow request /get_info from 65.21.187.214 took {l}ms"],
-    ["I", "core", "Difficulty recomputed: 773,885,427,585 (Δ +0.21%)"],
-    ["I", "p2p", "Sync: at height 3676070 / 3676070 (100.00%)"],
-    ["I", "core", "Block hash verified, signing as v16 (CLSAG + Bulletproofs+)"],
-    ["I", "core", "FCMP++ readiness gauge: 72% (membership proof draft 4)"],
-    ["I", "dand", "Stem path generated: 10 hops, seed=0x{hx}"],
-    ["I", "core", "Verifying ring signature CLSAG size=16 ✓"],
-  ];
-  const hx = () => Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, "0");
-  const ts = () => new Date().toISOString().slice(11, 23);
-  const fill = (s: string) => s.replace(/\{hx\}/g, hx).replace("{hx2}", hx()).replace("{sz}", String(1500 + (Math.random() * 1800 | 0))).replace("{f}", String(4000 + (Math.random() * 900 | 0))).replace(/\{h\}/g, () => String(1 + (Math.random() * 9 | 0))).replace("{p}", String(10 + (Math.random() * 9 | 0))).replace("{l}", String(200 + (Math.random() * 250 | 0)));
-  const mk = () => { const t = tmpl[Math.floor(Math.random() * tmpl.length)]; return { id: Math.random(), lvl: t[0], cat: t[1], ts: ts(), msg: fill(t[2]) }; };
-  const [rows, setRows] = React.useState(() => Array.from({ length: 16 }, mk));
-  React.useEffect(() => { const id = setInterval(() => setRows((r) => [mk(), ...r].slice(0, 16)), 1100); return () => clearInterval(id); }, []);
-  const colorFor = (lvl: string, cat?: string) => lvl === "W" ? "var(--y-50)" : lvl === "E" ? "var(--r-50)" : cat === "dand" ? "var(--p-50)" : cat === "core" ? "var(--tk-accent)" : cat === "p2p" ? "var(--c-50)" : "var(--ink-60)";
+/* ── live auto-tailing log · real feed diffs ────────────────── */
+function TermLiveLog({ data }: { data: MoneroLive }) {
+  const events = useFeedEvents(data, 16);
+  const fmtTs = (ts: number) => new Date(ts).toTimeString().slice(0, 8);
+  const line = (e: FeedEvent): { lvl: string; cat: string; msg: string } => {
+    switch (e.kind) {
+      case "block": return { lvl: "I", cat: "core", msg: `block #${e.height} ${e.hash.slice(0, 8)}… txs=${e.txs} ${e.sizeKB.toFixed(1)}KB` };
+      case "tx": return { lvl: "I", cat: "txpool", msg: `tx ${e.id.slice(0, 8)}… ${e.size}B fee=${e.fee.toFixed(6)} rate=${Math.round(e.perB)} pcn/B` };
+      case "txdrop": return { lvl: "I", cat: "txpool", msg: `${e.count} tx left pool (mined/expired)` };
+      case "stale": return { lvl: "W", cat: "net", msg: "feed stale · retrying" };
+      case "recover": return { lvl: "I", cat: "net", msg: "feed recovered" };
+    }
+  };
+  const colorFor = (lvl: string, cat?: string) => lvl === "W" ? "var(--y-50)" : lvl === "E" ? "var(--r-50)" : cat === "core" ? "var(--tk-accent)" : cat === "txpool" ? "var(--c-50)" : cat === "net" ? "var(--g-50)" : "var(--ink-60)";
   return (
     <div style={{ fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
-      {rows.map((l) => (
-        <div key={l.id} style={{ display: "grid", gridTemplateColumns: "16px 100px 56px 1fr", gap: 8, padding: "1px 0", animation: "term-logslide 0.35s ease" }}>
-          <span style={{ color: colorFor(l.lvl), fontWeight: 600 }}>{l.lvl}</span>
-          <span className="dim2">{l.ts}</span>
-          <span style={{ color: colorFor(l.lvl, l.cat) }}>{l.cat}</span>
-          <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.msg}</span>
-        </div>
-      ))}
+      {events.length === 0 ? (
+        <div className="dim2" style={{ padding: "8px 0", letterSpacing: "0.12em" }}>waiting for feed…</div>
+      ) : events.map((e, i) => {
+        const l = line(e);
+        return (
+          <div key={`${e.ts}-${i}`} style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: 8, padding: "1px 0", animation: "term-logslide 0.35s ease" }}>
+            <span style={{ color: colorFor(l.lvl), fontWeight: 600 }}>{l.lvl}</span>
+            <span className="dim2">{fmtTs(e.ts)}</span>
+            <span style={{ color: colorFor(l.lvl, l.cat) }}>{l.cat}</span>
+            <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.msg}</span>
+          </div>
+        );
+      })}
       <style>{`@keyframes term-logslide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }`}</style>
     </div>
   );
@@ -185,12 +199,23 @@ export function TerminalHubView({ data }: ViewProps) {
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
   // Shared tracking — same hook + detail (confOf) as every other view.
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
+  const tiersKnown = data.feeTiers.length === 4;
+  // Median mempool fee rate (piconero/B) — real txs only.
+  const medianPerB = React.useMemo(() => {
+    if (!data.mempool.length) return 0;
+    const s = data.mempool.map((t) => t.perB).sort((a, b) => a - b);
+    return s[Math.floor(s.length / 2)];
+  }, [data.mempool]);
+  const syncPct = data.ready && data.synchronized ? 100 : 0;
+  const poolPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((memBytes / data.blockWeightLimit) * 100)) : 0;
+  const weightPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((data.blockWeightMedian / data.blockWeightLimit) * 100)) : 0;
+  const feePct = data.ready && tiersKnown && medianPerB && data.feeTiers[2] ? Math.min(100, Math.round((medianPerB / data.feeTiers[2]) * 100)) : 0;
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
         <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> monerod tail · Block {data.height.toLocaleString()} · {data.mempool.length} mempool
+          <span className="led pulse" /> monerod tail · Block {data.ready ? data.height.toLocaleString() : "—"} · {data.mempool.length} mempool
         </span>
       </div>
       {tracking ? (
@@ -202,61 +227,80 @@ export function TerminalHubView({ data }: ViewProps) {
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 11.5, lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px rgba(255,122,26,0.18)" }}>
-{`╭─ monerod 0.18.4.0 ────────────────────────────────╮
-│ Status:    `}<span style={{ color: "var(--g-50)", textShadow: "var(--glow-g)" }}>SYNCED</span>{`  100.00% (3676070/3676070)        │
-│ Network:   mainnet · hardfork v16 (CLSAG+BP+)     │
-│ Hash rate: `}<span className="acc">6.45 GH/s</span>{` · diff 773,885,427,585  │
-│ Mempool:   `}<span className="acc">{pad(data.mempool.length, 3)} tx</span>{` · ${fmtBytes(memBytes).padEnd(8, " ")}      │
-│ Peers:     ${pad(data.peers.length, 3)}  ↓ 12.4 KB/s   ↑ 8.1 KB/s         │
-│ Wallet:    `}<span style={{ color: "var(--p-50)", textShadow: "var(--glow-p)" }}>connected</span>{` · subaddr 0/0 · ring 16     │
-│ Uptime:    47d 12h 18m                            │
-╰───────────────────────────────────────────────────╯`}
+{`╭─ monerod ${data.version || "—"} `.padEnd(52, "─") + "\n│ Status:    "}
+{data.ready ? (
+  <>
+    <span style={{ color: data.synchronized ? "var(--g-50)" : "var(--y-50)", textShadow: data.synchronized ? "var(--glow-g)" : "none" }}>{data.synchronized ? "SYNCED" : "SYNCING"}</span>
+    {` (${data.height.toLocaleString()}/${data.height.toLocaleString()})`}
+  </>
+) : "—"}
+{"\n│ Network:   " + (data.ready ? `${data.nettype || "—"} · hardfork ${data.hardfork}` : "—")}
+{"\n│ Hash rate: "}
+{data.ready ? (
+  <>
+    <span className="acc">{(data.hashrate / 1e9).toFixed(2)} GH/s</span>
+    {` · diff ${data.difficulty.toLocaleString()}`}
+  </>
+) : "—"}
+{"\n│ Mempool:   "}
+<span className="acc">{pad(data.mempool.length, 3)} tx</span>
+{` · ${fmtBytes(memBytes)}\n`}
+{"╰" + "─".repeat(51)}
                 </pre>
                 <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: 11 }}>
-                  <div className="kicker" style={{ marginBottom: 6 }}>RPC ENDPOINTS</div>
-                  {[["get_info", "GET", "127.0.0.1:18089/json_rpc", "12ms"], ["get_block", "GET", "127.0.0.1:18089/json_rpc", "8ms"], ["get_transactions", "GET", "…/get_transactions", "21ms"], ["send_raw_tx", "PUT", "…/send_raw_transaction", "—"], ["get_fee_estim.", "GET", "127.0.0.1:18089/json_rpc", "5ms"]].map((r, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 32px 1fr 50px", gap: 6, padding: "1px 0" }}>
-                      <span className="acc">{r[0]}</span><span className="dim2">{r[1]}</span><span className="dim">{r[2]}</span><span className="dim2" style={{ textAlign: "right" }}>{r[3]}</span>
+                  <div className="kicker" style={{ marginBottom: 6 }}>CHAIN TOTALS</div>
+                  {[
+                    ["txs all-time", data.ready ? fmtN(data.txCountTotal) : "—"],
+                    ["db size", dbGB(data)],
+                    ["alt blocks", data.ready ? String(data.altBlocksCount) : "—"],
+                    ["top block", data.ready ? shortHash(data.topBlockHash) : "—"],
+                  ].map((r, i) => (
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 6, padding: "1px 0" }}>
+                      <span className="dim">{r[0]}</span><span className="acc">{r[1]}</span>
                     </div>
                   ))}
                 </div>
               </PanelFrame>
 
               <PanelFrame title="$ jump · ⌘K" right={<span className="acc">PALETTE</span>}>
-                <TermPalette />
+                <TermPalette data={data} />
               </PanelFrame>
             </div>
 
-            <PanelFrame title="$ block-stream --ascii" right={<><span>13 LAST</span><span className="acc">+2 QUEUED</span></>}>
+            <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>}>
               <TermAsciiBlocks data={data} />
               <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
                 <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+10c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target=2:00</span><span className="dim2 acc">scroll ←→</span>
               </div>
             </PanelFrame>
 
-            <PanelFrame title="$ tail -f /var/log/monero/monero.log" right={<><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
-              <TermLiveLog />
+            <PanelFrame title="$ tail -f · live feed" right={<><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
+              <TermLiveLog data={data} />
             </PanelFrame>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
               <PanelFrame title="$ awk · fee distribution">
                 <TermFeeHisto data={data} />
               </PanelFrame>
-              <PanelFrame title="$ peer · top 10 by latency · illustrative">
-                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.45, color: "var(--ink-80)" }}>
-{data.peers.slice(0, 10).map((p, i) => `${pad(i + 1, 2)} ${p.ip.padEnd(22, " ").slice(0, 22)} ${String(p.lat).padStart(4, " ")}ms ${p.cnt}`).join("\n")}
+              <PanelFrame title="$ fee · tiers · live">
+                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.7 }}>
+                  {FEE_TIER_LABELS.map((label, i) => (
+                    <div key={label} style={{ color: tiersKnown ? TIER_COLORS[i] : "var(--ink-40)" }}>
+                      {tiersKnown
+                        ? `${label.padEnd(8)} ${String(Math.round(data.feeTiers[i])).padStart(8)} pcn/B   ${((data.feeTiers[i] * 1000) / 1e12).toFixed(5)} XMR/kB`
+                        : `${label.padEnd(8)} ${"—".padStart(8)} pcn/B   — XMR/kB`}
+                    </div>
+                  ))}
                 </pre>
               </PanelFrame>
               <PanelFrame title="$ env · runtime">
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.55, color: "var(--ink-80)" }}>
-{`MONEROD_VERSION=0.18.4.0
-MONEROD_NETWORK=mainnet
-MONEROD_DB_SYNC=safe
-DATA_DIR=/var/lib/monero
-DB_SIZE=210.4 GB
-TOR_PROXY=127.0.0.1:9050
-I2P_SAM=127.0.0.1:7656
-TX_PROXY=dandelion++
+{`MONEROD_VERSION=${data.version || "—"}
+NETTYPE=${data.nettype || "—"}
+SYNCHRONIZED=${data.ready ? String(data.synchronized) : "—"}
+DB_SIZE=${dbGB(data)}
+FORK=v${data.majorVersion || "—"}
+TOP_BLOCK=${data.ready ? shortHash(data.topBlockHash) : "—"}
 RING_SIZE=16
 BP_VARIANT=BP+`}
                 </pre>
@@ -277,43 +321,37 @@ BP_VARIANT=BP+`}
 
           <aside className="rail" style={{ borderLeft: "1px solid var(--rule)", borderRight: "none" }}>
             <div className="rail-block">
-              <h6>Wallet · sub 0/0</h6>
-              <div className="kv"><span className="k">Balance</span><span className="v acc">●●●● XMR</span></div>
-              <div className="kv"><span className="k">Unlocked</span><span className="v acc">●●●● XMR</span></div>
-              <div className="kv"><span className="k">Subaddrs</span><span className="v">14</span></div>
-              <div className="kv"><span className="k">Daemon</span><span className="v g">local</span></div>
-              <div className="kv"><span className="k">Privacy</span><span className="v p">maximal</span></div>
-              <div style={{ marginTop: 8 }}>
-                <button style={{ display: "block", width: "100%", background: "transparent", border: "1px solid var(--tk-accent)", color: "var(--tk-accent)", padding: "6px 8px", fontFamily: "var(--f-mono)", fontSize: 10.5, letterSpacing: "0.16em", textTransform: "uppercase", boxShadow: "var(--glow-1)", cursor: "pointer" }}>$ send tx</button>
-              </div>
+              <h6>Remote node</h6>
+              <div className="kv"><span className="k">Daemon</span><span className="v acc">{data.version || "—"}</span></div>
+              <div className="kv"><span className="k">Network</span><span className="v">{data.nettype || "—"}</span></div>
+              <div className="kv"><span className="k">DB</span><span className="v">{dbGB(data)}</span></div>
+              <div className="kv"><span className="k">Sync</span><span className={data.ready && data.synchronized ? "v g" : "v"}>{data.ready ? (data.synchronized ? "✓ synced" : "syncing") : "—"}</span></div>
             </div>
             <div className="rail-block">
-              <h6>Privacy fence</h6>
-              <div className="kv"><span className="k">Ring size</span><span className="v acc">16</span></div>
-              <div className="kv"><span className="k">Stem hops</span><span className="v p">10</span></div>
-              <div className="kv"><span className="k">Tor relay</span><span className="v g">on</span></div>
-              <div className="kv"><span className="k">I2P relay</span><span className="v g">on</span></div>
-              <div className="kv"><span className="k">View key</span><span className="v">private</span></div>
-              <div className="kv"><span className="k">FCMP++ test</span><span className="v p">opt-in</span></div>
+              <h6>Fee tiers</h6>
+              {FEE_TIER_LABELS.map((label, i) => (
+                <div className="kv" key={label}>
+                  <span className="k">{label}</span>
+                  <span className="v" style={tiersKnown ? { color: TIER_COLORS[i] } : undefined}>
+                    {tiersKnown ? `${Math.round(data.feeTiers[i])} pcn/B` : "—"}
+                  </span>
+                </div>
+              ))}
             </div>
             <div className="rail-block">
-              <h6>Recent CLI</h6>
-              <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10, lineHeight: 1.5, color: "var(--ink-60)" }}>
-{`$ status
-$ get_block_count
-$ get_mempool
-$ transfer 0.42 8A4…
-$ relay_tx 5e27cfc8…
-$ print_height`}
-              </pre>
+              <h6>Chain totals</h6>
+              <div className="kv"><span className="k">Txs all-time</span><span className="v acc">{data.ready ? fmtN(data.txCountTotal) : "—"}</span></div>
+              <div className="kv"><span className="k">Alt blocks</span><span className="v">{data.ready ? String(data.altBlocksCount) : "—"}</span></div>
+              <div className="kv"><span className="k">RandomX seed</span><span className="v">{data.ready ? shortHash(data.randomxSeedHash) : "—"}</span></div>
+              <div className="kv"><span className="k">Top block</span><span className="v">{data.ready ? shortHash(data.topBlockHash) : "—"}</span></div>
             </div>
             <div className="rail-block">
               <h6>Network gauges</h6>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
-                <TermGauge value={100} label="SYNC" />
-                <TermGauge value={94} label="PRIV" color="var(--p-50)" />
-                <TermGauge value={68} label="P2P" color="var(--c-50)" />
-                <TermGauge value={72} label="FCMP" color="var(--g-50)" />
+                <div title="node sync state"><TermGauge value={syncPct} label="SYNC" /></div>
+                <div title="mempool bytes vs one full block"><TermGauge value={poolPct} label="POOL" color="var(--c-50)" /></div>
+                <div title="median block weight vs dynamic limit"><TermGauge value={weightPct} label="WEIGHT" color="var(--p-50)" /></div>
+                <div title="median pool fee rate vs fast tier"><TermGauge value={feePct} label="FEE" color="var(--g-50)" /></div>
               </div>
             </div>
           </aside>
@@ -322,5 +360,3 @@ $ print_height`}
     </div>
   );
 }
-
-
