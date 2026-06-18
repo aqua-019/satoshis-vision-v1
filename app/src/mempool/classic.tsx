@@ -4,7 +4,7 @@ import * as React from "react";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
-import { confOf } from "@/mempool/conf";
+import { chainTip, confOf } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 import { useTick } from "@/design/ArtBackground";
 
@@ -183,9 +183,13 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   // drop a single vertical UNLOCK divider in the gap immediately before it.
   const dividerIndex = ribbon.findIndex((r) => r.status !== "queued" && r.status !== "next" && r.b.conf === 10);
 
-  // Glide the row when the tip advances (FLIP). The tracked ▲ arrow is a child
-  // of ClassicBlock, so it travels with its block automatically.
-  const glideRef = useRibbonGlide(data.height);
+  // Glide the row when the tip advances (FLIP). Keyed to chainTip(data) — the
+  // newest CONFIRMED block height (data.blocks[0].height), i.e. the exact value
+  // the ribbon renders from — NOT data.height (get_info chain length), which
+  // ticks on a different poll and would fire the glide against an unchanged DOM
+  // (no-op) or let a new block arrive with no glide (pop). The tracked ▲ arrow
+  // is a child of ClassicBlock, so it travels with its block automatically.
+  const glideRef = useRibbonGlide(chainTip(data));
 
   return (
     <div style={{ position: "relative", padding: "18px 20px 30px" }}>
