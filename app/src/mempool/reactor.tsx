@@ -32,7 +32,7 @@ interface ViewProps {
 }
 
 type Tracking =
-  | { kind: "tx"; id: string; blockHeight: number | null }
+  | { kind: "tx"; id: string; blockHeight: number | null; explicit?: boolean }
   | { kind: "block"; height: number; block?: Block }
   | null;
 

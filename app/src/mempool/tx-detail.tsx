@@ -90,13 +90,12 @@ const fmtAge = (s: number | null) => s == null ? "—" : s < 60 ? s + "s" : Math
 
 /* ─── stateful wrappers (loading / error / ready) ──────────────── */
 
-export function LiveTxDetail({ txid, data, pinnedHeight, onBack }: {
+export function LiveTxDetail({ txid, data, onBack }: {
   txid: string;
   data: MoneroLive;
-  pinnedHeight?: number | null;
   onBack?: () => void;
 }) {
-  const { status, tx, optimisticConf, optimisticHeight } = useLiveTx(txid, data, pinnedHeight);
+  const { status, tx } = useLiveTx(txid, data);
   if (status === "loading") {
     return (
       <div style={{ padding: "20px 28px 60px" }}>
@@ -105,9 +104,7 @@ export function LiveTxDetail({ txid, data, pinnedHeight, onBack }: {
         <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
         <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
           <span className="led pulse" /> resolving from node…
-          <span style={{ color: "var(--ink-40)" }}>
-            {optimisticHeight != null ? `pinned to block #${optimisticHeight.toLocaleString()} · ~${optimisticConf} conf` : "pending / mempool"}
-          </span>
+          <span style={{ color: "var(--ink-40)" }}>pending · awaiting first block</span>
         </div>
       </div>
     );
@@ -261,7 +258,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
           })}
         </div>
         <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6 }}>
-          <span>{tx.confirmations} of 10 — {remaining} more until unlock</span>
+          <span>{tx.inMempool ? "in mempool · pending · 0/10 · awaiting first block" : `${tx.confirmations} of 10 — ${remaining} more until unlock`}</span>
           <span>~2 min/block target · updated live</span>
         </div>
       </Section>

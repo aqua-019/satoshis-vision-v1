@@ -35,10 +35,14 @@ export function isMempoolTx(id: string): boolean {
 }
 
 /**
- * Pin the ABSOLUTE block height a (non-mempool) tx landed in, resolved from the
- * CURRENT snapshot. Call this ONCE (at search/track time) and store the result;
- * do NOT call it every tick or the pin would slide with the blocks window.
- * Returns null for a mempool tx (or when there are no blocks yet).
+ * TEST-ONLY (as of v5.0.15): a deterministic, hash-derived block-height generator.
+ *
+ * The production tracked-tx path NO LONGER guesses a tx's block from its hash — a
+ * typed txid's block is unknown until the node answers, so useTrackedTxHeight /
+ * useLiveTx resolve the REAL height from /api/xmr/tx (re-polled while pending). This
+ * helper is retained solely because verify-confirmations.mjs uses it to manufacture a
+ * spread of pinned heights when exercising the confOf invariant. Do NOT call it from
+ * any UI path. Returns null for a mempool tx (or when there are no blocks yet).
  */
 export function pinTxBlockHeight(id: string, data: MoneroLive): number | null {
   if (isMempoolTx(id) || !data.blocks.length) return null;
