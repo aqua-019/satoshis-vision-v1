@@ -21,7 +21,7 @@ import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx, Block } from "@/data/types";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useMempoolTracking, MempoolTrackingDetail, MempoolSearchBar } from "@/mempool/mempool-shared";
-import { confOf } from "@/mempool/conf";
+import { chainTip, confOf } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 
 interface ViewProps {
@@ -254,8 +254,11 @@ function RingSigFan() {
 export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
   // Shared tracking — the SAME hook + detail as every other view; confOf everywhere.
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
-  // Declared unconditionally for stable hook order.
-  const glideRef = useRibbonGlide(data.height);
+  // Declared unconditionally for stable hook order. Keyed to chainTip(data) —
+  // the newest confirmed block height (data.blocks[0].height), the same value
+  // the ribbon renders from — so the FLIP fires exactly when the block list
+  // shifts, not on every get_info (data.height) tick.
+  const glideRef = useRibbonGlide(chainTip(data));
 
   const clear = () => { clearTracking(); onClearFocus?.(); };
   const onSelectBlock = (height: number) => onSearch({ kind: "block", height });

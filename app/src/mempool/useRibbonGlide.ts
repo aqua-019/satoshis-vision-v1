@@ -13,8 +13,11 @@
 // child a `data-glide-key={height}` attribute AND a stable React `key={height}`
 // (so React reuses the DOM node across ticks — a FLIP prerequisite). Children
 // without `data-glide-key` (e.g. queued placeholders whose heights shift every
-// tick) are ignored. Pass `data.height` as the dep so a glide is scheduled once
-// per new tip, not on every age/conf data tick.
+// tick) are ignored. Pass `chainTip(data)` (the newest confirmed block height,
+// data.blocks[0].height — the exact value the ribbon renders from) as the dep so
+// a glide is scheduled precisely when the rendered block list shifts, NOT on
+// every get_info `data.height` tick (which polls separately and would fire the
+// glide against an unchanged DOM, or miss a real block entirely).
 //
 // Honors prefers-reduced-motion (instant snap, no animation).
 
