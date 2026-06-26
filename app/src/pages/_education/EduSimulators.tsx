@@ -33,6 +33,11 @@ export function EduSimulators({ navigate }: EduSimulatorsProps) {
           sub="Every privacy primitive in the Monero stack, rendered as a metaphor you can run. Open any one full-bleed in the simulator."
         />
       </div>
+      <div className="edu-meta-tag">
+        <span className="dot" />
+        <span>Metadata · for educational purposes only</span>
+        <span className="sub">illustrative protocol models — not live network data</span>
+      </div>
       {GROUPS.map(({ group, items }) => (
         <section key={group} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="kicker">{group}</div>

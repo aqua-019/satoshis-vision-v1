@@ -328,6 +328,29 @@ export function NetworkPage() {
         </PanelFrame>
       </section>
 
+      {/* Peer telemetry — paused placeholder. Peer topology can't come from a public
+          restricted node (all peer fields read 0; get_connections / get_peer_list are
+          admin-only), so instead of a misleading "0 peers" we reserve the space for real,
+          node-pointed telemetry. No fabricated peers, IPs, latencies, counts, or geography. */}
+      <PanelFrame
+        title="Connections · peer telemetry"
+        right={<span className="soon-badge">Soon</span>}
+        style={{ opacity: 0.62 }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
+          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+            <span style={{ fontSize: 26, color: "var(--ink-60)" }}>—</span>
+            <span className="dim" style={{ fontSize: 11 }}>updating with node-pointed data soon</span>
+          </div>
+          <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+            Peer topology — connection counts, the peer list, and latencies — requires a dedicated
+            unrestricted node. The public-node cascade this site reads runs restricted RPC (all peer
+            fields report 0, peer lists are admin-only), so this panel stays paused and populates
+            once a node is pointed at the site. No peer data is shown here until then.
+          </p>
+        </div>
+      </PanelFrame>
+
       {/* Chain meta + Block weight */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title="Chain meta · live" right={<span className="dim">node-reported</span>}>

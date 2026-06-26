@@ -661,6 +661,27 @@ header > div > h1.serif {
 .proto-badge.priv  { color: var(--p-50); border-color: var(--p-50); }
 .proto-badge.acc   { color: var(--tk-accent); border-color: var(--tk-accent); text-shadow: var(--glow-1); }
 
+/* Educational-metadata banner — marks the protocol simulators as illustrative teaching
+   models, never live network data. Purple (the privacy/education tone) + dashed border so
+   it reads as distinct from the live `· live` panels. */
+.edu-meta-tag {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 7px 14px; border: 1px dashed var(--p-50); border-radius: 1px;
+  background: rgba(184, 122, 255, 0.06);
+  font: 10px/1.4 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--p-50);
+}
+.edu-meta-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--p-50); box-shadow: var(--glow-p); flex: none; }
+.edu-meta-tag .sub { color: var(--ink-40); letter-spacing: 0.06em; text-transform: none; }
+
+/* "SOON" badge for paused panels reserving space for real, node-pointed telemetry. */
+.soon-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 8px; border: 1px dashed var(--y-50); border-radius: 1px;
+  font: 9px/1 var(--f-mono); letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--y-50); opacity: 0.85;
+}
+
 .proto-ctrl { display: flex; gap: 8px; flex-direction: column; }
 .proto-ctrl-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--ink-10); }
 .proto-ctrl-row .k { color: var(--ink-40); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }

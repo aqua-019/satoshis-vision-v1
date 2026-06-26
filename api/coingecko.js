@@ -71,13 +71,23 @@ export default async function handler(req, res) {
         return false;
     };
 
+    // A single upstream attempt. CoinGecko's free tier 429s on shared IPs under load.
+    const attempt = (timeoutMs) => fetch(url.toString(), {
+        headers: { 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(timeoutMs),
+    });
+
     try {
-        const upstream = await fetch(url.toString(), {
-            headers: { 'Accept': 'application/json' },
-            signal: AbortSignal.timeout(12000),
-        });
+        let upstream = await attempt(12000);
+        // One jittered backoff-retry, only on 429: a transient throttle usually clears
+        // within a second, so a single retry turns it into real fresh data instead of a
+        // degraded render — most valuable on a cold cache with no last-good to serve.
+        if (upstream.status === 429) {
+            await new Promise((r) => setTimeout(r, 300 + Math.floor(Math.random() * 400)));
+            upstream = await attempt(8000);
+        }
         if (!upstream.ok) {
-            // 429 (or any upstream error) → fall back to the last-known-good body.
+            // Still throttled/erroring → fall back to the last-known-good body.
             if (serveStale('upstream-' + upstream.status)) return;
             return res.status(upstream.status).json({
                 error: 'upstream',
