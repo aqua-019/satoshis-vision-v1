@@ -340,7 +340,7 @@ export function NetworkPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span style={{ fontSize: 26, color: "var(--ink-60)" }}>—</span>
-            <span className="dim" style={{ fontSize: 11 }}>updating with node-pointed data soon</span>
+            <span className="dim" style={{ fontSize: 11 }}>Not live network data — peer telemetry paused</span>
           </div>
           <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
             Peer topology — connection counts, the peer list, and latencies — requires a dedicated
