@@ -2,9 +2,7 @@
  * pages/SimulatePage.tsx — protocol simulator with 6 switchable surfaces.
  *
  * These are EDUCATIONAL models: illustrative, metaphor-driven animations of how each
- * Monero privacy primitive works — not live network data. A persistent "metadata · for
- * educational purposes only" banner sits under the header so the surface is never mistaken
- * for live telemetry (even where a view borrows a live number for flavour).
+ * Monero privacy primitive works — not live network data.
  *
  * Protocol views render ProtoArtboard (header+stage+panel) only — no full
  * page chrome — so we wrap in AppShell with `fluid` + `hideRail`.
@@ -26,7 +24,7 @@ export function SimulatePage() {
 
   return (
     <AppShell hideRail fluid bg={{ intensity: "calm" }}>
-      <div style={{ height: "100%", display: "grid", gridTemplateRows: "auto auto 1fr" }}>
+      <div style={{ height: "100%", display: "grid", gridTemplateRows: "auto 1fr" }}>
         <div style={{ padding: "12px 20px", display: "flex", gap: 18, alignItems: "center", borderBottom: "1px solid var(--rule)", flexWrap: "wrap" }}>
           <Crumbs items={["xmr.irish", "v5.0", "simulate", meta.label]} />
           <div style={{ flex: 1, minWidth: 20 }} />
@@ -55,11 +53,6 @@ export function SimulatePage() {
               );
             })}
           </div>
-        </div>
-        <div className="edu-meta-tag" style={{ margin: "10px 20px 0", justifyContent: "center" }}>
-          <span className="dot" />
-          <span>Metadata · for educational purposes only</span>
-          <span className="sub">illustrative protocol model — not live network data</span>
         </div>
         <div style={{ position: "relative", overflow: "hidden" }}>
           <View data={data} />
