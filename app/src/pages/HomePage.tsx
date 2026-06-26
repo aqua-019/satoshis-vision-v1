@@ -31,8 +31,9 @@ export function HomePage() {
             </h1>
             <p className="mono dim" style={{ margin: 0, maxWidth: "52ch", fontSize: 13, lineHeight: 1.7, letterSpacing: "0.02em" }}>
               An anonymity set of <b style={{ color: "var(--p-50)" }}>150,000,000+</b> outputs.
-              Live mempool, protocol explainers, an interactive simulator for every privacy primitive in the stack —
-              RingCT, Stealth addresses, Dandelion++, View tags, FCMP++.
+              Live mempool and chain telemetry, protocol explainers, and interactive educational
+              simulators for every privacy primitive in the stack — RingCT, Stealth addresses,
+              Dandelion++, View tags, FCMP++.
             </p>
             <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
               <Link to="/mempool" className="proto-btn" style={{ textDecoration: "none" }}>Open mempool →</Link>
@@ -99,10 +100,10 @@ export function HomePage() {
             {[
               { to: "/mempool",   t: "Mempool",   d: "5 visualisations. Reactor · Bridge · Sediment · Constellation · Terminal.", c: "var(--tk-accent)" },
               { to: "/markets",   t: "Markets",   d: "Spot price, volume, order-book depth, the XMR/BTC ratio. Where XMR trades.", c: "var(--c-50)" },
-              { to: "/network",   t: "Network",   d: "Pools, peers, hashrate, difficulty, fork readiness. The raw chain telemetry.", c: "var(--y-50)" },
+              { to: "/network",   t: "Network",   d: "Pools, hashrate, difficulty, block weight, fork readiness. Raw chain telemetry · peer telemetry soon.", c: "var(--y-50)" },
               { to: "/monero",    t: "Monero",    d: "Origin story, tail emission, the eternal hearth. Why this coin won't die.", c: "var(--g-50)" },
-              { to: "/education", t: "Education", d: "Six metaphor-driven protocol simulators. Decoy, Dandelion++, view tags, RingCT, stealth, FCMP++.", c: "var(--p-50)" },
-              { to: "/simulate",  t: "Simulate",  d: "Run any protocol with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--tk-accent)" },
+              { to: "/education", t: "Education", d: "The BTC→XMR journey, privacy timeline, Satoshi quotes, and metaphor-driven protocol simulators (educational).", c: "var(--p-50)" },
+              { to: "/simulate",  t: "Simulate",  d: "Educational protocol models — run any one with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--tk-accent)" },
               { to: "/node",      t: "Run a node", d: "monerod in one command. Tor + I2P optional. Free seed peers.", c: "var(--y-50)" },
             ].map((s) => (
               <Card key={s.to} onClick={() => navigate(s.to)} style={{ padding: 14 }}>
