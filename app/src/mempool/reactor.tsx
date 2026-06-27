@@ -16,7 +16,7 @@
 // FullTxDetail / FullBlockDetail inspectors (real /api/tx lookups).
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { PanelFrame, MiniBar } from "@/design/primitives";
+import { PanelFrame, MiniBar, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx, Block } from "@/data/types";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
@@ -353,7 +353,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
               <span className="acc">10 confs · UNLOCK ▸</span>
             </div>
           </PanelFrame>
-          <PanelFrame title="Iso stack · last 10" right={<>BLOCK GEOMETRY</>}>
+          <PanelFrame title="Iso stack · last 10" right={<><Provenance source="node" fresh="live" /><span>BLOCK GEOMETRY</span></>}>
             <IsoBlockStack blocks={data.blocks} w={340} h={300} onSelectBlock={onSelectBlock} />
           </PanelFrame>
         </div>
@@ -373,7 +373,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: 14, minHeight: 360 }}>
           <PanelFrame
             title={<><span>● Mempool · hex lattice</span><span className="dim2">cells = tx · color = fee/B</span></>}
-            right={<><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
+            right={<><Provenance source="node" fresh="live" /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
           >
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
               <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />

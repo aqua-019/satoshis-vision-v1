@@ -2,7 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
-import { Stat } from "@/design/primitives";
+import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
@@ -195,7 +195,7 @@ export function SedStrataLog({ data }: { data: MoneroLive }) {
   const blocks = data.blocks.slice(0, BLOCKS_CAP);
   const maxTx = Math.max(...blocks.map((b) => b.txs), 1);
   return (
-    <SedCard title={"Stratigraphy log · " + blocks.length + " strata"} right={<span className="acc">surface → unlock</span>}>
+    <SedCard title={"Stratigraphy log · " + blocks.length + " strata"} right={<><Provenance source="node" fresh="live" /><span className="acc">surface → unlock</span></>}>
       {/* top pane — markets-grade tx-count-per-stratum bars (oldest → newest) */}
       <BarSeries
         data={blocks.slice().reverse().map((b) => b.txs)}
@@ -246,7 +246,7 @@ export function SedClearance({ data }: { data: MoneroLive }) {
     setSeries((s) => [...s.slice(1), data.mempool.length]);
   }, [data.mempool.length]);
   return (
-    <SedCard title="Clearance rate" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> live</>}>
+    <SedCard title="Clearance rate" right={<Provenance source="node" fresh="live" />}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
         <span className="mono acc glow" style={{ fontSize: 24, fontWeight: 500 }}>{data.mempool.length}</span>
         <span className="mono dim" style={{ fontSize: 10 }}>tx suspended</span>
@@ -265,7 +265,7 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
   const max = Math.max(...data.mempool.map((t) => t.perB), 1);
   const rows = data.mempool.slice(0, 12);
   return (
-    <SedCard title={"Suspended transactions · " + rows.length + " of " + data.mempool.length} right={<span className="acc">sorted by depth</span>}>
+    <SedCard title={"Suspended transactions · " + rows.length + " of " + data.mempool.length} right={<><Provenance source="node" fresh="live" /><span className="acc">sorted by depth</span></>}>
       <div className="mono" style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
         <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Fee/B</span><span>Depth</span><span>Age</span>
       </div>
