@@ -7,7 +7,7 @@
  * median-vs-limit bar.
  *
  * Standalone page: owns its <AppShell> chrome. Every number on this page
- * comes from `useMoneroLive()` — node RPC via the public-node cascade plus
+ * comes from `useMoneroLive()` — node RPC via the public node cascade plus
  * CoinGecko for market data elsewhere. Chain values render "—" until the
  * first snapshot lands (`data.ready`); if polling fails after a healthy
  * start, the header pill flips to STALE · RECONNECTING and the charts dim
@@ -17,7 +17,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { AppShell, PageHeader } from "@/layout/AppShell";
-import { Stat, PanelFrame, Crumbs, Pill } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs, Pill, Provenance, DataLegend } from "@/design/primitives";
 import { AreaSeries, BarSeries } from "./markets/charts";
 import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
@@ -179,8 +179,9 @@ export function NetworkPage() {
   return (
     <AppShell bg={{ intensity: "calm" }}>
       <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
+      <DataLegend sources={["node"]} />
       <PageHeader
-        kicker="Network telemetry · live"
+        kicker={<>Network telemetry <Provenance source="node" fresh="live" bare /></>}
         title='Network — <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">the numbers</em>.'
         sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
         right={<>
@@ -312,7 +313,7 @@ export function NetworkPage() {
           </div>
         </PanelFrame>
 
-        <PanelFrame title="Remote node · live" right={<span className="dim">public-node cascade</span>}>
+        <PanelFrame title="Remote node" right={<Provenance source="node" fresh="live" detail="public node cascade" />}>
           <KVRows rows={[
             ["Daemon", ready && data.version ? data.version : "—"],
             ["Network", ready && data.nettype ? data.nettype : "—"],
@@ -334,7 +335,7 @@ export function NetworkPage() {
           node-pointed telemetry. No fabricated peers, IPs, latencies, counts, or geography. */}
       <PanelFrame
         title="Connections · peer telemetry"
-        right={<span className="soon-badge">Soon</span>}
+        right={<><Provenance source="node" /><span className="soon-badge">Soon</span></>}
         style={{ opacity: 0.62 }}
       >
         <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
@@ -344,7 +345,7 @@ export function NetworkPage() {
           </div>
           <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
             Peer topology — connection counts, the peer list, and latencies — requires a dedicated
-            unrestricted node. The public-node cascade this site reads runs restricted RPC (all peer
+            unrestricted node. The public node cascade this site reads runs restricted RPC (all peer
             fields report 0, peer lists are admin-only), so this panel stays paused and populates
             once a node is pointed at the site. No peer data is shown here until then.
           </p>
@@ -353,7 +354,7 @@ export function NetworkPage() {
 
       {/* Chain meta + Block weight */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <PanelFrame title="Chain meta · live" right={<span className="dim">node-reported</span>}>
+        <PanelFrame title="Chain meta" right={<Provenance source="node" fresh="live" detail="node reported" />}>
           <KVRows rows={[
             ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
             ["Adjusted time", ready && data.adjustedTime > 0 ? new Date(data.adjustedTime * 1000).toISOString().slice(11, 19) + " UTC" : "—"],

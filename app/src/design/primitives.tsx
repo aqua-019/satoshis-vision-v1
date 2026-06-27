@@ -7,6 +7,11 @@
 
 import * as React from "react";
 
+// Canonical data-source attribution badge — re-exported so the many
+// `@/design/primitives` import sites can pull it from one place.
+export { Provenance, DataLegend } from "./provenance";
+export type { ProvSource, ProvFreshness, ProvenanceProps, DataLegendProps } from "./provenance";
+
 // ── Stat tile ───────────────────────────────────────────────────
 
 export interface StatProps {

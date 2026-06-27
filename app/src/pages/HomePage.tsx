@@ -7,7 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { AppShell } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtBytes } from "@/data/types";
-import { Card, Crumbs, Pill, Sparkline, Stat } from "@/design/primitives";
+import { Card, Crumbs, Pill, Sparkline, Stat, Provenance } from "@/design/primitives";
 
 export function HomePage() {
   const data = useMoneroLive();
@@ -46,7 +46,7 @@ export function HomePage() {
 
           <Card style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-              <div className="kicker">Live · {data.source}</div>
+              <div className="kicker">Live snapshot</div>
               {!data.ready && !data.marketReady
                 ? <Pill>CONNECTING</Pill>
                 : data.stale
@@ -54,7 +54,10 @@ export function HomePage() {
                   : <Pill tone="live" dot>SYNCED</Pill>}
             </div>
             <div>
-              <div className="mono dim" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>XMR / USD</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="mono dim" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>XMR / USD</div>
+                <Provenance source="coingecko" fresh={data.stale ? "stale" : data.marketReady ? "live" : "loading"} />
+              </div>
               <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>{data.marketReady ? `$${data.price.toFixed(2)}` : "—"}</div>
               <div className="mono" style={{ marginTop: 6, fontSize: 12, color: data.change24h >= 0 ? "var(--g-50)" : "var(--r-50)" }}>
                 {data.marketReady ? <>{data.change24h >= 0 ? "▲" : "▼"} {Math.abs(data.change24h).toFixed(2)}% · 24h</> : "—"}
@@ -63,8 +66,12 @@ export function HomePage() {
             {data.priceSeries.length > 1 && (
               <Sparkline data={data.priceSeries.slice(-90)} width={420} height={90} />
             )}
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div className="mono dim" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>On-chain</div>
+              <Provenance source="node" fresh={data.ready ? "live" : "loading"} detail={data.source !== "coingecko" ? data.source : undefined} />
+            </div>
             <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 3, gap: 8 }}>
-              <Stat k="Block height" v={data.ready ? data.height.toLocaleString() : "—"} sub="live" tone="acc" />
+              <Stat k="Block height" v={data.ready ? data.height.toLocaleString() : "—"} tone="acc" />
               <Stat k="Hashrate" v={data.ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} sub="2:00 target" />
               <Stat k="Mempool" v={data.ready ? `${data.mempool.length} tx` : "—"} sub={data.ready ? fmtBytes(memBytes) : "—"} />
             </div>
@@ -107,7 +114,10 @@ export function HomePage() {
               { to: "/node",      t: "Run a node", d: "monerod in one command. Tor + I2P optional. Free seed peers.", c: "var(--y-50)" },
             ].map((s) => (
               <Card key={s.to} onClick={() => navigate(s.to)} style={{ padding: 14 }}>
-                <div className="mono" style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: s.c }}>{s.t}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div className="mono" style={{ fontSize: 10, letterSpacing: "0.18em", textTransform: "uppercase", color: s.c }}>{s.t}</div>
+                  {s.to === "/simulate" ? <Provenance source="model" /> : null}
+                </div>
                 <p className="mono" style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.55, color: "var(--ink-60)" }}>{s.d}</p>
               </Card>
             ))}

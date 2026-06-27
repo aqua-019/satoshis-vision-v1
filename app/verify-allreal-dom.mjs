@@ -10,7 +10,7 @@
 //      last-good height stays on screen (degrade keeps data, never invents it).
 //   C. markets stale-cache — localStorage pre-seeded with mh:v1:* entries and
 //      /api/coingecko aborted: /markets renders the cached series with a
-//      "STALE · CG" badge.
+//      "COINGECKO · stale" badge.
 //
 // Run: npm run build && (npm run preview &) && sleep 2 && node verify-allreal-dom.mjs
 import { chromium, webkit } from 'playwright';
@@ -134,7 +134,7 @@ function fulfil(route) {
   await p.goto(base + '/markets', { waitUntil: 'load' });
   await p.waitForTimeout(1500);
   const body = await p.evaluate(() => document.body.innerText);
-  ok(/STALE · CG/i.test(body), 'C: cached candle series is labelled "STALE · CG"');
+  ok(/COINGECKO · stale/i.test(body), 'C: cached candle series is labelled "COINGECKO · stale"');
   ok(/40 bars/i.test(body), 'C: the cached candles (40 bars) actually render');
   await p.close();
 }

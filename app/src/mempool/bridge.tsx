@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { useTick } from "@/design/ArtBackground";
-import { Stat } from "@/design/primitives";
+import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
@@ -387,7 +387,7 @@ export function BrgAlertTape({ data }: { data: MoneroLive }) {
 
   const col: Record<string, string> = { g: "var(--g-50)", acc: "var(--tk-accent)", p: "var(--p-50)", y: "var(--y-50)" };
   return (
-    <BrgCard title="Alert tape · live" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> −f</>}>
+    <BrgCard title="Alert tape" right={<><Provenance source="node" fresh="live" inline /> −f</>}>
       <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.5 }}>
         {rows.length === 0 ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>

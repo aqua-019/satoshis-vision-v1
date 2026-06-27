@@ -72,8 +72,8 @@ export function useMempoolTracking(data: MoneroLive) {
       // txid hash. Seed only an EXPLICIT click-from-a-confirmed-block height; otherwise
       // null (pending) and let useTrackedTxHeight resolve the real height from the node:
       //   • number    → clicked a confirmed block (authoritative; keep, drives the arrow now)
-      //   • null       → clicked a mempool list (unconfirmed → resolve from node)
-      //   • undefined → raw txid typed in the search box (→ resolve from node)
+      //   • null       → clicked a mempool list (unconfirmed → resolve from the node)
+      //   • undefined → raw txid typed in the search box (→ resolve from the node)
       // Confirmations then derive live (confOf) on every render.
       const explicit = typeof q.blockHeight === "number";
       setTracking({ kind: "tx", id: q.id, blockHeight: explicit ? q.blockHeight! : null, explicit });

@@ -8,7 +8,7 @@
  * and render "—" until the first CoinGecko response lands. Candle + line history
  * is REAL — useMarketHistory() pulls CoinGecko OHLC + market_chart through the
  * same-origin /api/coingecko proxy; a series whose fetch fails shows its
- * last-good cached data labelled "STALE · CG" (never a fabricated fallback).
+ * last-good cached data labelled "COINGECKO · stale" (never a fabricated fallback).
  * Exchange volume/spread rows come from CoinGecko's tickers endpoint (real,
  * per-venue). Atomic-swap/P2P venues don't publish volume — they are listed as
  * a directory without numbers. Charts are hand-rolled SVG; no third-party / CDN
@@ -18,7 +18,7 @@
 import * as React from "react";
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
-import { Stat, PanelFrame, Crumbs } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs, Provenance, DataLegend } from "@/design/primitives";
 import {
   useMarketHistory,
   RANGE_DAYS,
@@ -30,20 +30,19 @@ import {
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 
-/** Source label for a single series. */
+/** Source label for a single series — COINGECKO with a freshness suffix.
+ *  Stale renders the canonical "COINGECKO · stale" (freshness, orthogonal to source). */
 function SourceBadge({ status, prefix }: { status: SeriesStatus; prefix?: string }) {
-  const color = status === "live" ? "var(--g-50)" : status === "loading" ? "var(--ink-40)" : "var(--y-50)";
-  const text = status === "live" ? "LIVE · CG" : status === "loading" ? "loading… · retrying" : "STALE · CG";
-  return <span style={{ color }}>{prefix ? prefix + " · " : ""}{text}</span>;
+  return <Provenance source="coingecko" fresh={status} detail={prefix} />;
 }
 
 /** Source label for a group of series (counts stale fallbacks). */
 function GroupBadge({ result }: { result: SeriesResult<LineSeries[]> }) {
-  if (result.status === "loading") return <span style={{ color: "var(--ink-40)" }}>loading… · retrying</span>;
+  if (result.status === "loading") return <Provenance source="coingecko" fresh="loading" />;
   const total = result.data.length;
   const stales = result.data.filter((s) => s.status !== "live").length;
-  if (stales === 0) return <span style={{ color: "var(--g-50)" }}>{total} live · CG</span>;
-  return <span style={{ color: "var(--y-50)" }}>{total - stales}/{total} live · {stales} stale</span>;
+  if (stales === 0) return <Provenance source="coingecko" fresh="live" detail={`${total} live`} />;
+  return <Provenance source="coingecko" fresh="stale" detail={`${total - stales}/${total} live · ${stales} stale`} />;
 }
 
 /** $12.3M / $980K style volume formatter. */
@@ -121,7 +120,8 @@ export function MarketsPage() {
 
   return (
     <AppShell bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "markets"]} status={data.marketReady ? "Price live · CG" : "Connecting…"} />
+      <Crumbs items={["xmr.irish", "v5.0", "markets"]} status={data.marketReady ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
+      <DataLegend sources={["coingecko"]} />
       <PageHeader
         kicker="Markets · price, volume, liquidity"
         title='Markets — <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">where XMR trades</em>.'

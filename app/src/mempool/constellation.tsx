@@ -2,7 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
-import { Stat } from "@/design/primitives";
+import { Stat, Provenance } from "@/design/primitives";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import type { MoneroLive, Tx } from "@/data/types";
 import { fmtBytes, shortHash } from "@/data/types";
@@ -138,7 +138,6 @@ export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers:
       <text x={cx} y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--tk-accent)" letterSpacing="0.18em" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>
         {ready ? `MEMPOOL · ${txs.length} TX · LIVE` : "MEMPOOL · AWAITING FEED"}
       </text>
-      <text x={cx} y={size - 8} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.14em">POSITIONS HASH-DERIVED · SUBJECTS LIVE FROM NODE</text>
     </svg>
   );
 }
@@ -148,7 +147,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
   const tx = data.ready && data.mempool.length ? newestFirst(data.mempool)[0] : null;
   const tierIdx = tx ? feeTierIndex(tx.perB, data.feeTiers) : -1;
   return (
-    <ConCard title="Newest tx · mempool" right={tx ? <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> from node</> : <span className="dim">from node</span>}>
+    <ConCard title="Newest tx · mempool" right={<Provenance source="node" fresh={tx ? "live" : "none"} />}>
       {tx ? (
         <>
           <div className="mono" style={{ fontSize: 12, color: "var(--c-50)", marginBottom: 10, letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
@@ -330,7 +329,7 @@ export function ConOverview({ data }: { data: MoneroLive }) {
   return (
     <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
       <section style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, alignItems: "start" }}>
-        <ConCard title="Mempool constellation · live" right={<span className="dim">positions hash-derived</span>} style={{ display: "flex", flexDirection: "column" }}>
+        <ConCard title="Mempool constellation" right={<Provenance source="node" also="session" fresh="live" detail="positions hash-derived" />} style={{ display: "flex", flexDirection: "column" }}>
           <ConSphere txs={data.mempool} tiers={data.feeTiers} ready={ready} size={460} />
           <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8, marginTop: 8 }}>
             <Stat k="MEMPOOL" v={ready ? String(data.mempool.length) : "—"} sub="txs" tone="acc" />
@@ -364,8 +363,8 @@ export function ConstellationView({ data }: ViewProps) {
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
-        <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> Rotating mesh · {Math.min(60, data.mempool.length)} mempool txs · live
+        <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
+          <Provenance source="node" fresh="live" inline /> Rotating mesh · {Math.min(60, data.mempool.length)} mempool txs
         </span>
       </div>
       {tracking ? (
