@@ -5,6 +5,7 @@
  */
 
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { Sparkline, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
@@ -82,6 +83,9 @@ export function NetRail({ extra }: NetRailProps) {
       <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: 10 }}>
         <Provenance source="node" fresh={data.stale ? "stale" : "live"} detail={data.source} />
         <div style={{ marginTop: 4 }}>{data.lastUpdate ? `${new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC` : "—"}</div>
+        <div style={{ marginTop: 6 }}>
+          <Link to="/sources" style={{ color: "var(--ink-60)", textDecoration: "none", letterSpacing: "0.04em" }}>Data &amp; sources →</Link>
+        </div>
       </div>
     </aside>
   );

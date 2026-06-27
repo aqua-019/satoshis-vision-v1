@@ -17,6 +17,7 @@ import { NetworkPage } from "@/pages/NetworkPage";
 import { EducationPage } from "@/pages/EducationPage";
 import { MoneroPage } from "@/pages/MoneroPage";
 import { NodePage } from "@/pages/NodePage";
+import { SourcesPage } from "@/pages/SourcesPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
 
 // Lazy-loaded: /simulate pulls in all of @/protocols/** (the 15 educational
@@ -43,6 +44,7 @@ export function App({ useFeed }: AppProps = {}) {
         <Route path="/monero/:tab" element={<MoneroPage />} />
         <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
         <Route path="/node"      element={<NodePage />} />
+        <Route path="/sources"   element={<SourcesPage />} />
         <Route path="*"          element={<NotFoundPage />} />
       </Routes>
     </DataProvider>

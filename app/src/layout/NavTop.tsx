@@ -20,6 +20,7 @@ const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/education",  label: "Education" },
   { to: "/simulate",   label: "Simulate" },
   { to: "/node",       label: "Run a node" },
+  { to: "/sources",    label: "Sources" },
 ];
 
 const NAV_MENU_ID = "navtop-menu";
@@ -47,11 +48,13 @@ export function NavTop() {
 
   return (
     <div className="topbar">
-      <Link to="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
-        <span className="brand-mark" />
-        <span>xmr<b>.irish</b></span>
-        <span className="kicker" style={{ marginLeft: 8 }}>v5.0 · 0.1</span>
-      </Link>
+      <div className="brand-col" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Link to="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
+          <span className="brand-mark" />
+          <span>xmr<b>.irish</b></span>
+        </Link>
+        <Link to="/sources#release-notes" className="kicker" style={{ textDecoration: "none" }} title="Release notes">v5.0.20</Link>
+      </div>
 
       <nav
         ref={navRef}
