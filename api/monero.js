@@ -8,19 +8,15 @@
          or { method: "get_transactions", params: { txs_hashes: ["hash"] } }
    ═══════════════════════════════════════════════════════════════ */
 
-const NODES = [
-    'https://node.moneroworld.com:18089',
-    'https://node.sethforprivacy.com:18089',
-    'https://xmr-node.cakewallet.com:18081',
-    'https://nodes.hashvault.pro:18081'
-];
+const { nodesFor } = require('./_nodes.js');
+const NODES = nodesFor('mainnet');
 
 // JSON-RPC methods that go through /json_rpc endpoint
 const JSON_RPC_METHODS = ['get_info', 'get_block', 'get_block_header_by_height', 'get_last_block_header'];
 // Direct methods that go to their own endpoint
 const DIRECT_METHODS = ['get_transaction_pool', 'get_transactions'];
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');

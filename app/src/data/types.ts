@@ -52,6 +52,24 @@ export interface Block {
   conf: number;
 }
 
+/** A single connected peer — populated ONLY when the operator's PRIMARY node
+ *  (unrestricted RPC) is configured. The public reference pool reports no peer
+ *  detail, so this is empty in 5.0.x and the Network peer panel stays paused. */
+export interface Peer {
+  /** host:port / ip as reported by the operator's own node */
+  address: string;
+  /** peer's reported chain height, when known */
+  height?: number;
+  /** connection direction */
+  incoming?: boolean;
+  /** connection state, e.g. "normal" | "synchronizing" */
+  state?: string;
+  /** round-trip latency in ms, when measured */
+  latencyMs?: number;
+  /** seconds the connection has been live */
+  liveTimeSec?: number;
+}
+
 export type DataSource = "coingecko" | "rpc" | "ws" | "host";
 
 export interface MoneroLive {
@@ -88,6 +106,14 @@ export interface MoneroLive {
   nettype: string;
   /** network-adjusted unix time in seconds */
   adjustedTime: number;
+
+  // ── peers (operator PRIMARY node only; public reference pool reports 0/empty) ──
+  /** incoming + outgoing connection count (0 on the restricted public pool) */
+  peerCount: number;
+  incomingPeers: number;
+  outgoingPeers: number;
+  /** per-peer detail — present only when the operator's primary node is wired (V6) */
+  peers?: Peer[];
 
   // ── mempool / chain ──
   mempool: Tx[];
@@ -143,10 +169,3 @@ export const fmtBytes = (b: number | null | undefined): string =>
 
 export const shortHash = (h: string | null | undefined): string =>
   h ? `${h.slice(0, 8)}…${h.slice(-6)}` : "—";
-
-const HEX = "0123456789abcdef";
-export const randHex = (len: number): string => {
-  let s = "";
-  for (let i = 0; i < len; i++) s += HEX[(Math.random() * 16) | 0];
-  return s;
-};
