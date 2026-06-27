@@ -104,6 +104,9 @@ interface XmrNetwork {
   synchronized?: boolean;
   nettype?: string;
   adjusted_time?: number;
+  peer_count?: number;
+  incoming_peers?: number;
+  outgoing_peers?: number;
 }
 
 interface XmrRecentTx {
@@ -186,6 +189,9 @@ export function mapNetwork(net: XmrNetwork, prev: MoneroLive): Partial<MoneroLiv
     synchronized: net.synchronized ?? prev.synchronized,
     nettype: net.nettype || prev.nettype,
     adjustedTime: num(net.adjusted_time, prev.adjustedTime),
+    peerCount: num(net.peer_count, prev.peerCount),
+    incomingPeers: num(net.incoming_peers, prev.incomingPeers),
+    outgoingPeers: num(net.outgoing_peers, prev.outgoingPeers),
   };
 }
 

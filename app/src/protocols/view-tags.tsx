@@ -10,7 +10,8 @@ import { NavTop } from "@/layout/NavTop";
 import { NetRail } from "@/layout/NetRail";
 import { Footer } from "@/layout/Footer";
 import { useMoneroLive } from "@/data/DataContext";
-import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash, randHex } from "@/data/types";
+import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
+import { randHex } from "@/protocols/sim-random";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {

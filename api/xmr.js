@@ -6,12 +6,8 @@
    requires relay.xmr.irish once it is deployed.
    ═══════════════════════════════════════════════════════════════ */
 
-const NODES = [
-  'http://node.moneroworld.com:18089',
-  'http://nodes.hashvault.pro:18081',
-  'http://node.community.rino.io:18081',
-  'http://opennode.xmr-tw.org:18089',
-];
+const { nodesFor } = require('./_nodes.js');
+const NODES = nodesFor('mainnet');
 
 const POOL_TAGS = [
   { name: 'P2Pool',        tags: ['p2pool'],                  type: 'decentralized', url: 'https://p2pool.io' },
