@@ -5,6 +5,7 @@ import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import { chainTip, confOf } from "@/mempool/conf";
+import { Provenance } from "@/design/primitives";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 import { useTick } from "@/design/ArtBackground";
 
@@ -193,6 +194,9 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
 
   return (
     <div style={{ position: "relative", padding: "18px 20px 30px" }}>
+      <div className="mono" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>
+        Confirmations <Provenance source="session" /> <span className="dim2">tip − block height</span>
+      </div>
       <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 12 }}>
         {ribbon.map((r, i) => {
           const confirmed = r.status !== "queued" && r.status !== "next";
@@ -505,7 +509,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr }: any) {
       borderRadius: 8, padding: "12px 14px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <span className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)" }}>Live · last {rows.length} tx in mempool</span>
+        <span className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)", display: "flex", alignItems: "center", gap: 8 }}><Provenance source="node" fresh="live" inline /> last {rows.length} tx in mempool</span>
         <span className="mono dim" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase" }}>
           <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> streaming
         </span>

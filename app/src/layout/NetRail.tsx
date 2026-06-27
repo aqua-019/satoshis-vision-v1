@@ -6,7 +6,7 @@
 
 import * as React from "react";
 import { useMoneroLive } from "@/data/DataContext";
-import { Sparkline } from "@/design/primitives";
+import { Sparkline, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 
@@ -24,7 +24,7 @@ export function NetRail({ extra }: NetRailProps) {
   return (
     <aside className="rail">
       <div className="rail-block">
-        <h6>Network · live</h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Network <Provenance source="node" fresh="live" bare /></h6>
         <KV k={<><span className="led pulse" />Block height</>} v={ready ? data.height.toLocaleString() : "—"} accent />
         <KV k="Hashrate"      v={ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} />
         <KV k="Difficulty"    v={ready ? `${(data.difficulty / 1e9).toFixed(2)}G` : "—"} />
@@ -34,7 +34,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6>Remote node · live</h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Remote node <Provenance source="node" fresh="live" bare /></h6>
         <KV k="Daemon"     v={data.version || "—"} />
         <KV k="Network"    v={data.nettype || "—"} />
         <KV k="DB size"    v={data.databaseSize ? `${(data.databaseSize / 1e9).toFixed(1)} GB` : "—"} />
@@ -45,7 +45,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6>Fee tiers · live</h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Fee tiers <Provenance source="node" fresh="live" bare /></h6>
         {FEE_TIER_LABELS.map((label, i) => (
           <KV
             key={label}
@@ -62,7 +62,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6>Market · live · CG</h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Market <Provenance source="coingecko" fresh="live" bare /></h6>
         <KV k="XMR/USD" v={data.marketReady ? `$${data.price.toFixed(2)}` : "—"} accent />
         <KV k="24h Δ" v={data.marketReady ? (
           <span className={data.change24h >= 0 ? "up" : "dn"}>
@@ -80,10 +80,7 @@ export function NetRail({ extra }: NetRailProps) {
       {extra}
 
       <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: 10 }}>
-        Source: <span className="acc">{data.source}</span> ·{" "}
-        {data.stale
-          ? <span style={{ color: "var(--y-50)", animation: "blink 0.9s steps(2,end) infinite" }}>STALE · reconnecting</span>
-          : <span style={{ animation: "blink 0.9s steps(2,end) infinite" }}>● live</span>}
+        <Provenance source="node" fresh={data.stale ? "stale" : "live"} detail={data.source} />
         <div style={{ marginTop: 4 }}>{data.lastUpdate ? `${new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC` : "—"}</div>
       </div>
     </aside>

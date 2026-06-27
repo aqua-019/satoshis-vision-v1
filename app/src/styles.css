@@ -669,6 +669,59 @@ header > div > h1.serif {
   color: var(--y-50); opacity: 0.85;
 }
 
+/* ── provenance · canonical 4-source attribution badge ───────────────────────
+   ONE vocabulary, ONE badge, everywhere. NODE=green, COINGECKO=soft-amber,
+   SESSION=cyan ("computed"), MODEL=edu-purple. Stale/loading is a FRESHNESS
+   suffix (gold), never a source — gold therefore means exactly one thing
+   site-wide: degraded freshness. See design/provenance.tsx. */
+/* Rendered `inline` (not inline-flex) so innerText reads "COINGECKO · stale"
+   on one logical line — flex items would inject newlines into the text layer
+   (breaks screen-reader flow + string asserts) while looking identical. */
+.prov {
+  display: inline;
+  font: 9.5px/1 var(--f-mono); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-60); white-space: nowrap;
+}
+.prov-fresh, .prov-detail, .prov-sep { vertical-align: middle; }
+
+.prov-tag {
+  display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;
+  padding: 4px 9px; border: 1px solid var(--ink-20); border-radius: 1px;
+}
+.prov--bare .prov-tag,
+.prov--inline .prov-tag { padding: 0; border: 0; }
+.prov--compact .prov-tag { padding: 2px 6px; gap: 4px; letter-spacing: 0.1em; }
+
+.prov--node      .prov-tag { color: var(--g-50);  border-color: var(--g-50); }
+.prov--coingecko .prov-tag { color: var(--o-100); border-color: var(--o-100); }
+.prov--session   .prov-tag { color: var(--c-50);  border-color: var(--c-50); }
+.prov--model     .prov-tag { color: var(--p-50);  border-color: var(--p-50); }
+
+/* liveness dot — reuses the .led pulse cadence/token */
+.prov-dot {
+  width: 6px; height: 6px; border-radius: 50%; flex: none;
+  background: currentColor; box-shadow: 0 0 6px currentColor;
+  animation: ledpulse calc(1.4s / var(--tk-anim, 1)) ease-in-out infinite;
+}
+
+/* compound divider (e.g. SESSION ∣ NODE) */
+.prov-sep { width: 1px; height: 11px; background: var(--ink-20); display: inline-block; }
+
+/* freshness — gold STALE blinks; loading is dim. Orthogonal to source. */
+.prov-fresh--stale   { color: var(--y-50); animation: blink calc(0.9s / var(--tk-anim, 1)) steps(2, end) infinite; }
+.prov-fresh--loading { color: var(--ink-40); }
+.prov-detail { color: var(--ink-40); }
+
+/* data legend — one-line key explaining the source vocabulary */
+.data-legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+  font: 9.5px/1 var(--f-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-40); padding: 6px 0;
+}
+.data-legend__k { color: var(--ink-40); letter-spacing: 0.2em; }
+.data-legend__item { display: inline-flex; align-items: center; gap: 8px; }
+.data-legend__gloss { color: var(--ink-40); text-transform: none; letter-spacing: 0.02em; font-size: 10px; }
+
 .proto-ctrl { display: flex; gap: 8px; flex-direction: column; }
 .proto-ctrl-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 4px 0; border-bottom: 1px dashed var(--ink-10); }
 .proto-ctrl-row .k { color: var(--ink-40); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }

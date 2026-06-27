@@ -12,7 +12,7 @@
 // loading / error / placeholder states.
 
 import * as React from "react";
-import { Stat } from "@/design/primitives";
+import { Stat, Provenance } from "@/design/primitives";
 import {
   useLiveTx,
   useLiveBlock,
@@ -103,7 +103,7 @@ export function LiveTxDetail({ txid, data, onBack }: {
         <div className="kicker">Transaction</div>
         <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
         <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="led pulse" /> resolving from node…
+          <span className="led pulse" /> resolving from the node…
           <span style={{ color: "var(--ink-40)" }}>pending · awaiting first block</span>
         </div>
       </div>
@@ -142,7 +142,7 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
         <div className="kicker">Block</div>
         <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
         <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="led pulse" /> resolving from node…
+          <span className="led pulse" /> resolving from the node…
         </div>
       </div>
     );
@@ -207,7 +207,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       </div>
 
       {/* KPI tiles (all real; size/fee null → "—") */}
-      <Section title="Summary" kicker="Top-line · from node">
+      <Section title="Summary" kicker={<>Top-line <Provenance source="node" bare /></>}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
           <Stat k="Fee" v={tx.fee != null ? tx.fee.toFixed(7) : "—"} sub="XMR" tone="acc" />
           <Stat k="Fee rate" v={tx.feePerB != null ? tx.feePerB.toFixed(2) : "—"} sub="piconero / B" />
@@ -236,7 +236,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
 
       {/* Confirmation panel */}
       <Section title="Confirmation status" kicker="10-conf unlock"
-        right={<span><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 6px var(--g-50)" }} />LIVE</span>}>
+        right={<Provenance source="session" fresh="live" />}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
           <Stat k="of 10 confirmations" v={tx.confirmations} tone="acc" big />
           <Stat k="Blocks remaining" v={remaining} big />
@@ -333,7 +333,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
                 </div>
 
                 {decoys.status === "error" ? (
-                  <div className="mono dim" style={{ fontSize: 10.5 }}>decoy ages unavailable from node</div>
+                  <div className="mono dim" style={{ fontSize: 10.5 }}>decoy ages unavailable from the node</div>
                 ) : decoyInput && decoyInput.ring.length ? (
                   <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px 70px", gap: 8, fontFamily: "var(--f-mono)", fontSize: 11 }}>
                     <span className="kicker">#</span>
@@ -477,7 +477,7 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
       </div>
 
       {/* KPI tiles */}
-      <Section title="Block summary" kicker="At a glance · from node">
+      <Section title="Block summary" kicker={<>At a glance <Provenance source="node" bare /></>}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
           <Stat k="Transactions" v={block.txCount} tone="acc" />
           <Stat k="Weight" v={(block.weightBytes / 1024).toFixed(1)} sub="KB" />

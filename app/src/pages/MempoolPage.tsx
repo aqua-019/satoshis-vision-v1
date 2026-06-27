@@ -13,7 +13,7 @@
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 import { AppShell } from "@/layout/AppShell";
-import { Crumbs } from "@/design/primitives";
+import { Crumbs, DataLegend } from "@/design/primitives";
 import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
 import { MempoolHeartbeat } from "@/mempool/mempool-shared";
@@ -97,6 +97,12 @@ export function MempoolPage() {
             ) : null}
           </div>
           <MempoolHeartbeat data={data} />
+        </div>
+
+        {/* source vocabulary legend — mempool mixes live node subjects with
+            session-computed positions/confirmations. */}
+        <div style={{ padding: "2px 20px 0" }}>
+          <DataLegend sources={["node", "session"]} />
         </div>
 
         {/* View switcher — fixed top-right on desktop; inline dropdown on mobile.

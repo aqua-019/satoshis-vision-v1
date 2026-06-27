@@ -2,7 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
-import { PanelFrame } from "@/design/primitives";
+import { PanelFrame, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
@@ -274,7 +274,7 @@ export function TerminalHubView({ data }: ViewProps) {
               </div>
             </PanelFrame>
 
-            <PanelFrame title="$ tail -f · live feed" right={<><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
+            <PanelFrame title="$ tail -f · feed" right={<><Provenance source="node" fresh="live" inline /><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
               <TermLiveLog data={data} />
             </PanelFrame>
 
@@ -282,7 +282,7 @@ export function TerminalHubView({ data }: ViewProps) {
               <PanelFrame title="$ awk · fee distribution">
                 <TermFeeHisto data={data} />
               </PanelFrame>
-              <PanelFrame title="$ fee · tiers · live">
+              <PanelFrame title="$ fee · tiers" right={<Provenance source="node" fresh="live" />}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.7 }}>
                   {FEE_TIER_LABELS.map((label, i) => (
                     <div key={label} style={{ color: tiersKnown ? TIER_COLORS[i] : "var(--ink-40)" }}>

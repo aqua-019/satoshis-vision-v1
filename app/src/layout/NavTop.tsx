@@ -9,6 +9,7 @@
 import * as React from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
+import { Provenance } from "@/design/primitives";
 
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
@@ -66,6 +67,7 @@ export function NavTop() {
             className={({ isActive }) => (isActive ? "on" : "")}
           >
             {n.label}
+            {n.to === "/simulate" ? <Provenance source="model" compact style={{ marginLeft: 6 }} /> : null}
           </NavLink>
         ))}
       </nav>
