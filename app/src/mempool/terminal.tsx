@@ -7,7 +7,9 @@ import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
 import type { FeedEvent } from "@/data/useFeedEvents";
-import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell } from "@/mempool/mempool-shared";
+import { confOf, CONF_UNLOCK } from "@/mempool/conf";
+import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import type { MoneroLive, Block } from "@/data/types";
 
 interface ViewProps {
@@ -92,7 +94,7 @@ function TermPalette({ data }: { data: MoneroLive }) {
 }
 
 /* ── reactive ASCII block stream ────────────────────────────── */
-export function TermAsciiBlocks({ data }: { data: MoneroLive }) {
+export function TermAsciiBlocks({ data, trackedTxId, trackedHeight }: { data: MoneroLive; trackedTxId?: string | null; trackedHeight?: number | null }) {
   const cols: Block[] = data.blocks.slice(0, 13);
   const rowsMax = 18;
   const cell = (
@@ -104,17 +106,21 @@ export function TermAsciiBlocks({ data }: { data: MoneroLive }) {
     sizeKB = 0,
     newest = false,
   ) => {
+    const tracked = !q && trackedHeight != null && height === trackedHeight;
     const filled = q ? 0 : Math.min(rowsMax - 2, 2 + Math.floor((txs / 140) * (rowsMax - 4)));
     const empty = rowsMax - filled - 2;
     const ascii = q
       ? "┌──┐\n" + "│  │\n".repeat(rowsMax - 3) + `│ ${label} │\n` + "└──┘"
       : "┌──┐\n" + "│  │\n".repeat(empty) + "██\n".repeat(filled) + "└──┘";
     return (
-      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-80)" }}>
-        <div style={{ textAlign: "center", marginBottom: 4, color: q ? "var(--ink-40)" : "var(--tk-accent)", textShadow: q ? "none" : "var(--glow-1)" }}>{q ? "~+" + label : height.toString().slice(-3)}</div>
-        <pre style={{ margin: 0, lineHeight: 1, fontSize: 11, color: "var(--tk-accent)", textShadow: newest ? "0 0 9px rgba(255,122,26,0.7)" : "0 0 6px rgba(255,122,26,0.4)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
-        <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
-        {!q ? <div style={{ textAlign: "center", color: "var(--ink-40)", fontSize: 9 }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
+      <div data-tracked-tx={tracked ? trackedTxId : undefined} data-tracked-block={tracked ? height : undefined} style={{ fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-80)" }}>
+        <div style={{ textAlign: "center", marginBottom: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: q ? "none" : tracked ? "0 0 6px var(--y-50)" : "var(--glow-1)" }}>
+          {q ? "~+" + label : (tracked ? "▲" : "") + height.toString().slice(-3)}
+        </div>
+        <pre style={{ margin: 0, lineHeight: 1, fontSize: 11, color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px rgba(255,122,26,0.7)" : tracked ? "0 0 7px rgba(255,212,0,0.5)" : "0 0 6px rgba(255,122,26,0.4)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
+        <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
+        {!q ? <div style={{ textAlign: "center", color: tracked ? "var(--y-50)" : "var(--ink-40)", fontSize: 9 }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
+        {tracked ? <div style={{ textAlign: "center", color: "var(--y-50)", fontSize: 9 }}>{confOf(height, data)}/{CONF_UNLOCK}</div> : null}
       </div>
     );
   };
@@ -128,7 +134,10 @@ export function TermAsciiBlocks({ data }: { data: MoneroLive }) {
 }
 
 /* ── live auto-tailing log · real feed diffs ────────────────── */
-function TermLiveLog({ data }: { data: MoneroLive }) {
+function TermLiveLog({ data, trackedTx }: {
+  data: MoneroLive;
+  trackedTx?: { id: string; blockHeight: number | null; conf: number } | null;
+}) {
   const events = useFeedEvents(data, 16);
   const fmtTs = (ts: number) => new Date(ts).toTimeString().slice(0, 8);
   const line = (e: FeedEvent): { lvl: string; cat: string; msg: string } => {
@@ -141,8 +150,24 @@ function TermLiveLog({ data }: { data: MoneroLive }) {
     }
   };
   const colorFor = (lvl: string, cat?: string) => lvl === "W" ? "var(--y-50)" : lvl === "E" ? "var(--r-50)" : cat === "core" ? "var(--tk-accent)" : cat === "txpool" ? "var(--c-50)" : cat === "net" ? "var(--g-50)" : "var(--ink-60)";
+  // Pinned first row for a tracked tx, formatted like the surrounding log
+  // lines — real state (in_pool vs. resolved height/conf), never simulated.
+  const trackedMsg = trackedTx
+    ? (trackedTx.blockHeight != null
+        ? `tx ${trackedTx.id.slice(0, 8)}… height=${trackedTx.blockHeight} conf=${trackedTx.conf}/${CONF_UNLOCK}`
+        : `tx ${trackedTx.id.slice(0, 8)}… in_pool`)
+    : null;
   return (
     <div style={{ fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
+      {trackedTx && trackedMsg ? (
+        <div data-tracked-tx={trackedTx.id} data-tracked-block={trackedTx.blockHeight ?? undefined}
+          style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: 8, padding: "1px 0", color: "var(--y-50)" }}>
+          <span style={{ fontWeight: 600 }}>I</span>
+          <span style={{ opacity: 0.85 }}>{fmtTs(Date.now())}</span>
+          <span>track</span>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{trackedMsg}</span>
+        </div>
+      ) : null}
       {events.length === 0 ? (
         <div className="dim2" style={{ padding: "8px 0", letterSpacing: "0.12em" }}>waiting for feed…</div>
       ) : events.map((e, i) => {
@@ -196,31 +221,34 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
 }
 
 export function TerminalHubView({ data }: ViewProps) {
-  const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
   // Shared tracking — same hook + detail (confOf) as every other view.
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
   const tiersKnown = data.feeTiers.length === 4;
-  // Median mempool fee rate (piconero/B) — real txs only.
-  const medianPerB = React.useMemo(() => {
-    if (!data.mempool.length) return 0;
-    const s = data.mempool.map((t) => t.perB).sort((a, b) => a - b);
-    return s[Math.floor(s.length / 2)];
-  }, [data.mempool]);
+  // The ONE mempool telemetry derivation, shared with the other five views.
+  // Terminal keeps its own ASCII/kv skin — it just stops recomputing the
+  // same poolBytes/medianPerB figures locally.
+  const stats = useMemStats(data);
   const syncPct = data.ready && data.synchronized ? 100 : 0;
-  const poolPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((memBytes / data.blockWeightLimit) * 100)) : 0;
+  const poolPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((stats.poolBytes / data.blockWeightLimit) * 100)) : 0;
   const weightPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((data.blockWeightMedian / data.blockWeightLimit) * 100)) : 0;
-  const feePct = data.ready && tiersKnown && medianPerB && data.feeTiers[2] ? Math.min(100, Math.round((medianPerB / data.feeTiers[2]) * 100)) : 0;
+  const feePct = data.ready && tiersKnown && stats.medianPerB && data.feeTiers[2] ? Math.min(100, Math.round((stats.medianPerB / data.feeTiers[2]) * 100)) : 0;
+
+  // Tracked tx — same shape everywhere: null blockHeight = still pending,
+  // resolved once from the node otherwise; confOf never disagrees with the
+  // ribbon/other views since it's the one shared formula.
+  const trackedTxId = tracking?.kind === "tx" ? tracking.id : null;
+  const trackedBlockHeight = tracking?.kind === "tx" ? tracking.blockHeight : null;
+  const trackedConf = confOf(trackedBlockHeight, data);
+  const trackedTx = trackedTxId ? { id: trackedTxId, blockHeight: trackedBlockHeight, conf: trackedConf } : null;
+  // Seconds until the tracked tx reaches CONF_UNLOCK confirmations, honestly
+  // derived from the live block target — never a fabricated countdown.
+  const unlockOffsetSec = trackedTx && trackedTx.blockHeight != null && trackedTx.conf < CONF_UNLOCK
+    ? Math.max(0, CONF_UNLOCK - trackedTx.conf - 1) * (data.blockTarget || 120)
+    : 0;
+
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <div className="mempool-search-bar">
-        <MempoolSearchBar onSearch={onSearch} />
-        <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> monerod tail · Block {data.ready ? data.height.toLocaleString() : "—"} · {data.mempool.length} mempool
-        </span>
-      </div>
-      {tracking ? (
-        <MempoolTrackingDetail tracking={tracking} data={data} onBack={clearTracking} onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })} />
-      ) : (
+      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking} stats={false}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 14, padding: "16px 20px 40px" }}>
         <div>
 
@@ -244,7 +272,7 @@ export function TerminalHubView({ data }: ViewProps) {
 ) : "—"}
 {"\n│ Mempool:   "}
 <span className="acc">{pad(data.mempool.length, 3)} tx</span>
-{` · ${fmtBytes(memBytes)}\n`}
+{` · ${fmtBytes(stats.poolBytes)}\n`}
 {"╰" + "─".repeat(51)}
                 </pre>
                 <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: 11 }}>
@@ -268,14 +296,14 @@ export function TerminalHubView({ data }: ViewProps) {
             </div>
 
             <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>}>
-              <TermAsciiBlocks data={data} />
+              <TermAsciiBlocks data={data} trackedTxId={trackedTxId} trackedHeight={trackedBlockHeight} />
               <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
-                <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+10c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target=2:00</span><span className="dim2 acc">scroll ←→</span>
+                <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+{CONF_UNLOCK}c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target=2:00</span><span className="dim2 acc">scroll ←→</span>
               </div>
             </PanelFrame>
 
             <PanelFrame title="$ tail -f · feed" right={<><Provenance source="node" fresh="live" inline /><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
-              <TermLiveLog data={data} />
+              <TermLiveLog data={data} trackedTx={trackedTx} />
             </PanelFrame>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
@@ -354,9 +382,25 @@ BP_VARIANT=BP+`}
                 <div title="median pool fee rate vs fast tier"><TermGauge value={feePct} label="FEE" color="var(--g-50)" /></div>
               </div>
             </div>
+            {trackedTx ? (
+              <div className="rail-block" data-tracked-tx={trackedTx.id} data-tracked-block={trackedTx.blockHeight ?? undefined}>
+                <h6>Tracked</h6>
+                <div className="kv"><span className="k">Txid</span><span className="v acc">{shortHash(trackedTx.id)}</span></div>
+                <div className="kv"><span className="k">Height</span><span className="v">{trackedTx.blockHeight != null ? trackedTx.blockHeight.toLocaleString() : "in pool"}</span></div>
+                <div className="kv"><span className="k">Conf</span><span className={trackedTx.blockHeight != null && trackedTx.conf >= CONF_UNLOCK ? "v g" : "v"}>{trackedTx.blockHeight != null ? `${trackedTx.conf}/${CONF_UNLOCK}` : "—"}</span></div>
+                <div className="kv">
+                  <span className="k">Unlock ETA</span>
+                  <span className="v p">
+                    {trackedTx.blockHeight == null ? "—"
+                      : trackedTx.conf >= CONF_UNLOCK ? "unlocked"
+                      : <BlockEta data={data} offsetSec={unlockOffsetSec} />}
+                  </span>
+                </div>
+              </div>
+            ) : null}
           </aside>
         </div>
-      )}
+      </MemViewShell>
     </div>
   );
 }
