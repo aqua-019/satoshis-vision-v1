@@ -271,8 +271,15 @@ export function TerminalHubView({ data }: ViewProps) {
   </>
 ) : "—"}
 {"\n│ Mempool:   "}
-<span className="acc">{pad(data.mempool.length, 3)} tx</span>
-{` · ${fmtBytes(stats.poolBytes)}\n`}
+{/* Terminal opts out of MemStatStrip (stats={false}) to keep its dense
+    ASCII idiom, so it carries the shared-stat hooks itself. Same contract
+    as the strip: data-memstat names the figure, data-memstat-value gives
+    the raw number, so the cross-view gate compares readings rather than
+    formatting — this view zero-pads where the strip doesn't. */}
+<span className="acc" data-memstat="mempool" data-memstat-value={data.mempool.length}>{pad(data.mempool.length, 3)} tx</span>
+{" · "}
+<span data-memstat="bytes" data-memstat-value={stats.poolBytes}>{fmtBytes(stats.poolBytes)}</span>
+{"\n"}
 {"╰" + "─".repeat(51)}
                 </pre>
                 <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: 11 }}>

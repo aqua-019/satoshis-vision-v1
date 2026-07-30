@@ -4,7 +4,7 @@ import * as React from "react";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
 import { useMempoolTracking, MemViewShell, TrackChip } from "@/mempool/mempool-shared";
-import { chainTip, confOf, CONF_UNLOCK } from "@/mempool/conf";
+import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { BlockEta } from "@/mempool/mem-stats";
 import { Provenance } from "@/design/primitives";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
@@ -114,7 +114,7 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
     { height: data.height + 2, eta: "4 min", txs: 0 },
     { height: data.height + 1, eta: "2 min", txs: data.mempool.length },
   ];
-  const past = data.blocks.slice(0, CONF_UNLOCK);
+  const past = data.blocks.slice(0, RIBBON_BLOCKS);
   while (past.length < CONF_UNLOCK) past.push({ height: data.height - past.length, hash: "—", txs: 0, sizeKB: 0, reward: 0, pool: "—", age: 120 * past.length, conf: past.length + 1 });
 
   const ribbon = [

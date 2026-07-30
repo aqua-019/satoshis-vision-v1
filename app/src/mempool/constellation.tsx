@@ -6,7 +6,7 @@ import { useReducedMotion } from "@/design/useReducedMotion";
 import { Provenance } from "@/design/primitives";
 import { MemViewShell, TrackChip, useMempoolTracking, type Tracking } from "@/mempool/mempool-shared";
 import { useMemStats } from "@/mempool/mem-stats";
-import { CONF_UNLOCK, confOf } from "@/mempool/conf";
+import { CONF_UNLOCK, confOf, RIBBON_BLOCKS } from "@/mempool/conf";
 import type { MoneroLive, Tx } from "@/data/types";
 import { fmtBytes, shortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
@@ -380,7 +380,7 @@ export function ConBlockStream({ data, tracking, trackedHeight }: { data: Monero
   return (
     <ConCard title="Block stream" right={<span className="acc">{data.ready ? `tip #${data.height.toLocaleString()}` : "—"}</span>}>
       <div style={{ display: "flex", gap: 4, height: 96, alignItems: "flex-end" }}>
-        {data.blocks.slice(0, 10).map((b) => {
+        {data.blocks.slice(0, RIBBON_BLOCKS).map((b) => {
           const isTracked = trackedHeight != null && b.height === trackedHeight;
           return (
             <div className="mblock" key={b.height}

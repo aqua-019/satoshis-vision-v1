@@ -136,22 +136,26 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
 
   return (
     <section style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
-      {/* `display: contents` keeps the inner .stat as the grid item, so the
-          data-memstat hook adds no layout box. The attribute is the contract
-          verify-memstats.mjs scrapes to prove all six views agree. */}
-      <div data-memstat="mempool" style={{ display: "contents" }}>
+      {/* `display: contents` keeps the inner .stat as the grid item, so these
+          hooks add no layout box.
+          data-memstat names the figure; data-memstat-value carries the RAW
+          number. verify-memstats.mjs compares the raw values, not the rendered
+          text, because each view is free to format in its own idiom — Terminal
+          zero-pads its tx count to "038" where the strip renders "38". Those
+          are the same reading, and the gate has to be able to say so. */}
+      <div data-memstat="mempool" data-memstat-value={poolReady ? stats.txCount : ""} style={{ display: "contents" }}>
         <Stat k="MEMPOOL" v={poolReady ? fmtN(stats.txCount) : dash} sub="txs" tone="acc" />
       </div>
-      <div data-memstat="bytes" style={{ display: "contents" }}>
+      <div data-memstat="bytes" data-memstat-value={poolReady ? stats.poolBytes : ""} style={{ display: "contents" }}>
         <Stat k="WEIGHT" v={poolReady ? fmtBytes(stats.poolBytes) : dash} sub="pool" />
       </div>
-      <div data-memstat="oldest" style={{ display: "contents" }}>
+      <div data-memstat="oldest" data-memstat-value={poolReady ? stats.oldestAgeSec : ""} style={{ display: "contents" }}>
         <Stat k="OLDEST" v={poolReady ? `${stats.oldestAgeSec}s` : dash} sub="age" />
       </div>
-      <div data-memstat="median" style={{ display: "contents" }}>
+      <div data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""} style={{ display: "contents" }}>
         <Stat k="MEDIAN" v={poolReady ? Math.round(stats.medianPerB).toLocaleString() : dash} sub="pcn/B" />
       </div>
-      <div data-memstat="eta" style={{ display: "contents" }}>
+      <div data-memstat="eta" data-memstat-value={data.ready ? stats.nextBlockEtaSec : ""} style={{ display: "contents" }}>
         <Stat k="NEXT BLOCK" v={data.ready ? <BlockEta data={data} /> : dash} sub="eta" tone="p" />
       </div>
     </section>
