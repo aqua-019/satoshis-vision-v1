@@ -100,11 +100,11 @@ function TlNode({ ev, dimmed }: { ev: TlEvent; dimmed: boolean }) {
       </div>
       <div style={{ paddingBottom: 22 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-          <span className="mono" style={{ fontSize: 11, color: cat.color, letterSpacing: "0.04em" }}>{ev.d}</span>
-          <span className="mono" style={{ fontSize: 8.5, letterSpacing: "0.14em", textTransform: "uppercase", color: cat.color, border: "1px solid " + cat.color, borderRadius: 2, padding: "1px 6px" }}>{cat.label}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", color: cat.color, letterSpacing: "0.04em" }}>{ev.d}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: cat.color, border: "1px solid " + cat.color, borderRadius: 2, padding: "1px 6px" }}>{cat.label}</span>
         </div>
         <div className="serif" style={{ fontSize: 19, fontWeight: 500, color: "var(--ink-100)", margin: "5px 0 5px" }}>{ev.t}</div>
-        <p className="mono dim" style={{ margin: 0, fontSize: 12.5, lineHeight: 1.65, maxWidth: "80ch" }}>{ev.b}</p>
+        <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.65, maxWidth: "80ch" }}>{ev.b}</p>
       </div>
     </div>
   );
@@ -136,7 +136,7 @@ export function EduTimeline({ data }: { data: MoneroLive }) {
               <button key={k} type="button" onClick={() => setFilter(k)}
                 style={{ appearance: "none", cursor: "pointer", background: on ? "rgba(255,255,255,0.06)" : "transparent",
                   border: "1px solid " + (on ? color : "var(--ink-20)"), borderRadius: 999, padding: "5px 12px",
-                  color: on ? color : "var(--ink-60)", fontFamily: "var(--f-mono)", fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+                  color: on ? color : "var(--ink-60)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 {k === "all" ? "All" : TL_CAT[k as TlCat].label}
               </button>
             );
@@ -147,7 +147,7 @@ export function EduTimeline({ data }: { data: MoneroLive }) {
       {TL_ERAS.map((era) => (
         <section key={era.id} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14, marginTop: 8 }}>
-            <span className="mono" style={{ fontSize: 11, letterSpacing: "0.16em", color: "var(--tk-accent)" }}>{era.span}</span>
+            <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--tk-accent)" }}>{era.span}</span>
             <span className="serif" style={{ fontSize: 26, fontWeight: 500, color: "var(--ink-100)" }}>{era.name}</span>
             <span style={{ height: 1, flex: 1, background: "var(--rule)" }} />
           </div>

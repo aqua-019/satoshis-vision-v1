@@ -30,7 +30,7 @@ export function OutlookTab({ data }: MoneroTabProps) {
         <p className="serif" style={{ fontSize: 22, lineHeight: 1.45, color: "var(--ink-100)", margin: "12px 0 14px" }}>
           Privacy demand is structural, not speculative.
         </p>
-        <p className="mono dim" style={{ fontSize: 13, lineHeight: 1.72, margin: 0 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.72, margin: 0 }}>
           In 2025, dozens of jurisdictions implemented stricter compliance frameworks targeting privacy coins — and yet Monero's price rose 195%, its network processed 15,000–25,000 daily transactions, and its community grew. Every new surveillance framework (DAC8, CLARITY, GENIUS, AMLR) expands the addressable market for private money. Supply tightened by delistings + persistent demand moving P2P = structural price support.
         </p>
       </Card>
@@ -50,11 +50,11 @@ export function OutlookTab({ data }: MoneroTabProps) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginTop: 14 }}>
           <div>
             <div className="serif" style={{ fontSize: 20, color: "var(--c-50)", marginBottom: 6 }}>Bitcoin chose traceability</div>
-            <p className="mono dim" style={{ fontSize: 12.5, lineHeight: 1.65, margin: 0 }}>Gained Wall Street, ETFs, corporate treasuries, Strategic Reserve status, and a $2T+ market cap — by becoming fully auditable.</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.65, margin: 0 }}>Gained Wall Street, ETFs, corporate treasuries, Strategic Reserve status, and a $2T+ market cap — by becoming fully auditable.</p>
           </div>
           <div>
             <div className="serif" style={{ fontSize: 20, color: "var(--tk-accent)", marginBottom: 6 }}>Monero chose privacy</div>
-            <p className="mono dim" style={{ fontSize: 12.5, lineHeight: 1.65, margin: 0 }}>Gained the mathematical guarantee that no government, corporation, or surveillance state can see your transactions — by accepting institutional exclusion.</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.65, margin: 0 }}>Gained the mathematical guarantee that no government, corporation, or surveillance state can see your transactions — by accepting institutional exclusion.</p>
           </div>
         </div>
         <p className="serif" style={{ fontSize: 18, color: "var(--ink-100)", marginTop: 18, marginBottom: 0 }}>The world needs both. Bitcoin for when you want Wall Street's blessing. Monero for when you want freedom.</p>
