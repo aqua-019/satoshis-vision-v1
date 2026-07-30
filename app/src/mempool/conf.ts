@@ -81,3 +81,14 @@ export function chainTip(data: MoneroLive): number {
 export function confOf(blockHeight: number | null, data: MoneroLive): number {
   return liveConf(blockHeight, chainTip(data));
 }
+
+/** Monero's coinbase/received-output unlock depth: 10 confirmations. */
+export const CONF_UNLOCK = 10;
+
+/**
+ * 0…1 progress toward CONF_UNLOCK, for ribbons and chips. Built on confOf, so
+ * it can never disagree with the ribbon label or the tracked-arrow badge.
+ */
+export function confProgress(blockHeight: number | null, data: MoneroLive): number {
+  return Math.min(1, confOf(blockHeight, data) / CONF_UNLOCK);
+}

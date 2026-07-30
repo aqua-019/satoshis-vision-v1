@@ -12,11 +12,14 @@
  *
  * Two additions ParticleField doesn't need: honours prefers-reduced-motion
  * (a single static frame at t=0, no rAF loop — a murmuration inside a modal
- * is a bigger vestibular hit than background stars), and pauses the loop
+ * is a bigger vestibular hit than background stars) via the shared reactive
+ * design/useReducedMotion hook (so toggling the OS setting mid-session tears
+ * the canvas down and rebuilds it in the right mode), and pauses the loop
  * while the tab is hidden (document.visibilityState === "hidden").
  */
 
 import * as React from "react";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MiniMode } from "./data";
 
 type DrawFn = (ctx: CanvasRenderingContext2D, w: number, h: number, t: number, dt: number) => void;
@@ -28,6 +31,7 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
   // the canvas + observer).
   const drawRef = React.useRef<DrawFn>(draw);
   drawRef.current = draw;
+  const reduceMotion = useReducedMotion();
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -38,7 +42,6 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
     let w = 0;
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
       const r = canvas.getBoundingClientRect();
@@ -98,7 +101,9 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+    // reduceMotion is the only reactive dependency — mode/height changes
+    // flow through drawRef above and don't need a teardown/rebuild.
+  }, [reduceMotion]);
 
   return ref;
 }

@@ -10,6 +10,7 @@
  */
 
 import * as React from "react";
+import { useReducedMotion } from "./useReducedMotion";
 
 type Intensity = "calm" | "busy" | "chaotic";
 
@@ -47,6 +48,7 @@ export function ParticleField({
   className,
 }: ParticleFieldProps) {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
+  const reduceMotion = useReducedMotion();
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -82,11 +84,16 @@ export function ParticleField({
       hue: Math.random() < 0.85 ? 28 : 280,
     }));
 
-    const tick = () => {
+    // `k` is elapsed time normalised to 60fps-equivalent steps (k=1 means
+    // "one 1/60s tick just happened"). Every per-frame increment below is
+    // scaled by it so a 120Hz/144Hz display doesn't drift stars twice as
+    // fast in wall-clock time as a 60Hz one — at 60Hz, k≈1 every frame and
+    // the motion is pixel-identical to before this change.
+    const draw = (k: number) => {
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = color;
       for (const s of stars) {
-        s.x += s.vx; s.y += s.vy; s.ph += 0.02 * speed;
+        s.x += s.vx * k; s.y += s.vy * k; s.ph += 0.02 * speed * k;
         if (s.x < 0) s.x += w; if (s.x > w) s.x -= w;
         if (s.y < 0) s.y += h; if (s.y > h) s.y -= h;
         const a = s.a * (0.5 + 0.5 * Math.sin(s.ph));
@@ -96,7 +103,7 @@ export function ParticleField({
         ctx.fill();
       }
       for (const s of streams) {
-        s.y += s.vy; s.age++;
+        s.y += s.vy * k; s.age += k;
         if (s.y < -20 || s.age > s.life) {
           s.x = Math.random() * w; s.y = h + 20; s.age = 0;
           s.vy = -(Math.random() * 1.6 + 0.6) * speed;
@@ -111,12 +118,48 @@ export function ParticleField({
         ctx.fillRect(s.x, s.y, 1, 28);
       }
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+    };
+
+    // Reduced motion: paint one calm frame and never schedule the loop. This
+    // is decoration behind real content (not the content itself), so it
+    // should stay visible — just still, not blank.
+    if (reduceMotion) {
+      draw(0);
+      return () => ro.disconnect();
+    }
+
+    let lastTs: number | null = null;
+    draw(0); // instant first paint, matching the old synchronous tick() call
+
+    const tick = (now: number) => {
+      // Clamp so a background tab returning after minutes away doesn't
+      // teleport every particle across the canvas in one jump.
+      const dt = lastTs === null ? 0 : Math.min((now - lastTs) / 1000, 0.05);
+      lastTs = now;
+      draw(dt / (1 / 60));
       raf = requestAnimationFrame(tick);
     };
-    tick();
+    const start = () => {
+      if (raf) return;
+      lastTs = null; // avoid a huge dt spike on resume
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const onVisibility = () => {
+      if (document.hidden) stop(); else start();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    if (!document.hidden) start();
 
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, [density, speed, color]);
+    return () => {
+      stop();
+      ro.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [density, speed, color, reduceMotion]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;
 }

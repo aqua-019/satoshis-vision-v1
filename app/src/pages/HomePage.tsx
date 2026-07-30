@@ -64,7 +64,14 @@ export function HomePage() {
               </div>
             </div>
             {data.priceSeries.length > 1 && (
-              <Sparkline data={data.priceSeries.slice(-90)} width={420} height={90} />
+              <Sparkline
+                data={data.priceSeries.slice(-90)}
+                width={420}
+                height={90}
+                detail
+                hover
+                fmt={(v) => "$" + v.toFixed(2)}
+              />
             )}
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div className="mono dim" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase" }}>On-chain</div>
