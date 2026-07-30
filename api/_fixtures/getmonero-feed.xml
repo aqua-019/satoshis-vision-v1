@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Committed fixture for api/verify-feeds.mjs — NOT live data.
+  Mirrors the shape of getmonero.org's Jekyll-generated Atom feed
+  (feed.xml) as observed 2026-07-23. Exercises:
+    1. entry 1 — plain title, <published>, normal <link href>.
+    2. entry 2 — title with &#39;/&amp; entities, <published>.
+    3. entry 3 — title wrapped in CDATA, only <updated> (no <published>).
+    4. entry 4 — missing <link> entirely; parseAtom must skip this one.
+-->
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Monero</title>
+  <link href="https://www.getmonero.org/feed.xml" rel="self" type="application/atom+xml"/>
+  <link href="https://www.getmonero.org/"/>
+  <updated>2026-07-20T00:00:00+00:00</updated>
+  <id>https://www.getmonero.org/</id>
+
+  <entry>
+    <title>Monero Missions #7</title>
+    <link href="https://www.getmonero.org/2026/07/20/monero-missions-7.html" rel="alternate" type="text/html" title="Monero Missions #7"/>
+    <published>2026-07-20T00:00:00+00:00</published>
+    <updated>2026-07-20T00:00:00+00:00</updated>
+    <id>https://www.getmonero.org/2026/07/20/monero-missions-7.html</id>
+    <content type="html">Details on the seventh round of Monero Missions.</content>
+    <author>
+      <name>The Monero Project</name>
+    </author>
+  </entry>
+
+  <entry>
+    <title>Community member&#39;s guide to CCS &amp; funding</title>
+    <link href="https://www.getmonero.org/2026/06/15/ccs-funding-guide.html" rel="alternate" type="text/html" title="Community member's guide to CCS &amp; funding"/>
+    <published>2026-06-15T00:00:00+00:00</published>
+    <updated>2026-06-15T00:00:00+00:00</updated>
+    <id>https://www.getmonero.org/2026/06/15/ccs-funding-guide.html</id>
+    <content type="html">How the Community Crowdfunding System works.</content>
+    <author>
+      <name>The Monero Project</name>
+    </author>
+  </entry>
+
+  <entry>
+    <title type="html"><![CDATA[Hard fork scheduled: FCMP++ activation window]]></title>
+    <link href="https://www.getmonero.org/2026/05/01/fcmp-hard-fork.html" rel="alternate" type="text/html" title="Hard fork scheduled: FCMP++ activation window"/>
+    <updated>2026-05-01T12:30:00+00:00</updated>
+    <id>https://www.getmonero.org/2026/05/01/fcmp-hard-fork.html</id>
+    <content type="html">Network upgrade details and timeline.</content>
+    <author>
+      <name>The Monero Project</name>
+    </author>
+  </entry>
+
+  <entry>
+    <title>Malformed entry with no link (must be skipped)</title>
+    <published>2026-04-01T00:00:00+00:00</published>
+    <updated>2026-04-01T00:00:00+00:00</updated>
+    <id>https://www.getmonero.org/2026/04/01/no-link.html</id>
+    <content type="html">This entry intentionally omits &lt;link&gt; to test parseAtom's skip behavior.</content>
+    <author>
+      <name>The Monero Project</name>
+    </author>
+  </entry>
+</feed>

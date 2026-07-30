@@ -26,7 +26,8 @@ export const MONERO_TABS: readonly MoneroTabMeta[] = [
   { id: "markets", label: "Markets · thesis" },
   { id: "comparison", label: "vs Bitcoin" },
   { id: "attacks", label: "Attacks survived" },
-  { id: "future", label: "Future" },
+  // "future" retired in v6.0.1 — the roadmap now has its own top-level page at
+  // /future (live repo pulses + feeds). /monero/future redirects there; see App.tsx.
   { id: "bottomline", label: "Bottom Line" },
   { id: "outlook", label: "2027+ Outlook" },
 ];

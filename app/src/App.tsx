@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 
 import { DataProvider } from "@/data/DataContext";
 import { HomePage } from "@/pages/HomePage";
@@ -16,6 +16,8 @@ import { MarketsPage } from "@/pages/MarketsPage";
 import { NetworkPage } from "@/pages/NetworkPage";
 import { EducationPage } from "@/pages/EducationPage";
 import { MoneroPage } from "@/pages/MoneroPage";
+import { FuturePage } from "@/pages/FuturePage";
+import { TrustedPeersPage } from "@/pages/TrustedPeersPage";
 import { NodePage } from "@/pages/NodePage";
 import { SourcesPage } from "@/pages/SourcesPage";
 import { NotFoundPage } from "@/pages/NotFoundPage";
@@ -41,7 +43,13 @@ export function App({ useFeed }: AppProps = {}) {
         <Route path="/education" element={<EducationPage />} />
         <Route path="/education/:tab" element={<EducationPage />} />
         <Route path="/monero"    element={<MoneroPage />} />
+        {/* v6.0.1: the static Future tab was retired in favour of the live
+            /future page. Static segments outrank the :tab param in v6, so this
+            wins over /monero/:tab regardless of order. */}
+        <Route path="/monero/future" element={<Navigate to="/future" replace />} />
         <Route path="/monero/:tab" element={<MoneroPage />} />
+        <Route path="/future"    element={<FuturePage />} />
+        <Route path="/peers"     element={<TrustedPeersPage />} />
         <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
         <Route path="/node"      element={<NodePage />} />
         <Route path="/sources"   element={<SourcesPage />} />

@@ -26,7 +26,7 @@
       { "key": "Cache-Control", "value": "no-store" }
     ]}
   ],
-  "functions": { "api/monero.js": { "maxDuration": 15 }, "api/xmr.js": { "maxDuration": 30 } },
+  "functions": { "api/monero.js": { "maxDuration": 15 }, "api/xmr.js": { "maxDuration": 30 }, "api/feeds.js": { "maxDuration": 15 } },
   "rewrites": [
     { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }

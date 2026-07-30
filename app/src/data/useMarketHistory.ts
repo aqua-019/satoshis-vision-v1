@@ -91,14 +91,19 @@ type ReadableStore = Pick<Storage, "getItem">;
 type WritableStore = Pick<Storage, "setItem">;
 
 /** Parse a cached entry; corrupt JSON, wrong shape, or expiry all → null. */
-export function readCache<T>(store: ReadableStore | null, key: string, now = Date.now()): CachedSeries<T> | null {
+export function readCache<T>(
+  store: ReadableStore | null,
+  key: string,
+  now = Date.now(),
+  maxAge = LS_MAX_AGE_MS,
+): CachedSeries<T> | null {
   if (!store) return null;
   try {
     const raw = store.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as CachedSeries<T>;
     if (typeof parsed?.at !== "number" || parsed.data == null) return null;
-    if (now - parsed.at > LS_MAX_AGE_MS) return null;
+    if (now - parsed.at > maxAge) return null;
     return parsed;
   } catch {
     return null;
@@ -115,7 +120,7 @@ export function writeCache<T>(store: WritableStore | null, key: string, data: T,
   }
 }
 
-function safeStore(): Storage | null {
+export function safeStore(): Storage | null {
   try {
     return typeof window !== "undefined" ? window.localStorage : null;
   } catch {
