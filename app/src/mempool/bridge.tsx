@@ -35,8 +35,8 @@ export function BrgCard({ title, right, children, pad = "14px 16px", style }: an
     <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -173,7 +173,7 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
         <circle cx={c} cy={cyy} r="4" fill="#0a0806" stroke={color} strokeWidth="1.5" />
         <text x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={size * 0.18} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(cur)}{unit}</text>
       </svg>
-      <div className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
+      <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -289,14 +289,14 @@ export function BrgBlockCadence({ data }: { data: MoneroLive }) {
           <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
         </svg>
         <div style={{ flex: 1 }}>
-          <div className="mono dim" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 38 }}>
             {ivs.slice().reverse().map((iv, i) => {
               const over = iv > TARGET;
               return <div key={i} title={iv + "s"} style={{ flex: 1, height: Math.max(2, Math.round(iv / hiIv * 38)) + "px", background: over ? "var(--y-50)" : "var(--tk-accent)", opacity: 0.55 + i * 0.045, boxShadow: over ? "0 0 5px var(--y-50)" : "0 0 4px var(--tk-accent)" }} />;
             })}
           </div>
-          <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--ink-40)", marginTop: 5 }}>
+          <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 5 }}>
             <span>#{data.ready ? data.height.toLocaleString() : "—"}</span><span>μ {mu != null ? mu + "s" : "—"}</span><span>alt {data.ready ? data.altBlocksCount : "—"}</span>
           </div>
         </div>
@@ -311,7 +311,7 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
   const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
   return (
     <BrgCard title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-body)", lineHeight: 1.5 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           <span style={{ fontSize: 20, color: "var(--ink-100)" }}>{unattributed}/{recentBlocks.length}</span>
           <span className="dim">recent blocks · pool unknown</span>
@@ -388,7 +388,7 @@ export function BrgAlertTape({ data }: { data: MoneroLive }) {
   const col: Record<string, string> = { g: "var(--g-50)", acc: "var(--tk-accent)", p: "var(--p-50)", y: "var(--y-50)" };
   return (
     <BrgCard title="Alert tape" right={<><Provenance source="node" fresh="live" inline /> −f</>}>
-      <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.5 }}>
+      <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5 }}>
         {rows.length === 0 ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
         ) : rows.map((r) => (
@@ -409,7 +409,7 @@ export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (
   const rows = data.mempool.slice(0, 12);
   return (
     <BrgCard title={"Transaction console · " + rows.length + " of " + data.mempool.length} right={<span className="acc">FEE TIER · LIVE</span>}>
-      <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
         <span>SEQ</span><span>TIER</span><span>TXID</span><span>SIZE</span><span>FEE/B</span><span>RING</span><span>AGE</span>
       </div>
       {rows.map((t, i) => {
@@ -417,11 +417,11 @@ export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (
         const label = tier >= 0 ? FEE_TIER_LABELS[tier].toUpperCase() : "—";
         const tc = tier >= 0 ? TIER_COLORS[tier] : "var(--ink-40)";
         return (
-          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: 11, padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
+          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-mono)", padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
             onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.07)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
             <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
-            <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: 8.5, padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
+            <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
             <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
             <span className="dim">{fmtBytes(t.size)}</span>
             <span className="acc">{Math.round(t.perB).toLocaleString()}</span>
@@ -479,7 +479,7 @@ export function BridgeView({ data }: ViewProps) {
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
-        <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+        <span className="mono dim" style={{ fontSize: "var(--fs-mono)", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           <span className="led pulse" /> MISSION CONTROL · Block {data.ready ? data.height.toLocaleString() : "—"} · {data.ready ? data.mempool.length : "—"} mempool
         </span>
       </div>

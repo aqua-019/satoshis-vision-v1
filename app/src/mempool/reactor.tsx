@@ -144,13 +144,13 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
               >
                 <div style={{
                   position: "absolute", left: 6, top: 4,
-                  fontFamily: "var(--f-mono)", fontSize: 11,
+                  fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
                   color: i === 0 ? "#1a0a02" : "rgba(20,8,2,0.7)",
                   fontWeight: 600, transform: "rotate(0deg)",
                 }}>#{b.height.toString().slice(-4)}</div>
                 <div style={{
                   position: "absolute", left: 6, bottom: 6, right: 6,
-                  fontFamily: "var(--f-mono)", fontSize: 9.5,
+                  fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
                   color: "rgba(20,8,2,0.65)",
                 }}>{b.txs} TX · {b.sizeKB.toFixed(0)}KB</div>
               </div>
@@ -184,10 +184,10 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
         })}
       </div>
       {/* annotations layer (un-rotated) */}
-      <div style={{ position: "absolute", left: 12, top: 8, fontFamily: "var(--f-mono)", fontSize: 9, letterSpacing: "0.18em", color: "var(--ink-40)" }}>
+      <div style={{ position: "absolute", left: 12, top: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.18em", color: "var(--ink-40)" }}>
         ISOMETRIC · LAST 10 · LIVE
       </div>
-      <div style={{ position: "absolute", right: 12, bottom: 8, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>
+      <div style={{ position: "absolute", right: 12, bottom: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>
         ◢ #{blocks[0]?.height}
       </div>
     </div>
@@ -288,7 +288,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
         {/* search + live status */}
         <div className="mempool-search-bar">
           <MempoolSearchBar onSearch={onSearch} />
-          <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+          <span className="mono dim" style={{ fontSize: "var(--fs-mono)", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
             <span className="led pulse" /> Reactor · Block {data.height.toLocaleString()} · {data.mempool.length} mempool
           </span>
         </div>
@@ -324,15 +324,15 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                       outline: isTracked ? "1.5px solid var(--y-50)" : undefined, outlineOffset: -1 }}>
                     <div>
                       <div className="hh">#{b.height.toLocaleString()}</div>
-                      <div className="hh" style={{ fontSize: 9 }}>{b.conf} CONF</div>
+                      <div className="hh" style={{ fontSize: "var(--fs-label)" }}>{b.conf} CONF</div>
                     </div>
                     <div>
                       <div className="nm">{b.txs}</div>
                       <div className="sz">{b.sizeKB.toFixed(1)} KB</div>
                       <div className="sz">{b.age < 60 ? b.age + "s ago" : Math.floor(b.age / 60) + "m ago"}</div>
                       {isTracked ? (
-                        <div className="mono" style={{ marginTop: 4, color: "var(--y-50)", fontSize: 9.5, lineHeight: 1.15, textAlign: "center" }}>
-                          <div style={{ fontSize: 12 }}>▲</div>
+                        <div className="mono" style={{ marginTop: 4, color: "var(--y-50)", fontSize: "var(--fs-label)", lineHeight: 1.15, textAlign: "center" }}>
+                          <div style={{ fontSize: "var(--fs-mono)" }}>▲</div>
                           <div style={{ border: "1px solid var(--y-50)", borderRadius: 4, padding: "1px 5px", marginTop: 1, display: "inline-block" }}>{trackedConf}/10</div>
                         </div>
                       ) : null}
@@ -348,7 +348,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 animation: "flow 6s linear infinite",
               }} />
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 4px 0", fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-40)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 4px 0", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
               <span>← scroll back · #{(data.height - 10).toLocaleString()}</span>
               <span className="acc">10 confs · UNLOCK ▸</span>
             </div>
@@ -377,37 +377,37 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
           >
             <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
               <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "var(--f-mono)", fontSize: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                 <div className="kicker">Lattice key</div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,180,80,0.95)" }} /><span className="dim">priority</span></div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.6)" }} /><span className="dim">standard</span></div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.18)" }} /><span className="dim">low</span></div>
                 <div style={{ marginTop: 8 }} className="kicker">Distribution</div>
                 <MiniBar data={data.feeHist} width={170} height={48} />
-                <div className="dim" style={{ fontSize: 9 }}>fee/B histogram · 32 buckets</div>
+                <div className="dim" style={{ fontSize: "var(--fs-label)" }}>fee/B histogram · 32 buckets</div>
               </div>
             </div>
           </PanelFrame>
           <PanelFrame title="Ring · 16" right={<span className="acc">CLSAG</span>}>
             <RingSigFan />
-            <div className="kv" style={{ marginTop: 8, fontSize: 10 }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
-            <div className="kv" style={{ fontSize: 10 }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
-            <div className="kv" style={{ fontSize: 10 }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
+            <div className="kv" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
+            <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
+            <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
           </PanelFrame>
           <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
-            <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.55 }}>
+            <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                 <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
                   {data.blocks.slice(0, 14).filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.slice(0, 14).length}
                 </span>
                 <span className="dim">recent blocks · pool unknown</span>
               </div>
-              <p className="dim" style={{ marginTop: 8, fontSize: 10, color: "var(--ink-40)" }}>
+              <p className="dim" style={{ marginTop: 8, fontSize: "var(--fs-body)", color: "var(--ink-40)" }}>
                 Monero coinbases don't tag pools — the node reports every block as
                 unattributed, so per-pool share can't be measured on-chain. Live network
                 hashrate: <span className="acc">{netGh} GH/s</span>.
               </p>
-              <Link to="/simulate?p=skyline" className="acc" style={{ fontSize: 10 }}>
+              <Link to="/simulate?p=skyline" className="acc" style={{ fontSize: "var(--fs-mono)" }}>
                 Decentralization &amp; HHI → Skyline simulator
               </Link>
             </div>
@@ -419,7 +419,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
           title={<><span>● Live tx feed</span><span className="dim2">newest first</span></>}
           right={<><span>STREAM ACTIVE</span><span className="acc">FEE TIER · LIVE</span></>}
         >
-          <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: 11 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
             <div className="kicker">TIER</div>
             <div className="kicker">TXID</div>
             <div className="kicker">SIZE</div>
@@ -433,11 +433,11 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
               return (
               <React.Fragment key={tx.id}>
                 <div onClick={() => onPickTx(tx.id)} style={{ cursor: "pointer" }}>
-                  <span className="pill" style={{ padding: "2px 6px", fontSize: 9, color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
+                  <span className="pill" style={{ padding: "2px 6px", fontSize: "var(--fs-label)", color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
                     {tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx].toUpperCase() : "—"}
                   </span>
                 </div>
-                <div className="hash" onClick={() => onPickTx(tx.id)} style={{ fontSize: 10.5, cursor: "pointer" }}>{tx.id.slice(0, 12)}…{tx.id.slice(-10)}</div>
+                <div className="hash" onClick={() => onPickTx(tx.id)} style={{ fontSize: "var(--fs-mono)", cursor: "pointer" }}>{tx.id.slice(0, 12)}…{tx.id.slice(-10)}</div>
                 <div className="dim">{fmtBytes(tx.size)}</div>
                 <div>{fmtFee(tx.fee)}</div>
                 <div className="acc">{tx.perB.toFixed(2)} p/B</div>

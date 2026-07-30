@@ -69,16 +69,16 @@ function TermPalette({ data }: { data: MoneroLive }) {
   const showResults = phase === "hold" && cmds.length > 0;
   return (
     <div style={{ border: "1px solid var(--tk-accent)", background: "rgba(0,0,0,0.65)", boxShadow: "0 0 24px rgba(255,122,26,0.22), inset 0 0 30px rgba(255,122,26,0.05)", borderRadius: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: 13 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
         <span style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>›</span>
         <span style={{ color: "var(--ink-100)" }}>{typed}</span>
         <span style={{ width: 8, height: 16, background: "var(--tk-accent)", boxShadow: "var(--glow-1)", animation: "term-blink 1s steps(2) infinite", display: "inline-block" }} />
-        <span style={{ marginLeft: "auto", color: "var(--ink-40)", fontSize: 10 }}>⌘K · ESC</span>
+        <span style={{ marginLeft: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>⌘K · ESC</span>
       </div>
-      <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: 11.5, minHeight: 96 }}>
+      <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", minHeight: 96 }}>
         {(showResults ? cmds[ci % cmds.length].rows : []).map((r, i) => (
           <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "rgba(255,122,26,0.12)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein 0.25s ease" }}>
-            <span className="dim2" style={{ fontSize: 9, letterSpacing: "0.1em" }}>{r[0]}</span>
+            <span className="dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em" }}>{r[0]}</span>
             <span className={i === 0 ? "acc" : ""}>{r[1]}</span>
             <span className="dim">{r[2]}</span>
             <span className="dim2" style={{ textAlign: "right" }}>{i === 0 ? "↵" : ""}</span>
@@ -110,11 +110,11 @@ export function TermAsciiBlocks({ data }: { data: MoneroLive }) {
       ? "┌──┐\n" + "│  │\n".repeat(rowsMax - 3) + `│ ${label} │\n` + "└──┘"
       : "┌──┐\n" + "│  │\n".repeat(empty) + "██\n".repeat(filled) + "└──┘";
     return (
-      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-80)" }}>
+      <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-80)" }}>
         <div style={{ textAlign: "center", marginBottom: 4, color: q ? "var(--ink-40)" : "var(--tk-accent)", textShadow: q ? "none" : "var(--glow-1)" }}>{q ? "~+" + label : height.toString().slice(-3)}</div>
-        <pre style={{ margin: 0, lineHeight: 1, fontSize: 11, color: "var(--tk-accent)", textShadow: newest ? "0 0 9px rgba(255,122,26,0.7)" : "0 0 6px rgba(255,122,26,0.4)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
+        <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: "var(--tk-accent)", textShadow: newest ? "0 0 9px rgba(255,122,26,0.7)" : "0 0 6px rgba(255,122,26,0.4)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
         <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
-        {!q ? <div style={{ textAlign: "center", color: "var(--ink-40)", fontSize: 9 }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
+        {!q ? <div style={{ textAlign: "center", color: "var(--ink-40)", fontSize: "var(--fs-label)" }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
       </div>
     );
   };
@@ -142,7 +142,7 @@ function TermLiveLog({ data }: { data: MoneroLive }) {
   };
   const colorFor = (lvl: string, cat?: string) => lvl === "W" ? "var(--y-50)" : lvl === "E" ? "var(--r-50)" : cat === "core" ? "var(--tk-accent)" : cat === "txpool" ? "var(--c-50)" : cat === "net" ? "var(--g-50)" : "var(--ink-60)";
   return (
-    <div style={{ fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
+    <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5 }}>
       {events.length === 0 ? (
         <div className="dim2" style={{ padding: "8px 0", letterSpacing: "0.12em" }}>waiting for feed…</div>
       ) : events.map((e, i) => {
@@ -173,9 +173,9 @@ export function TermFeeHisto({ data }: { data: MoneroLive }) {
   const medianBin = bins.indexOf(Math.max(...bins));
   const bar = (v: number) => "█".repeat(Math.round((v / max) * 24));
   return (
-    <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5, color: "var(--tk-accent)", textShadow: "0 0 4px rgba(255,122,26,0.4)" }}>
+    <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--tk-accent)", textShadow: "0 0 4px rgba(255,122,26,0.4)" }}>
       {bins.map((v, i) => `${String(i * 40).padStart(3, " ")} |${bar(v).padEnd(24, " ")} ${String(v).padStart(3, " ")}${i === medianBin ? "  ← median" : ""}`).join("\n")}
-      <div className="dim" style={{ fontFamily: "var(--f-mono)", fontSize: 10, marginTop: 6 }}>fee in piconero/byte · {data.mempool.length} tx sample</div>
+      <div className="dim" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginTop: 6 }}>fee in piconero/byte · {data.mempool.length} tx sample</div>
     </pre>
   );
 }
@@ -190,7 +190,7 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
         <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={dash + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
         <text x={c} y={c + 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="15" fontWeight="500" fill={color}>{value}</text>
       </svg>
-      <div className="mono" style={{ fontSize: 8.5, letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: -2 }}>{label}</div>
+      <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: -2 }}>{label}</div>
     </div>
   );
 }
@@ -214,7 +214,7 @@ export function TerminalHubView({ data }: ViewProps) {
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
-        <span className="mono dim" style={{ fontSize: 10.5, marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
+        <span className="mono dim" style={{ fontSize: "var(--fs-mono)", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
           <span className="led pulse" /> monerod tail · Block {data.ready ? data.height.toLocaleString() : "—"} · {data.mempool.length} mempool
         </span>
       </div>
@@ -226,7 +226,7 @@ export function TerminalHubView({ data }: ViewProps) {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>}>
-                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 11.5, lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px rgba(255,122,26,0.18)" }}>
+                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px rgba(255,122,26,0.18)" }}>
 {`╭─ monerod ${data.version || "—"} `.padEnd(52, "─") + "\n│ Status:    "}
 {data.ready ? (
   <>
@@ -247,7 +247,7 @@ export function TerminalHubView({ data }: ViewProps) {
 {` · ${fmtBytes(memBytes)}\n`}
 {"╰" + "─".repeat(51)}
                 </pre>
-                <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: 11 }}>
+                <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                   <div className="kicker" style={{ marginBottom: 6 }}>CHAIN TOTALS</div>
                   {[
                     ["txs all-time", data.ready ? fmtN(data.txCountTotal) : "—"],
@@ -269,7 +269,7 @@ export function TerminalHubView({ data }: ViewProps) {
 
             <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>}>
               <TermAsciiBlocks data={data} />
-              <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+              <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
                 <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+10c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target=2:00</span><span className="dim2 acc">scroll ←→</span>
               </div>
             </PanelFrame>
@@ -283,7 +283,7 @@ export function TerminalHubView({ data }: ViewProps) {
                 <TermFeeHisto data={data} />
               </PanelFrame>
               <PanelFrame title="$ fee · tiers" right={<Provenance source="node" fresh="live" />}>
-                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.7 }}>
+                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.7 }}>
                   {FEE_TIER_LABELS.map((label, i) => (
                     <div key={label} style={{ color: tiersKnown ? TIER_COLORS[i] : "var(--ink-40)" }}>
                       {tiersKnown
@@ -294,7 +294,7 @@ export function TerminalHubView({ data }: ViewProps) {
                 </pre>
               </PanelFrame>
               <PanelFrame title="$ env · runtime">
-                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.55, color: "var(--ink-80)" }}>
+                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55, color: "var(--ink-80)" }}>
 {`MONEROD_VERSION=${data.version || "—"}
 NETTYPE=${data.nettype || "—"}
 SYNCHRONIZED=${data.ready ? String(data.synchronized) : "—"}
@@ -308,10 +308,10 @@ BP_VARIANT=BP+`}
             </div>
 
             <PanelFrame title="$ help" ticks={false}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 10, fontFamily: "var(--f-mono)", fontSize: 10.5 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                 {[["⌘K", "palette"], ["G H", "home"], ["G M", "mempool"], ["G E", "education"], ["G D", "dashboard"], ["G S", "simulate"], ["?", "help"], ["[", "prev block"], ["]", "next block"], ["/", "search"], ["F", "follow log"], ["S", "scanlines"], ["D", "density"], ["L", "lock"], ["⎋", "back"], ["⇧?", "keys"]].map(([k, v], i) => (
                   <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <span style={{ border: "1px solid var(--ink-20)", padding: "1px 6px", fontSize: 9.5, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{k}</span>
+                    <span style={{ border: "1px solid var(--ink-20)", padding: "1px 6px", fontSize: "var(--fs-label)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{k}</span>
                     <span className="dim">{v}</span>
                   </div>
                 ))}
