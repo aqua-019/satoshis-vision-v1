@@ -58,14 +58,38 @@ export function ParticleField({
     let raf = 0, w = 0, h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
+    let disposed = false;
+    let seeded = false;
+
     const resize = () => {
+      if (disposed) return;
       const r = canvas.getBoundingClientRect();
+      const pw = w, ph = h;
       w = r.width; h = r.height;
       canvas.width = w * dpr; canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!seeded) return; // first call runs before the particles exist
+
+      // The effect can run before layout settles, in which case every particle
+      // was seeded against a degenerate box and they all sit in one corner.
+      // When a real box finally arrives, re-scatter instead of leaving the
+      // clump; on an ordinary resize, map the existing composition onto the
+      // new box so the field doesn't visibly reshuffle.
+      if ((pw < 100 || ph < 100) && w >= 100 && h >= 100) {
+        for (const s of stars) { s.x = Math.random() * w; s.y = Math.random() * h; }
+        for (const s of streams) { s.x = Math.random() * w; s.y = h + Math.random() * h; }
+      } else if (pw > 0 && ph > 0) {
+        for (const s of stars) { s.x = (s.x / pw) * w; s.y = (s.y / ph) * h; }
+        for (const s of streams) { s.x = (s.x / pw) * w; }
+      }
     };
     resize();
-    const ro = new ResizeObserver(resize); ro.observe(canvas);
+    // rAF-deferred: calling resize() synchronously from the observer can
+    // re-trigger it in the same frame and surface "ResizeObserver loop
+    // completed with undelivered notifications". useFitToView.ts defers for
+    // the same reason.
+    const ro = new ResizeObserver(() => requestAnimationFrame(resize));
+    ro.observe(canvas);
 
     const N = Math.floor(120 * density);
     const stars = Array.from({ length: N }, () => ({
@@ -83,6 +107,7 @@ export function ParticleField({
       age: 0,
       hue: Math.random() < 0.85 ? 28 : 280,
     }));
+    seeded = true;
 
     // `k` is elapsed time normalised to 60fps-equivalent steps (k=1 means
     // "one 1/60s tick just happened"). Every per-frame increment below is
@@ -125,7 +150,7 @@ export function ParticleField({
     // should stay visible — just still, not blank.
     if (reduceMotion) {
       draw(0);
-      return () => ro.disconnect();
+      return () => { disposed = true; ro.disconnect(); };
     }
 
     let lastTs: number | null = null;
@@ -155,6 +180,7 @@ export function ParticleField({
     if (!document.hidden) start();
 
     return () => {
+      disposed = true; // a queued rAF from the observer may still fire
       stop();
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);

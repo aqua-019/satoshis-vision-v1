@@ -124,7 +124,10 @@ export function ChartTip({ x, y = 18, bounds, width, height, rows, children }: C
   const tx = Math.max(bounds.left, Math.min(x + 8, bounds.right - w));
 
   return (
-    <g pointerEvents="none" transform={`translate(${tx}, ${y})`}>
+    // data-charttip is the contract verify-charttip.mjs scrapes: one selector
+    // finds the readout on every chart on the site, so the gate keeps working
+    // when new charts (or new mempool views) are added.
+    <g pointerEvents="none" data-charttip="" transform={`translate(${tx}, ${y})`}>
       <rect x={0} y={0} width={w} height={h} rx={2} fill="rgba(8,7,5,0.94)" stroke="var(--rule)" />
       {rows?.length
         ? rows.map((r, i) => (
