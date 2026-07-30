@@ -6,6 +6,8 @@
 import * as React from "react";
 import { PageHeader } from "@/layout/AppShell";
 import { Card } from "@/design/primitives";
+import { AXIS, ChartCrosshair, ChartTip, GRID, VB_W, useSvgCursor, type ChartTipRow } from "@/design/chart-kit";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MoneroTabProps } from "./tabs";
 
 const THESIS_STATS = [
@@ -80,12 +82,171 @@ const OTHER_SIDE_ITEMS = [
   "Access window narrows with every delisting.",
 ] as const;
 
-const CYCLE_HIGHS = [
-  { cyc: "2017 cycle", peak: "$494 (Jan 2018)",    drawdown: "−92% to $40",       note: "Pre-bulletproofs, fee shock, exchange hype" },
-  { cyc: "2020 cycle", peak: "$517 (May 2021)",    drawdown: "−74% to $135",      note: "DeFi bull, ring-16 mandatory, Bulletproofs+" },
-  { cyc: "2024 cycle", peak: "$487 (Mar 2025)",    drawdown: "−42% to $282",      note: "Post-MiCA panic, shallow drawdown · structural buyers" },
-  { cyc: "2026 ATH",   peak: "$799.89 (Jan 2026)", drawdown: "−57% retrace · Feb", note: "Convergence: CLARITY · DAC8 · Zcash collapse · sanctions migration" },
-] as const;
+// Numeric mirrors of the historical facts already stated in `peak` / `drawdown`
+// below — same figures, just typed for the chart's geometry. No new numbers:
+// `peakUsd`/`peakDate` are the dollar amount and month parenthesised in `peak`;
+// `drawdownPct` is the percentage in `drawdown`; `troughUsd` is the trough
+// dollar figure in `drawdown` where one is stated. The 2026 row states a
+// retrace percentage but no trough dollar figure yet, so `troughUsd` is
+// intentionally omitted there rather than derived/estimated.
+interface CycleHigh {
+  cyc: string;
+  peak: string;
+  peakUsd: number;
+  peakDate: string; // "YYYY-MM", month precision only — no day is stated in copy
+  drawdown: string;
+  drawdownPct: number; // negative
+  troughUsd?: number;
+  note: string;
+}
+
+const CYCLE_HIGHS: readonly CycleHigh[] = [
+  { cyc: "2017 cycle", peak: "$494 (Jan 2018)",    peakUsd: 494,    peakDate: "2018-01", drawdown: "−92% to $40",        drawdownPct: -92, troughUsd: 40,  note: "Pre-bulletproofs, fee shock, exchange hype" },
+  { cyc: "2020 cycle", peak: "$517 (May 2021)",    peakUsd: 517,    peakDate: "2021-05", drawdown: "−74% to $135",       drawdownPct: -74, troughUsd: 135, note: "DeFi bull, ring-16 mandatory, Bulletproofs+" },
+  { cyc: "2024 cycle", peak: "$487 (Mar 2025)",    peakUsd: 487,    peakDate: "2025-03", drawdown: "−42% to $282",       drawdownPct: -42, troughUsd: 282, note: "Post-MiCA panic, shallow drawdown · structural buyers" },
+  { cyc: "2026 ATH",   peak: "$799.89 (Jan 2026)", peakUsd: 799.89, peakDate: "2026-01", drawdown: "−57% retrace · Feb", drawdownPct: -57,                 note: "Convergence: CLARITY · DAC8 · Zcash collapse · sanctions migration" },
+];
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+
+function yearFrac(iso: string): number {
+  const [y, m] = iso.split("-").map(Number);
+  return y + (m - 1) / 12;
+}
+
+function fmtDateLabel(iso: string): string {
+  const [y, m] = iso.split("-").map(Number);
+  return `${MONTHS[m - 1]} ${y}`;
+}
+
+function fmtPrice(v: number): string {
+  return "$" + (v >= 100 ? v.toFixed(0) : v.toFixed(2));
+}
+
+function fmtPct(v: number): string {
+  return (v < 0 ? "−" : "+") + Math.abs(v) + "%";
+}
+
+/** {1,2,5}×10^k ticks within [min, max] — a log-scale analogue of the linear
+ * "nice ticks" idiom used elsewhere (see markets/charts.tsx niceTicks). */
+function logTicks(min: number, max: number): number[] {
+  if (!(min > 0) || !(max > min)) return [min];
+  const out: number[] = [];
+  const kLo = Math.floor(Math.log10(min));
+  const kHi = Math.ceil(Math.log10(max));
+  for (let k = kLo; k <= kHi; k++) {
+    for (const s of [1, 2, 5]) {
+      const v = s * Math.pow(10, k);
+      if (v >= min && v <= max) out.push(v);
+    }
+  }
+  return out;
+}
+
+/**
+ * CycleHighsChart — the "refusing-to-die" chart. Marks each stated cycle high
+ * (and, where the copy states a trough dollar figure, its drawdown) on a
+ * log-price timeline. Deliberately NOT a continuous/interpolated price line:
+ * CYCLE_HIGHS holds four sparse historical peaks, not a price series, so
+ * connecting them with a smoothed curve would imply price action between
+ * cycles that was never measured. Marked points only — see handoff notes.
+ */
+function CycleHighsChart() {
+  const H = 320;
+  const padL = 54, padR = 26, padT = 40, padB = 34;
+  const innerW = VB_W - padL - padR, innerH = H - padT - padB;
+
+  const xMin = 2014, xMax = 2027.3;
+  const yMin = 30, yMax = 950;
+
+  const xOf = (yf: number) => padL + ((yf - xMin) / (xMax - xMin)) * innerW;
+  const py = (v: number) => padT + innerH - (Math.log10(v / yMin) / Math.log10(yMax / yMin)) * innerH;
+
+  const yTicks = logTicks(yMin, yMax);
+  const xTicks: number[] = [];
+  for (let yr = Math.ceil(xMin); yr <= Math.floor(xMax); yr += 3) xTicks.push(yr);
+
+  const reduced = useReducedMotion();
+  const [fade, setFade] = React.useState(reduced ? 1 : 0);
+  React.useEffect(() => {
+    if (reduced) { setFade(1); return; }
+    const id = requestAnimationFrame(() => setFade(1));
+    return () => cancelAnimationFrame(id);
+  }, [reduced]);
+
+  const [ref, vx, handlers] = useSvgCursor(VB_W);
+  // Points aren't evenly spaced in time, so snap to nearest by pixel distance
+  // rather than chart-kit's nearestIndex (which assumes uniform spacing).
+  const xs = CYCLE_HIGHS.map((c) => xOf(yearFrac(c.peakDate)));
+  const hoverI = vx == null ? null : xs.reduce((best, x, i) => (Math.abs(x - vx) < Math.abs(xs[best] - vx) ? i : best), 0);
+  const hover = hoverI != null ? CYCLE_HIGHS[hoverI] : null;
+
+  const tipRows: ChartTipRow[] = hover
+    ? [
+        { label: "CYCLE", value: hover.cyc },
+        { label: "DATE", value: fmtDateLabel(hover.peakDate) },
+        { label: "PEAK", value: fmtPrice(hover.peakUsd), color: "var(--tk-accent)" },
+        { label: "DRAWDOWN", value: hover.drawdown, color: "var(--r-50)" },
+        { value: hover.note, color: "var(--ink-60)" },
+      ]
+    : [];
+
+  return (
+    <svg
+      ref={ref}
+      viewBox={`0 0 ${VB_W} ${H}`}
+      width="100%"
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      {...handlers}
+    >
+      <text x={padL} y={20} fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)" letterSpacing="0.1em">CYCLE HIGH · USD (log)</text>
+      <text x={padL + 210} y={20} fontFamily="var(--f-mono)" fontSize="9" fill="var(--r-50)" letterSpacing="0.1em">DRAWDOWN → TROUGH</text>
+
+      {/* y gridlines + log price ticks */}
+      {yTicks.map((t) => (
+        <g key={"yt" + t}>
+          <line x1={padL} y1={py(t)} x2={padL + innerW} y2={py(t)} stroke={GRID} strokeDasharray="2 4" />
+          <text x={padL - 8} y={py(t) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize="10" fill={AXIS}>{fmtPrice(t)}</text>
+        </g>
+      ))}
+
+      {/* x axis + year ticks */}
+      <line x1={padL} y1={padT + innerH} x2={padL + innerW} y2={padT + innerH} stroke={GRID} />
+      {xTicks.map((yr) => (
+        <text key={"xt" + yr} x={xOf(yr)} y={H - 10} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9.5" fill={AXIS}>{yr}</text>
+      ))}
+
+      {/* marked cycle highs (+ stated troughs) — no interpolation between them */}
+      {CYCLE_HIGHS.map((c) => {
+        const x = xOf(yearFrac(c.peakDate));
+        const yPeak = py(c.peakUsd);
+        const yTrough = c.troughUsd != null ? py(c.troughUsd) : null;
+        return (
+          <g key={c.cyc}>
+            {yTrough != null ? (
+              <>
+                <line x1={x} y1={yPeak} x2={x} y2={yTrough} stroke="var(--r-50)" strokeDasharray="2 3" strokeWidth={1} opacity={0.55} />
+                <circle cx={x} cy={yTrough} r={3} fill="var(--r-50)" />
+                <text x={x} y={yTrough + 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--r-50)">{fmtPct(c.drawdownPct)}</text>
+              </>
+            ) : null}
+            <circle cx={x} cy={yPeak} r={3.5} fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 3px var(--tk-accent))" }} />
+            <text x={x} y={yPeak - 10} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9.5" fill="var(--ink-100)">{fmtPrice(c.peakUsd)}</text>
+            <text x={x} y={yPeak - 22} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.06em">{c.cyc.toUpperCase()}</text>
+          </g>
+        );
+      })}
+
+      {/* hover: crosshair + tooltip */}
+      {hover && hoverI != null ? (
+        <>
+          <ChartCrosshair x={xs[hoverI]} y1={padT} y2={padT + innerH} />
+          <ChartTip x={xs[hoverI]} bounds={{ left: padL, right: padL + innerW }} rows={tipRows} />
+        </>
+      ) : null}
+    </svg>
+  );
+}
 
 export function MarketsThesisTab(_props: MoneroTabProps) {
   return (
@@ -222,18 +383,14 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
         </p>
       </Card>
 
-      {/* ── EXISTING CYCLE TABLE (kept for chart-watchers) ── */}
+      {/* ── THE REFUSING-TO-DIE CHART · cycle highs marked ── */}
       <Card style={{ padding: 22 }}>
         <div className="kicker">Cycle highs · marked</div>
-        <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 10, marginTop: 14, fontSize: 12 }}>
-          {CYCLE_HIGHS.map((c) => (
-            <div key={c.cyc} style={{ padding: 12, border: "1px solid var(--rule)", borderRadius: 2 }}>
-              <div className="kicker" style={{ color: "var(--tk-accent)" }}>{c.cyc}</div>
-              <div className="serif" style={{ fontSize: 18, color: "var(--ink-100)", margin: "6px 0" }}>{c.peak}</div>
-              <div className="dn" style={{ fontSize: 11 }}>{c.drawdown}</div>
-              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 10.5, lineHeight: 1.55 }}>{c.note}</p>
-            </div>
-          ))}
+        <p className="mono dim" style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.65 }}>
+          Four cycles, four higher lows. Each point below is a stated historical peak — hover for the cycle, date, price and drawdown.
+        </p>
+        <div style={{ marginTop: 14 }}>
+          <CycleHighsChart />
         </div>
       </Card>
     </div>
