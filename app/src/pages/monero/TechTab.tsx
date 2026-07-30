@@ -170,7 +170,7 @@ export function TechTab(_props: MoneroTabProps) {
           <Card key={p.k} style={{ padding: 22 }}>
             <div className="kicker" style={{ color: p.c }}>{p.k}</div>
             <div className="serif" style={{ fontSize: 22, color: "var(--ink-100)", margin: "8px 0", fontWeight: 400 }}>{p.q}</div>
-            <p className="mono dim" style={{ margin: 0, fontSize: 12, lineHeight: 1.7 }}>{p.b}</p>
+            <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7 }}>{p.b}</p>
           </Card>
         ))}
       </section>
@@ -183,10 +183,10 @@ export function TechTab(_props: MoneroTabProps) {
         </h3>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginTop: 14 }}>
           <div>
-            <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.75 }}>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.75 }}>
               From 2014 to May 2022, Monero followed a smooth-decay emission curve. The block reward dropped exponentially toward an asymptote — and in May 2022 (block 1,978,433), it crossed the floor of <b className="acc">0.6 XMR / block</b>. From that block forward, the reward is fixed at 0.6 XMR. Approximately <b className="acc">157,680 XMR per year</b> are emitted, indefinitely.
             </p>
-            <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.75, marginTop: 10 }}>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.75, marginTop: 10 }}>
               At ~18.5M circulating supply (2026), that's <b>~0.85% inflation</b>. By year 2050, with ~22M circulating, inflation drops to <b>~0.72%</b>. As supply grows, the inflation rate decays asymptotically toward zero — but the absolute miner reward stays constant.
             </p>
           </div>
@@ -194,10 +194,10 @@ export function TechTab(_props: MoneroTabProps) {
             <p className="serif" style={{ fontSize: 17, color: "var(--ink-100)", margin: 0, fontWeight: 400, fontStyle: "italic" }}>
               "It costs something to verify a chain forever. That something must be paid."
             </p>
-            <p className="mono dim" style={{ fontSize: 11.5, lineHeight: 1.7, marginTop: 14 }}>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, marginTop: 14 }}>
               Bitcoin's halving schedule predicts zero new emission by ~2140. After that, miners must be paid entirely by fees. Whether fee revenue is sufficient — and stable — has never been empirically tested at scale. <b className="dn">The security budget cliff is real.</b>
             </p>
-            <p className="mono dim" style={{ fontSize: 11.5, lineHeight: 1.7, marginTop: 8 }}>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, marginTop: 8 }}>
               Monero's tail emission elects a different tradeoff: a tiny perpetual dilution buys a permanent, predictable miner subsidy. <b className="up">The hearth never goes cold.</b> Privacy networks need this even more than transparent ones: no anonymity set survives if no miner shows up.
             </p>
           </div>

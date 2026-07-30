@@ -1,25 +1,34 @@
-/**
- * design/useReducedMotion.ts — shared prefers-reduced-motion hook.
- *
- * Every self-hosted SVG chart (markets/charts.tsx, chart-kit.tsx consumers)
- * needs to know whether to skip its mount-fade / crosshair transitions.
- * Was previously copy-pasted locally in markets/charts.tsx; lifted out here
- * so mempool + network chart surfaces can share one implementation instead
- * of drifting. Reactive to live OS-setting changes, SSR-safe.
- */
+// design/useReducedMotion.ts — the canonical prefers-reduced-motion hook.
+//
+// Promoted from mempool/useRibbonGlide.ts:26-42, which is the SSR-safe
+// implementation among the four near-duplicates found in this repo at
+// v6.0.2 (the others: mempool/useDragPan.ts, and inline matchMedia checks
+// in protocols/metaphors.tsx / protocols/lighthouse.tsx / pages/future/
+// FutureMini.tsx / pages/markets/charts.tsx). Those copies are NOT rewired
+// to this export yet — that consolidation is a separate pass. New code
+// (this file's own siblings included) should import this one.
+//
+// SSR-safe: the lazy useState initializer guards `window`/`matchMedia`
+// so evaluating this module before either exists (or in an environment
+// that never defines them) doesn't throw — it just resolves to `false`
+// (motion on) until the effect can confirm otherwise client-side.
 
 import * as React from "react";
 
 export function useReducedMotion(): boolean {
-  const [r, setR] = React.useState(() =>
-    typeof matchMedia !== "undefined" ? matchMedia("(prefers-reduced-motion: reduce)").matches : false,
+  const [reduce, setReduce] = React.useState(
+    () =>
+      typeof window !== "undefined" &&
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
   );
   React.useEffect(() => {
-    if (typeof matchMedia === "undefined") return;
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setR(mq.matches);
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const on = () => setReduce(mq.matches);
+    on();
     mq.addEventListener("change", on);
     return () => mq.removeEventListener("change", on);
   }, []);
-  return r;
+  return reduce;
 }

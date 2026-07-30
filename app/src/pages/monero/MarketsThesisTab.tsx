@@ -273,7 +273,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 28, marginTop: 22 }}>
             <div>
-              <p className="mono" style={{ fontSize: 12.5, lineHeight: 1.85, color: "var(--ink-80)" }}>
+              <p className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.85, color: "var(--ink-80)" }}>
                 Those in power — governments, corporations, surveillance states — have visibility over everything. They see your bank accounts. They see your card purchases. They see your Bitcoin transactions on a permanent, public ledger. They know when you donate to causes they dislike. They know when you buy books they find subversive. They know when you send money to family in countries they've sanctioned.
               </p>
               <p className="serif" style={{ margin: "16px 0 0", fontSize: 22, lineHeight: 1.35, color: "var(--tk-accent)", fontWeight: 400 }}>
@@ -281,21 +281,21 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
               </p>
             </div>
             <div>
-              <p className="mono" style={{ fontSize: 12.5, lineHeight: 1.85, color: "var(--ink-80)" }}>
+              <p className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.85, color: "var(--ink-80)" }}>
                 <b style={{ color: "var(--p-50)" }}>Ring signatures</b> hide the sender. <b style={{ color: "var(--p-50)" }}>Stealth addresses</b> hide the receiver. <b style={{ color: "var(--p-50)" }}>RingCT</b> hides the amount. The entire transaction is a mathematical black box. Not private by policy. Not private by promise. <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>Private by mathematics.</em>
               </p>
               <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 8 }}>
                 {THESIS_STATS.map((s) => (
                   <div key={s.v} style={{ display: "grid", gridTemplateColumns: "100px 1fr", gap: 12, padding: "6px 0", borderTop: "1px dashed var(--ink-10)" }}>
                     <span className="mono acc" style={{ fontSize: 16, color: "var(--tk-accent)", textAlign: "right", textShadow: "var(--glow-1)" }}>{s.v}</span>
-                    <span className="mono" style={{ fontSize: 11.5, color: "var(--ink-80)", lineHeight: 1.55 }}>{s.w}</span>
+                    <span className="mono" style={{ fontSize: "var(--fs-body)", color: "var(--ink-80)", lineHeight: 1.55 }}>{s.w}</span>
                   </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <p className="mono dim" style={{ marginTop: 20, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", textAlign: "right" }}>
+          <p className="mono dim" style={{ marginTop: 20, fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", textAlign: "right" }}>
             — The Monero Archive, 2026
           </p>
         </div>
@@ -307,14 +307,14 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
         <h3 className="serif" style={{ margin: "10px 0 6px", fontSize: 26, fontWeight: 400, color: "var(--ink-100)" }}>
           XMR hit <em style={{ color: "var(--tk-accent)", fontStyle: "normal", textShadow: "var(--glow-1)" }}>$799.89</em> in mid-January 2026 — a 195% move from early 2025.
         </h3>
-        <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.7, margin: "10px 0 18px" }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, margin: "10px 0 18px" }}>
           It wasn't one catalyst. It was the convergence of several forces — political, technical, and structural — that revalued financial privacy from "niche" to "necessary" over the span of twelve months.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
           {CATALYST_CARDS.map((p) => (
             <div key={p.h} style={{ padding: 12, borderTop: `2px solid ${p.c}` }}>
-              <div className="mono" style={{ fontSize: 10.5, letterSpacing: "0.14em", textTransform: "uppercase", color: p.c }}>{p.h}</div>
-              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.65 }}>{p.b}</p>
+              <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: p.c }}>{p.h}</div>
+              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.65 }}>{p.b}</p>
             </div>
           ))}
         </div>
@@ -333,7 +333,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
                   <div className="serif" style={{ fontSize: 19, color: "var(--ink-100)", margin: "4px 0 0", fontWeight: 400 }}>{d.h}</div>
                 </div>
               </div>
-              <p className="mono dim" style={{ margin: "12px 0 0", fontSize: 11.5, lineHeight: 1.75 }}>{d.b}</p>
+              <p className="mono dim" style={{ margin: "12px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.75 }}>{d.b}</p>
             </Card>
           ))}
         </div>
@@ -344,10 +344,10 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
         <div className="kicker">The convergence</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, marginTop: 14, alignItems: "stretch" }}>
           <div>
-            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--r-50)", marginBottom: 10 }}>The tracked economy</div>
+            <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--r-50)", marginBottom: 10 }}>The tracked economy</div>
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
               {TRACKED_ECONOMY_ITEMS.map((l) => (
-                <li key={l} className="mono" style={{ fontSize: 12.5, color: "var(--ink-80)", paddingLeft: 14, position: "relative" }}>
+                <li key={l} className="mono" style={{ fontSize: "var(--fs-body)", color: "var(--ink-80)", paddingLeft: 14, position: "relative" }}>
                   <span style={{ position: "absolute", left: 0, color: "var(--r-50)" }}>×</span>{l}
                 </li>
               ))}
@@ -355,10 +355,10 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
           </div>
           <div style={{ width: 1, background: "var(--rule)" }} />
           <div>
-            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--g-50)", marginBottom: 10 }}>And on the other side</div>
+            <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--g-50)", marginBottom: 10 }}>And on the other side</div>
             <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 6 }}>
               {OTHER_SIDE_ITEMS.map((l) => (
-                <li key={l} className="mono" style={{ fontSize: 12.5, color: "var(--ink-80)", paddingLeft: 14, position: "relative" }}>
+                <li key={l} className="mono" style={{ fontSize: "var(--fs-body)", color: "var(--ink-80)", paddingLeft: 14, position: "relative" }}>
                   <span style={{ position: "absolute", left: 0, color: "var(--g-50)" }}>✓</span>{l}
                 </li>
               ))}
@@ -370,7 +370,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
           <div className="serif" style={{ fontSize: 22, color: "var(--ink-100)", lineHeight: 1.3 }}>The supply is <em style={{ color: "var(--tk-accent)", fontStyle: "normal" }}>fixed</em>.</div>
           <div className="serif" style={{ fontSize: 22, color: "var(--ink-100)", lineHeight: 1.3 }}>The technology is <em style={{ color: "var(--tk-accent)", fontStyle: "normal" }}>unbroken</em>.</div>
         </div>
-        <p className="mono dim" style={{ marginTop: 22, fontSize: 11, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", textAlign: "right" }}>
+        <p className="mono dim" style={{ marginTop: 22, fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", textAlign: "right" }}>
           — The Monero Archive, March 2026
         </p>
       </Card>
@@ -378,7 +378,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
       {/* ── COUNTERARGUMENTS ────────────────────────────────── */}
       <Card style={{ padding: 22 }}>
         <div className="kicker">Counterarguments · eyes open</div>
-        <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.75, margin: "10px 0 0" }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.75, margin: "10px 0 0" }}>
           The counterarguments are real — exchange delistings reduce liquidity, regulatory crackdowns could intensify, and quantum computing is a theoretical long-term risk. But every demand driver identified above is substantiated by what's actually happening on the ground right now.
         </p>
       </Card>
@@ -386,11 +386,26 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
       {/* ── THE REFUSING-TO-DIE CHART · cycle highs marked ── */}
       <Card style={{ padding: 22 }}>
         <div className="kicker">Cycle highs · marked</div>
-        <p className="mono dim" style={{ margin: "10px 0 0", fontSize: 11.5, lineHeight: 1.65 }}>
-          Four cycles, four higher lows. Each point below is a stated historical peak — hover for the cycle, date, price and drawdown.
+        <p className="mono dim" style={{ margin: "10px 0 0", fontSize: "var(--fs-mono)", lineHeight: 1.65 }}>
+          Four cycles, four higher lows. Each point is a stated historical peak — hover for the
+          cycle, date, price and drawdown.
         </p>
         <div style={{ marginTop: 14 }}>
           <CycleHighsChart />
+        </div>
+        {/* The grid stays below the chart as its legend rather than being
+            replaced by it: the per-cycle `note` is editorial copy, and moving
+            it behind a hover would make it invisible to anyone reading on
+            touch or with a keyboard. */}
+        <div className="mono kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 10, marginTop: 14, fontSize: "var(--fs-mono)" }}>
+          {CYCLE_HIGHS.map((c) => (
+            <div key={c.cyc} style={{ padding: 12, border: "1px solid var(--rule)", borderRadius: 2 }}>
+              <div className="kicker" style={{ color: "var(--tk-accent)" }}>{c.cyc}</div>
+              <div className="serif" style={{ fontSize: 18, color: "var(--ink-100)", margin: "6px 0" }}>{c.peak}</div>
+              <div className="dn" style={{ fontSize: "var(--fs-mono)" }}>{c.drawdown}</div>
+              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>{c.note}</p>
+            </div>
+          ))}
         </div>
       </Card>
     </div>

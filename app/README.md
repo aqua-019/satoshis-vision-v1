@@ -118,6 +118,43 @@ Fonts: Newsreader serif · Geist sans · JetBrains Mono. Swap by editing
 
 ---
 
+## Visual system (v6.0.2)
+
+Styling splits into three layers, imported from `src/main.tsx` in this exact
+order:
+
+```tsx
+import "./styles.css";           // base — the v5 terminal-dense identity, unchanged
+import "./styles-ambient.css";   // L3 — ambient background
+import "./styles-theme.css";     // L2 — chrome palette
+import "./styles-legibility.css"; // L1 — legibility, unconditional
+```
+
+| Layer | File | Scope | Owns |
+|---|---|---|---|
+| L1 | `styles-legibility.css` | Unconditional, never theme-scoped | The fluid type scale (`--fs-hero` … `--fs-label`), global readability primitives (`text-wrap`, measure guards, tabular numerals), the app's first `:focus-visible` ring, and two structural bugfixes (`.art-canvas` sizing, topbar overflow). |
+| L2 | `styles-theme.css` | Scoped to `:root[data-theme="indigo"]` (plus a classic-identity `:root` block) | The chrome palette — everything that changes a *colour* when the Design panel's Theme knob is toggled. |
+| L3 | `styles-ambient.css` | Always on, intensity-scaled | The aurora/dust/grain background field. Geometry and timing are unconditional; every colour routes through an `--amb-*` token that L2 re-binds per theme. |
+
+**Import order is load-bearing.** L1 loads *last* specifically so that no
+palette rule in L2 can ever override a readability rule in L1 — a theme
+switch can recolour type, but it can never again shrink it below the legible
+floor.
+
+**Governing palette rule: Monero orange means crypto data, never decoration.**
+`--tk-accent` stays bound to orange in *both* themes — it's read by 32 CSS
+rules and 235 TSX inline styles, and those sites are overwhelmingly data
+(prices, hashrate, block heights, tx counts, `.acc`, `.mblock` numerals).
+Rebinding `--tk-accent` itself would recolour every one of them. Chrome reads
+`--ui-accent` / `--ui-accent-text` / `--ui-primary` instead, which L2 binds to
+`--tk-accent` (identity) under classic and to Indigofera Nocturne under
+indigo. That indirection is the whole trick: ~15 chrome rules change per
+theme, and the 235 data call sites need zero edits — which is exactly why
+adding a theme toggle didn't require touching every `var(--tk-accent)` site
+in the codebase.
+
+---
+
 ## Privacy hygiene
 
 The default build:
@@ -136,8 +173,13 @@ The default build:
 - Public Monero RPC nodes generally don't serve `Access-Control-Allow-Origin`.
   Run a thin edge proxy and point your `useFeed` hook at it. See
   `DATA.md` in the source project.
-- Tweaks panel from the design hub is **not** in this repo — it's a
-  design-time concern. The hub lives at the v5 design-hub URL.
+- **Partial reversal, v6.0.2**: a minimal two-knob **Design panel** (Theme:
+  indigo/classic · Ambient: calm/busy/chaotic) now ships in the app itself,
+  reachable from a `⌘ DESIGN` control in the topbar — this is user-facing,
+  not a design-time tool. The full tweaks system (Accent/Type/Glow/Density)
+  is still deliberately **not** in this repo; that remains a design-time
+  concern and still lives in the design hub. Don't conflate the two: the
+  in-app panel is two knobs, not the whole tweaks surface.
 
 ---
 

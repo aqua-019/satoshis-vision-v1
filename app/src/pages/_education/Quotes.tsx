@@ -64,9 +64,9 @@ function QuoteCard({ q }: { q: Quote }) {
       border: "1px solid " + (q.key ? "rgba(255,122,26,0.35)" : "var(--rule)"),
       borderLeft: "2px solid " + (q.key ? "var(--tk-accent)" : "var(--ink-20)"),
       background: q.key ? "rgba(255,122,26,0.03)" : "rgba(8,7,5,0.6)" }}>
-      {q.key ? <div className="mono" style={{ fontSize: 9, letterSpacing: "0.18em", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>★ KEY</div> : null}
+      {q.key ? <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.18em", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>★ KEY</div> : null}
       <blockquote className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.5, color: "var(--ink-100)", fontStyle: "italic" }}>"{q.t}"</blockquote>
-      <figcaption className="mono" style={{ fontSize: 11, color: "var(--ink-60)", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <figcaption className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <span style={{ color: "var(--ink-100)" }}>Satoshi Nakamoto</span>
         <span className="dim2">{q.s} · {q.d}</span>
       </figcaption>
@@ -93,9 +93,9 @@ export function EduQuotes() {
             <button key={k} type="button" onClick={() => setCat(k)}
               style={{ appearance: "none", cursor: "pointer", background: on ? "rgba(255,122,26,0.1)" : "transparent",
                 border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-20)"), borderRadius: 999, padding: "6px 14px",
-                color: on ? "var(--tk-accent)" : "var(--ink-60)", fontFamily: "var(--f-mono)", fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase",
+                color: on ? "var(--tk-accent)" : "var(--ink-60)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase",
                 textShadow: on ? "var(--glow-1)" : "none" }}>
-              {Q_LABEL[k]} <span className="dim2" style={{ fontSize: 9 }}>{n}</span>
+              {Q_LABEL[k]} <span className="dim2" style={{ fontSize: "var(--fs-label)" }}>{n}</span>
             </button>
           );
         })}

@@ -41,8 +41,8 @@ export function EduSimulators({ navigate }: EduSimulatorsProps) {
               <Card key={p.id} onClick={() => navigate("/simulate?p=" + p.id)} style={{ padding: 18, cursor: "pointer" }}>
                 <div className="kicker" style={{ color: p.tone === "priv" ? "var(--p-50)" : "var(--tk-accent)" }}>{p.kicker}</div>
                 <div className="serif" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)", margin: "8px 0 6px" }}>{p.label}</div>
-                <p className="mono dim" style={{ margin: 0, fontSize: 12, lineHeight: 1.6 }}>{p.sub}</p>
-                <div className="mono acc" style={{ fontSize: 11, marginTop: 12, letterSpacing: "0.08em" }}>Run simulator →</div>
+                <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p.sub}</p>
+                <div className="mono acc" style={{ fontSize: "var(--fs-label)", marginTop: 12, letterSpacing: "0.08em" }}>Run simulator →</div>
               </Card>
             ))}
           </div>

@@ -141,8 +141,17 @@ For .onion / static-only hosts, swap `BrowserRouter` → `HashRouter` in
 
 ## What's deliberately NOT in this repo
 
-- **Tweaks panel** — that's a design-time tool, not user-facing UX. It
-  lives in the design hub (`design-hub.html` in the source project).
+- **Tweaks panel — partially reversed, v6.0.2.** A minimal two-knob
+  **Design panel** (Theme: indigo/classic · Ambient: calm/busy/chaotic) now
+  ships in the app, reachable from a `⌘ DESIGN` control in the topbar — it
+  is user-facing UX, not a design-time tool, and porting it over is part of
+  the standard port. The *full* tweaks system (Accent/Type/Glow/Density)
+  is still deliberately **not** in this repo — that remains a design-time
+  concern and still lives in the design hub (`design-hub.html` in the
+  source project). If you're porting this repo elsewhere, bring
+  `styles-legibility.css` / `styles-theme.css` / `styles-ambient.css` and
+  the topbar's Design panel wiring along with everything else; don't
+  mistake the two-knob panel for the design-hub tweaks surface.
 - **Edit mode wiring** — same reason.
 - **Service workers / offline cache** — host's responsibility.
 - **Analytics** — Monero is a privacy site. None.

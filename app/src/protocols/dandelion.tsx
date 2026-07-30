@@ -211,7 +211,7 @@ export function DandelionView({ data, bg }: ViewProps) {
       bg={bg}
       stage={
         <>
-          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-40)", letterSpacing: "0.18em" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.18em" }}>
             FIG. 02 · BOTANICAL · STEM ⟶ FLUFF
           </div>
           <DandelionStage />

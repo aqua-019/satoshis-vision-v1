@@ -34,7 +34,7 @@ function JrnStatGrid({ items }: { items: { v: React.ReactNode; k: React.ReactNod
       {items.map((s, i) => (
         <div key={i} style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "16px 14px", background: "rgba(0,0,0,0.3)" }}>
           <div className="mono" style={{ fontSize: 28, fontWeight: 500, color: s.tone || "var(--tk-accent)", textShadow: "var(--glow-1)", lineHeight: 1 }}>{s.v}</div>
-          <div className="mono dim" style={{ fontSize: 10.5, marginTop: 8, lineHeight: 1.4, letterSpacing: "0.04em" }}>{s.k}</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-label)", marginTop: 8, lineHeight: 1.4, letterSpacing: "0.04em" }}>{s.k}</div>
         </div>
       ))}
     </div>
@@ -46,7 +46,7 @@ function JrnTechCard({ name, protects, color, children }: { name: React.ReactNod
     <Card style={{ padding: 20, display: "flex", flexDirection: "column", gap: 8 }}>
       <div className="kicker" style={{ color }}>Protects · {protects}</div>
       <div className="serif" style={{ fontSize: 24, fontWeight: 500, color: "var(--ink-100)" }}>{name}</div>
-      <p className="mono dim" style={{ margin: 0, fontSize: 12.5, lineHeight: 1.65 }}>{children}</p>
+      <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.65 }}>{children}</p>
     </Card>
   );
 }
@@ -70,9 +70,9 @@ function JrnCompareTable() {
       </div>
       {ROWS.map((r, i) => (
         <div key={i} style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr", borderBottom: i < ROWS.length - 1 ? "1px solid var(--rule)" : "none" }}>
-          <div className="mono" style={{ padding: "12px 14px", fontSize: 11, color: "var(--ink-60)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{r[0]}</div>
-          <div className="mono" style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--ink-80)", lineHeight: 1.5 }}>{r[1]}</div>
-          <div className="mono" style={{ padding: "12px 14px", fontSize: 12.5, color: "var(--ink-100)", lineHeight: 1.5 }}>{r[2]}</div>
+          <div className="mono" style={{ padding: "12px 14px", fontSize: "var(--fs-label)", color: "var(--ink-60)", letterSpacing: "0.06em", textTransform: "uppercase" }}>{r[0]}</div>
+          <div className="mono" style={{ padding: "12px 14px", fontSize: "var(--fs-body)", color: "var(--ink-80)", lineHeight: 1.5 }}>{r[1]}</div>
+          <div className="mono" style={{ padding: "12px 14px", fontSize: "var(--fs-body)", color: "var(--ink-100)", lineHeight: 1.5 }}>{r[2]}</div>
         </div>
       ))}
     </div>
@@ -92,11 +92,11 @@ function JrnSpectrum() {
           <div style={{ width: 2, height: 22, background: "var(--tk-accent)", margin: "0 auto", boxShadow: "0 0 6px var(--tk-accent)" }} />
         </div>
       </div>
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)" }}>
         <span style={{ color: "var(--c-50)" }}>◀ Fully transparent · Bitcoin</span>
         <span style={{ color: "var(--tk-accent)" }}>Monero · Fully private ▶</span>
       </div>
-      <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.6, marginTop: 14, marginBottom: 0 }}>
+      <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6, marginTop: 14, marginBottom: 0 }}>
         Bitcoin sits near the transparent end. Monero sits at the private end. There is no middle ground.
       </p>
     </Card>
@@ -117,7 +117,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
         </EduMilestone>
         <EduMilestone date="January 3, 2009 · 18:15 UTC" title="Block zero: the genesis">
           Satoshi mines the first block. Embedded in the coinbase — a headline from The Times of London. A timestamp. A manifesto. Proof that Bitcoin was born not from greed, but from disgust at a system that privatized profits and socialized losses.
-          <div className="mono" style={{ marginTop: 12, padding: "12px 14px", border: "1px solid var(--rule)", borderLeft: "2px solid var(--tk-accent)", background: "rgba(0,0,0,0.35)", fontSize: 12.5, color: "var(--tk-accent)" }}>
+          <div className="mono" style={{ marginTop: 12, padding: "12px 14px", border: "1px solid var(--rule)", borderLeft: "2px solid var(--tk-accent)", background: "rgba(0,0,0,0.35)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)" }}>
             // The Times 03/Jan/2009<br />Chancellor on brink of second bailout for banks
           </div>
         </EduMilestone>
@@ -140,7 +140,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
         sub="Here's what they don't tell you: Satoshi knew Bitcoin's privacy was incomplete — and on the forums, wrestled with exactly how to fix it." />
       <Card style={{ padding: 22 }}>
         <div className="kicker">BitcoinTalk Thread #174 · August 10–13, 2010 · "Not a suggestion"</div>
-        <p className="mono dim" style={{ fontSize: 13, lineHeight: 1.7, marginTop: 10 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, marginTop: 10 }}>
           A user named "Red" raised concerns about Bitcoin's completely public transaction history. What followed is one of the most overlooked conversations in cryptocurrency history — Satoshi describing, in 2010, the exact primitives that would become Monero's core privacy layer.
         </p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
@@ -230,7 +230,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
       ]} />
       <Card style={{ padding: 22 }}>
         <div className="kicker">The real reason</div>
-        <p className="mono dim" style={{ fontSize: 13, lineHeight: 1.72, marginTop: 10 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.72, marginTop: 10 }}>
           The modern financial system runs on one assumption: every transaction can be watched. Banks report to governments. Bitcoin is a transparent ledger. Chain-analysis firms built a billion-dollar industry on it. Monero obliterates this model — ring signatures obscure the sender, stealth addresses hide the receiver, RingCT encrypts the amount. There is no transparent mode. This is why regulators treat it differently than any other cryptocurrency. It's not about crime. It's about control — and Monero removes it.
         </p>
       </Card>
@@ -241,13 +241,13 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <Card style={{ padding: 20 }}>
           <div className="kicker" style={{ color: "var(--r-50)" }}>The hidden tax</div>
-          <p className="mono dim" style={{ fontSize: 12.5, lineHeight: 1.65, marginTop: 10 }}>
+          <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.65, marginTop: 10 }}>
             Instant services advertise 0.5–1% fees; the reality is closer to 3–4%, hidden in bad rates. Worse, they collect fees in XMR and immediately dump for stablecoins — an estimated $300K+ in daily selling pressure that suppresses price regardless of demand.
           </p>
         </Card>
         <Card style={{ padding: 20 }}>
           <div className="kicker" style={{ color: "var(--g-50)" }}>How Wagyu v2 changes it</div>
-          <ul className="mono dim" style={{ fontSize: 12.5, lineHeight: 1.7, margin: "10px 0 0", paddingLeft: 18 }}>
+          <ul className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, margin: "10px 0 0", paddingLeft: 18 }}>
             <li>Routes swaps through professional market makers (Hyperliquid).</li>
             <li>Exchange-level pricing — no 1% hidden fees.</li>
             <li>Zero forced selling: $1M through Wagyu = zero dumped on market.</li>
@@ -262,7 +262,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <Card style={{ padding: 20 }}>
           <div className="kicker" style={{ color: "var(--c-50)" }}>Bitcoin wallets</div>
-          <p className="mono" style={{ fontSize: 12, lineHeight: 1.7, marginTop: 10, color: "var(--ink-80)" }}>
+          <p className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, marginTop: 10, color: "var(--ink-80)" }}>
             <b style={{ color: "var(--ink-100)" }}>Hardware:</b> Coldcard · Trezor · Ledger · Keystone<br />
             <b style={{ color: "var(--ink-100)" }}>Software:</b> Sparrow · Electrum · Bitcoin Core<br />
             <span className="dim">For maximum privacy: CoinJoin via Wasabi or JoinMarket.</span>
@@ -270,7 +270,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
         </Card>
         <Card style={{ padding: 20 }}>
           <div className="kicker" style={{ color: "var(--tk-accent)" }}>Monero wallets</div>
-          <p className="mono" style={{ fontSize: 12, lineHeight: 1.7, marginTop: 10, color: "var(--ink-80)" }}>
+          <p className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, marginTop: 10, color: "var(--ink-80)" }}>
             <b style={{ color: "var(--ink-100)" }}>Official:</b> Monero GUI · Monero CLI · Feather (Tor built-in)<br />
             <b style={{ color: "var(--ink-100)" }}>Mobile:</b> Cake Wallet · monero.com · Cupcake (cold storage) · Monerujo<br />
             <span className="dim">Privacy is default. No mixing required. Just send.</span>
@@ -281,7 +281,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
         <div className="kicker">Acquiring Monero · with CEXes increasingly hostile</div>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 12 }}>
           {[["Wagyu", "Exchange-level pricing, no KYC", "var(--tk-accent)"], ["Haveno", "Decentralized P2P trading", "var(--p-50)"], ["Atomic swaps", "BTC ↔ XMR trustlessly", "var(--g-50)"], ["LocalMonero", "Closed 2024 · alternatives emerging", "var(--ink-40)"]].map((c, i) => (
-            <div key={i}><div className="mono" style={{ fontSize: 14, color: c[2] }}>{c[0]}</div><div className="mono dim" style={{ fontSize: 11, lineHeight: 1.45, marginTop: 4 }}>{c[1]}</div></div>
+            <div key={i}><div className="mono" style={{ fontSize: 14, color: c[2] }}>{c[0]}</div><div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.45, marginTop: 4 }}>{c[1]}</div></div>
           ))}
         </div>
       </Card>

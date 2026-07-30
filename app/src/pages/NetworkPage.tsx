@@ -60,7 +60,7 @@ function useSessionSeries(sample: number, key: number, cap = 120): number[] {
 /** Mono key/value grid rows — the same idiom as the recent-blocks table. */
 function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
   return (
-    <div className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: "9px 10px", fontSize: 11, alignItems: "center" }}>
+    <div className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr", gap: "9px 10px", fontSize: "var(--fs-mono)", alignItems: "center" }}>
       {rows.map(([k, v], i) => (
         <React.Fragment key={i}>
           <span className="dim">{k}</span>
@@ -160,7 +160,7 @@ export function NetworkPage() {
               baseline="auto" xLabels={false} stale={data.stale}
               format={(v) => (v / 1e9).toFixed(2)} />
           ) : (
-            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting chain sample</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
           )}
         </PanelFrame>
         <PanelFrame title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
@@ -169,7 +169,7 @@ export function NetworkPage() {
               baseline="auto" xLabels={false} stale={data.stale}
               format={(v) => (v / 1e9).toFixed(2) + "G"} />
           ) : (
-            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting block sample</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
         </PanelFrame>
       </section>
@@ -181,7 +181,7 @@ export function NetworkPage() {
               baseline="zero" xLabels={false} stale={data.stale}
               format={(v) => String(Math.round(v))} />
           ) : (
-            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting mempool sample</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
           )}
         </PanelFrame>
         <PanelFrame title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
@@ -190,7 +190,7 @@ export function NetworkPage() {
               baseline="zero" stale={data.stale} endLabels={["older", "newer"]}
               format={(v) => (v * 100).toFixed(0) + "%"} />
           ) : (
-            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting block sample</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
         </PanelFrame>
       </section>
@@ -203,13 +203,13 @@ export function NetworkPage() {
               <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
                 baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
                 marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
-              <p className="mono dim" style={{ fontSize: 10.5, marginTop: 6, color: "var(--ink-40)" }}>
+              <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
                 μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
                 · timestamps are miner-set, filtered to 5–1800 s
               </p>
             </>
           ) : (
-            <p className="mono dim" style={{ fontSize: 10.5, color: "var(--ink-40)" }}>Awaiting block sample</p>
+            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
         </PanelFrame>
 
@@ -222,7 +222,7 @@ export function NetworkPage() {
             <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
               baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))} />
           )}
-          <p className="mono dim" style={{ fontSize: 10.5, marginTop: 6, color: "var(--ink-40)" }}>
+          <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
             {data.mempool.length
               ? <>Over <b className="acc">{data.mempool.length}</b> mempool tx · median fee marked on-chart</>
               : <>Awaiting mempool sample</>}
@@ -237,7 +237,7 @@ export function NetworkPage() {
             {/* lead with the real signal as a compact stat, not a paragraph */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
               <span style={{ fontSize: 26, color: "var(--ink-100)" }}>{recentBlocks.length ? `${unattributedPct}%` : "—"}</span>
-              <span className="dim" style={{ fontSize: 11 }}>
+              <span className="dim" style={{ fontSize: "var(--fs-mono)" }}>
                 {recentBlocks.length
                   ? <>unattributed · {unattributed}/{recentBlocks.length} recent blocks report pool "Unknown"</>
                   : <>awaiting block sample</>}
@@ -250,7 +250,7 @@ export function NetworkPage() {
               ) : null}
             </div>
             {/* one-line caption: the why lives in a hover tooltip; Skyline link stays visible */}
-            <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
               Coinbase outputs are one-time stealth addresses — pools can't be matched on-chain{" "}
               <span
                 title="Real explorers show pool names from a maintained dataset of coinbase tx_extra signatures, or a third-party pool API. Both are off-limits here: a bundled list goes stale and is partial, and an API would break the zero-third-party privacy invariant. So 'Unknown' from the node alone is the honest representation."
@@ -289,9 +289,9 @@ export function NetworkPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
             <span style={{ fontSize: 26, color: "var(--ink-60)" }}>—</span>
-            <span className="dim" style={{ fontSize: 11 }}>Not live network data — peer telemetry paused</span>
+            <span className="dim" style={{ fontSize: "var(--fs-mono)" }}>Not live network data — peer telemetry paused</span>
           </div>
-          <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+          <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
             Peer topology — connection counts, the peer list, and latencies — requires a dedicated
             unrestricted node. The public node cascade this site reads runs restricted RPC (all peer
             fields report 0, peer lists are admin-only), so this panel stays paused and populates
@@ -316,7 +316,7 @@ export function NetworkPage() {
 
         <PanelFrame title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)" }}>
               <span style={{ color: "var(--tk-accent)" }}>median {ready && data.blockWeightMedian > 0 ? fmtBytes(data.blockWeightMedian) : "—"}</span>
               <span className="dim">limit {ready && data.blockWeightLimit > 0 ? fmtBytes(data.blockWeightLimit) : "—"}</span>
             </div>
@@ -326,7 +326,7 @@ export function NetworkPage() {
                 <div style={{ position: "absolute", inset: "0 auto 0 0", width: Math.min(100, (data.blockWeightMedian / data.blockWeightLimit) * 100).toFixed(1) + "%", background: "var(--tk-accent)", opacity: 0.5, boxShadow: "0 0 8px var(--tk-accent)" }} />
               ) : null}
             </div>
-            <p className="mono dim" style={{ fontSize: 10.5, margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
               Monero's block size is dynamic: blocks above the median weight enter the penalty
               zone and pay a quadratic coinbase-reward penalty, and the node's dynamic limit
               is 2× the median — so the limit grows only as sustained demand lifts the median.
@@ -338,7 +338,7 @@ export function NetworkPage() {
       {/* Recent blocks table */}
       <PanelFrame title="Recent blocks" right={<span>height ↓</span>}>
         <div className="table-scroll">
-        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: 11 }} className="mono keep-cols">
+        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: "var(--fs-mono)" }} className="mono keep-cols">
           {["#", "Hash", "Txs", "Size", "Reward", "Pool", "Age"].map((h, i) => (
             <div key={i} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6, marginBottom: 2 }}>{h}</div>
           ))}

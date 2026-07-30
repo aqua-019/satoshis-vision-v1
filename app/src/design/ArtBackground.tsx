@@ -10,6 +10,7 @@
  */
 
 import * as React from "react";
+import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
 
 type Intensity = "calm" | "busy" | "chaotic";
@@ -20,12 +21,17 @@ export interface ArtBackgroundProps {
 }
 
 export function ArtBackground({ intensity = "busy", scan = false }: ArtBackgroundProps) {
+  // The user's ⌘ DESIGN → Ambient choice, when set, overrides every page's
+  // own `intensity` prop (see design/VisualContext.tsx); `ambient === null`
+  // means no override, so this page's own prop wins as before.
+  const { ambient } = useVisual();
+  const effectiveIntensity = ambient ?? intensity;
   return (
     <>
       <div className="art-grid" />
       <ParticleField
-        density={intensity === "calm" ? 0.45 : intensity === "chaotic" ? 1.6 : 1.0}
-        speed={intensity === "chaotic" ? 1.6 : 1.0}
+        density={effectiveIntensity === "calm" ? 0.45 : effectiveIntensity === "chaotic" ? 1.6 : 1.0}
+        speed={effectiveIntensity === "chaotic" ? 1.6 : 1.0}
       />
       <div className="art-noise" />
       <div className="art-vignette" />
@@ -37,86 +43,90 @@ export function ArtBackground({ intensity = "busy", scan = false }: ArtBackgroun
 interface ParticleFieldProps {
   density?: number;
   speed?: number;
+  /** Explicit override. Omitted (the normal case), the theme-aware
+   *  `--ui-accent-dim` token is read from computed style instead — see
+   *  below. */
   color?: string;
   className?: string;
 }
 
+interface Star { x: number; y: number; vx: number; vy: number; r: number; a: number; ph: number }
+interface Stream { x: number; y: number; vy: number; life: number; age: number; hue: number }
+
 export function ParticleField({
   density = 1.0,
   speed = 1.0,
-  color = "rgba(255,122,26,0.5)",
+  color,
   className,
 }: ParticleFieldProps) {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
-  const reduceMotion = useReducedMotion();
+  const reduced = useReducedMotion();
+  // Re-running the effect on a theme flip is how a live ⌘ DESIGN → Theme
+  // change repaints an already-mounted canvas — otherwise the computed
+  // `--ui-accent-dim` read below would only ever happen once, at mount.
+  const { theme } = useVisual();
 
   React.useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    let raf = 0, w = 0, h = 0;
+    let w = 0, h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    let disposed = false;
-    let seeded = false;
+    // Theme-aware particle colour: --ui-accent-dim already retints per
+    // theme (violet under indigo, the historic orange under classic — see
+    // styles-theme.css). Read it from computed style rather than
+    // hardcoding the orange; fall back to it only if the token resolves
+    // empty (e.g. rendered outside this app's CSS cascade entirely, per
+    // PORTING.md).
+    const themeColor =
+      color ??
+      (getComputedStyle(document.documentElement).getPropertyValue("--ui-accent-dim").trim() ||
+        "rgba(255,122,26,0.5)");
 
-    const resize = () => {
-      if (disposed) return;
-      const r = canvas.getBoundingClientRect();
-      const pw = w, ph = h;
-      w = r.width; h = r.height;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (!seeded) return; // first call runs before the particles exist
+    let stars: Star[] = [];
+    let streams: Stream[] = [];
 
-      // The effect can run before layout settles, in which case every particle
-      // was seeded against a degenerate box and they all sit in one corner.
-      // When a real box finally arrives, re-scatter instead of leaving the
-      // clump; on an ordinary resize, map the existing composition onto the
-      // new box so the field doesn't visibly reshuffle.
-      if ((pw < 100 || ph < 100) && w >= 100 && h >= 100) {
-        for (const s of stars) { s.x = Math.random() * w; s.y = Math.random() * h; }
-        for (const s of streams) { s.x = Math.random() * w; s.y = h + Math.random() * h; }
-      } else if (pw > 0 && ph > 0) {
-        for (const s of stars) { s.x = (s.x / pw) * w; s.y = (s.y / ph) * h; }
-        for (const s of streams) { s.x = (s.x / pw) * w; }
-      }
+    // Seeding lives inside resize() (not once at the top of the effect) so
+    // a LATER resize — not just the first measurement — reseeds against the
+    // current box. Before styles-legibility.css's `.art-canvas` fix this
+    // never mattered (the canvas was permanently stuck at its 300×150
+    // intrinsic size, see that file's "BUGFIX" comment); now that a resize
+    // can genuinely change w/h, seeding once at mount left every star keyed
+    // to a stale box after the next one.
+    const seed = () => {
+      const N = Math.floor(120 * density);
+      stars = Array.from({ length: N }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.15 * speed,
+        vy: (Math.random() - 0.5) * 0.15 * speed,
+        r: Math.random() * 1.3 + 0.2,
+        a: Math.random() * 0.7 + 0.1,
+        ph: Math.random() * Math.PI * 2,
+      }));
+      streams = Array.from({ length: Math.floor(8 * density) }, () => ({
+        x: Math.random() * w, y: h + Math.random() * h,
+        vy: -(Math.random() * 1.6 + 0.6) * speed,
+        life: Math.random() * 200 + 200,
+        age: 0,
+        hue: Math.random() < 0.85 ? 28 : 280,
+      }));
     };
-    resize();
-    // rAF-deferred: calling resize() synchronously from the observer can
-    // re-trigger it in the same frame and surface "ResizeObserver loop
-    // completed with undelivered notifications". useFitToView.ts defers for
-    // the same reason.
-    const ro = new ResizeObserver(() => requestAnimationFrame(resize));
-    ro.observe(canvas);
 
-    const N = Math.floor(120 * density);
-    const stars = Array.from({ length: N }, () => ({
-      x: Math.random() * w, y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.15 * speed,
-      vy: (Math.random() - 0.5) * 0.15 * speed,
-      r: Math.random() * 1.3 + 0.2,
-      a: Math.random() * 0.7 + 0.1,
-      ph: Math.random() * Math.PI * 2,
-    }));
-    const streams = Array.from({ length: Math.floor(8 * density) }, () => ({
-      x: Math.random() * w, y: h + Math.random() * h,
-      vy: -(Math.random() * 1.6 + 0.6) * speed,
-      life: Math.random() * 200 + 200,
-      age: 0,
-      hue: Math.random() < 0.85 ? 28 : 280,
-    }));
-    seeded = true;
-
-    // `k` is elapsed time normalised to 60fps-equivalent steps (k=1 means
-    // "one 1/60s tick just happened"). Every per-frame increment below is
-    // scaled by it so a 120Hz/144Hz display doesn't drift stars twice as
-    // fast in wall-clock time as a 60Hz one — at 60Hz, k≈1 every frame and
-    // the motion is pixel-identical to before this change.
-    const draw = (k: number) => {
+    // One frame's worth of update + draw. Split out from the rAF loop
+    // (below) so reduced motion can call it exactly once per resize instead
+    // of never running at all.
+    //
+    // `k` is elapsed time normalised to 60fps-equivalent steps: k=1 means
+    // "one 1/60s tick just happened". Every per-frame increment below scales
+    // by it, so a 120Hz/144Hz display no longer drifts the field twice as
+    // fast in wall-clock time as a 60Hz one. At 60Hz k≈1 and the motion is
+    // unchanged. k=0 draws the current state without advancing it, which is
+    // what the reduced-motion static frame wants.
+    const tick = (k: number) => {
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = color;
+      ctx.fillStyle = themeColor;
       for (const s of stars) {
         s.x += s.vx * k; s.y += s.vy * k; s.ph += 0.02 * speed * k;
         if (s.x < 0) s.x += w; if (s.x > w) s.x -= w;
@@ -145,47 +155,61 @@ export function ParticleField({
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     };
 
-    // Reduced motion: paint one calm frame and never schedule the loop. This
-    // is decoration behind real content (not the content itself), so it
-    // should stay visible — just still, not blank.
-    if (reduceMotion) {
-      draw(0);
-      return () => { disposed = true; ro.disconnect(); };
-    }
+    let disposed = false;
 
+    const resize = () => {
+      if (disposed) return; // a deferred rAF can still fire after unmount
+      const r = canvas.getBoundingClientRect();
+      w = r.width; h = r.height;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seed();
+      // Assigning canvas.width just wiped the backing store. Under reduced
+      // motion there's no rAF loop to repaint what that wipe erased, so the
+      // static frame has to be redrawn right here or the field goes blank
+      // on the next resize (mirrors pages/future/FutureMini.tsx's
+      // useMiniCanvas, which hits the exact same canvas.width= gotcha).
+      if (reduced) tick(0);
+    };
+    resize();
+    // Deferred through rAF: resizing synchronously from inside the observer
+    // can re-trigger it in the same frame and surface "ResizeObserver loop
+    // completed with undelivered notifications". useFitToView.ts defers for
+    // exactly this reason.
+    const ro = new ResizeObserver(() => requestAnimationFrame(resize));
+    ro.observe(canvas);
+
+    if (reduced) return () => { disposed = true; ro.disconnect(); };
+
+    let raf = 0;
     let lastTs: number | null = null;
-    draw(0); // instant first paint, matching the old synchronous tick() call
-
-    const tick = (now: number) => {
-      // Clamp so a background tab returning after minutes away doesn't
-      // teleport every particle across the canvas in one jump.
-      const dt = lastTs === null ? 0 : Math.min((now - lastTs) / 1000, 0.05);
+    const loop = (now: number) => {
+      // Clamp so a tab returning after minutes in the background doesn't
+      // teleport every particle across the canvas in a single step.
+      const dt = lastTs === null ? 1 / 60 : Math.min((now - lastTs) / 1000, 0.05);
       lastTs = now;
-      draw(dt / (1 / 60));
-      raf = requestAnimationFrame(tick);
+      tick(dt / (1 / 60));
+      raf = requestAnimationFrame(loop);
     };
     const start = () => {
       if (raf) return;
-      lastTs = null; // avoid a huge dt spike on resume
-      raf = requestAnimationFrame(tick);
+      lastTs = null; // avoid a dt spike on resume
+      raf = requestAnimationFrame(loop);
     };
-    const stop = () => {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    };
-    const onVisibility = () => {
-      if (document.hidden) stop(); else start();
-    };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+    // A hidden tab still runs rAF in some browsers and always burns battery
+    // in the ones that throttle it; nothing here is worth drawing unseen.
+    const onVisibility = () => { if (document.hidden) stop(); else start(); };
     document.addEventListener("visibilitychange", onVisibility);
     if (!document.hidden) start();
 
     return () => {
-      disposed = true; // a queued rAF from the observer may still fire
+      disposed = true;
       stop();
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [density, speed, color, reduceMotion]);
+  }, [density, speed, color, reduced, theme]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;
 }

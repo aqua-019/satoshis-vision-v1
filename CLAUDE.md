@@ -116,6 +116,38 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
   Use this section to leave notes for future sessions.
   Format: **YYYY-MM-DD**: Note content
 -->
+- **2026-07-30**: v6.0.2 "THREE-LAYER VISUAL SYSTEM" (app/): styling split into
+  three CSS layers, imported from main.tsx in this load-bearing order — base
+  styles.css, then L3 `styles-ambient.css` (aurora/dust/grain background,
+  always on, intensity-scaled), then L2 `styles-theme.css` (chrome palette,
+  scoped to `:root[data-theme="indigo"]` + a classic-identity `:root` block),
+  then L1 `styles-legibility.css` LAST so no palette rule can ever override a
+  readability rule. L1 raises the body-text floor from 11.5px to a 14px-based
+  fluid scale (`--fs-hero/h1/h2/body/mono/label`) and fixes two structural
+  bugs: `.art-canvas` (a `<canvas>` is a replaced element, so `inset:0` alone
+  never stretched it — every particle field was seeding into a 300×150
+  top-left corner) and topbar ticker overflow (was silently clipped, not
+  scrolled, ~769–1430px). Governing palette rule, enforced by construction:
+  Monero orange (`--tk-accent`) means crypto data, never decoration — it
+  stays orange in both themes across 32 CSS rules + 235 TSX inline sites;
+  chrome instead reads `--ui-accent`/`--ui-primary`, which L2 rebinds per
+  theme. That indirection is why the indigo theme toggle didn't require
+  touching any of the 235 data call sites. New user-facing surface: a minimal
+  two-knob Design panel (Theme: indigo/classic · Ambient: calm/busy/chaotic)
+  behind a `⌘ DESIGN` control in the topbar — this is a deliberate *partial*
+  reversal of the earlier "tweaks panel is design-time-only" decision; the
+  full Accent/Type/Glow/Density tweaks system stays out of the app. New gate:
+  `app/verify-legibility.mjs` (static-source-assertion style, matching
+  verify-sediment.mjs) — asserts the six-step scale is declared exactly once
+  verbatim, no sub-14 inline `fontSize:` object-style survives in
+  `app/src/**/*.tsx` (SVG `fontSize="9"` presentation attributes deliberately
+  excluded), `.art-canvas` declares both `width:100%` and `height:100%`, L1/L3
+  carry zero `[data-theme=` selectors, every non-`@keyframes`/non-classic-`:root`
+  rule in L2 is theme-scoped, and L3 doesn't redeclare the `sweep`/`drift`/
+  `streamY`/`bg-pulse`/`bg-pulse-soft` keyframe names already in styles.css.
+  As of this session the sub-14-fontSize migration across `src/**/*.tsx` is
+  still in flight (ui-builder et al.) — the gate correctly fails on it and
+  will pass once that work lands.
 - **2026-06-12**: v5.0.14 "ALL-REAL DATA" (app/ + api/): removed every simulated/illustrative
   data surface outside `app/src/protocols/**` (the educational simulators, now code-split into
   their own lazy chunk via /simulate). Deleted `app/src/data/simulated.ts`; the feed boots with

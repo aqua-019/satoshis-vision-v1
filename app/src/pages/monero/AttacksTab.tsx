@@ -88,9 +88,9 @@ export function AttacksTab(_props: MoneroTabProps) {
           {BOUNTIES.map((b) => (
             <div key={b.y} style={{ padding: 14, border: "1px solid var(--rule)", borderRadius: 2 }}>
               <div className="kicker" style={{ color: "var(--r-50)" }}>{b.y}</div>
-              <div className="mono" style={{ fontSize: 13, color: "var(--ink-100)", marginTop: 4 }}>{b.co}</div>
-              <div className="mono acc" style={{ fontSize: 12, marginTop: 2 }}>Offered: {b.amt}</div>
-              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.6 }}>{b.out}</p>
+              <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)", marginTop: 4 }}>{b.co}</div>
+              <div className="mono acc" style={{ fontSize: "var(--fs-mono)", marginTop: 2 }}>Offered: {b.amt}</div>
+              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{b.out}</p>
             </div>
           ))}
         </div>
@@ -103,10 +103,10 @@ export function AttacksTab(_props: MoneroTabProps) {
             <div key={p.title} style={{ display: "grid", gridTemplateColumns: "12px 1fr 120px", gap: 12, padding: "10px 0", borderTop: "1px dashed var(--ink-10)", alignItems: "flex-start" }}>
               <span style={{ width: 8, height: 8, borderRadius: 4, background: p.severity, boxShadow: `0 0 4px ${p.severity}`, marginTop: 6 }} />
               <div>
-                <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-100)" }}>{p.title}</div>
-                <p className="mono dim" style={{ margin: "4px 0 0", fontSize: 11, lineHeight: 1.6 }}>{p.note}</p>
+                <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>{p.title}</div>
+                <p className="mono dim" style={{ margin: "4px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p.note}</p>
               </div>
-              <span style={{ fontSize: 10, color: p.severity, textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "right" }}>{p.status}</span>
+              <span style={{ fontSize: "var(--fs-label)", color: p.severity, textTransform: "uppercase", letterSpacing: "0.14em", textAlign: "right" }}>{p.status}</span>
             </div>
           ))}
         </div>
@@ -117,8 +117,8 @@ export function AttacksTab(_props: MoneroTabProps) {
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
           {VECTORS.map((p) => (
             <div key={p.t} style={{ padding: 14, borderLeft: "2px solid var(--y-50)" }}>
-              <div className="mono" style={{ fontSize: 12.5, color: "var(--ink-100)" }}>{p.t}</div>
-              <p className="mono dim" style={{ margin: "6px 0 0", fontSize: 11.5, lineHeight: 1.7 }}>{p.d}</p>
+              <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>{p.t}</div>
+              <p className="mono dim" style={{ margin: "6px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.7 }}>{p.d}</p>
             </div>
           ))}
         </div>
@@ -131,7 +131,7 @@ export function AttacksTab(_props: MoneroTabProps) {
           <em style={{ color: "var(--g-50)", fontStyle: "normal" }}> no party has publicly demonstrated </em>
           a method to deanonymise a current-protocol Monero transaction at scale.
         </p>
-        <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.75 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.75 }}>
           Operational attacks — phishing, timing correlation, KYC at the on-ramp — remain effective against careless users.
           The protocol itself has held. FCMP++ will close most remaining theoretical attack surface in Q3 2026.
         </p>

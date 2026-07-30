@@ -185,14 +185,14 @@ export function IndistinguishabilityProbe({ ring }: any) {
             border: "1px solid var(--ink-20)",
             background: r.real ? "linear-gradient(135deg, rgba(255,180,80,0.4), rgba(255,122,26,0.25))" : "rgba(255,122,26,0.18)",
             display: "grid", placeItems: "center",
-            fontFamily: "var(--f-mono)", fontSize: 9,
+            fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
             color: r.real ? "var(--ink-100)" : "var(--ink-60)",
           }}>
             #{i.toString().padStart(2, "0")}
           </div>
         ))}
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: 9.5, color: "var(--ink-40)", marginTop: 4 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 4 }}>
         <span>Verifier sees: <span className="acc">16 valid signatures</span></span>
         <span>P(spotting real spender) → <span className="acc">1/16</span></span>
       </div>
@@ -228,7 +228,7 @@ export function DecoySelectionView({ data, bg }: ViewProps) {
       bg={bg}
       stage={
         <>
-          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-40)", letterSpacing: "0.18em" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.18em" }}>
             FIG. 01 · TIME TIDE · DENSITY CURVE = SAMPLING WEIGHT
           </div>
           <TimeTide ringSize={ringSize} trueAge={trueAge} />
