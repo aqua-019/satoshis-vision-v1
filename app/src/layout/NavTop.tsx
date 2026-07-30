@@ -10,6 +10,7 @@ import * as React from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { Provenance } from "@/design/primitives";
+import { DesignPanel } from "@/design/DesignPanel";
 
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
@@ -106,6 +107,9 @@ export function NavTop() {
             {data.marketReady ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
           </em>
         </span>
+        {/* Must stay the LAST child of .ticker-strip — see
+            design/DesignPanel.tsx's header comment for why. */}
+        <DesignPanel />
       </div>
 
       <button

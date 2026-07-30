@@ -156,7 +156,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
       <div style={{ position: "absolute", top: -1, left: -1, padding: "3px 8px",
         background: done ? "var(--g-50)" : on ? "var(--tk-accent)" : "var(--bg-2)",
         color: done ? "var(--bg-0)" : on ? "var(--bg-0)" : "var(--ink-60)",
-        fontFamily: "var(--f-mono)", fontSize: 9, letterSpacing: "0.16em",
+        fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.16em",
         textTransform: "uppercase", zIndex: 2,
       }}>{n} · {title}</div>
       <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} style={{ display: "block" }}>
@@ -197,7 +197,7 @@ export function RingctView({ data, bg }: ViewProps) {
       bg={bg}
       stage={
         <>
-          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-40)", letterSpacing: "0.18em" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.18em" }}>
             FIG. 04 · ASSEMBLY LINE · L → R · LIVE
           </div>
 
@@ -223,7 +223,7 @@ export function RingctView({ data, bg }: ViewProps) {
               margin: 0, padding: 14,
               border: "1px solid var(--rule)",
               background: "rgba(0,0,0,0.45)",
-              fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.5,
+              fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5,
               color: "var(--ink-80)",
             }}>
 {`tx {

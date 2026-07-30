@@ -51,7 +51,7 @@ export function ChamberPanel({ side, tick, phase }: any) {
       </svg>
 
       {/* steps */}
-      <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.7 }}>
+      <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.7 }}>
         {isAlice ? (
           <>
             <div className={"kv " + (phase >= 0 ? "" : "muted")}>
@@ -193,10 +193,10 @@ export function ChamberMath({ phase, tick }: any) {
       {/* one-time address */}
       <div style={{ width: 220, padding: "10px 12px", border: "1px solid " + (matched ? "var(--g-50)" : "var(--ink-20)"), background: "rgba(0,0,0,0.5)" }}>
         <div className="kicker" style={{ marginBottom: 4 }}>ONE-TIME OUTPUT KEY</div>
-        <div style={{ fontFamily: "var(--f-mono)", fontSize: 10.5, color: matched ? "var(--g-50)" : "var(--ink-40)", wordBreak: "break-all", letterSpacing: "-0.02em" }}>
+        <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: matched ? "var(--g-50)" : "var(--ink-40)", wordBreak: "break-all", letterSpacing: "-0.02em" }}>
           P = {matched ? "8b6a7c91f4d8…3e7" : "—"}
         </div>
-        <div className="dim2" style={{ fontSize: 9, marginTop: 4 }}>
+        <div className="dim2" style={{ fontSize: "var(--fs-label)", marginTop: 4 }}>
           {matched ? "visible to all · spendable by Bob" : "awaiting derivation"}
         </div>
       </div>
@@ -224,7 +224,7 @@ export function StealthView({ data, bg }: ViewProps) {
       bg={bg}
       stage={
         <>
-          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-40)", letterSpacing: "0.18em" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.18em" }}>
             FIG. 05 · TWO-KEY CHAMBER · DH ≡
           </div>
 

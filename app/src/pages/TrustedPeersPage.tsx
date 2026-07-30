@@ -57,14 +57,14 @@ export function TrustedPeersPage() {
                   </div>
                   <h3 className="serif" style={{ margin: 0, fontSize: "clamp(28px, 2.2vw, 38px)", fontWeight: 400, color: e.c, textShadow: `0 0 16px ${e.c}55` }}>{e.name}</h3>
                   <div className="serif" style={{ fontSize: 15, color: "var(--ink-80)", fontStyle: "italic" }}>{e.head}</div>
-                  <p className="mono dim" style={{ margin: 0, fontSize: 13, lineHeight: 1.7, flex: 1 }}>{e.blurb}</p>
+                  <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7, flex: 1 }}>{e.blurb}</p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--rule)", paddingTop: 13 }}>
                     <button
                       type="button"
                       className="mono dim2"
                       onClick={(ev) => { ev.stopPropagation(); setEco(e.id); }}
                       aria-label={`Read our brief on ${e.name}`}
-                      style={{ background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit", fontSize: 11.5, letterSpacing: "0.06em", textDecoration: "underline dotted" }}
+                      style={{ background: "none", border: 0, padding: 0, cursor: "pointer", font: "inherit", fontSize: "var(--fs-label)", letterSpacing: "0.06em", textDecoration: "underline dotted" }}
                     >
                       our brief
                     </button>
@@ -76,12 +76,12 @@ export function TrustedPeersPage() {
                         rel="noopener noreferrer"
                         onClick={(ev) => ev.stopPropagation()}
                         aria-label={`Visit ${e.name} (opens in a new tab)`}
-                        style={{ fontSize: 12, color: e.c, textDecoration: "none" }}
+                        style={{ fontSize: "var(--fs-mono)", color: e.c, textDecoration: "none" }}
                       >
                         visit {primary} ↗
                       </a>
                     ) : (
-                      <span className="mono" style={{ fontSize: 12, color: e.c }}>open panel →</span>
+                      <span className="mono" style={{ fontSize: "var(--fs-mono)", color: e.c }}>open panel →</span>
                     )}
                   </div>
                 </div>

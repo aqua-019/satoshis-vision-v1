@@ -63,7 +63,7 @@ export function EcoPopup({ e, onClose }: EcoPopupProps) {
         <div className="col-2" style={{ gridTemplateColumns: "1.2fr 1fr", gap: 26 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {e.body.map((par, i) => (
-              <p key={i} className="mono" style={{ margin: 0, fontSize: 13.5, lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
+              <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
             ))}
             {simId ? (
               <button
@@ -97,7 +97,7 @@ export function EcoPopup({ e, onClose }: EcoPopupProps) {
                   background: "repeating-linear-gradient(-45deg, rgba(255,255,255,0.015) 0 10px, rgba(255,255,255,0.04) 10px 20px)",
                 }}
               >
-                <span className="mono" style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{s.label}</span>
+                <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{s.label}</span>
               </div>
             ))}
           </div>

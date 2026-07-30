@@ -9,6 +9,8 @@ import * as React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import { DataProvider } from "@/data/DataContext";
+import { VisualProvider } from "@/design/VisualContext";
+import { AmbientField } from "@/design/AmbientField";
 import { HomePage } from "@/pages/HomePage";
 import { MempoolPage } from "@/pages/MempoolPage";
 import { MempoolTxPage } from "@/pages/MempoolTxPage";
@@ -33,28 +35,36 @@ export interface AppProps {
 
 export function App({ useFeed }: AppProps = {}) {
   return (
-    <DataProvider useFeed={useFeed}>
-      <Routes>
-        <Route path="/"          element={<HomePage />} />
-        <Route path="/mempool"   element={<MempoolPage />} />
-        <Route path="/mempool/tx/:txid" element={<MempoolTxPage />} />
-        <Route path="/markets"   element={<MarketsPage />} />
-        <Route path="/network"   element={<NetworkPage />} />
-        <Route path="/education" element={<EducationPage />} />
-        <Route path="/education/:tab" element={<EducationPage />} />
-        <Route path="/monero"    element={<MoneroPage />} />
-        {/* v6.0.1: the static Future tab was retired in favour of the live
-            /future page. Static segments outrank the :tab param in v6, so this
-            wins over /monero/:tab regardless of order. */}
-        <Route path="/monero/future" element={<Navigate to="/future" replace />} />
-        <Route path="/monero/:tab" element={<MoneroPage />} />
-        <Route path="/future"    element={<FuturePage />} />
-        <Route path="/peers"     element={<TrustedPeersPage />} />
-        <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
-        <Route path="/node"      element={<NodePage />} />
-        <Route path="/sources"   element={<SourcesPage />} />
-        <Route path="*"          element={<NotFoundPage />} />
-      </Routes>
-    </DataProvider>
+    // AmbientField (design/AmbientField.tsx) is a sibling of <Routes>, not a
+    // descendant of any page's `.art` (isolation: isolate) — see that
+    // file's header for why. DataProvider renders no DOM element of its own,
+    // so this nesting still puts AmbientField's actual DOM output directly
+    // beside whatever the active route renders.
+    <VisualProvider>
+      <AmbientField />
+      <DataProvider useFeed={useFeed}>
+        <Routes>
+          <Route path="/"          element={<HomePage />} />
+          <Route path="/mempool"   element={<MempoolPage />} />
+          <Route path="/mempool/tx/:txid" element={<MempoolTxPage />} />
+          <Route path="/markets"   element={<MarketsPage />} />
+          <Route path="/network"   element={<NetworkPage />} />
+          <Route path="/education" element={<EducationPage />} />
+          <Route path="/education/:tab" element={<EducationPage />} />
+          <Route path="/monero"    element={<MoneroPage />} />
+          {/* v6.0.1: the static Future tab was retired in favour of the live
+              /future page. Static segments outrank the :tab param in v6, so this
+              wins over /monero/:tab regardless of order. */}
+          <Route path="/monero/future" element={<Navigate to="/future" replace />} />
+          <Route path="/monero/:tab" element={<MoneroPage />} />
+          <Route path="/future"    element={<FuturePage />} />
+          <Route path="/peers"     element={<TrustedPeersPage />} />
+          <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
+          <Route path="/node"      element={<NodePage />} />
+          <Route path="/sources"   element={<SourcesPage />} />
+          <Route path="*"          element={<NotFoundPage />} />
+        </Routes>
+      </DataProvider>
+    </VisualProvider>
   );
 }

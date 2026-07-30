@@ -90,7 +90,7 @@ export function ScannerWall({ side, tick, viewTag, onCounter }: any) {
               {viewTag && candidate && !matched ? (
                 <div style={{
                   position: "absolute", inset: 1, display: "grid", placeItems: "center",
-                  fontFamily: "var(--f-mono)", fontSize: 7, color: "var(--ink-60)",
+                  fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-60)",
                 }}>?</div>
               ) : null}
             </div>
@@ -109,7 +109,7 @@ export function ScannerWall({ side, tick, viewTag, onCounter }: any) {
       ) : null}
 
       {/* count display */}
-      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--ink-60)" }}>
+      <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)" }}>
         <span>Scanned <span className="acc">{counter}/{TOTAL}</span> outputs</span>
         <span className={viewTag ? "acc" : ""}>{viewTag ? "Full ECDH on ~4 candidates" : "Full ECDH on all 256"}</span>
       </div>
@@ -139,7 +139,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
       bg={bg}
       stage={
         <>
-          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: 10, color: "var(--ink-40)", letterSpacing: "0.18em" }}>
+          <div style={{ position: "absolute", top: 0, right: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.18em" }}>
             FIG. 03 · LIGHTHOUSE-IN-FOG · SCAN RACE
           </div>
 
@@ -148,7 +148,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <div className="kicker" style={{ color: "var(--ink-60)" }}>WITHOUT VIEW TAGS · pre-2022</div>
-                <div style={{ fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--ink-100)" }}>~256 ms/block</div>
+                <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>~256 ms/block</div>
               </div>
               <ScannerWall side="left" tick={tick + tagSeed * 100} viewTag={false} onCounter={setLeftCount} />
             </div>
@@ -157,7 +157,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                 <div className="kicker" style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>WITH VIEW TAGS · v15+</div>
-                <div style={{ fontFamily: "var(--f-mono)", fontSize: 12, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>~1 ms/block</div>
+                <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>~1 ms/block</div>
               </div>
               <ScannerWall side="right" tick={tick + tagSeed * 100} viewTag={true} onCounter={setRightCount} />
             </div>
