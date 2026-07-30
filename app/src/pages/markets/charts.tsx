@@ -6,32 +6,34 @@
  * the container via width:100%, height by prop. They render REAL data when given
  * it; the source/status badge is the caller's job (see SourceBadge in
  * MarketsPage). prefers-reduced-motion disables the mount fade.
+ *
+ * Cursor tracking, the hover tooltip box, and the crosshair rule are shared
+ * with the mempool detail surfaces via @/design/chart-kit — see that module's
+ * header for why (this file used to hand-roll the same three things three
+ * times over; that duplication is gone now).
  */
 
 import * as React from "react";
 import type { Candle, LineSeries, SeriesStatus } from "@/data/useMarketHistory";
+import { useReducedMotion } from "@/design/useReducedMotion";
+import {
+  VB_W,
+  AXIS,
+  GRID,
+  useSvgCursor,
+  nearestIndex,
+  slotIndex,
+  ChartTip,
+  ChartCrosshair,
+  useGradientId,
+} from "@/design/chart-kit";
 
-const VB_W = 1000;
 const UP_FILL = "rgba(74,222,128,0.72)";
 const UP_STROKE = "rgba(74,222,128,1)";
 const DN_FILL = "rgba(255,77,109,0.72)";
 const DN_STROKE = "rgba(255,77,109,1)";
 
 /* ── helpers ───────────────────────────────────────────────────────── */
-
-function useReducedMotion(): boolean {
-  const [r, setR] = React.useState(() =>
-    typeof matchMedia !== "undefined" ? matchMedia("(prefers-reduced-motion: reduce)").matches : false,
-  );
-  React.useEffect(() => {
-    if (typeof matchMedia === "undefined") return;
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setR(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return r;
-}
 
 /** Fade the chart in once on mount (skipped under reduced-motion). */
 function useMountFade(reduced: boolean): number {
@@ -104,9 +106,6 @@ function smoothPath(pts: [number, number][]): string {
   return d;
 }
 
-const AXIS = "var(--ink-40)";
-const GRID = "rgba(255,255,255,0.05)";
-
 /* ════════════════════════════════════════════════════════════════════
    CandleChart — real OHLC + volume sub-bars + axes + annotations
    ════════════════════════════════════════════════════════════════════ */
@@ -121,7 +120,7 @@ export interface CandleChartProps {
 export function CandleChart({ candles, days, height = 300, status = "live" }: CandleChartProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  const [cross, setCross] = React.useState<number | null>(null);
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
 
   if (!candles?.length) return null;
   const stale = status === "stale";
@@ -159,23 +158,16 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
   const yTicks = niceTicks(yMin, yMax, 5);
   const xStep = Math.max(1, Math.ceil(n / 7));
 
-  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const vbX = (e.clientX - rect.left) * (W / rect.width);
-    const i = Math.round((vbX - padL - (slot - cw) / 2) / slot);
-    setCross(i >= 0 && i < n ? i : null);
-  };
-
+  const cross = slotIndex(vx, { padL, slot, cw, n });
   const cc = cross != null ? candles[cross] : null;
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
-      onPointerMove={onMove}
-      onPointerDown={onMove}
-      onPointerLeave={() => setCross(null)}
+      {...cursorHandlers}
     >
       {/* y gridlines + price labels */}
       {yTicks.map((t) => (
@@ -256,13 +248,12 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
         <g pointerEvents="none">
           <line x1={mid(cross!)} y1={padT} x2={mid(cross!)} y2={padT + priceH} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <line x1={padL} y1={py(cc.c)} x2={padL + innerW} y2={py(cc.c)} stroke="var(--ink-40)" strokeDasharray="2 3" />
-          <g transform={`translate(${Math.min(mid(cross!) + 8, padL + innerW - 150)}, ${padT + 6})`}>
-            <rect x="0" y="0" width="148" height="58" rx="3" fill="rgba(8,7,5,0.94)" stroke="var(--rule)" />
+          <ChartTip x={mid(cross!)} y={padT + 6} bounds={{ left: padL, right: padL + innerW }} width={148} height={58}>
             <text x="8" y="14" fontFamily="var(--f-mono)" fontSize="9" fill={AXIS}>{fmtDate(cc.t, days)}</text>
             <text x="8" y="28" fontFamily="var(--f-mono)" fontSize="9.5" fill="var(--ink-80)">O {fmtPrice(cc.o)}  H {fmtPrice(cc.h)}</text>
             <text x="8" y="40" fontFamily="var(--f-mono)" fontSize="9.5" fill="var(--ink-80)">L {fmtPrice(cc.l)}  C {fmtPrice(cc.c)}</text>
             <text x="8" y="52" fontFamily="var(--f-mono)" fontSize="9" fill={AXIS}>V {fmtVol(cc.v)}</text>
-          </g>
+          </ChartTip>
         </g>
       ) : null}
     </svg>
@@ -283,6 +274,8 @@ export interface MultiLineProps {
 export function MultiLine({ series, days, height = 280, labels = true }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
+  const gid = useGradientId("ml");
   if (!series?.length) return null;
 
   const W = VB_W;
@@ -304,12 +297,19 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
   const ref = norm.reduce((a, b) => ((b.t?.length ?? 0) > (a.t?.length ?? 0) ? b : a), norm[0]);
   const refLen = ref.n.length;
   const xStep = Math.max(1, Math.ceil(refLen / 7));
+  const cross = refLen > 0 ? nearestIndex(vx, { padL, innerW, n: refLen }) : null;
 
   return (
-    <svg viewBox={`0 0 ${W} ${height}`} width="100%" style={{ display: "block", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}>
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${W} ${height}`}
+      width="100%"
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      {...cursorHandlers}
+    >
       <defs>
         {norm.map((s, i) => (
-          <linearGradient key={"g" + i} id={`ml-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient key={"g" + i} id={`${gid}-${i}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
             <stop offset="100%" stopColor={s.color} stopOpacity="0" />
           </linearGradient>
@@ -340,7 +340,7 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
         const lastV = s.n[len - 1];
         return (
           <g key={si} opacity={isStale ? 0.6 : 1}>
-            <path d={area} fill={`url(#ml-grad-${si})`} stroke="none" />
+            <path d={area} fill={`url(#${gid}-${si})`} stroke="none" />
             <path d={line} fill="none" stroke={s.color} strokeWidth={isStale ? 1.1 : 1.5} strokeDasharray={isStale ? "4 3" : undefined} style={{ filter: `drop-shadow(0 0 2px ${s.color})` }} />
             {labels ? (
               <text x={padL + innerW + 5} y={y(lastV) + 3} fontFamily="var(--f-mono)" fontSize="10" fill={s.color}>
@@ -350,6 +350,31 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
           </g>
         );
       })}
+
+      {/* crosshair + per-series focus dots + tooltip */}
+      {cross != null ? (
+        <g pointerEvents="none">
+          <ChartCrosshair x={xOf(cross, refLen)} y1={padT} y2={padT + innerH} />
+          {norm.map((s, si) => {
+            const len = s.n.length;
+            if (!len) return null;
+            const idx = Math.min(len - 1, Math.round((cross / Math.max(1, refLen - 1)) * (len - 1)));
+            return <circle key={si} cx={xOf(idx, len)} cy={y(s.n[idx])} r="2.5" fill={s.color} />;
+          })}
+          <ChartTip
+            x={xOf(cross, refLen)}
+            y={padT + 6}
+            bounds={{ left: padL, right: padL + innerW }}
+            rows={norm.map((s) => {
+              const len = s.n.length;
+              if (!len) return { label: s.label, value: "—", color: s.color };
+              const idx = Math.min(len - 1, Math.round((cross / Math.max(1, refLen - 1)) * (len - 1)));
+              const v = s.n[idx];
+              return { label: s.label, value: (v >= 0 ? "+" : "") + v.toFixed(1) + "%" + (s.status === "stale" ? " ·stale" : ""), color: s.color };
+            })}
+          />
+        </g>
+      ) : null}
     </svg>
   );
 }
@@ -395,7 +420,7 @@ export function AreaSeries({
 }: AreaSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  const [cross, setCross] = React.useState<number | null>(null);
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
   const gradId = "area-grad-" + React.useId().replace(/:/g, "");
 
   if (!data?.length) return null;
@@ -439,22 +464,16 @@ export function AreaSeries({
   const baseY = py(yMin);
   const area = `${line} L ${pts[n - 1][0]},${baseY} L ${pts[0][0]},${baseY} Z`;
 
-  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const vbX = (e.clientX - rect.left) * (W / rect.width);
-    const i = n <= 1 ? 0 : Math.round(((vbX - padL) / innerW) * (n - 1));
-    setCross(i >= 0 && i < n ? i : null);
-  };
+  const cross = nearestIndex(vx, { padL, innerW, n });
   const cv = cross != null ? data[cross] : null;
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
-      onPointerMove={onMove}
-      onPointerDown={onMove}
-      onPointerLeave={() => setCross(null)}
+      {...cursorHandlers}
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -521,11 +540,16 @@ export function AreaSeries({
           <line x1={xOf(cross!)} y1={padT} x2={xOf(cross!)} y2={padT + innerH} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <line x1={padL} y1={py(cv)} x2={padL + innerW} y2={py(cv)} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <circle cx={xOf(cross!)} cy={py(cv)} r="2.5" fill={color} />
-          <g transform={`translate(${Math.min(xOf(cross!) + 8, padL + innerW - 132)}, ${padT + 6})`}>
-            <rect x="0" y="0" width="130" height={xLabels ? 32 : 20} rx="3" fill="rgba(8,7,5,0.94)" stroke="var(--rule)" />
-            {xLabels ? <text x="8" y="14" fontFamily="var(--f-mono)" fontSize="9" fill={AXIS}>{fmtDate(tAt(cross!), days)}</text> : null}
-            <text x="8" y={xLabels ? 26 : 14} fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-80)">{format(cv)}</text>
-          </g>
+          <ChartTip
+            x={xOf(cross!)}
+            y={padT + 6}
+            bounds={{ left: padL, right: padL + innerW }}
+            width={130}
+            height={xLabels ? 32 : 20}
+            rows={xLabels
+              ? [{ value: fmtDate(tAt(cross!), days), color: AXIS }, { value: format(cv), color: "var(--ink-80)" }]
+              : [{ value: format(cv), color: "var(--ink-80)" }]}
+          />
         </g>
       ) : null}
     </svg>
@@ -570,7 +594,7 @@ export function BarSeries({
 }: BarSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  const [cross, setCross] = React.useState<number | null>(null);
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
 
   if (!data?.length) return null;
   const n = data.length;
@@ -597,22 +621,26 @@ export function BarSeries({
   const now = Date.now();
   const baseY = py(Math.max(0, yMin));
 
-  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const vbX = (e.clientX - rect.left) * (W / rect.width);
-    const i = Math.floor((vbX - padL) / slot);
-    setCross(i >= 0 && i < n ? i : null);
-  };
+  // Slot-based, same shape as CandleChart (each datum owns a `slot`-wide
+  // column, bar narrower than the slot) — see chart-kit's slotIndex doc.
+  const cross = slotIndex(vx, { padL, slot, cw: bw, n });
   const cv = cross != null ? data[cross] : null;
+  /** Bucket label at hover: a "lo–hi" range when per-bar edge labels are
+   *  available (histogram bars), else the bare "#N" index as before. */
+  const crossLabel = (i: number): string => {
+    if (!labels) return `#${i + 1}`;
+    const edgeLo = labels[i];
+    const edgeHi = i + 1 < labels.length ? labels[i + 1] : undefined;
+    return edgeHi ? `${edgeLo}–${edgeHi}` : edgeLo;
+  };
 
   return (
     <svg
+      ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
-      onPointerMove={onMove}
-      onPointerDown={onMove}
-      onPointerLeave={() => setCross(null)}
+      {...cursorHandlers}
     >
       {/* y gridlines + labels */}
       {yTicks.map((tk) => (
@@ -670,14 +698,19 @@ export function BarSeries({
         <text x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="34" fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
       ) : null}
 
-      {/* hover readout */}
+      {/* crosshair + hover readout */}
       {cv != null ? (
         <g pointerEvents="none">
-          <g transform={`translate(${Math.min(bx(cross!) + bw + 6, padL + innerW - 112)}, ${padT + 6})`}>
-            <rect x="0" y="0" width="110" height="32" rx="3" fill="rgba(8,7,5,0.94)" stroke="var(--rule)" />
-            <text x="8" y="14" fontFamily="var(--f-mono)" fontSize="9" fill={AXIS}>{labels ? labels[cross!] : `#${cross! + 1}`}</text>
-            <text x="8" y="26" fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-80)">{format(cv)}</text>
-          </g>
+          <ChartCrosshair x={bx(cross!) + bw / 2} y1={padT} y2={padT + innerH} />
+          <ChartTip
+            x={bx(cross!) + bw}
+            y={padT + 6}
+            bounds={{ left: padL, right: padL + innerW }}
+            rows={[
+              { value: crossLabel(cross!), color: AXIS },
+              { value: format(cv), color: "var(--ink-80)" },
+            ]}
+          />
         </g>
       ) : null}
     </svg>
