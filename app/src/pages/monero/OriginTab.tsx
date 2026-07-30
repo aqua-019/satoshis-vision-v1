@@ -168,9 +168,9 @@ export function OriginTab(_props: MoneroTabProps) {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 20, alignItems: "stretch" }}>
           {LINEAGE.map((e, i) => (
             <div key={i} style={{ borderTop: `2px solid ${e.c}`, paddingTop: 12, paddingRight: 6 }}>
-              <div className="mono" style={{ fontSize: 9.5, letterSpacing: "0.16em", color: e.c, textShadow: `0 0 6px ${e.c}` }}>{e.y}</div>
+              <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: e.c, textShadow: `0 0 6px ${e.c}` }}>{e.y}</div>
               <div className="serif" style={{ fontSize: 17, fontWeight: 500, color: "var(--ink-100)", marginTop: 6, lineHeight: 1.2 }}>{e.t}</div>
-              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.55 }}>{e.b}</p>
+              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{e.b}</p>
             </div>
           ))}
         </div>
@@ -185,9 +185,9 @@ export function OriginTab(_props: MoneroTabProps) {
               <div key={p.n} style={{ display: "grid", gridTemplateColumns: "12px 1fr", gap: 12, padding: "6px 0", borderTop: "1px dashed var(--ink-10)" }}>
                 <span style={{ width: 8, height: 8, borderRadius: 4, background: p.c, boxShadow: `0 0 6px ${p.c}`, marginTop: 6 }} />
                 <div>
-                  <div className="mono" style={{ fontSize: 12, color: "var(--ink-100)" }}>{p.n}</div>
-                  <div className="mono dim" style={{ fontSize: 10, letterSpacing: "0.08em", textTransform: "uppercase", color: p.c }}>{p.r}</div>
-                  <p className="mono dim" style={{ margin: "4px 0 0", fontSize: 11, lineHeight: 1.55 }}>{p.desc}</p>
+                  <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>{p.n}</div>
+                  <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.08em", textTransform: "uppercase", color: p.c }}>{p.r}</div>
+                  <p className="mono dim" style={{ margin: "4px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{p.desc}</p>
                 </div>
               </div>
             ))}
@@ -196,21 +196,21 @@ export function OriginTab(_props: MoneroTabProps) {
 
         <Card style={{ padding: 22 }}>
           <div className="kicker">Funding model · CCS (Community Crowdfunding System)</div>
-          <p className="mono dim" style={{ margin: "10px 0 14px", fontSize: 12, lineHeight: 1.7 }}>
+          <p className="mono dim" style={{ margin: "10px 0 14px", fontSize: "var(--fs-body)", lineHeight: 1.7 }}>
             Every Monero feature since 2017 has been built via the CCS — a milestone-based bounty system funded by community donations.
             No VCs, no token sale, no foundation salary roll. Developers propose work, community funds it, milestones gate payouts.
           </p>
-          <div className="mono" style={{ fontSize: 12, color: "var(--ink-100)", marginTop: 4 }}>Sample funded proposals</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, fontSize: 11 }} className="mono">
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)", marginTop: 4 }}>Sample funded proposals</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8, fontSize: "var(--fs-mono)" }} className="mono">
             {CCS_PROPOSALS.map(([t, amt, who]) => (
               <div key={t} style={{ display: "grid", gridTemplateColumns: "1fr 90px 1fr", gap: 8, padding: "3px 0", borderBottom: "1px dashed var(--ink-10)" }}>
                 <span style={{ color: "var(--ink-80)" }}>{t}</span>
                 <span className="acc" style={{ textAlign: "right" }}>{amt}</span>
-                <span className="dim2" style={{ fontSize: 10 }}>{who}</span>
+                <span className="dim2" style={{ fontSize: "var(--fs-mono)" }}>{who}</span>
               </div>
             ))}
           </div>
-          <p className="mono dim" style={{ fontSize: 10.5, marginTop: 12, color: "var(--ink-40)" }}>
+          <p className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 12, color: "var(--ink-40)" }}>
             Total disbursed via CCS: ~25,000 XMR across ~150 proposals (2017–2026). No salaries; only deliverables.
           </p>
         </Card>
@@ -224,7 +224,7 @@ export function OriginTab(_props: MoneroTabProps) {
           <em style={{ color: "var(--r-50)", fontStyle: "normal" }}> 82% of the supply had been quietly mined </em>
           before public release. The "two-year-old chain" was a marketing fiction.
         </p>
-        <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.7 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7 }}>
           CryptoNote was sound. Bytecoin was not. The Monero fork preserved the protocol and threw out the launch. Every feature since — RingCT, Bulletproofs, CLSAG, view tags, FCMP++ — has been built in the open, audited, and released under a community process. The "fair launch" lineage is rare; Monero is one of perhaps three major coins (with Bitcoin and Litecoin) that genuinely had one.
         </p>
       </Card>

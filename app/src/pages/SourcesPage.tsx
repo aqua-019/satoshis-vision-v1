@@ -27,7 +27,7 @@ function Section({ kicker, title, children }: { kicker: string; title: string; c
 }
 
 function P({ children }: { children: React.ReactNode }) {
-  return <p className="mono dim" style={{ margin: "0 0 10px", fontSize: 12.5, lineHeight: 1.7, letterSpacing: "0.01em" }}>{children}</p>;
+  return <p className="mono dim" style={{ margin: "0 0 10px", fontSize: "var(--fs-body)", lineHeight: 1.7, letterSpacing: "0.01em" }}>{children}</p>;
 }
 
 /** One row of the four-source legend: the real badge + a one-line gloss + detail. */
@@ -36,7 +36,7 @@ function SourceRow({ source, gloss, children }: { source: ProvSource; gloss: str
     <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, padding: "14px 0", borderTop: "1px solid var(--rule)", alignItems: "start" }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <Provenance source={source} />
-        <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-40)", letterSpacing: "0.04em" }}>{gloss}</span>
+        <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.04em" }}>{gloss}</span>
       </div>
       <div>{children}</div>
     </div>
@@ -146,8 +146,8 @@ export function SourcesPage() {
             <div style={{ display: "flex", flexDirection: "column" }}>
               {RELEASES.map((r) => (
                 <div key={r.v} style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "12px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}>
-                  <span className="mono acc" style={{ fontSize: 12.5, letterSpacing: "0.04em" }}>{r.v}</span>
-                  <span className="mono dim" style={{ fontSize: 12.5, lineHeight: 1.6 }}>{r.note}</span>
+                  <span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{r.v}</span>
+                  <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{r.note}</span>
                 </div>
               ))}
             </div>

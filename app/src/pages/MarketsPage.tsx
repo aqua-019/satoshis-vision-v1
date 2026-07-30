@@ -131,7 +131,7 @@ export function MarketsPage() {
             {(Object.keys(RANGE_DAYS) as RangeKey[]).map((r) => (
               <button key={r} type="button" onClick={() => setRange(r)} className="proto-btn"
                 style={{
-                  padding: "5px 10px", fontSize: 10,
+                  padding: "5px 10px", fontSize: "var(--fs-label)",
                   borderColor: range === r ? "var(--tk-accent)" : "var(--ink-20)",
                   color: range === r ? "var(--tk-accent)" : "var(--ink-60)",
                   boxShadow: range === r ? "var(--glow-1)" : "none",
@@ -166,7 +166,7 @@ export function MarketsPage() {
             color="var(--tk-accent)" baseline="auto"
             format={(v) => (v * 1e5).toFixed(0) + " sat"}
             stale={hist.xmrBtc.status === "stale"} />
-          <p className="mono dim" style={{ marginTop: 8, fontSize: 11 }}>
+          <p className="mono dim" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}>
             {xmrBtcSeries.length ? (
               <>Floor: <b className="acc">{(ratioFloor * 1e5).toFixed(2)} sat</b> · Peak: <b className="acc">{(ratioPeak * 1e5).toFixed(2)} sat</b></>
             ) : (
@@ -176,7 +176,7 @@ export function MarketsPage() {
         </PanelFrame>
         <PanelFrame title={`Privacy peer group · normalized · ${range}`} right={<GroupBadge result={hist.peers} />}>
           <MultiLine series={peerSeries} days={days} height={200} labels={false} />
-          <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: 10.5 }}>
+          <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: "var(--fs-label)" }}>
             {peerSeries.map((s) => {
               const base = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
               const lastPct = s.data.length ? (s.data[s.data.length - 1] / base - 1) * 100 : null;
@@ -201,7 +201,7 @@ export function MarketsPage() {
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title="Exchange volume · 24h · top pairs" right={<SourceBadge status={tickers.status} />}>
           <div className="table-scroll">
-            <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr 80px 70px", gap: 8, fontSize: 11 }}>
+            <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr 80px 70px", gap: 8, fontSize: "var(--fs-mono)" }}>
               {["Venue", "Pair", "24h $", "Spread"].map((h) => (
                 <div key={h} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6 }}>{h}</div>
               ))}
@@ -210,8 +210,8 @@ export function MarketsPage() {
               ) : (
                 topTickers.map((t, i) => (
                   <React.Fragment key={t.venue + t.pair + i}>
-                    <span className="mono" style={{ color: "var(--ink-100)" }}>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: 9, marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
-                    <span className="mono dim" style={{ fontSize: 10.5 }}>{t.pair}</span>
+                    <span className="mono" style={{ color: "var(--ink-100)" }}>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
+                    <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{t.pair}</span>
                     <span className="mono" style={{ textAlign: "right", color: "var(--ink-80)" }}>{fmtUsd(t.volUsd)}</span>
                     <span className="mono" style={{ textAlign: "right", color: t.spreadPct <= 0.3 ? "var(--g-50)" : t.spreadPct <= 1 ? "var(--y-50)" : "var(--r-50)" }}>{t.spreadPct.toFixed(2)}%</span>
                   </React.Fragment>
@@ -219,8 +219,8 @@ export function MarketsPage() {
               )}
               {DELISTED.map((e) => (
                 <React.Fragment key={e.name}>
-                  <span className="mono" style={{ color: "var(--r-50)" }}>{e.name}<span className="dim" style={{ fontSize: 9, marginLeft: 4 }}>·DELISTED</span></span>
-                  <span className="mono dim" style={{ fontSize: 10.5 }}>{e.note}</span>
+                  <span className="mono" style={{ color: "var(--r-50)" }}>{e.name}<span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·DELISTED</span></span>
+                  <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{e.note}</span>
                   <span className="mono" style={{ textAlign: "right", color: "var(--ink-20)" }}>—</span>
                   <span className="mono" style={{ textAlign: "right", color: "var(--ink-20)" }}>—</span>
                 </React.Fragment>
@@ -231,20 +231,20 @@ export function MarketsPage() {
 
         <PanelFrame title="Atomic swap + P2P venues" right={<span>directory · volume not published</span>}>
           <div className="table-scroll">
-            <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px", gap: 8, fontSize: 11 }}>
+            <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px", gap: 8, fontSize: "var(--fs-mono)" }}>
               {["Venue", "Pairs", "Type"].map((h) => (
                 <div key={h} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6 }}>{h}</div>
               ))}
               {SWAP_DIRECTORY.map((e) => (
                 <React.Fragment key={e.name}>
                   <span className="mono" style={{ color: e.type.includes("shut down") ? "var(--r-50)" : "var(--ink-100)" }}>{e.name}</span>
-                  <span className="mono dim" style={{ fontSize: 10.5 }}>{e.pair}</span>
-                  <span className="mono" style={{ textAlign: "right", fontSize: 9.5, color: "var(--ink-60)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{e.type}</span>
+                  <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{e.pair}</span>
+                  <span className="mono" style={{ textAlign: "right", fontSize: "var(--fs-label)", color: "var(--ink-60)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{e.type}</span>
                 </React.Fragment>
               ))}
             </div>
           </div>
-          <p className="mono dim" style={{ marginTop: 12, fontSize: 10.5, color: "var(--ink-40)" }}>
+          <p className="mono dim" style={{ marginTop: 12, fontSize: "var(--fs-body)", color: "var(--ink-40)" }}>
             ⓘ Decentralized and P2P venues don't report 24h volume to aggregators — listing them without numbers is the honest version.
           </p>
         </PanelFrame>
@@ -253,11 +253,11 @@ export function MarketsPage() {
       {/* Liquidity by venue (real tickers) */}
       <PanelFrame title="Liquidity by venue · 24h converted volume" right={<SourceBadge status={tickers.status} prefix={venues.length ? `${venues.length} venues` : undefined} />}>
         {venues.length === 0 ? (
-          <p className="mono dim" style={{ fontSize: 11 }}>Awaiting CoinGecko tickers…</p>
+          <p className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>Awaiting CoinGecko tickers…</p>
         ) : (
           <div style={{ display: "grid", gap: 6 }}>
             {venues.map((v) => (
-              <div key={v.venue} className="mono" style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 80px", gap: 10, alignItems: "center", fontSize: 10.5 }}>
+              <div key={v.venue} className="mono" style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 80px", gap: 10, alignItems: "center", fontSize: "var(--fs-mono)" }}>
                 <span style={{ color: "var(--ink-100)" }}>{v.venue}</span>
                 <span style={{ position: "relative", height: 12, background: "rgba(255,255,255,0.03)", borderRadius: 1, overflow: "hidden" }}>
                   <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "rgba(255,122,26,0.35)", boxShadow: "0 0 6px rgba(255,122,26,0.25)" }} />

@@ -18,10 +18,10 @@ function Cmd({ id, cmd, copied, setCopied }: { id: string; cmd: string; copied: 
   };
   return (
     <div className="panel" style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-      <code className="mono" style={{ color: "var(--c-50)", fontSize: 13 }}>
+      <code className="mono" style={{ color: "var(--c-50)", fontSize: "var(--fs-mono)" }}>
         $ <span style={{ color: "var(--ink-100)" }}>{cmd}</span>
       </code>
-      <button type="button" className="proto-btn" style={{ padding: "5px 10px", fontSize: 10 }} onClick={copy}>
+      <button type="button" className="proto-btn" style={{ padding: "5px 10px", fontSize: "var(--fs-label)" }} onClick={copy}>
         {copied === id ? "✓ COPIED" : "COPY"}
       </button>
     </div>
@@ -52,7 +52,7 @@ export function NodePage() {
         <Card style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
           <div>
             <div className="kicker" style={{ color: "var(--tk-accent)" }}>Quick path · docker · 60 seconds</div>
-            <p className="mono dim" style={{ margin: "8px 0 14px", fontSize: 12 }}>
+            <p className="mono dim" style={{ margin: "8px 0 14px", fontSize: "var(--fs-body)" }}>
               The fastest way. Pulls the official image and starts a pruned node listening on 18089.
             </p>
           </div>
@@ -63,7 +63,7 @@ export function NodePage() {
 
         <Card style={{ padding: 22 }}>
           <div className="kicker" style={{ color: "var(--p-50)" }}>Privacy path · Tor + I2P · 12 minutes</div>
-          <p className="mono dim" style={{ margin: "8px 0 14px", fontSize: 12 }}>
+          <p className="mono dim" style={{ margin: "8px 0 14px", fontSize: "var(--fs-body)" }}>
             Add anonymity at the network layer. Your peers see neither your IP nor your geography.
           </p>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
@@ -81,14 +81,14 @@ export function NodePage() {
           ].map((p) => (
             <Card key={p.t} style={{ padding: 16 }}>
               <div className="serif" style={{ fontSize: 17, color: "var(--ink-100)" }}>{p.t}</div>
-              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.55 }}>{p.b}</p>
+              <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{p.b}</p>
             </Card>
           ))}
         </section>
 
         <Card style={{ padding: 22 }}>
           <div className="kicker">After sync · sanity check</div>
-          <div className="mono" style={{ marginTop: 10, fontSize: 12, lineHeight: 1.8, color: "var(--ink-80)" }}>
+          <div className="mono" style={{ marginTop: 10, fontSize: "var(--fs-mono)", lineHeight: 1.8, color: "var(--ink-80)" }}>
             <div><span style={{ color: "var(--c-50)" }}>$</span> curl <span style={{ color: "var(--ink-100)" }}>http://localhost:18089/get_info</span> | jq <span style={{ color: "var(--g-50)" }}>'.height, .target, .nettype'</span></div>
             <div className="dim" style={{ marginTop: 6 }}>Expected: <span className="acc">{data.ready ? data.height.toLocaleString() : "—"}</span> · 120 · "mainnet"</div>
           </div>

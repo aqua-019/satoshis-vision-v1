@@ -61,7 +61,7 @@ export function ProtoPopup({ p, onClose }: ProtoPopupProps) {
         <div className="col-2" style={{ gridTemplateColumns: "1.25fr 1fr", gap: 26, alignItems: "start" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
             {p.deep.map((par, i) => (
-              <p key={i} className="mono" style={{ margin: 0, fontSize: 13.5, lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
+              <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
             ))}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -109,7 +109,7 @@ export function ProtoPopup({ p, onClose }: ProtoPopupProps) {
               ))}
             </div>
           </div>
-          <div className="mono" style={{ fontSize: 11.5, color: "var(--ink-40)", textAlign: "right", lineHeight: 1.8 }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)", textAlign: "right", lineHeight: 1.8 }}>
             <div className="kicker" style={{ marginBottom: 6 }}>Live repo pulse · {p.repo}</div>
             {pulse ? (
               <>
