@@ -1,0 +1,185 @@
+/* ═══ L2 · CHROME PALETTE — v6.0.2 ═══════════════════════════════════
+   TOGGLEABLE. Everything here is scoped to :root[data-theme="indigo"]
+   except the classic identity bindings at the top.
+
+   Governing rule (and the reason this layer exists at all):
+     MONERO ORANGE MEANS CRYPTO DATA, NEVER DECORATION.
+
+   --tk-accent stays bound to orange in BOTH themes. It is read by 32 CSS
+   rules and 235 TSX inline styles, and those sites are overwhelmingly
+   data — prices, hashrate, block heights, tx counts, .acc, .mblock
+   numerals. Rebinding it would recolour every one of them.
+
+   Chrome instead reads --ui-accent / --ui-accent-text / --ui-primary,
+   which are bound to --tk-accent under classic (identity, so classic is
+   unchanged) and to Indigofera Nocturne under indigo. That is the whole
+   trick: ~15 chrome rules change, 235 data sites need zero edits.
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ── classic · identity bindings ─────────────────────────────────────
+   These make the chrome tokens resolve to today's orange identity, so
+   L1 rules that reference them (e.g. :focus-visible) never dangle and
+   classic mode is colour-identical to main. */
+:root {
+  --ui-accent:      var(--tk-accent);
+  --ui-accent-text: var(--tk-accent);
+  --ui-primary:     var(--tk-accent);
+  --ui-accent-dim:  rgba(255, 122, 26, 0.45);
+  --glow-v:      var(--glow-2);
+  --glow-v-soft: var(--glow-1);
+}
+
+/* Classic keeps a neutral ambient field — the L3 aurora ships indigo by
+   default, which would read as a cool wash behind warm chrome. Greyscale
+   here approximates the backdrop classic has always had. */
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(1) { background: radial-gradient(circle, rgba(58,56,54,0.19) 0%, rgba(46,44,42,0.09) 40%, transparent 68%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(2) { background: radial-gradient(circle, rgba(50,47,44,0.20) 0%, rgba(38,36,34,0.10) 42%, transparent 70%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(3) { background: radial-gradient(circle, rgba(60,56,50,0.14) 0%, rgba(46,43,40,0.07) 42%, transparent 68%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(4) { background: radial-gradient(circle, rgba(44,42,39,0.18) 0%, rgba(34,32,30,0.09) 44%, transparent 70%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(5) { background: radial-gradient(circle, rgba(66,60,52,0.11) 0%, rgba(50,46,42,0.05) 40%, transparent 66%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(6) { background: radial-gradient(circle, rgba(52,48,44,0.15) 0%, rgba(40,38,35,0.07) 42%, transparent 68%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(7) { background: radial-gradient(circle, rgba(70,64,56,0.09) 0%, rgba(54,50,45,0.04) 38%, transparent 64%); }
+:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(8) { background: radial-gradient(circle, rgba(40,38,36,0.20) 0%, rgba(31,30,28,0.10) 44%, transparent 70%); }
+:root:not([data-theme="indigo"]) {
+  --amb-floor:  #0b0b0c;
+  --amb-breath: #101011;
+  --amb-dust-1: rgba(214, 206, 190, 0.5);
+  --amb-dust-2: rgba(196, 188, 172, 0.42);
+  --amb-dust-3: rgba(176, 170, 156, 0.36);
+  --amb-sweep-1: rgba(200, 188, 168, 0.04);
+  --amb-sweep-2: rgba(226, 214, 194, 0.06);
+  --amb-ribbon-1: rgba(72, 68, 62, 0.055);
+  --amb-ribbon-2: rgba(58, 55, 50, 0.045);
+  --amb-ribbon-3: rgba(78, 73, 66, 0.04);
+  --amb-grain: 0 0 0 0 0.62  0 0 0 0 0.60  0 0 0 0 0.56  0 0 0 0.5 0;
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   INDIGOFERA NOCTURNE
+   ════════════════════════════════════════════════════════════════════ */
+
+:root[data-theme="indigo"] {
+  /* hex fallbacks first: an unsupported oklch() invalidates the whole
+     declaration, leaving the token UNDEFINED rather than degrading.
+     This site targets Tor Browser (Firefox ESR), so the pair matters. */
+  --in-bg: #0D0D0F;            --in-bg: oklch(0.13 0.006 290);
+  --in-surface: #16151D;       --in-surface: oklch(0.17 0.014 290);
+  --in-raised: #1D1B28;        --in-raised: oklch(0.21 0.018 290);
+  --ui-primary: #4B3FB8;       --ui-primary: oklch(0.42 0.17 282);
+  --ui-accent: #6E5EF0;        --ui-accent: oklch(0.55 0.21 282);
+  --ui-accent-text: #8B7BF5;   --ui-accent-text: oklch(0.66 0.19 282);
+  --ui-accent-dim: rgba(110, 94, 240, 0.45);
+  --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
+
+  /* ink ramp re-cut: cool quartz, WCAG-stepped.
+     100 → 15.9:1 · 80 → 11:1 · 60 → 6.5:1 (body floor) · 40 decorative */
+  --ink-100: #ECEAF6;
+  --ink-80:  #C9C6D8;
+  --ink-60:  #9C98B0;
+  --ink-40:  #716D86;
+  --ink-20:  rgba(201, 198, 216, 0.16);
+  --ink-10:  rgba(201, 198, 216, 0.08);
+
+  /* chrome lines: violet-tinted, orange demoted from decoration */
+  --line:   rgba(110, 94, 240, 0.16);
+  --line-d: rgba(110, 94, 240, 0.07);
+  --rule:   rgba(236, 234, 246, 0.08);
+  --bg-1: #0d0d0f;  --bg-2: #16151d;  --bg-3: #1d1b28;
+
+  /* softened orange glows — the old alphas made small mono type vibrate.
+     Still orange: these sit on DATA. */
+  --glow-1: 0 0 8px rgba(255, 122, 26, 0.28);
+  --glow-2: 0 0 14px rgba(255, 122, 26, 0.26), 0 0 2px rgba(255, 160, 80, 0.32);
+  --glow-3: 0 0 18px rgba(255, 122, 26, 0.34), 0 0 3px rgba(255, 180, 100, 0.4);
+  --glow-v: 0 0 10px rgba(110, 94, 240, 0.45);
+  --glow-v-soft: 0 0 8px rgba(110, 94, 240, 0.3);
+
+  /* ambient field tints consumed by L3 */
+  --amb-floor:  #121218;
+  --amb-breath: #161622;
+  --amb-dust-1: rgba(196, 188, 236, 0.55);
+  --amb-dust-2: rgba(170, 162, 214, 0.45);
+  --amb-dust-3: rgba(150, 144, 196, 0.4);
+  --amb-sweep-1: rgba(150, 138, 220, 0.045);
+  --amb-sweep-2: rgba(180, 168, 240, 0.07);
+  --amb-ribbon-1: rgba(64, 58, 118, 0.06);
+  --amb-ribbon-2: rgba(50, 46, 94, 0.05);
+  --amb-ribbon-3: rgba(70, 62, 126, 0.045);
+  --amb-grain: 0 0 0 0 0.6  0 0 0 0 0.58  0 0 0 0 0.7  0 0 0 0.5 0;
+}
+
+/* ── chrome recolor: structure = indigo, data = orange ───────────── */
+:root[data-theme="indigo"] ::selection { background: rgba(110, 94, 240, 0.35); color: #fff; }
+:root[data-theme="indigo"] a { color: var(--ui-accent-text); }
+:root[data-theme="indigo"] a:hover { color: var(--ink-100); }
+
+:root[data-theme="indigo"] .topbar { background: linear-gradient(to bottom, rgba(110,94,240,0.05), rgba(0,0,0,0)); }
+:root[data-theme="indigo"] .topbar::after { background: linear-gradient(to right, transparent, var(--ui-accent), transparent); opacity: 0.4; }
+:root[data-theme="indigo"] .brand-mark { border-color: var(--ui-accent); box-shadow: var(--glow-v-soft); }
+:root[data-theme="indigo"] .brand-mark::before { color: var(--ui-accent-text); filter: drop-shadow(0 0 4px var(--ui-accent)); }
+:root[data-theme="indigo"] .brand b { color: var(--ui-accent-text); text-shadow: var(--glow-v-soft); }
+:root[data-theme="indigo"] .topnav a { color: var(--ink-60); }
+:root[data-theme="indigo"] .topnav a:hover { color: var(--ink-100); }
+:root[data-theme="indigo"] .topnav a.on { color: var(--ui-accent-text); border-bottom-color: var(--ui-accent); text-shadow: none; }
+:root[data-theme="indigo"] .crumbs { color: var(--ink-60); }
+:root[data-theme="indigo"] .crumbs b { color: var(--ui-accent-text); text-shadow: none; }
+:root[data-theme="indigo"] .footer-tele { color: var(--ink-60); background: linear-gradient(to top, rgba(110,94,240,0.04), transparent); }
+:root[data-theme="indigo"] .art-grid { background-image: linear-gradient(to right, rgba(110,94,240,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(110,94,240,0.02) 1px, transparent 1px); }
+:root[data-theme="indigo"] .tick { border-color: var(--ui-primary); opacity: 0.7; }
+:root[data-theme="indigo"] .proto-head { background: linear-gradient(to bottom, rgba(110,94,240,0.05), transparent); }
+:root[data-theme="indigo"] .v6-modal-head { background: linear-gradient(to bottom, rgba(110,94,240,0.06), transparent); }
+:root[data-theme="indigo"] .v6-modal { background: linear-gradient(165deg, rgba(16,15,22,0.98), rgba(9,8,13,0.99)); box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(110,94,240,0.08), inset 0 1px 0 rgba(255,255,255,0.04); }
+:root[data-theme="indigo"] .v6-x:hover, :root[data-theme="indigo"] .v6-res:hover { border-color: var(--ui-accent); color: var(--ui-accent-text); box-shadow: var(--glow-v-soft); }
+:root[data-theme="indigo"] button.proto-btn { border-color: var(--ui-accent); color: var(--ui-accent-text); box-shadow: var(--glow-v-soft); }
+:root[data-theme="indigo"] button.proto-btn:hover { background: rgba(110, 94, 240, 0.12); }
+:root[data-theme="indigo"] .main::-webkit-scrollbar-thumb:hover,
+:root[data-theme="indigo"] .rail::-webkit-scrollbar-thumb:hover { background: var(--ui-primary); }
+
+/* panels: cool surface, violet ambient — orange reserved for data inside */
+:root[data-theme="indigo"] .panel { background: rgba(15, 14, 20, 0.88); }
+:root[data-theme="indigo"] .panel:hover { border-color: rgba(110, 94, 240, 0.4); box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 32px rgba(110,94,240,0.1), 0 0 0 1px rgba(110,94,240,0.14); }
+:root[data-theme="indigo"] .panel::before { background: radial-gradient(120% 80% at 50% 0%, rgba(110,94,240,0.05), transparent 60%); }
+/* styles.css:470 applies the pulse via `.shell .main .panel { animation: … }`.
+   Overriding animation-name alone keeps that rule's duration/easing/count. */
+:root[data-theme="indigo"] .shell .main .panel { animation-name: panel-breathe-v; }
+@keyframes panel-breathe-v {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(110,94,240,0); }
+  50% { box-shadow: 0 0 20px rgba(110,94,240,0.07); }
+}
+
+/* ── colour half of the L1 type raises ───────────────────────────────
+   L1 owns the sizes; these depend on the re-cut ink ramp so they live
+   here. Splitting each rule this way is what keeps classic unchanged. */
+:root[data-theme="indigo"] .kicker { color: var(--ink-60); }
+:root[data-theme="indigo"] .rail h6 { color: var(--ink-60); }
+:root[data-theme="indigo"] .kv .k { color: var(--ink-60); }
+:root[data-theme="indigo"] .panel-h { color: var(--ink-80); }
+:root[data-theme="indigo"] .panel-h .r { color: var(--ink-60); }
+:root[data-theme="indigo"] .stat .lbl { color: var(--ink-60); }
+:root[data-theme="indigo"] .stat .sub { color: var(--ink-60); }
+:root[data-theme="indigo"] .proto-head .kicker { color: var(--ink-60); }
+:root[data-theme="indigo"] .proto-head .sub { color: var(--ink-60); }
+:root[data-theme="indigo"] .proto-head .title { color: var(--ink-100); }
+:root[data-theme="indigo"] .proto-panel h6 { color: var(--ink-60); }
+:root[data-theme="indigo"] .proto-panel .body { color: var(--ink-80); }
+:root[data-theme="indigo"] .proto-step p { color: var(--ink-60); }
+:root[data-theme="indigo"] .proto-ctrl-row .k { color: var(--ink-60); }
+:root[data-theme="indigo"] .proto-badge { color: var(--ink-80); }
+:root[data-theme="indigo"] .v6-res { color: var(--ink-80); }
+:root[data-theme="indigo"] .mblock .hh { color: var(--ink-60); }
+:root[data-theme="indigo"] .mblock .sz { color: var(--ink-80); }
+
+/* DATA, not chrome — bold inside body copy marks a figure. Stays orange
+   in both themes; indigo just brightens it against the cooler ink. */
+:root[data-theme="indigo"] .proto-panel .body b { color: var(--o-60); }
+
+/* ── mblock tiles: solid ground, no translucent wash ─────────────────
+   Deliberately still ORANGE — .mblock is a data surface (block heights
+   and sizes), so §3d keeps it warm in both themes. Only the wash that
+   made the numerals hard to read is replaced. */
+:root[data-theme="indigo"] .mblock {
+  background: linear-gradient(180deg, #1c1210, #251708);
+  border-color: rgba(255, 138, 59, 0.5);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 14px rgba(0,0,0,0.45);
+}
+:root[data-theme="indigo"] .mblock.q { background: rgba(26, 15, 6, 0.75); }

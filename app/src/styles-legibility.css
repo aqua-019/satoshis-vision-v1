@@ -1,0 +1,138 @@
+/* ═══ L1 · LEGIBILITY — v6.0.2 ═══════════════════════════════════════
+   UNCONDITIONAL. Never theme-scoped, never toggleable. This is the fix
+   for the #1 user complaint ("difficult to read"): the 11.5px body floor
+   is gone and 14px is the new one.
+
+   Loaded LAST (see main.tsx) so a palette rule can never override a
+   legibility rule. Because this sheet loads after styles.css, a plain
+   `font-size` here beats an earlier `font:` shorthand at equal
+   specificity — the shorthands in styles.css do not need splitting.
+
+   Contains ONLY typographic metrics and two structural bugfixes.
+   Anything that changes a COLOUR belongs in styles-theme.css (L2).
+   ════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* fluid modular scale — floors raised to legible minimums */
+  --fs-hero:  clamp(36px, 3.3vw, 60px);
+  --fs-h1:    clamp(28px, 2.4vw, 44px);
+  --fs-h2:    clamp(21px, 1.7vw, 30px);
+  --fs-body:  clamp(14px, 1vw, 16.5px);
+  --fs-mono:  clamp(12.5px, 0.9vw, 14px);
+  --fs-label: clamp(10.5px, 0.74vw, 12px);
+}
+
+/* ── global readability primitives ───────────────────────────────── */
+p { text-wrap: pretty; }
+h1, h2, h3, h4 { text-wrap: balance; }
+
+/* measure guard — long-form copy never exceeds a comfortable line */
+.main p, .panel p, .proto-panel .body, .v6-modal-body p { max-width: 74ch; }
+
+/* numerals align in columns wherever data is tabulated */
+.mono, .stat .val, .kv .v, td, .tab { font-variant-numeric: tabular-nums; }
+
+/* The app's FIRST global focus ring. styles.css:811 previously removed
+   the only outline that existed. --ui-accent is bound in styles-theme.css
+   for BOTH themes, so this never dangles. */
+:focus-visible { outline: 2px solid var(--ui-accent); outline-offset: 2px; }
+
+/* ── type raise · chrome ─────────────────────────────────────────── */
+.topnav { font-size: clamp(12px, 0.85vw, 13.5px); }
+.crumbs { font-size: 11.5px; }
+.footer-tele { font-size: 11.5px; }
+.ticker-strip { font-size: 11.5px; }
+.ticker-strip .tk em { font-size: 10.5px; }
+.kicker { font-size: var(--fs-label); letter-spacing: 0.16em; }
+
+/* ── type raise · rail + data atoms ──────────────────────────────── */
+.rail { font-size: 12px; }
+.rail h6 { font-size: 10.5px; }
+.kv { font-size: 12.5px; }
+.kv .k { font-size: 11px; }
+.panel-h { font-size: 11px; }
+.stat .lbl { font-size: 10.5px; }
+.stat .val { font-size: 20px; }
+.stat .sub { font-size: 11px; }
+.pill { font-size: 10.5px; padding: 4px 9px; }
+
+/* ── type raise · protocol artboards ─────────────────────────────── */
+.proto-head .kicker { font-size: 11px; }
+.proto-head .sub { font-size: 13.5px; line-height: 1.55; max-width: 68ch; }
+.proto-panel { font-size: 12.5px; line-height: 1.6; }
+.proto-panel h6 { font-size: 10.5px; }
+.proto-panel .lede { font-size: 19px; line-height: 1.45; }
+.proto-panel .body { font-size: 13px; line-height: 1.7; }
+.proto-step h5 { font-size: 13px; }
+.proto-step p { font-size: 12px; line-height: 1.6; }
+.proto-ctrl-row .k { font-size: 11px; }
+.proto-badge { font-size: 10.5px; }
+button.proto-btn { font-size: 11.5px; }
+
+/* ── type raise · v6 future/peers + mempool tiles ────────────────── */
+.v6-res { font-size: 11.5px; }
+.v6-status { font-size: 10.5px; }
+.mblock .hh { font-size: 11px; }
+.mblock .nm { font-size: 24px; }
+.mblock .sz { font-size: 11px; opacity: 1; }
+
+/* ── BUGFIX · .art-canvas sizing ─────────────────────────────────────
+   <canvas> is a replaced element: `inset: 0` alone does NOT stretch it.
+   With width/height auto it resolves to its intrinsic 300×150 and the
+   over-constrained left/right pair drops `right`, so ParticleField
+   measured 300×150 and seeded every star into the top-left corner.
+   This is the "particles clustered in the corner" bug. */
+.art-canvas { width: 100%; height: 100%; }
+
+/* /simulate nests artboards: SimulatePage renders <AppShell> (.art +
+   ArtBackground) and the protocol inside it renders <ProtoArtboard>
+   (.art.proto + a SECOND ArtBackground). While both canvases were stuck
+   at 300×150 nobody noticed. Now that they fill their container, the
+   inner one would run a second full-viewport rAF loop over the first.
+   Only the outer artboard paints ambient chrome. */
+.art .art .art-canvas,
+.art .art .art-grid,
+.art .art .art-noise { display: none; }
+
+/* ── BUGFIX · topbar overflow guard ──────────────────────────────────
+   .topnav is an 11-link nowrap flex row inside a `1fr` grid track, so
+   its automatic minimum was ~830px and the bar's min-content ~1430px.
+   .art has overflow:hidden, so between 769px and ~1430px the ticker was
+   silently CLIPPED rather than scrolled — most laptops.
+
+   The ticker now compresses in a defined order and ⌘ DESIGN, which is
+   the last child of .ticker-strip, is protected from shrinking.
+   nth-child order: [1] LIVE/STALE pill · [2] XMR · [3] BTC.
+
+   EVERY rule below is floored at min-width:769px. That is not cosmetic:
+   this sheet loads after styles.css, so an unfloored rule would beat the
+   mobile layer at styles.css:843 (media queries add no specificity) —
+   `.ticker-strip{gap:12px}` would override mobile's 10px, `.topnav
+   {flex-wrap:wrap}` would break the mobile dropdown, and worst of all a
+   bare `max-width:1560px` also matches at 390px, so all three steps would
+   fire at once and leave the mobile ticker completely EMPTY.
+
+   These three desktop steps are a deliberate departure from the
+   768/769-only invariant declared at styles.css:843. The guard needs
+   width steps; there is no way to express it with one breakpoint. The
+   floors keep the ≤768 layer's ownership intact. */
+@media (min-width: 769px) {
+  .topbar { grid-template-columns: auto minmax(0, 1fr) auto; }
+  .topnav { flex-wrap: wrap; row-gap: 4px; min-width: 0; }
+  .ticker-strip { gap: 12px; flex-wrap: nowrap; min-width: 0; justify-content: flex-end; }
+  .ticker-strip .tk { flex-shrink: 1; overflow: hidden; white-space: nowrap; }
+  .ticker-strip > :last-child { flex-shrink: 0; }
+}
+@media (min-width: 769px) and (max-width: 1560px) { .ticker-strip .tk:nth-child(3) { display: none; } }
+@media (min-width: 769px) and (max-width: 1360px) { .ticker-strip .tk:nth-child(2) { display: none; } }
+@media (min-width: 769px) and (max-width: 1180px) { .ticker-strip .pill { display: none; } }
+
+/* ── mobile ──────────────────────────────────────────────────────────
+   This sheet loads after styles.css's mobile layer, so it carries its
+   own @media block rather than relying on that one. */
+@media (max-width: 768px) {
+  /* .art is height:auto/min-height:100dvh on mobile, so height:100% on
+     an abspos child resolves against the full document height — at dpr 2
+     that allocates a backing store of 2 × width × page-height. Cap it. */
+  .art-canvas { height: 100dvh; }
+}
