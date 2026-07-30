@@ -48,10 +48,10 @@ export function VsBitcoinTab(_props: MoneroTabProps) {
           ))}
           {ROWS.map((r, i) => (
             <React.Fragment key={r.k}>
-              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: 11.5, color: "var(--ink-80)" }}>{r.k}</div>
-              <div className="mono acc" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: 11.5 }}>{r.xmr}</div>
-              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", color: "var(--c-50)", fontSize: 11.5 }}>{r.btc}</div>
-              <div className="mono dim" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: 11, lineHeight: 1.55 }}>{r.note}</div>
+              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: "var(--fs-mono)", color: "var(--ink-80)" }}>{r.k}</div>
+              <div className="mono acc" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: "var(--fs-mono)" }}>{r.xmr}</div>
+              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", color: "var(--c-50)", fontSize: "var(--fs-mono)" }}>{r.btc}</div>
+              <div className="mono dim" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{r.note}</div>
             </React.Fragment>
           ))}
         </div>

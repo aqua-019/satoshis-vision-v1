@@ -80,7 +80,7 @@ export function NetRail({ extra }: NetRailProps) {
 
       {extra}
 
-      <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: 10 }}>
+      <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>
         <Provenance source="node" fresh={data.stale ? "stale" : "live"} detail={data.source} />
         <div style={{ marginTop: 4 }}>{data.lastUpdate ? `${new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC` : "—"}</div>
         <div style={{ marginTop: 6 }}>
