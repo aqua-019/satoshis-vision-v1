@@ -21,7 +21,6 @@ import { LegalityTab } from "./monero/LegalityTab";
 import { MarketsThesisTab } from "./monero/MarketsThesisTab";
 import { VsBitcoinTab } from "./monero/VsBitcoinTab";
 import { AttacksTab } from "./monero/AttacksTab";
-import { FutureTab } from "./monero/FutureTab";
 import { BottomLineTab } from "./monero/BottomLineTab";
 import { OutlookTab } from "./monero/OutlookTab";
 
@@ -47,7 +46,6 @@ export function MoneroPage() {
     case "markets":    content = <MarketsThesisTab {...tabProps} />; break;
     case "comparison": content = <VsBitcoinTab {...tabProps} />; break;
     case "attacks":    content = <AttacksTab {...tabProps} />; break;
-    case "future":     content = <FutureTab {...tabProps} />; break;
     case "bottomline": content = <BottomLineTab {...tabProps} />; break;
     case "outlook":    content = <OutlookTab {...tabProps} />; break;
     default:           content = <OverviewTab {...tabProps} />;

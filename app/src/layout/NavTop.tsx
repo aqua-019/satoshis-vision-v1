@@ -18,6 +18,8 @@ const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/network",    label: "Network" },
   { to: "/monero",     label: "Monero" },
   { to: "/education",  label: "Education" },
+  { to: "/future",     label: "Future" },
+  { to: "/peers",      label: "Peers" },
   { to: "/simulate",   label: "Simulate" },
   { to: "/node",       label: "Run a node" },
   { to: "/sources",    label: "Sources" },
