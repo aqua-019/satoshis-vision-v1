@@ -15,7 +15,7 @@ function BtmStat({ v, k, tone }: { v: React.ReactNode; k: React.ReactNode; tone?
   return (
     <div style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "18px 16px", background: "rgba(0,0,0,0.3)" }}>
       <div className="mono" style={{ fontSize: 34, fontWeight: 500, lineHeight: 1, color: tone || "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{v}</div>
-      <div className="mono dim" style={{ fontSize: 11, marginTop: 8, letterSpacing: "0.04em" }}>{k}</div>
+      <div className="mono dim" style={{ fontSize: "var(--fs-label)", marginTop: 8, letterSpacing: "0.04em" }}>{k}</div>
     </div>
   );
 }
@@ -34,7 +34,7 @@ function BtmDivergence() {
     ["Financial privacy", "None — public ledger", false, "Complete — mathematical guarantee", true],
   ];
   const cell = (text: React.ReactNode, yes: boolean, accent: boolean) => (
-    <div className="mono" style={{ padding: "11px 14px", fontSize: 12, lineHeight: 1.45, color: yes ? "var(--ink-100)" : "var(--ink-60)", display: "flex", gap: 8, alignItems: "baseline" }}>
+    <div className="mono" style={{ padding: "11px 14px", fontSize: "var(--fs-mono)", lineHeight: 1.45, color: yes ? "var(--ink-100)" : "var(--ink-60)", display: "flex", gap: 8, alignItems: "baseline" }}>
       <span style={{ color: yes ? "var(--g-50)" : "var(--r-50)", fontWeight: 600 }}>{yes ? "✓" : "✗"}</span>
       <span style={accent ? { color: "var(--tk-accent)" } : undefined}>{text}</span>
     </div>
@@ -48,7 +48,7 @@ function BtmDivergence() {
       </div>
       {ROWS.map((r, i) => (
         <div key={i} className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", borderBottom: i < ROWS.length - 1 ? "1px solid var(--rule)" : "none", background: i === ROWS.length - 1 ? "rgba(255,122,26,0.04)" : "transparent" }}>
-          <div className="mono" style={{ padding: "11px 14px", fontSize: 11.5, color: "var(--ink-60)", letterSpacing: "0.04em", textTransform: "uppercase", alignSelf: "center" }}>{r[0]}</div>
+          <div className="mono" style={{ padding: "11px 14px", fontSize: "var(--fs-label)", color: "var(--ink-60)", letterSpacing: "0.04em", textTransform: "uppercase", alignSelf: "center" }}>{r[0]}</div>
           {cell(r[1], r[2], false)}
           {cell(r[3], r[4], r[4])}
         </div>
@@ -66,10 +66,10 @@ function BtmEvidenceCard({ amount, who, when, outcome, otone, children }: {
     <Card style={{ padding: 22, display: "flex", flexDirection: "column", gap: 10 }}>
       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
         <div className="mono" style={{ fontSize: 30, fontWeight: 500, color: "var(--tk-accent)", textShadow: "var(--glow-1)", lineHeight: 1 }}>{amount}</div>
-        <div className="mono dim" style={{ fontSize: 10.5, textAlign: "right" }}>{who}<br />{when}</div>
+        <div className="mono dim" style={{ fontSize: "var(--fs-mono)", textAlign: "right" }}>{who}<br />{when}</div>
       </div>
-      <p className="mono dim" style={{ margin: 0, fontSize: 12.5, lineHeight: 1.68 }}>{children}</p>
-      <div className="mono" style={{ fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase", color: otone, border: "1px solid " + otone, borderRadius: 2, padding: "5px 10px", alignSelf: "flex-start" }}>{outcome}</div>
+      <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.68 }}>{children}</p>
+      <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase", color: otone, border: "1px solid " + otone, borderRadius: 2, padding: "5px 10px", alignSelf: "flex-start" }}>{outcome}</div>
     </Card>
   );
 }
@@ -90,7 +90,7 @@ function BtmArchGrid() {
         <Card key={i} style={{ padding: 18 }}>
           <div className="kicker" style={{ color: p[3] }}>Protects · {p[1]}</div>
           <div className="serif" style={{ fontSize: 20, fontWeight: 500, color: "var(--ink-100)", margin: "6px 0" }}>{p[0]}</div>
-          <p className="mono dim" style={{ margin: 0, fontSize: 11.5, lineHeight: 1.6 }}>{p[2]}</p>
+          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p[2]}</p>
         </Card>
       ))}
     </div>
@@ -113,9 +113,9 @@ function BtmDelistings() {
         <div key={i} style={{ border: "1px solid var(--rule)", borderLeft: "2px solid " + d[3], borderRadius: 2, padding: "14px 16px", background: "rgba(8,7,5,0.6)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
             <span className="serif" style={{ fontSize: 17, color: "var(--ink-100)", fontWeight: 500 }}>{d[0]}</span>
-            <span className="mono dim2" style={{ fontSize: 10 }}>{d[1]}</span>
+            <span className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>{d[1]}</span>
           </div>
-          <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11.5, lineHeight: 1.55 }}>{d[2]}</p>
+          <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{d[2]}</p>
         </div>
       ))}
     </div>
@@ -143,7 +143,7 @@ export function BottomLineTab({ data }: MoneroTabProps) {
         <p className="serif" style={{ fontSize: 23, lineHeight: 1.45, color: "var(--ink-100)", margin: "12px 0 14px" }}>
           In a world where every transaction is tracked and every human reduced to a data point, Monero is the only mathematical guarantee of financial privacy on Earth.
         </p>
-        <p className="mono dim" style={{ fontSize: 13, lineHeight: 1.72, margin: 0 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.72, margin: 0 }}>
           Those in power see your bank accounts, your card purchases, your Bitcoin transactions on a permanent public ledger. With Monero they see nothing. Ring signatures hide the sender, stealth addresses hide the receiver, RingCT hides the amount. Not private by policy — private by mathematics. This is why the IRS offered $625,000 to crack it (they failed), why Chainalysis won a $22M contract to trace it (their own leaked training admits they cannot), and why 73 exchanges delisted it in 2025. And yet XMR rose 195% — because demand for privacy is not a crime. It is a human right.
         </p>
       </Card>
@@ -186,7 +186,7 @@ export function BottomLineTab({ data }: MoneroTabProps) {
         <p className="serif" style={{ fontSize: 25, lineHeight: 1.42, color: "var(--ink-100)", margin: "0 auto", maxWidth: "52ch" }}>
           The surveillance state sees everything. Monero is the one thing they cannot see. That is not a bug — that is the entire point.
         </p>
-        <div className="mono" style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--tk-accent)", marginTop: 16 }}>"Privacy is not a crime. It is a right." — the Monero community</div>
+        <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--tk-accent)", marginTop: 16 }}>"Privacy is not a crime. It is a right." — the Monero community</div>
       </Card>
     </div>
   );

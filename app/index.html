@@ -7,6 +7,24 @@
     <meta name="description" content="xmr.irish v5.0 — Monero, in public, in private." />
     <meta name="referrer" content="no-referrer" />
     <title>xmr.irish · v5.0</title>
+    <script>
+      // Pre-paint theme stamp — avoids a flash of the wrong palette on a
+      // hard reload. design/VisualContext.tsx's <VisualProvider> makes this
+      // same `documentElement` write once React mounts (and keeps it in
+      // sync with in-session changes); this just gets there first, before
+      // any bundled CSS paints. CSP note: vercel.json sets
+      // `script-src 'self' 'unsafe-inline'`, so this inline script needs no
+      // hash or nonce. localStorage throws in some hardened/.onion browser
+      // configurations (storage disabled, private mode) — default to
+      // indigo on ANY failure, same default VisualContext's safe context
+      // value falls back to.
+      try {
+        var t = localStorage.getItem("xmri.theme");
+        document.documentElement.setAttribute("data-theme", t === "classic" ? "classic" : "indigo");
+      } catch (e) {
+        document.documentElement.setAttribute("data-theme", "indigo");
+      }
+    </script>
   </head>
   <body>
     <noscript>
@@ -15,13 +33,19 @@
           font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;line-height:1.6;padding:48px 20px}
         .nojs__wrap{max-width:640px;margin:0 auto}
         .nojs__mark{font-size:22px;letter-spacing:.04em;color:#a8a094}
-        .nojs__mark b{color:#ff7a1a;font-weight:600}
-        .nojs__desc{margin:6px 0 28px;font-size:13px;color:#6f6a61}
-        .nojs__note{border:1px solid rgba(255,122,26,.28);border-radius:6px;padding:14px 16px;
-          font-size:13px;color:#a8a094;margin-bottom:24px;background:rgba(255,122,26,.04)}
-        .nojs__facts{list-style:none;padding:0;margin:0 0 24px;font-size:12.5px;color:#8a8478}
+        /* Indigofera Nocturne (styles-theme.css's [data-theme="indigo"]
+           palette), literal — this markup renders before any JS/CSS bundle
+           exists, so it can't reach for var(--ui-accent-text) / var(--ui-
+           accent-dim); #8B7BF5 / rgb(110,94,240) are those tokens' own
+           values, copied in by hand. This is what every hardened/Tor
+           browser (and anyone without JS) actually sees. */
+        .nojs__mark b{color:#8B7BF5;font-weight:600}
+        .nojs__desc{margin:6px 0 28px;font-size:14px;color:#6f6a61}
+        .nojs__note{border:1px solid rgba(110,94,240,.28);border-radius:6px;padding:14px 16px;
+          font-size:14px;color:#a8a094;margin-bottom:24px;background:rgba(110,94,240,.04)}
+        .nojs__facts{list-style:none;padding:0;margin:0 0 24px;font-size:14px;color:#8a8478}
         .nojs__facts li{padding:6px 0;border-top:1px solid rgba(255,255,255,.05)}
-        .nojs__a{color:#ff7a1a;text-decoration:none;border-bottom:1px solid rgba(255,122,26,.4)}
+        .nojs__a{color:#8B7BF5;text-decoration:none;border-bottom:1px solid rgba(110,94,240,.4)}
       </style>
       <div class="nojs"><div class="nojs__wrap">
         <div class="nojs__mark">xmr<b>.irish</b></div>

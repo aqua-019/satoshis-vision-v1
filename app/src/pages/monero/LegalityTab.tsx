@@ -92,7 +92,7 @@ function LegalityRow({ row, open, onToggle }: LegalityRowProps) {
       <span style={{
         display: "inline-flex", alignItems: "center", gap: 5,
         padding: "3px 8px", border: "1px solid " + p.c, color: p.c, borderRadius: 2,
-        fontFamily: "var(--f-mono)", fontSize: 9.5, letterSpacing: "0.08em", textTransform: "uppercase",
+        fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.08em", textTransform: "uppercase",
         background: v === "illegal" ? "rgba(255,77,109,0.06)" : "transparent",
       }}>
         <span style={{ width: 5, height: 5, borderRadius: 5, background: p.c, boxShadow: `0 0 4px ${p.c}` }} />
@@ -110,14 +110,14 @@ function LegalityRow({ row, open, onToggle }: LegalityRowProps) {
           fontFamily: "var(--f-mono)",
         }}>
         <span style={{ fontSize: 18 }}>{row.c}</span>
-        <span style={{ fontSize: 12.5, color: "var(--ink-100)" }}>{row.n}</span>
+        <span style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>{row.n}</span>
         {chip("hold")}{chip("cex")}{chip("p2p")}{chip("mine")}{chip("pay")}
-        <span style={{ color: "var(--ink-60)", fontSize: 11 }}>{open ? "▾" : "▸"}</span>
+        <span style={{ color: "var(--ink-60)", fontSize: "var(--fs-label)" }}>{open ? "▾" : "▸"}</span>
       </button>
       {open ? (
         <div style={{ padding: "10px 18px 14px 60px", borderTop: "1px dashed var(--ink-10)", background: "rgba(0,0,0,0.3)" }}>
-          <p className="mono dim" style={{ margin: 0, fontSize: 11.5, lineHeight: 1.7 }}>{row.note}</p>
-          <div className="mono" style={{ marginTop: 10, fontSize: 10.5, color: "var(--ink-60)", letterSpacing: "0.06em" }}>
+          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7 }}>{row.note}</p>
+          <div className="mono" style={{ marginTop: 10, fontSize: "var(--fs-label)", color: "var(--ink-60)", letterSpacing: "0.06em" }}>
             <b style={{ color: "var(--ink-80)" }}>Activity legend:</b> <span style={{ color: "var(--ink-80)" }}>Hold</span> · <span style={{ color: "var(--ink-80)" }}>CEX trade</span> · <span style={{ color: "var(--ink-80)" }}>P2P trade</span> · <span style={{ color: "var(--ink-80)" }}>Mine</span> · <span style={{ color: "var(--ink-80)" }}>Accept as payment</span>
           </div>
         </div>
@@ -142,7 +142,7 @@ export function LegalityTab(_props: MoneroTabProps) {
       {/* Quick reference legend */}
       <Card style={{ padding: 18 }}>
         <div className="kicker" style={{ marginBottom: 10 }}>Quick reference · 5 activities × 4 statuses</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, fontFamily: "var(--f-mono)", fontSize: 11.5 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
           {[
             { c: "var(--g-50)", l: "Legal", d: "No specific restriction. Treated like any digital asset." },
             { c: "var(--y-50)", l: "Restricted", d: "Permitted but with reporting requirements or licensing limits." },
@@ -152,8 +152,8 @@ export function LegalityTab(_props: MoneroTabProps) {
             <div key={s.l} style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 8 }}>
               <span style={{ width: 6, height: 6, borderRadius: 3, background: s.c, boxShadow: `0 0 5px ${s.c}`, marginTop: 6 }} />
               <div>
-                <div style={{ color: s.c, letterSpacing: "0.1em", textTransform: "uppercase", fontSize: 10.5 }}>{s.l}</div>
-                <div className="dim" style={{ fontSize: 11, lineHeight: 1.5, marginTop: 2 }}>{s.d}</div>
+                <div style={{ color: s.c, letterSpacing: "0.1em", textTransform: "uppercase", fontSize: "var(--fs-label)" }}>{s.l}</div>
+                <div className="dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.5, marginTop: 2 }}>{s.d}</div>
               </div>
             </div>
           ))}
@@ -165,9 +165,9 @@ export function LegalityTab(_props: MoneroTabProps) {
         <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
             <div className="kicker">Country × activity matrix</div>
-            <div className="mono dim" style={{ fontSize: 11.5, marginTop: 4 }}>{LEGALITY_MATRIX.length} jurisdictions · click any row to expand</div>
+            <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 4 }}>{LEGALITY_MATRIX.length} jurisdictions · click any row to expand</div>
           </div>
-          <div className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "32px 1.4fr repeat(5, 1fr) 24px", gap: 10, fontSize: 9.5, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", minWidth: 720 }}>
+          <div className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "32px 1.4fr repeat(5, 1fr) 24px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)", minWidth: 720 }}>
             <span></span><span>Country</span>
             <span>Hold</span><span>CEX</span><span>P2P</span><span>Mine</span><span>Pay</span><span></span>
           </div>
@@ -183,7 +183,7 @@ export function LegalityTab(_props: MoneroTabProps) {
         </div>
         </div>
 
-        <p className="mono dim" style={{ fontSize: 10.5, marginTop: 14, lineHeight: 1.5 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 14, lineHeight: 1.5 }}>
           ⚠ This is design preview content. Verify current legal status before relying on it for any jurisdiction or activity. Laws change quickly in crypto.
         </p>
       </Card>
@@ -192,7 +192,7 @@ export function LegalityTab(_props: MoneroTabProps) {
       <Card style={{ padding: 26 }}>
         <div className="kicker">Exchange delistings · timeline</div>
         <h3 className="serif" style={{ margin: "10px 0 6px", fontSize: 22, fontWeight: 400, color: "var(--ink-100)" }}>The long retreat from regulated venues.</h3>
-        <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.7, marginBottom: 16 }}>
+        <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, marginBottom: 16 }}>
           Delisting is a regulatory artefact, not a verdict on the protocol. Jurisdictions have made compliance with anti-anonymity rules incompatible with listing.
           The on-ramps thinned; the protocol did not.
         </p>
@@ -209,9 +209,9 @@ export function LegalityTab(_props: MoneroTabProps) {
           ].map((e, i) => (
             <div key={i} style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: -25, top: 6, width: 10, height: 10, borderRadius: 5, border: "1px solid var(--r-50)", background: "var(--bg-0)", boxShadow: "var(--glow-1)" }} />
-              <div className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", color: "var(--ink-60)" }}>{e.d}</div>
-              <div className="mono" style={{ fontSize: 13, color: "var(--ink-100)", marginTop: 2 }}><b className="dn">{e.v}</b> · <span className="dim">{e.who}</span></div>
-              <p className="mono dim" style={{ margin: "4px 0 0", fontSize: 11, lineHeight: 1.55 }}>{e.why}</p>
+              <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-60)" }}>{e.d}</div>
+              <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)", marginTop: 2 }}><b className="dn">{e.v}</b> · <span className="dim">{e.who}</span></div>
+              <p className="mono dim" style={{ margin: "4px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{e.why}</p>
             </div>
           ))}
         </div>
