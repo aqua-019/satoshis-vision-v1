@@ -397,7 +397,17 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 # Per-repo CLAUDE.md — AQUA Stack L3: Orchestrator + Worker Roster
 
-This file assumes the universal LOOPFLOW block (AQUA reference, Appendix C) is installed at `~/.claude/CLAUDE.md`. That block defines the task source (`/handoffs/`), the gate, manual/mobile mode, and the exit (branch → `gh pr create`). This file adds what's new: the agent roster and delegation rules that run *inside* the closed loop.
+This file is **self-contained** (v3.1): it carries the loopflow rules it depends on, so it works identically in cloud sessions and fresh clones that never see `~/.claude`. A universal copy of the LOOPFLOW block also exists on Aqua's machine — the duplication is deliberate and harmless.
+
+## Loopflow core (applies even with no global config present)
+
+**Task source** — on session start, scan `./handoffs/` for the newest `HANDOFF-*.md` with `status: open`; that file is the task; flip it to `in_progress` when you begin. Entries in its `§8 LOOP FEEDBACK` are highest-priority context.
+
+**Manual mode** — no open handoff and the task arrives as a prompt (typical in cloud sessions): do not stall, and do not skip the record. Before substantive work, author a lightweight handoff into `./handoffs/` from `_TEMPLATE.md` — front-matter, GOAL, binary DONE-CRITERIA — then proceed normally. Prompt-driven work with no handoff file is a protocol violation, not a shortcut.
+
+**Records on exit** — every completed task fills its handoff's `§7 REPORT` and appends one line to `handoffs/LOG.md`: `task_id · outcome · PR link`. Genuinely blocked after 3 distinct attempts on the same failure → `status: blocked`, exact error in REPORT, stop. Blocked is a valid exit; silent failure is not.
+
+**Git** — branch name from the handoff front-matter, conventional commits, exit via `gh pr create`. Never commit straight to main.
 
 ## Role
 
@@ -435,7 +445,7 @@ Ten workers exist; a task uses the **minimal team that covers it** — typically
 
 ## One revolution of the inner loop
 
-1. **Pick up the task** per the universal block: newest open `HANDOFF-*.md`, flip to `in_progress`. If `§8 LOOP FEEDBACK` has entries, they are highest-priority context.
+1. **Pick up the task** per Loopflow core above: newest open `HANDOFF-*.md` (or self-author one in manual mode), flip to `in_progress`. If `§8 LOOP FEEDBACK` has entries, they are highest-priority context.
 2. **Verify the premise.** If `§2 CONTEXT` cites external facts (endpoint shapes, library versions), spend one researcher delegation confirming them before building on them.
 3. **Decompose** `§1 GOAL` within `§3 SCOPE` into worker tasks. Assign one owner per file — no two agents edit the same file. Launch independent subagents in a single message so they run in parallel. Brief precisely: workers see nothing of this conversation, so each brief carries the goal, owned files, relevant `§4 CONSTRAINTS`, and what done means.
 4. **Build** via ui-builder / chain-integrator. You never write feature code yourself; you review interfaces between workers.
