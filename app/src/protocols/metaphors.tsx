@@ -11,6 +11,7 @@ import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
 import { ParticleStream, SvgDefs } from "@/protocols/sim-fx";
 import { POOLS, type Pool } from "@/protocols/pool-data";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive, Tx } from "@/data/types";
 
 interface ViewProps {
@@ -38,12 +39,13 @@ function HearthStage() {
   const live = useTick(80);
   const reduce = usePrefersReducedMotion();
   const tick = reduce ? 80 : live;
-  const ref = React.useRef(null);
+  const ref = React.useRef<HTMLDivElement>(null);
   const t = tick % 200;
   const year = 1 + (t / 200) * 49;
   const subsidyShare = Math.max(0.01, 0.95 - Math.pow(year / 50, 0.42) * 0.94);
   const tailShare = 1 - subsidyShare;
   const W = 1080, H = 460;
+  const { u, fs } = useChartMetrics(ref, { vbWidth: W });
 
   const logs = Array.from({ length: 4 }).map((_, i) => ({
     x: 200 + i * 60, base: 280, h: 90 - i * 8,
@@ -70,7 +72,7 @@ function HearthStage() {
         trail
         depth
       />}
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }} data-diagram>
         <SvgDefs />
 
         {/* depth-of-field background hearth stone */}

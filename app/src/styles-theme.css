@@ -29,29 +29,35 @@
   --glow-v-soft: var(--glow-1);
 }
 
-/* Classic keeps a neutral ambient field — the L3 aurora ships indigo by
-   default, which would read as a cool wash behind warm chrome. Greyscale
-   here approximates the backdrop classic has always had. */
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(1) { background: radial-gradient(circle, rgba(58,56,54,0.19) 0%, rgba(46,44,42,0.09) 40%, transparent 68%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(2) { background: radial-gradient(circle, rgba(50,47,44,0.20) 0%, rgba(38,36,34,0.10) 42%, transparent 70%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(3) { background: radial-gradient(circle, rgba(60,56,50,0.14) 0%, rgba(46,43,40,0.07) 42%, transparent 68%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(4) { background: radial-gradient(circle, rgba(44,42,39,0.18) 0%, rgba(34,32,30,0.09) 44%, transparent 70%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(5) { background: radial-gradient(circle, rgba(66,60,52,0.11) 0%, rgba(50,46,42,0.05) 40%, transparent 66%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(6) { background: radial-gradient(circle, rgba(52,48,44,0.15) 0%, rgba(40,38,35,0.07) 42%, transparent 68%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(7) { background: radial-gradient(circle, rgba(70,64,56,0.09) 0%, rgba(54,50,45,0.04) 38%, transparent 64%); }
-:root:not([data-theme="indigo"]) #bg-plates .plate:nth-child(8) { background: radial-gradient(circle, rgba(40,38,36,0.20) 0%, rgba(31,30,28,0.10) 44%, transparent 70%); }
+/* v6.0.10 §6b — CLASSIC HAS NO AURORA.
+   Classic must be the v5 black/orange identity, unmodified. v6.0.2 gave it
+   eight greyscale-tinted orbs as a compromise; indigo orbs under orange
+   chrome is the worst of both, and greyscale orbs are still a v6 layer that
+   v5 `main` does not have — which makes the "classic is pixel-comparable to
+   v5 main" regression test unpassable by construction.
+
+   So the whole L3 field is suppressed here rather than retinted. This is
+   the ONLY honest way to answer that test. Deliberately not a third
+   ⌘ DESIGN knob: design/VisualContext.tsx documents the two-knob limit and
+   the Ambient knob still governs intensity under indigo.
+
+   L3 stays theme-agnostic (verify-legibility.mjs forbids [data-theme= in
+   styles-ambient.css) — the suppression lives here, in L2, where the
+   toggle belongs. */
+:root:not([data-theme="indigo"]) #bg-plates,
+:root:not([data-theme="indigo"]) #bg-fx,
+:root:not([data-theme="indigo"]) #bg-grain { display: none; }
+:root:not([data-theme="indigo"]) body::before { animation: none; }
+
 :root:not([data-theme="indigo"]) {
-  --amb-floor:  #0b0b0c;
-  --amb-breath: #101011;
-  --amb-dust-1: rgba(214, 206, 190, 0.5);
-  --amb-dust-2: rgba(196, 188, 172, 0.42);
-  --amb-dust-3: rgba(176, 170, 156, 0.36);
-  --amb-sweep-1: rgba(200, 188, 168, 0.04);
-  --amb-sweep-2: rgba(226, 214, 194, 0.06);
-  --amb-ribbon-1: rgba(72, 68, 62, 0.055);
-  --amb-ribbon-2: rgba(58, 55, 50, 0.045);
-  --amb-ribbon-3: rgba(78, 73, 66, 0.04);
-  --amb-grain: 0 0 0 0 0.62  0 0 0 0 0.60  0 0 0 0 0.56  0 0 0 0.5 0;
+  /* L3 still owns `html { background: var(--amb-floor) }` even with every
+     animated layer suppressed above, so the floor has to be v5's literal
+     base — styles.css declares `background-color: #050505`. v6.0.2's
+     #0b0b0c was a 1.5-point lift nobody asked for and it is exactly the
+     kind of leak the pixel-diff against v5 `main` is meant to catch.
+     The dust/sweep/ribbon tints are gone with the layers that read them. */
+  --amb-floor:  #050505;
+  --amb-breath: #050505;
 }
 
 /* ════════════════════════════════════════════════════════════════════
@@ -62,9 +68,14 @@
   /* hex fallbacks first: an unsupported oklch() invalidates the whole
      declaration, leaving the token UNDEFINED rather than degrading.
      This site targets Tor Browser (Firefox ESR), so the pair matters. */
-  --in-bg: #0D0D0F;            --in-bg: oklch(0.13 0.006 290);
-  --in-surface: #16151D;       --in-surface: oklch(0.17 0.014 290);
-  --in-raised: #1D1B28;        --in-raised: oklch(0.21 0.018 290);
+  /* v6.0.10 §6a — the ground was oklch(0.13) ≈ #0D0D0F, near-black, which
+     is what made the aurora read as murk instead of atmosphere. Lifted ~5
+     lightness points with the elevation steps moved in step so bg→surface
+     →raised stays distinguishable. A brighter floor makes the aurora MORE
+     visible at LOWER opacity, so styles-ambient.css comes down to match. */
+  --in-bg: #17161C;            --in-bg: oklch(0.18 0.008 290);
+  --in-surface: #201E29;       --in-surface: oklch(0.22 0.016 290);
+  --in-raised: #292636;        --in-raised: oklch(0.26 0.020 290);
   --ui-primary: #4B3FB8;       --ui-primary: oklch(0.42 0.17 282);
   --ui-accent: #6E5EF0;        --ui-accent: oklch(0.55 0.21 282);
   --ui-accent-text: #8B7BF5;   --ui-accent-text: oklch(0.66 0.19 282);
@@ -84,7 +95,10 @@
   --line:   rgba(110, 94, 240, 0.16);
   --line-d: rgba(110, 94, 240, 0.07);
   --rule:   rgba(236, 234, 246, 0.08);
-  --bg-1: #0d0d0f;  --bg-2: #16151d;  --bg-3: #1d1b28;
+  --bg-1: var(--in-bg);  --bg-2: var(--in-surface);  --bg-3: var(--in-raised);
+  /* data surfaces ride the lifted surface step, not the floor — that
+     separation is what keeps the aurora in the gutters (see styles.css). */
+  --surface-ground: #201E29;   --surface-ground: oklch(0.22 0.016 290);
 
   /* softened orange glows — the old alphas made small mono type vibrate.
      Still orange: these sit on DATA. */
@@ -126,9 +140,9 @@
 :root[data-theme="indigo"] .footer-tele { color: var(--ink-60); background: linear-gradient(to top, rgba(110,94,240,0.04), transparent); }
 :root[data-theme="indigo"] .art-grid { background-image: linear-gradient(to right, rgba(110,94,240,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(110,94,240,0.02) 1px, transparent 1px); }
 :root[data-theme="indigo"] .tick { border-color: var(--ui-primary); opacity: 0.7; }
-:root[data-theme="indigo"] .proto-head { background: linear-gradient(to bottom, rgba(110,94,240,0.05), transparent); }
+:root[data-theme="indigo"] .proto-head { background: linear-gradient(to bottom, rgba(110,94,240,0.05), transparent) var(--surface-ground); }
 :root[data-theme="indigo"] .v6-modal-head { background: linear-gradient(to bottom, rgba(110,94,240,0.06), transparent); }
-:root[data-theme="indigo"] .v6-modal { background: linear-gradient(165deg, rgba(16,15,22,0.98), rgba(9,8,13,0.99)); box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(110,94,240,0.08), inset 0 1px 0 rgba(255,255,255,0.04); }
+:root[data-theme="indigo"] .v6-modal { background: linear-gradient(165deg, rgba(16,15,22,0.98), rgba(9,8,13,0.99)) var(--surface-ground); box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(110,94,240,0.08), inset 0 1px 0 rgba(255,255,255,0.04); }
 :root[data-theme="indigo"] .v6-x:hover, :root[data-theme="indigo"] .v6-res:hover { border-color: var(--ui-accent); color: var(--ui-accent-text); box-shadow: var(--glow-v-soft); }
 :root[data-theme="indigo"] button.proto-btn { border-color: var(--ui-accent); color: var(--ui-accent-text); box-shadow: var(--glow-v-soft); }
 :root[data-theme="indigo"] button.proto-btn:hover { background: rgba(110, 94, 240, 0.12); }
@@ -136,7 +150,11 @@
 :root[data-theme="indigo"] .rail::-webkit-scrollbar-thumb:hover { background: var(--ui-primary); }
 
 /* panels: cool surface, violet ambient — orange reserved for data inside */
-:root[data-theme="indigo"] .panel { background: rgba(15, 14, 20, 0.88); }
+/* v6.0.10 §1 — was rgba(15,14,20,0.88). This layer loads AFTER styles.css, so
+   a translucent override here beat the --surface-ground fix and the aurora kept
+   drifting through every data panel under indigo (verify-ground caught it: the
+   same panels passed under classic, which has no aurora to leak). */
+:root[data-theme="indigo"] .panel { background: var(--surface-ground); }
 :root[data-theme="indigo"] .panel:hover { border-color: rgba(110, 94, 240, 0.4); box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 32px rgba(110,94,240,0.1), 0 0 0 1px rgba(110,94,240,0.14); }
 :root[data-theme="indigo"] .panel::before { background: radial-gradient(120% 80% at 50% 0%, rgba(110,94,240,0.05), transparent 60%); }
 /* styles.css:470 applies the pulse via `.shell .main .panel { animation: … }`.
@@ -182,4 +200,4 @@
   border-color: rgba(255, 138, 59, 0.5);
   box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 14px rgba(0,0,0,0.45);
 }
-:root[data-theme="indigo"] .mblock.q { background: rgba(26, 15, 6, 0.75); }
+:root[data-theme="indigo"] .mblock.q { background: rgba(26, 15, 6, 0.75) var(--surface-ground); }

@@ -111,7 +111,10 @@ const SCALE = [
   ["--fs-h2", "clamp(21px, 1.7vw, 30px)"],
   ["--fs-body", "clamp(14px, 1vw, 16.5px)"],
   ["--fs-mono", "clamp(12.5px, 0.9vw, 14px)"],
-  ["--fs-label", "clamp(10.5px, 0.74vw, 12px)"],
+  // v6.0.10: floor raised 10.5 → 11. "Nothing below 11 ships" is now a
+  // site-wide rule, not just a chart rule, and --fs-label is the only
+  // token that was still under it.
+  ["--fs-label", "clamp(11px, 0.74vw, 12px)"],
 ];
 
 for (const [name, expected] of SCALE) {

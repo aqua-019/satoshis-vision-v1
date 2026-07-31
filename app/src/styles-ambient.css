@@ -55,14 +55,14 @@ body::after { content: none; }
   border-radius: 50%;
   will-change: transform, opacity;
 }
-#bg-plates .plate:nth-child(1) { top: -22%; left: -14%; width: 80vmax; height: 80vmax; background: radial-gradient(circle, rgba(52,48,88,0.21) 0%, rgba(42,38,70,0.10) 40%, transparent 68%); animation: plate-a 72s ease-in-out -8s infinite; }
-#bg-plates .plate:nth-child(2) { top: 38%; left: 56%; width: 92vmax; height: 92vmax; background: radial-gradient(circle, rgba(42,38,74,0.22) 0%, rgba(34,31,58,0.11) 42%, transparent 70%); animation: plate-b 88s ease-in-out -31s infinite; }
-#bg-plates .plate:nth-child(3) { top: 52%; left: -24%; width: 72vmax; height: 72vmax; background: radial-gradient(circle, rgba(56,47,96,0.16) 0%, rgba(43,37,72,0.08) 42%, transparent 68%); animation: plate-c 64s ease-in-out -17s infinite; }
-#bg-plates .plate:nth-child(4) { top: -28%; left: 44%; width: 76vmax; height: 76vmax; background: radial-gradient(circle, rgba(38,34,64,0.20) 0%, rgba(31,28,52,0.10) 44%, transparent 70%); animation: plate-b 78s ease-in-out -55s infinite; }
-#bg-plates .plate:nth-child(5) { top: 16%; left: 22%; width: 56vmax; height: 56vmax; background: radial-gradient(circle, rgba(62,52,108,0.12) 0%, rgba(48,42,82,0.06) 40%, transparent 66%); animation: plate-a 56s ease-in-out -40s infinite; }
-#bg-plates .plate:nth-child(6) { top: 66%; left: 30%; width: 64vmax; height: 64vmax; background: radial-gradient(circle, rgba(46,40,80,0.17) 0%, rgba(37,33,62,0.08) 42%, transparent 68%); animation: plate-c 96s ease-in-out -66s infinite; }
-#bg-plates .plate:nth-child(7) { top: 2%; left: 74%; width: 52vmax; height: 52vmax; background: radial-gradient(circle, rgba(66,56,114,0.10) 0%, rgba(51,44,88,0.05) 38%, transparent 64%); animation: plate-a 84s ease-in-out -23s infinite; }
-#bg-plates .plate:nth-child(8) { top: 34%; left: 4%; width: 46vmax; height: 46vmax; background: radial-gradient(circle, rgba(34,31,60,0.22) 0%, rgba(28,26,48,0.11) 44%, transparent 70%); animation: plate-b 68s ease-in-out -12s infinite; }
+#bg-plates .plate:nth-child(1) { top: -22%; left: -14%; width: 80vmax; height: 80vmax; background: radial-gradient(circle, rgba(52,48,88,0.126) 0%, rgba(42,38,70,0.060) 40%, transparent 68%); animation: plate-a 72s ease-in-out -8s infinite; }
+#bg-plates .plate:nth-child(2) { top: 38%; left: 56%; width: 92vmax; height: 92vmax; background: radial-gradient(circle, rgba(42,38,74,0.132) 0%, rgba(34,31,58,0.066) 42%, transparent 70%); animation: plate-b 88s ease-in-out -31s infinite; }
+#bg-plates .plate:nth-child(3) { top: 52%; left: -24%; width: 72vmax; height: 72vmax; background: radial-gradient(circle, rgba(56,47,96,0.096) 0%, rgba(43,37,72,0.048) 42%, transparent 68%); animation: plate-c 64s ease-in-out -17s infinite; }
+#bg-plates .plate:nth-child(4) { top: -28%; left: 44%; width: 76vmax; height: 76vmax; background: radial-gradient(circle, rgba(38,34,64,0.120) 0%, rgba(31,28,52,0.060) 44%, transparent 70%); animation: plate-b 78s ease-in-out -55s infinite; }
+#bg-plates .plate:nth-child(5) { top: 16%; left: 22%; width: 56vmax; height: 56vmax; background: radial-gradient(circle, rgba(62,52,108,0.072) 0%, rgba(48,42,82,0.036) 40%, transparent 66%); animation: plate-a 56s ease-in-out -40s infinite; }
+#bg-plates .plate:nth-child(6) { top: 66%; left: 30%; width: 64vmax; height: 64vmax; background: radial-gradient(circle, rgba(46,40,80,0.102) 0%, rgba(37,33,62,0.048) 42%, transparent 68%); animation: plate-c 96s ease-in-out -66s infinite; }
+#bg-plates .plate:nth-child(7) { top: 2%; left: 74%; width: 52vmax; height: 52vmax; background: radial-gradient(circle, rgba(66,56,114,0.060) 0%, rgba(51,44,88,0.030) 38%, transparent 64%); animation: plate-a 84s ease-in-out -23s infinite; }
+#bg-plates .plate:nth-child(8) { top: 34%; left: 4%; width: 46vmax; height: 46vmax; background: radial-gradient(circle, rgba(34,31,60,0.132) 0%, rgba(28,26,48,0.066) 44%, transparent 70%); animation: plate-b 68s ease-in-out -12s infinite; }
 
 /* namespaced: bare `drift`/`sweep`/`bg-pulse` are already declared (and
    unused) in styles.css — re-declaring them would silently collide. */
@@ -99,21 +99,21 @@ body::after { content: none; }
     radial-gradient(circle at 48% 87%, var(--amb-dust-3, rgba(150,144,196,0.4)) 0 0.8px, transparent 1.4px);
   background-size: 340px 300px, 260px 320px, 300px 260px;
   animation: dust-drift 160s linear infinite alternate, dust-twinkle 11s ease-in-out infinite;
-  opacity: 0.14;
+  opacity: 0.09;
 }
 #bg-fx .dust.d2 {
   background-size: 520px 460px, 420px 500px, 460px 420px;
   animation-duration: 220s, 17s;
   animation-delay: -60s, -5s;
-  opacity: 0.1;
+  opacity: 0.065;
 }
 @keyframes dust-drift {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(-4%, -2.5%, 0); }
 }
 @keyframes dust-twinkle {
-  0%, 100% { opacity: 0.14; }
-  50%      { opacity: 0.07; }
+  0%, 100% { opacity: 0.09; }
+  50%      { opacity: 0.045; }
 }
 
 #bg-fx .sweep {
@@ -177,7 +177,7 @@ body::after { content: none; }
 #bg-grain {
   position: fixed; inset: 0; z-index: -2;
   pointer-events: none;
-  opacity: 0.06;
+  opacity: 0.04;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.6  0 0 0 0 0.58  0 0 0 0 0.7  0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
