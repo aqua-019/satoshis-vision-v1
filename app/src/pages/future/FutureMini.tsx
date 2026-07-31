@@ -4,11 +4,15 @@
  *
  * `useMiniCanvas` below is a local re-implementation of the prototype's
  * `useMemCanvas` hook, which does not exist in this repo. Modeled on the
- * ParticleField effect in design/ArtBackground.tsx: DPR clamped to 2,
+ * ParticleField effect in design/ArtBackground.tsx: DPR clamped (tier-aware,
+ * see below — ParticleField's flat 2 became a per-tier ceiling in v6.0.8),
  * ResizeObserver-driven sizing, `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)`,
  * cancelAnimationFrame on cleanup. Kept module-private — do not export it,
  * move it to @/design/, or import useFrame from @/protocols/sim-fx (that
- * hook lives in the lazy /simulate chunk).
+ * hook lives in the lazy /simulate chunk). Importing `byTier`/`Tier` from
+ * design/deviceTier.ts and `useVisual` from design/VisualContext.tsx is not
+ * that — those are read-only utility imports, not a relocation of the hook
+ * itself, and that boundary stays exactly where it was.
  *
  * Two additions ParticleField doesn't need: honours prefers-reduced-motion
  * (a single static frame at t=0, no rAF loop — a murmuration inside a modal
@@ -18,10 +22,12 @@
 
 import * as React from "react";
 import type { MiniMode } from "./data";
+import { byTier, type Tier } from "@/design/deviceTier";
+import { useVisual } from "@/design/VisualContext";
 
 type DrawFn = (ctx: CanvasRenderingContext2D, w: number, h: number, t: number, dt: number) => void;
 
-function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
+function useMiniCanvas(draw: DrawFn, tier: Tier): React.RefObject<HTMLCanvasElement> {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
   // Latest draw callback, read from inside the rAF loop without re-running
   // the setup effect on every render (mode/height changes don't tear down
@@ -37,7 +43,13 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
 
     let w = 0;
     let h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // `mid` still gets the full 2x — it's a phone-scale canvas at 240px
+    // tall inside a modal, not the fullscreen aurora, so the mid tier's
+    // usual "cut it in half" doesn't buy much here. `low` is the tier that
+    // is also demoted for weak/absent hardware signals generally (see
+    // deviceTier.ts's scoreDevice), so that's where the ceiling actually
+    // drops the backing-store pixel count.
+    const dpr = Math.min(window.devicePixelRatio || 1, byTier(tier, { high: 2, mid: 2, low: 1.5 }));
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
@@ -65,7 +77,16 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
 
     const frame = (now: number) => {
       if (lastTs !== null) {
-        const dt = (now - lastTs) / 1000;
+        // Clamp at 50ms: an unclamped dt after a long main-thread stall (tab
+        // switch mid-frame, a GC pause, devtools open) would otherwise jump
+        // every t-dependent draw call forward by however long the stall was
+        // — e.g. the fcmp murmuration's per-particle angle uses `t` directly,
+        // so an unclamped multi-second dt reads as the particles teleporting
+        // instead of animating. `elapsed` accumulates the CLAMPED value, not
+        // the raw one, so animation time and wall time stay consistent with
+        // each other post-clamp instead of `elapsed` silently falling behind
+        // real time after every stall.
+        const dt = Math.min((now - lastTs) / 1000, 0.05);
         elapsed += dt;
         drawRef.current(ctx, w, h, elapsed, dt);
       } else {
@@ -98,7 +119,13 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+    // `tier` is listed for lint honesty (the effect reads it via `dpr`), but
+    // it never actually re-triggers this in practice: getDeviceTier() is
+    // memoized for the page's lifetime (deviceTier.ts), so a tear-down/
+    // reseed of the canvas + ResizeObserver from a tier change mid-session
+    // cannot happen — same invariant useMiniCanvas's mode/height comment
+    // above relies on for drawRef.
+  }, [tier]);
 
   return ref;
 }
@@ -109,8 +136,20 @@ export interface FutureMiniProps {
 }
 
 export function FutureMini({ mode, height = 240 }: FutureMiniProps) {
+  const { tier } = useVisual();
   const ref = useMiniCanvas((ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
+    // "lighter" (additive blend) is load-bearing here, not decorative: every
+    // mode below draws overlapping translucent particles/traces meant to
+    // glow brighter where they cross (the fcmp murmuration's converging
+    // paths, cuprate's two race traces, jamtis's ribbon segments) — plain
+    // source-over would just show the top-most draw call's alpha and the
+    // "engine under load" read would be gone. It is a per-pixel
+    // read-modify-write, but the canvas here is small (240px tall, capped
+    // by `height`) and only paints while its modal is open and on-screen
+    // (ResizeObserver + visibilitychange above), so the region it applies
+    // to is already about as restricted as this component can make it
+    // without giving up the additive look mode-by-mode.
     ctx.globalCompositeOperation = "lighter";
 
     if (mode === "fcmp") {
@@ -205,7 +244,7 @@ export function FutureMini({ mode, height = 240 }: FutureMiniProps) {
     }
 
     ctx.globalCompositeOperation = "source-over";
-  });
+  }, tier);
 
   return (
     <canvas

@@ -1,7 +1,6 @@
 // AUTO-PORTED from terminal.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { useTick } from "@/design/ArtBackground";
 import { PanelFrame, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
@@ -163,12 +162,15 @@ function TermLiveLog({ data }: { data: MoneroLive }) {
 
 /* ── live ASCII fee histogram ───────────────────────────────── */
 export function TermFeeHisto({ data }: { data: MoneroLive }) {
-  const tick = useTick(1200);
+  // No tick here: the bins are a pure function of `data.mempool`, which already
+  // changes on the 2.5s feed poll — a `useTick(1200)` used to be a dep of this
+  // memo but nothing about the histogram is time-based, so it just forced an
+  // extra recompute + re-render 0.83x/sec for free (v6.0.8 perf pass).
   const bins = React.useMemo(() => {
     const b = new Array(11).fill(0);
     data.mempool.forEach((t) => { const i = Math.min(10, Math.floor(t.perB / 4e4)); b[i] += 1; });
     return b;
-  }, [data.mempool, tick]);
+  }, [data.mempool]);
   const max = Math.max(...bins, 1);
   const medianBin = bins.indexOf(Math.max(...bins));
   const bar = (v: number) => "█".repeat(Math.round((v / max) * 24));

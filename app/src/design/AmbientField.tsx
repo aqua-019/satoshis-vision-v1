@@ -17,8 +17,19 @@
 import * as React from "react";
 import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
+import { byTier } from "./deviceTier";
 
 const ORB_COUNT = { calm: 10, busy: 30, chaotic: 60 } as const;
+
+// v6.0.8 tier gating — see deviceTier.ts's header for why this exists at
+// all: 43 unconditional compositor layers at the default `busy` was a
+// reasonable desktop budget and an unreasonable phone one. Elements excluded
+// per tier must not be *mounted*, not merely hidden — a `display:none` node
+// still gets a compositor layer promoted for it via `will-change`, which is
+// the entire cost this is removing. See styles-ambient.css §Task B for the
+// matching `will-change` drop on `low`.
+const PLATE_COUNT = { high: 8, mid: 4, low: 2 } as const;
+const DUST_COUNT = { high: 2, mid: 1, low: 0 } as const;
 
 // mulberry32 — tiny deterministic 32-bit PRNG (xorshift + multiply). Not
 // cryptographic; the only property that matters here is that a fixed seed
@@ -93,7 +104,7 @@ type OrbCSSVars = React.CSSProperties &
   Partial<Record<"--x" | "--s" | "--d" | "--dl" | "--o" | "--sw" | "--c", string | number>>;
 
 export function AmbientField() {
-  const { ambient } = useVisual();
+  const { ambient, tier } = useVisual();
   const reduced = useReducedMotion();
 
   // AmbientField is global (one mount for the whole app), not per-page, so
@@ -102,23 +113,51 @@ export function AmbientField() {
   // so it takes the same default ArtBackground itself defaults to ("busy").
   const count = ORB_COUNT[ambient ?? "busy"];
 
+  // Tier caps the Ambient knob rather than replacing it: `mid` still honours
+  // calm/busy/chaotic's *relative* ordering, just clamped to 10 so `chaotic`
+  // (60) doesn't reappear through the back door on a mid-tier phone. `low`
+  // drops orbs entirely — the two surviving plates (below) carry the whole
+  // visual on that tier.
+  const orbCount = byTier(tier, { high: count, mid: Math.min(10, count), low: 0 });
+
   // Under reduced motion, skip the orb spans entirely rather than mounting
   // (up to 60) elements the CSS is just going to hide via
   // `opacity: 0 !important` anyway — cheaper, same visible result.
-  const ORBS = React.useMemo(() => (reduced ? [] : seedOrbs(count)), [count, reduced]);
+  const ORBS = React.useMemo(() => (reduced ? [] : seedOrbs(orbCount)), [orbCount, reduced]);
+
+  // Plates are styled positionally by :nth-child in styles-ambient.css, sized
+  // 80/92/72/76/56/64/52/46vmax for indices 1..8 (declaration order, not
+  // descending) — so slicing to the FIRST N via Array.from({length: N}) is
+  // not an arbitrary truncation, it happens to keep exactly the largest,
+  // best-spread plates:
+  //   mid (4): indices 1-4 = 80/92/72/76vmax, the four largest of the eight,
+  //     anchored upper-left / center-right / lower-left / upper-center — the
+  //     four screen quadrants are still covered.
+  //   low (2): indices 1-2 = 80/92vmax, the two largest overall, anchored
+  //     upper-left and center-right — a diagonal spread across the viewport
+  //     rather than two overlapping circles in one corner.
+  // If the CSS ever reorders these rules, this comment (and the mapping it
+  // documents) must move with it — nth-child selects by DOM position, not by
+  // any stable per-plate identity.
+  const plateCount = byTier(tier, PLATE_COUNT);
+  const dustCount = byTier(tier, DUST_COUNT);
 
   return (
     <>
       <div id="bg-plates">
-        {Array.from({ length: 8 }, (_, i) => (
+        {Array.from({ length: plateCount }, (_, i) => (
           <div className="plate" key={i} />
         ))}
       </div>
       <div id="bg-fx">
-        <div className="dust" />
-        <div className="dust d2" />
-        <div className="sweep" />
-        <div className="ribbon" />
+        {dustCount >= 1 && <div className="dust" />}
+        {dustCount >= 2 && <div className="dust d2" />}
+        {/* sweep + ribbon are `high`-only: the sweep's 320% translate and the
+            ribbon's 170vmax (pre-clamp) conic gradient are the two most
+            expensive individual layers in the stack — see styles-ambient.css
+            Task B for the size clamp that also applies when they DO render. */}
+        {tier === "high" && <div className="sweep" />}
+        {tier === "high" && <div className="ribbon" />}
         {ORBS.map((o, i) => (
           <span
             className="orb"

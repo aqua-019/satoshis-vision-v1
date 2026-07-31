@@ -1,7 +1,6 @@
 // AUTO-PORTED from sediment.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { useTick } from "@/design/ArtBackground";
 import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
@@ -132,7 +131,10 @@ export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: nu
 
 /* ── grain-size scatter — fee/B vs weight ───────────────────── */
 export function SedGrainScatter({ data }: { data: MoneroLive }) {
-  useTick(1100);
+  // No tick here: this body reads only `data.mempool`, which already changes
+  // on the 2.5s feed poll — a `useTick(1100)` used to sit here but its return
+  // value was never read, so it bought nothing except an extra full-subtree
+  // React re-render 0.9x/sec (v6.0.8 perf pass).
   const W = 300, H = 188, padL = 30, padR = 10, padT = 12, padB = 26;
   const iw = W - padL - padR, ih = H - padT - padB;
   const pts = data.mempool.slice(0, 60);

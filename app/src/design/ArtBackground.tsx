@@ -7,11 +7,19 @@
  *   - art-noise (SVG turbulence filter)
  *   - art-vignette (radial darken)
  *   - art-scan (optional CRT scanlines, controlled by `scan`)
+ *
+ * v6.0.8: the canvas is device-tiered (design/deviceTier.ts). It is the app's
+ * baseline power draw — AppShell mounts one on every page — so on the `low`
+ * tier it is not mounted at all and the static ambient plates carry the
+ * backdrop alone. `art-grid` / `art-noise` are static CSS and cost nothing
+ * per frame, so they stay on every tier.
  */
 
 import * as React from "react";
 import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
+import { byTier, getDeviceTier } from "./deviceTier";
+import { isPageActive, observeDrawable, onPageActiveChange } from "./usePageActive";
 
 type Intensity = "calm" | "busy" | "chaotic";
 
@@ -24,15 +32,17 @@ export function ArtBackground({ intensity = "busy", scan = false }: ArtBackgroun
   // The user's ⌘ DESIGN → Ambient choice, when set, overrides every page's
   // own `intensity` prop (see design/VisualContext.tsx); `ambient === null`
   // means no override, so this page's own prop wins as before.
-  const { ambient } = useVisual();
+  const { ambient, tier } = useVisual();
   const effectiveIntensity = ambient ?? intensity;
   return (
     <>
       <div className="art-grid" />
-      <ParticleField
-        density={effectiveIntensity === "calm" ? 0.45 : effectiveIntensity === "chaotic" ? 1.6 : 1.0}
-        speed={effectiveIntensity === "chaotic" ? 1.6 : 1.0}
-      />
+      {tier === "low" ? null : (
+        <ParticleField
+          density={effectiveIntensity === "calm" ? 0.45 : effectiveIntensity === "chaotic" ? 1.6 : 1.0}
+          speed={effectiveIntensity === "chaotic" ? 1.6 : 1.0}
+        />
+      )}
       <div className="art-noise" />
       <div className="art-vignette" />
       {scan ? <div className="art-scan" /> : null}
@@ -53,6 +63,47 @@ interface ParticleFieldProps {
 interface Star { x: number; y: number; vx: number; vy: number; r: number; a: number; ph: number }
 interface Stream { x: number; y: number; vy: number; life: number; age: number; hue: number }
 
+/** Longest frame we integrate. A tab that was hidden, a GC pause or a slow
+ *  first paint must not teleport every particle across the field. Matches the
+ *  50ms clamp the repo's other canvas driver documents. */
+const MAX_FRAME_MS = 50;
+/** Reference frame length. `dt / this` == 1.0 at 60fps, so the per-frame
+ *  velocities below keep their original tuning while becoming framerate-
+ *  independent. */
+const FRAME_MS = 1000 / 60;
+
+/** Radius of the pre-rendered stream glow, in CSS px. Covers the old 1.6px
+ *  dot plus the `shadowBlur: 8` halo it used to pay for on every particle of
+ *  every frame. */
+const GLOW_R = 12;
+
+/**
+ * Bake a stream's glow into an offscreen canvas once.
+ *
+ * The old draw path set `shadowColor` + `shadowBlur = 8` per stream per
+ * frame, which is a real Gaussian blur per particle — the single most
+ * expensive operation in this loop. The sprite is drawn at max lightness and
+ * the per-particle brightness ramp is expressed through `globalAlpha`
+ * instead, which is free.
+ */
+function makeGlowSprite(hue: number, dpr: number): HTMLCanvasElement {
+  const size = GLOW_R * 2;
+  const c = document.createElement("canvas");
+  c.width = Math.ceil(size * dpr);
+  c.height = Math.ceil(size * dpr);
+  const g = c.getContext("2d");
+  if (!g) return c;
+  g.scale(dpr, dpr);
+  const grad = g.createRadialGradient(GLOW_R, GLOW_R, 0, GLOW_R, GLOW_R, GLOW_R);
+  grad.addColorStop(0, `hsla(${hue}, 100%, 74%, 1)`);
+  grad.addColorStop(0.14, `hsla(${hue}, 100%, 60%, 0.9)`);
+  grad.addColorStop(0.42, `hsla(${hue}, 100%, 55%, 0.24)`);
+  grad.addColorStop(1, `hsla(${hue}, 100%, 50%, 0)`);
+  g.fillStyle = grad;
+  g.fillRect(0, 0, size, size);
+  return c;
+}
+
 export function ParticleField({
   density = 1.0,
   speed = 1.0,
@@ -64,7 +115,7 @@ export function ParticleField({
   // Re-running the effect on a theme flip is how a live ⌘ DESIGN → Theme
   // change repaints an already-mounted canvas — otherwise the computed
   // `--ui-accent-dim` read below would only ever happen once, at mount.
-  const { theme } = useVisual();
+  const { theme, tier } = useVisual();
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -72,7 +123,25 @@ export function ParticleField({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     let w = 0, h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // DPR is the single biggest lever on fill cost — it is quadratic in area.
+    // An iPhone reports 3; at 390×844 the difference between 2 and 1.5 is a
+    // 975×2110 backing store versus 585×1266, and at phone pitch the two are
+    // not tellable apart.
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      byTier(tier, { high: 2, mid: 2, low: 1.5 }),
+    );
+
+    // Particle budget. `high` keeps the original density-scaled counts;
+    // `mid` is a flat, much smaller field (density no longer scales it — a
+    // mid-tier device running the `chaotic` ambient preset must not be handed
+    // 192 stars). `low` never mounts this component at all (see
+    // ArtBackground), but the branch stays honest for direct callers.
+    const budget = byTier(tier, {
+      high: { stars: Math.floor(120 * density), streams: Math.floor(8 * density) },
+      mid: { stars: 30, streams: 3 },
+      low: { stars: 12, streams: 0 },
+    });
 
     // Theme-aware particle colour: --ui-accent-dim already retints per
     // theme (violet under indigo, the historic orange under classic — see
@@ -88,6 +157,10 @@ export function ParticleField({
     let stars: Star[] = [];
     let streams: Stream[] = [];
 
+    // Two hues, baked once at mount. The old loop paid a per-particle
+    // shadowBlur for this; now every stream is a single drawImage.
+    const glow = { 28: makeGlowSprite(28, dpr), 280: makeGlowSprite(280, dpr) } as Record<number, HTMLCanvasElement>;
+
     // Seeding lives inside resize() (not once at the top of the effect) so
     // a LATER resize — not just the first measurement — reseeds against the
     // current box. Before styles-legibility.css's `.art-canvas` fix this
@@ -96,7 +169,7 @@ export function ParticleField({
     // can genuinely change w/h, seeding once at mount left every star keyed
     // to a stale box after the next one.
     const seed = () => {
-      const N = Math.floor(120 * density);
+      const N = budget.stars;
       stars = Array.from({ length: N }, () => ({
         x: Math.random() * w, y: Math.random() * h,
         vx: (Math.random() - 0.5) * 0.15 * speed,
@@ -105,7 +178,7 @@ export function ParticleField({
         a: Math.random() * 0.7 + 0.1,
         ph: Math.random() * Math.PI * 2,
       }));
-      streams = Array.from({ length: Math.floor(8 * density) }, () => ({
+      streams = Array.from({ length: budget.streams }, () => ({
         x: Math.random() * w, y: h + Math.random() * h,
         vy: -(Math.random() * 1.6 + 0.6) * speed,
         life: Math.random() * 200 + 200,
@@ -117,11 +190,16 @@ export function ParticleField({
     // One frame's worth of update + draw. Split out from the rAF loop
     // (below) so reduced motion can call it exactly once per resize instead
     // of never running at all.
-    const tick = () => {
+    //
+    // `k` is the frame-length multiplier (1.0 at 60fps). Before v6.0.8 this
+    // loop had no `dt` at all, so every velocity below was really "per frame"
+    // — the field literally drifted faster on a 120Hz display and slower
+    // under load. The per-frame constants are unchanged; they are now scaled.
+    const tick = (k: number) => {
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = themeColor;
       for (const s of stars) {
-        s.x += s.vx; s.y += s.vy; s.ph += 0.02 * speed;
+        s.x += s.vx * k; s.y += s.vy * k; s.ph += 0.02 * speed * k;
         if (s.x < 0) s.x += w; if (s.x > w) s.x -= w;
         if (s.y < 0) s.y += h; if (s.y > h) s.y -= h;
         const a = s.a * (0.5 + 0.5 * Math.sin(s.ph));
@@ -131,21 +209,25 @@ export function ParticleField({
         ctx.fill();
       }
       for (const s of streams) {
-        s.y += s.vy; s.age++;
+        s.y += s.vy * k; s.age += k;
         if (s.y < -20 || s.age > s.life) {
           s.x = Math.random() * w; s.y = h + 20; s.age = 0;
           s.vy = -(Math.random() * 1.6 + 0.6) * speed;
           s.hue = Math.random() < 0.85 ? 28 : 280;
         }
-        ctx.globalAlpha = 0.85;
-        ctx.fillStyle = `hsl(${s.hue}, 100%, ${60 - Math.abs(s.age - s.life / 2) / s.life * 40}%)`;
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.shadowBlur = 8;
-        ctx.beginPath(); ctx.arc(s.x, s.y, 1.6, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0; ctx.globalAlpha = 0.18;
+        // The old code encoded the head's brightness ramp as an hsl()
+        // lightness between 60% and 20%. The sprite is baked at full
+        // lightness, so the same ramp rides on alpha instead — same read,
+        // no per-particle blur.
+        const ramp = 1 - (Math.abs(s.age - s.life / 2) / s.life) * 1.34;
+        ctx.globalAlpha = 0.85 * Math.max(0.25, ramp);
+        ctx.drawImage(glow[s.hue] ?? glow[28], s.x - GLOW_R, s.y - GLOW_R, GLOW_R * 2, GLOW_R * 2);
+        ctx.globalAlpha = 0.18;
+        ctx.fillStyle = `hsl(${s.hue}, 100%, 55%)`;
         ctx.fillRect(s.x, s.y, 1, 28);
+        ctx.fillStyle = themeColor;
       }
-      ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
     };
 
     const resize = () => {
@@ -159,7 +241,7 @@ export function ParticleField({
       // static frame has to be redrawn right here or the field goes blank
       // on the next resize (mirrors pages/future/FutureMini.tsx's
       // useMiniCanvas, which hits the exact same canvas.width= gotcha).
-      if (reduced) tick();
+      if (reduced) tick(1);
     };
     resize();
     const ro = new ResizeObserver(resize); ro.observe(canvas);
@@ -167,21 +249,117 @@ export function ParticleField({
     if (reduced) return () => ro.disconnect();
 
     let raf = 0;
-    const loop = () => { tick(); raf = requestAnimationFrame(loop); };
-    raf = requestAnimationFrame(loop);
+    let last: number | null = null;
 
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, [density, speed, color, reduced, theme]);
+    const loop = (now: number) => {
+      const elapsed = last === null ? FRAME_MS : Math.min(now - last, MAX_FRAME_MS);
+      last = now;
+      tick(elapsed / FRAME_MS);
+      raf = requestAnimationFrame(loop);
+    };
+
+    const start = () => {
+      if (raf) return;
+      last = null;         // a resumed loop starts from one nominal frame, not a 60s jump
+      raf = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
+
+    // Draw only when the tab is in front AND this canvas is on screen.
+    //
+    // The intersection half is not redundant with visibility: /simulate nests
+    // two `.art` elements and styles-legibility.css:93-95 hides the inner
+    // canvas with `display: none`. That hid the pixels but not the cost — the
+    // loop kept running and kept drawing into a 0×0 surface. A `display:none`
+    // element reports zero intersection, so it now stops.
+    const undrawable = observeDrawable(canvas, (drawable) => {
+      if (drawable) start();
+      else stop();
+    });
+
+    return () => { undrawable(); stop(); ro.disconnect(); };
+  }, [density, speed, color, reduced, theme, tier]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;
 }
 
-/** Animation tick — re-renders every `intervalMs`. Used by view-engine scenes. */
-export function useTick(intervalMs = 1000): number {
+export interface UseTickOptions {
+  /**
+   * `true` (default) — this tick drives decoration. It may be slowed on weak
+   * devices and frozen entirely under `prefers-reduced-motion`.
+   *
+   * `false` — this tick drives a real elapsed-time readout (mempool-shared's
+   * "updated Ns ago", classic's block-ETA countdown). Its interval is never
+   * stretched and it is never frozen, because a clock that lies is a bug, not
+   * a saved frame. It is still paused while the tab is hidden — nobody is
+   * reading it — and fires immediately on return so it is never stale on
+   * screen.
+   */
+  motion?: boolean;
+}
+
+/**
+ * Animation tick — re-renders every `intervalMs`. Used by view-engine scenes.
+ *
+ * v6.0.8: this hook is the app's timer storm. Twenty-one call sites, intervals
+ * down to 50ms, every one of them a `setInterval` that forces a full React
+ * re-render of its subtree and none of them stopping when the tab went away.
+ * The gating lives here rather than at the call sites so all twenty-one are
+ * fixed at once:
+ *
+ *   - paused while the tab is hidden, with one immediate tick on return
+ *   - frozen under `prefers-reduced-motion` (motion ticks only)
+ *   - floored per device tier (motion ticks only): `mid` ≥80ms, `low` ≥200ms
+ *
+ * For genuine motion — SVG scenes redrawing tens of nodes — prefer
+ * `useAnimationClock` (design/useAnimationClock.ts), which shares one rAF
+ * across all subscribers instead of arming a timer per component.
+ *
+ * Known limitation: the tier is resolved once per page load, so flipping the
+ * OS reduced-motion setting mid-session re-freezes motion ticks (via the
+ * reactive `useReducedMotion`) but does not re-tier the interval floors. A
+ * reload does. That trade is deliberate — see design/deviceTier.ts.
+ */
+export function useTick(intervalMs = 1000, { motion = true }: UseTickOptions = {}): number {
+  const reduced = useReducedMotion();
+  const tier = getDeviceTier();
+  const frozen = motion && reduced;
+  const effectiveMs = motion
+    ? Math.max(intervalMs, byTier(tier, { high: 0, mid: 80, low: 200 }))
+    : intervalMs;
+
   const [n, setN] = React.useState(0);
+
   React.useEffect(() => {
-    const id = setInterval(() => setN((x) => x + 1), intervalMs);
-    return () => clearInterval(id);
-  }, [intervalMs]);
-  return n;
+    if (frozen) return;
+
+    let id = 0;
+    const start = () => {
+      if (id) return;
+      id = window.setInterval(() => setN((x) => x + 1), effectiveMs);
+    };
+    const stop = () => {
+      if (!id) return;
+      clearInterval(id);
+      id = 0;
+    };
+
+    if (isPageActive()) start();
+
+    const off = onPageActiveChange((active) => {
+      if (!active) { stop(); return; }
+      // Tick once on return so a clock that was paused for a minute is
+      // correct on the first painted frame, not one interval later.
+      setN((x) => x + 1);
+      start();
+    });
+
+    return () => { stop(); off(); };
+  }, [effectiveMs, frozen]);
+
+  return frozen ? 0 : n;
 }

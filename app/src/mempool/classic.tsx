@@ -40,8 +40,11 @@ const fmtMMSS = (sec: number): string => {
 // last data update, so the number visibly moves even when no block has landed,
 // and resets toward ~2:00 when a real block arrives. `offsetSec` shifts the
 // QUEUED card one block-target further out than the imminent NEXT card.
+// `{ motion: false }` because this is a real MM:SS countdown, not decoration —
+// a clock that gets floored to an 80/200ms tier interval or frozen under
+// prefers-reduced-motion would visibly lie about how long until the next block.
 function ClassicEta({ tipAge, lastUpdate, offsetSec = 0 }: { tipAge: number; lastUpdate: number; offsetSec?: number }) {
-  useTick(1000);
+  useTick(1000, { motion: false });
   const sinceTip = tipAge + Math.floor((Date.now() - lastUpdate) / 1000);
   const remain = Math.max(0, CLASSIC_BLOCK_TARGET - sinceTip) + offsetSec;
   return <>{fmtMMSS(remain)}</>;
