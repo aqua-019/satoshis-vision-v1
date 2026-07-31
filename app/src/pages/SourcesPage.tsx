@@ -13,13 +13,18 @@ import { useLocation } from "react-router-dom";
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Provenance } from "@/design/primitives";
 import type { ProvSource } from "@/design/primitives";
+import { useReleaseNotes } from "@/data/useCachedFeed";
+import { mergeReleases } from "@/data/releases";
 
 // ── small in-page atoms ─────────────────────────────────────────
 
-function Section({ kicker, title, children }: { kicker: string; title: string; children: React.ReactNode }) {
+function Section({ kicker, title, right, children }: { kicker: string; title: string; right?: React.ReactNode; children: React.ReactNode }) {
   return (
     <Card style={{ padding: "20px 22px" }}>
-      <div className="kicker">{kicker}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+        <div className="kicker">{kicker}</div>
+        {right}
+      </div>
       <h2 className="serif" style={{ margin: "6px 0 14px", fontSize: 22, fontWeight: 500, color: "var(--ink-100)" }}>{title}</h2>
       {children}
     </Card>
@@ -43,16 +48,10 @@ function SourceRow({ source, gloss, children }: { source: ProvSource; gloss: str
   );
 }
 
-const RELEASES: ReadonlyArray<{ v: string; note: string }> = [
-  { v: "v5.0.20", note: "Stability cue (calm versioned release label), a no-JS / hardened-browser fallback, and this Data & sources page." },
-  { v: "v5.0.19", note: "Unified provenance vocabulary — one source badge (NODE / COINGECKO / SESSION / MODEL), rendered the same way on every data surface." },
-  { v: "v5.0.18", note: "Moved the “not live network data” disclaimer off the simulators and onto the node / peer surface where it belongs." },
-  { v: "v5.0.17", note: "Markets resilience — jittered 429 backoff-retry before falling back to last-good cache — plus the paused peer placeholder." },
-  { v: "v5.0.14", note: "Real-data purge: removed every simulated / illustrative surface; the educational simulators were code-split into the lazy /simulate chunk." },
-];
-
 export function SourcesPage() {
   const { hash } = useLocation();
+  const { releases, state: releaseState } = useReleaseNotes(12);
+  const mergedReleases = mergeReleases(releases);
 
   // react-router v6 BrowserRouter does not auto-scroll to #hash on navigation.
   React.useEffect(() => {
@@ -142,12 +141,46 @@ export function SourcesPage() {
         </Section>
 
         <section id="release-notes" style={{ scrollMarginTop: 24 }}>
-          <Section kicker="active · versioned maintenance" title="Release notes">
+          <Section
+            kicker="active · versioned maintenance"
+            title="Release notes"
+            right={
+              <span className="mono dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.02em", whiteSpace: "nowrap" }}>
+                {releaseState === "fail"
+                  ? "curated list · github unreachable"
+                  : releases
+                    ? `github commits · ${releases.length} releases`
+                    : "fetching github commits…"}
+              </span>
+            }
+          >
+            <p className="mono dim2" style={{ margin: "0 0 4px", fontSize: "var(--fs-label)", lineHeight: 1.6 }}>
+              Ordered by ship date, not version number — a point release such as v5.1.0 can land
+              between v5.0.9 and v5.0.8, which is expected, not a bug.
+            </p>
             <div style={{ display: "flex", flexDirection: "column" }}>
-              {RELEASES.map((r) => (
+              {mergedReleases.map((r) => (
                 <div key={r.v} style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "12px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}>
-                  <span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{r.v}</span>
-                  <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{r.note}</span>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {r.url ? (
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mono acc"
+                        style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em", color: "inherit", textDecoration: "none" }}
+                      >
+                        {r.v}
+                      </a>
+                    ) : (
+                      <span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{r.v}</span>
+                    )}
+                    {r.date ? <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{r.date}</span> : null}
+                  </div>
+                  <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
+                    {r.note}
+                    {r.also ? <span className="mono dim2"> · +{r.also} more commits</span> : null}
+                  </span>
                 </div>
               ))}
             </div>

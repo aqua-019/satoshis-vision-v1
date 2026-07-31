@@ -28,6 +28,7 @@
 import * as React from "react";
 import { getJSON } from "./http";
 import { readCache, writeCache, safeStore, type CachedSeries } from "./useMarketHistory";
+import type { ReleaseNote } from "./releases";
 
 export const FEED_TTL = 864e5; // 24 hours
 export const FEED_PREFIX = "xmri.feed.";
@@ -198,6 +199,19 @@ export function useMoneroBlog(n = 5): { posts: BlogPost[] | null; at: number | n
     ),
   );
   return { posts: data, at, state };
+}
+
+export function useReleaseNotes(n = 12): { releases: ReleaseNote[] | null; at: number | null; state: FeedState } {
+  // `n` changes the payload's length, so — same rule as useMrlIssues/
+  // useMoneroBlog — it's folded into the id. A fixed "commits.releases" id
+  // would let a caller that switches `n` hit a cache entry sized for a
+  // different `n` and silently render the wrong item count for up to 24h.
+  const { data, at, state } = useCachedFeed<ReleaseNote[]>(`commits.releases.${n}`, () =>
+    getJSON<FeedItemsResponse<ReleaseNote>>(`${FEED_PROXY}?src=commits&n=${n}`).then((r) =>
+      Array.isArray(r?.items) ? r.items : null,
+    ),
+  );
+  return { releases: data, at, state };
 }
 
 /* ── display helpers ────────────────────────────────────────────────── */
