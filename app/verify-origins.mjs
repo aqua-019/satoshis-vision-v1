@@ -118,6 +118,28 @@ function walk(dir, exts, out = [], skip = []) {
   // user-facing provenance labels (pages/future/data.ts lists "api.github.com/
   // repos/*, via /api/feeds proxy" as a source). Naming an upstream honestly in
   // the UI is the opposite of calling it from the browser.
+  // Self-hosting only counts if the files are actually there. A typo'd
+  // url('/fonts/…') fails SILENTLY — font-display:swap has already painted the
+  // system fallback, so the page looks fine and the branded face simply never
+  // arrives. That is precisely how the typography could rot back to system-only
+  // without anyone noticing, so resolve every referenced face against disk.
+  const fontRefs = [];
+  for (const f of [...walk(join(repoRoot, 'css'), ['.css']), ...walk(join(__dirname, 'src'), ['.css'])]) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/url\((['"]?)(\/fonts\/[^)'"]+)\1\)/g)) {
+      const rel = m[2];
+      // css/ is served from the repo root; app/src/ from app/public.
+      const disk = f.startsWith(join(__dirname, 'src'))
+        ? join(__dirname, 'public', rel)
+        : join(repoRoot, rel);
+      fontRefs.push([rel, existsSync(disk)]);
+    }
+  }
+  const missingFonts = fontRefs.filter(([, ok]) => !ok).map(([r]) => r);
+  ok(fontRefs.length > 0, `1 · fonts are self-hosted from /fonts/ (${fontRefs.length} faces referenced)`);
+  ok(missingFonts.length === 0,
+     `1 · every referenced font file exists${missingFonts.length ? ': missing ' + [...new Set(missingFonts)].join(', ') : ''}`);
+
   const appSrc = walk(join(__dirname, 'src'), ['.ts', '.tsx']).map((f) => strip(readFileSync(f, 'utf8'))).join('\n');
   ok(!/https?:\/\/api\.coingecko\.com|https?:\/\/api\.github\.com/.test(appSrc),
      '1 · app/src never fetches CoinGecko or GitHub directly (proxied via /api)');
