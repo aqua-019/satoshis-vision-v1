@@ -22,6 +22,21 @@
    No other query params are accepted — group composition (which coins,
    how many) is entirely server-controlled, which keeps the cache key
    space at exactly 4 entries (days ∈ {7,30,90,365}).
+
+   ENV: COINGECKO_API_KEY (optional but strongly recommended) — a free
+   CoinGecko *demo* key, sent as the 'x-cg-demo-api-key' header. Without
+   it this function runs on the anonymous public tier: ~5-15 req/min
+   against an IP shared with every other Vercel tenant, which a
+   cold-start fan-out (2 rankings + meta + up to 14 histories) will
+   exhaust. api/coingecko.js reads the same variable — the two share one
+   upstream quota, so set it once and both benefit.
+
+   RESPONSE QUALITY (v6.0.6): every response carries
+   'X-Markets-Quality: full|degraded'. Only a fully-live payload is
+   cached at the long s-maxage; anything degraded gets
+   DEGRADED_S_MAXAGE so the next request retries the origin. This
+   exists because caching a degraded payload at the full TTL is what
+   turned a transient 429 into permanently "stale" charts in v6.0.5.
    ═══════════════════════════════════════════════════════════════ */
 
 const BASE_URL = 'https://api.coingecko.com/api/v3/';
@@ -95,6 +110,32 @@ export function parseDays(raw) {
 export function cacheSeconds(days) {
     const table = { 7: 900, 30: 1800, 90: 3600, 365: 3600 };
     return { sMaxAge: table[days] ?? 1800, swr: 86400 };
+}
+
+/* How long a payload that ISN'T fully live may be cached. Short on purpose:
+   the next request must go to origin and retry rather than inherit a failure. */
+export const DEGRADED_S_MAXAGE = 45;
+
+/* Classify a payload by whether every part of it is genuinely live.
+   v6.0.6: this exists because caching a degraded payload at the full TTL is
+   what turned an intermittent CoinGecko 429 into a permanently "stale" chart —
+   one unlucky cold fan-out was pinned in the CDN for 30 minutes and servable
+   for 24h under stale-while-revalidate. */
+export function payloadQuality(body) {
+    if (!body || typeof body !== 'object') return 'degraded';
+    if (body.partial) return 'degraded';
+    const groups = body.rankings ? Object.values(body.rankings) : [];
+    if (groups.some((g) => !g || g.status !== 'live')) return 'degraded';
+    const series = body.series ? Object.values(body.series).flat() : [];
+    if (series.length === 0) return 'degraded';
+    if (series.some((s) => !s || s.status !== 'live')) return 'degraded';
+    return 'full';
+}
+
+/* Only a fully-live payload earns the long TTL. */
+export function cacheHeadersFor(days, quality) {
+    if (quality !== 'full') return { sMaxAge: DEGRADED_S_MAXAGE, swr: DEGRADED_S_MAXAGE };
+    return cacheSeconds(days);
 }
 
 function isFiniteNum(v) {
@@ -279,18 +320,46 @@ export async function pool(items, n, fn) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-/* Single upstream call with one jittered retry on 429 only, mirroring
-   api/coingecko.js's attempt()/retry shape (12s then 8s timeout). */
+/* Base retry delays in ms. CoinGecko's rate-limit window is per MINUTE, so the
+   old single 300-700ms retry just re-hit the same wall and the series came back
+   unavailable — the root of the v6.0.5 "permanently stale" charts. These span
+   ~15s of wall clock, which is enough to clear a burst without blowing the
+   20s DEADLINE_MS budget. Exported so the gate can assert the shape. */
+export function backoffDelays() {
+    return [1000, 4000, 10000];
+}
+
+/* Full jitter (AWS-style): random in [0, base]. Prevents a fan-out of 14
+   concurrent coins from retrying in lockstep and re-triggering the limit. */
+function jitter(base) {
+    return Math.floor(Math.random() * base);
+}
+
+/* CoinGecko demo key, when configured. Without it we're on the anonymous public
+   tier, which is ~5-15 req/min against an IP shared with every other Vercel
+   tenant — not enough for this endpoint's cold-start fan-out.
+   A PRO key instead uses https://pro-api.coingecko.com/api/v3/ with the
+   'x-cg-pro-api-key' header; that's a two-line change from here. */
+export function cgHeaders(env = process.env) {
+    const headers = { Accept: 'application/json' };
+    const key = env.COINGECKO_API_KEY;
+    if (key) headers['x-cg-demo-api-key'] = key;
+    return headers;
+}
+
+/* Single upstream call with jittered backoff on 429/5xx, sized to CoinGecko's
+   per-minute limit window. */
 async function fetchUpstream(path) {
     const url = BASE_URL + path;
     const attempt = (timeoutMs) => fetch(url, {
-        headers: { Accept: 'application/json' },
+        headers: cgHeaders(),
         signal: AbortSignal.timeout(timeoutMs),
     });
 
     let res = await attempt(12000);
-    if (res.status === 429) {
-        await sleep(300 + Math.floor(Math.random() * 400));
+    for (const base of backoffDelays()) {
+        if (res.status !== 429 && res.status < 500) break;
+        await sleep(jitter(base));
         res = await attempt(8000);
     }
     if (!res.ok) {
@@ -462,23 +531,32 @@ export default async function handler(req, res) {
     const start = Date.now();
     const deadlineAt = start + DEADLINE_MS;
     const days = parseDays(req.query?.days);
-    const { sMaxAge, swr } = cacheSeconds(days);
 
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
+    /* The module cache is gated by the SAME quality rule as the CDN: a warm
+       lambda holding a degraded body must re-attempt after DEGRADED_S_MAXAGE
+       rather than re-serving the failure for the full window. */
     const cached = payloadCache.get(days);
-    if (cached && Date.now() - cached.at < sMaxAge * 1000) {
-        res.setHeader('Cache-Control', `public, s-maxage=${sMaxAge}, stale-while-revalidate=${swr}`);
-        res.setHeader('X-Cache', 'hit');
-        return res.status(200).json(cached.body);
+    if (cached) {
+        const hit = cacheHeadersFor(days, cached.quality);
+        if (Date.now() - cached.at < hit.sMaxAge * 1000) {
+            res.setHeader('Cache-Control', `public, s-maxage=${hit.sMaxAge}, stale-while-revalidate=${hit.swr}`);
+            res.setHeader('X-Cache', 'hit');
+            res.setHeader('X-Markets-Quality', cached.quality);
+            return res.status(200).json(cached.body);
+        }
     }
 
     try {
         const body = await buildPayload(days, deadlineAt);
-        payloadCache.set(days, { body, at: Date.now() });
+        const quality = payloadQuality(body);
+        const { sMaxAge, swr } = cacheHeadersFor(days, quality);
+        payloadCache.set(days, { body, at: Date.now(), quality });
         res.setHeader('Cache-Control', `public, s-maxage=${sMaxAge}, stale-while-revalidate=${swr}`);
         res.setHeader('X-Cache', 'miss');
+        res.setHeader('X-Markets-Quality', quality);
         return res.status(200).json(body);
     } catch (err) {
         res.setHeader('Cache-Control', 'public, s-maxage=300');

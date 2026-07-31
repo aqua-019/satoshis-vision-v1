@@ -17,6 +17,11 @@
      /api/coingecko?path=coins/monero/market_chart&vs_currency=usd&days=30
      /api/coingecko?path=coins/monero/ohlc&vs_currency=usd&days=30
      /api/coingecko?path=coins/monero/tickers
+
+   ENV: COINGECKO_API_KEY (optional) — a free CoinGecko *demo* key, sent
+   as 'x-cg-demo-api-key'. Shared with api/markets.js: both hit the same
+   upstream quota from the same egress IP, so set it once and both
+   benefit. Unset = anonymous public tier (current behaviour, no crash).
    ═══════════════════════════════════════════════════════════════ */
 
 const ALLOWED = [
@@ -72,8 +77,18 @@ export default async function handler(req, res) {
     };
 
     // A single upstream attempt. CoinGecko's free tier 429s on shared IPs under load.
+    // v6.0.6: send the demo API key when configured. This proxy and /api/markets
+    // share one upstream quota and one egress IP, and this one carries the far
+    // more frequent traffic (the spot poll, tickers, OHLC) — so keying only the
+    // aggregator would leave it starved by its own sibling.
+    // A PRO key instead uses pro-api.coingecko.com with 'x-cg-pro-api-key'.
+    const cgHeaders = () => {
+        const headers = { 'Accept': 'application/json' };
+        if (process.env.COINGECKO_API_KEY) headers['x-cg-demo-api-key'] = process.env.COINGECKO_API_KEY;
+        return headers;
+    };
     const attempt = (timeoutMs) => fetch(url.toString(), {
-        headers: { 'Accept': 'application/json' },
+        headers: cgHeaders(),
         signal: AbortSignal.timeout(timeoutMs),
     });
 
