@@ -22,30 +22,13 @@
 // Honors prefers-reduced-motion (instant snap, no animation).
 
 import * as React from "react";
-
-function usePrefersReducedMotion(): boolean {
-  const [reduce, setReduce] = React.useState(
-    () =>
-      typeof window !== "undefined" &&
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-  );
-  React.useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setReduce(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduce;
-}
+import { useReducedMotion } from "@/design/useReducedMotion";
 
 export function useRibbonGlide(depKey: unknown) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const prev = React.useRef<Map<string, DOMRect>>(new Map());
   const raf = React.useRef<number | null>(null);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
 
   React.useLayoutEffect(() => {
     const root = ref.current;

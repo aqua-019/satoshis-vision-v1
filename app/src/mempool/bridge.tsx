@@ -9,7 +9,9 @@ import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
-import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell, TrackChip } from "@/mempool/mempool-shared";
+import type { Tracking } from "@/mempool/mempool-shared";
+import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -47,7 +49,7 @@ export function BrgCard({ title, right, children, pad = "14px 16px", style }: an
 }
 
 /* ── PPI radar — live mempool txs as blips, sweep arm lights them ── */
-export function BrgRadar({ data }: { data: MoneroLive }) {
+export function BrgRadar({ data, trackedId }: { data: MoneroLive; trackedId?: string | null }) {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
   const cx = 150, cy = 150, R = 132;
 
@@ -58,9 +60,21 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
       const ang = hashToUnit(t.id) * Math.PI * 2;
       const range = 0.32 + Math.min(0.62, t.age / 600);
       const tier = feeTierIndex(t.perB, data.feeTiers);
-      return { ang, r: range * R, color: tier >= 0 ? TIER_COLORS[tier] : "var(--ink-40)" };
+      return { id: t.id, ang, r: range * R, color: tier >= 0 ? TIER_COLORS[tier] : "var(--ink-40)" };
     });
   }, [data.mempool, data.feeTiers]);
+
+  // Index of the tracked tx's blip, computed OUTSIDE the blips memo above so
+  // trackedId never joins that memo's dependency key (the sweep math is
+  // untouched by tracking state). Read via a ref inside the rAF loop so a
+  // tracked-id change doesn't tear down/restart the sweep's elapsed-time
+  // origin (t0) — only the lock reticle below re-renders.
+  const trackedIdx = React.useMemo(
+    () => (trackedId ? blips.findIndex((b) => b.id === trackedId) : -1),
+    [blips, trackedId],
+  );
+  const trackedIdxRef = React.useRef(trackedIdx);
+  trackedIdxRef.current = trackedIdx;
 
   const blipRefs = React.useRef<(SVGCircleElement | null)[]>([]);
 
@@ -91,9 +105,14 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
         const recency = Math.max(0, 1 - d / (Math.PI * 0.8));    // fades over ~144°
         const node = blipRefs.current[i];
         if (node) {
+          const locked = i === trackedIdxRef.current;
           node.setAttribute("r", (1.6 + recency * 3.4).toFixed(2));
-          node.setAttribute("opacity", (0.28 + recency * 0.72).toFixed(3));
-          node.style.filter = recency > 0.25 ? `drop-shadow(0 0 ${(recency * 7).toFixed(1)}px ${b.color})` : "none";
+          // The tracked blip stays pinned at full opacity rather than fading
+          // with sweep recency — it must stay visible between sweep passes.
+          node.setAttribute("opacity", locked ? "1" : (0.28 + recency * 0.72).toFixed(3));
+          node.style.filter = locked || recency > 0.25
+            ? `drop-shadow(0 0 ${(Math.max(recency, locked ? 1 : 0) * 7).toFixed(1)}px ${b.color})`
+            : "none";
         }
       });
       raf = requestAnimationFrame(tick);
@@ -150,9 +169,28 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
       {/* mempool tx blips */}
       {blips.map((b, i) => (
         <circle key={i} ref={(n) => { blipRefs.current[i] = n; }}
+          data-tracked-tx={i === trackedIdx ? trackedId : undefined}
           cx={cx + Math.cos(b.ang) * b.r} cy={cy + Math.sin(b.ang) * b.r}
           r="2" fill={b.color} opacity="0.4" />
       ))}
+      {/* tracked-tx lock reticle: bracket on the blip + leader line/label to
+          the rim, so the tracked tx reads even while the sweep is elsewhere. */}
+      {trackedIdx >= 0 ? (() => {
+        const b = blips[trackedIdx];
+        const bx = cx + Math.cos(b.ang) * b.r, by = cy + Math.sin(b.ang) * b.r;
+        const rx = cx + Math.cos(b.ang) * R, ry = cy + Math.sin(b.ang) * R;
+        const lx = cx + Math.cos(b.ang) * (R + 16), ly = cy + Math.sin(b.ang) * (R + 16);
+        const anchor = Math.cos(b.ang) > 0.15 ? "start" : Math.cos(b.ang) < -0.15 ? "end" : "middle";
+        return (
+          <g data-tracked-tx={trackedId}>
+            <line x1={bx} y1={by} x2={rx} y2={ry} stroke="var(--y-50)" strokeWidth="1" strokeDasharray="2 2" opacity="0.85" />
+            <rect x={bx - 7} y={by - 7} width="14" height="14" fill="none" stroke="var(--y-50)" strokeWidth="1.4"
+              transform={`rotate(45 ${bx} ${by})`} style={{ filter: "drop-shadow(0 0 4px var(--y-50))" }} />
+            <text x={lx} y={ly} textAnchor={anchor} fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--y-50)"
+              style={{ filter: "drop-shadow(0 0 3px var(--y-50))" }}>{ShortHash(trackedId)}</text>
+          </g>
+        );
+      })() : null}
       {/* you (centre) */}
       <circle cx={cx} cy={cy} r="4" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 5px var(--tk-accent))" }} />
       <text x={cx} y={cy - 9} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)" letterSpacing="0.16em">NODE</text>
@@ -161,44 +199,88 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
   );
 }
 
-/* ── animated semicircular gauge with easing needle ─────────── */
+/* ── animated semicircular gauge with easing needle ───────────
+   Needle position is driven imperatively (SVG attrs via refs), NOT React
+   state, so a moving gauge never triggers a re-render. The rAF loop is
+   scheduled from the loop body (never from inside a state updater — this
+   app runs in <React.StrictMode>, which double-invokes updaters in dev, so
+   scheduling from inside setCur() forked the loop and compounded speed).
+   Delta-time smoothing (`cur += (target - cur) * (1 - exp(-dt/TAU))`) keeps
+   the easing rate independent of display refresh rate; the loop stops
+   entirely under prefers-reduced-motion (snaps straight to target) and
+   pauses while the tab is hidden. */
+const BRG_GAUGE_TAU = 0.2; // seconds — matches the old 0.08/frame feel at 60Hz
+
 export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)", size = 132 }: any) {
-  const [cur, setCur] = React.useState(0);
-  React.useEffect(() => {
-    let raf = 0;
-    const step = () => {
-      setCur((c) => {
-        const next = c + (value - c) * 0.08;
-        if (Math.abs(value - next) < 0.15) return value;
-        raf = requestAnimationFrame(step);
-        return next;
-      });
-    };
-    raf = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
+  const reduceMotion = useReducedMotion();
+  const curRef = React.useRef(reduceMotion ? value : 0);
+  const needleRef = React.useRef<SVGLineElement | null>(null);
+  const arcRef = React.useRef<SVGPathElement | null>(null);
+  const textRef = React.useRef<SVGTextElement | null>(null);
 
   const w = size, h = size * 0.62, c = w / 2, cyy = h - 6, r = w / 2 - 12;
-  const frac = Math.min(1, cur / 100);
-  const a0 = Math.PI, a1 = Math.PI * (1 - frac);      // 180° → value
   const ax = (ang: number, rad: number) => c + Math.cos(ang) * rad;
   const ay = (ang: number, rad: number) => cyy + -Math.sin(ang) * rad;
   const arc = (from: number, to: number, rad: number) => `M ${ax(from, rad)} ${ay(from, rad)} A ${rad} ${rad} 0 0 1 ${ax(to, rad)} ${ay(to, rad)}`;
-  const needleA = Math.PI * (1 - frac);
+
+  const paint = React.useCallback((cur: number) => {
+    const frac = Math.min(1, Math.max(0, cur / 100));
+    const a1 = Math.PI * (1 - frac);
+    if (arcRef.current) arcRef.current.setAttribute("d", arc(Math.PI, a1, r));
+    if (needleRef.current) {
+      needleRef.current.setAttribute("x2", ax(a1, r - 6).toFixed(2));
+      needleRef.current.setAttribute("y2", ay(a1, r - 6).toFixed(2));
+    }
+    if (textRef.current) textRef.current.textContent = Math.round(cur) + unit;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [r, unit]);
+
+  React.useEffect(() => {
+    if (reduceMotion) { curRef.current = value; paint(value); return; }
+
+    let raf = 0;
+    let lastTs: number | null = null;
+    const frame = (now: number) => {
+      const dt = Math.min(0.05, lastTs != null ? (now - lastTs) / 1000 : 0);
+      lastTs = now;
+      const cur = curRef.current;
+      const next = cur + (value - cur) * (1 - Math.exp(-dt / BRG_GAUGE_TAU));
+      const settled = Math.abs(value - next) < 0.05;
+      curRef.current = settled ? value : next;
+      paint(curRef.current);
+      if (!settled) raf = requestAnimationFrame(frame);
+    };
+    const start = () => { if (raf) return; lastTs = null; raf = requestAnimationFrame(frame); };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+
+    // Registered unconditionally (even if the tab starts hidden) so the loop
+    // can still be woken up by a later visibilitychange — snap to target
+    // immediately while hidden rather than silently doing nothing.
+    if (document.hidden) { curRef.current = value; paint(value); } else start();
+    const onVisibility = () => { if (document.hidden) stop(); else start(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [value, reduceMotion, paint]);
+
+  const frac0 = Math.min(1, Math.max(0, curRef.current / 100));
+  const a1_0 = Math.PI * (1 - frac0);
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <svg viewBox={`0 0 ${w} ${h + 4}`} width="100%" style={{ display: "block" }}>
         <path d={arc(Math.PI, 0, r)} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" strokeLinecap="round" />
-        <path d={arc(a0, a1, r)} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" style={{ filter: `drop-shadow(0 0 5px ${color})` }} />
+        <path ref={arcRef} d={arc(Math.PI, a1_0, r)} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" style={{ filter: `drop-shadow(0 0 5px ${color})` }} />
         {/* tick marks */}
         {Array.from({ length: 11 }).map((_, i) => {
           const a = Math.PI * (1 - i / 10);
           return <line key={i} x1={ax(a, r - 9)} y1={ay(a, r - 9)} x2={ax(a, r - 3)} y2={ay(a, r - 3)} stroke="var(--ink-40)" strokeWidth="1" />;
         })}
         {/* needle */}
-        <line x1={c} y1={cyy} x2={ax(needleA, r - 6)} y2={ay(needleA, r - 6)} stroke={color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
+        <line ref={needleRef} x1={c} y1={cyy} x2={ax(a1_0, r - 6)} y2={ay(a1_0, r - 6)} stroke={color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
         <circle cx={c} cy={cyy} r="4" fill="#0a0806" stroke={color} strokeWidth="1.5" />
-        <text x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={size * 0.18} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(cur)}{unit}</text>
+        <text ref={textRef} x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={size * 0.18} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(curRef.current)}{unit}</text>
       </svg>
       <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
     </div>
@@ -284,14 +366,16 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
 }
 
 /* ── block-cadence — countdown ring + real recent interval bars ─── */
-export function BrgBlockCadence({ data }: { data: MoneroLive }) {
+export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: MoneroLive; trackedTxId?: string | null; trackedHeight?: number | null }) {
   // Was a bare 250ms setInterval with no visibility gating — a 4Hz re-render
-  // forever, including in a backgrounded tab. The ring + M:SS label only ever
-  // display whole seconds, so 4Hz bought nothing. This is a real elapsed-time
-  // clock (not decoration), so it becomes `useTick(1000, { motion: false })`
-  // rather than a plain `useTick`: never floored per-tier, never frozen under
-  // prefers-reduced-motion, but still paused while the tab is hidden and fires
-  // one tick immediately on return (see UseTickOptions in design/ArtBackground.tsx).
+  // forever, including in a backgrounded tab. The ring and the M:SS label only
+  // ever display whole seconds, so 4Hz bought nothing; the ring keeps sweeping
+  // smoothly across the 1s gaps via a stroke-dashoffset transition instead.
+  //
+  // `{ motion: false }` because this is a real elapsed-time clock, not
+  // decoration: never floored per-tier, never frozen under
+  // prefers-reduced-motion — but still paused while the tab is hidden, firing
+  // one tick immediately on return. See UseTickOptions in design/ArtBackground.tsx.
   useTick(1000, { motion: false });
   const now = Date.now();
   const reduced = useReducedMotion();
@@ -308,16 +392,20 @@ export function BrgBlockCadence({ data }: { data: MoneroLive }) {
   const dashOffset = ring - ring * pct;
   const tone = overdue ? "var(--y-50)" : "var(--tk-accent)";
 
-  // Real intervals between consecutive recent blocks (age deltas). Miner
-  // timestamps are non-monotonic, so clamp each delta to [0, 1800]s.
+  // Real intervals between consecutive recent blocks (age deltas), each
+  // tagged with the (newer) block height it belongs to so a tracked block's
+  // bar can be tinted below. Miner timestamps are non-monotonic, so clamp
+  // each delta to [0, 1800]s.
   const ivs = React.useMemo(() => {
     const bs = data.blocks.slice(0, 11);
-    const out: number[] = [];
-    for (let i = 0; i + 1 < bs.length; i++) out.push(Math.max(0, Math.min(1800, bs[i + 1].age - bs[i].age)));
+    const out: { height: number; iv: number }[] = [];
+    for (let i = 0; i + 1 < bs.length; i++) {
+      out.push({ height: bs[i].height, iv: Math.max(0, Math.min(1800, bs[i + 1].age - bs[i].age)) });
+    }
     return out;
   }, [data.blocks]);
-  const mu = ivs.length ? Math.round(ivs.reduce((a, b) => a + b, 0) / ivs.length) : null;
-  const hiIv = Math.max(TARGET * 2, ...ivs);
+  const mu = ivs.length ? Math.round(ivs.reduce((a, b) => a + b.iv, 0) / ivs.length) : null;
+  const hiIv = Math.max(TARGET * 2, ...ivs.map((x) => x.iv));
 
   return (
     <BrgCard title="Block cadence · 2:00 target" right={!data.ready
@@ -340,9 +428,21 @@ export function BrgBlockCadence({ data }: { data: MoneroLive }) {
         <div style={{ flex: 1 }}>
           <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 38 }}>
-            {ivs.slice().reverse().map((iv, i) => {
-              const over = iv > TARGET;
-              return <div key={i} title={iv + "s"} style={{ flex: 1, height: Math.max(2, Math.round(iv / hiIv * 38)) + "px", background: over ? "var(--y-50)" : "var(--tk-accent)", opacity: 0.55 + i * 0.045, boxShadow: over ? "0 0 5px var(--y-50)" : "0 0 4px var(--tk-accent)" }} />;
+            {ivs.slice().reverse().map((item, i) => {
+              const over = item.iv > TARGET;
+              const tracked = trackedHeight != null && item.height === trackedHeight;
+              const tone2 = tracked || over ? "var(--y-50)" : "var(--tk-accent)";
+              return (
+                <div key={i} title={item.iv + "s"}
+                  data-tracked-tx={tracked ? trackedTxId : undefined}
+                  data-tracked-block={tracked ? item.height : undefined}
+                  style={{
+                    flex: 1, height: Math.max(2, Math.round(item.iv / hiIv * 38)) + "px",
+                    background: tone2, opacity: 0.55 + i * 0.045,
+                    boxShadow: tracked ? "0 0 7px var(--y-50)" : over ? "0 0 5px var(--y-50)" : "0 0 4px var(--tk-accent)",
+                    outline: tracked ? "1px solid var(--y-50)" : undefined,
+                  }} />
+              );
             })}
           </div>
           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 5 }}>
@@ -377,7 +477,9 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
 /* ── scrolling mission-control alert tape — real feed conditions only ── */
 type BrgAlertRow = { lvl: string; tone: string; msg: string; ts: string; t: number };
 
-export function BrgAlertTape({ data }: { data: MoneroLive }) {
+export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: {
+  data: MoneroLive; trackedTxId?: string | null; trackedHeight?: number | null; trackedConf?: number | null;
+}) {
   const events = useFeedEvents(data, 20);
   const [rows, setRows] = React.useState<BrgAlertRow[]>([]);
   const seq = React.useRef(0);
@@ -435,10 +537,24 @@ export function BrgAlertTape({ data }: { data: MoneroLive }) {
   }, [data.lastUpdate, data.ready]);
 
   const col: Record<string, string> = { g: "var(--g-50)", acc: "var(--tk-accent)", p: "var(--p-50)", y: "var(--y-50)" };
+  // A tracked tx that has left the mempool (real block height resolved) has
+  // no radar blip to show it on — pin a row here instead, always on top,
+  // independent of the real event log above.
+  const pinned = trackedTxId && trackedHeight != null ? (
+    <div data-tracked-tx={trackedTxId} data-tracked-block={trackedHeight}
+      style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px solid var(--y-50)" }}>
+      <span className="dim2">PINNED</span>
+      <span style={{ color: "var(--y-50)" }}>TRACK</span>
+      <span style={{ color: "var(--y-50)" }}>
+        {ShortHash(trackedTxId)} · confirmed #{trackedHeight.toLocaleString()} · {trackedConf}/{CONF_UNLOCK}
+      </span>
+    </div>
+  ) : null;
   return (
     <BrgCard title="Alert tape" right={<><Provenance source="node" fresh="live" inline /> −f</>}>
       <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5 }}>
-        {rows.length === 0 ? (
+        {pinned}
+        {rows.length === 0 && !pinned ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
         ) : rows.map((r) => (
           <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)", animation: "brg-slidein 0.4s ease" }}>
@@ -454,8 +570,9 @@ export function BrgAlertTape({ data }: { data: MoneroLive }) {
 }
 
 /* ── live tx console feed ───────────────────────────────────── */
-export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (id: string) => void }) {
+export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; tracking: Tracking; onPickTx: (id: string) => void }) {
   const rows = data.mempool.slice(0, 12);
+  const trackedId = tracking?.kind === "tx" ? tracking.id : null;
   return (
     <BrgCard title={"Transaction console · " + rows.length + " of " + data.mempool.length} right={<span className="acc">FEE TIER · LIVE</span>}>
       <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
@@ -465,17 +582,32 @@ export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (
         const tier = feeTierIndex(t.perB, data.feeTiers);
         const label = tier >= 0 ? FEE_TIER_LABELS[tier].toUpperCase() : "—";
         const tc = tier >= 0 ? TIER_COLORS[tier] : "var(--ink-40)";
+        const isTracked = t.id === trackedId;
         return (
-          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-mono)", padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.07)"}
-            onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-            <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
-            <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
-            <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
-            <span className="dim">{fmtBytes(t.size)}</span>
-            <span className="acc">{Math.round(t.perB).toLocaleString()}</span>
-            <span className="dim">{t.ringSize}</span>
-            <span className="dim2">{t.age}s</span>
+          <div key={t.id} data-tracked-tx={isTracked ? t.id : undefined}>
+            <div onClick={() => onPickTx(t.id)}
+              style={{
+                display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-mono)",
+                padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)",
+                borderLeft: isTracked ? "2px solid var(--y-50)" : "2px solid transparent",
+                background: isTracked ? "rgba(255,212,0,0.07)" : undefined,
+                cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center",
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = isTracked ? "rgba(255,212,0,0.12)" : "rgba(255,122,26,0.07)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = isTracked ? "rgba(255,212,0,0.07)" : "transparent"}>
+              <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
+              <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
+              <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
+              <span className="dim">{fmtBytes(t.size)}</span>
+              <span className="acc">{Math.round(t.perB).toLocaleString()}</span>
+              <span className="dim">{t.ringSize}</span>
+              <span className="dim2">{t.age}s</span>
+            </div>
+            {isTracked ? (
+              <div style={{ padding: "2px 8px 6px", borderLeft: "2px solid var(--y-50)" }}>
+                <TrackChip tracking={tracking} data={data} />
+              </div>
+            ) : null}
           </div>
         );
       })}
@@ -484,16 +616,25 @@ export function BrgTxConsole({ data, onPickTx }: { data: MoneroLive; onPickTx: (
 }
 
 /* ── overview composition ───────────────────────────────────── */
-export function BrgOverview({ data, onPickTx }: { data: MoneroLive; onPickTx: (id: string) => void }) {
-  const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
+// Mempool telemetry (count/weight/median/eta) now lives ONE place — the
+// shared MemStatStrip, rendered by MemViewShell above this component — so
+// this grid keeps only Bridge's own network/market instruments.
+export function BrgOverview({ data, tracking, onPickTx }: { data: MoneroLive; tracking: Tracking; onPickTx: (id: string) => void }) {
   const ready = data.ready, mkt = data.marketReady;
+
+  // Tracked tx, resolved once via useMempoolTracking + confOf everywhere —
+  // pending (still in mempool) shows on the radar/console; confirmed (left
+  // the mempool) shows on the alert tape + block-cadence panel instead.
+  const trackedTxId = tracking?.kind === "tx" ? tracking.id : null;
+  const trackedHeight = tracking?.kind === "tx" ? tracking.blockHeight : null;
+  const trackedConf = trackedHeight != null ? confOf(trackedHeight, data) : null;
+
   return (
     <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 8 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
         <Stat k="HEIGHT" v={ready ? data.height.toLocaleString() : "—"} sub="live" tone="acc" />
         <Stat k="HASHRATE" v={ready ? (data.hashrate / 1e9).toFixed(2) + " GH" : "—"} sub="2:00 tgt" />
         <Stat k="DIFFICULTY" v={ready ? (data.difficulty / 1e9).toFixed(2) + "G" : "—"} />
-        <Stat k="MEMPOOL" v={ready ? data.mempool.length : "—"} sub={ready ? fmtBytes(memBytes) : undefined} />
         <Stat k="XMR/USD" v={mkt ? "$" + data.price.toFixed(2) : "—"} sub={mkt ? (data.change24h >= 0 ? "+" : "") + data.change24h.toFixed(2) + "%" : undefined} tone={mkt ? (data.change24h >= 0 ? "g" : "dn") : undefined} />
         <Stat k="XMR/BTC" v={mkt ? data.btcRatio.toFixed(6) : "—"} />
         <Stat k="RING" v="16" sub="CLSAG" tone="p" />
@@ -502,22 +643,22 @@ export function BrgOverview({ data, onPickTx }: { data: MoneroLive; onPickTx: (i
 
       <section style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 14, alignItems: "stretch" }}>
         <BrgCard title="Mempool radar · PPI scope" right={<span className="acc">SWEEP 4.2s</span>} style={{ display: "flex", flexDirection: "column" }}>
-          <BrgRadar data={data} />
+          <BrgRadar data={data} trackedId={trackedTxId} />
         </BrgCard>
         <BrgGaugeBank data={data} />
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 14 }}>
         <BrgFeeScope data={data} />
-        <BrgBlockCadence data={data} />
+        <BrgBlockCadence data={data} trackedTxId={trackedTxId} trackedHeight={trackedHeight} />
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 14 }}>
         <BrgPoolDist data={data} />
-        <BrgAlertTape data={data} />
+        <BrgAlertTape data={data} trackedTxId={trackedTxId} trackedHeight={trackedHeight} trackedConf={trackedConf} />
       </section>
 
-      <BrgTxConsole data={data} onPickTx={onPickTx} />
+      <BrgTxConsole data={data} tracking={tracking} onPickTx={onPickTx} />
     </div>
   );
 }
@@ -526,17 +667,9 @@ export function BridgeView({ data }: ViewProps) {
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <div className="mempool-search-bar">
-        <MempoolSearchBar onSearch={onSearch} />
-        <span className="mono dim" style={{ fontSize: "var(--fs-mono)", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> MISSION CONTROL · Block {data.ready ? data.height.toLocaleString() : "—"} · {data.ready ? data.mempool.length : "—"} mempool
-        </span>
-      </div>
-      {tracking ? (
-        <MempoolTrackingDetail tracking={tracking} data={data} onBack={clearTracking} onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })} />
-      ) : (
-        <BrgOverview data={data} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
-      )}
+      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
+        <BrgOverview data={data} tracking={tracking} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
+      </MemViewShell>
     </div>
   );
 }

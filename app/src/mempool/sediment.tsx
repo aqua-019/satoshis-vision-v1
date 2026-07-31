@@ -1,11 +1,14 @@
 // AUTO-PORTED from sediment.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { Stat, Provenance } from "@/design/primitives";
+import { useReducedMotion } from "@/design/useReducedMotion";
+import { Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
-import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { MemViewShell, TrackChip, useMempoolTracking, type Tracking } from "@/mempool/mempool-shared";
+import { useMemStats, BlockEta } from "@/mempool/mem-stats";
+import { CONF_UNLOCK, confOf } from "@/mempool/conf";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
-import type { MoneroLive } from "@/data/types";
+import type { MoneroLive, Tx } from "@/data/types";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -49,11 +52,36 @@ export function SedCard({ title, right, children, pad = "14px 16px", style }: an
 }
 
 /* ── the core column — suspended txs → meniscus → strata ────── */
-export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: number; h?: number }) {
+export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLive; tracking?: Tracking; w?: number; h?: number }) {
+  const reduced = useReducedMotion();
   const txs = data.mempool.slice(0, 70);
   const max = Math.max(...txs.map((t) => t.perB), 1);
   const memH = h * 0.56;
   const blocks = data.blocks.slice(0, 12);
+
+  // Tracking, expressed in the core's own terms: a pending tx is a "you are
+  // here" depth line in the suspended column; a confirmed one lights up its
+  // stratum. Mirrors reactor.tsx / classic.tsx's tx-derived trackedHeight so
+  // the arrow/badge semantics agree across every mempool surface (never
+  // guess a height from a bare block-search — only a resolved tx pins one).
+  const trackedTxId = tracking?.kind === "tx" ? tracking.id : null;
+  const trackedPending = tracking?.kind === "tx" && tracking.blockHeight == null;
+  const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
+
+  const trackedTx = trackedPending && trackedTxId ? data.mempool.find((t) => t.id === trackedTxId) : null;
+  const trackedY = trackedTx ? (1 - Math.min(1, trackedTx.perB / max)) * (memH - 26) + 5 : null;
+
+  // One pass to fix each stratum's vertical band — shared by the strata
+  // themselves and the tracked-stratum depth-annotation marker so they can
+  // never disagree on where a block sits.
+  let cursor = memH + 8;
+  const strata = blocks.map((b, i) => {
+    const stratH = 13 + Math.min(34, b.txs * 0.55);
+    const top = cursor;
+    cursor += stratH + 2;
+    return { b, i, top, stratH };
+  });
+  const trackedStratum = trackedHeight != null ? strata.find((s) => s.b.height === trackedHeight) : null;
 
   return (
     <div style={{ position: "relative", width: w, height: h, maxWidth: "100%", marginLeft: "clamp(8px, 4vw, 78px)", flex: "none", boxSizing: "border-box" }}>
@@ -83,13 +111,38 @@ export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: nu
           const x = 10 + ((i * 47) % (w - 40));
           const sz = Math.max(4, Math.min(17, 3 + tx.size / 260));
           const t = tx.perB / max;
+          const isTracked = trackedTxId != null && tx.id === trackedTxId;
           return (
-            <div key={tx.id} title={ShortHash(tx.id)} style={{ position: "absolute", left: x, top: y, width: sz, height: sz, borderRadius: "50%",
-              background: `radial-gradient(circle at 32% 30%, rgba(255,222,164,${0.5 + t * 0.5}), rgba(255,122,26,${0.2 + t * 0.5}) 60%, transparent 80%)`,
-              boxShadow: `0 0 ${6 + t * 13}px rgba(255,122,26,${0.4 + t * 0.6})`,
-              animation: `sed-bob ${(3 + (i % 7) * 0.5).toFixed(2)}s ease-in-out ${(i * 0.09).toFixed(2)}s infinite` }} />
+            <React.Fragment key={tx.id}>
+              <div title={ShortHash(tx.id)} data-tracked-tx={isTracked ? tx.id : undefined} style={{ position: "absolute", left: x, top: y, width: sz, height: sz, borderRadius: "50%",
+                background: `radial-gradient(circle at 32% 30%, rgba(255,222,164,${0.5 + t * 0.5}), rgba(255,122,26,${0.2 + t * 0.5}) 60%, transparent 80%)`,
+                boxShadow: isTracked
+                  ? `0 0 ${6 + t * 13}px rgba(255,122,26,${0.4 + t * 0.6}), 0 0 0 3px var(--y-50)`
+                  : `0 0 ${6 + t * 13}px rgba(255,122,26,${0.4 + t * 0.6})`,
+                zIndex: isTracked ? 2 : 1,
+                animation: `sed-bob ${(3 + (i % 7) * 0.5).toFixed(2)}s ease-in-out ${(i * 0.09).toFixed(2)}s infinite` }} />
+              {/* halo ring — "you are here" on the core log */}
+              {isTracked ? (
+                <div aria-hidden style={{
+                  position: "absolute", left: x - 7, top: y - 7, width: sz + 14, height: sz + 14, borderRadius: "50%",
+                  border: "1.5px solid var(--y-50)", pointerEvents: "none", zIndex: 2,
+                  animation: reduced ? undefined : "sed-track-pulse 1.8s ease-in-out infinite",
+                }} />
+              ) : null}
+            </React.Fragment>
           );
         })}
+        {/* tracked depth line — spans the tube at the tracked tx's fee depth,
+            labelled toward the ruler side, even if the tx fell outside the
+            rendered top-70 particles above. */}
+        {trackedTx && trackedY != null ? (
+          <div data-tracked-tx={trackedTxId ?? undefined} style={{ position: "absolute", left: 5, right: 5, top: trackedY, height: 0 }}>
+            <div style={{ position: "absolute", left: 0, right: 0, top: -1, height: 2, background: "var(--y-50)", boxShadow: "0 0 8px var(--y-50)" }} />
+            <span style={{ position: "absolute", right: -150, top: -7, width: 140, textAlign: "right", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--y-50)", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+              TRACKED · {ShortHash(trackedTxId)}
+            </span>
+          </div>
+        ) : null}
         {/* fee ruler */}
         <div style={{ position: "absolute", right: -62, top: 0, bottom: 0, width: 56, display: "flex", flexDirection: "column", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)" }}>
           <div><div className="acc">320 p/B</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>HIGH</div></div>
@@ -103,19 +156,28 @@ export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: nu
       <div style={{ position: "absolute", right: -78, top: memH - 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--tk-accent)", letterSpacing: "0.12em" }}>⟵ CONFIRMATION</div>
 
       {/* strata = confirmed blocks */}
-      {blocks.map((b, i) => {
-        const stratH = 13 + Math.min(34, b.txs * 0.55);
-        const top = memH + 8 + blocks.slice(0, i).reduce((a, bb) => a + 13 + Math.min(34, bb.txs * 0.55) + 2, 0);
+      {strata.map(({ b, i, top, stratH }) => {
+        const isTrackedStratum = trackedHeight != null && b.height === trackedHeight;
         return (
-          <div key={b.height} style={{ position: "absolute", left: 5, right: 5, top, height: stratH,
+          <div key={b.height}
+            data-tracked-block={isTrackedStratum ? b.height : undefined}
+            data-tracked-tx={isTrackedStratum ? trackedTxId ?? undefined : undefined}
+            style={{ position: "absolute", left: 5, right: 5, top, height: stratH,
             background: `linear-gradient(180deg, rgba(255,180,80,${0.55 - i * 0.04}) 0%, rgba(214,98,15,${0.85 - i * 0.05}) 100%)`,
-            borderTop: i === 0 ? "1px solid rgba(255,220,160,0.85)" : "1px solid rgba(255,140,40,0.4)", borderBottom: "1px solid rgba(100,40,4,0.6)",
-            boxShadow: i === 0 ? "0 0 22px rgba(255,122,26,0.5), inset 0 1px 0 rgba(255,255,200,0.5)" : "inset 0 0 8px rgba(0,0,0,0.4)",
+            borderTop: isTrackedStratum ? "2px solid var(--y-50)" : (i === 0 ? "1px solid rgba(255,220,160,0.85)" : "1px solid rgba(255,140,40,0.4)"),
+            borderBottom: "1px solid rgba(100,40,4,0.6)",
+            boxShadow: isTrackedStratum
+              ? "0 0 18px var(--y-50), inset 0 1px 0 rgba(255,255,200,0.5)"
+              : (i === 0 ? "0 0 22px rgba(255,122,26,0.5), inset 0 1px 0 rgba(255,255,200,0.5)" : "inset 0 0 8px rgba(0,0,0,0.4)"),
             display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
             color: i < 3 ? "#1a0a02" : "rgba(20,8,2,0.8)", fontWeight: 600, opacity: 1 - i * 0.06 }}>
             <span>#{b.height.toLocaleString()}</span>
             <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.txs}tx · {b.conf}c</span>
-            <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.age < 60 ? b.age + "s" : Math.floor(b.age / 60) + "m"}</span>
+            {isTrackedStratum && tracking ? (
+              <TrackChip tracking={tracking} data={data} />
+            ) : (
+              <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.age < 60 ? b.age + "s" : Math.floor(b.age / 60) + "m"}</span>
+            )}
           </div>
         );
       })}
@@ -125,7 +187,14 @@ export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: nu
         <div style={{ position: "absolute", top: 0, right: 0, textAlign: "right" }}><div className="acc">T=0</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>NOW</div></div>
         <div style={{ position: "absolute", top: memH * 0.5 - 8, right: 0, textAlign: "right" }}><div>~120s</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>STEM</div></div>
         <div style={{ position: "absolute", top: memH - 14, right: 0, textAlign: "right" }}><div className="acc">CONF</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>+1 blk</div></div>
-        <div style={{ position: "absolute", top: memH + 96, right: 0, textAlign: "right" }}><div>+10c</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>UNLOCK</div></div>
+        <div style={{ position: "absolute", top: memH + 96, right: 0, textAlign: "right" }}><div>+{CONF_UNLOCK}c</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>UNLOCK</div></div>
+        {trackedStratum ? (
+          <div data-tracked-block={trackedStratum.b.height} data-tracked-tx={trackedTxId ?? undefined}
+            style={{ position: "absolute", top: trackedStratum.top - 8, right: 0, textAlign: "right", color: "var(--y-50)" }}>
+            <div style={{ fontSize: "var(--fs-mono)" }}>▲ TRACKED</div>
+            <div style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>{confOf(trackedStratum.b.height, data)}/{CONF_UNLOCK}</div>
+          </div>
+        ) : null}
       </div>
 
       {/* stopper */}
@@ -134,6 +203,7 @@ export function SedColumn({ data, w = 360, h = 624 }: { data: MoneroLive; w?: nu
       <style>{`
         @keyframes sed-stream { from { transform: translateY(-12px); opacity: 0; } 12% { opacity: 1; } to { transform: translateY(64px); opacity: 0; } }
         @keyframes sed-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(4px); } }
+        @keyframes sed-track-pulse { 0%,100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.14); } }
       `}</style>
     </div>
   );
@@ -203,7 +273,7 @@ function SedRingFan() {
 }
 
 /* ── stratigraphy log — confirmed blocks as a depth core ────── */
-export function SedStrataLog({ data }: { data: MoneroLive }) {
+export function SedStrataLog({ data, trackedHeight }: { data: MoneroLive; trackedHeight?: number | null }) {
   const blocks = data.blocks.slice(0, BLOCKS_CAP);
   const maxTx = Math.max(...blocks.map((b) => b.txs), 1);
   return (
@@ -220,16 +290,20 @@ export function SedStrataLog({ data }: { data: MoneroLive }) {
 
       {/* bottom pane — scrollable per-stratum log over all blocks */}
       <div style={{ maxHeight: 300, overflowY: "auto", marginTop: 12, display: "flex", flexDirection: "column", gap: 3 }}>
-        {blocks.map((b, i) => (
-          <div key={b.height} style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", opacity: Math.max(0.25, 0.9 - i * 0.05) }}>
-            <span className="dim2" style={{ fontSize: "var(--fs-label)" }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
-            <span style={{ color: i === 0 ? "var(--tk-accent)" : "var(--ink-60)" }}>#{b.height.toLocaleString()}</span>
-            <div style={{ height: 9, background: "rgba(255,255,255,0.04)", borderRadius: 2, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: (b.txs / maxTx * 100).toFixed(0) + "%", background: `linear-gradient(90deg, rgba(214,98,15,${0.9 - i * 0.05}), rgba(255,180,80,${0.85 - i * 0.05}))`, boxShadow: i === 0 ? "0 0 8px rgba(255,122,26,0.5)" : "none" }} />
+        {blocks.map((b, i) => {
+          const isTracked = trackedHeight != null && b.height === trackedHeight;
+          return (
+            <div key={b.height} data-tracked-block={isTracked ? b.height : undefined}
+              style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", opacity: isTracked ? 1 : Math.max(0.25, 0.9 - i * 0.05) }}>
+              <span className="dim2" style={{ fontSize: "var(--fs-label)" }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
+              <span style={{ color: isTracked ? "var(--y-50)" : i === 0 ? "var(--tk-accent)" : "var(--ink-60)" }}>#{b.height.toLocaleString()}</span>
+              <div style={{ height: 9, background: "rgba(255,255,255,0.04)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: (b.txs / maxTx * 100).toFixed(0) + "%", background: isTracked ? "var(--y-50)" : `linear-gradient(90deg, rgba(214,98,15,${0.9 - i * 0.05}), rgba(255,180,80,${0.85 - i * 0.05}))`, boxShadow: isTracked ? "0 0 8px var(--y-50)" : (i === 0 ? "0 0 8px rgba(255,122,26,0.5)" : "none") }} />
+              </div>
+              <span className="dim" style={{ textAlign: "right" }}>{b.txs}tx</span>
             </div>
-            <span className="dim" style={{ textAlign: "right" }}>{b.txs}tx</span>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </SedCard>
   );
@@ -251,12 +325,25 @@ export function SedFeeProfile({ data }: { data: MoneroLive }) {
   );
 }
 
+/** 90th-percentile fee/B — useMemStats doesn't expose this, so it's derived
+ *  locally from the real mempool, same as the (single) median implementation
+ *  it sits beside. Never a fabricated constant: null over an empty pool. */
+function p90PerB(txs: Tx[]): number | null {
+  if (!txs.length) return null;
+  const sorted = txs.map((t) => t.perB).sort((a, b) => a - b);
+  const idx = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * 0.9) - 1));
+  return sorted[idx];
+}
+
 /* ── live clearance trace — mempool depth over time ─────────── */
 export function SedClearance({ data }: { data: MoneroLive }) {
   const [series, setSeries] = React.useState(() => Array.from({ length: 48 }, () => data.mempool.length));
   React.useEffect(() => {
     setSeries((s) => [...s.slice(1), data.mempool.length]);
   }, [data.mempool.length]);
+  const stats = useMemStats(data);
+  const poolReady = data.ready && stats.txCount > 0;
+  const p90 = poolReady ? p90PerB(data.mempool) : null;
   return (
     <SedCard title="Clearance rate" right={<Provenance source="node" fresh="live" />}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
@@ -266,7 +353,9 @@ export function SedClearance({ data }: { data: MoneroLive }) {
       <AreaSeries data={series} height={84} color="var(--tk-accent)" baseline="zero"
         xLabels={false} markers={false} format={fmtRound} />
       <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6 }}>
-        <span>median 84 p/B</span><span>P90 246 p/B</span><span>next ≈1:54</span>
+        <span>median {poolReady ? Math.round(stats.medianPerB).toLocaleString() + " p/B" : "—"}</span>
+        <span>P90 {poolReady && p90 != null ? Math.round(p90).toLocaleString() + " p/B" : "—"}</span>
+        <span>next {data.ready ? <BlockEta data={data} /> : "—"}</span>
       </div>
     </SedCard>
   );
@@ -302,26 +391,17 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
   );
 }
 
-export function SedOverview({ data, onPickTx }: { data: MoneroLive; onPickTx: (id: string) => void }) {
-  const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
+export function SedOverview({ data, tracking, onPickTx }: { data: MoneroLive; tracking: Tracking; onPickTx: (id: string) => void }) {
+  const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
   return (
     <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
-        <Stat k="MEMPOOL" v={data.mempool.length} sub={fmtBytes(memBytes)} tone="acc" />
-        <Stat k="NEXT BLOCK" v="≈1:54" sub="2:00 tgt" />
-        <Stat k="MEDIAN FEE" v="84 p/B" sub="standard" />
-        <Stat k="P90 FEE" v="246 p/B" sub="priority" tone="acc" />
-        <Stat k="RING" v="16" sub="CLSAG" tone="p" />
-        <Stat k="TIP" v={"#" + (data.height % 1000)} sub={"#" + data.height.toLocaleString()} />
-      </section>
-
       <section style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "stretch" }}>
-        <SedColumn data={data} />
+        <SedColumn data={data} tracking={tracking} />
         <div style={{ flex: "1 1 360px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14, marginLeft: "clamp(0px, 4vw, 70px)" }}>
           <SedCard title="How to read this core" pad="14px 16px">
             <div style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.34, color: "var(--ink-100)", marginBottom: 8 }}>A cross-section of the mempool, drawn as a sample column.</div>
-            <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-body)", color: "var(--ink-60)", lineHeight: 1.55 }}>
-              Each <span className="acc">particle</span> is one pending transaction — its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>height</em> tracks fee-per-byte and its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>size</em> tracks weight. The bright band is the <span className="acc">confirmation interface</span>; strata below are confirmed blocks, brightest at the surface, fading toward <span className="dim">10-deep unlock</span>.
+            <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", lineHeight: 1.55 }}>
+              Each <span className="acc">particle</span> is one pending transaction — its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>height</em> tracks fee-per-byte and its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>size</em> tracks weight. The bright band is the <span className="acc">confirmation interface</span>; strata below are confirmed blocks, brightest at the surface, fading toward <span className="dim">{CONF_UNLOCK}-deep unlock</span>.
             </div>
           </SedCard>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
@@ -333,7 +413,7 @@ export function SedOverview({ data, onPickTx }: { data: MoneroLive; onPickTx: (i
       </section>
 
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-        <SedStrataLog data={data} />
+        <SedStrataLog data={data} trackedHeight={trackedHeight} />
         <SedFeeProfile data={data} />
       </section>
 
@@ -346,21 +426,15 @@ export function SedimentView({ data }: ViewProps) {
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
   // Chrome (NavTop / NetRail / Footer) is supplied by the PAGE (MempoolPage).
   // The view renders only content inside the single .main scroll container.
+  // MemViewShell keeps the core column mounted while a tx is tracked — the
+  // halo/depth-line/stratum highlight above stay visible alongside the
+  // shared detail panel it renders below, generalising reactor.tsx /
+  // classic.tsx's own hand-rolled version of this same pattern.
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <div className="mempool-search-bar">
-        <MempoolSearchBar onSearch={onSearch} />
-        <span className="mono dim" style={{ fontSize: "var(--fs-mono)", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-          <span className="led pulse" /> Tip {data.height.toLocaleString()} · stratum-1 forming
-        </span>
-      </div>
-      {tracking ? (
-        <MempoolTrackingDetail tracking={tracking} data={data} onBack={clearTracking} onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })} />
-      ) : (
-        <SedOverview data={data} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
-      )}
+      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
+        <SedOverview data={data} tracking={tracking} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
+      </MemViewShell>
     </div>
   );
 }
-
-

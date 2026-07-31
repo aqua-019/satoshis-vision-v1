@@ -602,6 +602,18 @@ header > div > h1.serif {
   .glide-block { transition: none; }
   .glide-enter { animation: none; }
   .mp-fit { transition: none; }
+  /* The status LEDs pulse forever. They carry no information the colour and
+     the adjacent label don't already carry, so under reduced motion they
+     hold steady at full opacity rather than blinking. Without this, eight
+     `ledpulse` animations keep running on /network alone — which is exactly
+     what a reader who set this preference asked not to happen.
+
+     `!important` is load-bearing, not lazy: `.prov-dot` is declared further
+     DOWN this file (it sets its own `animation: ledpulse …`), and a media
+     query adds no specificity — so at equal specificity the later rule would
+     win and this block would silently do nothing. styles-ambient.css's
+     reduced-motion block uses `!important` for the same reason. */
+  .led.pulse, .prov-dot, .blink { animation: none !important; opacity: 1; }
 }
 
 /* queued / next blocks (outline only) */

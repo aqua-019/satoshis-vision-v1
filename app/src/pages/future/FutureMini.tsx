@@ -16,11 +16,14 @@
  *
  * Two additions ParticleField doesn't need: honours prefers-reduced-motion
  * (a single static frame at t=0, no rAF loop — a murmuration inside a modal
- * is a bigger vestibular hit than background stars), and pauses the loop
+ * is a bigger vestibular hit than background stars) via the shared reactive
+ * design/useReducedMotion hook (so toggling the OS setting mid-session tears
+ * the canvas down and rebuilds it in the right mode), and pauses the loop
  * while the tab is hidden (document.visibilityState === "hidden").
  */
 
 import * as React from "react";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MiniMode } from "./data";
 import { byTier, type Tier } from "@/design/deviceTier";
 import { useVisual } from "@/design/VisualContext";
@@ -34,6 +37,7 @@ function useMiniCanvas(draw: DrawFn, tier: Tier): React.RefObject<HTMLCanvasElem
   // the canvas + observer).
   const drawRef = React.useRef<DrawFn>(draw);
   drawRef.current = draw;
+  const reduceMotion = useReducedMotion();
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -43,14 +47,10 @@ function useMiniCanvas(draw: DrawFn, tier: Tier): React.RefObject<HTMLCanvasElem
 
     let w = 0;
     let h = 0;
-    // `mid` still gets the full 2x — it's a phone-scale canvas at 240px
-    // tall inside a modal, not the fullscreen aurora, so the mid tier's
-    // usual "cut it in half" doesn't buy much here. `low` is the tier that
-    // is also demoted for weak/absent hardware signals generally (see
-    // deviceTier.ts's scoreDevice), so that's where the ceiling actually
-    // drops the backing-store pixel count.
+    // `mid` still gets the full 2x — this is a 240px-tall canvas inside a
+    // modal, not the fullscreen aurora, so halving it doesn't buy much. `low`
+    // is where the ceiling actually drops the backing-store pixel count.
     const dpr = Math.min(window.devicePixelRatio || 1, byTier(tier, { high: 2, mid: 2, low: 1.5 }));
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const resize = () => {
       const r = canvas.getBoundingClientRect();
@@ -119,13 +119,11 @@ function useMiniCanvas(draw: DrawFn, tier: Tier): React.RefObject<HTMLCanvasElem
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-    // `tier` is listed for lint honesty (the effect reads it via `dpr`), but
-    // it never actually re-triggers this in practice: getDeviceTier() is
-    // memoized for the page's lifetime (deviceTier.ts), so a tear-down/
-    // reseed of the canvas + ResizeObserver from a tier change mid-session
-    // cannot happen — same invariant useMiniCanvas's mode/height comment
-    // above relies on for drawRef.
-  }, [tier]);
+    // reduceMotion is the reactive dependency — mode/height changes flow
+    // through drawRef above and don't need a teardown/rebuild. `tier` is
+    // listed for lint honesty (the effect reads it via `dpr`) but can't
+    // actually re-fire: getDeviceTier() is memoized for the page's lifetime.
+  }, [reduceMotion, tier]);
 
   return ref;
 }

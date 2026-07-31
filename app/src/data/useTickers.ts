@@ -10,7 +10,7 @@
 
 import * as React from "react";
 import { cacheKey, readCache, writeCache, type SeriesStatus } from "./useMarketHistory";
-import { isPageActive, onPageActiveChange } from "@/design/usePageActive";
+import { isPageActive, onPageActiveChange } from "../design/usePageActive";
 
 export interface Ticker {
   /** exchange display name, e.g. "Kraken" */

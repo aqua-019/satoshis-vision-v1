@@ -191,10 +191,12 @@ export function ParticleField({
     // (below) so reduced motion can call it exactly once per resize instead
     // of never running at all.
     //
-    // `k` is the frame-length multiplier (1.0 at 60fps). Before v6.0.8 this
-    // loop had no `dt` at all, so every velocity below was really "per frame"
-    // — the field literally drifted faster on a 120Hz display and slower
-    // under load. The per-frame constants are unchanged; they are now scaled.
+    // `k` is elapsed time normalised to 60fps-equivalent steps: k=1 means
+    // "one 1/60s tick just happened". Every per-frame increment below scales
+    // by it, so a 120Hz/144Hz display no longer drifts the field twice as
+    // fast in wall-clock time as a 60Hz one. At 60Hz k≈1 and the motion is
+    // unchanged. k=0 draws the current state without advancing it, which is
+    // what the reduced-motion static frame wants.
     const tick = (k: number) => {
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = themeColor;
@@ -230,7 +232,10 @@ export function ParticleField({
       ctx.globalAlpha = 1;
     };
 
+    let disposed = false;
+
     const resize = () => {
+      if (disposed) return; // a deferred rAF can still fire after unmount
       const r = canvas.getBoundingClientRect();
       w = r.width; h = r.height;
       canvas.width = w * dpr; canvas.height = h * dpr;
@@ -241,47 +246,55 @@ export function ParticleField({
       // static frame has to be redrawn right here or the field goes blank
       // on the next resize (mirrors pages/future/FutureMini.tsx's
       // useMiniCanvas, which hits the exact same canvas.width= gotcha).
-      if (reduced) tick(1);
+      if (reduced) tick(0);
     };
     resize();
-    const ro = new ResizeObserver(resize); ro.observe(canvas);
+    // Deferred through rAF: resizing synchronously from inside the observer
+    // can re-trigger it in the same frame and surface "ResizeObserver loop
+    // completed with undelivered notifications". useFitToView.ts defers for
+    // exactly this reason.
+    const ro = new ResizeObserver(() => requestAnimationFrame(resize));
+    ro.observe(canvas);
 
-    if (reduced) return () => ro.disconnect();
+    if (reduced) return () => { disposed = true; ro.disconnect(); };
 
     let raf = 0;
-    let last: number | null = null;
-
+    let lastTs: number | null = null;
     const loop = (now: number) => {
-      const elapsed = last === null ? FRAME_MS : Math.min(now - last, MAX_FRAME_MS);
-      last = now;
+      // Clamp so a tab returning after minutes in the background doesn't
+      // teleport every particle across the canvas in a single step.
+      const elapsed = lastTs === null ? FRAME_MS : Math.min(now - lastTs, MAX_FRAME_MS);
+      lastTs = now;
       tick(elapsed / FRAME_MS);
       raf = requestAnimationFrame(loop);
     };
-
     const start = () => {
       if (raf) return;
-      last = null;         // a resumed loop starts from one nominal frame, not a 60s jump
+      lastTs = null; // avoid a dt spike on resume
       raf = requestAnimationFrame(loop);
     };
-    const stop = () => {
-      if (!raf) return;
-      cancelAnimationFrame(raf);
-      raf = 0;
-    };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; };
 
     // Draw only when the tab is in front AND this canvas is on screen.
     //
-    // The intersection half is not redundant with visibility: /simulate nests
-    // two `.art` elements and styles-legibility.css:93-95 hides the inner
-    // canvas with `display: none`. That hid the pixels but not the cost — the
-    // loop kept running and kept drawing into a 0×0 surface. A `display:none`
-    // element reports zero intersection, so it now stops.
+    // A hidden tab still runs rAF in some browsers and always burns battery in
+    // the ones that throttle it; nothing here is worth drawing unseen. The
+    // INTERSECTION half is not redundant with that: /simulate nests two `.art`
+    // elements and styles-legibility.css:93-95 hides the inner canvas with
+    // `display: none`. That hid the pixels but not the cost — the loop kept
+    // running and kept drawing into a 0×0 surface. A `display:none` element
+    // reports zero intersection, so it now stops.
     const undrawable = observeDrawable(canvas, (drawable) => {
       if (drawable) start();
       else stop();
     });
 
-    return () => { undrawable(); stop(); ro.disconnect(); };
+    return () => {
+      disposed = true;
+      undrawable();
+      stop();
+      ro.disconnect();
+    };
   }, [density, speed, color, reduced, theme, tier]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;

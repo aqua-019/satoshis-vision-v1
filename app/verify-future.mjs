@@ -14,7 +14,9 @@
 //   8. The three partner cards open the correct partner sites in a new tab.
 //   9. "our brief" opens the modal and does NOT navigate.
 //  10. The modal's VISIT button exists, is styled (a.proto-btn), and is safe.
-//  11. Only FCMP++ offers a working simulator button; the rest read PENDING.
+//  11. Every protocol card's simulator button lands on ITS OWN simulator
+//      (v6.0.9 — all five are registered now; the SIM_IDS gate and the named
+//      not-found state are asserted alongside, as 11b and 11c).
 //  12. /monero/future redirects to /future.
 //
 // All upstreams are intercepted, so this runs with no network egress —
@@ -23,7 +25,7 @@
 //
 // Run: npm run build && (npm run preview &) && sleep 2 && node verify-future.mjs
 import { chromium, webkit } from 'playwright';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 const base = 'http://localhost:4173';
 
@@ -178,31 +180,60 @@ console.log('engine:', engine, '\n');
   ok(cspViolations.length === 0, `7 · zero CSP violations in console (found ${cspViolations.length})`);
 
   // 11 — simulator gating, inside the popups where the button lives.
-  // Only `fcmp` is registered in the /simulate chunk; SimulatePage falls back
-  // to the decoy sim for an unknown ?p=, so the other four must NOT offer a
-  // button that would silently land somewhere else.
+  //
+  // v6.0.9 flipped this assertion's expected outcome, NOT its purpose. All five
+  // protocols now have a registered simulator, so all five must offer a real
+  // button — but the gate itself stays, because it is what makes a future card
+  // without a sim degrade honestly instead of mis-routing. What the check
+  // actually proves is that the button and the destination agree; a card whose
+  // popup says "RUN THE JAMTIS SIMULATOR" must land on the Jamtis sim, which is
+  // exactly what used to be false.
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
+  // Match on the card's own <h3>, not on any text in the card. "Jamtis" also
+  // appears inside the Seraphis card's metrics ("Pairs with Jamtis"), so a
+  // hasText filter silently opens the wrong popup — which is how the old
+  // PENDING-everywhere assertion passed while checking the wrong card.
+  const cardFor = (tag) => page.locator('.panel').filter({
+    has: page.getByRole('heading', { level: 3, name: tag, exact: true }),
+  });
 
-  await cards.filter({ hasText: 'FCMP++' }).first().click();
-  let dlg = page.locator('[role="dialog"]');
-  await dlg.waitFor();
-  let dlgText = await dlg.innerText();
-  ok(dlgText.includes('RUN THE FCMP++ SIMULATOR'), '11 · FCMP++ popup offers a real simulator button');
-  ok(!(await dlg.locator('button.proto-btn[disabled]').count()), '11 · FCMP++ button is enabled');
-  await page.keyboard.press('Escape');
-  await dlg.waitFor({ state: 'detached' });
-
-  for (const tag of ['Seraphis', 'Jamtis', 'Carrot', 'Cuprate']) {
-    await cards.filter({ hasText: tag }).first().click();
-    dlg = page.locator('[role="dialog"]');
+  for (const [tag, simId] of [
+    ['FCMP++', 'fcmp'],
+    ['Seraphis', 'seraphis'],
+    ['Jamtis', 'jamtis'],
+    ['Carrot', 'carrot'],
+    ['Cuprate', 'cuprate'],
+  ]) {
+    await cardFor(tag).first().click();
+    const dlg = page.locator('[role="dialog"]');
     await dlg.waitFor();
-    dlgText = await dlg.innerText();
-    ok(dlgText.includes('SIMULATOR PENDING'), `11 · ${tag} popup shows SIMULATOR PENDING (no simulator is registered)`);
-    ok(!dlgText.includes(`RUN THE ${tag.toUpperCase()} SIMULATOR`), `11 · ${tag} popup offers no button that would land on the decoy sim`);
-    ok((await dlg.locator('button.proto-btn[disabled]').count()) === 1, `11 · ${tag} pending affordance is disabled`);
-    await page.keyboard.press('Escape');
-    await dlg.waitFor({ state: 'detached' });
+    const dlgText = await dlg.innerText();
+    const label = `RUN THE ${tag.toUpperCase()} SIMULATOR`;
+    ok(dlgText.includes(label), `11 · ${tag} popup offers a real simulator button`);
+    ok(!dlgText.includes('SIMULATOR PENDING'), `11 · ${tag} popup no longer reads PENDING`);
+    ok(!(await dlg.locator('button.proto-btn[disabled]').count()), `11 · ${tag} button is enabled`);
+
+    // The button must reach ITS OWN simulator, not a silent substitute.
+    await dlg.locator('button.proto-btn', { hasText: label }).click();
+    await page.waitForURL(/\/simulate/);
+    ok(new URL(page.url()).searchParams.get('p') === simId,
+      `11 · ${tag} button lands on ?p=${simId} (${page.url()})`);
+    await page.goBack();
+    await cards.first().waitFor();
   }
+
+  // 11b — the gate mechanism itself still works: an id with no registered
+  // simulator degrades to a disabled PENDING affordance rather than routing.
+  const gateSrc = readFileSync(new URL('./src/pages/future/ProtoPopup.tsx', import.meta.url), 'utf8');
+  ok(/SIM_IDS\.has\(p\.sim\)/.test(gateSrc), '11b · ProtoPopup still gates the CTA on SIM_IDS');
+  ok(/SIMULATOR PENDING/.test(gateSrc), '11b · the PENDING affordance is still in the code path');
+
+  // 11c — an unknown ?p= must name what it could not find, never substitute.
+  await page.goto(base + '/simulate?p=definitely-not-a-simulator');
+  await page.locator('[role="alert"]').waitFor();
+  const nf = await page.locator('[role="alert"]').innerText();
+  ok(nf.includes('definitely-not-a-simulator'), '11c · unknown ?p= names the requested id');
+  ok(!nf.toLowerCase().includes('decoy selection'), '11c · unknown ?p= does not silently render the decoy sim');
 
   await ctx.close();
 }
