@@ -36,7 +36,7 @@ export function EduSimulators({ navigate }: EduSimulatorsProps) {
       {GROUPS.map(({ group, items }) => (
         <section key={group} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
           <div className="kicker">{group}</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
             {items.map((p) => (
               <Card key={p.id} onClick={() => navigate("/simulate?p=" + p.id)} style={{ padding: 18, cursor: "pointer" }}>
                 <div className="kicker" style={{ color: p.tone === "priv" ? "var(--p-50)" : "var(--tk-accent)" }}>{p.kicker}</div>

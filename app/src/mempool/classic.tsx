@@ -46,7 +46,7 @@ export function ClassicBlock({ block, status, confLabel, tracked, tracking, data
       data-glide-key={glideKey}
       data-tracked-block={tracked ? block.height : undefined}
       data-tracked-tx={trackedTxId}
-      className={glideKey != null ? "glide-block" : undefined}
+      className={"mp-block" + (glideKey != null ? " glide-block" : "")}
       style={{
         display: "flex", flexDirection: "column", gap: 6,
         cursor: onClick ? "pointer" : "default", minWidth: 108,
@@ -517,12 +517,11 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
           <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> streaming
         </span>
       </div>
+      <div className="table-scroll"><div className="mp-txbody">
       <div style={{
-        display: "grid",
-        gridTemplateColumns: "1.6fr 0.8fr 1fr 0.7fr 0.9fr 0.7fr",
-        gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase",
+        fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase",
         color: "var(--ink-40)", padding: "6px 8px", borderBottom: "1px solid var(--rule)",
-      }} className="mono">
+      }} className="mono mp-txgrid">
         <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Pcn/B</span><span>Tier</span><span>Age</span>
       </div>
       <div>
@@ -532,12 +531,10 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
           return (
             <div key={t.id} onClick={() => onPickTx(t.id)}
               data-tracked-tx={trackedTxId && trackedTxId === t.id ? t.id : undefined}
-              className={entering ? "classic-tx-enter" : undefined}
+              className={"mp-txgrid" + (entering ? " classic-tx-enter" : "")}
               onAnimationEnd={(e) => e.currentTarget.classList.remove("classic-tx-enter")}
               style={{
-                display: "grid",
-                gridTemplateColumns: "1.6fr 0.8fr 1fr 0.7fr 0.9fr 0.7fr",
-                gap: 10, fontSize: "var(--fs-mono)", padding: "8px 8px",
+                fontSize: "var(--fs-mono)", padding: "8px 8px",
                 borderBottom: "1px solid rgba(255,255,255,0.03)",
                 cursor: "pointer", transition: "background 0.12s",
                 fontFamily: "var(--f-mono)",
@@ -557,6 +554,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
           );
         })}
       </div>
+      </div></div>
     </div>
   );
 }

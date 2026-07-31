@@ -310,7 +310,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
         <p className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, margin: "10px 0 18px" }}>
           It wasn't one catalyst. It was the convergence of several forces — political, technical, and structural — that revalued financial privacy from "niche" to "necessary" over the span of twelve months.
         </p>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
           {CATALYST_CARDS.map((p) => (
             <div key={p.h} style={{ padding: 12, borderTop: `2px solid ${p.c}` }}>
               <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: p.c }}>{p.h}</div>
@@ -323,7 +323,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
       {/* ── DEMAND DRIVERS ──────────────────────────────────── */}
       <div>
         <div className="kicker" style={{ marginBottom: 12 }}>Demand drivers · structural · 2026</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 12 }}>
           {DEMAND_DRIVERS.map((d) => (
             <Card key={d.n} style={{ padding: 20 }}>
               <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
@@ -365,7 +365,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
             </ul>
           </div>
         </div>
-        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--rule)", display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid var(--rule)", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16 }}>
           <div className="serif" style={{ fontSize: 22, color: "var(--ink-100)", lineHeight: 1.3 }}>The demand is <em style={{ color: "var(--tk-accent)", fontStyle: "normal" }}>structural</em>.</div>
           <div className="serif" style={{ fontSize: 22, color: "var(--ink-100)", lineHeight: 1.3 }}>The supply is <em style={{ color: "var(--tk-accent)", fontStyle: "normal" }}>fixed</em>.</div>
           <div className="serif" style={{ fontSize: 22, color: "var(--ink-100)", lineHeight: 1.3 }}>The technology is <em style={{ color: "var(--tk-accent)", fontStyle: "normal" }}>unbroken</em>.</div>
