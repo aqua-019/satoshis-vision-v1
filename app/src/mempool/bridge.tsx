@@ -367,15 +367,16 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
 
 /* ── block-cadence — countdown ring + real recent interval bars ─── */
 export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: MoneroLive; trackedTxId?: string | null; trackedHeight?: number | null }) {
-  // Was a bare 250ms setInterval with no visibility gating — a 4Hz re-render
-  // forever, including in a backgrounded tab. The ring and the M:SS label only
-  // ever display whole seconds, so 4Hz bought nothing; the ring keeps sweeping
-  // smoothly across the 1s gaps via a stroke-dashoffset transition instead.
+  // Both branches independently cut this from 250ms to 1000ms: `now` is only
+  // ever consumed through a Math.floor to whole seconds below, so four ticks in
+  // five re-rendered to an identical frame. The ring keeps sweeping smoothly
+  // across the 1s gaps via a stroke-dashoffset transition rather than stepping.
   //
-  // `{ motion: false }` because this is a real elapsed-time clock, not
-  // decoration: never floored per-tier, never frozen under
-  // prefers-reduced-motion — but still paused while the tab is hidden, firing
-  // one tick immediately on return. See UseTickOptions in design/ArtBackground.tsx.
+  // `useTick` rather than a raw setInterval so it also PAUSES while the tab is
+  // hidden and fires one tick immediately on return. `{ motion: false }`
+  // because this is a real elapsed-time clock, not decoration: never floored
+  // per-tier, never frozen under prefers-reduced-motion — a countdown that
+  // freezes is a clock that lies. See UseTickOptions in design/ArtBackground.tsx.
   useTick(1000, { motion: false });
   const now = Date.now();
   const reduced = useReducedMotion();

@@ -163,11 +163,6 @@ for (const path of ['/markets', '/network', '/']) {
     // that then narrows, the pointer ends up past its right edge and
     // pointerleave fires, which clears the readout correctly and would make
     // this assertion fail for a reason that has nothing to do with scaling.
-    const hx = target.x + target.w * 0.3;
-    const hy = target.y + target.h * 0.5;
-    await p.mouse.move(hx, hy);
-    await p.waitForTimeout(250);
-
     const readTip = () => p.evaluate(() => {
       const svg = document.querySelector('[data-hovertarget]');
       // The tooltip is the <g pointer-events="none"> holding a rect + text.
@@ -175,23 +170,6 @@ for (const path of ['/markets', '/network', '/']) {
       return texts.join(' | ');
     });
 
-    const before = await readTip();
-    ok(before.length > 0, `hover produces a tooltip readout → "${before.slice(0, 70)}"`);
-
-    // THE VIEWBOX-SCALING REGRESSION TEST.
-    //
-    // Formulated as "same fraction across the plot ⇒ same datum, at any
-    // container width". Simply resizing under a stationary pointer does not
-    // test that: the chart moves out from under the cursor, pointerleave
-    // fires, and the readout clears — which is correct behaviour, so the
-    // assertion would fail for a reason unrelated to scaling.
-    //
-    // Hovering the SAME PROPORTIONAL position after a resize is the real
-    // invariant. useSvgCursor converts client px to viewBox units via
-    // getBoundingClientRect(), so the mapping is width-independent; anything
-    // reading offsetWidth, or storing raw pixels, drifts to a neighbouring
-    // datum here. The fixture's values are well separated so a near-miss
-    // cannot pass by luck.
     const hoverAtFraction = async (frac) => {
       // Scroll the chart into view BEFORE measuring. This assertion is about
       // the datum being width-independent, not about the chart happening to
@@ -214,6 +192,29 @@ for (const path of ['/markets', '/network', '/']) {
       return readTip();
     };
 
+    // Captured through `hoverAtFraction` (below) rather than from the `target`
+    // rect measured further up: that rect predates any scroll, so on a layout
+    // where this chart sits below the fold the baseline hover landed on the
+    // footer and read no datum — inverting the comparison and failing all
+    // three widths for a reason unrelated to scaling. Same helper, same
+    // preconditions, for all four measurements.
+    const before = await hoverAtFraction(0.3);
+    ok(before.length > 0, `hover produces a tooltip readout → "${before.slice(0, 70)}"`);
+
+    // THE VIEWBOX-SCALING REGRESSION TEST.
+    //
+    // Formulated as "same fraction across the plot ⇒ same datum, at any
+    // container width". Simply resizing under a stationary pointer does not
+    // test that: the chart moves out from under the cursor, pointerleave
+    // fires, and the readout clears — which is correct behaviour, so the
+    // assertion would fail for a reason unrelated to scaling.
+    //
+    // Hovering the SAME PROPORTIONAL position after a resize is the real
+    // invariant. useSvgCursor converts client px to viewBox units via
+    // getBoundingClientRect(), so the mapping is width-independent; anything
+    // reading offsetWidth, or storing raw pixels, drifts to a neighbouring
+    // datum here. The fixture's values are well separated so a near-miss
+    // cannot pass by luck.
     for (const width of [1180, 900, 1440]) {
       await p.setViewportSize({ width, height: 900 });
       await p.waitForTimeout(400);

@@ -195,10 +195,10 @@ export function useXmrIrishFeed(): MoneroLive {
   }, []);
 
   // ── FAST tier (3s): mempool + fee estimate ──────────────────────────────
-  const fastTick = async (): Promise<boolean> => {
+  const fastTick = async (signal: AbortSignal): Promise<boolean> => {
     const [mempool, fees] = await Promise.all([
-      getJSON("/api/xmr/mempool"),
-      getJSON("/api/xmr/fees"),
+      getJSON("/api/xmr/mempool", { signal }),
+      getJSON("/api/xmr/fees", { signal }),
     ]);
     if (!mempool && !fees) {
       fastFails.current++;
@@ -220,7 +220,7 @@ export function useXmrIrishFeed(): MoneroLive {
   };
 
   // ── CHAIN tier (15s): tip watch, full pull only when the tip moves ───────
-  const chainTick = async (): Promise<boolean> => {
+  const chainTick = async (signal: AbortSignal): Promise<boolean> => {
     const tip = await getJSON<XmrTip>("/api/xmr/tip");
     const tipHeight = typeof tip?.height === "number" ? tip.height : null;
 
@@ -239,8 +239,8 @@ export function useXmrIrishFeed(): MoneroLive {
     }
 
     const [network, blocks] = await Promise.all([
-      getJSON("/api/xmr/network"),
-      getJSON("/api/xmr/blocks?limit=100"),
+      getJSON("/api/xmr/network", { signal }),
+      getJSON("/api/xmr/blocks?limit=100", { signal }),
     ]);
 
     if (!network && !blocks) {
@@ -265,8 +265,8 @@ export function useXmrIrishFeed(): MoneroLive {
   };
 
   // ── MARKET tier (60s): CoinGecko spot ───────────────────────────────────
-  const marketTick = async (): Promise<boolean> => {
-    const market = await getJSON(COINGECKO);
+  const marketTick = async (signal: AbortSignal): Promise<boolean> => {
+    const market = await getJSON(COINGECKO, { signal });
     if (!market) return false; // market outage never marks the chain feed stale
     commit({ market: market as SnapshotSources["market"] }, { marketReady: true });
     return true;

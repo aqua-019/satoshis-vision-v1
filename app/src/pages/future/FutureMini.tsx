@@ -54,6 +54,12 @@ function useMiniCanvas(draw: DrawFn, tier: Tier): React.RefObject<HTMLCanvasElem
 
     const resize = () => {
       const r = canvas.getBoundingClientRect();
+      // v6.0.7: ResizeObserver fires with an identical box more often than you
+      // would expect — and under Tor Browser's letterboxing (the viewport snaps
+      // to 200x100 multiples) a single window drag produces a burst of them.
+      // The writes below are a full backing-store realloc plus a wipe plus a
+      // redraw, so bailing on a no-op change is free performance.
+      if (r.width === w && r.height === h) return;
       w = r.width;
       h = r.height;
       // Assigning width/height resets the backing store AND wipes the canvas.

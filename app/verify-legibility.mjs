@@ -226,7 +226,18 @@ for (const [label, src, path] of [
     const INDIGO = /^:root\[data-theme="indigo"\]/;
     const NOT_INDIGO = /^:root:not\(\[data-theme="indigo"\]\)/;
 
-    for (const b of blocks) {
+    // v6.0.7: @supports is a conditional GROUP rule — its own header is never a
+    // selector, so checking it directly would always "fail". Descend into its
+    // body and hold the rules inside to the same scoping contract instead.
+    // Offsets stay absolute so violations still report a real line number.
+    const flatten = (list, offset) =>
+      list.flatMap((b) =>
+        /^@supports\b/.test(b.header || "")
+          ? flatten(topLevelBlocks(b.body ?? ""), offset + b.bodyStart + 1)
+          : [{ ...b, headerStart: b.headerStart + offset }]
+      );
+
+    for (const b of flatten(blocks, 0)) {
       const header = b.header;
       if (!header) continue; // stray/empty (shouldn't happen)
       if (/^@keyframes\b/.test(header)) continue; // unconditional, allowed

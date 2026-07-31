@@ -18,6 +18,11 @@ import {
   cacheSeconds,
   downsample,
   pool,
+  payloadQuality,
+  cacheHeadersFor,
+  backoffDelays,
+  cgHeaders,
+  DEGRADED_S_MAXAGE,
 } from './markets.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -195,6 +200,60 @@ ok(maxConcurrent <= 4, `pool: never exceeds the requested concurrency (saw max $
 ok(maxConcurrent > 1, 'pool: actually runs concurrently, not serially');
 
 ok((await pool([], 4, async () => 1)).length === 0, 'pool([], 4, fn) -> [] (no throw)');
+
+/* ── v6.0.6 regression guard: payload quality gates cache TTL ──────────
+   The v6.0.5 bug was NOT that CoinGecko 429'd — that is expected on a free
+   tier. It was that a payload full of failed series got the same 30-minute
+   s-maxage as a good one, so a single unlucky cold fan-out was pinned in the
+   CDN and served to everyone. These are the assertions that catch that. */
+console.log('\n-- payload quality / cache TTL --');
+
+const liveSeries = (id) => ({ id, symbol: id.toUpperCase(), status: 'live', at: 1, t: [1, 2], p: [3, 4] });
+const goodBody = {
+  partial: false,
+  rankings: { peers: { status: 'live', members: [] }, majors: { status: 'live', members: [] } },
+  series: { peers: [liveSeries('monero')], majors: [liveSeries('bitcoin')] },
+};
+const withSeriesStatus = (status) => ({
+  ...goodBody,
+  series: { peers: [{ ...liveSeries('monero'), status }], majors: [liveSeries('bitcoin')] },
+});
+
+ok(payloadQuality(goodBody) === 'full', 'quality: all-live payload -> full');
+ok(payloadQuality({ ...goodBody, partial: true }) === 'degraded', 'quality: partial:true -> degraded');
+ok(payloadQuality(withSeriesStatus('unavailable')) === 'degraded', 'quality: any unavailable series -> degraded');
+ok(payloadQuality(withSeriesStatus('stale')) === 'degraded', 'quality: any stale series -> degraded');
+ok(
+  payloadQuality({ ...goodBody, rankings: { peers: { status: 'stale', members: [] }, majors: { status: 'live', members: [] } } }) === 'degraded',
+  'quality: a non-live RANKING alone -> degraded',
+);
+ok(payloadQuality({ ...goodBody, series: { peers: [], majors: [] } }) === 'degraded', 'quality: empty series -> degraded');
+ok(payloadQuality(null) === 'degraded' && payloadQuality(undefined) === 'degraded', 'quality: null/undefined -> degraded (no throw)');
+
+// The core guard. A degraded payload must never inherit the long TTL.
+for (const days of [7, 30, 90, 365]) {
+  const full = cacheHeadersFor(days, 'full');
+  const degraded = cacheHeadersFor(days, 'degraded');
+  ok(full.sMaxAge === cacheSeconds(days).sMaxAge, `cacheHeadersFor(${days},full) keeps the long s-maxage (${full.sMaxAge}s)`);
+  ok(degraded.sMaxAge === DEGRADED_S_MAXAGE, `cacheHeadersFor(${days},degraded) drops to ${DEGRADED_S_MAXAGE}s`);
+  ok(degraded.sMaxAge < full.sMaxAge, `cacheHeadersFor(${days}): degraded is strictly shorter than full`);
+  ok(degraded.swr <= DEGRADED_S_MAXAGE, `cacheHeadersFor(${days},degraded) does not serve a failure for 24h via SWR`);
+}
+ok(cacheHeadersFor(30, 'full').swr === 86400, 'cacheHeadersFor(30,full) keeps the 24h stale-while-revalidate');
+
+console.log('\n-- backoff --');
+const delays = backoffDelays();
+ok(delays.length >= 3, `backoffDelays: at least 3 retries (got ${delays.length})`);
+ok(delays.every((d, i) => i === 0 || d > delays[i - 1]), 'backoffDelays: strictly increasing');
+// Must be able to cross a per-minute rate-limit window; the old single
+// 300-700ms retry could not, which is why every history call came back dead.
+ok(delays.reduce((a, b) => a + b, 0) >= 10_000, `backoffDelays: spans >=10s of wall clock (got ${delays.reduce((a, b) => a + b, 0)}ms)`);
+ok(delays[0] >= 1000, 'backoffDelays: first retry waits >=1s, not sub-second');
+
+console.log('\n-- api key --');
+ok(cgHeaders({}).Accept === 'application/json', 'cgHeaders: Accept always set');
+ok(cgHeaders({})['x-cg-demo-api-key'] === undefined, 'cgHeaders: no key env -> no key header (anonymous tier still works)');
+ok(cgHeaders({ COINGECKO_API_KEY: 'CG-test' })['x-cg-demo-api-key'] === 'CG-test', 'cgHeaders: key env -> x-cg-demo-api-key header');
 
 if (failed > 0) {
   console.log(`\n${failed} check(s) FAILED`);

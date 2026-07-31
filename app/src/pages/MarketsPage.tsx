@@ -23,7 +23,8 @@
  */
 
 import * as React from "react";
-import { AppShell, PageHeader } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
+import { PageHeader } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Stat, PanelFrame, Crumbs, Provenance, DataLegend } from "@/design/primitives";
 import { ProvNote } from "@/design/provenance";
@@ -208,7 +209,7 @@ export function MarketsPage() {
   const maxVenueVol = venues.length ? venues[0].volUsd : 1;
 
   return (
-    <AppShell bg={{ intensity: "calm" }}>
+    <PageShell width="standard" rail bg={{ intensity: "calm" }}>
       <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={data.marketReady ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
       <DataLegend sources={["coingecko"]} />
       <PageHeader
@@ -261,7 +262,7 @@ export function MarketsPage() {
       </PanelFrame>
 
       {/* XMR/BTC ratio + XMR vs Top majors */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />}>
           <AreaSeries data={xmrBtcSeries} days={days} height={RATIO_CHART_HEIGHT}
             color="var(--tk-accent)" baseline="auto"
@@ -311,7 +312,7 @@ export function MarketsPage() {
       </PanelFrame>
 
       {/* Exchange volume (real) + swap-venue directory */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title="Exchange volume · 24h · top pairs" right={<SourceBadge status={tickers.status} />}>
           <div className="table-scroll">
             <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr 80px 70px", gap: 8, fontSize: "var(--fs-mono)" }}>
@@ -382,6 +383,6 @@ export function MarketsPage() {
           </div>
         )}
       </PanelFrame>
-    </AppShell>
+    </PageShell>
   );
 }

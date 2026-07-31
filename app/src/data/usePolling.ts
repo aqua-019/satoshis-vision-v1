@@ -17,6 +17,12 @@
  *   • Failure backoff — consecutive failures double the delay up to a cap, so a
  *     dead upstream is probed occasionally instead of hammered. Backoff never
  *     shortens a tier below its own cadence.
+ *   • A per-tick abort budget (v6.0.7) — `fetch` has no default timeout, and
+ *     the re-entrancy guard means a request that never settles would hold
+ *     `running` true forever and silently kill its tier for the rest of the
+ *     session. Each tick gets an AbortSignal, aborted on timeout and on
+ *     unmount. This matters most over Tor, where circuits do occasionally
+ *     just stop answering.
  *
  * The three hand-rolled poll loops that predate this (`useMarketHistory`,
  * `useTickers`, `mempool/live-detail`) are deliberately left alone — they have
@@ -43,6 +49,23 @@ export const TIER_MS: Record<TierName, number> = {
 
 /** Ceiling for failure backoff. A struggling node is retried at most this slowly. */
 export const BACKOFF_CAP_MS = 10_000;
+
+/**
+ * How long one tick may take before it is abandoned (v6.0.7).
+ *
+ * The re-entrancy guard below means a tick already in flight owns the next
+ * schedule — which is what stops requests stacking, but also means a request
+ * that NEVER settles wedges its tier permanently: `running` stays true, no
+ * timer is ever re-armed, and the tier goes silent for the rest of the session
+ * with nothing in the console. `fetch` has no default timeout, so on Tor
+ * (2-10s RTT, circuits that occasionally just die) that is a live risk rather
+ * than a theoretical one.
+ *
+ * 20s is deliberately well above a slow-but-working Tor round trip: this is a
+ * backstop against a hung socket, not a latency policy. The cadence and
+ * backoff above are what actually pace the tiers.
+ */
+export const TICK_TIMEOUT_MS = 20_000;
 
 declare global {
   interface Window {
@@ -89,7 +112,7 @@ const isHidden = (): boolean =>
  */
 export function usePolling(
   tier: TierName,
-  task: () => Promise<boolean>,
+  task: (signal: AbortSignal) => Promise<boolean>,
   enabled = true,
 ): void {
   const taskRef = React.useRef(task);
@@ -102,6 +125,8 @@ export function usePolling(
     let timer: ReturnType<typeof setTimeout> | null = null;
     let running = false;
     let failures = 0;
+    /** The controller for the tick currently on the wire, so teardown can cancel it. */
+    let inFlight: AbortController | null = null;
 
     const clear = () => {
       if (timer !== null) {
@@ -120,10 +145,29 @@ export function usePolling(
       }
       running = true;
       let succeeded = false;
+      // Race the task against TICK_TIMEOUT_MS so a socket that never settles
+      // can't hold `running` true forever and silently kill this tier, AND
+      // abort the request itself so we don't leak an open circuit per timeout.
+      // The timeout resolves false, which counts as a failure and so feeds
+      // backoff — a wedged upstream gets probed slowly, not abandoned.
+      const ctrl = new AbortController();
+      inFlight = ctrl;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       try {
-        succeeded = await taskRef.current();
+        succeeded = await Promise.race([
+          taskRef.current(ctrl.signal),
+          new Promise<boolean>((resolve) => {
+            timeoutId = setTimeout(() => {
+              ctrl.abort();
+              resolve(false);
+            }, TICK_TIMEOUT_MS);
+          }),
+        ]);
       } catch {
         succeeded = false;
+      } finally {
+        if (timeoutId !== null) clearTimeout(timeoutId);
+        if (inFlight === ctrl) inFlight = null;
       }
       running = false;
       if (!alive) return;
@@ -147,6 +191,10 @@ export function usePolling(
     return () => {
       alive = false;
       clear();
+      // Cancel a round still on the wire. Without this an unmount left the
+      // request running to completion — on Tor, another 10s of pointless
+      // circuit traffic per navigation.
+      inFlight?.abort();
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [tier, enabled]);

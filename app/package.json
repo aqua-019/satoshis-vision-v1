@@ -10,8 +10,9 @@
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
     "typecheck": "tsc --noEmit",
-    "verify:static": "node verify-chartkit.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs",
-    "verify:e2e": "node verify-charts.mjs && node verify-memdetail.mjs && node verify-glide.mjs",
+    "wait-preview": "node scripts/wait-preview.mjs",
+    "verify:static": "node verify-chartkit.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs && node verify-origins.mjs --static",
+    "verify:e2e": "node verify-charts.mjs && node verify-memdetail.mjs && node verify-glide.mjs && node verify-degraded.mjs && node verify-nojs.mjs && node verify-origins.mjs && node verify-tor.mjs",
     "verify": "npm run verify:static",
     "verify:perf": "node verify-perf-classic.mjs"
   },

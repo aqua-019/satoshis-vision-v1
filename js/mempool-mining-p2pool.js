@@ -1,5 +1,7 @@
 /* mempool-mining-p2pool.js — Top 3 Pools live dashboard.
-   Shows P2Pool (via p2pool.io/api/stats), MoneroOcean, SupportXMR. */
+   Shows P2Pool, MoneroOcean, SupportXMR — all via the same-origin
+   /api/xmr/mining/pools/live proxy (api/xmr.js:704). Pool metadata below is
+   presentational only; every number comes from that one request. */
 (function (global) {
     'use strict';
 
@@ -19,18 +21,7 @@
             fee:      '0%',
             minPay:   '0.0003 XMR',
             url:      'https://p2pool.io',
-            color:    'var(--xmr)',
-            apiUrl:   'https://p2pool.io/api/stats',
-            parseLive: function (json) {
-                var s = json && json.pool_statistics;
-                if (!s) return null;
-                return {
-                    hashrate_hs:   Number(s.hashRate)           || 0,
-                    miners:        Number(s.miners)             || 0,
-                    blocks_found:  Number(s.totalBlocksFound)   || 0,
-                    share_pct:     null   /* derived from network */
-                };
-            }
+            color:    'var(--xmr)'
         },
         {
             key:      'moneroocean',
@@ -39,18 +30,7 @@
             fee:      '0%',
             minPay:   '0.003 XMR',
             url:      'https://moneroocean.stream',
-            color:    '#3D8EFF',
-            apiUrl:   'https://moneroocean.stream/api/pool/stats',
-            parseLive: function (json) {
-                var p = json && json.pool;
-                if (!p) return null;
-                return {
-                    hashrate_hs:   Number(p.hashrate)           || 0,
-                    miners:        Number(p.miners)             || 0,
-                    blocks_found:  Number(p.totalBlocksFound)   || 0,
-                    share_pct:     null
-                };
-            }
+            color:    '#3D8EFF'
         },
         {
             key:      'supportxmr',
@@ -59,9 +39,7 @@
             fee:      '0.6%',
             minPay:   '0.1 XMR',
             url:      'https://supportxmr.com',
-            color:    '#00C97A',
-            apiUrl:   null,   /* no public CORS-friendly API */
-            parseLive: null
+            color:    '#00C97A'
         }
     ];
 
@@ -78,35 +56,42 @@
 
     MempoolMiningP2Pool.prototype.refresh = function () {
         var self = this;
-        /* Fetch network hashrate for share % + live pool APIs in parallel */
-        var networkP = fetch('/api/xmr/network', { headers: { accept: 'application/json' } })
-            .then(function (r) { return r.ok ? r.json() : {}; })
-            .catch(function () { return {}; });
+        /* v6.0.7 — one same-origin request, where there used to be three.
+           This was the last place in the whole site where the BROWSER talked
+           to a third party: p2pool.io and moneroocean.stream directly. Brave
+           Shields and Tor both block or stall those, and on the Vercel deploy
+           `connect-src 'self'` refuses them outright, so the panel was already
+           dead there. api/xmr.js:704-716 has proxied both upstreams all along
+           under /api/xmr/mining/pools/live — and it also returns
+           network_hashrate_hs, which makes the separate /api/xmr/network call
+           redundant too. */
+        fetch('/api/xmr/mining/pools/live', { headers: { accept: 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+            .then(function (payload) {
+            var net = payload || {};
+            var networkHr = Number(net.network_hashrate_hs) || 5.3e9;
+            /* The proxy returns more pools than this panel shows, so match by
+               name rather than by index. */
+            var byName = {};
+            (net.pools || []).forEach(function (p) { byName[p.name] = p; });
 
-        var poolFetches = POOLS.map(function (pool) {
-            if (!pool.apiUrl) return Promise.resolve(null);
-            return fetch(pool.apiUrl, { headers: { accept: 'application/json' } })
-                .then(function (r) { return r.ok ? r.json() : null; })
-                .then(function (json) { return pool.parseLive ? pool.parseLive(json) : null; })
-                .catch(function () { return null; });
-        });
-
-        Promise.all([networkP].concat(poolFetches)).then(function (results) {
-            var net = results[0] || {};
-            var networkHr = (Number(net.hashrate_ghs) || 5.3) * 1e9;
-            var liveData = results.slice(1);
-
-            var enriched = POOLS.map(function (pool, idx) {
-                var live = liveData[idx];
-                var hr = (live && live.hashrate_hs) || FALLBACK[pool.key] || 0;
-                var share = networkHr > 0 ? (hr / networkHr * 100) : 0;
+            var enriched = POOLS.map(function (pool) {
+                var live = byName[pool.name];
+                var isLive = !!(live && live.live && live.hashrate_hs);
+                var hr = (isLive && Number(live.hashrate_hs)) || FALLBACK[pool.key] || 0;
+                /* Prefer the proxy's own share, but it is null for any pool
+                   we're showing a FALLBACK hashrate for — derive it then. */
+                var share = (isLive && live.network_share_pct != null)
+                    ? Number(live.network_share_pct)
+                    : (networkHr > 0 ? (hr / networkHr * 100) : 0);
                 return {
                     pool:     pool,
-                    live:     !!live,
+                    live:     isLive,
                     hr:       hr,
-                    miners:   live ? live.miners : null,
+                    miners:   isLive ? live.miners : null,
                     share:    share,
-                    blocks:   live ? live.blocks_found : null
+                    blocks:   isLive ? live.blocks_found : null
                 };
             });
 

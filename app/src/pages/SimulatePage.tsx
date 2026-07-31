@@ -7,7 +7,8 @@
  * header strip below spells out what MODEL means.
  *
  * Protocol views render ProtoArtboard (header+stage+panel) only — no full page
- * chrome — so we wrap in AppShell with `fluid` + `hideRail`.
+ * chrome — so we wrap in PageShell at `width="fluid"`, which renders no centred
+ * container at all and leaves the rail hidden (the default).
  *
  * v6.0.9: an unknown ?p= used to resolve to the decoy sim with no indication,
  * which is how a "RUN THE JAMTIS SIMULATOR" button could open decoy selection.
@@ -20,7 +21,7 @@ import { useSearchParams } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { PROTOCOL_VIEWS } from "@/views/protocols";
 import { PROTOCOL_GROUP_ORDER } from "@/views/protocol-meta";
-import { AppShell } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { Crumbs } from "@/design/primitives";
 import { Provenance } from "@/design/provenance";
 
@@ -39,7 +40,7 @@ export function SimulatePage() {
   const activeId = notFound ? null : meta.id;
 
   return (
-    <AppShell hideRail fluid bg={{ intensity: "calm" }}>
+    <PageShell width="fluid" bg={{ intensity: "calm" }}>
       <div style={{ height: "100%", display: "grid", gridTemplateRows: "auto 1fr" }}>
         <div style={{ padding: "12px 20px", display: "flex", gap: 18, alignItems: "flex-start", borderBottom: "1px solid var(--rule)", flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
@@ -94,7 +95,7 @@ export function SimulatePage() {
           {notFound ? <SimNotFound requested={requested!} /> : <View data={data} />}
         </div>
       </div>
-    </AppShell>
+    </PageShell>
   );
 }
 
