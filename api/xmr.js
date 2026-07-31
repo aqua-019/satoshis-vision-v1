@@ -6,8 +6,19 @@
    requires relay.xmr.irish once it is deployed.
    ═══════════════════════════════════════════════════════════════ */
 
-const { nodesFor } = require('./_nodes.js');
-const NODES = nodesFor('mainnet');
+const { nodesFor, markNodeDown, markNodeUp } = require('./_nodes.js');
+
+/* Resolve the cascade PER CALL, never at module scope: _nodes.js sorts
+   cold-marked nodes to the back, and a module-scope snapshot would freeze the
+   order for the warm Lambda's whole life and defeat that entirely. */
+const nodes = () => nodesFor('mainnet');
+
+/* Overall budget for one cascade walk. The per-node timeouts (6s/8s) across a
+   6-node list add up to 36s+, which exceeds this function's maxDuration of 30s
+   (vercel.json) — the platform would kill us mid-flight and the client would see
+   a hang rather than a clean failure. Give up at 12s and let the caller fall
+   back to last-good values instead. */
+const CASCADE_BUDGET_MS = 12_000;
 
 const POOL_TAGS = [
   { name: 'P2Pool',        tags: ['p2pool'],                  type: 'decentralized', url: 'https://p2pool.io' },
@@ -35,10 +46,12 @@ function identifyPool(extraHex) {
 
 async function rpc(method, params = {}) {
   const body = JSON.stringify({ jsonrpc: '2.0', id: '0', method, params });
-  for (const node of NODES) {
+  const deadline = Date.now() + CASCADE_BUDGET_MS;
+  for (const node of nodes()) {
+    if (Date.now() >= deadline) break;
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 6000);
+      const timer = setTimeout(() => ctrl.abort(), Math.min(6000, deadline - Date.now()));
       const res = await fetch(`${node}/json_rpc`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -46,20 +59,29 @@ async function rpc(method, params = {}) {
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) continue;
+      if (!res.ok) { markNodeDown(node); continue; }
       const json = await res.json();
+      /* The node answered, so it is HEALTHY — even if monerod replied with a
+         JSON-RPC error (e.g. a restricted-RPC "Method not found"). Marking it
+         down here would evict good nodes for admin-only methods. */
+      markNodeUp(node);
       if (json?.result) return json.result;
-    } catch (_) { /* try next node */ }
+    } catch (_) {
+      /* transport-level: timeout, refused, DNS, TLS */
+      markNodeDown(node);
+    }
   }
   return null;
 }
 
 async function rpcHttp(path, payload) {
   const body = payload != null ? JSON.stringify(payload) : '{}';
-  for (const node of NODES) {
+  const deadline = Date.now() + CASCADE_BUDGET_MS;
+  for (const node of nodes()) {
+    if (Date.now() >= deadline) break;
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const timer = setTimeout(() => ctrl.abort(), Math.min(8000, deadline - Date.now()));
       const res = await fetch(`${node}${path}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -67,9 +89,12 @@ async function rpcHttp(path, payload) {
         signal: ctrl.signal,
       });
       clearTimeout(timer);
-      if (!res.ok) continue;
+      if (!res.ok) { markNodeDown(node); continue; }
+      markNodeUp(node);
       return await res.json();
-    } catch (_) { /* try next */ }
+    } catch (_) {
+      markNodeDown(node);
+    }
   }
   return null;
 }
@@ -85,6 +110,49 @@ function feeTier(rate) {
 function feeColor(rate) {
   const t = feeTier(rate);
   return { stuck: '#444444', economy: '#3D8EFF', normal: '#00C97A', fast: '#F26822', priority: '#FF4455' }[t];
+}
+
+/* ── Edge caching ──────────────────────────────────────────────────────────
+
+   The single most important cost control in this file. The client polls in three
+   tiers (fast 3s / chain 15s / market 60s); WITHOUT edge caching that is
+   3s × N visitors of upstream node load and Vercel invocations. WITH it, the CDN
+   collapses all concurrent visitors into ~1 upstream request per s-maxage window,
+   so upstream sees a flat ~1 request per tier interval regardless of traffic.
+
+   Each value is matched to how fast the underlying data can actually change:
+   mempool moves every few seconds; the block target is 120s; range queries and
+   pool attribution are minutes-stale by nature and cost 100+ RPC calls.
+
+   Routes absent from this table keep the handler's default `no-store` — that is
+   deliberate for per-user/one-shot lookups (block/*, decoys/*, health, stale).
+
+   NOTE: vercel.json's `no-store` header rule matches `/api/monero(.*)` only, so
+   it does NOT override these. */
+const CACHE_CONTROL = {
+  '':                    's-maxage=3, stale-while-revalidate=10',   // fast tier
+  'mempool':             's-maxage=3, stale-while-revalidate=10',   // fast tier
+  'mempool/recent':      's-maxage=3, stale-while-revalidate=10',
+  'mempool/projected':   's-maxage=3, stale-while-revalidate=10',
+  'fees':                's-maxage=3, stale-while-revalidate=10',   // fast tier
+  'mempool/fees':        's-maxage=3, stale-while-revalidate=10',
+  'tip':                 's-maxage=10, stale-while-revalidate=30',  // chain tier watch
+  'blocks/tip':          's-maxage=10, stale-while-revalidate=30',
+  'network':             's-maxage=15, stale-while-revalidate=30',  // chain tier
+  'blocks':              's-maxage=15, stale-while-revalidate=30',  // chain tier
+  'block_intervals':     's-maxage=60, stale-while-revalidate=120',
+  'network/hashrate':    's-maxage=300, stale-while-revalidate=600',
+  'network/difficulty':  's-maxage=300, stale-while-revalidate=600',
+  'emission':            's-maxage=300, stale-while-revalidate=600',
+  'mining/pools':        's-maxage=300, stale-while-revalidate=600', // ~100 RPC calls
+  'mining/pools/live':   's-maxage=300, stale-while-revalidate=600',
+};
+
+/** Cache-Control for a resolved sub-path, or null to keep the default no-store. */
+function cacheControlFor(sub) {
+  if (Object.prototype.hasOwnProperty.call(CACHE_CONTROL, sub)) return CACHE_CONTROL[sub];
+  if (sub.startsWith('tx/')) return 's-maxage=5, stale-while-revalidate=15';
+  return null;
 }
 
 // ── Route handlers ────────────────────────────────────────────────────────
@@ -132,8 +200,12 @@ async function handleMempool() {
     color: feeColor(({ stuck:0.5, economy:2, normal:12, fast:50, priority:100 })[key]),
   }));
 
-  // Projected block
-  const blockLimit = info?.block_weight_limit || 600000;
+  // Projected block. `reportedLimit` is null when the node didn't tell us the
+  // dynamic block weight limit; the packing loop still needs a bound, so it uses
+  // the 600 KB protocol floor, but we never PUBLISH that floor as if the node had
+  // reported it — bytes_limit / fill_pct go null instead.
+  const reportedLimit = info?.block_weight_limit ?? null;
+  const blockLimit = reportedLimit || 600000;
   const sorted = [...txs].sort((a,b) => b.fee_rate - a.fee_rate);
   const inBlock = []; let projBytes = 0;
   const tierBytes = { stuck:0, economy:0, normal:0, fast:0, priority:0 };
@@ -150,8 +222,8 @@ async function handleMempool() {
   const projectedBlock = {
     tx_count: inBlock.length,
     bytes: projBytes,
-    bytes_limit: blockLimit,
-    fill_pct: Math.round((projBytes/blockLimit)*100),
+    bytes_limit: reportedLimit,
+    fill_pct: reportedLimit ? Math.round((projBytes/reportedLimit)*100) : null,
     total_fees: projFees,
     median_fee_rate: medRate,
     fee_tiers: tierBytes,
@@ -178,11 +250,17 @@ async function handleMempool() {
 
 async function handleFees() {
   const feeEst = await rpc('get_fee_estimate');
-  const fees = feeEst?.fees || [20000, 80000, 320000, 4000000];
+  /* No invented tiers. The old `|| [20000, 80000, 320000, 4000000]` fallback
+     published a plausible-looking fee table that no node had reported — the
+     client would render fabricated numbers as live node data. Omit instead: the
+     client's mappers carry the last-good value forward (map.ts `num(v, prev.x)`)
+     and render "—" when nothing has ever landed. */
+  const fees = Array.isArray(feeEst?.fees) && feeEst.fees.length ? feeEst.fees : null;
+  if (!fees) return { tiers: null, recommended: null, slow: null, normal: null, fast: null, fastest: null };
   return {
     tiers: fees,
-    recommended: fees[1] || 80000,
-    slow: fees[0], normal: fees[1], fast: fees[2], fastest: fees[3],
+    recommended: fees[1] ?? null,
+    slow: fees[0] ?? null, normal: fees[1] ?? null, fast: fees[2] ?? null, fastest: fees[3] ?? null,
   };
 }
 
@@ -316,10 +394,12 @@ function parseTransaction(raw, txid) {
 
 async function handleTx(txid) {
   const res = await (async () => {
-    for (const node of NODES) {
+    const deadline = Date.now() + CASCADE_BUDGET_MS;
+    for (const node of nodes()) {
+      if (Date.now() >= deadline) break;
       try {
         const ctrl = new AbortController();
-        const timer = setTimeout(() => ctrl.abort(), 6000);
+        const timer = setTimeout(() => ctrl.abort(), Math.min(6000, deadline - Date.now()));
         const r = await fetch(`${node}/get_transactions`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -327,11 +407,14 @@ async function handleTx(txid) {
           signal: ctrl.signal,
         });
         clearTimeout(timer);
-        if (!r.ok) continue;
+        if (!r.ok) { markNodeDown(node); continue; }
+        /* Answered ⇒ healthy. An empty list just means this node doesn't have
+           the tx (unindexed / already mined out of its pool), not a fault. */
+        markNodeUp(node);
         const data = await r.json();
         const list = data?.txs || data?.txs_as_json || [];
         if (list.length > 0) return data;
-      } catch (_) {}
+      } catch (_) { markNodeDown(node); }
     }
     return null;
   })();
@@ -355,24 +438,28 @@ async function handleNetwork() {
     hashrate_ghs: Math.round(info.difficulty / 120 / 1e9 * 100) / 100,
     tx_pool_size: info.tx_pool_size,
     tx_count_total: info.tx_count,
-    block_weight_limit: info.block_weight_limit || 600000,
-    block_weight_median: info.block_weight_median || 300000,
+    /* Everything below reports null rather than a plausible default when the
+       node didn't supply it. A hard-coded stand-in reaches the UI indistinguishable
+       from live node data, which breaks the site's core invariant ("never show a
+       number that didn't come from the node"). The client carries last-good values
+       forward (map.ts `num(v, prev.x)`) and renders "—" until something real lands. */
+    block_weight_limit: info.block_weight_limit ?? null,
+    block_weight_median: info.block_weight_median ?? null,
+    /* 120s is the protocol's block target, not a stand-in for missing data. */
     target_seconds: info.target || 120,
-    peer_count: (info.incoming_connections_count || 0) + (info.outgoing_connections_count || 0),
-    incoming_peers: info.incoming_connections_count || 0,
-    outgoing_peers: info.outgoing_connections_count || 0,
     top_block_hash: info.top_block_hash || '',
-    alt_blocks_count: info.alt_blocks_count || 0,
-    version: info.version || '0.18.3.4',
-    // hard_fork_info is the authoritative source; 16 (current mainnet fork) only
-    // covers the rare case where every node's hard_fork_info call failed.
-    major_version: hardFork?.version || 16,
-    fee_tiers: feeEst?.fees || [20000, 80000, 320000, 4000000],
+    alt_blocks_count: info.alt_blocks_count ?? null,
+    version: info.version ?? null,
+    // hard_fork_info is the authoritative source. When every node's call fails we
+    // report null — claiming "v16" would be inventing chain state.
+    major_version: hardFork?.version ?? null,
+    fee_tiers: Array.isArray(feeEst?.fees) && feeEst.fees.length ? feeEst.fees : null,
     randomx_seed_hash: minerData?.seed_hash || '',
-    database_size: info.database_size || 0,
+    database_size: info.database_size ?? null,
     synchronized: !!info.synchronized,
-    nettype: info.nettype || 'mainnet',
-    adjusted_time: info.adjusted_time || 0,
+    // Never assume 'mainnet' — which network a node serves is reported, not guessed.
+    nettype: info.nettype ?? null,
+    adjusted_time: info.adjusted_time ?? null,
   };
 }
 
@@ -574,7 +661,8 @@ module.exports = async function handler(req, res) {
         return;
       }
       const avg = Math.round(deltas.reduce((a, b) => a + b, 0) / deltas.length);
-      res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+      /* Cache-Control comes from the CACHE_CONTROL table at the bottom of the
+         handler — one place, so cadence and cache window can't drift apart. */
       data = {
         avg_block_interval_s: avg,
         sample_size: deltas.length,
@@ -625,10 +713,12 @@ module.exports = async function handler(req, res) {
       }
 
       const txData = await (async () => {
-        for (const node of NODES) {
+        const deadline = Date.now() + CASCADE_BUDGET_MS;
+        for (const node of nodes()) {
+          if (Date.now() >= deadline) break;
           try {
             const ctrl = new AbortController();
-            const timer = setTimeout(() => ctrl.abort(), 6000);
+            const timer = setTimeout(() => ctrl.abort(), Math.min(6000, deadline - Date.now()));
             const r = await fetch(`${node}/get_transactions`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -636,10 +726,11 @@ module.exports = async function handler(req, res) {
               signal: ctrl.signal,
             });
             clearTimeout(timer);
-            if (!r.ok) continue;
+            if (!r.ok) { markNodeDown(node); continue; }
+            markNodeUp(node);
             const j = await r.json();
             if (j?.txs?.length || j?.txs_as_json?.length) return j;
-          } catch (_) {}
+          } catch (_) { markNodeDown(node); }
         }
         return null;
       })();
@@ -819,25 +910,29 @@ module.exports = async function handler(req, res) {
 
     } else if (sub === 'emission') {
       const info = await rpc('get_info');
-      data = handleEmission(info?.height || 3200000);
+      /* The whole emission curve is annotated off the live height, so a fabricated
+         height (the old `|| 3200000`) would produce a wrong-but-plausible supply
+         figure. Fail loudly instead and let the client keep its last-good values. */
+      if (!info?.height) { res.status(503).json({ error: 'Node unavailable' }); return; }
+      data = handleEmission(info.height);
 
     } else if (sub === 'stale') {
       data = await handleStale();
 
     } else if (sub === 'health') {
       const info = await rpc('get_info');
-      data = { ok: !!info, height: info?.height || 0, peers: (info?.incoming_connections_count || 0) + (info?.outgoing_connections_count || 0) };
+      /* No `peers` field. Restricted public RPC reports every peer counter as 0,
+         and publishing "0 peers" for a healthy network is worse than publishing
+         nothing — see the paused peer panel on /network. Peer data returns only
+         when an unrestricted primary node is configured (MONERO_PRIMARY_NODE). */
+      data = { ok: !!info, height: info?.height ?? null };
 
     } else {
       res.status(404).json({ error: `Unknown endpoint: /api/xmr/${sub}` }); return;
     }
 
-    /* Brief edge caching for the heavy read routes. Best-effort: lets the
-       Vercel CDN serve repeated polls from cache and revalidate in the
-       background. Other routes keep the default no-store header. */
-    if (sub === 'blocks' || sub === '' || sub === 'mempool' || sub.startsWith('tx/')) {
-      res.setHeader('Cache-Control', 's-maxage=5, stale-while-revalidate=15');
-    }
+    const cc = cacheControlFor(sub);
+    if (cc) res.setHeader('Cache-Control', cc);
 
     res.status(200).json(data);
 

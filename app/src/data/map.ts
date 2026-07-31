@@ -104,9 +104,15 @@ interface XmrNetwork {
   synchronized?: boolean;
   nettype?: string;
   adjusted_time?: number;
-  peer_count?: number;
-  incoming_peers?: number;
-  outgoing_peers?: number;
+  /* No peer fields. Restricted public RPC reports every peer counter as 0, and
+     /api/xmr/network no longer publishes them (v6.0.6) — mapping a 0 into
+     MoneroLive would make "0 peers" available to render as if it were live data. */
+}
+
+/** /api/xmr/fees — the fast tier's fee estimate. `tiers` is null when no node
+ *  answered; the proxy no longer substitutes a plausible default. */
+interface XmrFees {
+  tiers?: number[] | null;
 }
 
 interface XmrRecentTx {
@@ -189,9 +195,15 @@ export function mapNetwork(net: XmrNetwork, prev: MoneroLive): Partial<MoneroLiv
     synchronized: net.synchronized ?? prev.synchronized,
     nettype: net.nettype || prev.nettype,
     adjustedTime: num(net.adjusted_time, prev.adjustedTime),
-    peerCount: num(net.peer_count, prev.peerCount),
-    incomingPeers: num(net.incoming_peers, prev.incomingPeers),
-    outgoingPeers: num(net.outgoing_peers, prev.outgoingPeers),
+    /* Peer counts are deliberately NOT mapped — see XmrNetwork above. */
+  };
+}
+
+/** /api/xmr/fees → feeTiers. Polled on the fast tier so the fee histogram's tier
+ *  labels track the node's current estimate; carries last-good when unanswered. */
+export function mapFees(f: XmrFees, prev: MoneroLive): Partial<MoneroLive> {
+  return {
+    feeTiers: Array.isArray(f.tiers) && f.tiers.length ? f.tiers : prev.feeTiers,
   };
 }
 
@@ -280,6 +292,19 @@ export interface SnapshotSources {
   mempool?: XmrMempool | null;
   blocks?: XmrBlock[] | null;
   market?: CgPrice | null;
+  fees?: XmrFees | null;
+}
+
+export interface FoldOptions {
+  /**
+   * Append the current hashrate to `hashSeries`.
+   *
+   * MUST be set only by the CHAIN tier. Hashrate is derived from difficulty,
+   * which only moves when a block lands (~120s); if the 3s fast tier also pushed,
+   * the "Hashrate · session · N samples" chart on /network would fill with ~20
+   * duplicate samples a minute and read as a flat line of fake resolution.
+   */
+  pushHash?: boolean;
 }
 
 /**
@@ -289,18 +314,28 @@ export interface SnapshotSources {
  * carried from `prev`. This sets `source`/`live`/`lastUpdate`; the feed hook
  * spreads `ready`/`marketReady`/`stale` AFTER this result so the meta flags
  * stay truthful at every degrade step.
+ *
+ * Called once per tier tick with only that tier's sources (v6.0.6).
+ * `priceSeries` needs no equivalent flag: `mapMarket` is the only thing that
+ * pushes it and only the market tier ever supplies `src.market`.
  */
-export function mapToMoneroLive(prev: MoneroLive, src: SnapshotSources, source: DataSource): MoneroLive {
+export function mapToMoneroLive(
+  prev: MoneroLive,
+  src: SnapshotSources,
+  source: DataSource,
+  opts: FoldOptions = {},
+): MoneroLive {
   let next: MoneroLive = { ...prev };
 
   if (src.network) next = { ...next, ...mapNetwork(src.network, next) };
   if (src.info) next = { ...next, ...mapInfo(src.info, next) }; // get_info refines height/difficulty/target
   if (src.mempool) next = { ...next, ...mapMempool(src.mempool, next) };
+  if (src.fees) next = { ...next, ...mapFees(src.fees, next) };
   if (src.blocks) next = { ...next, ...mapBlocks(src.blocks, next) };
   if (src.market) next = { ...next, ...mapMarket(src.market, next) };
 
-  // roll the hashrate sparkline forward with each real sample
-  next.hashSeries = pushSeries(prev.hashSeries, next.hashrate);
+  // roll the hashrate sparkline forward — chain tier only, see FoldOptions
+  if (opts.pushHash) next.hashSeries = pushSeries(prev.hashSeries, next.hashrate);
   next.source = source;
   next.live = true;
   next.lastUpdate = Date.now();
