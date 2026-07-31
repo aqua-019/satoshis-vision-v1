@@ -59,18 +59,24 @@ const stripJsComments = (src) =>
 // ── 0) static — the structural guarantees a timing test can't prove ────────
 {
   const feed = stripJsComments(read('src/data/xmrirish-feed.ts') ?? '');
+  const polling = stripJsComments(read('src/data/usePolling.ts') ?? '');
   const art = stripJsComments(read('src/design/ArtBackground.tsx') ?? '');
   const mini = stripJsComments(read('src/pages/future/FutureMini.tsx') ?? '');
 
-  ok(!/setInterval\(\s*snapshot/.test(feed),
-     '0 · the feed no longer drives snapshot() from setInterval (it could stack)');
-  ok(/new AbortController\(\)/.test(feed), '0 · each round carries an AbortController');
-  ok(/signal/.test(feed), '0 · the signal is threaded into the fetches');
-  ok(/inFlight/.test(feed), '0 · an in-flight guard exists');
-  ok(/Math\.max\(\s*jittered,\s*lastRoundMs\s*\)/.test(feed),
-     '0 · the adaptive latency floor is present (never poll faster than the last round took)');
-  ok(/visibilityState/.test(feed), '0 · a hidden tab backs off');
-  ok(/inFlightCtrl\?\.abort\(\)/.test(feed), '0 · teardown aborts the round still on the wire');
+  // The scheduling guarantees live in usePolling (v6.0.6's tiering extracted
+  // them out of the feed). The feed itself must own no raw loop of its own.
+  ok(!/setInterval\(/.test(feed), '0 · the feed drives no setInterval of its own');
+  ok(/usePolling\(/.test(feed), '0 · the feed schedules through usePolling');
+
+  ok(!/setInterval\(/.test(polling),
+     '0 · usePolling reschedules with setTimeout, not setInterval (setInterval can stack)');
+  ok(/running/.test(polling), '0 · a re-entrancy guard exists');
+  ok(/visibilityState/.test(polling), '0 · a hidden tab does no network work');
+  ok(/backoffMs\(/.test(polling), '0 · consecutive failures back off');
+  // v6.0.7's addition: without this the re-entrancy guard turns a hung socket
+  // into a permanently dead tier — `running` never clears and nothing re-arms.
+  ok(/TICK_TIMEOUT_MS/.test(polling) && /Promise\.race\(/.test(polling),
+     '0 · a tick that never settles is abandoned on a timeout (fetch has none by default)');
 
   // Resize behaviour is gated statically: instrumenting reseed counts would
   // need a test-only hook in shipping code, which is a worse trade.
@@ -134,13 +140,16 @@ console.log('engine:', engine);
   p.on('requestfailed', (r) => {
     if (r.url().includes('/api/')) aborted.push(r.failure()?.errorText ?? '');
   });
-  // Never resolve. The 12s TIMEOUT_MS budget is the only thing that can end it.
-  await p.route('**/api/**', async () => { await sleep(60000); });
+  // Never resolve. usePolling's TICK_TIMEOUT_MS is the only thing that can end
+  // it — without that budget `running` stays true and the tier is dead for the
+  // rest of the session. Waiting past the real 20s rather than adding another
+  // test-only override to shipping code for a scenario that runs once.
+  await p.route('**/api/**', async () => { await sleep(120000); });
 
   await p.goto(base + '/network', { waitUntil: 'load' }).catch(() => {});
-  await p.waitForTimeout(15000);
+  await p.waitForTimeout(26000);
 
-  ok(aborted.length > 0, `2: the round's abort budget fires on a dead endpoint (${aborted.length} aborted)`);
+  ok(aborted.length > 0, `2: a hung request is aborted rather than wedging the tier (${aborted.length} aborted)`);
   await ctx.close();
 }
 

@@ -12,16 +12,18 @@
 //   - Live tx feed (fee-tier tagged, newest first)
 //
 // Drilldown: clicking a tx row or a block routes tracking through
-// mempool-shared's MempoolTrackingDetail, which renders the rich live
-// FullTxDetail / FullBlockDetail inspectors (real /api/tx lookups).
+// mempool-shared's MempoolTrackingDetail (rendered by MemViewShell below), which
+// renders the rich live FullTxDetail / FullBlockDetail inspectors (real /api/tx
+// lookups).
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { PanelFrame, MiniBar, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
-import type { MoneroLive, Tx, Block } from "@/data/types";
+import type { MoneroLive, Tx } from "@/data/types";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
-import { useMempoolTracking, MempoolTrackingDetail, MempoolSearchBar } from "@/mempool/mempool-shared";
-import { chainTip, confOf } from "@/mempool/conf";
+import { feeRateHistogram } from "@/data/histogram";
+import { useMempoolTracking, MemViewShell, TrackChip, type Tracking } from "@/mempool/mempool-shared";
+import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 
 interface ViewProps {
@@ -31,10 +33,10 @@ interface ViewProps {
   onClearFocus?: () => void;
 }
 
-type Tracking =
-  | { kind: "tx"; id: string; blockHeight: number | null; explicit?: boolean }
-  | { kind: "block"; height: number; block?: Block }
-  | null;
+/** Which (if any) tx a piece of tracking marks — used to gate data-tracked-tx. */
+function trackedTxIdFor(tracking: Tracking): string | null {
+  return tracking?.kind === "tx" ? tracking.id : null;
+}
 
 /* ──────────────────────────────────────────────────────────────
    HEX-LATTICE INSTRUMENTS
@@ -100,12 +102,12 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
 
 /* ── 3D isometric block stack — newest at front, oldest receding into depth ── */
 function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
-  blocks: Block[];
+  blocks: MoneroLive["blocks"];
   w?: number;
   h?: number;
   onSelectBlock?: (height: number) => void;
 }) {
-  const showing = blocks.slice(0, 10);
+  const showing = blocks.slice(0, RIBBON_BLOCKS);
   return (
     // overflow:hidden makes the box authoritative — the 3D stack can never bleed
     // out of w×h onto the neighbouring Pool-attribution panel (P3). The inner
@@ -279,178 +281,195 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
   // Tracked tx: the ▲ rides the block where height === pinned; badge === confOf,
   // which equals that block's own CONF label in the stream.
   const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
-  const trackedConf = trackedHeight != null ? confOf(trackedHeight, data) : null;
+
+  // Real fee/B histogram from the live mempool sample (same binning NetworkPage
+  // uses, so the two surfaces agree by construction) instead of the 5 coarse
+  // node buckets fanned out into a fake 32-point staircase (feeHistFromBuckets,
+  // data/map.ts) — that fan-out invents resolution the node never reported.
+  // Fall back to the node's coarse data.feeHist ONLY when the mempool itself is
+  // empty (nothing real to bin); otherwise show exactly what was really binned,
+  // even if that's fewer than 32 non-empty bars for a thin mempool.
+  const mempoolEmpty = data.mempool.length === 0;
+  const realHist = React.useMemo(
+    () => feeRateHistogram(data.mempool.map((t) => t.perB), 32),
+    [data.mempool],
+  );
+  const histData = mempoolEmpty ? data.feeHist : realHist.counts;
+  const histLabels = mempoolEmpty ? undefined : realHist.labels;
+  const histCaption = mempoolEmpty
+    ? "5 node buckets"
+    : realHist.counts.length
+      ? `32 bins · ${data.mempool.length} tx`
+      : `too few tx to bin (${data.mempool.length})`;
 
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "16px 20px 40px" }}>
 
-        {/* search + live status */}
-        <div className="mempool-search-bar">
-          <MempoolSearchBar onSearch={onSearch} />
-          <span className="mono dim" style={{ fontSize: "var(--fs-mono)", marginLeft: "auto", display: "flex", alignItems: "center", gap: 6 }}>
-            <span className="led pulse" /> Reactor · Block {data.height.toLocaleString()} · {data.mempool.length} mempool
-          </span>
-        </div>
+        {/* MemViewShell (mempool-shared.tsx) supplies the search bar, heartbeat,
+            tracked-chip and the shared stat strip (Reactor had none before this
+            refactor). The hero (block stream + iso stack) stays mounted while
+            tracking — same as before — so the tracked ▲ stays visible on its
+            block alongside the detail panel rendered below it. */}
+        <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
 
-        {/* hero: block stream + iso stack */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, minHeight: 320 }}>
-          <PanelFrame
-            title={<><span>● Block stream</span><span className="dim2">queued ⟶ confirmed</span></>}
-            right={<><span>FEE-SORTED</span><span className="acc">▣ AUTO-SCROLL</span></>}
-          >
-            <div ref={glideRef} style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "8px 4px" }}>
-              {/* queued + next placeholders */}
-              <div className="mblock q" style={{ width: 70, minHeight: 200, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-                <div>
-                  <div className="hh">~#{(data.height + 2).toLocaleString()}</div>
-                  <div className="nm" style={{ fontSize: 16 }}>QUEUED</div>
+          {/* hero: block stream + iso stack */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, minHeight: 320 }}>
+            <PanelFrame
+              title={<><span>● Block stream</span><span className="dim2">queued ⟶ confirmed</span></>}
+              right={<><span>FEE-SORTED</span><span className="acc">▣ AUTO-SCROLL</span></>}
+            >
+              <div ref={glideRef} style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "8px 4px" }}>
+                {/* queued + next placeholders */}
+                <div className="mblock q" style={{ width: 70, minHeight: 200, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                  <div>
+                    <div className="hh">~#{(data.height + 2).toLocaleString()}</div>
+                    <div className="nm" style={{ fontSize: 16 }}>QUEUED</div>
+                  </div>
+                  <div className="sz">{data.mempool.length} tx<br />in ~4 min</div>
                 </div>
-                <div className="sz">{data.mempool.length} tx<br />in ~4 min</div>
-              </div>
-              <div className="mblock q" style={{ width: 84, minHeight: 220 }}>
-                <div className="hh">~#{(data.height + 1).toLocaleString()}</div>
-                <div className="nm">NEXT</div>
-                <div className="sz">{Math.min(data.mempool.length, 22)} tx<br />in ~2 min</div>
-              </div>
-              {/* confirmed blocks — heights scale to txs, clickable → block detail */}
-              {data.blocks.slice(0, 10).map((b, i) => {
-                const h = 130 + Math.min(120, (b.txs / 140) * 120);
-                const isTracked = trackedHeight != null && b.height === trackedHeight;
-                return (
-                  <div key={b.height} data-glide-key={b.height} className="mblock glide-block" onClick={() => onSelectBlock(b.height)}
-                    style={{ width: 96, minHeight: h, display: "flex", flexDirection: "column", justifyContent: "space-between", opacity: 1 - i * 0.04, cursor: "pointer",
-                      boxShadow: isTracked ? "0 0 14px rgba(255,212,0,0.55)" : undefined,
-                      outline: isTracked ? "1.5px solid var(--y-50)" : undefined, outlineOffset: -1 }}>
-                    <div>
-                      <div className="hh">#{b.height.toLocaleString()}</div>
-                      <div className="hh" style={{ fontSize: "var(--fs-label)" }}>{b.conf} CONF</div>
+                <div className="mblock q" style={{ width: 84, minHeight: 220 }}>
+                  <div className="hh">~#{(data.height + 1).toLocaleString()}</div>
+                  <div className="nm">NEXT</div>
+                  <div className="sz">{Math.min(data.mempool.length, 22)} tx<br />in ~2 min</div>
+                </div>
+                {/* confirmed blocks — heights scale to txs, clickable → block detail */}
+                {data.blocks.slice(0, RIBBON_BLOCKS).map((b, i) => {
+                  const h = 130 + Math.min(120, (b.txs / 140) * 120);
+                  const isTracked = trackedHeight != null && b.height === trackedHeight;
+                  return (
+                    <div key={b.height} data-glide-key={b.height}
+                      data-tracked-block={isTracked ? b.height : undefined}
+                      data-tracked-tx={isTracked ? trackedTxIdFor(tracking) ?? undefined : undefined}
+                      className="mblock glide-block" onClick={() => onSelectBlock(b.height)}
+                      style={{ width: 96, minHeight: h, display: "flex", flexDirection: "column", justifyContent: "space-between", opacity: 1 - i * 0.04, cursor: "pointer",
+                        boxShadow: isTracked ? "0 0 14px rgba(255,212,0,0.55)" : undefined,
+                        outline: isTracked ? "1.5px solid var(--y-50)" : undefined, outlineOffset: -1 }}>
+                      <div>
+                        <div className="hh">#{b.height.toLocaleString()}</div>
+                        <div className="hh" style={{ fontSize: "var(--fs-label)" }}>{b.conf} CONF</div>
+                      </div>
+                      <div>
+                        <div className="nm">{b.txs}</div>
+                        <div className="sz">{b.sizeKB.toFixed(1)} KB</div>
+                        <div className="sz">{b.age < 60 ? b.age + "s ago" : Math.floor(b.age / 60) + "m ago"}</div>
+                        {isTracked ? (
+                          <div className="mono" style={{ marginTop: 4, textAlign: "center" }}>
+                            <div style={{ fontSize: "var(--fs-mono)", color: "var(--y-50)", lineHeight: 1 }}>▲</div>
+                            <TrackChip tracking={tracking} data={data} />
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
-                    <div>
-                      <div className="nm">{b.txs}</div>
-                      <div className="sz">{b.sizeKB.toFixed(1)} KB</div>
-                      <div className="sz">{b.age < 60 ? b.age + "s ago" : Math.floor(b.age / 60) + "m ago"}</div>
-                      {isTracked ? (
-                        <div className="mono" style={{ marginTop: 4, color: "var(--y-50)", fontSize: "var(--fs-label)", lineHeight: 1.15, textAlign: "center" }}>
-                          <div style={{ fontSize: "var(--fs-mono)" }}>▲</div>
-                          <div style={{ border: "1px solid var(--y-50)", borderRadius: 4, padding: "1px 5px", marginTop: 1, display: "inline-block" }}>{trackedConf}/10</div>
-                        </div>
-                      ) : null}
+                  );
+                })}
+                {/* glow track */}
+                <div style={{
+                  position: "absolute", left: 0, right: 0, bottom: 0, height: 3,
+                  background: "linear-gradient(to right, transparent, var(--tk-accent), transparent)",
+                  boxShadow: "0 0 12px var(--tk-accent)",
+                  animation: "flow 6s linear infinite",
+                }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 4px 0", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+                <span>← scroll back · #{(data.height - CONF_UNLOCK).toLocaleString()}</span>
+                <span className="acc">{CONF_UNLOCK} confs · UNLOCK ▸</span>
+              </div>
+            </PanelFrame>
+            <PanelFrame title={`Iso stack · last ${CONF_UNLOCK}`} right={<><Provenance source="node" fresh="live" /><span>BLOCK GEOMETRY</span></>}>
+              <IsoBlockStack blocks={data.blocks} w={340} h={300} onSelectBlock={onSelectBlock} />
+            </PanelFrame>
+          </div>
+
+          {/* Tracking drilldown is rendered BELOW this by MemViewShell (so the
+              tracked ▲ stays visible on its block in the stream above), and the
+              hex-lattice/ring/pool/tx-feed panels below hide while tracking —
+              same placement semantics as before this refactor. */}
+          {!tracking ? (
+            <>
+              {/* hex mempool grid + ring sig + pool distribution */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: 14, minHeight: 360 }}>
+                <PanelFrame
+                  title={<><span>● Mempool · hex lattice</span><span className="dim2">cells = tx · color = fee/B</span></>}
+                  right={<><Provenance source="node" fresh="live" /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
+                >
+                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                    <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+                      <div className="kicker">Lattice key</div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,180,80,0.95)" }} /><span className="dim">priority</span></div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.6)" }} /><span className="dim">standard</span></div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.18)" }} /><span className="dim">low</span></div>
+                      <div style={{ marginTop: 8 }} className="kicker">Distribution</div>
+                      <MiniBar data={histData} labels={histLabels} width={170} height={48} hover fmt={(v: number) => `${Math.round(v)} tx`} />
+                      <div className="dim" style={{ fontSize: "var(--fs-label)" }}>fee/B histogram · {histCaption}</div>
                     </div>
                   </div>
-                );
-              })}
-              {/* glow track */}
-              <div style={{
-                position: "absolute", left: 0, right: 0, bottom: 0, height: 3,
-                background: "linear-gradient(to right, transparent, var(--tk-accent), transparent)",
-                boxShadow: "0 0 12px var(--tk-accent)",
-                animation: "flow 6s linear infinite",
-              }} />
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 4px 0", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
-              <span>← scroll back · #{(data.height - 10).toLocaleString()}</span>
-              <span className="acc">10 confs · UNLOCK ▸</span>
-            </div>
-          </PanelFrame>
-          <PanelFrame title="Iso stack · last 10" right={<><Provenance source="node" fresh="live" /><span>BLOCK GEOMETRY</span></>}>
-            <IsoBlockStack blocks={data.blocks} w={340} h={300} onSelectBlock={onSelectBlock} />
-          </PanelFrame>
-        </div>
-
-        {/* Tracking drilldown renders BELOW the hero so the tracked ▲ stays
-            visible on its block in the stream above (shared detail + confOf). */}
-        {tracking ? (
-          <MempoolTrackingDetail
-            tracking={tracking}
-            data={data}
-            onBack={clear}
-            onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })}
-          />
-        ) : (
-        <>
-        {/* hex mempool grid + ring sig + pool distribution */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: 14, minHeight: 360 }}>
-          <PanelFrame
-            title={<><span>● Mempool · hex lattice</span><span className="dim2">cells = tx · color = fee/B</span></>}
-            right={<><Provenance source="node" fresh="live" /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
-          >
-            <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-              <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />
-              <div style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
-                <div className="kicker">Lattice key</div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,180,80,0.95)" }} /><span className="dim">priority</span></div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.6)" }} /><span className="dim">standard</span></div>
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.18)" }} /><span className="dim">low</span></div>
-                <div style={{ marginTop: 8 }} className="kicker">Distribution</div>
-                <MiniBar data={data.feeHist} width={170} height={48} />
-                <div className="dim" style={{ fontSize: "var(--fs-label)" }}>fee/B histogram · 32 buckets</div>
+                </PanelFrame>
+                <PanelFrame title="Ring · 16" right={<span className="acc">CLSAG</span>}>
+                  <RingSigFan />
+                  <div className="kv" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
+                  <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
+                  <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
+                </PanelFrame>
+                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
+                  <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                      <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
+                        {data.blocks.slice(0, 14).filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.slice(0, 14).length}
+                      </span>
+                      <span className="dim">recent blocks · pool unknown</span>
+                    </div>
+                    <p className="dim" style={{ marginTop: 8, fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+                      Monero coinbases don't tag pools — the node reports every block as
+                      unattributed, so per-pool share can't be measured on-chain. Live network
+                      hashrate: <span className="acc">{netGh} GH/s</span>.
+                    </p>
+                    <Link to="/simulate?p=skyline" className="acc" style={{ fontSize: "var(--fs-mono)" }}>
+                      Decentralization &amp; HHI → Skyline simulator
+                    </Link>
+                  </div>
+                </PanelFrame>
               </div>
-            </div>
-          </PanelFrame>
-          <PanelFrame title="Ring · 16" right={<span className="acc">CLSAG</span>}>
-            <RingSigFan />
-            <div className="kv" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
-            <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
-            <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
-          </PanelFrame>
-          <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
-            <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-                <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
-                  {data.blocks.slice(0, 14).filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.slice(0, 14).length}
-                </span>
-                <span className="dim">recent blocks · pool unknown</span>
-              </div>
-              <p className="dim" style={{ marginTop: 8, fontSize: "var(--fs-body)", color: "var(--ink-40)" }}>
-                Monero coinbases don't tag pools — the node reports every block as
-                unattributed, so per-pool share can't be measured on-chain. Live network
-                hashrate: <span className="acc">{netGh} GH/s</span>.
-              </p>
-              <Link to="/simulate?p=skyline" className="acc" style={{ fontSize: "var(--fs-mono)" }}>
-                Decentralization &amp; HHI → Skyline simulator
-              </Link>
-            </div>
-          </PanelFrame>
-        </div>
 
-        {/* live tx feed */}
-        <PanelFrame
-          title={<><span>● Live tx feed</span><span className="dim2">newest first</span></>}
-          right={<><span>STREAM ACTIVE</span><span className="acc">FEE TIER · LIVE</span></>}
-        >
-          <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
-            <div className="kicker">TIER</div>
-            <div className="kicker">TXID</div>
-            <div className="kicker">SIZE</div>
-            <div className="kicker">FEE</div>
-            <div className="kicker">FEE/B</div>
-            <div className="kicker">RING</div>
-            <div className="kicker">AGE</div>
-            {data.mempool.slice(0, 7).map((tx) => {
-              const tierIdx = feeTierIndex(tx.perB, data.feeTiers);
-              const tierColors = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"];
-              return (
-              <React.Fragment key={tx.id}>
-                <div onClick={() => onPickTx(tx.id)} style={{ cursor: "pointer" }}>
-                  <span className="pill" style={{ padding: "2px 6px", fontSize: "var(--fs-label)", color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
-                    {tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx].toUpperCase() : "—"}
-                  </span>
+              {/* live tx feed */}
+              <PanelFrame
+                title={<><span>● Live tx feed</span><span className="dim2">newest first</span></>}
+                right={<><span>STREAM ACTIVE</span><span className="acc">FEE TIER · LIVE</span></>}
+              >
+                <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+                  <div className="kicker">TIER</div>
+                  <div className="kicker">TXID</div>
+                  <div className="kicker">SIZE</div>
+                  <div className="kicker">FEE</div>
+                  <div className="kicker">FEE/B</div>
+                  <div className="kicker">RING</div>
+                  <div className="kicker">AGE</div>
+                  {data.mempool.slice(0, 7).map((tx) => {
+                    const tierIdx = feeTierIndex(tx.perB, data.feeTiers);
+                    const tierColors = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"];
+                    return (
+                    <React.Fragment key={tx.id}>
+                      <div onClick={() => onPickTx(tx.id)} style={{ cursor: "pointer" }}>
+                        <span className="pill" style={{ padding: "2px 6px", fontSize: "var(--fs-label)", color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
+                          {tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx].toUpperCase() : "—"}
+                        </span>
+                      </div>
+                      <div className="hash" data-tracked-tx={trackedTxIdFor(tracking) === tx.id ? tx.id : undefined} onClick={() => onPickTx(tx.id)} style={{ fontSize: "var(--fs-mono)", cursor: "pointer" }}>{tx.id.slice(0, 12)}…{tx.id.slice(-10)}</div>
+                      <div className="dim">{fmtBytes(tx.size)}</div>
+                      <div>{fmtFee(tx.fee)}</div>
+                      <div className="acc">{tx.perB.toFixed(2)} p/B</div>
+                      <div className="dim">ring:16</div>
+                      <div className="dim">{tx.age}s</div>
+                    </React.Fragment>
+                    );
+                  })}
                 </div>
-                <div className="hash" onClick={() => onPickTx(tx.id)} style={{ fontSize: "var(--fs-mono)", cursor: "pointer" }}>{tx.id.slice(0, 12)}…{tx.id.slice(-10)}</div>
-                <div className="dim">{fmtBytes(tx.size)}</div>
-                <div>{fmtFee(tx.fee)}</div>
-                <div className="acc">{tx.perB.toFixed(2)} p/B</div>
-                <div className="dim">ring:16</div>
-                <div className="dim">{tx.age}s</div>
-              </React.Fragment>
-              );
-            })}
-          </div>
-        </PanelFrame>
-        </>
-        )}
+              </PanelFrame>
+            </>
+          ) : null}
 
+        </MemViewShell>
       </div>
     </div>
   );

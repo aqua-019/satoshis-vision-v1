@@ -81,3 +81,25 @@ export function chainTip(data: MoneroLive): number {
 export function confOf(blockHeight: number | null, data: MoneroLive): number {
   return liveConf(blockHeight, chainTip(data));
 }
+
+/** Monero's coinbase/received-output unlock depth: 10 confirmations. */
+export const CONF_UNLOCK = 10;
+
+/**
+ * How many confirmed blocks a view's ribbon renders.
+ *
+ * Numerically equal to CONF_UNLOCK, and deliberately a SEPARATE constant: one
+ * is a consensus rule (Monero's unlock depth), the other is a display choice
+ * (how many tiles fit the strip). Writing `blocks.slice(0, CONF_UNLOCK)` reads
+ * fine until someone changes the unlock depth and silently resizes every
+ * ribbon — which verify-glide.mjs asserts the tile count of. Keep them apart.
+ */
+export const RIBBON_BLOCKS = 10;
+
+/**
+ * 0…1 progress toward CONF_UNLOCK, for ribbons and chips. Built on confOf, so
+ * it can never disagree with the ribbon label or the tracked-arrow badge.
+ */
+export function confProgress(blockHeight: number | null, data: MoneroLive): number {
+  return Math.min(1, confOf(blockHeight, data) / CONF_UNLOCK);
+}

@@ -73,7 +73,13 @@ export function NetRail({ extra }: NetRailProps) {
         <KV k="XMR/BTC" v={data.marketReady ? data.btcRatio.toFixed(6) : "—"} />
         {data.priceSeries.length > 1 && (
           <div style={{ marginTop: 6 }}>
-            <Sparkline data={data.priceSeries.slice(-56)} width={224} height={36} />
+            <Sparkline
+              data={data.priceSeries.slice(-56)}
+              width={224}
+              height={56}
+              detail
+              fmt={(v) => "$" + v.toFixed(0)}
+            />
           </div>
         )}
       </div>

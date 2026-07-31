@@ -1,0 +1,31 @@
+{
+  "_comment": "Committed fixture for api/verify-markets.mjs — NOT live data. Hand-built rows mirroring the shape of CoinGecko's coins/markets?order=market_cap_desc response (id, symbol, name, current_price, market_cap, market_cap_rank, ath, atl, price_change_percentage_24h). Exercises: [0] monero — the pin (present here too, as the real handler ensures via extractPinRow/withPin so a rank-~26 coin is never dropped just because it falls outside a top-25 majors page). [1..8] eight legitimate majors filling selectMembers' 8 'others' slots exactly (majors listN=9, minus the pin). [9] legit-dollar-coin — the over-filter guard: priced exactly $1.00 with ath $47 / atl $0.02, must NOT be flagged pegged (bandLow=atl/price=0.02 < 0.5), and is ranked low enough (50) to fall outside the top-8 cutoff without ever appearing in excluded[] (rank-cutoff is not a logged drop reason). [10..13] tether/usd-coin/dai/euro-coin — pegged coins (dai via the |price-1|<=0.02 disjunct since its ath 3.67 fails bandHigh<=1.5). [14..17] wrapped-bitcoin/staked-ether/wrapped-steth/coinbase-wrapped-btc — descriptor-matched derivatives. [18] innocuous-btc-fund — price-shadow derivative (no wrapped/staked/bridged/restaked/liquid in id or name, but priced within 20% of the bitcoin row in this same array). [19] no-rank-major — market_cap_rank:null, drop reason 'no-rank'.",
+  "rows": [
+    { "id": "monero", "symbol": "xmr", "name": "Monero", "current_price": 321.45, "market_cap": 5900000000, "market_cap_rank": 26, "ath": 542.33, "atl": 0.216177, "price_change_percentage_24h": 1.23 },
+
+    { "id": "bitcoin", "symbol": "btc", "name": "Bitcoin", "current_price": 65000, "market_cap": 1280000000000, "market_cap_rank": 1, "ath": 108135, "atl": 67.81, "price_change_percentage_24h": 0.55 },
+    { "id": "ethereum", "symbol": "eth", "name": "Ethereum", "current_price": 3400, "market_cap": 410000000000, "market_cap_rank": 2, "ath": 4878.26, "atl": 0.432979, "price_change_percentage_24h": -0.31 },
+    { "id": "binancecoin", "symbol": "bnb", "name": "BNB", "current_price": 570, "market_cap": 84000000000, "market_cap_rank": 4, "ath": 717.5, "atl": 0.0398177, "price_change_percentage_24h": 1.02 },
+    { "id": "solana", "symbol": "sol", "name": "Solana", "current_price": 165, "market_cap": 76000000000, "market_cap_rank": 6, "ath": 260.06, "atl": 0.500801, "price_change_percentage_24h": 3.14 },
+    { "id": "ripple", "symbol": "xrp", "name": "XRP", "current_price": 0.62, "market_cap": 34000000000, "market_cap_rank": 7, "ath": 3.4, "atl": 0.00268621, "price_change_percentage_24h": -1.88 },
+    { "id": "dogecoin", "symbol": "doge", "name": "Dogecoin", "current_price": 0.12, "market_cap": 17000000000, "market_cap_rank": 8, "ath": 0.731578, "atl": 0.0000869, "price_change_percentage_24h": 0.44 },
+    { "id": "cardano", "symbol": "ada", "name": "Cardano", "current_price": 0.38, "market_cap": 13500000000, "market_cap_rank": 9, "ath": 3.09, "atl": 0.0192575, "price_change_percentage_24h": -0.67 },
+    { "id": "tron", "symbol": "trx", "name": "TRON", "current_price": 0.13, "market_cap": 11200000000, "market_cap_rank": 10, "ath": 0.231673, "atl": 0.00180434, "price_change_percentage_24h": 0.09 },
+
+    { "id": "legit-dollar-coin", "symbol": "ldc", "name": "Legit Dollar Coin", "current_price": 1.00, "market_cap": 900000000, "market_cap_rank": 50, "ath": 47, "atl": 0.02, "price_change_percentage_24h": -1.2 },
+
+    { "id": "tether", "symbol": "usdt", "name": "Tether", "current_price": 1.00, "market_cap": 118000000000, "market_cap_rank": 3, "ath": 1.32, "atl": 0.572521, "price_change_percentage_24h": 0.01 },
+    { "id": "usd-coin", "symbol": "usdc", "name": "USDC", "current_price": 1.00, "market_cap": 34000000000, "market_cap_rank": 5, "ath": 1.17, "atl": 0.891848, "price_change_percentage_24h": 0.00 },
+    { "id": "dai", "symbol": "dai", "name": "Dai", "current_price": 1.00, "market_cap": 5300000000, "market_cap_rank": 20, "ath": 3.67, "atl": 0.903591, "price_change_percentage_24h": 0.02 },
+    { "id": "euro-coin", "symbol": "eurc", "name": "EURC", "current_price": 1.08, "market_cap": 210000000, "market_cap_rank": 60, "ath": 1.1938, "atl": 0.9147, "price_change_percentage_24h": 0.05 },
+
+    { "id": "wrapped-bitcoin", "symbol": "wbtc", "name": "Wrapped Bitcoin", "current_price": 65000, "market_cap": 9200000000, "market_cap_rank": 15, "ath": 108462, "atl": 0.0146328, "price_change_percentage_24h": 0.56 },
+    { "id": "staked-ether", "symbol": "steth", "name": "Lido Staked Ether", "current_price": 3400, "market_cap": 27000000000, "market_cap_rank": 16, "ath": 4877.31, "atl": 482.9, "price_change_percentage_24h": -0.30 },
+    { "id": "wrapped-steth", "symbol": "wsteth", "name": "Wrapped stETH", "current_price": 4020, "market_cap": 8300000000, "market_cap_rank": 17, "ath": 5628.15, "atl": 1032.44, "price_change_percentage_24h": -0.28 },
+    { "id": "coinbase-wrapped-btc", "symbol": "cbbtc", "name": "Coinbase Wrapped BTC", "current_price": 65000, "market_cap": 3800000000, "market_cap_rank": 18, "ath": 108300, "atl": 55890, "price_change_percentage_24h": 0.55 },
+
+    { "id": "innocuous-btc-fund", "symbol": "ibf", "name": "Innocuous BTC Fund", "current_price": 64000, "market_cap": 1200000000, "market_cap_rank": 19, "ath": 107900, "atl": 66.5, "price_change_percentage_24h": 0.50 },
+
+    { "id": "no-rank-major", "symbol": "nrm", "name": "No Rank Major", "current_price": 12.5, "market_cap": 2000000, "market_cap_rank": null, "ath": 40, "atl": 5, "price_change_percentage_24h": 0.9 }
+  ]
+}
