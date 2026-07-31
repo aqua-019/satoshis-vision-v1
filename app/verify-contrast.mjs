@@ -118,5 +118,59 @@ for (const theme of ['indigo', 'classic']) {
   await page.context().close();
 }
 
+// ── §7.11 · flipping the theme on a phone must not show an unstyled frame ────
+// index.html's pre-paint script covers a RELOAD. This covers the in-session
+// flip, where the risk is different: `data-theme` changes on <html> and every
+// palette token re-resolves at once. If any token dangled — or a surface fell
+// back to transparent for a frame — the aurora would flash through the page.
+{
+  R.group('── 390px · ⌘ DESIGN theme flip ─────────────────────────────');
+  const page = await newThemedPage(browser, { width: 390, height: 844 }, 'indigo');
+  await page.goto(BASE + '/markets', { waitUntil: 'networkidle' });
+
+  const sample = () => page.evaluate(() => {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 1;
+    const cx = cv.getContext('2d', { willReadFrequently: true });
+    const alphaOf = (c) => {
+      cx.globalCompositeOperation = 'copy';
+      cx.fillStyle = '#000'; cx.fillStyle = c; cx.fillRect(0, 0, 1, 1);
+      return cx.getImageData(0, 0, 1, 1).data[3] / 255;
+    };
+    const rs = getComputedStyle(document.documentElement);
+    const panel = document.querySelector('.panel');
+    return {
+      theme: document.documentElement.getAttribute('data-theme'),
+      ground: rs.getPropertyValue('--surface-ground').trim(),
+      inkFloor: rs.getPropertyValue('--ink-60').trim(),
+      panelAlpha: panel ? alphaOf(getComputedStyle(panel).backgroundColor) : null,
+    };
+  });
+
+  const before = await sample();
+  R.ok(before.theme === 'indigo', `starts on indigo (got ${before.theme})`);
+
+  const trigger = await page.$('.ticker-strip .pill:last-child, .ticker-strip > :last-child');
+  if (!trigger) {
+    R.ok(false, 'the ⌘ DESIGN trigger is reachable at 390px');
+  } else {
+    await trigger.click();
+    // the panel lists both themes; pick the one we are not on
+    const classic = await page.getByText(/classic/i).first();
+    await classic.click({ timeout: 5000 }).catch(() => {});
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const after = await sample();
+
+    R.ok(after.theme === 'classic', `flips to classic (got ${after.theme})`);
+    R.ok(!!after.ground && after.ground !== before.ground,
+      `--surface-ground re-resolves and actually changes ("${before.ground}" → "${after.ground}")`);
+    R.ok(!!after.inkFloor, 'the ink ramp still resolves after the flip — no dangling token');
+    R.ok(after.panelAlpha === 1 && before.panelAlpha === 1,
+      `panels stay fully opaque across the flip (before ${before.panelAlpha}, after ${after.panelAlpha})`,
+      'a transparent frame here is the aurora flashing through the page');
+  }
+  await page.context().close();
+}
+
 await browser.close();
 process.exit(R.finish());
