@@ -596,6 +596,32 @@ header > div > h1.serif {
   background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.3));
   flex-shrink: 0;
 }
+/* ── mempool view shell (v6.0.11) ────────────────────────────────
+   .mem-view is OPAQUE by construction. The page renders an ambient aurora
+   behind /mempool, and data must never be read through moving decoration. */
+.mem-view { position: relative; background: var(--bg-0, #050505); }
+
+/* A <canvas> is a REPLACED element, so inset:0 alone never stretches it — the
+   same trap .art-canvas documents. Absolute, not in flow: .mp-view is
+   `width: max-content` on desktop, and an in-flow `width:100%` canvas under a
+   max-content ancestor is a layout feedback loop that grows without bound.
+   Hosts must therefore be position:relative with a DEFINITE size. */
+.mem-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Table fallback — the reduced-motion state, and the readable layer on mobile.
+   Hidden by default: on a desktop with motion the view itself is the reading,
+   and the extra height would blow Reactor's ~116px of remaining headroom under
+   verify-fit.mjs's bound. */
+.mem-table { display: none; border-top: 1px solid var(--rule); }
+@media (prefers-reduced-motion: reduce) { .mem-table { display: block; } }
+.mem-tbl { width: 100%; display: grid; font: var(--fs-mono)/1.5 var(--f-mono); font-variant-numeric: tabular-nums; }
+.mem-tbl__c { padding: 5px 10px; border-bottom: 1px solid var(--ink-10); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mem-tbl__h .mem-tbl__c {
+  color: var(--ink-40); letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: var(--fs-label); position: sticky; top: 0; background: rgba(5,5,5,0.94);
+}
+.mem-tbl__r.is-tracked .mem-tbl__c { background: rgba(255,122,26,0.1); color: var(--tk-accent); }
+
 /* mempool block (shared) — flattened to solid amber tiles, no inner
    cream wash. The earlier `inset 0 0 24px rgba(255,255,255,0.18)` produced
    a cream wash when 10-14 of these tile horizontally on the home page. */
@@ -1174,6 +1200,31 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      fit (no clipping). The desktop-proportion grids inside are preserved by the
      `.mp-canvas-scroll * { min-width: revert }` rule above. */
   .mp-canvas-scroll > .mp-view--fit { max-width: 100vw; }
+
+  /* ── mempool views on mobile ──────────────────────────────────
+     §4e wants ≥12px inside the views, but --fs-label is
+     clamp(10.5px, 0.74vw, 12px) and resolves to 10.5px at 390px. The :root
+     scale cannot be raised — verify-legibility.mjs asserts all six values
+     byte-for-byte — so rebind the token SCOPED to the mempool layer, and lift
+     the shared atoms that hardcode a size instead of using it. Nothing outside
+     .mem-view changes. */
+  .mem-view { --fs-label: 12px; }
+  .mem-view .kicker,
+  .mem-view .kv, .mem-view .kv .k, .mem-view .kv .v,
+  .mem-view .stat .lbl, .mem-view .stat .sub, .mem-view .stat .val,
+  .mem-view .pill, .mem-view .panel-h,
+  .mem-view .prov, .mem-view .prov-tag,
+  .mem-view .mblock .hh, .mem-view .mblock .sz,
+  .mem-view .dim2, .mem-view .mono,
+  .mem-view .rail, .mem-view .rail h6 { font-size: 12px; }
+
+  /* A non-fit view is pinned to 900px and pans (the contract verify-mobile.mjs
+     asserts). Only the STAGE should need panning — the table sticks to the
+     viewport edge so it stays readable without scrolling sideways. */
+  .mem-view > .mem-table { position: sticky; left: 0; width: 100vw; max-width: 100vw; box-sizing: border-box; }
+  .mem-table { display: block; overflow-x: auto !important; overflow-y: hidden; }
+  .mem-table > * { min-width: max-content; }
+
 
   /* ── v6.0.4 — Classic reflows on phones instead of panning ──────────
      Classic is pure DOM (no fixed-size canvas), and it is the DEFAULT mempool

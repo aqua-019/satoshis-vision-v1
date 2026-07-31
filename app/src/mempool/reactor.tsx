@@ -20,9 +20,10 @@ import { Link } from "react-router-dom";
 import { PanelFrame, MiniBar, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
-import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
+import { FEE_TIER_LABELS, feeTierIndex, hashToUnit } from "@/data/map";
+import { BlockEta } from "@/mempool/mem-stats";
 import { feeRateHistogram } from "@/data/histogram";
-import { useMempoolTracking, MemViewShell, TrackChip, type Tracking } from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell, TrackChip, type Tracking, MemTxTable} from "@/mempool/mempool-shared";
 import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 
@@ -78,8 +79,12 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
                 intensity > 0.6
                   ? "0 0 " + (4 + intensity * 14) + "px rgba(255,122,26," + intensity + ")"
                   : "none",
+              // Deterministic jitter from the tx's own id, NOT a dice roll. The
+              // repo bans random on live surfaces, and a hash-derived duration is
+              // better anyway: a cell keeps its cadence across re-renders instead
+              // of resampling every commit.
               animation: intensity > 0.75
-                ? `hexpulse ${(1.6 + Math.random() * 1.2).toFixed(2)}s ease-in-out ${(-(i * 0.02)).toFixed(2)}s infinite`
+                ? `hexpulse ${(1.6 + hashToUnit(tx.id) * 1.2).toFixed(2)}s ease-in-out ${(-(i * 0.02)).toFixed(2)}s infinite`
                 : undefined,
             }}
             title={`${ShortHash(tx.id)} · ${fmtFee(tx.fee)}`}
@@ -311,7 +316,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             refactor). The hero (block stream + iso stack) stays mounted while
             tracking — same as before — so the tracked ▲ stays visible on its
             block alongside the detail panel rendered below it. */}
-        <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
+        <MemViewShell id="reactor" table={<MemTxTable data={data} tracking={tracking} viewId="reactor" columns={["txid", "perB", "tier", "size", "age", "inout"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
 
           {/* hero: block stream + iso stack */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, minHeight: 320 }}>
@@ -326,12 +331,13 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                     <div className="hh">~#{(data.height + 2).toLocaleString()}</div>
                     <div className="nm" style={{ fontSize: 16 }}>QUEUED</div>
                   </div>
-                  <div className="sz">{data.mempool.length} tx<br />in ~4 min</div>
+                  {/* real: the block after next, from the node's own target */}
+                  <div className="sz">{data.mempool.length} tx<br />in <BlockEta data={data} offsetSec={data.blockTarget || 120} /></div>
                 </div>
                 <div className="mblock q" style={{ width: 84, minHeight: 220 }}>
                   <div className="hh">~#{(data.height + 1).toLocaleString()}</div>
                   <div className="nm">NEXT</div>
-                  <div className="sz">{Math.min(data.mempool.length, 22)} tx<br />in ~2 min</div>
+                  <div className="sz">{Math.min(data.mempool.length, 22)} tx<br />in <BlockEta data={data} /></div>
                 </div>
                 {/* confirmed blocks — heights scale to txs, clickable → block detail */}
                 {data.blocks.slice(0, RIBBON_BLOCKS).map((b, i) => {

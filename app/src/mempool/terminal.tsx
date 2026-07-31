@@ -7,9 +7,9 @@ import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
 import type { FeedEvent } from "@/data/useFeedEvents";
-import { useMempoolTracking, MemViewShell } from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell, MemTxTable} from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
-import { useMemStats, BlockEta } from "@/mempool/mem-stats";
+import { useMemStats, BlockEta, fmtMMSS } from "@/mempool/mem-stats";
 import type { MoneroLive, Block } from "@/data/types";
 
 interface ViewProps {
@@ -58,7 +58,9 @@ function TermPalette({ data }: { data: MoneroLive }) {
     const full = cmds[ci % cmds.length].q;
     let to: ReturnType<typeof setTimeout> | undefined;
     if (phase === "typing") {
-      if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), 55 + Math.random() * 60);
+      // Index-derived cadence, not a dice roll: still reads as human typing, but
+      // the same keystroke always takes the same time, so it is reproducible.
+      if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), 55 + ((typed.length * 37) % 60));
       else to = setTimeout(() => setPhase("hold"), 1600);
     } else if (phase === "hold") {
       to = setTimeout(() => setPhase("clearing"), 1400);
@@ -248,7 +250,7 @@ export function TerminalHubView({ data }: ViewProps) {
 
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking} stats={false}>
+      <MemViewShell id="terminal" table={<MemTxTable data={data} tracking={tracking} viewId="terminal" columns={["txid", "perB", "tier", "size", "age"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking} stats={false}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 14, padding: "16px 20px 40px" }}>
         <div>
 
@@ -305,7 +307,7 @@ export function TerminalHubView({ data }: ViewProps) {
             <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>}>
               <TermAsciiBlocks data={data} trackedTxId={trackedTxId} trackedHeight={trackedBlockHeight} />
               <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
-                <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+{CONF_UNLOCK}c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target=2:00</span><span className="dim2 acc">scroll ←→</span>
+                <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+{CONF_UNLOCK}c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target={fmtMMSS(data.blockTarget || 120)}</span><span className="dim2 acc">scroll ←→</span>
               </div>
             </PanelFrame>
 
