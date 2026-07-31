@@ -6,6 +6,15 @@
  */
 
 import * as React from "react";
+import { fmtN } from "@/data/types";
+import {
+  ChartCrosshair,
+  ChartTip,
+  GRID,
+  nearestIndex,
+  useGradientId,
+  useSvgCursor,
+} from "./chart-kit";
 
 // Canonical data-source attribution badge — re-exported so the many
 // `@/design/primitives` import sites can pull it from one place.
@@ -92,29 +101,135 @@ export interface SparklineProps {
   fill?: boolean;
   dots?: boolean;
   area?: number;
+  /** gridlines at 25/50/75% + min/max/last labels */
+  detail?: boolean;
+  /** number → display string, used by detail labels and the hover readout */
+  fmt?: (v: number) => string;
+  /** crosshair + ChartTip on hover */
+  hover?: boolean;
 }
 
 export function Sparkline({
   data, width = 220, height = 40,
   color = "var(--tk-accent)", fill = true, dots = false, area = 0.25,
+  detail = false, fmt = (v: number) => fmtN(v, 2), hover = false,
 }: SparklineProps) {
+  // Hooks run unconditionally, before any early return below.
+  const gradId = useGradientId("spark");
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(width);
+
   if (!data || !data.length) return null;
+
+  const svgStyle: React.CSSProperties = {
+    display: "block",
+    maxWidth: width,
+    height: "auto",
+    ...(hover ? { touchAction: "pan-y" as const } : null),
+  };
+
+  // Single-sample series: no line to draw, `width / (data.length - 1)` would
+  // divide by zero and emit NaN path coordinates. Render just the one point.
+  if (data.length === 1) {
+    const cx = width / 2;
+    const cy = height / 2;
+    return (
+      <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={svgStyle}>
+        <circle cx={cx} cy={cy} r="2.4" fill={color} />
+        {detail ? (
+          <text x={cx} y={Math.max(10, cy - 8)} textAnchor="middle"
+                fontFamily="var(--f-mono)" fontSize="9.5" fill="var(--ink-40)">
+            {fmt(data[0])}
+          </text>
+        ) : null}
+      </svg>
+    );
+  }
+
   const min = Math.min(...data);
   const max = Math.max(...data);
   const rng = max - min || 1;
+
+  // Reserve vertical room for the min/max/last labels so `detail` mode
+  // doesn't clip them against the top/bottom edge of the viewBox.
+  const padTop = detail ? 16 : 0;
+  const padBottom = detail ? 14 : 0;
+  const plotH = height - padTop - padBottom;
+
   const step = width / (data.length - 1);
   const points = data.map<[number, number]>((v, i) => [
     i * step,
-    height - ((v - min) / rng) * (height - 4) - 2,
+    padTop + plotH - ((v - min) / rng) * (plotH - 4) - 2,
   ]);
   const d = "M" + points.map((p) => p.join(",")).join(" L ");
-  const f = d + ` L ${width},${height} L 0,${height} Z`;
+  const f = d + ` L ${width},${padTop + plotH} L 0,${padTop + plotH} Z`;
+
+  // Stride derived from series length so short series still get dots and
+  // long ones don't turn into a solid row (was a hardcoded `i % 12`).
+  const dotStride = Math.max(1, Math.round(data.length / 8));
+
+  const gridYs = detail ? [0.25, 0.5, 0.75].map((p) => padTop + p * plotH) : [];
+
+  const hoverIdx = hover ? nearestIndex(vx, { padL: 0, innerW: width, n: data.length }) : null;
+  const hoverPt = hoverIdx != null ? points[hoverIdx] : null;
+
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} width="100%" preserveAspectRatio="none"
-         style={{ display: "block", maxWidth: width, height: "auto" }}>
-      {fill ? <path d={f} fill={color} opacity={area} /> : null}
-      <path d={d} fill="none" stroke={color} strokeWidth="1.2" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
-      {dots ? points.filter((_, i) => i % 12 === 0).map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="1.2" fill={color} />) : null}
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${width} ${height}`}
+      width="100%"
+      style={svgStyle}
+      {...(hover ? cursorHandlers : {})}
+    >
+      {fill ? (
+        <>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={color} stopOpacity={Math.min(0.6, area + 0.3)} />
+              <stop offset="55%" stopColor={color} stopOpacity={area * 0.45} />
+              <stop offset="100%" stopColor={color} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <path d={f} fill={`url(#${gradId})`} />
+        </>
+      ) : null}
+
+      {detail ? gridYs.map((gy, i) => (
+        <line key={i} x1={0} y1={gy} x2={width} y2={gy} stroke={GRID} strokeDasharray="2 3" />
+      )) : null}
+
+      <path d={d} fill="none" stroke={color} strokeWidth="1.2" strokeLinejoin="round"
+        style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
+
+      {dots ? points.filter((_, i) => i % dotStride === 0).map((p, i) => (
+        <circle key={i} cx={p[0]} cy={p[1]} r="1.2" fill={color} />
+      )) : null}
+
+      {detail ? (
+        <>
+          <text x={2} y={10} fontFamily="var(--f-mono)" fontSize="9.5" fill="var(--ink-40)">
+            max {fmt(max)}
+          </text>
+          <text x={2} y={height - 3} fontFamily="var(--f-mono)" fontSize="9.5" fill="var(--ink-40)">
+            min {fmt(min)}
+          </text>
+          <circle cx={points[points.length - 1][0]} cy={points[points.length - 1][1]} r="2.2" fill={color} />
+          <text x={width - 2} y={10} textAnchor="end" fontFamily="var(--f-mono)" fontSize="9.5" fill={color}>
+            {fmt(data[data.length - 1])}
+          </text>
+        </>
+      ) : null}
+
+      {hover && hoverPt ? (
+        <>
+          <ChartCrosshair x={hoverPt[0]} y1={padTop} y2={padTop + plotH} />
+          <circle cx={hoverPt[0]} cy={hoverPt[1]} r="2.4" fill={color} />
+          <ChartTip
+            x={hoverPt[0]}
+            bounds={{ left: 0, right: width }}
+            rows={[{ value: fmt(data[hoverIdx as number]) }]}
+          />
+        </>
+      ) : null}
     </svg>
   );
 }
@@ -124,22 +239,71 @@ export interface MiniBarProps {
   width?: number;
   height?: number;
   color?: string;
+  /** per-bucket label, e.g. a fee range — shown in the hover readout */
+  labels?: string[];
+  fmt?: (v: number) => string;
+  hover?: boolean;
 }
 
-export function MiniBar({ data, width = 220, height = 36, color = "var(--tk-accent)" }: MiniBarProps) {
+export function MiniBar({
+  data, width = 220, height = 36, color = "var(--tk-accent)",
+  labels, fmt = (v: number) => fmtN(v, 2), hover = false,
+}: MiniBarProps) {
+  // Hooks run unconditionally, before the early return below.
+  const gradId = useGradientId("bar");
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(width);
+
   if (!data || !data.length) return null;
+
   const max = Math.max(...data) || 1;
-  const w = width / data.length;
+  const n = data.length;
+  const w = width / n;
+
+  const hoverIdx = hover && vx != null
+    ? Math.max(0, Math.min(n - 1, Math.floor((vx / width) * n)))
+    : null;
+
   return (
-    <svg width={width} height={height} style={{ display: "block" }}>
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${width} ${height}`}
+      width="100%"
+      style={{
+        display: "block",
+        maxWidth: width,
+        height: "auto",
+        ...(hover ? { touchAction: "pan-y" as const } : null),
+      }}
+      {...(hover ? cursorHandlers : {})}
+    >
+      <defs>
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.9" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.35" />
+        </linearGradient>
+      </defs>
       {data.map((v, i) => {
         const h = (v / max) * (height - 2);
+        const isHover = hoverIdx === i;
         return (
           <rect key={i} x={i * w + 0.5} y={height - h}
             width={Math.max(1, w - 1.5)} height={h}
-            fill={color} opacity={0.3 + (v / max) * 0.7} />
+            fill={`url(#${gradId})`}
+            opacity={isHover ? 1 : 0.3 + (v / max) * 0.7}
+            stroke={isHover ? color : "none"} strokeWidth={isHover ? 0.8 : 0} />
         );
       })}
+      {hover && hoverIdx != null ? (
+        <>
+          <ChartCrosshair x={(hoverIdx + 0.5) * w} y1={0} y2={height} />
+          <ChartTip
+            x={(hoverIdx + 0.5) * w}
+            y={4}
+            bounds={{ left: 0, right: width }}
+            rows={[{ label: labels?.[hoverIdx] ?? `bucket ${hoverIdx + 1} / ${n}`, value: fmt(data[hoverIdx]) }]}
+          />
+        </>
+      ) : null}
     </svg>
   );
 }
