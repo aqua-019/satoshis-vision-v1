@@ -7,6 +7,7 @@
 // the `data` prop is intentionally never read.
 
 import * as React from "react";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import { ProtoArtboard, ProtoStep } from "@/design/ProtoArtboard";
 import { ProtoCanvas } from "@/protocols/use-proto-canvas";
 import type { ProtoDrawFn } from "@/protocols/use-proto-canvas";
@@ -28,11 +29,6 @@ function memoHash(cache: Map<number, string>, height: number): string {
   let v = cache.get(height);
   if (!v) { v = randHex(10); cache.set(height, v); }
   return v;
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof window !== "undefined" && typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
 function drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, colW: number, boxH: number, color: string, height: number, hash: string, isTip: boolean) {
@@ -59,6 +55,12 @@ export function CuprateView({ bg }: ViewProps) {
   const [bugBlock, setBugBlock] = React.useState<number | null>(null);
   const [catchCount, setCatchCount] = React.useState(0);
   const [canvasKey, setCanvasKey] = React.useState(0);
+  // Under reduced motion there is no rAF loop to pick the state change up, so
+  // these handlers bump canvasKey to force a repaint. Read through the shared
+  // hook (the repo's single definition) rather than calling matchMedia here:
+  // a call inside a handler re-queries every click and never subscribes, so a
+  // mid-session preference change was invisible to React.
+  const reduce = useReducedMotion();
 
   // "freeze" / "resume" are consumed by the very next draw() call, using that
   // frame's real elapsed time — this is what lets the demo work identically
@@ -73,12 +75,12 @@ export function CuprateView({ bg }: ViewProps) {
   const onInject = () => {
     if (diverged || pendingRef.current) return;
     pendingRef.current = "freeze";
-    if (prefersReducedMotion()) setCanvasKey((k) => k + 1);
+    if (reduce) setCanvasKey((k) => k + 1);
   };
   const onReset = () => {
     if (!diverged) return;
     pendingRef.current = "resume";
-    if (prefersReducedMotion()) setCanvasKey((k) => k + 1);
+    if (reduce) setCanvasKey((k) => k + 1);
   };
 
   const draw: ProtoDrawFn = (ctx, w, h, t) => {
