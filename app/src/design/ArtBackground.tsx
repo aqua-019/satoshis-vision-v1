@@ -80,9 +80,22 @@ export function ParticleField({
     // hardcoding the orange; fall back to it only if the token resolves
     // empty (e.g. rendered outside this app's CSS cascade entirely, per
     // PORTING.md).
+    // v6.0.7: getComputedStyle on a CUSTOM PROPERTY hands back the raw token
+    // stream, not a resolved colour — so on a pre-oklch engine this used to
+    // return the literal string "oklch(...)". Canvas 2D SILENTLY IGNORES an
+    // unparseable fillStyle (no throw, no warning), leaving the previous value
+    // in place, so the whole field drew black-on-#121218: invisible, with
+    // nothing in the console. The old `|| fallback` never caught it because it
+    // only tests for an EMPTY string, and the token was non-empty and useless.
+    // styles-theme.css now guards oklch behind @supports, so this is belt and
+    // braces — but the validation is what makes the failure impossible rather
+    // than merely unlikely.
+    const rawDim = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ui-accent-dim")
+      .trim();
     const themeColor =
       color ??
-      (getComputedStyle(document.documentElement).getPropertyValue("--ui-accent-dim").trim() ||
+      ((rawDim && typeof CSS !== "undefined" && CSS.supports?.("color", rawDim) ? rawDim : "") ||
         "rgba(255,122,26,0.5)");
 
     let stars: Star[] = [];
@@ -155,15 +168,29 @@ export function ParticleField({
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     };
 
+    // v6.0.7 · Tor Browser letterboxes the viewport to 200x100 multiples, so a
+    // single window drag fires ResizeObserver repeatedly with a box that jumps
+    // in whole steps before settling. seed() ran on EVERY one of those,
+    // re-scattering all ~120 stars each time — the field visibly "explodes" on
+    // any resize, which is precisely the "doesn't function the same over Tor"
+    // report. Only reseed when the box moved far enough that the old
+    // distribution genuinely no longer fits; tick()'s existing wrap (see the
+    // `if (s.x > w) s.x -= w` above) pulls stray stars back inside within one
+    // frame on a shrink, so a sub-threshold change needs no reseed at all.
+    const RESEED_PX = 100;
+
     let disposed = false;
 
     const resize = () => {
       if (disposed) return; // a deferred rAF can still fire after unmount
       const r = canvas.getBoundingClientRect();
-      w = r.width; h = r.height;
+      const nw = r.width, nh = r.height;
+      const needSeed =
+        stars.length === 0 || Math.abs(nw - w) >= RESEED_PX || Math.abs(nh - h) >= RESEED_PX;
+      w = nw; h = nh;
       canvas.width = w * dpr; canvas.height = h * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      seed();
+      if (needSeed) seed();
       // Assigning canvas.width just wiped the backing store. Under reduced
       // motion there's no rAF loop to repaint what that wipe erased, so the
       // static frame has to be redrawn right here or the field goes blank

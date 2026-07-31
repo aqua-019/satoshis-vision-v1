@@ -50,6 +50,24 @@ const rootEmpty = await p.evaluate(() => {
 });
 ok(rootEmpty, 'no-JS: #root is empty (the SPA never mounts without JS)');
 
+// v6.0.7: this gate proved the noscript TEXT rendered but asserted nothing
+// about paint — so it would have passed happily while the page was white.
+// Either floor is correct here: only SCRIPTING is off, so the CSS bundle still
+// loads and styles-ambient.css paints html from --amb-floor. The pre-paint
+// theme stamp never runs, so data-theme is unset and the classic branch
+// (#0b0b0c) wins rather than indigo (#121218). What matters is that it is dark.
+const DARK_FLOORS = ['rgb(18, 18, 24)', 'rgb(11, 11, 12)'];
+const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+ok(DARK_FLOORS.includes(bg), `no-JS: html paints a dark floor (got ${bg})`);
+
+// The boot watchdog is the only thing that reveals #boot-fallback, and it
+// cannot run here — so <noscript> is what shows, never both surfaces at once.
+const fallbackHidden = await p.evaluate(() => {
+  const f = document.getElementById('boot-fallback');
+  return !f || f.hidden;
+});
+ok(fallbackHidden, 'no-JS: #boot-fallback stays hidden (noscript owns this case)');
+
 ok(/xmr\.irish/i.test(body), 'no-JS: wordmark "xmr.irish" is present');
 ok(/Monero education \+ live mempool/i.test(body), 'no-JS: one-line description renders');
 ok(/requires JavaScript/i.test(body), 'no-JS: honest "requires JavaScript" note renders');

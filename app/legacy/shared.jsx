@@ -137,12 +137,18 @@ function useMoneroLive() {
     };
   });
 
-  // Try CoinGecko price (open CORS)
+  // CoinGecko price, via the same-origin proxy.
+  // v6.0.7: this used to call api.coingecko.com directly. app/legacy/ is the
+  // porting source and Vite never bundles it, so it shipped nothing — but it
+  // is a re-activation landmine, and PORTING.md's standing rule is that a
+  // custom useFeed must go through /api/coingecko "so users on Tor never hit
+  // coingecko.com directly". The proxy's allowlist (api/coingecko.js:22)
+  // already permits simple/price.
   React.useEffect(() => {
     let cancelled = false;
     const fetchPrice = async () => {
       try {
-        const r = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true");
+        const r = await fetch("/api/coingecko?path=simple/price&ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true");
         if (!r.ok) throw new Error();
         const d = await r.json();
         if (cancelled) return;

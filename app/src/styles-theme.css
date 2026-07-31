@@ -59,17 +59,16 @@
    ════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="indigo"] {
-  /* hex fallbacks first: an unsupported oklch() invalidates the whole
-     declaration, leaving the token UNDEFINED rather than degrading.
-     This site targets Tor Browser (Firefox ESR), so the pair matters. */
-  --in-bg: #0D0D0F;            --in-bg: oklch(0.13 0.006 290);
-  --in-surface: #16151D;       --in-surface: oklch(0.17 0.014 290);
-  --in-raised: #1D1B28;        --in-raised: oklch(0.21 0.018 290);
-  --ui-primary: #4B3FB8;       --ui-primary: oklch(0.42 0.17 282);
-  --ui-accent: #6E5EF0;        --ui-accent: oklch(0.55 0.21 282);
-  --ui-accent-text: #8B7BF5;   --ui-accent-text: oklch(0.66 0.19 282);
+  /* v6.0.7 — sRGB values, unconditional. The oklch() upgrades live in the
+     @supports block below; see it for why the previous hex-then-oklch pair
+     on one selector could never have worked.
+     --in-bg / --in-surface / --in-raised were deleted here: zero var() and
+     zero getComputedStyle consumers repo-wide. --bg-1/2/3 below carry the
+     same three values and ARE consumed. */
+  --ui-primary: #4B3FB8;
+  --ui-accent: #6E5EF0;
+  --ui-accent-text: #8B7BF5;
   --ui-accent-dim: rgba(110, 94, 240, 0.45);
-  --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
 
   /* ink ramp re-cut: cool quartz, WCAG-stepped.
      100 → 15.9:1 · 80 → 11:1 · 60 → 6.5:1 (body floor) · 40 decorative */
@@ -106,6 +105,38 @@
   --amb-ribbon-2: rgba(50, 46, 94, 0.05);
   --amb-ribbon-3: rgba(70, 62, 126, 0.045);
   --amb-grain: 0 0 0 0 0.6  0 0 0 0 0.58  0 0 0 0 0.7  0 0 0 0.5 0;
+}
+
+/* ── oklch upgrade, guarded ───────────────────────────────────────────
+   The wider-gamut values, applied ONLY where the engine can parse them.
+
+   This replaced a hex-then-oklch pair of declarations on the same selector.
+   That pattern is correct for ordinary properties but is a no-op for CUSTOM
+   PROPERTIES, and the difference is why it never protected anything: a custom
+   property's value is parsed as an arbitrary <declaration-value> token stream,
+   so `--ui-accent: oklch(...)` is *syntactically valid to every browser*,
+   including ones with no oklch support. It therefore won the cascade over the
+   hex line, and only failed later — at substitution time — leaving each
+   consuming property computing to unset/initial. For a background that means
+   `transparent`.
+
+   Two consumers made this load-bearing rather than theoretical:
+     · styles-legibility.css:38  :focus-visible outline (keyboard a11y)
+     · design/ArtBackground.tsx:85 reads --ui-accent-dim through
+       getComputedStyle().getPropertyValue(), which hands back the SPECIFIED
+       token — the raw oklch() string. Its `|| fallback` only catches an EMPTY
+       value, not an unparseable one, so ctx.fillStyle silently kept its
+       previous value and the particle field drew invisible.
+
+   Review rule, enforced by verify-degraded.mjs: every oklch() in this repo
+   lives inside an @supports block, with an sRGB value declared outside it. */
+@supports (color: oklch(0 0 0)) {
+  :root[data-theme="indigo"] {
+    --ui-primary: oklch(0.42 0.17 282);
+    --ui-accent: oklch(0.55 0.21 282);
+    --ui-accent-text: oklch(0.66 0.19 282);
+    --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
+  }
 }
 
 /* ── chrome recolor: structure = indigo, data = orange ───────────── */

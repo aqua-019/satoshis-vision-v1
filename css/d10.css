@@ -76,12 +76,26 @@
     --border-default: var(--g8);
     --border-strong:  var(--g7);
 
-    /* Font stacks */
-    --font-headline: 'Playfair Display', Georgia, serif;
-    --font-subhead:  'Instrument Serif', Georgia, serif;
-    --font-mono:     'DM Mono', 'Courier New', monospace;
-    --font-data:     'Geologica', 'Helvetica Neue', sans-serif;
-    --font-body:     'Sora', 'Helvetica Neue', sans-serif;
+    /* Font stacks — system only, v6.0.7.
+       These named the five fonts.bunny.net faces, which meant a third-party
+       origin on every page load: a DNS lookup, a TLS handshake and a render-
+       blocking stylesheet before first paint. Brave Shields and Tor Browser
+       both block or slow that, and MASTER-HANDOFF.md's sitewide rule 2 already
+       forbade a font CDN. A downloaded face also buys nothing on the surfaces
+       we care about — Tor Browser restricts the visible font set to a bundled
+       allowlist — while adding entropy to fingerprint.
+       ui-serif / ui-sans-serif / ui-monospace lead because they are the only
+       names guaranteed to resolve there. Playfair Display and Instrument Serif
+       were both display serifs, and the headline/subhead distinction in this
+       file is already carried by font-style and size rather than family, so
+       collapsing them loses nothing structural. Geologica and Sora were both
+       geometric grotesks; tabular alignment for data is handled unconditionally
+       by `font-variant-numeric: tabular-nums` on html below. */
+    --font-headline: ui-serif, Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', Times, serif;
+    --font-subhead:  ui-serif, Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', Times, serif;
+    --font-mono:     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    --font-data:     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-body:     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 
     /* Fluid type scale */
     --text-hero:     clamp(2.25rem, 1rem + 5vw, 3.5rem);

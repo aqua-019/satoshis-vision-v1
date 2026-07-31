@@ -65,3 +65,52 @@ jobs:
 
       - name: "Gate: future feed cache"
         run: node verify-feedcache.mjs
+
+  verify:
+    # The v6.0.7 hardening gates. Unlike the offline gates in `build` above,
+    # these need a real browser and a built preview server, so they get their
+    # own job. Only the new gates plus the two they extend run here — several
+    # of the remaining verify-*.mjs are marked HISTORICAL (pre-v5.0.14) or
+    # expect live upstreams, and wiring those up is a separate audit.
+    name: hardening gates
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Source assertions only — no browser, no build. Fast enough that it is
+      # also what gates auto-merge (see auto-merge.yml).
+      - name: Static gates
+        run: npm run verify:static
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      # No verify-*.mjs spawns its own server (by design — see any "Run:"
+      # header); they all assume :4173 is already up. wait-preview replaces
+      # the `sleep 2` those headers suggest, which races on a cold runner.
+      - name: Start preview
+        run: npm run preview &
+
+      - name: Wait for preview
+        run: npm run wait-preview
+
+      # Drives the built app with the stylesheet blocked, the JS bundle
+      # blocked, the lazy chunk dropped, oklch unsupported, and every API
+      # response held open for 4s. All routes are intercepted, so no egress.
+      - name: Degraded-mode, Tor and single-origin gates
+        run: npm run verify:e2e
