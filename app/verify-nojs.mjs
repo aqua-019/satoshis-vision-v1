@@ -1,13 +1,19 @@
-// verify-nojs.mjs — proves the v5.0.20 no-JS / hardened-browser fallback.
+// verify-nojs.mjs — proves the no-JS / hardened-browser experience.
 //
-// Drives the BUILT app (vite preview @ :4173) in a JavaScript-DISABLED context
-// (what a visitor behind the Vercel interstitial or on a hardened browser sees).
-// With scripting off, React never mounts (#root stays empty) and the browser
-// renders the <noscript> block instead of a blank page. Asserts the fallback
-// carries: wordmark, one-line description, the honest enable-JS note, the static
-// "what Monero is / read-only / non-custodial" facts, and a getmonero.org link.
+// Drives the BUILT app in a JavaScript-DISABLED context: Tor Browser at Safest,
+// which is the configuration this all exists for. Served by
+// scripts/serve-dist.mjs, NOT `vite preview` — preview falls back to
+// dist/index.html for every path, which would serve the "/" prerender
+// everywhere and make this gate pass even if prerendering were broken.
+// serve-dist mirrors Vercel: real file, then directory index, then SPA
+// catch-all.
 //
-// Run: npm run build && (npm run preview &) && sleep 2 && node verify-nojs.mjs
+// v6.0.9 changed what "correct" means here. Every static route is now
+// prerendered, so a no-JS visitor gets the real page and the real nav rather
+// than a shell — see the inverted #root assertion below, and the
+// distinct-content check that is the actual headline guarantee.
+//
+// Run: npm run build && (node scripts/serve-dist.mjs &) && sleep 2 && node verify-nojs.mjs
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
 
@@ -43,12 +49,17 @@ await p.goto(base + '/', { waitUntil: 'load' });
 
 const body = await p.evaluate(() => document.body.innerText);
 
-// #root must stay empty — nothing rendered the SPA.
-const rootEmpty = await p.evaluate(() => {
+// v6.0.9 INVERTS this assertion, deliberately. It used to require #root to be
+// EMPTY without JS — true when the shell was all a no-JS visitor got, and the
+// reason Tor-at-Safest users saw a splash and nothing else. Every static route
+// is now prerendered, so #root arrives already full of real markup and the SPA
+// merely takes over. An empty #root here would mean prerendering had silently
+// stopped emitting, which is exactly the regression worth catching.
+const rootChildren = await p.evaluate(() => {
   const r = document.getElementById('root');
-  return !!r && r.childElementCount === 0;
+  return r ? r.childElementCount : -1;
 });
-ok(rootEmpty, 'no-JS: #root is empty (the SPA never mounts without JS)');
+ok(rootChildren > 0, `no-JS: #root carries prerendered markup (${rootChildren} children)`);
 
 // v6.0.7: this gate proved the noscript TEXT rendered but asserted nothing
 // about paint — so it would have passed happily while the page was white.
@@ -69,13 +80,18 @@ const fallbackHidden = await p.evaluate(() => {
 ok(fallbackHidden, 'no-JS: #boot-fallback stays hidden (noscript owns this case)');
 
 ok(/xmr\.irish/i.test(body), 'no-JS: wordmark "xmr.irish" is present');
-ok(/Monero education \+ live mempool/i.test(body), 'no-JS: one-line description renders');
+// v6.0.9: these two used to pin exact strings from the old full-screen splash
+// ("Monero education + live mempool…", "private, untraceable digital cash").
+// That splash is gone — a no-JS visitor now gets the REAL home page, which
+// explains the site better than the placeholder ever did. Assert the substance
+// a hardened visitor must still come away with, not the retired wording.
+ok(/mempool|telemetry|privacy/i.test(body), 'no-JS: the page explains what the site is');
 // Honest about WHY the live numbers are missing, without prescribing the
 // wording — the copy must say the live figures need JS, not demand the user
 // turn it on (asserted separately below).
 ok(/need(s)? JavaScript|requires JavaScript/i.test(body), 'no-JS: honest note about live figures needing JS renders');
 ok(/read-only and non-custodial/i.test(body), 'no-JS: read-only / non-custodial fact renders');
-ok(/private,? untraceable digital cash/i.test(body), 'no-JS: one-sentence "what Monero is" fact renders');
+ok(/privacy/i.test(body) && /monero/i.test(body), 'no-JS: Monero and its privacy framing are present');
 
 // A plain, JS-free way out: the getmonero.org link must be a real anchor.
 const moneroHref = await p.evaluate(() => {
@@ -84,18 +100,36 @@ const moneroHref = await p.evaluate(() => {
 });
 ok(/getmonero\.org/i.test(moneroHref), `no-JS: getmonero.org link is a real anchor (href: ${moneroHref || 'none'})`);
 
-// v6.0.7: the site's OWN routes must be reachable, not just an external link.
-// A real Tor-at-Safest screenshot showed this block rendering correctly but
-// offering exactly one way out — to another site. Tor Safest users made a
-// deliberate choice; the nav has to survive it. Also makes the routes
-// crawlable, since this is the only markup a no-JS fetch ever sees.
+// v6.0.7 required the routes to be reachable without JS; #141 satisfied that
+// with a hand-written link list. v6.0.9 makes it real: the routes now come from
+// the app's OWN prerendered nav, which is always current by construction — a
+// route added to App.tsx cannot go missing from a list someone forgot to edit.
 const routes = await p.evaluate(() =>
-  [...document.querySelectorAll('a')]
+  [...document.querySelectorAll('#root a')]
     .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
     .filter(Boolean));
-for (const r of ['/', '/mempool', '/markets', '/network', '/education', '/monero', '/future', '/peers', '/simulate', '/node', '/sources']) {
-  ok(routes.includes(r), `no-JS: ${r} is a real anchor in the fallback`);
+for (const r of ['/', '/mempool', '/markets', '/network', '/education', '/monero', '/future', '/peers', '/node', '/sources']) {
+  ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }
+
+// THE headline guarantee, and the one the previous gates could not have caught:
+// each route must serve DIFFERENT content. Before prerendering, vercel.json's
+// SPA catch-all meant every URL returned the same shell, so with JS off the
+// whole site collapsed to one page — the links navigated and changed nothing.
+// Distinct, substantial bodies are the proof that is fixed.
+const bodies = new Map();
+for (const r of ['/education', '/network', '/sources', '/monero', '/future']) {
+  await p.goto(base + r, { waitUntil: 'load' });
+  const text = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
+  bodies.set(r, text.replace(/\s+/g, ' ').trim());
+}
+for (const [r, text] of bodies) {
+  ok(text.length > 500, `no-JS: ${r} serves substantial prerendered content (${text.length} chars)`);
+}
+ok(new Set([...bodies.values()]).size === bodies.size,
+   `no-JS: every route serves DISTINCT content (${new Set([...bodies.values()]).size}/${bodies.size} unique)`);
+
+await p.goto(base + '/', { waitUntil: 'load' });
 
 // And no nagging. The prior copy read "Please enable it, or use a
 // JavaScript-capable browser", which is the apology tone this fallback is
