@@ -11,6 +11,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { DataProvider } from "@/data/DataContext";
 import { VisualProvider } from "@/design/VisualContext";
 import { AmbientField } from "@/design/AmbientField";
+import { RootBoundary } from "@/design/RootBoundary";
 import { HomePage } from "@/pages/HomePage";
 import { MempoolPage } from "@/pages/MempoolPage";
 import { MempoolTxPage } from "@/pages/MempoolTxPage";
@@ -59,7 +60,21 @@ export function App({ useFeed }: AppProps = {}) {
           <Route path="/monero/:tab" element={<MoneroPage />} />
           <Route path="/future"    element={<FuturePage />} />
           <Route path="/peers"     element={<TrustedPeersPage />} />
-          <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
+          {/* v6.0.7: the lazy chunk needs an error boundary, not just Suspense.
+              Suspense handles "still loading"; it does NOT handle "the fetch
+              failed" — that throw propagated uncaught and blanked the whole app.
+              A dropped chunk is a routine Tor outcome, so this degrades to an
+              inline message and leaves every other route working. */}
+          <Route path="/simulate"  element={
+            <RootBoundary inline={() => (
+              <div className="mono dim" style={{ padding: 40 }}>
+                the simulators failed to load — this is usually a blocked or dropped
+                request. <a href="/simulate">Retry</a>, or carry on with the rest of the site.
+              </div>
+            )}>
+              <React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>
+            </RootBoundary>
+          } />
           <Route path="/node"      element={<NodePage />} />
           <Route path="/sources"   element={<SourcesPage />} />
           <Route path="*"          element={<NotFoundPage />} />
