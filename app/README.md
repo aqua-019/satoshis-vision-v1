@@ -136,6 +136,37 @@ import "./styles-legibility.css"; // L1 — legibility, unconditional
 | L2 | `styles-theme.css` | Scoped to `:root[data-theme="indigo"]` (plus a classic-identity `:root` block) | The chrome palette — everything that changes a *colour* when the Design panel's Theme knob is toggled. |
 | L3 | `styles-ambient.css` | Always on, intensity-scaled | The aurora/dust/grain background field. Geometry and timing are unconditional; every colour routes through an `--amb-*` token that L2 re-binds per theme. |
 
+### Device tiering (v6.0.8)
+
+A fourth axis sits under the three style layers: `design/deviceTier.ts` resolves
+`high | mid | low` once per page load and stamps it on `documentElement` as
+`data-tier` (pre-paint, from `index.html`'s inline script, then re-stamped by
+`VisualProvider`).
+
+| Tier | Plates | Orbs | Dust | Sweep | Ribbon | ParticleField canvas |
+|---|---:|---:|:-:|:-:|:-:|---|
+| high | 8 | 10 / 30 / 60 per Ambient | 2 | yes | yes | 120·density stars |
+| mid | 4 | ≤10 | 1 | no | no | 30 stars |
+| low | 2, unanimated | 0 | 0 | no | no | not mounted |
+
+Derived from `hardwareConcurrency`, `deviceMemory`, viewport area and
+coarse-pointer; `prefers-reduced-motion` and `saveData` force `low`. Append
+`?tier=high|mid|low` to override (this is how `verify-perf.mjs` asserts each
+tier, and an escape hatch for hardware the heuristic misreads).
+
+**`tier` is not a third Design-panel knob.** It rides on `VisualState`
+read-only, is never persisted, and has no radio group — the two-knob decision
+in `design/VisualContext.tsx` stands. Excluded layers are *not rendered*, never
+`display: none`: a hidden element still allocates its compositor layer, which
+is the entire cost being removed.
+
+Everything animated is also gated on visibility (`design/usePageActive.ts`) and,
+for canvases, on intersection. React-rendered motion shares one rAF via
+`design/useAnimationClock.ts` — prefer its `useAnimationSeconds` over the frame
+counter, since a frame counter changes meaning per tier and seconds don't.
+
+See `PERF-BASELINE.md` for measured before/after.
+
 **Import order is load-bearing.** L1 loads *last* specifically so that no
 palette rule in L2 can ever override a readability rule in L1 — a theme
 switch can recolour type, but it can never again shrink it below the legible
