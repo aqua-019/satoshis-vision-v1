@@ -40,6 +40,12 @@ IN: delete the v4 front-end and its orphans; rewrite `verify-origins.mjs` as an 
 gate; generate `sitemap.xml`/`robots.txt` from a shared route table; resolve
 `verify-v510.mjs`; update stale docs and the session-start hook.
 
+**Added mid-task**: bring `CLAUDE.md`'s project description in line with what the repo is
+after this PR. It is read automatically at the start of every session, and this commit is
+what makes its old description false — leaving it would mislead the following 18 prompts.
+Scope limited to the project-description half; the L3 orchestrator, loopflow, roster,
+security-invariant and agent-teams sections are untouched and verified byte-identical.
+
 OUT: `app/src/**` and `app/index.html` (untouched by design); `docs/` v4 audits (kept as
 historical record); `api/monero.js` (now orphaned — flagged, not removed, as deleting it
 touches `api/` and `vercel.json` function config); the three remaining hand-maintained
@@ -62,6 +68,8 @@ route lists in `NavTop.tsx`, `RootBoundary.tsx` and `verify-lib.mjs`.
 - [x] `app/index.html` byte-identical; `app/src/**` shows zero changes
 - [x] `sitemap.xml` contains only routes that resolve — all 11 return 200
 - [x] No red check left that is not a real failure
+- [x] `CLAUDE.md` describes the post-PR repo; zero mentions of the deleted site's
+      architecture; L3 sections byte-identical to `origin/main`
 - [x] Branch pushed · draft PR opened
 
 ## 6 · VERIFY COMMANDS
@@ -110,6 +118,14 @@ node scripts/serve-dist.mjs & npm run wait-preview && npm run verify:e2e
 5. **Docs beyond the brief.** `CLAUDE.md`'s overview and `README.md` described the deleted
    site end-to-end; both were rewritten. `MASTER-HANDOFF.md` and `XMR-QUICKSTART.md` got
    deprecation banners rather than rewrites — they are v4 records worth keeping.
+
+6. **Two figures in the `CLAUDE.md` brief were carried forward from the standing rules and
+   are wrong after this PR; the true values were written instead.** "34 headless-Chromium
+   gates" — there are 44 `verify-*.mjs` files, 43 gates plus the `verify-lib.mjs` module,
+   and not all drive a browser (12 are offline source assertions). "29 woff2 in `fonts/`"
+   counted 17 at the repo root plus 12 in `app/public/fonts/`; this PR deletes the 17, so
+   12 is the post-merge count. Writing either stale figure into the file that exists to
+   stop stale figures propagating would have reintroduced the bug being fixed.
 
 **notes for ARCHITECTURE.md patch**: `app/scripts/routes.mjs` is the single source for
 static routes, consumed by `prerender.mjs` and `gen-sitemap.mjs`. Prompt 07's 11 → 6
