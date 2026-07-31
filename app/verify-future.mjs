@@ -189,6 +189,13 @@ console.log('engine:', engine, '\n');
   // popup says "RUN THE JAMTIS SIMULATOR" must land on the Jamtis sim, which is
   // exactly what used to be false.
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
+  // Match on the card's own <h3>, not on any text in the card. "Jamtis" also
+  // appears inside the Seraphis card's metrics ("Pairs with Jamtis"), so a
+  // hasText filter silently opens the wrong popup — which is how the old
+  // PENDING-everywhere assertion passed while checking the wrong card.
+  const cardFor = (tag) => page.locator('.panel').filter({
+    has: page.getByRole('heading', { level: 3, name: tag, exact: true }),
+  });
 
   for (const [tag, simId] of [
     ['FCMP++', 'fcmp'],
@@ -197,7 +204,7 @@ console.log('engine:', engine, '\n');
     ['Carrot', 'carrot'],
     ['Cuprate', 'cuprate'],
   ]) {
-    await cards.filter({ hasText: tag }).first().click();
+    await cardFor(tag).first().click();
     const dlg = page.locator('[role="dialog"]');
     await dlg.waitFor();
     const dlgText = await dlg.innerText();
