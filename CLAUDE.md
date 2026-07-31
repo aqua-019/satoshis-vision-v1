@@ -170,6 +170,54 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 ## Session Notes
 
+- **2026-07-31**: v6.0.5 "LIVE-RANKED MARKET GROUPS" (app/ + api/) — the note this
+  work never got. The fabricated-price fix (v6.0.5/v6.0.6, PRs #131/#137) removed
+  `genCandles6`, but the coin *membership* was still a frozen `CoinDef` list:
+  ZEC/DASH/ARRR as "the privacy peers", BTC/ETH/SOL as "the majors". Same failure
+  mode as the seeds, slower fuse — DASH had already dropped out of CoinGecko's
+  `privacy-coins` top 10 while BCN/DCR/MWC/XVG/NOCK/FIRO all rank above ARRR, and
+  ZEC leads XMR by cap. Membership now comes from a new `api/markets.js`
+  aggregator: `GROUPS.peers` reads `category=privacy-coins&order=market_cap_desc`,
+  `GROUPS.majors` reads plain `market_cap_desc`, `selectMembers()` pins `monero`
+  at index 0 and drops rows for `pegged` / `derivative` / `no-rank` /
+  `no-marketcap` / `invalid-price` into an `excluded[]` audit trail. **Stablecoins
+  are filtered structurally, not by name list** — `isPegged` is a price/ath/atl
+  band test, so a new peg is excluded the day it lists. `useMarketHistory.ts`
+  consumes that envelope and never ranks anything itself.
+  §3 legibility decision: **cap the chart, list the remainder as text** —
+  `chartN` 6 peers / 9 majors against `listN` 10 / 9, with the uncharted tail in
+  the "also in top N" row. Ten lines in a 300px panel is unreadable and no palette
+  fixes that; hover isolation was not pursued. Colours are `seriesColor(group, i)`,
+  a pure index-keyed lookup with XMR fixed to `--tk-accent` — that indirection is
+  why refreshes never reshuffle the palette.
+  Ragged history is rendered, never padded: `MultiLine` maps x by TIMESTAMP over
+  a common domain and splits segments, so `bytecoin` (17 of 31 points at days=30)
+  and `mimblewimblecoin` (25) simply start later on the axis. Padding is how the
+  original bug started; there is a gate asserting the line starts differ.
+  Layout swap: XMR/BTC + XMR-vs-Top-N now pair in the upper row and the privacy
+  group takes the full-width slot below. `RATIO_CHART_HEIGHT = 318` vs
+  `MAJORS_CHART_HEIGHT = 340` are **deliberately unequal chart props producing
+  equal PANEL heights** (266px measured) — the ratio panel carries a caption line
+  under its chart. Don't "fix" them to match.
+  Request budget: the aggregator is the whole point. A cold load is **6 history
+  requests** (1 `/api/markets` + XMR ohlc + XMR/usd + XMR/btc + BTC/usd + tickers)
+  and **21 across all four ranges** — flat in group size, so 6+9 charted coins
+  cost the same as 3+3. Edge cache `cacheSeconds` 900/1800/3600/3600 with
+  `DEGRADED_S_MAXAGE = 45`, because caching a degraded payload at the full TTL is
+  what turned a transient 429 into permanently-stale charts.
+  Gates: `api/verify-markets.mjs` (aggregator, offline, fixtures) and new
+  `app/verify-markets-dom.mjs` (29 assertions — membership, peg exclusion scoped
+  to the majors panel, ragged-history line starts, panel geometry at 1440,
+  colour stability across a reload, the request budget, and 390px overflow with
+  `.table-scroll` correctly exempted since styles.css:370 makes wide tables swipe
+  inside their own box by design). Both were written but wired into nothing; they
+  now run in CI, alongside `verify-multiline.mjs` / `verify-releases.mjs`.
+  **Not verifiable in-sandbox** (egress to api.coingecko.com is blocked): that the
+  live category still ranks DASH out and BCN/DCR/MWC in. The gate proves the page
+  renders whatever ranking it is handed — check the ranking itself on a preview.
+  Also landed: Prompt D Part 2, Sources release notes generated from the commit
+  log (`app/src/data/releases.ts` + `/api/feeds?src=commits`).
+
 - **2026-07-31**: v6.0.8 "FRAMERATE & PERFORMANCE, MOBILE-FIRST" (app/): the app
   had no idea what device it was on. 43 animated compositor layers (8 plates up
   to 92vmax, 30 orbs, 2 dust, a 320%-translating sweep, a 170vmax conic ribbon)
