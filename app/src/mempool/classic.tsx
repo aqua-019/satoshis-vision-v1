@@ -3,7 +3,7 @@
 import * as React from "react";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
-import { useMempoolTracking, MemViewShell, TrackChip } from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable} from "@/mempool/mempool-shared";
 import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { BlockEta } from "@/mempool/mem-stats";
 import { Provenance } from "@/design/primitives";
@@ -232,7 +232,7 @@ export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
             ribbon stays mounted while tracking (keepBodyWhileTracking, default
             true) so the tracked ▲ rides its block alongside the detail panel
             below (both read confOf) — same placement as before this refactor. */}
-        <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
+        <MemViewShell id="classic" table={<MemTxTable data={data} tracking={tracking} viewId="classic" columns={["txid", "perB", "tier", "size", "age", "inout"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
           <ClassicRibbon data={data} tracking={tracking} onSelectBlock={(h: number) => onSearch({ kind: "block", height: h })} />
           {!tracking ? (
             // trackedTxId is always null here: ClassicLanding (and its tx feed)

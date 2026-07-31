@@ -4,7 +4,7 @@ import * as React from "react";
 import { useAnimationSeconds } from "@/design/useAnimationClock";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { Provenance } from "@/design/primitives";
-import { MemViewShell, TrackChip, useMempoolTracking, type Tracking } from "@/mempool/mempool-shared";
+import { MemViewShell, TrackChip, useMempoolTracking, type Tracking, MemTxTable} from "@/mempool/mempool-shared";
 import { useMemStats } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf, RIBBON_BLOCKS } from "@/mempool/conf";
 import type { MoneroLive, Tx } from "@/data/types";
@@ -459,7 +459,7 @@ export function ConstellationView({ data }: ViewProps) {
   // same pattern.
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
+      <MemViewShell id="constellation" table={<MemTxTable data={data} tracking={tracking} viewId="constellation" columns={["txid", "perB", "tier", "size", "age"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
         <ConOverview data={data} tracking={tracking} />
       </MemViewShell>
     </div>

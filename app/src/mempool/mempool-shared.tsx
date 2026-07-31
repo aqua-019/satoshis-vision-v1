@@ -2,11 +2,13 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import type { MoneroLive, Block } from "@/data/types";
-import { shortHash } from "@/data/types";
+import { shortHash, fmtBytes } from "@/data/types";
 import { LiveTxDetail, LiveBlockDetail } from "@/mempool/tx-detail";
 import { useTrackedTxHeight } from "@/mempool/live-detail";
 import { useTick } from "@/design/ArtBackground";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
+import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { MemStatStrip } from "@/mempool/mem-stats";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
@@ -137,13 +139,19 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
     else if (/^\d{1,8}$/.test(t)) onSearch({ kind: "block", height: parseInt(t, 10) });
   };
   return (
-    <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, maxWidth: compact ? 380 : 520 }}>
+    // minWidth:0 on BOTH the form and the input. A flex item defaults to
+    // min-width:auto, which is its content's intrinsic minimum — for a text
+    // input that is wide enough to hold the placeholder. Without this the row
+    // cannot shrink at 390px: it overflows the view, and whichever sibling is
+    // allowed to give (the SEARCH button) collapses to a vertical stack of
+    // letters instead.
+    <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, maxWidth: compact ? 380 : 520 }}>
       <input
         type="text" value={q} onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder || "Search by 64-char txid or block height…"}
         spellCheck={false}
         style={{
-          flex: 1, appearance: "none",
+          flex: "1 1 0", minWidth: 0, appearance: "none",
           background: "rgba(0,0,0,0.6)", color: "var(--ink-100)",
           border: "1px solid var(--ink-20)", borderRadius: 3,
           padding: compact ? "7px 10px" : "9px 12px",
@@ -153,8 +161,15 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
         onFocus={(e) => (e.target.style.borderColor = "var(--tk-accent)")}
         onBlur={(e) => (e.target.style.borderColor = "var(--ink-20)")}
       />
+      {/* flexShrink:0 + nowrap. Without them the button is the flex item that
+          gives when the row is tight, and at 390px it collapses to ~40px wide,
+          wrapping the label into a vertical column of letters. */}
       <button type="submit" className="proto-btn"
-        style={{ padding: compact ? "6px 12px" : "8px 14px", fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)" }}>
+        style={{
+          padding: compact ? "6px 12px" : "8px 14px",
+          fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)",
+          flexShrink: 0, whiteSpace: "nowrap",
+        }}>
         SEARCH
       </button>
     </form>
@@ -196,7 +211,16 @@ export function TrackChip({ tracking, data, onClear }: TrackChipProps): JSX.Elem
     const tone = pending ? "var(--tk-accent)" : unlocked ? "var(--g-50)" : "var(--y-50)";
     const state = pending ? "IN MEMPOOL" : unlocked ? "CONFIRMED · UNLOCKED" : `${conf}/${CONF_UNLOCK} CONF`;
     return (
-      <span className="pill mono" style={{ borderColor: tone, color: tone }}>
+      // The data-* attributes are the machine-readable form of what the text
+      // says. A gate asserting "tracking survives the mempool → block
+      // transition and counts 0→10" cannot reliably parse a rendered pill —
+      // the shortened txid runs straight into the count — but it can read these.
+      <span
+        className="pill mono"
+        style={{ borderColor: tone, color: tone }}
+        data-mem-track-phase={pending ? "mempool" : unlocked ? "unlocked" : "confirmed"}
+        data-mem-track-conf={conf}
+      >
         {shortHash(tracking.id)}
         <span className="dim2" style={{ color: tone, opacity: 0.6 }}>·</span>
         {state}
@@ -211,7 +235,12 @@ export function TrackChip({ tracking, data, onClear }: TrackChipProps): JSX.Elem
   const tone = unlocked ? "var(--g-50)" : "var(--y-50)";
   const state = unlocked ? "CONFIRMED · UNLOCKED" : `${conf}/${CONF_UNLOCK} CONF`;
   return (
-    <span className="pill mono" style={{ borderColor: tone, color: tone }}>
+    <span
+      className="pill mono"
+      style={{ borderColor: tone, color: tone }}
+      data-mem-track-phase="block"
+      data-mem-track-conf={conf}
+    >
       {`BLOCK #${tracking.height.toLocaleString()}`}
       <span className="dim2" style={{ color: tone, opacity: 0.6 }}>·</span>
       {state}
@@ -271,6 +300,20 @@ export interface MemViewShellProps {
   keepBodyWhileTracking?: boolean;
   /** Hide the stats strip for views that render their own dense telemetry. */
   stats?: boolean;
+  /** The view's MEMPOOL_VIEWS id, surfaced as `data-mem-view`. Deep-link and
+   *  per-view DOM assertions key off it — without it a gate cannot tell which
+   *  of the eleven surfaces it is actually looking at, and an unknown `?v=`
+   *  silently serving the classic fallback is indistinguishable from success. */
+  id?: string;
+  /**
+   * Static equivalent of the view — a table of the same data.
+   *
+   * Rendered under `prefers-reduced-motion` INSTEAD of `children`, so an
+   * animated field is never merely paused but genuinely not mounted, and the
+   * data stays readable. Also rendered below the body on small screens, where
+   * a wide canvas has to be panned to read.
+   */
+  table?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -281,11 +324,20 @@ export function MemViewShell({
   onClearTracking,
   keepBodyWhileTracking = true,
   stats = true,
+  id,
+  table,
   children,
 }: MemViewShellProps): JSX.Element {
+  // Reduced motion suppresses ANIMATION, not CONTENT. An earlier revision hid
+  // the body outright and swapped in the table; that also removed Classic's and
+  // Reactor's block ribbons, which are static information a reduced-motion user
+  // still needs — verify-glide.mjs scenario 4 asserts exactly that (the new head
+  // block must still render, snapped). Views already stop their own animation
+  // via useReducedMotion; the table is an ADDITION for that state, not a
+  // replacement for the view.
   const showBody = !tracking || keepBodyWhileTracking;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0 }}>
+    <div className="mem-view" data-mem-view={id} style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0 }}>
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
         <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
@@ -293,8 +345,18 @@ export function MemViewShell({
           {tracking ? <TrackChip tracking={tracking} data={data} onClear={onClearTracking} /> : null}
         </div>
       </div>
-      {stats !== false ? <MemStatStrip data={data} /> : null}
-      {showBody ? children : null}
+      {/* `stats={false}` lets a view carry its own dense telemetry instead of
+          the strip (Terminal does). But that telemetry lives INSIDE the body,
+          and under reduced motion the body is not rendered — which would leave
+          the view with no numbers at all. So the strip comes back whenever the
+          body is suppressed: opting out of it is a layout choice, not a reason
+          to lose the readings. */}
+      {stats !== false || !showBody ? <MemStatStrip data={data} /> : null}
+      {showBody ? <div className="mem-body" data-mem-body>{children}</div> : null}
+      {/* Always in the DOM, CSS-gated to the states that need it (reduced
+          motion and ≤768px) so it costs desktop no height — Reactor has only
+          ~116px of headroom before verify-fit.mjs's bound. */}
+      {table ? <div className="mem-table" data-mem-table>{table}</div> : null}
       {tracking ? (
         <MempoolTrackingDetail
           tracking={tracking}
@@ -303,6 +365,103 @@ export function MemViewShell({
           onPickTx={(id, h) => onSearch({ kind: "tx", id, blockHeight: h })}
         />
       ) : null}
+    </div>
+  );
+}
+
+// ── Table fallback ─────────────────────────────────────────────
+//
+// The static equivalent of a mempool view: the same real txs, as rows.
+// MemViewShell renders it INSTEAD of the animated body under
+// prefers-reduced-motion, and alongside it on small screens where a wide
+// canvas has to be panned to read.
+//
+// One implementation with a per-view column set, not six bespoke tables. The
+// per-view *idiom* matters for the visualisation — that is the whole point of
+// having eleven of them — but the fallback is the plain reading of the same
+// numbers, and six copies of a tx table would only be six places for the
+// columns to drift apart.
+//
+// The tracked tx is marked with `data-track-idiom` here too, so a view whose
+// highlight only exists on a canvas still has a checkable, accessible one in
+// the reduced-motion state.
+
+export type MemTxColumn = "txid" | "perB" | "tier" | "size" | "age" | "inout" | "ring" | "fee";
+
+const COL_LABEL: Record<MemTxColumn, string> = {
+  txid: "txid", perB: "fee/B", tier: "tier", size: "size",
+  age: "age", inout: "in/out", ring: "ring", fee: "fee",
+};
+const COL_WIDTH: Record<MemTxColumn, string> = {
+  txid: "1.5fr", perB: "88px", tier: "74px", size: "80px",
+  age: "68px", inout: "74px", ring: "56px", fee: "110px",
+};
+
+const fmtAgeShort = (sec: number): string => {
+  const s = Math.max(0, Math.round(sec));
+  if (s < 90) return `${s}s`;
+  if (s < 3600) return `${Math.round(s / 60)}m`;
+  return `${Math.floor(s / 3600)}h ${String(Math.round((s % 3600) / 60)).padStart(2, "0")}m`;
+};
+
+export function MemTxTable({ data, tracking, viewId, columns, cap = 60, onPickTx }: {
+  data: MoneroLive;
+  tracking: Tracking;
+  /** view id, echoed onto the tracked row's data-track-idiom */
+  viewId: string;
+  columns: MemTxColumn[];
+  cap?: number;
+  onPickTx?: (id: string) => void;
+}): JSX.Element {
+  const trackedId = tracking?.kind === "tx" ? tracking.id.toLowerCase() : null;
+  const rows = React.useMemo(
+    () => [...data.mempool].sort((a, b) => a.age - b.age).slice(0, cap),
+    [data.mempool, cap],
+  );
+  const grid = columns.map((c) => COL_WIDTH[c]).join(" ");
+
+  const cell = (t: (typeof rows)[number], c: MemTxColumn): React.ReactNode => {
+    switch (c) {
+      case "txid": return shortHash(t.id);
+      case "perB": return `${Math.round(t.perB)} pcn/B`;
+      case "tier": {
+        const i = feeTierIndex(t.perB, data.feeTiers);
+        return i >= 0 ? FEE_TIER_LABELS[i] : "—";
+      }
+      case "size": return fmtBytes(t.size);
+      case "age": return fmtAgeShort(t.age);
+      case "inout": return `${t.inputs}/${t.outputs}`;
+      case "ring": return String(t.ringSize);
+      case "fee": return t.fee.toFixed(6);
+    }
+  };
+
+  return (
+    <div className="mem-tbl" style={{ gridTemplateColumns: grid }} role="table">
+      <div className="mem-tbl__r mem-tbl__h" role="row">
+        {columns.map((c) => <div key={c} className="mem-tbl__c" role="columnheader">{COL_LABEL[c]}</div>)}
+      </div>
+      {rows.length ? rows.map((t) => {
+        const isTracked = trackedId != null && t.id.toLowerCase() === trackedId;
+        return (
+          <div
+            key={t.id}
+            role="row"
+            className={"mem-tbl__r" + (isTracked ? " is-tracked" : "")}
+            data-track-idiom={isTracked ? viewId : undefined}
+            onClick={onPickTx ? () => onPickTx(t.id) : undefined}
+            style={onPickTx ? { cursor: "pointer" } : undefined}
+          >
+            {columns.map((c) => <div key={c} className="mem-tbl__c" role="cell">{cell(t, c)}</div>)}
+          </div>
+        );
+      }) : (
+        <div className="mem-tbl__r" role="row">
+          <div className="mem-tbl__c dim" style={{ gridColumn: "1 / -1" }} role="cell">
+            {data.ready ? "mempool is empty" : "awaiting the first node snapshot…"}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
