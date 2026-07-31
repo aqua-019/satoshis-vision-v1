@@ -10,6 +10,9 @@
 
 import * as React from "react";
 import type { Candle, LineSeries, SeriesStatus } from "@/data/useMarketHistory";
+// v6.0.8: was a verbatim local copy. design/useReducedMotion.ts:5-12 flags this
+// duplication as an un-done consolidation; this is it being done.
+import { useReducedMotion } from "@/design/useReducedMotion";
 
 const VB_W = 1000;
 const UP_FILL = "rgba(74,222,128,0.72)";
@@ -18,20 +21,6 @@ const DN_FILL = "rgba(255,77,109,0.72)";
 const DN_STROKE = "rgba(255,77,109,1)";
 
 /* ── helpers ───────────────────────────────────────────────────────── */
-
-function useReducedMotion(): boolean {
-  const [r, setR] = React.useState(() =>
-    typeof matchMedia !== "undefined" ? matchMedia("(prefers-reduced-motion: reduce)").matches : false,
-  );
-  React.useEffect(() => {
-    if (typeof matchMedia === "undefined") return;
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setR(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return r;
-}
 
 /** Fade the chart in once on mount (skipped under reduced-motion). */
 function useMountFade(reduced: boolean): number {
@@ -118,7 +107,7 @@ export interface CandleChartProps {
   status?: SeriesStatus;
 }
 
-export function CandleChart({ candles, days, height = 300, status = "live" }: CandleChartProps) {
+function CandleChartImpl({ candles, days, height = 300, status = "live" }: CandleChartProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   const [cross, setCross] = React.useState<number | null>(null);
@@ -280,7 +269,7 @@ export interface MultiLineProps {
   labels?: boolean;
 }
 
-export function MultiLine({ series, days, height = 280, labels = true }: MultiLineProps) {
+function MultiLineImpl({ series, days, height = 280, labels = true }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   if (!series?.length) return null;
@@ -381,7 +370,7 @@ export interface AreaSeriesProps {
   xLabels?: boolean;
 }
 
-export function AreaSeries({
+function AreaSeriesImpl({
   data,
   days = 7,
   t,
@@ -555,7 +544,7 @@ export interface BarSeriesProps {
   marker?: { index: number; label?: string };
 }
 
-export function BarSeries({
+function BarSeriesImpl({
   data,
   labels,
   endLabels,
@@ -683,3 +672,23 @@ export function BarSeries({
     </svg>
   );
 }
+
+/* ── memo boundaries ────────────────────────────────────────────────
+   MarketsPage subscribes to the 2.5s live feed, so every feed tick re-rendered
+   it — and with no memo boundary anywhere, re-invoked every chart body below.
+   That is two full `candles.map()` passes rebuilding SVG trees (CandleChart),
+   and a per-point normalise + flatMap + two spread-Math.min/max over up to
+   7 series × 365 points (MultiLine/AreaSeries/BarSeries), 24 times a minute,
+   to produce byte-identical output.
+
+   No dep-array surgery was needed: every data prop is a direct read of
+   `hist.<series>.data`, and useMarketHistory's effect is keyed [days,
+   retryNonce] — independent of the feed — so those arrays keep a stable
+   identity between range changes. The only prop that was NOT stable was
+   AreaSeries' `format` callback, passed as an inline arrow at
+   MarketsPage.tsx; it is hoisted to module scope there so this boundary
+   actually holds. */
+export const CandleChart = React.memo(CandleChartImpl);
+export const MultiLine = React.memo(MultiLineImpl);
+export const AreaSeries = React.memo(AreaSeriesImpl);
+export const BarSeries = React.memo(BarSeriesImpl);

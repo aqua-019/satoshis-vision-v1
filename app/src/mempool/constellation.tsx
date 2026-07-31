@@ -1,7 +1,7 @@
 // AUTO-PORTED from constellation.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { useTick } from "@/design/ArtBackground";
+import { useAnimationSeconds } from "@/design/useAnimationClock";
 import { Stat, Provenance } from "@/design/primitives";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import type { MoneroLive, Tx } from "@/data/types";
@@ -63,7 +63,17 @@ export function ConCard({ title, right, children, pad = "14px 16px", style }: an
    from each txid (two independent stable units), so a tx keeps its spot
    for its whole pool lifetime. Radius/glow scale with real perB. */
 export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers: number[]; ready: boolean; size?: number }) {
-  const tick = useTick(50);
+  // v6.0.8: was `useTick(50)` — its own setInterval, reconciling up to 60
+  // <circle>s plus arc paths through React 20×/second, forever, including in
+  // a hidden tab. Now one shared rAF (design/useAnimationClock.ts), throttled
+  // to 20fps on `high` / 12 on `mid` / 6 on `low` and paused when hidden.
+  //
+  // Seconds, not the frame counter: `tick * 0.008` meant "0.008 rad per
+  // frame", which silently becomes a 3× slower sphere on a low-tier phone.
+  // The rates below are expressed per second (the old per-frame constants
+  // × 20fps), so the sphere turns at the same speed on every device and only
+  // its smoothness varies.
+  const t = useAnimationSeconds({ fps: 20 });
   const cx = size / 2, cy = size / 2, r = size / 2 - 26;
 
   const pts = React.useMemo(() => {
@@ -87,7 +97,8 @@ export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers:
     });
   }, [pts]);
 
-  const rot = (tick * 0.008) % (Math.PI * 2);
+  // 0.008 rad/frame at the old 20fps == 0.16 rad/s.
+  const rot = (t * 0.16) % (Math.PI * 2);
   const project = (lat: number, lon: number) => {
     const lonR = lon + rot;
     return { x: cx + Math.cos(lat) * Math.sin(lonR) * r, y: cy - Math.sin(lat) * r, z: Math.cos(lat) * Math.cos(lonR) };
@@ -126,7 +137,8 @@ export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers:
       {/* decorative arcs between real tx points */}
       {arcs.map((arc, i) => {
         const a = project(arc.a.lat, arc.a.lon), b = project(arc.b.lat, arc.b.lon);
-        const progress = (tick * (0.006 + arc.u * 0.01) + arc.u) % 1;
+        // per-frame (0.006 + u*0.01) at 20fps == per-second (0.12 + u*0.2).
+        const progress = (t * (0.12 + arc.u * 0.2) + arc.u) % 1;
         return <path key={i} d={`M ${a.x} ${a.y} Q ${(a.x + b.x) / 2} ${(a.y + b.y) / 2 - 56} ${b.x} ${b.y}`} fill="none" stroke="url(#con-arc)" strokeWidth="1" opacity="0.55" strokeDasharray="56 230" strokeDashoffset={-progress * 286} />;
       })}
       {/* reticle */}

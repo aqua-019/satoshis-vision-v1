@@ -1,6 +1,8 @@
 // AUTO-PORTED from terminal.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
+import { byTier, getDeviceTier } from "@/design/deviceTier";
+import { usePageActive } from "@/design/usePageActive";
 import { PanelFrame, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
@@ -50,21 +52,35 @@ function TermPalette({ data }: { data: MoneroLive }) {
   const [ci, setCi] = React.useState(0);
   const [typed, setTyped] = React.useState("");
   const [phase, setPhase] = React.useState("typing"); // typing → hold → clearing
+  // v6.0.8: the typewriter is a setTimeout chain in an effect that re-arms on
+  // every character — during `clearing` that was a ~42Hz React render loop
+  // (24ms/char), running in hidden tabs, for a decorative prompt animation.
+  //
+  // Two gates:
+  //   `paused`  — usePageActive(). Nobody is reading a terminal in a tab they
+  //               can't see. It resumes mid-word exactly where it stopped,
+  //               because the phase/typed state is untouched by the pause.
+  //   `charMs`  — per-tier floor. On `low` the per-character cadence relaxes
+  //               so the effect re-runs 12×/sec instead of 42×/sec; the
+  //               animation reads the same, just less frantically.
+  const paused = !usePageActive();
+  const tier = getDeviceTier();
+  const charScale = byTier(tier, { high: 1, mid: 1.6, low: 3.5 });
   React.useEffect(() => {
-    if (!cmds.length) return;
+    if (!cmds.length || paused) return;
     const full = cmds[ci % cmds.length].q;
     let to: ReturnType<typeof setTimeout> | undefined;
     if (phase === "typing") {
-      if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), 55 + Math.random() * 60);
+      if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), (55 + Math.random() * 60) * charScale);
       else to = setTimeout(() => setPhase("hold"), 1600);
     } else if (phase === "hold") {
       to = setTimeout(() => setPhase("clearing"), 1400);
     } else {
-      if (typed.length > 0) to = setTimeout(() => setTyped(typed.slice(0, -1)), 24);
+      if (typed.length > 0) to = setTimeout(() => setTyped(typed.slice(0, -1)), 24 * charScale);
       else { setPhase("typing"); setCi((c) => (c + 1) % cmds.length); }
     }
     return () => clearTimeout(to);
-  }, [typed, phase, ci, cmds]);
+  }, [typed, phase, ci, cmds, paused, charScale]);
   const showResults = phase === "hold" && cmds.length > 0;
   return (
     <div style={{ border: "1px solid var(--tk-accent)", background: "rgba(0,0,0,0.65)", boxShadow: "0 0 24px rgba(255,122,26,0.22), inset 0 0 30px rgba(255,122,26,0.05)", borderRadius: 4 }}>

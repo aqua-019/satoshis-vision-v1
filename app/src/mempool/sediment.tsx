@@ -7,6 +7,16 @@ import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/m
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
 import type { MoneroLive } from "@/data/types";
 
+/* Chart formatters are hoisted to module scope so their identity is stable
+   across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
+   pages/markets/charts.tsx) and an inline `format={(v) => …}` arrow allocates
+   a fresh function every render, which defeats the boundary entirely. None of
+   these close over anything, so module scope is where they belonged anyway. */
+const fmtTx = (v: number): string => v + " tx";
+const fmtPerB = (v: number): string => Math.round(v).toLocaleString() + " p/B";
+const fmtRound = (v: number): string => String(Math.round(v));
+
+
 export const BLOCKS_CAP = 100;
 
 interface ViewProps {
@@ -202,7 +212,7 @@ export function SedStrataLog({ data }: { data: MoneroLive }) {
       <BarSeries
         data={blocks.slice().reverse().map((b) => b.txs)}
         labels={blocks.slice().reverse().map((b) => "#" + b.height)}
-        format={(v) => v + " tx"}
+        format={fmtTx}
         color="var(--tk-accent)"
         baseline="zero"
         height={150}
@@ -233,7 +243,7 @@ export function SedFeeProfile({ data }: { data: MoneroLive }) {
       {fees.length ? (
         <AreaSeries data={fees} xLabels={false} markers baseline="zero"
           color="var(--tk-accent)" height={188}
-          format={(v) => Math.round(v).toLocaleString() + " p/B"} />
+          format={fmtPerB} />
       ) : (
         <div className="mono dim" style={{ padding: 24, textAlign: "center", fontSize: "var(--fs-mono)" }}>mempool empty</div>
       )}
@@ -254,7 +264,7 @@ export function SedClearance({ data }: { data: MoneroLive }) {
         <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>tx suspended</span>
       </div>
       <AreaSeries data={series} height={84} color="var(--tk-accent)" baseline="zero"
-        xLabels={false} markers={false} format={(v) => String(Math.round(v))} />
+        xLabels={false} markers={false} format={fmtRound} />
       <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6 }}>
         <span>median 84 p/B</span><span>P90 246 p/B</span><span>next ≈1:54</span>
       </div>

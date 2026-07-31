@@ -1,7 +1,8 @@
 // AUTO-PORTED from protocols/view-tags.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { useTick, ArtBackground } from "@/design/ArtBackground";
+import { ArtBackground } from "@/design/ArtBackground";
+import { useAnimationSeconds } from "@/design/useAnimationClock";
 import {
   Stat, Pill, PanelFrame, Sparkline, MiniBar, Crumbs, Card,
 } from "@/design/primitives";
@@ -24,7 +25,7 @@ interface ViewProps {
 // its own. Left pane: pre-2022, full ECDH math per output. Right pane: with
 // view tags — 1 byte prefilter rejects 255/256 instantly. ~256× speedup.
 
-export function ScannerWall({ side, tick, viewTag, onCounter }: any) {
+export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boolean; onCounter?: (n: number) => void }) {
   // 16 cols × 16 rows = 256 cells per visible slab
   const COLS = 16, ROWS = 16, TOTAL = COLS * ROWS;
   const cells = React.useMemo(() => {
@@ -33,12 +34,14 @@ export function ScannerWall({ side, tick, viewTag, onCounter }: any) {
       tag: Math.floor(Math.random() * 256),
       mine: Math.random() < 0.0035,
     }));
-  }, [side, viewTag]);
+  }, [viewTag]);
 
   // Animation cursor moves through all cells; speed differs per side.
-  const speed = viewTag ? 18 : 0.4;
-  const cursor = Math.floor(tick * speed) % (TOTAL + 60);
-  const counter = Math.min(TOTAL, Math.floor(tick * speed));
+  // `t` is seconds, so these are cells/second — the old per-frame 18 / 0.4 at
+  // 20fps, scaled up by 20 to keep the same wall-clock pacing.
+  const speed = viewTag ? 360 : 8;
+  const cursor = Math.floor(t * speed) % (TOTAL + 60);
+  const counter = Math.min(TOTAL, Math.floor(t * speed));
 
   React.useEffect(() => {
     if (onCounter) onCounter(counter);
@@ -118,11 +121,16 @@ export function ScannerWall({ side, tick, viewTag, onCounter }: any) {
 }
 
 export function ViewTagsView({ data, bg }: ViewProps) {
-  const tick = useTick(50);
+  // v6.0.8: was `useTick(50)` — its own 20Hz setInterval driving two
+  // ScannerWalls of 256 cells each through React, running in hidden tabs.
+  // Now the shared rAF clock (20fps high / 12 mid / 6 low), and expressed in
+  // SECONDS so the demo's pacing is identical on every device — a teaching
+  // animation that runs 3× slower on a phone teaches the wrong thing.
+  const t = useAnimationSeconds({ fps: 20 });
   const [leftCount, setLeftCount] = React.useState(0);
   const [rightCount, setRightCount] = React.useState(0);
-  // Cycle the demo every ~6s
-  const cycle = Math.floor(tick / 150);
+  // 150 ticks at the old 50ms == one cycle every 7.5s.
+  const cycle = Math.floor(t / 7.5);
   const tagSeed = cycle;
 
   return (
@@ -150,7 +158,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
                 <div className="kicker" style={{ color: "var(--ink-60)" }}>WITHOUT VIEW TAGS · pre-2022</div>
                 <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>~256 ms/block</div>
               </div>
-              <ScannerWall side="left" tick={tick + tagSeed * 100} viewTag={false} onCounter={setLeftCount} />
+              <ScannerWall t={t + tagSeed * 5} viewTag={false} onCounter={setLeftCount} />
             </div>
 
             {/* RIGHT — view tags */}
@@ -159,7 +167,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
                 <div className="kicker" style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>WITH VIEW TAGS · v15+</div>
                 <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>~1 ms/block</div>
               </div>
-              <ScannerWall side="right" tick={tick + tagSeed * 100} viewTag={true} onCounter={setRightCount} />
+              <ScannerWall t={t + tagSeed * 5} viewTag={true} onCounter={setRightCount} />
             </div>
           </div>
 

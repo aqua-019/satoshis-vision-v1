@@ -30,6 +30,14 @@ import {
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 
+/* Chart formatters are hoisted to module scope so their identity is stable
+   across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
+   pages/markets/charts.tsx) and an inline `format={(v) => …}` arrow allocates
+   a fresh function every render, which defeats the boundary entirely. None of
+   these close over anything, so module scope is where they belonged anyway. */
+const fmtSat = (v: number): string => (v * 1e5).toFixed(0) + " sat";
+
+
 /** Source label for a single series — COINGECKO with a freshness suffix.
  *  Stale renders the canonical "COINGECKO · stale" (freshness, orthogonal to source). */
 function SourceBadge({ status, prefix }: { status: SeriesStatus; prefix?: string }) {
@@ -164,7 +172,7 @@ export function MarketsPage() {
         <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />}>
           <AreaSeries data={xmrBtcSeries} days={days} height={220}
             color="var(--tk-accent)" baseline="auto"
-            format={(v) => (v * 1e5).toFixed(0) + " sat"}
+            format={fmtSat}
             stale={hist.xmrBtc.status === "stale"} />
           <p className="mono dim" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}>
             {xmrBtcSeries.length ? (

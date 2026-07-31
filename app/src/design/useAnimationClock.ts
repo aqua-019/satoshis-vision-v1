@@ -30,25 +30,34 @@ interface Subscriber {
   fps: number;
   /** Timestamp of the last delivered frame, in rAF-clock ms. */
   last: number;
-  cb: (frame: number) => void;
+  cb: (frame: number, seconds: number) => void;
   frame: number;
+  /** Accumulated *animation* seconds — excludes time spent hidden, so a
+   *  resumed animation continues rather than jumping. */
+  seconds: number;
 }
 
 const subscribers = new Set<Subscriber>();
 let raf = 0;
 let unbindVisibility: (() => void) | null = null;
 
+/** Longest gap we credit to animation time. Mirrors the canvas drivers' clamp:
+ *  a stall must not teleport an animation forward. */
+const MAX_STEP_MS = 50;
+
 function loop(now: number): void {
   raf = requestAnimationFrame(loop);
   for (const s of subscribers) {
     const interval = 1000 / s.fps;
-    if (now - s.last < interval) continue;
+    const gap = now - s.last;
+    if (gap < interval) continue;
     // Snap to the grid rather than accumulating drift, but never let a long
     // stall (a backgrounded tab that resumed, a GC pause) queue a burst of
     // catch-up frames — this is a render driver, not a physics integrator.
-    s.last = now - Math.min(now - s.last - interval, interval);
+    s.last = now - Math.min(gap - interval, interval);
     s.frame += 1;
-    s.cb(s.frame);
+    s.seconds += Math.min(gap, MAX_STEP_MS) / 1000;
+    s.cb(s.frame, s.seconds);
   }
 }
 
@@ -74,8 +83,8 @@ function ensureBound(): void {
   });
 }
 
-function subscribe(fps: number, cb: (frame: number) => void): () => void {
-  const s: Subscriber = { fps, last: 0, cb, frame: 0 };
+function subscribe(fps: number, cb: (frame: number, seconds: number) => void): () => void {
+  const s: Subscriber = { fps, last: 0, cb, frame: 0, seconds: 0 };
   subscribers.add(s);
   ensureBound();
   start();
@@ -119,8 +128,34 @@ export function useAnimationClock({ fps = 20, enabled = true }: AnimationClockOp
 
   React.useEffect(() => {
     if (!enabled) return;
-    return subscribe(effectiveFps, setFrame);
+    return subscribe(effectiveFps, (f) => setFrame(f));
   }, [effectiveFps, enabled]);
 
   return enabled ? frame : 0;
+}
+
+/**
+ * Elapsed **animation seconds** from the same shared loop.
+ *
+ * Prefer this over the frame counter whenever the value feeds a *duration* —
+ * a rotation rate, a cycle period, a sweep position. A frame counter changes
+ * meaning per tier (20fps on high, 6fps on low), so `tick * 0.008` silently
+ * becomes a 3× slower rotation on a phone. Seconds do not: the animation runs
+ * at the same *speed* everywhere and only its smoothness varies, which is the
+ * trade this whole pass is trying to make.
+ *
+ * Time spent with the tab hidden is excluded, so returning to a tab resumes
+ * the animation where it was rather than jumping forward by the absence.
+ */
+export function useAnimationSeconds({ fps = 20, enabled = true }: AnimationClockOptions = {}): number {
+  const tier = getDeviceTier();
+  const effectiveFps = motionFps(tier, fps);
+  const [seconds, setSeconds] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!enabled) return;
+    return subscribe(effectiveFps, (_f, t) => setSeconds(t));
+  }, [effectiveFps, enabled]);
+
+  return enabled ? seconds : 0;
 }
