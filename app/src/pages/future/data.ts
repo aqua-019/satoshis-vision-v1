@@ -13,7 +13,11 @@
  * into the main bundle.
  */
 
-import { PROTOCOL_PRIMITIVES_META, PROTOCOL_METAPHORS_META } from "@/views/protocol-meta";
+import {
+  PROTOCOL_PRIMITIVES_META,
+  PROTOCOL_FUTURE_META,
+  PROTOCOL_METAPHORS_META,
+} from "@/views/protocol-meta";
 
 export type MiniMode = "fcmp" | "seraphis" | "jamtis" | "carrot" | "cuprate" | "stressnet";
 export type Metric = readonly [k: string, v: string];
@@ -80,7 +84,9 @@ export interface AutomationRow {
 /** Simulator ids actually registered in the (lazy) /simulate chunk. Gate
  * "RUN THE X SIMULATOR" buttons on membership here — see FutureProtocol.sim. */
 export const SIM_IDS: ReadonlySet<string> = new Set(
-  [...PROTOCOL_PRIMITIVES_META, ...PROTOCOL_METAPHORS_META].map((m) => m.id),
+  [...PROTOCOL_PRIMITIVES_META, ...PROTOCOL_FUTURE_META, ...PROTOCOL_METAPHORS_META].map(
+    (m) => m.id,
+  ),
 );
 
 /* ── protocol catalogue · the five incoming upgrades ──────────── */
@@ -106,7 +112,7 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   },
   {
     id: "seraphis", tag: "Seraphis", sub: "Next-generation tx protocol", c: "#ff7a1a", mini: "seraphis",
-    status: "BETA · audit in progress", sc: "var(--y-50)", eta: "2027 · fork v18", sim: null,
+    status: "BETA · audit in progress", sc: "var(--y-50)", eta: "2027 · fork v18", sim: "seraphis",
     head: "A clean-room rewrite of how transactions work.",
     lede: "Smaller signatures, ~40% faster verification, and a sane modular wallet model. Together with FCMP++ and Jamtis it's what the community calls 'Monero 2.0'.",
     deep: [
@@ -124,7 +130,7 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   },
   {
     id: "jamtis", tag: "Jamtis", sub: "Structured addresses", c: "#4ade80", mini: "jamtis",
-    status: "BETA · paired with Seraphis", sc: "var(--y-50)", eta: "ships with v18", sim: null,
+    status: "BETA · paired with Seraphis", sc: "var(--y-50)", eta: "ships with v18", sim: "jamtis",
     head: "Addresses become structured, checksummed, readable.",
     lede: "95 characters of base58 noise become a 75-character format with meaningful spans, native sub-address tags, and a checksum that catches typos before money moves.",
     deep: [
@@ -140,7 +146,7 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   },
   {
     id: "carrot", tag: "Carrot", sub: "Bounded view keys", c: "#5ed3f4", mini: "carrot",
-    status: "DESIGN · spec draft", sc: "var(--c-50)", eta: "2027+ · wallet-side", sim: null,
+    status: "DESIGN · spec draft", sc: "var(--c-50)", eta: "2027+ · wallet-side", sim: "carrot",
     head: "Give an auditor a keyhole, not the front door.",
     lede: "A new wallet addressing protocol — compatible with FCMP++ era Monero — that allows strictly-bounded disclosure: incoming payments visible, outgoing spends and balance sealed forever.",
     deep: [
@@ -156,7 +162,7 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   },
   {
     id: "cuprate", tag: "Cuprate", sub: "Rust full node", c: "#ffd400", mini: "cuprate",
-    status: "ALPHA · full sync working", sc: "var(--tk-accent)", eta: "2026–27", sim: null,
+    status: "ALPHA · full sync working", sc: "var(--tk-accent)", eta: "2026–27", sim: "cuprate",
     head: "A second, independent implementation of Monero.",
     lede: "Memory-safe Rust, modern tooling, faster initial sync — and the thing money networks actually need: no single client as a single point of failure.",
     deep: [
@@ -192,6 +198,11 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       "Before FCMP++ activates on mainnet, the community runs it under fire. The superstress net is a deliberately abused beta chain: storm campaigns, dynamic-block-size pressure, proof-verification load — measured, shared, fixed, repeated.",
       "One of the participating Umbrel nodes pipes its txpool into a fork of xmr.irish V4's mempool visualizer, making it the first FCMP++ chain with a live visual mempool. Screenshots, endpoints, and the node's story land here as they're provided.",
     ],
+    // The wind-tunnel simulator tells this same story from the modelling side:
+    // storm intensity in, dynamic block size and fee response out. Gated on
+    // SIM_IDS by EcoPopup, exactly like the protocol cards' CTAs.
+    simLink: "/simulate?p=stressnet",
+    simLabel: "RUN THE STRESSNET SIMULATOR",
     slots: [
       { label: "screenshot · umbrel node dashboard", h: 130 },
       { label: "screenshot · v4 mempool on beta chain", h: 130 },
