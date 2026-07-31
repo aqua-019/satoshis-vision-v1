@@ -291,7 +291,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
   return (
     <ConCard title="Mempool · bytes by fee tier" right={<span className="acc">{ok ? fmtBytes(totalBytes) : "—"}</span>}>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <svg viewBox="0 0 140 140" width="124" height="124">
+        <svg viewBox="0 0 140 140" width="100%" style={{ display: "block", maxWidth: 124 }}>
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={sw} />
           {ok && totalBytes > 0 ? FEE_TIER_LABELS.map((label, i) => {
             const len = (bytes[i] / totalBytes) * circ;

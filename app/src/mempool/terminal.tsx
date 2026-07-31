@@ -203,7 +203,7 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
   const r = size / 2 - 8, c = size / 2, ring = 2 * Math.PI * r, dash = ring * (value / 100) * 0.75;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size * 0.78}>
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ display: "block", maxWidth: size, aspectRatio: `${size} / ${size * 0.78}` }}>
         <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" strokeDasharray={ring * 0.75 + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" />
         <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={dash + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
         <text x={c} y={c + 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="15" fontWeight="500" fill={color}>{value}</text>
