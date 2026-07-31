@@ -11,12 +11,6 @@
 
 import * as React from "react";
 import type { MoneroLive } from "@/data/types";
-import { ReactorView } from "@/mempool/reactor";
-import { BridgeView } from "@/mempool/bridge";
-import { SedimentView } from "@/mempool/sediment";
-import { ConstellationView } from "@/mempool/constellation";
-import { TerminalHubView } from "@/mempool/terminal";
-import { ClassicView } from "@/mempool/classic";
 
 export type { ProtocolMetaBase } from "./protocol-meta";
 
@@ -45,17 +39,39 @@ export interface MempoolViewMeta {
   Component: ViewComponent;
 }
 
+/**
+ * v6.0.8: each view is `React.lazy`, so the six engines compile into six
+ * chunks instead of riding the main bundle.
+ *
+ * MempoolPage mounts exactly ONE of these (selected by `?v=`, default
+ * `classic`) but statically importing all six meant every visitor to any
+ * route downloaded `reactor` (457 lines), `bridge` (493), `classic` (608),
+ * `constellation`, `sediment` and `terminal` whether they opened /mempool or
+ * not.
+ *
+ * `Component` is a lazy reference, NOT a call — reading `meta.Component` to
+ * build the switcher's button list is a plain property read and does not
+ * start a fetch. React only invokes the importer when the element is actually
+ * rendered, which is why the switcher can map over all six for labels while
+ * only the active one's chunk loads. (This is the reason the registry keeps
+ * `label`/`sub`/`star`/`fit` as plain data next to the component rather than
+ * reaching into the module for them — same separation `protocol-meta.ts`
+ * already makes for the simulators, see this file's header.)
+ */
+const lazyView = (load: () => Promise<{ [k: string]: unknown }>, name: string): ViewComponent =>
+  React.lazy(async () => ({ default: (await load())[name] as ViewComponent }));
+
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
   { id: "reactor",       label: "Reactor",       sub: "3D iso · hex lattice · ring fan",  star: false, fit: true,
-    Component: ReactorView },
+    Component: lazyView(() => import("@/mempool/reactor"), "ReactorView") },
   { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",            star: false, fit: true,
-    Component: BridgeView },
+    Component: lazyView(() => import("@/mempool/bridge"), "BridgeView") },
   { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",         star: false, fit: true,
-    Component: SedimentView },
+    Component: lazyView(() => import("@/mempool/sediment"), "SedimentView") },
   { id: "constellation", label: "Constellation", sub: "luminous network sphere",           star: false, fit: true,
-    Component: ConstellationView },
+    Component: lazyView(() => import("@/mempool/constellation"), "ConstellationView") },
   { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
-    Component: TerminalHubView },
+    Component: lazyView(() => import("@/mempool/terminal"), "TerminalHubView") },
   { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: true,
-    Component: ClassicView },
+    Component: lazyView(() => import("@/mempool/classic"), "ClassicView") },
 ];

@@ -11,22 +11,29 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import { DataProvider } from "@/data/DataContext";
 import { VisualProvider } from "@/design/VisualContext";
 import { AmbientField } from "@/design/AmbientField";
+// HomePage stays EAGER. It is the LCP route — lazy-loading it would add a
+// round trip to the exact metric this pass exists to improve.
 import { HomePage } from "@/pages/HomePage";
-import { MempoolPage } from "@/pages/MempoolPage";
-import { MempoolTxPage } from "@/pages/MempoolTxPage";
-import { MarketsPage } from "@/pages/MarketsPage";
-import { NetworkPage } from "@/pages/NetworkPage";
-import { EducationPage } from "@/pages/EducationPage";
-import { MoneroPage } from "@/pages/MoneroPage";
-import { FuturePage } from "@/pages/FuturePage";
-import { TrustedPeersPage } from "@/pages/TrustedPeersPage";
-import { NodePage } from "@/pages/NodePage";
-import { SourcesPage } from "@/pages/SourcesPage";
-import { NotFoundPage } from "@/pages/NotFoundPage";
 
-// Lazy-loaded: /simulate pulls in all of @/protocols/** (the 15 educational
-// simulators), which Vite splits into its own chunk via this dynamic import.
-const SimulatePage = React.lazy(() => import("@/pages/SimulatePage"));
+// Everything else is route-split (v6.0.8). Before this, every visitor
+// downloaded every page: the ten Monero tab modules, the whole /future card
+// deck, the education chapters, the markets chart primitives — regardless of
+// where they landed. `/simulate` had been the lone exception since v5.0.14;
+// this extends that pattern to the rest of the router.
+//
+// Named exports need the `.then` unwrap; SimulatePage is a default export.
+const MempoolPage      = React.lazy(() => import("@/pages/MempoolPage").then((m) => ({ default: m.MempoolPage })));
+const MempoolTxPage    = React.lazy(() => import("@/pages/MempoolTxPage").then((m) => ({ default: m.MempoolTxPage })));
+const MarketsPage      = React.lazy(() => import("@/pages/MarketsPage").then((m) => ({ default: m.MarketsPage })));
+const NetworkPage      = React.lazy(() => import("@/pages/NetworkPage").then((m) => ({ default: m.NetworkPage })));
+const EducationPage    = React.lazy(() => import("@/pages/EducationPage").then((m) => ({ default: m.EducationPage })));
+const MoneroPage       = React.lazy(() => import("@/pages/MoneroPage").then((m) => ({ default: m.MoneroPage })));
+const FuturePage       = React.lazy(() => import("@/pages/FuturePage").then((m) => ({ default: m.FuturePage })));
+const TrustedPeersPage = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => ({ default: m.TrustedPeersPage })));
+const NodePage         = React.lazy(() => import("@/pages/NodePage").then((m) => ({ default: m.NodePage })));
+const SourcesPage      = React.lazy(() => import("@/pages/SourcesPage").then((m) => ({ default: m.SourcesPage })));
+const NotFoundPage     = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
+const SimulatePage     = React.lazy(() => import("@/pages/SimulatePage"));
 
 export interface AppProps {
   /** Swap in your own MoneroLive hook from the host runtime. */
@@ -43,6 +50,12 @@ export function App({ useFeed }: AppProps = {}) {
     <VisualProvider>
       <AmbientField />
       <DataProvider useFeed={useFeed}>
+        {/* ONE boundary for the whole router rather than one per route. With a
+            single lazy route the per-route <Suspense> was fine; at eleven it is
+            eleven copies of the same fallback. Placing it outside <Routes> also
+            means a navigation between two lazy routes shows the fallback once,
+            in one place, instead of unmounting and remounting a boundary. */}
+        <React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading…</div>}>
         <Routes>
           <Route path="/"          element={<HomePage />} />
           <Route path="/mempool"   element={<MempoolPage />} />
@@ -59,11 +72,12 @@ export function App({ useFeed }: AppProps = {}) {
           <Route path="/monero/:tab" element={<MoneroPage />} />
           <Route path="/future"    element={<FuturePage />} />
           <Route path="/peers"     element={<TrustedPeersPage />} />
-          <Route path="/simulate"  element={<React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>} />
+          <Route path="/simulate"  element={<SimulatePage />} />
           <Route path="/node"      element={<NodePage />} />
           <Route path="/sources"   element={<SourcesPage />} />
           <Route path="*"          element={<NotFoundPage />} />
         </Routes>
+        </React.Suspense>
       </DataProvider>
     </VisualProvider>
   );

@@ -25,6 +25,10 @@
 import * as React from "react";
 import type { MoneroLive } from "./types";
 import { getJSON } from "./http";
+// design/usePageActive imports nothing but React, so this data→design edge
+// creates no cycle (design/VisualContext already imports safeStore from
+// data/useMarketHistory in the other direction).
+import { onPageActiveChange } from "@/design/usePageActive";
 import {
   applyWsBlock,
   applyWsMempool,
@@ -185,12 +189,48 @@ export function useXmrIrishFeed(): MoneroLive {
       }
     }
 
+    // v6.0.8: the poll runs only while the tab is in front. At POLL_MS = 2500
+    // this is five same-origin requests every 2.5s, forever, on a phone in
+    // someone's pocket — the single cheapest battery win in the app.
+    //
+    // Two invariants this must not break:
+    //   1. Coming back must be instant. `resume()` fires one immediate
+    //      snapshot before re-arming the interval, so a user returning to the
+    //      tab sees fresh numbers on the first painted frame, not 2.5s later.
+    //   2. Hidden is not stale. `chainFails` counts *failures*, and a poll
+    //      that never ran is not a poll that failed — suspending the interval
+    //      must not push `stale` on. It doesn't, because `chainFails` is only
+    //      touched inside `snapshot()`. The last-good snapshot stays on screen
+    //      with whatever `stale` flag it already had, which is the correct
+    //      reading: nothing new has been learned. The immediate `snapshot()`
+    //      on resume is what re-establishes truth.
     function startPolling() {
       if (polling || !alive) return;
       polling = true;
       void snapshot();
       poll = setInterval(snapshot, POLL_MS);
     }
+
+    function suspendPolling() {
+      if (poll) { clearInterval(poll); poll = null; }
+    }
+
+    function resumePolling() {
+      if (!polling || !alive || poll) return;
+      // `snapshot()` guards its own in-flight state via `alive`, and each call
+      // is a fresh Promise.all — a resume while a request from before the hide
+      // is still outstanding just means the later response wins. No stampede:
+      // `resume` only ever fires one, and the `poll` null-check above stops a
+      // duplicated visibilitychange from arming two intervals.
+      void snapshot();
+      poll = setInterval(snapshot, POLL_MS);
+    }
+
+    const offVisibility = onPageActiveChange((active) => {
+      if (!alive) return;
+      if (active) resumePolling();
+      else suspendPolling();
+    });
 
     // 2. Try the relay WS when explicitly configured, else poll. Each path owns
     //    exactly one immediate snapshot (the WS path primes here; the polling path
@@ -242,6 +282,7 @@ export function useXmrIrishFeed(): MoneroLive {
 
     return () => {
       alive = false;
+      offVisibility();
       if (poll) clearInterval(poll);
       if (ws) {
         ws.onclose = null;

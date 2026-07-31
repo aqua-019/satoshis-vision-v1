@@ -109,7 +109,7 @@ export function MempoolPage() {
             Rendered before the view so position:fixed (desktop) is out of flow
             and position:static (mobile) lands it inline under the breadcrumb. */}
         <div className="mp-switcher" ref={switcherRef}>
-          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · 6 views</div>
+          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · {MEMPOOL_VIEWS.length} views</div>
           <button
             type="button"
             className="mp-switcher__trigger"
@@ -155,15 +155,28 @@ export function MempoolPage() {
             views (reactor/bridge/sediment/constellation) load scaled to the canvas
             width via <FitView>; classic/terminal keep their natural layout. */}
         <div className="mp-canvas-scroll" ref={panRef}>
-          {meta.fit ? (
-            <FitView scrollRef={panRef} mode={zoom}>
-              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-            </FitView>
-          ) : (
-            <div className="mp-view">
-              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-            </div>
-          )}
+          {/* v6.0.8: the six view engines are React.lazy (views/index.tsx), so
+              only the active one's chunk is fetched.
+
+              The boundary sits OUTSIDE <FitView> deliberately. FitView measures
+              its child through a ResizeObserver to compute the fit scale; if the
+              fallback rendered *inside* it, the first measurement would be of the
+              placeholder and the view would mount at the wrong scale. Keeping
+              FitView unmounted until the chunk resolves means its first measure is
+              always of the real content. */}
+          <React.Suspense
+            fallback={<div className="mono dim" style={{ padding: 40 }}>loading {meta.label.toLowerCase()}…</div>}
+          >
+            {meta.fit ? (
+              <FitView scrollRef={panRef} mode={zoom}>
+                <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+              </FitView>
+            ) : (
+              <div className="mp-view">
+                <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+              </div>
+            )}
+          </React.Suspense>
         </div>
       </div>
     </AppShell>

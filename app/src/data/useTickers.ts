@@ -10,6 +10,7 @@
 
 import * as React from "react";
 import { cacheKey, readCache, writeCache, type SeriesStatus } from "./useMarketHistory";
+import { isPageActive, onPageActiveChange } from "@/design/usePageActive";
 
 export interface Ticker {
   /** exchange display name, e.g. "Kraken" */
@@ -81,7 +82,9 @@ export function useTickers(): TickersResult {
 
   React.useEffect(() => {
     let alive = true;
-    let timer: ReturnType<typeof setTimeout> | null = null;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // What the next wait would have been, when a hide cut it short.
+    let pendingDelay: number | null = null;
 
     const run = async () => {
       let nextDelay = REFRESH_MS;
@@ -102,12 +105,35 @@ export function useTickers(): TickersResult {
           });
         }
       }
-      if (alive) timer = setTimeout(run, nextDelay);
+      // v6.0.8: don't re-arm while the tab is hidden. `pendingDelay` records
+      // what the next wait *would* have been so a resume honours the retry
+      // backoff rather than resetting it to the 5-minute happy path — a
+      // CoinGecko failure that happened just before the hide is still a
+      // failure when we come back.
+      if (!alive) return;
+      if (isPageActive()) timer = setTimeout(run, nextDelay);
+      else pendingDelay = nextDelay;
     };
 
     void run();
+
+    // On return: if a wait was cut short by the hide, run once immediately.
+    // `run()` re-arms the chain itself, so there is exactly one timer at all
+    // times and nothing stampedes.
+    const offVisibility = onPageActiveChange((active) => {
+      if (!alive) return;
+      if (active) {
+        if (pendingDelay !== null) { pendingDelay = null; void run(); }
+      } else if (timer) {
+        clearTimeout(timer);
+        timer = undefined;
+        pendingDelay = REFRESH_MS;
+      }
+    });
+
     return () => {
       alive = false;
+      offVisibility();
       if (timer) clearTimeout(timer);
     };
   }, []);

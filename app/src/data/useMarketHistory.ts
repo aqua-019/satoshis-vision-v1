@@ -15,6 +15,7 @@
  */
 
 import * as React from "react";
+import { isPageActive, onPageActiveChange } from "@/design/usePageActive";
 
 export interface Candle {
   /** bucket start, ms epoch */
@@ -364,12 +365,33 @@ export function useMarketHistory(days: number): MarketHistory {
   // While anything is not yet "live", schedule a quiet refetch. The timer
   // re-arms off `state` (each settle re-runs this effect) and is cleaned up on
   // unmount/range change, so StrictMode double-mount can't double-fire it.
+  //
+  // v6.0.8: gated on visibility too. This is the mildest of the app's polls
+  // (it only fires while a series has not reached "live", and stops for good
+  // once they all have), but a CoinGecko outage would otherwise have it
+  // retrying every 45s forever in a tab nobody is looking at. On return it
+  // retries immediately rather than waiting out the remainder of the window —
+  // the data was already known to be incomplete, so there is nothing to lose
+  // by asking again at once.
   React.useEffect(() => {
     if (state.loading) return;
     const statuses = [state.xmrCandles.status, state.xmrBtc.status, state.btcLine.status, state.peers.status, state.top.status];
     if (statuses.every((s) => s === "live")) return;
-    const id = setTimeout(() => setRetryNonce((n) => n + 1), RETRY_MS);
-    return () => clearTimeout(id);
+
+    let id: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => setRetryNonce((n) => n + 1);
+    const start = () => { if (!id) id = setTimeout(bump, RETRY_MS); };
+    const stop = () => { if (id) { clearTimeout(id); id = null; } };
+
+    if (isPageActive()) start();
+    const offVisibility = onPageActiveChange((active) => {
+      // A `bump()` here re-runs the fetch effect, which re-runs this one; the
+      // `statuses.every(live)` guard above is what terminates the chain.
+      if (active) bump();
+      else stop();
+    });
+
+    return () => { offVisibility(); stop(); };
   }, [state]);
 
   return state;
