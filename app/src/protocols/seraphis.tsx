@@ -100,31 +100,20 @@ export function SeraphisView({ bg }: ViewProps) {
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.closePath();
-    ctx.fillStyle = "rgba(255,122,26,0.10)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(255,122,26,0.55)";
-    ctx.lineWidth = 1.4;
-    ctx.stroke();
+    ctx.fillStyle = "rgba(255,122,26,0.10)"; ctx.fill();
+    ctx.strokeStyle = "rgba(255,122,26,0.55)"; ctx.lineWidth = 1.4; ctx.stroke();
 
-    ctx.fillStyle = INK_40;
-    ctx.font = `11px ${MONO}`;
-    ctx.textAlign = "left";
+    ctx.fillStyle = INK_40; ctx.font = `11px ${MONO}`; ctx.textAlign = "left";
     ctx.fillText("TODAY · CLSAG", pad, 16);
-    ctx.fillStyle = INK_80;
-    ctx.font = `10px ${MONO}`;
-    ctx.textAlign = "center";
+    ctx.fillStyle = INK_80; ctx.font = `10px ${MONO}`; ctx.textAlign = "center";
     ctx.fillText("membership + ownership", cx, cy - 2);
     ctx.fillText("+ amount, one blob", cx, cy + 11);
 
     const arrowX = pad + leftW + 8;
-    ctx.strokeStyle = INK_40;
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = INK_40; ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(arrowX, cy);
-    ctx.lineTo(arrowX + 20, cy);
-    ctx.moveTo(arrowX + 14, cy - 5);
-    ctx.lineTo(arrowX + 20, cy);
-    ctx.lineTo(arrowX + 14, cy + 5);
+    ctx.moveTo(arrowX, cy); ctx.lineTo(arrowX + 20, cy);
+    ctx.moveTo(arrowX + 14, cy - 5); ctx.lineTo(arrowX + 20, cy); ctx.lineTo(arrowX + 14, cy + 5);
     ctx.stroke();
 
     const rx = arrowX + 30, rw = w - rx - pad, rowH = (h - 32) / 3;
@@ -136,23 +125,16 @@ export function SeraphisView({ bg }: ViewProps) {
     rows.forEach(([label, sub, color], i) => {
       const ry = 28 + i * rowH + Math.sin(t * 0.7 + i * 0.6) * 1.4;
       const bh = rowH - 7;
-      ctx.fillStyle = "rgba(255,255,255,0.03)";
-      ctx.fillRect(rx, ry, rw, bh);
-      ctx.strokeStyle = color;
-      ctx.lineWidth = i === 0 ? 1.6 : 1;
+      ctx.fillStyle = "rgba(255,255,255,0.03)"; ctx.fillRect(rx, ry, rw, bh);
+      ctx.strokeStyle = color; ctx.lineWidth = i === 0 ? 1.6 : 1;
       ctx.strokeRect(rx + 0.5, ry + 0.5, rw - 1, bh - 1);
-      ctx.fillStyle = color;
-      ctx.font = `11px ${MONO}`;
-      ctx.textAlign = "left";
+      ctx.fillStyle = color; ctx.font = `11px ${MONO}`; ctx.textAlign = "left";
       ctx.fillText(label, rx + 8, ry + bh / 2 - 2);
-      ctx.fillStyle = INK_60;
-      ctx.font = `10px ${MONO}`;
+      ctx.fillStyle = INK_60; ctx.font = `10px ${MONO}`;
       ctx.fillText(sub, rx + 8, ry + bh / 2 + 11);
     });
 
-    ctx.fillStyle = INK_40;
-    ctx.font = `11px ${MONO}`;
-    ctx.textAlign = "right";
+    ctx.fillStyle = INK_40; ctx.font = `11px ${MONO}`; ctx.textAlign = "right";
     ctx.fillText("SERAPHIS · separable", w - pad, 16);
   };
 
@@ -162,43 +144,33 @@ export function SeraphisView({ bg }: ViewProps) {
     const pad = 20, y = h * 0.58;
     const x0 = pad, x1 = w - pad, step = (x1 - x0) / (TIERS.length - 1);
 
-    ctx.strokeStyle = RULE;
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = RULE; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
-
-    ctx.strokeStyle = ACCENT;
-    ctx.lineWidth = 2;
+    ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + step * (tier - 1), y); ctx.stroke();
 
     for (const tr of TIERS) {
       const x = x0 + step * (tr.n - 1);
       const on = tr.n === tier, passed = tr.n <= tier;
-      ctx.beginPath();
-      ctx.arc(x, y, on ? 7 : 4.5, 0, Math.PI * 2);
+      ctx.beginPath(); ctx.arc(x, y, on ? 7 : 4.5, 0, Math.PI * 2);
       ctx.fillStyle = on ? ACCENT : passed ? "rgba(255,122,26,0.5)" : "rgba(255,255,255,0.14)";
       ctx.fill();
       if (on) {
-        ctx.strokeStyle = ACCENT;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = ACCENT; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.stroke();
       }
-      ctx.font = `10px ${MONO}`;
-      ctx.textAlign = "center";
+      ctx.font = `10px ${MONO}`; ctx.textAlign = "center";
       ctx.fillStyle = on ? ACCENT : INK_60;
       ctx.fillText(String(tr.n), x, y + 20);
       if (tr.tag) {
-        ctx.font = `9px ${MONO}`;
-        ctx.fillStyle = on ? ACCENT : INK_40;
+        ctx.font = `9px ${MONO}`; ctx.fillStyle = on ? ACCENT : INK_40;
         ctx.fillText(tr.tag, x, y - 14);
       }
     }
 
-    ctx.font = `10px ${MONO}`;
-    ctx.fillStyle = INK_40;
-    ctx.textAlign = "left";
-    ctx.fillText("ADDRESS ONLY", x0, 16);
-    ctx.textAlign = "right";
-    ctx.fillText("FULL SPEND", x1, 16);
+    ctx.font = `10px ${MONO}`; ctx.fillStyle = INK_40;
+    ctx.textAlign = "left"; ctx.fillText("ADDRESS ONLY", x0, 16);
+    ctx.textAlign = "right"; ctx.fillText("FULL SPEND", x1, 16);
   };
 
   const assemblyLabel = `Assembly diagram: membership proof set to ${b.label}, alongside a separate ownership proof and amount proof, versus today's single entangled ring-signature blob.`;
