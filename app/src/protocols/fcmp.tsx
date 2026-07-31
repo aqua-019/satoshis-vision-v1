@@ -12,6 +12,7 @@ import { Footer } from "@/layout/Footer";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -50,9 +51,12 @@ export function Murmuration({ tick, t }: any) {
       py: Math.random() * Math.PI * 2,
     }));
   }, []);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       <defs>
         <radialGradient id="murmCore">
           <stop offset="0%"  stopColor="rgba(255,200,140,0.95)" />
@@ -71,7 +75,7 @@ export function Murmuration({ tick, t }: any) {
             <circle cx={p.x} cy={p.y} r="11" fill="url(#murmCore)" opacity={flicker} />
             <circle cx={p.x} cy={p.y} r="3.6" fill="#ffce8a"
               style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }} />
-            <text x={p.x} y={p.y + 24} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)">#{i}</text>
+            <text x={p.x} y={p.y + 24} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-60)">#{i}</text>
           </g>
         );
       })}
@@ -91,43 +95,49 @@ export function Murmuration({ tick, t }: any) {
         );
       })}
 
-      {/* label at left transitioning */}
-      <text x={40} y={36} fontFamily="var(--f-mono)" fontSize="11" fill="var(--ink-60)" letterSpacing="0.22em">ANON SET</text>
-      <text x={40} y={68} fontFamily="var(--f-serif)" fontSize="42" fontWeight="500"
+      {/* label at left transitioning — extra vertical room around the hero
+          number: its own font-derived line box is tall enough at high k that
+          the naive "same baseline" collision check needs real separation,
+          not just a few px, to read the two captions as distinct lines */}
+      <text x={40} y={30} fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-60)" letterSpacing="0.22em">ANON SET</text>
+      <text x={40} y={84} fontFamily="var(--f-serif)" fontSize={u(fs.label * 2.4)} fontWeight="500"
         fill="var(--tk-accent)" style={{ textShadow: "var(--glow-2)" }}>
         {t < 0.05 ? "16" : t < 0.3 ? Math.floor(16 + t * 4000) :
          t < 0.6 ? (Math.floor(16 + t * 50000)).toLocaleString() :
          t < 0.9 ? (Math.floor(t * 150e6 / 0.9)).toLocaleString() :
          "150,824,007"}
       </text>
-      <text x={40} y={92} fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-60)" letterSpacing="0.16em">
+      <text x={40} y={116} fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-60)" letterSpacing="0.16em">
         {t < 0.1 ? "RING-16 · CLSAG" :
          t < 0.5 ? "TRANSITIONING…" :
          t < 0.9 ? "GROWING…" :
          "ENTIRE CHAIN · FCMP++"}
       </text>
 
-      {/* progress bar */}
+      {/* progress bar — label above (short + tight-spaced so it can't outgrow
+          the 180-unit bar), value below at the opposite end so neither line
+          ever shares an x-range with the other */}
+      <text x={W - 220} y="26" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-60)" letterSpacing="0.04em">UPGRADE</text>
       <rect x={W - 220} y="40" width="180" height="6" fill="rgba(255,255,255,0.06)" />
       <rect x={W - 220} y="40" width={180 * t} height="6"
         fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 6px var(--tk-accent))" }} />
-      <text x={W - 220} y="62" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)" letterSpacing="0.16em">UPGRADE PROGRESS</text>
-      <text x={W - 40} y="62" textAnchor="end" fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)">{Math.round(t * 100)}%</text>
+      <text x={W - 40} y="62" textAnchor="end" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--tk-accent)">{Math.round(t * 100)}%</text>
 
       {/* center label */}
       {t > 0.85 ? (
         <g>
-          <text x={cx} y={cy + 4} textAnchor="middle" fontFamily="var(--f-serif)" fontSize="22" fontWeight="500"
+          <text x={cx} y={cy + 4} textAnchor="middle" fontFamily="var(--f-serif)" fontSize={u(fs.label * 1.7)} fontWeight="500"
             fill="var(--tk-accent)" style={{ textShadow: "var(--glow-3)" }} opacity={Math.min(1, (t - 0.85) / 0.1)}>
             ALL OF IT
           </text>
-          <text x={cx} y={cy + 26} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10"
+          <text x={cx} y={cy + 26} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)}
             fill="var(--ink-60)" letterSpacing="0.18em" opacity={Math.min(1, (t - 0.85) / 0.1)}>
             EVERY OUTPUT EVER MINED
           </text>
         </g>
       ) : null}
     </svg>
+    </div>
   );
 }
 
@@ -148,9 +158,12 @@ export function CurveTree({ depth = 4 }: any) {
     }
   };
   recurse(W / 2, H - 10, 56, -Math.PI / 2, 0);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
-      <text x={20} y={20} fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-40)" letterSpacing="0.2em">CURVE TREE · depth-bounded commitment hierarchy</text>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
+      <text x={20} y={20} fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-40)" letterSpacing="0.2em">CURVE TREE · depth-bounded commitment hierarchy</text>
       {lines.map((l, i) => (
         <line key={i} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
           stroke={`rgba(184,122,255,${0.85 - l.d * 0.15})`}
@@ -162,10 +175,11 @@ export function CurveTree({ depth = 4 }: any) {
           fill={d.d === depth ? "var(--tk-accent)" : "#b87aff"}
           style={d.d === 0 ? { filter: "drop-shadow(0 0 4px #b87aff)" } : undefined} />
       ))}
-      <text x={W / 2} y={H - 26} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--p-50)" letterSpacing="0.16em" style={{ textShadow: "var(--glow-p)" }}>
+      <text x={W / 2} y={H - 26} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--p-50)" letterSpacing="0.16em" style={{ textShadow: "var(--glow-p)" }}>
         ROOT · O(log n) membership proof
       </text>
     </svg>
+    </div>
   );
 }
 

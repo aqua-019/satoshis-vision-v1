@@ -60,6 +60,15 @@ export interface ChartMetrics {
   u: (px: number) => number;
   /** the resolved --fs-chart-* tokens, in CSS px. */
   fs: ChartFontScale;
+  /**
+   * FIXED mode: the narrowest the container may be before `k` would exceed
+   * `maxK` — i.e. before labels would have to grow so much they overrun the
+   * artwork. Apply it to the measuring wrapper; the artboard then PANS inside
+   * `.proto-stage` (which scrolls on mobile) at a size where its labels are
+   * both legible and non-overlapping, instead of being squeezed until they
+   * collide. 0 in fluid mode, where there is nothing to pan.
+   */
+  minWidth: number;
 }
 
 export interface ChartMetricsOptions {
@@ -76,9 +85,18 @@ export interface ChartMetricsOptions {
  */
 export const FS_FALLBACK: ChartFontScale = { tick: 11, label: 12 };
 
-/** Default cap for FIXED mode. At k=2.2 a 900-unit artboard on a 390px phone
- *  gets 11px-equivalent labels without the text overrunning the geometry. */
-const DEFAULT_MAX_K = 2.2;
+/**
+ * Default cap for FIXED mode, and it is a legibility/geometry trade, not a
+ * round number. `k` is how much a hand-placed artboard's type is inflated to
+ * survive being scaled down. Past roughly 1.7 the labels stop fitting the
+ * geometry they annotate: measured on /simulate?p=decoy at 390px with k≈3, the
+ * axis caption "AGE OF OUTPUT ⟶ (days)" grew past the plot edge and every day
+ * tick collided with it — legible text that no longer says anything.
+ *
+ * So the cap holds, and `minWidth` below lets the artboard pan instead. Panning
+ * a readable diagram beats reading a whole unreadable one.
+ */
+const DEFAULT_MAX_K = 1.7;
 
 /**
  * Read --fs-chart-tick / --fs-chart-label off a mounted element.
@@ -222,5 +240,9 @@ export function useChartMetrics(
 
   const u = React.useCallback((px: number) => px * k, [k]);
 
-  return { w, ready: w > 0, k, u, fs };
+  // Below this width, k would have to exceed maxK to hold the type floor — so
+  // the container stops shrinking and the artboard pans instead.
+  const minWidth = vbWidth ? Math.ceil(vbWidth / maxK) : 0;
+
+  return { w, ready: w > 0, k, u, fs, minWidth };
 }

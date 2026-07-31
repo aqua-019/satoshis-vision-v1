@@ -116,7 +116,7 @@ export function ProtoPopup({ p, onClose }: ProtoPopupProps) {
                 <div>★ <b style={{ color: "var(--ink-80)" }}>{pulse.stars.toLocaleString()}</b> · open issues <b style={{ color: "var(--ink-80)" }}>{pulse.issues}</b></div>
                 <div>
                   last push <b style={{ color: stale ? "var(--y-50)" : "var(--g-50)" }}>{agoStr(pulse.pushed)}</b>
-                  {stale ? " · QUIET >90D" : ""} · refreshed every 24h via /api/feeds
+                  {stale ? " · repo quiet" : ""} · refreshed every 24h via /api/feeds
                 </div>
               </>
             ) : (

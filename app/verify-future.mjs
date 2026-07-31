@@ -146,9 +146,10 @@ console.log('engine:', engine, '\n');
   ok(pulses.length >= 5, `1 · five protocol cards show "★N · Nd ago" without a click (found ${pulses.length})`);
   ok((await page.locator('[role="dialog"]').count()) === 0, '1 · no modal was opened to get them');
 
-  // 2 — QUIET >90D computed from the seeded stale pushed_at
-  const quiet = await page.locator('text=QUIET >90D').count();
-  ok(quiet === 1, `2 · exactly one card flags QUIET >90D from real pushed_at (found ${quiet})`);
+  // 2 — repo-quiet flag computed from the seeded stale pushed_at. Scoped to
+  // "repo" (not the protocol itself) per TASK 3 — see cards.tsx/ProtoPopup.tsx.
+  const quiet = await page.locator('text=repo quiet').count();
+  ok(quiet === 1, `2 · exactly one card flags "repo quiet" from real pushed_at (found ${quiet})`);
 
   // 3 — two dev-lab pulses with real numbers
   ok(body.includes('monero-project/monero') && body.includes('monero-project/research-lab'),
@@ -182,6 +183,21 @@ console.log('engine:', engine, '\n');
   // to the decoy sim for an unknown ?p=, so the other four must NOT offer a
   // button that would silently land somewhere else.
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
+
+  // 13 — the v18 rail stop derives its phase from its mapped protocols
+  // (§5's "one source of truth" claim), checked in the rendered DOM rather
+  // than just in source: the rail's phase token must equal both Seraphis's
+  // and Jamtis's own card phase token.
+  const phaseOfText = (s) => (s.split('·').pop() || '').trim().toUpperCase();
+  const v18Stop = page.locator('.stop', { hasText: 'v18' }).first();
+  const v18StatusText = await v18Stop.locator('.dim2').innerText();
+  const v18Phase = phaseOfText(v18StatusText);
+  const seraphisStatusText = await cards.filter({ hasText: 'Seraphis' }).first().locator('.v6-status').innerText();
+  const jamtisStatusText = await cards.filter({ hasText: 'Jamtis' }).first().locator('.v6-status').innerText();
+  const seraphisPhase = (seraphisStatusText.split('·')[0] || '').trim().toUpperCase();
+  const jamtisPhase = (jamtisStatusText.split('·')[0] || '').trim().toUpperCase();
+  ok(v18Phase === seraphisPhase, `13 · v18 rail phase "${v18Phase}" equals Seraphis card phase "${seraphisPhase}"`);
+  ok(v18Phase === jamtisPhase, `13 · v18 rail phase "${v18Phase}" equals Jamtis card phase "${jamtisPhase}"`);
 
   await cards.filter({ hasText: 'FCMP++' }).first().click();
   let dlg = page.locator('[role="dialog"]');

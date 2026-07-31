@@ -12,6 +12,7 @@ import { Footer } from "@/layout/Footer";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -49,9 +50,12 @@ function DandelionStage() {
       delay: (i % 10) * 0.05,
     };
   });
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       <defs>
         <radialGradient id="dlOrigin">
           <stop offset="0%" stopColor="rgba(184,122,255,0.95)" />
@@ -71,7 +75,7 @@ function DandelionStage() {
 
       {/* ground (subtle horizon line) */}
       <line x1="40" y1="380" x2={W - 40} y2="380" stroke="rgba(255,255,255,0.04)" strokeDasharray="2 6" />
-      <text x="40" y="402" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.16em">P2P TOPOLOGY · UNROLLED HORIZONTAL</text>
+      <text x="40" y="402" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.16em">P2P TOPOLOGY · UNROLLED HORIZONTAL</text>
 
       {/* stem connectors (drawn up to currentHop) */}
       {stem.slice(0, currentHop).map((p, i) => {
@@ -113,14 +117,14 @@ function DandelionStage() {
               </circle>
             ) : null}
 
-            <text x={p.x} y={p.y + 24} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9"
+            <text x={p.x} y={p.y + 24} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)}
               fill={isOrigin ? "#b87aff" : reached ? "var(--ink-100)" : "var(--ink-40)"} letterSpacing="0.1em">
               {p.label}
             </text>
 
             {/* hop probability annotation */}
             {i > 0 && reached ? (
-              <text x={(p.x + stem[i - 1].x) / 2} y={p.y - 30} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-60)">
+              <text x={(p.x + stem[i - 1].x) / 2} y={p.y - 30} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-60)">
                 p=0.10
               </text>
             ) : null}
@@ -157,7 +161,7 @@ function DandelionStage() {
                     </g>
                   );
                 })}
-                <text x={c.x} y={c.y - 60} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="11"
+                <text x={c.x} y={c.y - 60} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)}
                   fill="var(--tk-accent)" letterSpacing="0.16em"
                   style={{ filter: "drop-shadow(0 0 6px var(--tk-accent))" }}>
                   FLUFF ✦
@@ -171,28 +175,43 @@ function DandelionStage() {
       {/* phase divider */}
       <line x1={stem[FLUFF_AT].x - 30} y1="60" x2={stem[FLUFF_AT].x - 30} y2="340"
         stroke="rgba(255,200,120,0.2)" strokeDasharray="2 4" />
-      <text x={stem[Math.floor(FLUFF_AT / 2)].x} y="40" textAnchor="middle"
-        fontFamily="var(--f-mono)" fontSize="10" fill="rgba(184,122,255,0.85)"
-        letterSpacing="0.22em" style={{ textShadow: "var(--glow-p)" }}>
-        ── STEM PHASE ── (private, deterministic)
+      {/* Short labels + a tick-sized subtitle on its own line — the full
+          "STEM PHASE ── (private, deterministic)" caption at legible size
+          was wider than half the artboard and collided with its twin. */}
+      <text x={stem[Math.floor(FLUFF_AT / 2)].x} y="28" textAnchor="middle"
+        fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="rgba(184,122,255,0.85)"
+        letterSpacing="0.08em" style={{ textShadow: "var(--glow-p)" }}>
+        STEM PHASE
       </text>
-      <text x={(stem[FLUFF_AT].x + W - 80) / 2} y="40" textAnchor="middle"
-        fontFamily="var(--f-mono)" fontSize="10" fill="rgba(255,180,80,0.85)"
-        letterSpacing="0.22em" style={{ textShadow: "var(--glow-1)" }}>
-        ── FLUFF PHASE ── (gossip, broadcast)
+      <text x={stem[Math.floor(FLUFF_AT / 2)].x} y="54" textAnchor="middle"
+        fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="rgba(184,122,255,0.6)"
+        letterSpacing="0.04em">
+        private · deterministic
+      </text>
+      <text x={(stem[FLUFF_AT].x + W - 80) / 2} y="28" textAnchor="middle"
+        fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="rgba(255,180,80,0.85)"
+        letterSpacing="0.08em" style={{ textShadow: "var(--glow-1)" }}>
+        FLUFF PHASE
+      </text>
+      <text x={(stem[FLUFF_AT].x + W - 80) / 2} y="54" textAnchor="middle"
+        fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="rgba(255,180,80,0.6)"
+        letterSpacing="0.04em">
+        gossip · broadcast
       </text>
 
-      {/* originator obscurity meter */}
-      <g transform={`translate(40, 60)`}>
-        <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">ORIGINATOR · obscurity</text>
+      {/* originator obscurity meter — pushed down from y=60 so its top line
+          clears the phase subtitles above (both now grow with k) */}
+      <g transform={`translate(40, 82)`}>
+        <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">ORIGINATOR · obscurity</text>
         <rect x="0" y="14" width="180" height="6" fill="rgba(255,255,255,0.04)" />
         <rect x="0" y="14" width={Math.min(180, currentHop * 18 + (isFluff ? 60 : 0))} height="6"
           fill="rgba(184,122,255,0.9)" style={{ filter: "drop-shadow(0 0 6px #b87aff)" }} />
-        <text x="0" y="38" fontFamily="var(--f-mono)" fontSize="10" fill="var(--p-50)">
+        <text x="0" y="38" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--p-50)">
           {currentHop} hop{currentHop === 1 ? "" : "s"} · {isFluff ? "broadcast" : "private"} · adversary set ≈ {Math.max(1, Math.pow(2, currentHop + (isFluff ? 6 : 0)))}+
         </text>
       </g>
     </svg>
+    </div>
   );
 }
 

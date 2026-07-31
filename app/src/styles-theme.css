@@ -82,11 +82,16 @@
   --ui-accent-dim: rgba(110, 94, 240, 0.45);
   --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
 
-  /* ink ramp re-cut: cool quartz, WCAG-stepped.
-     100 → 15.9:1 · 80 → 11:1 · 60 → 6.5:1 (body floor) · 40 decorative */
+  /* ink ramp: cool quartz, WCAG-stepped. Ratios below are MEASURED against
+     --surface-ground (rgb 26,25,34) by verify-contrast.mjs, not asserted by
+     hand — v6.0.2's numbers were computed against the pre-lift oklch(0.13)
+     ground and §6a moved it, so they had to be re-derived.
+       100 → 14.7:1 · 80 → 10.4:1 · 60 → 7.1:1 (body floor) · 40 decorative
+     --ink-60 was #9C98B0, which measured 6.24:1 on the lifted ground — under
+     the ≥7:1 body-text bar. Raised until it cleared it. */
   --ink-100: #ECEAF6;
   --ink-80:  #C9C6D8;
-  --ink-60:  #9C98B0;
+  --ink-60:  #A9A4BC;
   --ink-40:  #716D86;
   --ink-20:  rgba(201, 198, 216, 0.16);
   --ink-10:  rgba(201, 198, 216, 0.08);

@@ -276,6 +276,109 @@ for (const [label, src, path] of [
   }
 }
 
+// ── 6) v6.0.10 · the in-chart type tokens ──────────────────────────────────
+// Deliberately NOT appended to the SCALE array above: that loop asserts each
+// token is declared EXACTLY ONCE, and these two are declared twice on purpose —
+// once in :root and once in the ≤768px block, because §2.4 requires chart text
+// to scale UP on phones while prose scales down.
+{
+  const CHART_TOKENS = [
+    // [token, desktop, mobile]
+    ["--fs-chart-tick", "11px", "12px"],
+    ["--fs-chart-label", "12px", "13px"],
+  ];
+  if (!legSrc) {
+    assert("styles-legibility.css declares the chart type tokens", false, `${legPath} not found`);
+  } else {
+    // topLevelBlocks() is brace-depth aware, so the @media block comes back as
+    // one unit rather than being split at its inner braces.
+    // topLevelBlocks() yields { header, body } — the @media block comes back as
+    // ONE unit (it is brace-depth aware), which is exactly what we need here.
+    // Strip comments FIRST: a block's header is everything since the previous
+    // closing brace, so a doc comment above `:root {` lands inside the header
+    // and an equality test against ":root" never matches. stripCssComments
+    // preserves length, so line numbers still resolve.
+    const blocks = topLevelBlocks(stripCssComments(legSrc));
+    const mobile = blocks.find((b) => /@media[^{]*max-width:\s*768px/.test(b.header));
+    const rootBlocks = blocks.filter((b) => b.header.trim() === ":root");
+
+    for (const [name, desktop, mobileVal] of CHART_TOKENS) {
+      const re = new RegExp(escapeRegExp(name) + "\\s*:\\s*([^;]+);");
+      const inRoot = rootBlocks.map((b) => b.body.match(re)).filter(Boolean);
+      assert(
+        `${name} is declared once at :root as ${desktop}`,
+        inRoot.length === 1 && inRoot[0][1].trim() === desktop,
+        inRoot.length === 0 ? "not declared at :root"
+          : inRoot.length > 1 ? `declared ${inRoot.length} times at :root`
+          : `got "${inRoot[0][1].trim()}"`,
+      );
+      const inMobile = mobile ? mobile.body.match(re) : null;
+      assert(
+        `${name} steps UP to ${mobileVal} inside @media (max-width: 768px)`,
+        !!inMobile && inMobile[1].trim() === mobileVal,
+        !mobile ? "no ≤768px block found"
+          : !inMobile ? "not overridden on mobile — chart text would shrink with prose"
+          : `got "${inMobile[1].trim()}"`,
+      );
+    }
+
+    // Plain px, never clamp(): design/useChartMetrics.ts reads these back with
+    // getComputedStyle to derive chart geometry, and an unregistered custom
+    // property computes to its own token stream — a clamp() would hand JS the
+    // literal string "clamp(11px, …)" and parseFloat would return 11 by
+    // accident rather than by design.
+    for (const [name] of CHART_TOKENS) {
+      const re = new RegExp(escapeRegExp(name) + "\\s*:\\s*([^;]+);", "g");
+      const bad = [...legSrc.matchAll(re)].filter((m) => /clamp|calc|var/.test(m[1]));
+      assert(
+        `${name} is a plain px length (useChartMetrics parses it)`,
+        bad.length === 0,
+        bad.map((m) => `${legPath}:${lineOf(legSrc, m.index)}  ${m[1].trim()}`).join("\n    "),
+      );
+    }
+  }
+}
+
+// ── 7) no sub-11 SVG fontSize ATTRIBUTE in the migrated file set ───────────
+// Assertion 2 above scans the `fontSize:` object form and deliberately excludes
+// the `fontSize="9"` presentation attribute. That exclusion is what let 3.2px
+// chart labels ship. This closes it — scoped to files that have actually been
+// migrated, so a file owned by another stream reports as ⚠ rather than ❌.
+{
+  const MIGRATED = [
+    "src/pages/markets/charts.tsx",
+    "src/protocols/metaphors.tsx",
+    "src/protocols/ringct.tsx",
+    "src/protocols/fcmp.tsx",
+    "src/protocols/dandelion.tsx",
+    "src/protocols/decoy-selection.tsx",
+    "src/protocols/stealth.tsx",
+    "src/protocols/lighthouse.tsx",
+    "src/mempool/bridge.tsx",
+    "src/mempool/constellation.tsx",
+    "src/mempool/sediment.tsx",
+    "src/mempool/reactor.tsx",
+    "src/pages/monero/TechTab.tsx",
+  ];
+  // `=` form only: fontSize="9" / fontSize={9}. The `:` form is assertion 2's.
+  const re = /fontSize=(?:"([\d.]+)"|\{\s*([\d.]+)\s*\})/g;
+  const violations = [];
+  for (const rel of MIGRATED) {
+    let src;
+    try { src = readFileSync(new URL("./" + rel, import.meta.url), "utf8"); }
+    catch { violations.push(`${rel}  (unreadable)`); continue; }
+    for (const m of src.matchAll(re)) {
+      const v = Number(m[1] ?? m[2]);
+      if (v < 11) violations.push(`${rel}:${lineOf(src, m.index)}  fontSize=${m[1] ?? m[2]}`);
+    }
+  }
+  assert(
+    "no sub-11 SVG fontSize attribute remains in the migrated chart/diagram files",
+    violations.length === 0,
+    violations.slice(0, 20).join("\n    ") + (violations.length > 20 ? `\n    …and ${violations.length - 20} more` : ""),
+  );
+}
+
 // ── report ──────────────────────────────────────────────────────────────────
 console.log("verify-legibility — static assertions\n");
 for (const c of checks) {

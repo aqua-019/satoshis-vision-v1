@@ -28,6 +28,50 @@
 
 import { launch, newThemedPage, makeReporter, BASE } from './verify-lib.mjs';
 
+// ── the charts need DATA, or there is nothing to measure ─────────────────────
+// This sandbox has no egress to CoinGecko, so /markets and /network would render
+// empty chart shells and the gate would pass vacuously. Serve deterministic
+// synthetic history through the same-origin /api/coingecko proxy the app already
+// uses. The VALUES are fake and only ever feed layout assertions — this gate
+// measures type size and label collision, never correctness of the numbers, so
+// mocking here does not weaken any claim the gate makes.
+const T0 = 1_735_689_600_000; // fixed epoch: no Date.now(), so runs are reproducible
+const DAY = 86_400_000;
+
+function ohlc(n, base) {
+  return Array.from({ length: n }, (_, i) => {
+    const t = T0 - (n - 1 - i) * DAY;
+    const o = base * (1 + 0.22 * Math.sin(i / 5));
+    const c = base * (1 + 0.22 * Math.sin((i + 1) / 5));
+    return [t, o, Math.max(o, c) * 1.03, Math.min(o, c) * 0.97, c];
+  });
+}
+function chart(n, base) {
+  const prices = Array.from({ length: n }, (_, i) =>
+    [T0 - (n - 1 - i) * DAY, base * (1 + 0.3 * Math.sin(i / 4))]);
+  return { prices, total_volumes: prices.map(([t], i) => [t, 4.2e8 + i * 1e6]) };
+}
+const TICKERS = {
+  tickers: Array.from({ length: 12 }, (_, i) => ({
+    market: { name: ['Kraken', 'KuCoin', 'Gate.io', 'TradeOgre', 'HTX', 'MEXC'][i % 6] },
+    base: 'XMR', target: ['USDT', 'BTC', 'USD'][i % 3],
+    converted_volume: { usd: 9_400_000 - i * 500_000 },
+    bid_ask_spread_percentage: 0.08 + i * 0.14,
+    trust_score: 'green',
+  })),
+};
+
+async function mockMarketData(page) {
+  await page.route('**/api/coingecko**', (route) => {
+    const url = route.request().url();
+    const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+    if (url.includes('ohlc')) return json(ohlc(60, 168));
+    if (url.includes('market_chart')) return json(chart(60, url.includes('vs_currency=btc') ? 0.0016 : 168));
+    if (url.includes('tickers')) return json(TICKERS);
+    return json({});
+  });
+}
+
 const R = makeReporter('verify-chart-legibility');
 const { browser, engine } = await launch();
 console.log('engine:', engine);
@@ -81,6 +125,7 @@ const PROBE = () => {
 for (const vp of PASSES) {
   R.group(`── ${vp.name}px · floor ${vp.floor}px ────────────────────────`);
   const page = await newThemedPage(browser, vp, 'indigo');
+  await mockMarketData(page);
 
   let totalTexts = 0;
   for (const route of ROUTES) {
@@ -90,8 +135,29 @@ for (const vp of PASSES) {
     const svgs = await page.evaluate(PROBE);
 
     // A selector typo must not produce a vacuous pass — this is the classic way
-    // a gate of this shape silently rots.
-    if (!R.ok(svgs.length > 0, `${route} · has at least one [data-chart]/[data-diagram]`)) continue;
+    // a gate of this shape silently rots. But some routes legitimately render no
+    // chart HERE: /network and /mempool need the xmr.irish node, and this sandbox
+    // has no egress to it, so they sit in their skeleton state by design (see
+    // verify-stale.mjs, which owns that behaviour). Requiring a chart on those
+    // would be a false failure; requiring NOTHING would be a false pass. So
+    // require one or the other, explicitly, and say which happened.
+    if (svgs.length === 0) {
+      // The escape hatch is scoped to the routes that genuinely need the node
+      // feed. Anything else — /monero/tech is static educational SVG, the
+      // simulators are self-contained — MUST render a chart, or the migration
+      // missed it. Without this scoping a stray "loading" anywhere in the page
+      // text would let an unmigrated route pass.
+      const nodeDependent = route === '/network' || route === '/mempool';
+      const skeleton = nodeDependent && await page.evaluate(() =>
+        /CONNECTING|Awaiting|STALE · reconnecting/i.test(document.body.innerText));
+      R.ok(skeleton, `${route} · renders a chart, or is a node-dependent route in its documented no-data state`,
+        nodeDependent
+          ? 'node-dependent, but no skeleton either — the selector or the route is wrong'
+          : 'this route has no upstream dependency, so a missing [data-chart]/[data-diagram] means it was not migrated');
+      if (skeleton) R.info(`${route} · skipped: node feed unavailable in this sandbox`);
+      continue;
+    }
+    R.ok(true, `${route} · has at least one [data-chart]/[data-diagram]`);
 
     const texts = svgs.flatMap((s) => s.texts);
     totalTexts += texts.length;
@@ -137,6 +203,7 @@ R.group('── type balance · caption must not out-size the chart ────
 {
   for (const vp of PASSES) {
     const page = await newThemedPage(browser, vp, 'indigo');
+    await mockMarketData(page);
     await page.goto(BASE + '/simulate?p=decoy', { waitUntil: 'networkidle' });
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const m = await page.evaluate(() => {

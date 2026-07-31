@@ -8,6 +8,7 @@ import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -47,6 +48,8 @@ export function BrgCard({ title, right, children, pad = "14px 16px", style }: an
 /* ── PPI radar — live mempool txs as blips, sweep arm lights them ── */
 export function BrgRadar({ data }: { data: MoneroLive }) {
   const svgRef = React.useRef<SVGSVGElement | null>(null);
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(wrapRef, { vbWidth: 300, maxK: 1.4 });
   const cx = 150, cy = 150, R = 132;
 
   // Stable polar position per tx: angle from txid hash, range from age
@@ -89,7 +92,8 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
   }, [blips]);
 
   return (
-    <svg ref={svgRef} viewBox="0 0 300 300" width="100%" style={{ display: "block", maxHeight: 300 }}>
+    <div ref={wrapRef} className="chart-box" style={{ width: "100%", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg ref={svgRef} viewBox="0 0 300 300" width="100%" style={{ display: "block", maxHeight: 300 }} data-diagram>
       <defs>
         <radialGradient id="brg-ppi" cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="rgba(255,122,26,0.10)" />
@@ -128,9 +132,10 @@ export function BrgRadar({ data }: { data: MoneroLive }) {
       ))}
       {/* you (centre) */}
       <circle cx={cx} cy={cy} r="4" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 5px var(--tk-accent))" }} />
-      <text x={cx} y={cy - 9} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)" letterSpacing="0.16em">NODE</text>
-      <text x="12" y="18" fontFamily="var(--f-mono)" fontSize="8.5" fill="var(--ink-40)" letterSpacing="0.16em">PPI · MEMPOOL TX · LIVE · RANGE = AGE</text>
+      <text x={cx} y={cy - 9} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-60)" letterSpacing="0.16em">NODE</text>
+      <text x="12" y="18" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.16em">PPI · MEMPOOL TX · LIVE · RANGE = AGE</text>
     </svg>
+    </div>
   );
 }
 
@@ -158,9 +163,11 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
   const ay = (ang: number, rad: number) => cyy + -Math.sin(ang) * rad;
   const arc = (from: number, to: number, rad: number) => `M ${ax(from, rad)} ${ay(from, rad)} A ${rad} ${rad} 0 0 1 ${ax(to, rad)} ${ay(to, rad)}`;
   const needleA = Math.PI * (1 - frac);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: w, maxK: 1.6 });
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <svg viewBox={`0 0 ${w} ${h + 4}`} width="100%" style={{ display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ display: "flex", flexDirection: "column", alignItems: "center", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+      <svg viewBox={`0 0 ${w} ${h + 4}`} width="100%" style={{ display: "block" }} data-diagram>
         <path d={arc(Math.PI, 0, r)} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" strokeLinecap="round" />
         <path d={arc(a0, a1, r)} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" style={{ filter: `drop-shadow(0 0 5px ${color})` }} />
         {/* tick marks */}
@@ -171,7 +178,7 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
         {/* needle */}
         <line x1={c} y1={cyy} x2={ax(needleA, r - 6)} y2={ay(needleA, r - 6)} stroke={color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
         <circle cx={c} cy={cyy} r="4" fill="#0a0806" stroke={color} strokeWidth="1.5" />
-        <text x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={size * 0.18} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(cur)}{unit}</text>
+        <text x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label * 2)} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(cur)}{unit}</text>
       </svg>
       <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
     </div>
@@ -229,9 +236,12 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
   const path = "M" + pts.map(([x, y]) => x.toFixed(1) + "," + y.toFixed(1)).join(" L ");
   const area = path + ` L ${padL + iw},${padT + ih} L ${padL},${padT + ih} Z`;
   const scanI = tick % series.length;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W, maxK: 1.4 });
   return (
     <BrgCard title="Fee/byte oscilloscope" right={<span className="acc">{data.mempool.length} tx</span>}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+      <div ref={ref} className="chart-box" style={{ width: "100%", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
         <defs>
           <linearGradient id="brg-scope" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="rgba(255,122,26,0.4)" />
@@ -244,10 +254,11 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
         <circle cx={pts[scanI][0]} cy={pts[scanI][1]} r="3" fill="var(--y-50)" style={{ filter: "drop-shadow(0 0 5px var(--y-50))" }} />
         <line x1={pts[scanI][0]} y1={padT} x2={pts[scanI][0]} y2={padT + ih} stroke="var(--y-50)" strokeOpacity="0.3" strokeWidth="1" />
         {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
-          <text key={i} x={padL + f * iw} y={H - 4} textAnchor={i === 0 ? "start" : i === 4 ? "end" : "middle"} fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">{Math.round(f * hi)}</text>
+          <text key={i} x={padL + f * iw} y={H - 4} textAnchor={i === 0 ? "start" : i === 4 ? "end" : "middle"} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)">{Math.round(f * hi)}</text>
         ))}
-        <text x={W - padR} y={padT + 8} textAnchor="end" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">piconero/byte →</text>
+        <text x={W - padR} y={padT + 8} textAnchor="end" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)">piconero/byte →</text>
       </svg>
+      </div>
     </BrgCard>
   );
 }
@@ -281,12 +292,12 @@ export function BrgBlockCadence({ data }: { data: MoneroLive }) {
         ? <span style={{ color: "var(--y-50)" }}>OVERDUE</span>
         : <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> locked</>}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <svg viewBox="0 0 90 90" width="90" height="90">
+        <svg viewBox="0 0 90 90" width="90" height="90" data-chart>
           <circle cx="45" cy="45" r="34" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
           <circle cx="45" cy="45" r="34" fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round"
             strokeDasharray={dash + " " + (ring - dash)} transform="rotate(-90 45 45)" style={{ filter: `drop-shadow(0 0 4px ${tone})` }} />
-          <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
-          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
+          <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-40)">ELAPSED</text>
+          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
         </svg>
         <div style={{ flex: 1 }}>
           <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>

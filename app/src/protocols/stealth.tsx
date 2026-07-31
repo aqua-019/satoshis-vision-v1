@@ -12,6 +12,7 @@ import { Footer } from "@/layout/Footer";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -28,6 +29,8 @@ export function ChamberPanel({ side, tick, phase }: any) {
   const isAlice = side === "alice";
   const color = isAlice ? "#ff7a1a" : "#5ed3f4";
   const glow = isAlice ? "var(--glow-1)" : "0 0 14px rgba(94,211,244,0.55)";
+  const portraitRef = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(portraitRef, { vbWidth: 200 });
   return (
     <div style={{
       flex: 1, position: "relative",
@@ -42,13 +45,15 @@ export function ChamberPanel({ side, tick, phase }: any) {
       </div>
 
       {/* portrait silhouette */}
-      <svg viewBox="0 0 200 90" width="100%" height="80" style={{ marginBottom: 10 }}>
-        <ellipse cx="100" cy="40" rx="22" ry="26" fill="none" stroke={color} strokeWidth="1" opacity="0.4" />
-        <path d="M 70 90 Q 70 60 100 60 Q 130 60 130 90 Z" fill="none" stroke={color} strokeWidth="1" opacity="0.4" />
-        <text x="100" y="44" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fill={color} letterSpacing="0.12em" style={{ textShadow: glow }}>
-          {isAlice ? "A" : "B"}
-        </text>
-      </svg>
+      <div ref={portraitRef} className="chart-box" style={{ marginBottom: 10, ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+        <svg viewBox="0 0 200 90" width="100%" height="80" data-diagram>
+          <ellipse cx="100" cy="40" rx="22" ry="26" fill="none" stroke={color} strokeWidth="1" opacity="0.4" />
+          <path d="M 70 90 Q 70 60 100 60 Q 130 60 130 90 Z" fill="none" stroke={color} strokeWidth="1" opacity="0.4" />
+          <text x="100" y="44" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label * 1.2)} fill={color} letterSpacing="0.12em" style={{ textShadow: glow }}>
+            {isAlice ? "A" : "B"}
+          </text>
+        </svg>
+      </div>
 
       {/* steps */}
       <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.7 }}>
@@ -134,7 +139,7 @@ export function ChamberMath({ phase, tick }: any) {
       padding: "0 28px",
     }}>
       <div style={{ width: 220, height: 320, position: "relative" }}>
-        <svg viewBox="0 0 220 320" width="220" height="320">
+        <svg viewBox="0 0 220 320" width="220" height="320" data-chart>
           <defs>
             <linearGradient id="chamberFrame" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%"  stopColor="rgba(255,200,120,0.5)" />
@@ -167,24 +172,24 @@ export function ChamberMath({ phase, tick }: any) {
               <animate attributeName="opacity" values="0.7;0;0.7" dur="2.5s" repeatCount="indefinite" />
             </circle>
           ) : null}
-          <text x="110" y="123" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="11" fontWeight="500"
+          <text x="110" y="123" textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fontWeight="500"
             fill={matched ? "#1a0a02" : "var(--ink-40)"}>s</text>
 
           {/* equation */}
-          <text x="110" y="180" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="11" fill="var(--ink-100)">
+          <text x="110" y="180" textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fill="var(--ink-100)">
             H(r·A)
           </text>
-          <text x="110" y="200" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fill={matched ? "var(--g-50)" : "var(--ink-40)"}>
+          <text x="110" y="200" textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fill={matched ? "var(--g-50)" : "var(--ink-40)"}>
             ≡
           </text>
-          <text x="110" y="220" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="11" fill="var(--ink-100)">
+          <text x="110" y="220" textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fill="var(--ink-100)">
             H(a·R)
           </text>
 
-          <text x="110" y="252" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)" letterSpacing="0.16em">
+          <text x="110" y="252" textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)" letterSpacing="0.16em">
             DIFFIE-HELLMAN
           </text>
-          <text x="110" y="266" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill={matched ? "var(--g-50)" : "var(--ink-40)"} letterSpacing="0.16em">
+          <text x="110" y="266" textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill={matched ? "var(--g-50)" : "var(--ink-40)"} letterSpacing="0.16em">
             {matched ? "✓ SAME SECRET" : "computing…"}
           </text>
         </svg>

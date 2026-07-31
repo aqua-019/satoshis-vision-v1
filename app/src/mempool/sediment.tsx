@@ -6,6 +6,7 @@ import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 export const BLOCKS_CAP = 100;
@@ -138,9 +139,12 @@ export function SedGrainScatter({ data }: { data: MoneroLive }) {
   const pts = data.mempool.slice(0, 60);
   const maxFee = Math.max(...pts.map((t) => t.perB), 1);
   const maxSz = Math.max(...pts.map((t) => t.size), 1);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
   return (
     <SedCard title="Grain-size analysis" right={<span className="dim">fee/B × weight</span>}>
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
+      <div ref={ref} className="chart-box" style={{ width: "100%", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
         {[0, 0.25, 0.5, 0.75, 1].map((t) => <line key={t} x1={padL} x2={W - padR} y1={padT + ih * t} y2={padT + ih * t} stroke="rgba(255,255,255,0.04)" strokeDasharray="2 3" />)}
         <line x1={padL} y1={padT} x2={padL} y2={padT + ih} stroke="var(--ink-20)" strokeWidth="1" />
         <line x1={padL} y1={padT + ih} x2={W - padR} y2={padT + ih} stroke="var(--ink-20)" strokeWidth="1" />
@@ -152,9 +156,10 @@ export function SedGrainScatter({ data }: { data: MoneroLive }) {
           const f = t.perB / maxFee;
           return <circle key={t.id} cx={x} cy={y} r={2 + (t.size / maxSz) * 2.2} fill="var(--tk-accent)" opacity={0.4 + f * 0.5} style={f > 0.6 ? { filter: "drop-shadow(0 0 3px var(--tk-accent))" } : undefined} />;
         })}
-        <text x={padL} y={H - 6} fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)">weight →</text>
-        <text x={6} y={padT + 6} fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)" transform={`rotate(-90 8 ${padT + 6})`}>fee/B →</text>
+        <text x={padL} y={H - 6} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)">weight →</text>
+        <text x={6} y={padT + 6} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" transform={`rotate(-90 8 ${padT + 6})`}>fee/B →</text>
       </svg>
+      </div>
     </SedCard>
   );
 }

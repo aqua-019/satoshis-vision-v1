@@ -175,20 +175,11 @@ export function MarketsPage() {
           </p>
         </PanelFrame>
         <PanelFrame title={`Privacy peer group · normalized · ${range}`} right={<GroupBadge result={hist.peers} />}>
-          <MultiLine series={peerSeries} days={days} height={200} labels={false} />
-          <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: "var(--fs-label)" }}>
-            {peerSeries.map((s) => {
-              const base = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
-              const lastPct = s.data.length ? (s.data[s.data.length - 1] / base - 1) * 100 : null;
-              return (
-                <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
-                  <span className="dim">{s.label}</span>
-                  <b style={{ color: s.color }}>{lastPct == null ? "—" : (lastPct >= 0 ? "+" : "") + lastPct.toFixed(1) + "%"}{s.status === "stale" ? " ·stale" : ""}</b>
-                </span>
-              );
-            })}
-          </div>
+          {/* MultiLine now owns its own legend (charts.tsx ChartLegend), placed
+              inline on wide viewports and below the plot on narrow ones. The
+              hand-rolled copy that used to live here was the same markup and
+              only agreed with the inline version by accident. */}
+          <MultiLine series={peerSeries} days={days} height={200} />
         </PanelFrame>
       </section>
 
@@ -200,49 +191,62 @@ export function MarketsPage() {
       {/* Exchange volume (real) + swap-venue directory */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title="Exchange volume · 24h · top pairs" right={<SourceBadge status={tickers.status} />}>
-          <div className="table-scroll">
-            <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "130px 1fr 80px 70px", gap: 8, fontSize: "var(--fs-mono)" }}>
-              {["Venue", "Pair", "24h $", "Spread"].map((h) => (
-                <div key={h} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6 }}>{h}</div>
-              ))}
-              {topTickers.length === 0 ? (
-                <span className="mono dim" style={{ gridColumn: "1 / -1", padding: "10px 0" }}>Awaiting CoinGecko tickers…</span>
-              ) : (
-                topTickers.map((t, i) => (
-                  <React.Fragment key={t.venue + t.pair + i}>
-                    <span className="mono" style={{ color: "var(--ink-100)" }}>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
-                    <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{t.pair}</span>
-                    <span className="mono" style={{ textAlign: "right", color: "var(--ink-80)" }}>{fmtUsd(t.volUsd)}</span>
-                    <span className="mono" style={{ textAlign: "right", color: t.spreadPct <= 0.3 ? "var(--g-50)" : t.spreadPct <= 1 ? "var(--y-50)" : "var(--r-50)" }}>{t.spreadPct.toFixed(2)}%</span>
-                  </React.Fragment>
-                ))
-              )}
-              {DELISTED.map((e) => (
-                <React.Fragment key={e.name}>
-                  <span className="mono" style={{ color: "var(--r-50)" }}>{e.name}<span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·DELISTED</span></span>
-                  <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{e.note}</span>
-                  <span className="mono" style={{ textAlign: "right", color: "var(--ink-20)" }}>—</span>
-                  <span className="mono" style={{ textAlign: "right", color: "var(--ink-20)" }}>—</span>
-                </React.Fragment>
-              ))}
-            </div>
+          <div className="mk-table" style={{ ["--mk-cols" as string]: "130px 1fr 80px 70px" } as React.CSSProperties}>
+            {["Venue", "Pair", "24h $", "Spread"].map((h) => (
+              <div key={h} className="kicker mk-head">{h}</div>
+            ))}
+            {topTickers.length === 0 ? (
+              <span className="mono dim" style={{ padding: "10px 0" }}>Awaiting CoinGecko tickers…</span>
+            ) : (
+              topTickers.map((t, i) => (
+                <div className="mk-row" key={t.venue + t.pair + i}>
+                  <span className="mk-cell" style={{ color: "var(--ink-100)" }}>
+                    <span className="mk-lbl">Venue</span>
+                    <span>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
+                  </span>
+                  <span className="mk-cell dim"><span className="mk-lbl">Pair</span><span>{t.pair}</span></span>
+                  <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-80)" }}>
+                    <span className="mk-lbl">24h $</span><span>{fmtUsd(t.volUsd)}</span>
+                  </span>
+                  <span className="mk-cell" style={{ textAlign: "right", color: t.spreadPct <= 0.3 ? "var(--g-50)" : t.spreadPct <= 1 ? "var(--y-50)" : "var(--r-50)" }}>
+                    <span className="mk-lbl">Spread</span><span>{t.spreadPct.toFixed(2)}%</span>
+                  </span>
+                </div>
+              ))
+            )}
+            {DELISTED.map((e) => (
+              <div className="mk-row" key={e.name}>
+                <span className="mk-cell" style={{ color: "var(--r-50)" }}>
+                  <span className="mk-lbl">Venue</span>
+                  <span>{e.name}<span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·DELISTED</span></span>
+                </span>
+                <span className="mk-cell dim"><span className="mk-lbl">Pair</span><span>{e.note}</span></span>
+                <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-20)" }}><span className="mk-lbl">24h $</span><span>—</span></span>
+                <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-20)" }}><span className="mk-lbl">Spread</span><span>—</span></span>
+              </div>
+            ))}
           </div>
         </PanelFrame>
 
         <PanelFrame title="Atomic swap + P2P venues" right={<span>directory · volume not published</span>}>
-          <div className="table-scroll">
-            <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px", gap: 8, fontSize: "var(--fs-mono)" }}>
-              {["Venue", "Pairs", "Type"].map((h) => (
-                <div key={h} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6 }}>{h}</div>
-              ))}
-              {SWAP_DIRECTORY.map((e) => (
-                <React.Fragment key={e.name}>
-                  <span className="mono" style={{ color: e.type.includes("shut down") ? "var(--r-50)" : "var(--ink-100)" }}>{e.name}</span>
-                  <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{e.pair}</span>
-                  <span className="mono" style={{ textAlign: "right", fontSize: "var(--fs-label)", color: "var(--ink-60)", textTransform: "uppercase", letterSpacing: "0.06em" }}>{e.type}</span>
-                </React.Fragment>
-              ))}
-            </div>
+          {/* The TYPE column was clipped to a single character at 390px: it was a
+              .keep-cols grid, so the mobile layer forced max-content and the
+              swipe never reached it. As cards it simply wraps. */}
+          <div className="mk-table" style={{ ["--mk-cols" as string]: "140px 1fr 110px" } as React.CSSProperties}>
+            {["Venue", "Pairs", "Type"].map((h) => (
+              <div key={h} className="kicker mk-head">{h}</div>
+            ))}
+            {SWAP_DIRECTORY.map((e) => (
+              <div className="mk-row" key={e.name}>
+                <span className="mk-cell" style={{ color: e.type.includes("shut down") ? "var(--r-50)" : "var(--ink-100)" }}>
+                  <span className="mk-lbl">Venue</span><span>{e.name}</span>
+                </span>
+                <span className="mk-cell dim"><span className="mk-lbl">Pairs</span><span>{e.pair}</span></span>
+                <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-60)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                  <span className="mk-lbl">Type</span><span>{e.type}</span>
+                </span>
+              </div>
+            ))}
           </div>
           <p className="mono dim" style={{ marginTop: 12, fontSize: "var(--fs-body)", color: "var(--ink-40)" }}>
             ⓘ Decentralized and P2P venues don't report 24h volume to aggregators — listing them without numbers is the honest version.
@@ -257,7 +261,7 @@ export function MarketsPage() {
         ) : (
           <div style={{ display: "grid", gap: 6 }}>
             {venues.map((v) => (
-              <div key={v.venue} className="mono" style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 80px", gap: 10, alignItems: "center", fontSize: "var(--fs-mono)" }}>
+              <div key={v.venue} className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "minmax(90px, 120px) 1fr minmax(70px, 90px) minmax(64px, 80px)", gap: 10, alignItems: "center", fontSize: "var(--fs-mono)" }}>
                 <span style={{ color: "var(--ink-100)" }}>{v.venue}</span>
                 <span style={{ position: "relative", height: 12, background: "rgba(255,255,255,0.03)", borderRadius: 1, overflow: "hidden" }}>
                   <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "rgba(255,122,26,0.35)", boxShadow: "0 0 6px rgba(255,122,26,0.25)" }} />

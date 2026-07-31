@@ -8,6 +8,7 @@ import type { MoneroLive, Tx } from "@/data/types";
 import { fmtBytes, shortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents, type FeedEvent } from "@/data/useFeedEvents";
+import { useChartMetrics } from "@/design/useChartMetrics";
 
 interface ViewProps {
   data: MoneroLive;
@@ -64,6 +65,8 @@ export function ConCard({ title, right, children, pad = "14px 16px", style }: an
    for its whole pool lifetime. Radius/glow scale with real perB. */
 export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers: number[]; ready: boolean; size?: number }) {
   const tick = useTick(50);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: size, maxK: 1.6 });
   const cx = size / 2, cy = size / 2, r = size / 2 - 26;
 
   const pts = React.useMemo(() => {
@@ -94,7 +97,8 @@ export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers:
   };
 
   return (
-    <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }} data-diagram>
       <defs>
         <radialGradient id="con-sph" cx="40%" cy="35%"><stop offset="0%" stopColor="rgba(255,180,80,0.18)" /><stop offset="55%" stopColor="rgba(255,122,26,0.06)" /><stop offset="100%" stopColor="rgba(0,0,0,0.7)" /></radialGradient>
         <radialGradient id="con-atmo"><stop offset="60%" stopColor="rgba(255,122,26,0)" /><stop offset="100%" stopColor="rgba(255,122,26,0.32)" /></radialGradient>
@@ -135,10 +139,11 @@ export function ConSphere({ txs, tiers, ready, size = 460 }: { txs: Tx[]; tiers:
         <line x1={cx} y1={cy - r - 20} x2={cx} y2={cy - r - 5} /><line x1={cx} y1={cy + r + 5} x2={cx} y2={cy + r + 20} />
         <circle cx={cx} cy={cy} r={r + 7} strokeDasharray="2 8" />
       </g>
-      <text x={cx} y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--tk-accent)" letterSpacing="0.18em" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>
+      <text x={cx} y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--tk-accent)" letterSpacing="0.18em" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>
         {ready ? `MEMPOOL · ${txs.length} TX · LIVE` : "MEMPOOL · AWAITING FEED"}
       </text>
     </svg>
+    </div>
   );
 }
 
@@ -172,12 +177,15 @@ export function ConMempoolRadar({ data }: { data: MoneroLive }) {
   const W = 220, c = W / 2, R = c - 14;
   const txs = data.ready ? data.mempool.slice(0, 60) : [];
   const maxAge = Math.max(1, ...txs.map((t) => t.age));
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W, maxK: 1.6 });
   return (
     <ConCard title="Mempool polar · age vs fee" right={<span className="dim">{txs.length ? `${txs.length} tx` : "—"}</span>}>
-      <svg viewBox={`0 0 ${W} ${W}`} width="100%" style={{ display: "block", maxWidth: 220, margin: "0 auto" }}>
+      <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: 220, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+      <svg viewBox={`0 0 ${W} ${W}`} width="100%" style={{ display: "block" }} data-diagram>
         {[0.33, 0.66, 1].map((f, i) => <circle key={i} cx={c} cy={c} r={R * f} fill="none" stroke="rgba(255,122,26,0.14)" strokeWidth="1" strokeDasharray={i === 2 ? "none" : "2 5"} />)}
         {txs.length ? [0.33, 0.66, 1].map((f, i) => (
-          <text key={i} x={c + 3} y={c - R * f + 9} fontFamily="var(--f-mono)" fontSize="7" fill="var(--ink-40)">{Math.round(maxAge * f)}s</text>
+          <text key={i} x={c + 3} y={c - R * f + 9} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)">{Math.round(maxAge * f)}s</text>
         )) : null}
         {txs.map((t) => {
           const ang = hashToUnit(t.id) * Math.PI * 2;
@@ -193,6 +201,7 @@ export function ConMempoolRadar({ data }: { data: MoneroLive }) {
         })}
         <circle cx={c} cy={c} r="3" fill="var(--tk-accent)" style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }} />
       </svg>
+      </div>
     </ConCard>
   );
 }
@@ -276,19 +285,23 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
   if (ok) for (const t of data.mempool) { const i = feeTierIndex(t.perB, data.feeTiers); if (i >= 0) { bytes[i] += t.size; totalBytes += t.size; } }
   const med = data.ready ? medianPerB(data.mempool) : null;
   let acc = 0;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: 140 });
   return (
     <ConCard title="Mempool · bytes by fee tier" right={<span className="acc">{ok ? fmtBytes(totalBytes) : "—"}</span>}>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <svg viewBox="0 0 140 140" width="124" height="124">
+        <div ref={ref} style={{ width: 124 }}>
+        <svg viewBox="0 0 140 140" width="124" height="124" data-diagram>
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={sw} />
           {ok && totalBytes > 0 ? FEE_TIER_LABELS.map((label, i) => {
             const len = (bytes[i] / totalBytes) * circ;
             const el = <circle key={label} cx={cx} cy={cy} r={r} fill="none" stroke={TIER_COLORS[i]} strokeWidth={sw} strokeDasharray={len + " " + (circ - len)} strokeDashoffset={-acc} transform={`rotate(-90 ${cx} ${cy})`} style={{ filter: `drop-shadow(0 0 4px ${TIER_COLORS[i]})` }} />;
             acc += len; return el;
           }) : null}
-          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="16" fontWeight="500" fill="var(--tk-accent)">{data.ready ? data.mempool.length : "—"}</text>
-          <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="7.5" fill="var(--ink-40)" letterSpacing="0.12em">TX IN POOL</text>
+          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label * 1.3)} fontWeight="500" fill="var(--tk-accent)">{data.ready ? data.mempool.length : "—"}</text>
+          <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.12em">TX IN POOL</text>
         </svg>
+        </div>
         <div style={{ flex: 1 }}>
           {FEE_TIER_LABELS.map((label, i) => (
             <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", padding: "3px 0" }}>

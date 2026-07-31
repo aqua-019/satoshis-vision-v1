@@ -8,6 +8,7 @@ import { FEE_TIER_LABELS } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
 import type { FeedEvent } from "@/data/useFeedEvents";
 import { MempoolSearchBar, useMempoolTracking, MempoolTrackingDetail } from "@/mempool/mempool-shared";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive, Block } from "@/data/types";
 
 interface ViewProps {
@@ -183,12 +184,19 @@ export function TermFeeHisto({ data }: { data: MoneroLive }) {
 /* ── compact radial gauge ───────────────────────────────────── */
 export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 }: any) {
   const r = size / 2 - 8, c = size / 2, ring = 2 * Math.PI * r, dash = ring * (value / 100) * 0.75;
+  // The svg's viewBox is a square (0 0 size size) but its rendered box is
+  // size × size*0.78 — "meet" scales the whole square uniformly to fit the
+  // shorter dimension, so every user unit paints at an extra ×0.78 on top of
+  // whatever the width/vbWidth ratio gives. Divide the u() result to cancel it.
+  const SQUASH = 0.78;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: size, maxK: 1.6 });
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size * 0.78}>
+    <div ref={ref} className="chart-box" style={{ display: "flex", flexDirection: "column", alignItems: "center", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size * 0.78} data-diagram>
         <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" strokeDasharray={ring * 0.75 + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" />
         <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={dash + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
-        <text x={c} y={c + 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="15" fontWeight="500" fill={color}>{value}</text>
+        <text x={c} y={c + 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label) / SQUASH} fontWeight="500" fill={color}>{value}</text>
       </svg>
       <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: -2 }}>{label}</div>
     </div>

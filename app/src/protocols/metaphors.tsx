@@ -45,7 +45,7 @@ function HearthStage() {
   const subsidyShare = Math.max(0.01, 0.95 - Math.pow(year / 50, 0.42) * 0.94);
   const tailShare = 1 - subsidyShare;
   const W = 1080, H = 460;
-  const { u, fs } = useChartMetrics(ref, { vbWidth: W });
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   const logs = Array.from({ length: 4 }).map((_, i) => ({
     x: 200 + i * 60, base: 280, h: 90 - i * 8,
@@ -81,7 +81,7 @@ function HearthStage() {
         </g>
         {/* hearth body — sharp foreground */}
         <rect x="140" y="100" width="460" height="240" fill="#050505" stroke="rgba(255,122,26,0.18)" strokeWidth="0.5" />
-        <text x="148" y="92" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.16em">THE HEARTH · SECURITY BUDGET</text>
+        <text x="148" y="92" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.16em">THE HEARTH · SECURITY BUDGET</text>
 
         {/* logs with rim light */}
         {logs.map((l, i) => (
@@ -130,30 +130,30 @@ function HearthStage() {
 
         {/* tail emission stream label (particles handle the visual) */}
         <g transform="translate(660, 200)">
-          <text fontFamily="var(--f-mono)" fontSize="10" fill="var(--p-50)" letterSpacing="0.12em" filter="url(#fx-glow)">TAIL · 0.6 XMR</text>
-          <text y="14" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.06em">forever · every block</text>
+          <text fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--p-50)" letterSpacing="0.12em" filter="url(#fx-glow)">TAIL · 0.6 XMR</text>
+          <text y="14" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.06em">forever · every block</text>
           {/* arrow into hearth */}
           <path d="M 0 30 Q -40 50 -90 30" fill="none" stroke="rgba(184,122,255,0.5)" strokeWidth="1" strokeDasharray="2 3" />
         </g>
 
         {/* year marker with depth */}
         <g transform="translate(870, 70)">
-          <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">YEAR</text>
-          <text y="44" fontFamily="var(--f-mono)" fontSize="44" fill="var(--tk-accent)" filter="url(#fx-bloom)">
+          <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">YEAR</text>
+          <text y="44" fontFamily="var(--f-mono)" fontSize={u(fs.label * 3.5)} fill="var(--tk-accent)" filter="url(#fx-bloom)">
             {Math.floor(year)}
           </text>
-          <text y="66" fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-60)">since fork (2014)</text>
+          <text y="66" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-60)">since fork (2014)</text>
         </g>
 
         {/* share bars with glow */}
         <g transform="translate(700, 320)">
-          <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">REWARD COMPOSITION</text>
+          <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">REWARD COMPOSITION</text>
           <rect y="14" width="180" height="10" fill="rgba(255,122,26,0.12)" />
           <rect y="14" width={180 * subsidyShare} height="10" fill="var(--tk-accent)" filter="url(#fx-glow)" />
-          <text x="0" y="38" fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)">SUBSIDY {(subsidyShare * 100).toFixed(0)}%</text>
+          <text x="0" y="38" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--tk-accent)">SUBSIDY {(subsidyShare * 100).toFixed(0)}%</text>
           <rect y="50" width="180" height="10" fill="rgba(184,122,255,0.12)" />
           <rect y="50" width={180 * tailShare} height="10" fill="var(--p-50)" filter="url(#fx-glow)" />
-          <text x="0" y="74" fontFamily="var(--f-mono)" fontSize="9" fill="var(--p-50)">TAIL {(tailShare * 100).toFixed(0)}%</text>
+          <text x="0" y="74" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--p-50)">TAIL {(tailShare * 100).toFixed(0)}%</text>
         </g>
       </svg>
     </div>
@@ -209,13 +209,16 @@ function MetronomeStage() {
   const swing = Math.sin(tCycle * Math.PI * 2);
   const angle = swing * 22;
   const W = 900, H = 460;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   // count ticks (blocks) generated
   const blocksGenerated = Math.floor(tick / 50);
 
   // BTC for comparison drops a block every 600s; show ratio
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       <defs>
         <linearGradient id="metroPedestal" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#3a2410" />
@@ -231,9 +234,9 @@ function MetronomeStage() {
       <polygon points="350,360 540,360 510,150 380,150" fill="url(#metroPedestal)"
         stroke="rgba(255,122,26,0.35)" strokeWidth="1" />
       <rect x="365" y="170" width="160" height="20" fill="rgba(0,0,0,0.5)" />
-      <text x="445" y="184" fontFamily="var(--f-mono)" fontSize="11" textAnchor="middle"
+      <text x="445" y="184" fontFamily="var(--f-mono)" fontSize={u(fs.label)} textAnchor="middle"
         fill="var(--tk-accent)" letterSpacing="0.14em">2:00</text>
-      <text x="445" y="200" fontFamily="var(--f-mono)" fontSize="8" textAnchor="middle"
+      <text x="445" y="200" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
         fill="var(--ink-40)" letterSpacing="0.18em">BLOCK TARGET</text>
 
       {/* swinging arm + bob */}
@@ -249,18 +252,18 @@ function MetronomeStage() {
 
       {/* block crystal — appears each tick */}
       <g transform="translate(700, 220)">
-        <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">BLOCKS GENERATED</text>
-        <text y="40" fontFamily="var(--f-mono)" fontSize="38" fill="var(--tk-accent)"
+        <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">BLOCKS GENERATED</text>
+        <text y="40" fontFamily="var(--f-mono)" fontSize={u(fs.label * 3)} fill="var(--tk-accent)"
           style={{ filter: "drop-shadow(0 0 5px var(--tk-accent))" }}>{blocksGenerated}</text>
         <rect y="60" width="50" height="60" fill="url(#metroBlock)"
           stroke="var(--tk-accent)" strokeWidth="1" rx="3" />
-        <text x="25" y="98" fontFamily="var(--f-mono)" fontSize="10" textAnchor="middle"
+        <text x="25" y="98" fontFamily="var(--f-mono)" fontSize={u(fs.label)} textAnchor="middle"
           fill="#0e0805">#{blocksGenerated.toString().slice(-4)}</text>
       </g>
 
       {/* comparison — three metronomes' relative cadence */}
       <g transform="translate(80, 80)">
-        <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">CADENCE COMPARISON</text>
+        <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">CADENCE COMPARISON</text>
         {([
           { label: "MONERO · 2 min", w: 120, color: "var(--tk-accent)" },
           { label: "BITCOIN · 10 min", w: 24, color: "#f7931a" },
@@ -268,12 +271,13 @@ function MetronomeStage() {
           { label: "SOLANA · 0.4 sec",  w: 200, color: "var(--p-50)" },
         ] as { label: string; w: number; max?: number; color: string }[]).map((m, i) => (
           <g key={i} transform={`translate(0, ${20 + i * 20})`}>
-            <text x="0" y="9" fontFamily="var(--f-mono)" fontSize="9" fill={m.color}>{m.label}</text>
+            <text x="0" y="9" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill={m.color}>{m.label}</text>
             <rect x="124" y="0" width={Math.min(m.w, m.max || 200)} height="10" fill={m.color} opacity="0.4" />
           </g>
         ))}
       </g>
     </svg>
+    </div>
   );
 }
 
@@ -334,10 +338,12 @@ function SiloStage() {
   const xmrFaucetRate = year < 8 ? Math.exp(-year / 3) * 4 : 0.32;
 
   const W = 1000, H = 460;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   const SiloViz = ({ x, supply, max, faucet, label, color, drip }: { x: number; supply: number; max: number; faucet: number; label: string; color: string; drip: number }) => (
     <g transform={`translate(${x}, 0)`}>
-      <text x="80" y="20" fontFamily="var(--f-mono)" fontSize="10" textAnchor="middle"
+      <text x="80" y="20" fontFamily="var(--f-mono)" fontSize={u(fs.label)} textAnchor="middle"
         fill={color} letterSpacing="0.14em">{label}</text>
       {/* faucet */}
       <rect x="74" y="38" width="12" height="22" fill="#2a1810" />
@@ -347,7 +353,7 @@ function SiloStage() {
             fill={color} style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
         ))
       ) : (
-        <text x="80" y="80" fontFamily="var(--f-mono)" fontSize="8" textAnchor="middle"
+        <text x="80" y="80" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
           fill="var(--ink-40)">[shut]</text>
       )}
       {/* silo body */}
@@ -358,33 +364,35 @@ function SiloStage() {
         fill={color} opacity="0.35" />
       <line x1="24" y1={380 - (supply / max) * 218} x2="136" y2={380 - (supply / max) * 218}
         stroke={color} strokeWidth="1.5" />
-      <text x="80" y="396" fontFamily="var(--f-mono)" fontSize="11" textAnchor="middle"
+      <text x="80" y="396" fontFamily="var(--f-mono)" fontSize={u(fs.label)} textAnchor="middle"
         fill={color}>{supply.toFixed(2)}M</text>
-      <text x="80" y="410" fontFamily="var(--f-mono)" fontSize="8.5" textAnchor="middle"
+      <text x="80" y="410" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
         fill="var(--ink-40)">/ {max}M cap</text>
     </g>
   );
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       <SiloViz x={120} supply={btcSupply} max={21} faucet={btcFaucetRate} label="BITCOIN" color="#f7931a" drip={0} />
       <SiloViz x={420} supply={xmrSupply} max={50} faucet={xmrFaucetRate} label="MONERO" color="var(--tk-accent)" drip={40} />
 
       {/* year marker */}
       <g transform="translate(740, 80)">
-        <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">YEAR</text>
-        <text y="40" fontFamily="var(--f-mono)" fontSize="44" fill="var(--tk-accent)"
+        <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">YEAR</text>
+        <text y="40" fontFamily="var(--f-mono)" fontSize={u(fs.label * 3.5)} fill="var(--tk-accent)"
           style={{ filter: "drop-shadow(0 0 4px var(--tk-accent))" }}>{Math.floor(year)}</text>
-        <text y="62" fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-60)">since launch</text>
-        <text y="100" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.14em">BTC INFL</text>
-        <text y="118" fontFamily="var(--f-mono)" fontSize="14" fill="#f7931a">{(btcFaucetRate * 100).toFixed(2)}%</text>
-        <text y="146" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.14em">XMR INFL</text>
-        <text y="164" fontFamily="var(--f-mono)" fontSize="14" fill="var(--tk-accent)">{(xmrFaucetRate * 100 / 100).toFixed(2)}%</text>
-        <text y="200" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-40)" letterSpacing="0.06em">
+        <text y="62" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-60)">since launch</text>
+        <text y="100" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.14em">BTC INFL</text>
+        <text y="118" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="#f7931a">{(btcFaucetRate * 100).toFixed(2)}%</text>
+        <text y="146" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.14em">XMR INFL</text>
+        <text y="164" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--tk-accent)">{(xmrFaucetRate * 100 / 100).toFixed(2)}%</text>
+        <text y="200" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.06em">
           {year > 130 ? "BTC faucet closed forever" : year > 8 ? "XMR tail = constant" : "both faucets pouring"}
         </text>
       </g>
     </svg>
+    </div>
   );
 }
 
@@ -432,6 +440,8 @@ function ThermostatStage() {
   const hashrate = 6.5 + Math.sin(tick * 0.04) * 0.6 + Math.sin(tick * 0.015) * 0.3;
   const difficulty = hashrate * 119.5;     // tracks closely, lag ~1 block
   const W = 900, H = 460;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   const dial = (cx: number, cy: number, label: string, val: number, units: string, color: string, range: [number, number], animLag?: boolean) => {
     const min = range[0], max = range[1];
@@ -456,11 +466,11 @@ function ThermostatStage() {
           stroke={color} strokeWidth="2.5" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
         <circle r="4" fill={color} />
         {/* labels */}
-        <text y="-100" fontFamily="var(--f-mono)" fontSize="9" textAnchor="middle"
+        <text y="-100" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
           fill="var(--ink-40)" letterSpacing="0.16em">{label}</text>
-        <text y="106" fontFamily="var(--f-mono)" fontSize="22" textAnchor="middle"
+        <text y="106" fontFamily="var(--f-mono)" fontSize={u(fs.label * 1.8)} textAnchor="middle"
           fill={color}>{val.toFixed(2)}{units}</text>
-        <text y="124" fontFamily="var(--f-mono)" fontSize="9" textAnchor="middle"
+        <text y="124" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
           fill="var(--ink-40)">
           {animLag ? "tracking · " : ""}
           {min}…{max}
@@ -470,22 +480,24 @@ function ThermostatStage() {
   };
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       {dial(220, 220, "AMBIENT · HASHRATE", hashrate, " GH/s", "#5ed3f4", [5.5, 7.5])}
       {dial(450, 220, "THERMOSTAT · DIFFICULTY", difficulty, "G", "var(--tk-accent)", [650, 900], true)}
       {dial(680, 220, "ROOM TEMP · BLOCK TIME", 120 + Math.sin(tick * 0.04 + 0.1) * 2, "s", "var(--g-50)", [110, 130])}
 
       {/* arrow chain */}
-      <text x="335" y="225" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="18" fill="var(--ink-40)">→</text>
-      <text x="335" y="244" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.14em">adjusts</text>
-      <text x="565" y="225" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="18" fill="var(--ink-40)">→</text>
-      <text x="565" y="244" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.14em">keeps stable</text>
+      <text x="335" y="225" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label * 1.5)} fill="var(--ink-40)">→</text>
+      <text x="335" y="244" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.14em">adjusts</text>
+      <text x="565" y="225" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label * 1.5)} fill="var(--ink-40)">→</text>
+      <text x="565" y="244" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.14em">keeps stable</text>
 
       {/* explanation */}
-      <text x="450" y="400" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-60)" letterSpacing="0.06em">
+      <text x="450" y="400" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-60)" letterSpacing="0.06em">
         Hashrate drifts. Difficulty chases it every block. Block time stays at 2:00.
       </text>
     </svg>
+    </div>
   );
 }
 
@@ -537,12 +549,15 @@ function AuctionStage({ mempool, height }: { mempool: Tx[]; height: number }) {
   const visible = sorted.slice(0, 24);
 
   const W = 1000, H = 460;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       {/* podium */}
       <rect x="40" y="60" width="920" height="60" fill="rgba(0,0,0,0.55)" stroke="rgba(255,122,26,0.18)" />
-      <text x="60" y="84" fontFamily="var(--f-mono)" fontSize="10" fill="var(--tk-accent)" letterSpacing="0.18em">BLOCK #{(height || 3676070) + blockNum}</text>
-      <text x="60" y="104" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.14em">
+      <text x="60" y="84" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--tk-accent)" letterSpacing="0.18em">BLOCK #{(height || 3676070) + blockNum}</text>
+      <text x="60" y="104" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.14em">
         ACCEPTING TOP {slots} PADDLES · 2:00 UNTIL HAMMER ↓ ·
         <tspan fill="var(--y-50)" letterSpacing="0.14em"> {((100 - ((tick % 80) / 80) * 100) | 0)}%</tspan>
       </text>
@@ -565,11 +580,11 @@ function AuctionStage({ mempool, height }: { mempool: Tx[]; height: number }) {
               stroke={isSeated ? "var(--tk-accent)" : "var(--ink-20)"}
               strokeWidth="1"
               style={isSeated ? { filter: "drop-shadow(0 0 5px rgba(255,122,26,0.5))" } : undefined} />
-            <text x="22" y="22" fontFamily="var(--f-mono)" fontSize="8" textAnchor="middle"
+            <text x="22" y="22" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
               fill={isSeated ? "var(--tk-accent)" : "var(--ink-40)"}>FEE</text>
-            <text x="22" y="38" fontFamily="var(--f-mono)" fontSize="10" textAnchor="middle"
+            <text x="22" y="38" fontFamily="var(--f-mono)" fontSize={u(fs.label)} textAnchor="middle"
               fill={isSeated ? "#fff1e0" : "var(--ink-60)"}>{(t.perB / 1000).toFixed(1)}</text>
-            <text x="22" y="48" fontFamily="var(--f-mono)" fontSize="7" textAnchor="middle"
+            <text x="22" y="48" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
               fill={isSeated ? "var(--ink-80)" : "var(--ink-40)"}>k/B</text>
           </g>
         );
@@ -578,11 +593,12 @@ function AuctionStage({ mempool, height }: { mempool: Tx[]; height: number }) {
       {/* legend */}
       <g transform="translate(40, 410)">
         <rect x="0" y="0" width="14" height="14" fill="rgba(255,122,26,0.32)" stroke="var(--tk-accent)" />
-        <text x="20" y="11" fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)">SEATED · paid the price</text>
+        <text x="20" y="11" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--tk-accent)">SEATED · paid the price</text>
         <rect x="220" y="0" width="14" height="14" fill="rgba(255,255,255,0.04)" stroke="var(--ink-20)" />
-        <text x="240" y="11" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)">RETURNED TO ROOM · waits for next block</text>
+        <text x="240" y="11" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-60)">RETURNED TO ROOM · waits for next block</text>
       </g>
     </svg>
+    </div>
   );
 }
 
@@ -644,9 +660,11 @@ function SkylineStage({ poolDist }: { poolDist: Pool[] }) {
   const buildingW = 56;
   const gap = 8;
   const startX = 80;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto" }}>
+    <div ref={ref} className="chart-box" style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
       {/* Atmospheric particles — fog + sparks rising from city */}
       {!reduce && <ParticleStream
         width={W} height={H}
@@ -661,7 +679,7 @@ function SkylineStage({ poolDist }: { poolDist: Pool[] }) {
         trail
         depth
       />}
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }} data-diagram>
         <SvgDefs />
         {/* deep sky gradient */}
         <defs>
@@ -717,12 +735,14 @@ function SkylineStage({ poolDist }: { poolDist: Pool[] }) {
               {/* light shaft rising from building */}
               <rect x={x + buildingW / 2 - 2} y={baseY - h - 60} width="4" height="60"
                 fill={dec ? "url(#fx-orb-cyan)" : "url(#fx-flame-core)"} opacity="0.2" />
-              {/* label */}
-              <text x={x + buildingW / 2} y={baseY + 16} fontFamily="var(--f-mono)" fontSize="9"
-                textAnchor="middle" fill={dec ? "var(--g-50)" : "var(--r-50)"} letterSpacing="0.04em">
-                {p.name.slice(0, 8)}
+              {/* label — 4 chars (not 8) so neighbouring buildings' names,
+                  now rendered at legible tick size, don't run into each
+                  other across the 8-unit gap between 56-unit-wide towers */}
+              <text x={x + buildingW / 2} y={baseY + 16} fontFamily="var(--f-mono)" fontSize={u(fs.tick)}
+                textAnchor="middle" fill={dec ? "var(--g-50)" : "var(--r-50)"}>
+                {p.name.slice(0, 4)}
               </text>
-              <text x={x + buildingW / 2} y={baseY + 28} fontFamily="var(--f-mono)" fontSize="9"
+              <text x={x + buildingW / 2} y={baseY + 34} fontFamily="var(--f-mono)" fontSize={u(fs.tick)}
                 textAnchor="middle" fill="var(--ink-60)">
                 {(p.share * 100).toFixed(0)}%
               </text>
@@ -737,20 +757,22 @@ function SkylineStage({ poolDist }: { poolDist: Pool[] }) {
           );
         })}
 
-        {/* HHI gauge */}
-        <g transform="translate(740, 60)">
-          <text fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">HHI · CONCENTRATION</text>
+        {/* HHI gauge — shifted from x=740 to x=620 and letter-spacing cut so
+            "HHI · CONCENTRATION" at legible tick size stays inside W=1000 */}
+        <g transform="translate(620, 60)">
+          <text fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.06em">HHI · CONCENTRATION</text>
           <rect x="0" y="14" width="220" height="10" fill="rgba(0,0,0,0.5)" stroke="var(--ink-20)" />
           <rect x="0" y="14" width={Math.min(220, (hhi / 5000) * 220)} height="10" fill={hhiColor}
             filter="url(#fx-glow)" />
+          {/* 1.5K tick kept as a line only — labeling both the 1.5K and 2.5K
+              thresholds text-and-all left only 44 units between two ~50-unit
+              labels once they were legible size; one label is enough context. */}
           <line x1={(1500 / 5000) * 220} y1="14" x2={(1500 / 5000) * 220} y2="24" stroke="rgba(255,255,255,0.3)" />
-          <text x={(1500 / 5000) * 220} y="36" fontFamily="var(--f-mono)" fontSize="8" textAnchor="middle"
-            fill="var(--ink-40)">1.5K</text>
           <line x1={(2500 / 5000) * 220} y1="14" x2={(2500 / 5000) * 220} y2="24" stroke="rgba(255,255,255,0.3)" />
-          <text x={(2500 / 5000) * 220} y="36" fontFamily="var(--f-mono)" fontSize="8" textAnchor="middle"
+          <text x={(2500 / 5000) * 220} y="36" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
             fill="var(--ink-40)">2.5K</text>
-          <text x="0" y="60" fontFamily="var(--f-mono)" fontSize="24" fill={hhiColor} filter="url(#fx-bloom)">{Math.round(hhi).toLocaleString()}</text>
-          <text x="0" y="80" fontFamily="var(--f-mono)" fontSize="10" fill={hhiColor} letterSpacing="0.16em">{hhiLabel}</text>
+          <text x="0" y="92" fontFamily="var(--f-mono)" fontSize={u(fs.label * 2)} fill={hhiColor} filter="url(#fx-bloom)">{Math.round(hhi).toLocaleString()}</text>
+          <text x="0" y="124" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill={hhiColor} letterSpacing="0.16em">{hhiLabel}</text>
         </g>
       </svg>
     </div>
@@ -808,9 +830,11 @@ function BloodhoundStage() {
     { x: 860, label: "FCMP++",         defeat: "forest smells same" },
   ];
   const houndX = 80 + Math.min(stage + 1, stations.length) * 130 + Math.sin(tick * 0.1) * 4;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto" }}>
+    <div ref={ref} className="chart-box" style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
       {/* Forest mist particles + spore haze */}
       {!reduce && <ParticleStream
         width={W} height={H}
@@ -825,7 +849,7 @@ function BloodhoundStage() {
         trail
         depth
       />}
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }} data-diagram>
         <SvgDefs />
 
         {/* layered forest depth — background trees */}
@@ -851,7 +875,7 @@ function BloodhoundStage() {
         {/* ground with subtle gradient */}
         <line x1="0" y1="320" x2={W} y2="320" stroke="rgba(255,122,26,0.18)" strokeDasharray="3 4" />
         <rect x="0" y="320" width={W} height={H - 320} fill="rgba(184,122,255,0.04)" />
-        <text x="20" y="340" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.16em">TRAIL ↓</text>
+        <text x="20" y="312" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.16em">TRAIL ↓</text>
 
         {/* stations — gates */}
         {stations.map((s, i) => {
@@ -865,10 +889,10 @@ function BloodhoundStage() {
               <line x1="-14" y1="0" x2="14" y2="0" stroke={passed ? "var(--p-50)" : "var(--ink-20)"} strokeWidth="2"
                 filter={passed ? "url(#fx-glow)" : undefined} />
               {passed ? <circle cx="0" cy="60" r="32" fill="url(#fx-orb-purple)" opacity="0.18" /> : null}
-              <text x="0" y="-12" fontFamily="var(--f-mono)" fontSize="9" textAnchor="middle"
+              <text x="0" y="-12" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
                 fill={passed ? "var(--p-50)" : "var(--ink-60)"} letterSpacing="0.06em">{s.label}</text>
               {passed ? (
-                <text x="0" y="142" fontFamily="var(--f-mono)" fontSize="8.5" textAnchor="middle"
+                <text x="0" y="142" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
                   fill="var(--p-50)" letterSpacing="0.02em">{s.defeat}</text>
               ) : null}
             </g>
@@ -887,9 +911,9 @@ function BloodhoundStage() {
           <line x1="-10" y1="10" x2="-10" y2="18" stroke="var(--p-50)" strokeWidth="1.2" />
           <line x1="0"   y1="10" x2="0"   y2="18" stroke="var(--p-50)" strokeWidth="1.2" />
           <line x1="10"  y1="10" x2="10"  y2="18" stroke="var(--p-50)" strokeWidth="1.2" />
-          <text x="36" y="-12" fontFamily="var(--f-mono)" fontSize="14" fill="var(--p-50)" filter="url(#fx-glow)">?</text>
-          <text x="32" y="-22" fontFamily="var(--f-mono)" fontSize="10" fill="var(--p-50)" opacity="0.6">?</text>
-          <text x="0" y="40" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9"
+          <text x="36" y="-12" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--p-50)" filter="url(#fx-glow)">?</text>
+          <text x="32" y="-22" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--p-50)" opacity="0.6" data-decorative>?</text>
+          <text x="0" y="40" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)}
             fill="var(--p-50)" letterSpacing="0.1em">CHAINALYSIS</text>
         </g>
 
@@ -906,9 +930,12 @@ function BloodhoundStage() {
           })}
         </g>
 
-        <text x={W / 2} y={400} fontFamily="var(--f-mono)" fontSize="10" textAnchor="middle"
+        {/* wrapped onto two lines — the single-sentence caption at legible
+            mobile size was wider than the artboard itself */}
+        <text x={W / 2} y={392} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} textAnchor="middle"
           fill="var(--ink-60)" letterSpacing="0.06em">
-          Each station erases one dimension of the trail. By station 6 there's nothing left to chase.
+          <tspan x={W / 2} dy="0">Each station erases one dimension of the trail.</tspan>
+          <tspan x={W / 2} dy="1.3em">By station 6 there's nothing left to chase.</tspan>
         </text>
       </svg>
     </div>
@@ -956,9 +983,11 @@ function BalanceStage() {
   const tick = reduce ? 0 : live;
   const lean = Math.sin(tick * 0.08) * 6;
   const W = 900, H = 460;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto" }}>
+    <div ref={ref} className="chart-box" style={{ position: "relative", width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
       {/* Crypto-particle field: signed commitments drifting */}
       {!reduce && <ParticleStream
         width={W} height={H}
@@ -971,7 +1000,7 @@ function BalanceStage() {
         trail
         depth
       />}
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }}>
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ position: "relative", display: "block" }} data-diagram>
         <SvgDefs />
         <defs>
           <linearGradient id="envelopeGrad">
@@ -1005,11 +1034,11 @@ function BalanceStage() {
                 <line x1="40" y1="0" x2="20" y2="14" stroke="var(--tk-accent)" strokeWidth="0.5" />
                 {/* wax seal */}
                 <circle cx="20" cy="14" r="4" fill="rgba(255,77,109,0.5)" stroke="var(--r-50)" strokeWidth="0.4" />
-                <text x="20" y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--y-50)">?</text>
+                <text x="20" y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--y-50)">?</text>
               </g>
             ))}
           </g>
-          <text x="-180" y="84" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)" letterSpacing="0.16em">INPUTS · 3 sealed</text>
+          <text x="-180" y="84" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--tk-accent)" letterSpacing="0.16em">INPUTS · 3 sealed</text>
 
           {/* right pan (outputs) — purple */}
           <line x1="180" y1="3" x2="180" y2="48" stroke="rgba(184,122,255,0.6)" />
@@ -1021,25 +1050,25 @@ function BalanceStage() {
                 <line x1="0" y1="0" x2="20" y2="14" stroke="var(--p-50)" strokeWidth="0.5" />
                 <line x1="40" y1="0" x2="20" y2="14" stroke="var(--p-50)" strokeWidth="0.5" />
                 <circle cx="20" cy="14" r="4" fill="rgba(94,211,244,0.5)" stroke="var(--c-50)" strokeWidth="0.4" />
-                <text x="20" y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--y-50)">?</text>
+                <text x="20" y="22" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--y-50)">?</text>
               </g>
             ))}
           </g>
-          <text x="180" y="84" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--p-50)" letterSpacing="0.16em">OUTPUTS · 2 sealed</text>
+          <text x="180" y="84" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--p-50)" letterSpacing="0.16em">OUTPUTS · 2 sealed</text>
         </g>
 
         {/* sum-equation with bloom */}
-        <text x={W / 2} y="80" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="15"
+        <text x={W / 2} y="80" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label * 1.2)}
           fill="var(--ink-100)" letterSpacing="0.06em" filter="url(#fx-glow)">
           Σ <tspan fill="var(--tk-accent)">inputs</tspan> = Σ <tspan fill="var(--p-50)">outputs</tspan> + <tspan fill="var(--y-50)">fee</tspan>
         </text>
-        <text x={W / 2} y="106" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="11"
+        <text x={W / 2} y="106" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)}
           fill="var(--ink-40)" letterSpacing="0.08em">
           verifiable by anyone · without opening any envelope
         </text>
 
         {/* annotation */}
-        <text x={W / 2} y="436" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10"
+        <text x={W / 2} y="436" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)}
           fill="var(--g-50)" letterSpacing="0.06em" filter="url(#fx-glow)">
           <tspan>✓</tspan> commitment balance verified <tspan fill="var(--ink-40)">·</tspan> bulletproofs+ range proof valid
         </text>

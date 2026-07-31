@@ -13,6 +13,7 @@ import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
 import { Stat } from "@/design/primitives";
 import { ProtoArtboard } from "@/design/ProtoArtboard";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -56,9 +57,12 @@ function LighthouseStage({ hashrate, difficulty }: { hashrate: number; difficult
   const beamHalf = 64; // half-width of the cone at its far end
 
   const beamPts = `${cx},${cy} ${cx + beamLen},${cy - beamHalf} ${cx + beamLen},${cy + beamHalf}`;
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       <defs>
         <linearGradient id="lhBeam" x1="0" y1="0" x2="1" y2="0">
           <stop offset="0%" stopColor="rgba(255,210,130,0.95)" />
@@ -104,16 +108,17 @@ function LighthouseStage({ hashrate, difficulty }: { hashrate: number; difficult
       <circle cx={cx} cy={cy} r={lampR} fill="rgba(255,240,200,0.95)" style={{ filter: "drop-shadow(0 0 12px rgba(255,180,90,0.9))" }} />
 
       {/* labels */}
-      <text x="40" y="44" fontFamily="var(--f-mono)" fontSize="11" fill="var(--tk-accent)" letterSpacing="0.16em">
+      <text x="40" y="44" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--tk-accent)" letterSpacing="0.16em">
         SWEEP = HASHRATE · {hashG.toFixed(2)} GH/s
       </text>
-      <text x="40" y="64" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.12em">
+      <text x="40" y="64" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.12em">
         LAMP WEIGHT = DIFFICULTY · {diffG.toFixed(0)}G
       </text>
-      <text x={cx} y="430" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="10" fill="var(--ink-60)" letterSpacing="0.06em">
+      <text x={cx} y="430" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={u(fs.label)} fill="var(--ink-60)" letterSpacing="0.06em">
         Hashrate rises, the lamp grows heavier — but the beam still sweeps once every 2:00.
       </text>
     </svg>
+    </div>
   );
 }
 

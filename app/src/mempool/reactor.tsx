@@ -199,7 +199,7 @@ function RingSigFan() {
   const N = 16;
   const cx = 100, cy = 100, r = 80;
   return (
-    <svg width={210} height={210} viewBox="0 0 210 210">
+    <svg width={210} height={210} viewBox="0 0 210 210" data-chart>
       <defs>
         <radialGradient id="ringPulse">
           <stop offset="0%" stopColor="#ff7a1a" stopOpacity="0.8" />
@@ -236,7 +236,7 @@ function RingSigFan() {
         );
       })}
       <circle cx={cx} cy={cy} r="6" fill="#fff1e0" style={{ filter: "drop-shadow(0 0 10px #ff7a1a)" }} />
-      <text x={cx} y={cy + 28} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)" letterSpacing="0.1em">
+      <text x={cx} y={cy + 28} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)" letterSpacing="0.1em">
         TX · 16 RING · 1 REAL
       </text>
     </svg>

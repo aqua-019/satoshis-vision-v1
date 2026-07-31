@@ -18,7 +18,7 @@ import * as React from "react";
 
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
-import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS } from "./future/data";
+import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS, roadmapStatus } from "./future/data";
 import { ProtocolCard, DevLabPulseCard, MoneroNewsCard } from "./future/cards";
 import { ProtoPopup } from "./future/ProtoPopup";
 import { EcoPopup } from "./future/EcoPopup";
@@ -46,7 +46,7 @@ export function FuturePage() {
             <div key={r.v} className="stop" style={{ ["--node-c" as never]: r.c }}>
               <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.2em", color: r.c, textShadow: `0 0 8px ${r.c}66` }}>{r.v}{r.on ? " ● NEXT" : ""}</div>
               <div className="serif" style={{ fontSize: "clamp(15px, 1.15vw, 20px)", color: "var(--ink-100)", marginTop: 3 }}>{r.t}</div>
-              <div className="mono dim2" style={{ fontSize: "var(--fs-label)", marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{r.d}</div>
+              <div className="mono dim2" style={{ fontSize: "var(--fs-label)", marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{roadmapStatus(r)}</div>
             </div>
           ))}
         </div>

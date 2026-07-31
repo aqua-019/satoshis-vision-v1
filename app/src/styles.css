@@ -438,6 +438,42 @@ header > div > h1.serif {
   }
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   DATA TABLE → CARDS  (Markets venues, and anything else that must fit 390)
+   ══════════════════════════════════════════════════════════════════════
+   Same trick as .lg-*: the column track list is passed in as --mk-cols, NOT as
+   an inline `grid-template-columns`. The mobile blanket rule below matches the
+   literal substring "grid-template-columns" in the style ATTRIBUTE, so a custom
+   property slips past it and the table needs no .keep-cols escape hatch — which
+   is what forced `min-width: max-content` and clipped the TYPE column to one
+   character in the first place.
+
+   Desktop: .mk-row is display:contents, so .mk-cell children ARE the grid items.
+   Mobile:  .mk-table becomes a flex column and each .mk-row is a self-contained
+            card of label→value lines. No horizontal scroll, nothing to clip. */
+.mk-table { display: grid; grid-template-columns: var(--mk-cols); gap: 8px; font-family: var(--f-mono); font-size: var(--fs-mono); }
+.mk-row { display: contents; }
+.mk-lbl { display: none; }
+.mk-head { border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+
+@media (max-width: 768px) {
+  .mk-table { display: flex; flex-direction: column; gap: 8px; }
+  .mk-head { display: none; }
+  .mk-row {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 10px 12px; border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--surface-ground);
+  }
+  .mk-cell { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .mk-lbl {
+    display: inline; flex-shrink: 0;
+    color: var(--ink-60); font-size: var(--fs-label);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  /* the value half of each line right-aligns, whatever it was on desktop */
+  .mk-cell > :last-child { text-align: right !important; }
+}
+
 /* quick-reference legend — a class so the blanket rule leaves it alone */
 .lg-legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
 
@@ -1122,6 +1158,12 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .mp-canvas-scroll * { min-width: revert !important; }                  /* undo the 0 inside the canvas */
   .mp-canvas-scroll > *:not(.mp-view--fit) { min-width: 900px !important; } /* desktop proportions for non-fit views */
   .main svg, .main canvas, .main img { max-width: 100%; height: auto; }
+  /* …but NOT inside a simulator stage. That stage now scrolls, and a diagram
+     there is either fluid (viewBox tracks the container) or fixed-pixel and
+     meant to pan. `max-width: 100%` silently shaved a 200px station svg to
+     198px — a 1% scale that dragged its 12px labels to 11.88px and failed the
+     floor for no visible reason. Mirrors the .mp-canvas-scroll exemption. */
+  .proto-stage svg { max-width: none; }
   .mp-canvas-scroll svg, .mp-canvas-scroll canvas { max-width: none; }   /* but let the canvas overflow & pan */
   .main [style*="padding: 32px 48px"] { padding-left: 16px !important; padding-right: 16px !important; }
   [style*="padding: 20px 48px 60px"] { padding-left: 16px !important; padding-right: 16px !important; }  /* Monero + deep-link tx container — widen the text column */
@@ -1143,6 +1185,14 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .main { padding: 12px 14px; }
   .card, [class*="panel"] { padding: 14px !important; }
   .panel-b { padding: 12px !important; }
+
+  /* Panel headers are `justify-content: space-between` with a nowrap title on
+     the left and a provenance badge on the right. At 390px the pair exceeds the
+     panel and the badge was SILENTLY CLIPPED — ".panel" has no scroller, so
+     "COINGECKO · LOADING · 0 BARS" simply ended mid-word. §4: never silent
+     clipping. Let the row wrap instead. */
+  .panel-h { flex-wrap: wrap; row-gap: 4px; }
+  .panel-h .l, .panel-h .r { flex-wrap: wrap; min-width: 0; }
 
   /* P2 — breadcrumb status drops to its own line; header content wraps */
   .crumbs { flex-wrap: wrap; row-gap: 4px; }
@@ -1190,7 +1240,58 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .proto-head .r { flex-wrap: wrap; }
   .proto-head .title { font-size: 24px; }
   .proto-body { grid-template-columns: 1fr; }
-  .proto-stage { overflow: visible; padding: 16px; min-height: 56vh; }
+  /* A hand-placed 900-unit artboard cannot show 12px labels inside 358px —
+     the type would have to inflate ~3× and would then overrun the geometry it
+     annotates (measured: the decoy axis caption ran past the plot edge and
+     collided with every day tick). So the stage PANS. useChartMetrics gives
+     each diagram a minWidth = vbWidth / maxK, which is the narrowest it can be
+     while its labels stay both legible and non-colliding.
+
+     §4.1: a scroll container is only acceptable WITH a visible affordance —
+     never silent clipping. Hence the edge fade and the ↔ hint below. */
+  .proto-stage {
+    padding: 16px; min-height: 56vh;
+    overflow-x: auto; overflow-y: visible;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+  /* Re-assert the diagram's own minimum AFTER the blanket
+     `.proto-body * { min-width: 0 !important }` above, which would otherwise
+     collapse it and leave the artboard scaled down to illegibility again.
+     The value arrives as a custom property (--chart-min, set inline by
+     useChartMetrics's `minWidth`) precisely because the blanket cannot see it. */
+  .proto-stage .chart-box { min-width: var(--chart-min, 0px) !important; }
+
+  /* Outside a simulator (e.g. /monero/tech) there is no scrolling stage to pan
+     in, and `.art` is `overflow-x: clip` — so giving the BOX a min-width just
+     pushed a 575px diagram under a clip and silently cut it off. Here the box
+     itself is the scroller and the svg carries the minimum, which keeps the
+     page at 390px while the diagram pans inside it. */
+  /* …but NOT inside the mempool pan canvas. Those views are already held at
+     desktop proportions and scaled to fit by useFitToView; handing them an
+     extra min-width makes the content wider, so the fit hook scales the whole
+     view DOWN to compensate (measured: reactor at "100%" came back as
+     matrix(0.847…) instead of identity, failing verify-fit). That canvas owns
+     its own sizing — mirrors the `.mp-canvas-scroll * { min-width: revert }`
+     exemption above. */
+  .main .chart-box:not(.mp-canvas-scroll *) {
+    overflow-x: auto; overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .main .chart-box:not(.mp-canvas-scroll *) > svg { min-width: var(--chart-min, 0px); }
+
+  /* the fade sits on the stage, not the scroller's content, so it stays put
+     while the diagram moves under it */
+  .proto-body { position: relative; }
+  .proto-body::after {
+    content: "↔";
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    z-index: 3; pointer-events: none;
+    font: 12px/1 var(--f-mono); color: var(--ink-40);
+    padding: 6px 4px; border-radius: 2px;
+    background: linear-gradient(to right, transparent, var(--surface-ground) 55%);
+  }
   .proto-panel { border-left: none; border-top: 1px solid var(--rule);
                  background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent) var(--surface-ground); }
 
@@ -1220,6 +1321,11 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .lg-acts-stack { display: flex; flex-direction: column; }
   .lg-legend { grid-template-columns: repeat(2, 1fr); }
   .lg-panel { padding: 10px 14px 14px; }
+  /* The search box shares .chip-row with four filter chips. Its `min-width:
+     180px` is cancelled by the blanket `.main * { min-width: 0 !important }`
+     above, so it collapsed to whatever was left over — about 50px, rendering
+     as "Sea". Give it its own row instead of fighting for the remainder. */
+  .lg-search { flex-basis: 100%; }
 
   /* ── v6.0.1 mobile: FUTURE + TRUSTED PEERS modal/rail ─────────── */
   :root { --pad-page: 0px; }        /* .main already supplies the gutter at this width */
