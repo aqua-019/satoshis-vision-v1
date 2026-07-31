@@ -7,62 +7,66 @@ It serves as persistent memory so context, decisions, and progress carry forward
 
 ## Project Overview
 
-**Satoshi's Vision Archive** — An educational static website exploring the evolution
-from Bitcoin to Monero, documenting Satoshi Nakamoto's writings on privacy and the
-divergent paths of transparent vs. private cryptocurrency.
+**xmr.irish — Satoshi's Vision Archive** — An educational site on Bitcoin's
+surveillance trajectory and Monero's privacy architecture, rendered from live
+chain and market data.
 
-- **Type**: Static HTML site (no build step, no framework)
-- **Hosting**: Netlify / Vercel / GitHub Pages
+- **Type**: React 18 + Vite + TypeScript SPA in `app/`, prerendered to static HTML at build
+- **Hosting**: Vercel only (`vercel.json`), with CommonJS serverless functions in `api/`
 - **License**: MIT
 
 ## Tech Stack
 
-- Pure HTML/CSS/JS (no frameworks, no bundler)
-- Netlify config: `netlify.toml`
-- Vercel config: `vercel.json`
-- No `package.json` — no npm dependencies
+- `app/` — React 18 · Vite 5 · TS strict. The only front-end. `app/package.json` is the
+  only real package manifest (`relay/` has one; there is no root `package.json`).
+- `api/` — Vercel serverless, **CommonJS**. Mixing module systems here has broken this
+  project before.
+- `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
+- Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
+  `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
+- Verification: 44 `verify-*.mjs` files (`app/` ×40, `api/` ×4) — 43 gates plus
+  `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
+  are offline source assertions. `.github/workflows/ci.yml` runs **24 distinct files** on
+  PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
+  (11 gates, no browser) and `verify:e2e` (9 gates, against `scripts/serve-dist.mjs`).
+  The remaining ~19 are wired to neither npm nor CI — several expect live upstreams.
 
-## Site Pages
+## Site Routes
 
-| File                    | Purpose                                      |
-|-------------------------|----------------------------------------------|
-| `index.html`            | Splash page — privacy evolution overview     |
-| `bottom-line.html`      | Full BTC/XMR analysis, timeline, bounties    |
-| `hold-monero.html`      | Exchange widget demo (Wagyu + ChangeNOW)     |
-| `btc-xmr-education.html` | Visual infographics comparing BTC vs XMR   |
-| `quotes.html`           | Interactive Satoshi quote explorer (18 quotes)|
-| `secrets.html`          | Deep dive into Satoshi's privacy writings    |
-| `timeline.html`         | Historical milestones visualization          |
+The 11 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
+both `scripts/prerender.mjs` (emits `dist/<route>/index.html` so the site works with JS
+off) and `scripts/gen-sitemap.mjs` (emits `dist/sitemap.xml` + `dist/robots.txt`).
+Add or remove a route there and both follow.
+
+`/` · `/mempool` · `/markets` · `/network` · `/education` · `/monero` · `/future` ·
+`/peers` · `/simulate` · `/node` · `/sources`
+
+Not in that list, by design: `/mempool/tx/:txid` (unbounded param, falls through to the
+SPA shell) and `/monero/future` (a `<Navigate>` redirect to `/future`).
+
+The route set is also duplicated, by hand, in `src/layout/NavTop.tsx` (`NAV`),
+`src/design/RootBoundary.tsx` (`ROUTES`) and `verify-lib.mjs` (`ROUTES`, a test-surface
+list that expands tabs and query permutations). Those three are not yet unified.
 
 ## Development Conventions
 
-- All pages are self-contained HTML files with inline CSS and JS
-- No build process — edit HTML files directly
-- Security headers configured in `netlify.toml` and `vercel.json`
-- Keep pages consistent in styling and navigation
-
-## Dynamic Features
-
-### PriceService (index.html)
-- Shared pub/sub price service: `PriceService.subscribe(fn)` pattern
-- Fetches BTC/USD, XMR/USD from CoinGecko, calculates BTC/XMR ratio
-- 30-minute refresh interval (was 60s — reduced to respect rate limits)
-- Any component can subscribe to price updates via `PriceService.subscribe()`
-
-### WidgetLoader (hold-monero.html)
-- IntersectionObserver-based lazy loading for all exchange iframes
-- ChangeNOW and Wagyu iframes only load when scrolled into view
-- Tracks loaded state to prevent duplicate loads
-
-### SwapTracker (hold-monero.html)
-- Users can check ChangeNOW swap status by pasting transaction ID
-- Uses ChangeNOW public API (`/api/v1/transactions/{id}/`)
-- Color-coded status display with support link
-- Clear disclaimer that ChangeNOW handles all swap operations
-
-### LiveRate (hold-monero.html)
-- Shows live BTC→XMR conversion rate on swap page
-- 30-minute refresh, same CoinGecko source
+- Edit `app/src/**`; there is no hand-edited HTML. `app/index.html` is the Vite entry and
+  carries the v6.0.7 critical paint floor — read the comment before touching its `<head>`.
+- Security headers live in `vercel.json` only. CSP is `connect-src 'self'`: the browser
+  reaches no third party, ever. Everything goes through `/api/`.
+- `Math.random()` only inside `app/src/protocols/` (the educational simulators). **Zero
+  fabricated values on live surfaces** — this has regressed once already. A live number is
+  real or it is an em-dash; degradation is last-good plus "STALE · reconnecting", never
+  synthesis.
+- Provenance vocabulary, used verbatim in the UI: `NODE` / `NETWORK` / `COINGECKO` /
+  `SESSION` / `MODEL`. Every displayed figure names where it came from.
+- Fonts are self-hosted from `app/public/fonts/` (12 woff2: Geist, JetBrains Mono,
+  Newsreader). No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The site is used over
+  Tor and the count of third-party browser requests must stay at **zero** — gated by
+  `verify-origins.mjs`.
+- Every route keeps its `noscript` block and a literal background floor; no white flash on
+  any route, throttled or not. Usable at 390px, no text under 12px, and every animation
+  ships a `prefers-reduced-motion` path that loses no information.
 
 ## Key Decisions Log
 
@@ -125,48 +129,57 @@ divergent paths of transparent vs. private cryptocurrency.
   (sediment worst, ~30 nodes at ~4px). `verify-legibility.mjs` excludes SVG
   presentation attributes by design, so `verify-memviews.mjs` reports the count
   rather than failing. HTML text is clean everywhere.
-- **2026-03-11**: ChangeNOW custom swap — decided to keep widget approach (not custom API)
-  to avoid money transmitter liability. Added swap status tracker as value-add.
-  Custom API integration would create shared liability; widget keeps ChangeNOW as
-  sole service provider. Site clearly disclaims it does not custody funds.
-- **2026-03-11**: CoinGecko API reduced from 60s to 30min interval to respect free-tier
-  rate limits and reduce unnecessary calls. Added BTC/XMR ratio pair.
-- **2026-03-11**: Iframe widgets now lazy-loaded via IntersectionObserver for performance.
+- **2026-03-11 — SUPERSEDED by v6.1.0**: four decisions were recorded here about the v4
+  static site's exchange-widget page, its price-service polling interval, and iframe lazy
+  loading. Every surface they governed was deleted in v6.1.0, and the liability reasoning
+  behind the widget decision no longer applies to anything in the tree — the site embeds
+  no third-party iframe and custodies nothing. Retained only as a pointer: if an exchange
+  or swap surface is ever proposed again, read that reasoning in git history
+  (`git show 0a49c1d:CLAUDE.md`) before designing it.
 - **2026-03-11**: Established CLAUDE.md memory system for cross-session persistence
 
 ## Current Status / Progress
 
 <!-- Update this section as work progresses -->
-- Memory system established (CLAUDE.md)
-- All 7 pages present and functional
-- PriceService dynamic layer added (index.html) — BTC/USD, XMR/USD, BTC/XMR
-- WidgetLoader + SwapTracker + LiveRate added (hold-monero.html)
-- Exchange iframes now lazy-loaded
+- The React SPA in `app/` is the only front-end. The v4 static site was deleted in v6.1.0.
+- 11 static routes, all prerendered to real HTML so the site works with JavaScript off.
+- Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
+  degrading to last-good + "STALE · reconnecting" rather than to synthesis.
+- `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
+- CI runs 24 of the gates on every PR to `main`; the rest are hand-run.
 
 ## Known Issues / TODOs
 
 <!-- Track open items here -->
-- **Cake Wallet integration**: Research deep-linking / URI schemes for direct wallet connection
-- **Backend evaluation**: Needed if adding charts/tickers, image/video hosting, multi-ticker dashboards
-- **Railway + PostgreSQL**: Evaluate for future dynamic data (historical prices, chart data)
-- **Custom ChangeNOW API swap**: Possible but creates regulatory risk — keep as widget for now
-- **Wagyu API**: Docs at docs.wagyu.xyz — evaluate for custom DEX UI if widget insufficient
+- **`api/monero.js` is orphaned** (v6.1.0): its last caller, the legacy `js/monero-network.js`,
+  was deleted. Removing it also means dropping two `vercel.json` entries — the `functions`
+  maxDuration and the `/api/monero(.*)` no-store header.
+- **Four route lists, one truth**: `app/scripts/routes.mjs` is canonical, but `NavTop.tsx`
+  (`NAV`), `RootBoundary.tsx` (`ROUTES`) and `verify-lib.mjs` (`ROUTES`) still duplicate it
+  by hand. Fold them in during the routing restructure.
+- **`useChartMetrics` measures in a `useLayoutEffect` keyed on the ref object**, whose
+  identity never changes — so a component that returns `null` before its box mounts never
+  attaches its ResizeObserver. The durable fix is a callback ref inside the hook; it touches
+  19 call sites. See the v6.0.12 note.
+- **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
+  ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
+- **Orphaned gates**: 18 `verify-*.mjs` are wired to neither npm nor CI. Several expect live
+  upstreams; auditing and wiring them is its own task.
 
-## Architecture Notes — Backend Evaluation
+## Architecture Notes
 
-If the project grows beyond static content, here's the recommended path:
+| Concern | Where it lives |
+|---|---|
+| Routes (canonical list) | `app/scripts/routes.mjs` → `prerender.mjs` + `gen-sitemap.mjs` |
+| Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
+| Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
+| Visual system | `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-legibility.css`, in that order |
+| Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
+| Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
 
-| Need | Solution | Hosting |
-|------|----------|---------|
-| Historical price charts | Node.js + CoinGecko historical API → PostgreSQL cache | Railway |
-| Multi-ticker dashboard | Backend cron fetches prices, frontend polls `/api/prices` | Railway |
-| Image/video hosting | Cloudflare R2 or Backblaze B2 (cheap object storage) | External CDN |
-| Cake Wallet integration | Deep-link URIs (`monero:address?amount=X`) + QR codes | Static (no backend) |
-| Custom ChangeNOW swap | Node.js proxy with API key (hides key from client) | Railway |
-| Analytics (privacy-respecting) | Plausible or Umami self-hosted | Railway |
-
-**Recommended stack if backend added:** Node.js + Fastify + PostgreSQL on Railway.
-Keep current static pages as-is; add `/api` endpoints only for features that need server logic.
+**If a feature needs a third party**, it goes through a function in `api/`, never the browser:
+CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via `s-maxage`
+matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
 
@@ -314,6 +327,9 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
   — via `Math.max(base, …)` so the 60s market tier can never "back off" into polling a
   rate-limited upstream *faster*. `POST /api/monero` is dropped from the React client
   (`api/monero.js` stays — the legacy static site's `js/monero-network.js` still uses it).
+  **Superseded by v6.1.0**: that consumer was deleted with the rest of the v4 front-end, so
+  `api/monero.js` and its two `vercel.json` entries are now orphaned. Left in place
+  deliberately — see Known Issues / TODOs.
   Three traps handled: `hashSeries` now advances only under a `pushHash` flag set by the
   chain tier (a 3s push would fake sparkline resolution); `/api/xmr/tip` returns
   `height - 1` (tip block) vs `/api/xmr/network`'s raw block *count*, so tip is used
@@ -386,13 +402,13 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
   liquidity-by-venue. New guards: verify-stale.mjs, verify-allreal-dom.mjs (Playwright,
   mocked-network boot/stale/cache scenarios). Live-origin checks run externally (sandbox
   egress blocks xmr.irish).
-- **2026-03-11**: Added dynamic layers — PriceService, WidgetLoader, SwapTracker, LiveRate.
-  ChangeNOW widget kept (not custom API) due to liability concerns. Iframes now lazy-loaded.
-  Backend evaluation documented: Railway + PostgreSQL recommended if dynamic features expand.
-  Cake Wallet integration research started — open-source, uses ChangeNOW/SideShift internally.
-  Next steps: Cake Wallet deep-link integration, chart system if backend approved.
-- **2026-03-11**: Initial CLAUDE.md created. Repo is a static HTML site with 7 pages,
-  deployed via Netlify/Vercel. No build tools or dependencies.
+- **2026-03-11 — SUPERSEDED by v6.1.0**: two entries described the v4 static site as it then
+  was — a handful of self-contained HTML pages with no build step, plus the client-side
+  polling, lazy-loading and exchange-widget layers built on top of them, and a proposed
+  Railway + PostgreSQL backend if it ever outgrew static hosting. It outgrew it in a
+  different direction: the front-end became the React SPA in `app/`, the backend became
+  Vercel serverless functions in `api/`, and the pages those layers lived in were deleted.
+  Full text in git history (`git show 0a49c1d:CLAUDE.md`).
 
 
 # Per-repo CLAUDE.md — AQUA Stack L3: Orchestrator + Worker Roster

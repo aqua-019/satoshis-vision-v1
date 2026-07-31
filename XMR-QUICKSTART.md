@@ -2,6 +2,16 @@
 ## xmr.irish v4.0 — Session Setup + Model Selection
 ## Read this before opening any handoff document
 
+> ⚠️ **HISTORICAL — superseded as of v6.1.0 (July 2026).**
+> The session-priming text below describes xmr.irish as "a static HTML Monero
+> educational site" and points at root-level `.html`, `js/` and `css/`. **That
+> front-end was deleted in v6.1.0** — it had been unreachable since the SPA
+> migration. The site is now the React 18 + Vite + TypeScript app in `app/`,
+> with CommonJS serverless functions in `api/`.
+>
+> Read `CLAUDE.md` (loaded automatically each session) and `README.md` instead.
+> The loopflow and model-selection guidance below still applies.
+
 ---
 
 ## HOW TO USE THESE HANDOFFS

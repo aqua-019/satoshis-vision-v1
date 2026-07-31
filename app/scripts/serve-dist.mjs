@@ -30,6 +30,11 @@ const MIME = {
   ".svg": "image/svg+xml",
   ".json": "application/json",
   ".woff2": "font/woff2",
+  // v6.1.0: sitemap.xml + robots.txt are generated into dist/ by
+  // scripts/gen-sitemap.mjs. Without these the mirror served them as
+  // application/octet-stream, which is not what Vercel does.
+  ".xml": "application/xml",
+  ".txt": "text/plain; charset=utf-8",
   ".map": "application/json",
   ".png": "image/png",
   ".ico": "image/x-icon",
