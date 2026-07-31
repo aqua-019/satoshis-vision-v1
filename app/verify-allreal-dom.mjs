@@ -74,6 +74,9 @@ function fulfil(route) {
   const json = (data) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
   if (url.includes('/api/monero')) return json(FIX.info);
   if (url.includes('/api/xmr/network')) return json(FIX.network);
+  // v6.0.6 tiering: the chain tier watches /tip, the fast tier polls /fees.
+  if (url.includes('/api/xmr/tip')) return json({ height: H - 1, target: 120, difficulty: FIX.network.difficulty });
+  if (url.includes('/api/xmr/fees')) return json({ tiers: FIX.network.fee_tiers });
   if (url.includes('/api/xmr/mempool')) return json(FIX.mempool);
   if (url.includes('/api/xmr/blocks')) return json(FIX.blocks);
   if (url.includes('/api/coingecko')) {
@@ -83,9 +86,19 @@ function fulfil(route) {
   return route.abort();
 }
 
+/* v6.0.6: compress the three polling tiers (real cadence is 3s/15s/60s) so the
+   degrade assertions don't have to wait out a 15s chain tick. Uses the documented
+   test override in data/usePolling.ts, injected before app boot. */
+const TEST_TIERS = { fast: 300, chain: 500, market: 2000 };
+async function newPage(opts) {
+  const p = await b.newPage(opts);
+  await p.addInitScript((t) => { window.__XMR_TIER_MS__ = t; }, TEST_TIERS);
+  return p;
+}
+
 /* ── Scenario A: total outage from first paint ───────────────────────── */
 {
-  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', (r) => r.abort());
   await p.goto(base + '/network', { waitUntil: 'load' });
   await p.waitForTimeout(1500);
@@ -104,7 +117,7 @@ function fulfil(route) {
 
 /* ── Scenario B: live, then the feed dies → STALE with last-good data ── */
 {
-  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  const p = await newPage({ viewport: { width: 1440, height: 900 } });
   let dead = false;
   await p.route('**/api/**', (r) => (dead ? r.abort() : fulfil(r)));
   await p.goto(base + '/network', { waitUntil: 'load' });
@@ -123,7 +136,7 @@ function fulfil(route) {
 
 /* ── Scenario C: markets render the localStorage stale cache ─────────── */
 {
-  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  const p = await newPage({ viewport: { width: 1440, height: 900 } });
   const candles = Array.from({ length: 40 }, (_, i) => ({
     t: Date.now() - (40 - i) * 4 * 3600_000, o: 320 + i, h: 324 + i, l: 318 + i, c: 322 + i, v: 1e6,
   }));
