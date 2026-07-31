@@ -85,6 +85,25 @@
      Kept as two tokens so that sum is greppable in one place. */
   --pad-main: 22px;   /* .main's own gutter (the outer column) */
   --pad-page: 48px;   /* PageShell's inner gutter — see .page-shell */
+
+  /* ── GOVERNING RULE · ambient decoration never renders behind data ────
+     The L3 aurora (styles-ambient.css) paints on `position: fixed` layers
+     at z-index -4/-3/-2, so ANY transparent surface above it shows orbs
+     drifting through whatever it contains. That is depth in the margins
+     BETWEEN panels and noise on top of a chart.
+
+     Every surface that carries data — panels, charts, simulator stages,
+     tables — sits on --surface-ground. Only the gutters stay transparent.
+     Enforced by app/verify-ground.mjs, which re-screenshots each stage with
+     the aurora layers hidden and requires the two buffers to be identical.
+
+     Opaque on purpose: an alpha here is exactly the bug. */
+  --surface-ground: #0a0907;
+
+  /* Documentation token. Media queries cannot read custom properties, so
+     the literal 768px still appears in every @media prelude — this exists
+     so the ONE breakpoint this codebase has is greppable and named. */
+  --bp-mobile: 768px;
 }
 
 html, body {
@@ -105,7 +124,13 @@ html, body {
      -1  the four animated pulses
    Each pulse is < 5 luminance points above base; visible only against
    pure black. Inert in middle and corners; never reads as a shape. */
-html { background: #020202; }
+html {
+  /* iOS Safari inflates text inside wide or reflowed blocks unless told not
+     to — the default is `auto`. On /mempool that is what turns a 10px label
+     into oversized wrapping type on a real iPhone while every desktop and
+     emulated check looks fine. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%; background: #020202; }
 body { position: relative; }
 
 body::before {
@@ -296,7 +321,7 @@ header > div > h1.serif {
   padding: 16px 14px;
   display: flex; flex-direction: column; gap: 14px;
   font-family: var(--f-mono); font-size: 11px;
-  background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+  background: linear-gradient(to right, rgba(0,0,0,0.4), transparent) var(--surface-ground);
   overflow-y: auto;
 }
 .rail h6 { margin: 0 0 6px 0; font: 9.5px/1 var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink-40); }
@@ -368,6 +393,146 @@ header > div > h1.serif {
 .col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .col-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ── screen-reader-only ──────────────────────────────────────────────
+   The app's first .sr-only. Needed because a status chip is a coloured
+   dot plus a word: sighted users read the column header, a screen reader
+   heard "United States, Legal, Restricted, Legal, Legal, Legal" with no
+   idea which activity each belonged to. */
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   LEGALITY — country × activity, two presentations, one DOM tree
+   ══════════════════════════════════════════════════════════════════════
+   These are CLASSES, not inline styles, and that is the entire point.
+   The mobile layer's blanket rule (search `[style*="grid-template-columns"]`
+   below) matches on the inline style ATTRIBUTE. The old matrix declared its
+   grid inline, lost to that rule, and had to buy its way out with
+   .keep-cols — which drags in `min-width: max-content !important` and IS
+   the cause of the off-screen header and the one-letter-per-line COUNTRY
+   column. A class-based grid the selector cannot see needs no escape
+   hatch, no !important, and no horizontal scroll.
+   ══════════════════════════════════════════════════════════════════════ */
+.lg-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lg-item { border: 1px solid var(--rule); border-radius: 3px; background: var(--surface-ground); }
+
+.lg-row {
+  position: relative; width: 100%; appearance: none; border: 0; cursor: pointer;
+  background: transparent; color: inherit; text-align: left; font-family: var(--f-mono);
+  display: grid; align-items: center; gap: 10px;
+  /* minmax() so it DEGRADES instead of collapsing, and 88px minimum on the
+     status cells — the v4 handoff flagged them as too small two versions
+     ago. Total min width ≈ 690px, which fits the .main column at ≥769px. */
+  grid-template-columns: 28px minmax(9ch, 1.5fr) repeat(5, minmax(88px, 1fr)) 22px;
+  padding: 12px 16px; min-height: 48px;
+}
+.lg-row[aria-expanded="true"] { background: rgba(255,122,26,0.05); }
+.lg-head {
+  display: grid; align-items: center; gap: 10px;
+  grid-template-columns: 28px minmax(9ch, 1.5fr) repeat(5, minmax(88px, 1fr)) 22px;
+  padding: 0 16px 6px;
+  font-family: var(--f-mono); font-size: var(--fs-label);
+  letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-40);
+  border-bottom: 1px solid var(--rule); margin-bottom: 8px;
+}
+.lg-name { color: var(--ink-100); font-size: var(--fs-mono); }
+.lg-reason { display: none; }
+.lg-flag { font-size: 18px; line-height: 1; }
+.lg-caret { color: var(--ink-60); font-size: var(--fs-label); text-align: right; }
+
+/* display:contents promotes the five chips to direct grid items of the
+   8-column row on desktop; on mobile the wrapper flips to display:none and
+   takes all five with it as a unit. They are decorative spans inside a
+   <button>, so the old "display:contents drops semantics" bug (which
+   applied to elements with implicit roles) does not reach them. */
+.lg-acts { display: contents; }
+.lg-headline { display: none; }
+.lg-acts-stack { display: none; }
+
+.lg-panel { padding: 10px 18px 14px; border-top: 1px dashed var(--ink-10); background: rgba(0,0,0,0.3); }
+/* flex, not grid — "stacked label→chip rows, never a grid" (§3), and
+   structurally immune to the inline-grid blanket regardless. <div> around a
+   dt/dd pair inside <dl> is valid HTML5; the dd margin reset kills the UA's
+   40px inline-start indent that would otherwise push chips off-centre. */
+.lg-act-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 0; border-bottom: 1px dashed var(--ink-10); min-height: 40px;
+}
+.lg-act-row dt { color: var(--ink-60); font-size: var(--fs-mono); }
+.lg-act-row dd { margin: 0; }
+.lg-note { margin: 10px 0 0; font-size: var(--fs-body); line-height: 1.7; color: var(--ink-60); }
+
+/* hover preview — desktop pointers only, so a touch device can never get a
+   stuck tooltip, and pointer-events:none so it can never eat the click. */
+.lg-pop { display: none; }
+@media (hover: hover) and (min-width: 769px) {
+  .lg-row:hover .lg-pop, .lg-row:focus-visible .lg-pop {
+    display: block; position: absolute; left: 60px; top: calc(100% - 6px); z-index: 5;
+    max-width: 46ch; padding: 8px 10px; pointer-events: none;
+    background: var(--surface-ground); border: 1px solid var(--rule);
+    font-size: var(--fs-label); line-height: 1.5; color: var(--ink-80);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   DATA TABLE → CARDS  (Markets venues, and anything else that must fit 390)
+   ══════════════════════════════════════════════════════════════════════
+   Same trick as .lg-*: the column track list is passed in as --mk-cols, NOT as
+   an inline `grid-template-columns`. The mobile blanket rule below matches the
+   literal substring "grid-template-columns" in the style ATTRIBUTE, so a custom
+   property slips past it and the table needs no .keep-cols escape hatch — which
+   is what forced `min-width: max-content` and clipped the TYPE column to one
+   character in the first place.
+
+   Desktop: .mk-row is display:contents, so .mk-cell children ARE the grid items.
+   Mobile:  .mk-table becomes a flex column and each .mk-row is a self-contained
+            card of label→value lines. No horizontal scroll, nothing to clip. */
+.mk-table { display: grid; grid-template-columns: var(--mk-cols); gap: 8px; font-family: var(--f-mono); font-size: var(--fs-mono); }
+.mk-row { display: contents; }
+.mk-lbl { display: none; }
+.mk-head { border-bottom: 1px solid var(--rule); padding-bottom: 6px; }
+
+@media (max-width: 768px) {
+  .mk-table { display: flex; flex-direction: column; gap: 8px; }
+  .mk-head { display: none; }
+  .mk-row {
+    display: flex; flex-direction: column; gap: 5px;
+    padding: 10px 12px; border: 1px solid var(--rule); border-radius: 3px;
+    background: var(--surface-ground);
+  }
+  .mk-cell { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+  .mk-lbl {
+    display: inline; flex-shrink: 0;
+    color: var(--ink-60); font-size: var(--fs-label);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+  /* the value half of each line right-aligns, whatever it was on desktop */
+  .mk-cell > :last-child { text-align: right !important; }
+}
+
+/* quick-reference legend — a class so the blanket rule leaves it alone */
+.lg-legend { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+
+/* filter chips + summary */
+.lg-controls { display: flex; flex-direction: column; gap: 12px; }
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.lg-chip {
+  appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+  min-height: 40px; padding: 6px 12px; border-radius: 2px;
+  background: transparent; border: 1px solid var(--ink-20); color: var(--ink-60);
+  font-family: var(--f-mono); font-size: var(--fs-label);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.lg-chip[aria-pressed="true"] { border-color: var(--tk-accent); color: var(--tk-accent); box-shadow: var(--glow-1); }
+.lg-search {
+  flex: 1; min-width: 180px; min-height: 40px; padding: 8px 12px; border-radius: 2px;
+  background: rgba(0,0,0,0.35); border: 1px solid var(--ink-20); color: var(--ink-100);
+  font-family: var(--f-mono);
+}
 /* order-book level row — stays multi-column on mobile (exempt from the
    blanket collapse below): price · cumulative-depth bar · size. */
 .ob-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center; }
@@ -381,7 +546,7 @@ header > div > h1.serif {
 
 /* ── data atoms ──────────────────────────────────────────────── */
 
-.stat { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--ink-10); border-radius: 3px; background: rgba(0,0,0,0.3); }
+.stat { display: flex; flex-direction: column; gap: 2px; padding: 8px 10px; border: 1px solid var(--ink-10); border-radius: 3px; background: rgba(0,0,0,0.3) var(--surface-ground); }
 .stat .lbl { font: 9px/1 var(--f-mono); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-40); }
 .stat .val { font: 18px/1.1 var(--f-mono); color: var(--ink-100); font-variant-numeric: tabular-nums; }
 .stat .val.acc { color: var(--tk-accent); text-shadow: var(--glow-1); }
@@ -401,7 +566,9 @@ header > div > h1.serif {
 
 /* ── panel ────────────────────────────────────────────────────── */
 
-.panel { border: 1px solid var(--rule); background: rgba(8,7,5,0.86); border-radius: 2px; position: relative; }
+/* background was rgba(8,7,5,0.86) — 14% transparent, which the L3 aurora
+   showed straight through. Panels carry data; see --surface-ground. */
+.panel { border: 1px solid var(--rule); background: var(--surface-ground); border-radius: 2px; position: relative; }
 .panel-h { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--rule); font: 10px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-60); }
 .panel-h .l { display: flex; gap: 10px; align-items: center; }
 .panel-h .r { display: flex; gap: 8px; align-items: center; color: var(--ink-40); }
@@ -596,7 +763,39 @@ header > div > h1.serif {
   border-bottom: 1px solid var(--rule);
   background: linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0.3));
   flex-shrink: 0;
+  /* wrap rather than overflow: the right-hand group (heartbeat + track chip)
+     is nowrap by design, so on a narrow view it has to go to its own line
+     instead of being squeezed to 45px and stacking its text vertically. */
+  flex-wrap: wrap;
 }
+/* the status group keeps its natural width; the search form is what gives */
+.mempool-search-bar > *:not(form) { flex-shrink: 0; }
+/* ── mempool view shell (v6.0.11) ────────────────────────────────
+   .mem-view is OPAQUE by construction. The page renders an ambient aurora
+   behind /mempool, and data must never be read through moving decoration. */
+.mem-view { position: relative; background: var(--bg-0, #050505); }
+
+/* A <canvas> is a REPLACED element, so inset:0 alone never stretches it — the
+   same trap .art-canvas documents. Absolute, not in flow: .mp-view is
+   `width: max-content` on desktop, and an in-flow `width:100%` canvas under a
+   max-content ancestor is a layout feedback loop that grows without bound.
+   Hosts must therefore be position:relative with a DEFINITE size. */
+.mem-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Table fallback — the reduced-motion state, and the readable layer on mobile.
+   Hidden by default: on a desktop with motion the view itself is the reading,
+   and the extra height would blow Reactor's ~116px of remaining headroom under
+   verify-fit.mjs's bound. */
+.mem-table { display: none; border-top: 1px solid var(--rule); }
+@media (prefers-reduced-motion: reduce) { .mem-table { display: block; } }
+.mem-tbl { width: 100%; display: grid; font: var(--fs-mono)/1.5 var(--f-mono); font-variant-numeric: tabular-nums; }
+.mem-tbl__c { padding: 5px 10px; border-bottom: 1px solid var(--ink-10); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mem-tbl__h .mem-tbl__c {
+  color: var(--ink-40); letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: var(--fs-label); position: sticky; top: 0; background: rgba(5,5,5,0.94);
+}
+.mem-tbl__r.is-tracked .mem-tbl__c { background: rgba(255,122,26,0.1); color: var(--tk-accent); }
+
 /* mempool block (shared) — flattened to solid amber tiles, no inner
    cream wash. The earlier `inset 0 0 24px rgba(255,255,255,0.18)` produced
    a cream wash when 10-14 of these tile horizontally on the home page. */
@@ -659,7 +858,7 @@ header > div > h1.serif {
 }
 
 /* queued / next blocks (outline only) */
-.mblock.q { background: transparent; color: var(--tk-accent); box-shadow: inset 0 0 24px rgba(255,122,26,0.12), 0 0 12px rgba(255,122,26,0.2); }
+.mblock.q { background: var(--surface-ground); color: var(--tk-accent); box-shadow: inset 0 0 24px rgba(255,122,26,0.12), 0 0 12px rgba(255,122,26,0.2); }
 .mblock.q .nm { color: var(--tk-accent); text-shadow: var(--glow-1); }
 .mblock.q .hh { color: var(--tk-accent); opacity: 0.7; }
 
@@ -674,7 +873,7 @@ header > div > h1.serif {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 28px;
   border-bottom: 1px solid var(--rule);
-  background: linear-gradient(to bottom, rgba(255,122,26,0.04), transparent);
+  background: linear-gradient(to bottom, rgba(255,122,26,0.04), transparent) var(--surface-ground);
 }
 .proto-head .l { display: flex; flex-direction: column; gap: 4px; }
 .proto-head .kicker { font: 10px/1 var(--f-mono); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink-40); }
@@ -690,11 +889,17 @@ header > div > h1.serif {
   gap: 0;
   min-height: 0;
 }
-.proto-stage { padding: 28px; position: relative; overflow: hidden; }
+/* The stage is where every simulator draws. It had NO background at all, so
+   the fixed aurora layers painted through it and orbs drifted across the
+   decoy-selection density curve, the Dandelion stem/fluff diagram and the
+   Bloodhound station chart. See --surface-ground. */
+.proto-stage { padding: 28px; position: relative; overflow: hidden; background: var(--surface-ground); }
 .proto-panel {
   padding: 22px 22px;
   border-left: 1px solid var(--rule);
-  background: linear-gradient(to right, rgba(0,0,0,0.4), transparent);
+  /* gradient over an opaque ground — the gradient alone let the aurora
+     through the explainer copy. See --surface-ground. */
+  background: linear-gradient(to right, rgba(0,0,0,0.4), transparent) var(--surface-ground);
   display: flex; flex-direction: column; gap: 18px;
   font: 11px/1.55 var(--f-mono);
   overflow-y: auto;
@@ -846,7 +1051,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 }
 .v6-modal {
   width: min(1180px, 96vw); max-height: 92vh; overflow-y: auto;
-  background: rgba(5, 5, 5, 0.96);
+  background: var(--surface-ground);
   border: 1px solid var(--rule);
   border-radius: 2px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), var(--glow-1);
@@ -872,7 +1077,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   position: relative;
   padding: 14px 12px 12px;
   border-top: 2px solid var(--node-c, var(--ink-20));
-  background: rgba(0, 0, 0, 0.3);
+  background: rgba(0, 0, 0, 0.3) var(--surface-ground);
 }
 .v6-rail .stop::before {
   content: "";
@@ -1094,7 +1299,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   /* The blanket grid collapse excludes: the responsive utility classes, any grid
      explicitly marked .keep-cols (wide tables that scroll horizontally instead),
      and everything inside the mempool pan canvas (kept at desktop proportions). */
-  .main [style*="grid-template-columns"]:not(.kpi-grid):not(.col-2):not(.col-3):not(.ob-row):not(.keep-cols):not(.mp-canvas-scroll *),
+  .main [style*="grid-template-columns"]:not(.kpi-grid):not(.col-2):not(.col-3):not(.ob-row):not(.keep-cols):not(.mem-stat-strip):not(.mp-canvas-scroll *),
   .proto-body [style*="grid-template-columns"]:not(.mp-canvas-scroll *),
   .proto-panel [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
   .main *, .proto-body * { min-width: 0 !important; }          /* let grid/flex children shrink */
@@ -1102,8 +1307,26 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   /* re-assert min-width exemptions AFTER the blanket (equal specificity → later wins) */
   .table-scroll > *, .keep-cols { min-width: max-content !important; }   /* wide tables keep columns; user swipes */
   .mp-canvas-scroll * { min-width: revert !important; }                  /* undo the 0 inside the canvas */
+  /* …but NOT the shared search row. That `revert` restores min-width:auto,
+     and !important in a stylesheet outranks an inline style, so the form's own
+     `minWidth: 0` loses and the row cannot shrink: at 390px it overflows the
+     view and the SEARCH button ends up clipped off the right edge. The search
+     bar is chrome, not part of the desktop-proportion canvas the revert exists
+     to protect. */
+  .mem-view .mempool-search-bar form,
+  .mem-view .mempool-search-bar input[type="text"] { min-width: 0 !important; }
+  /* and give the form its own row: sharing a line with the status pill left
+     ~60px of actual input, which is not a search box anyone can use. The bar
+     already wraps, so the pill simply moves below. */
+  .mem-view .mempool-search-bar form { flex: 1 0 100% !important; max-width: 100% !important; }
   .mp-canvas-scroll > *:not(.mp-view--fit) { min-width: 900px !important; } /* desktop proportions for non-fit views */
   .main svg, .main canvas, .main img { max-width: 100%; height: auto; }
+  /* …but NOT inside a simulator stage. That stage now scrolls, and a diagram
+     there is either fluid (viewBox tracks the container) or fixed-pixel and
+     meant to pan. `max-width: 100%` silently shaved a 200px station svg to
+     198px — a 1% scale that dragged its 12px labels to 11.88px and failed the
+     floor for no visible reason. Mirrors the .mp-canvas-scroll exemption. */
+  .proto-stage svg { max-width: none; }
   .mp-canvas-scroll svg, .mp-canvas-scroll canvas { max-width: none; }   /* but let the canvas overflow & pan */
   /* ── v6.0.4 — one class rule replaces two inline-string hacks ───────
      Two rules used to live here, each matching a page container's inline
@@ -1135,6 +1358,14 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .main { padding: 12px 14px; }
   .card, [class*="panel"] { padding: 14px !important; }
   .panel-b { padding: 12px !important; }
+
+  /* Panel headers are `justify-content: space-between` with a nowrap title on
+     the left and a provenance badge on the right. At 390px the pair exceeds the
+     panel and the badge was SILENTLY CLIPPED — ".panel" has no scroller, so
+     "COINGECKO · LOADING · 0 BARS" simply ended mid-word. §4: never silent
+     clipping. Let the row wrap instead. */
+  .panel-h { flex-wrap: wrap; row-gap: 4px; }
+  .panel-h .l, .panel-h .r { flex-wrap: wrap; min-width: 0; }
 
   /* P2 — breadcrumb status drops to its own line; header content wraps */
   .crumbs { flex-wrap: wrap; row-gap: 4px; }
@@ -1177,6 +1408,34 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      `.mp-canvas-scroll * { min-width: revert }` rule above. */
   .mp-canvas-scroll > .mp-view--fit { max-width: 100vw; max-width: 100dvw; }
 
+  /* ── mempool views on mobile ──────────────────────────────────
+     §4e asks for a 12px floor inside the views, and this is where a rebind of
+     --fs-label (clamp(10.5px, 0.74vw, 12px) → 10.5px at 390px) would go, scoped
+     to .mem-view so the :root scale verify-legibility.mjs pins stays untouched.
+
+     It is NOT here, deliberately. Two revisions tried it — first forcing 12px on
+     every .mono/.kv/.stat/.prov/.rail atom in a view, then just the token — and
+     both made Classic measurably worse rather than better: the phone layout has
+     no slack, so the extra pixels went into wrapping (the block-ribbon header
+     broke to "CONFIRMATI / ONS") rather than into readability. Raising type in a
+     layout with no room for it is not a legibility win, and shipping a visible
+     regression to satisfy a checklist item is the wrong trade.
+
+     The floor is still worth having. It needs the mempool mobile layout to be
+     reworked to absorb it, which is its own piece of work — tracked as an open
+     gap, not quietly dropped. */
+
+  /* The strip is an inline grid of five figures. Left to the blanket collapse
+     above it becomes five full-height rows — most of a phone screen to show
+     five numbers — so it takes the same `:not()` escape hatch .keep-cols uses
+     (adding an !important rule here would lose: the blanket selector carries
+     far higher specificity and is itself !important). Two columns instead. */
+  .mem-stat-strip { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+
+  .mem-table { display: block; overflow-x: auto !important; overflow-y: hidden; }
+  .mem-table > * { min-width: max-content; }
+
+
   /* ── v6.0.4 — Classic reflows on phones instead of panning ──────────
      Classic is pure DOM (no fixed-size canvas), and it is the DEFAULT mempool
      view, so "the list/table representation" is what a phone actually lands on.
@@ -1197,8 +1456,11 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      .mp-block's 108px and .mp-txbody's 560px below and need two more re-assertions. */
   .mp-view--reflow > * { min-width: 0 !important; }
   /* the blanket collapse at :984 excludes `.mp-canvas-scroll *`, so for this one
-     view the collapse has to be re-stated positively. */
-  .mp-view--reflow [style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+     view the collapse has to be re-stated positively — minus the stat strip,
+     which is five short figures rather than content that wants a full row each.
+     Collapsed it ran 352px tall, which is most of a phone screen to show five
+     numbers. */
+  .mp-view--reflow [style*="grid-template-columns"]:not(.mem-stat-strip) { grid-template-columns: 1fr !important; }
   /* …except the tx feed, which stays a table and swipes inside its own box */
   .mp-view--reflow .table-scroll { overflow-x: auto !important; }
   .mp-view--reflow .mp-txbody { min-width: 560px !important; }
@@ -1221,9 +1483,92 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .proto-head .r { flex-wrap: wrap; }
   .proto-head .title { font-size: 24px; }
   .proto-body { grid-template-columns: 1fr; }
-  .proto-stage { overflow: visible; padding: 16px; min-height: 56vh; }
+  /* A hand-placed 900-unit artboard cannot show 12px labels inside 358px —
+     the type would have to inflate ~3× and would then overrun the geometry it
+     annotates (measured: the decoy axis caption ran past the plot edge and
+     collided with every day tick). So the stage PANS. useChartMetrics gives
+     each diagram a minWidth = vbWidth / maxK, which is the narrowest it can be
+     while its labels stay both legible and non-colliding.
+
+     §4.1: a scroll container is only acceptable WITH a visible affordance —
+     never silent clipping. Hence the edge fade and the ↔ hint below. */
+  .proto-stage {
+    padding: 16px; min-height: 56vh;
+    overflow-x: auto; overflow-y: visible;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+  }
+  /* Re-assert the diagram's own minimum AFTER the blanket
+     `.proto-body * { min-width: 0 !important }` above, which would otherwise
+     collapse it and leave the artboard scaled down to illegibility again.
+     The value arrives as a custom property (--chart-min, set inline by
+     useChartMetrics's `minWidth`) precisely because the blanket cannot see it. */
+  .proto-stage .chart-box { min-width: var(--chart-min, 0px) !important; }
+
+  /* Outside a simulator (e.g. /monero/tech) there is no scrolling stage to pan
+     in, and `.art` is `overflow-x: clip` — so giving the BOX a min-width just
+     pushed a 575px diagram under a clip and silently cut it off. Here the box
+     itself is the scroller and the svg carries the minimum, which keeps the
+     page at 390px while the diagram pans inside it. */
+  /* …but NOT inside the mempool pan canvas. Those views are already held at
+     desktop proportions and scaled to fit by useFitToView; handing them an
+     extra min-width makes the content wider, so the fit hook scales the whole
+     view DOWN to compensate (measured: reactor at "100%" came back as
+     matrix(0.847…) instead of identity, failing verify-fit). That canvas owns
+     its own sizing — mirrors the `.mp-canvas-scroll * { min-width: revert }`
+     exemption above. */
+  .main .chart-box:not(.mp-canvas-scroll *) {
+    overflow-x: auto; overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+  .main .chart-box:not(.mp-canvas-scroll *) > svg { min-width: var(--chart-min, 0px); }
+
+  /* the fade sits on the stage, not the scroller's content, so it stays put
+     while the diagram moves under it */
+  .proto-body { position: relative; }
+  .proto-body::after {
+    content: "↔";
+    position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+    z-index: 3; pointer-events: none;
+    font: 12px/1 var(--f-mono); color: var(--ink-40);
+    padding: 6px 4px; border-radius: 2px;
+    background: linear-gradient(to right, transparent, var(--surface-ground) 55%);
+  }
   .proto-panel { border-left: none; border-top: 1px solid var(--rule);
-                 background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent); }
+                 background: linear-gradient(to bottom, rgba(0,0,0,0.4), transparent) var(--surface-ground); }
+
+  /* ── v6.0.10 · LEGALITY: one card per country ──────────────────
+     Not a shrunken table. Flag + name + ONE headline status, readable
+     with zero taps; tap expands the five activities as a flex column of
+     label→chip rows (never a grid, so the blanket rule above is
+     irrelevant to it). Nothing here can clip or scroll sideways. */
+  /* The headline chip gets its OWN row, not an `auto` track beside the name.
+     Sharing a row, its content ("Restricted · Centralized exchange trade") is
+     long enough that the `auto` track wins the space and the `1fr` name track
+     collapses to a few pixels — which reproduces the exact one-character-per-
+     line bug this redesign exists to kill, just from the other direction.
+     Two rows also means the chip is genuinely full-width, so it cannot clip. */
+  .lg-row {
+    grid-template-columns: 26px 1fr;
+    grid-template-areas: "flag name" "headline headline";
+    row-gap: 10px; column-gap: 10px; padding: 12px 14px; min-height: 56px;
+    align-items: start;
+  }
+  .lg-acts, .lg-head, .lg-pop, .lg-caret { display: none; }
+  .lg-flag { grid-area: flag; }
+  .lg-name { grid-area: name; }
+  .lg-headline { grid-area: headline; display: block; }
+  /* .lg-reason stays hidden: the headline chip on its own row already carries
+     the same string, in the status colour. Two copies would just be noise. */
+  .lg-acts-stack { display: flex; flex-direction: column; }
+  .lg-legend { grid-template-columns: repeat(2, 1fr); }
+  .lg-panel { padding: 10px 14px 14px; }
+  /* The search box shares .chip-row with four filter chips. Its `min-width:
+     180px` is cancelled by the blanket `.main * { min-width: 0 !important }`
+     above, so it collapsed to whatever was left over — about 50px, rendering
+     as "Sea". Give it its own row instead of fighting for the remainder. */
+  .lg-search { flex-basis: 100%; }
 
   /* ── v6.0.1 mobile: FUTURE + TRUSTED PEERS modal/rail ─────────── */
   /* v6.0.4 — the `:root { --pad-page: 0px }` that used to sit here is gone. After the

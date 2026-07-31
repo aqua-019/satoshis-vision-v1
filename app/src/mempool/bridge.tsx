@@ -9,7 +9,7 @@ import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
-import { useMempoolTracking, MemViewShell, TrackChip } from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable} from "@/mempool/mempool-shared";
 import type { Tracking } from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import type { MoneroLive } from "@/data/types";
@@ -668,7 +668,7 @@ export function BridgeView({ data }: ViewProps) {
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
+      <MemViewShell id="bridge" table={<MemTxTable data={data} tracking={tracking} viewId="bridge" columns={["txid", "perB", "tier", "size", "age", "inout", "ring"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
         <BrgOverview data={data} tracking={tracking} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
       </MemViewShell>
     </div>

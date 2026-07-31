@@ -32,7 +32,7 @@ const base = 'http://localhost:4173';
 // these are asserted against styles-theme.css's --amb-floor below rather than
 // trusted. rgb() form is what getComputedStyle returns.
 const INDIGO_RGB = 'rgb(18, 18, 24)';  // #121218
-const CLASSIC_RGB = 'rgb(11, 11, 12)'; // #0b0b0c
+const CLASSIC_RGB = 'rgb(5, 5, 5)'; // #050505 — v6.0.10 §6b: classic is v5's literal floor
 const ACCENT_HEX = '#6E5EF0';
 const ACCENT_RGB = 'rgb(110, 94, 240)';
 
@@ -80,7 +80,12 @@ const stripCssComments = (src) =>
   const indigoFloor = /:root\[data-theme="indigo"\][^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
   const classicFloor = /:root:not\(\[data-theme="indigo"\]\)[^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
   ok(indigoFloor?.[1]?.toLowerCase() === '#121218', `0 · inline indigo floor matches --amb-floor (${indigoFloor?.[1] ?? 'not found'})`);
-  ok(classicFloor?.[1]?.toLowerCase() === '#0b0b0c', `0 · inline classic floor matches --amb-floor (${classicFloor?.[1] ?? 'not found'})`);
+  // v6.0.10 §6b: classic's floor is v5's literal #050505. It was #0b0b0c — a
+  // 1.5-point lift v6.0.2 introduced and nothing asked for, and exactly the
+  // kind of drift the "classic is pixel-comparable to v5 main" test exists to
+  // catch. index.html's pre-paint floor moves with it, which is what this
+  // assertion is for.
+  ok(classicFloor?.[1]?.toLowerCase() === '#050505', `0 · inline classic floor matches --amb-floor (${classicFloor?.[1] ?? 'not found'})`);
 
   ok(/id="boot-fallback"[^>]*\shidden/.test(html), '0 · #boot-fallback ships hidden (so JS-off gets <noscript>, not both)');
   ok(/__xmriBootTimeoutMs/.test(html), '0 · boot watchdog is present and overridable for tests');
@@ -143,7 +148,14 @@ console.log('engine:', engine);
   await ctx.close();
 }
 
-// ── B) JS bundle blocked, scripting ON — what <noscript> cannot cover ───────
+// ── B) JS bundle blocked, scripting ON ─────────────────────────────────────
+// v6.0.9 splits this in two, because prerendering changed what "correct" is.
+//
+// B1 · a PRERENDERED route. The bundle is dead, but dist/index.html already
+// carries the real page inside #root, so the user gets actual content and a
+// working nav — strictly better than any fallback. The boot fallback must
+// therefore NOT appear here: showing "the bundle did not load" over a page
+// that is perfectly readable would be a regression, not a safety net.
 {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 400; });
@@ -153,28 +165,57 @@ console.log('engine:', engine);
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `B: page is still dark with the JS bundle blocked (got ${bg})`);
+  ok(bg === INDIGO_RGB, `B1: page is still dark with the JS bundle blocked (got ${bg})`);
 
-  const visible = await p.evaluate(() => {
+  const rootText = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
+  ok(rootText.trim().length > 300, `B1: prerendered content survives a dead bundle (${rootText.trim().length} chars)`);
+
+  const fallbackShown = await p.evaluate(() => {
     const f = document.getElementById('boot-fallback');
-    return !!f && !f.hidden && f.getBoundingClientRect().height > 0;
+    return !!f && !f.hidden;
   });
-  ok(visible, 'B: #boot-fallback is revealed once the watchdog fires');
+  ok(!fallbackShown, 'B1: the boot fallback stays hidden — prerendered content is the better answer');
 
-  const text = await p.evaluate(() => document.body.innerText);
-  ok(/xmr\.irish/i.test(text), 'B: wordmark renders');
-  ok(/did not load/i.test(text), 'B: honest explanation renders');
-
-  // Links must be real anchors — navigation has to survive with no JS running.
   const hrefs = await p.evaluate(() =>
-    [...document.querySelectorAll('#boot-fallback a')].map((a) => new URL(a.href).pathname));
+    [...document.querySelectorAll('#root a')].map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } }));
   for (const route of ['/mempool', '/markets', '/network']) {
-    ok(hrefs.includes(route), `B: ${route} is a real anchor in the fallback`);
+    ok(hrefs.includes(route), `B1: ${route} is still a real anchor with the bundle dead`);
   }
   await ctx.close();
 }
 
-// ── B2) control — a HEALTHY load must never show the fallback ───────────────
+// B2 · a NON-prerendered route with the bundle dead. /mempool/tx/:txid takes a
+// parameter, so there is no static file for it and vercel.json's catch-all
+// serves dist/index.html — which is now the PRERENDERED home page, not an empty
+// shell. So even an un-prerenderable deep link degrades to a readable,
+// navigable page instead of a blank one. Worth asserting explicitly: it is the
+// weakest remaining path, and it is still fine.
+//
+// This also narrows #boot-fallback's job. #root is no longer empty on ANY
+// route, so the watchdog can now only fire if prerendering itself stopped
+// emitting — i.e. it survives as a build-regression backstop rather than the
+// primary no-JS surface it was in v6.0.7. Kept for exactly that reason.
+{
+  const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 400; });
+  const p = await ctx.newPage();
+  await p.route('**/assets/*.js', (r) => r.abort());
+  await p.goto(base + '/mempool/tx/0000000000000000000000000000000000000000000000000000000000000000', { waitUntil: 'load' });
+  await p.waitForTimeout(1200);
+
+  const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+  ok(bg === INDIGO_RGB, `B2: un-prerenderable deep link is still dark (got ${bg})`);
+
+  const rootText = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
+  ok(rootText.trim().length > 300, `B2: it degrades to the readable home prerender, not a blank page (${rootText.trim().length} chars)`);
+
+  const hrefs = await p.evaluate(() =>
+    [...document.querySelectorAll('#root a')].map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } }));
+  ok(hrefs.includes('/education'), 'B2: the nav still works from an un-prerenderable deep link');
+  await ctx.close();
+}
+
+// ── B3) control — a HEALTHY load must never show the fallback ───────────────
 {
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 } });
   await ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 400; });
@@ -191,8 +232,8 @@ console.log('engine:', engine);
       fallbackShown: !!f && !f.hidden,
     };
   });
-  ok(mounted.children > 0, `B2: React mounted normally (#root has ${mounted.children} children)`);
-  ok(!mounted.fallbackShown, 'B2: a healthy boot cancels the watchdog — no "did not load" on a merely slow load');
+  ok(mounted.children > 0, `B3: React mounted normally (#root has ${mounted.children} children)`);
+  ok(!mounted.fallbackShown, 'B3: a healthy boot cancels the watchdog — no "did not load" on a merely slow load');
   await ctx.close();
 }
 

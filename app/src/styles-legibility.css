@@ -19,8 +19,28 @@
   --fs-h2:    clamp(21px, 1.7vw, 30px);
   --fs-body:  clamp(14px, 1vw, 16.5px);
   --fs-mono:  clamp(12.5px, 0.9vw, 14px);
-  --fs-label: clamp(10.5px, 0.74vw, 12px);
+  --fs-label: clamp(11px, 0.74vw, 12px);
 }
+
+/* ── in-chart type · v6.0.10 ─────────────────────────────────────────
+   PLAIN px, deliberately NOT clamp(). design/useChartMetrics.ts reads
+   these back with getComputedStyle to derive chart geometry, and an
+   unregistered custom property computes to its own token stream — so a
+   clamp() would hand JS the literal string "clamp(11px, …)" and
+   parseFloat would return 11 by accident rather than by design. The
+   mobile step is an override in the @media block at the foot of this
+   file, which is also why the SCALE check in verify-legibility.mjs
+   (exactly-once) cannot own these two. */
+:root {
+  --fs-chart-tick:  11px;   /* axis ticks, in-chart annotations */
+  --fs-chart-label: 12px;   /* series labels, value pills, tooltips */
+}
+
+/* For SVGs that are already 1 user unit = 1 CSS px (fixed width/height, no
+   viewBox downscale). There, and ONLY there, CSS font-size on <text> is
+   the whole fix — see the header of design/useChartMetrics.ts. */
+.c-tick  { font-size: var(--fs-chart-tick); }
+.c-label { font-size: var(--fs-chart-label); }
 
 /* ── global readability primitives ───────────────────────────────── */
 p { text-wrap: pretty; }
@@ -61,7 +81,11 @@ h1, h2, h3, h4 { text-wrap: balance; }
 .proto-head .sub { font-size: 13.5px; line-height: 1.55; max-width: 68ch; }
 .proto-panel { font-size: 12.5px; line-height: 1.6; }
 .proto-panel h6 { font-size: 10.5px; }
-.proto-panel .lede { font-size: 19px; line-height: 1.45; }
+/* 19px against a 9px chart tick was a 2.1:1 inversion — the caption
+   out-sizing the thing it captions. With ticks now at a real 11px the
+   lede comes down to 16px, so the ratio is 1.45:1 and the CHART is the
+   focal point. v6.0.10 §2.3. */
+.proto-panel .lede { font-size: 16px; line-height: 1.5; }
 .proto-panel .body { font-size: 13px; line-height: 1.7; }
 .proto-step h5 { font-size: 13px; }
 .proto-step p { font-size: 12px; line-height: 1.6; }
@@ -140,4 +164,20 @@ button.proto-btn { font-size: 11.5px; }
      an abspos child resolves against the full document height — at dpr 2
      that allocates a backing store of 2 × width × page-height. Cap it. */
   .art-canvas { height: 100dvh; }
+
+  /* v6.0.10 §2.4 — chart text scales UP on small screens, not down. A
+     phone needs BIGGER data labels than a desktop, because the plot they
+     annotate is the thing that shrank. Prose goes the other way (the
+     lede below), so the chart:caption ratio tightens from 1.45 to 1.25. */
+  :root {
+    --fs-chart-tick:  12px;
+    --fs-chart-label: 13px;
+  }
+  .proto-panel .lede { font-size: 15px; }
+
+  /* PageHeader's <h1> is inline fontSize:34 (layout/AppShell.tsx) and
+     nothing overrode it — only .edu-head h2 was handled (styles.css).
+     A 34px hero eats the fold on a 390×844 phone, which is what pushes
+     the legal page's summary line below it. */
+  .main header h1 { font-size: 25px !important; line-height: 1.15; }
 }

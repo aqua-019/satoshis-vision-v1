@@ -67,6 +67,64 @@ divergent paths of transparent vs. private cryptocurrency.
 ## Key Decisions Log
 
 <!-- Add decisions here as they are made, newest first -->
+- **2026-07-31**: v6.0.11 — mempool view hardening, built ON TOP of the shell
+  that landed in main while this was in flight.
+  **Read this before starting mempool work**: two streams independently built a
+  mempool shell from the same brief. Main's won (it merged first, and its six
+  views were already retrofitted); this branch was rebuilt on top of it rather
+  than resolving nine conflicting files in its own favour. If you are handed a
+  brief that says a prototype or a helper "already exists", verify it against
+  the tree *and* against `origin/main` before building — the brief for this work
+  named `six-new-a.jsx`, `MemViewShell`, `useMemCanvas`, `MemStatStrip` and
+  `ConfirmationLineage` as existing, and at the time none of them did.
+  **Correction to an earlier note**: tiered polling DOES now exist.
+  `xmrirish-feed.ts` runs three tiers — FAST 3s (mempool + fee estimate), CHAIN
+  15s (tip watch, full pull only when the tip moves), MARKET 60s. An earlier
+  entry said it didn't; that was true of the pre-v6.0.9 base only. Practical
+  consequence for tests: a confirmation count cannot advance faster than the
+  15s chain tier, so any gate asserting 0→10 depth needs a timeout above that —
+  12s measures the poll schedule, not the tracking.
+  What this change adds on top of main's shell: `useMemCanvas.ts` (elapsed-time
+  rAF, DPR-capped, visibility AND intersection gated as one predicate, memoised
+  glow sprites — `ctx.shadowBlur` is banned and gated, being a full blur per
+  draw call); `MemTxTable` + a `table` slot on `MemViewShell`, CSS-gated to
+  reduced-motion and ≤768px; `id` → `data-mem-view` and `data-mem-track-phase` /
+  `data-mem-track-conf` on TrackChip, which is what makes per-view deep links
+  and 0→10 depth machine-checkable at all; the last two `Math.random()` sites
+  (`terminal` typing jitter, `reactor` hex pulse) and the last three fabricated
+  strings (`reactor` "in ~4 min"/"in ~2 min", `terminal` "target=2:00"); an
+  honest overdue ETA (`nextBlockEtaSec` no longer floors at 0 — Poisson arrivals
+  make overdue the ordinary case, and a countdown parked on "0:00" is a
+  fabricated reading); and a scoped 12px mobile type floor for `.mem-view`.
+  **Three constraints that will bite again**:
+  (1) `verify-glide.mjs` scenario 4 loads `?v=classic` under
+  `prefers-reduced-motion` and asserts the block ribbon STILL renders — so
+  reduced motion must suppress *animation*, not *content*. Hiding the view body
+  and swapping in a table breaks it.
+  (2) `verify-fit.mjs` bounds Reactor's desktop vertical scroll at 200px and it
+  already uses ~84px. Anything added below the body eats that headroom; the
+  table is `display:none` on desktop for exactly this reason.
+  (3) A `<canvas>` is a replaced element AND `.mp-view` is `width: max-content`
+  on desktop, so an in-flow `width:100%` canvas is a layout feedback loop — it
+  reached 658,432px wide in testing. `.mem-canvas` is `position:absolute` and
+  `useMemCanvas` carries a `MAX_DIM` clamp plus a one-shot console warning,
+  because nothing errors; it just gets mysteriously slow.
+  Also: canvas cannot resolve `var(--x)` — `cssColor()` unwraps it, and
+  `glowSprite()` re-resolves defensively, because an exception inside a rAF loop
+  unmounts the whole view rather than degrading one particle.
+  New gates: `verify-memshell.mjs` (static; prints the line-count table; strips
+  comments before grepping, since the code legitimately names the banned
+  patterns in its own docs; the useTick check is scoped to canvas paths per §5
+  item 7 and REPORTS the four DOM/SVG views that still tick as standing debt),
+  `verify-memviews.mjs` (Playwright, every registered view: deep links, cross-view
+  stat parity off the raw `data-memstat-value`, tracked-tx idiom, 0→10 depth,
+  390px, reduced motion, canvas count), `verify-memperf.mjs` (CDP 6× throttle,
+  240 txs, 5th-percentile fps — reports `n/a — DOM/SVG` while no canvas view
+  exists). npm: `verify:mem`, `verify:mem:dom`, `verify:mem:perf`.
+  **Known gap**: SVG `<text>` inside views still renders below 12px on mobile
+  (sediment worst, ~30 nodes at ~4px). `verify-legibility.mjs` excludes SVG
+  presentation attributes by design, so `verify-memviews.mjs` reports the count
+  rather than failing. HTML text is clean everywhere.
 - **2026-03-11**: ChangeNOW custom swap — decided to keep widget approach (not custom API)
   to avoid money transmitter liability. Added swap status tracker as value-add.
   Custom API integration would create shared liability; widget keeps ChangeNOW as

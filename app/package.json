@@ -6,15 +6,19 @@
   "description": "xmr.irish v5.0 \u2014 portable Vite + React + TypeScript skeleton, designed to slot into any host runtime.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run build:ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
     "typecheck": "tsc --noEmit",
     "wait-preview": "node scripts/wait-preview.mjs",
-    "verify:static": "node verify-chartkit.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs && node verify-multiline.mjs && node verify-releases.mjs && node verify-origins.mjs --static",
-    "verify:e2e": "node verify-charts.mjs && node verify-memdetail.mjs && node verify-glide.mjs && node verify-markets-dom.mjs && node verify-degraded.mjs && node verify-nojs.mjs && node verify-origins.mjs && node verify-tor.mjs",
+    "verify:static": "node verify-chartkit.mjs && node verify-memshell.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs && node verify-multiline.mjs && node verify-releases.mjs && node verify-origins.mjs --static",
+    "verify:e2e": "node verify-charts.mjs && node verify-memviews.mjs && node verify-memdetail.mjs && node verify-glide.mjs && node verify-markets-dom.mjs && node verify-degraded.mjs && node verify-nojs.mjs && node verify-origins.mjs && node verify-tor.mjs",
     "verify": "npm run verify:static",
-    "verify:perf": "node verify-perf-classic.mjs"
+    "verify:perf": "node verify-perf-classic.mjs",
+    "verify:mem": "node verify-memshell.mjs",
+    "verify:mem:dom": "node verify-memviews.mjs",
+    "verify:mem:perf": "node verify-memperf.mjs",
+    "build:ssr": "vite build --config vite.ssr.config.ts --logLevel error"
   },
   "dependencies": {
     "react": "^18.3.1",

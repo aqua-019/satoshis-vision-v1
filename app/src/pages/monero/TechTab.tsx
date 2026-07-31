@@ -8,6 +8,7 @@ import { PageHeader } from "@/layout/AppShell";
 import { Card } from "@/design/primitives";
 import { AXIS, ChartCrosshair, ChartTip, GRID, nearestIndex, useSvgCursor, type ChartTipRow } from "@/design/chart-kit";
 import { useReducedMotion } from "@/design/useReducedMotion";
+import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroTabProps } from "./tabs";
 
 const PRIMITIVES = [
@@ -97,6 +98,19 @@ function EmissionCurve() {
     return () => cancelAnimationFrame(id);
   }, [reduced]);
 
+  // v6.0.10 §2 — this is a hand-placed artboard (W-unit coordinates), so type
+  // is inflated by u() to survive the viewBox downscale rather than the whole
+  // thing being re-derived. Past the k cap it pans instead; see useChartMetrics.
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth, w: measured } = useChartMetrics(boxRef, { vbWidth: W });
+  // This tab sits under `.main`, which pins every descendant's min-width to 0
+  // (!important) for its own unrelated reason — stronger than the un-important
+  // `.main .chart-box > svg` rule the pan floor relies on elsewhere, so
+  // min-width never reaches the DOM here. Sidestep it with an explicit pixel
+  // WIDTH, a property that blanket rule never touches, floored at `minWidth`
+  // so the curve overflows into a pan instead of being squeezed under the
+  // 12px type floor.
+  const svgW = Math.max(minWidth, measured || minWidth);
   const [ref, vx, handlers] = useSvgCursor(W);
   const hoverI = nearestIndex(vx, { padL, innerW, n: years });
   const hp = hoverI != null ? pts[hoverI] : null;
@@ -116,30 +130,32 @@ function EmissionCurve() {
     : [];
 
   return (
+    <div ref={boxRef} className="chart-box" style={{ width: "100%", overflowX: "auto", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
     <svg
       ref={ref}
+      data-diagram
       viewBox={`0 0 ${W} ${H}`}
-      width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      width={svgW}
+      style={{ display: "block", maxWidth: "none", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
       {...handlers}
     >
       {/* supply gridlines + y ticks */}
       {supplyTicks.map((t) => (
         <g key={"gy" + t}>
           <line x1={padL} y1={yOfS(t)} x2={padL + innerW} y2={yOfS(t)} stroke={GRID} strokeDasharray="2 4" />
-          <text x={padL - 6} y={yOfS(t) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize="10" fill={AXIS}>{fmtSupplyTick(t)}</text>
+          <text x={padL - 6} y={yOfS(t) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill={AXIS}>{fmtSupplyTick(t)}</text>
         </g>
       ))}
 
       <line x1={xOf(8)} y1={padT} x2={xOf(8)} y2={padT + innerH} stroke="var(--ink-20)" strokeDasharray="2 3" />
-      <text x={xOf(8) + 4} y={padT + 10} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.12em">TAIL BEGINS · 2022</text>
+      <text x={xOf(8) + 4} y={padT + 10} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.12em">TAIL BEGINS · 2022</text>
       <path d={emitPath} fill="none" stroke="var(--p-50)" strokeWidth="1.4" />
       <path d={supplyPath} fill="none" stroke="var(--tk-accent)" strokeWidth="1.6" style={{ filter: "drop-shadow(0 0 3px var(--tk-accent))" }} />
-      <text x={padL} y={padT + 10} fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)" letterSpacing="0.1em">SUPPLY (linear, asymptotic ~22M)</text>
-      <text x={padL + 280} y={padT + 10} fontFamily="var(--f-mono)" fontSize="9" fill="var(--p-50)" letterSpacing="0.1em">YEARLY EMISSION (log)</text>
-      <text x={padL} y={H - 12} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">2014</text>
-      <text x={xOf(50)} y={H - 12} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">2064</text>
-      <text x={xOf(99)} y={H - 12} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">2114</text>
+      <text x={padL} y={padT + 10} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--tk-accent)" letterSpacing="0.1em">SUPPLY (linear, asymptotic ~22M)</text>
+      <text x={padL + 280} y={padT + 10} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--p-50)" letterSpacing="0.1em">YEARLY EMISSION (log)</text>
+      <text x={padL} y={H - 12} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2014</text>
+      <text x={xOf(50)} y={H - 12} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2064</text>
+      <text x={xOf(99)} y={H - 12} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2114</text>
 
       {/* hover: crosshair + focus dots on both curves + tooltip */}
       {hp && hoverI != null ? (
@@ -153,6 +169,7 @@ function EmissionCurve() {
         </>
       ) : null}
     </svg>
+    </div>
   );
 }
 

@@ -4,7 +4,7 @@ import * as React from "react";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
-import { MemViewShell, TrackChip, useMempoolTracking, type Tracking } from "@/mempool/mempool-shared";
+import { MemViewShell, TrackChip, useMempoolTracking, type Tracking, MemTxTable} from "@/mempool/mempool-shared";
 import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf } from "@/mempool/conf";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
@@ -432,7 +432,7 @@ export function SedimentView({ data }: ViewProps) {
   // classic.tsx's own hand-rolled version of this same pattern.
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <MemViewShell data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
+      <MemViewShell id="sediment" table={<MemTxTable data={data} tracking={tracking} viewId="sediment" columns={["txid", "perB", "tier", "size", "age"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking}>
         <SedOverview data={data} tracking={tracking} onPickTx={(id) => onSearch({ kind: "tx", id, blockHeight: null })} />
       </MemViewShell>
     </div>

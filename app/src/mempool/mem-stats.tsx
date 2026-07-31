@@ -37,11 +37,14 @@ export interface MemStats {
   oldestAgeSec: number;
   medianPerB: number;
   feeBands: FeeBand[];
-  /** seconds until the next block on the live block-target, floored at 0 */
+  /** Seconds until the next block is DUE on the node's live block-target.
+   *  MAY BE NEGATIVE — see nextBlockEtaSec(). */
   nextBlockEtaSec: number;
+  /** the tip is already older than blockTarget */
+  overdue: boolean;
 }
 
-const fmtMMSS = (sec: number): string => {
+export const fmtMMSS = (sec: number): string => {
   const s = Math.max(0, Math.round(sec));
   return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 };
@@ -57,11 +60,18 @@ function medianOfPerB(txs: Tx[]): number {
 /** Seconds since the tip's block, interpolated from the last snapshot to now —
  *  the same shape as classic.tsx's ClassicEta, generalised to read the node's
  *  real `data.blockTarget` instead of a hardcoded 120. Not memoised: callers
- *  that need a live countdown (BlockEta) call this fresh on every tick. */
+ *  that need a live countdown (BlockEta) call this fresh on every tick.
+ *
+ *  DELIBERATELY NOT FLOORED AT 0. Monero block arrival is a Poisson process, so
+ *  running past the target is the ordinary case, not an anomaly — roughly a
+ *  third of blocks do. A countdown clamped at zero parks on "0:00" and keeps
+ *  asserting a block is due *now* for as long as the wait lasts, which is a
+ *  fabricated reading of exactly the kind the ALL-REAL-DATA invariant exists to
+ *  prevent. Callers render a negative value as "+0:37 overdue". */
 function nextBlockEtaSec(data: MoneroLive): number {
   const sinceTip = (data.blocks[0]?.age ?? 0) + Math.floor((Date.now() - data.lastUpdate) / 1000);
   const target = data.blockTarget || 120;
-  return Math.max(0, target - sinceTip);
+  return target - sinceTip;
 }
 
 /** Pure derivation of mempool telemetry from `data`. Memoised on the fields it
@@ -88,6 +98,7 @@ export function useMemStats(data: MoneroLive): MemStats {
       medianPerB: medianOfPerB(txs),
       feeBands,
       nextBlockEtaSec: nextBlockEtaSec(data),
+      overdue: nextBlockEtaSec(data) < 0,
     };
   }, [data.mempool, data.feeTiers, data.blocks, data.lastUpdate, data.blockTarget]);
 }
@@ -105,7 +116,11 @@ export function BlockEta({ data, offsetSec = 0 }: { data: MoneroLive; offsetSec?
   // still fires one tick immediately on return, so nothing is wasted either.
   useTick(1000, { motion: false });
   if (!data.ready) return <>—</>;
-  return <>{fmtMMSS(nextBlockEtaSec(data) + offsetSec)}</>;
+  const eta = nextBlockEtaSec(data) + offsetSec;
+  // Overdue is normal for Poisson arrivals, so say so rather than parking on
+  // "0:00" — the reading stays true for as long as the wait lasts.
+  if (eta < 0) return <span className="warn" style={{ color: "var(--y-50)" }}>+{fmtMMSS(-eta)} overdue</span>;
+  return <>{fmtMMSS(eta)}</>;
 }
 
 /** Dense five-figure strip: mempool count, pool weight, oldest tx age, median
@@ -141,7 +156,7 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
   }
 
   return (
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+    <section className="mem-stat-strip" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
       {/* `display: contents` keeps the inner .stat as the grid item, so these
           hooks add no layout box.
           data-memstat names the figure; data-memstat-value carries the RAW

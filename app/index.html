@@ -15,14 +15,14 @@
              controls and scrollbars are dark before the bundle lands
            · colours MUST match the real floors or we trade a white flash for a
              colour flash: indigo #121218 (styles-theme.css:98) and classic
-             #0b0b0c (styles-theme.css:44). The theme stamp below sets
+             #050505 (styles-theme.css). The theme stamp below sets
              data-theme before first paint, so the classic selector resolves.
          The bundle still wins once it arrives (Vite appends its <link> later in
          <head>), which is what keeps styles-ambient.css's body-transparent
          occlusion fix working. -->
     <style>
       html { background-color: #121218; color-scheme: dark; }
-      html[data-theme="classic"] { background-color: #0b0b0c; }
+      html[data-theme="classic"] { background-color: #050505; }
       body { background-color: #121218; color: #C9C6D8; margin: 0; }
     </style>
     <meta name="theme-color" content="#121218" />
@@ -130,56 +130,43 @@
     </script>
   </head>
   <body>
+    <!-- v6.0.9: every static route is PRERENDERED (scripts/prerender.mjs), so
+         with scripting off the page below is the real page — real prose, real
+         nav, real <a href> links. This block is therefore a BANNER, not the
+         full-screen takeover it used to be: covering the content would hide the
+         very thing prerendering exists to show. It explains only what is
+         genuinely missing without JS — the live figures, which render as "—"
+         because the app never invents a number it did not receive. -->
     <noscript>
       <style>
-        .nojs{position:fixed;inset:0;overflow:auto;background:#050505;color:#a8a094;box-sizing:border-box;
-          font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;line-height:1.6;padding:48px 20px}
-        .nojs__wrap{max-width:640px;margin:0 auto}
-        .nojs__mark{font-size:22px;letter-spacing:.04em;color:#a8a094}
-        /* Indigofera Nocturne (styles-theme.css's [data-theme="indigo"]
-           palette), literal — this markup renders before any JS/CSS bundle
-           exists, so it can't reach for var(--ui-accent-text) / var(--ui-
-           accent-dim); #8B7BF5 / rgb(110,94,240) are those tokens' own
-           values, copied in by hand. This is what every hardened/Tor
-           browser (and anyone without JS) actually sees. */
-        .nojs__mark b{color:#8B7BF5;font-weight:600}
-        .nojs__desc{margin:6px 0 28px;font-size:14px;color:#6f6a61}
-        .nojs__note{border:1px solid rgba(110,94,240,.28);border-radius:6px;padding:14px 16px;
-          font-size:14px;color:#a8a094;margin-bottom:24px;background:rgba(110,94,240,.04)}
-        .nojs__facts{list-style:none;padding:0;margin:0 0 24px;font-size:14px;color:#8a8478}
-        .nojs__facts li{padding:6px 0;border-top:1px solid rgba(255,255,255,.05)}
-        .nojs__nav{list-style:none;padding:0;margin:0 0 24px;font-size:14px;
-          display:flex;flex-wrap:wrap;gap:8px 18px}
-        .nojs__a{color:#8B7BF5;text-decoration:none;border-bottom:1px solid rgba(110,94,240,.4)}
+        /* Literal hex, no var(): this renders before any bundled CSS, and on a
+           JS-off load the bundle's palette may be all that is missing. */
+        .nojs{background:#16151d;border-bottom:1px solid rgba(110,94,240,.28);color:#a8a094;
+          font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+          font-size:14px;line-height:1.6;padding:14px 20px}
+        .nojs__wrap{max-width:960px;margin:0 auto}
+        .nojs b{color:#8B7BF5;font-weight:600}
+        .nojs a{color:#8B7BF5;text-decoration:none;border-bottom:1px solid rgba(110,94,240,.4)}
       </style>
       <div class="nojs"><div class="nojs__wrap">
-        <div class="nojs__mark">xmr<b>.irish</b></div>
-        <div class="nojs__desc">Monero education + live mempool, network &amp; market data.</div>
-        <div class="nojs__note">Live figures — block height, mempool, price — need JavaScript, so
-          they are not shown. Everything else on this site is static text and works exactly as it is.
-          Every page below is a plain link.</div>
-        <ul class="nojs__nav">
-          <li><a class="nojs__a" href="/">Home</a></li>
-          <li><a class="nojs__a" href="/mempool">Mempool</a></li>
-          <li><a class="nojs__a" href="/markets">Markets</a></li>
-          <li><a class="nojs__a" href="/network">Network</a></li>
-          <li><a class="nojs__a" href="/education">Education</a></li>
-          <li><a class="nojs__a" href="/monero">Monero</a></li>
-          <li><a class="nojs__a" href="/future">Future</a></li>
-          <li><a class="nojs__a" href="/peers">Peers</a></li>
-          <li><a class="nojs__a" href="/simulate">Simulate</a></li>
-          <li><a class="nojs__a" href="/node">Node</a></li>
-          <li><a class="nojs__a" href="/sources">Sources</a></li>
-        </ul>
-        <ul class="nojs__facts">
-          <li>Monero is private, untraceable digital cash — amounts, senders and receivers are hidden by default.</li>
-          <li>This site is read-only and non-custodial: no funds, no accounts, no wallets, no tracking.</li>
-          <li>Nothing here can move money; it only displays public network and market data.</li>
-        </ul>
-        <a class="nojs__a" href="https://getmonero.org" rel="noopener noreferrer">Learn about Monero → getmonero.org</a>
+        <b>JavaScript is off — the page below is complete and the navigation works.</b>
+        Live figures (block height, mempool, price) show <b>—</b> rather than a number,
+        because those need JavaScript to fetch. Everything else is real.
+        This site is read-only and non-custodial: no funds, no accounts, no wallets,
+        no tracking, and nothing here can move money.
+        <a href="https://getmonero.org" rel="noopener noreferrer">getmonero.org</a>
       </div></div>
     </noscript>
-    <!-- v6.0.7 BOOT FALLBACK — the fix for the actual reported symptom.
+    <!-- v6.0.7 BOOT FALLBACK — now a build-regression backstop.
+         v6.0.9 prerenders every static route into #root, and the SPA catch-all
+         serves the prerendered home page for anything else, so #root is no
+         longer empty on ANY route and the watchdog below cannot fire in normal
+         operation. That is the intended outcome: real content beats a fallback.
+         It is kept because the one case it still catches is worth catching —
+         prerendering silently stopping, which would otherwise ship an empty
+         shell to every visitor.
+
+         Original rationale follows, still accurate for that case:
          Visible only when React never mounts: module blocked by Brave Shields,
          chunk 404 over Tor, CSP refusal, parse error, or a throw before first
          paint. <noscript> cannot cover any of those — it renders only when
