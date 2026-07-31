@@ -156,7 +156,7 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
   }
 
   return (
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+    <section className="mem-stat-strip" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
       {/* `display: contents` keeps the inner .stat as the grid item, so these
           hooks add no layout box.
           data-memstat names the figure; data-memstat-value carries the RAW

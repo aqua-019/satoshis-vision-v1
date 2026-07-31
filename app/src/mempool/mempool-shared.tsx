@@ -139,13 +139,19 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
     else if (/^\d{1,8}$/.test(t)) onSearch({ kind: "block", height: parseInt(t, 10) });
   };
   return (
-    <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, maxWidth: compact ? 380 : 520 }}>
+    // minWidth:0 on BOTH the form and the input. A flex item defaults to
+    // min-width:auto, which is its content's intrinsic minimum — for a text
+    // input that is wide enough to hold the placeholder. Without this the row
+    // cannot shrink at 390px: it overflows the view, and whichever sibling is
+    // allowed to give (the SEARCH button) collapses to a vertical stack of
+    // letters instead.
+    <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, maxWidth: compact ? 380 : 520 }}>
       <input
         type="text" value={q} onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder || "Search by 64-char txid or block height…"}
         spellCheck={false}
         style={{
-          flex: 1, appearance: "none",
+          flex: "1 1 0", minWidth: 0, appearance: "none",
           background: "rgba(0,0,0,0.6)", color: "var(--ink-100)",
           border: "1px solid var(--ink-20)", borderRadius: 3,
           padding: compact ? "7px 10px" : "9px 12px",
@@ -155,8 +161,15 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
         onFocus={(e) => (e.target.style.borderColor = "var(--tk-accent)")}
         onBlur={(e) => (e.target.style.borderColor = "var(--ink-20)")}
       />
+      {/* flexShrink:0 + nowrap. Without them the button is the flex item that
+          gives when the row is tight, and at 390px it collapses to ~40px wide,
+          wrapping the label into a vertical column of letters. */}
       <button type="submit" className="proto-btn"
-        style={{ padding: compact ? "6px 12px" : "8px 14px", fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)" }}>
+        style={{
+          padding: compact ? "6px 12px" : "8px 14px",
+          fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)",
+          flexShrink: 0, whiteSpace: "nowrap",
+        }}>
         SEARCH
       </button>
     </form>
