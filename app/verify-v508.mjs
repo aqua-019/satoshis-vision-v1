@@ -88,13 +88,21 @@ console.log(`PASS LIST (${simPass.length}/15): ${simPass.join(", ")}`);
 // ── 2. /design 404s; no ⌘ DESIGN link ──
 console.log("\n=== P6 · Design hub removed ===");
 await page.goto(`${base}/design`, { waitUntil: "networkidle" });
+// v6.0.10: the `⌘ DESIGN` clause is retired. This assertion dates from the
+// removal of the v5 design HUB (a /design ROUTE), and it also banned the
+// STRING "⌘ DESIGN" anywhere in the DOM. v6.0.2 then deliberately added a
+// two-knob Design panel behind a `⌘ DESIGN` trigger in the topbar
+// (design/DesignPanel.tsx), so the string is now expected and this check has
+// been failing ever since — for the wrong reason.
+// What the check is actually for still holds and is still asserted: there is
+// no /design route, and nothing links to one.
 const d = await page.evaluate(() => ({
   is404: /404/.test(document.body.innerText) && /not in the mempool/i.test(document.body.innerText),
   designLinks: document.querySelectorAll('a[href="/design"], a[href$="/design"]').length,
-  hasDesignText: /⌘\s*DESIGN/i.test(document.body.innerText),
+  hasDesignPanelTrigger: /⌘\s*DESIGN/i.test(document.body.innerText),
 }));
-const p6ok = d.is404 && d.designLinks === 0 && !d.hasDesignText;
-console.log(`${p6ok ? "✅" : "❌"} /design→404=${d.is404} designLinks=${d.designLinks} ⌘DESIGN=${d.hasDesignText}`);
+const p6ok = d.is404 && d.designLinks === 0;
+console.log(`${p6ok ? "✅" : "❌"} /design→404=${d.is404} designLinks=${d.designLinks} (⌘DESIGN panel trigger present=${d.hasDesignPanelTrigger}, expected since v6.0.2)`);
 if (!p6ok) fail = true;
 
 // ── 3. Home recent-blocks are focusable <a> deep-links ──

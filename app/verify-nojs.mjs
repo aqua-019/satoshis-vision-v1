@@ -66,8 +66,9 @@ ok(rootChildren > 0, `no-JS: #root carries prerendered markup (${rootChildren} c
 // Either floor is correct here: only SCRIPTING is off, so the CSS bundle still
 // loads and styles-ambient.css paints html from --amb-floor. The pre-paint
 // theme stamp never runs, so data-theme is unset and the classic branch
-// (#0b0b0c) wins rather than indigo (#121218). What matters is that it is dark.
-const DARK_FLOORS = ['rgb(18, 18, 24)', 'rgb(11, 11, 12)'];
+// (#050505) wins rather than indigo (#121218). What matters is that it is dark.
+// v6.0.10 §6b moved classic's floor from #0b0b0c to v5's literal #050505.
+const DARK_FLOORS = ['rgb(18, 18, 24)', 'rgb(5, 5, 5)'];
 const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
 ok(DARK_FLOORS.includes(bg), `no-JS: html paints a dark floor (got ${bg})`);
 

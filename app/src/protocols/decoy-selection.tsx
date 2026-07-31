@@ -13,6 +13,7 @@ import { Footer } from "@/layout/Footer";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
+import { useChartMetrics, estTextW } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -75,9 +76,31 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
     wavePts.push([xOf(age), padT + innerH - p * 1400]);
   }
   const wavePath = "M " + wavePts.map((p) => p.join(",")).join(" L ");
+  const ref = React.useRef<HTMLDivElement>(null);
+  const { u: uPx, fs, minWidth } = useChartMetrics(ref, { vbWidth: W });
+
+  // Ring members are sorted by age (== sorted by x), so a single left-to-right
+  // sweep is enough to decide which "#NN" buoy labels have room to print
+  // without touching their neighbour — the true spender always shows. Items
+  // BEFORE the true spender also check distance to ITS x, not just the last
+  // shown label — otherwise one can pass the gap check against its own
+  // predecessor and still land right next to the (unconditionally shown)
+  // true-spender label that follows it.
+  const tickUnits = uPx(fs.tick);
+  const labelGap = estTextW(3, tickUnits) + tickUnits * 1.1;
+  const realX = xOf((ring.find((r: any) => r.real)?.age) ?? 0);
+  let lastLabelX = -Infinity;
+  const showBuoyLabel = ring.map((r: any) => {
+    const x = xOf(r.age);
+    const show = r.real ||
+      (x - lastLabelX >= labelGap && Math.abs(x - realX) >= labelGap);
+    if (show) lastLabelX = x;
+    return show;
+  });
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ maxWidth: W, display: "block" }}>
+    <div ref={ref} className="chart-box" style={{ width: "100%", maxWidth: W, margin: "0 auto", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }} data-diagram>
       <defs>
         <linearGradient id="tideFill" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%"  stopColor="rgba(255,122,26,0.45)" />
@@ -102,16 +125,16 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
         return (
           <g key={i}>
             <line x1={x} y1={padT} x2={x} y2={padT + innerH} stroke="rgba(255,122,26,0.05)" />
-            <text x={x} y={padT + innerH + 16} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">
+            <text x={x} y={padT + innerH + 16} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={uPx(fs.tick)} fill="var(--ink-40)">
               {days}d
             </text>
           </g>
         );
       })}
-      <text x={padL} y={padT + innerH + 36} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" letterSpacing="0.18em">
+      <text x={padL} y={padT + innerH + 36} fontFamily="var(--f-mono)" fontSize={uPx(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">
         AGE OF OUTPUT  ⟶ (days since mined)
       </text>
-      <text x={W - padR} y={padT + innerH + 36} fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)" textAnchor="end" letterSpacing="0.18em">
+      <text x={W - padR} y={padT + innerH + 36} fontFamily="var(--f-mono)" fontSize={uPx(fs.tick)} fill="var(--ink-40)" textAnchor="end" letterSpacing="0.18em">
         ◀ MORE RECENT · OLDER ▶
       </text>
 
@@ -145,12 +168,14 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
               fill={r.real ? "#ffce8a" : "rgba(255,180,80,0.95)"}
               stroke={r.real ? "#ffd9a0" : "rgba(255,200,120,0.4)"} strokeWidth="1"
               style={{ filter: r.real ? "drop-shadow(0 0 4px #ff7a1a)" : "drop-shadow(0 0 4px rgba(255,122,26,0.8))" }} />
-            {/* label */}
-            <text x={x} y={yWave + bob - 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9"
-              fill={r.real ? "#ffce8a" : "rgba(255,200,140,0.7)"}
-              opacity={r.real ? 1 : 0.6}>
-              #{i.toString().padStart(2, "0")}
-            </text>
+            {/* label — skipped where too close to the previous one to avoid collision */}
+            {showBuoyLabel[i] ? (
+              <text x={x} y={yWave + bob - 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={uPx(fs.tick)}
+                fill={r.real ? "#ffce8a" : "rgba(255,200,140,0.7)"}
+                opacity={r.real ? 1 : 0.6}>
+                #{i.toString().padStart(2, "0")}
+              </text>
+            ) : null}
           </g>
         );
       })}
@@ -163,7 +188,7 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
         const yWave = padT + innerH - lognormPdf(r.age + 0.1) * 1400;
         return (
           <g>
-            <text x={x} y={padT - 8} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="#ffd400"
+            <text x={x} y={padT - 8} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={uPx(fs.tick)} fill="#ffd400"
               style={{ filter: "drop-shadow(0 0 4px #ffd400)" }}>
               ↓ TRUE SPENDER
             </text>
@@ -172,6 +197,7 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
         );
       })()}
     </svg>
+    </div>
   );
 }
 

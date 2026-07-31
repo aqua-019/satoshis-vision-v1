@@ -15,14 +15,14 @@
              controls and scrollbars are dark before the bundle lands
            · colours MUST match the real floors or we trade a white flash for a
              colour flash: indigo #121218 (styles-theme.css:98) and classic
-             #0b0b0c (styles-theme.css:44). The theme stamp below sets
+             #050505 (styles-theme.css). The theme stamp below sets
              data-theme before first paint, so the classic selector resolves.
          The bundle still wins once it arrives (Vite appends its <link> later in
          <head>), which is what keeps styles-ambient.css's body-transparent
          occlusion fix working. -->
     <style>
       html { background-color: #121218; color-scheme: dark; }
-      html[data-theme="classic"] { background-color: #0b0b0c; }
+      html[data-theme="classic"] { background-color: #050505; }
       body { background-color: #121218; color: #C9C6D8; margin: 0; }
     </style>
     <meta name="theme-color" content="#121218" />

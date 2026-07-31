@@ -253,7 +253,9 @@ export function FutureMini({ mode, height = 240 }: FutureMiniProps) {
   return (
     <canvas
       ref={ref}
-      style={{ display: "block", width: "100%", height, background: "rgba(0,0,0,0.35)", border: "1px solid var(--rule)" }}
+      /* opaque ground: rgba(0,0,0,0.35) let the L3 aurora drift through the
+         mini-sim. See --surface-ground in styles.css. */
+      style={{ display: "block", width: "100%", height, background: "var(--surface-ground)", border: "1px solid var(--rule)" }}
     />
   );
 }

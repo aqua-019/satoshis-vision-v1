@@ -50,7 +50,7 @@ export function ProtocolCard({ p, onOpen }: ProtocolCardProps) {
               <span className="led pulse" style={{ background: p.sc, boxShadow: `0 0 8px ${p.sc}`, margin: 0 }} />
               {p.status}
             </span>
-            {stale ? <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>QUIET &gt;90D</span> : null}
+            {stale && pulse ? <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>repo quiet {agoStr(pulse.pushed)}</span> : null}
           </div>
           <h3 className="serif" style={{ margin: "14px 0 4px", fontSize: "clamp(24px, 1.9vw, 34px)", fontWeight: 400, color: p.c, textShadow: `0 0 16px ${p.c}55` }}>{p.tag}</h3>
           <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · ETA {p.eta}</div>
@@ -88,7 +88,7 @@ export function DevLabPulseCard({ repo, label }: DevLabPulseCardProps) {
         <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", display: "flex", gap: 12, alignItems: "center" }}>
           <span>★ {pulse.stars.toLocaleString()}</span>
           <span>issues {pulse.issues}</span>
-          <span style={{ color: stale ? "var(--y-50)" : "var(--g-50)" }}>{stale ? "quiet · " : "pushed "}{agoStr(pulse.pushed)}</span>
+          <span style={{ color: stale ? "var(--y-50)" : "var(--g-50)" }}>{stale ? "repo quiet · " : "pushed "}{agoStr(pulse.pushed)}</span>
         </div>
       ) : (
         <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>fetching via /api/feeds …</div>

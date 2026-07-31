@@ -65,13 +65,14 @@ export interface EcoEntry {
   links: readonly EcoLink[];
 }
 
-export interface RoadmapStop {
-  v: string;
-  t: string;
-  d: string;
-  c: string;
-  on: boolean;
-}
+// A roadmap stop is EITHER a fork that maps onto one or more
+// FUTURE_PROTOCOLS entries (status text is *derived*, never restated — see
+// roadmapStatus() below) OR a stop with no protocol member yet, which still
+// carries its own literal `d` string. A stop can never carry both fields or
+// neither — that's the whole point of the union.
+export type RoadmapStop =
+  | { v: string; t: string; c: string; on: boolean; protocols: readonly string[] }
+  | { v: string; t: string; c: string; on: boolean; d: string };
 
 export interface AutomationRow {
   k: string;
@@ -130,7 +131,7 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
   },
   {
     id: "jamtis", tag: "Jamtis", sub: "Structured addresses", c: "#4ade80", mini: "jamtis",
-    status: "BETA · paired with Seraphis", sc: "var(--y-50)", eta: "ships with v18", sim: "jamtis",
+    status: "BETA · addressing layer", sc: "var(--y-50)", eta: "ships with v18", sim: "jamtis",
     head: "Addresses become structured, checksummed, readable.",
     lede: "95 characters of base58 noise become a 75-character format with meaningful spans, native sub-address tags, and a checksum that catches typos before money moves.",
     deep: [
@@ -180,13 +181,66 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
 ];
 
 /* ── roadmap rail data ────────────────────────────────────────── */
+// v16 and v20 have no FUTURE_PROTOCOLS member (v16 predates this catalogue;
+// v20 is a node-share + PQ-research milestone, a different claim than
+// Cuprate's own "full sync working" card — see FuturePage TASK 2 audit
+// notes) so they keep a literal `d`. v17/v18/v19 derive their status text
+// from FUTURE_PROTOCOLS — see roadmapStatus() — so the rail can never
+// disagree with the cards again.
 export const ROADMAP: readonly RoadmapStop[] = [
   { v: "v16", t: "Ring 16 · CLSAG", d: "2022 · live", c: "var(--g-50)", on: false },
-  { v: "v17", t: "FCMP++", d: "Q3 2026 · in audit", c: "#b87aff", on: true },
-  { v: "v18", t: "Seraphis + Jamtis", d: "2027 · design", c: "var(--tk-accent)", on: false },
-  { v: "v19", t: "Carrot era wallets", d: "2027+ · spec", c: "#5ed3f4", on: false },
+  { v: "v17", t: "FCMP++", protocols: ["fcmp"], c: "#b87aff", on: true },
+  { v: "v18", t: "Seraphis + Jamtis", protocols: ["seraphis", "jamtis"], c: "var(--tk-accent)", on: false },
+  { v: "v19", t: "Carrot era wallets", protocols: ["carrot"], c: "#5ed3f4", on: false },
   { v: "v20", t: "Cuprate share + PQ prep", d: "2028+ · horizon", c: "#ffd400", on: false },
 ];
+
+/** Ordered least → most advanced. Only these four tokens are expected as the
+ * leading " · "-delimited segment of a FutureProtocol.status string. */
+export const PHASE_ORDER = ["DESIGN", "ALPHA", "BETA", "LIVE"] as const;
+
+/** The phase token a status string leads with, e.g. "BETA · audit in
+ * progress" → "BETA". Uppercased so callers never have to re-normalize. */
+function phaseOf(status: string): string {
+  return status.split(" · ")[0]!.trim().toUpperCase();
+}
+
+/**
+ * Single source of truth for what a roadmap stop's status line reads.
+ * A stop with a literal `d` just returns it. A stop that maps onto one or
+ * more FUTURE_PROTOCOLS members derives its text as `{date} · {phase}`:
+ *   - phase is the LEAST-ADVANCED member's phase token (never an average,
+ *     never a third invented state) — a multi-protocol fork isn't done
+ *     until every protocol riding it is.
+ *   - date is that same least-advanced protocol's own `eta`, taking only
+ *     the text before its first " · " (so "2027 · fork v18" contributes
+ *     "2027", keeping the rail reading as date + phase, e.g. "2027 · beta").
+ * Tie-break: if two mapped protocols land on the same phase rank (as
+ * Seraphis and Jamtis both do at BETA), the FIRST one listed in the stop's
+ * `protocols` array wins — comparison below is strict `<`, so a later equal
+ * rank never displaces the earlier pick. This keeps the result deterministic
+ * without inventing a rule the data doesn't already imply (declaration order).
+ */
+export function roadmapStatus(stop: RoadmapStop): string {
+  if ("d" in stop) return stop.d;
+
+  let chosen: FutureProtocol | undefined;
+  let chosenRank = Infinity;
+  for (const id of stop.protocols) {
+    const proto = FUTURE_PROTOCOLS.find((p) => p.id === id);
+    if (!proto) continue;
+    const rank = PHASE_ORDER.indexOf(phaseOf(proto.status) as (typeof PHASE_ORDER)[number]);
+    if (rank !== -1 && rank < chosenRank) {
+      chosenRank = rank;
+      chosen = proto;
+    }
+  }
+  if (!chosen) return ""; // unreachable given today's data; never fabricate a fallback string
+
+  const phase = phaseOf(chosen.status).toLowerCase();
+  const date = chosen.eta.split(" · ")[0]!.trim();
+  return `${date} · ${phase}`;
+}
 
 /* ── ecosystem panels (xmrhub / kyc.rip / xmr.club / stressnet) ─── */
 export const ECOSYSTEM: readonly EcoEntry[] = [

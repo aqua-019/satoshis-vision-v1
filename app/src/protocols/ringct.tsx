@@ -32,8 +32,8 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
         <g>
           <rect x="20" y="30" width={w - 40} height={h - 70} fill="rgba(0,0,0,0.35)" stroke="rgba(255,122,26,0.6)" />
           <rect x="36" y="50" width={w - 72} height="22" fill="rgba(255,122,26,0.2)" />
-          <text x={w / 2} y="66" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-100)">C = aG + xH</text>
-          <text x={w / 2} y="92" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)">value · blinded</text>
+          <text x={w / 2} y="66" textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-100)">C = aG + xH</text>
+          <text x={w / 2} y="92" textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)">value · blinded</text>
           {/* lock */}
           <circle cx={w / 2} cy={130} r="14" fill="rgba(255,122,26,0.18)" stroke="var(--tk-accent)" />
           <rect x={w / 2 - 4} y={126} width="8" height="10" fill="var(--tk-accent)" />
@@ -56,31 +56,38 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
                   fill={isReal ? "#ffce8a" : "rgba(255,180,80,0.85)"}
                   opacity={flicker}
                   style={{ filter: isReal ? "drop-shadow(0 0 4px var(--tk-accent))" : "drop-shadow(0 0 3px rgba(255,122,26,0.6))" }} />
-                <text x={cx} y={cy + 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="6" fill="var(--ink-40)">{i}</text>
+                <text x={cx} y={cy + 14} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-40)">{i}</text>
               </g>
             );
           })}
-          <text x={w / 2} y={h / 2 - 4} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)" letterSpacing="0.18em">RING 16</text>
+          <text x={w / 2} y={h / 2 - 4} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--tk-accent)" letterSpacing="0.18em">RING 16</text>
         </g>
       );
     }
     if (kind === "outputs") {
       // 2 blinded output commitments
+      // Margin/gap-derived so both boxes (and their labels) stay inside [0, w] —
+      // the previous `32 + i*(w-80)` placed box 1 partly off-canvas at w=200.
+      const margin = 14, gap = 12;
+      const bw = (w - margin * 2 - gap) / 2;
       return (
         <g>
           {[0, 1].map((i) => {
-            const x = 32 + i * (w - 80);
+            const x = margin + i * (bw + gap);
             return (
               <g key={i}>
-                <rect x={x} y={42} width={w - 100} height={h - 90}
+                <rect x={x} y={42} width={bw} height={h - 90}
                   fill={`linear-gradient(to bottom, rgba(94,211,244,0.18), rgba(94,211,244,0.05))`}
                   stroke="rgba(94,211,244,0.6)" />
-                <text x={x + (w - 100) / 2} y={64} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="#5ed3f4">out_{i}</text>
-                <text x={x + (w - 100) / 2} y={86} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)">C = a'G + x'H</text>
-                <text x={x + (w - 100) / 2} y={104} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)">x' = stealth</text>
+                <text x={x + bw / 2} y={64} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="#5ed3f4">out_{i}</text>
+                {/* spaces trimmed around operators — at c-tick size the two
+                    80-unit-wide boxes are just far enough apart for the tight
+                    form to clear, not the airier "C = a'G + x'H" */}
+                <text x={x + bw / 2} y={86} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)">C=a'G+x'H</text>
+                <text x={x + bw / 2} y={104} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)">x'=stealth</text>
                 {/* "sealing" pulse */}
                 {on ? (
-                  <rect x={x} y={42} width={w - 100} height={h - 90} fill="none" stroke="#5ed3f4" strokeWidth="1.5">
+                  <rect x={x} y={42} width={bw} height={h - 90} fill="none" stroke="#5ed3f4" strokeWidth="1.5">
                     <animate attributeName="opacity" values="0.2;1;0.2" dur="1.4s" repeatCount="indefinite" />
                   </rect>
                 ) : null}
@@ -88,7 +95,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
             );
           })}
           {/* balance equation */}
-          <text x={w / 2} y={h - 26} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--g-50)">Σ in − Σ out = 0</text>
+          <text x={w / 2} y={h - 26} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--g-50)">Σ in − Σ out = 0</text>
         </g>
       );
     }
@@ -106,10 +113,10 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
           {/* mill */}
           <rect x="14" y={130} width={w - 28} height="10" fill="rgba(184,122,255,0.18)" stroke="rgba(184,122,255,0.5)" />
           <rect x={14 + t * (w - 38)} y={128} width="20" height="14" fill="#b87aff" style={{ filter: "drop-shadow(0 0 6px #b87aff)" }} />
-          <text x={w / 2} y={170} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="#b87aff" letterSpacing="0.16em" style={{ textShadow: "var(--glow-p)" }}>
+          <text x={w / 2} y={170} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="#b87aff" letterSpacing="0.16em" style={{ textShadow: "var(--glow-p)" }}>
             BULLETPROOFS+
           </text>
-          <text x={w / 2} y={186} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)">
+          <text x={w / 2} y={186} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)">
             range proof · O(log n)
           </text>
         </g>
@@ -125,8 +132,8 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
             style={{ transformOrigin: `${w / 2}px ${h / 2 - 16}px`, animation: "spin 14s linear infinite" }} />
           <circle cx={w / 2} cy={h / 2 - 16} r="34" fill="rgba(255,122,26,0.25)" stroke="var(--tk-accent)" strokeWidth="2"
             style={{ filter: "drop-shadow(0 0 6px var(--tk-accent))" }} />
-          <text x={w / 2} y={h / 2 - 18} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="11" fill="var(--ink-80)" letterSpacing="0.1em" style={{ textShadow: "var(--glow-1)" }}>CLSAG</text>
-          <text x={w / 2} y={h / 2 - 4} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="8" fill="var(--ink-60)">σ · 16-ring</text>
+          <text x={w / 2} y={h / 2 - 18} textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fill="var(--ink-80)" letterSpacing="0.1em" style={{ textShadow: "var(--glow-1)" }}>CLSAG</text>
+          <text x={w / 2} y={h / 2 - 4} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)">σ · 16-ring</text>
           {/* seal rays */}
           {Array.from({ length: 12 }).map((_, i) => {
             const a = (i / 12) * Math.PI * 2;
@@ -134,7 +141,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
               x2={w / 2 + Math.cos(a) * 60} y2={h / 2 - 16 + Math.sin(a) * 60}
               stroke="var(--tk-accent)" strokeWidth="0.6" opacity={pulse} />;
           })}
-          <text x={w / 2} y={h - 22} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--g-50)" letterSpacing="0.14em">SEALED ✓</text>
+          <text x={w / 2} y={h - 22} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--g-50)" letterSpacing="0.14em">SEALED ✓</text>
         </g>
       );
     }
@@ -159,7 +166,14 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
         fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.16em",
         textTransform: "uppercase", zIndex: 2,
       }}>{n} · {title}</div>
-      <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: "block", maxWidth: w }}>
+      {/* minWidth + flexShrink:0 are load-bearing, and they are why this one
+          station does NOT get v6.0.8's plain fluid treatment. These five are
+          flex items in the assembly row: with `width:100%` alone, flex shrinks
+          each 200px svg to ~62px at 390px, which scales the whole coordinate
+          system with it and renders every label at ~2.4 CSS px. Pinned to its
+          designed width, the ROW pans instead (.proto-stage scrolls on mobile)
+          and the type keeps its nominal px. */}
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: "block", maxWidth: w, minWidth: w, flexShrink: 0 }} data-chart>
         {renderInside()}
       </svg>
     </div>
@@ -201,19 +215,26 @@ export function RingctView({ data, bg }: ViewProps) {
             FIG. 04 · ASSEMBLY LINE · L → R · LIVE
           </div>
 
-          <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "center", marginTop: 20 }}>
-            {stations.map((s, i) => (
-              <React.Fragment key={i}>
-                <AssemblyStation {...s} on={isStation(i)} done={isDone(i)} tick={tick} />
-                {i < stations.length - 1 ? (
-                  <div style={{
-                    width: 30, marginTop: 100, display: "flex", alignItems: "center", justifyContent: "center",
-                    color: isDone(i) ? "var(--g-50)" : "var(--ink-20)",
-                    fontFamily: "var(--f-mono)", fontSize: 18,
-                  }}>→</div>
-                ) : null}
-              </React.Fragment>
-            ))}
+          {/* The 5 stations are R1 (1 user unit = 1 CSS px, width={w} height={h}
+              matching their own viewBox exactly) — that only holds if the row
+              never flex-shrinks them. width:max-content keeps every station at
+              its natural 200px; table-scroll lets mobile pan across the full
+              row instead of squeezing it (and its text) down to fit 390px. */}
+          <div className="table-scroll">
+            <div style={{ display: "flex", gap: 12, alignItems: "flex-start", justifyContent: "center", marginTop: 20, width: "max-content", minWidth: "100%" }}>
+              {stations.map((s, i) => (
+                <React.Fragment key={i}>
+                  <AssemblyStation {...s} on={isStation(i)} done={isDone(i)} tick={tick} />
+                  {i < stations.length - 1 ? (
+                    <div style={{
+                      width: 30, marginTop: 100, display: "flex", alignItems: "center", justifyContent: "center",
+                      color: isDone(i) ? "var(--g-50)" : "var(--ink-20)",
+                      fontFamily: "var(--f-mono)", fontSize: 18,
+                    }}>→</div>
+                  ) : null}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
 
           {/* transaction record visualization */}

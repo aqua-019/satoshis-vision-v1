@@ -32,7 +32,7 @@ const base = 'http://localhost:4173';
 // these are asserted against styles-theme.css's --amb-floor below rather than
 // trusted. rgb() form is what getComputedStyle returns.
 const INDIGO_RGB = 'rgb(18, 18, 24)';  // #121218
-const CLASSIC_RGB = 'rgb(11, 11, 12)'; // #0b0b0c
+const CLASSIC_RGB = 'rgb(5, 5, 5)'; // #050505 — v6.0.10 §6b: classic is v5's literal floor
 const ACCENT_HEX = '#6E5EF0';
 const ACCENT_RGB = 'rgb(110, 94, 240)';
 
@@ -80,7 +80,12 @@ const stripCssComments = (src) =>
   const indigoFloor = /:root\[data-theme="indigo"\][^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
   const classicFloor = /:root:not\(\[data-theme="indigo"\]\)[^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
   ok(indigoFloor?.[1]?.toLowerCase() === '#121218', `0 · inline indigo floor matches --amb-floor (${indigoFloor?.[1] ?? 'not found'})`);
-  ok(classicFloor?.[1]?.toLowerCase() === '#0b0b0c', `0 · inline classic floor matches --amb-floor (${classicFloor?.[1] ?? 'not found'})`);
+  // v6.0.10 §6b: classic's floor is v5's literal #050505. It was #0b0b0c — a
+  // 1.5-point lift v6.0.2 introduced and nothing asked for, and exactly the
+  // kind of drift the "classic is pixel-comparable to v5 main" test exists to
+  // catch. index.html's pre-paint floor moves with it, which is what this
+  // assertion is for.
+  ok(classicFloor?.[1]?.toLowerCase() === '#050505', `0 · inline classic floor matches --amb-floor (${classicFloor?.[1] ?? 'not found'})`);
 
   ok(/id="boot-fallback"[^>]*\shidden/.test(html), '0 · #boot-fallback ships hidden (so JS-off gets <noscript>, not both)');
   ok(/__xmriBootTimeoutMs/.test(html), '0 · boot watchdog is present and overridable for tests');
