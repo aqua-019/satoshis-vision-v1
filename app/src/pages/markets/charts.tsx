@@ -128,7 +128,7 @@ export interface CandleChartProps {
   status?: SeriesStatus;
 }
 
-export function CandleChart({ candles, days, height = 300, status = "live" }: CandleChartProps) {
+function CandleChartImpl({ candles, days, height = 300, status = "live" }: CandleChartProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
@@ -311,7 +311,7 @@ function pointAtTime(pts: NormPoint[], t: number, tol: number): NormPoint | null
   return best !== null && bestDt <= tol ? best : null;
 }
 
-export function MultiLine({ series, days, height = 280, labels = true, emptyNote }: MultiLineProps) {
+function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
@@ -510,7 +510,7 @@ export interface AreaSeriesProps {
   xLabels?: boolean;
 }
 
-export function AreaSeries({
+function AreaSeriesImpl({
   data,
   days = 7,
   t,
@@ -683,7 +683,7 @@ export interface BarSeriesProps {
   marker?: { index: number; label?: string };
 }
 
-export function BarSeries({
+function BarSeriesImpl({
   data,
   labels,
   endLabels,
@@ -820,3 +820,21 @@ export function BarSeries({
     </svg>
   );
 }
+
+/* ── memo boundaries (v6.0.8) ───────────────────────────────────────
+   MarketsPage subscribes to the live feed, so every tick re-renders it — and
+   with no memo boundary anywhere, re-invoked every chart body above. That is
+   two full `candles.map()` passes rebuilding SVG trees (CandleChart), and a
+   per-point normalise + domain scan over up to 7 series × 365 points
+   (MultiLine/AreaSeries/BarSeries), to produce byte-identical output.
+
+   No dep-array surgery was needed: every data prop is a direct read of
+   `hist.<series>.data`, and useMarketHistory's effect is keyed [days,
+   retryNonce] — independent of the feed — so those arrays keep a stable
+   identity between range changes. The one prop that was NOT stable was the
+   `format` callback, passed as an inline arrow at several call sites; those
+   are hoisted to module scope so this boundary actually holds. */
+export const CandleChart = React.memo(CandleChartImpl);
+export const MultiLine = React.memo(MultiLineImpl);
+export const AreaSeries = React.memo(AreaSeriesImpl);
+export const BarSeries = React.memo(BarSeriesImpl);

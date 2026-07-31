@@ -1,7 +1,8 @@
 // AUTO-PORTED from terminal.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { useTick } from "@/design/ArtBackground";
+import { byTier, getDeviceTier } from "@/design/deviceTier";
+import { usePageActive } from "@/design/usePageActive";
 import { PanelFrame, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
@@ -53,23 +54,38 @@ function TermPalette({ data }: { data: MoneroLive }) {
   const [ci, setCi] = React.useState(0);
   const [typed, setTyped] = React.useState("");
   const [phase, setPhase] = React.useState("typing"); // typing → hold → clearing
+  // v6.0.8: the typewriter is a setTimeout chain in an effect that re-arms on
+  // every character — during `clearing` that was a ~42Hz React render loop
+  // (24ms/char), running in hidden tabs, for a decorative prompt animation.
+  //
+  // Two gates:
+  //   `paused`  — usePageActive(). Nobody is reading a terminal in a tab they
+  //               can't see. It resumes mid-word exactly where it stopped,
+  //               because the phase/typed state is untouched by the pause.
+  //   `charMs`  — per-tier floor. On `low` the per-character cadence relaxes
+  //               so the effect re-runs 12×/sec instead of 42×/sec; the
+  //               animation reads the same, just less frantically.
+  const paused = !usePageActive();
+  const tier = getDeviceTier();
+  const charScale = byTier(tier, { high: 1, mid: 1.6, low: 3.5 });
   React.useEffect(() => {
-    if (!cmds.length) return;
+    if (!cmds.length || paused) return;
     const full = cmds[ci % cmds.length].q;
     let to: ReturnType<typeof setTimeout> | undefined;
     if (phase === "typing") {
       // Index-derived cadence, not a dice roll: still reads as human typing, but
       // the same keystroke always takes the same time, so it is reproducible.
-      if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), 55 + ((typed.length * 37) % 60));
+      // charScale (v6.0.8 device tiering) still applies on top.
+      if (typed.length < full.length) to = setTimeout(() => setTyped(full.slice(0, typed.length + 1)), (55 + ((typed.length * 37) % 60)) * charScale);
       else to = setTimeout(() => setPhase("hold"), 1600);
     } else if (phase === "hold") {
       to = setTimeout(() => setPhase("clearing"), 1400);
     } else {
-      if (typed.length > 0) to = setTimeout(() => setTyped(typed.slice(0, -1)), 24);
+      if (typed.length > 0) to = setTimeout(() => setTyped(typed.slice(0, -1)), 24 * charScale);
       else { setPhase("typing"); setCi((c) => (c + 1) % cmds.length); }
     }
     return () => clearTimeout(to);
-  }, [typed, phase, ci, cmds]);
+  }, [typed, phase, ci, cmds, paused, charScale]);
   const showResults = phase === "hold" && cmds.length > 0;
   return (
     <div style={{ border: "1px solid var(--tk-accent)", background: "rgba(0,0,0,0.65)", boxShadow: "0 0 24px rgba(255,122,26,0.22), inset 0 0 30px rgba(255,122,26,0.05)", borderRadius: 4 }}>
@@ -190,12 +206,15 @@ function TermLiveLog({ data, trackedTx }: {
 
 /* ── live ASCII fee histogram ───────────────────────────────── */
 export function TermFeeHisto({ data }: { data: MoneroLive }) {
-  const tick = useTick(1200);
+  // No tick here: the bins are a pure function of `data.mempool`, which already
+  // changes on the 2.5s feed poll — a `useTick(1200)` used to be a dep of this
+  // memo but nothing about the histogram is time-based, so it just forced an
+  // extra recompute + re-render 0.83x/sec for free (v6.0.8 perf pass).
   const bins = React.useMemo(() => {
     const b = new Array(11).fill(0);
     data.mempool.forEach((t) => { const i = Math.min(10, Math.floor(t.perB / 4e4)); b[i] += 1; });
     return b;
-  }, [data.mempool, tick]);
+  }, [data.mempool]);
   const max = Math.max(...bins, 1);
   const medianBin = bins.indexOf(Math.max(...bins));
   const bar = (v: number) => "█".repeat(Math.round((v / max) * 24));
@@ -212,7 +231,7 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
   const r = size / 2 - 8, c = size / 2, ring = 2 * Math.PI * r, dash = ring * (value / 100) * 0.75;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size * 0.78}>
+      <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ display: "block", maxWidth: size, aspectRatio: `${size} / ${size * 0.78}` }}>
         <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" strokeDasharray={ring * 0.75 + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" />
         <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={dash + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
         <text x={c} y={c + 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="15" fontWeight="500" fill={color}>{value}</text>

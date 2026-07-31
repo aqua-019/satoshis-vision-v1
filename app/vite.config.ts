@@ -22,6 +22,14 @@ export default defineConfig({
         chunkFileNames: "assets/[name]-[hash:8].js",
         entryFileNames: "assets/[name]-[hash:8].js",
         assetFileNames: "assets/[name]-[hash:8][extname]",
+        // Pin the framework into its own chunk. This serves the same goal as
+        // the stable names above: React + the router change on a dependency
+        // bump (rarely), app code changes on every deploy (often). Split, a
+        // returning Tor visitor re-downloads only what actually moved instead
+        // of the framework riding along on every app-code hash change.
+        manualChunks: {
+          vendor: ["react", "react-dom", "react-router-dom"],
+        },
       },
     },
   },

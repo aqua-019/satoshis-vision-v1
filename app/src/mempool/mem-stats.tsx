@@ -108,7 +108,13 @@ export function useMemStats(data: MoneroLive): MemStats {
  *  shifts a further-out queued slot one block-target past the imminent one
  *  (mirrors classic.tsx's QUEUED vs NEXT cards). */
 export function BlockEta({ data, offsetSec = 0 }: { data: MoneroLive; offsetSec?: number }): JSX.Element {
-  useTick(1000);
+  // `{ motion: false }` because this is a real MM:SS countdown, not decoration.
+  // v6.0.8 made `useTick` tier-aware and reduced-motion-aware by default: a
+  // plain `useTick(1000)` here would FREEZE under prefers-reduced-motion, and a
+  // countdown frozen at "1:47" is a clock that lies. The opt-out keeps the
+  // cadence exact on every tier; it is still paused while the tab is hidden and
+  // still fires one tick immediately on return, so nothing is wasted either.
+  useTick(1000, { motion: false });
   if (!data.ready) return <>—</>;
   const eta = nextBlockEtaSec(data) + offsetSec;
   // Overdue is normal for Poisson arrivals, so say so rather than parking on

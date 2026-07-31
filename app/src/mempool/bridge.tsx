@@ -4,6 +4,7 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
+import { observeDrawable } from "@/design/usePageActive";
 import { Stat, Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
@@ -76,18 +77,30 @@ export function BrgRadar({ data, trackedId }: { data: MoneroLive; trackedId?: st
   trackedIdxRef.current = trackedIdx;
 
   const blipRefs = React.useRef<(SVGCircleElement | null)[]>([]);
+
+  // `blips` lives in a ref the loop reads, NOT as an effect dep. `blips` is a
+  // useMemo on [data.mempool, data.feeTiers] and the feed polls every 2.5s, so
+  // an effect keyed on `blips` itself tore the 60fps rAF loop down and rebuilt
+  // it every 2.5 seconds — the loop's own `t0` reset each time, which snapped
+  // the sweep arm back to bearing 0 on every feed tick (v6.0.8 perf pass). The
+  // ref lets the loop read the latest blips without restarting for them.
+  const blipsRef = React.useRef(blips);
+  blipsRef.current = blips;
+
   React.useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
     let raf = 0;
+    let running = false;
     const t0 = performance.now();
     const PERIOD = 4.2; // seconds per revolution
     const tick = () => {
-      const el = svgRef.current; if (!el) { raf = requestAnimationFrame(tick); return; }
       const t = (performance.now() - t0) / 1000;
       const sweep = ((t / PERIOD) % 1) * Math.PI * 2;       // 0..2π
       const arm = el.querySelector("[data-arm]");
       if (arm) arm.setAttribute("transform", `rotate(${sweep * 180 / Math.PI} ${cx} ${cy})`);
       // light each blip by how recently the sweep crossed its angle
-      blips.forEach((b, i) => {
+      blipsRef.current.forEach((b, i) => {
         let d = sweep - b.ang; while (d < 0) d += Math.PI * 2;   // radians since sweep passed
         const recency = Math.max(0, 1 - d / (Math.PI * 0.8));    // fades over ~144°
         const node = blipRefs.current[i];
@@ -104,9 +117,22 @@ export function BrgRadar({ data, trackedId }: { data: MoneroLive; trackedId?: st
       });
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [blips]);
+    const start = () => {
+      if (running) return;
+      running = true;
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      running = false;
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    // Was: unconditional rAF forever, including in a hidden tab (the `!el`
+    // branch even rescheduled itself instead of giving up). Now stops entirely
+    // when the tab is backgrounded or this SVG scrolls off screen.
+    const undrawable = observeDrawable(el, (drawable) => (drawable ? start() : stop()));
+    return () => { undrawable(); stop(); };
+  }, []);
 
   return (
     <svg ref={svgRef} viewBox="0 0 300 300" width="100%" style={{ display: "block", maxHeight: 300 }}>
@@ -290,6 +316,10 @@ export function BrgGaugeBank({ data }: { data: MoneroLive }) {
 
 /* ── fee/byte oscilloscope — live area trace with a running scan dot ── */
 export function BrgFeeScope({ data }: { data: MoneroLive }) {
+  // Genuinely drives motion (kept, v6.0.8 perf pass): the scan dot / scan line
+  // below reads `tick` directly at render time (`scanI`, ~:231, and the marker
+  // line at ~:244-245). Only the distribution memo below was over-depending on
+  // it — the fee-rate histogram is a pure function of `data.mempool`.
   const tick = useTick(900);
   const NB = 40;
   const { series, hi } = React.useMemo(() => {
@@ -304,7 +334,7 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
     // light smoothing so the trace reads as a scope, not a comb
     const sm = buckets.map((v, i) => (buckets[i - 1] || 0) * 0.25 + v + (buckets[i + 1] || 0) * 0.25);
     return { series: sm, hi };
-  }, [data.mempool, tick]);
+  }, [data.mempool]);
   const W = 360, H = 130, padL = 8, padR = 8, padT = 12, padB = 18;
   const iw = W - padL - padR, ih = H - padT - padB;
   const max = Math.max(...series, 1);
@@ -337,17 +367,30 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
 
 /* ── block-cadence — countdown ring + real recent interval bars ─── */
 export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: MoneroLive; trackedTxId?: string | null; trackedHeight?: number | null }) {
-  const [now, setNow] = React.useState(Date.now());
-  // 1000ms, not 250ms: `now` is only ever consumed through a Math.floor to
-  // whole seconds below, so four ticks in five re-rendered to the identical
-  // frame. Free 4x reduction in render work on a page that is already busy —
-  // and battery matters on the mobile surface this pass is about.
-  React.useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
+  // Both branches independently cut this from 250ms to 1000ms: `now` is only
+  // ever consumed through a Math.floor to whole seconds below, so four ticks in
+  // five re-rendered to an identical frame. The ring keeps sweeping smoothly
+  // across the 1s gaps via a stroke-dashoffset transition rather than stepping.
+  //
+  // `useTick` rather than a raw setInterval so it also PAUSES while the tab is
+  // hidden and fires one tick immediately on return. `{ motion: false }`
+  // because this is a real elapsed-time clock, not decoration: never floored
+  // per-tier, never frozen under prefers-reduced-motion — a countdown that
+  // freezes is a clock that lies. See UseTickOptions in design/ArtBackground.tsx.
+  useTick(1000, { motion: false });
+  const now = Date.now();
+  const reduced = useReducedMotion();
   const TARGET = 120;
   const elapsed = data.ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - data.lastUpdate) / 1000)) : 0;
   const overdue = data.ready && elapsed > TARGET;
   const pct = Math.min(1, elapsed / TARGET);
-  const ring = 2 * Math.PI * 34, dash = ring * pct;
+  const ring = 2 * Math.PI * 34;
+  // The dasharray pair stays fixed at the full ring length; only dashoffset
+  // moves. A CSS transition on strokeDasharray can't tween cleanly (both
+  // numbers in the pair change every update) but stroke-dashoffset is a single
+  // scalar, so it sweeps smoothly across the 1s gaps between ticks instead of
+  // stepping. Off entirely under prefers-reduced-motion.
+  const dashOffset = ring - ring * pct;
   const tone = overdue ? "var(--y-50)" : "var(--tk-accent)";
 
   // Real intervals between consecutive recent blocks (age deltas), each
@@ -372,10 +415,14 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
         ? <span style={{ color: "var(--y-50)" }}>OVERDUE</span>
         : <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> locked</>}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <svg viewBox="0 0 90 90" width="90" height="90">
+        <svg viewBox="0 0 90 90" width="100%" style={{ maxWidth: 90, display: "block" }}>
           <circle cx="45" cy="45" r="34" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
           <circle cx="45" cy="45" r="34" fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round"
-            strokeDasharray={dash + " " + (ring - dash)} transform="rotate(-90 45 45)" style={{ filter: `drop-shadow(0 0 4px ${tone})` }} />
+            strokeDasharray={ring} strokeDashoffset={dashOffset} transform="rotate(-90 45 45)"
+            style={{
+              filter: `drop-shadow(0 0 4px ${tone})`,
+              transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke 0.3s ease",
+            }} />
           <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
           <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
         </svg>

@@ -2,7 +2,6 @@
 // high-fidelity protocol simulation stages.
 //
 // ES exports (formerly window globals):
-//   useFrame()             — rAF-driven sub-frame counter (60fps tick)
 //   useMouseParallax(ref)  — mouse-relative parallax offset (-1..1 each axis)
 //   <SvgDefs />            — reusable filter/gradient defs (glow, blur, parallax)
 //   <GlowOrb cx cy r ...>  — high-fidelity SVG orb with layered radial gradients
@@ -13,6 +12,8 @@
 // Self-contained: no network, no Three.js, no localStorage.
 
 import * as React from "react";
+import { byTier, getDeviceTier } from "@/design/deviceTier";
+import { observeDrawable } from "@/design/usePageActive";
 import { useReducedMotion } from "@/design/useReducedMotion";
 
 /* ── high-precision frame tick (60fps) ────────────────────── */
@@ -234,19 +235,26 @@ export function ParticleStream({
   style,
 }: any) {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
+  const tier = getDeviceTier();
   const reduceMotion = useReducedMotion();
   React.useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // DPR is quadratic in fill cost; 1.5 on a phone is not tellable apart
+    // from 2 at that pixel pitch.
+    const dpr = Math.min(window.devicePixelRatio || 1, byTier(tier, { high: 2, mid: 2, low: 1.5 }));
     canvas.width = width * dpr; canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const rng = () => Math.random();
+    // v6.0.8: tier the particle budget. Each particle draws THREE stacked arcs
+    // per frame (the depth-aware bloom below), so the per-frame cost is 3× the
+    // count — this is the most fill-heavy loop in the simulators.
+    const tierCount = Math.max(1, Math.round(count * byTier(tier, { high: 1, mid: 0.5, low: 0.25 })));
     // particles include z (depth, 0..1); 0 = far, 1 = near
-    const ps = Array.from({ length: count }).map(() => spawn());
+    const ps = Array.from({ length: tierCount }).map(() => spawn());
     function spawn() {
       let x, y;
       if (spread === "radial" && radius != null) {
@@ -347,18 +355,20 @@ export function ParticleStream({
       cancelAnimationFrame(raf);
       raf = 0;
     };
-    const onVisibility = () => {
-      if (document.hidden) stop(); else start();
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    if (!document.hidden) start();
 
-    return () => {
-      stop();
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [count, width, height, color, altColor, altRatio, speedMul, gravity, size[0], size[1], trail, depth, spread, cx, cy, radius, reduceMotion]);
+    // Draw only while the tab is in front AND this canvas is on screen.
+    // `globalCompositeOperation = "lighter"` above is kept deliberately — it is
+    // what makes the three stacked arcs read as additive bloom rather than
+    // three flat discs, so it is load-bearing for the visual, not decoration.
+    // It does force a read-modify-write per pixel though, which is exactly why
+    // not running the loop when nobody can see it matters more here than
+    // anywhere else in the app.
+    const undrawable = observeDrawable(canvas, (drawable) => {
+      if (drawable) start(); else stop();
+    });
 
+    return () => { undrawable(); stop(); };
+  }, [tier, reduceMotion, count, width, height, color, altColor, altRatio, speedMul, gravity, size[0], size[1], trail, depth, spread, cx, cy, radius]);
   return <canvas ref={ref} width={width} height={height}
     className={className}
     style={{ position: "absolute", inset: 0, pointerEvents: "none", mixBlendMode: "screen", ...style }} />;

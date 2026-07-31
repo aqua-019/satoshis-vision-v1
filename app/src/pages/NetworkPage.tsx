@@ -25,6 +25,17 @@ import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
 
+/* Chart formatters are hoisted to module scope so their identity is stable
+   across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
+   pages/markets/charts.tsx) and an inline `format={(v) => …}` arrow allocates
+   a fresh function every render, which defeats the boundary entirely. None of
+   these close over anything, so module scope is where they belonged anyway. */
+const fmtGiga = (v: number): string => (v / 1e9).toFixed(2);
+const fmtGigaSuffix = (v: number): string => (v / 1e9).toFixed(2) + "G";
+const fmtRound = (v: number): string => String(Math.round(v));
+const fmtPct = (v: number): string => (v * 100).toFixed(0) + "%";
+
+
 /** Median of a numeric series (ignores non-finite). */
 function median(nums: number[]): number {
   const a = nums.filter(Number.isFinite).sort((x, y) => x - y);
@@ -159,7 +170,7 @@ export function NetworkPage() {
           {hashSeries.length ? (
             <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
               baseline="auto" xLabels={false} stale={data.stale}
-              format={(v) => (v / 1e9).toFixed(2)} />
+              format={fmtGiga} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
           )}
@@ -168,7 +179,7 @@ export function NetworkPage() {
           {diffSeries.length ? (
             <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
               baseline="auto" xLabels={false} stale={data.stale}
-              format={(v) => (v / 1e9).toFixed(2) + "G"} />
+              format={fmtGigaSuffix} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
@@ -180,7 +191,7 @@ export function NetworkPage() {
           {mempoolSeries.length ? (
             <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
               baseline="zero" xLabels={false} stale={data.stale}
-              format={(v) => String(Math.round(v))} />
+              format={fmtRound} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
           )}
@@ -189,7 +200,7 @@ export function NetworkPage() {
           {fullness.length ? (
             <BarSeries data={fullness} height={180} color="var(--tk-accent)"
               baseline="zero" stale={data.stale} endLabels={["older", "newer"]}
-              format={(v) => (v * 100).toFixed(0) + "%"} />
+              format={fmtPct} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
@@ -202,7 +213,7 @@ export function NetworkPage() {
           {ivHist.counts.length ? (
             <>
               <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
-                baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
+                baseline="zero" stale={data.stale} format={fmtRound}
                 marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
               <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
                 μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
@@ -217,11 +228,11 @@ export function NetworkPage() {
         <PanelFrame title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
             <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
-              baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
+              baseline="zero" stale={data.stale} format={fmtRound}
               marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
           ) : (
             <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
-              baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))} />
+              baseline="zero" stale={data.stale} format={fmtRound} />
           )}
           <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
             {data.mempool.length

@@ -22,6 +22,27 @@
 
 import * as React from "react";
 
+/* ── visibility, inlined on purpose ──────────────────────────────────
+   design/usePageActive.ts is the shared primitive and every OTHER poll in the
+   app uses it. This module deliberately does not import it — nor anything else
+   but React.
+
+   verify-stale.mjs does `import * as mh from './src/data/useMarketHistory.ts'`
+   and runs it in bare Node, where there is no Vite alias and no extensionless
+   relative resolution. Every import added here that isn't a bare package
+   specifier breaks that gate. Keeping this module dependency-free is therefore
+   load-bearing, not an oversight — if you consolidate these four lines into the
+   shared hook, verify-stale.mjs stops being able to load the module at all. */
+const pageActive = (): boolean =>
+  typeof document === "undefined" || document.visibilityState !== "hidden";
+
+function onPageActiveChange(fn: (active: boolean) => void): () => void {
+  if (typeof document === "undefined") return () => {};
+  const handler = () => fn(pageActive());
+  document.addEventListener("visibilitychange", handler);
+  return () => document.removeEventListener("visibilitychange", handler);
+}
+
 export interface Candle {
   /** bucket start, ms epoch */
   t: number;
@@ -502,6 +523,14 @@ export function useMarketHistory(days: number): MarketHistory {
   // While anything is not yet "live", schedule a quiet refetch. The timer
   // re-arms off `state` (each settle re-runs this effect) and is cleaned up on
   // unmount/range change, so StrictMode double-mount can't double-fire it.
+  //
+  // v6.0.8: gated on visibility too. This is the mildest of the app's polls
+  // (it only fires while a series has not reached "live", and stops for good
+  // once they all have), but a CoinGecko outage would otherwise have it
+  // retrying every 45s forever in a tab nobody is looking at. On return it
+  // retries immediately rather than waiting out the remainder of the window —
+  // the data was already known to be incomplete, so there is nothing to lose
+  // by asking again at once.
   React.useEffect(() => {
     if (state.loading) return;
     const statuses = [
@@ -509,8 +538,21 @@ export function useMarketHistory(days: number): MarketHistory {
       state.peers.status, state.top.status, state.meta.status,
     ];
     if (statuses.every((s) => s === "live")) return;
-    const id = setTimeout(() => setRetryNonce((n) => n + 1), RETRY_MS);
-    return () => clearTimeout(id);
+
+    let id: ReturnType<typeof setTimeout> | null = null;
+    const bump = () => setRetryNonce((n) => n + 1);
+    const start = () => { if (!id) id = setTimeout(bump, RETRY_MS); };
+    const stop = () => { if (id) { clearTimeout(id); id = null; } };
+
+    if (pageActive()) start();
+    const offVisibility = onPageActiveChange((active) => {
+      // A `bump()` here re-runs the fetch effect, which re-runs this one; the
+      // `statuses.every(live)` guard above is what terminates the chain.
+      if (active) bump();
+      else stop();
+    });
+
+    return () => { offVisibility(); stop(); };
   }, [state]);
 
   return state;
