@@ -65,22 +65,16 @@
    ════════════════════════════════════════════════════════════════════ */
 
 :root[data-theme="indigo"] {
-  /* hex fallbacks first: an unsupported oklch() invalidates the whole
-     declaration, leaving the token UNDEFINED rather than degrading.
-     This site targets Tor Browser (Firefox ESR), so the pair matters. */
-  /* v6.0.10 §6a — the ground was oklch(0.13) ≈ #0D0D0F, near-black, which
-     is what made the aurora read as murk instead of atmosphere. Lifted ~5
-     lightness points with the elevation steps moved in step so bg→surface
-     →raised stays distinguishable. A brighter floor makes the aurora MORE
-     visible at LOWER opacity, so styles-ambient.css comes down to match. */
-  --in-bg: #17161C;            --in-bg: oklch(0.18 0.008 290);
-  --in-surface: #201E29;       --in-surface: oklch(0.22 0.016 290);
-  --in-raised: #292636;        --in-raised: oklch(0.26 0.020 290);
-  --ui-primary: #4B3FB8;       --ui-primary: oklch(0.42 0.17 282);
-  --ui-accent: #6E5EF0;        --ui-accent: oklch(0.55 0.21 282);
-  --ui-accent-text: #8B7BF5;   --ui-accent-text: oklch(0.66 0.19 282);
+  /* v6.0.7 — sRGB values, unconditional. The oklch() upgrades live in the
+     @supports block below; see it for why the previous hex-then-oklch pair
+     on one selector could never have worked.
+     --in-bg / --in-surface / --in-raised were deleted here: zero var() and
+     zero getComputedStyle consumers repo-wide. --bg-1/2/3 below carry the
+     same three values and ARE consumed. */
+  --ui-primary: #4B3FB8;
+  --ui-accent: #6E5EF0;
+  --ui-accent-text: #8B7BF5;
   --ui-accent-dim: rgba(110, 94, 240, 0.45);
-  --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
 
   /* ink ramp: cool quartz, WCAG-stepped. Ratios below are MEASURED against
      --surface-ground (rgb 26,25,34) by verify-contrast.mjs, not asserted by
@@ -100,10 +94,16 @@
   --line:   rgba(110, 94, 240, 0.16);
   --line-d: rgba(110, 94, 240, 0.07);
   --rule:   rgba(236, 234, 246, 0.08);
-  --bg-1: var(--in-bg);  --bg-2: var(--in-surface);  --bg-3: var(--in-raised);
-  /* data surfaces ride the lifted surface step, not the floor — that
+  /* v6.0.10 §6a — the ground was #0d0d0f, near-black, which is what made the
+     aurora read as murk rather than atmosphere. Lifted ~5 lightness points
+     with the elevation steps moved in step so bg→surface→raised stays
+     distinguishable; styles-ambient.css drops orb opacity to match, because a
+     brighter floor needs LESS aurora, not more. oklch upgrades are in the
+     @supports block below, per this file's review rule. */
+  --bg-1: #17161C;  --bg-2: #201E29;  --bg-3: #292636;
+  /* data surfaces ride the lifted SURFACE step, not the floor — that
      separation is what keeps the aurora in the gutters (see styles.css). */
-  --surface-ground: #201E29;   --surface-ground: oklch(0.22 0.016 290);
+  --surface-ground: #201E29;
 
   /* softened orange glows — the old alphas made small mono type vibrate.
      Still orange: these sit on DATA. */
@@ -125,6 +125,44 @@
   --amb-ribbon-2: rgba(50, 46, 94, 0.05);
   --amb-ribbon-3: rgba(70, 62, 126, 0.045);
   --amb-grain: 0 0 0 0 0.6  0 0 0 0 0.58  0 0 0 0 0.7  0 0 0 0.5 0;
+}
+
+/* ── oklch upgrade, guarded ───────────────────────────────────────────
+   The wider-gamut values, applied ONLY where the engine can parse them.
+
+   This replaced a hex-then-oklch pair of declarations on the same selector.
+   That pattern is correct for ordinary properties but is a no-op for CUSTOM
+   PROPERTIES, and the difference is why it never protected anything: a custom
+   property's value is parsed as an arbitrary <declaration-value> token stream,
+   so `--ui-accent: oklch(...)` is *syntactically valid to every browser*,
+   including ones with no oklch support. It therefore won the cascade over the
+   hex line, and only failed later — at substitution time — leaving each
+   consuming property computing to unset/initial. For a background that means
+   `transparent`.
+
+   Two consumers made this load-bearing rather than theoretical:
+     · styles-legibility.css:38  :focus-visible outline (keyboard a11y)
+     · design/ArtBackground.tsx:85 reads --ui-accent-dim through
+       getComputedStyle().getPropertyValue(), which hands back the SPECIFIED
+       token — the raw oklch() string. Its `|| fallback` only catches an EMPTY
+       value, not an unparseable one, so ctx.fillStyle silently kept its
+       previous value and the particle field drew invisible.
+
+   Review rule, enforced by verify-degraded.mjs: every oklch() in this repo
+   lives inside an @supports block, with an sRGB value declared outside it. */
+@supports (color: oklch(0 0 0)) {
+  :root[data-theme="indigo"] {
+    --ui-primary: oklch(0.42 0.17 282);
+    --ui-accent: oklch(0.55 0.21 282);
+    --ui-accent-text: oklch(0.66 0.19 282);
+    --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
+    /* v6.0.10 §6a — the lifted ground and the data-surface token, in the
+       wider gamut. sRGB equivalents are declared unguarded above. */
+    --bg-1: oklch(0.18 0.008 290);
+    --bg-2: oklch(0.22 0.016 290);
+    --bg-3: oklch(0.26 0.020 290);
+    --surface-ground: oklch(0.22 0.016 290);
+  }
 }
 
 /* ── chrome recolor: structure = indigo, data = orange ───────────── */

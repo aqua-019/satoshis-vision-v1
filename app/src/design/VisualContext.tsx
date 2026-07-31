@@ -15,6 +15,15 @@
  *            here it overrides every page's own choice, everywhere,
  *            until changed back.
  *
+ * v6.0.8 adds a THIRD value, `tier`, and it is explicitly not a third knob —
+ * the rule above still holds. `tier` is derived (design/deviceTier.ts), never
+ * persisted, and has no setter and no radio group in DesignPanel. It rides
+ * here only so consumers share one memoized answer instead of each calling
+ * `getDeviceTier()` and each re-deriving it. It is stamped to
+ * `documentElement`'s `data-tier` for the same reason `theme` is:
+ * styles-ambient.css needs to gate on it, and index.html's pre-paint script
+ * stamps it first so a phone never paints 43 layers before React mounts.
+ *
  * Persistence reuses `safeStore()` from data/useMarketHistory.ts (a bare
  * try/catch around `window.localStorage`) under the `xmri.` prefix already
  * established by data/useCachedFeed.ts's `xmri.feed.` keys. It deliberately
@@ -25,6 +34,7 @@
 
 import * as React from "react";
 import { safeStore } from "@/data/useMarketHistory";
+import { getDeviceTier, type Tier } from "./deviceTier";
 
 export type ThemeKey = "indigo" | "classic";
 export type AmbientKey = "calm" | "busy" | "chaotic";
@@ -69,6 +79,8 @@ function writePref(key: string, value: string | null): void {
 export interface VisualState {
   theme: ThemeKey;
   ambient: AmbientKey | null;
+  /** Derived, read-only. See the header — this is not a knob. */
+  tier: Tier;
   setTheme: (t: ThemeKey) => void;
   setAmbient: (a: AmbientKey | null) => void;
 }
@@ -82,6 +94,12 @@ export interface VisualState {
 const DEFAULT_VISUAL: VisualState = {
   theme: "indigo",
   ambient: null,
+  // Not the "low" fallback getDeviceTier() uses for a non-DOM host: a
+  // provider-less mount is a host runtime rendering into a real browser, so
+  // ask the real heuristic. Cheap — it memoizes on first call.
+  get tier() {
+    return getDeviceTier();
+  },
   setTheme: () => {},
   setAmbient: () => {},
 };
@@ -96,6 +114,10 @@ export function VisualProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = React.useState<ThemeKey>(() => readPref(THEME_KEY, isThemeKey) ?? "indigo");
   const [ambient, setAmbientState] = React.useState<AmbientKey | null>(() => readPref(AMBIENT_KEY, isAmbientKey));
 
+  // Derived, not state: getDeviceTier() memoizes for the page's lifetime, so
+  // this is stable across every render and never triggers one.
+  const tier = getDeviceTier();
+
   // The app's FIRST `documentElement` write. index.html's pre-paint inline
   // script stamps this same attribute before first paint (so a hard reload
   // never flashes the wrong palette); this effect keeps it in sync with
@@ -103,6 +125,15 @@ export function VisualProvider({ children }: { children: React.ReactNode }) {
   React.useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
+
+  // Same contract for `data-tier`. index.html's inline script runs a
+  // deliberately smaller heuristic (it has no module graph to reach into), so
+  // this re-stamp is what reconciles the two — including the `?tier=` override,
+  // which the inline version does honour, and the viewport-area signal, which
+  // it does not. Re-stamping an identical value is a no-op in every engine.
+  React.useEffect(() => {
+    document.documentElement.setAttribute("data-tier", tier);
+  }, [tier]);
 
   const setTheme = React.useCallback((t: ThemeKey) => {
     setThemeState(t);
@@ -115,8 +146,8 @@ export function VisualProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = React.useMemo<VisualState>(
-    () => ({ theme, ambient, setTheme, setAmbient }),
-    [theme, ambient, setTheme, setAmbient],
+    () => ({ theme, ambient, tier, setTheme, setAmbient }),
+    [theme, ambient, tier, setTheme, setAmbient],
   );
 
   return <VisualCtx.Provider value={value}>{children}</VisualCtx.Provider>;

@@ -1,6 +1,7 @@
 // AUTO-PORTED from protocols/decoy-selection.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { useTick, ArtBackground } from "@/design/ArtBackground";
 import {
   Stat, Pill, PanelFrame, Sparkline, MiniBar, Crumbs, Card,
@@ -21,7 +22,7 @@ interface ViewProps {
 }
 
 // decoy-selection.jsx — TIME TIDE
-// Outputs bob on a horizontal age-axis tide. Log-normal sampling density
+// Outputs bob on a horizontal age-axis tide. The sampling density drawn here
 // IS the wave height. 16 ring members surface as glowing buoys. The real
 // spender is statistically indistinguishable from its 15 decoys.
 
@@ -36,7 +37,7 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
     });
   }, [total]);
 
-  // Log-normal CDF approximation for ring sampling
+  // Log-space CDF approximation of wallet2's gamma decoy picker (illustrative)
   // f(x) = (1/(xσ√2π)) exp(-(ln x − μ)²/(2σ²))
   // We use μ=1.7, σ=0.85 days (close to Monero's actual sampling)
   const lognormPdf = (x: number) => {
@@ -51,7 +52,7 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
     // 1 real spender at age=trueAge
     picks.push({ age: trueAge, real: true });
     for (let i = 0; i < ringSize - 1; i++) {
-      // Sample from log-normal via inverse-CDF approximation
+      // Sample via inverse-CDF approximation of that shape
       const u = Math.random();
       const z = Math.sqrt(-2 * Math.log(u || 0.001)) * Math.cos(2 * Math.PI * Math.random());
       const days = Math.exp(1.7 + z * 0.85);
@@ -248,7 +249,7 @@ export function DecoySelectionView({ data, bg }: ViewProps) {
       sub="The signer chooses 15 decoys from the chain's own UTXO set, weighted toward recent ages. From the verifier's seat, none of the 16 is distinguishable from any other."
       badges={[
         { label: "Ring 16", tone: "acc" },
-        { label: "log-normal μ=1.7 σ=0.85", tone: "" },
+        { label: "gamma over log-age · model approx", tone: "" },
         { label: "Ready", tone: "ready" },
       ]}
       bg={bg}
@@ -273,15 +274,15 @@ export function DecoySelectionView({ data, bg }: ViewProps) {
           </div>
 
           <div className="body">
-            Monero samples each ring member from a log-normal distribution over output <b>age</b> — heavy near recent outputs (where most real spends occur), tapering into older outputs. The shape of the curve matches the <em>actual</em> spending behavior of the network, so the real spender's age is always <em>somewhere</em> on the wave the verifier already expects.
+            Monero samples each ring member from a <b>gamma</b> distribution applied to the log of output <b>age</b> (wallet2's <em>gamma_picker</em>, shape ≈ 19.28, rate ≈ 1.61) — heavy near recent outputs, where most real spends occur, tapering into older ones. The curve drawn here is a log-space approximation of that shape, not the wallet's exact sampler. The <em>intent</em> is that the distribution matches real spending behaviour, so the true spender's age is always somewhere on the wave the verifier already expects — <em>whether it actually does</em> is the open question OSPEAD studies.
           </div>
 
           <div>
             <h6>Parameters</h6>
             <div className="proto-ctrl">
               <div className="proto-ctrl-row"><span className="k">Ring size</span><span className="v acc">{ringSize}</span></div>
-              <div className="proto-ctrl-row"><span className="k">μ (log-mean)</span><span className="v">1.70</span></div>
-              <div className="proto-ctrl-row"><span className="k">σ (log-sd)</span><span className="v">0.85</span></div>
+              <div className="proto-ctrl-row"><span className="k">Wallet sampler</span><span className="v">gamma(19.28, 1.61)</span></div>
+              <div className="proto-ctrl-row"><span className="k">Drawn here</span><span className="v">log-space approx</span></div>
               <div className="proto-ctrl-row"><span className="k">True spender age</span><span className="v">{trueAge}d</span></div>
               <div className="proto-ctrl-row"><span className="k">Anonymity set</span><span className="v acc">16</span></div>
               <div className="proto-ctrl-row"><span className="k">P(guess)</span><span className="v">1/16 ≈ 6.25%</span></div>
@@ -290,7 +291,7 @@ export function DecoySelectionView({ data, bg }: ViewProps) {
 
           <div>
             <h6>Sampling procedure</h6>
-            <ProtoStep n={1} done title="Sample 15 ages">From log-normal(1.7, 0.85). Most land in the last week.</ProtoStep>
+            <ProtoStep n={1} done title="Sample 15 ages">From the gamma picker over log-age. Most land in the last week.</ProtoStep>
             <ProtoStep n={2} done title="Resolve to UTXOs">Pick a random output that existed at each sampled age.</ProtoStep>
             <ProtoStep n={3} done title="Shuffle">Mix the real spender in among the 15. Order is uniform.</ProtoStep>
             <ProtoStep n={4} on title="Sign ring">CLSAG — one of the 16 keys produces a valid signature.</ProtoStep>
@@ -298,6 +299,15 @@ export function DecoySelectionView({ data, bg }: ViewProps) {
 
           <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
             <em>Cracks in the wall:</em> heuristic analysis can sometimes shift probability away from 1/16 toward a smaller set (output-age outliers, multi-input pattern matching). FCMP++ retires this surface entirely — see <span style={{ color: "var(--p-50)" }}>F6 · FCMP++</span>.
+          </div>
+
+          <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
+            <em>And here's what's wrong with it:</em> this whole mechanism rests on the decoy
+            distribution matching how outputs are really spent. Monero Research Lab's OSPEAD
+            work asks whether it does.{" "}
+            <Link to="/simulate?p=ospead" style={{ color: "var(--tk-accent)" }}>
+              Open the OSPEAD simulator →
+            </Link>
           </div>
         </>
       }

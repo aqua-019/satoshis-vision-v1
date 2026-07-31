@@ -3,6 +3,7 @@ name: v5 CI
 on:
   pull_request:
     branches:
+      - main
       - v5-migration
 
 permissions:
@@ -14,12 +15,14 @@ defaults:
 
 jobs:
   build:
-    name: typecheck + build
+    name: typecheck + build + offline gates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node >=22.18 is required: several verify gates import the shipped .ts
+      # sources directly and rely on the runtime's type stripping.
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
@@ -35,3 +38,78 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Offline gates only — no browser, no network. The Playwright gates
+      # (verify-tiers-dom, verify-glide, verify-allreal-dom, …) need a built
+      # preview server and are still run by hand; see app/README.md.
+      - name: "Gate: tiered polling contract"
+        run: node verify-tiers.mjs
+
+      - name: "Gate: node cascade health"
+        run: node ../api/verify-nodehealth.mjs
+
+      - name: "Gate: proxy tx parsing"
+        run: node ../api/verify-tx-parse.mjs
+
+      - name: "Gate: feeds proxy"
+        run: node ../api/verify-feeds.mjs
+
+      - name: "Gate: market stale-cache"
+        run: node verify-stale.mjs
+
+      - name: "Gate: confirmations"
+        run: node verify-confirmations.mjs
+
+      - name: "Gate: tx detail mappers"
+        run: node verify-txdetail.mjs
+
+      - name: "Gate: future feed cache"
+        run: node verify-feedcache.mjs
+
+  verify:
+    # The v6.0.7 hardening gates. Unlike the offline gates in `build` above,
+    # these need a real browser and a built preview server, so they get their
+    # own job. Only the new gates plus the two they extend run here — several
+    # of the remaining verify-*.mjs are marked HISTORICAL (pre-v5.0.14) or
+    # expect live upstreams, and wiring those up is a separate audit.
+    name: hardening gates
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Source assertions only — no browser, no build, ~30s.
+      - name: Static gates
+        run: npm run verify:static
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      # No verify-*.mjs spawns its own server (by design — see any "Run:"
+      # header); they all assume :4173 is already up. wait-preview replaces
+      # the `sleep 2` those headers suggest, which races on a cold runner.
+      - name: Start preview
+        run: npm run preview &
+
+      - name: Wait for preview
+        run: npm run wait-preview
+
+      # Drives the built app with the stylesheet blocked, the JS bundle
+      # blocked, the lazy chunk dropped, oklch unsupported, and every API
+      # response held open for 4s. All routes are intercepted, so no egress.
+      - name: Degraded-mode, Tor and single-origin gates
+        run: npm run verify:e2e

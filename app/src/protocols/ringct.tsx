@@ -166,13 +166,14 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
         fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.16em",
         textTransform: "uppercase", zIndex: 2,
       }}>{n} · {title}</div>
-      {/* flexShrink:0 is load-bearing. These five stations are flex items in the
-          assembly row; at 390px flex was shrinking each 200px svg to ~65px,
-          which scales the whole coordinate system with it — every label
-          rendered at 2.4 CSS px. The row pans instead (.proto-stage scrolls on
-          mobile), so the stations stay at their designed size and their type
-          stays at its nominal px. */}
-      <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} style={{ display: "block", flexShrink: 0 }} data-chart>
+      {/* minWidth + flexShrink:0 are load-bearing, and they are why this one
+          station does NOT get v6.0.8's plain fluid treatment. These five are
+          flex items in the assembly row: with `width:100%` alone, flex shrinks
+          each 200px svg to ~62px at 390px, which scales the whole coordinate
+          system with it and renders every label at ~2.4 CSS px. Pinned to its
+          designed width, the ROW pans instead (.proto-stage scrolls on mobile)
+          and the type keeps its nominal px. */}
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: "block", maxWidth: w, minWidth: w, flexShrink: 0 }} data-chart>
         {renderInside()}
       </svg>
     </div>

@@ -10,8 +10,23 @@
        (all chain data). In V6 it is the reference set for incoming node / peer
        data, cross-referenced against the primary.
 
-   With NO env vars set, nodesFor('mainnet') returns the historical working
-   cascade in the historical order — behaviour is byte-identical to before. */
+   With NO env vars set AND no recorded failures, nodesFor('mainnet') returns the
+   historical working cascade in the historical order — behaviour is
+   byte-identical to before.
+
+   HEALTH MEMORY (v6.0.6). Public nodes are unreliable: of five well-known nodes
+   tested 2026-07-30, four were down. Previously every RPC call restarted the
+   cascade at index 0, so a dead head-of-list cost a full 6s timeout on EVERY
+   request. Nodes are now cold-marked on transport failure and sorted to the back
+   of the cascade until their cooldown expires.
+
+   Two deliberate properties:
+     • A cold node is REORDERED, never dropped. If every node is cold the full
+       list is still returned, so a total-outage false positive can't blank the
+       page — it only costs ordering.
+     • State is module-scope, so it lives only as long as a warm Lambda. That is
+       intentional: cold-marking is an OPTIMISATION and correctness never depends
+       on it surviving a cold start. */
 
 const REFERENCE_MAINNET = [
   // proven working set — xmr.js's live order, DO NOT reorder:
@@ -25,6 +40,55 @@ const REFERENCE_MAINNET = [
 ];
 
 const csv = (v) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []);
+
+/* ── health memory ──────────────────────────────────────────────────────── */
+
+/** url → { failures, until }. Warm-Lambda lifetime only. */
+const health = new Map();
+
+/** First cooldown after a single failure. Doubles per consecutive failure. */
+const COOLDOWN_BASE_MS = 30_000;
+/** Ceiling, so a node that recovers is retried within a few minutes. */
+const COOLDOWN_MAX_MS = 5 * 60_000;
+
+/** Record a TRANSPORT failure (timeout, refused, non-2xx). Callers must NOT use
+ *  this for an RPC-level `{error:{...}}` reply — a node that answers with a
+ *  protocol error is alive and healthy. */
+function markNodeDown(url, now = Date.now()) {
+  const failures = (health.get(url)?.failures || 0) + 1;
+  // 30s, 60s, 120s, 240s, 300s (capped)
+  const cooldown = Math.min(COOLDOWN_MAX_MS, COOLDOWN_BASE_MS * Math.pow(2, failures - 1));
+  health.set(url, { failures, until: now + cooldown });
+}
+
+/** Record a success — clears any cooldown and the failure streak immediately. */
+function markNodeUp(url) {
+  health.delete(url);
+}
+
+/** True while `url` is inside its cooldown window. */
+function isNodeCold(url, now = Date.now()) {
+  const h = health.get(url);
+  if (!h) return false;
+  if (now >= h.until) {
+    // Cooldown served — forget it so the node returns to its natural position
+    // and its next failure starts the backoff ladder afresh.
+    health.delete(url);
+    return false;
+  }
+  return true;
+}
+
+/** Stable partition: warm nodes first (original order), cold nodes last
+ *  (original order). Never drops a node. */
+function byHealth(list, now) {
+  const warm = [];
+  const cold = [];
+  for (const n of list) (isNodeCold(n, now) ? cold : warm).push(n);
+  return warm.concat(cold);
+}
+
+/* ── configuration ──────────────────────────────────────────────────────── */
 
 /** The operator's own node, or null when unconfigured (5.0.x → null). */
 function primaryNode() {
@@ -48,11 +112,40 @@ function referenceNodes(network = 'mainnet') {
 }
 
 /** The operative cascade a proxy iterates: primary first (when set), then the
- *  public reference pool. 5.0.x with no primary ⇒ exactly the historical pool. */
-function nodesFor(network = 'mainnet') {
+ *  public reference pool, with cold nodes sorted to the back of each group.
+ *  Call this PER REQUEST — caching it at module scope freezes the order for the
+ *  warm Lambda's whole life and defeats the health memory. */
+function nodesFor(network = 'mainnet', now = Date.now()) {
   const primary = network === 'mainnet' ? primaryNode() : null;
-  const pool = referenceNodes(network);
-  return primary ? [primary, ...pool.filter((n) => n !== primary)] : pool;
+  const pool = byHealth(referenceNodes(network), now);
+  if (!primary) return pool;
+  const rest = pool.filter((n) => n !== primary);
+  // A cold primary still leads only if it's warm; otherwise it falls behind the
+  // healthy pool rather than costing a timeout on every request.
+  return isNodeCold(primary, now) ? [...rest, primary] : [primary, ...rest];
 }
 
-module.exports = { nodesFor, primaryNode, referenceNodes };
+/* ── test-only introspection ────────────────────────────────────────────── */
+
+/** TEST ONLY — clear all health state. */
+function _resetHealth() {
+  health.clear();
+}
+
+/** TEST ONLY — snapshot of the health map. */
+function _healthSnapshot() {
+  return new Map(health);
+}
+
+module.exports = {
+  nodesFor,
+  primaryNode,
+  referenceNodes,
+  markNodeDown,
+  markNodeUp,
+  isNodeCold,
+  _resetHealth,
+  _healthSnapshot,
+  COOLDOWN_BASE_MS,
+  COOLDOWN_MAX_MS,
+};

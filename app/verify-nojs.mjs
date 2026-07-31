@@ -50,9 +50,30 @@ const rootEmpty = await p.evaluate(() => {
 });
 ok(rootEmpty, 'no-JS: #root is empty (the SPA never mounts without JS)');
 
+// v6.0.7: this gate proved the noscript TEXT rendered but asserted nothing
+// about paint — so it would have passed happily while the page was white.
+// Either floor is correct here: only SCRIPTING is off, so the CSS bundle still
+// loads and styles-ambient.css paints html from --amb-floor. The pre-paint
+// theme stamp never runs, so data-theme is unset and the classic branch
+// (#0b0b0c) wins rather than indigo (#121218). What matters is that it is dark.
+const DARK_FLOORS = ['rgb(18, 18, 24)', 'rgb(11, 11, 12)'];
+const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
+ok(DARK_FLOORS.includes(bg), `no-JS: html paints a dark floor (got ${bg})`);
+
+// The boot watchdog is the only thing that reveals #boot-fallback, and it
+// cannot run here — so <noscript> is what shows, never both surfaces at once.
+const fallbackHidden = await p.evaluate(() => {
+  const f = document.getElementById('boot-fallback');
+  return !f || f.hidden;
+});
+ok(fallbackHidden, 'no-JS: #boot-fallback stays hidden (noscript owns this case)');
+
 ok(/xmr\.irish/i.test(body), 'no-JS: wordmark "xmr.irish" is present');
 ok(/Monero education \+ live mempool/i.test(body), 'no-JS: one-line description renders');
-ok(/requires JavaScript/i.test(body), 'no-JS: honest "requires JavaScript" note renders');
+// Honest about WHY the live numbers are missing, without prescribing the
+// wording — the copy must say the live figures need JS, not demand the user
+// turn it on (asserted separately below).
+ok(/need(s)? JavaScript|requires JavaScript/i.test(body), 'no-JS: honest note about live figures needing JS renders');
 ok(/read-only and non-custodial/i.test(body), 'no-JS: read-only / non-custodial fact renders');
 ok(/private,? untraceable digital cash/i.test(body), 'no-JS: one-sentence "what Monero is" fact renders');
 
@@ -62,6 +83,25 @@ const moneroHref = await p.evaluate(() => {
   return a ? a.href : '';
 });
 ok(/getmonero\.org/i.test(moneroHref), `no-JS: getmonero.org link is a real anchor (href: ${moneroHref || 'none'})`);
+
+// v6.0.7: the site's OWN routes must be reachable, not just an external link.
+// A real Tor-at-Safest screenshot showed this block rendering correctly but
+// offering exactly one way out — to another site. Tor Safest users made a
+// deliberate choice; the nav has to survive it. Also makes the routes
+// crawlable, since this is the only markup a no-JS fetch ever sees.
+const routes = await p.evaluate(() =>
+  [...document.querySelectorAll('a')]
+    .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
+    .filter(Boolean));
+for (const r of ['/', '/mempool', '/markets', '/network', '/education', '/monero', '/future', '/peers', '/simulate', '/node', '/sources']) {
+  ok(routes.includes(r), `no-JS: ${r} is a real anchor in the fallback`);
+}
+
+// And no nagging. The prior copy read "Please enable it, or use a
+// JavaScript-capable browser", which is the apology tone this fallback is
+// explicitly not supposed to take.
+const noscriptText = await p.evaluate(() => document.body.innerText);
+ok(!/please enable/i.test(noscriptText), 'no-JS: copy does not nag the user to enable JavaScript');
 
 await ctx.close();
 await b.close();

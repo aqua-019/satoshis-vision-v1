@@ -2,7 +2,6 @@
 // high-fidelity protocol simulation stages.
 //
 // ES exports (formerly window globals):
-//   useFrame()             — rAF-driven sub-frame counter (60fps tick)
 //   useMouseParallax(ref)  — mouse-relative parallax offset (-1..1 each axis)
 //   <SvgDefs />            — reusable filter/gradient defs (glow, blur, parallax)
 //   <GlowOrb cx cy r ...>  — high-fidelity SVG orb with layered radial gradients
@@ -13,19 +12,43 @@
 // Self-contained: no network, no Three.js, no localStorage.
 
 import * as React from "react";
+import { byTier, getDeviceTier } from "@/design/deviceTier";
+import { observeDrawable } from "@/design/usePageActive";
+import { useReducedMotion } from "@/design/useReducedMotion";
 
 /* ── high-precision frame tick (60fps) ────────────────────── */
 export function useFrame() {
   const [n, setN] = React.useState(0);
+  const reduceMotion = useReducedMotion();
   React.useEffect(() => {
-    let raf: number, last = performance.now();
+    // Freeze at whatever value `n` already holds — no reason to keep ticking
+    // a counter that only exists to drive motion nobody wants to see.
+    if (reduceMotion) return;
+    let raf = 0;
+    let last = performance.now();
     const loop = (t: number) => {
       if (t - last >= 16) { setN((x) => x + 1); last = t; }
       raf = requestAnimationFrame(loop);
     };
-    raf = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    const start = () => {
+      if (raf) return;
+      last = performance.now(); // avoid a burst of catch-up ticks on resume
+      raf = requestAnimationFrame(loop);
+    };
+    const stop = () => {
+      if (raf) cancelAnimationFrame(raf);
+      raf = 0;
+    };
+    const onVisibility = () => {
+      if (document.hidden) stop(); else start();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    if (!document.hidden) start();
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [reduceMotion]);
   return n;
 }
 
@@ -33,29 +56,70 @@ export function useFrame() {
 /* ── mouse parallax hook ──────────────────────────────────── */
 export function useMouseParallax(ref: React.RefObject<HTMLElement | null>, strength = 1) {
   const [p, setP] = React.useState({ x: 0, y: 0 });
+  const reduceMotion = useReducedMotion();
   React.useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    let raf = 0, target = { x: 0, y: 0 }, cur = { x: 0, y: 0 };
+
+    if (reduceMotion) {
+      // No easing loop at all — the offset snaps straight to the pointer
+      // position, one setState per pointer event, never per-frame.
+      const onMove = (e: MouseEvent) => {
+        const r = el.getBoundingClientRect();
+        setP({
+          x: +(((e.clientX - r.left) / r.width - 0.5) * 2 * strength).toFixed(3),
+          y: +(((e.clientY - r.top) / r.height - 0.5) * 2 * strength).toFixed(3),
+        });
+      };
+      const onLeave = () => setP({ x: 0, y: 0 });
+      el.addEventListener("mousemove", onMove);
+      el.addEventListener("mouseleave", onLeave);
+      return () => {
+        el.removeEventListener("mousemove", onMove);
+        el.removeEventListener("mouseleave", onLeave);
+      };
+    }
+
+    let raf = 0;
+    const target = { x: 0, y: 0 };
+    const cur = { x: 0, y: 0 };
+    let lastTs: number | null = null;
+
+    // Frame-rate-independent easing: the old `cur += (target - cur) * 0.08`
+    // per rAF tick converged faster in wall-clock time on a 120/144Hz display
+    // than on 60Hz (more ticks/sec = more 8% steps/sec). `1 - exp(-dt/TAU)`
+    // reproduces the same settle feel at any refresh rate. TAU=0.2s is the
+    // continuous-time constant equivalent to K=0.08 at 60fps — solving
+    // K = 1 - exp(-(1/60)/TAU) for TAU.
+    const TAU = 0.2;
+
+    const animate = (now: number) => {
+      const dt = lastTs === null ? 1 / 60 : Math.min((now - lastTs) / 1000, 0.05);
+      lastTs = now;
+      const ease = 1 - Math.exp(-dt / TAU);
+      cur.x += (target.x - cur.x) * ease;
+      cur.y += (target.y - cur.y) * ease;
+      setP({ x: +cur.x.toFixed(3), y: +cur.y.toFixed(3) });
+      if (Math.abs(cur.x - target.x) > 0.001 || Math.abs(cur.y - target.y) > 0.001) {
+        raf = requestAnimationFrame(animate);
+      } else {
+        raf = 0;
+      }
+    };
+    const kick = () => {
+      if (!raf) { lastTs = null; raf = requestAnimationFrame(animate); }
+    };
     const onMove = (e: MouseEvent) => {
       const r = el.getBoundingClientRect();
       target.x = ((e.clientX - r.left) / r.width  - 0.5) * 2 * strength;
       target.y = ((e.clientY - r.top)  / r.height - 0.5) * 2 * strength;
-      if (!raf) raf = requestAnimationFrame(animate);
+      kick();
     };
-    const onLeave = () => { target.x = 0; target.y = 0; if (!raf) raf = requestAnimationFrame(animate); };
-    const animate = () => {
-      cur.x += (target.x - cur.x) * 0.08;
-      cur.y += (target.y - cur.y) * 0.08;
-      setP({ x: +cur.x.toFixed(3), y: +cur.y.toFixed(3) });
-      if (Math.abs(cur.x - target.x) > 0.001 || Math.abs(cur.y - target.y) > 0.001) {
-        raf = requestAnimationFrame(animate);
-      } else raf = 0;
-    };
+    const onLeave = () => { target.x = 0; target.y = 0; kick(); };
     el.addEventListener("mousemove", onMove);
     el.addEventListener("mouseleave", onLeave);
     return () => { el.removeEventListener("mousemove", onMove); el.removeEventListener("mouseleave", onLeave); if (raf) cancelAnimationFrame(raf); };
-  }, [strength]);
+  }, [strength, reduceMotion]);
   return p;
 }
 
@@ -171,18 +235,26 @@ export function ParticleStream({
   style,
 }: any) {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
+  const tier = getDeviceTier();
+  const reduceMotion = useReducedMotion();
   React.useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // DPR is quadratic in fill cost; 1.5 on a phone is not tellable apart
+    // from 2 at that pixel pitch.
+    const dpr = Math.min(window.devicePixelRatio || 1, byTier(tier, { high: 2, mid: 2, low: 1.5 }));
     canvas.width = width * dpr; canvas.height = height * dpr;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     const rng = () => Math.random();
+    // v6.0.8: tier the particle budget. Each particle draws THREE stacked arcs
+    // per frame (the depth-aware bloom below), so the per-frame cost is 3× the
+    // count — this is the most fill-heavy loop in the simulators.
+    const tierCount = Math.max(1, Math.round(count * byTier(tier, { high: 1, mid: 0.5, low: 0.25 })));
     // particles include z (depth, 0..1); 0 = far, 1 = near
-    const ps = Array.from({ length: count }).map(() => spawn());
+    const ps = Array.from({ length: tierCount }).map(() => spawn());
     function spawn() {
       let x, y;
       if (spread === "radial" && radius != null) {
@@ -211,8 +283,10 @@ export function ParticleStream({
       };
     }
 
-    let raf: number;
-    const tick = () => {
+    // `k` normalises this frame's elapsed time to 60fps-equivalent steps
+    // (k=1 ⇔ 1/60s just passed), same treatment as design/ArtBackground's
+    // particle field — keeps the drift speed identical across refresh rates.
+    const draw = (k: number) => {
       // ghost trail with alpha-clear (poor man's trail accumulation)
       if (trail) {
         ctx.globalCompositeOperation = "destination-out";
@@ -225,14 +299,14 @@ export function ParticleStream({
       }
 
       for (const p of ps) {
-        p.life++;
+        p.life += k;
         if (p.life > p.maxLife ||
             p.x < -20 || p.x > width + 20 || p.y < -40 || p.y > height + 40) {
           Object.assign(p, spawn(), { life: 0 });
           continue;
         }
-        p.x += p.vx; p.y += p.vy;
-        p.ph += 0.03;
+        p.x += p.vx * k; p.y += p.vy * k;
+        p.ph += 0.03 * k;
 
         const depthScale = depth ? 0.4 + p.z * 0.6 : 1;
         const r = p.r * depthScale;
@@ -251,12 +325,50 @@ export function ParticleStream({
       }
       ctx.globalAlpha = 1;
       ctx.globalCompositeOperation = "source-over";
+    };
+
+    // Reduced motion: one calm frame, no rAF loop — same rationale as
+    // ArtBackground's particle field. `trail` mode alpha-clears instead of
+    // clearing, which assumes prior frames; skip that and just clear once.
+    if (reduceMotion) {
+      ctx.clearRect(0, 0, width, height);
+      draw(0);
+      return;
+    }
+
+    let raf = 0;
+    let lastTs: number | null = null;
+    draw(0); // instant first paint, matching the old synchronous tick() call
+
+    const tick = (now: number) => {
+      const dt = lastTs === null ? 0 : Math.min((now - lastTs) / 1000, 0.05);
+      lastTs = now;
+      draw(dt / (1 / 60));
       raf = requestAnimationFrame(tick);
     };
-    tick();
-    return () => cancelAnimationFrame(raf);
-  }, [count, width, height, color, altColor, altRatio, speedMul, gravity, size[0], size[1], trail, depth, spread, cx, cy, radius]);
+    const start = () => {
+      if (raf) return;
+      lastTs = null; // avoid a huge dt spike on resume
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    };
 
+    // Draw only while the tab is in front AND this canvas is on screen.
+    // `globalCompositeOperation = "lighter"` above is kept deliberately — it is
+    // what makes the three stacked arcs read as additive bloom rather than
+    // three flat discs, so it is load-bearing for the visual, not decoration.
+    // It does force a read-modify-write per pixel though, which is exactly why
+    // not running the loop when nobody can see it matters more here than
+    // anywhere else in the app.
+    const undrawable = observeDrawable(canvas, (drawable) => {
+      if (drawable) start(); else stop();
+    });
+
+    return () => { undrawable(); stop(); };
+  }, [tier, reduceMotion, count, width, height, color, altColor, altRatio, speedMul, gravity, size[0], size[1], trail, depth, spread, cx, cy, radius]);
   return <canvas ref={ref} width={width} height={height}
     className={className}
     style={{ position: "absolute", inset: 0, pointerEvents: "none", mixBlendMode: "screen", ...style }} />;

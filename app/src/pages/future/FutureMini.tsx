@@ -4,30 +4,40 @@
  *
  * `useMiniCanvas` below is a local re-implementation of the prototype's
  * `useMemCanvas` hook, which does not exist in this repo. Modeled on the
- * ParticleField effect in design/ArtBackground.tsx: DPR clamped to 2,
+ * ParticleField effect in design/ArtBackground.tsx: DPR clamped (tier-aware,
+ * see below — ParticleField's flat 2 became a per-tier ceiling in v6.0.8),
  * ResizeObserver-driven sizing, `ctx.setTransform(dpr, 0, 0, dpr, 0, 0)`,
  * cancelAnimationFrame on cleanup. Kept module-private — do not export it,
  * move it to @/design/, or import useFrame from @/protocols/sim-fx (that
- * hook lives in the lazy /simulate chunk).
+ * hook lives in the lazy /simulate chunk). Importing `byTier`/`Tier` from
+ * design/deviceTier.ts and `useVisual` from design/VisualContext.tsx is not
+ * that — those are read-only utility imports, not a relocation of the hook
+ * itself, and that boundary stays exactly where it was.
  *
  * Two additions ParticleField doesn't need: honours prefers-reduced-motion
  * (a single static frame at t=0, no rAF loop — a murmuration inside a modal
- * is a bigger vestibular hit than background stars), and pauses the loop
+ * is a bigger vestibular hit than background stars) via the shared reactive
+ * design/useReducedMotion hook (so toggling the OS setting mid-session tears
+ * the canvas down and rebuilds it in the right mode), and pauses the loop
  * while the tab is hidden (document.visibilityState === "hidden").
  */
 
 import * as React from "react";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MiniMode } from "./data";
+import { byTier, type Tier } from "@/design/deviceTier";
+import { useVisual } from "@/design/VisualContext";
 
 type DrawFn = (ctx: CanvasRenderingContext2D, w: number, h: number, t: number, dt: number) => void;
 
-function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
+function useMiniCanvas(draw: DrawFn, tier: Tier): React.RefObject<HTMLCanvasElement> {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
   // Latest draw callback, read from inside the rAF loop without re-running
   // the setup effect on every render (mode/height changes don't tear down
   // the canvas + observer).
   const drawRef = React.useRef<DrawFn>(draw);
   drawRef.current = draw;
+  const reduceMotion = useReducedMotion();
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -37,11 +47,19 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
 
     let w = 0;
     let h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // `mid` still gets the full 2x — this is a 240px-tall canvas inside a
+    // modal, not the fullscreen aurora, so halving it doesn't buy much. `low`
+    // is where the ceiling actually drops the backing-store pixel count.
+    const dpr = Math.min(window.devicePixelRatio || 1, byTier(tier, { high: 2, mid: 2, low: 1.5 }));
 
     const resize = () => {
       const r = canvas.getBoundingClientRect();
+      // v6.0.7: ResizeObserver fires with an identical box more often than you
+      // would expect — and under Tor Browser's letterboxing (the viewport snaps
+      // to 200x100 multiples) a single window drag produces a burst of them.
+      // The writes below are a full backing-store realloc plus a wipe plus a
+      // redraw, so bailing on a no-op change is free performance.
+      if (r.width === w && r.height === h) return;
       w = r.width;
       h = r.height;
       // Assigning width/height resets the backing store AND wipes the canvas.
@@ -65,7 +83,16 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
 
     const frame = (now: number) => {
       if (lastTs !== null) {
-        const dt = (now - lastTs) / 1000;
+        // Clamp at 50ms: an unclamped dt after a long main-thread stall (tab
+        // switch mid-frame, a GC pause, devtools open) would otherwise jump
+        // every t-dependent draw call forward by however long the stall was
+        // — e.g. the fcmp murmuration's per-particle angle uses `t` directly,
+        // so an unclamped multi-second dt reads as the particles teleporting
+        // instead of animating. `elapsed` accumulates the CLAMPED value, not
+        // the raw one, so animation time and wall time stay consistent with
+        // each other post-clamp instead of `elapsed` silently falling behind
+        // real time after every stall.
+        const dt = Math.min((now - lastTs) / 1000, 0.05);
         elapsed += dt;
         drawRef.current(ctx, w, h, elapsed, dt);
       } else {
@@ -98,7 +125,11 @@ function useMiniCanvas(draw: DrawFn): React.RefObject<HTMLCanvasElement> {
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+    // reduceMotion is the reactive dependency — mode/height changes flow
+    // through drawRef above and don't need a teardown/rebuild. `tier` is
+    // listed for lint honesty (the effect reads it via `dpr`) but can't
+    // actually re-fire: getDeviceTier() is memoized for the page's lifetime.
+  }, [reduceMotion, tier]);
 
   return ref;
 }
@@ -109,8 +140,20 @@ export interface FutureMiniProps {
 }
 
 export function FutureMini({ mode, height = 240 }: FutureMiniProps) {
+  const { tier } = useVisual();
   const ref = useMiniCanvas((ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
+    // "lighter" (additive blend) is load-bearing here, not decorative: every
+    // mode below draws overlapping translucent particles/traces meant to
+    // glow brighter where they cross (the fcmp murmuration's converging
+    // paths, cuprate's two race traces, jamtis's ribbon segments) — plain
+    // source-over would just show the top-most draw call's alpha and the
+    // "engine under load" read would be gone. It is a per-pixel
+    // read-modify-write, but the canvas here is small (240px tall, capped
+    // by `height`) and only paints while its modal is open and on-screen
+    // (ResizeObserver + visibilitychange above), so the region it applies
+    // to is already about as restricted as this component can make it
+    // without giving up the additive look mode-by-mode.
     ctx.globalCompositeOperation = "lighter";
 
     if (mode === "fcmp") {
@@ -205,7 +248,7 @@ export function FutureMini({ mode, height = 240 }: FutureMiniProps) {
     }
 
     ctx.globalCompositeOperation = "source-over";
-  });
+  }, tier);
 
   return (
     <canvas

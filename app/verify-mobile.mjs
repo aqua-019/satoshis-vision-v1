@@ -26,12 +26,31 @@ console.log('engine:', engine);
 const p = await b.newPage({ viewport: { width: 390, height: 844 } });
 let fail = false;
 
-// 1) MEMPOOL canvas must be a working horizontal scroller
-await p.goto(base + '/mempool', { waitUntil: 'networkidle' });
+// 1) MEMPOOL canvas must be a working horizontal scroller.
+//    v6.0.4: this used to point at /mempool with no query, which resolves to the
+//    DEFAULT view — Classic. Classic is pure DOM and now reflows to the viewport
+//    instead of panning (it is what a phone actually lands on, so panning made the
+//    default view the least readable one). The pan behaviour still belongs to the
+//    fixed-size views, so this assertion moves to Terminal, which deliberately
+//    keeps the 900px pin. See styles.css `.mp-canvas-scroll--reflow`.
+await p.goto(base + '/mempool?v=terminal', { waitUntil: 'networkidle' });
 await p.waitForSelector('.mp-canvas-scroll');
 const m = await p.$eval('.mp-canvas-scroll', el => { el.scrollLeft = 400; return { clientW: el.clientWidth, scrollW: el.scrollWidth, left: el.scrollLeft }; });
-console.log('mempool canvas', m);
+console.log('mempool canvas (terminal)', m);
 if (!(m.clientW <= 420 && m.scrollW >= 850 && m.left > 50)) { console.log('❌ mempool canvas does NOT pan'); fail = true; } else console.log('✅ mempool canvas pans');
+
+// 1b) …and the converse: Classic must NOT pan. It opts into the reflow layer, so
+//     it reads as a normal single-column page at 390px with no horizontal scroll.
+await p.goto(base + '/mempool', { waitUntil: 'networkidle' });
+await p.waitForSelector('.mp-canvas-scroll');
+const c = await p.$eval('.mp-canvas-scroll', el => ({
+  reflow: el.classList.contains('mp-canvas-scroll--reflow'),
+  clientW: el.clientWidth, scrollW: el.scrollWidth,
+}));
+console.log('mempool classic (default view)', c);
+if (!c.reflow) { console.log('❌ Classic did not opt into the reflow layer'); fail = true; }
+else if (c.scrollW - c.clientW > 2) { console.log('❌ Classic still pans (' + (c.scrollW - c.clientW) + 'px)'); fail = true; }
+else console.log('✅ Classic reflows instead of panning');
 
 // 2) No page-level horizontal overflow on key routes (incl. the Monero/Bottom-Line
 //    page that v5.0.5 left rendering its <main> 998px wide and clipped).

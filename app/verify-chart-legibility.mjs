@@ -62,6 +62,24 @@ const TICKERS = {
 };
 
 async function mockMarketData(page) {
+  // main (v6.0.9) moved group membership + ATH/ATL to an /api/markets
+  // aggregator; without it the Markets page renders no chart at all and this
+  // gate would have nothing to measure.
+  await page.route('**/api/markets**', (route) => route.fulfill({
+    status: 200, contentType: 'application/json',
+    body: JSON.stringify({
+      majors: ['bitcoin', 'ethereum', 'solana'].map((id, i) => ({
+        id, symbol: ['btc', 'eth', 'sol'][i], name: id, price: 60000 / (i + 1),
+        change24h: 1.2 - i, marketCap: 1.2e12 / (i + 1), rank: i + 1,
+      })),
+      privacy: ['monero', 'zcash', 'dash'].map((id, i) => ({
+        id, symbol: ['xmr', 'zec', 'dash'][i], name: id, price: 168 / (i + 1),
+        change24h: 0.8 - i, marketCap: 3.1e9 / (i + 1), rank: 40 + i,
+      })),
+      ath: { price: 542.33, date: '2018-01-09' },
+      atl: { price: 0.21, date: '2015-01-14' },
+    }),
+  }));
   await page.route('**/api/coingecko**', (route) => {
     const url = route.request().url();
     const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });

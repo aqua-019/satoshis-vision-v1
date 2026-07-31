@@ -2,27 +2,55 @@
  * pages/markets/charts.tsx — hand-rolled SVG chart primitives for the Markets
  * surface. No third-party / CDN chart libraries (privacy invariant).
  *
- * Every chart measures its container (design/useChartMetrics.ts) and sets its
- * viewBox width to the measured CSS width, so ONE USER UNIT IS ONE CSS PIXEL.
- * That is what makes `fontSize={fs.tick}` mean 11 real pixels instead of 11
- * pre-scaling units — under the old fixed `viewBox="0 0 1000 H"`, a 358px-wide
- * phone render painted a 9.5 axis label at 3.4 CSS px. It also fixes a height
- * bug nobody had noticed: with a 1000-unit viewBox and no height attribute, the
+ * Every chart MEASURES its container (design/useChartMetrics.ts) and sets its
+ * viewBox width to that measured CSS width, so ONE USER UNIT IS ONE CSS PIXEL.
+ * VB_W survives only as the pre-measurement fallback.
+ *
+ * That matters because SVG font-size is in USER UNITS: under the old fixed
+ * `viewBox="0 0 1000 H"`, a 358px-wide phone render painted a 9.5 axis label at
+ * 3.4 CSS px, and raising the attribute to 11 would have painted 3.9. It also
+ * fixes a height bug — with a 1000-unit viewBox and no height attribute, the
  * intrinsic ratio squashed a `height={320}` chart to 114px on a phone.
  *
- * Consequence: every gutter that exists to make room for text is DERIVED from
+ * Consequence: every gutter that exists to make ROOM FOR TEXT is derived from
  * that text (estTextW/labelStep/tickCount), never a constant — a fixed padL
  * clips the moment the type changes size. Below 420px the y labels move inside
- * the plot entirely.
+ * the plot entirely. They render REAL data when given
+ * it; the source/status badge is the caller's job (see SourceBadge in
+ * MarketsPage). prefers-reduced-motion disables the mount fade.
  *
- * They render REAL data when given it; the source/status badge is the caller's
- * job (see SourceBadge in MarketsPage). prefers-reduced-motion disables the
- * mount fade.
+ * Cursor tracking, the hover tooltip box, and the crosshair rule are shared
+ * with the mempool detail surfaces via @/design/chart-kit — see that module's
+ * header for why (this file used to hand-roll the same three things three
+ * times over; that duplication is gone now).
  */
 
 import * as React from "react";
 import type { Candle, LineSeries, SeriesStatus } from "@/data/useMarketHistory";
-import { useChartMetrics, estTextW, labelStep, tickCount, spreadLabels } from "@/design/useChartMetrics";
+import { useReducedMotion } from "@/design/useReducedMotion";
+import { useChartMetrics, estTextW, labelStep, tickCount } from "@/design/useChartMetrics";
+import { Provenance } from "@/design/primitives";
+import {
+  VB_W,
+  AXIS,
+  GRID,
+  useSvgCursor,
+  nearestIndex,
+  slotIndex,
+  ChartTip,
+  ChartCrosshair,
+  useGradientId,
+} from "@/design/chart-kit";
+import {
+  normalizeSeries,
+  timeDomain,
+  xOf as geomXOf,
+  yDomain,
+  dedupeLabelYs,
+  medianStep,
+  type NormSeries,
+  type NormPoint,
+} from "./geometry";
 
 const UP_FILL = "rgba(74,222,128,0.72)";
 const UP_STROKE = "rgba(74,222,128,1)";
@@ -30,20 +58,6 @@ const DN_FILL = "rgba(255,77,109,0.72)";
 const DN_STROKE = "rgba(255,77,109,1)";
 
 /* ── helpers ───────────────────────────────────────────────────────── */
-
-function useReducedMotion(): boolean {
-  const [r, setR] = React.useState(() =>
-    typeof matchMedia !== "undefined" ? matchMedia("(prefers-reduced-motion: reduce)").matches : false,
-  );
-  React.useEffect(() => {
-    if (typeof matchMedia === "undefined") return;
-    const mq = matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setR(mq.matches);
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return r;
-}
 
 /** Fade the chart in once on mount (skipped under reduced-motion). */
 function useMountFade(reduced: boolean): number {
@@ -116,17 +130,6 @@ function smoothPath(pts: [number, number][]): string {
   return d;
 }
 
-/** Keep a centred label inside the plot: half its own width from either edge.
- *  Replaces the hardcoded `- 50` clamps, which assumed a label width that only
- *  held while the type was 9.5px. */
-function clampLabelX(x: number, text: string, fontPx: number, lo: number, hi: number): number {
-  const half = estTextW(text.length, fontPx) / 2 + 2;
-  return Math.max(lo + half, Math.min(x, hi - half));
-}
-
-const AXIS = "var(--ink-40)";
-const GRID = "rgba(255,255,255,0.05)";
-
 /* ════════════════════════════════════════════════════════════════════
    CandleChart — real OHLC + volume sub-bars + axes + annotations
    ════════════════════════════════════════════════════════════════════ */
@@ -138,17 +141,17 @@ export interface CandleChartProps {
   status?: SeriesStatus;
 }
 
-export function CandleChart({ candles, days, height = 300, status = "live" }: CandleChartProps) {
+function CandleChartImpl({ candles, days, height = 300, status = "live" }: CandleChartProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  const [cross, setCross] = React.useState<number | null>(null);
   const boxRef = React.useRef<HTMLDivElement>(null);
-  // Fluid mode: the viewBox width tracks the measured CSS width, so one user
-  // unit IS one CSS px and a fontSize attribute is the rendered pixel size.
-  const { w: W, ready, fs } = useChartMetrics(boxRef);
+  const { w: measured, ready, fs } = useChartMetrics(boxRef);
+  const vbW = measured || VB_W;
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
 
   if (!candles?.length) return null;
   const stale = status === "stale";
+  const W = vbW;
   const padT = 14;
   const volH = Math.max(28, Math.round(height * 0.16));
   const dateH = 22;
@@ -161,14 +164,12 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
   const yMin = lo - pad, yMax = hi + pad, yRng = yMax - yMin || 1;
   const py = (v: number) => padT + priceH - ((v - yMin) / yRng) * priceH;
 
-  // Gutters are DERIVED, not constants. They exist to make room for text, and
-  // the text just changed size — a fixed padL:54 clipped "$105.0k" the moment
-  // ticks became legible. Below 420px the y labels move INSIDE the plot, riding
-  // above their own gridline, which reclaims ~55px of a 358px canvas.
+  // Gutters exist to make room for TEXT, so they are derived from it. Below
+  // 420px the y labels ride above their own gridline INSIDE the plot, which
+  // reclaims ~55px of a 358px canvas.
   const yTicks = niceTicks(yMin, yMax, tickCount(priceH, fs.tick));
   const yInside = W < 420;
-  const maxTickChars = Math.max(...yTicks.map((t) => fmtPrice(t).length));
-  const padL = yInside ? 8 : Math.ceil(estTextW(maxTickChars, fs.tick)) + 10;
+  const padL = yInside ? 8 : Math.ceil(estTextW(Math.max(...yTicks.map((t) => fmtPrice(t).length)), fs.tick)) + 10;
   const padR = Math.ceil(estTextW(fmtPrice(candles[n - 1].c).length, fs.label)) + 14;
   const innerW = Math.max(10, W - padL - padR);
 
@@ -189,44 +190,26 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
   const changePct = ((last - first) / (first || 1)) * 100;
   const lastUp = last >= first;
 
-  // Seven date ticks is fine at 1440px and unreadable at 390px. Deriving the
-  // step from measured width is what stops the higher floor from turning into
-  // a collision — the whole point of raising it is lost if the labels touch.
   const xStep = labelStep(n, innerW, fs.tick, 6);
 
-  // 1 user unit == 1 CSS px now, so no scale conversion is needed.
-  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const i = Math.round((e.clientX - rect.left - padL - (slot - cw) / 2) / slot);
-    setCross(i >= 0 && i < n ? i : null);
-  };
-
+  const cross = slotIndex(vx, { padL, slot, cw, n });
   const cc = cross != null ? candles[cross] : null;
-  const tipW = Math.ceil(estTextW(22, fs.tick)) + 16;
-  const tipH = fs.label * 4 + 14;
 
   return (
     <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
     {ready ? (
     <svg
-      data-chart
+      ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
-      onPointerMove={onMove}
-      onPointerDown={onMove}
-      onPointerLeave={() => setCross(null)}
+      {...cursorHandlers}
     >
       {/* y gridlines + price labels */}
       {yTicks.map((t) => (
         <g key={"y" + t}>
           <line x1={padL} y1={py(t)} x2={padL + innerW} y2={py(t)} stroke={GRID} strokeDasharray="2 4" />
-          <text
-            x={yInside ? padL + 3 : padL - 8}
-            y={yInside ? py(t) - 4 : py(t) + 3}
-            textAnchor={yInside ? "start" : "end"}
-            fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}
-          >{fmtPrice(t)}</text>
+          <text x={yInside ? padL + 3 : padL - 8} y={yInside ? py(t) - 4 : py(t) + 3} textAnchor={yInside ? "start" : "end"} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtPrice(t)}</text>
         </g>
       ))}
 
@@ -273,16 +256,16 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
       {/* high / low markers */}
       <g fontFamily="var(--f-mono)" fontSize={fs.label}>
         <circle cx={mid(hiIdx)} cy={py(candles[hiIdx].h)} r="2" fill={UP_STROKE} />
-        <text x={clampLabelX(mid(hiIdx), `H ${fmtPrice(candles[hiIdx].h)}`, fs.label, padL, padL + innerW)} y={py(candles[hiIdx].h) - 6} textAnchor="middle" fill={UP_STROKE}>H {fmtPrice(candles[hiIdx].h)}</text>
+        <text x={Math.min(mid(hiIdx), padL + innerW - 50)} y={py(candles[hiIdx].h) - 6} textAnchor="middle" fill={UP_STROKE}>H {fmtPrice(candles[hiIdx].h)}</text>
         <circle cx={mid(loIdx)} cy={py(candles[loIdx].l)} r="2" fill={DN_STROKE} />
-        <text x={clampLabelX(mid(loIdx), `L ${fmtPrice(candles[loIdx].l)}`, fs.label, padL, padL + innerW)} y={py(candles[loIdx].l) + 13} textAnchor="middle" fill={DN_STROKE}>L {fmtPrice(candles[loIdx].l)}</text>
+        <text x={Math.min(mid(loIdx), padL + innerW - 50)} y={py(candles[loIdx].l) + 13} textAnchor="middle" fill={DN_STROKE}>L {fmtPrice(candles[loIdx].l)}</text>
       </g>
 
       {/* last-price line + pill */}
       <line x1={padL} y1={py(last)} x2={padL + innerW} y2={py(last)} stroke={lastUp ? UP_STROKE : DN_STROKE} strokeWidth="0.8" strokeDasharray="1 3" opacity={0.8} />
       <g transform={`translate(${padL + innerW + 3}, ${py(last)})`}>
-        <rect x="0" y={-fs.label * 0.8} width={padR - 6} height={fs.label * 1.6} rx="2" fill={lastUp ? UP_STROKE : DN_STROKE} />
-        <text x={(padR - 6) / 2} y={fs.label * 0.36} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="#0b0a08" fontWeight={600}>{fmtPrice(last)}</text>
+        <rect x="0" y="-8" width={padR - 6} height="16" rx="2" fill={lastUp ? UP_STROKE : DN_STROKE} />
+        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="#0b0a08" fontWeight={600}>{fmtPrice(last)}</text>
       </g>
 
       {/* period-change badge */}
@@ -301,13 +284,12 @@ export function CandleChart({ candles, days, height = 300, status = "live" }: Ca
         <g pointerEvents="none">
           <line x1={mid(cross!)} y1={padT} x2={mid(cross!)} y2={padT + priceH} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <line x1={padL} y1={py(cc.c)} x2={padL + innerW} y2={py(cc.c)} stroke="var(--ink-40)" strokeDasharray="2 3" />
-          <g transform={`translate(${Math.max(padL, Math.min(mid(cross!) + 8, padL + innerW - tipW))}, ${padT + 6})`}>
-            <rect x="0" y="0" width={tipW} height={tipH} rx="3" fill="var(--surface-ground)" stroke="var(--rule)" />
-            <text x="8" y={fs.label * 1.2} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(cc.t, days)}</text>
-            <text x="8" y={fs.label * 2.4} fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--ink-80)">O {fmtPrice(cc.o)}  H {fmtPrice(cc.h)}</text>
-            <text x="8" y={fs.label * 3.5} fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--ink-80)">L {fmtPrice(cc.l)}  C {fmtPrice(cc.c)}</text>
-            <text x="8" y={fs.label * 4.6} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>V {fmtVol(cc.v)}</text>
-          </g>
+          <ChartTip x={mid(cross!)} y={padT + 6} bounds={{ left: padL, right: padL + innerW }} width={148} height={58}>
+            <text x="8" y="14" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(cc.t, days)}</text>
+            <text x="8" y="28" fontFamily="var(--f-mono)" fontSize={fs.tick} fill="var(--ink-80)">O {fmtPrice(cc.o)}  H {fmtPrice(cc.h)}</text>
+            <text x="8" y="40" fontFamily="var(--f-mono)" fontSize={fs.tick} fill="var(--ink-80)">L {fmtPrice(cc.l)}  C {fmtPrice(cc.c)}</text>
+            <text x="8" y="52" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>V {fmtVol(cc.v)}</text>
+          </ChartTip>
         </g>
       ) : null}
     </svg>
@@ -325,90 +307,127 @@ export interface MultiLineProps {
   days: number;
   height?: number;
   labels?: boolean;
+  /** Rendered under the empty-state badge when nothing is usable to plot. */
+  emptyNote?: React.ReactNode;
+}
+
+const ML_X_TICKS = 7;
+
+/** Hover tolerance: a series answers the cursor only within 3× its own median
+ *  sampling step — the same "3× median step" rule splitSegments uses to decide
+ *  a time gap is too wide to draw a line across. `floor` (a fraction of the
+ *  domain span) keeps single-point series, whose median step is 0, reachable. */
+function hoverTolerance(pts: NormPoint[], floor: number): number {
+  return Math.max(3 * medianStep(pts), floor);
 }
 
 /**
- * ChartLegend — swatch · label · last-% per series, laid out as wrapping HTML.
- *
- * Extracted from MarketsPage, which rendered exactly this markup beside a
- * `labels={false}` MultiLine. MultiLine now owns it, so there is ONE legend
- * implementation and it is correct at every width instead of two that agree
- * only by accident.
+ * The point of `pts` closest in time to `t`, or null when nothing lies within
+ * `tol` of it. Returning null rather than the closest-at-any-distance is the
+ * honest answer for a series that doesn't cover the hovered moment: a coin
+ * listed three weeks ago has no value to report at day 1 of a 90-day window.
+ * Segments are scanned flat — a gap breaks the LINE, not the lookup.
  */
-export function ChartLegend({ series }: { series: LineSeries[] }) {
-  return (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-chart-label)" }}>
-      {series.map((s) => {
-        const first = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
-        const lastV = ((s.data[s.data.length - 1] ?? first) / first - 1) * 100;
-        return (
-          <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-            <span style={{ width: 8, height: 2, background: s.color, boxShadow: `0 0 4px ${s.color}`, flexShrink: 0 }} />
-            <span className="dim">{s.label}</span>
-            <span style={{ color: s.color }}>{(lastV >= 0 ? "+" : "") + lastV.toFixed(1)}%</span>
-            {s.status === "stale" ? <span className="dim">·stale</span> : null}
-          </span>
-        );
-      })}
-    </div>
-  );
+function pointAtTime(pts: NormPoint[], t: number, tol: number): NormPoint | null {
+  let best: NormPoint | null = null;
+  let bestDt = Infinity;
+  for (const p of pts) {
+    const dt = Math.abs(p.t - t);
+    if (dt < bestDt) { bestDt = dt; best = p; }
+  }
+  return best !== null && bestDt <= tol ? best : null;
 }
 
-export function MultiLine({ series, days, height = 280, labels = true }: MultiLineProps) {
+function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   const boxRef = React.useRef<HTMLDivElement>(null);
-  const { w: W, ready, fs } = useChartMetrics(boxRef);
-  if (!series?.length) return null;
+  const { w: measured, ready, fs } = useChartMetrics(boxRef);
+  const vbW = measured || VB_W;
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
+  const gid = useGradientId("ml");
 
+  const W = vbW;
   const padT = 16, padB = 26;
-
-  const norm = series.map((s) => {
-    const first = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
-    return { ...s, n: s.data.map((v) => (v / first - 1) * 100) };
-  });
-  const all = norm.flatMap((s) => s.n).filter((v) => isFinite(v));
-  const min = Math.min(0, ...all), max = Math.max(0, ...all);
-  const rng = max - min || 1;
-
   // padR was a flat 100 units — a guess that "ETH +23.0%" fits, which it does
-  // not once the label is a real 12px. Decide from the actual longest legend
-  // string, and if it would eat more than ~28% of the plot, drop the inline
-  // legend entirely and render it below in HTML instead.
-  const yTickChars = Math.max(...niceTicks(min, max, 5).map((t) => ((t > 0 ? "+" : "") + t.toFixed(0) + "%").length));
-  // Same narrow-width treatment as the other charts: below 420px the % labels
-  // ride above their own gridline inside the plot, which frees the left gutter
-  // AND lifts the bottom-most label clear of the date row it used to sit on.
-  const yInside = W < 420;
-  const padL = yInside ? 8 : Math.ceil(estTextW(yTickChars, fs.tick)) + 8;
-  const legendChars = Math.max(...series.map((s) => s.label.length + 9));
+  // not at a real 12px. Derive it, and if the inline legend would eat more than
+  // ~28% of the plot, drop it (callers pair `labels={false}` with their own
+  // SeriesSwatchLegend below the plot, which is the narrow-width answer).
+  const legendChars = Math.max(8, ...(series ?? []).map((s) => s.label.length + 9));
   const needPadR = Math.ceil(estTextW(legendChars, fs.label)) + 12;
   const inlineLegend = labels && W >= 520 && needPadR <= W * 0.28;
+  const yInside = W < 420;
+  const padL = yInside ? 8 : Math.ceil(estTextW(6, fs.tick)) + 8;
   const padR = inlineLegend ? needPadR : 14;
   const innerW = Math.max(10, W - padL - padR);
   const innerH = height - padT - padB;
+
+  const norm: NormSeries[] = React.useMemo(
+    () => (series ?? []).map((s) => normalizeSeries(s, days)),
+    [series, days],
+  );
+  const domain = timeDomain(norm);
+
+  if (!domain) {
+    return (
+      <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <Provenance source="coingecko" fresh="none" detail="unavailable" />
+        {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
+      </div>
+    );
+  }
+
+  const { min, max } = yDomain(norm);
+  const rng = max - min || 1;
   const y = (v: number) => padT + innerH - ((v - min) / rng) * innerH;
-  const xOf = (i: number, len: number) => padL + (len <= 1 ? 0 : (i / (len - 1)) * innerW);
+  const X = (t: number) => geomXOf(t, domain, padL, innerW);
 
   const yTicks = niceTicks(min, max, tickCount(innerH, fs.tick));
-  const ref = norm.reduce((a, b) => ((b.t?.length ?? 0) > (a.t?.length ?? 0) ? b : a), norm[0]);
-  const refLen = ref.n.length;
-  const xStep = labelStep(refLen, innerW, fs.tick, 6);
-
-  // Two series that end close together used to paint their end-labels on top of
-  // each other; push them apart before drawing.
-  const endYs = spreadLabels(
-    norm.map((s) => y(s.n[s.n.length - 1] ?? 0)),
-    fs.label * 1.15, padT, height - padB,
+  const xTicks = Array.from({ length: ML_X_TICKS }, (_, i) =>
+    domain.t0 + (i / (ML_X_TICKS - 1)) * (domain.t1 - domain.t0),
   );
+
+  // One label y-position per series (in series order), de-collided so up to
+  // 9 simultaneous series stay legibly spaced.
+  const rawLabelYs = norm.map((s) => y(s.last ?? 0));
+  const labelYs = labels ? dedupeLabelYs(rawLabelYs) : rawLabelYs;
+
+  /* Hover, resolved in the TIME domain — not with chart-kit's nearestIndex.
+     nearestIndex assumes one shared, evenly-spaced index spanning the plot,
+     and the whole point of this chart's geometry is that series no longer
+     share an index (17 daily points can sit beside 720 hourly ones). So the
+     cursor's viewBox x is inverted back through geometry.xOf into a
+     timestamp, and every series then answers with its OWN nearest point in
+     time. Everything below is index-free. */
+  const span = domain.t1 - domain.t0 || 1;
+  const cursorT =
+    vx == null || vx < padL - 4 || vx > padL + innerW + 4
+      ? null
+      : domain.t0 + ((Math.min(padL + innerW, Math.max(padL, vx)) - padL) / innerW) * span;
+
+  // Per-series nearest point at the cursor's time (null = doesn't cover it),
+  // computed once and reused by the focus dots and the tooltip rows.
+  const hovered: (NormPoint | null)[] =
+    cursorT == null
+      ? []
+      : norm.map((s) => {
+          const pts = s.segments.flat();
+          return pointAtTime(pts, cursorT, hoverTolerance(pts, span * 0.02));
+        });
 
   return (
     <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
-    {ready ? (<>
-    <svg data-chart viewBox={`0 0 ${W} ${height}`} width="100%" style={{ display: "block", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}>
+    {ready ? (
+    <svg
+      ref={svgRef}
+      viewBox={`0 0 ${W} ${height}`}
+      width="100%"
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      {...cursorHandlers}
+    >
       <defs>
         {norm.map((s, i) => (
-          <linearGradient key={"g" + i} id={`ml-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient key={"g" + i} id={`${gid}-${i}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
             <stop offset="100%" stopColor={s.color} stopOpacity="0" />
           </linearGradient>
@@ -416,57 +435,94 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
       </defs>
 
       {/* y gridlines + % labels */}
-      {yTicks.map((t) => {
-        // Drop a label that would land on the date row rather than draw it
-        // there — the gridline still communicates the level.
-        const ly = yInside ? y(t) - 4 : y(t) + 3;
-        const clearOfDates = ly < height - padB + fs.tick * 0.4;
-        return (
-          <g key={"y" + t}>
-            <line x1={padL} y1={y(t)} x2={padL + innerW} y2={y(t)} stroke={t === 0 ? "rgba(255,255,255,0.14)" : GRID} strokeDasharray={t === 0 ? undefined : "2 4"} />
-            {clearOfDates ? (
-              <text
-                x={yInside ? padL + 3 : padL - 6}
-                y={ly}
-                textAnchor={yInside ? "start" : "end"}
-                fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}
-              >{(t > 0 ? "+" : "") + t.toFixed(0)}%</text>
-            ) : null}
-          </g>
-        );
-      })}
+      {yTicks.map((t) => (
+        <g key={"y" + t}>
+          <line x1={padL} y1={y(t)} x2={padL + innerW} y2={y(t)} stroke={t === 0 ? "rgba(255,255,255,0.14)" : GRID} strokeDasharray={t === 0 ? undefined : "2 4"} />
+          <text x={yInside ? padL + 3 : padL - 6} y={yInside ? y(t) - 4 : y(t) + 3} textAnchor={yInside ? "start" : "end"} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{(t > 0 ? "+" : "") + t.toFixed(0)}%</text>
+        </g>
+      ))}
 
-      {/* x date ticks (from the longest real series) */}
-      {ref.t ? ref.n.map((_, i) => (i % xStep === 0 ? (
-        <text key={"x" + i} x={clampLabelX(xOf(i, refLen), fmtDate(ref.t![i], days), fs.tick, 0, W)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(ref.t![i], days)}</text>
-      ) : null)) : null}
+      {/* x date ticks — 7 evenly spaced by TIME across the common domain,
+          not by index of whichever series happens to be longest. */}
+      {xTicks.map((t, i) => (
+        <text key={"x" + i} x={X(t)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(t, days)}</text>
+      ))}
 
-      {/* area + line per series */}
+      {/* area + line per series, one path pair per honest segment — a
+          series covering only part of the window simply stops there. */}
       {norm.map((s, si) => {
-        const len = s.n.length;
-        if (!len) return null;
-        const pts = s.n.map((v, i) => [xOf(i, len), y(v)] as [number, number]);
-        const line = smoothPath(pts);
-        const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
         const isStale = s.status === "stale";
-        const lastV = s.n[len - 1];
         return (
-          <g key={si} opacity={isStale ? 0.6 : 1}>
-            <path d={area} fill={`url(#ml-grad-${si})`} stroke="none" />
-            <path d={line} fill="none" stroke={s.color} strokeWidth={isStale ? 1.1 : 1.5} strokeDasharray={isStale ? "4 3" : undefined} style={{ filter: `drop-shadow(0 0 2px ${s.color})` }} />
+          <g key={si}>
+            {s.segments.map((seg, gi) => {
+              if (seg.length >= 2) {
+                const pts = seg.map((p) => [X(p.t), y(p.v)] as [number, number]);
+                const line = smoothPath(pts);
+                const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
+                return (
+                  <g key={gi} opacity={isStale ? 0.6 : 1}>
+                    <path d={area} fill={`url(#${gid}-${si})`} stroke="none" />
+                    <path
+                      d={line}
+                      fill="none"
+                      stroke={s.color}
+                      strokeWidth={isStale ? 1.1 : 1.5}
+                      strokeDasharray={isStale ? "4 3" : undefined}
+                      style={{ filter: `drop-shadow(0 0 2px ${s.color})` }}
+                    />
+                  </g>
+                );
+              }
+              // isolated real datum — keep it visible as a dot rather than
+              // letting a single point silently vanish.
+              const [dx, dy] = [X(seg[0].t), y(seg[0].v)];
+              return <circle key={gi} cx={dx} cy={dy} r="1.6" fill={s.color} opacity={isStale ? 0.6 : 1} />;
+            })}
             {inlineLegend ? (
-              <text x={padL + innerW + 5} y={endYs[si] + 3} fontFamily="var(--f-mono)" fontSize={fs.label} fill={s.color}>
-                {s.label} {(lastV >= 0 ? "+" : "") + lastV.toFixed(1)}%{isStale ? " ·stale" : ""}
+              <text x={padL + innerW + 5} y={labelYs[si] + 3} fontFamily="var(--f-mono)" fontSize={fs.label} fill={s.color}>
+                {s.label} {s.last == null ? "—" : (s.last >= 0 ? "+" : "") + s.last.toFixed(1) + "%"}{isStale ? " ·stale" : ""}
               </text>
             ) : null}
           </g>
         );
       })}
+
+      {/* crosshair + per-series focus dots + tooltip.
+          The rule sits at the cursor's own time rather than snapping to a
+          sample: with mixed cadences there is no single sample to snap to.
+          Each series' dot shows where ITS nearest sample actually falls, so a
+          sparse series visibly answers from a point beside the rule. The tip
+          carries the series names, which is the only labelling this chart has
+          when `labels={false}` drops the right-hand gutter. */}
+      {cursorT != null ? (
+        <g pointerEvents="none">
+          <ChartCrosshair x={X(cursorT)} y1={padT} y2={padT + innerH} />
+          {norm.map((s, si) => {
+            const p = hovered[si];
+            return p ? <circle key={si} cx={X(p.t)} cy={y(p.v)} r="2.5" fill={s.color} /> : null;
+          })}
+          <ChartTip
+            x={X(cursorT)}
+            y={padT + 6}
+            bounds={{ left: padL, right: padL + innerW }}
+            rows={[
+              { value: fmtDate(cursorT, days), color: AXIS },
+              ...norm.map((s, si) => {
+                const p = hovered[si];
+                return {
+                  label: s.label,
+                  value: p == null
+                    ? "—"
+                    : (p.v >= 0 ? "+" : "") + p.v.toFixed(1) + "%" + (s.status === "stale" ? " ·stale" : ""),
+                  color: s.color,
+                };
+              }),
+            ]}
+          />
+        </g>
+      ) : null}
     </svg>
-    {/* Below the plot on narrow widths, where competing for horizontal space is
-        what clipped it in the first place. */}
-    {labels && !inlineLegend ? <ChartLegend series={series} /> : null}
-    </>) : null}
+    ) : null}
     </div>
   );
 }
@@ -498,7 +554,7 @@ export interface AreaSeriesProps {
   xLabels?: boolean;
 }
 
-export function AreaSeries({
+function AreaSeriesImpl({
   data,
   days = 7,
   t,
@@ -512,13 +568,15 @@ export function AreaSeries({
 }: AreaSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  const [cross, setCross] = React.useState<number | null>(null);
-  const gradId = "area-grad-" + React.useId().replace(/:/g, "");
   const boxRef = React.useRef<HTMLDivElement>(null);
-  const { w: W, ready, fs } = useChartMetrics(boxRef);
+  const { w: measured, ready, fs } = useChartMetrics(boxRef);
+  const vbW = measured || VB_W;
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
+  const gradId = "area-grad-" + React.useId().replace(/:/g, "");
 
   if (!data?.length) return null;
   const n = data.length;
+  const W = vbW;
   const padT = 14;
   const dateH = xLabels ? 22 : 8;
   const innerH = height - padT - dateH - 10;
@@ -535,16 +593,6 @@ export function AreaSeries({
     yMax = hi + pad;
   }
   const yRng = yMax - yMin || 1;
-
-  // Derived gutters — see CandleChart. `yInside` matters most here: sediment
-  // renders AreaSeries at height 84, where a 55px left gutter is most of the
-  // chart.
-  const yTicks = niceTicks(yMin, yMax, tickCount(innerH, fs.tick));
-  const yInside = W < 420;
-  const padL = yInside ? 8 : Math.ceil(estTextW(Math.max(...yTicks.map((tk) => format(tk).length)), fs.tick)) + 10;
-  const padR = Math.ceil(estTextW(format(data[n - 1]).length, fs.label)) + 14;
-  const innerW = Math.max(10, W - padL - padR);
-
   const py = (v: number) => padT + innerH - ((v - yMin) / yRng) * innerH;
   const xOf = (i: number) => padL + (n <= 1 ? innerW / 2 : (i / (n - 1)) * innerW);
 
@@ -552,6 +600,13 @@ export function AreaSeries({
   const stepMs = (days * 86_400_000) / Math.max(1, n - 1);
   const tAt = (i: number) => (t && t[i] != null ? t[i] : now - (n - 1 - i) * stepMs);
 
+  // Derived, as in CandleChart. `yInside` matters most here: sediment renders
+  // AreaSeries at height 84, where a 54px left gutter is most of the chart.
+  const yTicks = niceTicks(yMin, yMax, tickCount(innerH, fs.tick));
+  const yInside = W < 420;
+  const padL = yInside ? 8 : Math.ceil(estTextW(Math.max(...yTicks.map((tk) => format(tk).length)), fs.tick)) + 10;
+  const padR = Math.ceil(estTextW(format(data[n - 1]).length, fs.label)) + 14;
+  const innerW = Math.max(10, W - padL - padR);
   const xStep = labelStep(n, innerW, fs.tick, 6);
 
   const hiIdx = data.reduce((m, v, i) => (v > data[m] ? i : m), 0);
@@ -565,26 +620,18 @@ export function AreaSeries({
   const baseY = py(yMin);
   const area = `${line} L ${pts[n - 1][0]},${baseY} L ${pts[0][0]},${baseY} Z`;
 
-  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const i = n <= 1 ? 0 : Math.round(((e.clientX - rect.left - padL) / innerW) * (n - 1));
-    setCross(i >= 0 && i < n ? i : null);
-  };
+  const cross = nearestIndex(vx, { padL, innerW, n });
   const cv = cross != null ? data[cross] : null;
-  const tipW = Math.ceil(estTextW(Math.max(12, format(cv ?? last).length + 4), fs.label)) + 16;
-  const tipH = xLabels ? fs.label * 2.6 + 6 : fs.label * 1.6 + 4;
 
   return (
     <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
     {ready ? (
     <svg
-      data-chart
+      ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
-      onPointerMove={onMove}
-      onPointerDown={onMove}
-      onPointerLeave={() => setCross(null)}
+      {...cursorHandlers}
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -605,7 +652,7 @@ export function AreaSeries({
       {xLabels ? data.map((_, i) => (i % xStep === 0 ? (
         <g key={"x" + i}>
           <line x1={xOf(i)} y1={padT + innerH} x2={xOf(i)} y2={padT + innerH + 4} stroke={AXIS} />
-          <text x={clampLabelX(xOf(i), fmtDate(tAt(i), days), fs.tick, 0, W)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(tAt(i), days)}</text>
+          <text x={xOf(i)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(tAt(i), days)}</text>
         </g>
       ) : null)) : null}
 
@@ -619,17 +666,17 @@ export function AreaSeries({
       {markers && n > 1 ? (
         <g fontFamily="var(--f-mono)" fontSize={fs.label}>
           <circle cx={xOf(hiIdx)} cy={py(data[hiIdx])} r="2" fill={color} />
-          <text x={clampLabelX(xOf(hiIdx), format(data[hiIdx]), fs.label, padL, padL + innerW)} y={py(data[hiIdx]) - 6} textAnchor="middle" fill={AXIS}>{format(data[hiIdx])}</text>
+          <text x={Math.min(Math.max(xOf(hiIdx), padL + 22), padL + innerW - 22)} y={py(data[hiIdx]) - 6} textAnchor="middle" fill={AXIS}>{format(data[hiIdx])}</text>
           <circle cx={xOf(loIdx)} cy={py(data[loIdx])} r="2" fill={color} opacity={0.65} />
-          <text x={clampLabelX(xOf(loIdx), format(data[loIdx]), fs.label, padL, padL + innerW)} y={py(data[loIdx]) + 13} textAnchor="middle" fill={AXIS}>{format(data[loIdx])}</text>
+          <text x={Math.min(Math.max(xOf(loIdx), padL + 22), padL + innerW - 22)} y={py(data[loIdx]) + 13} textAnchor="middle" fill={AXIS}>{format(data[loIdx])}</text>
         </g>
       ) : null}
 
       {/* last-value line + pill */}
       <line x1={padL} y1={py(last)} x2={padL + innerW} y2={py(last)} stroke={color} strokeWidth="0.8" strokeDasharray="1 3" opacity={0.8} />
       <g transform={`translate(${padL + innerW + 3}, ${py(last)})`}>
-        <rect x="0" y={-fs.label * 0.8} width={padR - 6} height={fs.label * 1.6} rx="2" fill={color} />
-        <text x={(padR - 6) / 2} y={fs.label * 0.36} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="#0b0a08" fontWeight={600}>{format(last)}</text>
+        <rect x="0" y="-8" width={padR - 6} height="16" rx="2" fill={color} />
+        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="#0b0a08" fontWeight={600}>{format(last)}</text>
       </g>
 
       {/* period-change badge */}
@@ -651,11 +698,16 @@ export function AreaSeries({
           <line x1={xOf(cross!)} y1={padT} x2={xOf(cross!)} y2={padT + innerH} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <line x1={padL} y1={py(cv)} x2={padL + innerW} y2={py(cv)} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <circle cx={xOf(cross!)} cy={py(cv)} r="2.5" fill={color} />
-          <g transform={`translate(${Math.max(padL, Math.min(xOf(cross!) + 8, padL + innerW - tipW))}, ${padT + 6})`}>
-            <rect x="0" y="0" width={tipW} height={tipH} rx="3" fill="var(--surface-ground)" stroke="var(--rule)" />
-            {xLabels ? <text x="8" y={fs.label * 1.15} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(tAt(cross!), days)}</text> : null}
-            <text x="8" y={xLabels ? fs.label * 2.3 : fs.label * 1.15} fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--ink-80)">{format(cv)}</text>
-          </g>
+          <ChartTip
+            x={xOf(cross!)}
+            y={padT + 6}
+            bounds={{ left: padL, right: padL + innerW }}
+            width={130}
+            height={xLabels ? 32 : 20}
+            rows={xLabels
+              ? [{ value: fmtDate(tAt(cross!), days), color: AXIS }, { value: format(cv), color: "var(--ink-80)" }]
+              : [{ value: format(cv), color: "var(--ink-80)" }]}
+          />
         </g>
       ) : null}
     </svg>
@@ -687,7 +739,7 @@ export interface BarSeriesProps {
   marker?: { index: number; label?: string };
 }
 
-export function BarSeries({
+function BarSeriesImpl({
   data,
   labels,
   endLabels,
@@ -702,12 +754,14 @@ export function BarSeries({
 }: BarSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  const [cross, setCross] = React.useState<number | null>(null);
   const boxRef = React.useRef<HTMLDivElement>(null);
-  const { w: W, ready, fs } = useChartMetrics(boxRef);
+  const { w: measured, ready, fs } = useChartMetrics(boxRef);
+  const vbW = measured || VB_W;
+  const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
 
   if (!data?.length) return null;
   const n = data.length;
+  const W = vbW;
   const padT = 14;
   const dateH = 22;
   const innerH = height - padT - dateH - 10;
@@ -717,6 +771,7 @@ export function BarSeries({
   const yMin = baseline === "zero" ? Math.min(0, lo) : lo - (hi - lo || 1) * 0.08;
   const yMax = hi * 1.05 || 1;
   const yRng = yMax - yMin || 1;
+  const py = (v: number) => padT + innerH - ((v - yMin) / yRng) * innerH;
 
   const yTicks = niceTicks(yMin, yMax, tickCount(innerH, fs.tick));
   const yInside = W < 420;
@@ -724,38 +779,37 @@ export function BarSeries({
   const padR = 16;
   const innerW = Math.max(10, W - padL - padR);
 
-  const py = (v: number) => padT + innerH - ((v - yMin) / yRng) * innerH;
-
   const slot = innerW / n;
   const bw = Math.max(1, slot - Math.max(1.5, slot * 0.2));
   const bx = (i: number) => padL + i * slot + (slot - bw) / 2;
 
   const maxIdx = data.reduce((m, v, i) => (v > data[m] ? i : m), 0);
-  // Bin labels are wider than dates, so measure the widest one we will draw.
-  const xChars = labels ? Math.max(...labels.map((l) => l.length)) : 6;
-  const xStep = labelStep(n, innerW, fs.tick, xChars);
+  const xStep = labelStep(n, innerW, fs.tick, labels ? Math.max(...labels.map((l) => l.length)) : 6);
   const now = Date.now();
   const baseY = py(Math.max(0, yMin));
 
-  const onMove = (e: React.PointerEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const i = Math.floor((e.clientX - rect.left - padL) / slot);
-    setCross(i >= 0 && i < n ? i : null);
-  };
+  // Slot-based, same shape as CandleChart (each datum owns a `slot`-wide
+  // column, bar narrower than the slot) — see chart-kit's slotIndex doc.
+  const cross = slotIndex(vx, { padL, slot, cw: bw, n });
   const cv = cross != null ? data[cross] : null;
-  const tipW = Math.ceil(estTextW(Math.max(10, format(cv ?? 0).length + 2), fs.label)) + 16;
+  /** Bucket label at hover: a "lo–hi" range when per-bar edge labels are
+   *  available (histogram bars), else the bare "#N" index as before. */
+  const crossLabel = (i: number): string => {
+    if (!labels) return `#${i + 1}`;
+    const edgeLo = labels[i];
+    const edgeHi = i + 1 < labels.length ? labels[i + 1] : undefined;
+    return edgeHi ? `${edgeLo}–${edgeHi}` : edgeLo;
+  };
 
   return (
     <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
     {ready ? (
     <svg
-      data-chart
+      ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
-      onPointerMove={onMove}
-      onPointerDown={onMove}
-      onPointerLeave={() => setCross(null)}
+      {...cursorHandlers}
     >
       {/* y gridlines + labels */}
       {yTicks.map((tk) => (
@@ -767,14 +821,14 @@ export function BarSeries({
 
       {/* x labels */}
       {labels ? data.map((_, i) => (i % xStep === 0 || i === n - 1 ? (
-        <text key={"x" + i} x={clampLabelX(bx(i) + bw / 2, labels[i], fs.tick, 0, W)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{labels[i]}</text>
+        <text key={"x" + i} x={bx(i) + bw / 2} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{labels[i]}</text>
       ) : null)) : endLabels ? (
         <>
           <text x={padL} y={height - 6} textAnchor="start" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{endLabels[0]}</text>
           <text x={padL + innerW} y={height - 6} textAnchor="end" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{endLabels[1]}</text>
         </>
       ) : t ? data.map((_, i) => (i % xStep === 0 ? (
-        <text key={"x" + i} x={clampLabelX(bx(i) + bw / 2, fmtDate(t[i] ?? now, days), fs.tick, 0, W)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(t[i] ?? now, days)}</text>
+        <text key={"x" + i} x={bx(i) + bw / 2} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(t[i] ?? now, days)}</text>
       ) : null)) : null}
 
       {/* bars */}
@@ -813,14 +867,19 @@ export function BarSeries({
         <text data-decorative x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={Math.max(fs.label * 2, Math.min(34, W * 0.09))} fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
       ) : null}
 
-      {/* hover readout */}
+      {/* crosshair + hover readout */}
       {cv != null ? (
         <g pointerEvents="none">
-          <g transform={`translate(${Math.max(padL, Math.min(bx(cross!) + bw + 6, padL + innerW - tipW))}, ${padT + 6})`}>
-            <rect x="0" y="0" width={tipW} height={fs.label * 2.6 + 6} rx="3" fill="var(--surface-ground)" stroke="var(--rule)" />
-            <text x="8" y={fs.label * 1.15} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{labels ? labels[cross!] : `#${cross! + 1}`}</text>
-            <text x="8" y={fs.label * 2.3} fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--ink-80)">{format(cv)}</text>
-          </g>
+          <ChartCrosshair x={bx(cross!) + bw / 2} y1={padT} y2={padT + innerH} />
+          <ChartTip
+            x={bx(cross!) + bw}
+            y={padT + 6}
+            bounds={{ left: padL, right: padL + innerW }}
+            rows={[
+              { value: crossLabel(cross!), color: AXIS },
+              { value: format(cv), color: "var(--ink-80)" },
+            ]}
+          />
         </g>
       ) : null}
     </svg>
@@ -828,3 +887,21 @@ export function BarSeries({
     </div>
   );
 }
+
+/* ── memo boundaries (v6.0.8) ───────────────────────────────────────
+   MarketsPage subscribes to the live feed, so every tick re-renders it — and
+   with no memo boundary anywhere, re-invoked every chart body above. That is
+   two full `candles.map()` passes rebuilding SVG trees (CandleChart), and a
+   per-point normalise + domain scan over up to 7 series × 365 points
+   (MultiLine/AreaSeries/BarSeries), to produce byte-identical output.
+
+   No dep-array surgery was needed: every data prop is a direct read of
+   `hist.<series>.data`, and useMarketHistory's effect is keyed [days,
+   retryNonce] — independent of the feed — so those arrays keep a stable
+   identity between range changes. The one prop that was NOT stable was the
+   `format` callback, passed as an inline arrow at several call sites; those
+   are hoisted to module scope so this boundary actually holds. */
+export const CandleChart = React.memo(CandleChartImpl);
+export const MultiLine = React.memo(MultiLineImpl);
+export const AreaSeries = React.memo(AreaSeriesImpl);
+export const BarSeries = React.memo(BarSeriesImpl);

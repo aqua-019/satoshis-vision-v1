@@ -15,7 +15,7 @@
 
 import * as React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AppShell } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
 import { resolveTab } from "./_education/tabs";
@@ -47,12 +47,10 @@ export function EducationPage() {
   }
 
   return (
-    <AppShell hideRail bg={{ intensity: "calm" }}>
-      <div style={{ padding: "20px 48px 80px", display: "flex", flexDirection: "column", gap: 22, maxWidth: 1180, margin: "0 auto", width: "100%" }}>
-        <Crumbs items={["xmr.irish", "v5.0", "education", active === "journey" ? "btc → xmr" : active]} status="PRIVACY IS NOT OPTIONAL" />
-        <EduTabs active={active} onChange={onChange} />
-        {content}
-      </div>
-    </AppShell>
+    <PageShell width="reading" bg={{ intensity: "calm" }}>
+      <Crumbs items={["xmr.irish", "v5.0", "education", active === "journey" ? "btc → xmr" : active]} status="PRIVACY IS NOT OPTIONAL" />
+      <EduTabs active={active} onChange={onChange} />
+      {content}
+    </PageShell>
   );
 }

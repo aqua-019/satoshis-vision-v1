@@ -139,7 +139,7 @@ export function ChamberMath({ phase, tick }: any) {
       padding: "0 28px",
     }}>
       <div style={{ width: 220, height: 320, position: "relative" }}>
-        <svg viewBox="0 0 220 320" width="220" height="320" data-chart>
+        <svg viewBox="0 0 220 320" width="100%" style={{ display: "block", maxWidth: 220 }} data-chart>
           <defs>
             <linearGradient id="chamberFrame" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%"  stopColor="rgba(255,200,120,0.5)" />

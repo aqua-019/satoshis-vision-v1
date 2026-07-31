@@ -6,11 +6,12 @@
 // at 2:00. "Difficulty tracks hashrate" without a single graph.
 //
 // Same chrome + animation idiom as the consensus/economics metaphors in
-// metaphors.tsx: ProtoArtboard {stage, panel}, useTick for motion, a local
-// usePrefersReducedMotion, and a live data-driven Stat grid.
+// metaphors.tsx: ProtoArtboard {stage, panel}, useTick for motion, the
+// shared useReducedMotion hook, and a live data-driven Stat grid.
 
 import * as React from "react";
 import { useTick } from "@/design/ArtBackground";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import { Stat } from "@/design/primitives";
 import { ProtoArtboard } from "@/design/ProtoArtboard";
 import { useChartMetrics } from "@/design/useChartMetrics";
@@ -21,21 +22,9 @@ interface ViewProps {
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
 }
 
-function usePrefersReducedMotion(): boolean {
-  const [reduce, setReduce] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setReduce(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduce;
-}
-
 function LighthouseStage({ hashrate, difficulty }: { hashrate: number; difficulty: number }) {
   const live = useTick(60);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 0 : live;
 
   const W = 1000;

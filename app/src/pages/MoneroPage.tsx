@@ -9,7 +9,7 @@
 
 import * as React from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { AppShell } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
 import { resolveTab } from "./monero/tabs";
@@ -51,13 +51,15 @@ export function MoneroPage() {
     default:           content = <OverviewTab {...tabProps} />;
   }
 
+  // Width is a property of the active tab, not of the page: Bottom Line is long-form
+  // prose so it drops to the reading tier while every other tab stays standard. The
+  // container therefore changes width on tab switch — the scrollTo(0, 0) effect above
+  // already masks that reflow, since the switch repaints from the top either way.
   return (
-    <AppShell hideRail bg={{ intensity: "calm" }}>
-      <div style={{ padding: "20px 48px 60px", display: "flex", flexDirection: "column", gap: 22, maxWidth: 1500, margin: "0 auto", width: "100%" }}>
-        <Crumbs items={["xmr.irish", "v5.0", "monero", active]} />
-        <MoneroTabs active={active} onChange={onChange} />
-        {content}
-      </div>
-    </AppShell>
+    <PageShell width={active === "bottomline" ? "reading" : "standard"} bg={{ intensity: "calm" }}>
+      <Crumbs items={["xmr.irish", "v5.0", "monero", active]} />
+      <MoneroTabs active={active} onChange={onChange} />
+      {content}
+    </PageShell>
   );
 }

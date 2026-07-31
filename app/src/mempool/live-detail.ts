@@ -8,6 +8,7 @@
 
 import * as React from "react";
 import { getJSON } from "@/data/http";
+import { isPageActive, onPageActiveChange } from "@/design/usePageActive";
 import { confOf, chainTip } from "@/mempool/conf";
 import type { MoneroLive } from "@/data/types";
 import {
@@ -97,13 +98,28 @@ function useTxRaw(txid: string, data: MoneroLive): TxRawState {
   React.useEffect(() => {
     if (!pending || !TXID_RE.test(txid)) return;
     let alive = true;
-    const id = setInterval(() => {
+    let id: ReturnType<typeof setInterval> | null = null;
+
+    const fetchOnce = () => {
       getJSON<ApiTxDetail>(`/api/xmr/tx/${txid}`).then((r) => {
         if (!alive || !r || !r.txid) return; // transient miss → keep last-good
         setState({ raw: r, status: "ready" });
       });
-    }, PENDING_POLL_MS);
-    return () => { alive = false; clearInterval(id); };
+    };
+
+    const start = () => { if (!id) id = setInterval(fetchOnce, PENDING_POLL_MS); };
+    const stop = () => { if (id) { clearInterval(id); id = null; } };
+
+    // v6.0.8: nobody is watching an unconfirmed tx in a hidden tab. Suspend
+    // the 15s poll and fetch once on return — a tx that confirmed while the
+    // tab was away must show as confirmed immediately, not up to 15s later.
+    if (isPageActive()) start();
+    const offVisibility = onPageActiveChange((active) => {
+      if (!alive) return;
+      if (active) { fetchOnce(); start(); } else stop();
+    });
+
+    return () => { alive = false; offVisibility(); stop(); };
   }, [txid, pending]);
 
   return state;

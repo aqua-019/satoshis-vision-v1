@@ -8,6 +8,40 @@
    Step 06: Feedback Loop (behavioral refinement)
    ═══════════════════════════════════════════════════════════════ */
 
+/* ── storage · hardened ────────────────────────────────────────────
+   v6.0.7. Tor Browser with storage disabled, Brave "block all cookies",
+   Firefox "block all storage" and Safari private mode all make a BARE
+   localStorage.getItem() THROW SecurityError — they do not return null.
+   assembleContext() hit one on its very first statement and took every
+   downstream feature with it: injectTokens, render, init3DCards,
+   initConstellation. Since this file loads at the end of <body> and inits on
+   DOMContentLoaded the document was already painted, so it never white-paged
+   anything — but every hardened visitor silently lost all of GenUI and got a
+   console error. That is the audience this site is for.
+
+   Nothing here throws; a hardened visitor simply reads as brand new. Mirrors
+   the idiom already used at js/price-service.js:65 and js/mempool-3.js:172. */
+const LS = {
+    get(k, dflt) {
+        try { const v = window.localStorage.getItem(k); return v === null ? dflt : v; }
+        catch (_) { return dflt; }
+    },
+    set(k, v) {
+        try { window.localStorage.setItem(k, v); return true; } catch (_) { return false; }
+    },
+    /* Guards twice over: storage throwing AND corrupt JSON. The old bare
+       `JSON.parse(getItem(...) || '{}')` sites could fail either way. */
+    getJSON(k, dflt) {
+        try {
+            const p = JSON.parse(LS.get(k, 'null'));
+            return p && typeof p === 'object' ? p : dflt;
+        } catch (_) { return dflt; }
+    },
+    setJSON(k, v) {
+        try { return LS.set(k, JSON.stringify(v)); } catch (_) { return false; }
+    }
+};
+
 const GenUI = {
     VERSION: '3.3',
     ctx: {},
@@ -63,16 +97,16 @@ const GenUI = {
         else if (hour >= 22 || hour < 6) timeOfDay = 'night';
 
         // Visit history from localStorage
-        const visitCount = parseInt(localStorage.getItem('xmr_visits') || '0') + 1;
-        localStorage.setItem('xmr_visits', visitCount.toString());
-        const lastPage = localStorage.getItem('xmr_lastpage') || '';
-        const lastVisit = localStorage.getItem('xmr_lastvisit') || '';
-        const lastTrackedTx = localStorage.getItem('xmr_lasttx') || '';
-        localStorage.setItem('xmr_lastvisit', new Date().toISOString());
-        localStorage.setItem('xmr_lastpage', window.location.pathname);
+        const visitCount = parseInt(LS.get('xmr_visits', '0'), 10) + 1;
+        LS.set('xmr_visits', visitCount.toString());
+        const lastPage = LS.get('xmr_lastpage', '') || '';
+        const lastVisit = LS.get('xmr_lastvisit', '') || '';
+        const lastTrackedTx = LS.get('xmr_lasttx', '') || '';
+        LS.set('xmr_lastvisit', new Date().toISOString());
+        LS.set('xmr_lastpage', window.location.pathname);
 
         // Scroll velocity tracking
-        let scrollDepths = JSON.parse(localStorage.getItem('xmr_scrolldepths') || '{}');
+        let scrollDepths = LS.getJSON('xmr_scrolldepths', {});
 
         return {
             referrerType, utmSource, utmMedium, txParam,
@@ -379,9 +413,9 @@ const GenUI = {
             const depth = Math.round((window.scrollY / (document.body.scrollHeight - window.innerHeight)) * 100);
             if (depth > maxScrollDepth) {
                 maxScrollDepth = depth;
-                let depths = JSON.parse(localStorage.getItem('xmr_scrolldepths') || '{}');
+                let depths = LS.getJSON('xmr_scrolldepths', {});
                 depths[ctx.page] = maxScrollDepth;
-                localStorage.setItem('xmr_scrolldepths', JSON.stringify(depths));
+                LS.setJSON('xmr_scrolldepths', depths);
             }
         }, { passive: true });
 
@@ -398,13 +432,13 @@ const GenUI = {
                         const time = Date.now() - dwellTimes[id];
                         // If user dwelt >30s on education section, decrease fluency for next visit
                         if (id === 'pillars' && time > 30000) {
-                            const currentFluency = parseInt(localStorage.getItem('xmr_fluency_adj') || '0');
-                            localStorage.setItem('xmr_fluency_adj', Math.max(currentFluency - 5, -20).toString());
+                            const currentFluency = parseInt(LS.get('xmr_fluency_adj', '0'), 10) || 0;
+                            LS.set('xmr_fluency_adj', Math.max(currentFluency - 5, -20).toString());
                         }
                         // If user quickly passes education, increase fluency
                         if (id === 'pillars' && time < 3000) {
-                            const currentFluency = parseInt(localStorage.getItem('xmr_fluency_adj') || '0');
-                            localStorage.setItem('xmr_fluency_adj', Math.min(currentFluency + 5, 20).toString());
+                            const currentFluency = parseInt(LS.get('xmr_fluency_adj', '0'), 10) || 0;
+                            LS.set('xmr_fluency_adj', Math.min(currentFluency + 5, 20).toString());
                         }
                         delete dwellTimes[id];
                     }
@@ -416,10 +450,10 @@ const GenUI = {
         // Track hover on metric cells (for network page reordering)
         document.querySelectorAll('[data-metric-id]').forEach(cell => {
             cell.addEventListener('mouseenter', () => {
-                let hovered = JSON.parse(localStorage.getItem('xmr_metric_hovers') || '{}');
+                let hovered = LS.getJSON('xmr_metric_hovers', {});
                 const id = cell.dataset.metricId;
                 hovered[id] = (hovered[id] || 0) + 1;
-                localStorage.setItem('xmr_metric_hovers', JSON.stringify(hovered));
+                LS.setJSON('xmr_metric_hovers', hovered);
             });
         });
     },
@@ -490,7 +524,7 @@ const GenUI = {
         this._initialized = true;
 
         // Apply fluency adjustment from feedback loop
-        const fluencyAdj = parseInt(localStorage.getItem('xmr_fluency_adj') || '0');
+        const fluencyAdj = parseInt(LS.get('xmr_fluency_adj', '0'), 10) || 0;
 
         const intent = this.detectIntent();
         const ctx = this.assembleContext(intent);
@@ -517,5 +551,15 @@ const GenUI = {
     }
 };
 
-// Auto-init on DOM ready
-document.addEventListener('DOMContentLoaded', () => GenUI.init());
+// Auto-init on DOM ready.
+// Belt and braces on top of LS: GenUI is progressive enhancement over content
+// that has already rendered, so nothing it does is worth taking the page down
+// for. Any future throw in here degrades to a warning instead of aborting the
+// rest of the DOMContentLoaded handlers on the page.
+document.addEventListener('DOMContentLoaded', () => {
+    try {
+        GenUI.init();
+    } catch (e) {
+        console.warn('[GenUI] init failed, page continues without it:', e);
+    }
+});

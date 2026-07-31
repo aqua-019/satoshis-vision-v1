@@ -6,7 +6,7 @@
  * + pool attribution + remote-node / chain-meta readouts + block-weight
  * median-vs-limit bar.
  *
- * Standalone page: owns its <AppShell> chrome. Every number on this page
+ * Standalone page: owns its <PageShell> chrome. Every number on this page
  * comes from `useMoneroLive()` — node RPC via the public node cascade plus
  * CoinGecko for market data elsewhere. Chain values render "—" until the
  * first snapshot lands (`data.ready`); if polling fails after a healthy
@@ -16,12 +16,25 @@
 
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { AppShell, PageHeader } from "@/layout/AppShell";
+import { PageHeader } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { Stat, PanelFrame, Crumbs, Pill, Provenance, DataLegend } from "@/design/primitives";
 import { AreaSeries, BarSeries } from "./markets/charts";
 import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
+import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
+
+/* Chart formatters are hoisted to module scope so their identity is stable
+   across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
+   pages/markets/charts.tsx) and an inline `format={(v) => …}` arrow allocates
+   a fresh function every render, which defeats the boundary entirely. None of
+   these close over anything, so module scope is where they belonged anyway. */
+const fmtGiga = (v: number): string => (v / 1e9).toFixed(2);
+const fmtGigaSuffix = (v: number): string => (v / 1e9).toFixed(2) + "G";
+const fmtRound = (v: number): string => String(Math.round(v));
+const fmtPct = (v: number): string => (v * 100).toFixed(0) + "%";
+
 
 /** Median of a numeric series (ignores non-finite). */
 function median(nums: number[]): number {
@@ -36,59 +49,6 @@ function fmtPcnB(v: number): string {
   if (v >= 1e6) return (v / 1e6).toFixed(v >= 1e7 ? 0 : 1) + "M";
   if (v >= 1e3) return (v / 1e3).toFixed(v >= 1e4 ? 0 : 1) + "k";
   return String(Math.round(v));
-}
-
-/** Compact seconds label for interval bin edges (e.g. 45s, 2.5m, 12m). */
-function fmtSecs(s: number): string {
-  if (s >= 120) return (s / 60).toFixed(s >= 600 ? 0 : 1) + "m";
-  return Math.round(s) + "s";
-}
-
-/** Bin real per-tx fee rates (Tx.perB, piconero/B) into a histogram with real
- *  bin-edge labels. Log-spaced when the range spans >10×, else linear. Returns
- *  empty arrays when the mempool sample is too small to bin honestly. */
-function feeRateHistogram(perB: number[], bins = 10): { counts: number[]; labels: string[] } {
-  const vals = perB.filter((v) => Number.isFinite(v) && v > 0).sort((a, b) => a - b);
-  if (vals.length < 4) return { counts: [], labels: [] };
-  const min = vals[0], max = vals[vals.length - 1];
-  if (max <= min) return { counts: [vals.length], labels: [fmtPcnB(min)] };
-  const useLog = max / Math.max(1, min) > 10;
-  const edges: number[] = [];
-  for (let i = 0; i <= bins; i++) {
-    const f = i / bins;
-    edges.push(useLog ? min * Math.pow(max / min, f) : min + (max - min) * f);
-  }
-  const counts = new Array(bins).fill(0);
-  for (const v of vals) {
-    let b = bins - 1;
-    for (let i = 0; i < bins; i++) { if (v < edges[i + 1]) { b = i; break; } }
-    counts[b]++;
-  }
-  return { counts, labels: counts.map((_, i) => fmtPcnB(edges[i])) };
-}
-
-/** Bin real block intervals (seconds) into a linear histogram with real
- *  second-valued bin-edge labels, plus the median bin index for the on-chart
- *  marker. Returns empty arrays when the sample is too small to bin honestly. */
-function intervalHistogram(intervals: number[], bins = 12): {
-  counts: number[]; labels: string[]; medBin: number; med: number; mean: number;
-} {
-  if (intervals.length < 4) return { counts: [], labels: [], medBin: -1, med: 0, mean: 0 };
-  const sorted = [...intervals].sort((a, b) => a - b);
-  const lo = sorted[0];
-  const span = Math.max(1, sorted[sorted.length - 1] - lo);
-  const counts = new Array(bins).fill(0);
-  const binOf = (v: number) => Math.min(bins - 1, Math.max(0, Math.floor(((v - lo) / span) * bins)));
-  for (const v of intervals) counts[binOf(v)]++;
-  const med = median(intervals);
-  const mean = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-  return {
-    counts,
-    labels: counts.map((_, i) => fmtSecs(lo + (i / bins) * span)),
-    medBin: binOf(med),
-    med,
-    mean,
-  };
 }
 
 /** Accumulate a session rolling buffer: append `sample` whenever `key` changes,
@@ -177,7 +137,7 @@ export function NetworkPage() {
   const weightKnown = ready && data.blockWeightMedian > 0 && data.blockWeightLimit > 0;
 
   return (
-    <AppShell bg={{ intensity: "calm" }}>
+    <PageShell width="standard" rail bg={{ intensity: "calm" }}>
       <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
       <DataLegend sources={["node"]} />
       <PageHeader
@@ -205,12 +165,12 @@ export function NetworkPage() {
       </section>
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
           {hashSeries.length ? (
             <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
               baseline="auto" xLabels={false} stale={data.stale}
-              format={(v) => (v / 1e9).toFixed(2)} />
+              format={fmtGiga} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
           )}
@@ -219,19 +179,19 @@ export function NetworkPage() {
           {diffSeries.length ? (
             <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
               baseline="auto" xLabels={false} stale={data.stale}
-              format={(v) => (v / 1e9).toFixed(2) + "G"} />
+              format={fmtGigaSuffix} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
         </PanelFrame>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
           {mempoolSeries.length ? (
             <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
               baseline="zero" xLabels={false} stale={data.stale}
-              format={(v) => String(Math.round(v))} />
+              format={fmtRound} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
           )}
@@ -240,7 +200,7 @@ export function NetworkPage() {
           {fullness.length ? (
             <BarSeries data={fullness} height={180} color="var(--tk-accent)"
               baseline="zero" stale={data.stale} endLabels={["older", "newer"]}
-              format={(v) => (v * 100).toFixed(0) + "%"} />
+              format={fmtPct} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
@@ -248,12 +208,12 @@ export function NetworkPage() {
       </section>
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
+      <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
         <PanelFrame title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
           {ivHist.counts.length ? (
             <>
               <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
-                baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
+                baseline="zero" stale={data.stale} format={fmtRound}
                 marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
               <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
                 μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
@@ -268,11 +228,11 @@ export function NetworkPage() {
         <PanelFrame title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
             <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
-              baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))}
+              baseline="zero" stale={data.stale} format={fmtRound}
               marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
           ) : (
             <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
-              baseline="zero" stale={data.stale} format={(v) => String(Math.round(v))} />
+              baseline="zero" stale={data.stale} format={fmtRound} />
           )}
           <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
             {data.mempool.length
@@ -283,7 +243,7 @@ export function NetworkPage() {
       </section>
 
       {/* Pool attribution + Remote node */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title="Pool attribution" right={<span className="dim">unattributed</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             {/* lead with the real signal as a compact stat, not a paragraph */}
@@ -353,7 +313,7 @@ export function NetworkPage() {
       </PanelFrame>
 
       {/* Chain meta + Block weight */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title="Chain meta" right={<Provenance source="node" fresh="live" detail="node reported" />}>
           <KVRows rows={[
             ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
@@ -408,6 +368,6 @@ export function NetworkPage() {
         </div>
         </div>
       </PanelFrame>
-    </AppShell>
+    </PageShell>
   );
 }

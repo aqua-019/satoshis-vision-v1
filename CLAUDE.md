@@ -112,10 +112,98 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 ## Session Notes
 
+- **2026-07-31**: v6.0.8 "FRAMERATE & PERFORMANCE, MOBILE-FIRST" (app/): the app
+  had no idea what device it was on. 43 animated compositor layers (8 plates up
+  to 92vmax, 30 orbs, 2 dust, a 320%-translating sweep, a 170vmax conic ribbon)
+  plus a rAF canvas rendered identically on a 4K desktop and a phone, and 21
+  `useTick` setIntervals (down to 50ms) plus every network poll kept running in
+  hidden tabs. New `design/deviceTier.ts` resolves `high|mid|low` once per load
+  from hardwareConcurrency / deviceMemory / viewport area / coarse-pointer, with
+  `prefers-reduced-motion` and `saveData` forcing `low` and a `?tier=` override
+  on top (the gate needs a deterministic selector; Tor lands low/mid on its own
+  spoofing). It is NOT a third ⌘ DESIGN knob — `tier` rides on `VisualState`
+  read-only, is never persisted, and has no radio group; VisualContext's
+  "two knobs" note stands. `data-tier` is stamped pre-paint by index.html's
+  inline script (a smaller, deliberately more pessimistic heuristic) and
+  re-stamped by VisualProvider, so a phone never composites 43 layers during
+  the bundle download. New `design/usePageActive.ts` (visibility +
+  IntersectionObserver, including a non-hook subscription so rAF drivers don't
+  re-render to learn they should stop) and `design/useAnimationClock.ts` (one
+  shared rAF fanned out per-subscriber at tier-scaled fps; `useAnimationSeconds`
+  is the variant to prefer, because a frame counter changes meaning per tier
+  while seconds don't). ParticleField gained a `dt` — it had none, so drift
+  speed literally tracked refresh rate — plus a 50ms clamp, tier-aware DPR, and
+  a pre-baked glow sprite replacing a per-particle `shadowBlur`. Measured on a
+  390×844 / 6× CPU / Slow-4G emulation (which resolves to `low`): /mempool
+  15.7 → 60.1 fps, /markets 13.7 → 46.4, / 14.5 → 50.0; long-task time down
+  84–93%; background rAF 44/51/40 → **0/0/0**; entry chunk 560.72 → 45.67 kB
+  (164.07 → 15.97 kB gzip, 58% less for first paint including the new vendor
+  chunk). Breakpoints: the audit's "no mobile layout" claim was wrong —
+  styles.css:849+ is a working 224-line phone layer under a documented
+  single-breakpoint invariant. The real gap was 769–1199px (a 260px rail eating
+  a third of a tablet), so that band plus a ≤479px band were ADDED rather than
+  the existing layer refactored. New gate `app/verify-perf.mjs` (22 assertions:
+  pre-hydration tier stamp, per-tier layer census, background quiescence,
+  8 routes × 8 widths overflow, orientation flip, reduced-motion, timer census,
+  static source checks). Before/after in `app/PERF-BASELINE.md`, including an
+  explicit list of what real-device checks remain for a human.
+  Corrections to the prompt's audit, verified against source: `useMemCanvas`
+  does not exist in this repo; `reactor.tsx` has zero timers; orbs were already
+  seeded via `.map()`, not 30 hardcoded spans; charts were already responsive
+  (`viewBox` + `width="100%"`); React was already the production npm build, not
+  a CDN dev bundle; fonts were already self-hosted, subset and `swap` (only
+  preload was missing).
+
 <!--
   Use this section to leave notes for future sessions.
   Format: **YYYY-MM-DD**: Note content
 -->
+- **2026-07-31**: v6.0.6 "TIERED POLLING" (app/ + api/). Answers "do we need our own
+  node for the Network page?" — **no**, except peer data. The starting premise was partly
+  stale: the honesty work (peer panel paused not zeroed, provenance badges, a real
+  "% unattributed" pool signal, no `genTx`/`randHex` outside `src/protocols/**`) already
+  shipped in v5.0.14/v5.0.22, and `app/legacy/shared.jsx` — the simulated `useMoneroLive`
+  with `PEERS`/`genTx` — is dead code outside the build. The genuine gap was the polling
+  architecture: ONE `setInterval` at 2.5s fired a `Promise.all` over five endpoints, two
+  of them uncacheable (`POST /api/monero`; `/api/xmr/network` under a blanket `no-store`),
+  so every visitor drove ~24 uncached node-cascade round trips/min while the 120s block
+  target meant height was re-fetched ~48× per block.
+  Now three tiers via a new `app/src/data/usePolling.ts`: **fast 3s** (mempool + fees),
+  **chain 15s** (the already-built-but-never-wired `/api/xmr/tip` watch, pulling
+  `network`+`blocks` only when the tip moves), **market 60s** (CoinGecko). Polling stops
+  on a hidden tab and resumes with an immediate catch-up; failures back off to a 10s cap
+  — via `Math.max(base, …)` so the 60s market tier can never "back off" into polling a
+  rate-limited upstream *faster*. `POST /api/monero` is dropped from the React client
+  (`api/monero.js` stays — the legacy static site's `js/monero-network.js` still uses it).
+  Three traps handled: `hashSeries` now advances only under a `pushHash` flag set by the
+  chain tier (a 3s push would fake sparkline resolution); `/api/xmr/tip` returns
+  `height - 1` (tip block) vs `/api/xmr/network`'s raw block *count*, so tip is used
+  **only as a change detector** — folding it into `height` would sit one block behind
+  every explorer; peer zeros are no longer mapped or published at all.
+  Server: `api/_nodes.js` gains warm-Lambda cold-marking (exponential 30s→5min cooldown,
+  cold nodes **reordered not dropped**, so an all-cold false positive can't blank the
+  page); `api/xmr.js` resolves the cascade per-request (was frozen at module scope),
+  marks transport failures down but NOT RPC-level errors (a node answering "Method not
+  found" is alive), and bounds a cascade walk at 12s — 6 nodes × 6s exceeded the 30s
+  `maxDuration`. One `CACHE_CONTROL` table replaces the blanket `no-store`, with
+  `s-maxage` matched to each tier so the CDN collapses all visitors into ~1 upstream
+  request per interval. Removed every invented fallback (`'0.18.3.4'` daemon version —
+  rendered as "Daemon" on /network — the `[20000,80000,320000,4000000]` fee table,
+  `|| 300000` block weights, `|| 3200000` emission height, `|| 'mainnet'` nettype);
+  these now report null and the client carries last-good.
+  New gates: `app/verify-tiers.mjs` (pure backoff maths + static assertions that tier
+  cadence and proxy `s-maxage` can't drift apart), `api/verify-nodehealth.mjs`, and
+  `app/verify-tiers-dom.mjs` (Playwright, counts requests per URL: cadence ratio, tip
+  gating, visibility pause/resume, degrade-to-last-good). `verify-glide.mjs` needed its
+  `/api/xmr/tip` fixture driven by the block head, else its blocks-only discriminator
+  could never trigger a re-pull; the DOM gates compress tiers via the documented
+  `window.__XMR_TIER_MS__` override. CI now runs on PRs to `main` (it only ran on
+  `v5-migration`, so PRs to main had NO CI) and executes the 8 offline gates.
+  **Not verifiable in-sandbox** (egress to Monero nodes and to xmr.irish is blocked —
+  the preview proxy returns 403): height-vs-explorer, hashrate == difficulty/120, live
+  mempool movement, and the ~100-vs-300 upstream request count. Check those on a deploy
+  preview. `verify-v510.mjs` does zero route mocking so it cannot pass here either —
+  pre-existing environmental limit, not a regression.
 - **2026-07-30**: v6.0.2 "THREE-LAYER VISUAL SYSTEM" (app/): styling split into
   three CSS layers, imported from main.tsx in this load-bearing order — base
   styles.css, then L3 `styles-ambient.css` (aurora/dust/grain background,

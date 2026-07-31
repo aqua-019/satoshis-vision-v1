@@ -6,6 +6,8 @@
 import * as React from "react";
 import { PageHeader } from "@/layout/AppShell";
 import { Card } from "@/design/primitives";
+import { AXIS, ChartCrosshair, ChartTip, GRID, nearestIndex, useSvgCursor, type ChartTipRow } from "@/design/chart-kit";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import { useChartMetrics } from "@/design/useChartMetrics";
 import type { MoneroTabProps } from "./tabs";
 
@@ -23,6 +25,42 @@ const PRIMITIVES = [
   { k: "FCMP++ (Q3 2026)",  q: "How big is the crowd?",   c: "var(--g-50)",
     b: "Full-chain Membership Proofs replace the 16-member ring with a proof that the real spender is somewhere in the entire UTXO set — currently 150M+ outputs. The anonymity multiplier goes from 16× to >10,000,000×." },
 ] as const;
+
+// Monero targets one block every 120s. Averaging a 365-day year:
+// 365 × 24h × 60m × 60s ÷ 120s/block ≈ 262,800 blocks/year. Used below only to
+// give the hovered year an *approximate* block height — the real chain has
+// jitter block-to-block, so this is a reader's landmark, not a chain query.
+const BLOCKS_PER_YEAR = 262_800;
+
+function fmtXMR(v: number): string {
+  return v.toLocaleString("en-US", { maximumFractionDigits: 0 });
+}
+
+// Small "nice round number" tick generator — mirrors the algorithm in
+// pages/markets/charts.tsx (niceNum/niceTicks), which isn't exported for
+// reuse. Kept local so this axis follows the same visual idiom.
+function niceTicks(min: number, max: number, count = 5): number[] {
+  if (!isFinite(min) || !isFinite(max) || min === max) return [min];
+  const niceNum = (range: number, round: boolean): number => {
+    const r = range || 1;
+    const exp = Math.floor(Math.log10(r));
+    const f = r / Math.pow(10, exp);
+    const nf = round ? (f < 1.5 ? 1 : f < 3 ? 2 : f < 7 ? 5 : 10) : (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10);
+    return nf * Math.pow(10, exp);
+  };
+  const step = niceNum(niceNum(max - min, false) / Math.max(1, count - 1), true);
+  const lo = Math.floor(min / step) * step;
+  const hi = Math.ceil(max / step) * step;
+  const out: number[] = [];
+  for (let v = lo; v <= hi + step * 0.5; v += step) out.push(Number(v.toFixed(10)));
+  return out;
+}
+
+function fmtSupplyTick(v: number): string {
+  if (v === 0) return "0";
+  const m = v / 1_000_000;
+  return (Number.isInteger(m) ? m.toFixed(0) : m.toFixed(1)) + "M";
+}
 
 function EmissionCurve() {
   const W = 900, H = 220;
@@ -50,29 +88,86 @@ function EmissionCurve() {
   const yOfE = (v: number): number => padT + innerH - (Math.log10(v + 1) / Math.log10(maxEmit + 1)) * innerH;
   const supplyPath = "M" + pts.map((p, i) => `${xOf(i)},${yOfS(p.supply)}`).join(" L ");
   const emitPath = "M" + pts.map((p, i) => `${xOf(i)},${yOfE(p.emit)}`).join(" L ");
-  const ref = React.useRef<HTMLDivElement>(null);
-  const { u, fs, minWidth, w } = useChartMetrics(ref, { vbWidth: W });
-  // This tab happens to sit under an ancestor `.main` too, which pins every
-  // descendant's min-width to 0 (!important) for its OWN unrelated reason —
-  // stronger than the un-important `.main .chart-box > svg` rule this hook
-  // relies on elsewhere, so min-width never actually reaches the DOM here.
-  // Sidestepping it entirely: give the svg an explicit pixel WIDTH (a
-  // property that blanket rule never touches) instead of width:100% +
-  // min-width, floored at `minWidth` so it still overflows into a pan
-  // instead of being squeezed under the type floor.
-  const svgW = Math.max(minWidth, w || minWidth);
+  const supplyTicks = niceTicks(0, maxSupply, 5);
+
+  const reduced = useReducedMotion();
+  const [fade, setFade] = React.useState(reduced ? 1 : 0);
+  React.useEffect(() => {
+    if (reduced) { setFade(1); return; }
+    const id = requestAnimationFrame(() => setFade(1));
+    return () => cancelAnimationFrame(id);
+  }, [reduced]);
+
+  // v6.0.10 §2 — this is a hand-placed artboard (W-unit coordinates), so type
+  // is inflated by u() to survive the viewBox downscale rather than the whole
+  // thing being re-derived. Past the k cap it pans instead; see useChartMetrics.
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  const { u, fs, minWidth, w: measured } = useChartMetrics(boxRef, { vbWidth: W });
+  // This tab sits under `.main`, which pins every descendant's min-width to 0
+  // (!important) for its own unrelated reason — stronger than the un-important
+  // `.main .chart-box > svg` rule the pan floor relies on elsewhere, so
+  // min-width never reaches the DOM here. Sidestep it with an explicit pixel
+  // WIDTH, a property that blanket rule never touches, floored at `minWidth`
+  // so the curve overflows into a pan instead of being squeezed under the
+  // 12px type floor.
+  const svgW = Math.max(minWidth, measured || minWidth);
+  const [ref, vx, handlers] = useSvgCursor(W);
+  const hoverI = nearestIndex(vx, { padL, innerW, n: years });
+  const hp = hoverI != null ? pts[hoverI] : null;
+  const isTail = hp ? hp.y >= 8 : false;
+
+  const tipRows: ChartTipRow[] = hp
+    ? [
+        { label: "YEAR", value: String(2014 + hp.y) },
+        { label: "BLOCK ≈", value: fmtXMR(Math.round(hp.y * BLOCKS_PER_YEAR)) },
+        { label: "SUPPLY", value: fmtXMR(hp.supply) + " XMR", color: "var(--tk-accent)" },
+        {
+          label: isTail ? "TAIL EMIT" : "EMIT (log)",
+          value: fmtXMR(hp.emit) + (isTail ? " XMR/yr · flat 0.6/block tail" : " XMR/yr · decaying"),
+          color: isTail ? "var(--p-50)" : undefined,
+        },
+      ]
+    : [];
+
   return (
-    <div ref={ref} className="chart-box" style={{ width: "100%", overflowX: "auto", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
-    <svg viewBox={`0 0 ${W} ${H}`} width={svgW} style={{ display: "block", maxWidth: "none" }} data-diagram>
+    <div ref={boxRef} className="chart-box" style={{ width: "100%", overflowX: "auto", overscrollBehaviorX: "contain", WebkitOverflowScrolling: "touch", ["--chart-min" as string]: `${minWidth}px` } as React.CSSProperties}>
+    <svg
+      ref={ref}
+      data-diagram
+      viewBox={`0 0 ${W} ${H}`}
+      width={svgW}
+      style={{ display: "block", maxWidth: "none", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      {...handlers}
+    >
+      {/* supply gridlines + y ticks */}
+      {supplyTicks.map((t) => (
+        <g key={"gy" + t}>
+          <line x1={padL} y1={yOfS(t)} x2={padL + innerW} y2={yOfS(t)} stroke={GRID} strokeDasharray="2 4" />
+          <text x={padL - 6} y={yOfS(t) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill={AXIS}>{fmtSupplyTick(t)}</text>
+        </g>
+      ))}
+
       <line x1={xOf(8)} y1={padT} x2={xOf(8)} y2={padT + innerH} stroke="var(--ink-20)" strokeDasharray="2 3" />
-      <text x={xOf(8) + 4} y={padT + 34} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.12em">TAIL BEGINS · 2022</text>
+      <text x={xOf(8) + 4} y={padT + 10} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.12em">TAIL BEGINS · 2022</text>
       <path d={emitPath} fill="none" stroke="var(--p-50)" strokeWidth="1.4" />
       <path d={supplyPath} fill="none" stroke="var(--tk-accent)" strokeWidth="1.6" style={{ filter: "drop-shadow(0 0 3px var(--tk-accent))" }} />
       <text x={padL} y={padT + 10} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--tk-accent)" letterSpacing="0.1em">SUPPLY (linear, asymptotic ~22M)</text>
-      <text x={W - padR} y={padT + 10} textAnchor="end" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--p-50)" letterSpacing="0.1em">YEARLY EMISSION (log)</text>
+      <text x={padL + 280} y={padT + 10} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--p-50)" letterSpacing="0.1em">YEARLY EMISSION (log)</text>
       <text x={padL} y={H - 12} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2014</text>
       <text x={xOf(50)} y={H - 12} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2064</text>
-      <text x={xOf(99)} y={H - 12} textAnchor="end" fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2114</text>
+      <text x={xOf(99)} y={H - 12} fontFamily="var(--f-mono)" fontSize={u(fs.tick)} fill="var(--ink-40)" letterSpacing="0.18em">2114</text>
+
+      {/* hover: crosshair + focus dots on both curves + tooltip */}
+      {hp && hoverI != null ? (
+        <>
+          <ChartCrosshair x={xOf(hoverI)} y1={padT} y2={padT + innerH} />
+          <g pointerEvents="none">
+            <circle cx={xOf(hoverI)} cy={yOfS(hp.supply)} r={3} fill="var(--tk-accent)" />
+            <circle cx={xOf(hoverI)} cy={yOfE(hp.emit)} r={3} fill="var(--p-50)" />
+          </g>
+          <ChartTip x={xOf(hoverI)} bounds={{ left: padL, right: padL + innerW }} rows={tipRows} />
+        </>
+      ) : null}
     </svg>
     </div>
   );

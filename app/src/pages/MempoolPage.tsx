@@ -1,18 +1,20 @@
 /**
  * pages/MempoolPage.tsx — flagship surface with 5 switchable views.
  *
- * The PAGE owns the chrome: <AppShell> renders NavTop + the left NetRail
+ * The PAGE owns the chrome: <PageShell> renders NavTop + the left NetRail
  * telemetry rail + Footer, and we render the breadcrumb + a floating view
  * switcher over the content. Each view renders ONLY its content (a single
  * scroll container), so no ancestor overflow clips the view's overlays.
  *
- * `fluid` makes AppShell's <main> full-bleed (padding:0, non-scrolling) while
- * keeping the NetRail; the active view supplies its own scroll region.
+ * `width="fluid"` renders no centred container and makes <main> full-bleed
+ * (padding:0, non-scrolling); the active view supplies its own scroll region.
+ * `rail` is one of only three pages that keep the NetRail (with /markets and
+ * /network) — mempool is the telemetry surface the rail exists for.
  */
 
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
-import { AppShell } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { Crumbs, DataLegend } from "@/design/primitives";
 import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
@@ -72,7 +74,7 @@ export function MempoolPage() {
   }, [open]);
 
   return (
-    <AppShell fluid bg={{ intensity: "calm" }}>
+    <PageShell width="fluid" rail bg={{ intensity: "calm" }}>
       <div className="mp-shell">
         {/* breadcrumb — page chrome; heartbeat surfaces per-second feed liveness */}
         <div style={{ padding: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -109,7 +111,7 @@ export function MempoolPage() {
             Rendered before the view so position:fixed (desktop) is out of flow
             and position:static (mobile) lands it inline under the breadcrumb. */}
         <div className="mp-switcher" ref={switcherRef}>
-          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · 6 views</div>
+          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · {MEMPOOL_VIEWS.length} views</div>
           <button
             type="button"
             className="mp-switcher__trigger"
@@ -154,18 +156,40 @@ export function MempoolPage() {
         {/* active view fills the remaining height and scrolls internally. Fit-enabled
             views (reactor/bridge/sediment/constellation) load scaled to the canvas
             width via <FitView>; classic/terminal keep their natural layout. */}
-        <div className="mp-canvas-scroll" ref={panRef}>
-          {meta.fit ? (
-            <FitView scrollRef={panRef} mode={zoom}>
-              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-            </FitView>
-          ) : (
-            <div className="mp-view">
-              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-            </div>
-          )}
+        <div className={"mp-canvas-scroll" + (meta.reflow ? " mp-canvas-scroll--reflow" : "")} ref={panRef}>
+          {/* v6.0.8: the six view engines are React.lazy (views/index.tsx), so
+              only the active one's chunk is fetched.
+
+              The boundary sits OUTSIDE <FitView> deliberately. FitView measures
+              its child through a ResizeObserver to compute the fit scale; if the
+              fallback rendered *inside* it, the first measurement would be of the
+              placeholder and the view would mount at the wrong scale. Keeping
+              FitView unmounted until the chunk resolves means its first measure is
+              always of the real content. */}
+          <React.Suspense
+            fallback={
+              // `minHeight` is load-bearing, not cosmetic. A bare padded <div>
+              // is far shorter than the view that replaces it, so the swap
+              // pushed everything below it down and cost ~0.07 CLS — measured,
+              // not theoretical. Reserving roughly the view's height keeps the
+              // shift inside the noise.
+              <div className="mono dim" style={{ padding: 40, minHeight: "70vh" }}>
+                loading {meta.label.toLowerCase()}…
+              </div>
+            }
+          >
+            {meta.fit ? (
+              <FitView scrollRef={panRef} mode={zoom}>
+                <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+              </FitView>
+            ) : (
+              <div className={"mp-view" + (meta.reflow ? " mp-view--reflow" : "")}>
+                <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+              </div>
+            )}
+          </React.Suspense>
         </div>
       </div>
-    </AppShell>
+    </PageShell>
   );
 }
