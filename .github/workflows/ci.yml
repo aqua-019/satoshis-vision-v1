@@ -89,8 +89,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Source assertions only — no browser, no build. Fast enough that it is
-      # also what gates auto-merge (see auto-merge.yml).
+      # Source assertions only — no browser, no build, ~30s.
       - name: Static gates
         run: npm run verify:static
 
