@@ -2,6 +2,18 @@
 ## Executive Index + Global Context for Claude Code
 ## Last updated: April 2026
 
+> ⚠️ **HISTORICAL — superseded as of v6.1.0 (July 2026).**
+> This document describes the v4 static site: 22 `.html` pages at the repo root
+> with `js/`, `css/` and `nav.js`. **All of it was deleted in v6.1.0.** It had
+> been unreachable since the SPA migration — `vercel.json` publishes `app/dist`,
+> which those files were never part of.
+>
+> The front-end is now the React SPA in `app/`. Its routes live in
+> `app/scripts/routes.mjs`; deployment is Vercel only (`netlify.toml` is gone).
+> For current architecture and conventions read `CLAUDE.md` and `README.md`.
+> Kept as a record of the v4 design decisions and sitewide rules, several of
+> which still hold (one origin, self-hosted fonts, no fabricated data).
+
 ---
 
 ## REPO & DEPLOYMENT

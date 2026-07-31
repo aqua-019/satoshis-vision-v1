@@ -6,7 +6,7 @@
   "description": "xmr.irish v5.0 \u2014 portable Vite + React + TypeScript skeleton, designed to slot into any host runtime.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && npm run build:ssr && node scripts/prerender.mjs",
+    "build": "tsc --noEmit && vite build && npm run build:ssr && node scripts/prerender.mjs && node scripts/gen-sitemap.mjs",
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
     "typecheck": "tsc --noEmit",

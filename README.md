@@ -1,99 +1,113 @@
-# Satoshi's Vision Archive
+# Satoshi's Vision Archive — xmr.irish
 
-An educational website exploring the evolution from Bitcoin to Monero, documenting Satoshi Nakamoto's writings on privacy and the divergent paths of transparent vs. private cryptocurrency.
+An educational site on Bitcoin's surveillance trajectory and Monero's privacy
+architecture, rendered from live chain and market data.
 
 ![Bitcoin](https://img.shields.io/badge/Bitcoin-F7931A?style=flat&logo=bitcoin&logoColor=white)
 ![Monero](https://img.shields.io/badge/Monero-FF6600?style=flat&logo=monero&logoColor=white)
 
-## 🌐 Live Demo
-
-Deploy to any static hosting platform:
-- **Netlify**: Drag & drop or connect repo
-- **Vercel**: One-click deploy
-- **GitHub Pages**: Enable in repo settings
+**Live**: [xmr.irish](https://xmr.irish)
 
 ---
 
 ## 📁 Project Structure
 
 ```
-satoshis-vision/
-├── index.html              # Splash page - Privacy Evolution overview
-├── bottom-line.html        # The Bottom Line - Complete BTC/XMR analysis
-│                           # ├── TradFi Comparison Table
-│                           # ├── Full Timeline (2008-2027)
-│                           # ├── Government Bounties
-│                           # ├── Cryptographic Architecture
-│                           # └── Exchange Delistings
-├── hold-monero.html        # Hold Monero - Wagyu + ChangeNOW integration
-├── btc-xmr-education.html  # Educational comparison infographics
-├── quotes.html             # Satoshi Quote Explorer (18 curated quotes)
-├── secrets.html            # Satoshi's Privacy Secrets
-├── timeline.html           # Visual Timeline
-├── vercel.json             # Vercel configuration
-├── netlify.toml            # Netlify configuration
-├── .gitignore              # Git ignore rules
-├── LICENSE                 # MIT License
-└── README.md               # This file
+satoshis-vision-v1/
+├── app/                    # React 18 + Vite + TypeScript SPA — the front-end
+│   ├── index.html          # Vite entry (carries the critical paint floor)
+│   ├── src/                # routes, layout, data hooks, protocol simulators
+│   ├── public/             # favicon + 12 self-hosted woff2
+│   ├── scripts/
+│   │   ├── routes.mjs      # the 11 static routes — single source of truth
+│   │   ├── prerender.mjs   # emits dist/<route>/index.html (works with JS off)
+│   │   ├── gen-sitemap.mjs # emits dist/sitemap.xml + dist/robots.txt
+│   │   └── serve-dist.mjs  # local mirror of Vercel's resolution order
+│   └── verify-*.mjs        # 40 gates (static assertions + Playwright)
+├── api/                    # Vercel serverless functions — CommonJS
+│   └── verify-*.mjs        # 4 offline gates
+├── relay/                  # websocket relay (not currently deployed)
+├── docs/                   # design specs and historical v4 audits
+├── vercel.json             # deploy config: build, rewrites, CSP, HSTS
+└── LICENSE
 ```
 
----
-
-## 🚀 Deployment Instructions
-
-### Option 1: Netlify (Recommended)
-
-**Drag & Drop:**
-1. Go to [app.netlify.com/drop](https://app.netlify.com/drop)
-2. Drag the `satoshis-vision-deploy` folder
-3. Done! Get your URL instantly
-
-**From GitHub:**
-1. Push this repo to GitHub
-2. Connect to Netlify
-3. Build settings auto-configured via `netlify.toml`
+> The v4 static site that used to live at the repo root (22 `.html` pages, `js/`,
+> `css/`) was deleted in v6.1.0. It had been unreachable since the SPA migration —
+> `vercel.json` publishes `app/dist`, which those files were never part of.
 
 ---
 
-### Option 2: Vercel
+## 🚀 Development
 
-**From GitHub:**
-1. Push this repo to GitHub
-2. Import to [vercel.com/new](https://vercel.com/new)
-3. Settings auto-configured via `vercel.json`
-
-**CLI Deploy:**
 ```bash
-npm i -g vercel
-cd satoshis-vision-deploy
-vercel
+cd app
+npm ci
+npm run dev        # vite dev server
+npm run build      # tsc + vite build + SSR + prerender + sitemap
 ```
 
+To serve a production build exactly as Vercel resolves it — real file, then
+directory index, then the SPA catch-all:
+
+```bash
+node scripts/serve-dist.mjs &
+npm run wait-preview
+```
+
+`npm run preview` (plain `vite preview`) is an SPA server that falls back to
+`index.html` for every path, so it hides prerender breakage. Prefer `serve-dist`.
+
+### Adding or removing a route
+
+Edit **`app/scripts/routes.mjs`**. The prerenderer and the sitemap generator both
+read it, so the two stay in step. Register the route in `app/src/App.tsx` as well.
+
 ---
 
-### Option 3: GitHub Pages
+## ✅ Verification
 
-1. Create new GitHub repository
-2. Upload all files from this folder
-3. Go to **Settings → Pages**
-4. Source: **Deploy from a branch**
-5. Branch: **main** / Folder: **/ (root)**
-6. Save → Wait 2-3 minutes
-7. Your site: `https://[username].github.io/[repo-name]`
+44 gates guard this repo. `.github/workflows/ci.yml` runs 24 of them on every PR
+to `main`, in two jobs:
+
+```bash
+cd app
+npm run typecheck
+npm run build
+
+npm run verify:static   # 11 source-assertion gates, no browser, ~30s
+
+npx playwright install --with-deps chromium
+node scripts/serve-dist.mjs &
+npm run wait-preview
+npm run verify:e2e      # 9 Playwright gates
+```
+
+The remaining gates are run by hand — several expect live upstreams the sandbox
+cannot reach.
 
 ---
 
-## 📄 Pages Overview
+## 🛡️ Security and privacy invariants
 
-| Page | Description |
-|------|-------------|
-| **index.html** | Splash page with privacy evolution narrative |
-| **bottom-line.html** | Comprehensive analysis: timeline, bounties, delistings |
-| **hold-monero.html** | Exchange widget demo (Wagyu + ChangeNOW) |
-| **btc-xmr-education.html** | Visual infographics comparing BTC vs XMR |
-| **quotes.html** | Interactive Satoshi quote explorer |
-| **secrets.html** | Deep dive into Satoshi's privacy writings |
-| **timeline.html** | Historical milestones visualization |
+These are enforced by gates, not convention:
+
+- **One origin.** CSP is `connect-src 'self'`. The browser reaches no third party;
+  everything is proxied through `/api/`. Gated by `verify-origins.mjs`.
+- **Self-hosted fonts.** 12 woff2 in `app/public/fonts/`. No CDN — the site is used
+  over Tor and the external-request count must stay at zero.
+- **No fabricated data.** `Math.random()` is confined to `app/src/protocols/` (the
+  educational simulators). Live surfaces show real values or an em-dash, never an
+  invented one. Degradation is "STALE · reconnecting" plus last-good, never synthesis.
+- **Works with JavaScript off.** Every static route is prerendered to real HTML.
+- **No white flash.** Every route keeps its `noscript` block and a literal
+  background floor. Gated by `verify-degraded.mjs`.
+- **Usable at 390px**, no text under 12px, and a `prefers-reduced-motion` path that
+  loses no information.
+
+Security headers (`vercel.json`): `X-Frame-Options: DENY`,
+`X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer`,
+`Strict-Transport-Security` with preload, and the CSP above.
 
 ---
 
@@ -105,34 +119,23 @@ FOR EDUCATIONAL AND DEMONSTRATION PURPOSES ONLY
 • This website documents publicly available information
 • NOT financial, legal, or investment advice
 • No endorsement of any cryptocurrency or financial product
-• Third-party exchange widgets are for demonstration only
 • Users are responsible for compliance with local regulations
 • The creators assume no liability for use or misuse
 ```
 
 ---
 
-## 🛡️ Security Headers
-
-Both `netlify.toml` and `vercel.json` include security headers:
-- `X-Frame-Options: DENY`
-- `X-Content-Type-Options: nosniff`
-- `X-XSS-Protection: 1; mode=block`
-- `Referrer-Policy: strict-origin-when-cross-origin`
-
----
-
 ## 📜 License
 
-MIT License - See [LICENSE](LICENSE) file
+MIT License — see [LICENSE](LICENSE)
 
 ---
 
 ## 🔗 External Resources
 
-- [GetMonero.org](https://www.getmonero.org/) - Official Monero site
-- [Bitcoin.org](https://bitcoin.org/) - Official Bitcoin site
-- [Nakamoto Institute](https://nakamotoinstitute.org/) - Satoshi's writings
+- [GetMonero.org](https://www.getmonero.org/) — Official Monero site
+- [Bitcoin.org](https://bitcoin.org/) — Official Bitcoin site
+- [Nakamoto Institute](https://nakamotoinstitute.org/) — Satoshi's writings
 - [Monero Research Lab](https://www.getmonero.org/resources/research-lab/)
 
 ---

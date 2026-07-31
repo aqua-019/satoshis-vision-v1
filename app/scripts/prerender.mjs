@@ -28,30 +28,12 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+// v6.1.0: the route list moved to scripts/routes.mjs so the sitemap generator
+// builds from the same source. Adding a route is one edit, not two.
+import { ROUTES } from "./routes.mjs";
 
 const appDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const dist = join(appDir, "dist");
-
-/**
- * Every route App.tsx serves that has a fixed path.
- *
- * /mempool/tx/:txid is deliberately absent — it takes a txid parameter, so
- * there is no finite set of pages to emit. It keeps falling through to the
- * SPA shell, which is correct: a transaction lookup genuinely needs JS.
- */
-const ROUTES = [
-  "/",
-  "/mempool",
-  "/markets",
-  "/network",
-  "/education",
-  "/monero",
-  "/future",
-  "/peers",
-  "/simulate",
-  "/node",
-  "/sources",
-];
 
 const shellPath = join(dist, "index.html");
 if (!existsSync(shellPath)) {

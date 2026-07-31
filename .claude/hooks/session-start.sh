@@ -3,16 +3,18 @@ set -euo pipefail
 
 cd "$CLAUDE_PROJECT_DIR"
 
-# Validate key files exist
-for f in index.html CLAUDE.md netlify.toml vercel.json .mcp.json; do
+# Validate key files exist. v6.1.0 dropped index.html and netlify.toml from this
+# list: the v4 static site at the repo root was deleted (it was never served —
+# vercel.json publishes app/dist), and Vercel is now the only deploy target.
+for f in CLAUDE.md vercel.json .mcp.json app/index.html app/package.json; do
   if [ ! -f "$f" ]; then
     echo "WARNING: Expected file missing: $f" >&2
   fi
 done
 
-# Count HTML pages as a sanity check
-html_count=$(find . -maxdepth 1 -name '*.html' | wc -l)
-echo "Environment ready: $html_count HTML pages found in project root"
+# Count app routes as a sanity check (was: HTML pages in the project root)
+route_count=$(grep -c '^  "/' app/scripts/routes.mjs 2>/dev/null || echo 0)
+echo "Environment ready: $route_count static routes in app/scripts/routes.mjs"
 
 # Confirm tooling availability
 echo "Python: $(python3 --version 2>&1)"
