@@ -159,7 +159,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
         fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.16em",
         textTransform: "uppercase", zIndex: 2,
       }}>{n} · {title}</div>
-      <svg viewBox={`0 0 ${w} ${h}`} width={w} height={h} style={{ display: "block" }}>
+      <svg viewBox={`0 0 ${w} ${h}`} width="100%" style={{ display: "block", maxWidth: w }}>
         {renderInside()}
       </svg>
     </div>

@@ -163,11 +163,6 @@ for (const path of ['/markets', '/network', '/']) {
     // that then narrows, the pointer ends up past its right edge and
     // pointerleave fires, which clears the readout correctly and would make
     // this assertion fail for a reason that has nothing to do with scaling.
-    const hx = target.x + target.w * 0.3;
-    const hy = target.y + target.h * 0.5;
-    await p.mouse.move(hx, hy);
-    await p.waitForTimeout(250);
-
     const readTip = () => p.evaluate(() => {
       const svg = document.querySelector('[data-hovertarget]');
       // The tooltip is the <g pointer-events="none"> holding a rect + text.
@@ -175,7 +170,35 @@ for (const path of ['/markets', '/network', '/']) {
       return texts.join(' | ');
     });
 
-    const before = await readTip();
+    const hoverAtFraction = async (frac) => {
+      // Scroll the chart into view BEFORE measuring. This assertion is about
+      // the datum being width-independent, not about the chart happening to
+      // sit above the fold — and those are different things once a breakpoint
+      // reflows the page. At 1180px the v6.0.8 tablet band collapses the
+      // telemetry rail to a single column, which pushes this chart down far
+      // enough that a fraction-of-its-height hover landed below `.main`'s
+      // scroll viewport, on the footer. The mouse then hovered no chart at
+      // all and the readout lost its datum — a false failure that said
+      // nothing about width-independence.
+      await p.evaluate(() => document.querySelector('[data-hovertarget]')
+        .scrollIntoView({ block: 'center', behavior: 'instant' }));
+      await p.waitForTimeout(120);
+      const r = await p.evaluate(() => {
+        const s = document.querySelector('[data-hovertarget]').getBoundingClientRect();
+        return { x: s.x, y: s.y, w: s.width, h: s.height };
+      });
+      await p.mouse.move(r.x + r.w * frac, r.y + r.h * 0.5);
+      await p.waitForTimeout(220);
+      return readTip();
+    };
+
+    // Captured through `hoverAtFraction` (below) rather than from the `target`
+    // rect measured further up: that rect predates any scroll, so on a layout
+    // where this chart sits below the fold the baseline hover landed on the
+    // footer and read no datum — inverting the comparison and failing all
+    // three widths for a reason unrelated to scaling. Same helper, same
+    // preconditions, for all four measurements.
+    const before = await hoverAtFraction(0.3);
     ok(before.length > 0, `hover produces a tooltip readout → "${before.slice(0, 70)}"`);
 
     // THE VIEWBOX-SCALING REGRESSION TEST.
@@ -192,16 +215,6 @@ for (const path of ['/markets', '/network', '/']) {
     // reading offsetWidth, or storing raw pixels, drifts to a neighbouring
     // datum here. The fixture's values are well separated so a near-miss
     // cannot pass by luck.
-    const hoverAtFraction = async (frac) => {
-      const r = await p.evaluate(() => {
-        const s = document.querySelector('[data-hovertarget]').getBoundingClientRect();
-        return { x: s.x, y: s.y, w: s.width, h: s.height };
-      });
-      await p.mouse.move(r.x + r.w * frac, r.y + r.h * 0.5);
-      await p.waitForTimeout(220);
-      return readTip();
-    };
-
     for (const width of [1180, 900, 1440]) {
       await p.setViewportSize({ width, height: 900 });
       await p.waitForTimeout(400);

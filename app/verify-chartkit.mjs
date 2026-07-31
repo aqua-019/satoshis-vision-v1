@@ -105,8 +105,15 @@ assert(
 
 // The non-reactive one-shot read is the bug this replaced: it never responds
 // to the user changing the OS setting after mount.
+// `deviceTier.ts` is exempt alongside the hook itself: it is a module-scope
+// function, not a component, so it CANNOT call a hook — and its read is
+// deliberately one-shot. The tier is memoized for the page's lifetime by
+// design (a tier that changed mid-session would tear down and reseed every
+// canvas and orb field on a resize), so reactivity would be a bug here, not a
+// fix. Components still have to use the hook.
+const RM_EXEMPT = new Set(["src/design/useReducedMotion.ts", "src/design/deviceTier.ts"]);
 const oneShot = ALL
-  .filter(([r, s]) => r !== "src/design/useReducedMotion.ts" &&
+  .filter(([r, s]) => !RM_EXEMPT.has(r) &&
     /matchMedia\(["'`]\(prefers-reduced-motion/.test(s))
   .map(([r]) => r);
 assert("no ad-hoc matchMedia(prefers-reduced-motion) reads", oneShot.length === 0, oneShot.join(", "));
@@ -227,7 +234,14 @@ for (const f of LOOPS) {
   );
   assert(
     `${f.split("/").pop()} pauses when the tab is hidden`,
-    /visibilitychange|document\.hidden/.test(s),
+    // `observeDrawable` / `onPageActiveChange` (design/usePageActive.ts) are the
+    // v6.0.8 shared primitives for this. They wrap the same `visibilitychange`
+    // listener AND add an IntersectionObserver, so a loop using them stops in
+    // strictly more cases than one hand-rolling the raw API — accepting them
+    // here widens the gate to the better implementation, it does not weaken it.
+    // (verify-perf.mjs asserts the actual behaviour: 0 rAF callbacks in 3s on a
+    // hidden tab, per route.)
+    /visibilitychange|document\.hidden|observeDrawable|onPageActiveChange/.test(s),
   );
 }
 

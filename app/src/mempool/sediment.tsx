@@ -1,7 +1,6 @@
 // AUTO-PORTED from sediment.jsx
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
-import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { Provenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
@@ -10,6 +9,16 @@ import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf } from "@/mempool/conf";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
 import type { MoneroLive, Tx } from "@/data/types";
+
+/* Chart formatters are hoisted to module scope so their identity is stable
+   across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
+   pages/markets/charts.tsx) and an inline `format={(v) => …}` arrow allocates
+   a fresh function every render, which defeats the boundary entirely. None of
+   these close over anything, so module scope is where they belonged anyway. */
+const fmtTx = (v: number): string => v + " tx";
+const fmtPerB = (v: number): string => Math.round(v).toLocaleString() + " p/B";
+const fmtRound = (v: number): string => String(Math.round(v));
+
 
 export const BLOCKS_CAP = 100;
 
@@ -202,7 +211,10 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
 
 /* ── grain-size scatter — fee/B vs weight ───────────────────── */
 export function SedGrainScatter({ data }: { data: MoneroLive }) {
-  useTick(1100);
+  // No tick here: this body reads only `data.mempool`, which already changes
+  // on the 2.5s feed poll — a `useTick(1100)` used to sit here but its return
+  // value was never read, so it bought nothing except an extra full-subtree
+  // React re-render 0.9x/sec (v6.0.8 perf pass).
   const W = 300, H = 188, padL = 30, padR = 10, padT = 12, padB = 26;
   const iw = W - padL - padR, ih = H - padT - padB;
   const pts = data.mempool.slice(0, 60);
@@ -270,7 +282,7 @@ export function SedStrataLog({ data, trackedHeight }: { data: MoneroLive; tracke
       <BarSeries
         data={blocks.slice().reverse().map((b) => b.txs)}
         labels={blocks.slice().reverse().map((b) => "#" + b.height)}
-        format={(v) => v + " tx"}
+        format={fmtTx}
         color="var(--tk-accent)"
         baseline="zero"
         height={150}
@@ -305,7 +317,7 @@ export function SedFeeProfile({ data }: { data: MoneroLive }) {
       {fees.length ? (
         <AreaSeries data={fees} xLabels={false} markers baseline="zero"
           color="var(--tk-accent)" height={188}
-          format={(v) => Math.round(v).toLocaleString() + " p/B"} />
+          format={fmtPerB} />
       ) : (
         <div className="mono dim" style={{ padding: 24, textAlign: "center", fontSize: "var(--fs-mono)" }}>mempool empty</div>
       )}
@@ -339,7 +351,7 @@ export function SedClearance({ data }: { data: MoneroLive }) {
         <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>tx suspended</span>
       </div>
       <AreaSeries data={series} height={84} color="var(--tk-accent)" baseline="zero"
-        xLabels={false} markers={false} format={(v) => String(Math.round(v))} />
+        xLabels={false} markers={false} format={fmtRound} />
       <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6 }}>
         <span>median {poolReady ? Math.round(stats.medianPerB).toLocaleString() + " p/B" : "—"}</span>
         <span>P90 {poolReady && p90 != null ? Math.round(p90).toLocaleString() + " p/B" : "—"}</span>

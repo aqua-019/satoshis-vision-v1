@@ -29,14 +29,18 @@ export type Tracking =
 
 // MempoolHeartbeat — a per-mempool liveness chip. Real Monero blocks are ~2 min
 // apart, so the block ribbon is legitimately quiet between them; this gives the
-// user a per-second signal the feed is alive. `useTick(1000)` re-renders it each
-// second to advance "updated Ns ago"; the LED is keyed on `lastUpdate` so it
-// remounts (replaying the one-shot `mp-beat` flash) exactly when a new poll lands,
-// not every second. Three states: CONNECTING… (no node snapshot yet), STALE
-// (feed was live then polls started failing — values shown are last-good), and
-// LIVE (healthy feed).
+// user a per-second signal the feed is alive. `useTick(1000, { motion: false })`
+// re-renders it each second to advance "updated Ns ago"; the LED is keyed on
+// `lastUpdate` so it remounts (replaying the one-shot `mp-beat` flash) exactly
+// when a new poll lands, not every second. This is a real elapsed-time readout,
+// not decoration — `motion: false` keeps its 1s cadence exact on the mid/low
+// tiers instead of being floored to 80/200ms, and it stays live under
+// prefers-reduced-motion instead of freezing (see design/ArtBackground.tsx's
+// UseTickOptions doc comment). Three states: CONNECTING… (no node snapshot
+// yet), STALE (feed was live then polls started failing — values shown are
+// last-good), and LIVE (healthy feed).
 export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
-  useTick(1000);
+  useTick(1000, { motion: false });
   const ageSec = Math.max(0, Math.round((Date.now() - data.lastUpdate) / 1000));
   if (!data.ready) {
     return (

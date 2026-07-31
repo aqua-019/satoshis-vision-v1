@@ -157,15 +157,37 @@ export function MempoolPage() {
             views (reactor/bridge/sediment/constellation) load scaled to the canvas
             width via <FitView>; classic/terminal keep their natural layout. */}
         <div className={"mp-canvas-scroll" + (meta.reflow ? " mp-canvas-scroll--reflow" : "")} ref={panRef}>
-          {meta.fit ? (
-            <FitView scrollRef={panRef} mode={zoom}>
-              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-            </FitView>
-          ) : (
-            <div className={"mp-view" + (meta.reflow ? " mp-view--reflow" : "")}>
-              <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
-            </div>
-          )}
+          {/* v6.0.8: the six view engines are React.lazy (views/index.tsx), so
+              only the active one's chunk is fetched.
+
+              The boundary sits OUTSIDE <FitView> deliberately. FitView measures
+              its child through a ResizeObserver to compute the fit scale; if the
+              fallback rendered *inside* it, the first measurement would be of the
+              placeholder and the view would mount at the wrong scale. Keeping
+              FitView unmounted until the chunk resolves means its first measure is
+              always of the real content. */}
+          <React.Suspense
+            fallback={
+              // `minHeight` is load-bearing, not cosmetic. A bare padded <div>
+              // is far shorter than the view that replaces it, so the swap
+              // pushed everything below it down and cost ~0.07 CLS — measured,
+              // not theoretical. Reserving roughly the view's height keeps the
+              // shift inside the noise.
+              <div className="mono dim" style={{ padding: 40, minHeight: "70vh" }}>
+                loading {meta.label.toLowerCase()}…
+              </div>
+            }
+          >
+            {meta.fit ? (
+              <FitView scrollRef={panRef} mode={zoom}>
+                <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+              </FitView>
+            ) : (
+              <div className={"mp-view" + (meta.reflow ? " mp-view--reflow" : "")}>
+                <View data={data} bg={{ intensity: "calm" }} focusBlock={focusBlock} onClearFocus={clearFocus} />
+              </div>
+            )}
+          </React.Suspense>
         </div>
       </div>
     </PageShell>

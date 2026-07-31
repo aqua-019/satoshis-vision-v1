@@ -112,6 +112,48 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 ## Session Notes
 
+- **2026-07-31**: v6.0.8 "FRAMERATE & PERFORMANCE, MOBILE-FIRST" (app/): the app
+  had no idea what device it was on. 43 animated compositor layers (8 plates up
+  to 92vmax, 30 orbs, 2 dust, a 320%-translating sweep, a 170vmax conic ribbon)
+  plus a rAF canvas rendered identically on a 4K desktop and a phone, and 21
+  `useTick` setIntervals (down to 50ms) plus every network poll kept running in
+  hidden tabs. New `design/deviceTier.ts` resolves `high|mid|low` once per load
+  from hardwareConcurrency / deviceMemory / viewport area / coarse-pointer, with
+  `prefers-reduced-motion` and `saveData` forcing `low` and a `?tier=` override
+  on top (the gate needs a deterministic selector; Tor lands low/mid on its own
+  spoofing). It is NOT a third ⌘ DESIGN knob — `tier` rides on `VisualState`
+  read-only, is never persisted, and has no radio group; VisualContext's
+  "two knobs" note stands. `data-tier` is stamped pre-paint by index.html's
+  inline script (a smaller, deliberately more pessimistic heuristic) and
+  re-stamped by VisualProvider, so a phone never composites 43 layers during
+  the bundle download. New `design/usePageActive.ts` (visibility +
+  IntersectionObserver, including a non-hook subscription so rAF drivers don't
+  re-render to learn they should stop) and `design/useAnimationClock.ts` (one
+  shared rAF fanned out per-subscriber at tier-scaled fps; `useAnimationSeconds`
+  is the variant to prefer, because a frame counter changes meaning per tier
+  while seconds don't). ParticleField gained a `dt` — it had none, so drift
+  speed literally tracked refresh rate — plus a 50ms clamp, tier-aware DPR, and
+  a pre-baked glow sprite replacing a per-particle `shadowBlur`. Measured on a
+  390×844 / 6× CPU / Slow-4G emulation (which resolves to `low`): /mempool
+  15.7 → 60.1 fps, /markets 13.7 → 46.4, / 14.5 → 50.0; long-task time down
+  84–93%; background rAF 44/51/40 → **0/0/0**; entry chunk 560.72 → 45.67 kB
+  (164.07 → 15.97 kB gzip, 58% less for first paint including the new vendor
+  chunk). Breakpoints: the audit's "no mobile layout" claim was wrong —
+  styles.css:849+ is a working 224-line phone layer under a documented
+  single-breakpoint invariant. The real gap was 769–1199px (a 260px rail eating
+  a third of a tablet), so that band plus a ≤479px band were ADDED rather than
+  the existing layer refactored. New gate `app/verify-perf.mjs` (22 assertions:
+  pre-hydration tier stamp, per-tier layer census, background quiescence,
+  8 routes × 8 widths overflow, orientation flip, reduced-motion, timer census,
+  static source checks). Before/after in `app/PERF-BASELINE.md`, including an
+  explicit list of what real-device checks remain for a human.
+  Corrections to the prompt's audit, verified against source: `useMemCanvas`
+  does not exist in this repo; `reactor.tsx` has zero timers; orbs were already
+  seeded via `.map()`, not 30 hardcoded spans; charts were already responsive
+  (`viewBox` + `width="100%"`); React was already the production npm build, not
+  a CDN dev bundle; fonts were already self-hosted, subset and `swap` (only
+  preload was missing).
+
 <!--
   Use this section to leave notes for future sessions.
   Format: **YYYY-MM-DD**: Note content

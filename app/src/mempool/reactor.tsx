@@ -201,7 +201,7 @@ function RingSigFan() {
   const N = 16;
   const cx = 100, cy = 100, r = 80;
   return (
-    <svg width={210} height={210} viewBox="0 0 210 210">
+    <svg width="100%" viewBox="0 0 210 210" style={{ display: "block", maxWidth: 210 }}>
       <defs>
         <radialGradient id="ringPulse">
           <stop offset="0%" stopColor="#ff7a1a" stopOpacity="0.8" />

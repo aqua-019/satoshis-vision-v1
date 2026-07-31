@@ -27,6 +27,19 @@
     </style>
     <meta name="theme-color" content="#121218" />
     <link rel="icon" href="/favicon.svg" />
+    <!-- First-paint fonts only. All three families are self-hosted, subset by
+         unicode-range and `font-display: swap` (see src/styles.css's @font-face
+         block), but a swap-ed font is still discovered late: the browser has to
+         parse the CSS bundle, match a rule, and only then fetch. Preloading the
+         two faces that every page paints immediately — Geist 400 for body copy,
+         JetBrains Mono 400 for the ticker and every numeral — removes that
+         round-trip from LCP. Newsreader is display-only (headings below the
+         fold on most routes) and is deliberately NOT preloaded; preloading
+         everything is the same as preloading nothing.
+         `crossorigin` is required even same-origin: fonts are fetched in CORS
+         mode, and without it the preload is discarded and re-fetched. -->
+    <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="description" content="xmr.irish v5.0 — Monero, in public, in private." />
     <meta name="referrer" content="no-referrer" />
@@ -47,6 +60,46 @@
         document.documentElement.setAttribute("data-theme", t === "classic" ? "classic" : "indigo");
       } catch (e) {
         document.documentElement.setAttribute("data-theme", "indigo");
+      }
+
+      // Pre-paint DEVICE-TIER stamp. styles-ambient.css gates the heavy
+      // layers on `[data-tier]`, and the aurora paints long before React
+      // mounts — without this a phone composites all 43 layers (8 plates up
+      // to 92vmax, 30 orbs, a 170vmax conic ribbon) for the duration of the
+      // bundle download, which is exactly the window where it can least
+      // afford them.
+      //
+      // This is a deliberately SMALLER heuristic than design/deviceTier.ts:
+      // no viewport-area scoring, no coarse-pointer read. It only has to be
+      // right about the obvious cases (reduced motion, save-data, few cores,
+      // little memory, phone-width) and never to over-promise — guessing
+      // "low" and being upgraded to "high" by the React re-stamp costs one
+      // paint; guessing "high" on a phone costs the whole boot. Ties go to
+      // the cheaper tier. `?tier=` is honoured here too so verify-perf.mjs
+      // can assert the pre-hydration stamp.
+      try {
+        var q = /[?&]tier=(high|mid|low)\b/.exec(location.search);
+        var tier;
+        if (q) {
+          tier = q[1];
+        } else if (
+          (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ||
+          (navigator.connection && navigator.connection.saveData === true)
+        ) {
+          tier = "low";
+        } else {
+          var s = 0;
+          var cores = navigator.hardwareConcurrency || 8;
+          s += cores <= 4 ? 2 : cores <= 6 ? 1 : 0;
+          var mem = typeof navigator.deviceMemory === "number" ? navigator.deviceMemory : 8;
+          s += mem <= 2 ? 2 : mem <= 4 ? 1 : 0;
+          var area = window.innerWidth * window.innerHeight;
+          s += area < 500000 ? 2 : area < 1200000 ? 1 : 0;
+          tier = s >= 4 ? "low" : s >= 2 ? "mid" : "high";
+        }
+        document.documentElement.setAttribute("data-tier", tier);
+      } catch (e) {
+        document.documentElement.setAttribute("data-tier", "low");
       }
       // v6.0.7 boot watchdog. #boot-fallback below ships `hidden`, so with
       // scripting OFF it stays hidden and <noscript> is what renders — the two
