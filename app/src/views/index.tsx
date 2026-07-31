@@ -42,6 +42,10 @@ export interface MempoolViewMeta {
    *  (reactor/bridge/sediment/constellation) opt in; Classic's intentional block
    *  ribbon and Terminal are excluded. */
   fit?: boolean;
+  /** Pure-DOM view with no fixed-size canvas: reflows to the viewport on phones instead
+   *  of panning inside the 900px-pinned box. Classic only — Terminal is a
+   *  desktop-proportion instrument (320px daemon aside, 8-column readouts). */
+  reflow?: boolean;
   Component: ViewComponent;
 }
 
@@ -56,6 +60,6 @@ export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
     Component: ConstellationView },
   { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
     Component: TerminalHubView },
-  { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: true,
+  { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: true, reflow: true,
     Component: ClassicView },
 ];
