@@ -29,6 +29,12 @@
 //     → { source, fetchedAt, items: [{ title, url, date }] }
 //     → 501 + { error, hint } when the token is absent — an honest empty
 //       state beats a silent one.
+//   GET /api/feeds?src=commits&n=12
+//     → { source, fetchedAt, repo, items: [{ v, note, date, sha, url, also? }] }
+//     → this repo has zero git tags and zero GitHub releases, so "release
+//       notes" are parsed from versioned commit subjects ("vX.Y.Z — note")
+//       in this repo's own commit history. No caller-supplied repo param —
+//       SELF_REPO is a fixed module constant, so GH_ALLOWED does not apply.
 
 const FEEDS = {
   getmonero: "https://www.getmonero.org/feed.xml",
@@ -37,6 +43,23 @@ const FEEDS = {
 const X_HANDLES = { monero: "monero", moneroresearchl: "MoneroResearchL" };
 
 const DAY = 86400; // seconds
+
+/* This site's own repo — fixed, NOT caller-supplied. Used only by
+   src=commits, which accepts no repo param, so GH_ALLOWED (which exists to
+   constrain a caller-supplied repo param) is inapplicable here. */
+const SELF_REPO = "aqua-019/satoshis-vision-v1";
+
+/* src=commits: cap by parsed releases, not upstream pages. MAX_PAGES is a
+   pure backstop so a pathological history can't spin the function forever. */
+const RELEASES_CAP = 12;
+const MAX_PAGES = 3;
+
+/* Matches a commit subject like "v6.0.2 — type pass: ...". Anchored at ^ on
+   purpose: real non-matching subjects in this repo include "Merge pull
+   request #125 from …", "chore: arm AQUA v3 stack", and version numbers
+   mentioned mid-sentence (e.g. "fix(mempool): … (v5.0.11)") — none of those
+   are releases and none may match. */
+const VERSION_RX = /^(v\d+\.\d+\.\d+)\s*[—–-]\s*(.+)$/;
 
 /* GitHub rejects requests with no User-Agent. Sent on every github.com call
    (src=ghrepo and src=mrl). */
@@ -87,6 +110,19 @@ function decodeEntities(s) {
     .trim();
 }
 
+/* Pure: match a single-line commit subject against VERSION_RX. Returns
+   { v, note } on match, null otherwise. Callers are responsible for
+   reducing a (possibly multi-line) commit message down to its first line
+   before calling this — the ^…$ anchors mean a raw multi-line message
+   containing a version on line 1 would otherwise fail to match at all,
+   since "." never crosses a newline. */
+function parseCommitVersion(subject) {
+  const s = typeof subject === "string" ? subject.trim() : "";
+  const m = VERSION_RX.exec(s);
+  if (!m) return null;
+  return { v: m[1], note: m[2].trim() };
+}
+
 /* Validate a caller-supplied "owner/name" repo string. Pure — no network,
    no allowlist check (see canonicalRepo for that). Returns the trimmed
    string on success, null on any rejection. */
@@ -131,6 +167,45 @@ function mapIssues(json) {
     }));
 }
 
+/* Pure transform: GitHub commits-list API JSON → release-note items[].
+   Never sorts — GitHub's reverse-chronological order is the truthful
+   "what shipped when" sequence (semver sorting would misrepresent history,
+   e.g. move v5.1.0 out of its real chronological slot). Keeps the first
+   (newest) occurrence of each version and folds later duplicates into
+   `also` on that item, since the UI keys rows by version. Capped by number
+   of parsed releases, not input length — `cap` defaults to RELEASES_CAP. */
+function mapCommits(json, cap) {
+  const arr = Array.isArray(json) ? json : [];
+  const limit = Number.isInteger(cap) && cap > 0 ? cap : RELEASES_CAP;
+  const items = [];
+  const byVersion = new Map();
+
+  for (const c of arr) {
+    const subject = String(c?.commit?.message || "").split("\n", 1)[0].trim();
+    const parsed = parseCommitVersion(subject);
+    if (!parsed) continue;
+
+    const existing = byVersion.get(parsed.v);
+    if (existing) {
+      existing.also = (existing.also || 0) + 1;
+      continue;
+    }
+    if (items.length >= limit) continue; // cap reached; keep scanning for dups of kept versions
+
+    const item = {
+      v: parsed.v,
+      note: parsed.note,
+      date: String(c?.commit?.author?.date || "").slice(0, 10),
+      sha: c?.sha || "",
+      url: c?.html_url || "",
+    };
+    items.push(item);
+    byVersion.set(parsed.v, item);
+  }
+
+  return items;
+}
+
 async function getMoneroBlog(n) {
   const r = await fetch(FEEDS.getmonero, {
     headers: { "User-Agent": "xmr.irish/6.0 (+https://xmr.irish)" },
@@ -163,6 +238,31 @@ async function getGhRepo(repoCanonical) {
   if (!r.ok) throw new Error("github repo HTTP " + r.status);
   const json = await r.json();
   return mapRepo(json);
+}
+
+/* Self-repo commit history → release-note items. No sha=/branch param on
+   the upstream URL — origin/HEAD is unset locally and the deploy branch may
+   change, so this deliberately lets GitHub use the repo default. Paginates
+   only as far as needed to satisfy `cap` parsed releases (MAX_PAGES is a
+   pure backstop); with 24 versioned commits in the last 100, page 1 alone
+   satisfies the default cap of 12, so steady state is one upstream call. */
+async function getSelfCommits(cap) {
+  const limit = Number.isInteger(cap) && cap > 0 ? cap : RELEASES_CAP;
+  let all = [];
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const r = await fetch(
+      `https://api.github.com/repos/${SELF_REPO}/commits?per_page=100&page=${page}`,
+      { headers: GH_HEADERS, signal: AbortSignal.timeout(8000) }
+    );
+    if (!r.ok) throw new Error("github commits HTTP " + r.status);
+    const batch = await r.json();
+    const batchArr = Array.isArray(batch) ? batch : [];
+    all = all.concat(batchArr);
+
+    if (mapCommits(all, limit).length >= limit) break;
+    if (batchArr.length < 100) break; // upstream exhausted, no point paging further
+  }
+  return mapCommits(all, limit);
 }
 
 /* ── X / Twitter ──────────────────────────────────────────────────
@@ -238,6 +338,23 @@ module.exports = async (req, res) => {
       }));
     }
 
+    if (src === "commits") {
+      // Single-object-plus-repo response, like ghrepo — not the generic
+      // { source, fetchedAt, items } envelope below. No caller-supplied
+      // repo param to validate: SELF_REPO is a fixed module constant.
+      const rawN = parseInt(req.query?.n, 10);
+      const cap = Number.isFinite(rawN) ? Math.min(Math.max(rawN, 1), 20) : RELEASES_CAP;
+      const items = await getSelfCommits(cap);
+      res.setHeader("Cache-Control", `s-maxage=${DAY}, stale-while-revalidate=${DAY}`);
+      res.statusCode = 200;
+      return res.end(JSON.stringify({
+        source: src,
+        fetchedAt: new Date().toISOString(),
+        repo: SELF_REPO,
+        items,
+      }));
+    }
+
     let items;
     if (src === "getmonero") {
       items = await getMoneroBlog(n);
@@ -253,7 +370,7 @@ module.exports = async (req, res) => {
       items = await getXPosts(handle, n);
     } else {
       res.statusCode = 400;
-      return res.end(JSON.stringify({ error: "unknown src", allowed: ["getmonero", "mrl", "ghrepo", "x"] }));
+      return res.end(JSON.stringify({ error: "unknown src", allowed: ["getmonero", "mrl", "ghrepo", "x", "commits"] }));
     }
 
     // Cache at the edge for 24h; serve stale for another 24h while
@@ -276,3 +393,5 @@ module.exports.parseRepoParam = parseRepoParam;
 module.exports.mapRepo = mapRepo;
 module.exports.mapIssues = mapIssues;
 module.exports.GH_ALLOWED = GH_ALLOWED;
+module.exports.parseCommitVersion = parseCommitVersion;
+module.exports.mapCommits = mapCommits;
