@@ -10,6 +10,15 @@
 
 import * as React from "react";
 import type { Candle, LineSeries, SeriesStatus } from "@/data/useMarketHistory";
+import { Provenance } from "@/design/primitives";
+import {
+  normalizeSeries,
+  timeDomain,
+  xOf as geomXOf,
+  yDomain,
+  dedupeLabelYs,
+  type NormSeries,
+} from "./geometry";
 
 const VB_W = 1000;
 const UP_FILL = "rgba(74,222,128,0.72)";
@@ -278,38 +287,57 @@ export interface MultiLineProps {
   days: number;
   height?: number;
   labels?: boolean;
+  /** Rendered under the empty-state badge when nothing is usable to plot. */
+  emptyNote?: React.ReactNode;
 }
 
-export function MultiLine({ series, days, height = 280, labels = true }: MultiLineProps) {
+const ML_X_TICKS = 7;
+
+export function MultiLine({ series, days, height = 280, labels = true, emptyNote }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
-  if (!series?.length) return null;
+  const uid = React.useId().replace(/:/g, "");
 
   const W = VB_W;
   const padL = 48, padR = labels ? 100 : 16, padT = 16, padB = 26;
   const innerW = W - padL - padR;
   const innerH = height - padT - padB;
 
-  const norm = series.map((s) => {
-    const first = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
-    return { ...s, n: s.data.map((v) => (v / first - 1) * 100) };
-  });
-  const all = norm.flatMap((s) => s.n).filter((v) => isFinite(v));
-  const min = Math.min(0, ...all), max = Math.max(0, ...all);
+  const norm: NormSeries[] = React.useMemo(
+    () => (series ?? []).map((s) => normalizeSeries(s, days)),
+    [series, days],
+  );
+  const domain = timeDomain(norm);
+
+  if (!domain) {
+    return (
+      <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <Provenance source="coingecko" fresh="none" detail="unavailable" />
+        {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
+      </div>
+    );
+  }
+
+  const { min, max } = yDomain(norm);
   const rng = max - min || 1;
   const y = (v: number) => padT + innerH - ((v - min) / rng) * innerH;
-  const xOf = (i: number, len: number) => padL + (len <= 1 ? 0 : (i / (len - 1)) * innerW);
+  const X = (t: number) => geomXOf(t, domain, padL, innerW);
 
   const yTicks = niceTicks(min, max, 5);
-  const ref = norm.reduce((a, b) => ((b.t?.length ?? 0) > (a.t?.length ?? 0) ? b : a), norm[0]);
-  const refLen = ref.n.length;
-  const xStep = Math.max(1, Math.ceil(refLen / 7));
+  const xTicks = Array.from({ length: ML_X_TICKS }, (_, i) =>
+    domain.t0 + (i / (ML_X_TICKS - 1)) * (domain.t1 - domain.t0),
+  );
+
+  // One label y-position per series (in series order), de-collided so up to
+  // 9 simultaneous series stay legibly spaced.
+  const rawLabelYs = norm.map((s) => y(s.last ?? 0));
+  const labelYs = labels ? dedupeLabelYs(rawLabelYs) : rawLabelYs;
 
   return (
     <svg viewBox={`0 0 ${W} ${height}`} width="100%" style={{ display: "block", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}>
       <defs>
         {norm.map((s, i) => (
-          <linearGradient key={"g" + i} id={`ml-grad-${i}`} x1="0" y1="0" x2="0" y2="1">
+          <linearGradient key={"g" + i} id={`ml-grad-${uid}-${i}`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={s.color} stopOpacity="0.18" />
             <stop offset="100%" stopColor={s.color} stopOpacity="0" />
           </linearGradient>
@@ -324,27 +352,45 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
         </g>
       ))}
 
-      {/* x date ticks (from the longest real series) */}
-      {ref.t ? ref.n.map((_, i) => (i % xStep === 0 ? (
-        <text key={"x" + i} x={xOf(i, refLen)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9.5" fill={AXIS}>{fmtDate(ref.t![i], days)}</text>
-      ) : null)) : null}
+      {/* x date ticks — 7 evenly spaced by TIME across the common domain,
+          not by index of whichever series happens to be longest. */}
+      {xTicks.map((t, i) => (
+        <text key={"x" + i} x={X(t)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9.5" fill={AXIS}>{fmtDate(t, days)}</text>
+      ))}
 
-      {/* area + line per series */}
+      {/* area + line per series, one path pair per honest segment — a
+          series covering only part of the window simply stops there. */}
       {norm.map((s, si) => {
-        const len = s.n.length;
-        if (!len) return null;
-        const pts = s.n.map((v, i) => [xOf(i, len), y(v)] as [number, number]);
-        const line = smoothPath(pts);
-        const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
         const isStale = s.status === "stale";
-        const lastV = s.n[len - 1];
         return (
-          <g key={si} opacity={isStale ? 0.6 : 1}>
-            <path d={area} fill={`url(#ml-grad-${si})`} stroke="none" />
-            <path d={line} fill="none" stroke={s.color} strokeWidth={isStale ? 1.1 : 1.5} strokeDasharray={isStale ? "4 3" : undefined} style={{ filter: `drop-shadow(0 0 2px ${s.color})` }} />
+          <g key={si}>
+            {s.segments.map((seg, gi) => {
+              if (seg.length >= 2) {
+                const pts = seg.map((p) => [X(p.t), y(p.v)] as [number, number]);
+                const line = smoothPath(pts);
+                const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
+                return (
+                  <g key={gi} opacity={isStale ? 0.6 : 1}>
+                    <path d={area} fill={`url(#ml-grad-${uid}-${si})`} stroke="none" />
+                    <path
+                      d={line}
+                      fill="none"
+                      stroke={s.color}
+                      strokeWidth={isStale ? 1.1 : 1.5}
+                      strokeDasharray={isStale ? "4 3" : undefined}
+                      style={{ filter: `drop-shadow(0 0 2px ${s.color})` }}
+                    />
+                  </g>
+                );
+              }
+              // isolated real datum — keep it visible as a dot rather than
+              // letting a single point silently vanish.
+              const [dx, dy] = [X(seg[0].t), y(seg[0].v)];
+              return <circle key={gi} cx={dx} cy={dy} r="1.6" fill={s.color} opacity={isStale ? 0.6 : 1} />;
+            })}
             {labels ? (
-              <text x={padL + innerW + 5} y={y(lastV) + 3} fontFamily="var(--f-mono)" fontSize="10" fill={s.color}>
-                {s.label} {(lastV >= 0 ? "+" : "") + lastV.toFixed(1)}%{isStale ? " ·stale" : ""}
+              <text x={padL + innerW + 5} y={labelYs[si] + 3} fontFamily="var(--f-mono)" fontSize="10" fill={s.color}>
+                {s.label} {s.last == null ? "—" : (s.last >= 0 ? "+" : "") + s.last.toFixed(1) + "%"}{isStale ? " ·stale" : ""}
               </text>
             ) : null}
           </g>

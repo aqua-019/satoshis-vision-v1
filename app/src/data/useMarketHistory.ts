@@ -6,6 +6,12 @@
  * through the same-origin /api/coingecko proxy (privacy invariant: the browser
  * never touches the CoinGecko API host directly, no third-party chart libs).
  *
+ * Group membership (privacy peers, top majors) is NOT hardcoded — it comes from
+ * the server-side aggregator at /api/markets, which ranks coins live (market-cap
+ * order for majors, a privacy-coins category for peers) and reports its own
+ * per-group and per-series status. The client never invents a ranking; on outage
+ * it falls back to the last manifest + per-coin caches it persisted itself.
+ *
  * No synthesis, ever. Each series is:
  *   "live"    — the fetch succeeded this session;
  *   "stale"   — the fetch failed, showing the last-good response from the
@@ -45,6 +51,34 @@ export interface LineSeries {
   t?: number[];
 }
 
+/** One ranked coin, charted or not — the full membership manifest for a group. */
+export interface GroupMember {
+  id: string;
+  symbol: string;
+  name: string;
+  rank: number | null;
+  price: number | null;
+  marketCap: number | null;
+  change24h: number | null;
+  charted: boolean;
+  pinned?: boolean;
+}
+
+export interface GroupResult extends SeriesResult<LineSeries[]> {
+  /** full ranking incl. non-charted remainder */
+  members: GroupMember[];
+  rankStatus: SeriesStatus;
+  /** true once an aggregator attempt has settled for this range */
+  attempted: boolean;
+}
+
+export interface XmrMeta {
+  ath: number;
+  athDate: string;
+  atl: number;
+  atlDate: string;
+}
+
 export interface MarketHistory {
   loading: boolean;
   days: number;
@@ -54,10 +88,12 @@ export interface MarketHistory {
   xmrBtc: SeriesResult<number[]>;
   /** BTC/USD line (market_chart vs usd) */
   btcLine: SeriesResult<number[]>;
-  /** XMR + privacy peers, normalised inputs */
-  peers: SeriesResult<LineSeries[]>;
-  /** XMR + top-coins, normalised inputs */
-  top: SeriesResult<LineSeries[]>;
+  /** XMR + live-ranked privacy peers, normalised inputs */
+  peers: GroupResult;
+  /** XMR + live-ranked top majors, normalised inputs */
+  top: GroupResult;
+  /** XMR all-time-high/low, from the aggregator envelope */
+  meta: SeriesResult<XmrMeta | null>;
 }
 
 export const RANGE_DAYS = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365 } as const;
@@ -202,54 +238,22 @@ function attachVolume(candles: Candle[], volumes: [number, number][]): Candle[] 
   });
 }
 
-/* ── coin groups (label, CoinGecko id, color) ──────────────────────── */
+/* ── group palette (label/id come from the aggregator; colour is index-keyed) */
 
-type CoinDef = readonly [label: string, id: string, color: string];
-
-const PEER_GROUP: readonly CoinDef[] = [
-  ["XMR", "monero", "var(--tk-accent)"],
-  ["ZEC", "zcash", "#ffd400"],
-  ["DASH", "dash", "#5ed3f4"],
-  ["ARRR", "pirate-chain", "#b87aff"],
+export const XMR_COLOR = "var(--tk-accent)";
+export const PEER_PALETTE: readonly string[] = ["#ffd400", "#5ed3f4", "#b87aff", "#4ade80", "#ff4d6d"];
+export const MAJOR_PALETTE: readonly string[] = [
+  "var(--ink-100)", "#b87aff", "#4ade80", "#ffd400", "#5ed3f4", "#ff4d6d", "#f59e0b", "#22d3ee",
 ];
 
-const TOP_GROUP: readonly CoinDef[] = [
-  ["XMR", "monero", "var(--tk-accent)"],
-  ["BTC", "bitcoin", "var(--ink-100)"],
-  ["ETH", "ethereum", "#b87aff"],
-  ["SOL", "solana", "#4ade80"],
-  ["BNB", "binancecoin", "#ffd400"],
-  ["XRP", "ripple", "#5ed3f4"],
-  ["ADA", "cardano", "#ff4d6d"],
-];
-
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-interface CachedLine { data: number[]; t?: number[] }
-
-/** Fetch a group's market_chart lines, staggered to respect CG free-tier; each
- *  id that fails falls back to ITS OWN last-good cache ("stale"), or an empty
- *  "loading" line when no cache exists. */
-async function fetchGroup(ids: readonly CoinDef[], vs: string, days: number, startDelay = 0): Promise<LineSeries[]> {
-  if (startDelay) await sleep(startDelay);
-  const out: LineSeries[] = [];
-  for (let i = 0; i < ids.length; i++) {
-    const [label, id, color] = ids[i];
-    const key = cacheKey("chart", id, vs, days);
-    if (i > 0) await sleep(250);
-    try {
-      const { prices } = await fetchChart(id, vs, days);
-      const line: CachedLine = { data: prices.map((p) => p[1]), t: prices.map((p) => p[0]) };
-      keep(key, line);
-      out.push({ label, color, status: "live", ...line });
-    } catch {
-      const hit = recall<CachedLine>(key);
-      out.push(hit
-        ? { label, color, status: "stale", ...hit }
-        : { label, color, status: "loading", data: [] });
-    }
-  }
-  return out;
+/** Pure, index-keyed colour lookup so swatch/line/label can never disagree.
+ *  Index 0 (XMR, always pinned first) is always XMR_COLOR regardless of group;
+ *  index ≥1 walks the group's palette, wrapping defensively. */
+export function seriesColor(group: "peers" | "majors", index: number): string {
+  if (index <= 0) return XMR_COLOR;
+  const palette = group === "peers" ? PEER_PALETTE : MAJOR_PALETTE;
+  const i = ((index - 1) % palette.length + palette.length) % palette.length;
+  return palette[i];
 }
 
 /** "live" if anything is live; else "stale" if anything has last-good data;
@@ -267,25 +271,150 @@ function hydrate<T>(key: string, empty: T, gl: string): SeriesResult<T> {
     : { data: empty, status: "loading", granularityLabel: gl };
 }
 
+/* ── /api/markets aggregator (server-ranked group membership) ──────── */
+
+type UpstreamStatus = "live" | "stale" | "unavailable";
+
+interface RankingGroup {
+  status: UpstreamStatus;
+  at: number;
+  source: string;
+  members: GroupMember[];
+  excluded?: { id: string; reason: string }[];
+}
+
+interface SeriesMember {
+  id: string;
+  symbol: string;
+  status: UpstreamStatus;
+  at: number;
+  t: (number | null)[];
+  p: (number | null)[];
+}
+
+interface MarketsEnvelope {
+  v: number;
+  days: number;
+  fetchedAt: string;
+  partial: boolean;
+  meta: { status: UpstreamStatus; ath: number | null; athDate: string | null; atl: number | null; atlDate: string | null };
+  rankings: { peers: RankingGroup; majors: RankingGroup };
+  series: { peers: SeriesMember[]; majors: SeriesMember[] };
+}
+
+interface CachedLine { data: number[]; t?: number[] }
+
+async function getMarketsJson(days: number): Promise<MarketsEnvelope> {
+  const r = await fetch(`/api/markets?days=${days}`);
+  if (!r.ok) throw new Error(`markets ${r.status}`);
+  const j = (await r.json()) as MarketsEnvelope | null;
+  if (!j || typeof j !== "object" || !j.rankings || !j.series) throw new Error("malformed markets envelope");
+  return j;
+}
+
+function fetchMarkets(days: number): Promise<MarketsEnvelope> {
+  return cached(`markets|${days}`, () => getMarketsJson(days));
+}
+
+/** Build a GroupResult from a resolved membership list + optional live series
+ *  lookup. Shared by the aggregator success path, its failure fallback, and
+ *  boot hydration — the only difference between those three is where `members`
+ *  and `seriesLookup` come from. */
+function assembleGroup(
+  group: "peers" | "majors",
+  members: GroupMember[],
+  rankStatus: SeriesStatus,
+  days: number,
+  gl: string,
+  attempted: boolean,
+  seriesLookup?: (id: string) => SeriesMember | undefined,
+): GroupResult {
+  const charted = members.filter((m) => m.charted);
+  const data: LineSeries[] = charted.map((m, i) => {
+    const key = cacheKey("chart", m.id, "usd", days);
+    const color = seriesColor(group, i);
+    const entry = seriesLookup?.(m.id);
+    if (entry && entry.status === "live") {
+      const t: number[] = [];
+      const p: number[] = [];
+      for (let idx = 0; idx < entry.t.length; idx++) {
+        const val = entry.p[idx];
+        if (val != null && entry.t[idx] != null) { t.push(entry.t[idx] as number); p.push(val); }
+      }
+      if (p.length > 0) {
+        const line: CachedLine = { data: p, t };
+        keep(key, line);
+        return { label: m.symbol, color, status: "live", ...line };
+      }
+    }
+    const hit = recall<CachedLine>(key);
+    return hit
+      ? { label: m.symbol, color, status: "stale", ...hit }
+      : { label: m.symbol, color, status: "loading", data: [] };
+  });
+  return { data, status: groupStatus(data), granularityLabel: gl, members, rankStatus, attempted };
+}
+
+/** Aggregator responded (HTTP success): resolve this group's membership —
+ *  prefer the response's own list, else fall back to the last manifest — and
+ *  persist a fresh non-empty manifest so future boots/outages have it. */
+function buildGroup(env: MarketsEnvelope, group: "peers" | "majors", days: number, gl: string): GroupResult {
+  const ranking = env.rankings[group];
+  const manifestKey = cacheKey("members", group, "usd", 0);
+  const members = ranking.members.length > 0 ? ranking.members : recall<GroupMember[]>(manifestKey) ?? [];
+  if (ranking.members.length > 0) keep(manifestKey, ranking.members);
+  const rankStatus: SeriesStatus = ranking.status === "live" ? "live" : members.length > 0 ? "stale" : "loading";
+  const seriesList = env.series[group];
+  const lookup = (id: string) => seriesList.find((s) => s.id === id);
+  return assembleGroup(group, members, rankStatus, days, gl, true, lookup);
+}
+
+/** Aggregator request failed outright (network / non-OK / malformed JSON):
+ *  fall back entirely to the last persisted manifest + per-coin caches. */
+function fallbackGroup(group: "peers" | "majors", days: number, gl: string): GroupResult {
+  const members = recall<GroupMember[]>(cacheKey("members", group, "usd", 0)) ?? [];
+  const rankStatus: SeriesStatus = members.length > 0 ? "stale" : "loading";
+  return assembleGroup(group, members, rankStatus, days, gl, true);
+}
+
+/** Boot hydration: identical to fallbackGroup's cache lookup, but no aggregator
+ *  attempt has happened yet this session, so `attempted` is false. */
+function initGroup(group: "peers" | "majors", days: number, gl: string): GroupResult {
+  const members = recall<GroupMember[]>(cacheKey("members", group, "usd", 0)) ?? [];
+  const rankStatus: SeriesStatus = members.length > 0 ? "stale" : "loading";
+  return assembleGroup(group, members, rankStatus, days, gl, false);
+}
+
+const metaCacheKey = () => cacheKey("meta", "monero", "usd", 0);
+
+function metaFromCache(gl: string): SeriesResult<XmrMeta | null> {
+  const hit = recall<XmrMeta>(metaCacheKey());
+  return hit
+    ? { data: hit, status: "stale", granularityLabel: gl }
+    : { data: null, status: "loading", granularityLabel: gl };
+}
+
+function buildMeta(env: MarketsEnvelope, gl: string): SeriesResult<XmrMeta | null> {
+  const m = env.meta;
+  if (m && m.status === "live" && m.ath != null && m.athDate != null && m.atl != null && m.atlDate != null) {
+    const data: XmrMeta = { ath: m.ath, athDate: m.athDate, atl: m.atl, atlDate: m.atlDate };
+    keep(metaCacheKey(), data);
+    return { data, status: "live", granularityLabel: gl };
+  }
+  return metaFromCache(gl);
+}
+
 function initialHistory(days: number): MarketHistory {
   const gl = granLabel(days);
-  const lines = (ids: readonly CoinDef[]): SeriesResult<LineSeries[]> => {
-    const data = ids.map(([label, id, color]): LineSeries => {
-      const hit = recall<CachedLine>(cacheKey("chart", id, "usd", days));
-      return hit
-        ? { label, color, status: "stale", ...hit }
-        : { label, color, status: "loading", data: [] };
-    });
-    return { data, status: groupStatus(data), granularityLabel: gl };
-  };
   return {
     loading: true,
     days,
     xmrCandles: hydrate<Candle[]>(cacheKey("ohlc", "monero", "usd", days), [], gl),
     xmrBtc: hydrate<number[]>(cacheKey("ratio", "monero", "btc", days), [], gl),
     btcLine: hydrate<number[]>(cacheKey("line", "bitcoin", "usd", days), [], gl),
-    peers: lines(PEER_GROUP),
-    top: lines(TOP_GROUP),
+    peers: initGroup("peers", days, gl),
+    top: initGroup("majors", days, gl),
+    meta: metaFromCache(gl),
   };
 }
 
@@ -348,13 +477,22 @@ export function useMarketHistory(days: number): MarketHistory {
         if (hit) set({ btcLine: { data: hit, status: "stale", granularityLabel: gl } });
       });
 
-    // peer + top groups, staggered (top delayed to ease free-tier rate caps)
-    const pPeers = fetchGroup(PEER_GROUP, "usd", days, 0).then((d) =>
-      set({ peers: { data: d, status: groupStatus(d), granularityLabel: gl } }));
-    const pTop = fetchGroup(TOP_GROUP, "usd", days, 600).then((d) =>
-      set({ top: { data: d, status: groupStatus(d), granularityLabel: gl } }));
+    // peers + majors ranking/series + XMR meta — one aggregator round trip,
+    // shared via the module-scope `cached()` promise map so StrictMode's
+    // double-mount and the two group consumers below share one request.
+    const pMarkets = fetchMarkets(days)
+      .then((env) => set({
+        peers: buildGroup(env, "peers", days, gl),
+        top: buildGroup(env, "majors", days, gl),
+        meta: buildMeta(env, gl),
+      }))
+      .catch(() => set({
+        peers: fallbackGroup("peers", days, gl),
+        top: fallbackGroup("majors", days, gl),
+        meta: metaFromCache(gl),
+      }));
 
-    Promise.allSettled([pCandles, pBtc, pBtcLine, pPeers, pTop]).then(() => {
+    Promise.allSettled([pCandles, pBtc, pBtcLine, pMarkets]).then(() => {
       if (alive) setState((s) => ({ ...s, loading: false }));
     });
 
@@ -366,7 +504,10 @@ export function useMarketHistory(days: number): MarketHistory {
   // unmount/range change, so StrictMode double-mount can't double-fire it.
   React.useEffect(() => {
     if (state.loading) return;
-    const statuses = [state.xmrCandles.status, state.xmrBtc.status, state.btcLine.status, state.peers.status, state.top.status];
+    const statuses = [
+      state.xmrCandles.status, state.xmrBtc.status, state.btcLine.status,
+      state.peers.status, state.top.status, state.meta.status,
+    ];
     if (statuses.every((s) => s === "live")) return;
     const id = setTimeout(() => setRetryNonce((n) => n + 1), RETRY_MS);
     return () => clearTimeout(id);

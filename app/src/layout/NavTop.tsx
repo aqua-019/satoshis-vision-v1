@@ -11,6 +11,7 @@ import { NavLink, Link } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { Provenance } from "@/design/primitives";
 import { DesignPanel } from "@/design/DesignPanel";
+import { SITE_VERSION } from "@/data/releases";
 
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
@@ -56,7 +57,7 @@ export function NavTop() {
           <span className="brand-mark" />
           <span>xmr<b>.irish</b></span>
         </Link>
-        <Link to="/sources#release-notes" className="kicker" style={{ textDecoration: "none" }} title="Release notes">v5.0.20</Link>
+        <Link to="/sources#release-notes" className="kicker" style={{ textDecoration: "none" }} title="Release notes">{SITE_VERSION}</Link>
       </div>
 
       <nav

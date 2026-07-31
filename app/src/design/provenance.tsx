@@ -92,6 +92,12 @@ export function Provenance({
   );
 }
 
+/** Same chrome as <Provenance>, no source tag — for curated editorial content
+ *  that has no upstream (e.g. the swap-venue directory). */
+export function ProvNote({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
+  return <span className="prov" style={style}><span className="prov-detail">{children}</span></span>;
+}
+
 export interface DataLegendProps {
   /** Which source tags to explain, in order. */
   sources: ProvSource[];
