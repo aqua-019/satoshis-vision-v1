@@ -26,7 +26,10 @@ chain and market data.
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
 - Verification: 44 `verify-*.mjs` files (`app/` ×40, `api/` ×4) — 43 gates plus
   `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs 24 of them on PRs to `main`.
+  are offline source assertions. `.github/workflows/ci.yml` runs **24 distinct files** on
+  PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
+  (11 gates, no browser) and `verify:e2e` (9 gates, against `scripts/serve-dist.mjs`).
+  The remaining ~19 are wired to neither npm nor CI — several expect live upstreams.
 
 ## Site Routes
 
@@ -180,41 +183,6 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
-- **2026-07-31**: v6.1.0 — **deleted the v4 front-end**: 22 root `.html`, `js/` (51),
-  `css/`, `nav.js`, root `fonts/` (17 woff2), `netlify.toml`, root
-  `favicon.svg`/`manifest.json`/`sitemap.xml`/`robots.txt`,
-  `scripts/harden-legacy-head.mjs`, and `app/verify-v510.mjs`. 100 files, ~82.5k lines.
-  **Why it was safe**: `vercel.json` sets `outputDirectory: app/dist` and rewrites
-  `/((?!api/).*)` → `/index.html`. The repo root is not in `app/dist`, so every legacy
-  URL already served the SPA shell. This is a structural proof and it beats a curl —
-  which is just as well, because sandbox egress to `xmr.irish` returns 403.
-  **The trap, for anyone deleting root files again**: `app/verify-origins.mjs` read the
-  repo root and runs in CI *twice* (`ci.yml:102` and `:127`). Its `walk()` had no
-  `existsSync` guard, so removing `js/`/`css/` crashed it with `ENOENT`, and
-  `ok(pages.length === 20)` hard-failed on the missing HTML. It also parsed the CSP out of
-  `netlify.toml`. It is now an app-only gate: phase 3 (20 legacy pages under that deploy's
-  CSP) is gone, along with the sole `ALLOWED` third-party entry, which existed for one
-  exchange iframe on a page this change deletes. Phases 1 and 2 both still pass.
-  **Sitemap**: root `sitemap.xml` listed 18 URLs, 17 of them legacy — and was itself
-  unreachable, as were root `robots.txt` and `manifest.json`. Now generated into `dist/`
-  at build time by `scripts/gen-sitemap.mjs` from `scripts/routes.mjs`, the extracted
-  route table `prerender.mjs` also consumes. Vercel's filesystem lookup runs before
-  rewrites, so a real `dist/sitemap.xml` wins over the catch-all with no config change.
-  No `<lastmod>`/`<priority>`/`<changefreq>`: a build timestamp is not a content date, and
-  Google has ignored the other two since 2023 — inventing them is the same failure mode as
-  fabricated prices. **Prompt 07's 11 → 6 restructure edits `routes.mjs` only.**
-  **`verify-v510.mjs` deleted rather than repaired.** The brief blamed its
-  `networkidle` waits, which is true but insufficient: it also selects charts by
-  `viewBox="0 0 1000…"` (v6.0.12 switched to measured CSS width, so it matches nothing)
-  and looks for a `Top 10` panel now titled `XMR vs Top 9` (live-ranked). Its own header
-  called it a HISTORICAL GATE written against a seed feed deleted in v5.0.14, and it does
-  zero route mocking. Repairing it would have rebuilt it as a near-duplicate of
-  `verify-charts.mjs` + `verify-markets-dom.mjs`, both already in CI. **No red check
-  disappeared — it was wired to neither npm nor CI.**
-  `auto-merge.yml` needed no action: already deleted in `a570bbb`, absent at `origin/main`.
-  Still-duplicated route lists (`NavTop.tsx`, `RootBoundary.tsx`, `verify-lib.mjs`) and the
-  now-orphaned `api/monero.js` are known follow-ups, not regressions.
-
 - **2026-07-31**: v6.0.12 — **Markets charts rendered nothing on a cold first
   visit**, and the fix is a pattern worth knowing before writing another chart.
   `verify-markets-dom.mjs` (added the same day) caught it the moment it ran
@@ -361,7 +329,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   (`api/monero.js` stays — the legacy static site's `js/monero-network.js` still uses it).
   **Superseded by v6.1.0**: that consumer was deleted with the rest of the v4 front-end, so
   `api/monero.js` and its two `vercel.json` entries are now orphaned. Left in place
-  deliberately, as removing them was outside that change's scope — see the v6.1.0 note.
+  deliberately — see Known Issues / TODOs.
   Three traps handled: `hashSeries` now advances only under a `pushHash` flag set by the
   chain tier (a 3s push would fake sparkline resolution); `/api/xmr/tip` returns
   `height - 1` (tip block) vs `/api/xmr/network`'s raw block *count*, so tip is used

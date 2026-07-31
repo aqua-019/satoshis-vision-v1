@@ -46,6 +46,15 @@ what makes its old description false — leaving it would mislead the following 
 Scope limited to the project-description half; the L3 orchestrator, loopflow, roster,
 security-invariant and agent-teams sections are untouched and verified byte-identical.
 
+**Corrected after review**: the first pass appended a dated v6.1.0 session note (+35 lines)
+to `CLAUDE.md`. That was wrong in kind, not just in size — 18 prompts follow this one, and
+18 more notes turn an auto-read memory file into a history log that costs tokens at the
+start of every future session. The note was removed; its standing facts (orphaned
+`api/monero.js`, the duplicated route lists, the canonical route table) already live in
+Known Issues and Architecture Notes, and the run history lives in §7 below plus `LOG.md`,
+which is where it belongs. `CLAUDE.md`'s diff against `origin/main` shrank from
++132/−84 to +104/−88 as a result.
+
 OUT: `app/src/**` and `app/index.html` (untouched by design); `docs/` v4 audits (kept as
 historical record); `api/monero.js` (now orphaned — flagged, not removed, as deleting it
 touches `api/` and `vercel.json` function config); the three remaining hand-maintained
@@ -70,7 +79,10 @@ route lists in `NavTop.tsx`, `RootBoundary.tsx` and `verify-lib.mjs`.
 - [x] No red check left that is not a real failure
 - [x] `CLAUDE.md` describes the post-PR repo; zero mentions of the deleted site's
       architecture; L3 sections byte-identical to `origin/main`
-- [x] Branch pushed · draft PR opened
+- [x] `CLAUDE.md` carries no dated run log; every count in it was measured this run
+      (12 woff2; 44 `verify-*.mjs`; 24 distinct files in CI = 9 + `verify:static` 11 +
+      `verify:e2e` 9)
+- [x] Branch pushed · PR opened and marked ready for review (not draft)
 
 ## 6 · VERIFY COMMANDS
 
@@ -126,6 +138,10 @@ node scripts/serve-dist.mjs & npm run wait-preview && npm run verify:e2e
    counted 17 at the repo root plus 12 in `app/public/fonts/`; this PR deletes the 17, so
    12 is the post-merge count. Writing either stale figure into the file that exists to
    stop stale figures propagating would have reintroduced the bug being fixed.
+   Re-audited on review: neither stale figure ever reached `CLAUDE.md`. The gate line now
+   also names the wired suites, so the number is checkable rather than asserted — 24
+   distinct files in CI = 9 individually-named offline gates + `verify:static` (11) +
+   `verify:e2e` (9), all read off `package.json` and `ci.yml`.
 
 **notes for ARCHITECTURE.md patch**: `app/scripts/routes.mjs` is the single source for
 static routes, consumed by `prerender.mjs` and `gen-sitemap.mjs`. Prompt 07's 11 → 6
