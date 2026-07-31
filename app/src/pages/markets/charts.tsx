@@ -16,6 +16,7 @@
 import * as React from "react";
 import type { Candle, LineSeries, SeriesStatus } from "@/data/useMarketHistory";
 import { useReducedMotion } from "@/design/useReducedMotion";
+import { Provenance } from "@/design/primitives";
 import {
   VB_W,
   AXIS,
@@ -27,6 +28,16 @@ import {
   ChartCrosshair,
   useGradientId,
 } from "@/design/chart-kit";
+import {
+  normalizeSeries,
+  timeDomain,
+  xOf as geomXOf,
+  yDomain,
+  dedupeLabelYs,
+  medianStep,
+  type NormSeries,
+  type NormPoint,
+} from "./geometry";
 
 const UP_FILL = "rgba(74,222,128,0.72)";
 const UP_STROKE = "rgba(74,222,128,1)";
@@ -269,35 +280,100 @@ export interface MultiLineProps {
   days: number;
   height?: number;
   labels?: boolean;
+  /** Rendered under the empty-state badge when nothing is usable to plot. */
+  emptyNote?: React.ReactNode;
 }
 
-export function MultiLine({ series, days, height = 280, labels = true }: MultiLineProps) {
+const ML_X_TICKS = 7;
+
+/** Hover tolerance: a series answers the cursor only within 3× its own median
+ *  sampling step — the same "3× median step" rule splitSegments uses to decide
+ *  a time gap is too wide to draw a line across. `floor` (a fraction of the
+ *  domain span) keeps single-point series, whose median step is 0, reachable. */
+function hoverTolerance(pts: NormPoint[], floor: number): number {
+  return Math.max(3 * medianStep(pts), floor);
+}
+
+/**
+ * The point of `pts` closest in time to `t`, or null when nothing lies within
+ * `tol` of it. Returning null rather than the closest-at-any-distance is the
+ * honest answer for a series that doesn't cover the hovered moment: a coin
+ * listed three weeks ago has no value to report at day 1 of a 90-day window.
+ * Segments are scanned flat — a gap breaks the LINE, not the lookup.
+ */
+function pointAtTime(pts: NormPoint[], t: number, tol: number): NormPoint | null {
+  let best: NormPoint | null = null;
+  let bestDt = Infinity;
+  for (const p of pts) {
+    const dt = Math.abs(p.t - t);
+    if (dt < bestDt) { bestDt = dt; best = p; }
+  }
+  return best !== null && bestDt <= tol ? best : null;
+}
+
+export function MultiLine({ series, days, height = 280, labels = true, emptyNote }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   const [svgRef, vx, cursorHandlers] = useSvgCursor(VB_W);
   const gid = useGradientId("ml");
-  if (!series?.length) return null;
 
   const W = VB_W;
   const padL = 48, padR = labels ? 100 : 16, padT = 16, padB = 26;
   const innerW = W - padL - padR;
   const innerH = height - padT - padB;
 
-  const norm = series.map((s) => {
-    const first = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
-    return { ...s, n: s.data.map((v) => (v / first - 1) * 100) };
-  });
-  const all = norm.flatMap((s) => s.n).filter((v) => isFinite(v));
-  const min = Math.min(0, ...all), max = Math.max(0, ...all);
+  const norm: NormSeries[] = React.useMemo(
+    () => (series ?? []).map((s) => normalizeSeries(s, days)),
+    [series, days],
+  );
+  const domain = timeDomain(norm);
+
+  if (!domain) {
+    return (
+      <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+        <Provenance source="coingecko" fresh="none" detail="unavailable" />
+        {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
+      </div>
+    );
+  }
+
+  const { min, max } = yDomain(norm);
   const rng = max - min || 1;
   const y = (v: number) => padT + innerH - ((v - min) / rng) * innerH;
-  const xOf = (i: number, len: number) => padL + (len <= 1 ? 0 : (i / (len - 1)) * innerW);
+  const X = (t: number) => geomXOf(t, domain, padL, innerW);
 
   const yTicks = niceTicks(min, max, 5);
-  const ref = norm.reduce((a, b) => ((b.t?.length ?? 0) > (a.t?.length ?? 0) ? b : a), norm[0]);
-  const refLen = ref.n.length;
-  const xStep = Math.max(1, Math.ceil(refLen / 7));
-  const cross = refLen > 0 ? nearestIndex(vx, { padL, innerW, n: refLen }) : null;
+  const xTicks = Array.from({ length: ML_X_TICKS }, (_, i) =>
+    domain.t0 + (i / (ML_X_TICKS - 1)) * (domain.t1 - domain.t0),
+  );
+
+  // One label y-position per series (in series order), de-collided so up to
+  // 9 simultaneous series stay legibly spaced.
+  const rawLabelYs = norm.map((s) => y(s.last ?? 0));
+  const labelYs = labels ? dedupeLabelYs(rawLabelYs) : rawLabelYs;
+
+  /* Hover, resolved in the TIME domain — not with chart-kit's nearestIndex.
+     nearestIndex assumes one shared, evenly-spaced index spanning the plot,
+     and the whole point of this chart's geometry is that series no longer
+     share an index (17 daily points can sit beside 720 hourly ones). So the
+     cursor's viewBox x is inverted back through geometry.xOf into a
+     timestamp, and every series then answers with its OWN nearest point in
+     time. Everything below is index-free. */
+  const span = domain.t1 - domain.t0 || 1;
+  const cursorT =
+    vx == null || vx < padL - 4 || vx > padL + innerW + 4
+      ? null
+      : domain.t0 + ((Math.min(padL + innerW, Math.max(padL, vx)) - padL) / innerW) * span;
+
+  // Per-series nearest point at the cursor's time (null = doesn't cover it),
+  // computed once and reused by the focus dots and the tooltip rows.
+  const hovered: (NormPoint | null)[] =
+    cursorT == null
+      ? []
+      : norm.map((s) => {
+          const pts = s.segments.flat();
+          return pointAtTime(pts, cursorT, hoverTolerance(pts, span * 0.02));
+        });
 
   return (
     <svg
@@ -324,54 +400,82 @@ export function MultiLine({ series, days, height = 280, labels = true }: MultiLi
         </g>
       ))}
 
-      {/* x date ticks (from the longest real series) */}
-      {ref.t ? ref.n.map((_, i) => (i % xStep === 0 ? (
-        <text key={"x" + i} x={xOf(i, refLen)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9.5" fill={AXIS}>{fmtDate(ref.t![i], days)}</text>
-      ) : null)) : null}
+      {/* x date ticks — 7 evenly spaced by TIME across the common domain,
+          not by index of whichever series happens to be longest. */}
+      {xTicks.map((t, i) => (
+        <text key={"x" + i} x={X(t)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9.5" fill={AXIS}>{fmtDate(t, days)}</text>
+      ))}
 
-      {/* area + line per series */}
+      {/* area + line per series, one path pair per honest segment — a
+          series covering only part of the window simply stops there. */}
       {norm.map((s, si) => {
-        const len = s.n.length;
-        if (!len) return null;
-        const pts = s.n.map((v, i) => [xOf(i, len), y(v)] as [number, number]);
-        const line = smoothPath(pts);
-        const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
         const isStale = s.status === "stale";
-        const lastV = s.n[len - 1];
         return (
-          <g key={si} opacity={isStale ? 0.6 : 1}>
-            <path d={area} fill={`url(#${gid}-${si})`} stroke="none" />
-            <path d={line} fill="none" stroke={s.color} strokeWidth={isStale ? 1.1 : 1.5} strokeDasharray={isStale ? "4 3" : undefined} style={{ filter: `drop-shadow(0 0 2px ${s.color})` }} />
+          <g key={si}>
+            {s.segments.map((seg, gi) => {
+              if (seg.length >= 2) {
+                const pts = seg.map((p) => [X(p.t), y(p.v)] as [number, number]);
+                const line = smoothPath(pts);
+                const area = `${line} L ${pts[pts.length - 1][0]},${y(min)} L ${pts[0][0]},${y(min)} Z`;
+                return (
+                  <g key={gi} opacity={isStale ? 0.6 : 1}>
+                    <path d={area} fill={`url(#${gid}-${si})`} stroke="none" />
+                    <path
+                      d={line}
+                      fill="none"
+                      stroke={s.color}
+                      strokeWidth={isStale ? 1.1 : 1.5}
+                      strokeDasharray={isStale ? "4 3" : undefined}
+                      style={{ filter: `drop-shadow(0 0 2px ${s.color})` }}
+                    />
+                  </g>
+                );
+              }
+              // isolated real datum — keep it visible as a dot rather than
+              // letting a single point silently vanish.
+              const [dx, dy] = [X(seg[0].t), y(seg[0].v)];
+              return <circle key={gi} cx={dx} cy={dy} r="1.6" fill={s.color} opacity={isStale ? 0.6 : 1} />;
+            })}
             {labels ? (
-              <text x={padL + innerW + 5} y={y(lastV) + 3} fontFamily="var(--f-mono)" fontSize="10" fill={s.color}>
-                {s.label} {(lastV >= 0 ? "+" : "") + lastV.toFixed(1)}%{isStale ? " ·stale" : ""}
+              <text x={padL + innerW + 5} y={labelYs[si] + 3} fontFamily="var(--f-mono)" fontSize="10" fill={s.color}>
+                {s.label} {s.last == null ? "—" : (s.last >= 0 ? "+" : "") + s.last.toFixed(1) + "%"}{isStale ? " ·stale" : ""}
               </text>
             ) : null}
           </g>
         );
       })}
 
-      {/* crosshair + per-series focus dots + tooltip */}
-      {cross != null ? (
+      {/* crosshair + per-series focus dots + tooltip.
+          The rule sits at the cursor's own time rather than snapping to a
+          sample: with mixed cadences there is no single sample to snap to.
+          Each series' dot shows where ITS nearest sample actually falls, so a
+          sparse series visibly answers from a point beside the rule. The tip
+          carries the series names, which is the only labelling this chart has
+          when `labels={false}` drops the right-hand gutter. */}
+      {cursorT != null ? (
         <g pointerEvents="none">
-          <ChartCrosshair x={xOf(cross, refLen)} y1={padT} y2={padT + innerH} />
+          <ChartCrosshair x={X(cursorT)} y1={padT} y2={padT + innerH} />
           {norm.map((s, si) => {
-            const len = s.n.length;
-            if (!len) return null;
-            const idx = Math.min(len - 1, Math.round((cross / Math.max(1, refLen - 1)) * (len - 1)));
-            return <circle key={si} cx={xOf(idx, len)} cy={y(s.n[idx])} r="2.5" fill={s.color} />;
+            const p = hovered[si];
+            return p ? <circle key={si} cx={X(p.t)} cy={y(p.v)} r="2.5" fill={s.color} /> : null;
           })}
           <ChartTip
-            x={xOf(cross, refLen)}
+            x={X(cursorT)}
             y={padT + 6}
             bounds={{ left: padL, right: padL + innerW }}
-            rows={norm.map((s) => {
-              const len = s.n.length;
-              if (!len) return { label: s.label, value: "—", color: s.color };
-              const idx = Math.min(len - 1, Math.round((cross / Math.max(1, refLen - 1)) * (len - 1)));
-              const v = s.n[idx];
-              return { label: s.label, value: (v >= 0 ? "+" : "") + v.toFixed(1) + "%" + (s.status === "stale" ? " ·stale" : ""), color: s.color };
-            })}
+            rows={[
+              { value: fmtDate(cursorT, days), color: AXIS },
+              ...norm.map((s, si) => {
+                const p = hovered[si];
+                return {
+                  label: s.label,
+                  value: p == null
+                    ? "—"
+                    : (p.v >= 0 ? "+" : "") + p.v.toFixed(1) + "%" + (s.status === "stale" ? " ·stale" : ""),
+                  color: s.color,
+                };
+              }),
+            ]}
           />
         </g>
       ) : null}

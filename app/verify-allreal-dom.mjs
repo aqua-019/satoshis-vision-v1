@@ -41,6 +41,11 @@ console.log('engine:', engine);
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
+/* A fabricated zero price, as a WHOLE token. The negative lookahead matters:
+   small-cap privacy coins render at 4dp, so a bare /\$0\.00/ substring test
+   also matches the legitimate "$0.0019" and fails on real data. */
+const ZERO_PRICE = /\$0\.00(?!\d)/;
+
 /* ── fixtures (shapes mirror the real /api responses; see data/map.ts) ── */
 const H = 3_700_123;
 const nowSec = Math.floor(Date.now() / 1000);
@@ -104,7 +109,7 @@ async function newPage(opts) {
   await p.waitForTimeout(1500);
   const body = await p.evaluate(() => document.body.innerText);
   ok(/CONNECTING/i.test(body), 'A: NavTop pill shows CONNECTING during boot/outage');
-  ok(!/\$0\.00/.test(body), 'A: no $0.00 fabricated zero-price anywhere');
+  ok(!ZERO_PRICE.test(body), 'A: no $0.00 fabricated zero-price anywhere');
   ok(!body.includes('$NaN') && !body.includes('NaN'), 'A: no NaN leaked to the DOM');
   const heightKpi = await p.evaluate(() => {
     const els = [...document.querySelectorAll('*')];
@@ -149,6 +154,53 @@ async function newPage(opts) {
   const body = await p.evaluate(() => document.body.innerText);
   ok(/COINGECKO · stale/i.test(body), 'C: cached candle series is labelled "COINGECKO · stale"');
   ok(/40 bars/i.test(body), 'C: the cached candles (40 bars) actually render');
+  // v6.0.5: group membership comes from /api/markets, which is aborted here and
+  // has no cached manifest — the two group panels must say so rather than
+  // drawing an empty frame or inventing a ranking.
+  ok(/COINGECKO · unavailable/i.test(body), 'C: un-cached group panels render "COINGECKO · unavailable"');
+  // Same honesty bar Scenario A holds /network to. The dynamic membership and
+  // the privacy remainder row are the new places a null could surface as 0.
+  ok(!ZERO_PRICE.test(body), 'C: no $0.00 anywhere on /markets under total outage');
+  ok(!body.includes('NaN'), 'C: no NaN anywhere on /markets under total outage');
+  await p.close();
+}
+
+/* ── Scenario D: cached membership manifest survives an outage ────────── */
+/* Membership is server-ranked now, so a cold offline load would know nothing
+   about which coins to draw. The manifest is cached under its own key so the
+   last-known ranking still renders — labelled stale, never re-invented. */
+{
+  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  const members = [
+    { id: 'monero', symbol: 'XMR', name: 'Monero', rank: 26, price: 321.45, marketCap: 5.9e9, change24h: 1.23, charted: true, pinned: true },
+    { id: 'zcash', symbol: 'ZEC', name: 'Zcash', rank: 21, price: 473.05, marketCap: 7.94e9, change24h: 2.1, charted: true },
+    { id: 'decred', symbol: 'DCR', name: 'Decred', rank: 180, price: 13.39, marketCap: 2.345e8, change24h: -0.5, charted: true },
+    // non-charted remainder — exercises the text row, incl. a null price
+    { id: 'verge', symbol: 'XVG', name: 'Verge', rank: 420, price: 0.0019, marketCap: 3.13e7, change24h: 0.2, charted: false },
+    { id: 'zcoin', symbol: 'FIRO', name: 'Firo', rank: 610, price: null, marketCap: null, change24h: null, charted: false },
+  ];
+  const line = (base) => ({
+    data: Array.from({ length: 30 }, (_, i) => base + i),
+    t: Array.from({ length: 30 }, (_, i) => Date.now() - (30 - i) * 86400_000),
+  });
+  const stamp = (data) => JSON.stringify({ at: Date.now() - 60_000, data });
+  await p.addInitScript((entries) => {
+    for (const [k, v] of entries) localStorage.setItem(k, v);
+  }, [
+    ['mh:v1:members|peers|usd|0', stamp(members)],
+    ['mh:v1:chart|monero|usd|30', stamp(line(300))],
+    ['mh:v1:chart|zcash|usd|30', stamp(line(450))],
+    ['mh:v1:chart|decred|usd|30', stamp(line(12))],
+  ]);
+  await p.route('**/api/**', (r) => r.abort());
+  await p.goto(base + '/markets', { waitUntil: 'load' });
+  await p.waitForTimeout(1500);
+  const body = await p.evaluate(() => document.body.innerText);
+  ok(/\bZEC\b/.test(body) && /\bDCR\b/.test(body), 'D: last-known charted membership renders from the manifest');
+  ok(/\bXVG\b/.test(body), 'D: non-charted remainder members render as text');
+  ok(/COINGECKO · stale/i.test(body), 'D: cached membership is labelled stale, not live');
+  ok(!ZERO_PRICE.test(body), 'D: a null price renders "—", never $0.00');
+  ok(!body.includes('NaN'), 'D: no NaN from partial/absent member numbers');
   await p.close();
 }
 

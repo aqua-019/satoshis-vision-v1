@@ -1,34 +1,43 @@
 /**
  * pages/MarketsPage.tsx — the Markets surface.
  *
- * XMR/USD candles, XMR/BTC ratio, privacy-coin peer group, top-10 normalized,
- * real per-exchange volume/spread, and a liquidity-by-venue breakdown.
+ * XMR/USD candles, XMR/BTC ratio, a live-ranked "vs Top N majors" comparison,
+ * and a full-width privacy peer-group chart — both group memberships come
+ * from the /api/markets aggregator, not a hardcoded coin list (see
+ * useMarketHistory.ts). Real per-exchange volume/spread and a liquidity-by-
+ * venue breakdown round out the page.
  *
  * HONESTY: spot KPIs (XMR/USD, XMR/BTC, market cap) are LIVE via useMoneroLive()
  * and render "—" until the first CoinGecko response lands. Candle + line history
  * is REAL — useMarketHistory() pulls CoinGecko OHLC + market_chart through the
- * same-origin /api/coingecko proxy; a series whose fetch fails shows its
- * last-good cached data labelled "COINGECKO · stale" (never a fabricated fallback).
+ * same-origin /api/coingecko proxy, and group membership + ATH/ATL through the
+ * same-origin /api/markets aggregator; a series whose fetch fails shows its
+ * last-good cached data labelled "COINGECKO · stale" (never a fabricated
+ * fallback), and a group with zero live *and* zero cached members renders an
+ * honest "unavailable" badge instead of an empty chart pretending to be live.
  * Exchange volume/spread rows come from CoinGecko's tickers endpoint (real,
  * per-venue). Atomic-swap/P2P venues don't publish volume — they are listed as
- * a directory without numbers. Charts are hand-rolled SVG; no third-party / CDN
- * chart libraries (privacy invariant).
+ * a directory without numbers, badged with ProvNote since curated editorial
+ * content has no upstream source to attribute. Charts are hand-rolled SVG; no
+ * third-party / CDN chart libraries (privacy invariant).
  */
 
 import * as React from "react";
 import { AppShell, PageHeader } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Stat, PanelFrame, Crumbs, Provenance, DataLegend } from "@/design/primitives";
+import { ProvNote } from "@/design/provenance";
 import {
   useMarketHistory,
   RANGE_DAYS,
   type RangeKey,
   type SeriesStatus,
-  type SeriesResult,
   type LineSeries,
+  type GroupResult,
 } from "@/data/useMarketHistory";
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
+import { SITE_VERSION } from "@/data/releases";
 
 /** Source label for a single series — COINGECKO with a freshness suffix.
  *  Stale renders the canonical "COINGECKO · stale" (freshness, orthogonal to source). */
@@ -36,8 +45,12 @@ function SourceBadge({ status, prefix }: { status: SeriesStatus; prefix?: string
   return <Provenance source="coingecko" fresh={status} detail={prefix} />;
 }
 
-/** Source label for a group of series (counts stale fallbacks). */
-function GroupBadge({ result }: { result: SeriesResult<LineSeries[]> }) {
+/** Source label for a group of series (counts stale fallbacks). Covers the
+ *  "attempted, still nothing" case honestly instead of showing a bare
+ *  "loading" forever. */
+function GroupBadge({ result }: { result: GroupResult }) {
+  if (result.status === "loading" && result.attempted && result.data.length === 0)
+    return <Provenance source="coingecko" fresh="none" detail="unavailable" />;
   if (result.status === "loading") return <Provenance source="coingecko" fresh="loading" />;
   const total = result.data.length;
   const stales = result.data.filter((s) => s.status !== "live").length;
@@ -45,18 +58,81 @@ function GroupBadge({ result }: { result: SeriesResult<LineSeries[]> }) {
   return <Provenance source="coingecko" fresh="stale" detail={`${total - stales}/${total} live · ${stales} stale`} />;
 }
 
-/** $12.3M / $980K style volume formatter. */
+/** Compact color-swatch legend for a `labels={false}` MultiLine — one line
+ *  per series with its live last-value % and a stale suffix when relevant.
+ *  Originally built for the peer chart; now used by whichever MultiLine is
+ *  in the half-width slot (currently majors). */
+function SeriesSwatchLegend({ series }: { series: LineSeries[] }) {
+  return (
+    <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: "var(--fs-label)" }}>
+      {series.map((s) => {
+        const base = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
+        const lastPct = s.data.length ? (s.data[s.data.length - 1] / base - 1) * 100 : null;
+        return (
+          <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+            <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
+            <span className="dim">{s.label}</span>
+            <b style={{ color: s.color }}>{lastPct == null ? "—" : (lastPct >= 0 ? "+" : "") + lastPct.toFixed(1) + "%"}{s.status === "stale" ? " ·stale" : ""}</b>
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+/** $12.3M / $980K style volume/market-cap formatter. */
 function fmtUsd(v: number): string {
   if (v >= 1e9) return "$" + (v / 1e9).toFixed(2) + "B";
   if (v >= 1e6) return "$" + (v / 1e6).toFixed(2) + "M";
   return "$" + (v / 1e3).toFixed(0) + "K";
 }
 
+/** Price cell for the privacy-group "also in top N" remainder row:
+ *  null → em dash (never 0), 2dp at ≥$1, 4dp below (small-cap coins need it). */
+function fmtPeerPrice(v: number | null): string {
+  if (v == null) return "—";
+  return "$" + (v >= 1 ? v.toFixed(2) : v.toFixed(4));
+}
+
+/** "Jan 2018" style month+year from an ISO date string (ATH/ATL dates). */
+function monthYear(iso: string): string {
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+}
+
 /** Monero emission: ~18.132M at the tail-emission switch (block 2,641,623),
- *  then exactly 0.6 XMR per block forever. Same constants as the backend. */
+ *  then exactly 0.6 XMR per block forever. Same constants as the backend.
+ *  These three numbers are consensus parameters baked into the protocol —
+ *  not stale/fetched data, so they are never cache-invalidated or badged
+ *  themselves. `circ` (derived from them × the live node height) becomes
+ *  genuinely two-sourced once the market-cap tile multiplies it by
+ *  CoinGecko's price: SESSION (node height, computed in-browser) ×
+ *  COINGECKO (live price) — hence the compound `also="session"` badge on
+ *  that tile. */
 const TAIL_START_HEIGHT = 2_641_623;
 const SUPPLY_AT_TAIL = 18_132_000;
 const TAIL_REWARD = 0.6;
+
+/** Row caps — exchange-volume table, liquidity-by-venue panel, and the
+ *  "also in top N" text row under the privacy chart. */
+const TOP_TICKERS_LIMIT = 10;
+const VENUES_LIMIT = 8;
+const PEER_REMAINDER_LIMIT = 4;
+
+/** Spread color thresholds (percent) — shared by the exchange-volume table
+ *  and the liquidity-by-venue panel. */
+const SPREAD_GOOD_MAX = 0.3;
+const SPREAD_OK_MAX = 1;
+
+/** Chart heights for the ratio + majors row: equal PANEL heights (not equal
+ *  chart heights) — the ratio panel carries an extra ~22px caption below its
+ *  chart, so its chart prop is shorter to keep both panel frames terminating
+ *  at the same y. The privacy chart is full-width and independent of this
+ *  row's alignment constraint. */
+const RATIO_CHART_HEIGHT = 318;
+const MAJORS_CHART_HEIGHT = 340;
+const PRIVACY_CHART_HEIGHT = 300;
 
 /** Exchanges that delisted XMR — factual events, shown without numbers. */
 const DELISTED = [
@@ -83,8 +159,8 @@ export function MarketsPage() {
   const [range, setRange] = React.useState<RangeKey>("30D");
   const days = RANGE_DAYS[range];
 
-  // REAL market history (CoinGecko via /api/coingecko); failures degrade to the
-  // last-good cache per series, labelled STALE.
+  // REAL market history (CoinGecko via /api/coingecko + /api/markets); failures
+  // degrade to the last-good cache per series, labelled STALE.
   const hist = useMarketHistory(days);
   const tickers = useTickers();
   const xmrCandles = hist.xmrCandles.data;
@@ -96,11 +172,16 @@ export function MarketsPage() {
   const ratioPeak = xmrBtcSeries.length ? Math.max(...xmrBtcSeries) : 0;
   const lastRatio = xmrBtcSeries.length ? xmrBtcSeries[xmrBtcSeries.length - 1] : 0;
 
+  // Live-ranked group membership (from the aggregator, not hardcoded lists).
+  const majorsCount = topSeries.length;
+  const chartedPeerSymbols = peerSeries.map((s) => s.label).join(" · ");
+  const peerRemainder = hist.peers.members.filter((m) => !m.charted).slice(0, PEER_REMAINDER_LIMIT);
+
   // Real circulating supply from the chain height (tail emission is linear).
   const circ = data.ready ? SUPPLY_AT_TAIL + Math.max(0, data.height - TAIL_START_HEIGHT) * TAIL_REWARD : 0;
 
   const tickerVolume = tickers.data.reduce((a, t) => a + t.volUsd, 0);
-  const topTickers = tickers.data.slice(0, 10);
+  const topTickers = tickers.data.slice(0, TOP_TICKERS_LIMIT);
 
   // Liquidity by venue: aggregate pair volumes per exchange, best spread shown.
   const venues = React.useMemo(() => {
@@ -114,13 +195,13 @@ export function MarketsPage() {
         m.set(t.venue, { venue: t.venue, volUsd: t.volUsd, spreadPct: t.spreadPct });
       }
     }
-    return [...m.values()].sort((a, b) => b.volUsd - a.volUsd).slice(0, 8);
+    return [...m.values()].sort((a, b) => b.volUsd - a.volUsd).slice(0, VENUES_LIMIT);
   }, [tickers.data]);
   const maxVenueVol = venues.length ? venues[0].volUsd : 1;
 
   return (
     <AppShell bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "markets"]} status={data.marketReady ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
+      <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={data.marketReady ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
       <DataLegend sources={["coingecko"]} />
       <PageHeader
         kicker="Markets · price, volume, liquidity"
@@ -145,10 +226,22 @@ export function MarketsPage() {
       <section className="kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 10 }}>
         <Stat k="XMR / USD" v={data.marketReady ? `$${data.price.toFixed(2)}` : "—"} sub={data.marketReady ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}% · 24h` : "connecting"} tone="acc" />
         <Stat k="XMR / BTC" v={data.marketReady ? data.btcRatio.toFixed(6) : "—"} sub={xmrBtcSeries.length ? `Range ${ratioFloor.toFixed(5)}–${ratioPeak.toFixed(5)}` : "—"} />
-        <Stat k="Market cap" v={data.marketReady && circ > 0 ? `$${((data.price * circ) / 1e9).toFixed(2)}B` : "—"} sub={circ > 0 ? `${(circ / 1e6).toFixed(2)}M circ · tail emission` : "—"} />
+        <Stat
+          k="Market cap"
+          v={data.marketReady && circ > 0 ? `$${((data.price * circ) / 1e9).toFixed(2)}B` : "—"}
+          sub={circ > 0 ? (<>{(circ / 1e6).toFixed(2)}M circ · tail emission <Provenance source="coingecko" also="session" bare /></>) : "—"}
+        />
         <Stat k="24h volume" v={tickers.status === "loading" ? "—" : fmtUsd(tickerVolume)} sub={tickers.status === "loading" ? "CG tickers" : `CG tickers · ${tickers.data.length} pairs`} />
-        <Stat k="ATH" v="$542.33" sub="Jan 2018" />
-        <Stat k="ATL" v="$0.21" sub="Jan 2015" />
+        <Stat
+          k="ATH"
+          v={hist.meta.data ? `$${hist.meta.data.ath.toFixed(2)}` : "—"}
+          sub={hist.meta.data ? (<>{monthYear(hist.meta.data.athDate)} <Provenance source="coingecko" fresh={hist.meta.status} bare /></>) : "—"}
+        />
+        <Stat
+          k="ATL"
+          v={hist.meta.data ? `$${hist.meta.data.atl.toFixed(2)}` : "—"}
+          sub={hist.meta.data ? (<>{monthYear(hist.meta.data.atlDate)} <Provenance source="coingecko" fresh={hist.meta.status} bare /></>) : "—"}
+        />
       </section>
 
       {/* Candle chart */}
@@ -159,10 +252,10 @@ export function MarketsPage() {
         <CandleChart candles={xmrCandles} days={days} status={hist.xmrCandles.status} height={320} />
       </PanelFrame>
 
-      {/* XMR/BTC ratio + Privacy peer group */}
+      {/* XMR/BTC ratio + XMR vs Top majors */}
       <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
         <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />}>
-          <AreaSeries data={xmrBtcSeries} days={days} height={220}
+          <AreaSeries data={xmrBtcSeries} days={days} height={RATIO_CHART_HEIGHT}
             color="var(--tk-accent)" baseline="auto"
             format={(v) => (v * 1e5).toFixed(0) + " sat"}
             stale={hist.xmrBtc.status === "stale"} />
@@ -174,27 +267,39 @@ export function MarketsPage() {
             )}
           </p>
         </PanelFrame>
-        <PanelFrame title={`Privacy peer group · normalized · ${range}`} right={<GroupBadge result={hist.peers} />}>
-          <MultiLine series={peerSeries} days={days} height={200} labels={false} />
-          <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: "var(--fs-label)" }}>
-            {peerSeries.map((s) => {
-              const base = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
-              const lastPct = s.data.length ? (s.data[s.data.length - 1] / base - 1) * 100 : null;
-              return (
-                <span key={s.label} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: 2, background: s.color, boxShadow: `0 0 4px ${s.color}` }} />
-                  <span className="dim">{s.label}</span>
-                  <b style={{ color: s.color }}>{lastPct == null ? "—" : (lastPct >= 0 ? "+" : "") + lastPct.toFixed(1) + "%"}{s.status === "stale" ? " ·stale" : ""}</b>
-                </span>
-              );
-            })}
-          </div>
+        <PanelFrame title={`XMR vs Top ${majorsCount || "—"} · normalized % · ${range}`} right={<GroupBadge result={hist.top} />}>
+          <MultiLine series={topSeries} days={days} height={MAJORS_CHART_HEIGHT} labels={false} />
+          <SeriesSwatchLegend series={topSeries} />
         </PanelFrame>
       </section>
 
-      {/* Top crypto comparison */}
-      <PanelFrame title={`XMR vs Top 10 · normalized % · ${range}`} right={<GroupBadge result={hist.top} />}>
-        <MultiLine series={topSeries} days={days} height={300} />
+      {/* Privacy peer group — full width, live-ranked membership */}
+      <PanelFrame
+        title={`Privacy peer group · normalized · ${range}`}
+        right={
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {chartedPeerSymbols ? (
+              <span className="mono dim" style={{ fontSize: "var(--fs-label)", maxWidth: 260, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={chartedPeerSymbols}>
+                {chartedPeerSymbols}
+              </span>
+            ) : null}
+            <GroupBadge result={hist.peers} />
+          </div>
+        }
+      >
+        <MultiLine series={peerSeries} days={days} height={PRIVACY_CHART_HEIGHT} labels={true} />
+        {peerRemainder.length > 0 ? (
+          <div className="mono" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", marginTop: 10, fontSize: "var(--fs-label)" }}>
+            <span className="kicker">also in top {hist.peers.members.length}</span>
+            {peerRemainder.map((m) => (
+              <span key={m.id} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                <b className="dim">{m.symbol}</b>
+                <span>{fmtPeerPrice(m.price)}</span>
+                <span className="dim">{m.marketCap == null ? "—" : fmtUsd(m.marketCap)}</span>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </PanelFrame>
 
       {/* Exchange volume (real) + swap-venue directory */}
@@ -213,7 +318,7 @@ export function MarketsPage() {
                     <span className="mono" style={{ color: "var(--ink-100)" }}>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
                     <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{t.pair}</span>
                     <span className="mono" style={{ textAlign: "right", color: "var(--ink-80)" }}>{fmtUsd(t.volUsd)}</span>
-                    <span className="mono" style={{ textAlign: "right", color: t.spreadPct <= 0.3 ? "var(--g-50)" : t.spreadPct <= 1 ? "var(--y-50)" : "var(--r-50)" }}>{t.spreadPct.toFixed(2)}%</span>
+                    <span className="mono" style={{ textAlign: "right", color: t.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : t.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>{t.spreadPct.toFixed(2)}%</span>
                   </React.Fragment>
                 ))
               )}
@@ -229,7 +334,7 @@ export function MarketsPage() {
           </div>
         </PanelFrame>
 
-        <PanelFrame title="Atomic swap + P2P venues" right={<span>directory · volume not published</span>}>
+        <PanelFrame title="Atomic swap + P2P venues" right={<ProvNote>directory · volume not published</ProvNote>}>
           <div className="table-scroll">
             <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "140px 1fr 110px", gap: 8, fontSize: "var(--fs-mono)" }}>
               {["Venue", "Pairs", "Type"].map((h) => (
@@ -263,7 +368,7 @@ export function MarketsPage() {
                   <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "rgba(255,122,26,0.35)", boxShadow: "0 0 6px rgba(255,122,26,0.25)" }} />
                 </span>
                 <span className="dim" style={{ textAlign: "right" }}>{fmtUsd(v.volUsd)}</span>
-                <span style={{ textAlign: "right", color: v.spreadPct <= 0.3 ? "var(--g-50)" : v.spreadPct <= 1 ? "var(--y-50)" : "var(--r-50)" }}>{v.spreadPct.toFixed(2)}% spr</span>
+                <span style={{ textAlign: "right", color: v.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : v.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>{v.spreadPct.toFixed(2)}% spr</span>
               </div>
             ))}
           </div>

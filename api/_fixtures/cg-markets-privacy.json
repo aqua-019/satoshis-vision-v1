@@ -1,0 +1,22 @@
+{
+  "_comment": "Committed fixture for api/verify-markets.mjs — NOT live data. Hand-built rows mirroring the shape of CoinGecko's coins/markets?category=privacy-coins response (id, symbol, name, current_price, market_cap, market_cap_rank, ath, atl, price_change_percentage_24h). Exercises: [0] monero — the pin, not pegged/derivative despite ath/price ratio > 1. [1..9] nine legitimate privacy coins, pre-sorted by ascending market_cap_rank, to fill selectMembers' 9 'others' slots exactly (peers listN=10, minus the pin). [10] tether — cross-listed pegged coin (mirrors the brief's own excluded[] example, {id:'tether',reason:'pegged'}). [11] shadow-coin — market_cap_rank:null, drop reason 'no-rank'. [12] wrapped-monero — descriptor-matched derivative ('wrapped' in id/name), drop reason 'derivative'. [13] void-cap-coin — market_cap:0, drop reason 'no-marketcap'. [14] glitch-price-coin — non-finite current_price, drop reason 'invalid-price'.",
+  "rows": [
+    { "id": "monero", "symbol": "xmr", "name": "Monero", "current_price": 321.45, "market_cap": 5900000000, "market_cap_rank": 26, "ath": 542.33, "atl": 0.216177, "price_change_percentage_24h": 1.23 },
+
+    { "id": "zcash", "symbol": "zec", "name": "Zcash", "current_price": 48.12, "market_cap": 780000000, "market_cap_rank": 30, "ath": 5941.79, "atl": 4.41, "price_change_percentage_24h": 0.85 },
+    { "id": "dash", "symbol": "dash", "name": "Dash", "current_price": 28.77, "market_cap": 340000000, "market_cap_rank": 45, "ath": 1642.22, "atl": 0.834486, "price_change_percentage_24h": -0.42 },
+    { "id": "zencash", "symbol": "zen", "name": "Horizen", "current_price": 11.33, "market_cap": 190000000, "market_cap_rank": 60, "ath": 149.87, "atl": 1.68, "price_change_percentage_24h": 2.11 },
+    { "id": "verge", "symbol": "xvg", "name": "Verge", "current_price": 0.0031, "market_cap": 48000000, "market_cap_rank": 75, "ath": 0.299817, "atl": 0.00000934, "price_change_percentage_24h": -1.05 },
+    { "id": "secret", "symbol": "scrt", "name": "Secret", "current_price": 0.42, "market_cap": 41000000, "market_cap_rank": 90, "ath": 11.06, "atl": 0.0693258, "price_change_percentage_24h": 0.67 },
+    { "id": "beam", "symbol": "beam", "name": "Beam", "current_price": 0.018, "market_cap": 27000000, "market_cap_rank": 105, "ath": 5.29, "atl": 0.0130457, "price_change_percentage_24h": -0.19 },
+    { "id": "grin", "symbol": "grin", "name": "Grin", "current_price": 0.052, "market_cap": 19000000, "market_cap_rank": 120, "ath": 3.39, "atl": 0.0106247, "price_change_percentage_24h": 1.87 },
+    { "id": "zcoin", "symbol": "firo", "name": "Firo", "current_price": 0.94, "market_cap": 13500000, "market_cap_rank": 135, "ath": 175.24, "atl": 0.170037, "price_change_percentage_24h": -2.33 },
+    { "id": "oasis-network", "symbol": "rose", "name": "Oasis", "current_price": 0.061, "market_cap": 9800000, "market_cap_rank": 150, "ath": 3.09, "atl": 0.00714032, "price_change_percentage_24h": 0.31 },
+
+    { "id": "tether", "symbol": "usdt", "name": "Tether", "current_price": 1.00, "market_cap": 118000000000, "market_cap_rank": 3, "ath": 1.32, "atl": 0.572521, "price_change_percentage_24h": 0.01 },
+    { "id": "shadow-coin", "symbol": "shdw", "name": "Shadow Coin", "current_price": 2.10, "market_cap": 5000000, "market_cap_rank": null, "ath": 9.5, "atl": 0.5, "price_change_percentage_24h": 4.2 },
+    { "id": "wrapped-monero", "symbol": "wxmr", "name": "Wrapped Monero", "current_price": 321.10, "market_cap": 2000000, "market_cap_rank": 400, "ath": 500, "atl": 100, "price_change_percentage_24h": 1.1 },
+    { "id": "void-cap-coin", "symbol": "void", "name": "Void Cap Coin", "current_price": 3.5, "market_cap": 0, "market_cap_rank": 410, "ath": 20, "atl": 1, "price_change_percentage_24h": -5.5 },
+    { "id": "glitch-price-coin", "symbol": "glch", "name": "Glitch Price Coin", "current_price": "n/a", "market_cap": 1000000, "market_cap_rank": 420, "ath": 10, "atl": 1, "price_change_percentage_24h": 0.5 }
+  ]
+}
