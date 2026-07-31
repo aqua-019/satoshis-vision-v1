@@ -170,6 +170,39 @@ Keep current static pages as-is; add `/api` endpoints only for features that nee
 
 ## Session Notes
 
+- **2026-07-31**: v6.0.12 — **Markets charts rendered nothing on a cold first
+  visit**, and the fix is a pattern worth knowing before writing another chart.
+  `verify-markets-dom.mjs` (added the same day) caught it the moment it ran
+  against a build that included the v6.0.10 `useChartMetrics` migration: four
+  `.chart-box` wrappers in the DOM, **zero `<svg>` inside them**. Reproduced on
+  pristine `origin/main`, so it was never branch-local.
+  Mechanism: `useChartMetrics` measures in a `useLayoutEffect` keyed on the ref
+  OBJECT, whose identity never changes — so the effect runs exactly once, on
+  first render. Every chart in `markets/charts.tsx` opened with
+  `if (!data?.length) return null;`, and on a cold load history is still in
+  flight at first render, so `ref.current` was null when the effect fired. It
+  returned early, no ResizeObserver was ever attached, `ready` stayed false
+  forever, and the `{ready ? <svg/> : null}` gate never opened. **Nothing
+  recovered it** — the `window.resize` listener lives in that same skipped
+  effect, so even a resize didn't help. Only a remount did, which is exactly why
+  the charts appeared on a *second* visit (warm `mh:v1:` cache → box present on
+  first render) and never on a first one. Confirmed by probe: cold `{box:4,
+  svg:0}` → resize `{box:4, svg:0}` → navigate away and back `{box:4, svg:4}`.
+  Fix: an `EmptyBox` helper, so the empty/loading branch mounts the SAME
+  `div.chart-box` root as the populated branch. React then reuses one DOM node,
+  the ref is attached from the first render, and filling the chart is an update
+  rather than a remount.
+  **The rule this leaves behind: never return `null` (or a different root) from
+  a component whose ref is measured by `useChartMetrics`.** The hazard is
+  generic, not Markets-specific — the seven `src/protocols/*` diagrams and
+  `monero/TechTab.tsx` use the same hook and are only safe because they render
+  their box unconditionally. The durable fix is a callback ref inside the hook;
+  that touches 19 call sites and was deliberately left for its own change.
+  Also worth knowing: charts no longer emit `viewBox="0 0 1000 H"` — the width
+  is the MEASURED CSS width so one user unit is one CSS pixel. Any test that
+  selects a chart by its full viewBox string silently matches nothing; match on
+  the height half, which is the prop the page actually sets.
+
 - **2026-07-31**: v6.0.5 "LIVE-RANKED MARKET GROUPS" (app/ + api/) — the note this
   work never got. The fabricated-price fix (v6.0.5/v6.0.6, PRs #131/#137) removed
   `genCandles6`, but the coin *membership* was still a frozen `CoinDef` list:
