@@ -141,6 +141,43 @@ export interface CandleChartProps {
   status?: SeriesStatus;
 }
 
+/**
+ * The empty/loading state of a measured chart — and the reason it exists is
+ * subtle enough to be worth stating.
+ *
+ * useChartMetrics measures in a layout effect keyed on the ref OBJECT, whose
+ * identity never changes. So the effect runs exactly once, on the component's
+ * first render. If that first render bails out before the measured box is in
+ * the tree (`return null` while history is still in flight), `ref.current` is
+ * null when the effect fires, it returns early, and no ResizeObserver is ever
+ * attached — the element that mounts a moment later is never measured, `ready`
+ * stays false, and the <svg> never renders at all. Nothing recovers it: the
+ * window resize listener lives in that same skipped effect, so even a resize
+ * doesn't help. Only a remount does, which is why the charts appeared on a
+ * second visit (warm cache → box present on first render) and never on a cold
+ * one.
+ *
+ * Keeping the same `div.chart-box` root in BOTH branches means React reuses
+ * one DOM node, the ref is attached from the very first render, and the
+ * transition to the populated chart is an update rather than a remount.
+ *
+ * `children` carries whatever the chart wants to say while it has nothing to
+ * draw; charts that just render nothing pass none.
+ */
+function EmptyBox({
+  boxRef, height, children,
+}: {
+  boxRef: React.RefObject<HTMLDivElement>;
+  height: number;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
+      {children}
+    </div>
+  );
+}
+
 function CandleChartImpl({ candles, days, height = 300, status = "live" }: CandleChartProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
@@ -149,7 +186,8 @@ function CandleChartImpl({ candles, days, height = 300, status = "live" }: Candl
   const vbW = measured || VB_W;
   const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
 
-  if (!candles?.length) return null;
+  // Empty state still mounts the MEASURED box — see EmptyBox.
+  if (!candles?.length) return <EmptyBox boxRef={boxRef} height={height} />;
   const stale = status === "stale";
   const W = vbW;
   const padT = 14;
@@ -370,10 +408,12 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }:
 
   if (!domain) {
     return (
-      <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-        <Provenance source="coingecko" fresh="none" detail="unavailable" />
-        {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
-      </div>
+      <EmptyBox boxRef={boxRef} height={height}>
+        <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          <Provenance source="coingecko" fresh="none" detail="unavailable" />
+          {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
+        </div>
+      </EmptyBox>
     );
   }
 
@@ -574,7 +614,8 @@ function AreaSeriesImpl({
   const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
   const gradId = "area-grad-" + React.useId().replace(/:/g, "");
 
-  if (!data?.length) return null;
+  // Empty state still mounts the MEASURED box — see EmptyBox.
+  if (!data?.length) return <EmptyBox boxRef={boxRef} height={height} />;
   const n = data.length;
   const W = vbW;
   const padT = 14;
@@ -759,7 +800,8 @@ function BarSeriesImpl({
   const vbW = measured || VB_W;
   const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
 
-  if (!data?.length) return null;
+  // Empty state still mounts the MEASURED box — see EmptyBox.
+  if (!data?.length) return <EmptyBox boxRef={boxRef} height={height} />;
   const n = data.length;
   const W = vbW;
   const padT = 14;

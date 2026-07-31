@@ -83,6 +83,12 @@ const MAJORS = [
   ['whitebit', 'WBT', 'WhiteBIT Coin', 10, 42.0, 6.1e9],
 ];
 
+/* Charts are identified by the HEIGHT half of their viewBox, never the whole
+   string: charts.tsx measures its own CSS width and uses it as the viewBox
+   width so one user unit is one CSS pixel, which makes the width viewport- and
+   layout-dependent. The height is the prop this page sets, so it is the stable
+   discriminator between the four charts. */
+
 /* Must track api/markets.js GROUPS.{peers,majors}.chartN — the §3 legibility
    decision (cap the chart, list the remainder as text) lives in those numbers. */
 const PEER_CHART_N = 6, MAJOR_CHART_N = 9;
@@ -184,7 +190,7 @@ is(badges.some((t) => t.includes(`${MAJOR_CHART_N} live`)), `GroupBadge reads "$
    swap-venue directory further down legitimately lists "XMR↔ETH, USDC" as a
    tradable pair, which is a venue fact rather than a chart series. */
 const majorsPanel = await page.evaluate(() => {
-  const svg = document.querySelector('svg[viewBox="0 0 1000 340"]');
+  const svg = document.querySelector('svg[viewBox$=" 340"]');
   for (let n = svg; n && n !== document.body; n = n.parentElement) {
     if (/XMR vs Top/i.test(n.innerText || '')) return n.innerText;
   }
@@ -202,7 +208,7 @@ is(!/(largest|biggest|leading|#1)[^.]{0,40}privacy[^.]{0,20}(coin|cap)/i.test(te
    mimblewimblecoin (25) must START LATER on the shared time axis — if either
    were padded to full length, every line would begin at the same padL. */
 const starts = await page.evaluate(() => {
-  const svg = document.querySelector('svg[viewBox="0 0 1000 300"]'); // privacy MultiLine
+  const svg = document.querySelector('svg[viewBox$=" 300"]'); // privacy MultiLine
   if (!svg) return [];
   return [...svg.querySelectorAll('path[stroke]')]
     .filter((p) => (p.getAttribute('fill') || 'none') === 'none')  // line paths; area twins are fill-only
@@ -280,7 +286,7 @@ console.log('\nverify-markets-dom — 1440px layout');
      unequal chart heights. Assert the panels, never the SVGs. */
   const L = await d.evaluate(() => {
     const panelOf = (vb) => {
-      const svg = document.querySelector(`svg[viewBox="0 0 1000 ${vb}"]`);
+      const svg = document.querySelector(`svg[viewBox$=" ${vb}"]`);
       for (let n = svg; n && n !== document.body; n = n.parentElement) {
         const cs = getComputedStyle(n);
         if (cs.borderTopWidth !== '0px' || cs.borderLeftWidth !== '0px') {
@@ -304,7 +310,7 @@ console.log('\nverify-markets-dom — 1440px layout');
 
   /* seriesColor() is index-keyed, so a refresh must not reshuffle the palette. */
   const strokes = () => d.evaluate(() => {
-    const svg = document.querySelector('svg[viewBox="0 0 1000 300"]');
+    const svg = document.querySelector('svg[viewBox$=" 300"]');
     return [...svg.querySelectorAll('path[stroke]')].map((p) => p.getAttribute('stroke'));
   });
   const first = await strokes();
