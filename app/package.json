@@ -9,7 +9,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "wait-preview": "node scripts/wait-preview.mjs",
+    "verify:static": "node verify-legibility.mjs && node verify-origins.mjs --static",
+    "verify:e2e": "node verify-degraded.mjs && node verify-nojs.mjs && node verify-origins.mjs && node verify-tor.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
