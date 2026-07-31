@@ -10,9 +10,10 @@
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
     "typecheck": "tsc --noEmit",
-    "verify:static": "node verify-chartkit.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs",
+    "verify:static": "node verify-chartkit.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs",
     "verify:e2e": "node verify-charts.mjs && node verify-memdetail.mjs && node verify-glide.mjs",
-    "verify": "npm run verify:static"
+    "verify": "npm run verify:static",
+    "verify:perf": "node verify-perf-classic.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

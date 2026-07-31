@@ -40,8 +40,8 @@ export function ConCard({ title, right, children, pad = "14px 16px", style }: an
     <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -184,7 +184,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
     <ConCard title="Newest tx · mempool" right={<Provenance source="node" fresh={tx ? "live" : "none"} />}>
       {tx ? (
         <>
-          <div className="mono" style={{ fontSize: 12, color: "var(--c-50)", marginBottom: 10, letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginBottom: 10, letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
           <div className="kv"><span className="k">Fee</span><span className="v acc">{tx.fee.toFixed(6)} XMR</span></div>
           <div className="kv"><span className="k">Size</span><span className="v">{fmtBytes(tx.size)}</span></div>
           <div className="kv"><span className="k">Rate</span><span className="v">{Math.round(tx.perB)} pcn/B</span></div>
@@ -193,7 +193,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
           <div className="kv"><span className="k">Tier</span><span className="v" style={{ color: tierColor(tierIdx) }}>{tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx] : "—"}</span></div>
         </>
       ) : (
-        <div className="mono dim" style={{ fontSize: 11, padding: "18px 0", textAlign: "center" }}>awaiting mempool…</div>
+        <div className="mono dim" style={{ fontSize: "var(--fs-mono)", padding: "18px 0", textAlign: "center" }}>awaiting mempool…</div>
       )}
     </ConCard>
   );
@@ -282,7 +282,7 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
   const pinned = pinnedTrackRow(tracking, data);
   return (
     <ConCard title="Feed log · tail" right={<><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> −f</>}>
-      <div style={{ fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.55 }}>
+      <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
         {pinned ? (
           <div data-tracked-tx={pinned.txid} data-tracked-block={pinned.height}
             style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px solid var(--y-50)" }}>
@@ -322,7 +322,7 @@ function ConFeeTierBars({ data }: { data: MoneroLive }) {
     <ConCard title="Fee tiers · mempool distribution" right={<span className="acc">{ok ? `${data.mempool.length} tx` : "—"}</span>}>
       <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
         {FEE_TIER_LABELS.map((label, i) => (
-          <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10 }}>
+          <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
             <span className="dim2">{label}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ok ? `${data.feeTiers[i].toLocaleString()} pcn/B` : "—"}</span>
             <div style={{ height: 7, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
@@ -361,7 +361,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
         </svg>
         <div style={{ flex: 1 }}>
           {FEE_TIER_LABELS.map((label, i) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, padding: "3px 0" }}>
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", padding: "3px 0" }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: TIER_COLORS[i], boxShadow: `0 0 4px ${TIER_COLORS[i]}` }} />
               <span className="dim" style={{ flex: 1 }}>{label}</span>
               <span className="acc">{ok && totalBytes > 0 ? `${((bytes[i] / totalBytes) * 100).toFixed(1)}%` : "—"}</span>
@@ -392,9 +392,9 @@ export function ConBlockStream({ data, tracking, trackedHeight }: { data: Monero
                 outlineOffset: isTracked ? 1 : undefined,
                 boxShadow: isTracked ? "0 0 14px var(--y-50)" : undefined,
               }}>
-              <div className="hh" style={{ fontSize: 8 }}>{b.conf}c</div>
-              <div className="nm" style={{ fontSize: 12 }}>{b.txs}</div>
-              {isTracked ? <div className="mono" style={{ fontSize: 8, color: "var(--y-50)", marginTop: 2 }}>▲ TRACK</div> : null}
+              <div className="hh" style={{ fontSize: "var(--fs-label)" }}>{b.conf}c</div>
+              <div className="nm" style={{ fontSize: "var(--fs-mono)" }}>{b.txs}</div>
+              {isTracked ? <div className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--y-50)", marginTop: 2 }}>▲ TRACK</div> : null}
             </div>
           );
         })}

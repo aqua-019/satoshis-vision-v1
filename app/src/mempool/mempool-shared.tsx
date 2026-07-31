@@ -143,14 +143,14 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
           background: "rgba(0,0,0,0.6)", color: "var(--ink-100)",
           border: "1px solid var(--ink-20)", borderRadius: 3,
           padding: compact ? "7px 10px" : "9px 12px",
-          fontFamily: "var(--f-mono)", fontSize: compact ? 11 : 12,
+          fontFamily: "var(--f-mono)", fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)",
           letterSpacing: "0.02em", outline: "none",
         }}
         onFocus={(e) => (e.target.style.borderColor = "var(--tk-accent)")}
         onBlur={(e) => (e.target.style.borderColor = "var(--ink-20)")}
       />
       <button type="submit" className="proto-btn"
-        style={{ padding: compact ? "6px 12px" : "8px 14px", fontSize: compact ? 9.5 : 10 }}>
+        style={{ padding: compact ? "6px 12px" : "8px 14px", fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)" }}>
         SEARCH
       </button>
     </form>
@@ -178,7 +178,7 @@ export function TrackChip({ tracking, data, onClear }: TrackChipProps): JSX.Elem
       aria-label="Clear tracked"
       style={{
         appearance: "none", cursor: "pointer", background: "transparent", border: 0,
-        color: "inherit", fontSize: 13, lineHeight: 1, padding: 0, marginLeft: 2,
+        color: "inherit", fontSize: "var(--fs-mono)", lineHeight: 1, padding: 0, marginLeft: 2,
       }}
     >
       ×

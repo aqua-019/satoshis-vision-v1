@@ -38,8 +38,8 @@ export function BrgCard({ title, right, children, pad = "14px 16px", style }: an
     <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -256,7 +256,7 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
         <circle cx={c} cy={cyy} r="4" fill="#0a0806" stroke={color} strokeWidth="1.5" />
         <text ref={textRef} x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={size * 0.18} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(curRef.current)}{unit}</text>
       </svg>
-      <div className="mono" style={{ fontSize: 9, letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
+      <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
     </div>
   );
 }
@@ -376,7 +376,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
           <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
         </svg>
         <div style={{ flex: 1 }}>
-          <div className="mono dim" style={{ fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 38 }}>
             {ivs.slice().reverse().map((item, i) => {
               const over = item.iv > TARGET;
@@ -395,7 +395,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
               );
             })}
           </div>
-          <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 9, color: "var(--ink-40)", marginTop: 5 }}>
+          <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 5 }}>
             <span>#{data.ready ? data.height.toLocaleString() : "—"}</span><span>μ {mu != null ? mu + "s" : "—"}</span><span>alt {data.ready ? data.altBlocksCount : "—"}</span>
           </div>
         </div>
@@ -410,7 +410,7 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
   const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
   return (
     <BrgCard title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-body)", lineHeight: 1.5 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           <span style={{ fontSize: 20, color: "var(--ink-100)" }}>{unattributed}/{recentBlocks.length}</span>
           <span className="dim">recent blocks · pool unknown</span>
@@ -502,7 +502,7 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
   ) : null;
   return (
     <BrgCard title="Alert tape" right={<><Provenance source="node" fresh="live" inline /> −f</>}>
-      <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, lineHeight: 1.5 }}>
+      <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5 }}>
         {pinned}
         {rows.length === 0 && !pinned ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
@@ -525,7 +525,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
   const trackedId = tracking?.kind === "tx" ? tracking.id : null;
   return (
     <BrgCard title={"Transaction console · " + rows.length + " of " + data.mempool.length} right={<span className="acc">FEE TIER · LIVE</span>}>
-      <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
         <span>SEQ</span><span>TIER</span><span>TXID</span><span>SIZE</span><span>FEE/B</span><span>RING</span><span>AGE</span>
       </div>
       {rows.map((t, i) => {
@@ -537,7 +537,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
           <div key={t.id} data-tracked-tx={isTracked ? t.id : undefined}>
             <div onClick={() => onPickTx(t.id)}
               style={{
-                display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: 11,
+                display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-mono)",
                 padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)",
                 borderLeft: isTracked ? "2px solid var(--y-50)" : "2px solid transparent",
                 background: isTracked ? "rgba(255,212,0,0.07)" : undefined,
@@ -546,7 +546,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
               onMouseEnter={(e) => e.currentTarget.style.background = isTracked ? "rgba(255,212,0,0.12)" : "rgba(255,122,26,0.07)"}
               onMouseLeave={(e) => e.currentTarget.style.background = isTracked ? "rgba(255,212,0,0.07)" : "transparent"}>
               <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
-              <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: 8.5, padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
+              <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
               <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
               <span className="dim">{fmtBytes(t.size)}</span>
               <span className="acc">{Math.round(t.perB).toLocaleString()}</span>

@@ -3,6 +3,7 @@ name: v5 CI
 on:
   pull_request:
     branches:
+      - main
       - v5-migration
 
 permissions:
@@ -14,12 +15,14 @@ defaults:
 
 jobs:
   build:
-    name: typecheck + build
+    name: typecheck + build + offline gates
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Node >=22.18 is required: several verify gates import the shipped .ts
+      # sources directly and rely on the runtime's type stripping.
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
@@ -35,3 +38,30 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Offline gates only — no browser, no network. The Playwright gates
+      # (verify-tiers-dom, verify-glide, verify-allreal-dom, …) need a built
+      # preview server and are still run by hand; see app/README.md.
+      - name: "Gate: tiered polling contract"
+        run: node verify-tiers.mjs
+
+      - name: "Gate: node cascade health"
+        run: node ../api/verify-nodehealth.mjs
+
+      - name: "Gate: proxy tx parsing"
+        run: node ../api/verify-tx-parse.mjs
+
+      - name: "Gate: feeds proxy"
+        run: node ../api/verify-feeds.mjs
+
+      - name: "Gate: market stale-cache"
+        run: node verify-stale.mjs
+
+      - name: "Gate: confirmations"
+        run: node verify-confirmations.mjs
+
+      - name: "Gate: tx detail mappers"
+        run: node verify-txdetail.mjs
+
+      - name: "Gate: future feed cache"
+        run: node verify-feedcache.mjs

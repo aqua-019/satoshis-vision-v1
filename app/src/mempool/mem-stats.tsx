@@ -119,15 +119,15 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
     return (
       <div
         className="mono dim"
-        style={{ display: "flex", alignItems: "center", gap: 14, fontSize: 10.5, flexWrap: "wrap" }}
+        style={{ display: "flex", alignItems: "center", gap: 14, fontSize: "var(--fs-label)", flexWrap: "wrap" }}
       >
         <span>
-          <span className="acc" data-memstat="mempool">{poolReady ? fmtN(stats.txCount) : dash}</span> mempool
+          <span className="acc" data-memstat="mempool" data-memstat-value={poolReady ? stats.txCount : ""}>{poolReady ? fmtN(stats.txCount) : dash}</span> mempool
         </span>
-        <span data-memstat="bytes">{poolReady ? fmtBytes(stats.poolBytes) : dash}</span>
-        <span data-memstat="oldest">{poolReady ? `${stats.oldestAgeSec}s oldest` : dash}</span>
-        <span data-memstat="median">{poolReady ? `${Math.round(stats.medianPerB).toLocaleString()} pcn/B med` : dash}</span>
-        <span style={{ color: "var(--p-50)" }} data-memstat="eta">
+        <span data-memstat="bytes" data-memstat-value={poolReady ? stats.poolBytes : ""}>{poolReady ? fmtBytes(stats.poolBytes) : dash}</span>
+        <span data-memstat="oldest" data-memstat-value={poolReady ? stats.oldestAgeSec : ""}>{poolReady ? `${stats.oldestAgeSec}s oldest` : dash}</span>
+        <span data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""}>{poolReady ? `${Math.round(stats.medianPerB).toLocaleString()} pcn/B med` : dash}</span>
+        <span style={{ color: "var(--p-50)" }} data-memstat="eta" data-memstat-value={data.ready ? stats.nextBlockEtaSec : ""}>
           {data.ready ? <BlockEta data={data} /> : dash} next block
         </span>
       </div>

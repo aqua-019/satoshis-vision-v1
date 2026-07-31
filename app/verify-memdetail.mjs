@@ -102,9 +102,18 @@ const reset = () => { curHead = H0; FIX.blocks = mkBlocks(H0); FIX.network = { .
 const advance = () => { curHead += 1; FIX.blocks = mkBlocks(curHead);
   FIX.network = { ...FIX.network, height: curHead }; FIX.info = { result: { ...FIX.info.result, height: curHead } }; };
 
+// v6.0.6 tiered polling: the CHAIN tier watches /api/xmr/tip and re-pulls
+// network+blocks ONLY when the tip moves. Without this fixture the tip request
+// falls through to abort(), the client never sees a change, blocks are never
+// re-fetched, and a tracked tx's confirmation count sits still forever — which
+// looks exactly like a product bug and isn't one. Tip tracks the block head,
+// mirroring verify-glide.mjs's tipFix().
+const tipFix = () => ({ height: curHead, target: 120, difficulty: 7.7e11 });
+
 function fulfil(route) {
   const url = route.request().url();
   const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+  if (url.includes('/api/xmr/tip')) return json(tipFix());
   if (url.includes('/api/monero')) return json(FIX.info);
   if (url.includes('/api/xmr/network')) return json(FIX.network);
   if (url.includes('/api/xmr/mempool')) return json({ ...FIX.mempool, recent_txs: mkTxs() });
@@ -118,10 +127,16 @@ function fulfil(route) {
   }
   return route.abort();
 }
-const POLL = 3200; // > the feed's POLL_MS (2500), so a mutation is always picked up
+// The chain tier is 15s in production, which would make this script spend
+// minutes asleep. usePolling.ts exposes a documented window.__XMR_TIER_MS__
+// override for exactly this; compress the tiers and wait just past the
+// compressed chain interval.
+const TIERS = { fast: 400, chain: 900, market: 5000 };
+const POLL = TIERS.chain * 3; // comfortably clears a chain-tier pull
 
 const open = async (view) => {
   const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
+  await p.addInitScript((t) => { window.__XMR_TIER_MS__ = t; }, TIERS);
   await p.route('**/api/**', fulfil);
   await p.goto(`${base}/mempool?v=${view}`, { waitUntil: 'load' });
   await p.waitForTimeout(2600);

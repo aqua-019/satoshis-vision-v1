@@ -33,8 +33,8 @@ export function SedCard({ title, right, children, pad = "14px 16px", style }: an
     <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -77,7 +77,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
   return (
     <div style={{ position: "relative", width: w, height: h, maxWidth: "100%", marginLeft: "clamp(8px, 4vw, 78px)", flex: "none", boxSizing: "border-box" }}>
       {/* mouth label */}
-      <div style={{ position: "absolute", top: -26, left: 0, right: 0, textAlign: "center", fontFamily: "var(--f-mono)", fontSize: 9.5, letterSpacing: "0.2em", color: "var(--ink-40)" }}>
+      <div style={{ position: "absolute", top: -26, left: 0, right: 0, textAlign: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.2em", color: "var(--ink-40)" }}>
         ▼ INCOMING · STEM ⟶ FLUFF
       </div>
 
@@ -129,22 +129,22 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
         {trackedTx && trackedY != null ? (
           <div data-tracked-tx={trackedTxId ?? undefined} style={{ position: "absolute", left: 5, right: 5, top: trackedY, height: 0 }}>
             <div style={{ position: "absolute", left: 0, right: 0, top: -1, height: 2, background: "var(--y-50)", boxShadow: "0 0 8px var(--y-50)" }} />
-            <span style={{ position: "absolute", right: -150, top: -7, width: 140, textAlign: "right", fontFamily: "var(--f-mono)", fontSize: 8.5, color: "var(--y-50)", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
+            <span style={{ position: "absolute", right: -150, top: -7, width: 140, textAlign: "right", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--y-50)", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>
               TRACKED · {ShortHash(trackedTxId)}
             </span>
           </div>
         ) : null}
         {/* fee ruler */}
-        <div style={{ position: "absolute", right: -62, top: 0, bottom: 0, width: 56, display: "flex", flexDirection: "column", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: 9, color: "var(--ink-40)" }}>
-          <div><div className="acc">320 p/B</div><div className="dim2" style={{ fontSize: 8 }}>HIGH</div></div>
+        <div style={{ position: "absolute", right: -62, top: 0, bottom: 0, width: 56, display: "flex", flexDirection: "column", justifyContent: "space-between", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)" }}>
+          <div><div className="acc">320 p/B</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>HIGH</div></div>
           <div>240</div><div>160</div><div>80</div>
-          <div><div>0 p/B</div><div className="dim2" style={{ fontSize: 8 }}>LOW</div></div>
+          <div><div>0 p/B</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>LOW</div></div>
         </div>
       </div>
 
       {/* meniscus */}
       <div style={{ position: "absolute", left: 5, right: 5, top: memH - 2, height: 4, background: "linear-gradient(to right, transparent, rgba(255,206,138,0.85), transparent)", boxShadow: "0 0 14px var(--tk-accent)", animation: "sed-bob 7s ease-in-out infinite" }} />
-      <div style={{ position: "absolute", right: -78, top: memH - 12, fontFamily: "var(--f-mono)", fontSize: 8.5, color: "var(--tk-accent)", letterSpacing: "0.12em" }}>⟵ CONFIRMATION</div>
+      <div style={{ position: "absolute", right: -78, top: memH - 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--tk-accent)", letterSpacing: "0.12em" }}>⟵ CONFIRMATION</div>
 
       {/* strata = confirmed blocks */}
       {strata.map(({ b, i, top, stratH }) => {
@@ -160,30 +160,30 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
             boxShadow: isTrackedStratum
               ? "0 0 18px var(--y-50), inset 0 1px 0 rgba(255,255,200,0.5)"
               : (i === 0 ? "0 0 22px rgba(255,122,26,0.5), inset 0 1px 0 rgba(255,255,200,0.5)" : "inset 0 0 8px rgba(0,0,0,0.4)"),
-            display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", fontFamily: "var(--f-mono)", fontSize: 9.5,
+            display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
             color: i < 3 ? "#1a0a02" : "rgba(20,8,2,0.8)", fontWeight: 600, opacity: 1 - i * 0.06 }}>
             <span>#{b.height.toLocaleString()}</span>
-            <span style={{ fontSize: 9, opacity: 0.72 }}>{b.txs}tx · {b.conf}c</span>
+            <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.txs}tx · {b.conf}c</span>
             {isTrackedStratum && tracking ? (
               <TrackChip tracking={tracking} data={data} />
             ) : (
-              <span style={{ fontSize: 9, opacity: 0.72 }}>{b.age < 60 ? b.age + "s" : Math.floor(b.age / 60) + "m"}</span>
+              <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.age < 60 ? b.age + "s" : Math.floor(b.age / 60) + "m"}</span>
             )}
           </div>
         );
       })}
 
       {/* depth annotations */}
-      <div style={{ position: "absolute", left: -76, top: 0, bottom: 0, width: 70, fontFamily: "var(--f-mono)", fontSize: 9, color: "var(--ink-40)" }}>
-        <div style={{ position: "absolute", top: 0, right: 0, textAlign: "right" }}><div className="acc">T=0</div><div className="dim2" style={{ fontSize: 8 }}>NOW</div></div>
-        <div style={{ position: "absolute", top: memH * 0.5 - 8, right: 0, textAlign: "right" }}><div>~120s</div><div className="dim2" style={{ fontSize: 8 }}>STEM</div></div>
-        <div style={{ position: "absolute", top: memH - 14, right: 0, textAlign: "right" }}><div className="acc">CONF</div><div className="dim2" style={{ fontSize: 8 }}>+1 blk</div></div>
-        <div style={{ position: "absolute", top: memH + 96, right: 0, textAlign: "right" }}><div>+{CONF_UNLOCK}c</div><div className="dim2" style={{ fontSize: 8 }}>UNLOCK</div></div>
+      <div style={{ position: "absolute", left: -76, top: 0, bottom: 0, width: 70, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--ink-40)" }}>
+        <div style={{ position: "absolute", top: 0, right: 0, textAlign: "right" }}><div className="acc">T=0</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>NOW</div></div>
+        <div style={{ position: "absolute", top: memH * 0.5 - 8, right: 0, textAlign: "right" }}><div>~120s</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>STEM</div></div>
+        <div style={{ position: "absolute", top: memH - 14, right: 0, textAlign: "right" }}><div className="acc">CONF</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>+1 blk</div></div>
+        <div style={{ position: "absolute", top: memH + 96, right: 0, textAlign: "right" }}><div>+{CONF_UNLOCK}c</div><div className="dim2" style={{ fontSize: "var(--fs-label)" }}>UNLOCK</div></div>
         {trackedStratum ? (
           <div data-tracked-block={trackedStratum.b.height} data-tracked-tx={trackedTxId ?? undefined}
             style={{ position: "absolute", top: trackedStratum.top - 8, right: 0, textAlign: "right", color: "var(--y-50)" }}>
-            <div style={{ fontSize: 10 }}>▲ TRACKED</div>
-            <div style={{ fontSize: 8, color: "var(--y-50)" }}>{confOf(trackedStratum.b.height, data)}/{CONF_UNLOCK}</div>
+            <div style={{ fontSize: "var(--fs-mono)" }}>▲ TRACKED</div>
+            <div style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>{confOf(trackedStratum.b.height, data)}/{CONF_UNLOCK}</div>
           </div>
         ) : null}
       </div>
@@ -282,8 +282,8 @@ export function SedStrataLog({ data, trackedHeight }: { data: MoneroLive; tracke
           const isTracked = trackedHeight != null && b.height === trackedHeight;
           return (
             <div key={b.height} data-tracked-block={isTracked ? b.height : undefined}
-              style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: 10, opacity: isTracked ? 1 : Math.max(0.25, 0.9 - i * 0.05) }}>
-              <span className="dim2" style={{ fontSize: 9 }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
+              style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", opacity: isTracked ? 1 : Math.max(0.25, 0.9 - i * 0.05) }}>
+              <span className="dim2" style={{ fontSize: "var(--fs-label)" }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
               <span style={{ color: isTracked ? "var(--y-50)" : i === 0 ? "var(--tk-accent)" : "var(--ink-60)" }}>#{b.height.toLocaleString()}</span>
               <div style={{ height: 9, background: "rgba(255,255,255,0.04)", borderRadius: 2, overflow: "hidden" }}>
                 <div style={{ height: "100%", width: (b.txs / maxTx * 100).toFixed(0) + "%", background: isTracked ? "var(--y-50)" : `linear-gradient(90deg, rgba(214,98,15,${0.9 - i * 0.05}), rgba(255,180,80,${0.85 - i * 0.05}))`, boxShadow: isTracked ? "0 0 8px var(--y-50)" : (i === 0 ? "0 0 8px rgba(255,122,26,0.5)" : "none") }} />
@@ -307,7 +307,7 @@ export function SedFeeProfile({ data }: { data: MoneroLive }) {
           color="var(--tk-accent)" height={188}
           format={(v) => Math.round(v).toLocaleString() + " p/B"} />
       ) : (
-        <div className="mono dim" style={{ padding: 24, textAlign: "center", fontSize: 11 }}>mempool empty</div>
+        <div className="mono dim" style={{ padding: 24, textAlign: "center", fontSize: "var(--fs-mono)" }}>mempool empty</div>
       )}
     </SedCard>
   );
@@ -336,11 +336,11 @@ export function SedClearance({ data }: { data: MoneroLive }) {
     <SedCard title="Clearance rate" right={<Provenance source="node" fresh="live" />}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
         <span className="mono acc glow" style={{ fontSize: 24, fontWeight: 500 }}>{data.mempool.length}</span>
-        <span className="mono dim" style={{ fontSize: 10 }}>tx suspended</span>
+        <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>tx suspended</span>
       </div>
       <AreaSeries data={series} height={84} color="var(--tk-accent)" baseline="zero"
         xLabels={false} markers={false} format={(v) => String(Math.round(v))} />
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: 9.5, color: "var(--ink-40)", marginTop: 6 }}>
+      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6 }}>
         <span>median {poolReady ? Math.round(stats.medianPerB).toLocaleString() + " p/B" : "—"}</span>
         <span>P90 {poolReady && p90 != null ? Math.round(p90).toLocaleString() + " p/B" : "—"}</span>
         <span>next {data.ready ? <BlockEta data={data} /> : "—"}</span>
@@ -355,13 +355,13 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
   const rows = data.mempool.slice(0, 12);
   return (
     <SedCard title={"Suspended transactions · " + rows.length + " of " + data.mempool.length} right={<><Provenance source="node" fresh="live" /><span className="acc">sorted by depth</span></>}>
-      <div className="mono" style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: 9, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
         <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Fee/B</span><span>Depth</span><span>Age</span>
       </div>
       {rows.map((t) => {
         const depth = 1 - t.perB / max;
         return (
-          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: 11, padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
+          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-mono)", padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
             onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.07)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
             <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
@@ -388,7 +388,7 @@ export function SedOverview({ data, tracking, onPickTx }: { data: MoneroLive; tr
         <div style={{ flex: "1 1 360px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14, marginLeft: "clamp(0px, 4vw, 70px)" }}>
           <SedCard title="How to read this core" pad="14px 16px">
             <div style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.34, color: "var(--ink-100)", marginBottom: 8 }}>A cross-section of the mempool, drawn as a sample column.</div>
-            <div style={{ fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--ink-60)", lineHeight: 1.55 }}>
+            <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", lineHeight: 1.55 }}>
               Each <span className="acc">particle</span> is one pending transaction — its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>height</em> tracks fee-per-byte and its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>size</em> tracks weight. The bright band is the <span className="acc">confirmation interface</span>; strata below are confirmed blocks, brightest at the surface, fading toward <span className="dim">{CONF_UNLOCK}-deep unlock</span>.
             </div>
           </SedCard>
