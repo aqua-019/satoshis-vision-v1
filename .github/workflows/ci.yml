@@ -54,6 +54,14 @@ jobs:
       - name: "Gate: feeds proxy"
         run: node ../api/verify-feeds.mjs
 
+      # Exercises selectMembers/parseDays/cacheSeconds/classifyQuality against
+      # the committed api/_fixtures/cg-markets-*.json rows. This is what keeps
+      # the Markets groups data-driven: pin-at-index-0, the pegged/derivative
+      # exclusions (stablecoins never reach a series slot) and the chart-budget
+      # cutoff are all asserted here, offline.
+      - name: "Gate: markets aggregator"
+        run: node ../api/verify-markets.mjs
+
       - name: "Gate: market stale-cache"
         run: node verify-stale.mjs
 
