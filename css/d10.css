@@ -4,6 +4,43 @@
    Typography: Playfair Display / Instrument Serif / DM Mono / Geologica / Sora
    ═══════════════════════════════════════════════════════════════ */
 
+
+/* ─── self-hosted fonts · latin woff2 ─────────────────────────────────
+   v6.0.9. These are the five families this design system has always named.
+   They were loaded from fonts.bunny.net until v6.0.7 removed that origin —
+   correctly, since Brave Shields and Tor Browser block third-party font CDNs,
+   and a preconnect alone is still a DNS lookup plus a TLS handshake to someone
+   else's server. But dropping the origin also dropped the typography, which
+   was a regression for every visitor, not a privacy win.
+
+   Vendored from @fontsource (the same upstream Google Fonts files) into
+   /fonts/ instead. Same faces, one origin, MASTER-HANDOFF.md rule 2 satisfied
+   ("all fonts must be self-hosted from /fonts/"), and vercel.json already
+   caches *.woff2 for a year as immutable.
+
+   font-display:swap throughout: text paints immediately in the system
+   fallback and re-renders when the face arrives, so a slow or blocked font
+   never delays first paint. That is what keeps the Tor and Brave paths fast
+   — and why every stack below still ends in a real system fallback. */
+
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/playfair-display-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/playfair-display-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:600;font-display:swap;src:url('/fonts/playfair-display-latin-600-normal.woff2') format('woff2')}
+@font-face{font-family:'Playfair Display';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/playfair-display-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Instrument Serif';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/instrument-serif-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Instrument Serif';font-style:italic;font-weight:400;font-display:swap;src:url('/fonts/instrument-serif-latin-400-italic.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/dm-mono-latin-300-normal.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/dm-mono-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/dm-mono-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Geologica';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/geologica-latin-300-normal.woff2') format('woff2')}
+@font-face{font-family:'Geologica';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/geologica-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Geologica';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/geologica-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Geologica';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/geologica-latin-700-normal.woff2') format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:300;font-display:swap;src:url('/fonts/sora-latin-300-normal.woff2') format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:400;font-display:swap;src:url('/fonts/sora-latin-400-normal.woff2') format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:500;font-display:swap;src:url('/fonts/sora-latin-500-normal.woff2') format('woff2')}
+@font-face{font-family:'Sora';font-style:normal;font-weight:700;font-display:swap;src:url('/fonts/sora-latin-700-normal.woff2') format('woff2')}
+
 /* ── Layer 1: Primitive Tokens ───────────────────────────────── */
 :root {
     /* Brand colors */
@@ -76,26 +113,19 @@
     --border-default: var(--g8);
     --border-strong:  var(--g7);
 
-    /* Font stacks — system only, v6.0.7.
-       These named the five fonts.bunny.net faces, which meant a third-party
-       origin on every page load: a DNS lookup, a TLS handshake and a render-
-       blocking stylesheet before first paint. Brave Shields and Tor Browser
-       both block or slow that, and MASTER-HANDOFF.md's sitewide rule 2 already
-       forbade a font CDN. A downloaded face also buys nothing on the surfaces
-       we care about — Tor Browser restricts the visible font set to a bundled
-       allowlist — while adding entropy to fingerprint.
-       ui-serif / ui-sans-serif / ui-monospace lead because they are the only
-       names guaranteed to resolve there. Playfair Display and Instrument Serif
-       were both display serifs, and the headline/subhead distinction in this
-       file is already carried by font-style and size rather than family, so
-       collapsing them loses nothing structural. Geologica and Sora were both
-       geometric grotesks; tabular alignment for data is handled unconditionally
-       by `font-variant-numeric: tabular-nums` on html below. */
-    --font-headline: ui-serif, Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', Times, serif;
-    --font-subhead:  ui-serif, Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', Times, serif;
-    --font-mono:     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --font-data:     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-body:     ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    /* Font stacks — v6.0.9: the branded families, self-hosted (see @font-face
+       above), each still ending in a real system fallback.
+       v6.0.7 stripped these to system-only because fonts.bunny.net had to go
+       and the woff2 files could not be fetched at the time. The origin stays
+       gone; the typography comes back. The fallbacks are load-bearing rather
+       than decorative — with font-display:swap they are what actually paints
+       first, and they are all a browser that blocks or restricts downloadable
+       fonts (Tor Browser at Safest) will ever use. */
+    --font-headline: 'Playfair Display', ui-serif, Georgia, 'Times New Roman', serif;
+    --font-subhead:  'Instrument Serif', ui-serif, Georgia, 'Times New Roman', serif;
+    --font-mono:     'DM Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;
+    --font-data:     'Geologica', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-body:     'Sora', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
     /* Fluid type scale */
     --text-hero:     clamp(2.25rem, 1rem + 5vw, 3.5rem);

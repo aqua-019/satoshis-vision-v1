@@ -6,7 +6,7 @@
   "description": "xmr.irish v5.0 \u2014 portable Vite + React + TypeScript skeleton, designed to slot into any host runtime.",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && npm run build:ssr && node scripts/prerender.mjs",
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
     "typecheck": "tsc --noEmit",
@@ -17,7 +17,8 @@
     "verify:perf": "node verify-perf-classic.mjs",
     "verify:mem": "node verify-memshell.mjs",
     "verify:mem:dom": "node verify-memviews.mjs",
-    "verify:mem:perf": "node verify-memperf.mjs"
+    "verify:mem:perf": "node verify-memperf.mjs",
+    "build:ssr": "vite build --config vite.ssr.config.ts --logLevel error"
   },
   "dependencies": {
     "react": "^18.3.1",
