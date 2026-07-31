@@ -136,7 +136,7 @@ export function MempoolPage() {
                     border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),
                     color: on ? "var(--tk-accent)" : "var(--ink-80)",
                     padding: "6px 10px",
-                    fontFamily: "var(--f-mono)", fontSize: 10.5,
+                    fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
                     letterSpacing: "0.1em", textTransform: "uppercase",
                     boxShadow: on ? "var(--glow-1)" : "none",
                     display: "flex", flexDirection: "column", gap: 1, textAlign: "left",
@@ -146,7 +146,7 @@ export function MempoolPage() {
                     {it.star ? <span style={{ color: "var(--tk-accent)" }}>★</span> : null}
                     {it.label}
                   </span>
-                  <span style={{ fontSize: 9, color: "var(--ink-40)", letterSpacing: "0.04em", textTransform: "none" }}>{it.sub}</span>
+                  <span style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.04em", textTransform: "none" }}>{it.sub}</span>
                 </button>
               );
             })}

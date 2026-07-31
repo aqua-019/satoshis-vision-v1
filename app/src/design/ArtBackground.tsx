@@ -10,6 +10,8 @@
  */
 
 import * as React from "react";
+import { useVisual } from "./VisualContext";
+import { useReducedMotion } from "./useReducedMotion";
 
 type Intensity = "calm" | "busy" | "chaotic";
 
@@ -19,12 +21,17 @@ export interface ArtBackgroundProps {
 }
 
 export function ArtBackground({ intensity = "busy", scan = false }: ArtBackgroundProps) {
+  // The user's ⌘ DESIGN → Ambient choice, when set, overrides every page's
+  // own `intensity` prop (see design/VisualContext.tsx); `ambient === null`
+  // means no override, so this page's own prop wins as before.
+  const { ambient } = useVisual();
+  const effectiveIntensity = ambient ?? intensity;
   return (
     <>
       <div className="art-grid" />
       <ParticleField
-        density={intensity === "calm" ? 0.45 : intensity === "chaotic" ? 1.6 : 1.0}
-        speed={intensity === "chaotic" ? 1.6 : 1.0}
+        density={effectiveIntensity === "calm" ? 0.45 : effectiveIntensity === "chaotic" ? 1.6 : 1.0}
+        speed={effectiveIntensity === "chaotic" ? 1.6 : 1.0}
       />
       <div className="art-noise" />
       <div className="art-vignette" />
@@ -36,55 +43,83 @@ export function ArtBackground({ intensity = "busy", scan = false }: ArtBackgroun
 interface ParticleFieldProps {
   density?: number;
   speed?: number;
+  /** Explicit override. Omitted (the normal case), the theme-aware
+   *  `--ui-accent-dim` token is read from computed style instead — see
+   *  below. */
   color?: string;
   className?: string;
 }
 
+interface Star { x: number; y: number; vx: number; vy: number; r: number; a: number; ph: number }
+interface Stream { x: number; y: number; vy: number; life: number; age: number; hue: number }
+
 export function ParticleField({
   density = 1.0,
   speed = 1.0,
-  color = "rgba(255,122,26,0.5)",
+  color,
   className,
 }: ParticleFieldProps) {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
+  const reduced = useReducedMotion();
+  // Re-running the effect on a theme flip is how a live ⌘ DESIGN → Theme
+  // change repaints an already-mounted canvas — otherwise the computed
+  // `--ui-accent-dim` read below would only ever happen once, at mount.
+  const { theme } = useVisual();
 
   React.useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    let raf = 0, w = 0, h = 0;
+    let w = 0, h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const resize = () => {
-      const r = canvas.getBoundingClientRect();
-      w = r.width; h = r.height;
-      canvas.width = w * dpr; canvas.height = h * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Theme-aware particle colour: --ui-accent-dim already retints per
+    // theme (violet under indigo, the historic orange under classic — see
+    // styles-theme.css). Read it from computed style rather than
+    // hardcoding the orange; fall back to it only if the token resolves
+    // empty (e.g. rendered outside this app's CSS cascade entirely, per
+    // PORTING.md).
+    const themeColor =
+      color ??
+      (getComputedStyle(document.documentElement).getPropertyValue("--ui-accent-dim").trim() ||
+        "rgba(255,122,26,0.5)");
+
+    let stars: Star[] = [];
+    let streams: Stream[] = [];
+
+    // Seeding lives inside resize() (not once at the top of the effect) so
+    // a LATER resize — not just the first measurement — reseeds against the
+    // current box. Before styles-legibility.css's `.art-canvas` fix this
+    // never mattered (the canvas was permanently stuck at its 300×150
+    // intrinsic size, see that file's "BUGFIX" comment); now that a resize
+    // can genuinely change w/h, seeding once at mount left every star keyed
+    // to a stale box after the next one.
+    const seed = () => {
+      const N = Math.floor(120 * density);
+      stars = Array.from({ length: N }, () => ({
+        x: Math.random() * w, y: Math.random() * h,
+        vx: (Math.random() - 0.5) * 0.15 * speed,
+        vy: (Math.random() - 0.5) * 0.15 * speed,
+        r: Math.random() * 1.3 + 0.2,
+        a: Math.random() * 0.7 + 0.1,
+        ph: Math.random() * Math.PI * 2,
+      }));
+      streams = Array.from({ length: Math.floor(8 * density) }, () => ({
+        x: Math.random() * w, y: h + Math.random() * h,
+        vy: -(Math.random() * 1.6 + 0.6) * speed,
+        life: Math.random() * 200 + 200,
+        age: 0,
+        hue: Math.random() < 0.85 ? 28 : 280,
+      }));
     };
-    resize();
-    const ro = new ResizeObserver(resize); ro.observe(canvas);
 
-    const N = Math.floor(120 * density);
-    const stars = Array.from({ length: N }, () => ({
-      x: Math.random() * w, y: Math.random() * h,
-      vx: (Math.random() - 0.5) * 0.15 * speed,
-      vy: (Math.random() - 0.5) * 0.15 * speed,
-      r: Math.random() * 1.3 + 0.2,
-      a: Math.random() * 0.7 + 0.1,
-      ph: Math.random() * Math.PI * 2,
-    }));
-    const streams = Array.from({ length: Math.floor(8 * density) }, () => ({
-      x: Math.random() * w, y: h + Math.random() * h,
-      vy: -(Math.random() * 1.6 + 0.6) * speed,
-      life: Math.random() * 200 + 200,
-      age: 0,
-      hue: Math.random() < 0.85 ? 28 : 280,
-    }));
-
+    // One frame's worth of update + draw. Split out from the rAF loop
+    // (below) so reduced motion can call it exactly once per resize instead
+    // of never running at all.
     const tick = () => {
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = color;
+      ctx.fillStyle = themeColor;
       for (const s of stars) {
         s.x += s.vx; s.y += s.vy; s.ph += 0.02 * speed;
         if (s.x < 0) s.x += w; if (s.x > w) s.x -= w;
@@ -111,12 +146,32 @@ export function ParticleField({
         ctx.fillRect(s.x, s.y, 1, 28);
       }
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
-      raf = requestAnimationFrame(tick);
     };
-    tick();
+
+    const resize = () => {
+      const r = canvas.getBoundingClientRect();
+      w = r.width; h = r.height;
+      canvas.width = w * dpr; canvas.height = h * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seed();
+      // Assigning canvas.width just wiped the backing store. Under reduced
+      // motion there's no rAF loop to repaint what that wipe erased, so the
+      // static frame has to be redrawn right here or the field goes blank
+      // on the next resize (mirrors pages/future/FutureMini.tsx's
+      // useMiniCanvas, which hits the exact same canvas.width= gotcha).
+      if (reduced) tick();
+    };
+    resize();
+    const ro = new ResizeObserver(resize); ro.observe(canvas);
+
+    if (reduced) return () => ro.disconnect();
+
+    let raf = 0;
+    const loop = () => { tick(); raf = requestAnimationFrame(loop); };
+    raf = requestAnimationFrame(loop);
 
     return () => { cancelAnimationFrame(raf); ro.disconnect(); };
-  }, [density, speed, color]);
+  }, [density, speed, color, reduced, theme]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;
 }

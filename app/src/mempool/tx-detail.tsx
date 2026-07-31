@@ -35,7 +35,7 @@ function DKV({ k, v, mono = true, tone, copy, wrap }: any) {
     }}>
       <div className="kicker" style={{ color: "var(--ink-40)" }}>{k}</div>
       <div className={mono ? "mono" : "serif"} style={{
-        fontSize: mono ? 12 : 13,
+        fontSize: mono ? "var(--fs-mono)" : "var(--fs-body)",
         color: tone === "acc" ? "var(--tk-accent)" : tone === "purple" ? "var(--p-50)" : tone === "cyan" ? "var(--c-50)" : tone === "dim" ? "var(--ink-60)" : "var(--ink-100)",
         wordBreak: "break-all",
         lineHeight: 1.55,
@@ -43,7 +43,7 @@ function DKV({ k, v, mono = true, tone, copy, wrap }: any) {
       {copy ? (
         <button onClick={() => navigator.clipboard.writeText(copy)}
           style={{ appearance: "none", background: "transparent", border: "1px solid var(--ink-20)",
-            color: "var(--ink-60)", padding: "3px 8px", fontSize: 9.5,
+            color: "var(--ink-60)", padding: "3px 8px", fontSize: "var(--fs-label)",
             fontFamily: "var(--f-mono)", letterSpacing: "0.1em",
             cursor: "pointer", borderRadius: 3 }}
           title={"Copy " + k}>COPY</button>
@@ -60,7 +60,7 @@ function Section({ title, right, children, kicker }: any) {
           {kicker ? <div className="kicker" style={{ marginBottom: 4 }}>{kicker}</div> : null}
           <h3 className="serif" style={{ margin: 0, fontSize: 18, fontWeight: 400, color: "var(--ink-100)" }}>{title}</h3>
         </div>
-        {right ? <div className="mono" style={{ fontSize: 11, color: "var(--ink-60)" }}>{right}</div> : null}
+        {right ? <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)" }}>{right}</div> : null}
       </div>
       {children}
     </section>
@@ -72,7 +72,7 @@ function PrivacyBadges() {
     <span key={b} style={{
       padding: "4px 10px", border: "1px solid var(--g-50)", color: "var(--g-50)",
       background: "rgba(74,222,128,0.06)", borderRadius: 3,
-      fontFamily: "var(--f-mono)", fontSize: 10, letterSpacing: "0.1em", textTransform: "uppercase",
+      fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase",
     }}>{b}</span>
   ));
 }
@@ -82,7 +82,7 @@ const BackBtn = ({ onBack }: { onBack?: () => void }) => onBack ? (
     style={{ appearance: "none", cursor: "pointer", background: "transparent",
       border: "1px solid var(--ink-20)", color: "var(--ink-60)",
       padding: "5px 12px", borderRadius: 3,
-      fontFamily: "var(--f-mono)", fontSize: 11, marginBottom: 18 }}>← Back</button>
+      fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginBottom: 18 }}>← Back</button>
 ) : null;
 
 const fmtKB = (b: number | null) => b == null ? "—" : (b / 1024).toFixed(2);
@@ -101,8 +101,8 @@ export function LiveTxDetail({ txid, data, onBack }: {
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Transaction</div>
-        <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
-        <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
+        <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
           <span className="led pulse" /> resolving from the node…
           <span style={{ color: "var(--ink-40)" }}>pending · awaiting first block</span>
         </div>
@@ -114,10 +114,10 @@ export function LiveTxDetail({ txid, data, onBack }: {
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Transaction</div>
-        <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
+        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
         <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
-          <div className="mono" style={{ fontSize: 12.5, color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
-          <div className="mono dim" style={{ fontSize: 11, lineHeight: 1.6 }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
             The node did not return this transaction. It may be too recent to have propagated, pruned,
             or the RPC relay is unreachable from this browser. No data is shown rather than invented values.
           </div>
@@ -141,7 +141,7 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
         <BackBtn onBack={onBack} />
         <div className="kicker">Block</div>
         <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
-        <div className="mono dim" style={{ marginTop: 14, fontSize: 12, display: "flex", alignItems: "center", gap: 10 }}>
+        <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
           <span className="led pulse" /> resolving from the node…
         </div>
       </div>
@@ -154,8 +154,8 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
         <div className="kicker">Block</div>
         <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
         <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
-          <div className="mono" style={{ fontSize: 12.5, color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
-          <div className="mono dim" style={{ fontSize: 11, lineHeight: 1.6 }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
             The node did not return this block. The RPC relay may be unreachable from this browser.
             No data is shown rather than invented values.
           </div>
@@ -184,8 +184,8 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "flex-start", paddingBottom: 18, borderBottom: "1px solid var(--rule)" }}>
         <div>
           <div className="kicker">Transaction</div>
-          <div className="mono" style={{ fontSize: 13.5, color: "var(--c-50)", marginTop: 6, wordBreak: "break-all", lineHeight: 1.4 }}>{tx.id}</div>
-          <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: "var(--f-mono)", fontSize: 11, color: "var(--ink-60)", flexWrap: "wrap" }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all", lineHeight: 1.4 }}>{tx.id}</div>
+          <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", flexWrap: "wrap" }}>
             <span>v{tx.version}</span>
             <span>·</span>
             <span>rct_type: <b style={{ color: "var(--p-50)" }}>{tx.rctType}</b> ({tx.rctTypeLabel})</span>
@@ -202,7 +202,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
           ) : (
             <span className="pill warn"><span className="led pulse" />CONFIRMING</span>
           )}
-          <span className="mono dim" style={{ fontSize: 10.5 }}>{tx.confirmations}/10 confirmations</span>
+          <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{tx.confirmations}/10 confirmations</span>
         </div>
       </div>
 
@@ -222,11 +222,11 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginTop: 18, border: "1px solid var(--g-50)", background: "rgba(74,222,128,0.05)", borderRadius: 4 }}>
         <span style={{ color: "var(--g-50)", fontSize: 22, lineHeight: 1 }}>✓</span>
         <div>
-          <div className="mono" style={{ fontSize: 12, color: "var(--ink-100)" }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>
             Monero protocol privacy
-            <span className="up" style={{ marginLeft: 8, fontSize: 10.5, letterSpacing: "0.12em" }}>ALWAYS-ON</span>
+            <span className="up" style={{ marginLeft: 8, fontSize: "var(--fs-label)", letterSpacing: "0.12em" }}>ALWAYS-ON</span>
           </div>
-          <div className="mono dim" style={{ fontSize: 10.5, marginTop: 4, letterSpacing: "0.04em" }}>
+          <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 4, letterSpacing: "0.04em" }}>
             sender hidden (ring signature) · recipient hidden (stealth address) · amount hidden (RingCT)
           </div>
         </div>
@@ -257,7 +257,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
             );
           })}
         </div>
-        <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, marginTop: 6 }}>
+        <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", marginTop: 6 }}>
           <span>{tx.inMempool ? "in mempool · pending · 0/10 · awaiting first block" : `${tx.confirmations} of 10 — ${remaining} more until unlock`}</span>
           <span>~2 min/block target · updated live</span>
         </div>
@@ -267,7 +267,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       {tx.inMempool ? (
         <Section title="Mempool" kicker="Dandelion++ stem + fluff">
           <DKV k="First seen (this node)" v={tx.firstSeen ? new Date(tx.firstSeen * 1000).toISOString() : "—"} mono />
-          <div className="mono dim" style={{ fontSize: 10.5, marginTop: 8, lineHeight: 1.55 }}>
+          <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 8, lineHeight: 1.55 }}>
             Origin IP is obscured by Dandelion++ (stem then fluff). Per-peer relay counts and propagation
             latency are not exposed by the node RPC and are not shown.
           </div>
@@ -278,10 +278,10 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       <Section title="tx_extra" kicker="On-chain metadata" right={<span>{tx.extraSize} bytes</span>}>
         {tx.extraHex ? (
           <DKV k="raw_extra_hex"
-            v={<code style={{ fontSize: 10.5, color: "var(--ink-60)", display: "block", padding: 10, background: "rgba(0,0,0,0.4)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
+            v={<code style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "block", padding: 10, background: "rgba(0,0,0,0.4)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
             copy={tx.extraHex} />
         ) : <DKV k="raw_extra_hex" v="(empty)" tone="dim" />}
-        <div className="mono dim" style={{ fontSize: 10.5, marginTop: 6 }}>
+        <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 6 }}>
           tx_pubkey / payment_id live inside this blob; they are not decoded client-side.
         </div>
       </Section>
@@ -299,7 +299,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
                   background: openIn === i ? "rgba(255,122,26,0.1)" : "transparent",
                   border: "1px solid " + (openIn === i ? "var(--tk-accent)" : "var(--ink-20)"),
                   color: openIn === i ? "var(--tk-accent)" : "var(--ink-60)",
-                  borderRadius: 2, fontFamily: "var(--f-mono)", fontSize: 11,
+                  borderRadius: 2, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
                 }}>Input #{i}</button>
             ))}
           </div>
@@ -307,7 +307,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
 
         {(() => {
           const inp = tx.inputs[openIn] || tx.inputs[0];
-          if (!inp) return <div className="mono dim" style={{ fontSize: 11 }}>No inputs returned.</div>;
+          if (!inp) return <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>No inputs returned.</div>;
           const decoyInput = decoys.inputs?.find((d) => d.inputIdx === openIn);
           return (
             <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
@@ -324,18 +324,18 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
                     <button type="button" onClick={() => setWantDecoys(true)}
                       style={{ appearance: "none", cursor: "pointer", background: "transparent",
                         border: "1px solid var(--ink-20)", color: "var(--ink-60)", padding: "4px 10px",
-                        borderRadius: 3, fontFamily: "var(--f-mono)", fontSize: 10 }}>
+                        borderRadius: 3, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                       ▶ Resolve ring ages (extra RPC)
                     </button>
                   ) : decoys.status === "loading" ? (
-                    <span className="mono dim" style={{ fontSize: 10 }}>resolving…</span>
+                    <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>resolving…</span>
                   ) : null}
                 </div>
 
                 {decoys.status === "error" ? (
-                  <div className="mono dim" style={{ fontSize: 10.5 }}>decoy ages unavailable from the node</div>
+                  <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>decoy ages unavailable from the node</div>
                 ) : decoyInput && decoyInput.ring.length ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px 70px", gap: 8, fontFamily: "var(--f-mono)", fontSize: 11 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px 70px", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                     <span className="kicker">#</span>
                     <span className="kicker">Block height</span>
                     <span className="kicker">Age (blocks)</span>
@@ -352,9 +352,9 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
                     ))}
                   </div>
                 ) : wantDecoys && decoys.status === "ready" ? (
-                  <div className="mono dim" style={{ fontSize: 10.5 }}>no ring data for this input</div>
+                  <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>no ring data for this input</div>
                 ) : (
-                  <div className="mono dim" style={{ fontSize: 10.5 }}>
+                  <div className="mono dim" style={{ fontSize: "var(--fs-body)" }}>
                     Ring-member ages resolve each decoy's on-chain output to its block height (one batched /get_outs call).
                   </div>
                 )}
@@ -374,11 +374,11 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
                 <div className="kicker" style={{ color: "var(--p-50)" }}>Output #{i}</div>
               </div>
               <DKV k="stealth_address" v={o.stealthKey || "—"} tone="purple" copy={o.stealthKey || undefined} />
-              <DKV k="view_tag" v={o.viewTag ? <><b style={{ color: "var(--tk-accent)" }}>0x{o.viewTag}</b> <span className="dim" style={{ marginLeft: 8, fontSize: 11 }}>· 1 byte · scan acceleration</span></> : "—"} />
+              <DKV k="view_tag" v={o.viewTag ? <><b style={{ color: "var(--tk-accent)" }}>0x{o.viewTag}</b> <span className="dim" style={{ marginLeft: 8, fontSize: "var(--fs-mono)" }}>· 1 byte · scan acceleration</span></> : "—"} />
               <DKV k="amount" v="HIDDEN (Pedersen commitment)" tone="dim" />
             </div>
           ))}
-          {!tx.outputs.length ? <div className="mono dim" style={{ fontSize: 11 }}>No outputs returned.</div> : null}
+          {!tx.outputs.length ? <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>No outputs returned.</div> : null}
         </div>
       </Section>
 
@@ -398,13 +398,13 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">CLSAG · ring signature</div>
-            <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.55 }}>
+            <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
               Each of {tx.inputs.length} input{tx.inputs.length === 1 ? "" : "s"} proves "this is one of the {tx.ringSize} keys" without revealing which — the spender is hidden in the ring.
             </p>
           </div>
           <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">Bulletproofs+ · range proof</div>
-            <p className="mono dim" style={{ margin: "8px 0 0", fontSize: 11, lineHeight: 1.55 }}>
+            <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
               Proves all {tx.outputs.length} output amounts are in range without revealing the values. Logarithmic verification.
             </p>
           </div>
@@ -430,11 +430,11 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
           style={{ appearance: "none", cursor: "pointer", background: "transparent",
             border: "1px solid var(--ink-20)", color: "var(--ink-60)",
             padding: "5px 12px", borderRadius: 3,
-            fontFamily: "var(--f-mono)", fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
           {showJson ? "▼ Hide JSON" : "▶ Show JSON"}
         </button>
         {showJson ? (
-          <pre style={{ marginTop: 10, padding: 14, background: "rgba(0,0,0,0.5)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
+          <pre style={{ marginTop: 10, padding: 14, background: "rgba(0,0,0,0.5)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
 {JSON.stringify(tx, null, 2)}
           </pre>
         ) : null}
@@ -468,8 +468,8 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
         <div>
           <div className="kicker">Block</div>
           <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>#{block.height.toLocaleString()}</h2>
-          <div className="mono" style={{ fontSize: 12.5, color: "var(--c-50)", marginTop: 8, wordBreak: "break-all" }}>{block.hash}</div>
-          <div className="mono dim" style={{ fontSize: 11, marginTop: 8 }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 8, wordBreak: "break-all" }}>{block.hash}</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 8 }}>
             Mined by <b style={{ color: "var(--ink-100)" }}>{block.pool}</b> · {block.timestampIso} · {fmtAge(block.ageSeconds)} ago
           </div>
         </div>
@@ -525,18 +525,18 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
                 display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center",
                 padding: "8px 12px", background: "transparent",
                 border: "1px solid " + (row.coinbase ? "var(--tk-accent)" : "var(--ink-10)"), borderRadius: 3,
-                color: "var(--ink-100)", fontFamily: "var(--f-mono)", fontSize: 11.5,
+                color: "var(--ink-100)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
                 transition: "background 0.12s",
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.05)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-              <span className={row.coinbase ? "acc" : "dim"} style={{ fontSize: 9.5 }}>{row.coinbase ? "COINBASE" : String(i).padStart(2, "0")}</span>
+              <span className={row.coinbase ? "acc" : "dim"} style={{ fontSize: "var(--fs-label)" }}>{row.coinbase ? "COINBASE" : String(i).padStart(2, "0")}</span>
               <span style={{ color: "var(--c-50)", wordBreak: "break-all" }}>{row.id}</span>
               <span className="dim">↗</span>
             </button>
           ))}
           {remaining ? (
-            <div className="mono dim" style={{ padding: "8px 12px", fontSize: 11, fontStyle: "italic" }}>
+            <div className="mono dim" style={{ padding: "8px 12px", fontSize: "var(--fs-mono)", fontStyle: "italic" }}>
               + {remaining} more txs in this block (truncated for display)
             </div>
           ) : null}
@@ -549,11 +549,11 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
           style={{ appearance: "none", cursor: "pointer", background: "transparent",
             border: "1px solid var(--ink-20)", color: "var(--ink-60)",
             padding: "5px 12px", borderRadius: 3,
-            fontFamily: "var(--f-mono)", fontSize: 10.5, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
           {showJson ? "▼ Hide JSON" : "▶ Show JSON"}
         </button>
         {showJson ? (
-          <pre style={{ marginTop: 10, padding: 14, background: "rgba(0,0,0,0.5)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: 10.5, lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
+          <pre style={{ marginTop: 10, padding: 14, background: "rgba(0,0,0,0.5)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
 {JSON.stringify(block, null, 2)}
           </pre>
         ) : null}

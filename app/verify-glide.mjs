@@ -107,6 +107,13 @@ const FIX = {
   },
 };
 
+/* v6.0.6: the chain tier watches /api/xmr/tip and only re-pulls network+blocks
+   when the tip MOVES. Tip is the chain head, so it tracks curHead (the block
+   fixtures) — not curInfoH. That keeps the two discriminator scenarios intact:
+   a get_info-only bump leaves the tip still, while a blocks-only advance moves
+   it and therefore triggers the re-pull the glide assertion depends on. */
+const tipFix = () => ({ height: curHead, target: 120, difficulty: 7.7e11 });
+
 function resetFix() {
   curHead = H0; curInfoH = H0;
   FIX.network = { ...baseNetwork, height: H0 };
@@ -136,6 +143,8 @@ function fulfil(route) {
   const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
   if (url.includes('/api/monero')) return json(FIX.info);
   if (url.includes('/api/xmr/network')) return json(FIX.network);
+  if (url.includes('/api/xmr/tip')) return json(tipFix());
+  if (url.includes('/api/xmr/fees')) return json({ tiers: baseNetwork.fee_tiers });
   if (url.includes('/api/xmr/mempool')) return json(FIX.mempool);
   if (url.includes('/api/xmr/tx/')) return json(FIX.tx);
   if (url.includes('/api/xmr/block/')) return route.abort();   // block detail: not exercised
@@ -172,12 +181,21 @@ async function installGlideSpy(p) {
 const readGlide = (p) => p.evaluate(() => window.__glide);
 const resetGlide = (p) => p.evaluate(() => { const g = window.__glide; g.flip = 0; g.enter = 0; g.enterKeys = []; });
 const waitHead = (p, h) => p.waitForFunction((x) => !!document.querySelector(`[data-glide-key="${x}"]`), h, { timeout: 9000 });
-const POLL = 3200; // > feed POLL_MS (2500) so a mutation is guaranteed to be picked up
+/* v6.0.6: the real chain tier runs at 15s, which would make every wait below
+   exceed its timeout. Compress all three tiers for the test via the documented
+   override in data/usePolling.ts, injected before app boot. */
+const TEST_TIERS = { fast: 400, chain: 400, market: 5000 };
+async function newPage(opts) {
+  const p = await b.newPage(opts);
+  await p.addInitScript((t) => { window.__XMR_TIER_MS__ = t; }, TEST_TIERS);
+  return p;
+}
+const POLL = 1400; // > 3× the compressed chain tier, so a mutation is always picked up
 
 /* ── Scenarios 1–3: glide trigger discrimination, per view ── */
 for (const v of ['classic', 'reactor']) {
   resetFix();
-  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', fulfil);
   await p.goto(`${base}/mempool?v=${v}`, { waitUntil: 'load' });
   await p.waitForSelector('[data-glide-key]', { timeout: 9000 });
@@ -220,7 +238,7 @@ for (const v of ['classic', 'reactor']) {
 /* ── Scenario 4: reduced motion → snap (no events), new head still renders ── */
 {
   resetFix();
-  const p = await b.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  const p = await newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   await p.route('**/api/**', fulfil);
   await p.goto(`${base}/mempool?v=classic`, { waitUntil: 'load' });
   await p.waitForSelector('[data-glide-key]', { timeout: 9000 });
@@ -244,7 +262,7 @@ for (const v of ['classic', 'reactor']) {
 /* ── Scenario 5: tracked ▲ rides along (search a confirmed txid, then advance) ── */
 for (const v of ['classic', 'reactor']) {
   resetFix();
-  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', fulfil);
   await p.goto(`${base}/mempool?v=${v}`, { waitUntil: 'load' });
   await p.waitForSelector('[data-glide-key]', { timeout: 9000 });

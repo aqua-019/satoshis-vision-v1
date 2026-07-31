@@ -16,8 +16,8 @@
 
 import * as React from "react";
 
-import { PageHeader } from "@/layout/AppShell";
 import { PageShell } from "@/layout/PageShell";
+import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
 import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS } from "./future/data";
 import { ProtocolCard, DevLabPulseCard, MoneroNewsCard } from "./future/cards";
@@ -44,9 +44,9 @@ export function FuturePage() {
       <div className="v6-rail">
         {ROADMAP.map((r) => (
           <div key={r.v} className="stop" style={{ ["--node-c" as never]: r.c }}>
-            <div className="mono" style={{ fontSize: 11, letterSpacing: "0.2em", color: r.c, textShadow: `0 0 8px ${r.c}66` }}>{r.v}{r.on ? " ● NEXT" : ""}</div>
+            <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.2em", color: r.c, textShadow: `0 0 8px ${r.c}66` }}>{r.v}{r.on ? " ● NEXT" : ""}</div>
             <div className="serif" style={{ fontSize: "clamp(15px, 1.15vw, 20px)", color: "var(--ink-100)", marginTop: 3 }}>{r.t}</div>
-            <div className="mono dim2" style={{ fontSize: 11, marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{r.d}</div>
+            <div className="mono dim2" style={{ fontSize: "var(--fs-label)", marginTop: 2, letterSpacing: "0.06em", textTransform: "uppercase" }}>{r.d}</div>
           </div>
         ))}
       </div>
@@ -66,9 +66,9 @@ export function FuturePage() {
           <div className="serif" style={{ fontSize: "clamp(20px, 1.7vw, 30px)", color: "var(--ink-100)", margin: "6px 0 4px" }}>
             The Umbrel <em style={{ fontStyle: "normal", color: "var(--g-50)", textShadow: "var(--glow-g)" }}>superstress net</em> is hammering FCMP++ — with this site&apos;s V4 mempool watching it live.
           </div>
-          <p className="mono dim" style={{ margin: 0, fontSize: 12.5 }}>Storm campaigns · dynamic block size under load · the first FCMP++ chain with a visual mempool. Screenshots + endpoints landing soon.</p>
+          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)" }}>Storm campaigns · dynamic block size under load · the first FCMP++ chain with a visual mempool. Screenshots + endpoints landing soon.</p>
         </div>
-        <span className="open-cue mono" style={{ opacity: 1, color: "var(--g-50)", fontSize: 12 }}>open window →</span>
+        <span className="open-cue mono" style={{ opacity: 1, color: "var(--g-50)", fontSize: "var(--fs-mono)" }}>open window →</span>
       </Card>
 
       {/* Trusted peers live on their own page (/peers) */}
@@ -89,9 +89,9 @@ export function FuturePage() {
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "8px 28px" }} className="mono">
           {AUTOMATION_ROWS.map((row) => (
             <div key={row.k} style={{ display: "flex", flexDirection: "column", gap: 2, borderTop: "1px dashed var(--ink-10)", paddingTop: 8 }}>
-              <span style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{row.k}</span>
-              <span style={{ fontSize: 12.5, color: "var(--ink-80)" }}>{row.src}</span>
-              <span style={{ fontSize: 11, color: row.tone === "live" ? "var(--g-50)" : "var(--y-50)" }}>{row.mode}</span>
+              <span style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{row.k}</span>
+              <span style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)" }}>{row.src}</span>
+              <span style={{ fontSize: "var(--fs-mono)", color: row.tone === "live" ? "var(--g-50)" : "var(--y-50)" }}>{row.mode}</span>
             </div>
           ))}
         </div>

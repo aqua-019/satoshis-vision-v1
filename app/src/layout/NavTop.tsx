@@ -10,6 +10,8 @@ import * as React from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { Provenance } from "@/design/primitives";
+import { DesignPanel } from "@/design/DesignPanel";
+import { SITE_VERSION } from "@/data/releases";
 
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
@@ -55,7 +57,7 @@ export function NavTop() {
           <span className="brand-mark" />
           <span>xmr<b>.irish</b></span>
         </Link>
-        <Link to="/sources#release-notes" className="kicker" style={{ textDecoration: "none" }} title="Release notes">v5.0.20</Link>
+        <Link to="/sources#release-notes" className="kicker" style={{ textDecoration: "none" }} title="Release notes">{SITE_VERSION}</Link>
       </div>
 
       <nav
@@ -106,6 +108,9 @@ export function NavTop() {
             {data.marketReady ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
           </em>
         </span>
+        {/* Must stay the LAST child of .ticker-strip — see
+            design/DesignPanel.tsx's header comment for why. */}
+        <DesignPanel />
       </div>
 
       <button

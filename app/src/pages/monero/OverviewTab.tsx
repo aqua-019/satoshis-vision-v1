@@ -42,7 +42,7 @@ export function OverviewTab({ navigate }: MoneroTabProps) {
           <Card key={i} style={{ padding: 22 }}>
             <div className="kicker" style={{ color: p.c }}>{p.k}</div>
             <div className="serif" style={{ fontSize: 28, fontWeight: 500, color: "var(--ink-100)", margin: "8px 0" }}>{p.t}</div>
-            <p className="mono dim" style={{ margin: 0, fontSize: 12, lineHeight: 1.65 }}>{p.b}</p>
+            <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.65 }}>{p.b}</p>
           </Card>
         ))}
       </section>

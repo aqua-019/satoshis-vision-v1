@@ -63,9 +63,35 @@ for (const vp of VPS) {
     });
     ok(r.sw - r.cw <= 2, `${vp.name} ${v}: no horizontal overflow (scrollW ${r.sw} − clientW ${r.cw} = ${r.sw - r.cw})`);
     const identity = !r.transform || r.transform === 'none' || r.transform === 'matrix(1, 0, 0, 1, 0, 0)';
-    ok(!identity && r.boxW < r.natW - 1, `${vp.name} ${v}: scaled to fit (transform ${r.transform}; box ${r.boxW} < natural ${r.natW})`);
+    // A view only has to scale when it is genuinely wider than its canvas.
+    // Constellation's natural width fell below the 1440 desktop canvas at some
+    // point before v6.0.2 (it fails this assertion at bf7fc80 too, with natural
+    // 1000), so demanding a scale-down there asserted a fact that had stopped
+    // being true. Identity transform on a view that already fits is correct
+    // behaviour, not a regression.
+    const mustScale = r.natW > r.cw + 1;
+    ok(mustScale ? (!identity && r.boxW < r.natW - 1) : identity,
+      `${vp.name} ${v}: ${mustScale ? `scaled to fit (transform ${r.transform}; box ${r.boxW} < natural ${r.natW})`
+                                     : `fits unscaled, no transform applied (natural ${r.natW} <= canvas ${r.cw})`}`);
     if (v === 'reactor' && vp.name === 'desktop') {
-      ok(r.sh - r.ch <= 2, `desktop reactor: no vertical overflow (scrollH ${r.sh} − clientH ${r.ch} = ${r.sh - r.ch})`);
+      // CONTRACT CHANGED IN v6.0.2 — deliberately, and this is the load-bearing
+      // comment for why this assertion was relaxed rather than the code "fixed".
+      //
+      // Reactor used to fit both axes: its height/width scale ratio sat just
+      // inside useFitToView's HEIGHT_FIT_TOLERANCE (0.92). The legibility pass
+      // raised its type, which grew natural height and pushed the ratio to
+      // 0.8962 — just outside. Recapturing it by lowering the tolerance would
+      // drop reactor's applied scale from 0.8508 to 0.7625, shrinking ALL its
+      // text by a further ~10% (--fs-mono would render near 9.9px effective).
+      // That trades away the legibility fix on the flagship view to satisfy a
+      // heuristic tuned before that fix existed.
+      //
+      // So: reactor may now scroll vertically. What still must hold is that the
+      // scroll is BOUNDED — a sliver, not a symptom of the fit math failing
+      // altogether. 84px measured at 1440x900; 200 leaves headroom for content
+      // growth without silently tolerating an unscaled view.
+      ok(r.sh - r.ch <= 200,
+        `desktop reactor: vertical scroll is bounded (scrollH ${r.sh} − clientH ${r.ch} = ${r.sh - r.ch} ≤ 200)`);
     }
     if (v === 'sediment') {
       const vy = await p.evaluate(() => {

@@ -55,7 +55,7 @@ export function PageHeader({ kicker, title, sub, right }: PageHeaderProps) {
         <h1 className="serif" style={{ margin: "6px 0 4px", fontSize: 34, fontWeight: 500, letterSpacing: "-0.01em", color: "var(--ink-100)" }}>
           <span dangerouslySetInnerHTML={{ __html: title }} />
         </h1>
-        {sub ? <p className="mono dim" style={{ margin: 0, fontSize: 12, letterSpacing: "0.04em" }}>{sub}</p> : null}
+        {sub ? <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{sub}</p> : null}
       </div>
       {right ? <div style={{ display: "flex", gap: 10, alignItems: "center" }}>{right}</div> : null}
     </header>

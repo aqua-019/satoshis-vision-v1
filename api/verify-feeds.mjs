@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const require = createRequire(import.meta.url);
-const { parseAtom, parseRepoParam, mapRepo, mapIssues, GH_ALLOWED } = require('./feeds.js');
+const { parseAtom, parseRepoParam, mapRepo, mapIssues, GH_ALLOWED, parseCommitVersion, mapCommits } = require('./feeds.js');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -118,6 +118,141 @@ const mappedRepo = mapRepo(repoFixture);
 ok(mappedRepo.stars === 9876, 'mapRepo maps stargazers_count -> stars');
 ok(mappedRepo.pushed === '2026-07-29T10:00:00Z', 'mapRepo maps pushed_at -> pushed');
 ok(mappedRepo.issues === 234, 'mapRepo maps open_issues_count -> issues');
+
+/* ── parseCommitVersion ────────────────────────────────────────────── */
+
+ok(
+  JSON.stringify(parseCommitVersion('v6.0.2 — type pass: monero tabs, education, layout'))
+    === JSON.stringify({ v: 'v6.0.2', note: 'type pass: monero tabs, education, layout' }),
+  'parseCommitVersion parses "vX.Y.Z — note" (em dash) into { v, note }'
+);
+
+ok(parseCommitVersion('Merge pull request #125 from aqua-019/foo') === null,
+  'parseCommitVersion rejects a merge-commit subject');
+ok(parseCommitVersion('chore: arm AQUA v3 stack') === null,
+  'parseCommitVersion rejects a chore subject mentioning a bare "v3"');
+ok(parseCommitVersion('fix(mempool): tighten pan (v5.0.11)') === null,
+  'parseCommitVersion rejects a version mentioned mid-sentence, not anchored at start');
+ok(parseCommitVersion('Mobile hotfix (v5.0.2): layout') === null,
+  'parseCommitVersion rejects another mid-sentence version mention');
+ok(parseCommitVersion('') === null, 'parseCommitVersion rejects an empty subject');
+
+ok(
+  JSON.stringify(parseCommitVersion('v1.2.3 — note')) === JSON.stringify({ v: 'v1.2.3', note: 'note' }),
+  'parseCommitVersion accepts the em-dash (—) form'
+);
+ok(
+  JSON.stringify(parseCommitVersion('v1.2.3 – note')) === JSON.stringify({ v: 'v1.2.3', note: 'note' }),
+  'parseCommitVersion accepts the en-dash (–) form'
+);
+ok(
+  JSON.stringify(parseCommitVersion('v1.2.3 - note')) === JSON.stringify({ v: 'v1.2.3', note: 'note' }),
+  'parseCommitVersion accepts the plain-hyphen (-) form'
+);
+
+/* ── mapCommits ────────────────────────────────────────────────────── */
+/* Fixture mirrors the GitHub commits-list API shape:
+   { sha, commit: { message, author: { date } }, html_url }.
+   Ordered newest-first, as GitHub returns it. Built inline rather than as
+   a committed fixture file — this is the only test that needs it. */
+
+const commitsFixture = [
+  { sha: '7e668de1111111111111111111111111111111',
+    commit: { message: 'v6.0.2 — type pass: monero tabs, education, layout', author: { date: '2026-07-30T10:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/7e668de1111111111111111111111111111111' },
+  { sha: 'mergeabc2222222222222222222222222222222',
+    commit: { message: 'Merge pull request #125 from aqua-019/foo\n\nSome merge body text', author: { date: '2026-07-29T09:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/mergeabc2222222222222222222222222222222' },
+  { sha: '7dc05503333333333333333333333333333333',
+    commit: { message: 'v6.0.2 — fix mempool pan on mobile', author: { date: '2026-07-28T08:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/7dc05503333333333333333333333333333333' },
+  { sha: 'choreabc4444444444444444444444444444444',
+    commit: { message: 'chore: arm AQUA v3 stack', author: { date: '2026-07-27T07:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/choreabc4444444444444444444444444444444' },
+  { sha: '1bc8f06555555555555555555555555555555',
+    commit: { message: 'v6.0.2 — polish layout details', author: { date: '2026-07-26T06:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/1bc8f06555555555555555555555555555555' },
+  { sha: 'fixmempool666666666666666666666666666',
+    commit: { message: 'fix(mempool): tighten pan (v5.0.11)', author: { date: '2026-07-25T05:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/fixmempool666666666666666666666666666' },
+  { sha: '4f97c21777777777777777777777777777777',
+    commit: { message: 'v6.0.2 — initial type pass', author: { date: '2026-07-24T04:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/4f97c21777777777777777777777777777777' },
+  { sha: 'mobilehotfix88888888888888888888888888',
+    commit: { message: 'Mobile hotfix (v5.0.2): layout', author: { date: '2026-07-23T03:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/mobilehotfix88888888888888888888888888' },
+  { sha: 'multiline999999999999999999999999999999',
+    commit: { message: 'v9.9.9 — multiline note first line\n\nBody text mentions v1.2.3 — should not matter\nAnd more body', author: { date: '2026-07-01T00:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/multiline999999999999999999999999999999' },
+  { sha: 'emptymsg000000000000000000000000000000',
+    commit: { message: '', author: { date: '2026-06-20T00:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/emptymsg000000000000000000000000000000' },
+  { sha: 'v509sha0000000000000000000000000000000',
+    commit: { message: 'v5.0.9 — mempool tuning', author: { date: '2026-06-10T00:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/v509sha0000000000000000000000000000000' },
+  { sha: 'v510sha1111111111111111111111111111111',
+    commit: { message: 'v5.1.0 — research lab sync', author: { date: '2026-06-07T00:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/v510sha1111111111111111111111111111111' },
+  { sha: 'v508sha2222222222222222222222222222222',
+    commit: { message: 'v5.0.8 — minor fixes', author: { date: '2026-06-01T00:00:00Z' } },
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/v508sha2222222222222222222222222222222' },
+];
+
+/* 8 of the 13 fixture commits match; 5 unique versions
+   (v6.0.2, v9.9.9, v5.0.9, v5.1.0, v5.0.8) — well under the default cap
+   of 12, so every unique version survives. */
+const mappedCommits = mapCommits(commitsFixture);
+ok(mappedCommits.length === 5, 'mapCommits collapses the fixture to 5 unique-version items under the default cap');
+
+const v602 = mappedCommits.find((i) => i.v === 'v6.0.2');
+ok(!!v602, 'mapCommits produces an item for v6.0.2');
+ok(v602?.also === 3, 'mapCommits folds the 3 duplicate v6.0.2 commits into also === 3 on the kept item');
+ok(v602?.sha === '7e668de1111111111111111111111111111111',
+  'mapCommits keeps the newest of the 4 duplicate v6.0.2 commits (7e668de), not a later one');
+ok(v602?.note === 'type pass: monero tabs, education, layout',
+  'mapCommits keeps the note from the newest v6.0.2 commit, not a duplicate\'s');
+ok(v602?.date === '2026-07-30', 'mapCommits derives date as YYYY-MM-DD from commit.author.date');
+ok(v602?.url === 'https://github.com/aqua-019/satoshis-vision-v1/commit/7e668de1111111111111111111111111111111',
+  'mapCommits maps commit.html_url -> url');
+
+const multilineItem = mappedCommits.find((i) => i.v === 'v9.9.9');
+ok(multilineItem?.note === 'multiline note first line',
+  'mapCommits reads only the first line of a multi-line commit message');
+ok(!mappedCommits.some((i) => i.v === 'v1.2.3'),
+  'mapCommits does not pick up a version mentioned on a later line of the message body');
+
+/* Order preservation: v5.1.0 is chronologically between v5.0.9 and v5.0.8
+   in the fixture (as it is in real history) — mapCommits must never sort,
+   so that relative order must survive verbatim. */
+const idx509 = mappedCommits.findIndex((i) => i.v === 'v5.0.9');
+const idx510 = mappedCommits.findIndex((i) => i.v === 'v5.1.0');
+const idx508 = mappedCommits.findIndex((i) => i.v === 'v5.0.8');
+ok(idx509 >= 0 && idx510 >= 0 && idx508 >= 0 && idx509 < idx510 && idx510 < idx508,
+  'mapCommits preserves GitHub order — v5.1.0 stays between v5.0.9 and v5.0.8, no semver sort');
+
+/* Cap: with cap=2, only the first 2 *unique* versions are kept as items,
+   but scanning continues so a later duplicate of an already-kept version
+   (v6.0.2) is still folded into also — not silently lost at the cap edge. */
+const capped = mapCommits(commitsFixture, 2);
+ok(capped.length === 2, 'mapCommits respects a cap of 2 (2 unique-version items, not 2 input rows)');
+ok(capped.find((i) => i.v === 'v6.0.2')?.also === 3,
+  'mapCommits still folds duplicates of an already-kept version after the cap is reached');
+ok(!capped.some((i) => i.v === 'v5.0.9'),
+  'mapCommits does not add a 3rd unique version once the cap of 2 is reached');
+
+/* Non-matching input. */
+const nonMatching = commitsFixture.filter((c) => parseCommitVersion(String(c.commit.message).split('\n', 1)[0].trim()) === null);
+ok(nonMatching.length === 5, 'sanity: fixture has exactly 5 non-matching commits (merge/chore/fix/hotfix/empty)');
+ok(mapCommits(nonMatching).length === 0, 'mapCommits on an all-non-matching input returns []');
+ok(mapCommits([]).length === 0, 'mapCommits([]) returns []');
+ok(mapCommits(null).length === 0, 'mapCommits(null) returns [] (defensive, does not throw)');
+
+/* ── GH_ALLOWED must stay untouched by src=commits ────────────────────
+   src=commits accepts no caller-supplied repo param (SELF_REPO is a fixed
+   module constant), so it must never be added to this allowlist. */
+ok(GH_ALLOWED.length === 7, 'GH_ALLOWED still has exactly the 7 repos from the brief (src=commits added nothing here)');
+ok(!GH_ALLOWED.some((r) => r.toLowerCase().includes('satoshis-vision')),
+  'GH_ALLOWED does not contain this site\'s own repo — src=commits has no caller-supplied repo param to constrain');
 
 if (failed > 0) {
   console.log(`\n${failed} check(s) FAILED`);

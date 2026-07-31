@@ -23,7 +23,7 @@ export function EduTabs({ active, onChange }: EduTabsProps) {
             style={{ appearance: "none", background: "transparent", cursor: "pointer", border: 0,
               borderBottom: "2px solid " + (on ? "var(--tk-accent)" : "transparent"),
               color: on ? "var(--tk-accent)" : "var(--ink-60)", padding: "10px 16px",
-              fontFamily: "var(--f-mono)", fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase",
+              fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase",
               textShadow: on ? "var(--glow-1)" : "none", marginBottom: -1 }}>{t.label}</button>
         );
       })}
