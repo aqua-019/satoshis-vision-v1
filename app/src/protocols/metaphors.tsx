@@ -1,6 +1,7 @@
 // AUTO-PORTED from protocols/metaphors.jsx
 import * as React from "react";
 import { useTick, ArtBackground } from "@/design/ArtBackground";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import { Stat, Pill, PanelFrame, Sparkline, MiniBar, Crumbs, Card } from "@/design/primitives";
 import { ProtoArtboard, ProtoStep, ProtoHeader } from "@/design/ProtoArtboard";
 import { NavTop } from "@/layout/NavTop";
@@ -18,25 +19,13 @@ interface ViewProps {
   bg?: { intensity?: "calm" | "busy" | "chaotic"; scan?: boolean };
 }
 
-function usePrefersReducedMotion(): boolean {
-  const [reduce, setReduce] = React.useState(false);
-  React.useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const on = () => setReduce(mq.matches);
-    on();
-    mq.addEventListener("change", on);
-    return () => mq.removeEventListener("change", on);
-  }, []);
-  return reduce;
-}
-
 /* ════════════════════════════════════════════════════════════════
    1. ETERNAL HEARTH · tail emission · volumetric flame + particles
    ════════════════════════════════════════════════════════════════ */
 
 function HearthStage() {
   const live = useTick(80);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 80 : live;
   const ref = React.useRef(null);
   const t = tick % 200;
@@ -200,7 +189,7 @@ export function HearthView({ data, bg }: ViewProps) {
 
 function MetronomeStage() {
   const live = useTick(60);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 25 : live;
   const tCycle = (tick % 100) / 100;
   // sine swing — left at 0, right at 0.5, center at 0.25 and 0.75
@@ -316,7 +305,7 @@ export function MetronomeView({ data, bg }: ViewProps) {
 
 function SiloStage() {
   const live = useTick(80);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 100 : live;
   const t = (tick % 400) / 400;       // 400-frame loop = full timeline
   const year = t * 200;               // 0 → 200 years
@@ -424,7 +413,7 @@ export function SiloView({ data, bg }: ViewProps) {
 
 function ThermostatStage() {
   const live = useTick(60);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 0 : live;
   // Hashrate "ambient temperature" oscillates
   const hashrate = 6.5 + Math.sin(tick * 0.04) * 0.6 + Math.sin(tick * 0.015) * 0.3;
@@ -524,7 +513,7 @@ export function ThermostatView({ data, bg }: ViewProps) {
 
 function AuctionStage({ mempool, height }: { mempool: Tx[]; height: number }) {
   const live = useTick(80);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 0 : live;
   const slots = 80;          // seats per block (approx)
   // sort mempool by perB desc
@@ -625,7 +614,7 @@ export function AuctionView({ data, bg }: ViewProps) {
 
 function SkylineStage({ poolDist }: { poolDist: Pool[] }) {
   const live = useTick(120);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 0 : live;
   const sky = poolDist
     .filter(p => p.name !== "Solo / Unknown")
@@ -793,7 +782,7 @@ export function SkylineView({ data, bg }: ViewProps) {
 
 function BloodhoundStage() {
   const live = useTick(60);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 200 : live;
   const stage = Math.floor((tick % 240) / 40);
   const W = 1000, H = 460;
@@ -950,7 +939,7 @@ export function BloodhoundView({ data, bg }: ViewProps) {
 
 function BalanceStage() {
   const live = useTick(80);
-  const reduce = usePrefersReducedMotion();
+  const reduce = useReducedMotion();
   const tick = reduce ? 0 : live;
   const lean = Math.sin(tick * 0.08) * 6;
   const W = 900, H = 460;

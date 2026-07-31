@@ -117,11 +117,18 @@ export function ParticleField({
     // One frame's worth of update + draw. Split out from the rAF loop
     // (below) so reduced motion can call it exactly once per resize instead
     // of never running at all.
-    const tick = () => {
+    //
+    // `k` is elapsed time normalised to 60fps-equivalent steps: k=1 means
+    // "one 1/60s tick just happened". Every per-frame increment below scales
+    // by it, so a 120Hz/144Hz display no longer drifts the field twice as
+    // fast in wall-clock time as a 60Hz one. At 60Hz k≈1 and the motion is
+    // unchanged. k=0 draws the current state without advancing it, which is
+    // what the reduced-motion static frame wants.
+    const tick = (k: number) => {
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = themeColor;
       for (const s of stars) {
-        s.x += s.vx; s.y += s.vy; s.ph += 0.02 * speed;
+        s.x += s.vx * k; s.y += s.vy * k; s.ph += 0.02 * speed * k;
         if (s.x < 0) s.x += w; if (s.x > w) s.x -= w;
         if (s.y < 0) s.y += h; if (s.y > h) s.y -= h;
         const a = s.a * (0.5 + 0.5 * Math.sin(s.ph));
@@ -131,7 +138,7 @@ export function ParticleField({
         ctx.fill();
       }
       for (const s of streams) {
-        s.y += s.vy; s.age++;
+        s.y += s.vy * k; s.age += k;
         if (s.y < -20 || s.age > s.life) {
           s.x = Math.random() * w; s.y = h + 20; s.age = 0;
           s.vy = -(Math.random() * 1.6 + 0.6) * speed;
@@ -148,7 +155,10 @@ export function ParticleField({
       ctx.globalAlpha = 1; ctx.shadowBlur = 0;
     };
 
+    let disposed = false;
+
     const resize = () => {
+      if (disposed) return; // a deferred rAF can still fire after unmount
       const r = canvas.getBoundingClientRect();
       w = r.width; h = r.height;
       canvas.width = w * dpr; canvas.height = h * dpr;
@@ -159,18 +169,46 @@ export function ParticleField({
       // static frame has to be redrawn right here or the field goes blank
       // on the next resize (mirrors pages/future/FutureMini.tsx's
       // useMiniCanvas, which hits the exact same canvas.width= gotcha).
-      if (reduced) tick();
+      if (reduced) tick(0);
     };
     resize();
-    const ro = new ResizeObserver(resize); ro.observe(canvas);
+    // Deferred through rAF: resizing synchronously from inside the observer
+    // can re-trigger it in the same frame and surface "ResizeObserver loop
+    // completed with undelivered notifications". useFitToView.ts defers for
+    // exactly this reason.
+    const ro = new ResizeObserver(() => requestAnimationFrame(resize));
+    ro.observe(canvas);
 
-    if (reduced) return () => ro.disconnect();
+    if (reduced) return () => { disposed = true; ro.disconnect(); };
 
     let raf = 0;
-    const loop = () => { tick(); raf = requestAnimationFrame(loop); };
-    raf = requestAnimationFrame(loop);
+    let lastTs: number | null = null;
+    const loop = (now: number) => {
+      // Clamp so a tab returning after minutes in the background doesn't
+      // teleport every particle across the canvas in a single step.
+      const dt = lastTs === null ? 1 / 60 : Math.min((now - lastTs) / 1000, 0.05);
+      lastTs = now;
+      tick(dt / (1 / 60));
+      raf = requestAnimationFrame(loop);
+    };
+    const start = () => {
+      if (raf) return;
+      lastTs = null; // avoid a dt spike on resume
+      raf = requestAnimationFrame(loop);
+    };
+    const stop = () => { cancelAnimationFrame(raf); raf = 0; };
+    // A hidden tab still runs rAF in some browsers and always burns battery
+    // in the ones that throttle it; nothing here is worth drawing unseen.
+    const onVisibility = () => { if (document.hidden) stop(); else start(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    if (!document.hidden) start();
 
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); };
+    return () => {
+      disposed = true;
+      stop();
+      ro.disconnect();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [density, speed, color, reduced, theme]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;

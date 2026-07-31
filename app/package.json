@@ -3,13 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "xmr.irish v5.0 — portable Vite + React + TypeScript skeleton, designed to slot into any host runtime.",
+  "description": "xmr.irish v5.0 \u2014 portable Vite + React + TypeScript skeleton, designed to slot into any host runtime.",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "port": "node scripts/port-jsx-to-tsx.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "verify:static": "node verify-chartkit.mjs && node verify-legibility.mjs && node verify-sediment.mjs && node verify-confirmations.mjs && node verify-feedcache.mjs && node verify-stale.mjs && node verify-txdetail.mjs",
+    "verify:e2e": "node verify-charts.mjs && node verify-memdetail.mjs && node verify-glide.mjs",
+    "verify": "npm run verify:static",
+    "verify:perf": "node verify-perf-classic.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

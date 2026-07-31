@@ -111,7 +111,7 @@ export function MempoolPage() {
             Rendered before the view so position:fixed (desktop) is out of flow
             and position:static (mobile) lands it inline under the breadcrumb. */}
         <div className="mp-switcher" ref={switcherRef}>
-          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · 6 views</div>
+          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · {MEMPOOL_VIEWS.length} views</div>
           <button
             type="button"
             className="mp-switcher__trigger"

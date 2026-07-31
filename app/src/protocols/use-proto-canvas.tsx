@@ -20,6 +20,7 @@
  */
 
 import * as React from "react";
+import { useReducedMotion } from "@/design/useReducedMotion";
 
 /** `t` is elapsed animation seconds (frozen while hidden/offscreen); `dt` is
  *  seconds since the previous frame, 0 on the first/static frame. */
@@ -46,6 +47,16 @@ export function useProtoCanvas(draw: ProtoDrawFn): React.RefObject<HTMLCanvasEle
   const ref = React.useRef<HTMLCanvasElement | null>(null);
   const drawRef = React.useRef<ProtoDrawFn>(draw);
   drawRef.current = draw;
+  // Read through the shared hook rather than calling matchMedia inside the
+  // effect: a one-shot read never sees the user change the setting after
+  // mount, and this repo now has exactly one definition of that subscription
+  // (v6.0.3 collapsed four copies into it). Being a dep means flipping the OS
+  // setting tears the loop down and re-runs it in the other mode.
+  //
+  // Safe across the /simulate code-split seam that this file's header warns
+  // about: useReducedMotion is a ~25-line standalone module already in the
+  // main chunk, not a component that would drag a chunk with it.
+  const reduce = useReducedMotion();
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -56,9 +67,6 @@ export function useProtoCanvas(draw: ProtoDrawFn): React.RefObject<HTMLCanvasEle
     let w = 0;
     let h = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const reduce =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let elapsed = 0; // animation seconds — frozen while hidden or offscreen
     let lastTs: number | null = null;
@@ -140,7 +148,7 @@ export function useProtoCanvas(draw: ProtoDrawFn): React.RefObject<HTMLCanvasEle
       io.disconnect();
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, []);
+  }, [reduce]);
 
   return ref as React.RefObject<HTMLCanvasElement>;
 }

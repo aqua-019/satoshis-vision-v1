@@ -643,6 +643,18 @@ header > div > h1.serif {
   .glide-block { transition: none; }
   .glide-enter { animation: none; }
   .mp-fit { transition: none; }
+  /* The status LEDs pulse forever. They carry no information the colour and
+     the adjacent label don't already carry, so under reduced motion they
+     hold steady at full opacity rather than blinking. Without this, eight
+     `ledpulse` animations keep running on /network alone — which is exactly
+     what a reader who set this preference asked not to happen.
+
+     `!important` is load-bearing, not lazy: `.prov-dot` is declared further
+     DOWN this file (it sets its own `animation: ledpulse …`), and a media
+     query adds no specificity — so at equal specificity the later rule would
+     win and this block would silently do nothing. styles-ambient.css's
+     reduced-motion block uses `!important` for the same reason. */
+  .led.pulse, .prov-dot, .blink { animation: none !important; opacity: 1; }
 }
 
 /* queued / next blocks (outline only) */
@@ -1191,12 +1203,6 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   /* the block ribbon already scrolls itself (classic.tsx ClassicRibbon overflowX:auto);
      re-assert the card width that :991's `revert` was preserving. */
   .mp-view--reflow .mp-block { min-width: 108px !important; flex: 0 0 auto; }
-  /* Classic's header row (search + "Block N · Live") is an inline flex with no
-     wrap. At 390px the two items together are ~20px wider than the reflowed
-     column, so let the row wrap — the inline style sets `display:flex` but not
-     `flex-wrap`, so a class rule wins without !important. */
-  .mp-view--reflow .mp-classic-head { flex-wrap: wrap; row-gap: 10px; }
-
   /* v6.0.4 — the provenance badge is `white-space: nowrap` by design (it must
      read as one logical line for screen readers and string asserts). On a 390px
      phone a long `detail` string pushed it ~39px past the column. Allowing a
