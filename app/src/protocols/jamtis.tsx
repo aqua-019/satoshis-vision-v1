@@ -129,7 +129,10 @@ export function JamtisView({ bg }: ViewProps) {
       ctx.strokeStyle = broken ? "rgba(255,60,60,0.9)" : `rgba(${sp.rgb},${active ? 0.95 : 0.5})`;
       ctx.lineWidth = active ? 3 : 1.5;
       ctx.stroke();
-      ctx.font = "11px var(--f-mono)";
+      // A CSS custom property never resolves inside ctx.font — the assignment
+      // is silently ignored and the canvas keeps its 10px sans-serif default.
+      // Name the stack literally, as the other five sims do.
+      ctx.font = "11px 'JetBrains Mono', ui-monospace, monospace";
       ctx.fillStyle = broken ? "rgba(255,60,60,0.95)" : `rgba(${sp.rgb},0.9)`;
       ctx.fillText(sp.key.toUpperCase().slice(0, 7), 16, y - 6);
     });
