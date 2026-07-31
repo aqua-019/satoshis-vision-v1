@@ -255,7 +255,11 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
 /* ── block-cadence — countdown ring + real recent interval bars ─── */
 export function BrgBlockCadence({ data }: { data: MoneroLive }) {
   const [now, setNow] = React.useState(Date.now());
-  React.useEffect(() => { const id = setInterval(() => setNow(Date.now()), 250); return () => clearInterval(id); }, []);
+  // 1000ms, not 250ms: `now` is only ever consumed through a Math.floor to
+  // whole seconds below, so four ticks in five re-rendered to the identical
+  // frame. Free 4x reduction in render work on a page that is already busy —
+  // and battery matters on the mobile surface this pass is about.
+  React.useEffect(() => { const id = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(id); }, []);
   const TARGET = 120;
   const elapsed = data.ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - data.lastUpdate) / 1000)) : 0;
   const overdue = data.ready && elapsed > TARGET;
