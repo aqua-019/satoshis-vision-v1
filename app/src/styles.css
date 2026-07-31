@@ -1191,6 +1191,21 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   /* the block ribbon already scrolls itself (classic.tsx ClassicRibbon overflowX:auto);
      re-assert the card width that :991's `revert` was preserving. */
   .mp-view--reflow .mp-block { min-width: 108px !important; flex: 0 0 auto; }
+  /* Classic's header row (search + "Block N · Live") is an inline flex with no
+     wrap. At 390px the two items together are ~20px wider than the reflowed
+     column, so let the row wrap — the inline style sets `display:flex` but not
+     `flex-wrap`, so a class rule wins without !important. */
+  .mp-view--reflow .mp-classic-head { flex-wrap: wrap; row-gap: 10px; }
+
+  /* v6.0.4 — the provenance badge is `white-space: nowrap` by design (it must
+     read as one logical line for screen readers and string asserts). On a 390px
+     phone a long `detail` string pushed it ~39px past the column. Allowing a
+     line break at this width costs nothing structurally — .prov is display:inline,
+     so the text layer and reading order are unchanged, it simply wraps.
+     PRE-EXISTING: baseline measured .main scrollWidth 427 vs 390 at /markets
+     before this refactor. It was invisible only because .main is overflow-x:hidden,
+     which clips rather than scrolls. */
+  .prov { white-space: normal; }
 
   /* FIX 3 — simulators: stack the artboard, move badges below the title, give the
      canvas room, restack the side panel. (.proto-* are classes, no TSX needed.) */

@@ -6,7 +6,7 @@
  * + pool attribution + remote-node / chain-meta readouts + block-weight
  * median-vs-limit bar.
  *
- * Standalone page: owns its <AppShell> chrome. Every number on this page
+ * Standalone page: owns its <PageShell> chrome. Every number on this page
  * comes from `useMoneroLive()` — node RPC via the public node cascade plus
  * CoinGecko for market data elsewhere. Chain values render "—" until the
  * first snapshot lands (`data.ready`); if polling fails after a healthy
@@ -16,7 +16,8 @@
 
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { AppShell, PageHeader } from "@/layout/AppShell";
+import { PageHeader } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { Stat, PanelFrame, Crumbs, Pill, Provenance, DataLegend } from "@/design/primitives";
 import { AreaSeries, BarSeries } from "./markets/charts";
 import { fmtN, fmtBytes, shortHash } from "@/data/types";
@@ -177,7 +178,7 @@ export function NetworkPage() {
   const weightKnown = ready && data.blockWeightMedian > 0 && data.blockWeightLimit > 0;
 
   return (
-    <AppShell bg={{ intensity: "calm" }}>
+    <PageShell width="standard" rail bg={{ intensity: "calm" }}>
       <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
       <DataLegend sources={["node"]} />
       <PageHeader
@@ -205,7 +206,7 @@ export function NetworkPage() {
       </section>
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
           {hashSeries.length ? (
             <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
@@ -226,7 +227,7 @@ export function NetworkPage() {
         </PanelFrame>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
           {mempoolSeries.length ? (
             <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
@@ -248,7 +249,7 @@ export function NetworkPage() {
       </section>
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, alignItems: "start" }}>
+      <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
         <PanelFrame title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
           {ivHist.counts.length ? (
             <>
@@ -283,7 +284,7 @@ export function NetworkPage() {
       </section>
 
       {/* Pool attribution + Remote node */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title="Pool attribution" right={<span className="dim">unattributed</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             {/* lead with the real signal as a compact stat, not a paragraph */}
@@ -353,7 +354,7 @@ export function NetworkPage() {
       </PanelFrame>
 
       {/* Chain meta + Block weight */}
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+      <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title="Chain meta" right={<Provenance source="node" fresh="live" detail="node reported" />}>
           <KVRows rows={[
             ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
@@ -408,6 +409,6 @@ export function NetworkPage() {
         </div>
         </div>
       </PanelFrame>
-    </AppShell>
+    </PageShell>
   );
 }

@@ -15,7 +15,7 @@ export interface EduTabsProps {
 
 export function EduTabs({ active, onChange }: EduTabsProps) {
   return (
-    <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--rule)", flexWrap: "wrap" }}>
+    <div className="tabstrip">
       {EDU_TABS.map((t) => {
         const on = t.id === active;
         return (

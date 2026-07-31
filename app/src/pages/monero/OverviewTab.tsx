@@ -37,7 +37,7 @@ export function OverviewTab({ navigate }: MoneroTabProps) {
         title='A coin that <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">refuses</em> to know who you are.'
         sub="Eleven years old. No premine, no founder reward, no on-chain identity. Built by a rotating cast of cypherpunks."
       />
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
         {PILLARS.map((p, i) => (
           <Card key={i} style={{ padding: 22 }}>
             <div className="kicker" style={{ color: p.c }}>{p.k}</div>

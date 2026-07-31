@@ -30,7 +30,7 @@ function JrnHero({ navigate }: { navigate: (to: string) => void }) {
 
 function JrnStatGrid({ items }: { items: { v: React.ReactNode; k: React.ReactNode; tone?: string }[] }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
       {items.map((s, i) => (
         <div key={i} style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "16px 14px", background: "rgba(0,0,0,0.3)" }}>
           <div className="mono" style={{ fontSize: 28, fontWeight: 500, color: s.tone || "var(--tk-accent)", textShadow: "var(--glow-1)", lineHeight: 1 }}>{s.v}</div>
@@ -279,7 +279,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
       </div>
       <Card style={{ padding: 20 }}>
         <div className="kicker">Acquiring Monero · with CEXes increasingly hostile</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginTop: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginTop: 12 }}>
           {[["Wagyu", "Exchange-level pricing, no KYC", "var(--tk-accent)"], ["Haveno", "Decentralized P2P trading", "var(--p-50)"], ["Atomic swaps", "BTC ↔ XMR trustlessly", "var(--g-50)"], ["LocalMonero", "Closed 2024 · alternatives emerging", "var(--ink-40)"]].map((c, i) => (
             <div key={i}><div className="mono" style={{ fontSize: 14, color: c[2] }}>{c[0]}</div><div className="mono dim" style={{ fontSize: 11, lineHeight: 1.45, marginTop: 4 }}>{c[1]}</div></div>
           ))}

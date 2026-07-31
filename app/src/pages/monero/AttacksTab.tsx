@@ -84,7 +84,7 @@ export function AttacksTab(_props: MoneroTabProps) {
 
       <Card style={{ padding: 22 }}>
         <div className="kicker">Bounties · what was offered, what was delivered</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12, marginTop: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12, marginTop: 14 }}>
           {BOUNTIES.map((b) => (
             <div key={b.y} style={{ padding: 14, border: "1px solid var(--rule)", borderRadius: 2 }}>
               <div className="kicker" style={{ color: "var(--r-50)" }}>{b.y}</div>

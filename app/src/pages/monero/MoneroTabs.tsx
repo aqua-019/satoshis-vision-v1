@@ -15,7 +15,7 @@ export interface MoneroTabsProps {
 
 export function MoneroTabs({ active, onChange }: MoneroTabsProps) {
   return (
-    <div style={{ display: "flex", gap: 4, borderBottom: "1px solid var(--rule)", flexWrap: "wrap" }}>
+    <div className="tabstrip">
       {MONERO_TABS.map((t) => {
         const on = t.id === active;
         return (

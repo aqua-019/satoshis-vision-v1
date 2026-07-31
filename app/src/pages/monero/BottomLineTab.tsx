@@ -85,7 +85,7 @@ function BtmArchGrid() {
     ["Dandelion++", "Network", "Probabilistic stem routing obscures the broadcaster's IP, defeating network-level deanonymization.", "var(--ink-80)"],
   ];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
       {PRIMS.map((p, i) => (
         <Card key={i} style={{ padding: 18 }}>
           <div className="kicker" style={{ color: p[3] }}>Protects · {p[1]}</div>
@@ -108,7 +108,7 @@ function BtmDelistings() {
     ["Haveno DEX", "2024 – 2025", "A Monero-first decentralized exchange enters production. When CEXes delist, DEXs emerge.", "var(--g-50)"],
   ];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
       {D.map((d, i) => (
         <div key={i} style={{ border: "1px solid var(--rule)", borderLeft: "2px solid " + d[3], borderRadius: 2, padding: "14px 16px", background: "rgba(8,7,5,0.6)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
@@ -157,7 +157,7 @@ export function BottomLineTab({ data }: MoneroTabProps) {
       <section style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <EduChapter n="II" kicker="The record" title="Government bounties & failed attempts"
           sub="A documented history of state-sponsored efforts to break Monero's privacy — and their consistent failure to produce a working trace." />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 12 }}>
           <BtmEvidenceCard amount="$625,000" who="IRS Criminal Investigation" when="September 2020" outcome="Stagnant — unfilled" otone="var(--y-50)">
             A public bounty for Monero-tracing tools. 22 companies applied; Chainalysis and Integra FEC were selected and given 8 months. The deadline passed. No deterministic tracing tool was ever delivered. CipherTrace's CEO admitted tracing Monero is "more of a probabilistic game."
           </BtmEvidenceCard>

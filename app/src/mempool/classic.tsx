@@ -97,7 +97,7 @@ export function ClassicBlock({ block, status, confLabel, trackedHere, onClick, g
     <div
       onClick={onClick}
       data-glide-key={glideKey}
-      className={glideKey != null ? "glide-block" : undefined}
+      className={"mp-block" + (glideKey != null ? " glide-block" : "")}
       style={{
         display: "flex", flexDirection: "column", gap: 6,
         cursor: onClick ? "pointer" : "default", minWidth: 108,
@@ -275,7 +275,7 @@ export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
 
   return (
     <div style={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
-      <div style={{ padding: "20px 24px 4px", display: "flex", alignItems: "center", gap: 18, borderBottom: "1px solid var(--rule)" }}>
+      <div className="mp-classic-head" style={{ padding: "20px 24px 4px", display: "flex", alignItems: "center", gap: 18, borderBottom: "1px solid var(--rule)" }}>
         <ClassicSearch onSearch={onSearch} />
         <span style={{ flex: 1 }} />
         <span className="mono" style={{ fontSize: 10.5, color: "var(--ink-60)" }}>
@@ -514,41 +514,42 @@ export function ClassicTxFeed({ mempool, onPickTx, thr }: any) {
           <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> streaming
         </span>
       </div>
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1.6fr 0.8fr 1fr 0.7fr 0.9fr 0.7fr",
-        gap: 10, fontSize: 9.5, letterSpacing: "0.14em", textTransform: "uppercase",
-        color: "var(--ink-40)", padding: "6px 8px", borderBottom: "1px solid var(--rule)",
-      }} className="mono">
-        <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Pcn/B</span><span>Tier</span><span>Age</span>
-      </div>
-      <div>
-        {rows.map((t: any) => {
-          const tier = classicTierOf(t, thr);
-          return (
-            <div key={t.id} onClick={() => onPickTx(t.id)}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1.6fr 0.8fr 1fr 0.7fr 0.9fr 0.7fr",
-                gap: 10, fontSize: 11, padding: "8px 8px",
-                borderBottom: "1px solid rgba(255,255,255,0.03)",
-                cursor: "pointer", transition: "background 0.12s",
-                fontFamily: "var(--f-mono)",
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.025)"}
-              onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-              <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
-              <span style={{ color: "var(--ink-80)" }}>{fmtBytes(t.size)}</span>
-              <span style={{ color: "var(--tk-accent)" }}>{t.fee.toFixed(7)}</span>
-              <span style={{ color: "var(--ink-80)" }}>{Math.round(t.perB).toLocaleString()}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, color: tier.color, fontSize: 9.5, letterSpacing: "0.14em" }}>
-                <span style={{ width: 7, height: 7, borderRadius: 4, background: tier.color, boxShadow: "0 0 4px " + tier.color }} />
-                {tier.label}
-              </span>
-              <span style={{ color: "var(--ink-60)" }}>{t.age}s</span>
-            </div>
-          );
-        })}
+      <div className="table-scroll">
+        <div className="mp-txbody">
+          <div style={{
+            fontSize: 9.5, letterSpacing: "0.14em", textTransform: "uppercase",
+            color: "var(--ink-40)", padding: "6px 8px", borderBottom: "1px solid var(--rule)",
+          }} className="mono mp-txgrid">
+            <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Pcn/B</span><span>Tier</span><span>Age</span>
+          </div>
+          <div>
+            {rows.map((t: any) => {
+              const tier = classicTierOf(t, thr);
+              return (
+                <div key={t.id} onClick={() => onPickTx(t.id)}
+                  className="mp-txgrid"
+                  style={{
+                    fontSize: 11, padding: "8px 8px",
+                    borderBottom: "1px solid rgba(255,255,255,0.03)",
+                    cursor: "pointer", transition: "background 0.12s",
+                    fontFamily: "var(--f-mono)",
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.025)"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                  <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
+                  <span style={{ color: "var(--ink-80)" }}>{fmtBytes(t.size)}</span>
+                  <span style={{ color: "var(--tk-accent)" }}>{t.fee.toFixed(7)}</span>
+                  <span style={{ color: "var(--ink-80)" }}>{Math.round(t.perB).toLocaleString()}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, color: tier.color, fontSize: 9.5, letterSpacing: "0.14em" }}>
+                    <span style={{ width: 7, height: 7, borderRadius: 4, background: tier.color, boxShadow: "0 0 4px " + tier.color }} />
+                    {tier.label}
+                  </span>
+                  <span style={{ color: "var(--ink-60)" }}>{t.age}s</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

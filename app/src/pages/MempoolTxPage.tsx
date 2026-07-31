@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { AppShell } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
 import { shortHash } from "@/data/types";
@@ -14,11 +14,9 @@ export function MempoolTxPage() {
   // useTxRaw) resolves the REAL block height from the node and flips pending →
   // confirmed on its own. The block is never guessed from the txid hash.
   return (
-    <AppShell hideRail bg={{ intensity: "calm" }}>
-      <div style={{ padding: "20px 48px 60px", display: "flex", flexDirection: "column", gap: 22, maxWidth: 1500, margin: "0 auto", width: "100%" }}>
-        <Crumbs items={["xmr.irish", "mempool", "tx", shortHash(id)]} />
-        <LiveTxDetail txid={id} data={data} onBack={() => navigate("/mempool")} />
-      </div>
-    </AppShell>
+    <PageShell width="standard" bg={{ intensity: "calm" }}>
+      <Crumbs items={["xmr.irish", "mempool", "tx", shortHash(id)]} />
+      <LiveTxDetail txid={id} data={data} onBack={() => navigate("/mempool")} />
+    </PageShell>
   );
 }

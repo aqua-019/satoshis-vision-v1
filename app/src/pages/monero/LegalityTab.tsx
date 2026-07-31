@@ -142,7 +142,7 @@ export function LegalityTab(_props: MoneroTabProps) {
       {/* Quick reference legend */}
       <Card style={{ padding: 18 }}>
         <div className="kicker" style={{ marginBottom: 10 }}>Quick reference · 5 activities × 4 statuses</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, fontFamily: "var(--f-mono)", fontSize: 11.5 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, fontFamily: "var(--f-mono)", fontSize: 11.5 }}>
           {[
             { c: "var(--g-50)", l: "Legal", d: "No specific restriction. Treated like any digital asset." },
             { c: "var(--y-50)", l: "Restricted", d: "Permitted but with reporting requirements or licensing limits." },

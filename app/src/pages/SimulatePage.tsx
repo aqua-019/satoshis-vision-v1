@@ -5,14 +5,15 @@
  * Monero privacy primitive works — not live network data.
  *
  * Protocol views render ProtoArtboard (header+stage+panel) only — no full
- * page chrome — so we wrap in AppShell with `fluid` + `hideRail`.
+ * page chrome — so we wrap in PageShell at `width="fluid"`, which renders no
+ * centred container at all and leaves the rail hidden (the default).
  */
 
 import * as React from "react";
 import { useSearchParams } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { PROTOCOL_VIEWS } from "@/views/protocols";
-import { AppShell } from "@/layout/AppShell";
+import { PageShell } from "@/layout/PageShell";
 import { Crumbs } from "@/design/primitives";
 
 export function SimulatePage() {
@@ -23,7 +24,7 @@ export function SimulatePage() {
   const View = meta.Component;
 
   return (
-    <AppShell hideRail fluid bg={{ intensity: "calm" }}>
+    <PageShell width="fluid" bg={{ intensity: "calm" }}>
       <div style={{ height: "100%", display: "grid", gridTemplateRows: "auto 1fr" }}>
         <div style={{ padding: "12px 20px", display: "flex", gap: 18, alignItems: "center", borderBottom: "1px solid var(--rule)", flexWrap: "wrap" }}>
           <Crumbs items={["xmr.irish", "v5.0", "simulate", meta.label]} />
@@ -58,7 +59,7 @@ export function SimulatePage() {
           <View data={data} />
         </div>
       </div>
-    </AppShell>
+    </PageShell>
   );
 }
 

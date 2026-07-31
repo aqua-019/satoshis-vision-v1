@@ -165,7 +165,7 @@ export function OriginTab(_props: MoneroTabProps) {
       {/* Lineage diagram */}
       <Card style={{ padding: 26 }}>
         <div className="kicker">Lineage · 2012 → today</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12, marginTop: 20, alignItems: "stretch" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12, marginTop: 20, alignItems: "stretch" }}>
           {LINEAGE.map((e, i) => (
             <div key={i} style={{ borderTop: `2px solid ${e.c}`, paddingTop: 12, paddingRight: 6 }}>
               <div className="mono" style={{ fontSize: 9.5, letterSpacing: "0.16em", color: e.c, textShadow: `0 0 6px ${e.c}` }}>{e.y}</div>
@@ -235,7 +235,7 @@ export function OriginTab(_props: MoneroTabProps) {
         <h3 className="serif" style={{ margin: "10px 0 14px", fontSize: 22, fontWeight: 400, color: "var(--ink-100)" }}>
           When <em style={{ color: "var(--r-50)", fontStyle: "normal" }}>thankful_for_today</em> proposed changes the community rejected, seven pseudonyms forked his fork. None of them had a name. None of them have one today.
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginTop: 12 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 14, marginTop: 12 }}>
           {SEVEN_WHO_TOOK_OVER.map((p) => (
             <div key={p.n} style={{ padding: 12, border: "1px solid var(--rule)", borderRadius: 2, display: "grid", gridTemplateColumns: "8px 1fr", gap: 12 }}>
               <span style={{ width: 6, height: 6, borderRadius: 3, background: p.c, boxShadow: `0 0 5px ${p.c}`, marginTop: 6 }} />
@@ -258,7 +258,7 @@ export function OriginTab(_props: MoneroTabProps) {
         <h3 className="serif" style={{ margin: "10px 0 18px", fontSize: 22, fontWeight: 400, color: "var(--ink-100)" }}>
           What kept it together when there was nothing holding it together.
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 22 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: 22 }}>
           <div>
             <h4 className="mono" style={{ margin: 0, fontSize: 12, color: "var(--tk-accent)", letterSpacing: "0.12em", textTransform: "uppercase" }}>Governance posture</h4>
             <p className="mono dim" style={{ fontSize: 12, lineHeight: 1.75, marginTop: 8 }}>
@@ -289,7 +289,7 @@ export function OriginTab(_props: MoneroTabProps) {
       {/* Notable contributors (deeper) */}
       <Card style={{ padding: 22 }}>
         <div className="kicker">Notable shipping in the last 36 months</div>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginTop: 14, fontFamily: "var(--f-mono)", fontSize: 11.5 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 14, marginTop: 14, fontFamily: "var(--f-mono)", fontSize: 11.5 }}>
           {NOTABLE_SHIPPING.map(([d, t, who]) => (
             <div key={d + t} style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: 12, paddingTop: 6, borderTop: "1px dashed var(--ink-10)" }}>
               <span className="dim" style={{ color: "var(--tk-accent)", letterSpacing: "0.1em" }}>{d}</span>
