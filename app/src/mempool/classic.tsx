@@ -404,21 +404,52 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
         <span className="mono" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)" }}>Projected next block · #{(height + 1).toLocaleString()}</span>
         <span className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", letterSpacing: "0.06em" }}>ETA ~<BlockEta data={data} /></span>
       </div>
-      {/* segmented bar */}
-      <div style={{ height: 22, background: "var(--surface-sunk)", borderRadius: 5, overflow: "hidden", display: "flex", border: "1px solid var(--ink-10)" }}>
-        {CLASSIC_TIERS.map((tier, i) => {
-          const tx = buckets[tier.id];
-          const pct = tx.length / total;
-          return (
-            <div key={tier.id} title={tier.label + " · " + tx.length + " tx"} style={{
-              width: (pct * 100) + "%", height: "100%",
-              background: tier.color,
-              opacity: 0.78,
-              borderRight: i < 3 ? "1px solid color-mix(in srgb, var(--bg-0) 40%, transparent)" : "none",
-              transition: reduceMotion ? "none" : "width var(--d-4) var(--e-standard)", // D0651: 0.6s → --d-4 (+100ms drift, only larger token available)
-            }} />
-          );
-        })}
+      {/* Segmented bar — D0673, and the one shape here where scaleX alone cannot
+          work. As flex items each segment's LAYOUT width positioned the next one,
+          so scaling only the paint would leave gaps or overlaps. The container is
+          therefore `position: relative` and each segment is absolutely positioned
+          at full width, then placed AND sized by one compositor transform:
+          translateX to its cumulative offset, scaleX to its share. */}
+      <div style={{ height: 22, background: "var(--surface-sunk)", borderRadius: 5, overflow: "hidden", position: "relative", border: "1px solid var(--ink-10)" }}>
+        {(() => {
+          let offset = 0;
+          return CLASSIC_TIERS.map((tier, i) => {
+            const tx = buckets[tier.id];
+            const pct = tx.length / total;
+            const at = offset;
+            offset += pct;
+            // Guarded because an empty tier gives pct === 0, and the separator
+            // below counter-scales by 1/pct — 1/0 is Infinity, which silently
+            // produces an unrendered element rather than an error.
+            const seg = Math.max(pct, 0.0001);
+            return (
+              <div key={tier.id} title={tier.label + " · " + tx.length + " tx"} style={{
+                position: "absolute", left: 0, top: 0, bottom: 0, width: "100%",
+                background: tier.color,
+                opacity: 0.78,
+                transformOrigin: "left",
+                transform: `translateX(${at * 100}%) scaleX(${seg})`,
+                transition: reduceMotion ? "none" : "transform var(--d-4) var(--e-standard)",
+              }}>
+                {/* The 1px tier separator, counter-scaled. Left on the segment it
+                    would be scaled by that segment's share — at scaleX(0.05) a 1px
+                    rule renders as 0.05px and the divisions between small tiers
+                    disappear. scaleX(1/seg) inside the already-scaled segment nets
+                    out to 1, so it stays a crisp 1px at every share; origin `right`
+                    pins it to the segment's trailing edge. */}
+                {i < 3 ? (
+                  <div style={{
+                    position: "absolute", top: 0, bottom: 0, right: 0, width: 1,
+                    background: "color-mix(in srgb, var(--bg-0) 40%, transparent)",
+                    transformOrigin: "right",
+                    transform: `scaleX(${1 / seg})`,
+                    pointerEvents: "none",
+                  }} />
+                ) : null}
+              </div>
+            );
+          });
+        })()}
       </div>
       <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)", marginTop: 8 }}>
         <span>{fill != null ? Math.round(fill * 100) + "% of block capacity" : "— capacity"}</span>
@@ -455,17 +486,47 @@ export function ClassicFeeDepth({ buckets }: any) {
           const tx = buckets[tier.id];
           const bytes = tx.reduce((s: number, t: any) => s + t.size, 0);
           const pct = bytes / total;
+          // Floor carried over from the old `Math.max(2, pct * 100) + "%"`: an
+          // empty tier still shows a sliver rather than vanishing. 0.02 of an
+          // 18px-tall track is ~2px at the widths this renders at, matching the
+          // old 2% intent closely enough that the bars measure the same.
+          const barScale = Math.max(0.02, pct);
           return (
             <div key={tier.id} style={{ display: "grid", gridTemplateColumns: "84px 1fr 80px 60px", gap: 12, alignItems: "center" }}>
               <span className="mono" style={{ fontSize: "var(--fs-label)", color: tier.color, letterSpacing: "0.12em", fontWeight: 600 }}>{tier.label}</span>
               <div style={{ position: "relative", height: 18, background: "var(--line-d)", borderRadius: 3, overflow: "hidden" }}>
+                {/* D0673: scaleX rather than width. The element is laid out at full
+                    width and scaled down, so the animated property is a compositor
+                    one. Two things had to move off the scaled node to survive that:
+                    the 8px glow (a box-shadow scales WITH the transform, so at
+                    scaleX(0.06) it renders as a smeared 0.5px smudge) now lives on
+                    a non-scaled overlay below, and the old `Math.max(2, …)` floor —
+                    which existed to keep an empty tier visibly non-zero — becomes a
+                    floor on the SCALE factor, same intent expressed in the new
+                    unit. `inset: "0 auto 0 0"` was a static position, never a
+                    transition target, and is replaced by an explicit left/width. */}
                 <div style={{
-                  position: "absolute", inset: "0 auto 0 0",
-                  width: Math.max(2, pct * 100) + "%", height: "100%",
+                  position: "absolute", left: 0, top: 0, bottom: 0,
+                  width: "100%",
+                  transformOrigin: "left",
+                  transform: `scaleX(${barScale})`,
                   background: `linear-gradient(90deg, color-mix(in srgb, ${tier.color} 25%, transparent), color-mix(in srgb, ${tier.color} 93%, transparent))`,
-                  boxShadow: `0 0 8px color-mix(in srgb, ${tier.color} 33%, transparent)`,
-                  transition: reduceMotion ? "none" : "width var(--d-4) var(--e-standard)", // D0651: 0.6s → --d-4 (+100ms drift, only larger token available)
-                }} />
+                  transition: reduceMotion ? "none" : "transform var(--d-4) var(--e-standard)",
+                }}>
+                  {/* The glow, counter-scaled back to net 1. Nested inside the
+                      scaled bar it inherits scaleX(barScale), so scaleX(1/barScale)
+                      cancels it exactly — the blur renders round instead of smeared,
+                      and because transform-origin is `right` the two right edges
+                      stay coincident, so the halo tracks the bar's leading edge for
+                      free instead of needing its own position animation. */}
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    transformOrigin: "right",
+                    transform: `scaleX(${1 / barScale})`,
+                    boxShadow: `0 0 8px color-mix(in srgb, ${tier.color} 33%, transparent)`,
+                    pointerEvents: "none",
+                  }} />
+                </div>
               </div>
               <span className="mono dim" style={{ fontSize: "var(--fs-mono)", textAlign: "right" }}>{fmtBytes(bytes)}</span>
               <span className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)", textAlign: "right" }}>{(pct * 100).toFixed(1)}%</span>

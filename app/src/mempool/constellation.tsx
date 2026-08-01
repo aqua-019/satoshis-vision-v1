@@ -331,6 +331,10 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
    shifted" reveal, not interaction chrome; forcing it onto --d-4 would
    be a real, noticeable speed-up disguised as a token count going down. */
 function ConFeeTierBars({ data }: { data: MoneroLive }) {
+  // This bar was the one ungated animation left in the file — its siblings
+  // (the rAF clock at :68, the <animate> elements below) already honour the
+  // preference, so it kept sliding for reduced-motion visitors on its own.
+  const reduced = useReducedMotion();
   const ok = data.ready && data.feeTiers.length === 4;
   const counts = [0, 0, 0, 0];
   if (ok) for (const t of data.mempool) { const i = feeTierIndex(t.perB, data.feeTiers); if (i >= 0) counts[i]++; }
@@ -342,8 +346,34 @@ function ConFeeTierBars({ data }: { data: MoneroLive }) {
           <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
             <span className="dim2">{label}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ok ? `${data.feeTiers[i].toLocaleString()} pcn/B` : "—"}</span>
+            {/* D0673: scaleX, not width. Three things changed with it —
+                the fill's own `borderRadius: 3` is dropped as redundant (the
+                wrapper already clips with the same radius) AND because a radius
+                on a scaled box goes elliptical; the 6px glow moves to a
+                counter-scaled child so the blur stays round and tracks the
+                leading edge; and the 0.8s literal becomes var(--d-4). That last
+                is a deliberate 800→500ms change, taken because the declaration
+                was being rewritten anyway and 800ms was 300ms past the top of
+                the token scale with nothing but inertia behind it. */}
             <div style={{ height: 7, background: "var(--line)", borderRadius: 3, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: ok ? `${(counts[i] / max) * 100}%` : "0%", background: TIER_COLORS[i], boxShadow: ok ? `0 0 6px ${TIER_COLORS[i]}` : "none", borderRadius: 3, transition: "width 0.8s ease" }} />
+              <div style={{
+                height: "100%", width: "100%",
+                position: "relative",
+                background: TIER_COLORS[i],
+                transformOrigin: "left",
+                transform: `scaleX(${ok ? Math.max(0.0001, counts[i] / max) : 0})`,
+                transition: reduced ? "none" : "transform var(--d-4) var(--e-standard)",
+              }}>
+                {ok && counts[i] > 0 ? (
+                  <div style={{
+                    position: "absolute", inset: 0,
+                    transformOrigin: "right",
+                    transform: `scaleX(${1 / Math.max(0.0001, counts[i] / max)})`,
+                    boxShadow: `0 0 6px ${TIER_COLORS[i]}`,
+                    pointerEvents: "none",
+                  }} />
+                ) : null}
+              </div>
             </div>
             <span style={{ textAlign: "right", color: ok ? "var(--ink-100)" : "var(--ink-40)" }}>{ok ? counts[i] : "—"}</span>
           </div>

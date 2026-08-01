@@ -218,11 +218,16 @@ export function CarrotView({ bg }: ViewProps) {
               <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
                 <div style={{ flex: 1 }}>
                   <div className="dim2" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", marginBottom: 3 }}>CARROT</div>
-                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "25%", background: "var(--c-50)", transition: "width var(--d-4) var(--e-standard)" /* D0651: 0.5s exact → --d-4 */ }} /></div>
+                  {/* D0673: scaleX, not width. Both bars here are CONSTANTS (1-of-4
+                      vs 4-of-4 exposure), so nothing was ever actually animating —
+                      the transition only ever cost a layout property's worth of
+                      risk for no motion at all. transform-origin keeps it growing
+                      from the left as a width would have. */}
+                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "100%", transformOrigin: "left", transform: "scaleX(0.25)", background: "var(--c-50)", transition: "transform var(--d-4) var(--e-standard)" }} /></div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="dim2" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", marginBottom: 3 }}>TODAY</div>
-                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "100%", background: "var(--y-50)", transition: "width var(--d-4) var(--e-standard)" /* D0651: 0.5s exact → --d-4 */ }} /></div>
+                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "100%", transformOrigin: "left", transform: "scaleX(1)", background: "var(--y-50)", transition: "transform var(--d-4) var(--e-standard)" }} /></div>
                 </div>
               </div>
             </div>
