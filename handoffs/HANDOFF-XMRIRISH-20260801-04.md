@@ -121,7 +121,7 @@ OUT (non-goals, each stated in the PR as a decision rather than an omission):
 - [x] Focus lands in the new view's main region; the route is announced
 - [x] Theme toggle crossfades, and swaps instantly under reduced motion
 - [x] design-reviewer returned APPROVE
-- [ ] Branch pushed · PR opened (ready, not draft) · `mergeable_state: clean` · CI green
+- [x] Branch pushed · PR opened (ready, not draft) · `mergeable_state: clean` · CI green
 
 ## 6 · VERIFY COMMANDS
 
@@ -145,7 +145,7 @@ node verify-shots.mjs --theme classic --baseline <baseline-tree>
 
 status: done
 
-pr: (filled on open — one PR, ready not draft)
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/150 (ready, not draft)
 
 commits (6, on top of `2ca475c`, the merge of PR #149):
   d5f99e0  fix(view-tags): 175,397px document at 390px, and a scanner that ran under reduce
