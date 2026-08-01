@@ -15,6 +15,13 @@ export function MempoolTxPage() {
   // confirmed on its own. The block is never guessed from the txid hash.
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
+      {/* D0744 — this page's visible heading is the transaction hash inside
+          LiveTxDetail, which is not an <h1> and should not become one (it is
+          rendered by a component the /mempool views also embed inline). The
+          landmark still needs an accessible name, so the name is stated once,
+          here, screen-reader-only. `.sr-only` is position:absolute with a 1px
+          box: it occupies ZERO layout space, so this changes no pixel. */}
+      <h1 id="page-title" className="sr-only">Transaction {shortHash(id)}</h1>
       <Crumbs items={["xmr.irish", "mempool", "tx", shortHash(id)]} />
       <LiveTxDetail txid={id} data={data} onBack={() => navigate("/mempool")} />
     </PageShell>

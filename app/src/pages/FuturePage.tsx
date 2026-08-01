@@ -39,6 +39,30 @@ export function FuturePage() {
   const openP = FUTURE_PROTOCOLS.find((p) => p.id === popup);
   const openE = ECOSYSTEM.find((e) => e.id === eco);
 
+  // D0666 — the popups are no longer unmounted on close. V6Modal now plays an
+  // exit before it removes itself, and it cannot do that if the component
+  // rendering it has already been torn down. So the page RETAINS whichever
+  // entry was last opened and flips `open` instead: the dialog keeps its own
+  // content for the whole exit rather than blanking to an empty box mid-fade.
+  //
+  // Refs, not state, on purpose — this is a render-time cache of a value
+  // derived from `popup`/`eco`, and writing to it changes nothing about what
+  // renders NOW (`open` already carries that). Making it state would schedule
+  // a second render per open for no observable difference.
+  //
+  // The retained component stays mounted for the rest of the page's life,
+  // which costs nothing: <V6Modal> returns null once `present` drops, so none
+  // of the popup's children — including FutureMini's canvas — are ever
+  // mounted while closed, and ProtoPopup's own useRepoPulse reads the same
+  // 24h cache the card already filled (no extra /api/feeds request; see
+  // verify-future.mjs's assertion 17, which counts them).
+  const lastP = React.useRef<typeof openP>(undefined);
+  const lastE = React.useRef<typeof openE>(undefined);
+  if (openP) lastP.current = openP;
+  if (openE) lastE.current = openE;
+  const shownP = openP ?? lastP.current;
+  const shownE = openE ?? lastE.current;
+
   const openProtocol = React.useCallback((id: string) => {
     // Two-phase: at the moment startVt captures the "old" snapshot the
     // modal does not exist yet, so the name has to land on the CARD's <h3>
@@ -86,15 +110,26 @@ export function FuturePage() {
         ))}
       </div>
 
-      {/* five protocol cards — each pings its own repo on mount */}
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14 }}>
-        {FUTURE_PROTOCOLS.map((p) => (
-          <ProtocolCard
-            key={p.id}
-            p={p}
-            onOpen={() => openProtocol(p.id)}
-            morphed={morph === p.id && popup !== p.id}
-          />
+      {/* five protocol cards — each pings its own repo on mount.
+          D0661: each card is wrapped in `.v6-stagger`, which is what carries
+          the entrance animation (styles.css) and the 0-based index it reads
+          as --stagger-i. The wrapper exists because neither obvious hook
+          works: ProtocolCard's inner `.v6-future-card` is `display: contents`
+          (no box at all) and the card's own `.panel` already has its
+          `animation` slot taken by the ambient breathe, which styles-theme.css
+          then rebinds per theme at a specificity nothing here could beat
+          without deleting it. Full reasoning at the CSS rule. The wrapper is
+          `display: grid`, so it takes over as the grid item and the card
+          stretches inside it exactly as it did when it WAS the grid item. */}
+      <section className="v6-proto-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14 }}>
+        {FUTURE_PROTOCOLS.map((p, i) => (
+          <div key={p.id} className="v6-stagger" style={{ ["--stagger-i" as never]: String(i) }}>
+            <ProtocolCard
+              p={p}
+              onOpen={() => openProtocol(p.id)}
+              morphed={morph === p.id && popup !== p.id}
+            />
+          </div>
         ))}
       </section>
 
@@ -147,8 +182,8 @@ export function FuturePage() {
         </div>
       </Card>
 
-      {openP ? <ProtoPopup p={openP} onClose={closeProtocol} morphed={morph === openP.id} /> : null}
-      {openE ? <EcoPopup e={openE} onClose={() => setEco(null)} /> : null}
+      {shownP ? <ProtoPopup p={shownP} open={!!openP} onClose={closeProtocol} morphed={morph === shownP.id} /> : null}
+      {shownE ? <EcoPopup e={shownE} open={!!openE} onClose={() => setEco(null)} /> : null}
     </PageShell>
   );
 }

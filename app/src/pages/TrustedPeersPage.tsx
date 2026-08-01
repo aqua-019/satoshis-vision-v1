@@ -23,6 +23,13 @@ export function TrustedPeersPage() {
   const [eco, setEco] = React.useState<string | null>(null);
   const partners = ECOSYSTEM.filter((e) => e.status === "PARTNER");
   const openE = ECOSYSTEM.find((e) => e.id === eco);
+  // D0666 — retain the last-opened brief so V6Modal can play its exit before
+  // unmounting. Dropping <EcoPopup> on close (what this used to do) removes
+  // the dialog from the DOM on the same frame, which is the exact absence of
+  // an exit frame the change fixes. See FuturePage.tsx for the full note.
+  const lastE = React.useRef<typeof openE>(undefined);
+  if (openE) lastE.current = openE;
+  const shownE = openE ?? lastE.current;
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
@@ -34,8 +41,14 @@ export function TrustedPeersPage() {
         right={<Pill tone="acc" dot>{partners.length} partners</Pill>}
       />
 
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
-        {partners.map((e) => {
+      {/* D0661: each card is wrapped in `.v6-stagger`, which carries the
+          entrance animation and the 0-based --stagger-i index — the same
+          wrapper the /future grid uses, and for the same reason: `.panel`'s
+          `animation` slot already belongs to the ambient breathe (see the
+          CSS rule). The wrapper is `display: grid`, so it becomes the grid
+          item and the card stretches inside it unchanged. */}
+      <section className="v6-peer-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 18 }}>
+        {partners.map((e, i) => {
           const primary = (e.links.find(([, href]) => href) || e.links[0] || [])[0];
           /* Card click → the partner's own site (new tab, noopener). The
              in-site brief stays one click away in the footer, so nothing
@@ -45,7 +58,8 @@ export function TrustedPeersPage() {
             else setEco(e.id);
           };
           return (
-            <Card key={e.id} onClick={visit} style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 300, borderColor: e.c + "44" }}>
+            <div key={e.id} className="v6-stagger" style={{ ["--stagger-i" as never]: String(i) }}>
+            <Card onClick={visit} style={{ padding: 0, overflow: "hidden", display: "flex", flexDirection: "column", minHeight: 300, borderColor: e.c + "44" }}>
               <div style={{ height: 4, background: e.c, boxShadow: `0 0 14px ${e.c}` }} />
               <div style={{ padding: "22px 24px 20px", display: "flex", flexDirection: "column", gap: 13, flex: 1 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -86,11 +100,12 @@ export function TrustedPeersPage() {
                 </div>
               </div>
             </Card>
+            </div>
           );
         })}
       </section>
 
-      {openE ? <EcoPopup e={openE} onClose={() => setEco(null)} /> : null}
+      {shownE ? <EcoPopup e={shownE} open={!!openE} onClose={() => setEco(null)} /> : null}
     </PageShell>
   );
 }

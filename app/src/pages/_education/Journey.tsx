@@ -12,7 +12,11 @@ function JrnHero({ navigate }: { navigate: (to: string) => void }) {
     <section style={{ position: "relative", padding: "30px 0 18px", display: "flex", flexDirection: "column", gap: 18 }}>
       <div className="edu-head" style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         <div className="kicker" style={{ color: "var(--tk-accent)" }}>An educational journey through digital money</div>
-        <h1 className="serif" style={{ margin: 0, fontSize: 64, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.02, color: "var(--ink-100)" }}>
+        {/* id="page-title" — names the <main> landmark (layout/AppShell.tsx).
+            /education's default tab renders this instead of a PageHeader, so
+            the id lives here; the other three education tabs get it from
+            PageHeader. Exactly one per route — verify-nav.mjs asserts it. */}
+        <h1 id="page-title" className="serif" style={{ margin: 0, fontSize: 64, fontWeight: 400, letterSpacing: "-0.02em", lineHeight: 1.02, color: "var(--ink-100)" }}>
           The Genesis of <em style={{ color: "var(--tk-accent)", textShadow: "var(--glow-2)", fontStyle: "normal" }}>Privacy</em>
         </h1>
         <p className="serif" style={{ margin: 0, maxWidth: "64ch", fontSize: 21, lineHeight: 1.5, color: "var(--ink-80)" }}>

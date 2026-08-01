@@ -21,11 +21,28 @@ import { MEMPOOL_VIEWS } from "@/views";
 import { MempoolHeartbeat } from "@/mempool/mempool-shared";
 import { useDragPan } from "@/mempool/useDragPan";
 import { FitView } from "@/mempool/FitView";
+import { useUrlState } from "@/routes/useUrlState";
+
+/** Hoisted so useUrlState's setter identity is stable across renders. */
+const MEMPOOL_VIEW_IDS: readonly string[] = MEMPOOL_VIEWS.map((v) => v.id);
 
 export function MempoolPage() {
   const data = useMoneroLive();
   const [params, setParams] = useSearchParams();
-  const active = MEMPOOL_VIEWS.find((v) => v.id === params.get("v"))?.id ?? "classic";
+
+  // `?v=` is PRIMARY, SHAREABLE content — which of the six views you are
+  // looking at — so it PUSHes a history entry (routes/useUrlState.ts's policy
+  // block). More importantly the setter is the FUNCTIONAL form, which is what
+  // this call site got wrong before: `setParams({ v: it.id })` replaced the
+  // whole query string and silently dropped `?block=<height>`, the deep link
+  // the HomePage block ribbon hands out — so switching views while a block
+  // panel was open closed the panel. `clearFocus` below already used the
+  // right idiom; the two are symmetric now.
+  const [active, setActive] = useUrlState({
+    key: "v",
+    values: MEMPOOL_VIEW_IDS,
+    fallback: "classic",
+  });
   const meta = MEMPOOL_VIEWS.find((v) => v.id === active)!;
   const View = meta.Component;
 
@@ -76,6 +93,13 @@ export function MempoolPage() {
   return (
     <PageShell width="fluid" rail bg={{ intensity: "calm" }}>
       <div className="mp-shell">
+        {/* D0744 — /mempool renders no visible <h1>: the surface IS the
+            visualisation, and promoting a breadcrumb or a view label to a
+            heading would be inventing chrome to satisfy a checkbox. The
+            <main> landmark still needs an accessible name, so it is stated
+            once here, screen-reader-only. `.sr-only` is out of flow with a
+            1px box — zero layout space, zero pixels changed. */}
+        <h1 id="page-title" className="sr-only">Mempool · {meta.label} view</h1>
         {/* breadcrumb — page chrome; heartbeat surfaces per-second feed liveness */}
         <div style={{ padding: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           {/* breadcrumb + fit/100% zoom toggle on the LEFT (the fixed .mp-switcher
@@ -123,14 +147,27 @@ export function MempoolPage() {
             <span aria-hidden="true">{open ? "▴" : "▾"}</span>
           </button>
           <div id="mp-view-list" className={"mp-switcher__list" + (open ? " is-open" : "")}>
-            {MEMPOOL_VIEWS.map((it) => {
+            {MEMPOOL_VIEWS.map((it, i) => {
               const on = it.id === active;
               return (
                 <button
                   key={it.id}
                   type="button"
+                  className="mp-switcher__item"
+                  aria-current={on ? "true" : undefined}
                   onClick={() => { setParams({ v: it.id }); setOpen(false); }}
                   style={{
+                    /* D0661 — per-item index for the open cascade. The DELAY is
+                       computed in CSS (`calc(var(--stagger-i) * 30ms)`) so the
+                       whole effect can be switched off in one place: the
+                       animation lives inside a
+                       `@media (prefers-reduced-motion: no-preference)` block,
+                       and under `reduce` these items simply appear at once. No
+                       information is carried by the movement — the list is
+                       already fully present and readable — so nothing is lost.
+                       The index is data, not motion, which is why it is safe
+                       to emit unconditionally here. */
+                    ["--stagger-i" as any]: i,
                     appearance: "none", cursor: "pointer",
                     background: on ? "color-mix(in srgb, var(--accent-structural) 8%, transparent)" : "transparent",
                     border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),

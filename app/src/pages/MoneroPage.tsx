@@ -30,10 +30,11 @@ export function MoneroPage() {
   const { tab } = useParams();
   const active = resolveTab(tab);
 
-  // Scroll to top whenever the active tab changes.
-  React.useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [active]);
+  // NO scroll handling here — see the same note in EducationPage.tsx. The old
+  // `window.scrollTo(0, 0)` was a no-op above 768px (`.art` is
+  // `overflow:hidden`; `main.main` is the real scroller), so on desktop a tab
+  // switch left you mid-page. routes/useRouteChrome.ts owns it now and resets
+  // every scroller a route can have.
 
   const onChange = (id: string) => navigate(id === "overview" ? "/monero" : "/monero/" + id);
 
