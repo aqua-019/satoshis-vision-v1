@@ -41,7 +41,7 @@
  * engine genuinely lack the method at runtime.
  */
 
-import { getDeviceTier } from "./deviceTier";
+import { getDeviceTier, prefersReducedMotion } from "./deviceTier";
 import { isPageActive } from "./usePageActive";
 
 /** The subset of a real ViewTransition this module uses. See the header for
@@ -52,18 +52,6 @@ interface VtHandle {
 }
 
 let current: VtHandle | null = null;
-
-/** SSR-safe; mirrors design/deviceTier.ts's own identically-named private
- *  helper (not exported there, so not reusable directly) — see the comment
- *  below on why this function needs its own independent read of the same
- *  media query deviceTier.ts already folds in. */
-function prefersReducedMotion(): boolean {
-  try {
-    return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  } catch {
-    return false;
-  }
-}
 
 /**
  * Is this page, right now, a place a view transition is worth running?

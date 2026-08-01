@@ -56,10 +56,30 @@ function readOverride(): Tier | null {
   }
 }
 
-function prefersReducedMotion(): boolean {
+/**
+ * One-shot, non-reactive read of the reduced-motion preference.
+ *
+ * Exported (v6.1.3) rather than kept private because `design/viewTransition.ts`
+ * needs the RAW preference, separately from the tier. `computeTier()` below
+ * folds this into a `"low"` verdict — correct for its own consumers, which
+ * scale ambient layer counts and particle density — but a view transition must
+ * still RUN under reduced motion and merely lose its spatial movement, so
+ * vtSupported() has to be able to tell "low because weak hardware" from "low
+ * because the user asked for less motion". Sharing this one helper is what
+ * keeps that distinction from becoming a second copy of the media query:
+ * verify-chartkit.mjs fails any ad-hoc `matchMedia("(prefers-reduced-motion")`
+ * read outside this file and useReducedMotion.ts, and it is right to.
+ *
+ * Components must still use `useReducedMotion()` — this one does not react to
+ * the OS setting changing after mount, which is a bug in a component and
+ * deliberate here.
+ */
+export function prefersReducedMotion(): boolean {
   try {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   } catch {
+    // `window` undefined under SSR lands here too — no preference is the
+    // right answer when there is no user agent to have one.
     return false;
   }
 }
