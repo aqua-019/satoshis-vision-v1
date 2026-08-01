@@ -1,3 +1,4 @@
 # Loop log — one line per completed task: task_id · outcome · PR
 
 - XMRIRISH-20260731-01 · done — v6.1.0 deleted the dead v4 front-end (100 files, ~82.5k lines); verify-origins rewritten app-only; sitemap generated from app/scripts/routes.mjs; CLAUDE.md project description rewritten to standing facts only, no dated run log, L3 sections byte-identical · https://github.com/aqua-019/satoshis-vision-v1/pull/146
+- XMRIRISH-20260801-02 · done — v6.1.1 Future tab: repo pulse goes 2→4 repos and splits push age from issue age (src=ghrepo gains issueAt from a concurrent second GitHub call, browser cost unchanged at 1 request/repo); all paid-API framing removed from app/src; the unconfirmed MoneroSpace lineage claim removed from 4 rendered sites and gated against; registry's stale "2.5s poll" corrected to the v6.0.6 tiers; verify-future.mjs de-networkidled, hardened and wired into verify:e2e (CI 24→25 distinct gates) · https://github.com/aqua-019/satoshis-vision-v1/pull/147

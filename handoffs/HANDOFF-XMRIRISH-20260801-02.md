@@ -108,7 +108,7 @@ grep -n "monero/future" scripts/routes.mjs
 
 status: done
 
-pr: (filled in below once opened)
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/147
 
 commits: one conventional commit on `claude/future-tab-automation-registry-0e3gox`.
 
