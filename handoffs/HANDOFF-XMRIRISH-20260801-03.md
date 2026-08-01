@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260801-03
 branch: claude/theme-system-v612-a5c0ph
-status: in_progress            # open -> in_progress -> done | blocked
+status: done            # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, no cowork handoff)
 owner: claude-code
 ---
@@ -159,21 +159,67 @@ node verify-shots.mjs --baseline /tmp/shots-main
 
 ## 7 · REPORT  — filled on exit
 
-status:
+status: done
 
-pr:
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/148
 
-commits:
+commits: three conventional commits on `claude/theme-system-v612-a5c0ph`.
 
-deps added:
+deps added: none.
 
 deviations from spec:
+- **Phosphor departs from the mockup on one binding, by measurement.** Structural
+  `#39ff88` vs the `protocols/` diagram green `#4ade80` is ΔE00 **7.4** — a collision.
+  Structural moved to `#33ff33` (ΔE00 **12.3**, and the canonical CRT P1 green).
+  `--status-up` stays `var(--g-50)` in all three themes rather than becoming the
+  structural green, per the tiebreak: when a diagram semantic collides with a theme
+  accent, the theme accent moves.
+- **The amber collision predicted in the brief did not materialise.** `#ffb000` vs
+  `#ffd400` measures 12.5 and vs `#ffce8a` 12.3, both clear of the ΔE00 ≥ 10 bar.
+  Left unchanged rather than shifted to match the prediction.
+- **`pages/future/data.ts` was NOT tokenised.** Its `c` field is consumed by string
+  concatenation (`${e.c}66`) in `cards.tsx` / `ProtoPopup.tsx` / `V6Modal.tsx`; a
+  `var()` there yields `var(--p-50)66`, which is invalid CSS. Kept as a categorical
+  identity palette.
+- **`chart-kit.tsx`'s `rgba(8,7,5,0.94)` was kept**, commented. `verify-chartkit.mjs`
+  asserts that literal appears in exactly one file; tokenising it fails a CI gate.
+- The audit introduced `color-mix()` (119 expressions), new to this codebase. All mix
+  toward `transparent`, so a pre-`color-mix` engine degrades to "no tint" rather than
+  "no surface"; `verify-legibility.mjs` now asserts that property.
+- `verify-shots.mjs` was wired to npm (`verify:shots`) but deliberately NOT to CI — it
+  needs a baseline tree built from another commit, which CI cannot produce.
 
 collision table (literal · sites · theme · measured before/after · what moved):
 
-notes for ARCHITECTURE.md patch:
+| literal | sites | theme | before | after | what moved |
+|---|---|---|---|---|---|
+| `#4ade80` (`--g-50`, diagram green) | 11 literal + 20 `var(--g-50)` | phosphor | ΔE00 7.4 vs structural | ΔE00 12.3 | **theme** — structural `#39ff88` → `#33ff33` |
+| `#ffd400` (`--y-50`) | 9 | phosphor | ΔE00 12.5 vs data | unchanged | nothing — clear of the bar |
+| `#ffce8a` (`--o-100`) | 8 | phosphor | ΔE00 12.3 vs data | unchanged | nothing — clear of the bar |
+| `#ff7a1a` (longhand data accent) | 14 | all | n/a | n/a | tokenised to `var(--accent-data)` (carve-out 1) |
+
+Phosphor's `--ink-60` also failed AA at 5.18:1 (it had inherited classic's 0.55 alpha by
+symmetry, not by measurement). Raised to 0.70 → 7.74:1; exact minimum for 7:1 is 0.661.
+
+notes for ARCHITECTURE.md patch: none — no ARCHITECTURE.md in this repo. `app/README.md`
+and `CLAUDE.md` were corrected where this change made them false.
 
 open questions:
+- **`verify-shots.mjs` still uses `waitUntil: 'networkidle'`** (line 55), the pattern
+  prompt 02 removed from `verify-future.mjs`. It is hand-run so it can wait, but it
+  makes a full 333-shot sweep take ~45 min. `verify-contrast.mjs` and
+  `verify-ground.mjs` were de-networkidled as a condition of wiring them into CI; the
+  other nine gates that use it were left alone.
+- **`protocols/pool-data.ts`'s `color` field is dead code** — `POOLS` is imported only
+  by `metaphors.tsx`'s `SkylineStage`, which computes fill from `p.type` and never reads
+  `p.color`. Carve-out 1 tokenised its P2Pool entry as instructed; if the field is ever
+  wired up, one member of that categorical palette now tracks the theme while its five
+  siblings stay literal. Worth a decision then, not now.
+- **`FutureMini.tsx` keeps a `"white"` keyword** for the fcmp convergence dot — no role
+  represents neutral white, and `--text-primary` is warm.
+- Phosphor's aurora tints, ink ramp beyond `--ink-60`, and `--accent-data-hi` were
+  designed for internal consistency, not independently measured beyond what
+  `verify-contrast.mjs` covers.
 
 ## 8 · LOOP FEEDBACK
 

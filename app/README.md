@@ -120,8 +120,10 @@ Fonts: Newsreader serif · Geist sans · JetBrains Mono. Swap by editing
 
 ## Visual system (v6.0.2)
 
-Styling splits into three layers, imported from `src/main.tsx` in this exact
-order:
+Styling splits into three layers — L1/L2/L3 below are this doc's own
+numbering for the three files, not the CSS `@layer` names further down —
+imported from `src/main.tsx` in this order (the order itself is no longer
+what enforces precedence; see "Layer order is load-bearing" below):
 
 ```tsx
 import "./styles.css";           // base — the v5 terminal-dense identity, unchanged
@@ -133,7 +135,7 @@ import "./styles-legibility.css"; // L1 — legibility, unconditional
 | Layer | File | Scope | Owns |
 |---|---|---|---|
 | L1 | `styles-legibility.css` | Unconditional, never theme-scoped | The fluid type scale (`--fs-hero` … `--fs-label`), global readability primitives (`text-wrap`, measure guards, tabular numerals), the app's first `:focus-visible` ring, and two structural bugfixes (`.art-canvas` sizing, topbar overflow). |
-| L2 | `styles-theme.css` | Scoped to `:root[data-theme="indigo"]` (plus a classic-identity `:root` block) | The chrome palette — everything that changes a *colour* when the Design panel's Theme knob is toggled. |
+| L2 | `styles-theme.css` | Contributes to *two* layers: colour-role rebindings to `theme`, ~49 chrome-override rules to `components` (`theme` is declared before `components` in the order statement, so an override left in `theme` would silently lose to `styles.css`'s base rules regardless of specificity — nothing errors when this happens, which is exactly how it regressed once during the v6.1.2 retrofit). Scoped explicitly per theme — `:root[data-theme="classic"]` / `="phosphor"` / `="indigo"` — plus `:root:not([data-theme])` for the JS-off case where the pre-paint stamp never runs | The chrome palette — everything that changes a *colour* when the Design panel's Theme knob (now three-way: Classic · Phosphor · Indigo) is toggled. |
 | L3 | `styles-ambient.css` | Always on, intensity-scaled | The aurora/dust/grain background field. Geometry and timing are unconditional; every colour routes through an `--amb-*` token that L2 re-binds per theme. |
 
 ### Device tiering (v6.0.8)
@@ -167,22 +169,40 @@ counter, since a frame counter changes meaning per tier and seconds don't.
 
 See `PERF-BASELINE.md` for measured before/after.
 
-**Import order is load-bearing.** L1 loads *last* specifically so that no
-palette rule in L2 can ever override a readability rule in L1 — a theme
-switch can recolour type, but it can never again shrink it below the legible
-floor.
+**Layer order is load-bearing — v6.1.2 moved this off the import list above.**
+`styles.css:1` declares `@layer reset, base, theme, components, utilities;`
+exactly once, and every rule in all four stylesheets lives inside one of
+those five layers (`@font-face`, `@keyframes` and `@property` sit outside
+all of them — they take no part in cascade layering, so wrapping them would
+just make the registration invisible to the layering machinery). `utilities`
+— L1's layer — is declared last, so no palette rule in `theme` or
+`components` can ever override a readability rule in L1, exactly as before;
+the guarantee just no longer depends on `main.tsx`'s import order, which is
+now documentation rather than the mechanism. A theme switch can recolour
+type, but it can never again shrink it below the legible floor.
 
 **Governing palette rule: Monero orange means crypto data, never decoration.**
-`--tk-accent` stays bound to orange in *both* themes — it's read by 32 CSS
-rules and 235 TSX inline styles, and those sites are overwhelmingly data
-(prices, hashrate, block heights, tx counts, `.acc`, `.mblock` numerals).
-Rebinding `--tk-accent` itself would recolour every one of them. Chrome reads
-`--ui-accent` / `--ui-accent-text` / `--ui-primary` instead, which L2 binds to
-`--tk-accent` (identity) under classic and to Indigofera Nocturne under
-indigo. That indirection is the whole trick: ~15 chrome rules change per
-theme, and the 235 data call sites need zero edits — which is exactly why
-adding a theme toggle didn't require touching every `var(--tk-accent)` site
-in the codebase.
+`--tk-accent` stays bound to orange data in all three themes — it's read by
+32 CSS rules and 235 TSX inline styles, and those sites are overwhelmingly
+data (prices, hashrate, block heights, tx counts, `.acc`, `.mblock`
+numerals). Chrome reads `--ui-accent` / `--ui-accent-text` / `--ui-primary`
+instead.
+
+v6.1.2 moved the implementation behind role tokens without changing the
+rule. `styles.css` registers 18 colour roles with `@property`
+(`syntax:'<color>'`, so a theme value that fails to parse as a colour
+computes to guaranteed-invalid and falls back to the registered
+`initial-value` instead of silently becoming some other type) and declares
+the three aliases once, unscoped, in `@layer base`: `--tk-accent:
+var(--accent-data)`, `--ui-accent: var(--accent-structural)`, `--ui-primary:
+var(--accent-structural)`. No theme block touches an alias — only
+`styles-theme.css` rebinds `--accent-data` / `--accent-structural` per
+theme, and because `var()` resolves against the cascade at use time, the
+aliases pick up whichever theme is active with zero per-theme
+redeclaration. That indirection is still the whole trick: ~49 chrome rules
+change across three themes, and the 235 data call sites need zero edits —
+which is exactly why phosphor, the third theme, cost about thirty lines
+instead of an afternoon of `!important` archaeology.
 
 ---
 
@@ -205,9 +225,14 @@ The default build:
   Run a thin edge proxy and point your `useFeed` hook at it. See
   `DATA.md` in the source project.
 - **Partial reversal, v6.0.2**: a minimal two-knob **Design panel** (Theme:
-  indigo/classic · Ambient: calm/busy/chaotic) now ships in the app itself,
-  reachable from a `⌘ DESIGN` control in the topbar — this is user-facing,
-  not a design-time tool. The full tweaks system (Accent/Type/Glow/Density)
+  classic/phosphor/indigo, classic default · Ambient: calm/busy/chaotic) now
+  ships in the app itself, reachable from a `⌘ DESIGN` control in the topbar
+  — this is user-facing, not a design-time tool. v6.1.2 added phosphor as a
+  third Theme option and flipped the default from indigo to classic; it also
+  mounted the same Theme control (`design/ThemeToggle.tsx`) directly on Main
+  Home, beside the hero CTAs, as a first-class control rather than a
+  topbar-only footnote — both toggles render from one definition so they
+  can't drift out of sync. The full tweaks system (Accent/Type/Glow/Density)
   is still deliberately **not** in this repo; that remains a design-time
   concern and still lives in the design hub. Don't conflate the two: the
   in-app panel is two knobs, not the whole tweaks surface.

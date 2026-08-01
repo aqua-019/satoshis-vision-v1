@@ -26,10 +26,11 @@ chain and market data.
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
 - Verification: 44 `verify-*.mjs` files (`app/` ×40, `api/` ×4) — 43 gates plus
   `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **25 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **27 distinct files** on
   PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
-  (11 gates, no browser) and `verify:e2e` (10 gates, against `scripts/serve-dist.mjs`).
-  The remaining 17 are wired to neither npm nor CI — several expect live upstreams.
+  (11 gates, no browser) and `verify:e2e` (12 gates, against `scripts/serve-dist.mjs` —
+  v6.1.2 wired in `verify-contrast.mjs` and `verify-ground.mjs`).
+  The remaining 13 are wired to neither npm nor CI — several expect live upstreams.
 
 ## Site Routes
 
@@ -163,7 +164,11 @@ list that expands tabs and query permutations). Those three are not yet unified.
   19 call sites. See the v6.0.12 note.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
-- **Orphaned gates**: 17 `verify-*.mjs` are wired to neither npm nor CI. Several expect live
+- **Orphaned gates**: 13 `verify-*.mjs` are wired to neither npm nor CI (v6.1.2 wired in
+  `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots` npm script,
+  `verify-shots.mjs`) — `verify-shots.mjs` is npm-wired only, deliberately not CI: a
+  `--baseline` diff needs a shot tree built from another commit, which CI has no way to
+  produce, so it stays a by-hand comparison tool. Several of the rest expect live
   upstreams; auditing and wiring them is its own task.
 - **MoneroSpace's lineage is an open question** with `brainchainz`. Its own repo
   (`brainchainz/Monero-Superbrain`) points at a different origin than the one this site's
@@ -180,7 +185,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 | Routes (canonical list) | `app/scripts/routes.mjs` → `prerender.mjs` + `gen-sitemap.mjs` |
 | Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
 | Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
-| Visual system | `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-legibility.css`, in that order |
+| Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
 
@@ -370,7 +375,9 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   three CSS layers, imported from main.tsx in this load-bearing order — base
   styles.css, then L3 `styles-ambient.css` (aurora/dust/grain background,
   always on, intensity-scaled), then L2 `styles-theme.css` (chrome palette,
-  scoped to `:root[data-theme="indigo"]` + a classic-identity `:root` block),
+  scoped to `:root[data-theme="indigo"]` + a classic-identity `:root` block —
+  v6.1.2 replaced this with an explicit selector per theme, now three, plus a
+  JS-off `:root:not([data-theme])` fallback; see the Architecture Notes row),
   then L1 `styles-legibility.css` LAST so no palette rule can ever override a
   readability rule. L1 raises the body-text floor from 11.5px to a 14px-based
   fluid scale (`--fs-hero/h1/h2/body/mono/label`) and fixes two structural
@@ -379,12 +386,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   top-left corner) and topbar ticker overflow (was silently clipped, not
   scrolled, ~769–1430px). Governing palette rule, enforced by construction:
   Monero orange (`--tk-accent`) means crypto data, never decoration — it
-  stays orange in both themes across 32 CSS rules + 235 TSX inline sites;
-  chrome instead reads `--ui-accent`/`--ui-primary`, which L2 rebinds per
-  theme. That indirection is why the indigo theme toggle didn't require
-  touching any of the 235 data call sites. New user-facing surface: a minimal
-  two-knob Design panel (Theme: indigo/classic · Ambient: calm/busy/chaotic)
-  behind a `⌘ DESIGN` control in the topbar — this is a deliberate *partial*
+  stays orange across 32 CSS rules + 235 TSX inline sites in every theme (two
+  at the time, classic/indigo; v6.1.2 added a third, phosphor, unchanged rule).
+  Chrome instead reads `--ui-accent`/`--ui-primary`, which L2 rebinds per
+  theme. That
+  indirection is why the indigo theme toggle didn't require touching any of
+  the 235 data call sites. New user-facing surface: a minimal two-knob Design
+  panel (Theme: indigo/classic · Ambient: calm/busy/chaotic; v6.1.2 added
+  phosphor as a third Theme option — still two knobs) behind a
+  `⌘ DESIGN` control in the topbar — this is a deliberate *partial*
   reversal of the earlier "tweaks panel is design-time-only" decision; the
   full Accent/Type/Glow/Density tweaks system stays out of the app. New gate:
   `app/verify-legibility.mjs` (static-source-assertion style, matching
@@ -392,12 +402,21 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   verbatim, no sub-14 inline `fontSize:` object-style survives in
   `app/src/**/*.tsx` (SVG `fontSize="9"` presentation attributes deliberately
   excluded), `.art-canvas` declares both `width:100%` and `height:100%`, L1/L3
-  carry zero `[data-theme=` selectors, every non-`@keyframes`/non-classic-`:root`
+  carry zero `[data-theme=` selectors, every non-`@keyframes`/non-shared-`:root`
   rule in L2 is theme-scoped, and L3 doesn't redeclare the `sweep`/`drift`/
   `streamY`/`bg-pulse`/`bg-pulse-soft` keyframe names already in styles.css.
   As of this session the sub-14-fontSize migration across `src/**/*.tsx` is
   still in flight (ui-builder et al.) — the gate correctly fails on it and
   will pass once that work lands.
+  **v6.1.2 addendum** (same gate, assertions added since the above list was
+  written, not part of the original v6.0.2 gate): the theme-scoping check now
+  names all three themes plus the JS-off `:root:not([data-theme])` case rather
+  than an indigo/not-indigo pair; and three new checks — the `@layer reset,
+  base, theme, components, utilities;` order statement appears exactly once
+  across the four stylesheets, no top-level rule in any of them sits outside
+  a `@layer` block, and every `color-mix()` in `app/src/**/*.tsx` mixes toward
+  `transparent` (so an unsupported engine degrades to no-tint, never to
+  no-surface).
 - **2026-06-12**: v5.0.14 "ALL-REAL DATA" (app/ + api/): removed every simulated/illustrative
   data surface outside `app/src/protocols/**` (the educational simulators, now code-split into
   their own lazy chunk via /simulate). Deleted `app/src/data/simulated.ts`; the feed boots with
