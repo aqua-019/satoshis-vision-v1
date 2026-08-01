@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const require = createRequire(import.meta.url);
-const { parseAtom, parseRepoParam, mapRepo, mapIssues, GH_ALLOWED, parseCommitVersion, mapCommits } = require('./feeds.js');
+const { parseAtom, parseRepoParam, mapRepo, mapIssues, latestIssueAt, GH_ALLOWED, canonicalRepo, SELF_REPO, parseCommitVersion, mapCommits } = require('./feeds.js');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -83,7 +83,27 @@ ok(parseRepoParam(undefined) === null, 'parseRepoParam rejects undefined');
 for (const repo of GH_ALLOWED) {
   ok(parseRepoParam(repo) === repo, `GH_ALLOWED entry "${repo}" passes parseRepoParam`);
 }
-ok(GH_ALLOWED.length === 7, 'GH_ALLOWED has exactly the 7 repos from the brief');
+/* An exact SET check, not just a count — a count alone would let a swapped
+   entry through, and the casing of the two v6.1.1 additions is load-bearing
+   (api.github.com paths are case-sensitive where github.com redirects). */
+const EXPECTED_ALLOWED = [
+  'kayabaNerve/fcmp-plus-plus',
+  'seraphis-migration/wallet3',
+  'UkoeHB/Seraphis',
+  'jeffro256/carrot',
+  'Cuprate/cuprate',
+  'monero-project/monero',
+  'monero-project/research-lab',
+  'aqua-019/satoshis-vision-v1',
+  'brainchainz/Monero-Superbrain',
+];
+ok(GH_ALLOWED.length === 9, 'GH_ALLOWED has exactly 9 repos (7 original + this site + Monero-Superbrain)');
+ok(JSON.stringify([...GH_ALLOWED].sort()) === JSON.stringify([...EXPECTED_ALLOWED].sort()),
+  'GH_ALLOWED is exactly the expected set — no silent additions or swaps');
+ok(GH_ALLOWED.includes('brainchainz/Monero-Superbrain'),
+  'Monero-Superbrain is stored with GitHub\'s exact casing');
+ok(canonicalRepo('brainchainz/monero-superbrain') === 'brainchainz/Monero-Superbrain',
+  'canonicalRepo repairs a lowercase caller into the canonical casing sent upstream');
 
 /* ── mapIssues ─────────────────────────────────────────────────────── */
 
@@ -105,6 +125,22 @@ ok(mappedIssues[1].n === 103, 'mapIssues preserves order, skipping only the PR')
 ok(mapIssues([]).length === 0, 'mapIssues([]) returns []');
 ok(mapIssues(null).length === 0, 'mapIssues(null) returns [] (defensive, does not throw)');
 
+/* ── latestIssueAt ─────────────────────────────────────────────────────
+   The repo pulse reports push age and issue age as two separate signals, so
+   a repo nobody pushes to (monero-project/research-lab) is not reported as
+   dead while its issues are busy. issuesFixture is the adversarial case: its
+   PR at index 1 carries the NEWEST updated_at, so a naive "take [0] of the
+   raw list" would return the PR's date. */
+ok(latestIssueAt(issuesFixture) === '2026-07-01T00:00:00Z',
+  'latestIssueAt skips the newer PR and returns the newest real issue\'s updated_at');
+ok(latestIssueAt([]) === null,
+  'latestIssueAt([]) -> null (a repo with no issues, e.g. this site\'s own)');
+ok(latestIssueAt(null) === null, 'latestIssueAt(null) -> null (defensive, does not throw)');
+ok(latestIssueAt([{ number: 9, pull_request: {}, updated_at: '2026-07-09T00:00:00Z' }]) === null,
+  'a window containing only PRs -> null, never the PR\'s date');
+ok(latestIssueAt([{ number: 9, title: 'x', html_url: 'u', comments: 0 }]) === null,
+  'an issue with no updated_at -> null, never undefined leaking into the payload');
+
 /* ── mapRepo ───────────────────────────────────────────────────────── */
 
 const repoFixture = {
@@ -118,6 +154,10 @@ const mappedRepo = mapRepo(repoFixture);
 ok(mappedRepo.stars === 9876, 'mapRepo maps stargazers_count -> stars');
 ok(mappedRepo.pushed === '2026-07-29T10:00:00Z', 'mapRepo maps pushed_at -> pushed');
 ok(mappedRepo.issues === 234, 'mapRepo maps open_issues_count -> issues');
+/* issueAt comes from a DIFFERENT endpoint and is merged in getGhRepo. Pinning
+   its absence here keeps mapRepo a single-payload pure transform. */
+ok(!('issueAt' in mappedRepo),
+  'mapRepo emits no issueAt — the issue timestamp is a second call, merged in getGhRepo');
 
 /* ── parseCommitVersion ────────────────────────────────────────────── */
 
@@ -247,12 +287,25 @@ ok(mapCommits(nonMatching).length === 0, 'mapCommits on an all-non-matching inpu
 ok(mapCommits([]).length === 0, 'mapCommits([]) returns []');
 ok(mapCommits(null).length === 0, 'mapCommits(null) returns [] (defensive, does not throw)');
 
-/* ── GH_ALLOWED must stay untouched by src=commits ────────────────────
-   src=commits accepts no caller-supplied repo param (SELF_REPO is a fixed
-   module constant), so it must never be added to this allowlist. */
-ok(GH_ALLOWED.length === 7, 'GH_ALLOWED still has exactly the 7 repos from the brief (src=commits added nothing here)');
-ok(!GH_ALLOWED.some((r) => r.toLowerCase().includes('satoshis-vision')),
-  'GH_ALLOWED does not contain this site\'s own repo — src=commits has no caller-supplied repo param to constrain');
+/* ── the site's own repo, and why it is now allowlisted ───────────────
+   This block used to assert the OPPOSITE — that GH_ALLOWED must not contain
+   this site's own repo — on the reasoning that src=commits accepts no
+   caller-supplied repo param and therefore needs no allowlist entry. That
+   reasoning still holds for src=commits, and is asserted below. What changed
+   in v6.1.1 is that a DIFFERENT caller appeared: src=ghrepo does take a
+   caller-supplied repo, and the Future tab's "This site" pulse row asks for
+   this repo by name. The entry exists for that caller alone. */
+ok(SELF_REPO === 'aqua-019/satoshis-vision-v1', 'SELF_REPO is this site\'s repo');
+ok(GH_ALLOWED.filter((r) => r === SELF_REPO).length === 1,
+  'SELF_REPO appears exactly once in GH_ALLOWED — reachable via src=ghrepo, listed once');
+ok(canonicalRepo(SELF_REPO) === SELF_REPO, 'src=ghrepo can resolve this site\'s own repo');
+/* The invariant the old assertion was really protecting: src=commits reads
+   SELF_REPO directly and never consults the allowlist, so allowlisting the
+   repo cannot widen what src=commits will serve. */
+ok(!/GH_ALLOWED/.test(
+  readFileSync(new URL('./feeds.js', import.meta.url), 'utf8')
+    .split('if (src === "commits")')[1].split('if (src ===')[0]),
+  'the src=commits branch never consults GH_ALLOWED');
 
 if (failed > 0) {
   console.log(`\n${failed} check(s) FAILED`);

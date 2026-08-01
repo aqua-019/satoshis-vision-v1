@@ -19,7 +19,7 @@ import * as React from "react";
 import { PageShell } from "@/layout/PageShell";
 import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
-import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS, roadmapStatus } from "./future/data";
+import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS, DEV_LAB_PULSES, roadmapStatus } from "./future/data";
 import { ProtocolCard, DevLabPulseCard, MoneroNewsCard } from "./future/cards";
 import { ProtoPopup } from "./future/ProtoPopup";
 import { EcoPopup } from "./future/EcoPopup";
@@ -62,11 +62,15 @@ export function FuturePage() {
           <span className="mono" style={{ color: "var(--g-50)", fontSize: 22, textShadow: "var(--glow-g)" }}>β</span>
         </div>
         <div>
-          <div className="kicker" style={{ color: "var(--g-50)" }}>Live now · community FCMP++ beta · friend of the site</div>
+          <div className="kicker" style={{ color: "var(--g-50)" }}>Live now · community FCMP++ beta · Umbrel apps</div>
+          {/* "Umbrel superstress net" must stay contiguous here —
+              verify-sims.mjs finds this band by that text to open the
+              stressnet simulator. */}
           <div className="serif" style={{ fontSize: "clamp(20px, 1.7vw, 30px)", color: "var(--ink-100)", margin: "6px 0 4px" }}>
-            The Umbrel <em style={{ fontStyle: "normal", color: "var(--g-50)", textShadow: "var(--glow-g)" }}>superstress net</em> is hammering FCMP++ — with this site&apos;s V4 mempool watching it live.
+            The Umbrel <em style={{ fontStyle: "normal", color: "var(--g-50)", textShadow: "var(--glow-g)" }}>superstress net</em> is hammering FCMP++ before it reaches mainnet.
           </div>
-          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)" }}>Storm campaigns · dynamic block size under load · the first FCMP++ chain with a visual mempool. Screenshots + endpoints landing soon.</p>
+          {/* Names MoneroSpace, claims nothing about where it came from. */}
+          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)" }}>Storm campaigns · dynamic block size under load · proof-verification pressure — with MoneroSpace, the beta chain&apos;s visual mempool, in the same Umbrel app repo. Screenshots + endpoints landing soon.</p>
         </div>
         <span className="open-cue mono" style={{ opacity: 1, color: "var(--g-50)", fontSize: "var(--fs-mono)" }}>open window →</span>
       </Card>
@@ -81,9 +85,13 @@ export function FuturePage() {
         <div className="kicker" style={{ marginBottom: 12 }}>Automation · how this tab stays current</div>
 
         {/* dev-lab pulse — always-on, not gated behind a click */}
+        {/* Four repos, one /api/feeds request each per visitor per 24h.
+            .col-2 renders 2×2 here and stacks 1-up at ≤768px. Each row
+            reports push age and issue age SEPARATELY — research-lab is
+            push-quiet and issue-active at the same time, and one combined
+            badge used to report that as a dead repo. */}
         <div className="col-2" style={{ gap: 10, marginBottom: 16 }}>
-          <DevLabPulseCard repo="monero-project/monero" label="Core client" />
-          <DevLabPulseCard repo="monero-project/research-lab" label="MRL · research issues" />
+          {DEV_LAB_PULSES.map((p) => <DevLabPulseCard key={p.repo} {...p} />)}
         </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "8px 28px" }} className="mono">

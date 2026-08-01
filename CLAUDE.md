@@ -26,10 +26,10 @@ chain and market data.
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
 - Verification: 44 `verify-*.mjs` files (`app/` ×40, `api/` ×4) — 43 gates plus
   `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **24 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **25 distinct files** on
   PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
-  (11 gates, no browser) and `verify:e2e` (9 gates, against `scripts/serve-dist.mjs`).
-  The remaining ~19 are wired to neither npm nor CI — several expect live upstreams.
+  (11 gates, no browser) and `verify:e2e` (10 gates, against `scripts/serve-dist.mjs`).
+  The remaining 17 are wired to neither npm nor CI — several expect live upstreams.
 
 ## Site Routes
 
@@ -146,7 +146,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 24 of the gates on every PR to `main`; the rest are hand-run.
+- CI runs 25 of the gates on every PR to `main`; the rest are hand-run.
 
 ## Known Issues / TODOs
 
@@ -163,8 +163,15 @@ list that expands tabs and query permutations). Those three are not yet unified.
   19 call sites. See the v6.0.12 note.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
-- **Orphaned gates**: 18 `verify-*.mjs` are wired to neither npm nor CI. Several expect live
+- **Orphaned gates**: 17 `verify-*.mjs` are wired to neither npm nor CI. Several expect live
   upstreams; auditing and wiring them is its own task.
+- **MoneroSpace's lineage is an open question** with `brainchainz`. Its own repo
+  (`brainchainz/Monero-Superbrain`) points at a different origin than the one this site's
+  earlier copy asserted, and the maintainer has not answered. Neither account is
+  confirmed, so `pages/future/data.ts`, `FuturePage.tsx` and `protocols/stressnet.tsx`
+  name the project and link the repo and assert **neither** provenance.
+  `verify-future.mjs` fails the build if a lineage claim reappears anywhere in the tree —
+  do not "restore" one without an answer from the maintainer.
 
 ## Architecture Notes
 

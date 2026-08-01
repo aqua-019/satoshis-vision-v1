@@ -224,7 +224,9 @@ export function StressnetView({ bg }: ViewProps) {
           </div>
 
           <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
-            <em>The real tunnel:</em> the <b>Umbrel Superstress Net</b> is a live community FCMP++ beta chain, and one of its nodes pipes its txpool into a fork of this site's mempool visualiser. Nothing on this page is a reading from it — no telemetry endpoint exists yet.{" "}
+            {/* No provenance claim about MoneroSpace here either — see the
+                note on ECOSYSTEM[0] in pages/future/data.ts. */}
+            <em>The real tunnel:</em> the <b>Umbrel Superstress Net</b> is a live community FCMP++ beta chain. Nothing on this page is a reading from it — no telemetry endpoint exists yet.{" "}
             <Link to="/future" style={{ color: "var(--tk-accent)" }}>See the Superstress Net card →</Link>
           </div>
         </>

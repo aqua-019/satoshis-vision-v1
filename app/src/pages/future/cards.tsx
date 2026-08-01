@@ -4,8 +4,11 @@
  * ProtocolCard      — one of the five incoming upgrades. Pings its repo ON
  *                     MOUNT, so the grid itself carries live signal instead
  *                     of staying inert until someone opens a modal.
- * DevLabPulseCard   — always-on readout for the two core repos behind
- *                     "fork status / ETAs".
+ * DevLabPulseCard   — always-on readout for the four repos on the automation
+ *                     registry's pulse row (DEV_LAB_PULSES in data.ts). Push
+ *                     age and issue age are SEPARATE readouts: a repo nobody
+ *                     pushes to can still have live issue discussion, and
+ *                     one combined badge reported that as a dead repo.
  * MoneroNewsCard    — getmonero.org announcements + MRL research-lab issue
  *                     traffic, both 24h-cached and stamped with their age.
  *
@@ -16,6 +19,7 @@
  */
 
 import * as React from "react";
+import { Link } from "react-router-dom";
 
 import { Card } from "@/design/primitives";
 import {
@@ -43,14 +47,23 @@ export function ProtocolCard({ p, onOpen }: ProtocolCardProps) {
 
   return (
     <Card onClick={onOpen} style={{ padding: 22, minHeight: 240, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-      <div className="v6-future-card">
+      {/* `data-pulse` is the deterministic "this repo's fetch has resolved"
+          hook the DOM gate waits on, replacing a networkidle heuristic.
+          It sits here rather than on <Card> because Card takes a fixed prop
+          set and does not spread — see design/primitives.tsx. Note this
+          element is `display: contents`, so it has no box: query it with
+          querySelectorAll/count, never with a visibility-based wait. */}
+      <div className="v6-future-card" data-pulse={pulse ? "live" : "pending"}>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             <span className="v6-status" style={{ color: p.sc }}>
               <span className="led pulse" style={{ background: p.sc, boxShadow: `0 0 8px ${p.sc}`, margin: 0 }} />
               {p.status}
             </span>
-            {stale && pulse ? <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>repo quiet {agoStr(pulse.pushed)}</span> : null}
+            {/* "push quiet", not "repo quiet": pushed_at is the only signal
+                this badge measures, and a repo can be push-quiet while its
+                issues are busy. */}
+            {stale && pulse ? <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>push quiet · {agoStr(pulse.pushed)}</span> : null}
           </div>
           <h3 className="serif" style={{ margin: "14px 0 4px", fontSize: "clamp(24px, 1.9vw, 34px)", fontWeight: 400, color: p.c, textShadow: `0 0 16px ${p.c}55` }}>{p.tag}</h3>
           <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · ETA {p.eta}</div>
@@ -72,23 +85,58 @@ export function ProtocolCard({ p, onOpen }: ProtocolCardProps) {
 export interface DevLabPulseCardProps {
   repo: string;
   label: string;
+  /** Where the repo slug links. A leading "/" renders an in-app <Link>
+   *  (this site's own row goes to /sources, where its release feed lives);
+   *  anything else renders an external anchor. Deriving the link kind from
+   *  the href itself means there is no second prop that can disagree. */
+  href: string;
 }
 
-export function DevLabPulseCard({ repo, label }: DevLabPulseCardProps) {
+export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
   const pulse = useRepoPulse(repo);
-  const stale = pulse ? isStale(pulse.pushed) : false;
+  // Two INDEPENDENT staleness reads. Before v6.1.1 one badge derived from
+  // pushed_at spoke for the whole repo, so monero-project/research-lab —
+  // which nobody pushes to, but whose issues carry the actual MRL
+  // discussion — rendered as "repo quiet · 485d ago". That told visitors
+  // Monero research had stopped, which is false. Push age and issue age are
+  // different facts and now read as different lines.
+  const pushStale = pulse ? isStale(pulse.pushed) : false;
+  const issueStale = pulse ? isStale(pulse.issueAt) : false;
 
   return (
-    <div className="panel" style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 4 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+    <div
+      className="panel"
+      // The DOM gate waits on data-pulse="live" instead of a network
+      // heuristic, and counts data-pulse-repo to prove all four rows fetched.
+      data-pulse-repo={repo}
+      data-pulse={pulse ? "live" : "pending"}
+      style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 4 }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
         <span className="mono dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>{label}</span>
-        <span className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>{repo}</span>
+        {href.startsWith("/") ? (
+          <Link className="mono dim2" to={href} style={{ fontSize: "var(--fs-mono)" }}>{repo} →</Link>
+        ) : (
+          <a className="mono dim2" href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: "var(--fs-mono)" }}>{repo} ↗</a>
+        )}
       </div>
       {pulse ? (
-        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", display: "flex", gap: 12, alignItems: "center" }}>
+        // flexWrap so four readouts still fit at 390px, where .col-2 is 1-up.
+        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
           <span>★ {pulse.stars.toLocaleString()}</span>
-          <span>issues {pulse.issues}</span>
-          <span style={{ color: stale ? "var(--y-50)" : "var(--g-50)" }}>{stale ? "repo quiet · " : "pushed "}{agoStr(pulse.pushed)}</span>
+          {/* GitHub's open_issues_count counts open PRs as issues. Saying
+              "issues N" without that caveat overstates the number. */}
+          <span>open issues {pulse.issues} <span className="dim2">(incl. PRs)</span></span>
+          {/* data-readout makes each signal individually addressable by the
+              DOM gate, instead of a whitespace-fragile innerText regex. */}
+          <span data-readout="push" style={{ color: pushStale ? "var(--y-50)" : "var(--g-50)" }}>
+            last push · {agoStr(pulse.pushed)}{pushStale ? " · quiet" : ""}
+          </span>
+          {/* A repo with no issue activity reports "—" in dim, never green:
+              absence of data is not a healthy reading. */}
+          <span data-readout="issue" style={{ color: pulse.issueAt ? (issueStale ? "var(--y-50)" : "var(--g-50)") : "var(--ink-40)" }}>
+            last issue activity · {agoStr(pulse.issueAt)}{pulse.issueAt && issueStale ? " · quiet" : ""}
+          </span>
         </div>
       ) : (
         <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>fetching via /api/feeds …</div>
@@ -176,16 +224,17 @@ export function MoneroNewsCard() {
         </div>
       </div>
 
-      {/* The two X accounts — honest about what they'd need. Stating the
-          constraint is deliberate: silently omitting them reads as an
-          oversight, and this stops the question recurring. */}
+      {/* The two X accounts. Naming them is deliberate — silently dropping
+          them reads as an oversight. What they are NOT is a pending
+          integration waiting on a purchase: X publishes no unauthenticated
+          read API, so these are link-outs and that is the finished design,
+          not a stalled one. */}
       <div style={{ borderTop: "1px solid var(--rule)", marginTop: 16, paddingTop: 12, display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
         <span className="mono dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Also tracked</span>
         <a className="v6-res" href="https://x.com/monero" target="_blank" rel="noopener noreferrer">@monero ↗</a>
         <a className="v6-res" href="https://x.com/MoneroResearchL" target="_blank" rel="noopener noreferrer">@MoneroResearchL ↗</a>
         <span className="mono dim2" style={{ fontSize: "var(--fs-body)" }}>
-          · link-out only — X has no unauthenticated read API (401 without a bearer token);
-          <code> {FEED_PROXY}?src=x</code> returns 501 until X_BEARER_TOKEN (paid tier) is set
+          · link-out only — X has no unauthenticated read API, so these stay links rather than an ingested feed
         </span>
       </div>
     </Card>

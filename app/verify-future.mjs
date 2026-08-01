@@ -1,11 +1,12 @@
 // verify-future.mjs — DOM gate for v6.0.1 "Future tab live feeds + partner redirects".
 //
-// Drives the BUILT app (vite preview @ :4173) with /api/feeds mocked at the
+// Drives the BUILT app (serve-dist @ :4173) with /api/feeds mocked at the
 // page level, proving the browser checks from the v6.0.1 spec:
 //
 //   1. Five protocol cards show "★N · Nd ago" WITHOUT opening a modal.
-//   2. QUIET >90D is computed from a real pushed_at (one repo seeded stale).
-//   3. The automation registry shows two dev-lab pulses with real numbers.
+//   2. Push staleness is computed from a real pushed_at (one repo seeded
+//      stale) and is labelled as a PUSH signal, never as the whole repo.
+//   3. The automation registry shows FOUR repo pulses with real numbers.
 //   4. The MRL column lists real issue titles.
 //   5. The announcements column shows real posts — or, when the proxy fails,
 //      an explicit explanation naming the endpoint. Never blank.
@@ -18,16 +19,39 @@
 //      (v6.0.9 — all five are registered now; the SIM_IDS gate and the named
 //      not-found state are asserted alongside, as 11b and 11c).
 //  12. /monero/future redirects to /future.
+//  14. app/src carries no "friend's" / "paid-tier" / "X_BEARER" copy.
+//  15. No MoneroSpace lineage claim anywhere in the tree — the project is
+//      named and its repo linked, but neither provenance is asserted.
+//  16. research-lab reports push age and issue age as two DISTINCT labelled
+//      readouts, so a push-quiet repo with live issues is not called dead.
+//  17. Exactly one /api/feeds?src=ghrepo request per pulse repo on a cold
+//      load, and zero on a reload inside 24h.
 //
 // All upstreams are intercepted, so this runs with no network egress —
 // which matters here, because the sandbox proxy blocks getmonero.org and
 // api.github.com outright (CONNECT 403). Live-origin checks are post-deploy.
 //
-// Run: npm run build && (npm run preview &) && sleep 2 && node verify-future.mjs
+// NO network-idle waiting anywhere in this file (the literal token is absent
+// on purpose, so a grep can prove it). That wait is a network heuristic
+// standing in for "the thing I assert has rendered", and it is what made
+// verify-v510.mjs permanently red before it was deleted. Every goto here is
+// `domcontentloaded` plus an explicit wait on the element the scenario
+// actually checks — usually `[data-pulse="live"]`, the hook the cards expose
+// for exactly this purpose.
+//
+// Run against serve-dist, NOT `vite preview`. Preview is an SPA server that
+// falls back to dist/index.html for every path, so a broken prerender would
+// pass unnoticed; serve-dist mirrors Vercel's real-file → directory-index →
+// SPA-shell order. Same port, different resolution.
+//   npm run build && (node scripts/serve-dist.mjs &) && npm run wait-preview \
+//     && node verify-future.mjs
 import { chromium, webkit } from 'playwright';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const base = 'http://localhost:4173';
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
@@ -42,18 +66,75 @@ function findChrome() {
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
+/* ── static source gates ────────────────────────────────────────────
+   Deliberately ABOVE the browser launch, so the two copy criteria still
+   run (and still fail the build) on a machine with no chromium. */
+
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', '.vercel']);
+function walk(dir, exts) {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    if (SKIP_DIRS.has(name)) continue;
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) out.push(...walk(p, exts));
+    else if (exts.some((e) => p.endsWith(e))) out.push(p);
+  }
+  return out;
+}
+
+// 14 — mirrors `grep -ri "friend's\|paid-tier\|X_BEARER" app/src/`.
+const APP_SRC = walk(join(__dirname, 'src'), ['.ts', '.tsx', '.css']);
+const BANNED_RX = /friend's|paid-tier|x_bearer/i;
+const bannedHits = APP_SRC.filter((f) => BANNED_RX.test(readFileSync(f, 'utf8')));
+ok(bannedHits.length === 0,
+  `14 · app/src carries no "friend's" / "paid-tier" / "X_BEARER" copy (found ${bannedHits.length}${bannedHits.length ? ': ' + bannedHits.join(', ') : ''})`);
+
+/* 15 — the MoneroSpace provenance question is unresolved: its repo points at
+   one origin, this site's earlier copy claimed another, and the maintainer
+   has not answered. Until they do, naming and linking the project is the
+   honest maximum. These patterns are deliberately narrow — "v4 mempool" on
+   its own is NOT banned, because src/mempool/classic.tsx legitimately
+   describes itself as a take on this site's own v4 mempool-explorer. */
+const LINEAGE_RX = /fork of (this site|xmr\.irish)|xmr\.irish v4'?s? mempool|this site'?s? v4 mempool|pipes its txpool|mempool\.space|first fcmp\+\+ chain/i;
+const TREE = walk(join(__dirname, '..'), ['.ts', '.tsx', '.js', '.mjs', '.css', '.json', '.md', '.html']);
+const lineageHits = TREE
+  .filter((f) => !f.endsWith('verify-future.mjs')) // this file defines the patterns
+  .filter((f) => LINEAGE_RX.test(readFileSync(f, 'utf8')));
+ok(lineageHits.length === 0,
+  `15 · no MoneroSpace lineage claim anywhere in the tree (found ${lineageHits.length}${lineageHits.length ? ': ' + lineageHits.join(', ') : ''})`);
+const named = APP_SRC.filter((f) => /MoneroSpace/.test(readFileSync(f, 'utf8')));
+ok(named.length >= 1, `15 · the project is named MoneroSpace where it is described (${named.length} file(s))`);
+const linked = APP_SRC.filter((f) => /github\.com\/brainchainz\/Monero-Superbrain/.test(readFileSync(f, 'utf8')));
+ok(linked.length >= 1, `15 · its repo is linked, not merely named (${linked.length} file(s))`);
+
 const DAY = 86400000;
 const iso = (msAgo) => new Date(Date.now() - msAgo).toISOString();
 
-// One repo (Cuprate) is seeded 200 days stale to exercise QUIET >90D.
+/* Fixture repos, each exercising one real-world shape:
+   - Cuprate: a PROTOCOL card seeded 200d push-stale → the one "push quiet".
+   - research-lab: the case this whole change exists for — nobody pushes to
+     it, but its issues carry live MRL discussion. Old push, recent issue.
+   - this site's own repo: no issue tracker traffic → issueAt null → must
+     render an em-dash, never a substituted date. */
 const STALE_REPO = 'Cuprate/cuprate';
+const PUSH_STALE_REPO = 'monero-project/research-lab';
+const NO_ISSUES_REPO = 'aqua-019/satoshis-vision-v1';
+const DEVLAB_REPOS = [
+  'monero-project/monero',
+  'monero-project/research-lab',
+  'aqua-019/satoshis-vision-v1',
+  'brainchainz/Monero-Superbrain',
+];
 const repoPulse = (repo) => ({
   source: 'ghrepo',
   fetchedAt: new Date().toISOString(),
   repo,
   stars: 4242,
-  pushed: iso(repo === STALE_REPO ? 200 * DAY : 3 * DAY),
+  pushed: iso(repo === STALE_REPO || repo === PUSH_STALE_REPO ? 200 * DAY : 3 * DAY),
   issues: 17,
+  issueAt: repo === NO_ISSUES_REPO ? null
+    : repo === PUSH_STALE_REPO ? iso(5 * 3600000)
+    : iso(2 * DAY),
 });
 
 const MRL_TITLES = [
@@ -89,6 +170,9 @@ async function mockFeeds(ctx, { blogFails = false } = {}, counter) {
     const u = new URL(route.request().url());
     const src = u.searchParams.get('src') || 'getmonero';
     if (counter) counter.n += 1;
+    // Record WHICH repo, not just how many — a per-repo count is what proves
+    // the four registry pulses each fetch exactly once and dedup holds.
+    if (counter && src === 'ghrepo') counter.repos.push(u.searchParams.get('repo'));
     if (src === 'ghrepo') {
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(repoPulse(u.searchParams.get('repo'))) });
     }
@@ -117,16 +201,25 @@ let b, engine = 'chromium';
 try {
   const executablePath = findChrome();
   b = await chromium.launch(executablePath ? { executablePath } : {});
-} catch {
-  engine = 'webkit';
-  b = await webkit.launch();
+} catch (chromiumErr) {
+  // CI installs chromium ONLY. Say why chromium failed before falling back,
+  // so a chromium problem doesn't surface as a confusing webkit error — and
+  // if webkit is absent too, rethrow chromium's failure, which is the real one.
+  console.log('⚠️  chromium launch failed: ' + (chromiumErr?.message || chromiumErr));
+  console.log('⚠️  falling back to webkit');
+  try {
+    engine = 'webkit';
+    b = await webkit.launch();
+  } catch {
+    throw chromiumErr;
+  }
 }
 console.log('engine:', engine, '\n');
 
 /* ── Scenario A · /future with every feed healthy ──────────────────── */
 {
   const ctx = await b.newContext();
-  const counter = { n: 0 };
+  const counter = { n: 0, repos: [] };
   await mockFeeds(ctx, {}, counter);
 
   const offOrigin = [];
@@ -138,8 +231,15 @@ console.log('engine:', engine, '\n');
 
   const page = await ctx.newPage();
   page.on('console', (m) => { if (/Content Security Policy|Refused to connect/i.test(m.text())) cspViolations.push(m.text()); });
-  await page.goto(base + '/future', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(600);
+  await page.goto(base + '/future', { waitUntil: 'domcontentloaded' });
+  // Deterministic replacement for a network-idle wait: data-pulse flips to "live"
+  // only once that repo's fetch has resolved. 5 protocol cards + 4 registry
+  // pulses = 9. Note the protocol cards' hook sits on a `display: contents`
+  // element, so this must be a querySelectorAll count, not a visibility wait.
+  await page.waitForFunction(
+    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
+    9, { timeout: 15000 },
+  );
 
   const body = await page.innerText('body');
 
@@ -148,16 +248,64 @@ console.log('engine:', engine, '\n');
   ok(pulses.length >= 5, `1 · five protocol cards show "★N · Nd ago" without a click (found ${pulses.length})`);
   ok((await page.locator('[role="dialog"]').count()) === 0, '1 · no modal was opened to get them');
 
-  // 2 — repo-quiet flag computed from the seeded stale pushed_at. Scoped to
-  // "repo" (not the protocol itself) per TASK 3 — see cards.tsx/ProtoPopup.tsx.
-  const quiet = await page.locator('text=repo quiet').count();
-  ok(quiet === 1, `2 · exactly one card flags "repo quiet" from real pushed_at (found ${quiet})`);
+  // 2 — push staleness computed from the seeded pushed_at, and now scoped to
+  // the PUSH signal. The old chip read "repo quiet", which let one signal
+  // speak for the whole repo; that is the misreading this release removes.
+  const quiet = await page.locator('text=push quiet').count();
+  ok(quiet === 1, `2 · exactly one protocol card flags "push quiet" from real pushed_at (found ${quiet})`);
+  ok(!body.includes('repo quiet'),
+    '2 · nothing reads "repo quiet" — push age never speaks for the whole repo');
 
-  // 3 — two dev-lab pulses with real numbers
-  ok(body.includes('monero-project/monero') && body.includes('monero-project/research-lab'),
-    '3 · automation registry names both dev-lab repos');
-  const devlab = await page.locator('.panel', { hasText: 'monero-project/' }).filter({ hasText: '★' }).count();
-  ok(devlab >= 2, `3 · both dev-lab panels rendered a ★ count (found ${devlab})`);
+  // 3 — FOUR pulses with real numbers.
+  // Counted on [data-pulse-repo], NOT `.panel`: Card also renders .panel
+  // (design/primitives.tsx), so the registry's own wrapper Card contains
+  // every pulse's text and a `.panel` count silently over-matches.
+  const pulseRows = page.locator('[data-pulse-repo]');
+  const nPulses = await pulseRows.count();
+  ok(nPulses === 4, `3 · the automation registry renders exactly 4 repo pulses (found ${nPulses})`);
+  for (const repo of DEVLAB_REPOS) {
+    const row = pulseRows.filter({ hasText: repo });
+    ok((await row.count()) === 1, `3 · exactly one pulse panel for ${repo}`);
+    const t = (await row.innerText()).replace(/\s+/g, ' ');
+    ok(/★ 4,242/.test(t), `3 · ${repo} renders the star count from the payload`);
+    ok(/open issues 17/.test(t), `3 · ${repo} renders the open-issue count from the payload`);
+    ok(/\(incl\. PRs\)/.test(t), `3 · ${repo} states that open_issues_count includes PRs`);
+    ok(!/fetching via|pinging/.test(t), `3 · ${repo} is not stuck in a loading state`);
+  }
+
+  // 16 — the case this release exists for: research-lab is push-quiet AND
+  // issue-active at the same time. Two labelled readouts, never merged.
+  const norm = async (loc) => (await loc.innerText()).replace(/\s+/g, ' ').trim();
+  const rl = pulseRows.filter({ hasText: PUSH_STALE_REPO });
+  const rlPush = await norm(rl.locator('[data-readout="push"]'));
+  const rlIssue = await norm(rl.locator('[data-readout="issue"]'));
+  ok(/^last push · 200d ago · quiet$/.test(rlPush), `16 · research-lab labels its push age ("${rlPush}")`);
+  ok(/^last issue activity · 5h ago$/.test(rlIssue), `16 · research-lab labels its issue age separately ("${rlIssue}")`);
+  ok(rlPush !== rlIssue, '16 · push staleness and issue activity are two distinct readouts, not one number');
+
+  // A repo with no issue activity reports an em-dash, never a stand-in date.
+  const self = pulseRows.filter({ hasText: NO_ISSUES_REPO });
+  const selfIssue = await norm(self.locator('[data-readout="issue"]'));
+  ok(/^last issue activity · —$/.test(selfIssue), `16 · a repo with no issue activity renders "—" (got "${selfIssue}")`);
+  ok((await self.locator('a[href="/sources"]').count()) === 1,
+    '16 · this site\'s own row links to /sources, not to github.com');
+  const sb = pulseRows.filter({ hasText: 'brainchainz/Monero-Superbrain' });
+  ok((await sb.locator('a[href="https://github.com/brainchainz/Monero-Superbrain"]').count()) === 1,
+    '16 · the Superbrain row links its repo with GitHub\'s exact casing');
+
+  // 15 (DOM) — named, linked, and no provenance asserted either way.
+  ok(/MoneroSpace/.test(body), '15 · /future names MoneroSpace');
+  ok(!LINEAGE_RX.test(body), '15 · /future asserts no lineage for MoneroSpace');
+  await page.locator('.panel').filter({ hasText: 'superstress net' }).first().click();
+  const eco = page.locator('[role="dialog"]');
+  await eco.waitFor();
+  const ecoText = await eco.innerText();
+  ok(/MoneroSpace/.test(ecoText), '15 · the stressnet window names MoneroSpace');
+  ok(!LINEAGE_RX.test(ecoText), '15 · the stressnet window claims neither lineage');
+  ok((await eco.locator('a[href="https://github.com/brainchainz/Monero-Superbrain"]').count()) >= 1,
+    '15 · the stressnet window links the repo, not merely names it');
+  await page.keyboard.press('Escape');
+  await page.locator('[role="dialog"]').waitFor({ state: 'hidden' });
 
   // 4 — MRL column lists real issue titles
   const mrlSeen = MRL_TITLES.filter((t) => body.includes(t));
@@ -167,12 +315,35 @@ console.log('engine:', engine, '\n');
   const blogSeen = BLOG_TITLES.filter((t) => body.includes(t));
   ok(blogSeen.length === BLOG_TITLES.length, `5a · announcements column lists real getmonero.org posts (found ${blogSeen.length})`);
 
+  // 17 — exact cold-load accounting, per repo set. The four registry repos
+  // share no entry with the five protocol-card repos, so a cold /future is 11
+  // /api/feeds requests: 9 ghrepo (5 protocol + 4 registry) + getmonero + mrl.
+  // "4 requests per visitor per 24h" is the cost of the REGISTRY block, not
+  // the page total — assert both so neither can drift silently.
+  const coldRegistry = counter.repos.filter((r) => DEVLAB_REPOS.includes(r));
+  ok(coldRegistry.length === 4 && new Set(coldRegistry).size === 4,
+    `17 · cold load issued exactly one ?src=ghrepo per registry repo (${coldRegistry.length} requests, ${new Set(coldRegistry).size} distinct)`);
+  ok(coldRegistry.includes('brainchainz/Monero-Superbrain'),
+    '17 · the Superbrain repo is requested with GitHub\'s exact casing');
+  ok(counter.repos.length === 9,
+    `17 · 9 ghrepo requests on a cold load — 5 protocol cards + 4 registry, no duplicates (found ${counter.repos.length})`);
+
   // 6 — a reload inside 24h issues no further /api/feeds requests
   const before = counter.n;
   ok(before > 0, `6 · first load issued ${before} /api/feeds requests`);
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  // Positive half anchored on the DOM: a cache hit renders from the lazy
+  // useState initialiser, so all nine flip to "live" without any network.
+  await page.waitForFunction(
+    (n) => document.querySelectorAll('[data-pulse="live"]').length === n,
+    9, { timeout: 15000 },
+  );
+  // Grace window for the NEGATIVE half — a rogue request needs time to appear
+  // before we can honestly say none did.
   await page.waitForTimeout(600);
   ok(counter.n === before, `6 · reload inside 24h issued NO further /api/feeds requests (still ${counter.n})`);
+  ok(counter.repos.filter((r) => DEVLAB_REPOS.includes(r)).length === 4,
+    '17 · reload inside 24h issued 0 further ghrepo requests for the registry repos');
   ok((await page.innerText('body')).includes(MRL_TITLES[0]), '6 · reloaded page still renders from the 24h cache');
 
   // 7 — nothing cross-origin, no CSP violations
@@ -259,8 +430,10 @@ console.log('engine:', engine, '\n');
   const ctx = await b.newContext();
   await mockFeeds(ctx, { blogFails: true });
   const page = await ctx.newPage();
-  await page.goto(base + '/future', { waitUntil: 'networkidle' });
-  await page.waitForTimeout(800);
+  await page.goto(base + '/future', { waitUntil: 'domcontentloaded' });
+  // This scenario asserts the failed-announcements panel, so wait for it —
+  // not for the network to go quiet.
+  await page.waitForSelector('text=returned no data', { timeout: 15000 });
 
   const body = await page.innerText('body');
   ok(body.includes('returned no data'), '5b · failed announcements feed renders an explicit explanation');
@@ -276,9 +449,11 @@ console.log('engine:', engine, '\n');
   const ctx = await b.newContext();
   await mockFeeds(ctx);
   const page = await ctx.newPage();
-  await page.goto(base + '/peers', { waitUntil: 'networkidle' });
+  await page.goto(base + '/peers', { waitUntil: 'domcontentloaded' });
 
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
+  // The partner cards ARE the assertion — wait on them, not on the network.
+  await cards.first().waitFor({ timeout: 15000 });
   const expect = { XMRHUB: 'xmrhub.org', 'kyc.rip': 'kyc.rip', 'xmr.club': 'xmr.club' };
 
   // 8 — each partner card opens the right site in a new tab
@@ -327,10 +502,19 @@ console.log('engine:', engine, '\n');
   const ctx = await b.newContext();
   await mockFeeds(ctx);
   const page = await ctx.newPage();
-  await page.goto(base + '/monero/future', { waitUntil: 'networkidle' });
+  // /monero/future is deliberately ABSENT from scripts/routes.mjs (rationale
+  // written there), so serve-dist finds no file and no directory index and
+  // falls through to the SPA shell, where <Navigate> fires client-side. The
+  // URL is therefore the assertion — wait on it directly.
+  await page.goto(base + '/monero/future', { waitUntil: 'domcontentloaded' });
+  // Predicate on the exact pathname, NOT /\/future$/ — the pre-redirect URL
+  // "/monero/future" also ends in "/future", so a suffix regex matches
+  // immediately and the assertion reads the URL it was meant to wait past.
+  await page.waitForURL((u) => new URL(u).pathname === '/future', { timeout: 15000 });
   ok(new URL(page.url()).pathname === '/future', `12 · /monero/future redirects to /future (got ${new URL(page.url()).pathname})`);
 
-  await page.goto(base + '/monero', { waitUntil: 'networkidle' });
+  await page.goto(base + '/monero', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('text=Bottom Line', { timeout: 15000 });
   const tabs = await page.innerText('body');
   ok(!/\bFuture\b/.test(tabs.split('Bottom Line')[0] || ''), '12 · the Monero tab bar no longer offers a Future tab');
 

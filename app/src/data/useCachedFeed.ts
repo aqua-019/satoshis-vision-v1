@@ -155,19 +155,42 @@ export function useCachedFeed<T>(
 
 /* ── /api/feeds consumers ───────────────────────────────────────────── */
 
-interface GhRepoResponse { stars?: number; pushed?: string; issues?: number }
+interface GhRepoResponse { stars?: number; pushed?: string; issues?: number; issueAt?: string | null }
 interface FeedItemsResponse<I> { items?: I[] }
 
-export interface RepoPulse { stars: number; pushed: string; issues: number }
+/**
+ * `pushed` and `issueAt` are two independent signals and must stay that way.
+ * A repo nobody pushes to can still have live discussion in its issues —
+ * monero-project/research-lab is exactly that case, and collapsing the two
+ * made the Future tab imply Monero research had stopped.
+ * `issues` is GitHub's `open_issues_count`, which INCLUDES open pull
+ * requests; every surface that renders it says so.
+ */
+export interface RepoPulse { stars: number; pushed: string; issues: number; issueAt: string | null }
 
 export function useRepoPulse(repo: string): RepoPulse | null {
   // `repo` fully determines the payload, so it's folded into the id itself
   // — the effect's `deps` array would be redundant (see fetchOnce above).
-  const id = repo ? `gh.${repo}` : null;
+  //
+  // v6.1.1: `.v2.` because the payload SHAPE changed (issueAt), and that is
+  // the same rule the fetchOnce note above states — anything that changes the
+  // payload is baked into the id. It matters here because useCachedFeed
+  // returns a cache hit WITHOUT re-validating its shape: a returning visitor
+  // holding a pre-v6.1.1 entry would otherwise read "last issue activity —"
+  // on an actively-discussed repo for up to 24h, which is the exact
+  // misreading this change exists to fix. Cost is one refetch per repo, once;
+  // the old `gh.<repo>` keys are left to expire rather than swept, because a
+  // sweeper is more code and more failure modes than ~1 KB justifies.
+  const id = repo ? `gh.v2.${repo}` : null;
   const { data } = useCachedFeed<RepoPulse>(id, () =>
     getJSON<GhRepoResponse>(`${FEED_PROXY}?src=ghrepo&repo=${encodeURIComponent(repo)}`).then((r) =>
       r && typeof r.stars === "number" && typeof r.pushed === "string" && typeof r.issues === "number"
-        ? { stars: r.stars, pushed: r.pushed, issues: r.issues }
+        // `issueAt` is deliberately NOT part of the guard above. It is
+        // normalized, not required: a visitor holding a cache entry written
+        // before this field existed still has good stars/pushed/issues, and
+        // failing the whole guard would throw that away for up to 24h to
+        // punish a missing optional. Absent/malformed → null → renders "—".
+        ? { stars: r.stars, pushed: r.pushed, issues: r.issues, issueAt: typeof r.issueAt === "string" ? r.issueAt : null }
         : null,
     ),
   );

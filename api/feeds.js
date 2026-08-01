@@ -24,7 +24,12 @@
 //   GET /api/feeds?src=mrl&n=6
 //     → { source, fetchedAt, items: [{ n, t, u, url, c }] }
 //   GET /api/feeds?src=ghrepo&repo=owner/name
-//     → { source, fetchedAt, repo, stars, pushed, issues }
+//     → { source, fetchedAt, repo, stars, pushed, issues, issueAt }
+//       `pushed` and `issueAt` are two DIFFERENT signals and must not be
+//       collapsed: a repo nobody pushes to can still have active issues
+//       (monero-project/research-lab is exactly that). `issueAt` is null
+//       when the repo has no issue activity, or when that one upstream
+//       call failed — the row still renders either way.
 //   GET /api/feeds?src=x&handle=monero&n=5      (only if X_BEARER_TOKEN set)
 //     → { source, fetchedAt, items: [{ title, url, date }] }
 //     → 501 + { error, hint } when the token is absent — an honest empty
@@ -44,9 +49,13 @@ const X_HANDLES = { monero: "monero", moneroresearchl: "MoneroResearchL" };
 
 const DAY = 86400; // seconds
 
-/* This site's own repo — fixed, NOT caller-supplied. Used only by
-   src=commits, which accepts no repo param, so GH_ALLOWED (which exists to
-   constrain a caller-supplied repo param) is inapplicable here. */
+/* This site's own repo. For src=commits it is a fixed module constant and
+   that path accepts no repo param, so GH_ALLOWED — which exists purely to
+   constrain a CALLER-SUPPLIED repo param — remains inapplicable there.
+   v6.1.1: it is nonetheless listed in GH_ALLOWED below, because the Future
+   tab's automation registry now pulses this repo through src=ghrepo, and
+   that path does take a caller-supplied param. The two facts are separate;
+   neither implies the other. */
 const SELF_REPO = "aqua-019/satoshis-vision-v1";
 
 /* src=commits: cap by parsed releases, not upstream pages. MAX_PAGES is a
@@ -79,6 +88,11 @@ const GH_ALLOWED = [
   "Cuprate/cuprate",
   "monero-project/monero",
   "monero-project/research-lab",
+  SELF_REPO,
+  // Exact case matters upstream: github.com/brainchainz/monero-superbrain
+  // redirects in a browser, but api.github.com paths do not. canonicalRepo()
+  // matches the caller case-insensitively and forwards THIS spelling.
+  "brainchainz/Monero-Superbrain",
 ];
 
 /* ── minimal Atom parser ──────────────────────────────────────────
@@ -167,6 +181,20 @@ function mapIssues(json) {
     }));
 }
 
+/* Pure transform: GitHub issues-list API JSON → the newest non-PR issue's
+   `updated_at`, or null. Built on mapIssues so the "a pull request is not an
+   issue" filter is defined exactly once — GitHub's issues endpoint returns
+   both, and PR churn is not research activity. Upstream is asked for
+   sort=updated&direction=desc, so the first surviving row IS the newest;
+   nothing here re-sorts (re-sorting would invent an ordering the caller
+   didn't ask for). null means "no issue activity found" and is rendered as
+   an em-dash — it is never a stand-in for a value we failed to fetch. */
+function latestIssueAt(json) {
+  const items = mapIssues(json);
+  const u = items.length ? items[0].u : null;
+  return typeof u === "string" && u ? u : null;
+}
+
 /* Pure transform: GitHub commits-list API JSON → release-note items[].
    Never sorts — GitHub's reverse-chronological order is the truthful
    "what shipped when" sequence (semver sorting would misrepresent history,
@@ -229,15 +257,60 @@ async function getMrlIssues(n) {
   return mapIssues(json);
 }
 
-/* Repo metadata (stars/pushed/open issues) for an allowlisted repo. */
+/* Repo metadata (stars/pushed/open issues) plus that repo's newest issue
+   activity, for an allowlisted repo.
+
+   TWO upstream calls, deliberately CONCURRENT. Each carries its own 8s
+   timeout and vercel.json caps this function at maxDuration 15, so running
+   them in sequence could blow the cap on a slow upstream; allSettled keeps
+   the worst case at ~8s.
+
+   They also fail INDEPENDENTLY, on purpose. Repo metadata is the row, so its
+   rejection still throws and the client renders an honest failure. Issue
+   activity is one field of that row, so its rejection degrades to
+   issueAt: null and everything else still renders — losing one signal must
+   not blank the other three.
+
+   Returns `{ fields, issuesDegraded }`. `issuesDegraded` is true only when the
+   issues call failed TRANSIENTLY — it is what stops a half-empty payload being
+   pinned at the edge for a full day (this repo's standing rule: never cache a
+   degraded payload at the full TTL). A repo whose issue tracker is simply
+   disabled answers 404/410, which is a stable fact, not a degradation, and
+   caches normally. The flag is never serialized to the browser. */
 async function getGhRepo(repoCanonical) {
-  const r = await fetch(`https://api.github.com/repos/${repoCanonical}`, {
-    headers: GH_HEADERS,
-    signal: AbortSignal.timeout(8000),
-  });
-  if (!r.ok) throw new Error("github repo HTTP " + r.status);
-  const json = await r.json();
-  return mapRepo(json);
+  const [repoRes, issuesRes] = await Promise.allSettled([
+    fetch(`https://api.github.com/repos/${repoCanonical}`, {
+      headers: GH_HEADERS,
+      signal: AbortSignal.timeout(8000),
+    }),
+    // state=all: an update to a CLOSED issue is still issue activity.
+    fetch(
+      `https://api.github.com/repos/${repoCanonical}/issues?state=all&sort=updated&direction=desc&per_page=30`,
+      { headers: GH_HEADERS, signal: AbortSignal.timeout(8000) }
+    ),
+  ]);
+
+  if (repoRes.status !== "fulfilled") throw repoRes.reason;
+  if (!repoRes.value.ok) throw new Error("github repo HTTP " + repoRes.value.status);
+  const json = await repoRes.value.json();
+
+  let issueAt = null;
+  let issuesDegraded = false;
+  if (issuesRes.status === "fulfilled" && issuesRes.value.ok) {
+    try {
+      issueAt = latestIssueAt(await issuesRes.value.json());
+    } catch {
+      issueAt = null; // unparseable body is "unknown", not a value to invent
+      issuesDegraded = true;
+    }
+  } else if (issuesRes.status === "fulfilled") {
+    // 404/410 = no issue tracker on this repo. A stable fact; cache it.
+    issuesDegraded = issuesRes.value.status !== 404 && issuesRes.value.status !== 410;
+  } else {
+    issuesDegraded = true; // transport failure / timeout
+  }
+
+  return { fields: { ...mapRepo(json), issueAt }, issuesDegraded };
 }
 
 /* Self-repo commit history → release-note items. No sha=/branch param on
@@ -327,14 +400,21 @@ module.exports = async (req, res) => {
           hint: "repo is not in the allowlist: " + GH_ALLOWED.join(", "),
         }));
       }
-      const repoData = await getGhRepo(canonical);
-      res.setHeader("Cache-Control", `s-maxage=${DAY}, stale-while-revalidate=${DAY}`);
+      const { fields, issuesDegraded } = await getGhRepo(canonical);
+      // A transiently issue-less payload gets the short negative TTL instead
+      // of 24h, so one blipped upstream can't blank a repo's issue age for a
+      // whole day. The browser's own 24h localStorage cache is written either
+      // way, so this changes edge revalidation only — not request counts.
+      res.setHeader(
+        "Cache-Control",
+        issuesDegraded ? "s-maxage=300" : `s-maxage=${DAY}, stale-while-revalidate=${DAY}`,
+      );
       res.statusCode = 200;
       return res.end(JSON.stringify({
         source: src,
         fetchedAt: new Date().toISOString(),
         repo: canonical,
-        ...repoData,
+        ...fields,
       }));
     }
 
@@ -392,6 +472,9 @@ module.exports.decodeEntities = decodeEntities;
 module.exports.parseRepoParam = parseRepoParam;
 module.exports.mapRepo = mapRepo;
 module.exports.mapIssues = mapIssues;
+module.exports.latestIssueAt = latestIssueAt;
 module.exports.GH_ALLOWED = GH_ALLOWED;
+module.exports.canonicalRepo = canonicalRepo;
+module.exports.SELF_REPO = SELF_REPO;
 module.exports.parseCommitVersion = parseCommitVersion;
 module.exports.mapCommits = mapCommits;

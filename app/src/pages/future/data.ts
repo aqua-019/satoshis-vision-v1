@@ -82,6 +82,32 @@ export interface AutomationRow {
   // yellow = needs something that doesn't exist yet
 }
 
+export interface DevLabPulse {
+  /** owner/name in GitHub's EXACT casing — api.github.com paths are
+   *  case-sensitive even where github.com redirects, and this string is
+   *  matched against api/feeds.js's GH_ALLOWED. */
+  repo: string;
+  label: string;
+  /** Leading "/" → in-app <Link>; anything else → external anchor. */
+  href: string;
+}
+
+/**
+ * The always-on repo pulse under "Automation". Data rather than JSX so the
+ * set is one list, assertable from source, and FuturePage stays a `.map()`.
+ * Four repos = four /api/feeds requests per visitor per 24h.
+ * Every entry must also exist in api/feeds.js's GH_ALLOWED, or the proxy
+ * 400s the request.
+ */
+export const DEV_LAB_PULSES: readonly DevLabPulse[] = [
+  { repo: "monero-project/monero", label: "Core client", href: "https://github.com/monero-project/monero" },
+  { repo: "monero-project/research-lab", label: "MRL · research", href: "https://github.com/monero-project/research-lab" },
+  // Links to /sources, not github.com: this site's release feed is rendered
+  // there from its own commit log.
+  { repo: "aqua-019/satoshis-vision-v1", label: "This site", href: "/sources" },
+  { repo: "brainchainz/Monero-Superbrain", label: "Superstress · Umbrel apps", href: "https://github.com/brainchainz/Monero-Superbrain" },
+];
+
 /** Simulator ids actually registered in the (lazy) /simulate chunk. Gate
  * "RUN THE X SIMULATOR" buttons on membership here — see FutureProtocol.sim. */
 export const SIM_IDS: ReadonlySet<string> = new Set(
@@ -246,11 +272,17 @@ export function roadmapStatus(stop: RoadmapStop): string {
 export const ECOSYSTEM: readonly EcoEntry[] = [
   {
     id: "stressnet", name: "Umbrel Superstress Net", head: "the FCMP++ beta chain, live.",
-    kind: "Community testnet · friend of the site", status: "LIVE · BETA", c: "#4ade80",
-    blurb: "A community FCMP++ stress-test chain running on Umbrel nodes — one of them runs this site's V4 mempool code against the beta chain.",
+    kind: "Community testnet · Umbrel apps", status: "LIVE · BETA", c: "#4ade80",
+    blurb: "A community FCMP++ stress-test chain running on Umbrel nodes, packaged as Umbrel apps in brainchainz/Monero-Superbrain alongside MoneroSpace, a visual mempool for the beta chain.",
+    // The second paragraph deliberately asserts NO provenance for MoneroSpace.
+    // An earlier revision claimed it descended from this site's own mempool
+    // work; that was never confirmed, and the project's own repo points at a
+    // different origin. Naming it and linking it is the honest maximum until
+    // its maintainer answers — do not restore a lineage sentence here without
+    // a source. verify-future.mjs fails the build if one comes back.
     body: [
       "Before FCMP++ activates on mainnet, the community runs it under fire. The superstress net is a deliberately abused beta chain: storm campaigns, dynamic-block-size pressure, proof-verification load — measured, shared, fixed, repeated.",
-      "One of the participating Umbrel nodes pipes its txpool into a fork of xmr.irish V4's mempool visualizer, making it the first FCMP++ chain with a live visual mempool. Screenshots, endpoints, and the node's story land here as they're provided.",
+      "The same Umbrel app repo publishes MoneroSpace, a visual mempool pointed at the beta chain. Where its interface design comes from is an open question we have put to its maintainer; until that is answered this page names the project and links the repo and claims nothing further either way. Screenshots, endpoints, and the node's story land here as they're provided.",
     ],
     // The wind-tunnel simulator tells this same story from the modelling side:
     // storm intensity in, dynamic block size and fee response out. Gated on
@@ -259,10 +291,10 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     simLabel: "RUN THE STRESSNET SIMULATOR",
     slots: [
       { label: "screenshot · umbrel node dashboard", h: 130 },
-      { label: "screenshot · v4 mempool on beta chain", h: 130 },
+      { label: "screenshot · MoneroSpace on the beta chain", h: 130 },
       { label: "telemetry endpoint · to be wired", h: 64 },
     ],
-    links: [["Umbrel node writeup", null], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
+    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["Umbrel node writeup", null], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
   },
   {
     id: "xmrhub", name: "XMRHUB", head: "the ecosystem, in one directory.",
@@ -306,25 +338,28 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
 ];
 
 /* ── automation registry · actual wiring, not aspiration ─────────
-   Reflects the real v5.0.14+ data seam (data/xmrirish-feed.ts, App.tsx):
-   the app polls /api/monero (get_info) + /api/xmr/{network,mempool,blocks}
-   + /api/coingecko on a 2.5s loop, all-real since v5.0.14 — so chain data
-   is live, not "simulated until proxied" as the v6 prototype claimed.
+   Reflects the real data seam (data/xmrirish-feed.ts, App.tsx). Since v6.0.6
+   chain and market data arrive on THREE polling tiers — FAST 3s (mempool +
+   fee estimate), CHAIN 15s (tip watch, full pull only when the tip moves),
+   MARKET 60s (CoinGecko) — not the single 2.5s loop this comment and three
+   of the rows below used to claim, and `POST /api/monero` was dropped from
+   the React client in that same change.
    GitHub and getmonero.org route through the same-origin /api/feeds proxy
    (24h edge cache + 24h localStorage) — also live. Genuinely still pending:
-   X ingest (needs a paid-tier X_BEARER_TOKEN), stressnet telemetry (no
-   endpoint exists yet), and the XMRHUB directory feed (no public feed
+   X ingest (X publishes no unauthenticated read API), stressnet telemetry
+   (no endpoint exists yet), and the XMRHUB directory feed (no public feed
    exists yet). ─────────────────────────────────────────────────── */
 export const AUTOMATION_ROWS: readonly AutomationRow[] = [
-  { k: "Repo activity", src: "api.github.com/repos/*, via /api/feeds proxy", mode: "live · 24h edge + localStorage cache", tone: "live" },
+  { k: "Repo activity", src: "api.github.com/repos/*, via /api/feeds proxy", mode: "live · 4 repos · 24h edge + localStorage cache", tone: "live" },
   { k: "Dev labs · MRL", src: "research-lab/issues?sort=updated, via /api/feeds", mode: "live · 24h edge + localStorage cache", tone: "live" },
-  { k: "Spot price", src: "/api/coingecko?path=simple/price", mode: "live · 2.5s poll", tone: "live" },
+  { k: "Spot price", src: "/api/coingecko?path=simple/price", mode: "live · 60s market tier", tone: "live" },
   { k: "Announcements", src: "getmonero.org, via /api/feeds proxy", mode: "live · 24h edge + localStorage cache", tone: "live" },
-  { k: "X · @monero, @MoneroResearchL", src: "x.com — no public API (401)", mode: "link-out only · needs paid-tier X_BEARER_TOKEN to ingest", tone: "pending" },
-  // isStale() now actually computes this from each repo's live pushed_at, on
-  // the cards and in the popup alike — so it is wired, not aspirational.
-  { k: "Fork ETAs", src: "editorial, sourced from MRL + blog", mode: "live · auto-flags QUIET when a repo is idle >90d", tone: "live" },
-  { k: "Stressnet telemetry", src: "friend's umbrel endpoint", mode: "pending wiring · no endpoint exists yet", tone: "pending" },
+  { k: "X · @monero, @MoneroResearchL", src: "x.com — no public API (401)", mode: "link-out only", tone: "pending" },
+  // isStale() computes both readouts from live timestamps — pushed_at and the
+  // repo's newest issue updated_at — on the pulse rows and in the popup
+  // alike. Two signals, never merged: see DevLabPulseCard.
+  { k: "Fork ETAs", src: "editorial, sourced from MRL + blog", mode: "live · flags a push idle >90d, separately from issue activity", tone: "live" },
+  { k: "Stressnet telemetry", src: "brainchainz/Monero-Superbrain · Superstress", mode: "repo pulse live · telemetry endpoint still pending", tone: "pending" },
   { k: "Ecosystem links", src: "xmrhub directory feed", mode: "pending wiring · no public feed exists yet", tone: "pending" },
-  { k: "Chain data", src: "monerod get_info + /api/xmr/{network,mempool,blocks}", mode: "live · 2.5s poll, all-real since v5.0.14", tone: "live" },
+  { k: "Chain data", src: "/api/xmr/{tip,mempool,fees,network,blocks}", mode: "live · 3s / 15s tiers, all-real since v5.0.14", tone: "live" },
 ];

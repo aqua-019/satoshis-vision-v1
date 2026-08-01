@@ -67,7 +67,7 @@ read it, so the two stay in step. Register the route in `app/src/App.tsx` as wel
 
 ## ✅ Verification
 
-44 gates guard this repo. `.github/workflows/ci.yml` runs 24 of them on every PR
+44 gates guard this repo. `.github/workflows/ci.yml` runs 25 of them on every PR
 to `main`, in two jobs:
 
 ```bash
@@ -80,7 +80,7 @@ npm run verify:static   # 11 source-assertion gates, no browser, ~30s
 npx playwright install --with-deps chromium
 node scripts/serve-dist.mjs &
 npm run wait-preview
-npm run verify:e2e      # 9 Playwright gates
+npm run verify:e2e      # 10 Playwright gates
 ```
 
 The remaining gates are run by hand — several expect live upstreams the sandbox
