@@ -53,21 +53,55 @@ interface VtHandle {
 
 let current: VtHandle | null = null;
 
+/** SSR-safe; mirrors design/deviceTier.ts's own identically-named private
+ *  helper (not exported there, so not reusable directly) — see the comment
+ *  below on why this function needs its own independent read of the same
+ *  media query deviceTier.ts already folds in. */
+function prefersReducedMotion(): boolean {
+  try {
+    return typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Is this page, right now, a place a view transition is worth running?
- * Deliberately does NOT consult `prefers-reduced-motion` — reduced motion
- * changes the ANIMATION a transition plays, not whether one runs at all.
- * That distinction lives entirely in styles-motion.css (see its header):
- * a transition still fires under reduce, it just loses its spatial movement
- * and settles for the platform's default crossfade at a shorter duration.
+ * Deliberately does NOT consult `prefers-reduced-motion` as a veto — reduced
+ * motion changes the ANIMATION a transition plays, not whether one runs at
+ * all. That distinction lives entirely in styles-motion.css (see its
+ * header): a transition still fires under reduce, it just loses its spatial
+ * movement and settles for the platform's default crossfade at a shorter
+ * duration.
+ *
+ * Contradiction found and resolved here, worth flagging to whoever owns
+ * design/deviceTier.ts next: this function is written to reuse
+ * `getDeviceTier()` for its low-tier veto, per the brief that produced it —
+ * but `getDeviceTier()` itself folds `prefers-reduced-motion` INTO its "low"
+ * verdict (deviceTier.ts's own documented ordering: "prefers-reduced-motion
+ * ... outranks hardware"), which is exactly correct for THAT module's real
+ * callers (the ambient background layer count, particle field density —
+ * things that should genuinely shrink under reduced motion) and exactly
+ * wrong inherited here unmodified: it would make `vtSupported()` return
+ * `false` for every visitor with reduced motion set, silently vetoing every
+ * transition before styles-motion.css's reduced-motion CSS ever gets a
+ * chance to run — contradicting the very policy stated two paragraphs up in
+ * this same function. Caught by verify-motion.mjs's §3 "reduce" case
+ * (0 ::view-transition-* animations recorded — no transition ran at all).
+ * design/deviceTier.ts is out of this task's owned-files list (shared by
+ * far more than this feature), so rather than edit its conflation, the fix
+ * lives entirely here: only let a "low" verdict veto a transition when
+ * WEAK HARDWARE, not a stated motion preference, is why it's low. A device
+ * that is low only because reduced-motion (or save-data) is active still
+ * gets a transition — CSS is what makes that one look different; a single
+ * opacity crossfade is cheap enough for any hardware tier regardless.
  */
 export function vtSupported(): boolean {
-  return (
-    typeof document !== "undefined" &&
-    typeof document.startViewTransition === "function" &&
-    getDeviceTier() !== "low" &&
-    isPageActive()
-  );
+  if (typeof document === "undefined") return false;
+  if (typeof document.startViewTransition !== "function") return false;
+  if (!isPageActive()) return false;
+  if (getDeviceTier() === "low" && !prefersReducedMotion()) return false;
+  return true;
 }
 
 function clearFlags(html: HTMLElement): void {
