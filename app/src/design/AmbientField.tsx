@@ -19,6 +19,7 @@ import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
 import { byTier } from "./deviceTier";
 import { mulberry32 } from "./prng";
+import { useGovernorScale } from "./useAnimationClock";
 
 const ORB_COUNT = { calm: 10, busy: 30, chaotic: 60 } as const;
 
@@ -120,6 +121,33 @@ export function AmbientField() {
   // `opacity: 0 !important` anyway — cheaper, same visible result.
   const ORBS = React.useMemo(() => (reduced ? [] : seedOrbs(orbCount)), [orbCount, reduced]);
 
+  // D0692 — the frame-budget governor, applied to the one count here that is
+  // actually a lever. Orbs run from 0 to 60 animated compositor layers (the
+  // Ambient knob × tier), and they are the cheapest thing in the stack to lose:
+  // each is a blurred, semi-transparent blob on a 22–48s rise, so a thinner
+  // field reads as "calmer", not as "broken".
+  //
+  // SLICED, NEVER RESEEDED — same rule as ParticleField, for the same reasons.
+  // `seedOrbs` walks a sequential PRNG, so orbs 0..N-1 of a 30-orb field are
+  // byte-identical to a 30→N thinning; re-running seedOrbs(N) would produce the
+  // same prefix but re-key the useMemo and rebuild the array on every dial move.
+  // Slicing from the END also means orb 0 is always present: the field thins in
+  // place instead of re-scattering, which is the difference between a quality
+  // change you do not notice and one that looks like a bug.
+  //
+  // The dial is quantised to 0.1 by useGovernorScale, so a full 1.0→0.5 shed
+  // re-renders this list ~5 times, not once per frame for ~42 frames.
+  //
+  // DELIBERATELY NOT GOVERNED: plates, dust, sweep and ribbon. Not an oversight
+  // and not laziness — verify-perf.mjs §2 asserts those four as an exact
+  // per-tier census (high 8/2/1/1, mid 4/1/0/0, low 2/0/0/0), i.e. another gate
+  // owns them as a fixed MOUNT budget. Making them load-dependent would trade a
+  // deterministic, reviewable invariant for at most 12 layers, while the orbs
+  // alone are up to 60. If they are ever governed, that census has to become a
+  // range in the same change, and verify-perf.mjs is not this file's to edit.
+  const gov = useGovernorScale();
+  const drawnOrbs = Math.round(ORBS.length * gov);
+
   // Plates are styled positionally by :nth-child in styles-ambient.css, sized
   // 80/92/72/76/56/64/52/46vmax for indices 1..8 (declaration order, not
   // descending) — so slicing to the FIRST N via Array.from({length: N}) is
@@ -153,7 +181,7 @@ export function AmbientField() {
             Task B for the size clamp that also applies when they DO render. */}
         {tier === "high" && <div className="sweep" />}
         {tier === "high" && <div className="ribbon" />}
-        {ORBS.map((o, i) => (
+        {ORBS.slice(0, drawnOrbs).map((o, i) => (
           <span
             className="orb"
             key={i}

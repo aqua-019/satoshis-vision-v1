@@ -2,6 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useTick, ArtBackground } from "@/design/ArtBackground";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import {
   Stat, Pill, PanelFrame, Sparkline, MiniBar, Crumbs, Card,
 } from "@/design/primitives";
@@ -135,6 +136,11 @@ export function ChamberMath({ phase, tick }: any) {
   // The central mirror — both sides compute the SAME secret without comms.
   // s = H(r·A) (Alice's view) === H(a·R) (Bob's view)
   const matched = phase >= 4;
+  // SMIL <animate> is invisible to CSS: no `animation: none` rule can stop it,
+  // so the only way to honour reduced motion is to not render the element.
+  // The halo CIRCLE itself stays either way — it is the static mark that says
+  // "the shared secret materialized"; only its 2.5s breathing is suppressed.
+  const reduced = useReducedMotion();
   return (
     <div style={{
       position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
@@ -171,9 +177,10 @@ export function ChamberMath({ phase, tick }: any) {
             // --d-4 (500ms); resolved round-half-up to --d-4, per styles.css:.panel.
             style={{ filter: matched ? "drop-shadow(0 0 22px rgba(255,200,120,0.8))" : undefined, transition: "r var(--d-4) var(--e-standard), filter var(--d-4) var(--e-standard)" }} />
           {matched ? (
-            <circle cx="110" cy="120" r="36" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="0.5">
-              <animate attributeName="r" values="36;50;36" dur="2.5s" repeatCount="indefinite" />
-              <animate attributeName="opacity" values="0.7;0;0.7" dur="2.5s" repeatCount="indefinite" />
+            <circle cx="110" cy="120" r="36" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="0.5"
+              opacity={reduced ? 0.7 : undefined}>
+              {reduced ? null : <animate attributeName="r" values="36;50;36" dur="2.5s" repeatCount="indefinite" />}
+              {reduced ? null : <animate attributeName="opacity" values="0.7;0;0.7" dur="2.5s" repeatCount="indefinite" />}
             </circle>
           ) : null}
           <text x="110" y="123" textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fontWeight="500"
@@ -215,8 +222,25 @@ export function ChamberMath({ phase, tick }: any) {
 
 export function StealthView({ data, bg }: ViewProps) {
   const tick = useTick(80);
+  const reduced = useReducedMotion();
   const cycle = Math.floor(tick / 22) % 8;
-  const phase = Math.min(4, cycle);
+  // Reduced motion: freeze at the COMPLETED phase, not phase 0.
+  //
+  // useTick returns a literal 0 when frozen, so the natural still frame is
+  // phase 0 — where ChamberMath's readout says "computing…" rather than
+  // "✓ SAME SECRET", the `≡` between H(r·A) and H(a·R) renders dim instead of
+  // green, and every derivation row in both chambers is `muted`/`dim2`. A
+  // reader with reduced motion set was shown a Diffie-Hellman exchange parked
+  // forever mid-computation — the one thing this simulator exists to resolve.
+  // Same failure and same fix as view-tags.tsx (frozen at t=0 both scanner
+  // panes reported "1 ms") and fcmp.tsx (frozen at t=0 the anonymity set read
+  // "16"): freeze where the animation LANDS.
+  //
+  // Phase 4 is also the state in which neither `ledpulse` LED is mounted, so
+  // this removes an infinite CSS animation that was running under reduce —
+  // the inline `animation: ledpulse` at :101-102 is not covered by the
+  // `.led.pulse` selector in styles.css's reduced-motion block.
+  const phase = reduced ? 4 : Math.min(4, cycle);
 
   return (
     <ProtoArtboard

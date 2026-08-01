@@ -68,7 +68,11 @@ if (!htmlTagMatch) {
   shell = shell.replace(HTML_TAG_RE, `<html$1 data-theme="classic">`);
 }
 
-const { render } = await import(join(dist + "-ssr", "entry-ssr.js"));
+// SUSPENDED_RE comes from the SSR entry rather than being re-typed here: the
+// two used to be separate literals, and they drifted by exactly one space —
+// which is how /simulate shipped an empty #root for an unknown number of
+// builds. One pattern, one place, both consumers.
+const { render, SUSPENDED_RE } = await import(join(dist + "-ssr", "entry-ssr.js"));
 
 let failed = 0;
 for (const route of ROUTES) {
@@ -84,7 +88,7 @@ for (const route of ROUTES) {
   // A page that still shows the Suspense fallback means render() gave up
   // before the lazy chunk resolved. Emitting it would ship "loading…" as the
   // permanent no-JS content, which is worse than the shell — fail loudly.
-  if (/loading[….]/.test(html)) {
+  if (SUSPENDED_RE.test(html)) {
     console.error(`❌ ${route}: still suspended after render passes`);
     failed++;
     continue;

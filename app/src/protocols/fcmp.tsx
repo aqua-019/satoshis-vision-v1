@@ -2,6 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useTick, ArtBackground } from "@/design/ArtBackground";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import {
   Stat, Pill, PanelFrame, Sparkline, MiniBar, Crumbs, Card,
 } from "@/design/primitives";
@@ -185,10 +186,29 @@ export function CurveTree({ depth = 4 }: any) {
 
 export function FcmpView({ data, bg }: ViewProps) {
   const tick = useTick(60);
+  const reduced = useReducedMotion();
   // animate the t parameter for the murmuration on a 12s cycle, with a long
   // hold at full anonymity set
   const cy = (tick % 220);
-  const t = cy < 30 ? 0 : cy < 130 ? (cy - 30) / 100 : 1;
+  const animT = cy < 30 ? 0 : cy < 130 ? (cy - 30) / 100 : 1;
+  // Reduced motion: freeze at the COMPLETED state (t=1), not at t=0.
+  //
+  // useTick returns a literal 0 when it freezes itself, so `cy` is 0 and the
+  // natural frozen frame is t=0 — which parks this stage on "ANON SET 16 /
+  // RING-16 · CLSAG / UPGRADE 0%" with the swarm at opacity 0. That is the
+  // BEFORE end of the very transition the simulator exists to show: a reader
+  // with reduced motion set was told the anonymity set is 16 on a page titled
+  // "when the anonymity set becomes everything". Identical failure to the one
+  // view-tags.tsx had (freezing at t=0 made both scanner panes report "1 ms",
+  // the inverse of its lesson) and fixed the same way — freeze where the
+  // animation LANDS, because the landing state is the claim.
+  //
+  // At t=1 the stage reads 150,824,007 / ENTIRE CHAIN · FCMP++ / 100% and
+  // renders "ALL OF IT · EVERY OUTPUT EVER MINED". The ring-16 starting value
+  // is not lost with the candles: the "● Before · ring 16" panel below prints
+  // "Anonymity set 16" and "P(guess real spender) 1/16 = 6.25%" as ordinary
+  // text in every motion state.
+  const t = reduced ? 1 : animT;
 
   return (
     <ProtoArtboard

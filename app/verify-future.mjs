@@ -491,8 +491,19 @@ console.log('engine:', engine, '\n');
   // resolve by getElementById in-page rather than via a locator.
   const labelText = await page.evaluate((id) => document.getElementById(id)?.textContent ?? null, labelledBy);
   ok(!!labelText && labelText.length > 0, `10 · aria-labelledby resolves to a real heading ("${(labelText || '').slice(0, 40)}…")`);
+  // D0666 — this WAS `ok(!(await dialog.isVisible()), …)` on the line right
+  // after the keypress, and that only ever passed because V6Modal had no exit
+  // frame: `if (!open) return null` meant the dialog was in the DOM on one
+  // frame and gone on the next. It now keeps `.is-open` off for the length of
+  // its exit transition (~150ms) before unmounting, so sampling visibility
+  // immediately after Escape reads the dialog MID-EXIT and reports a failure
+  // for behaviour that is correct. Waiting for `hidden` (which a detached
+  // node satisfies) asserts the same thing — Escape closes it — without
+  // asserting a frame count nobody chose. This is the idiom this same file
+  // already uses correctly at :308.
   await page.keyboard.press('Escape');
-  ok(!(await dialog.isVisible()), '10 · Escape closes the dialog');
+  await dialog.waitFor({ state: 'hidden', timeout: 5000 });
+  ok((await dialog.count()) === 0, '10 · Escape closes the dialog (waited for the exit to finish)');
 
   await ctx.close();
 }

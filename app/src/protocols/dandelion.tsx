@@ -13,6 +13,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
 import { useChartMetrics } from "@/design/useChartMetrics";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -26,6 +27,13 @@ interface ViewProps {
 // into 360° propagation rays that land on the broader network.
 
 function DandelionStage() {
+  // v6.1.3 audit: the "current hop" pulse below is gated on `isCurrent`, which
+  // is derived from tick — and `useTick` freezes to 0, so under reduce it fired
+  // permanently on the origin node. The hop is still identified without it: the
+  // origin renders at r=11 with its own gradient fill and keeps the
+  // drop-shadow, and every reached node is filled purple against unreached
+  // grey. Only the expanding ring goes.
+  const reduced = useReducedMotion();
   const tick = useTick(60);
   const W = 1080, H = 460;
   // Stem proceeds left → right through 10 hops; fluff fires at hop 6
@@ -110,7 +118,7 @@ function DandelionStage() {
               style={isOrigin || isCurrent ? { filter: "drop-shadow(0 0 6px #b87aff)" } : undefined} />
 
             {/* pulse ring on current hop */}
-            {isCurrent ? (
+            {isCurrent && !reduced ? (
               <circle cx={p.x} cy={p.y} r="14" fill="none" stroke="#b87aff" strokeWidth="1" opacity="0.6">
                 <animate attributeName="r" values="8;22;8" dur="1.2s" repeatCount="indefinite" />
                 <animate attributeName="opacity" values="0.7;0;0.7" dur="1.2s" repeatCount="indefinite" />

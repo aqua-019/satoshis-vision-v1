@@ -20,6 +20,11 @@ import { SIM_IDS, type EcoEntry } from "./data";
 
 export interface EcoPopupProps {
   e: EcoEntry;
+  /** D0666: showing, not mounted — see ProtoPopup's identical prop. Both
+   *  consumers (FuturePage's stressnet band, TrustedPeersPage's "our brief")
+   *  retain the last entry and flip this, so V6Modal gets to play its exit
+   *  before it unmounts itself. */
+  open: boolean;
   onClose: () => void;
 }
 
@@ -32,13 +37,13 @@ function simIdOf(simLink: string | undefined): string | null {
   return id && SIM_IDS.has(id) ? id : null;
 }
 
-export function EcoPopup({ e, onClose }: EcoPopupProps) {
+export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
   const navigate = useNavigate();
   const titleId = React.useId();
   const simId = simIdOf(e.simLink);
 
   return (
-    <V6Modal open onClose={onClose} labelledBy={titleId}>
+    <V6Modal open={open} onClose={onClose} labelledBy={titleId}>
       <div className="v6-modal-head">
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center" }}>

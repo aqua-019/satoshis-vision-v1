@@ -39,6 +39,12 @@ import {
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 import { SITE_VERSION } from "@/data/releases";
+import { useUrlState } from "@/routes/useUrlState";
+
+/** Hoisted so useUrlState's setter identity is stable across renders. The
+ *  order here is RANGE_DAYS' own key order, which is also the button order. */
+const RANGE_KEYS = Object.keys(RANGE_DAYS) as RangeKey[];
+const DEFAULT_RANGE: RangeKey = "30D";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -165,7 +171,20 @@ const SWAP_DIRECTORY = [
 
 export function MarketsPage() {
   const data = useMoneroLive();
-  const [range, setRange] = React.useState<RangeKey>("30D");
+  // `?range=` is a SECONDARY, high-frequency control of the SAME content, so
+  // it REPLACES rather than pushes: Back should leave /markets, not walk back
+  // through four range clicks. `clearAtFallback` keeps the canonical URL
+  // clean — /markets with no parameter renders 30D, so selecting 30D writes
+  // no parameter at all instead of pinning the default into the URL. It was
+  // `React.useState<RangeKey>("30D")` before, which meant the range you were
+  // looking at could not be shared or bookmarked at all.
+  const [range, setRange] = useUrlState<RangeKey>({
+    key: "range",
+    values: RANGE_KEYS,
+    fallback: DEFAULT_RANGE,
+    replace: true,
+    clearAtFallback: true,
+  });
   const days = RANGE_DAYS[range];
 
   // REAL market history (CoinGecko via /api/coingecko + /api/markets); failures
@@ -218,8 +237,8 @@ export function MarketsPage() {
         sub="Spot price, peer-group performance, real per-exchange volume and spreads. Delistings tracked separately."
         right={
           <div style={{ display: "flex", gap: 4 }}>
-            {(Object.keys(RANGE_DAYS) as RangeKey[]).map((r) => (
-              <button key={r} type="button" onClick={() => setRange(r)} className="proto-btn"
+            {RANGE_KEYS.map((r) => (
+              <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)} className="proto-btn"
                 style={{
                   padding: "5px 10px", fontSize: "var(--fs-label)",
                   borderColor: range === r ? "var(--tk-accent)" : "var(--ink-20)",

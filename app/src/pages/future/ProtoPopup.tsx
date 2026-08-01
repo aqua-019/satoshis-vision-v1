@@ -24,6 +24,14 @@ import { SIM_IDS, type FutureProtocol } from "./data";
 
 export interface ProtoPopupProps {
   p: FutureProtocol;
+  /** D0666: whether the dialog should be SHOWING — not whether it is
+   *  mounted. V6Modal keeps its own `present` state so it can play an exit
+   *  before unmounting, which only works if this component stays rendered
+   *  across the close. FuturePage therefore holds the last-opened protocol
+   *  and flips this to false rather than dropping <ProtoPopup> outright;
+   *  hardcoding `open` here (as this file used to) would delete the exit
+   *  frame again from one level up. */
+  open: boolean;
   onClose: () => void;
   /** True while this popup is the TARGET of the card→modal shared-element
    *  morph (see FuturePage.tsx's `morph` state) — cleared once the opening
@@ -32,7 +40,7 @@ export interface ProtoPopupProps {
   morphed?: boolean;
 }
 
-export function ProtoPopup({ p, onClose, morphed }: ProtoPopupProps) {
+export function ProtoPopup({ p, open, onClose, morphed }: ProtoPopupProps) {
   const navigate = useNavigate();
   const pulse = useRepoPulse(p.repo);
   const titleId = React.useId();
@@ -40,7 +48,7 @@ export function ProtoPopup({ p, onClose, morphed }: ProtoPopupProps) {
   const stale = pulse ? isStale(pulse.pushed) : false;
 
   return (
-    <V6Modal open onClose={onClose} labelledBy={titleId}>
+    <V6Modal open={open} onClose={onClose} labelledBy={titleId}>
       <div className="v6-modal-head">
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>

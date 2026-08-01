@@ -31,10 +31,13 @@ export function EducationPage() {
   const { tab } = useParams();
   const active = resolveTab(tab);
 
-  // Scroll to top whenever the active tab changes.
-  React.useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [active]);
+  // NO scroll handling here. There used to be a `window.scrollTo(0, 0)` keyed
+  // on `active`, and above 768px it was a NO-OP on every desktop: `.art` is
+  // `height:100vh; overflow:hidden`, so the DOCUMENT never scrolls — `main.main`
+  // is the scroller. It only ever did anything below 768px. Tab changes are
+  // PATH changes (/education/:tab), so routes/useRouteChrome.ts — called from
+  // AppShell, which does see the right element — now resets all three
+  // scrollers, on desktop and phone alike.
 
   const onChange = (id: string) => navigate(id === "journey" ? "/education" : "/education/" + id);
 

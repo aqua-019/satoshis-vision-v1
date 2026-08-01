@@ -11,6 +11,7 @@ import type { FeedEvent } from "@/data/useFeedEvents";
 import { useMempoolTracking, MemViewShell, MemTxTable} from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { useMemStats, BlockEta, fmtMMSS } from "@/mempool/mem-stats";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MoneroLive, Block } from "@/data/types";
 
 interface ViewProps {
@@ -40,6 +41,7 @@ const dbGB = (data: MoneroLive) =>
 
 /* ── self-typing command palette (real RPC outputs) ─────────── */
 function TermPalette({ data }: { data: MoneroLive }) {
+  const reduced = useReducedMotion();
   const cmds = React.useMemo(() => {
     if (!data.ready) return [] as { q: string; rows: string[][] }[];
     const b = data.blocks[0];
@@ -65,11 +67,22 @@ function TermPalette({ data }: { data: MoneroLive }) {
   //   `charMs`  — per-tier floor. On `low` the per-character cadence relaxes
   //               so the effect re-runs 12×/sec instead of 42×/sec; the
   //               animation reads the same, just less frantically.
+  //
+  // v6.1.3 audit adds a third gate, `reduced`, and it is the one the audit's own
+  // animation census could not see: the typewriter is a setTimeout chain, not a
+  // CSS animation or a SMIL <animate>, so it does not appear in
+  // `getAnimations()` at all. It was looping indefinitely under reduce.
+  //
+  // Freezing it needs the same care as view-tags/stealth/fcmp: the natural still
+  // frame is `typed=""`, `phase="typing"`, which renders an empty prompt over
+  // "querying daemon…" — a terminal that never answers. So the reduce path parks
+  // at the state the cycle LANDS on instead: the full command echoed, and its
+  // real daemon rows shown. Same information, no motion.
   const paused = !usePageActive();
   const tier = getDeviceTier();
   const charScale = byTier(tier, { high: 1, mid: 1.6, low: 3.5 });
   React.useEffect(() => {
-    if (!cmds.length || paused) return;
+    if (!cmds.length || paused || reduced) return;
     const full = cmds[ci % cmds.length].q;
     let to: ReturnType<typeof setTimeout> | undefined;
     if (phase === "typing") {
@@ -85,17 +98,21 @@ function TermPalette({ data }: { data: MoneroLive }) {
       else { setPhase("typing"); setCi((c) => (c + 1) % cmds.length); }
     }
     return () => clearTimeout(to);
-  }, [typed, phase, ci, cmds, paused, charScale]);
-  const showResults = phase === "hold" && cmds.length > 0;
+  }, [typed, phase, ci, cmds, paused, charScale, reduced]);
+  const showResults = cmds.length > 0 && (reduced || phase === "hold");
+  const shownTyped = reduced && cmds.length ? cmds[ci % cmds.length].q : typed;
   return (
     <div style={{ border: "1px solid var(--tk-accent)", background: "var(--surface-raised)", boxShadow: "0 0 24px color-mix(in srgb, var(--accent-structural) 22%, transparent), inset 0 0 30px color-mix(in srgb, var(--accent-structural) 5%, transparent)", borderRadius: 4 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
         <span style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>›</span>
-        <span style={{ color: "var(--ink-100)" }}>{typed}</span>
+        <span style={{ color: "var(--ink-100)" }}>{shownTyped}</span>
         {/* D0651: term-blink 1s steps(2) — a terminal cursor blink rate, same category as
             styles.css's calc(1.4s/…) LED pulse and .footer-tele .blink; steps() has no
-            --e-* analogue (all four tokens are cubic-bezier curves). Left fully literal. */}
-        <span style={{ width: 8, height: 16, background: "var(--tk-accent)", boxShadow: "var(--glow-1)", animation: "term-blink 1s steps(2) infinite", display: "inline-block" }} />
+            --e-* analogue (all four tokens are cubic-bezier curves). Left fully literal.
+            v6.1.3 audit: gated on `reduced`. The caret stays RENDERED and solid — that is
+            exactly what a terminal cursor looks like between blinks — so the "live shell"
+            affordance survives; only the loop goes. */}
+        <span style={{ width: 8, height: 16, background: "var(--tk-accent)", boxShadow: "var(--glow-1)", animation: reduced ? undefined : "term-blink 1s steps(2) infinite", display: "inline-block" }} />
         <span style={{ marginLeft: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>⌘K · ESC</span>
       </div>
       <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", minHeight: 96 }}>
@@ -116,6 +133,10 @@ function TermPalette({ data }: { data: MoneroLive }) {
 
 /* ── reactive ASCII block stream ────────────────────────────── */
 export function TermAsciiBlocks({ data, trackedTxId, trackedHeight }: { data: MoneroLive; trackedTxId?: string | null; trackedHeight?: number | null }) {
+  // v6.1.3 audit: term-flash marked the newest block and ran under reduce. The
+  // newest block is ALSO the leftmost column and the only one whose conf row
+  // reads "0c", so dropping the pulse loses no way to identify it.
+  const reduced = useReducedMotion();
   const cols: Block[] = data.blocks.slice(0, 13);
   const rowsMax = 18;
   const cell = (
@@ -140,7 +161,7 @@ export function TermAsciiBlocks({ data, trackedTxId, trackedHeight }: { data: Mo
         </div>
         {/* D0651: term-flash 1.4s — an ambient "this block is newest" signal, same 1.4s
             cadence as styles.css's global LED pulse; not an interaction. Literal. */}
-        <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px color-mix(in srgb, var(--accent-data) 70%, transparent)" : tracked ? "0 0 7px color-mix(in srgb, var(--status-warn) 50%, transparent)" : "0 0 6px color-mix(in srgb, var(--accent-data) 40%, transparent)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
+        <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px color-mix(in srgb, var(--accent-data) 70%, transparent)" : tracked ? "0 0 7px color-mix(in srgb, var(--status-warn) 50%, transparent)" : "0 0 6px color-mix(in srgb, var(--accent-data) 40%, transparent)", animation: newest && !reduced ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
         <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
         {!q ? <div style={{ textAlign: "center", color: tracked ? "var(--y-50)" : "var(--ink-40)", fontSize: "var(--fs-label)" }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
         {tracked ? <div style={{ textAlign: "center", color: "var(--y-50)", fontSize: "var(--fs-label)" }}>{confOf(height, data)}/{CONF_UNLOCK}</div> : null}
@@ -249,6 +270,7 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
 export function TerminalHubView({ data }: ViewProps) {
   // Shared tracking — same hook + detail (confOf) as every other view.
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
+  const reduced = useReducedMotion();
   const tiersKnown = data.feeTiers.length === 4;
   // The ONE mempool telemetry derivation, shared with the other five views.
   // Terminal keeps its own ASCII/kv skin — it just stops recomputing the
@@ -336,7 +358,7 @@ export function TerminalHubView({ data }: ViewProps) {
             </PanelFrame>
 
             {/* D0651: term-blink — same justification as the first use above (~line 95) */}
-            <PanelFrame title="$ tail -f · feed" right={<><Provenance source="node" fresh="live" inline /><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
+            <PanelFrame title="$ tail -f · feed" right={<><Provenance source="node" fresh="live" inline /><span>−f</span><span className="acc" style={{ animation: reduced ? undefined : "term-blink 1s steps(2) infinite" }}>●</span></>}>
               <TermLiveLog data={data} trackedTx={trackedTx} />
             </PanelFrame>
 

@@ -30,6 +30,13 @@
  * under reduce (verify-motion.mjs asserts ≥1 animation on a
  * ::view-transition-* pseudo even then) — so its durations are literal ms,
  * not tokens, deliberately.
+ *
+ * D0651 — tagging that reason so it is greppable: EVERY `animation-duration`
+ * in this file is a justified literal, not a missed migration. `--d-*` goes to
+ * 0ms under reduce, and a view transition that resolves in 0ms never fires its
+ * `finished` promise the way the code below expects, so tokenising these would
+ * turn "the transition is instant under reduce" into "the transition does not
+ * happen", which is a different thing and one verify-motion.mjs fails on.
  */
 
 @layer components {

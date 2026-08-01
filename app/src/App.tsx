@@ -14,6 +14,7 @@ import { AmbientField } from "@/design/AmbientField";
 import { RootBoundary } from "@/design/RootBoundary";
 import { markChunkResolved } from "@/design/useViewTransitionNavigate";
 import { NavTransitions } from "@/routes/NavTransitions";
+import { RouteAnnouncer } from "@/routes/RouteAnnouncer";
 // HomePage stays EAGER. It is the LCP route — lazy-loading it would add a
 // round trip to the exact metric this pass exists to improve.
 import { HomePage } from "@/pages/HomePage";
@@ -61,6 +62,12 @@ export function App({ useFeed }: AppProps = {}) {
       <AmbientField />
       <NavTransitions />
       <DataProvider useFeed={useFeed}>
+        {/* D0745 — the route announcer is a SIBLING of <Suspense>, not a
+            descendant of any page. A live region has to be in the DOM BEFORE
+            the text it announces changes; one that is created in the same
+            commit as its content is not reliably read out. AppShell (which
+            remounts per route) is therefore the one place it could not go. */}
+        <RouteAnnouncer />
         {/* ONE boundary for the whole router rather than one per route. With a
             single lazy route the per-route <Suspense> was fine; at eleven it is
             eleven copies of the same fallback. Placing it outside <Routes> also

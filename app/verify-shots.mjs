@@ -17,6 +17,61 @@
 // Pair with `--baseline <dir>` to diff a previous sweep — that is how §7.10's
 // "classic is pixel-comparable to v5 main" check is run: sweep on main, sweep
 // here, diff the classic trees, and justify every non-zero region.
+//
+// ════════════════════════════════════════════════════════════════════════════
+// WHAT A CLEAN SWEEP DOES AND DOES NOT PROVE — read this before believing one
+// ════════════════════════════════════════════════════════════════════════════
+//
+// **This gate is structurally incapable of seeing any CSS-animation change.**
+// Every captured page has `freezeAmbient()` applied first (verify-lib.mjs:95),
+// and that injects:
+//
+//     *, *::before, *::after { animation: none !important; transition: none !important; }
+//
+// which kills every CSS animation and transition in the document before the
+// shutter opens. It is the right call — without it no shot is reproducible —
+// but the consequence is absolute: a "pixel-identical" result is **no evidence
+// whatsoever** about motion. Measured in v6.1.3, not reasoned about:
+// `protocols/ringct.tsx`'s inline `spin 14s` and `protocols/carrot.tsx`'s
+// `width` → `transform: scaleX()` bar rewrite both came back byte-identical to
+// the baseline, while a live probe on the same two builds showed the baseline
+// running `spin` at `matrix(0.427, 0.904, …)` and the branch at
+// `animation-name: none`. The gate saw nothing because there was nothing left
+// to see. **SMIL is NOT covered by that rule** — no CSS declaration reaches an
+// `<animate>` element — which is exactly why `dandelion`'s SMIL removal DOES
+// show up as a diff while the CSS changes do not. That asymmetry is the tell.
+//
+// Motion is `verify-reduce.mjs`'s job (all 27 simulator + mempool surfaces,
+// zero running animations and zero SMIL elements under reduce) and
+// `verify-motion.mjs`'s. Neither is redundant with this file. Do not "cover
+// motion" by adding routes here.
+//
+// **This gate is order-dependent, and the order is the ROUTES array.** All
+// routes are captured in one browser context, so `localStorage` (the `mh:v1:`
+// market-history cache above all), the HTTP cache and the font cache persist
+// from route to route — `/markets` is swept before `/monero/markets` and warms
+// what the latter renders from. Measured: `/monero/markets` at 1440 is
+// byte-identical between two builds when each is swept ALONE, and reproducibly
+// differs between the same two builds when swept as part of the full 43-route
+// run (309511 twice vs 309534 twice). So a shot's bytes are a function of
+// (build, viewport, theme, **and everything visited before it**). A `--route`
+// filter therefore does not reproduce the full sweep's result for that route,
+// and comparing a filtered run against a full-sweep baseline can differ for
+// that reason alone.
+//
+// **The noise floor is not zero, and it is not confined to /simulate.** Two
+// full sweeps of the SAME tree, back to back, differed on 18 of 129 classic
+// shots — 17 `/simulate` (the sanctioned `Math.random()` exemption, below) and
+// `/peers` at 390, which is not a simulate route. An earlier version of the
+// comment below claimed "every non-simulate route is now byte-identical
+// between sweeps"; that was measured on a 37-route matrix and is no longer
+// true. A single differing non-simulate shot is therefore **weak** evidence of
+// a code change on its own — reproduce it (sweep both trees twice) before
+// attributing it.
+//
+// So: this gate catches layout, colour, type, content and geometry regressions
+// across the route × theme × width matrix, at rest. That is a lot, and it is
+// why the set is worth a human's eyes. It catches nothing that moves.
 
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { launch, newThemedPage, freezeAmbient, makeReporter, BASE, ROUTES, THEMES, SIM_ROUTES } from './verify-lib.mjs';
@@ -91,6 +146,11 @@ let count = 0;
 let compared = 0;
 const diffs = [];
 const unmatched = [];
+/** Every shot that was actually compared against a baseline counterpart, so the
+ *  noise-floor line can be reported on a CLEAN run too — where `diffs` is empty
+ *  and would otherwise leave nothing to count the uncomparable /simulate shots
+ *  from. Equal-this-time is not the same as comparable. */
+const comparedShots = [];
 const failed = [];
 
 for (const theme of THEME_SET) {
@@ -152,14 +212,23 @@ for (const theme of THEME_SET) {
     // Confirmed fix: with the clock frozen, two /sources·1440·classic
     // captures taken 2.5s apart are `cmp`-identical, byte for byte.
     //
-    // What's LEFT after that fix (measured on a real two-sweep run of this
-    // build, 37 routes × 3 widths × classic — see the compared/unmatched/
-    // failed accounting below for the live numbers): every non-simulate route
-    // is now byte-identical between sweeps. The only shots that still differ
-    // are `/simulate?p=*` ones, and only some of those — decoy, dandelion,
-    // hearth, ringct and viewtags were the ones measured differing, which
-    // lines up with those being the simulators whose src/protocols/** module
-    // seeds visible state from unseeded Math.random() on mount. That is the
+    // What's LEFT after that fix. **This paragraph previously claimed "every
+    // non-simulate route is now byte-identical between sweeps." That claim was
+    // measured on a 37-route matrix and is no longer true — v6.1.3 re-measured
+    // it on the current 43-route matrix and two back-to-back full sweeps of ONE
+    // unchanged tree differed on 18 of 129 classic shots: 17 `/simulate` and
+    // `/peers` at 390.** The residual non-simulate jitter is unexplained; the
+    // leading suspect is the `waitUntil: 'networkidle'` below, which cannot
+    // settle deterministically against a 3s FAST polling tier (see the note at
+    // that call). Treat one differing non-simulate shot as weak evidence and
+    // reproduce it — sweep BOTH trees twice — before attributing it to a code
+    // change.
+    //
+    // The bulk of the instability is `/simulate?p=*` — decoy, dandelion,
+    // jamtis, cuprate, viewtags, bloodhound and silo measured differing across
+    // the two runs, which lines up with those being the simulators whose
+    // src/protocols/** module seeds visible state from unseeded Math.random()
+    // on mount. That is the
     // sanctioned randomness this repo allows outside verify-shots.mjs's
     // control (see SIM_SET above) and this gate does not fail on it.
     //
@@ -194,6 +263,17 @@ for (const theme of THEME_SET) {
 
     for (const route of routes) {
       try {
+        // v6.1.3, logged NOT fixed: `networkidle` is the anti-pattern every
+        // other gate in this repo carries a comment about — the 3s FAST polling
+        // tier means the network is never durably idle, so WHEN this resolves
+        // depends on where in the poll cycle the navigation landed. verify-future,
+        // verify-contrast and verify-ground were each de-networkidled in
+        // v6.1.1/v6.1.2 for exactly this; the shot gate was missed. It is the
+        // leading suspect for the residual non-simulate jitter documented above.
+        // Not changed here on purpose: altering the sweep's navigation timing
+        // invalidates every baseline tree in existence, so it needs its own
+        // change with its own re-baselining. Replacement when that happens:
+        // `domcontentloaded` + `waitForSelector('.art-stage')` + `document.fonts.ready`.
         await page.goto(BASE + route, { waitUntil: 'networkidle' });
         await freezeAmbient(page);
         await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
@@ -212,6 +292,7 @@ for (const theme of THEME_SET) {
           const prior = `${BASELINE.replace(/\/$/, '')}/${theme}/${width}/${slug(route)}.png`;
           if (existsSync(prior)) {
             compared++;
+            comparedShots.push({ theme, width, route });
             const same = Buffer.compare(readFileSync(prior), png) === 0;
             if (!same) diffs.push({ theme, width, route, key: `${theme}/${width}${route}` });
           } else {
@@ -273,6 +354,15 @@ if (BASELINE) {
 
   if (diffs.length === 0) {
     R.ok(true, `pixel-identical to ${BASELINE} across ${compared} compared shots${subsetNote}`);
+    // Even a zero-diff run must state the noise floor. /simulate shots that
+    // happen to match on one run are not thereby comparable — they re-seed from
+    // Math.random() on mount and can differ on the next run of the SAME tree.
+    // A clean line with no caveat is how "96% verified" gets read off a number
+    // that includes ~13% uncomparable shots.
+    const simShots = comparedShots.filter((s) => SIM_SET.has(s.route));
+    if (simShots.length) {
+      R.info(`NOISE FLOOR: ${simShots.length} of ${compared} compared shots are /simulate and UNCOMPARABLE in principle (unseeded Math.random() in src/protocols/**) — they matched this time, which is not the same as being verified.`);
+    }
   } else {
     R.info(`${diffs.length}/${compared} compared shots differ from the baseline:`);
     for (const d of diffs) R.info(`  ${d.key}`);
@@ -291,6 +381,28 @@ if (BASELINE) {
       R.info(`${classicSimDiffs.length} classic diff(s) are /simulate routes — expected (unseeded Math.random() in src/protocols/**), not failed:`);
       for (const d of classicSimDiffs) R.info(`    ${d.key}`);
     }
+    // v6.1.3 — the noise floor, stated as its own number every run and NEVER
+    // folded into the pass line above it.
+    //
+    // These shots are not "compared and equal" and they are not "compared and
+    // deliberately different". They are UNCOMPARABLE: the simulator re-seeds
+    // visible state from `Math.random()` on every mount, which CLAUDE.md
+    // explicitly permits inside `src/protocols/**`, so the same tree swept
+    // twice produces different pixels. Measured on this build: two back-to-back
+    // full sweeps of ONE tree differed on 17 of the 63 classic /simulate shots.
+    // Reporting them as a fraction of the matrix is the point — "129 compared,
+    // 5 differing" reads as 96% verified when ~13% of it could not be verified
+    // at all.
+    //
+    // This is fixable and is a later prompt's work, logged rather than done:
+    // `src/design/prng.ts` now exists (h3 + mulberry32, added in v6.1.3 for
+    // ArtBackground). Threading a fixed seed into `src/protocols/sim-random.ts`
+    // under a test flag — the `window.__XMRI_*` idiom this repo already uses for
+    // __MEM_FPS__ / __XMR_TIER_MS__ — would make the whole matrix deterministic
+    // and turn these 17 shots from uncomparable into compared. It is out of
+    // scope here because it changes what 21 educational simulators render.
+    const simCompared = comparedShots.filter((s) => SIM_SET.has(s.route)).length;
+    R.info(`NOISE FLOOR: ${simCompared} of ${compared} compared shots are /simulate and UNCOMPARABLE, not verified-equal — unseeded Math.random() in src/protocols/**; ${classicSimDiffs.length} actually differed this run. See the note above this line for the fix and why it is not done here.`);
     R.ok(classicRealDiffs.length === 0,
       `classic is pixel-identical to the baseline outside /simulate (${classicRealDiffs.length} differing)${subsetNote}`,
       classicRealDiffs.map((d) => d.key).join('\n     '));

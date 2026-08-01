@@ -193,6 +193,42 @@
   --e-accel:cubic-bezier(.4,0,1,1);
   --e-expressive:cubic-bezier(.2,.9,.1,1);
 
+  /* ── D0655 · --e-spring · the DEFAULT for FUNCTIONAL movement ──────
+     A CRITICALLY DAMPED spring (zeta = 1), fitted to a cubic-bezier.
+
+     WHICH SPRING: mass 1, stiffness 170, damping 26 — react-spring's
+     `default` config, and the closest widely-used preset to true critical
+     damping. omega_n = sqrt(170) = 13.04 rad/s and
+     zeta = 26 / (2*sqrt(170)) = 0.997, i.e. critical to within 0.3%.
+     Its step response is x(t) = 1 - (1 + omega_n*t)*e^(-omega_n*t), which
+     settles to within 2% at 447ms — close enough to --d-4 (500ms) that the
+     token scale needed no fifth duration to carry it.
+
+     THE FIT: normalising that response over [0, 447ms] and least-squares
+     fitting a cubic-bezier with y1 pinned to 0 (a spring released from rest
+     has ZERO initial velocity, which is exactly what y1 = 0 encodes) gives
+     cubic-bezier(.17, 0, .24, 1). Max deviation from the real spring is
+     0.0084 — under 1% of the travel, across the whole curve. With y1 = 0
+     and y2 = 1 the y-polynomial is 3t^2 - 2t^3, whose derivative
+     6t(1 - t) is non-negative on [0,1]: the curve is PROVABLY monotone, so
+     it cannot overshoot no matter what duration it is paired with.
+
+     WHY NO OVERSHOOT IS THE RIGHT DEFAULT FOR FUNCTIONAL MOVEMENT:
+     overshoot is a claim. A panel that sails past its resting position and
+     settles back says "this had momentum, it is physical, look at it" — a
+     legitimate thing to say about an EXPRESSIVE moment (a celebration, a
+     reveal) and a lie about a FUNCTIONAL one (a menu opening, a drawer
+     sliding, a view scaling to fit). Functional movement exists to explain
+     WHERE a thing went, and every frame past the destination is a frame
+     spent showing the reader a position the element does not occupy. It
+     also costs real time: an underdamped curve must travel out and back
+     before it is readable, so the same perceived settle needs a longer
+     duration. Critical damping is the fastest approach to rest that never
+     crosses it — the mathematically minimal answer to "arrive, and stop".
+     --e-expressive (which does overshoot, y1=.9 past 1) stays available for
+     the cases that genuinely want the claim. */
+  --e-spring:cubic-bezier(.17,0,.24,1);
+
   /* ── crossfade · v6.1.2 ──────────────────────────────────────────
      Every role above is @property-registered as a <color>, which makes
      it individually animatable. One transition list at :root therefore
@@ -919,7 +955,14 @@ header > div > h1.serif {
    fit/100% toggle; live re-fits move sub-pixel so the easing is imperceptible there.
    Disabled under prefers-reduced-motion (see the reduce block below). */
 .mp-view--fit { display: block; overflow: hidden; }
-.mp-fit { width: max-content; transform-origin: top left; transition: transform var(--d-3) var(--e-standard); /* D0651: 0.25s → --d-3 (closer to 300ms than 150ms) */ }
+/* D0655: --e-standard → --e-spring. The fit/100% toggle is FUNCTIONAL
+   movement — the scale change is the whole message ("this is the same
+   content, resized") — and --e-standard's symmetric ease made a 0.4→1.0
+   jump read as a lurch at both ends. The spring's zero initial velocity and
+   monotone approach mean it never scales past 100% and back, which on a
+   2279px-wide view would be a visible content overshoot past the viewport,
+   not a flourish. */
+.mp-fit { width: max-content; transform-origin: top left; transition: transform var(--d-3) var(--e-spring); /* D0651: 0.25s → --d-3 (closer to 300ms than 150ms) */ }
 /* v6.0.4 — Classic's live-tx feed. Header row and body rows share one template
    so the two halves stay aligned when .table-scroll swipes on phones. Values are
    the exact former inline ones from classic.tsx, so desktop is pixel-unchanged. */
@@ -941,8 +984,65 @@ header > div > h1.serif {
   border: 1px solid var(--rule); border-radius: 2px;
   display: flex; flex-direction: column; gap: 6px; max-width: 220px;
 }
-.mp-switcher__list { display: none; flex-direction: column; gap: 6px; }
-.mp-switcher__list.is-open { display: flex; }
+/* ── D0665/D0666 · the view list gets an entry/exit transition ──────────
+   Was two lines — `display: none` / `.is-open { display: flex }` — and so
+   had no exit at all: React drops `.is-open` and the list is simply gone on
+   the next frame.
+
+   `display` is a DISCRETE property, so it cannot tween; `allow-discrete`
+   asks the engine to flip it at one end of the transition instead of
+   ignoring it. The flip point is not symmetric, and that asymmetry is the
+   whole feature: per css-transitions-2, a discrete `display` transition
+   flips at 0% when the TO value is not `none`, and at 100% when it is. So
+   OPENING is instant (display becomes flex on the first frame, and the
+   opacity/transform tween plays over the already-laid-out box) while
+   CLOSING holds the box for the full duration and only then removes it.
+   verify-memviews.mjs scenario 5 depends on the first half of that: it
+   clicks the trigger and queries `#mp-view-list button` in the SAME
+   evaluate, so any delay on the open direction would find an empty list.
+   verify-discrete.mjs asserts both halves.
+
+   @starting-style supplies the "before-change style" the transition needs.
+   An element going from `display: none` to rendered has no previous style
+   for `opacity` to interpolate FROM, so without this block the fade simply
+   never starts (this is the entire reason @starting-style exists). Note it
+   must be a separate block, not a `from`-like shorthand: it declares the
+   style the element has for the one frame BEFORE its first style
+   computation, which is not something a normal rule can express.
+
+   FIREFOX ESR 128 (Tor Browser's base) SUPPORTS NEITHER, and degrades to
+   exactly today's behaviour by construction: `allow-discrete` is an
+   unknown keyword inside the `transition` shorthand, which makes the whole
+   declaration invalid-at-computed-value-time and drops it — so there is no
+   transition at all, `display` flips instantly in BOTH directions, and the
+   `opacity: 0` below never animates because (again) an unrendered element
+   has no prior value to animate from. Instant flip, both ways, no
+   half-applied middle state. The `@starting-style` block is parsed as an
+   unknown at-rule and skipped whole.
+
+   `pointer-events` rides along so the closing list cannot swallow a click
+   during its exit — it is the one interaction hazard a delayed `display`
+   introduces, and the base rule already owns the closing state. */
+.mp-switcher__list {
+  display: none;
+  flex-direction: column; gap: 6px;
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition:
+    opacity var(--d-2) var(--e-standard),
+    transform var(--d-2) var(--e-spring),
+    display var(--d-2) allow-discrete;
+}
+.mp-switcher__list.is-open {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+@starting-style {
+  .mp-switcher__list.is-open { opacity: 0; transform: translateY(-4px); }
+}
 /* navtop toggle is mobile-only — hidden on desktop (revealed inside the media query) */
 .navtop-toggle { display: none; }
 /* desktop view switcher: a compact collapsible pill (mobile @media bumps it to a
@@ -1242,6 +1342,24 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
 @layer components {
+/* ── view-tags ScannerWall · v6.1.3 ──────────────────────────────────
+   The 16×16 output wall in protocols/view-tags.tsx. Declared as a CLASS
+   rather than inline for one specific reason: the mobile layer's blanket
+   collapse below matches `[style*="grid-template-columns"]` on the inline
+   ATTRIBUTE and forces `1fr !important` inside `.proto-body`. These 256
+   cells are `aspect-ratio: 1`, so one column made every cell as wide as the
+   pane and the document 175,397px tall at 390 / 366,156px at 768 — unusable,
+   and slow enough that a full-page screenshot intermittently passed 60s.
+   Same fix, and same reasoning, the legality matrix already documents: a
+   grid the selector cannot see needs no `.keep-cols` escape hatch (which
+   would drag in `min-width: max-content !important`).
+
+   16 mirrors COLS in view-tags.tsx. Change one, change both. Sixteen ~7px
+   cells at 390 stays legible BECAUSE nothing here is text — the wall is a
+   density read (how much got scanned), and the numbers it teaches live in
+   the <Stat> grid below it. */
+.vt-wall { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+
 /* hex grid cell */
 .hex {
   width: 28px; height: 32px;
@@ -1256,12 +1374,45 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
    that had no v5 equivalent. ════════════════════════════════════ */
 
 /* ── modal shell ──────────────────────────────────────────────── */
+/* D0666 · entry AND exit. V6Modal.tsx used to be `if (!open) return null`,
+   which gives a dialog no exit frame whatsoever — it is in the DOM, then it
+   is not. It now keeps an internal `present` flag: `.is-open` goes on at
+   mount (so @starting-style below animates the entrance) and comes OFF on
+   close, at which point the component reads its own computed
+   transition-duration off these rules and unmounts once that has elapsed.
+   Two consequences worth knowing at this read site:
+
+   1. The duration below IS the unmount delay. Nothing in JS hardcodes a
+      number; changing --d-2/--d-3 here changes the unmount timing too.
+   2. `role="dialog"` therefore survives ~one exit's worth of frames past
+      the close. Gates must wait for `hidden`/detached rather than sampling
+      visibility on the next line — verify-future.mjs:495 was doing exactly
+      that and had to change with this.
+
+   Unlike the switcher above, this pair needs no `display … allow-discrete`:
+   React owns the mount, so "gone" is expressed by detaching the node, and
+   the base (closed) rule only has to describe what the exit LOOKS like.
+   Firefox ESR 128 therefore keeps the exit — it is a plain opacity/transform
+   transition — and loses only the @starting-style entrance, which degrades
+   to the dialog appearing at full opacity exactly as it does today. */
 .v6-modal-veil {
   position: fixed; inset: 0; z-index: 1000;
   display: grid; place-items: center;
   overflow-y: auto; padding: 4vh 2vw;
   background: rgba(0, 0, 0, 0.72);
   -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  /* closed state == the exit target. --e-accel: a dismissal should leave
+     briskly, the mirror of the decelerating entrance below. `pointer-events`
+     rides along because this veil is `inset: 0` — an exiting one would
+     otherwise swallow every click in the viewport for the whole exit. */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--d-2) var(--e-accel);
+}
+.v6-modal-veil.is-open {
+  opacity: 1;
+  pointer-events: auto;
+  transition: opacity var(--d-3) var(--e-standard);
 }
 .v6-modal {
   width: min(1180px, 96vw); max-height: 92vh; overflow-y: auto;
@@ -1269,6 +1420,23 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   border: 1px solid var(--rule);
   border-radius: 2px;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), var(--glow-1);
+  /* D0655: the box's travel is FUNCTIONAL movement — it explains where the
+     dialog came from — so it takes --e-spring and must not overshoot. A
+     modal that sails past its resting position and settles back reads as a
+     toy; this arrives and stops. */
+  transform: translateY(8px) scale(0.985);
+  transition: transform var(--d-2) var(--e-accel);
+}
+.v6-modal-veil.is-open .v6-modal {
+  transform: none;
+  transition: transform var(--d-3) var(--e-spring);
+}
+/* The dialog's first-frame style. Both selectors are needed: the veil and
+   the box are inserted in the same commit, so each gets its own starting
+   style, and a descendant selector is perfectly legal inside the block. */
+@starting-style {
+  .v6-modal-veil.is-open { opacity: 0; }
+  .v6-modal-veil.is-open .v6-modal { transform: translateY(8px) scale(0.985); }
 }
 .v6-modal-head { display: flex; justify-content: space-between; gap: 24px; padding: 24px 28px; border-bottom: 1px solid var(--rule); }
 .v6-modal-body { padding: 24px 28px; display: flex; flex-direction: column; gap: 22px; }
@@ -1313,6 +1481,173 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 .open-cue { font: 11px/1 var(--f-mono); letter-spacing: 0.1em; color: var(--ink-40); opacity: 0; transition: opacity var(--d-2) var(--e-standard); /* D0651: 0.18s → --d-2 */ }
 .panel:hover .open-cue,
 .panel:focus-within .open-cue { opacity: 1; }
+
+/* ── D0661 · stagger cascade on the two card grids ─────────────────────
+   /future's five protocol cards and /peers' three partner cards rise in
+   sequence rather than all at once, at 45ms per card (mid of the 30-60ms
+   band). `.v6-stagger` is a real wrapper element the two pages render around
+   each <Card>; the index arrives on it as --stagger-i.
+
+   WHY A WRAPPER, and not the card. Two independent reasons, either one
+   fatal on its own:
+
+   1. `.v6-future-card` — the element that LOOKS like the right hook — is
+      `display: contents` (declared just above). It generates NO BOX at all:
+      not a transform reference box, nothing for an animation to apply to.
+      A transform-bearing @keyframes on it is a silent no-op.
+   2. `.panel`'s `animation` slot is ALREADY OCCUPIED, and by a rule that
+      outranks anything reasonable a card-level selector could say:
+      `.shell .main .panel { animation: panel-breathe 8s … infinite }`
+      (styles.css, same @layer, specificity 0-3-0) is the ambient breathe,
+      and styles-theme.css rebinds `animation-name` per theme at 0-5-0
+      (`:root[data-theme="indigo"] .shell .main .panel`). Winning that fight
+      would mean either DELETING the ambient breathe from these eight cards,
+      or listing both animations and having the theme layer's single-name
+      rebind silently collapse the list back to one. Neither is a stagger;
+      both are a regression in something else.
+
+   A wrapper has neither problem: it owns its `animation` outright, and the
+   card inside it is untouched — ambient breathe, per-theme rebind and the
+   `:hover` lift all keep working exactly as they did.
+
+   LAYOUT MUST NOT MOVE. The wrapper becomes the grid item that `.panel`
+   used to be, so it is `display: grid`: its single implicit auto row
+   stretches to the wrapper's height (which the section's row already
+   stretches), and the card stretches to that row. Measured before and
+   after at 1440: /future 4×315×351 + 315×291, /peers 3×421×300 —
+   identical.
+
+   `backwards`, NOT `both`/`forwards`: the fill must cover the DELAY (so a
+   card is not sitting there visible for 180ms before its own animation
+   starts) but must not persist past the end. A forwards-filling animation
+   keeps supplying `transform` from the animation origin, which outranks
+   every declaration — including the card's `:hover` lift, which would stop
+   working permanently in exchange for a 300ms entrance.
+
+   INERT UNDER REDUCED MOTION, and inert by ABSENCE: the whole thing is
+   scoped inside a no-preference query, so under `reduce` no animation
+   exists on any wrapper, every one computes `animation-delay: 0s`, and the
+   cards paint at full opacity on their first frame. Nothing is lost with
+   it: the sequence carries no information, it only orders the eye, and the
+   reading order is already in the DOM. Note this is also why the delay
+   cannot merely be zeroed while keeping the animation — a zero-delay fade
+   is still motion, and this reader asked for none. */
+.v6-stagger { display: grid; }
+@media (prefers-reduced-motion: no-preference) {
+  .v6-stagger {
+    animation: stagger-rise var(--d-3) var(--e-spring) backwards;
+    /* D0661: 45ms is the per-item STEP, not a duration — it is multiplied by the
+       item index, so it is the same category as styles-ambient.css's per-plate
+       desync offsets and stays literal for the same reason: folding an
+       index-derived offset into a shared --d-* token puts every card back in
+       lockstep, which is the one thing a cascade must not do. 45ms sits mid-band
+       in D0661's 30-60ms range; the switcher below uses 30ms because it has six
+       items in a small box and 45 would leave the last one visibly late. */
+    animation-delay: calc(var(--stagger-i, 0) * 45ms);
+  }
+
+  /* Third stagger surface: the mempool view switcher. Same keyframe, same
+     backwards fill, same inert-by-absence behaviour under reduce — but 30ms
+     per step rather than 45ms, and the difference is not arbitrary. This is
+     six items in a fixed 220px panel that opens directly under the pointer, so
+     the cascade has to finish inside the click-to-read gap: 6 x 45ms = 270ms
+     is longer than that gap and the last tile would still be arriving as the
+     eye reached it. The two card grids can afford 45ms because they are
+     page-level content the reader scans, not a menu they are already pointing
+     at.
+
+     Scoped to `.is-open` so the cascade plays on OPEN rather than on every
+     render of a closed list, and a child combinator so a future nested list
+     cannot inherit it. Nothing the switcher means is carried by the movement —
+     the list is fully present and readable with zero animation. */
+  .mp-switcher__list.is-open > .mp-switcher__item {
+    animation: stagger-rise var(--d-3) var(--e-spring) backwards;
+    /* D0661: per-item STEP, literal for the same reason as the 45ms above — it
+       is index-multiplied, so a shared token would collapse the cascade. 30ms
+       is the bottom of D0661's band: six tiles at 45ms would put the last one
+       225ms behind the first inside a small popover, which reads as lag rather
+       than as cascade. verify-nav.mjs §6 measures the resulting
+       0/30/60/90/120/150ms and asserts all six are distinct. */
+    animation-delay: calc(var(--stagger-i, 0) * 30ms);
+  }
+}
+
+/* D0666 · reduced motion: no entrance, no exit, no delayed unmount.
+   --d-2/--d-3 are already zeroed globally under this preference (see the
+   :root reduce block), so this is belt-and-braces — but it is the
+   declaration V6Modal.tsx's measured-duration unmount reads, and stating it
+   outright keeps "the dialog leaves instantly under reduce" true at this
+   read site rather than by inference two files away. Nothing is lost: the
+   dialog's content is identical either way; only its arrival is. */
+@media (prefers-reduced-motion: reduce) {
+  .v6-modal-veil,
+  .v6-modal-veil.is-open,
+  .v6-modal,
+  .v6-modal-veil.is-open .v6-modal { transition: none; }
+}
+
+/* transform + opacity only — no layout property is touched, so eight cards
+   rising at once stay on the compositor. `from` alone: the implicit `to` is
+   the element's own computed style, which is precisely what we want to
+   arrive at, and writing it out would freeze `transform: none` into the
+   animation where the hover lift wants to live. */
+@keyframes stagger-rise {
+  from { opacity: 0; transform: translateY(10px); }
+}
+
+/* ── skip link · owned by styles.css, consumed by AppShell ─────────────
+   Targets the `<a href="#main" class="skip-link">` the app shell renders as
+   its first focusable element. Visually hidden until it takes focus, then it
+   appears top-left over the chrome with an opaque ground and a visible ring.
+
+   HIDDEN BY POSITION, not by `display: none` / `visibility: hidden` /
+   `width: 0`: the first two remove the element from the accessibility tree
+   AND from the focus order, which defeats the entire purpose (a skip link
+   nobody can Tab to is decoration), and a zero-size box is treated as
+   unfocusable by some engines. `position: fixed` at a negative `top` keeps
+   the box at its full, real size — just above the viewport — so it stays
+   focusable, stays in the reading order, and needs no size change on focus.
+
+   Deliberately NOT the 1px + clip-path visually-hidden recipe, which is the
+   other standard answer and was the first version of this rule. A 1px box
+   with `overflow: hidden` around 131px of text has
+   `scrollWidth > clientWidth`, which is the exact signature of silently
+   clipped text — verify-responsive.mjs flags it on all 43 routes × 3 themes,
+   and rightly so: its detector cannot tell "hidden on purpose" from "cut off
+   by accident" (it carries a hand-written exemption for `.sr-only` for this
+   very reason). Off-screen positioning has no `overflow: hidden` at all, so
+   it never enters that check, and the box it reports is the box the reader
+   will actually see.
+
+   `:focus`, not only `:focus-visible`: this element is reached by keyboard
+   or by an AT's own focus call, both of which set :focus — and on the
+   engines where a programmatic focus does not qualify as :focus-visible, a
+   :focus-visible-only rule would leave the link off-screen at the moment it
+   matters. `:focus-visible` is listed alongside for the ring, not instead.
+
+   No transition: this must be on screen the instant it is focused. An
+   entrance animation on a skip link is a delay between "I pressed Tab" and
+   "I can read where it goes", which is the one thing this control cannot
+   afford. Nothing here is motion, so there is nothing for reduced motion to
+   suppress. */
+.skip-link {
+  position: fixed; top: -100px; left: 8px; z-index: 9999;
+  max-width: calc(100vw - 16px);
+  padding: 10px 16px;
+  font-family: var(--f-mono); font-size: var(--fs-mono);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  text-decoration: none; white-space: nowrap;
+  color: var(--tk-accent);
+  background: var(--surface-ground);
+  border: 1px solid var(--tk-accent);
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  top: 8px;
+  outline: 2px solid var(--tk-accent);
+  outline-offset: 2px;
+  box-shadow: var(--glow-1);
+}
 
 /* ══════════════════════════════════════════════════════════════════════
    DESKTOP RESPONSIVE TIERS — v6.0.4
@@ -1461,7 +1796,12 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border-left: 1px solid var(--rule);
     transform: translateX(100%);
-    transition: transform var(--d-2) var(--e-standard); /* D0651: 0.2s → --d-2 (closer to 150ms than 300ms) */
+    /* D0655: --e-standard → --e-spring. A drawer sliding in from the edge is
+       the canonical functional movement — it exists to say WHERE the nav came
+       from — so it takes the no-overshoot default. Overshoot here would push
+       the panel past the viewport edge and expose the page behind it for a
+       frame, which is the one thing a full-height 100dvh drawer must not do. */
+    transition: transform var(--d-2) var(--e-spring); /* D0651: 0.2s → --d-2 (closer to 150ms than 300ms) */
     overflow-y: auto;
   }
   .topnav.is-open { transform: translateX(0); }
@@ -1493,8 +1833,14 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     font-family: var(--f-mono); font-size: 11px;
     letter-spacing: 0.1em; text-transform: uppercase;
   }
-  .mp-switcher__list { display: none; }
-  .mp-switcher__list.is-open { display: flex; }
+  /* D0665/D0666: the `display: none` / `.is-open { display: flex }` pair
+     that used to sit here has been REMOVED, not re-stated. It was a verbatim
+     copy of the base rules (which apply at every width — there is no rule
+     anywhere that shows this list unconditionally on desktop), and at equal
+     specificity a later copy wins, so leaving it would have overridden the
+     base rule's `transition` list and silently killed the entry/exit
+     transition on phones only. Phones now get the same transition desktop
+     does; nothing else about this layer changes. */
   .mp-switcher__list button { min-height: 44px; }
 
   /* ── v5.0.2 mobile hotfix: nav reachability, overflow, simulators ── */

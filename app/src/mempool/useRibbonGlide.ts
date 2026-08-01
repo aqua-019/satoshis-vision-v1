@@ -1,4 +1,14 @@
-// mempool/useRibbonGlide.ts — FLIP glide for a row of keyed block tiles.
+// mempool/useRibbonGlide.ts — D0663 · FLIP glide for a row of keyed block tiles.
+//
+// v6.1.3 note on D0663's scope: this is the repo's ONE layout-position change —
+// a block lands and every tile in the ribbon shifts one slot — and it is the
+// only place FLIP is warranted. It predates the motion-token work and was
+// already correct, so D0663 was satisfied by tagging and verifying it rather
+// than by adding a second FLIP somewhere that did not need one. The stagger
+// cascade (D0661) is not FLIP: those elements enter, they do not move. If a new
+// reorderable list ever appears, this hook is the pattern to reuse — the
+// prerequisites are in the usage note below, and getting `key` wrong makes it
+// silently do nothing.
 //
 // When the chain advances, the Classic / Reactor block ribbons re-render with
 // blocks shifted one slot. Without help the DOM jumps. This hook applies the
@@ -24,13 +34,23 @@
 import * as React from "react";
 import { useReducedMotion } from "@/design/useReducedMotion";
 
+/** `useLayoutEffect` warns under renderToString — scripts/prerender.mjs runs the
+ *  app on the server to emit the no-JS HTML, and `/mempool` mounts ClassicRibbon
+ *  there. There is no layout to measure and no FLIP to run on the server, so it
+ *  takes the passive variant (which React also never runs) purely to keep the
+ *  prerender log clean; the browser always gets the layout effect. Same shape as
+ *  routes/useRouteChrome.ts:124 — copied here rather than shared because a hook
+ *  that imports another module's private isomorphic helper reads as a dependency
+ *  it does not have. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 export function useRibbonGlide(depKey: unknown) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const prev = React.useRef<Map<string, DOMRect>>(new Map());
   const raf = React.useRef<number | null>(null);
   const reduce = useReducedMotion();
 
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     const root = ref.current;
     if (!root) return;
 

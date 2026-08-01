@@ -24,13 +24,18 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 44 `verify-*.mjs` files (`app/` ×40, `api/` ×4) — 43 gates plus
+- Verification: 52 `verify-*.mjs` files (`app/` ×48, `api/` ×4) — 51 gates plus
   `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **27 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **35 distinct files** on
   PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
-  (11 gates, no browser) and `verify:e2e` (12 gates, against `scripts/serve-dist.mjs` —
-  v6.1.2 wired in `verify-contrast.mjs` and `verify-ground.mjs`).
-  The remaining 13 are wired to neither npm nor CI — several expect live upstreams.
+  (13 gates, no browser) and `verify:e2e` (18 gates, against `scripts/serve-dist.mjs`).
+  Four gates appear in both the named list and `verify:static`, which is why 9 + 13 + 18
+  is not 40. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
+  `verify-motion`, `verify-nav`, `verify-discrete`, `verify-govern`, `verify-reduce` (e2e).
+  Three more are npm-wired but deliberately not in CI (`verify:shots`, `verify:perf`,
+  `verify:mem:perf` — a baseline shot tree and a framerate measurement are both things a
+  shared runner cannot produce honestly). The remaining 13 are wired to neither npm nor
+  CI — several expect live upstreams.
 
 ## Site Routes
 
@@ -68,6 +73,15 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Every route keeps its `noscript` block and a literal background floor; no white flash on
   any route, throttled or not. Usable at 390px, no text under 12px, and every animation
   ships a `prefers-reduced-motion` path that loses no information.
+- **After a break test, restoring is not done until the tree proves it.** Deliberately
+  breaking a gate to check it goes red is required practice here, and v6.1.3 shipped a
+  session in which the restore was skipped: `ArtBackground.tsx:265` sat in the working tree
+  reading the frame-governor dial and discarding it, so the governor shed nothing — exactly
+  what its gate exists to prove. It never reached a commit, but every "green" run taken
+  while it was there measured a tree that no longer existed. The sequence, in order:
+  `git checkout -- <file>` → `git status --short` shows only intended changes →
+  `grep -rn "MUTATION\|BREAK TEST" app/src app/*.mjs` is empty → *then* run the chain.
+  Trusting the last green run instead of re-checking a clean tree is how this ships.
 
 ## Key Decisions Log
 
@@ -147,7 +161,8 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 25 of the gates on every PR to `main`; the rest are hand-run.
+- CI runs 35 of the 51 gates on every PR to `main`; 3 more are npm-wired by hand and 13
+  are wired to nothing.
 
 ## Known Issues / TODOs
 
@@ -164,6 +179,12 @@ list that expands tabs and query permutations). Those three are not yet unified.
   19 call sites. See the v6.0.12 note.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
+- **The shot matrix cannot see five of the six mempool views.** `verify-lib.mjs`'s `ROUTES`
+  carries `/mempool` once, at its default `?v=classic`; `reactor`, `bridge`, `sediment`,
+  `constellation` and `terminal` are never screenshotted at any width or theme. Found while
+  predicting the v6.1.3 sweep. `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=`
+  explicitly, so the views are not unverified — but no human ever sees them in a shot tree,
+  and a `--route /mempool` sweep silently means "classic only".
 - **Orphaned gates**: 13 `verify-*.mjs` are wired to neither npm nor CI (v6.1.2 wired in
   `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots` npm script,
   `verify-shots.mjs`) — `verify-shots.mjs` is npm-wired only, deliberately not CI: a
@@ -194,6 +215,123 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-01**: v6.1.3 "MOTION & TRANSITION FOUNDATION" (app/ only; nothing in
+  `api/` changed). The site had no motion vocabulary — 37 `transition:`
+  declarations and 59+ timing literals across 4 stylesheets and 21 inline sites,
+  two distinct cubic-beziers in the whole repo, durations spread over 9 ad-hoc
+  values. Now four duration tokens (`--d-1` 75ms · `--d-2` 150 · `--d-3` 300 ·
+  `--d-4` 500) and five easings (`--e-standard/decel/accel/expressive/spring`)
+  declared once in `styles.css`'s `@layer base { :root }`, zeroed by the existing
+  reduce block at `:221-223`. Long ambient loops (6s–260s) and the per-item
+  desync offsets stay literal on purpose — they are not interaction timings, and
+  collapsing an index-derived desync into a shared token puts 12 streamers back
+  in lockstep. Every remaining literal carries a `// D0651:` comment saying why.
+  **Six traps recorded, each of which cost real time:**
+  (1) **`deviceTier.ts:121` folds `prefers-reduced-motion` into tier `low`.** Any
+  gate written as `getDeviceTier() !== "low"` therefore also vetoes every
+  reduced-motion visitor. `vtSupported()` shipped with exactly that bug and was
+  caught only because `verify-motion.mjs` §3 asserts 0 animations *and* a working
+  transition under reduce. If you reuse the tier as a capability check, say
+  `tier === "low" && !prefersReducedMotion()`.
+  (2) **`useTick` freezes to a literal `0`, so a tick-driven simulator's natural
+  still frame is its FIRST frame** — and for three of them that frame was the
+  "before" state the simulator exists to move past. `view-tags` reported "1 ms"
+  for both scanner panes (the inverse of its own lesson), `fcmp` reported an
+  anonymity set of 16, `stealth` parked Diffie-Hellman on "computing…". Freeze
+  where the animation LANDS, not where it starts. Stopping motion is necessary
+  and not sufficient; the frozen frame is a content claim.
+  (3) **SMIL `<animate>` is invisible to CSS.** No `animation: none`, no
+  `@media (prefers-reduced-motion)`, no global `transition-duration: 0ms` reaches
+  it, and Chromium's `getAnimations()` does not report it either. The only way to
+  honour reduce is to not render the element — which is why `verify-reduce.mjs`
+  asserts SMIL **absence** rather than SMIL not-running. Four of the six defects
+  it found were SMIL.
+  (4) **An animation census is a floor, not a ceiling.** `terminal.tsx`'s
+  typewriter is a `setTimeout` chain, so it appears in neither `getAnimations()`
+  nor a `querySelectorAll('animate')` — it was typing and erasing forever under
+  reduce and the runtime audit scored it clean. JS-driven motion needs a source
+  read.
+  (5) **An inline `animation:` never reaches a class-scoped reduce gate.**
+  `styles-ambient.css:328` gates `.spin-slow`/`.spin-med` with `!important`;
+  `ringct.tsx` invoked the same global `spin` keyframe from an inline style and
+  sailed straight past it.
+  (6) **`window.scrollTo(0, 0)` is a no-op on every desktop.** `.art` is
+  `height:100vh; overflow:hidden` (`styles.css:347-359`), so the document never
+  scrolls above 768px — `main.main` is the scroller. `EducationPage` and
+  `MoneroPage` both carried one; both are deleted and subsumed by
+  `routes/useRouteChrome.ts`, which targets `document.scrollingElement`,
+  `main.main` and `.mp-canvas-scroll`, keyed on `location.key` in a module-level
+  `Map` (in memory — a per-history-entry record of visited URLs does not belong
+  on disk on a Monero privacy site, and could not restore `main.main` anyway
+  since that element is recreated).
+  **View Transitions are hand-rolled and feature-detected, and the fallback is
+  the MAIN path**: Tor Browser is Firefox ESR and Firefox only shipped view
+  transitions in 144, so the site's primary audience never receives them. That is
+  the argument for keeping 100% of the branching in `design/viewTransition.ts`
+  and 0% in components. `react-router` here is the JSX `<Routes>` API, not
+  `createBrowserRouter`, so `<ScrollRestoration>` and the router's own VT support
+  are unavailable at any version — hand-rolling is forced, not preferred.
+  `React.lazy` is KEPT: `startViewTransition` would otherwise snapshot
+  content→`loading…`, and there is no public API to warm a lazy payload
+  (the initializer throws its thenable on first invocation even when the module
+  is already in the registry). Instead each declaration in `App.tsx` gains a
+  `.then()` that records its key in a module-level `Set`; a route in the Set
+  transitions, one not in it navigates plainly. A route's first visit does not
+  morph. **D0721 persistent shell, D0723 speculation rules and D0724 hover
+  prefetch are deferred to prompt 07** with the route table, on the record.
+  **Accessibility landed as part of this, not after it**: `<main>` gains
+  `id="main" tabIndex={-1} aria-labelledby="page-title"` and `PageHeader`'s `<h1>`
+  gains `id="page-title"` — one edit covering 9 pages — plus `.sr-only` h1s for
+  the four pages that rendered none at all (`MempoolPage`, `MempoolTxPage`,
+  `SimulatePage`, and `NotFoundPage`, whose heading-sized `<div>` became a real
+  one). A persistent `RouteAnnouncer` reports the navigation; the focus move
+  reports where you now are; they say different things, so there is no
+  double-speak. A skip link was absent and is now present.
+  **Two defects carried from prompt 03, both closed, and one recorded diagnosis
+  disproved.** `design/ArtBackground.tsx` seeded 15 `Math.random()` calls, making
+  the "only inside `app/src/protocols/`" rule false site-wide; they are now
+  `h3(i, role, SEED)` from a shared `design/prng.ts`, substituted 1:1 so every
+  marginal distribution is unchanged by construction. And the acyclicity
+  assertion that `verify-legibility.mjs:542` said lived in `verify-contrast.mjs`
+  did not exist anywhere; it is now `verify-roles.mjs`. **The disproved
+  diagnosis**: prompt 03 recorded that the 1440 shot sweep was unstable because
+  ParticleField seeds with `Math.random()`. ParticleField does not render in
+  those screenshots at all — `verify-shots.mjs:73` emulates reduced motion, which
+  demotes to `low`, on which `ArtBackground.tsx:40` renders `null`. The real
+  cause was `Footer.tsx:12,22`: a live seconds-resolution UTC clock on every
+  route, proven by pixel diff (84 px, `elementFromPoint` → `.footer-tele`) and
+  fixed with Playwright's Clock API.
+  **Also**: `/simulate` had been shipping an **empty `#root`** — `prerender.mjs`
+  and `entry-ssr.tsx` each carried their own copy of a `/loading[….]/` regex that
+  missed the nested "loading simulators…" fallback by one space, so the route
+  broke out of the resolution loop still suspended. One exported `SUSPENDED_RE`
+  now serves both. And `ScannerWall` produced a 175,397px document at 390px.
+  **Eight new gates**, all break-tested: `verify-prng`, `verify-gpu` (static);
+  `verify-roles`, `verify-motion`, `verify-nav`, `verify-discrete`,
+  `verify-govern`, `verify-reduce` (e2e). `verify-prng` §6 also widened from
+  `src/design/` to all of `src/` with `protocols/` exempt — an adversarial pass
+  proved `Math.random()` in `src/routes/` passed the entire `verify:static` chain
+  green, so the rule CLAUDE.md calls out as having "regressed once already" was
+  enforced in two directories and nowhere else.
+  **Two structural limits of the shot matrix, measured and written into
+  `verify-shots.mjs`'s own header**: (a) `freezeAmbient()` injects
+  `*, *::before, *::after { animation: none !important; transition: none
+  !important }` before every capture, so **the sweep is incapable of seeing any
+  CSS-animation change** — `ringct`'s inline `spin 14s` and `carrot`'s `scaleX`
+  rewrite both came back byte-identical while a live probe showed the baseline
+  spinning and the branch stopped. SMIL is not covered by that rule, which is
+  why `dandelion` does show. A clean sweep is no evidence about motion; that is
+  `verify-reduce.mjs`'s job. (b) The sweep is **order-dependent** — one browser
+  context, so localStorage/HTTP/font caches carry between routes — and its noise
+  floor is not zero and not confined to `/simulate`: two back-to-back sweeps of
+  ONE unchanged tree differed on 18 of 129 classic shots, 17 `/simulate` plus
+  `/peers` at 390. The gate's previous claim that non-simulate routes were
+  byte-identical between sweeps is corrected. It now prints a `NOISE FLOOR:`
+  line every run counting uncomparable shots instead of folding them into a
+  pass, and `verify-shots.mjs:190` still uses `waitUntil: 'networkidle'` against
+  the 3s tier — logged, not fixed, because changing it invalidates every
+  baseline tree.
 
 - **2026-07-31**: v6.0.12 — **Markets charts rendered nothing on a cold first
   visit**, and the fix is a pattern worth knowing before writing another chart.
