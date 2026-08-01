@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArtBackground } from "@/design/ArtBackground";
 import { useAnimationSeconds } from "@/design/useAnimationClock";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import {
   Stat, Pill, PanelFrame, Sparkline, MiniBar, Crumbs, Card,
 } from "@/design/primitives";
@@ -25,7 +26,7 @@ interface ViewProps {
 // its own. Left pane: pre-2022, full ECDH math per output. Right pane: with
 // view tags — 1 byte prefilter rejects 255/256 instantly. ~256× speedup.
 
-export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boolean; onCounter?: (n: number) => void }) {
+export function ScannerWall({ t, viewTag, onCounter, frozen = false }: { t: number; viewTag: boolean; onCounter?: (n: number) => void; frozen?: boolean }) {
   // 16 cols × 16 rows = 256 cells per visible slab
   const COLS = 16, ROWS = 16, TOTAL = COLS * ROWS;
   const cells = React.useMemo(() => {
@@ -40,8 +41,17 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
   // `t` is seconds, so these are cells/second — the old per-frame 18 / 0.4 at
   // 20fps, scaled up by 20 to keep the same wall-clock pacing.
   const speed = viewTag ? 360 : 8;
-  const cursor = Math.floor(t * speed) % (TOTAL + 60);
-  const counter = Math.min(TOTAL, Math.floor(t * speed));
+  // `frozen` is the reduced-motion path, and it is NOT `t = 0`. Zeroing the
+  // clock would leave cursor and counter at 0: no cell scanned, and — because
+  // ViewTagsView's <Stat> readouts are DERIVED from these counters — both
+  // panes reporting "1 ms". That reads as "view tags save you nothing", which
+  // is the precise opposite of the lesson, so a zeroed duration would not be a
+  // reduced-motion variant of this view; it would be a wrong one. Freeze at the
+  // COMPLETED state instead: every output scanned, counters at TOTAL, so the
+  // stats resolve to the real 256 ms vs 4 ms and the matched cells are visible.
+  // The comparison survives with nothing moving, which is the actual contract.
+  const cursor = frozen ? TOTAL : Math.floor(t * speed) % (TOTAL + 60);
+  const counter = frozen ? TOTAL : Math.min(TOTAL, Math.floor(t * speed));
 
   React.useEffect(() => {
     if (onCounter) onCounter(counter);
@@ -49,11 +59,19 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
 
   return (
     <div style={{ position: "relative" }}>
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(${COLS}, 1fr)`,
-        gap: 3,
-      }}>
+      {/* CLASS, not an inline grid — and that is the whole point, same reasoning
+          styles.css records for the legality matrix. The mobile layer's blanket
+          rule (styles.css `.proto-body [style*="grid-template-columns"]`) matches
+          on the inline style ATTRIBUTE and forces `1fr !important`. This wall is
+          256 `aspect-ratio: 1` cells: collapsed to one column each cell became as
+          wide as the pane (~708px) and the document grew to 175,397px tall at
+          390 and 366,156px at 768 — a page no one can use and a full-page
+          screenshot that intermittently exceeded 60s. A class the selector cannot
+          see needs no escape hatch; `.keep-cols` would "work" but drags in
+          `min-width: max-content !important`, which is what put the legality
+          header off-screen. Column count lives in styles.css and is mirrored by
+          COLS above — change one, change both. */}
+      <div className="vt-wall">
         {cells.map((c, i) => {
           const scanned = i <= cursor;
           // With view tags: pre-rejected cells dim instantly (255/256), only ~1/256 require full scan
@@ -89,7 +107,10 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
                   position: "absolute", inset: -3,
                   border: "1.5px solid #b87aff",
                   pointerEvents: "none",
-                  animation: "pulseScale 1.5s ease-in-out infinite",
+                  // Held still under reduce. The ring itself still marks the
+                  // matched cell — the pulse was drawing attention, not carrying
+                  // the fact, so suppressing it loses nothing.
+                  animation: frozen ? "none" : "pulseScale 1.5s ease-in-out infinite",
                 }} />
               ) : null}
               {viewTag && candidate && !matched ? (
@@ -103,8 +124,11 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
         })}
       </div>
 
-      {/* full-row sweep cursor (no view tag) */}
-      {!viewTag ? (
+      {/* Full-row sweep cursor (no view tag). Dropped when frozen: it marks
+          where the scan HAS REACHED, and at the completed state that is "past
+          the end" — a bar parked below the last row would imply a scan still in
+          progress. The completed wall and the 256/256 readout carry the state. */}
+      {!viewTag && !frozen ? (
         <div style={{
           position: "absolute", left: 0, top: Math.floor(cursor / COLS) * (100 / ROWS) + "%",
           width: "100%", height: 100 / ROWS + "%",
@@ -128,7 +152,13 @@ export function ViewTagsView({ data, bg }: ViewProps) {
   // Now the shared rAF clock (20fps high / 12 mid / 6 low), and expressed in
   // SECONDS so the demo's pacing is identical on every device — a teaching
   // animation that runs 3× slower on a phone teaches the wrong thing.
-  const t = useAnimationSeconds({ fps: 20 });
+  // useAnimationClock/useAnimationSeconds do NOT check reduced motion the way
+  // useTick freezes itself — the call site must gate them (see the note in
+  // design/useReducedMotion.ts, and constellation.tsx:68 for the correct shape).
+  // This one didn't, so the scanner race kept running for every visitor with
+  // reduced motion set: the one surface in this file that is pure movement.
+  const reduced = useReducedMotion();
+  const t = useAnimationSeconds({ fps: 20, enabled: !reduced });
   const [leftCount, setLeftCount] = React.useState(0);
   const [rightCount, setRightCount] = React.useState(0);
   // 150 ticks at the old 50ms == one cycle every 7.5s.
@@ -160,7 +190,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
                 <div className="kicker" style={{ color: "var(--ink-60)" }}>WITHOUT VIEW TAGS · pre-2022</div>
                 <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>~256 ms/block</div>
               </div>
-              <ScannerWall t={t + tagSeed * 5} viewTag={false} onCounter={setLeftCount} />
+              <ScannerWall t={t + tagSeed * 5} viewTag={false} onCounter={setLeftCount} frozen={reduced} />
             </div>
 
             {/* RIGHT — view tags */}
@@ -169,7 +199,7 @@ export function ViewTagsView({ data, bg }: ViewProps) {
                 <div className="kicker" style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>WITH VIEW TAGS · v15+</div>
                 <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>~1 ms/block</div>
               </div>
-              <ScannerWall t={t + tagSeed * 5} viewTag={true} onCounter={setRightCount} />
+              <ScannerWall t={t + tagSeed * 5} viewTag={true} onCounter={setRightCount} frozen={reduced} />
             </div>
           </div>
 

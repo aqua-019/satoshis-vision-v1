@@ -1242,6 +1242,24 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
 @layer components {
+/* ── view-tags ScannerWall · v6.1.3 ──────────────────────────────────
+   The 16×16 output wall in protocols/view-tags.tsx. Declared as a CLASS
+   rather than inline for one specific reason: the mobile layer's blanket
+   collapse below matches `[style*="grid-template-columns"]` on the inline
+   ATTRIBUTE and forces `1fr !important` inside `.proto-body`. These 256
+   cells are `aspect-ratio: 1`, so one column made every cell as wide as the
+   pane and the document 175,397px tall at 390 / 366,156px at 768 — unusable,
+   and slow enough that a full-page screenshot intermittently passed 60s.
+   Same fix, and same reasoning, the legality matrix already documents: a
+   grid the selector cannot see needs no `.keep-cols` escape hatch (which
+   would drag in `min-width: max-content !important`).
+
+   16 mirrors COLS in view-tags.tsx. Change one, change both. Sixteen ~7px
+   cells at 390 stays legible BECAUSE nothing here is text — the wall is a
+   density read (how much got scanned), and the numbers it teaches live in
+   the <Stat> grid below it. */
+.vt-wall { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+
 /* hex grid cell */
 .hex {
   width: 28px; height: 32px;
