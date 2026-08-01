@@ -24,12 +24,12 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 52 `verify-*.mjs` files (`app/` ×48, `api/` ×4) — 51 gates plus
+- Verification: 54 `verify-*.mjs` files (`app/` ×50, `api/` ×4) — 53 gates plus
   `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **35 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **39 distinct files** on
   PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
-  (13 gates, no browser) and `verify:e2e` (18 gates, against `scripts/serve-dist.mjs`).
-  Four gates appear in both the named list and `verify:static`, which is why 9 + 13 + 18
+  (15 gates, no browser) and `verify:e2e` (20 gates, against `scripts/serve-dist.mjs`).
+  Four gates appear in both the named list and `verify:static`, which is why 9 + 15 + 20
   is not 40. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
   `verify-motion`, `verify-nav`, `verify-discrete`, `verify-govern`, `verify-reduce` (e2e).
   Three more are npm-wired but deliberately not in CI (`verify:shots`, `verify:perf`,
@@ -63,9 +63,15 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - `Math.random()` only inside `app/src/protocols/` (the educational simulators). **Zero
   fabricated values on live surfaces** — this has regressed once already. A live number is
   real or it is an em-dash; degradation is last-good plus "STALE · reconnecting", never
-  synthesis.
-- Provenance vocabulary, used verbatim in the UI: `NODE` / `NETWORK` / `COINGECKO` /
-  `SESSION` / `MODEL`. Every displayed figure names where it came from.
+  synthesis. Feed health is ONE per-endpoint discriminated union — `MoneroLive.status`,
+  `loading | live | stale | error` per endpoint (`app/src/data/feed-status.ts`), derived
+  during render, never stored. It replaced four booleans in v6.1.4; read it through
+  `hasData()` / `feedDegraded()` rather than comparing phases by hand.
+- Provenance vocabulary, used verbatim in the UI: `NODE` / `COINGECKO` / `SESSION` /
+  `MODEL` — FOUR, declared once as `ProvSource` in `app/src/design/provenance.tsx`.
+  Every displayed figure names where it came from. (A `NETWORK` source is sometimes
+  listed as a fifth; it has never existed in the code. If one is ever added it would
+  come from a per-node health surface, and it must be added to `ProvSource` first.)
 - Fonts are self-hosted from `app/public/fonts/` (12 woff2: Geist, JetBrains Mono,
   Newsreader). No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The site is used over
   Tor and the count of third-party browser requests must stay at **zero** — gated by
@@ -161,7 +167,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 35 of the 51 gates on every PR to `main`; 3 more are npm-wired by hand and 13
+- CI runs 39 of the 53 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs
@@ -206,7 +212,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 | Routes (canonical list) | `app/scripts/routes.mjs` → `prerender.mjs` + `gen-sitemap.mjs` |
 | Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
 | Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
-| Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2) |
+| Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
 

@@ -16,7 +16,13 @@
  *
  * Your hook MUST return a MoneroLive shape (see types.ts). It can subscribe
  * to a websocket, poll an RPC, or anything else — as long as it yields a
- * stable object each render and keeps `ready`/`marketReady`/`stale` truthful.
+ * stable object each render and keeps `status` truthful.
+ *
+ * `status` is a per-endpoint discriminated union (data/feed-status.ts), not the
+ * four booleans this contract carried before v6.1.4. Build it with `deriveAll()`
+ * from your own `{ okAt, fails, reason }` observations rather than assembling
+ * phases by hand — that keeps the "derived, never stored" property the union
+ * exists to guarantee.
  *
  * Read README.md → "Plugging live data" for the suggested REST + WS surface.
  */

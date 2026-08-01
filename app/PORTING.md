@@ -29,6 +29,15 @@ Anywhere your runtime already has a Monero data layer, this is where it
 plugs in. The default feed (`xmrirish-feed.ts`) polls same-origin
 `/api/*` proxies — supply `useFeed` to replace it.
 
+> **Contract change, v6.1.4.** `MoneroLive` dropped the four status
+> booleans (`live` / `ready` / `marketReady` / `stale`) for a single
+> per-endpoint union, `status` (see `src/data/feed-status.ts`). An
+> existing `useFeed` implementation will fail to compile rather than
+> silently mis-report health — build the map with `deriveAll()` from
+> your own per-endpoint observations, or, if your source has no
+> per-endpoint detail, set every key from whatever single signal you
+> do have. `app/README.md` carries the field-by-field migration table.
+
 ### 2. Routing (`@/App`)
 
 `App.tsx` uses `react-router-dom`'s `<Routes>`. If your host uses Next.js

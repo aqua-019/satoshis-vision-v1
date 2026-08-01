@@ -79,11 +79,36 @@ Your hook must return the `MoneroLive` shape (see `src/data/types.ts`).
 Everything else (sparklines, mempool grids, peer lists, dashboards)
 follows automatically — no other change required.
 
-If you don't supply `useFeed`, the real xmr.irish feed runs: it polls
-the same-origin `/api/monero`, `/api/xmr/*`, and `/api/coingecko`
-proxies every 2.5s. First paint shows skeletons until real data lands
-(`data.ready` / `data.marketReady`), and on poll failure the last-good
-snapshot is kept with `data.stale === true` — the UI never shows a
+If you don't supply `useFeed`, the real xmr.irish feed runs: it polls the
+same-origin `/api/xmr/*` and `/api/coingecko` proxies in three tiers —
+mempool and fees every 3s, a cheap tip watch every 15s (pulling chain
+meta only when the tip moves), CoinGecko every 60s.
+
+**Breaking in v6.1.4**: `MoneroLive` no longer carries the four status
+booleans `live` / `ready` / `marketReady` / `stale`. It carries one
+per-endpoint discriminated union instead:
+
+```ts
+data.status[key]   // key ∈ mempool | fees | tip | network | blocks | market
+  → { phase: "loading" | "live" | "stale" | "error", at, fails, endpoint, reason }
+```
+
+Read it through the predicates in `src/data/feed-status.ts` rather than
+comparing phases by hand:
+
+| was | now |
+| --- | --- |
+| `data.ready` | `hasData(data.status.network)` |
+| `data.marketReady` | `hasData(data.status.market)` |
+| `data.stale` | `feedDegraded(data.status)` |
+| `data.live` | `!feedDegraded(data.status)` |
+
+The point of the union is that `error` — never succeeded *and* now
+failing — is a state the booleans could not express, so a feed that was
+dead from a cold start could only ever say "connecting", forever.
+
+Surfaces render `—` until real data lands, and on poll failure the
+last-good snapshot is kept and labelled stale. The UI never shows a
 number that didn't come from the node or CoinGecko.
 
 ### Suggested host endpoints (if you're building from scratch)
