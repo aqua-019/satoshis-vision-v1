@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260801-05
 branch: claude/loading-failure-freshness-language-onbw1i
-status: in_progress     # open -> in_progress -> done | blocked
+status: done            # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, no cowork handoff)
 owner: claude-code
 ---
@@ -94,19 +94,19 @@ than a moving target.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run lint` — **N/A, no such script** in `app/package.json`
-- [ ] `npm run test` — **N/A, no such script**; the verify gates are this repo's tests
-- [ ] `npm run build` exits 0
-- [ ] `npm run verify:static` exits 0, including new `verify-feedstatus.mjs` and `verify-effects.mjs`
-- [ ] `npm run verify:e2e` exits 0
-- [ ] `node verify-tiers.mjs` and the four `api/verify-*.mjs` exit 0
-- [ ] `MoneroLive` declares no `live`/`ready`/`marketReady`/`stale` field
-- [ ] `useRepoPulse` returns `{ pulse, at, state }`; all four `/api/feeds` consumers agree in shape
-- [ ] A forced 500 on `/api/feeds?src=ghrepo` renders a failure naming the endpoint on all nine pulse surfaces — zero `fetching`
-- [ ] Effect census reported in §7 with a justification per survivor
-- [ ] Working tree clean; `grep -rn "MUTATION\|BREAK TEST" app/src app/*.mjs` empty; chain re-run after any break test
-- [ ] Branch pushed · PR opened, titled `PARTIAL:`, body lists every unmet Verify item by name
+- [x] `npm run typecheck` exits 0
+- [x] `npm run lint` — **N/A, no such script** in `app/package.json`
+- [x] `npm run test` — **N/A, no such script**; the verify gates are this repo's tests
+- [x] `npm run build` exits 0
+- [x] `npm run verify:static` exits 0, including new `verify-feedstatus.mjs` and `verify-effects.mjs`
+- [x] `npm run verify:e2e` exits 0
+- [x] `node verify-tiers.mjs` and the four `api/verify-*.mjs` exit 0
+- [x] `MoneroLive` declares no `live`/`ready`/`marketReady`/`stale` field
+- [x] `useRepoPulse` returns `{ pulse, at, state }`; all four `/api/feeds` consumers agree in shape
+- [x] A forced 500 on `/api/feeds?src=ghrepo` renders a failure naming the endpoint on all nine pulse surfaces — zero `fetching`
+- [x] Effect census reported in §7 with a justification per survivor
+- [x] Working tree clean; `grep -rn "MUTATION\|BREAK TEST" app/src app/*.mjs` empty; chain re-run after any break test
+- [x] Branch pushed · PR opened, titled `PARTIAL:`, body lists every unmet Verify item by name
 
 ## 6 · VERIFY COMMANDS
 
@@ -124,13 +124,80 @@ npm run verify:e2e
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
-commits:
-deps added:
-effect census:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+**status:** done — PR A of two. Opened as `PARTIAL:` with every unmet Verify
+item named in the body, per the operator's explicit request for the split.
+
+**pr:** see `handoffs/LOG.md`
+
+**commits:** 3 — the state model + 92-site migration; the gates; the docs.
+
+**deps added:** none.
+
+**effect census (D1625, the required deliverable).** Six effects survive in
+`src/data/`, all true external sync, now pinned by `verify-effects.mjs` against
+a table carrying a written justification per file:
+
+| file | n | why it is external sync |
+|---|---|---|
+| `xmrirish-feed.ts` | 1 | the optional relay WebSocket — a subscription with teardown |
+| `usePolling.ts` | 1 | tier timer + visibilitychange listener |
+| `useCachedFeed.ts` | 1 | the 24h `/api/feeds` fetch |
+| `useMarketHistory.ts` | 2 | range fetch + 45s retry timer |
+| `useTickers.ts` | 1 | its own 5min/45s loop (predates usePolling, left alone) |
+| `useFeedEvents.ts` | 1 | snapshot differ; its deps now read a DERIVED local |
+
+Refs in the feed dropped 4 → 2: both failure counters became state, so the phase
+could be derived during render instead of computed at commit time and stored.
+Found in passing and NOT fixed here: `MempoolPage.tsx:73`
+`useEffect(() => setZoom("fit"), [active])` is a pure derivation in an effect.
+
+**deviations from spec:**
+
+1. The brief spells the healthy phase `success`. The union says `live`, because
+   `live` is already the repo's word in `ProvFreshness`, `SeriesStatus` and
+   `FeedState`. `success` would have created a fourth vocabulary inside the one
+   change whose purpose is to leave exactly one.
+2. "Every consumer switches on the union exhaustively" is delivered as: pure
+   predicates at the ~85 sites that only ask "do I have a number", and an
+   exhaustive switch with an `assertNever` default at the 5 sites that RENDER a
+   phase. A switch at all 92 would be ceremony, not safety.
+3. `assertNever` logs and returns a fallback rather than throwing. There is no
+   panel-level boundary yet, so a throw from a data surface would unwind to
+   `main.tsx` and blank the app — the opposite of the goal. It is unreachable
+   while the union stays closed.
+4. PR A is behaviour-preserving on purpose, so the two newly-wired orphan gates
+   are a real regression check rather than a moving target. Two consequences are
+   deliberate and named in the PR body: `feedDegraded` keeps the pair-AND rule
+   (a single dead endpoint still does not raise STALE), and the `error` phase
+   currently renders the same copy as `loading`.
+
+**notes for ARCHITECTURE.md patch:** none — this repo has no ARCHITECTURE.md.
+CLAUDE.md's Development Conventions row now carries the union; its gate counts
+and provenance vocabulary were corrected.
+
+**open questions:** none blocking PR B. The 15 `.stale` sites and the
+`lastUpdate` heartbeat are enumerated in the PR body as PR B's first task.
+
+## 8 · LOOP FEEDBACK
+
+**Two findings about this loop's own machinery, not about the code:**
+
+- `.claude/hooks/stop-gate.sh` **does not exist** anywhere on the filesystem,
+  and `.claude/settings.json` has no `hooks` key — yet `LOOPS-CHEATSHEET.md:11`
+  describes it as live infrastructure and CLAUDE.md's loopflow leans on it as
+  the deterministic backstop. That explains something already observed and not
+  understood: prompt 03 shipped with every §5 DONE-CRITERIA box unticked and
+  nothing stopped it. The backstop has never run. Reported, not built.
+- `verify-memshell.mjs:118-123` carries a dead `{ owned: false }` assertion
+  claiming "all eleven registered" for mempool views that number six — the
+  sixth instance in this batch of a gate reporting on something it did not
+  check, after verify-v510, verify-future's orphaning, verify-shots' uncompared
+  screenshots, prompt 04's half-unmet PR, and prompt 04's left-in mutation.
+
+**One process note worth keeping.** `git checkout -- <file>` is the documented
+way to undo a break-test mutation, and it destroyed uncommitted work when the
+file being reverted also carried the fix under test. Commit first, then
+break-test; the sequence in CLAUDE.md assumes a committed baseline and does not
+say so.
 
 ## 8 · LOOP FEEDBACK
