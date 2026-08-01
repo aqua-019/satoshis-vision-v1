@@ -51,21 +51,24 @@ ok(readFeedCache('nope') === null, 'null store (private mode) → null');
 globalThis.window = { localStorage: shim };
 
 // 1) key shape
-const key = feedCacheKey('gh.monero-project/monero');
-ok(key === `${FEED_PREFIX}gh.monero-project/monero`, `feedCacheKey → "${key}"`);
-ok(key === 'xmri.feed.gh.monero-project/monero', 'feedCacheKey matches the documented namespace');
+// v6.1.1: the repo-pulse id carries `.v2.` — see useRepoPulse. The payload
+// shape changed (issueAt), and useCachedFeed serves a cache hit WITHOUT
+// re-validating its shape, so the id is what forces the one-time refetch.
+const key = feedCacheKey('gh.v2.monero-project/monero');
+ok(key === `${FEED_PREFIX}gh.v2.monero-project/monero`, `feedCacheKey → "${key}"`);
+ok(key === 'xmri.feed.gh.v2.monero-project/monero', 'feedCacheKey matches the documented namespace');
 
 // 2) write → read round-trip preserves data and stamps `at` with write time.
 const t0 = 1_753_000_000_000;
-const repoData = { stars: 4321, pushed: '2026-07-20T00:00:00Z', issues: 12 };
-writeFeedCache('gh.monero-project/monero', repoData, t0);
-const hit = readFeedCache('gh.monero-project/monero', t0 + 1000);
+const repoData = { stars: 4321, pushed: '2026-07-20T00:00:00Z', issues: 12, issueAt: '2026-07-28T00:00:00Z' };
+writeFeedCache('gh.v2.monero-project/monero', repoData, t0);
+const hit = readFeedCache('gh.v2.monero-project/monero', t0 + 1000);
 ok(!!hit && hit.at === t0, 'round-trip: `at` stamped with write time');
 ok(!!hit && JSON.stringify(hit.data) === JSON.stringify(repoData), 'round-trip: data deep-equals');
 
 // 3) entries at exactly FEED_TTL still serve; one ms past → treated as absent.
-ok(readFeedCache('gh.monero-project/monero', t0 + FEED_TTL) !== null, 'read at exactly FEED_TTL → still served');
-ok(readFeedCache('gh.monero-project/monero', t0 + FEED_TTL + 1) === null, 'read past FEED_TTL → null');
+ok(readFeedCache('gh.v2.monero-project/monero', t0 + FEED_TTL) !== null, 'read at exactly FEED_TTL → still served');
+ok(readFeedCache('gh.v2.monero-project/monero', t0 + FEED_TTL + 1) === null, 'read past FEED_TTL → null');
 ok(FEED_TTL === 864e5, 'FEED_TTL === 24h (864e5 ms)');
 
 // 4) corrupt / wrong-shape entries never throw — they read as null.

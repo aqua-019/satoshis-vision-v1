@@ -113,10 +113,14 @@ export function ProtoPopup({ p, onClose }: ProtoPopupProps) {
             <div className="kicker" style={{ marginBottom: 6 }}>Live repo pulse · {p.repo}</div>
             {pulse ? (
               <>
-                <div>★ <b style={{ color: "var(--ink-80)" }}>{pulse.stars.toLocaleString()}</b> · open issues <b style={{ color: "var(--ink-80)" }}>{pulse.issues}</b></div>
+                {/* open_issues_count includes open PRs — same caveat as the
+                    automation registry's pulse rows carry. */}
+                <div>★ <b style={{ color: "var(--ink-80)" }}>{pulse.stars.toLocaleString()}</b> · open issues <b style={{ color: "var(--ink-80)" }}>{pulse.issues}</b> (incl. PRs)</div>
                 <div>
                   last push <b style={{ color: stale ? "var(--y-50)" : "var(--g-50)" }}>{agoStr(pulse.pushed)}</b>
-                  {stale ? " · repo quiet" : ""} · refreshed every 24h via /api/feeds
+                  {/* "push quiet", not "repo quiet": pushed_at is all this
+                      measures, and a push-quiet repo can still be busy. */}
+                  {stale ? " · push quiet" : ""} · refreshed every 24h via /api/feeds
                 </div>
               </>
             ) : (
