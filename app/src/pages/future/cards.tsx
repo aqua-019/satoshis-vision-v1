@@ -23,7 +23,7 @@ import { Link } from "react-router-dom";
 
 import { Card } from "@/design/primitives";
 import {
-  useRepoPulse, useMrlIssues, useMoneroBlog,
+  useRepoPulse, useMrlIssues, useMoneroBlog, repoPulseEndpoint,
   agoStr, isStale, FEED_PROXY,
   type FeedState,
 } from "@/data/useCachedFeed";
@@ -47,8 +47,9 @@ export interface ProtocolCardProps {
 }
 
 export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
-  const pulse = useRepoPulse(p.repo);
+  const { pulse, state: pulseState } = useRepoPulse(p.repo);
   const stale = pulse ? isStale(pulse.pushed) : false;
+  const pulseFailed = pulseState === "fail" && !pulse;
 
   return (
     <Card onClick={onOpen} style={{ padding: 22, minHeight: 240, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -58,7 +59,11 @@ export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
           set and does not spread — see design/primitives.tsx. Note this
           element is `display: contents`, so it has no box: query it with
           querySelectorAll/count, never with a visibility-based wait. */}
-      <div className="v6-future-card" data-pulse={pulse ? "live" : "pending"}>
+      {/* `data-pulse-state` carries the raw FeedState; `data-pulse` keeps its
+          original two values because verify-future.mjs waits on
+          [data-pulse="live"], and a warm cache emitting a third value there
+          would hang that gate for its full timeout. */}
+      <div className="v6-future-card" data-pulse={pulse ? "live" : "pending"} data-pulse-state={pulseState}>
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
             <span className="v6-status" style={{ color: p.sc }}>
@@ -91,7 +96,12 @@ export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
           <span className="mono dim2" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.1em" }}>
-            {p.repo}{pulse ? <> · ★{pulse.stars.toLocaleString()} · {agoStr(pulse.pushed)}</> : " · pinging…"}
+            {p.repo}
+            {pulse
+              ? <> · ★{pulse.stars.toLocaleString()} · {agoStr(pulse.pushed)}</>
+              : pulseFailed
+                ? <span style={{ color: "var(--y-50)" }}> · <code>{repoPulseEndpoint(p.repo)}</code> unreachable</span>
+                : " · pinging…"}
           </span>
           <span className="open-cue">open window →</span>
         </div>
@@ -113,7 +123,7 @@ export interface DevLabPulseCardProps {
 }
 
 export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
-  const pulse = useRepoPulse(repo);
+  const { pulse, state } = useRepoPulse(repo);
   // Two INDEPENDENT staleness reads. Before v6.1.1 one badge derived from
   // pushed_at spoke for the whole repo, so monero-project/research-lab —
   // which nobody pushes to, but whose issues carry the actual MRL
@@ -130,6 +140,7 @@ export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
       // heuristic, and counts data-pulse-repo to prove all four rows fetched.
       data-pulse-repo={repo}
       data-pulse={pulse ? "live" : "pending"}
+      data-pulse-state={state}
       style={{ padding: "10px 14px", display: "flex", flexDirection: "column", gap: 4 }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
@@ -159,7 +170,7 @@ export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
           </span>
         </div>
       ) : (
-        <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>fetching via /api/feeds …</div>
+        <FeedEmpty state={state} endpoint={repoPulseEndpoint(repo)} what="this repo's GitHub pulse" />
       )}
     </div>
   );
@@ -167,7 +178,7 @@ export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
 
 /* ── empty states — visible, specific, never fabricated ─────────── */
 
-function FeedEmpty({ state, endpoint, what }: { state: FeedState; endpoint: string; what: string }) {
+export function FeedEmpty({ state, endpoint, what }: { state: FeedState; endpoint: string; what: string }) {
   if (state === "load" || state === "cached") {
     return <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>fetching…</div>;
   }

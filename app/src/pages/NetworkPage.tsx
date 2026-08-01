@@ -9,9 +9,9 @@
  * Standalone page: owns its <PageShell> chrome. Every number on this page
  * comes from `useMoneroLive()` — node RPC via the public node cascade plus
  * CoinGecko for market data elsewhere. Chain values render "—" until the
- * first snapshot lands (`data.ready`); if polling fails after a healthy
+ * first snapshot lands (`hasData(data.status.network)`); if polling fails after a healthy
  * start, the header pill flips to STALE · RECONNECTING and the charts dim
- * (`data.stale`). Nothing on this page is synthesized or hard-coded.
+ * (`feedDegraded(data.status)`). Nothing on this page is synthesized or hard-coded.
  */
 
 import * as React from "react";
@@ -24,6 +24,7 @@ import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
+import { assertNever, CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -85,7 +86,7 @@ function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
 
 export function NetworkPage() {
   const data = useMoneroLive();
-  const ready = data.ready;
+  const ready = hasData(data.status.network);
 
   // Real, honestly-windowed series for the network charts (no synthesis).
   // hashSeries is the rolling buffer of real hashrate samples; pin its last point
@@ -145,11 +146,17 @@ export function NetworkPage() {
         title='Network — <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">the numbers</em>.'
         sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
         right={<>
-          {data.stale
-            ? <Pill tone="warn" dot>STALE · RECONNECTING</Pill>
-            : ready
-              ? <Pill tone="live" dot>LIVE</Pill>
-              : <Pill dot>CONNECTING</Pill>}
+          {(() => {
+            // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
+            const phase = chromePhase(data.status, CHAIN_CHROME_KEYS);
+            switch (phase) {
+              case "stale": return <Pill tone="warn" dot>STALE · RECONNECTING</Pill>;
+              case "live": return <Pill tone="live" dot>LIVE</Pill>;
+              case "loading":
+              case "error": return <Pill dot>CONNECTING</Pill>;
+              default: return assertNever(phase, "NetworkPage pill");
+            }
+          })()}
           <Pill>UPDATED {data.lastUpdate > 0 ? new Date(data.lastUpdate).toISOString().slice(11, 19) : "—"}</Pill>
         </>}
       />
@@ -169,7 +176,7 @@ export function NetworkPage() {
         <PanelFrame title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
           {hashSeries.length ? (
             <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
-              baseline="auto" xLabels={false} stale={data.stale}
+              baseline="auto" xLabels={false} stale={feedDegraded(data.status)}
               format={fmtGiga} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
@@ -178,7 +185,7 @@ export function NetworkPage() {
         <PanelFrame title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
           {diffSeries.length ? (
             <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
-              baseline="auto" xLabels={false} stale={data.stale}
+              baseline="auto" xLabels={false} stale={feedDegraded(data.status)}
               format={fmtGigaSuffix} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
@@ -190,7 +197,7 @@ export function NetworkPage() {
         <PanelFrame title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
           {mempoolSeries.length ? (
             <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
-              baseline="zero" xLabels={false} stale={data.stale}
+              baseline="zero" xLabels={false} stale={feedDegraded(data.status)}
               format={fmtRound} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
@@ -199,7 +206,7 @@ export function NetworkPage() {
         <PanelFrame title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
           {fullness.length ? (
             <BarSeries data={fullness} height={180} color="var(--tk-accent)"
-              baseline="zero" stale={data.stale} endLabels={["older", "newer"]}
+              baseline="zero" stale={feedDegraded(data.status)} endLabels={["older", "newer"]}
               format={fmtPct} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
@@ -213,7 +220,7 @@ export function NetworkPage() {
           {ivHist.counts.length ? (
             <>
               <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
-                baseline="zero" stale={data.stale} format={fmtRound}
+                baseline="zero" stale={feedDegraded(data.status)} format={fmtRound}
                 marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
               <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
                 μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
@@ -228,11 +235,11 @@ export function NetworkPage() {
         <PanelFrame title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
             <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
-              baseline="zero" stale={data.stale} format={fmtRound}
+              baseline="zero" stale={feedDegraded(data.status)} format={fmtRound}
               marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
           ) : (
             <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
-              baseline="zero" stale={data.stale} format={fmtRound} />
+              baseline="zero" stale={feedDegraded(data.status)} format={fmtRound} />
           )}
           <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
             {data.mempool.length

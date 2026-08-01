@@ -13,6 +13,7 @@ import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { useMemStats, BlockEta, fmtMMSS } from "@/mempool/mem-stats";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MoneroLive, Block } from "@/data/types";
+import { hasData } from "@/data/feed-status";
 
 interface ViewProps {
   data: MoneroLive;
@@ -27,7 +28,7 @@ const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"]
 
 /** GB string from a real byte count; "—" until the node has reported it. */
 const dbGB = (data: MoneroLive) =>
-  data.ready && data.databaseSize ? (data.databaseSize / 1e9).toFixed(1) + " GB" : "—";
+  hasData(data.status.network) && data.databaseSize ? (data.databaseSize / 1e9).toFixed(1) + " GB" : "—";
 
 // terminal.jsx — TERMINAL HUB · hi-fi CLI
 //
@@ -35,15 +36,19 @@ const dbGB = (data: MoneroLive) =>
 // fed by live RPC data, an auto-tailing log derived from real feed diffs,
 // a reactive ASCII block stream, a live ASCII fee histogram, compact radial
 // gauges and a node/fee/chain rail. Scanlines on. Every number rendered here
-// comes from the daemon feed; unknowns render "—" until data.ready.
+// comes from the daemon feed; unknowns render "—" until hasData(data.status.network).
 //
 // All helpers prefixed `Term` to avoid shared-scope collisions.
 
 /* ── self-typing command palette (real RPC outputs) ─────────── */
 function TermPalette({ data }: { data: MoneroLive }) {
   const reduced = useReducedMotion();
+  // Hoisted rather than called inline in the dep array below: a dep entry has to
+  // be readable at a glance, and a call expression there reads like a new
+  // subscription rather than the plain boolean it is.
+  const ready = hasData(data.status.network);
   const cmds = React.useMemo(() => {
-    if (!data.ready) return [] as { q: string; rows: string[][] }[];
+    if (!ready) return [] as { q: string; rows: string[][] }[];
     const b = data.blocks[0];
     const pool = data.mempool.slice(0, 2);
     return [
@@ -52,7 +57,7 @@ function TermPalette({ data }: { data: MoneroLive }) {
       { q: "get_fee_estimate", rows: [["FEE", data.feeTiers.length === 4 ? data.feeTiers.map((t) => Math.round(t)).join(" / ") : "—", "pcn/B · slow→fastest"]] },
       { q: "print_pool", rows: pool.length ? pool.map((t) => ["TX", shortHash(t.id), `${Math.round(t.perB)} pcn/B · ${t.size} B`]) : [["POOL", "—", "pool empty"]] },
     ];
-  }, [data.ready, data.height, data.difficulty, data.mempool, data.blocks, data.feeTiers]);
+  }, [ready, data.height, data.difficulty, data.mempool, data.blocks, data.feeTiers]);
   const [ci, setCi] = React.useState(0);
   const [typed, setTyped] = React.useState("");
   const [phase, setPhase] = React.useState("typing"); // typing → hold → clearing
@@ -276,10 +281,10 @@ export function TerminalHubView({ data }: ViewProps) {
   // Terminal keeps its own ASCII/kv skin — it just stops recomputing the
   // same poolBytes/medianPerB figures locally.
   const stats = useMemStats(data);
-  const syncPct = data.ready && data.synchronized ? 100 : 0;
-  const poolPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((stats.poolBytes / data.blockWeightLimit) * 100)) : 0;
-  const weightPct = data.ready && data.blockWeightLimit ? Math.min(100, Math.round((data.blockWeightMedian / data.blockWeightLimit) * 100)) : 0;
-  const feePct = data.ready && tiersKnown && stats.medianPerB && data.feeTiers[2] ? Math.min(100, Math.round((stats.medianPerB / data.feeTiers[2]) * 100)) : 0;
+  const syncPct = hasData(data.status.network) && data.synchronized ? 100 : 0;
+  const poolPct = hasData(data.status.network) && data.blockWeightLimit ? Math.min(100, Math.round((stats.poolBytes / data.blockWeightLimit) * 100)) : 0;
+  const weightPct = hasData(data.status.network) && data.blockWeightLimit ? Math.min(100, Math.round((data.blockWeightMedian / data.blockWeightLimit) * 100)) : 0;
+  const feePct = hasData(data.status.network) && tiersKnown && stats.medianPerB && data.feeTiers[2] ? Math.min(100, Math.round((stats.medianPerB / data.feeTiers[2]) * 100)) : 0;
 
   // Tracked tx — same shape everywhere: null blockHeight = still pending,
   // resolved once from the node otherwise; confOf never disagrees with the
@@ -304,15 +309,15 @@ export function TerminalHubView({ data }: ViewProps) {
               <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px color-mix(in srgb, var(--accent-structural) 18%, transparent)" }}>
 {`╭─ monerod ${data.version || "—"} `.padEnd(52, "─") + "\n│ Status:    "}
-{data.ready ? (
+{hasData(data.status.network) ? (
   <>
     <span style={{ color: data.synchronized ? "var(--g-50)" : "var(--y-50)", textShadow: data.synchronized ? "var(--glow-g)" : "none" }}>{data.synchronized ? "SYNCED" : "SYNCING"}</span>
     {` (${data.height.toLocaleString()}/${data.height.toLocaleString()})`}
   </>
 ) : "—"}
-{"\n│ Network:   " + (data.ready ? `${data.nettype || "—"} · hardfork ${data.hardfork}` : "—")}
+{"\n│ Network:   " + (hasData(data.status.network) ? `${data.nettype || "—"} · hardfork ${data.hardfork}` : "—")}
 {"\n│ Hash rate: "}
-{data.ready ? (
+{hasData(data.status.network) ? (
   <>
     <span className="acc">{(data.hashrate / 1e9).toFixed(2)} GH/s</span>
     {` · diff ${data.difficulty.toLocaleString()}`}
@@ -333,10 +338,10 @@ export function TerminalHubView({ data }: ViewProps) {
                 <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                   <div className="kicker" style={{ marginBottom: 6 }}>CHAIN TOTALS</div>
                   {[
-                    ["txs all-time", data.ready ? fmtN(data.txCountTotal) : "—"],
+                    ["txs all-time", hasData(data.status.network) ? fmtN(data.txCountTotal) : "—"],
                     ["db size", dbGB(data)],
-                    ["alt blocks", data.ready ? String(data.altBlocksCount) : "—"],
-                    ["top block", data.ready ? shortHash(data.topBlockHash) : "—"],
+                    ["alt blocks", hasData(data.status.network) ? String(data.altBlocksCount) : "—"],
+                    ["top block", hasData(data.status.network) ? shortHash(data.topBlockHash) : "—"],
                   ].map((r, i) => (
                     <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 6, padding: "1px 0" }}>
                       <span className="dim">{r[0]}</span><span className="acc">{r[1]}</span>
@@ -381,10 +386,10 @@ export function TerminalHubView({ data }: ViewProps) {
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55, color: "var(--ink-80)" }}>
 {`MONEROD_VERSION=${data.version || "—"}
 NETTYPE=${data.nettype || "—"}
-SYNCHRONIZED=${data.ready ? String(data.synchronized) : "—"}
+SYNCHRONIZED=${hasData(data.status.network) ? String(data.synchronized) : "—"}
 DB_SIZE=${dbGB(data)}
 FORK=v${data.majorVersion || "—"}
-TOP_BLOCK=${data.ready ? shortHash(data.topBlockHash) : "—"}
+TOP_BLOCK=${hasData(data.status.network) ? shortHash(data.topBlockHash) : "—"}
 RING_SIZE=16
 BP_VARIANT=BP+`}
                 </pre>
@@ -409,7 +414,7 @@ BP_VARIANT=BP+`}
               <div className="kv"><span className="k">Daemon</span><span className="v acc">{data.version || "—"}</span></div>
               <div className="kv"><span className="k">Network</span><span className="v">{data.nettype || "—"}</span></div>
               <div className="kv"><span className="k">DB</span><span className="v">{dbGB(data)}</span></div>
-              <div className="kv"><span className="k">Sync</span><span className={data.ready && data.synchronized ? "v g" : "v"}>{data.ready ? (data.synchronized ? "✓ synced" : "syncing") : "—"}</span></div>
+              <div className="kv"><span className="k">Sync</span><span className={hasData(data.status.network) && data.synchronized ? "v g" : "v"}>{hasData(data.status.network) ? (data.synchronized ? "✓ synced" : "syncing") : "—"}</span></div>
             </div>
             <div className="rail-block">
               <h6>Fee tiers</h6>
@@ -424,10 +429,10 @@ BP_VARIANT=BP+`}
             </div>
             <div className="rail-block">
               <h6>Chain totals</h6>
-              <div className="kv"><span className="k">Txs all-time</span><span className="v acc">{data.ready ? fmtN(data.txCountTotal) : "—"}</span></div>
-              <div className="kv"><span className="k">Alt blocks</span><span className="v">{data.ready ? String(data.altBlocksCount) : "—"}</span></div>
-              <div className="kv"><span className="k">RandomX seed</span><span className="v">{data.ready ? shortHash(data.randomxSeedHash) : "—"}</span></div>
-              <div className="kv"><span className="k">Top block</span><span className="v">{data.ready ? shortHash(data.topBlockHash) : "—"}</span></div>
+              <div className="kv"><span className="k">Txs all-time</span><span className="v acc">{hasData(data.status.network) ? fmtN(data.txCountTotal) : "—"}</span></div>
+              <div className="kv"><span className="k">Alt blocks</span><span className="v">{hasData(data.status.network) ? String(data.altBlocksCount) : "—"}</span></div>
+              <div className="kv"><span className="k">RandomX seed</span><span className="v">{hasData(data.status.network) ? shortHash(data.randomxSeedHash) : "—"}</span></div>
+              <div className="kv"><span className="k">Top block</span><span className="v">{hasData(data.status.network) ? shortHash(data.topBlockHash) : "—"}</span></div>
             </div>
             <div className="rail-block">
               <h6>Network gauges</h6>

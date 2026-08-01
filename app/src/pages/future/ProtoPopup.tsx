@@ -17,10 +17,11 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
 
-import { useRepoPulse, agoStr, isStale } from "@/data/useCachedFeed";
+import { useRepoPulse, agoStr, isStale, repoPulseEndpoint } from "@/data/useCachedFeed";
 import { V6Modal } from "./V6Modal";
 import { FutureMini } from "./FutureMini";
 import { SIM_IDS, type FutureProtocol } from "./data";
+import { FeedEmpty } from "./cards";
 
 export interface ProtoPopupProps {
   p: FutureProtocol;
@@ -42,7 +43,7 @@ export interface ProtoPopupProps {
 
 export function ProtoPopup({ p, open, onClose, morphed }: ProtoPopupProps) {
   const navigate = useNavigate();
-  const pulse = useRepoPulse(p.repo);
+  const { pulse, state: pulseState } = useRepoPulse(p.repo);
   const titleId = React.useId();
   const hasSim = p.sim !== null && SIM_IDS.has(p.sim);
   const stale = pulse ? isStale(pulse.pushed) : false;
@@ -147,7 +148,13 @@ export function ProtoPopup({ p, open, onClose, morphed }: ProtoPopupProps) {
                 </div>
               </>
             ) : (
-              <div>fetching via /api/feeds … <span className="dim2">(last-good cache shows when available)</span></div>
+              <div data-pulse-state={pulseState}>
+                <FeedEmpty
+                  state={pulseState}
+                  endpoint={repoPulseEndpoint(p.repo)}
+                  what="this repo's GitHub pulse"
+                />
+              </div>
             )}
           </div>
         </div>

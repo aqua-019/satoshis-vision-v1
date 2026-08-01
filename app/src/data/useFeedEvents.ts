@@ -13,6 +13,7 @@
 
 import * as React from "react";
 import type { MoneroLive } from "./types";
+import { feedDegraded, hasData } from "./feed-status";
 
 export type FeedEvent =
   | { kind: "block"; ts: number; height: number; hash: string; txs: number; sizeKB: number; reward: number }
@@ -33,18 +34,25 @@ export function useFeedEvents(data: MoneroLive, cap = 40): FeedEvent[] {
     primed: false,
   });
 
+  /* Derived once, and used in BOTH the effect body and its dep array — the two
+     must read the same expression or the differ can miss an edge. `prev.stale`
+     below is this hook's own ref field, not the feed's; they are different
+     things that happened to share a name before v6.1.4. */
+  const ready = hasData(data.status.network);
+  const stale = feedDegraded(data.status);
+
   React.useEffect(() => {
     const prev = ref.current;
     const fresh: FeedEvent[] = [];
     const now = Date.now();
 
     // stale/recover edges fire even before the differ is primed
-    if (data.ready && data.stale !== prev.stale) {
-      fresh.push({ kind: data.stale ? "stale" : "recover", ts: now });
-      prev.stale = data.stale;
+    if (ready && stale !== prev.stale) {
+      fresh.push({ kind: stale ? "stale" : "recover", ts: now });
+      prev.stale = stale;
     }
 
-    if (data.ready && !data.stale) {
+    if (ready && !stale) {
       if (!prev.primed) {
         // First real snapshot: seed the differ silently (no fake backlog).
         prev.tipHeight = data.height;
@@ -78,7 +86,7 @@ export function useFeedEvents(data: MoneroLive, cap = 40): FeedEvent[] {
     }
     // Diff exactly once per feed tick (lastUpdate) and on stale edges.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.lastUpdate, data.stale]);
+  }, [data.lastUpdate, stale]);
 
   return events;
 }

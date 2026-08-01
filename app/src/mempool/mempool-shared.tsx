@@ -9,6 +9,7 @@ import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
+import { assertNever, CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
 import { MemStatStrip } from "@/mempool/mem-stats";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
@@ -44,7 +45,9 @@ export type Tracking =
 export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
   useTick(1000, { motion: false });
   const ageSec = Math.max(0, Math.round((Date.now() - data.lastUpdate) / 1000));
-  if (!data.ready) {
+  // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
+  const phase = chromePhase(data.status, CHAIN_CHROME_KEYS);
+  if (phase === "loading" || phase === "error") {
     return (
       <span className="pill" title="Waiting for the first node snapshot">
         <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
@@ -52,7 +55,7 @@ export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
       </span>
     );
   }
-  if (data.stale) {
+  if (phase === "stale") {
     return (
       <span className="pill" title={`Last good snapshot ${ageSec}s ago · retrying every 2.5s`}>
         <span className="led" style={{ background: "var(--y-50)", boxShadow: "0 0 6px var(--y-50)" }} />
@@ -60,6 +63,7 @@ export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
       </span>
     );
   }
+  phase satisfies "live";
   return (
     <span className="pill live" title={"Feed polling ~every 2.5s · source: " + data.source}>
       <span
@@ -462,7 +466,7 @@ export function MemTxTable({ data, tracking, viewId, columns, cap = 60, onPickTx
       }) : (
         <div className="mem-tbl__r" role="row">
           <div className="mem-tbl__c dim" style={{ gridColumn: "1 / -1" }} role="cell">
-            {data.ready ? "mempool is empty" : "awaiting the first node snapshot…"}
+            {hasData(data.status.network) ? "mempool is empty" : "awaiting the first node snapshot…"}
           </div>
         </div>
       )}

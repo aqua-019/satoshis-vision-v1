@@ -11,6 +11,7 @@ import type { MoneroLive, Tx } from "@/data/types";
 import { fmtBytes, shortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents, type FeedEvent } from "@/data/useFeedEvents";
+import { hasData } from "@/data/feed-status";
 
 interface ViewProps {
   data: MoneroLive;
@@ -190,7 +191,7 @@ export function ConSphere({ txs, tiers, ready, trackedTxId, size = 460 }: { txs:
 
 /* ── newest mempool tx card ─────────────────────────────────── */
 function ConNewestTx({ data }: { data: MoneroLive }) {
-  const tx = data.ready && data.mempool.length ? newestFirst(data.mempool)[0] : null;
+  const tx = hasData(data.status.network) && data.mempool.length ? newestFirst(data.mempool)[0] : null;
   const tierIdx = tx ? feeTierIndex(tx.perB, data.feeTiers) : -1;
   return (
     <ConCard title="Newest tx · mempool" right={<Provenance source="node" fresh={tx ? "live" : "none"} />}>
@@ -216,7 +217,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
    radius is real age (newest at center), color is the real fee tier. */
 export function ConMempoolRadar({ data, trackedTxId }: { data: MoneroLive; trackedTxId?: string | null }) {
   const W = 220, c = W / 2, R = c - 14;
-  const base = data.ready ? data.mempool.slice(0, 60) : [];
+  const base = hasData(data.status.network) ? data.mempool.slice(0, 60) : [];
   // The tracked tx keeps its bearing/dot even if it fell outside the base-60
   // sample — same "always show what's tracked" rule as the sphere above.
   const trackedTx = trackedTxId ? data.mempool.find((t) => t.id === trackedTxId) : null;
@@ -335,7 +336,7 @@ function ConFeeTierBars({ data }: { data: MoneroLive }) {
   // (the rAF clock at :68, the <animate> elements below) already honour the
   // preference, so it kept sliding for reduced-motion visitors on its own.
   const reduced = useReducedMotion();
-  const ok = data.ready && data.feeTiers.length === 4;
+  const ok = hasData(data.status.network) && data.feeTiers.length === 4;
   const counts = [0, 0, 0, 0];
   if (ok) for (const t of data.mempool) { const i = feeTierIndex(t.perB, data.feeTiers); if (i >= 0) counts[i]++; }
   const max = Math.max(1, ...counts);
@@ -386,7 +387,7 @@ function ConFeeTierBars({ data }: { data: MoneroLive }) {
 /* ── mempool bytes-by-fee-tier donut ────────────────────────── */
 function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
   const cx = 70, cy = 70, r = 52, sw = 16, circ = 2 * Math.PI * r;
-  const ok = data.ready && data.feeTiers.length === 4 && data.mempool.length > 0;
+  const ok = hasData(data.status.network) && data.feeTiers.length === 4 && data.mempool.length > 0;
   const bytes = [0, 0, 0, 0];
   let totalBytes = 0;
   if (ok) for (const t of data.mempool) { const i = feeTierIndex(t.perB, data.feeTiers); if (i >= 0) { bytes[i] += t.size; totalBytes += t.size; } }
@@ -403,7 +404,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
             const el = <circle key={label} cx={cx} cy={cy} r={r} fill="none" stroke={TIER_COLORS[i]} strokeWidth={sw} strokeDasharray={len + " " + (circ - len)} strokeDashoffset={-acc} transform={`rotate(-90 ${cx} ${cy})`} style={{ filter: `drop-shadow(0 0 4px ${TIER_COLORS[i]})` }} />;
             acc += len; return el;
           }) : null}
-          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="16" fontWeight="500" fill="var(--tk-accent)">{data.ready ? data.mempool.length : "—"}</text>
+          <text x={cx} y={cy - 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="16" fontWeight="500" fill="var(--tk-accent)">{hasData(data.status.network) ? data.mempool.length : "—"}</text>
           <text x={cx} y={cy + 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="7.5" fill="var(--ink-40)" letterSpacing="0.12em">TX IN POOL</text>
         </svg>
         <div style={{ flex: 1 }}>
@@ -425,7 +426,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
 /* ── block stream strip ─────────────────────────────────────── */
 export function ConBlockStream({ data, tracking, trackedHeight }: { data: MoneroLive; tracking: Tracking; trackedHeight: number | null }) {
   return (
-    <ConCard title="Block stream" right={<span className="acc">{data.ready ? `tip #${data.height.toLocaleString()}` : "—"}</span>}>
+    <ConCard title="Block stream" right={<span className="acc">{hasData(data.status.network) ? `tip #${data.height.toLocaleString()}` : "—"}</span>}>
       <div style={{ display: "flex", gap: 4, height: 96, alignItems: "flex-end" }}>
         {data.blocks.slice(0, RIBBON_BLOCKS).map((b) => {
           const isTracked = trackedHeight != null && b.height === trackedHeight;
@@ -456,7 +457,7 @@ export function ConBlockStream({ data, tracking, trackedHeight }: { data: Monero
 }
 
 export function ConOverview({ data, tracking }: { data: MoneroLive; tracking: Tracking }) {
-  const ready = data.ready;
+  const ready = hasData(data.status.network);
   // tx-derived only (never a bare block search) — mirrors reactor.tsx /
   // classic.tsx's trackedHeight so the star/radar/stream/log can never
   // disagree with the ribbon arrow or TrackChip on any other view.

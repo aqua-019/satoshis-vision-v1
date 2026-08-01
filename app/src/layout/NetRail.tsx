@@ -10,6 +10,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { Sparkline, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
+import { feedDegraded, hasData } from "@/data/feed-status";
 
 export interface NetRailProps {
   /** Optional extra blocks to render below the standard set. */
@@ -19,7 +20,7 @@ export interface NetRailProps {
 export function NetRail({ extra }: NetRailProps) {
   const data = useMoneroLive();
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
-  const ready = data.ready;
+  const ready = hasData(data.status.network);
   const t = data.blockTarget;
   const tiers = data.feeTiers;
   return (
@@ -64,13 +65,13 @@ export function NetRail({ extra }: NetRailProps) {
 
       <div className="rail-block">
         <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Market <Provenance source="coingecko" fresh="live" bare /></h6>
-        <KV k="XMR/USD" v={data.marketReady ? `$${data.price.toFixed(2)}` : "—"} accent />
-        <KV k="24h Δ" v={data.marketReady ? (
+        <KV k="XMR/USD" v={hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"} accent />
+        <KV k="24h Δ" v={hasData(data.status.market) ? (
           <span className={data.change24h >= 0 ? "up" : "dn"}>
             {data.change24h >= 0 ? "+" : ""}{data.change24h.toFixed(2)}%
           </span>
         ) : "—"} />
-        <KV k="XMR/BTC" v={data.marketReady ? data.btcRatio.toFixed(6) : "—"} />
+        <KV k="XMR/BTC" v={hasData(data.status.market) ? data.btcRatio.toFixed(6) : "—"} />
         {data.priceSeries.length > 1 && (
           <div style={{ marginTop: 6 }}>
             <Sparkline
@@ -87,7 +88,7 @@ export function NetRail({ extra }: NetRailProps) {
       {extra}
 
       <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>
-        <Provenance source="node" fresh={data.stale ? "stale" : "live"} detail={data.source} />
+        <Provenance source="node" fresh={feedDegraded(data.status) ? "stale" : "live"} detail={data.source} />
         <div style={{ marginTop: 4 }}>{data.lastUpdate ? `${new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC` : "—"}</div>
         <div style={{ marginTop: 6 }}>
           <Link to="/sources" style={{ color: "var(--ink-60)", textDecoration: "none", letterSpacing: "0.04em" }}>Data &amp; sources →</Link>

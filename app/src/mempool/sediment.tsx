@@ -9,6 +9,7 @@ import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf } from "@/mempool/conf";
 import { AreaSeries, BarSeries } from "@/pages/markets/charts";
 import type { MoneroLive, Tx } from "@/data/types";
+import { hasData } from "@/data/feed-status";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -363,7 +364,7 @@ export function SedClearance({ data }: { data: MoneroLive }) {
     setSeries((s) => [...s.slice(1), data.mempool.length]);
   }, [data.mempool.length]);
   const stats = useMemStats(data);
-  const poolReady = data.ready && stats.txCount > 0;
+  const poolReady = hasData(data.status.network) && stats.txCount > 0;
   const p90 = poolReady ? p90PerB(data.mempool) : null;
   return (
     <SedCard title="Clearance rate" right={<Provenance source="node" fresh="live" />}>
@@ -376,7 +377,7 @@ export function SedClearance({ data }: { data: MoneroLive }) {
       <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6 }}>
         <span>median {poolReady ? Math.round(stats.medianPerB).toLocaleString() + " p/B" : "—"}</span>
         <span>P90 {poolReady && p90 != null ? Math.round(p90).toLocaleString() + " p/B" : "—"}</span>
-        <span>next {data.ready ? <BlockEta data={data} /> : "—"}</span>
+        <span>next {hasData(data.status.network) ? <BlockEta data={data} /> : "—"}</span>
       </div>
     </SedCard>
   );

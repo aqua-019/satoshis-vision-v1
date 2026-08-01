@@ -21,6 +21,7 @@
  */
 
 import * as React from "react";
+import type { FeedPhase } from "./feed-status";
 
 /* ── visibility, inlined on purpose ──────────────────────────────────
    design/usePageActive.ts is the shared primitive and every OTHER poll in the
@@ -54,7 +55,17 @@ export interface Candle {
   v: number;
 }
 
-export type SeriesStatus = "live" | "stale" | "loading";
+/**
+ * The market hook's status vocabulary IS the feed's (v6.1.4). It used to be its
+ * own three-member union with no way to say "we asked and there is nothing" —
+ * that state was carried beside it, in the `attempted` boolean on GroupResult,
+ * which is the same boolean-next-to-a-union shape D1622 exists to remove.
+ *
+ * `import type` only: verify-stale.mjs loads this module in bare Node with no
+ * alias resolution, and Node erases type-only imports. A VALUE import from
+ * ./feed-status here would fail with ERR_MODULE_NOT_FOUND.
+ */
+export type SeriesStatus = FeedPhase;
 
 export interface SeriesResult<T> {
   data: T;
@@ -282,6 +293,9 @@ export function seriesColor(group: "peers" | "majors", index: number): string {
 export function groupStatus(g: { status: SeriesStatus }[]): SeriesStatus {
   if (g.some((s) => s.status === "live")) return "live";
   if (g.some((s) => s.status === "stale")) return "stale";
+  // Only when EVERY member is down — a mix of error and loading is still
+  // partly in flight, and "loading" is the honest word for that.
+  if (g.length > 0 && g.every((s) => s.status === "error")) return "error";
   return "loading";
 }
 
@@ -373,7 +387,13 @@ function assembleGroup(
       ? { label: m.symbol, color, status: "stale", ...hit }
       : { label: m.symbol, color, status: "loading", data: [] };
   });
-  return { data, status: groupStatus(data), granularityLabel: gl, members, rankStatus, attempted };
+  /* "We asked, and there is nothing" is a real state, and it now lives in the
+     union instead of being reconstructed at the call site. MarketsPage's
+     GroupBadge used to spell this `status === "loading" && attempted &&
+     data.length === 0`; same condition, moved to where the facts are. */
+  const status = groupStatus(data);
+  const settled: SeriesStatus = status === "loading" && attempted && data.length === 0 ? "error" : status;
+  return { data, status: settled, granularityLabel: gl, members, rankStatus, attempted };
 }
 
 /** Aggregator responded (HTTP success): resolve this group's membership —

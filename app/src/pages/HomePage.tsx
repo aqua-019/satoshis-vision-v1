@@ -7,6 +7,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtBytes } from "@/data/types";
+import { assertNever, CHAIN_MARKET_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
 import { Card, Crumbs, Pill, Sparkline, Stat, Provenance } from "@/design/primitives";
 import { ThemeToggle } from "@/design/ThemeToggle";
 
@@ -50,20 +51,26 @@ export function HomePage() {
         <Card style={{ padding: 18, display: "flex", flexDirection: "column", gap: 14 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div className="kicker">Live snapshot</div>
-            {!data.ready && !data.marketReady
-              ? <Pill>CONNECTING</Pill>
-              : data.stale
-                ? <Pill tone="warn" dot>STALE · reconnecting</Pill>
-                : <Pill tone="live" dot>SYNCED</Pill>}
+            {(() => {
+              // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
+              const phase = chromePhase(data.status, CHAIN_MARKET_CHROME_KEYS);
+              switch (phase) {
+                case "loading":
+                case "error": return <Pill>CONNECTING</Pill>;
+                case "stale": return <Pill tone="warn" dot>STALE · reconnecting</Pill>;
+                case "live": return <Pill tone="live" dot>SYNCED</Pill>;
+                default: return assertNever(phase, "HomePage pill");
+              }
+            })()}
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase" }}>XMR / USD</div>
-              <Provenance source="coingecko" fresh={data.stale ? "stale" : data.marketReady ? "live" : "loading"} />
+              <Provenance source="coingecko" fresh={feedDegraded(data.status) ? "stale" : hasData(data.status.market) ? "live" : "loading"} />
             </div>
-            <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>{data.marketReady ? `$${data.price.toFixed(2)}` : "—"}</div>
+            <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>{hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"}</div>
             <div className="mono" style={{ marginTop: 6, fontSize: "var(--fs-mono)", color: data.change24h >= 0 ? "var(--g-50)" : "var(--r-50)" }}>
-              {data.marketReady ? <>{data.change24h >= 0 ? "▲" : "▼"} {Math.abs(data.change24h).toFixed(2)}% · 24h</> : "—"}
+              {hasData(data.status.market) ? <>{data.change24h >= 0 ? "▲" : "▼"} {Math.abs(data.change24h).toFixed(2)}% · 24h</> : "—"}
             </div>
           </div>
           {data.priceSeries.length > 1 && (
@@ -78,12 +85,12 @@ export function HomePage() {
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase" }}>On-chain</div>
-            <Provenance source="node" fresh={data.ready ? "live" : "loading"} detail={data.source !== "coingecko" ? data.source : undefined} />
+            <Provenance source="node" fresh={hasData(data.status.network) ? "live" : "loading"} detail={data.source !== "coingecko" ? data.source : undefined} />
           </div>
           <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 3, gap: 8 }}>
-            <Stat k="Block height" v={data.ready ? data.height.toLocaleString() : "—"} tone="acc" />
-            <Stat k="Hashrate" v={data.ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} sub="2:00 target" />
-            <Stat k="Mempool" v={data.ready ? `${data.mempool.length} tx` : "—"} sub={data.ready ? fmtBytes(memBytes) : "—"} />
+            <Stat k="Block height" v={hasData(data.status.network) ? data.height.toLocaleString() : "—"} tone="acc" />
+            <Stat k="Hashrate" v={hasData(data.status.network) ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} sub="2:00 target" />
+            <Stat k="Mempool" v={hasData(data.status.network) ? `${data.mempool.length} tx` : "—"} sub={hasData(data.status.network) ? fmtBytes(memBytes) : "—"} />
           </div>
         </Card>
       </section>

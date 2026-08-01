@@ -168,7 +168,17 @@ interface FeedItemsResponse<I> { items?: I[] }
  */
 export interface RepoPulse { stars: number; pushed: string; issues: number; issueAt: string | null }
 
-export function useRepoPulse(repo: string): RepoPulse | null {
+/**
+ * v6.1.4: returns `{ pulse, at, state }`, matching its three siblings below.
+ *
+ * It used to destructure `{ data }` alone and return `RepoPulse | null`, which
+ * threw away the state machine `useCachedFeed` had already computed. A caller
+ * could not tell "still loading" from "the proxy is dead" — both were `null` —
+ * so every pulse surface rendered "fetching via /api/feeds …" forever against a
+ * dead proxy. A spinner that will never resolve is a lie told patiently, and it
+ * was the only one of the four wrappers that told it.
+ */
+export function useRepoPulse(repo: string): { pulse: RepoPulse | null; at: number | null; state: FeedState } {
   // `repo` fully determines the payload, so it's folded into the id itself
   // — the effect's `deps` array would be redundant (see fetchOnce above).
   //
@@ -182,7 +192,7 @@ export function useRepoPulse(repo: string): RepoPulse | null {
   // the old `gh.<repo>` keys are left to expire rather than swept, because a
   // sweeper is more code and more failure modes than ~1 KB justifies.
   const id = repo ? `gh.v2.${repo}` : null;
-  const { data } = useCachedFeed<RepoPulse>(id, () =>
+  const { data, at, state } = useCachedFeed<RepoPulse>(id, () =>
     getJSON<GhRepoResponse>(`${FEED_PROXY}?src=ghrepo&repo=${encodeURIComponent(repo)}`).then((r) =>
       r && typeof r.stars === "number" && typeof r.pushed === "string" && typeof r.issues === "number"
         // `issueAt` is deliberately NOT part of the guard above. It is
@@ -194,8 +204,14 @@ export function useRepoPulse(repo: string): RepoPulse | null {
         : null,
     ),
   );
-  return data;
+  return { pulse: data, at, state };
 }
+
+/** The same-origin URL a repo pulse is fetched from. Exported so a failing
+ *  surface can NAME the endpoint rather than saying "something went wrong" —
+ *  the rule verify-future.mjs already enforces for the announcements column. */
+export const repoPulseEndpoint = (repo: string): string =>
+  `${FEED_PROXY}?src=ghrepo&repo=${encodeURIComponent(repo)}`;
 
 export interface MrlIssue { n: number; t: string; u: string; url: string; c: number }
 

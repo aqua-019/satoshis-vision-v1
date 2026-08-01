@@ -4,19 +4,24 @@
  * `useXmrIrishFeed()` yields the MoneroLive shape the whole app reads via
  * `useMoneroLive()`. It:
  *
- *   1. boots empty           → `ready`/`marketReady` are false; surfaces render
- *                              skeletons / "—" until real data lands. The UI
- *                              never displays a number that didn't come from
- *                              the node or CoinGecko.
+ *   1. boots empty           → every `status[key].phase` is "loading"; surfaces
+ *                              render "—" until real data lands. The UI never
+ *                              displays a number that didn't come from the node
+ *                              or CoinGecko.
  *   2. polls in three tiers  → each endpoint is refreshed at the rate its data
  *                              actually changes (see below), mapped through
  *                              map.ts (source "rpc" / "coingecko").
  *   3. takes live deltas     → over the optional relay WebSocket (source "ws"),
  *                              which supersedes the chain-data tiers while open.
  *   4. degrades to stale     → on repeated poll failure the last-good snapshot
- *                              is kept, `stale` flips true (badges show
- *                              "STALE · reconnecting"), and polling continues —
- *                              the next success flips back to live.
+ *                              is kept, the failing endpoint's phase becomes
+ *                              "stale" (badges show "STALE · reconnecting"), and
+ *                              polling continues — the next success flips it
+ *                              back to "live". An endpoint that has NEVER
+ *                              succeeded goes to "error" instead, which is the
+ *                              distinction the old `ready` boolean could not
+ *                              draw: it left a dead-from-cold feed saying
+ *                              "connecting" forever.
  *
  * ── Tiering (v6.0.6) ──────────────────────────────────────────────────────
  * This used to be ONE `setInterval` at 2.5s firing a `Promise.all` over five
@@ -46,6 +51,13 @@ import type { MoneroLive } from "./types";
 import { getJSON } from "./http";
 import { usePolling } from "./usePolling";
 import {
+  BOOT_OBS,
+  deriveAll,
+  type FailReason,
+  type FeedKey,
+  type ObsMap,
+} from "./feed-status";
+import {
   applyWsBlock,
   applyWsMempool,
   applyWsNetwork,
@@ -68,10 +80,9 @@ declare global {
   }
 }
 
-/** Consecutive FAST-tier failures before the feed is marked stale (~6s). */
-const STALE_AFTER_FAST = 2;
-/** Consecutive CHAIN-tier failures before the feed is marked stale (~30s). */
-const STALE_AFTER_CHAIN = 2;
+/* The consecutive-failure thresholds moved to feed-status.ts `STALE_AFTER`
+   (v6.1.4). They are per-ENDPOINT now rather than per-tier, at the same value of
+   2, so a fast-tier outage still surfaces in ~6s and a chain-only one in ~30s. */
 /**
  * Even with a static height, re-pull chain meta this often so slow-moving fields
  * (daemon version, DB size, fee tiers) can't sit unrefreshed forever if the tip
@@ -130,10 +141,7 @@ const BOOT: MoneroLive = {
   feeHist: [],
   source: "rpc",
   lastUpdate: 0,
-  live: false,
-  ready: false,
-  marketReady: false,
-  stale: false,
+  status: deriveAll(BOOT_OBS),
 };
 
 /**
@@ -151,14 +159,12 @@ function relayWsUrl(): string | null {
 }
 
 export function useXmrIrishFeed(): MoneroLive {
-  const [state, setState] = React.useState<MoneroLive>(BOOT);
+  /* The snapshot (numbers) and the observations (per-endpoint facts) are held
+     separately, because they change for different reasons: a snapshot only ever
+     moves forward on success, while an observation records failures too. */
+  const [snap, setSnap] = React.useState<MoneroLive>(BOOT);
+  const [obs, setObs] = React.useState<ObsMap>(BOOT_OBS);
 
-  /* Consecutive-failure streaks, per tier. Either crossing its threshold means
-     the chain numbers on screen are last-good, so `stale` is raised. Tracking
-     them separately keeps the flag truthful: the 3s tier detects a total outage
-     in ~6s, while a chain-only outage still surfaces without waiting on it. */
-  const fastFails = React.useRef(0);
-  const chainFails = React.useRef(0);
   /** Last tip height observed, for change detection. null = never seen. */
   const lastTip = React.useRef<number | null>(null);
   /** When the chain tier last pulled network+blocks. */
@@ -166,32 +172,36 @@ export function useXmrIrishFeed(): MoneroLive {
   /** True while a relay socket is delivering deltas — suspends the chain tiers. */
   const [wsLive, setWsLive] = React.useState<boolean>(() => relayWsUrl() !== null);
 
-  const isStale = () =>
-    fastFails.current >= STALE_AFTER_FAST || chainFails.current >= STALE_AFTER_CHAIN;
-
-  /** Fold a successful tier result into state, recomputing the meta flags. */
-  const commit = React.useCallback(
-    (src: SnapshotSources, opts: { pushHash?: boolean; ready?: boolean; marketReady?: boolean }) => {
-      setState((s) => {
-        const stale = s.ready && isStale();
-        return {
-          ...mapToMoneroLive(s, src, s.source === "ws" ? "ws" : "rpc", { pushHash: opts.pushHash }),
-          ready: s.ready || !!opts.ready,
-          marketReady: s.marketReady || !!opts.marketReady,
-          stale,
-          live: !stale,
-        };
-      });
-    },
-    [],
-  );
-
-  /** Record a failed tier tick — keep last-good values, raise `stale` on a streak. */
-  const noteFailure = React.useCallback(() => {
-    setState((s) => {
-      const stale = s.ready && isStale();
-      return stale === s.stale ? s : { ...s, stale, live: !stale };
+  /**
+   * Record ONE endpoint's outcome. Facts only — no phase is computed here, and
+   * nothing derived is stored (D1624). This is the whole reason a per-endpoint
+   * union is expressible at all: the old code folded mempool and fees into a
+   * single `fastFails` counter, so "mempool answered, fees didn't" had nowhere
+   * to live.
+   */
+  const note = React.useCallback((key: FeedKey, ok: boolean, reason: FailReason = "http") => {
+    setObs((o) => {
+      const prev = o[key];
+      if (ok) {
+        return { ...o, [key]: { okAt: Date.now(), fails: 0, reason: null } };
+      }
+      return { ...o, [key]: { okAt: prev.okAt, fails: prev.fails + 1, reason } };
     });
+  }, []);
+
+  /** Classify a failure from what we can actually observe. `getJSON` collapses
+   *  every failure to null, so anything beyond these three would be invented. */
+  const why = (signal: AbortSignal): FailReason => {
+    if (signal.aborted) return "timeout";
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return "offline";
+    return "http";
+  };
+
+  /** Fold a successful tier result into the snapshot. */
+  const commit = React.useCallback((src: SnapshotSources, opts: { pushHash?: boolean }) => {
+    setSnap((s) =>
+      mapToMoneroLive(s, src, s.source === "ws" ? "ws" : "rpc", { pushHash: opts.pushHash }),
+    );
   }, []);
 
   // ── FAST tier (3s): mempool + fee estimate ──────────────────────────────
@@ -200,15 +210,16 @@ export function useXmrIrishFeed(): MoneroLive {
       getJSON("/api/xmr/mempool", { signal }),
       getJSON("/api/xmr/fees", { signal }),
     ]);
-    if (!mempool && !fees) {
-      fastFails.current++;
-      noteFailure();
-      return false;
-    }
-    fastFails.current = 0;
-    /* Deliberately does NOT set `ready`: that flag gates height/difficulty, which
-       only the chain tier supplies. Flipping it here would render BOOT's 0 as a
-       block height. */
+    /* Recorded SEPARATELY (v6.1.4). The old code kept one counter for the pair
+       and only incremented it when BOTH failed, so a dead /api/xmr/fees behind a
+       healthy /api/xmr/mempool was invisible. `feedDegraded` still applies the
+       pair-AND rule, so this changes what is KNOWABLE, not what is rendered. */
+    note("mempool", mempool != null, why(signal));
+    note("fees", fees != null, why(signal));
+    if (!mempool && !fees) return false;
+    /* Deliberately does NOT mark the chain ready: chain numbers gate on
+       status.network, which only the chain tier supplies. Marking them here
+       would render BOOT's 0 as a block height. */
     commit(
       {
         mempool: mempool as SnapshotSources["mempool"],
@@ -223,6 +234,10 @@ export function useXmrIrishFeed(): MoneroLive {
   const chainTick = async (signal: AbortSignal): Promise<boolean> => {
     const tip = await getJSON<XmrTip>("/api/xmr/tip");
     const tipHeight = typeof tip?.height === "number" ? tip.height : null;
+    /* The tip watch has its own status, but it is NOT part of `feedDegraded`:
+       a failed watch falls through to the full pull below rather than freezing
+       the chain numbers, so it is a cost, not a degradation. */
+    note("tip", tipHeight !== null, why(signal));
 
     const first = lastTip.current === null;
     const advanced = tipHeight !== null && tipHeight !== lastTip.current;
@@ -234,7 +249,6 @@ export function useXmrIrishFeed(): MoneroLive {
     if (!needFull) {
       // Tip answered and hasn't moved — nothing to fetch. This is the steady
       // state and the whole point of the tier: 1 cheap RPC instead of 20.
-      chainFails.current = 0;
       return true;
     }
 
@@ -243,13 +257,14 @@ export function useXmrIrishFeed(): MoneroLive {
       getJSON("/api/xmr/blocks?limit=100", { signal }),
     ]);
 
-    if (!network && !blocks) {
-      chainFails.current++;
-      noteFailure();
-      return false;
-    }
+    // Separately, for the same reason as the fast tier above: /network feeds the
+    // KPI row and the hashrate chart, /blocks feeds the block panels, and they
+    // can fail independently.
+    note("network", network != null, why(signal));
+    note("blocks", blocks != null, why(signal));
 
-    chainFails.current = 0;
+    if (!network && !blocks) return false;
+
     if (tipHeight !== null) lastTip.current = tipHeight;
     lastFull.current = Date.now();
     /* pushHash here and nowhere else — hashrate derives from difficulty, which
@@ -259,7 +274,7 @@ export function useXmrIrishFeed(): MoneroLive {
         network: network as SnapshotSources["network"],
         blocks: blocks as SnapshotSources["blocks"],
       },
-      { pushHash: true, ready: !!network },
+      { pushHash: true },
     );
     return true;
   };
@@ -267,8 +282,14 @@ export function useXmrIrishFeed(): MoneroLive {
   // ── MARKET tier (60s): CoinGecko spot ───────────────────────────────────
   const marketTick = async (signal: AbortSignal): Promise<boolean> => {
     const market = await getJSON(COINGECKO, { signal });
-    if (!market) return false; // market outage never marks the chain feed stale
-    commit({ market: market as SnapshotSources["market"] }, { marketReady: true });
+    /* v6.1.4: a market failure is now RECORDED. It still never marks the chain
+       feed stale (feedDegraded excludes `market` — CoinGecko failing says
+       nothing about node health), but it used to return here with no state
+       write at all, which made a total CoinGecko outage indistinguishable from
+       a cold boot: both rendered "connecting", forever. */
+    note("market", market != null, why(signal));
+    if (!market) return false;
+    commit({ market: market as SnapshotSources["market"] }, {});
     return true;
   };
 
@@ -299,13 +320,16 @@ export function useXmrIrishFeed(): MoneroLive {
         if (!alive || !m || !m.type) return;
         switch (m.type) {
           case "block":
-            setState((s) => ({ ...applyWsBlock(s, m.data as never), ready: true, stale: false }));
+            setSnap((s) => applyWsBlock(s, m.data as never));
+            note("blocks", true);
             break;
           case "mempool-update":
-            setState((s) => ({ ...applyWsMempool(s, m.data as never), ready: true, stale: false }));
+            setSnap((s) => applyWsMempool(s, m.data as never));
+            note("mempool", true);
             break;
           case "network-update":
-            setState((s) => ({ ...applyWsNetwork(s, m.data as never), ready: true, stale: false }));
+            setSnap((s) => applyWsNetwork(s, m.data as never));
+            note("network", true);
             break;
           // hello / fee-update / pong / tx-confirmed: no MoneroLive field to map
           default:
@@ -330,7 +354,17 @@ export function useXmrIrishFeed(): MoneroLive {
         ws.close();
       }
     };
-  }, []);
+  }, [note]);
 
-  return state;
+  /**
+   * D1624 — the ONE derivation. Phase is computed here, during render, from the
+   * facts in `obs`; nothing stores it, so nothing can hold a copy that has gone
+   * out of date the way the old `commit`-time `stale` did.
+   *
+   * Memoised because this object is the Context value read by 12 call sites and
+   * prop-drilled to ~29 more. A fresh identity on every render would re-render
+   * the entire tree on every parent render, which on /mempool is a measurable
+   * regression rather than a theoretical one.
+   */
+  return React.useMemo<MoneroLive>(() => ({ ...snap, status: deriveAll(obs) }), [snap, obs]);
 }
