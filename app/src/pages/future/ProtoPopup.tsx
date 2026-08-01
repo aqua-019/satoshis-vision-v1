@@ -25,9 +25,14 @@ import { SIM_IDS, type FutureProtocol } from "./data";
 export interface ProtoPopupProps {
   p: FutureProtocol;
   onClose: () => void;
+  /** True while this popup is the TARGET of the card→modal shared-element
+   *  morph (see FuturePage.tsx's `morph` state) — cleared once the opening
+   *  transition settles, so the name does not linger on a modal that is
+   *  just sitting open with no transition in flight. */
+  morphed?: boolean;
 }
 
-export function ProtoPopup({ p, onClose }: ProtoPopupProps) {
+export function ProtoPopup({ p, onClose, morphed }: ProtoPopupProps) {
   const navigate = useNavigate();
   const pulse = useRepoPulse(p.repo);
   const titleId = React.useId();
@@ -48,7 +53,17 @@ export function ProtoPopup({ p, onClose }: ProtoPopupProps) {
           <h2
             id={titleId}
             className="serif"
-            style={{ margin: 0, fontSize: "clamp(28px, 2.6vw, 44px)", fontWeight: 400, color: "var(--ink-100)", lineHeight: 1.08 }}
+            style={{
+              margin: 0,
+              fontSize: "clamp(28px, 2.6vw, 44px)",
+              fontWeight: 400,
+              color: "var(--ink-100)",
+              lineHeight: 1.08,
+              // §6 shared-element morph target — the SAME name
+              // pages/future/cards.tsx's <h3> carries while morphing, never
+              // both at once. See that file's comment for why.
+              viewTransitionName: morphed ? "proto-title" : undefined,
+            }}
           >
             <em style={{ fontStyle: "normal", color: p.c, textShadow: `0 0 14px ${p.c}66` }}>{p.tag}</em> — {p.head}
           </h2>

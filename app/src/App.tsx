@@ -12,6 +12,8 @@ import { DataProvider } from "@/data/DataContext";
 import { VisualProvider } from "@/design/VisualContext";
 import { AmbientField } from "@/design/AmbientField";
 import { RootBoundary } from "@/design/RootBoundary";
+import { markChunkResolved } from "@/design/useViewTransitionNavigate";
+import { NavTransitions } from "@/routes/NavTransitions";
 // HomePage stays EAGER. It is the LCP route — lazy-loading it would add a
 // round trip to the exact metric this pass exists to improve.
 import { HomePage } from "@/pages/HomePage";
@@ -23,18 +25,25 @@ import { HomePage } from "@/pages/HomePage";
 // this extends that pattern to the rest of the router.
 //
 // Named exports need the `.then` unwrap; SimulatePage is a default export.
-const MempoolPage      = React.lazy(() => import("@/pages/MempoolPage").then((m) => ({ default: m.MempoolPage })));
-const MempoolTxPage    = React.lazy(() => import("@/pages/MempoolTxPage").then((m) => ({ default: m.MempoolTxPage })));
-const MarketsPage      = React.lazy(() => import("@/pages/MarketsPage").then((m) => ({ default: m.MarketsPage })));
-const NetworkPage      = React.lazy(() => import("@/pages/NetworkPage").then((m) => ({ default: m.NetworkPage })));
-const EducationPage    = React.lazy(() => import("@/pages/EducationPage").then((m) => ({ default: m.EducationPage })));
-const MoneroPage       = React.lazy(() => import("@/pages/MoneroPage").then((m) => ({ default: m.MoneroPage })));
-const FuturePage       = React.lazy(() => import("@/pages/FuturePage").then((m) => ({ default: m.FuturePage })));
-const TrustedPeersPage = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => ({ default: m.TrustedPeersPage })));
-const NodePage         = React.lazy(() => import("@/pages/NodePage").then((m) => ({ default: m.NodePage })));
-const SourcesPage      = React.lazy(() => import("@/pages/SourcesPage").then((m) => ({ default: m.SourcesPage })));
-const NotFoundPage     = React.lazy(() => import("@/pages/NotFoundPage").then((m) => ({ default: m.NotFoundPage })));
-const SimulatePage     = React.lazy(() => import("@/pages/SimulatePage"));
+// Each `.then()` also calls `markChunkResolved(key)` — a side effect, not
+// part of the unwrap — recording in useViewTransitionNavigate.ts's
+// module-level Set that this chunk's real content has actually finished
+// downloading and evaluating. That Set is what lets a route navigation know
+// whether it is safe to view-transition into (chunk already resolved) or
+// must fall back to a plain navigate (first visit — see that hook's header
+// for why a naive transition here would morph into the Suspense fallback).
+const MempoolPage      = React.lazy(() => import("@/pages/MempoolPage").then((m) => { markChunkResolved("mempool"); return { default: m.MempoolPage }; }));
+const MempoolTxPage    = React.lazy(() => import("@/pages/MempoolTxPage").then((m) => { markChunkResolved("mempool-tx"); return { default: m.MempoolTxPage }; }));
+const MarketsPage      = React.lazy(() => import("@/pages/MarketsPage").then((m) => { markChunkResolved("markets"); return { default: m.MarketsPage }; }));
+const NetworkPage      = React.lazy(() => import("@/pages/NetworkPage").then((m) => { markChunkResolved("network"); return { default: m.NetworkPage }; }));
+const EducationPage    = React.lazy(() => import("@/pages/EducationPage").then((m) => { markChunkResolved("education"); return { default: m.EducationPage }; }));
+const MoneroPage       = React.lazy(() => import("@/pages/MoneroPage").then((m) => { markChunkResolved("monero"); return { default: m.MoneroPage }; }));
+const FuturePage       = React.lazy(() => import("@/pages/FuturePage").then((m) => { markChunkResolved("future"); return { default: m.FuturePage }; }));
+const TrustedPeersPage = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => { markChunkResolved("peers"); return { default: m.TrustedPeersPage }; }));
+const NodePage         = React.lazy(() => import("@/pages/NodePage").then((m) => { markChunkResolved("node"); return { default: m.NodePage }; }));
+const SourcesPage      = React.lazy(() => import("@/pages/SourcesPage").then((m) => { markChunkResolved("sources"); return { default: m.SourcesPage }; }));
+const NotFoundPage     = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
+const SimulatePage     = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
 
 export interface AppProps {
   /** Swap in your own MoneroLive hook from the host runtime. */
@@ -50,6 +59,7 @@ export function App({ useFeed }: AppProps = {}) {
     // beside whatever the active route renders.
     <VisualProvider>
       <AmbientField />
+      <NavTransitions />
       <DataProvider useFeed={useFeed}>
         {/* ONE boundary for the whole router rather than one per route. With a
             single lazy route the per-route <Suspense> was fine; at eleven it is

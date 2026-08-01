@@ -39,9 +39,14 @@ function stamp(at: number | null): string {
 export interface ProtocolCardProps {
   p: FutureProtocol;
   onOpen: () => void;
+  /** True only for the brief window (see FuturePage.tsx's `morph` state)
+   *  this card's title is the SOURCE of the card→modal shared-element
+   *  morph — never true once the popup for this same id is open, so the
+   *  name is never on both the card and the modal at once. */
+  morphed?: boolean;
 }
 
-export function ProtocolCard({ p, onOpen }: ProtocolCardProps) {
+export function ProtocolCard({ p, onOpen, morphed }: ProtocolCardProps) {
   const pulse = useRepoPulse(p.repo);
   const stale = pulse ? isStale(pulse.pushed) : false;
 
@@ -65,7 +70,22 @@ export function ProtocolCard({ p, onOpen }: ProtocolCardProps) {
                 issues are busy. */}
             {stale && pulse ? <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--y-50)" }}>push quiet · {agoStr(pulse.pushed)}</span> : null}
           </div>
-          <h3 className="serif" style={{ margin: "14px 0 4px", fontSize: "clamp(24px, 1.9vw, 34px)", fontWeight: 400, color: p.c, textShadow: `0 0 16px ${p.c}55` }}>{p.tag}</h3>
+          <h3
+            className="serif"
+            style={{
+              margin: "14px 0 4px",
+              fontSize: "clamp(24px, 1.9vw, 34px)",
+              fontWeight: 400,
+              color: p.c,
+              textShadow: `0 0 16px ${p.c}55`,
+              // §6 shared-element morph source. `undefined` (not a
+              // conditional key) so React drops the property entirely when
+              // not morphing, rather than assigning an empty string name.
+              viewTransitionName: morphed ? "proto-title" : undefined,
+            }}
+          >
+            {p.tag}
+          </h3>
           <div className="kicker" style={{ marginBottom: 10 }}>{p.sub} · ETA {p.eta}</div>
           <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p.lede}</p>
         </div>
