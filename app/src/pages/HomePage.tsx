@@ -8,6 +8,7 @@ import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtBytes } from "@/data/types";
 import { Card, Crumbs, Pill, Sparkline, Stat, Provenance } from "@/design/primitives";
+import { ThemeToggle } from "@/design/ThemeToggle";
 
 export function HomePage() {
   const data = useMoneroLive();
@@ -34,12 +35,13 @@ export function HomePage() {
             simulators for every privacy primitive in the stack — RingCT, Stealth addresses,
             Dandelion++, View tags, FCMP++.
           </p>
-          <div style={{ display: "flex", gap: 10, marginTop: 6 }}>
+          <div style={{ display: "flex", gap: 10, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
             <Link to="/mempool" className="proto-btn" style={{ textDecoration: "none" }}>Open mempool →</Link>
             <Link to="/education" className="proto-btn"
               style={{ textDecoration: "none", borderColor: "var(--p-50)", color: "var(--p-50)", boxShadow: "var(--glow-p)" }}>
               Learn the protocols
             </Link>
+            <ThemeToggle style={{ marginLeft: 8 }} />
           </div>
         </div>
 

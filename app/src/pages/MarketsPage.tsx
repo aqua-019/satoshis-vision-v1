@@ -389,8 +389,9 @@ export function MarketsPage() {
             {venues.map((v) => (
               <div key={v.venue} className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "minmax(90px, 120px) 1fr minmax(70px, 90px) minmax(64px, 80px)", gap: 10, alignItems: "center", fontSize: "var(--fs-mono)" }}>
                 <span style={{ color: "var(--ink-100)" }}>{v.venue}</span>
-                <span style={{ position: "relative", height: 12, background: "rgba(255,255,255,0.03)", borderRadius: 1, overflow: "hidden" }}>
-                  <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "rgba(255,122,26,0.35)", boxShadow: "0 0 6px rgba(255,122,26,0.25)" }} />
+                <span style={{ position: "relative", height: 12, background: "color-mix(in srgb, var(--surface-sunk) 60%, transparent)", borderRadius: 1, overflow: "hidden" }}>
+                  {/* fill length encodes real venUsd volume — accent-data, not chrome */}
+                  <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "color-mix(in srgb, var(--accent-data) 35%, transparent)", boxShadow: "0 0 6px color-mix(in srgb, var(--accent-data) 25%, transparent)" }} />
                 </span>
                 <span className="dim" style={{ textAlign: "right" }}>{fmtUsd(v.volUsd)}</span>
                 <span style={{ textAlign: "right", color: v.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : v.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>{v.spreadPct.toFixed(2)}% spr</span>

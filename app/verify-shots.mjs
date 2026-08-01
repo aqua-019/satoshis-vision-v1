@@ -24,7 +24,12 @@ import { launch, newThemedPage, freezeAmbient, makeReporter, BASE, ROUTES, THEME
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
 
-const OUT = arg('--out', new URL('./.shots/', import.meta.url).pathname);
+// Normalise to a trailing slash. `dir` below is built by bare concatenation
+// (`${OUT}${theme}/…`), so `--out /tmp/shots` silently wrote to /tmp/shotsclassic/
+// and /tmp/shotsindigo/ rather than under /tmp/shots/. Nothing errored — the run
+// reported success and a later --baseline against /tmp/shots then matched zero
+// files and (before the compared/unmatched split below) still printed a clean pass.
+const OUT = arg('--out', new URL('./.shots/', import.meta.url).pathname).replace(/\/?$/, '/');
 const BASELINE = arg('--baseline', null);
 const WIDTHS = arg('--width') ? [Number(arg('--width'))] : [390, 768, 1440];
 const THEME_SET = arg('--theme') ? [arg('--theme')] : THEMES;
@@ -40,7 +45,9 @@ console.log(`writing ${routes.length} routes × ${THEME_SET.length} themes × ${
 const slug = (r) => (r === '/' ? 'index' : r.replace(/^\//, '').replace(/[/?=&]+/g, '-'));
 
 let count = 0;
+let compared = 0;
 const diffs = [];
+const unmatched = [];
 
 for (const theme of THEME_SET) {
   for (const width of WIDTHS) {
@@ -49,6 +56,20 @@ for (const theme of THEME_SET) {
     const page = await newThemedPage(browser, { width, height: width === 390 ? 844 : 900 }, theme);
     // Animation off, so a sweep is reproducible and a diff means a real change
     // rather than "the aurora had drifted 40px".
+    //
+    // v6.1.2 — KNOWN LIMIT, read before trusting a --baseline run. This freezes
+    // CSS animation but NOT a canvas rAF, and design/ArtBackground.tsx's
+    // ParticleField seeds ~120 particles with Math.random() (13 call sites). So
+    // at any width where the device tier resolves above `low`, the particle
+    // canvas renders and TWO SWEEPS OF THE SAME BUILD differ byte-for-byte.
+    // Measured: /sources at 1440 classic, same dist, 135366B vs 135439B.
+    //
+    // Consequence: byte-equality is only a valid acceptance test at widths where
+    // ParticleField is skipped — 390 resolves to tier `low` and is deterministic,
+    // 1440 is not. A classic diff at 1440 therefore proves nothing on its own, and
+    // this gate was orphaned long enough that nobody had run it against a baseline
+    // to find out. Either seed the field deterministically or force `?tier=low`
+    // before this can claim to be the classic pixel-parity test at every width.
     await page.emulateMedia({ reducedMotion: 'reduce' });
 
     for (const route of routes) {
@@ -63,8 +84,16 @@ for (const theme of THEME_SET) {
       if (BASELINE) {
         const prior = `${BASELINE.replace(/\/$/, '')}/${theme}/${width}/${slug(route)}.png`;
         if (existsSync(prior)) {
+          compared++;
           const same = Buffer.compare(readFileSync(prior), png) === 0;
           if (!same) diffs.push(`${theme}/${width}${route}`);
+        } else {
+          // A shot with no counterpart in the baseline tree was NEVER COMPARED.
+          // Counting it toward a "pixel-identical across N shots" claim is how
+          // this gate lies: a theme that did not exist at the baseline commit
+          // writes a full set of shots, none of which are looked at, and the
+          // summary silently inflates. Track it separately and report it.
+          unmatched.push(`${theme}/${width}${route}`);
         }
       }
     }
@@ -77,10 +106,25 @@ console.log(`\n${count} screenshots written to ${OUT}`);
 
 if (BASELINE) {
   R.group('── diff vs baseline ────────────────────────────────────────');
+
+  // Say what was actually verified before saying whether it passed. `count` is
+  // shots WRITTEN; `compared` is shots CHECKED. They differ whenever the
+  // baseline tree predates a theme or a route, and conflating them turns
+  // "111 shots nobody looked at" into part of a clean bill of health.
+  R.info(`${compared} compared · ${unmatched.length} had no baseline · ${count} written`);
+  R.ok(compared + unmatched.length === count,
+    `every written shot is accounted for (${compared} + ${unmatched.length} = ${count})`);
+  if (unmatched.length) {
+    const themes = [...new Set(unmatched.map((u) => u.split('/')[0]))];
+    R.info(`no baseline for: ${themes.join(', ')} — new since the baseline commit, NOT verified here`);
+  }
+  R.ok(compared > 0, `the baseline tree actually matched something (${compared} shots)`,
+    'a baseline path typo yields zero comparisons and would otherwise report as a clean pass');
+
   if (diffs.length === 0) {
-    R.ok(true, `pixel-identical to ${BASELINE} across ${count} shots`);
+    R.ok(true, `pixel-identical to ${BASELINE} across ${compared} compared shots`);
   } else {
-    R.info(`${diffs.length}/${count} shots differ from the baseline:`);
+    R.info(`${diffs.length}/${compared} compared shots differ from the baseline:`);
     for (const d of diffs) R.info(`  ${d}`);
     R.info('Each difference must be deliberate and listed in the PR body (§7.10).');
     // Differing is the EXPECTED outcome for indigo; only classic is claimed to

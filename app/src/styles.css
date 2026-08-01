@@ -1,3 +1,5 @@
+@layer reset, base, theme, components, utilities;
+
 /* ─── self-hosted fonts · latin woff2 subsets ─────────────────────────
    Subset at build time from the Google Fonts API and served from /public/fonts
    so the browser NEVER beacons any third-party font CDN at runtime — the
@@ -16,8 +18,47 @@
 @font-face { font-family:"Geist"; font-style:normal; font-weight:600; font-display:swap; src:url(/fonts/geist-600.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 @font-face { font-family:"Geist"; font-style:normal; font-weight:700; font-display:swap; src:url(/fonts/geist-700.woff2) format("woff2"); unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD; }
 
+/* ─── v6.1.2 · role-token @property registrations ─────────────────────
+   UNLAYERED — @property is not subject to @layer at all, so this block
+   sits outside every layer on purpose; putting it inside one would make
+   the registration invisible to the cascade-layer machinery and these
+   would silently behave as plain untyped custom properties again (no
+   crossfade, and the "compute to guaranteed-invalid on a cycle" trap
+   stops applying).
+
+   Each role is registered `syntax: '<color>'` so the browser type-checks
+   every value a theme assigns it (a typo that isn't a valid <color>
+   computes to guaranteed-invalid → initial-value, not silently "some
+   other type"), and `inherits: true` so descendants pick it up normally.
+   `initial-value` is CLASSIC's value in every case — classic is this
+   app's default/unthemed identity, and the Properties and Values API
+   requires initial-value to be a literal (no var()), which conveniently
+   is exactly what "the un-derived starting point" means here.
+
+   Do NOT register --glow-*: those hold box-shadow lists, not colours,
+   and `syntax:'<color>'` would reject every one of them as invalid. */
+@property --surface-base        { syntax: '<color>'; inherits: true; initial-value: #050505; }
+@property --surface-raised      { syntax: '<color>'; inherits: true; initial-value: #0a0907; }
+@property --surface-sunk        { syntax: '<color>'; inherits: true; initial-value: #020202; }
+@property --accent-structural   { syntax: '<color>'; inherits: true; initial-value: #ff7a1a; }
+@property --accent-structural-dim { syntax: '<color>'; inherits: true; initial-value: #d6620f; }
+@property --accent-data         { syntax: '<color>'; inherits: true; initial-value: #ff7a1a; }
+@property --accent-data-hi      { syntax: '<color>'; inherits: true; initial-value: #ffce8a; }
+@property --text-primary        { syntax: '<color>'; inherits: true; initial-value: #a8a094; }
+@property --text-secondary      { syntax: '<color>'; inherits: true; initial-value: rgba(168, 160, 148, 0.55); }
+@property --text-muted          { syntax: '<color>'; inherits: true; initial-value: rgba(168, 160, 148, 0.32); }
+@property --text-faint          { syntax: '<color>'; inherits: true; initial-value: rgba(168, 160, 148, 0.16); }
+@property --status-up           { syntax: '<color>'; inherits: true; initial-value: #4ade80; }
+@property --status-down         { syntax: '<color>'; inherits: true; initial-value: #ff4d6d; }
+@property --status-warn         { syntax: '<color>'; inherits: true; initial-value: #ffd400; }
+@property --line                { syntax: '<color>'; inherits: true; initial-value: rgba(255, 122, 26, 0.14); }
+@property --line-d              { syntax: '<color>'; inherits: true; initial-value: rgba(255, 122, 26, 0.06); }
+@property --aurora-a            { syntax: '<color>'; inherits: true; initial-value: #3a3a42; }
+@property --aurora-b            { syntax: '<color>'; inherits: true; initial-value: #242429; }
+
 /* ─── XMRIRISH v5.0 — terminal-dense base ─────────────────────────── */
 
+@layer base {
 :root {
   /* ink */
   --bg-0:    #050505;
@@ -49,6 +90,46 @@
   --p-50:    #b87aff;     /* monero privacy purple */
   --c-50:    #5ed3f4;     /* cyan secondary data */
 
+  /* ── role tokens · v6.1.2 · @property-registered above ─────────────
+     Declared FROM the hue scale, a --bg-N or --ink-N step, or a literal —
+     NEVER from an alias (--tk-accent / --ui-*). That direction-of-flow
+     is what keeps `alias → role → scale` acyclic: an alias declared as
+     var(--role) below, with a role declared back as var(--alias) here,
+     computes to guaranteed-invalid and every theme falls back to this
+     block's initial-value in silence. See THEME-SPEC.md.
+     These are classic's values — the theme blocks in styles-theme.css
+     override the ones that differ; anything a theme doesn't mention
+     (e.g. the three --status-* are theme-invariant) just inherits this. */
+  --surface-base:   var(--bg-0);     /* #050505 */
+  --surface-raised: var(--bg-1);     /* #0a0907 */
+  --surface-sunk:   #020202;         /* new — no prior scale token */
+
+  --accent-structural:     var(--o-50);  /* #ff7a1a */
+  --accent-structural-dim: var(--o-40);  /* #d6620f */
+  --accent-data:            var(--o-50); /* #ff7a1a */
+  --accent-data-hi:         var(--o-100);/* #ffce8a */
+
+  --text-primary:   var(--ink-100);
+  --text-secondary: var(--ink-60);
+  --text-muted:     var(--ink-40);
+  --text-faint:     var(--ink-20);
+
+  --status-up:   var(--g-50);
+  --status-down: var(--r-50);
+  --status-warn: var(--y-50);
+
+  /* --line / --line-d already declared below (unchanged names, now also
+     @property-registered above) — no redeclaration needed here. */
+
+  /* Reference hues for the aurora field (styles-ambient.css routes its
+     radial-gradient stops through these via color-mix(), preserving each
+     plate's own alpha while making the HUE theme-bound). Inert under
+     classic — the whole aurora field is display:none for this theme
+     (see styles-theme.css), so these never actually paint; picked as a
+     neutral so nothing looks broken if that ever changes. */
+  --aurora-a: #3a3a42;
+  --aurora-b: #242429;
+
   /* text */
   /* text — pushed dimmer site-wide so the hero/serif doesn't read as
      a cream wash on dark. Old ink-100 was #d8d0c0 (bone-cream); now
@@ -75,10 +156,37 @@
   --glow-p:  0 0 10px rgba(184, 122, 255, 0.5);
   --glow-soft-p: 0 0 28px rgba(184, 122, 255, 0.35);   /* wider/softer purple bloom for large serif <em> accents (34px+) — --glow-p's tight 10px/0.5 blooms badly at that size */
 
-  --tk-accent: var(--o-50);
+  /* ── one-way alias block · v6.1.2 ────────────────────────────────
+     alias → role → scale, one direction only. Declared ONCE, here, at
+     unscoped :root — NOT repeated per theme. A theme block only ever
+     rebinds the ROLE (--accent-structural, --accent-data, …); because
+     var() resolves against the cascade at use time, not declaration
+     time, these three aliases automatically pick up whichever theme's
+     role value applies to a given element with zero per-theme alias
+     redeclaration and zero edits to the 235+ call sites that already
+     read --tk-accent / --ui-accent / --ui-primary directly. */
+  --tk-accent:  var(--accent-data);
+  --ui-accent:  var(--accent-structural);
+  --ui-primary: var(--accent-structural);
   --tk-glow: 1;
   --tk-density: 1;
   --tk-anim: 1;
+
+  /* ── crossfade · v6.1.2 ──────────────────────────────────────────
+     Every role above is @property-registered as a <color>, which makes
+     it individually animatable. One transition list at :root therefore
+     crossfades EVERYTHING derived from a theme swap in a single pass —
+     backgrounds, borders, text, glows — instead of each consumer
+     flickering to its new value on its own frame. */
+  transition:
+    --surface-base 180ms ease, --surface-raised 180ms ease, --surface-sunk 180ms ease,
+    --accent-structural 180ms ease, --accent-structural-dim 180ms ease,
+    --accent-data 180ms ease, --accent-data-hi 180ms ease,
+    --text-primary 180ms ease, --text-secondary 180ms ease,
+    --text-muted 180ms ease, --text-faint 180ms ease,
+    --status-up 180ms ease, --status-down 180ms ease, --status-warn 180ms ease,
+    --line 180ms ease, --line-d 180ms ease,
+    --aurora-a 180ms ease, --aurora-b 180ms ease;
 
   /* Page gutters compose: .main supplies --pad-main, and .page-shell (nested
      inside it) supplies --pad-page. Total desktop gutter = 22 + 48 = 70px.
@@ -106,6 +214,16 @@
   --bp-mobile: 768px;
 }
 
+/* Reduced motion: swap themes instantly. No information rides on the
+   180ms crossfade — it is a cosmetic smoothing of the swap, so zeroing
+   the duration here loses nothing and matches every other animated
+   surface in this file. */
+@media (prefers-reduced-motion: reduce) {
+  :root { transition-duration: 0ms; }
+}
+}
+
+@layer reset {
 html, body {
   margin: 0; padding: 0;
   background-color: #050505;
@@ -132,7 +250,9 @@ html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%; background: #020202; }
 body { position: relative; }
+}
 
+@layer components {
 body::before {
   content: "";
   position: fixed; inset: 0; z-index: -3; pointer-events: none;
@@ -165,6 +285,8 @@ body::after {
    layers align twice on the same screen. Movement is gentle: every blob
    stays within 30% of its anchor. Pulses never cross the screen center
    simultaneously. */
+}
+
 @keyframes bg-grey-pulse {
   0%   { background-position:   0%   0%,   100%   0%,    0% 100%, 100% 100%; opacity: 0.95; }
   18%  { background-position:  30%  10%,    65%  15%,   18%  82%,  78%  88%; opacity: 0.85; }
@@ -175,7 +297,9 @@ body::after {
   100% { background-position:   0%   0%,   100%   0%,    0% 100%, 100% 100%; opacity: 0.95; }
 }
 
+@layer reset {
 * { box-sizing: border-box; }
+}
 
 /* Page-level pulse — slower, narrower, layered on top of the snake. */
 @keyframes bg-pulse {
@@ -187,6 +311,7 @@ body::after {
   50%      { background-color: #0e0d09; }
 }
 
+@layer components {
 /* ── base atoms ────────────────────────────────────────────────── */
 
 .mono { font-family: var(--f-mono); font-feature-settings: "tnum","zero","cv01","cv02"; }
@@ -337,7 +462,11 @@ header > div > h1.serif {
 .led.q { background: var(--y-50); box-shadow: 0 0 6px var(--y-50); }
 .led.o { background: var(--tk-accent); box-shadow: 0 0 6px var(--tk-accent); }
 .led.p { background: var(--p-50); box-shadow: 0 0 6px var(--p-50); }
+}
+
 @keyframes ledpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+@layer components {
 .led.pulse { animation: ledpulse calc(1.4s / var(--tk-anim, 1)) ease-in-out infinite; }
 
 .peerlist { display: flex; flex-direction: column; gap: 3px; }
@@ -558,9 +687,12 @@ header > div > h1.serif {
 .pill.live { border-color: var(--g-50); color: var(--g-50); text-shadow: var(--glow-g); }
 .pill.warn { border-color: var(--y-50); color: var(--y-50); }
 .pill.acc { border-color: var(--tk-accent); color: var(--tk-accent); text-shadow: var(--glow-1); }
+}
+
 /* one-shot flash for the per-mempool heartbeat LED — replays on each new poll */
 @keyframes mp-beat { 0% { opacity: 0.4; transform: scale(0.9); } 45% { opacity: 1; transform: scale(1.05); } 100% { opacity: 1; transform: scale(1); } }
 
+@layer components {
 .hash { font-family: var(--f-mono); color: var(--c-50); }
 .hash:hover { text-shadow: 0 0 8px var(--c-50); cursor: pointer; }
 
@@ -597,6 +729,8 @@ header > div > h1.serif {
   background: linear-gradient(to top, rgba(255,122,26,0.04), transparent);
 }
 .footer-tele .blink { animation: blink calc(0.9s / var(--tk-anim, 1)) steps(2, end) infinite; }
+}
+
 @keyframes blink { 50% { opacity: 0.2; } }
 
 /* hex pulse keyframes */
@@ -626,6 +760,7 @@ header > div > h1.serif {
   50% { transform: translate(8px, -6px); }
 }
 
+@layer components {
 .spin-slow { animation: spin calc(60s / var(--tk-anim, 1)) linear infinite; }
 .spin-med  { animation: spin calc(20s / var(--tk-anim, 1)) linear infinite; transform-origin: center; }
 
@@ -669,11 +804,15 @@ header > div > h1.serif {
 .panel:hover::before { opacity: 1; }
 .panel > *:not(.tick) { position: relative; z-index: 1; }
 .panel > .tick { z-index: 2; }
+}
+
 /* Slow ambient pulse on accent-bordered panels */
 @keyframes panel-breathe {
   0%, 100% { box-shadow: 0 0 0 0 rgba(255, 122, 26, 0); }
   50%      { box-shadow: 0 0 24px rgba(255, 122, 26, 0.08); }
 }
+
+@layer components {
 .shell .main .panel { animation: panel-breathe 8s ease-in-out infinite; animation-delay: var(--breathe-d, 0s); }
 
 /* ── tilt-card · mouse-reactive panel ──────────────────────────
@@ -684,11 +823,14 @@ header > div > h1.serif {
 .tilt-card.tilt-pulse {
   animation: tilt-pulse 6s ease-in-out infinite;
 }
+}
+
 @keyframes tilt-pulse {
   0%, 100% { box-shadow: 0 0 0 1px rgba(255,122,26,0.05); }
   50%      { box-shadow: 0 0 24px rgba(255,122,26,0.15), 0 0 0 1px rgba(255,122,26,0.2); }
 }
 
+@layer components {
 /* ── mempool page chrome — was inline on MempoolPage; classed so mobile
    media queries can flatten the fixed-height flex layout into body scroll.
    These base rules reproduce the previous inline desktop values exactly. */
@@ -835,10 +977,14 @@ header > div > h1.serif {
   animation: glide-enter-kf 0.55s cubic-bezier(0.215, 0.61, 0.355, 1);
   will-change: transform, opacity;
 }
+}
+
 @keyframes glide-enter-kf {
   from { opacity: 0; transform: translateX(-18px); }
   to   { opacity: 1; transform: translateX(0); }
 }
+
+@layer components {
 @media (prefers-reduced-motion: reduce) {
   .glide-block { transition: none; }
   .glide-enter { animation: none; }
@@ -1019,6 +1165,7 @@ button.proto-btn, a.proto-btn {
 }
 button.proto-btn:hover, a.proto-btn:hover { background: rgba(255,122,26,0.1); }
 button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
+}
 
 /* shared global anim */
 @keyframes pulseScale { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
@@ -1028,6 +1175,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 }
 @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
 
+@layer components {
 /* hex grid cell */
 .hex {
   width: 28px; height: 32px;
@@ -1669,4 +1817,5 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      trigger stays reachable. `> .tk` scoped like styles-legibility.css:133
      does — a bare `.tk` would also catch the trigger's chrome. */
   .ticker-strip > .tk { display: none; }
+}
 }

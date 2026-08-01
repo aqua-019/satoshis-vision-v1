@@ -6,9 +6,9 @@
  * that's a design-time tool, not user-facing UX"). Resist growing a third
  * knob here without revisiting that call.
  *
- *   theme    "indigo" | "classic" — default "indigo". Written to
- *            `document.documentElement`'s `data-theme` attribute, which is
- *            the whole of styles-theme.css's (L2) toggle mechanism.
+ *   theme    "classic" | "indigo" | "phosphor" — default "classic". Written
+ *            to `document.documentElement`'s `data-theme` attribute, which
+ *            is the whole of styles-theme.css's (L2) toggle mechanism.
  *   ambient  "calm" | "busy" | "chaotic" | null — default null, meaning
  *            "no user override; each page keeps rendering its own
  *            ArtBackground `intensity` prop". Once a user picks a value
@@ -36,14 +36,18 @@ import * as React from "react";
 import { safeStore } from "@/data/useMarketHistory";
 import { getDeviceTier, type Tier } from "./deviceTier";
 
-export type ThemeKey = "indigo" | "classic";
+export type ThemeKey = "indigo" | "classic" | "phosphor";
 export type AmbientKey = "calm" | "busy" | "chaotic";
 
 const THEME_KEY = "xmri.theme";
 const AMBIENT_KEY = "xmri.ambient";
 
+// Load-bearing, not just a type guard: a `data-theme` value this rejects
+// falls back silently (readPref returns null → the "classic" default below),
+// which reads as a CSS bug rather than a rejected value. Every member of
+// ThemeKey must be listed here or it will never round-trip out of storage.
 function isThemeKey(v: string | null): v is ThemeKey {
-  return v === "indigo" || v === "classic";
+  return v === "indigo" || v === "classic" || v === "phosphor";
 }
 function isAmbientKey(v: string | null): v is AmbientKey {
   return v === "calm" || v === "busy" || v === "chaotic";
@@ -87,12 +91,13 @@ export interface VisualState {
 
 /** Safe default so `import { App } from "@/App"` (host runtimes that skip
  *  main.tsx entirely — see PORTING.md) still render correctly with no
- *  <VisualProvider> mounted: indigo as a plain data default (the CSS
+ *  <VisualProvider> mounted: classic as a plain data default (the CSS
  *  attribute itself won't be stamped without the provider's effect, so
- *  chrome falls back to the classic look — acceptable, not broken) and
- *  `ambient: null` so every page just uses its own ArtBackground intensity. */
+ *  chrome falls back to the classic look — the site's default, not a
+ *  fallback path) and `ambient: null` so every page just uses its own
+ *  ArtBackground intensity. */
 const DEFAULT_VISUAL: VisualState = {
-  theme: "indigo",
+  theme: "classic",
   ambient: null,
   // Not the "low" fallback getDeviceTier() uses for a non-DOM host: a
   // provider-less mount is a host runtime rendering into a real browser, so
@@ -111,7 +116,7 @@ export function useVisual(): VisualState {
 }
 
 export function VisualProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = React.useState<ThemeKey>(() => readPref(THEME_KEY, isThemeKey) ?? "indigo");
+  const [theme, setThemeState] = React.useState<ThemeKey>(() => readPref(THEME_KEY, isThemeKey) ?? "classic");
   const [ambient, setAmbientState] = React.useState<AmbientKey | null>(() => readPref(AMBIENT_KEY, isAmbientKey));
 
   // Derived, not state: getDeviceTier() memoizes for the page's lifetime, so

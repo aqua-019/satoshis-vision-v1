@@ -61,9 +61,9 @@ const QUOTES: Quote[] = [
 function QuoteCard({ q }: { q: Quote }) {
   return (
     <figure style={{ margin: 0, breakInside: "avoid", display: "flex", flexDirection: "column", gap: 14, padding: "20px 22px", borderRadius: 3, marginBottom: 14,
-      border: "1px solid " + (q.key ? "rgba(255,122,26,0.35)" : "var(--rule)"),
+      border: "1px solid " + (q.key ? "color-mix(in srgb, var(--accent-structural) 35%, transparent)" : "var(--rule)"),
       borderLeft: "2px solid " + (q.key ? "var(--tk-accent)" : "var(--ink-20)"),
-      background: q.key ? "rgba(255,122,26,0.03)" : "rgba(8,7,5,0.6)" }}>
+      background: q.key ? "color-mix(in srgb, var(--accent-structural) 3%, transparent)" : "color-mix(in srgb, var(--surface-raised) 60%, transparent)" }}>
       {q.key ? <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.18em", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>★ KEY</div> : null}
       <blockquote className="serif" style={{ margin: 0, fontSize: 18, lineHeight: 1.5, color: "var(--ink-100)", fontStyle: "italic" }}>"{q.t}"</blockquote>
       <figcaption className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
@@ -91,7 +91,7 @@ export function EduQuotes() {
           const n = k === "all" ? QUOTES.length : QUOTES.filter((q) => q.c === k).length;
           return (
             <button key={k} type="button" onClick={() => setCat(k)}
-              style={{ appearance: "none", cursor: "pointer", background: on ? "rgba(255,122,26,0.1)" : "transparent",
+              style={{ appearance: "none", cursor: "pointer", background: on ? "color-mix(in srgb, var(--accent-structural) 10%, transparent)" : "transparent",
                 border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-20)"), borderRadius: 999, padding: "6px 14px",
                 color: on ? "var(--tk-accent)" : "var(--ink-60)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase",
                 textShadow: on ? "var(--glow-1)" : "none" }}>

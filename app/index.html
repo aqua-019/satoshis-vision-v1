@@ -9,23 +9,26 @@
          browser painted its default WHITE — with near-white text on top. That is
          the Brave-mobile / Tor white-page report.
 
-         Rules this block exists to hold, asserted by verify-darkfloor.mjs:
+         Rules this block exists to hold, asserted by verify-degraded.mjs:
            · literal hex only — never var(), never a token, never JS-dependent
            · color-scheme:dark here too, not only in styles.css:94, so form
              controls and scrollbars are dark before the bundle lands
            · colours MUST match the real floors or we trade a white flash for a
-             colour flash: indigo #121218 (styles-theme.css:98) and classic
-             #050505 (styles-theme.css). The theme stamp below sets
-             data-theme before first paint, so the classic selector resolves.
+             colour flash: classic #050505 is now the bare default (classic is
+             the site's default theme), with indigo #121218 and phosphor
+             #030603 (both styles-theme.css) as attribute-qualified exceptions.
+             The theme stamp below sets data-theme before first paint, so the
+             right selector resolves for whichever theme (or none) was stored.
          The bundle still wins once it arrives (Vite appends its <link> later in
          <head>), which is what keeps styles-ambient.css's body-transparent
          occlusion fix working. -->
     <style>
-      html { background-color: #121218; color-scheme: dark; }
-      html[data-theme="classic"] { background-color: #050505; }
-      body { background-color: #121218; color: #C9C6D8; margin: 0; }
+      html { background-color: #050505; color-scheme: dark; }
+      html[data-theme="indigo"] { background-color: #121218; }
+      html[data-theme="phosphor"] { background-color: #030603; }
+      body { background-color: #050505; color: #C9C6D8; margin: 0; }
     </style>
-    <meta name="theme-color" content="#121218" />
+    <meta name="theme-color" content="#050505" />
     <link rel="icon" href="/favicon.svg" />
     <!-- First-paint fonts only. All three families are self-hosted, subset by
          unicode-range and `font-display: swap` (see src/styles.css's @font-face
@@ -53,13 +56,19 @@
       // `script-src 'self' 'unsafe-inline'`, so this inline script needs no
       // hash or nonce. localStorage throws in some hardened/.onion browser
       // configurations (storage disabled, private mode) — default to
-      // indigo on ANY failure, same default VisualContext's safe context
-      // value falls back to.
+      // classic on ANY failure, same default VisualContext's safe context
+      // value falls back to. A stored value that is neither "indigo" nor
+      // "phosphor" (unset, corrupt, or predating this theme) also falls
+      // through to classic — the new default only applies to visitors with
+      // no valid stored preference; an existing "indigo" choice is untouched.
       try {
         var t = localStorage.getItem("xmri.theme");
-        document.documentElement.setAttribute("data-theme", t === "classic" ? "classic" : "indigo");
+        document.documentElement.setAttribute(
+          "data-theme",
+          t === "indigo" || t === "phosphor" ? t : "classic"
+        );
       } catch (e) {
-        document.documentElement.setAttribute("data-theme", "indigo");
+        document.documentElement.setAttribute("data-theme", "classic");
       }
 
       // Pre-paint DEVICE-TIER stamp. styles-ambient.css gates the heavy
@@ -141,12 +150,12 @@
       <style>
         /* Literal hex, no var(): this renders before any bundled CSS, and on a
            JS-off load the bundle's palette may be all that is missing. */
-        .nojs{background:#16151d;border-bottom:1px solid rgba(110,94,240,.28);color:#a8a094;
+        .nojs{background:#0a0907;border-bottom:1px solid rgba(255,122,26,.28);color:#a8a094;
           font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
           font-size:14px;line-height:1.6;padding:14px 20px}
         .nojs__wrap{max-width:960px;margin:0 auto}
-        .nojs b{color:#8B7BF5;font-weight:600}
-        .nojs a{color:#8B7BF5;text-decoration:none;border-bottom:1px solid rgba(110,94,240,.4)}
+        .nojs b{color:#ff7a1a;font-weight:600}
+        .nojs a{color:#ff7a1a;text-decoration:none;border-bottom:1px solid rgba(255,122,26,.4)}
       </style>
       <div class="nojs"><div class="nojs__wrap">
         <b>JavaScript is off — the page below is complete and the navigation works.</b>
@@ -182,18 +191,18 @@
            positioned rule below would otherwise out-specify it and the
            fallback would show on every load. */
         #boot-fallback[hidden]{display:none}
-        #boot-fallback{position:fixed;inset:0;overflow:auto;background:#121218;color:#a8a094;
+        #boot-fallback{position:fixed;inset:0;overflow:auto;background:#050505;color:#a8a094;
           box-sizing:border-box;font-family:ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
           line-height:1.6;padding:48px 20px}
         .shell__wrap{max-width:640px;margin:0 auto}
         .shell__mark{font-size:22px;letter-spacing:.04em;color:#a8a094}
-        .shell__mark b{color:#8B7BF5;font-weight:600}
+        .shell__mark b{color:#ff7a1a;font-weight:600}
         .shell__desc{margin:6px 0 28px;font-size:14px;color:#6f6a61}
-        .shell__note{border:1px solid rgba(110,94,240,.28);border-radius:6px;padding:14px 16px;
-          font-size:14px;color:#a8a094;margin-bottom:24px;background:rgba(110,94,240,.04)}
+        .shell__note{border:1px solid rgba(255,122,26,.28);border-radius:6px;padding:14px 16px;
+          font-size:14px;color:#a8a094;margin-bottom:24px;background:rgba(255,122,26,.04)}
         .shell__nav{list-style:none;padding:0;margin:0 0 24px;font-size:14px;
           display:flex;flex-wrap:wrap;gap:8px 18px}
-        .shell__a{color:#8B7BF5;text-decoration:none;border-bottom:1px solid rgba(110,94,240,.4)}
+        .shell__a{color:#ff7a1a;text-decoration:none;border-bottom:1px solid rgba(255,122,26,.4)}
       </style>
       <div id="boot-fallback" hidden><div class="shell__wrap">
         <div class="shell__mark">xmr<b>.irish</b></div>

@@ -56,7 +56,7 @@ export interface EduPullquoteProps {
 
 export function EduPullquote({ children, cite }: EduPullquoteProps) {
   return (
-    <figure style={{ margin: "8px 0", padding: "26px 30px", border: "1px solid var(--rule)", borderLeft: "2px solid var(--tk-accent)", background: "rgba(255,122,26,0.03)", borderRadius: 2 }}>
+    <figure style={{ margin: "8px 0", padding: "26px 30px", border: "1px solid var(--rule)", borderLeft: "2px solid var(--tk-accent)", background: "color-mix(in srgb, var(--accent-structural) 3%, transparent)", borderRadius: 2 }}>
       <blockquote className="serif" style={{ margin: 0, fontSize: 23, lineHeight: 1.42, color: "var(--ink-100)", fontStyle: "italic" }}>{children}</blockquote>
       {cite ? <figcaption className="mono" style={{ marginTop: 14, fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--tk-accent)" }}>— {cite}</figcaption> : null}
     </figure>

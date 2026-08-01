@@ -1,3 +1,4 @@
+@layer theme {
 /* ═══ L2 · CHROME PALETTE — v6.0.2 ═══════════════════════════════════
    TOGGLEABLE. Everything here is scoped to :root[data-theme="indigo"]
    except the classic identity bindings at the top.
@@ -19,11 +20,21 @@
 /* ── classic · identity bindings ─────────────────────────────────────
    These make the chrome tokens resolve to today's orange identity, so
    L1 rules that reference them (e.g. :focus-visible) never dangle and
-   classic mode is colour-identical to main. */
+   classic mode is colour-identical to main.
+
+   v6.1.2 — --ui-accent / --ui-primary used to be hardcoded here too
+   (`var(--tk-accent)`). They are gone on purpose: styles.css's base
+   :root now declares the canonical `--ui-accent: var(--accent-structural);
+   --ui-primary: var(--accent-structural);` alias exactly once, and
+   because var() resolves live against the cascade, classic's role
+   values (declared in styles.css, also unscoped :root) resolve through
+   it with no redeclaration needed here. Keeping a second, competing
+   `:root { --ui-accent: … }` in this LATER layer would have silently
+   won over that alias for every theme, including indigo/phosphor's own
+   scoped blocks losing the argument only by virtue of specificity —
+   fragile. One source of truth instead. */
 :root {
-  --ui-accent:      var(--tk-accent);
   --ui-accent-text: var(--tk-accent);
-  --ui-primary:     var(--tk-accent);
   --ui-accent-dim:  rgba(255, 122, 26, 0.45);
   --glow-v:      var(--glow-2);
   --glow-v-soft: var(--glow-1);
@@ -43,13 +54,27 @@
 
    L3 stays theme-agnostic (verify-legibility.mjs forbids [data-theme= in
    styles-ambient.css) — the suppression lives here, in L2, where the
-   toggle belongs. */
-:root:not([data-theme="indigo"]) #bg-plates,
-:root:not([data-theme="indigo"]) #bg-fx,
-:root:not([data-theme="indigo"]) #bg-grain { display: none; }
-:root:not([data-theme="indigo"]) body::before { animation: none; }
+   toggle belongs.
 
-:root:not([data-theme="indigo"]) {
+   v6.1.2 — was `:root:not([data-theme="indigo"])`. With only two themes,
+   "not indigo" and "classic" were the same set, so the shortcut worked.
+   Phosphor breaks that equivalence: left alone, this selector would also
+   match phosphor and hand it classic's floor AND classic's
+   `display:none` on the whole aurora — the exact silent-orange failure
+   shape this refactor exists to avoid, just for suppression instead of
+   colour. Spelled out as the two cases actually meant: the classic
+   theme, and the pre-paint / JS-off case where index.html's stamp never
+   ran and no `data-theme` attribute exists at all. */
+:root[data-theme="classic"] #bg-plates,
+:root[data-theme="classic"] #bg-fx,
+:root[data-theme="classic"] #bg-grain,
+:root:not([data-theme]) #bg-plates,
+:root:not([data-theme]) #bg-fx,
+:root:not([data-theme]) #bg-grain { display: none; }
+:root[data-theme="classic"] body::before,
+:root:not([data-theme]) body::before { animation: none; }
+
+:root[data-theme="classic"], :root:not([data-theme]) {
   /* L3 still owns `html { background: var(--amb-floor) }` even with every
      animated layer suppressed above, so the floor has to be v5's literal
      base — styles.css declares `background-color: #050505`. v6.0.2's
@@ -70,9 +95,14 @@
      on one selector could never have worked.
      --in-bg / --in-surface / --in-raised were deleted here: zero var() and
      zero getComputedStyle consumers repo-wide. --bg-1/2/3 below carry the
-     same three values and ARE consumed. */
-  --ui-primary: #4B3FB8;
-  --ui-accent: #6E5EF0;
+     same three values and ARE consumed.
+
+     v6.1.2 — --ui-primary / --ui-accent used to be hardcoded here
+     (#4B3FB8 / #6E5EF0, plus an oklch upgrade below). Both numbers now
+     live ONCE, as --accent-structural / --accent-structural-dim in the
+     role-token block further down, and styles.css's base alias
+     (`--ui-accent: var(--accent-structural)`) picks them up live — no
+     redeclaration, no oklch duplicate to keep in sync by hand. */
   --ui-accent-text: #8B7BF5;
   --ui-accent-dim: rgba(110, 94, 240, 0.45);
 
@@ -125,6 +155,38 @@
   --amb-ribbon-2: rgba(50, 46, 94, 0.05);
   --amb-ribbon-3: rgba(70, 62, 126, 0.045);
   --amb-grain: 0 0 0 0 0.6  0 0 0 0 0.58  0 0 0 0 0.7  0 0 0 0.5 0;
+  /* NOTE — --amb-grain is unconsumed. styles-ambient.css's #bg-grain paints
+     its noise as a literal data: URI (see that file); a custom property
+     cannot be substituted into a string embedded inside url(), so no
+     amount of retinting this token changes what actually paints. This was
+     already true before v6.1.2 touched anything here — flagged, not fixed,
+     in this pass; see the ui-builder report for the phosphor equivalent. */
+
+  /* ── role tokens · v6.1.2 — indigo, "the existing palette expressed as
+     roles". --accent-structural/-dim carry the numbers that used to be
+     hardcoded on --ui-accent/--ui-primary above (#6E5EF0 / #4B3FB8) —
+     literally the same colours, just declared once, as the role the alias
+     now derives from. --accent-data is deliberately NOT overridden: Monero
+     orange stays the data colour in indigo (inherits classic's --o-50 from
+     styles.css), only the structural/chrome colour moves to violet.
+     the text-* and surface-* roles just alias indigo's own ink/bg ramp already declared
+     above, so nothing here is a second source of truth for those values. */
+  --surface-base:   var(--bg-1);
+  --surface-raised: var(--bg-2);
+  --surface-sunk:   #0F0E13;
+  --accent-structural:     #6E5EF0;
+  --accent-structural-dim: #4B3FB8;
+  --text-primary:   var(--ink-100);
+  --text-secondary: var(--ink-60);
+  --text-muted:     var(--ink-40);
+  --text-faint:     var(--ink-20);
+
+  /* Aurora hue family — the mean outer/inner stop colour averaged across
+     the 8 plates in styles-ambient.css (each plate keeps its own alpha via
+     color-mix(); only the HUE is unified into these two tokens). This is
+     indigo's existing violet, consolidated rather than changed. */
+  --aurora-a: rgb(50, 43, 86);
+  --aurora-b: rgb(39, 35, 67);
 }
 
 /* ── oklch upgrade, guarded ───────────────────────────────────────────
@@ -152,8 +214,11 @@
    lives inside an @supports block, with an sRGB value declared outside it. */
 @supports (color: oklch(0 0 0)) {
   :root[data-theme="indigo"] {
-    --ui-primary: oklch(0.42 0.17 282);
-    --ui-accent: oklch(0.55 0.21 282);
+    /* v6.1.2 — was --ui-primary / --ui-accent directly. Renamed to the
+       roles that now feed them via styles.css's alias, same numbers,
+       so the wide-gamut upgrade is preserved rather than dropped. */
+    --accent-structural-dim: oklch(0.42 0.17 282);
+    --accent-structural: oklch(0.55 0.21 282);
     --ui-accent-text: oklch(0.66 0.19 282);
     --ui-accent-dim: oklch(0.55 0.21 282 / 0.45);
     /* v6.0.10 §6a — the lifted ground and the data-surface token, in the
@@ -165,7 +230,128 @@
   }
 }
 
-/* ── chrome recolor: structure = indigo, data = orange ───────────── */
+/* ════════════════════════════════════════════════════════════════════
+   PHOSPHOR — v6.1.2, new
+   A P1 CRT-green terminal identity: structural chrome reads green, DATA
+   reads amber rather than Monero orange. That second part is the one
+   real departure from the two-theme "--tk-accent stays orange in every
+   theme" rule stated at the top of this file — phosphor is not "indigo
+   with a green coat of paint", its whole accent language moves, and the
+   role-token system is exactly what makes that a per-theme token choice
+   instead of a site-wide one. See the role-token block below for the
+   two measured departures from the mockup.
+   No oklch upgrade here (unlike indigo) — not required by the spec for
+   this theme and skipped to keep this pass's surface area bounded;
+   verify-degraded.mjs's oklch/@supports assertions are satisfied by the
+   indigo block above regardless. */
+
+:root[data-theme="phosphor"] {
+  --ui-accent-text: #8CFF8C;
+  --ui-accent-dim:  rgba(51, 255, 51, 0.45);
+  --glow-v:      0 0 10px rgba(51, 255, 51, 0.45);
+  --glow-v-soft: 0 0 8px rgba(51, 255, 51, 0.3);
+
+  /* ink ramp: pale phosphor green on near-black. Alpha steps mirror
+     classic's (0.85/0.55/0.32/0.16/0.08) rather than indigo's — indigo
+     had to RAISE its alphas to clear a 7:1 body-text floor on its much
+     lighter #201E29 ground; phosphor's ground is #0A130A, darker than
+     even classic's #0a0907, so classic's alphas clear the same bar with
+     margin to spare on this ramp. Not independently re-measured by this
+     pass — flagged for verify-contrast.mjs, which is outside this
+     brief's verify commands. */
+  --ink-100: #C8F0C8;
+  --ink-80:  rgba(200, 240, 200, 0.85);
+  /* --ink-60 is the BODY-TEXT FLOOR and carries the ≥7:1 bar, so it does not
+     get to inherit classic's 0.55 by symmetry — measured, it lands at 5.18:1
+     on this ground and fails. 0.661 is the exact minimum for 7:1; 0.70 (7.74:1)
+     is used instead so a later nudge to --surface-ground doesn't silently drop
+     it back under. verify-contrast.mjs measures this rather than trusting it. */
+  --ink-60:  rgba(200, 240, 200, 0.70);
+  --ink-40:  rgba(200, 240, 200, 0.32);
+  --ink-20:  rgba(200, 240, 200, 0.16);
+  --ink-10:  rgba(200, 240, 200, 0.08);
+
+  --line:   rgba(51, 255, 51, 0.16);
+  --line-d: rgba(51, 255, 51, 0.07);
+  --rule:   rgba(200, 240, 200, 0.08);
+  --bg-1: #0A130A;  --bg-2: #0F1C0F;  --bg-3: #16281A;
+  --surface-ground: #0A130A;
+
+  /* data glows now ride amber (--accent-data below), not orange — a
+     phosphor .acc/.kv .v.acc reading amber with an orange halo around it
+     would look like a bug, not a theme. */
+  --glow-1: 0 0 8px rgba(255, 176, 0, 0.45);
+  --glow-2: 0 0 14px rgba(255, 176, 0, 0.40), 0 0 2px rgba(255, 200, 80, 0.5);
+  --glow-3: 0 0 18px rgba(255, 176, 0, 0.5), 0 0 3px rgba(255, 210, 100, 0.6);
+
+  /* ambient field tints consumed by L3 */
+  --amb-floor:  #030603;
+  --amb-breath: #0A160A;
+  --amb-dust-1: rgba(140, 255, 150, 0.5);
+  --amb-dust-2: rgba(255, 190, 60, 0.4);
+  --amb-dust-3: rgba(120, 230, 130, 0.4);
+  --amb-sweep-1: rgba(80, 220, 90, 0.05);
+  --amb-sweep-2: rgba(140, 255, 150, 0.08);
+  --amb-ribbon-1: rgba(40, 120, 40, 0.06);
+  --amb-ribbon-2: rgba(180, 130, 20, 0.05);
+  --amb-ribbon-3: rgba(40, 140, 50, 0.045);
+  /* No --amb-grain here, deliberately: see the note beside indigo's
+     --amb-grain above — the token cannot reach the grain's data: URI
+     paint regardless of theme, so declaring a phosphor value would just
+     be a second dead token. */
+
+  /* ── role tokens ────────────────────────────────────────────────────
+     THEME-SPEC.md collision findings: phosphor's structural green and
+     the diagram green (`--g-50` / #4ade80, ~20 protocols/ sites) measured
+     ΔE00 7.37 against the mockup's #39ff88 — below the ≥10 bar for "two
+     colours that carry different meanings on one page". The amber pair
+     (data vs diagram warn/hi) was predicted to collide too but measured
+     clear (12.48 / 12.26), so it ships as the mockup specified.
+     Resolution is "the theme accent moves, not the diagram" — protocols/
+     keeps meaning what it means; phosphor's own accent shifted instead:
+       structural      #39ff88 → #33ff33  (ΔE00 vs --g-50: 7.4 → 12.3;
+                        contrast 15.02:1 on --surface-base). Also happens
+                        to be the canonical P1 CRT phosphor green, so this
+                        is more faithful to "phosphor, literally" than the
+                        mockup's value was.
+       structural-dim   #1f9e55 → #1faa1f  (hue-matched to the new
+                        structural; 6.62:1 on --surface-base, clear of the
+                        3:1 a border needs).
+     accent-data (#ffb000) is UNCHANGED from the mockup — measured clear,
+     not shifted to match a prediction that didn't hold.
+     status-up stays var(--g-50) — THEME-INVARIANT, not overridden here.
+     The mockup binds status-up to the theme's structural green; that
+     binding is what's being rejected. Keeping status-up on the shared
+     --g-50 means "up" / "unbroken" / "diagram-match" all read as the
+     same green everywhere, exactly as they already do in classic and
+     indigo — no regression, no third green in the building. */
+  --surface-base:   #030603;
+  --surface-raised: #0A130A;
+  --surface-sunk:   #010301;
+  --accent-structural:     #33ff33;
+  --accent-structural-dim: #1faa1f;
+  --accent-data:            #ffb000;
+  --accent-data-hi:         #ffd166;
+  --text-primary:   var(--ink-100);
+  --text-secondary: var(--ink-60);
+  --text-muted:     var(--ink-40);
+  --text-faint:     var(--ink-20);
+
+  --aurora-a: rgb(60, 200, 70);
+  --aurora-b: rgb(190, 140, 20);
+}
+}
+
+/* ── chrome recolor: structure = indigo, data = orange ─────────────
+   LAYER NOTE — these are COMPONENT overrides, not tokens, so they live in
+   `components`, not `theme`. Layer order beats specificity, and `theme` is
+   declared BEFORE `components`: a rule left in `theme` loses to styles.css's
+   base `.topbar` / `.panel` / `.mblock` rules however specific it is, so all
+   49 indigo chrome overrides would silently do nothing. Nothing catches that
+   — the gates assert selector SHAPE, not which declaration won.
+   The token blocks above stay in `theme`, where they belong: nothing ever
+   competes with a token, it is only ever consumed. */
+@layer components {
 :root[data-theme="indigo"] ::selection { background: rgba(110, 94, 240, 0.35); color: #fff; }
 :root[data-theme="indigo"] a { color: var(--ui-accent-text); }
 :root[data-theme="indigo"] a:hover { color: var(--ink-100); }
@@ -203,11 +389,50 @@
 /* styles.css:470 applies the pulse via `.shell .main .panel { animation: … }`.
    Overriding animation-name alone keeps that rule's duration/easing/count. */
 :root[data-theme="indigo"] .shell .main .panel { animation-name: panel-breathe-v; }
+
+/* ── phosphor · same rule set, green structural chrome ────────────── */
+:root[data-theme="phosphor"] ::selection { background: rgba(51, 255, 51, 0.35); color: #001a00; }
+:root[data-theme="phosphor"] a { color: var(--ui-accent-text); }
+:root[data-theme="phosphor"] a:hover { color: var(--ink-100); }
+
+:root[data-theme="phosphor"] .topbar { background: linear-gradient(to bottom, rgba(51,255,51,0.05), rgba(0,0,0,0)); }
+:root[data-theme="phosphor"] .topbar::after { background: linear-gradient(to right, transparent, var(--ui-accent), transparent); opacity: 0.4; }
+:root[data-theme="phosphor"] .brand-mark { border-color: var(--ui-accent); box-shadow: var(--glow-v-soft); }
+:root[data-theme="phosphor"] .brand-mark::before { color: var(--ui-accent-text); filter: drop-shadow(0 0 4px var(--ui-accent)); }
+:root[data-theme="phosphor"] .brand b { color: var(--ui-accent-text); text-shadow: var(--glow-v-soft); }
+:root[data-theme="phosphor"] .topnav a { color: var(--ink-60); }
+:root[data-theme="phosphor"] .topnav a:hover { color: var(--ink-100); }
+:root[data-theme="phosphor"] .topnav a.on { color: var(--ui-accent-text); border-bottom-color: var(--ui-accent); text-shadow: none; }
+:root[data-theme="phosphor"] .crumbs { color: var(--ink-60); }
+:root[data-theme="phosphor"] .crumbs b { color: var(--ui-accent-text); text-shadow: none; }
+:root[data-theme="phosphor"] .footer-tele { color: var(--ink-60); background: linear-gradient(to top, rgba(51,255,51,0.04), transparent); }
+:root[data-theme="phosphor"] .art-grid { background-image: linear-gradient(to right, rgba(51,255,51,0.02) 1px, transparent 1px), linear-gradient(to bottom, rgba(51,255,51,0.02) 1px, transparent 1px); }
+:root[data-theme="phosphor"] .tick { border-color: var(--ui-primary); opacity: 0.7; }
+:root[data-theme="phosphor"] .proto-head { background: linear-gradient(to bottom, rgba(51,255,51,0.05), transparent) var(--surface-ground); }
+:root[data-theme="phosphor"] .v6-modal-head { background: linear-gradient(to bottom, rgba(51,255,51,0.06), transparent); }
+:root[data-theme="phosphor"] .v6-modal { background: linear-gradient(165deg, rgba(6,12,6,0.98), rgba(3,7,3,0.99)) var(--surface-ground); box-shadow: 0 40px 120px rgba(0,0,0,0.8), 0 0 60px rgba(51,255,51,0.08), inset 0 1px 0 rgba(255,255,255,0.04); }
+:root[data-theme="phosphor"] .v6-x:hover, :root[data-theme="phosphor"] .v6-res:hover { border-color: var(--ui-accent); color: var(--ui-accent-text); box-shadow: var(--glow-v-soft); }
+:root[data-theme="phosphor"] button.proto-btn { border-color: var(--ui-accent); color: var(--ui-accent-text); box-shadow: var(--glow-v-soft); }
+:root[data-theme="phosphor"] button.proto-btn:hover { background: rgba(51, 255, 51, 0.12); }
+:root[data-theme="phosphor"] .main::-webkit-scrollbar-thumb:hover,
+:root[data-theme="phosphor"] .rail::-webkit-scrollbar-thumb:hover { background: var(--ui-primary); }
+
+:root[data-theme="phosphor"] .panel { background: var(--surface-ground); }
+:root[data-theme="phosphor"] .panel:hover { border-color: rgba(51, 255, 51, 0.4); box-shadow: 0 8px 24px rgba(0,0,0,0.4), 0 0 32px rgba(51,255,51,0.1), 0 0 0 1px rgba(51,255,51,0.14); }
+:root[data-theme="phosphor"] .panel::before { background: radial-gradient(120% 80% at 50% 0%, rgba(51,255,51,0.05), transparent 60%); }
+:root[data-theme="phosphor"] .shell .main .panel { animation-name: panel-breathe-p; }
+}
+
 @keyframes panel-breathe-v {
   0%, 100% { box-shadow: 0 0 0 0 rgba(110,94,240,0); }
   50% { box-shadow: 0 0 20px rgba(110,94,240,0.07); }
 }
+@keyframes panel-breathe-p {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(51,255,51,0); }
+  50% { box-shadow: 0 0 20px rgba(51,255,51,0.07); }
+}
 
+@layer components {
 /* ── colour half of the L1 type raises ───────────────────────────────
    L1 owns the sizes; these depend on the re-cut ink ramp so they live
    here. Splitting each rule this way is what keeps classic unchanged. */
@@ -244,3 +469,40 @@
   box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 14px rgba(0,0,0,0.45);
 }
 :root[data-theme="indigo"] .mblock.q { background: rgba(26, 15, 6, 0.75) var(--surface-ground); }
+
+/* ── phosphor · same rule set, plus one departure indigo doesn't have:
+   phosphor's DATA accent is amber (--accent-data: #ffb000), not Monero
+   orange, so its "data stays warm" analog of the rule above uses amber,
+   not --o-60. .mblock's numerals (.nm/.hh) already read --tk-accent from
+   styles.css and retint to amber automatically via the role system —
+   only the hand-authored background/border/shadow literals below need a
+   phosphor-specific value, exactly as indigo only overrides those same
+   three for the same reason. */
+:root[data-theme="phosphor"] .kicker { color: var(--ink-60); }
+:root[data-theme="phosphor"] .rail h6 { color: var(--ink-60); }
+:root[data-theme="phosphor"] .kv .k { color: var(--ink-60); }
+:root[data-theme="phosphor"] .panel-h { color: var(--ink-80); }
+:root[data-theme="phosphor"] .panel-h .r { color: var(--ink-60); }
+:root[data-theme="phosphor"] .stat .lbl { color: var(--ink-60); }
+:root[data-theme="phosphor"] .stat .sub { color: var(--ink-60); }
+:root[data-theme="phosphor"] .proto-head .kicker { color: var(--ink-60); }
+:root[data-theme="phosphor"] .proto-head .sub { color: var(--ink-60); }
+:root[data-theme="phosphor"] .proto-head .title { color: var(--ink-100); }
+:root[data-theme="phosphor"] .proto-panel h6 { color: var(--ink-60); }
+:root[data-theme="phosphor"] .proto-panel .body { color: var(--ink-80); }
+:root[data-theme="phosphor"] .proto-step p { color: var(--ink-60); }
+:root[data-theme="phosphor"] .proto-ctrl-row .k { color: var(--ink-60); }
+:root[data-theme="phosphor"] .proto-badge { color: var(--ink-80); }
+:root[data-theme="phosphor"] .v6-res { color: var(--ink-80); }
+:root[data-theme="phosphor"] .mblock .hh { color: var(--ink-60); }
+:root[data-theme="phosphor"] .mblock .sz { color: var(--ink-80); }
+
+:root[data-theme="phosphor"] .proto-panel .body b { color: var(--accent-data); }
+
+:root[data-theme="phosphor"] .mblock {
+  background: linear-gradient(180deg, #1a1206, #241a05);
+  border-color: rgba(255, 176, 0, 0.5);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset, 0 4px 14px rgba(0,0,0,0.45);
+}
+:root[data-theme="phosphor"] .mblock.q { background: rgba(20, 15, 3, 0.75) var(--surface-ground); }
+}

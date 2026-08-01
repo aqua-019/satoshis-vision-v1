@@ -132,7 +132,7 @@ export function MempoolPage() {
                   onClick={() => { setParams({ v: it.id }); setOpen(false); }}
                   style={{
                     appearance: "none", cursor: "pointer",
-                    background: on ? "rgba(255,122,26,0.08)" : "transparent",
+                    background: on ? "color-mix(in srgb, var(--accent-structural) 8%, transparent)" : "transparent",
                     border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),
                     color: on ? "var(--tk-accent)" : "var(--ink-80)",
                     padding: "6px 10px",

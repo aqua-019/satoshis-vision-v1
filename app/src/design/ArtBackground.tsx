@@ -112,10 +112,34 @@ export function ParticleField({
 }: ParticleFieldProps) {
   const ref = React.useRef<HTMLCanvasElement | null>(null);
   const reduced = useReducedMotion();
-  // Re-running the effect on a theme flip is how a live ⌘ DESIGN → Theme
-  // change repaints an already-mounted canvas — otherwise the computed
-  // `--ui-accent-dim` read below would only ever happen once, at mount.
   const { theme, tier } = useVisual();
+
+  // Theme-aware particle colour, read into a ref rather than a local const —
+  // see the header comment on `themeColorRef` inside the draw effect below
+  // for why this is split into its own effect. Declared FIRST so it wins the
+  // race to populate the ref before the draw effect's first tick, including
+  // on mount.
+  //
+  // v6.0.7: getComputedStyle on a CUSTOM PROPERTY hands back the raw token
+  // stream, not a resolved colour — so on a pre-oklch engine this used to
+  // return the literal string "oklch(...)". Canvas 2D SILENTLY IGNORES an
+  // unparseable fillStyle (no throw, no warning), leaving the previous value
+  // in place, so the whole field drew black-on-#121218: invisible, with
+  // nothing in the console. The old `|| fallback` never caught it because it
+  // only tests for an EMPTY string, and the token was non-empty and useless.
+  // styles-theme.css now guards oklch behind @supports, so this is belt and
+  // braces — but the validation is what makes the failure impossible rather
+  // than merely unlikely.
+  const themeColorRef = React.useRef<string>("rgba(255,122,26,0.5)");
+  React.useEffect(() => {
+    const rawDim = getComputedStyle(document.documentElement)
+      .getPropertyValue("--ui-accent-dim")
+      .trim();
+    themeColorRef.current =
+      color ??
+      ((rawDim && typeof CSS !== "undefined" && CSS.supports?.("color", rawDim) ? rawDim : "") ||
+        "rgba(255,122,26,0.5)");
+  }, [color, theme]);
 
   React.useEffect(() => {
     const canvas = ref.current;
@@ -145,27 +169,11 @@ export function ParticleField({
 
     // Theme-aware particle colour: --ui-accent-dim already retints per
     // theme (violet under indigo, the historic orange under classic — see
-    // styles-theme.css). Read it from computed style rather than
-    // hardcoding the orange; fall back to it only if the token resolves
-    // empty (e.g. rendered outside this app's CSS cascade entirely, per
-    // PORTING.md).
-    // v6.0.7: getComputedStyle on a CUSTOM PROPERTY hands back the raw token
-    // stream, not a resolved colour — so on a pre-oklch engine this used to
-    // return the literal string "oklch(...)". Canvas 2D SILENTLY IGNORES an
-    // unparseable fillStyle (no throw, no warning), leaving the previous value
-    // in place, so the whole field drew black-on-#121218: invisible, with
-    // nothing in the console. The old `|| fallback` never caught it because it
-    // only tests for an EMPTY string, and the token was non-empty and useless.
-    // styles-theme.css now guards oklch behind @supports, so this is belt and
-    // braces — but the validation is what makes the failure impossible rather
-    // than merely unlikely.
-    const rawDim = getComputedStyle(document.documentElement)
-      .getPropertyValue("--ui-accent-dim")
-      .trim();
-    const themeColor =
-      color ??
-      ((rawDim && typeof CSS !== "undefined" && CSS.supports?.("color", rawDim) ? rawDim : "") ||
-        "rgba(255,122,26,0.5)");
+    // styles-theme.css). Resolved in the sibling effect above into
+    // `themeColorRef`, and read from that ref on every frame below —
+    // NOT closed over here — so a theme flip recolours without re-running
+    // this effect (which would tear down and reseed the whole field; see
+    // that effect's header comment).
 
     let stars: Star[] = [];
     let streams: Stream[] = [];
@@ -212,7 +220,7 @@ export function ParticleField({
     // what the reduced-motion static frame wants.
     const tick = (k: number) => {
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = themeColor;
+      ctx.fillStyle = themeColorRef.current;
       for (const s of stars) {
         s.x += s.vx * k; s.y += s.vy * k; s.ph += 0.02 * speed * k;
         if (s.x < 0) s.x += w; if (s.x > w) s.x -= w;
@@ -240,7 +248,7 @@ export function ParticleField({
         ctx.globalAlpha = 0.18;
         ctx.fillStyle = `hsl(${s.hue}, 100%, 55%)`;
         ctx.fillRect(s.x, s.y, 1, 28);
-        ctx.fillStyle = themeColor;
+        ctx.fillStyle = themeColorRef.current;
       }
       ctx.globalAlpha = 1;
     };
@@ -322,7 +330,7 @@ export function ParticleField({
       stop();
       ro.disconnect();
     };
-  }, [density, speed, color, reduced, theme, tier]);
+  }, [density, speed, reduced, tier]);
 
   return <canvas ref={ref} className={"art-canvas " + (className || "")} />;
 }

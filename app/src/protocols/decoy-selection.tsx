@@ -167,7 +167,7 @@ export function TimeTide({ ringSize = 16, trueAge = 7, total = 380 }: any) {
             <circle cx={x} cy={yWave + bob} r={r.real ? 5 : 4}
               fill={r.real ? "#ffce8a" : "rgba(255,180,80,0.95)"}
               stroke={r.real ? "#ffd9a0" : "rgba(255,200,120,0.4)"} strokeWidth="1"
-              style={{ filter: r.real ? "drop-shadow(0 0 4px #ff7a1a)" : "drop-shadow(0 0 4px rgba(255,122,26,0.8))" }} />
+              style={{ filter: r.real ? "drop-shadow(0 0 4px var(--accent-data))" : "drop-shadow(0 0 4px rgba(255,122,26,0.8))" }} />
             {/* label — skipped where too close to the previous one to avoid collision */}
             {showBuoyLabel[i] ? (
               <text x={x} y={yWave + bob - 12} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={uPx(fs.tick)}

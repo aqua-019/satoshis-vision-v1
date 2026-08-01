@@ -33,7 +33,7 @@ export function StatusChip({ status, label, srPrefix, block }: StatusChipProps) 
         justifyContent: block ? "center" : undefined,
         padding: "3px 8px", border: "1px solid " + meta.c, color: meta.c, borderRadius: 2,
         fontFamily: "var(--f-mono)", fontSize, letterSpacing: "0.08em", textTransform: "uppercase",
-        background: status === "illegal" ? "rgba(255,77,109,0.06)" : "transparent",
+        background: status === "illegal" ? "color-mix(in srgb, var(--status-down) 6%, transparent)" : "transparent",
       }}
     >
       {srPrefix ? <span className="sr-only">{srPrefix}: </span> : null}

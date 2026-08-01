@@ -39,6 +39,25 @@ const BASELINE = { attack: 6.25, ring: 16 };
 const lx = (age: number) => Math.log(age / AGE_MIN) / Math.log(AGE_MAX / AGE_MIN);
 const bump = (u: number, mu: number, sd: number) => Math.exp(-Math.pow(u - mu, 2) / (2 * sd * sd));
 
+/**
+ * Resolve --accent-data to a concrete colour for canvas — canvas cannot
+ * consume var(), and ctx.fillStyle = "var(--accent-data)" fails silently
+ * (previous colour just persists, no error). Call once per draw pass, never
+ * per curve()/fillStyle call. Falls back to --tk-accent (always declared,
+ * orange in both current themes) rather than a hardcoded hex, so this file
+ * carries no literal duplicate of the token's value. Sibling of the
+ * same-named helper in cuprate.tsx and of cssColor() in
+ * mempool/useMemCanvas.ts.
+ */
+function resolveAccentData(): string {
+  if (typeof document === "undefined") return "#ffffff";
+  const root = getComputedStyle(document.documentElement);
+  const v = root.getPropertyValue("--accent-data").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v;
+  const fallback = root.getPropertyValue("--tk-accent").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(fallback) ? fallback : "#ffffff";
+}
+
 /** Wallet2's gamma decoy sampler, as a density over log-age. */
 const decoyPdf = (u: number) => bump(u, 0.58, 0.20) * 0.92 + bump(u, 0.80, 0.30) * 0.30;
 /** Estimated real-spend density — mass sits markedly younger than the decoys. */
@@ -54,6 +73,7 @@ export function OspeadView({ bg }: ViewProps) {
 
   const draw: ProtoDrawFn = (ctx, w, h, t) => {
     const on = refitRef.current;
+    const accentData = resolveAccentData(); // resolved once per draw pass — canvas can't read var()
     ctx.clearRect(0, 0, w, h);
     const padL = 44, padR = 14, padT = 26, padB = 40;
     const iw = w - padL - padR, ih = h - padT - padB;
@@ -91,7 +111,7 @@ export function OspeadView({ bg }: ViewProps) {
       ctx.stroke(); ctx.setLineDash([]);
     };
     curve(realPdf, "#ffd400", [5, 4], 1.8);
-    curve(decoy, on ? "#4ade80" : "#ff7a1a", [], 2);
+    curve(decoy, on ? "#4ade80" : accentData, [], 2);
 
     // sweeping read-head — starts mid-plot so the frozen reduced-motion frame
     // is still informative rather than parked in a corner.
@@ -111,7 +131,7 @@ export function OspeadView({ bg }: ViewProps) {
     // legend
     ctx.textAlign = "left"; ctx.font = `11px ${MONO}`;
     ctx.fillStyle = "#ffd400"; ctx.fillText("╌╌ estimated REAL spends", padL, padT - 10);
-    ctx.fillStyle = on ? "#4ade80" : "#ff7a1a";
+    ctx.fillStyle = on ? "#4ade80" : accentData;
     ctx.fillText(on ? "── OSPEAD refit decoys" : "── current gamma decoys", padL + 190, padT - 10);
 
     // effective-ring bar — what the mismatch actually costs, in ring members.

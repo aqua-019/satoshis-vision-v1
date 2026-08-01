@@ -33,6 +33,7 @@ const base = 'http://localhost:4173';
 // trusted. rgb() form is what getComputedStyle returns.
 const INDIGO_RGB = 'rgb(18, 18, 24)';  // #121218
 const CLASSIC_RGB = 'rgb(5, 5, 5)'; // #050505 — v6.0.10 §6b: classic is v5's literal floor
+const PHOSPHOR_RGB = 'rgb(3, 6, 3)'; // #030603 — v6.1.2
 const ACCENT_HEX = '#6E5EF0';
 const ACCENT_RGB = 'rgb(110, 94, 240)';
 
@@ -73,12 +74,33 @@ const stripCssComments = (src) =>
   // exactly the case this block exists for.
   const floorBlock = html.slice(styleAt, html.indexOf('</style>', styleAt));
   ok(/#121218/i.test(floorBlock), '0 · floor declares the indigo hex literally');
+  ok(/#050505/i.test(floorBlock), '0 · floor declares the classic hex literally');
+  ok(/#030603/i.test(floorBlock), '0 · floor declares the phosphor hex literally');
   ok(/color-scheme:\s*dark/i.test(floorBlock), '0 · floor declares color-scheme:dark');
   ok(!/var\(/.test(floorBlock), '0 · floor contains no var() — literals only');
 
+  // v6.1.2 — the UNQUALIFIED html{} rule must be CLASSIC, because classic is now
+  // the default. It is also what an unstamped document gets: with JS off the
+  // pre-paint script never runs, so no data-theme attribute is ever set and only
+  // this rule applies. Getting the polarity backwards doesn't fail anything
+  // loudly — it just gives every default visitor a one-frame flash of the wrong
+  // theme on every cold load, which is exactly what this block exists to prevent.
+  const bareHtml = /html\s*\{[^}]*background-color:\s*(#[0-9a-f]{6})/i.exec(floorBlock);
+  ok(bareHtml?.[1]?.toLowerCase() === '#050505',
+     `0 · the unqualified html{} floor is classic (got ${bareHtml?.[1] ?? 'no match'})`);
+
   // Anti-drift: the hand-copied hexes must equal styles-theme.css's --amb-floor.
+  // v6.1.2 — classic is no longer expressed as ":not(indigo)". With phosphor in
+  // the tree that exclusion would have matched phosphor too and handed it
+  // classic's floor, so every theme is named explicitly now.
   const indigoFloor = /:root\[data-theme="indigo"\][^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
-  const classicFloor = /:root:not\(\[data-theme="indigo"\]\)[^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
+  const classicFloor = /:root\[data-theme="classic"\][^{]*\{[^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
+  const phosphorFloor = /:root\[data-theme="phosphor"\][^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
+  ok(phosphorFloor?.[1]?.toLowerCase() === '#030603',
+     `0 · inline phosphor floor matches --amb-floor (${phosphorFloor?.[1] ?? 'not found'})`);
+  // The unstamped (JS-off) case must resolve to the default theme, not dangle.
+  ok(/:root:not\(\[data-theme\]\)/.test(theme),
+     '0 · styles-theme.css handles the unstamped :root:not([data-theme]) case');
   ok(indigoFloor?.[1]?.toLowerCase() === '#121218', `0 · inline indigo floor matches --amb-floor (${indigoFloor?.[1] ?? 'not found'})`);
   // v6.0.10 §6b: classic's floor is v5's literal #050505. It was #0b0b0c — a
   // 1.5-point lift v6.0.2 introduced and nothing asked for, and exactly the
@@ -120,7 +142,11 @@ console.log('engine:', engine);
   await p.waitForTimeout(300);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `A: html background is the dark floor with CSS blocked (got ${bg})`);
+  // v6.1.2 — the DEFAULT is classic now, so an unseeded page boots to #050505.
+  // This is the unqualified html{} rule in index.html's inline floor doing its job;
+  // if this ever reads the indigo hex again, the floor's polarity has been flipped
+  // back and every default visitor is eating a wrong-theme flash on cold load.
+  ok(bg === CLASSIC_RGB, `A: html background is the dark floor with CSS blocked (got ${bg})`);
   ok(bg !== 'rgba(0, 0, 0, 0)' && bg !== 'rgb(255, 255, 255)', 'A: html background is neither transparent nor white');
 
   const scheme = await p.evaluate(() => getComputedStyle(document.documentElement).colorScheme);
@@ -140,11 +166,20 @@ console.log('engine:', engine);
   ok(linkRules === 0, `A: the bundled stylesheet contributed zero rules (link rules: ${linkRules})`);
   ok(styleRules > 0, `A: the inline floor is what is painting (inline rules: ${styleRules})`);
 
-  const classicBg = await p.evaluate(() => {
-    document.documentElement.setAttribute('data-theme', 'classic');
-    return getComputedStyle(document.documentElement).backgroundColor;
+  // Flip to a NON-default theme: the default is already proven above, so
+  // re-asserting classic here would test nothing. The attribute-qualified
+  // branches are the half that could silently go missing from the inline floor.
+  const altFloors = await p.evaluate(() => {
+    const out = {};
+    for (const t of ['indigo', 'phosphor']) {
+      document.documentElement.setAttribute('data-theme', t);
+      out[t] = getComputedStyle(document.documentElement).backgroundColor;
+    }
+    document.documentElement.removeAttribute('data-theme');
+    return out;
   });
-  ok(classicBg === CLASSIC_RGB, `A: classic theme floor also holds with CSS blocked (got ${classicBg})`);
+  ok(altFloors.indigo === INDIGO_RGB, `A: indigo floor holds with CSS blocked (got ${altFloors.indigo})`);
+  ok(altFloors.phosphor === PHOSPHOR_RGB, `A: phosphor floor holds with CSS blocked (got ${altFloors.phosphor})`);
   await ctx.close();
 }
 
@@ -165,7 +200,7 @@ console.log('engine:', engine);
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `B1: page is still dark with the JS bundle blocked (got ${bg})`);
+  ok(bg === CLASSIC_RGB, `B1: page is still dark with the JS bundle blocked (got ${bg})`);
 
   const rootText = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
   ok(rootText.trim().length > 300, `B1: prerendered content survives a dead bundle (${rootText.trim().length} chars)`);
@@ -204,7 +239,7 @@ console.log('engine:', engine);
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `B2: un-prerenderable deep link is still dark (got ${bg})`);
+  ok(bg === CLASSIC_RGB, `B2: un-prerenderable deep link is still dark (got ${bg})`);
 
   const rootText = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
   ok(rootText.trim().length > 300, `B2: it degrades to the readable home prerender, not a blank page (${rootText.trim().length} chars)`);
@@ -264,6 +299,15 @@ console.log('engine:', engine);
 // simulation of a pre-oklch engine.
 {
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
+  // v6.1.2 — SEED INDIGO. This scenario exists to prove the oklch->sRGB fallback,
+  // and indigo is the only theme that declares any oklch at all. Once classic
+  // became the default, an unseeded page measured classic, where there is no
+  // oklch to fall back FROM — so the check still went green-or-red on a value
+  // that had nothing to do with what it claims to test.
+  await ctx.addInitScript(() => {
+    try { localStorage.setItem('xmri.theme', 'indigo'); } catch { /* storage disabled */ }
+    document.documentElement.setAttribute('data-theme', 'indigo');
+  });
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.abort());
   await p.route('**/assets/*.css', async (route) => {
@@ -275,9 +319,12 @@ console.log('engine:', engine);
   await p.goto(base + '/', { waitUntil: 'load' });
   await p.waitForTimeout(400);
 
+  // Either serialisation is correct. --accent-structural is @property-registered
+  // as <color>, so it COMPUTES to rgb(...); --ui-accent is a plain alias onto it
+  // and inherits that computed form rather than the authored hex.
   const accent = await p.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--ui-accent').trim());
-  ok(accent.toLowerCase() === ACCENT_HEX.toLowerCase(),
+  ok([ACCENT_HEX.toLowerCase(), ACCENT_RGB].includes(accent.toLowerCase()),
      `D: --ui-accent falls back to sRGB without oklch support (got "${accent}")`);
 
   // styles-legibility.css:38 :focus-visible { outline: 2px solid var(--ui-accent) }

@@ -71,13 +71,13 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
               width: 22, height: 26,
               background:
                 intensity > 0.85
-                  ? "rgba(255,180,80,0.95)"
+                  ? "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)"
                   : intensity > 0.6
-                    ? "rgba(255,122,26," + (0.35 + intensity * 0.55) + ")"
-                    : "rgba(255,122,26," + (0.08 + intensity * 0.4) + ")",
+                    ? `color-mix(in srgb, var(--accent-data) ${Math.round((0.35 + intensity * 0.55) * 100)}%, transparent)`
+                    : `color-mix(in srgb, var(--accent-data) ${Math.round((0.08 + intensity * 0.4) * 100)}%, transparent)`,
               boxShadow:
                 intensity > 0.6
-                  ? "0 0 " + (4 + intensity * 14) + "px rgba(255,122,26," + intensity + ")"
+                  ? `0 0 ${4 + intensity * 14}px color-mix(in srgb, var(--accent-data) ${Math.round(intensity * 100)}%, transparent)`
                   : "none",
               // Deterministic jitter from the tx's own id, NOT a dice roll. The
               // repo bans random on live surfaces, and a hash-derived duration is
@@ -96,7 +96,7 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
             style={{
               left: x, top: y, width: 22, height: 26,
               background: "transparent",
-              border: "0.5px solid rgba(255,122,26,0.06)",
+              border: "0.5px solid var(--line-d)",
             }}
           />
         )
@@ -144,21 +144,21 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
               <div
                 style={{
                   position: "absolute", inset: 0,
-                  background: `linear-gradient(135deg, rgba(255,180,80,${0.85 - i * 0.05}) 0%, rgba(255,122,26,${0.7 - i * 0.05}) 100%)`,
-                  border: "1px solid rgba(255,200,120,0.9)",
-                  boxShadow: i === 0 ? "0 0 40px rgba(255,122,26,0.8), inset 0 0 20px rgba(255,255,200,0.4)" : "0 0 16px rgba(255,122,26,0.3)",
+                  background: `linear-gradient(135deg, color-mix(in srgb, var(--accent-structural) ${Math.round((0.85 - i * 0.05) * 100)}%, transparent) 0%, color-mix(in srgb, var(--accent-structural) ${Math.round((0.7 - i * 0.05) * 100)}%, transparent) 100%)`,
+                  border: "1px solid color-mix(in srgb, var(--accent-structural) 90%, transparent)",
+                  boxShadow: i === 0 ? "0 0 40px color-mix(in srgb, var(--accent-structural) 80%, transparent), inset 0 0 20px color-mix(in srgb, var(--accent-structural) 40%, transparent)" : "0 0 16px color-mix(in srgb, var(--accent-structural) 30%, transparent)",
                 }}
               >
                 <div style={{
                   position: "absolute", left: 6, top: 4,
                   fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
-                  color: i === 0 ? "#1a0a02" : "rgba(20,8,2,0.7)",
+                  color: i === 0 ? "var(--bg-0)" : "color-mix(in srgb, var(--bg-0) 70%, transparent)",
                   fontWeight: 600, transform: "rotate(0deg)",
                 }}>#{b.height.toString().slice(-4)}</div>
                 <div style={{
                   position: "absolute", left: 6, bottom: 6, right: 6,
                   fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
-                  color: "rgba(20,8,2,0.65)",
+                  color: "color-mix(in srgb, var(--bg-0) 65%, transparent)",
                 }}>{b.txs} TX · {b.sizeKB.toFixed(0)}KB</div>
               </div>
               {/* right side (extruded) */}
@@ -166,8 +166,8 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
                 style={{
                   position: "absolute",
                   width: heightOfBlock, height: size,
-                  background: `linear-gradient(180deg, rgba(255,122,26,${0.55 - i * 0.04}), rgba(180,75,10,${0.85 - i * 0.04}))`,
-                  border: "1px solid rgba(255,180,80,0.5)",
+                  background: `linear-gradient(180deg, color-mix(in srgb, var(--accent-structural) ${Math.round((0.55 - i * 0.04) * 100)}%, transparent), color-mix(in srgb, var(--accent-structural-dim) ${Math.round((0.85 - i * 0.04) * 100)}%, transparent))`,
+                  border: "1px solid color-mix(in srgb, var(--accent-structural) 50%, transparent)",
                   right: -heightOfBlock,
                   top: 0,
                   transform: "rotateY(90deg)",
@@ -178,8 +178,8 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
                 style={{
                   position: "absolute",
                   width: size, height: heightOfBlock,
-                  background: `linear-gradient(90deg, rgba(140,55,8,${0.85 - i * 0.04}), rgba(80,32,4,${0.95 - i * 0.04}))`,
-                  border: "1px solid rgba(255,180,80,0.35)",
+                  background: `linear-gradient(90deg, color-mix(in srgb, var(--accent-structural-dim) ${Math.round((0.85 - i * 0.04) * 100)}%, transparent), color-mix(in srgb, var(--accent-structural-dim) ${Math.round((0.95 - i * 0.04) * 100)}%, transparent))`,
+                  border: "1px solid color-mix(in srgb, var(--accent-structural) 35%, transparent)",
                   left: 0,
                   bottom: -heightOfBlock,
                   transform: "rotateX(-90deg)",
@@ -209,19 +209,19 @@ function RingSigFan() {
     <svg width="100%" viewBox="0 0 210 210" style={{ display: "block", maxWidth: 210 }}>
       <defs>
         <radialGradient id="ringPulse">
-          <stop offset="0%" stopColor="#ff7a1a" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#ff7a1a" stopOpacity="0" />
+          <stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="ringLine" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(255,122,26,0.05)" />
-          <stop offset="60%" stopColor="rgba(255,122,26,0.5)" />
-          <stop offset="100%" stopColor="rgba(255,200,120,0.95)" />
+          <stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.05" />
+          <stop offset="60%" stopColor="var(--accent-structural)" stopOpacity="0.5" />
+          <stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0.95" />
         </linearGradient>
       </defs>
       <circle cx={cx} cy={cy} r="55" fill="url(#ringPulse)" opacity="0.5">
         <animate attributeName="r" values="50;70;50" dur="3.5s" repeatCount="indefinite" />
       </circle>
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,122,26,0.18)" strokeDasharray="3 3" />
+      <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.18} strokeDasharray="3 3" />
       {Array.from({ length: N }).map((_, i) => {
         const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
         const x2 = cx + Math.cos(ang) * r;
@@ -230,11 +230,13 @@ function RingSigFan() {
         return (
           <g key={i}>
             <line x1={cx} y1={cy} x2={x2} y2={y2}
-              stroke={isReal ? "url(#ringLine)" : "rgba(255,122,26,0.15)"}
+              stroke={isReal ? "url(#ringLine)" : "var(--accent-structural-dim)"}
+              strokeOpacity={isReal ? undefined : 0.15}
               strokeWidth={isReal ? "1.5" : "0.5"} />
             <circle cx={x2} cy={y2} r={isReal ? 4 : 2.4}
-              fill={isReal ? "#ffd9a0" : "rgba(255,122,26,0.65)"}
-              style={{ filter: `drop-shadow(0 0 ${isReal ? 8 : 3}px ${isReal ? "#ffb978" : "rgba(255,122,26,0.6)"})` }}>
+              fill={isReal ? "var(--accent-structural)" : "var(--accent-structural-dim)"}
+              fillOpacity={isReal ? undefined : 0.65}
+              style={{ filter: `drop-shadow(0 0 ${isReal ? 8 : 3}px ${isReal ? "var(--accent-structural)" : "color-mix(in srgb, var(--accent-structural-dim) 60%, transparent)"})` }}>
               {isReal ? (
                 <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" />
               ) : null}
@@ -242,7 +244,7 @@ function RingSigFan() {
           </g>
         );
       })}
-      <circle cx={cx} cy={cy} r="6" fill="#fff1e0" style={{ filter: "drop-shadow(0 0 10px #ff7a1a)" }} />
+      <circle cx={cx} cy={cy} r="6" fill="var(--accent-structural)" style={{ filter: "drop-shadow(0 0 10px var(--accent-structural))" }} />
       <text x={cx} y={cy + 28} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-60)" letterSpacing="0.1em">
         TX · 16 RING · 1 REAL
       </text>
@@ -349,7 +351,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                       data-tracked-tx={isTracked ? trackedTxIdFor(tracking) ?? undefined : undefined}
                       className="mblock glide-block" onClick={() => onSelectBlock(b.height)}
                       style={{ width: 96, minHeight: h, display: "flex", flexDirection: "column", justifyContent: "space-between", opacity: 1 - i * 0.04, cursor: "pointer",
-                        boxShadow: isTracked ? "0 0 14px rgba(255,212,0,0.55)" : undefined,
+                        boxShadow: isTracked ? "0 0 14px color-mix(in srgb, var(--status-warn) 55%, transparent)" : undefined,
                         outline: isTracked ? "1.5px solid var(--y-50)" : undefined, outlineOffset: -1 }}>
                       <div>
                         <div className="hh">#{b.height.toLocaleString()}</div>
@@ -403,9 +405,9 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                     <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                       <div className="kicker">Lattice key</div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,180,80,0.95)" }} /><span className="dim">priority</span></div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.6)" }} /><span className="dim">standard</span></div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "rgba(255,122,26,0.18)" }} /><span className="dim">low</span></div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)" }} /><span className="dim">priority</span></div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 60%, transparent)" }} /><span className="dim">standard</span></div>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 18%, transparent)" }} /><span className="dim">low</span></div>
                       <div style={{ marginTop: 8 }} className="kicker">Distribution</div>
                       <MiniBar data={histData} labels={histLabels} width={170} height={48} hover fmt={(v: number) => `${Math.round(v)} tx`} />
                       <div className="dim" style={{ fontSize: "var(--fs-label)" }}>fee/B histogram · {histCaption}</div>

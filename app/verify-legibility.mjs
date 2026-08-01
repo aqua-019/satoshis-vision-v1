@@ -91,10 +91,12 @@ function topLevelBlocks(src) {
 const legPath = "src/styles-legibility.css";
 const themePath = "src/styles-theme.css";
 const ambPath = "src/styles-ambient.css";
+const stylesPath = "src/styles.css";
 
 const legSrc = read(legPath);
 const themeSrc = read(themePath);
 const ambSrc = read(ambPath);
+const stylesSrc = read(stylesPath);
 
 let failed = false;
 const checks = [];
@@ -134,6 +136,48 @@ for (const [name, expected] of SCALE) {
       : count > 1
         ? `declared ${count} times (must be exactly once) at lines ${matches.map((m) => lineOf(legSrc, m.index)).join(", ")}`
         : `found "${value}" at ${legPath}:${lineOf(legSrc, matches[0].index)}`
+  );
+}
+
+// ── 1b) every color-mix() must mix toward `transparent` ────────────────────
+// v6.1.2 — the colour audit replaced ~119 hardcoded rgba() tints with
+// color-mix(in srgb, var(--role) N%, transparent). That is the only way to keep
+// an alpha tint while still resolving through a theme role, since a CSS custom
+// property cannot be alpha-adjusted at the call site and a React inline style
+// object cannot carry a fallback declaration for the same key.
+//
+// The safety property this asserts: color-mix() is Chrome 111+ / Firefox 113+ /
+// Safari 16.2+, the same era as oklch(), which this repo already guards behind
+// @supports. On an older engine the declaration is simply invalid and does not
+// apply — so a mix TOWARD TRANSPARENT degrades to "no tint", which is fine, while
+// a mix toward an opaque colour would degrade to "no surface at all". On a page
+// with an aurora behind it that is the panel-goes-transparent bug verify-contrast
+// checks for at runtime. Keep every mix ending in `, transparent)` and the
+// degraded case can only ever be flatter, never broken.
+{
+  const tsxFiles = walk(join(appDir, "src"), ".tsx").sort();
+  const violations = [];
+  for (const f of tsxFiles) {
+    const src = readFileSync(f, "utf8");
+    for (const m of src.matchAll(/color-mix\(/g)) {
+      let i = m.index + m[0].length, depth = 1;
+      while (i < src.length && depth > 0) {
+        if (src[i] === "(") depth++;
+        else if (src[i] === ")") depth--;
+        i++;
+      }
+      const expr = src.slice(m.index, i);
+      if (!/,\s*transparent\s*\)$/.test(expr)) {
+        violations.push(`${f.replace(appDir + "/", "")}  ${expr.slice(0, 80)}`);
+      }
+    }
+  }
+  assert(
+    "every color-mix() in app/src/**/*.tsx mixes toward transparent (degrades to no-tint, never to no-surface)",
+    violations.length === 0,
+    violations.length === 0
+      ? ""
+      : `${violations.length} mix(es) toward an opaque colour:\n    ` + violations.join("\n    ")
   );
 }
 
@@ -226,40 +270,85 @@ for (const [label, src, path] of [
     const stripped = stripCssComments(themeSrc);
     const blocks = topLevelBlocks(stripped);
     const violations = [];
-    const INDIGO = /^:root\[data-theme="indigo"\]/;
-    const NOT_INDIGO = /^:root:not\(\[data-theme="indigo"\]\)/;
+    const layerViolations = [];
+    // v6.1.2 — three themes. The old pair of regexes hardcoded "indigo" and the
+    // `:not([data-theme="indigo"])` classic branch; with phosphor in the tree
+    // "not indigo" no longer means "classic", so every theme is now named
+    // explicitly and the unstamped case (JS off — the pre-paint stamp never
+    // runs) is matched by :root:not([data-theme]) rather than by exclusion.
+    const THEME_NAMES = ["classic", "indigo", "phosphor"];
+    const SCOPED = new RegExp(
+      `^:root(?:\\[data-theme="(?:${THEME_NAMES.join("|")})"\\]|:not\\(\\[data-theme\\]\\))`
+    );
 
     // v6.0.7: @supports is a conditional GROUP rule — its own header is never a
     // selector, so checking it directly would always "fail". Descend into its
     // body and hold the rules inside to the same scoping contract instead.
     // Offsets stay absolute so violations still report a real line number.
-    const flatten = (list, offset) =>
-      list.flatMap((b) =>
-        /^@supports\b/.test(b.header || "")
-          ? flatten(topLevelBlocks(b.body ?? ""), offset + b.bodyStart + 1)
-          : [{ ...b, headerStart: b.headerStart + offset }]
-      );
+    // v6.0.11 cascade-layers retrofit: the whole file is now wrapped in one or
+    // more `@layer theme { ... }` blocks (§1 of the retrofit), so every real
+    // rule's header is nested one level deeper than before. @layer is the same
+    // kind of conditional GROUP rule @supports already is here — its header is
+    // never a selector either — so it gets the identical descend-and-flatten
+    // treatment, recursively (a `@supports` block inside a `@layer` block, as
+    // styles-theme.css has, unwraps both levels).
+    // Carries the enclosing @layer name down, so a rule can be checked for
+    // WHICH layer it landed in as well as how it is scoped.
+    const flatten = (list, offset, layer) =>
+      list.flatMap((b) => {
+        const h = b.header || "";
+        const m = /^@layer\s+([a-z]+)/.exec(h);
+        if (m) return flatten(topLevelBlocks(b.body ?? ""), offset + b.bodyStart + 1, m[1]);
+        if (/^@supports\b/.test(h)) return flatten(topLevelBlocks(b.body ?? ""), offset + b.bodyStart + 1, layer);
+        return [{ ...b, headerStart: b.headerStart + offset, layer }];
+      });
 
-    for (const b of flatten(blocks, 0)) {
+    for (const b of flatten(blocks, 0, null)) {
       const header = b.header;
       if (!header) continue; // stray/empty (shouldn't happen)
       if (/^@keyframes\b/.test(header)) continue; // unconditional, allowed
-      if (header === ":root") continue; // classic-identity bindings, allowed
+      if (header === ":root") continue; // shared identity/alias bindings, allowed
 
       const parts = header.split(",").map((s) => s.trim()).filter(Boolean);
       for (const part of parts) {
-        if (!INDIGO.test(part) && !NOT_INDIGO.test(part)) {
+        if (!SCOPED.test(part)) {
           violations.push(`${themePath}:${lineOf(stripped, b.headerStart)}  "${part}" (in rule "${header}")`);
+        }
+        // LAYER PLACEMENT. A rule that only sets custom properties is a TOKEN
+        // block and belongs in `theme`. A rule with a descendant/compound part
+        // after the :root scope is a COMPONENT OVERRIDE and must live in
+        // `components` — because layer order beats specificity, and `theme` is
+        // declared BEFORE `components`. A component override left in `theme`
+        // loses to styles.css's base `.topbar`/`.panel`/`.mblock` rules however
+        // specific it is, and does nothing at all. That regressed once during
+        // the v6.1.2 layer retrofit and no other assertion in this repo noticed:
+        // they all check selector SHAPE, none check which declaration won.
+        const isOverride = /^:root(?:\[[^\]]*\]|:not\([^)]*\))*\s*\S/.test(part) &&
+                           /[\s>+~]/.test(part.replace(/^:root(?:\[[^\]]*\]|:not\([^)]*\))*/, "").trim() ||
+                             part.replace(/^:root(?:\[[^\]]*\]|:not\([^)]*\))*/, "").trim());
+        if (isOverride && b.layer && b.layer !== "components") {
+          layerViolations.push(
+            `${themePath}:${lineOf(stripped, b.headerStart)}  "${part}" is in @layer ${b.layer}, must be @layer components`
+          );
         }
       }
     }
 
     assert(
-      "styles-theme.css: every rule outside :root/@keyframes is scoped to :root[data-theme=\"indigo\"] or :root:not([data-theme=\"indigo\"])",
+      `styles-theme.css: every rule outside :root/@keyframes is scoped to one of ${THEME_NAMES.map((t) => `[data-theme="${t}"]`).join(" / ")} or :root:not([data-theme])`,
       violations.length === 0,
       violations.length === 0
         ? ""
         : `${violations.length} unscoped rule(s):\n    ` + violations.join("\n    ")
+    );
+
+    assert(
+      "styles-theme.css: component overrides live in @layer components, not @layer theme (layer order beats specificity)",
+      layerViolations.length === 0,
+      layerViolations.length === 0
+        ? ""
+        : `${layerViolations.length} rule(s) in the wrong layer — these silently lose to styles.css:\n    ` +
+          layerViolations.join("\n    ")
     );
   }
 }
@@ -309,7 +398,18 @@ for (const [label, src, path] of [
     // closing brace, so a doc comment above `:root {` lands inside the header
     // and an equality test against ":root" never matches. stripCssComments
     // preserves length, so line numbers still resolve.
-    const blocks = topLevelBlocks(stripCssComments(legSrc));
+    // v6.0.11 cascade-layers retrofit: the whole file now lives inside one or
+    // more `@layer utilities { ... }` wrappers, so :root and the ≤768px block
+    // are no longer top-level — they sit one level inside the layer. Flatten
+    // through @layer first, same descend-and-offset treatment the
+    // styles-theme.css check above gives @supports/@layer.
+    const flattenLayer = (list, offset) =>
+      list.flatMap((b) =>
+        /^@layer\b/.test(b.header || "")
+          ? flattenLayer(topLevelBlocks(b.body ?? ""), offset + b.bodyStart + 1)
+          : [{ ...b, headerStart: b.headerStart + offset }]
+      );
+    const blocks = flattenLayer(topLevelBlocks(stripCssComments(legSrc)), 0);
     const mobile = blocks.find((b) => /@media[^{]*max-width:\s*768px/.test(b.header));
     const rootBlocks = blocks.filter((b) => b.header.trim() === ":root");
 
@@ -390,6 +490,79 @@ for (const [label, src, path] of [
     "no sub-11 SVG fontSize attribute remains in the migrated chart/diagram files",
     violations.length === 0,
     violations.slice(0, 20).join("\n    ") + (violations.length > 20 ? `\n    …and ${violations.length - 20} more` : ""),
+  );
+}
+
+// ── 8) cascade layers · v6.0.11 retrofit ────────────────────────────────────
+// 8a) the layer order is declared exactly once, verbatim, across the four
+// stylesheets. THE governing hazard: an unlayered rule beats every layered
+// rule, silently — so the order statement itself must exist exactly once
+// (declaring it more than once is harmless per spec, but a second, drifted
+// copy is exactly the kind of thing that goes stale unnoticed) and every
+// real rule below must live inside one of the five named layers.
+{
+  const LAYER_STMT = "@layer reset, base, theme, components, utilities;";
+  const STYLESHEETS = [
+    [stylesPath, stylesSrc],
+    [legPath, legSrc],
+    [themePath, themeSrc],
+    [ambPath, ambSrc],
+  ];
+
+  const occurrences = [];
+  for (const [path, src] of STYLESHEETS) {
+    if (!src) continue;
+    let idx = src.indexOf(LAYER_STMT);
+    while (idx !== -1) {
+      occurrences.push(`${path}:${lineOf(src, idx)}`);
+      idx = src.indexOf(LAYER_STMT, idx + LAYER_STMT.length);
+    }
+  }
+  assert(
+    `the layer order statement ("${LAYER_STMT}") appears exactly once across styles.css / styles-ambient.css / styles-theme.css / styles-legibility.css`,
+    occurrences.length === 1,
+    occurrences.length === 0
+      ? "not found in any of the four files"
+      : `found ${occurrences.length} time(s): ${occurrences.join(", ")}`
+  );
+
+  // 8b) no top-level rule in any of the four stylesheets sits outside a
+  // @layer block. Exempt: @font-face, @keyframes, @property, @charset, @import
+  // (none of which participate in layering) and the @layer statement itself (it
+  // has no body, so topLevelBlocks — which only ever sees brace-delimited
+  // blocks — can never surface it here in the first place). Anything else at
+  // the top level that isn't itself a `@layer ... { }` wrapper is the exact
+  // hazard §2 of the retrofit warns about: it silently outranks every rule
+  // that IS layered, with no error from any tool.
+  //
+  // @property is exempt for a specific reason, not by analogy: a registration
+  // is not a declaration and takes part in no cascade, so a layer around it
+  // would change nothing. Its `initial-value` is a last-resort fallback, and
+  // the thing that actually matters about it — that no theme ever falls back
+  // TO that value — is asserted at runtime by verify-contrast.mjs instead.
+  const EXEMPT_AT_RULE = /^@(font-face|keyframes|property|charset|import)\b/;
+  const LAYER_BLOCK = /^@layer\b/;
+  const unlayered = [];
+  for (const [path, src] of STYLESHEETS) {
+    if (!src) {
+      unlayered.push(`${path}  (file not found)`);
+      continue;
+    }
+    const stripped = stripCssComments(src);
+    for (const b of topLevelBlocks(stripped)) {
+      const header = b.header;
+      if (!header) continue; // stray/empty (shouldn't happen)
+      if (EXEMPT_AT_RULE.test(header)) continue;
+      if (LAYER_BLOCK.test(header)) continue;
+      unlayered.push(`${path}:${lineOf(stripped, b.headerStart)}  "${header}"`);
+    }
+  }
+  assert(
+    "no top-level rule in styles.css / styles-ambient.css / styles-theme.css / styles-legibility.css sits outside a @layer block",
+    unlayered.length === 0,
+    unlayered.length === 0
+      ? ""
+      : `${unlayered.length} unlayered rule(s):\n    ` + unlayered.join("\n    ")
   );
 }
 

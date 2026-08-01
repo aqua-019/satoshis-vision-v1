@@ -152,7 +152,7 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
         spellCheck={false}
         style={{
           flex: "1 1 0", minWidth: 0, appearance: "none",
-          background: "rgba(0,0,0,0.6)", color: "var(--ink-100)",
+          background: "var(--surface-sunk)", color: "var(--ink-100)",
           border: "1px solid var(--ink-20)", borderRadius: 3,
           padding: compact ? "7px 10px" : "9px 12px",
           fontFamily: "var(--f-mono)", fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)",

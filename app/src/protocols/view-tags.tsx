@@ -62,12 +62,12 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
           const matched = scanned && c.mine;
           let bg;
           if (viewTag) {
-            if (matched) bg = "linear-gradient(135deg, #b87aff 0%, #ff7a1a 100%)";
+            if (matched) bg = "linear-gradient(135deg, #b87aff 0%, var(--accent-data) 100%)";
             else if (preReject) bg = "rgba(255,255,255,0.025)";
             else if (candidate) bg = "rgba(255,180,80,0.4)";
             else bg = "rgba(255,255,255,0.04)";
           } else {
-            if (matched) bg = "linear-gradient(135deg, #b87aff 0%, #ff7a1a 100%)";
+            if (matched) bg = "linear-gradient(135deg, #b87aff 0%, var(--accent-data) 100%)";
             else if (scanned) bg = "rgba(255,122,26,0.18)";
             else bg = "rgba(255,255,255,0.04)";
           }

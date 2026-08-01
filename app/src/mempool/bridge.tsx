@@ -36,7 +36,7 @@ const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"]
 /* ── card chrome shared by all bridge instruments ───────────── */
 export function BrgCard({ title, right, children, pad = "14px 16px", style }: any) {
   return (
-    <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
+    <div style={{ background: "var(--surface-raised)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
           <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
@@ -138,22 +138,22 @@ export function BrgRadar({ data, trackedId }: { data: MoneroLive; trackedId?: st
     <svg ref={svgRef} viewBox="0 0 300 300" width="100%" style={{ display: "block", maxHeight: 300 }}>
       <defs>
         <radialGradient id="brg-ppi" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="rgba(255,122,26,0.10)" />
-          <stop offset="100%" stopColor="rgba(255,122,26,0)" />
+          <stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.10" />
+          <stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="brg-wedge" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor="rgba(255,122,26,0.42)" />
-          <stop offset="100%" stopColor="rgba(255,122,26,0)" />
+          <stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.42" />
+          <stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0" />
         </linearGradient>
       </defs>
       <circle cx={cx} cy={cy} r={R} fill="url(#brg-ppi)" />
       {/* range rings */}
       {[0.33, 0.66, 1].map((f, i) => (
-        <circle key={i} cx={cx} cy={cy} r={R * f} fill="none" stroke="rgba(255,122,26,0.16)" strokeWidth="1" strokeDasharray={i === 2 ? "none" : "2 5"} />
+        <circle key={i} cx={cx} cy={cy} r={R * f} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.16} strokeWidth="1" strokeDasharray={i === 2 ? "none" : "2 5"} />
       ))}
       {/* cross-hairs */}
-      <line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke="rgba(255,122,26,0.12)" strokeWidth="1" />
-      <line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke="rgba(255,122,26,0.12)" strokeWidth="1" />
+      <line x1={cx - R} y1={cy} x2={cx + R} y2={cy} stroke="var(--accent-structural)" strokeOpacity={0.12} strokeWidth="1" />
+      <line x1={cx} y1={cy - R} x2={cx} y2={cy + R} stroke="var(--accent-structural)" strokeOpacity={0.12} strokeWidth="1" />
       {/* bearing ticks */}
       {Array.from({ length: 24 }).map((_, i) => {
         const a = i * 15 * Math.PI / 180;
@@ -270,7 +270,7 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <svg viewBox={`0 0 ${w} ${h + 4}`} width="100%" style={{ display: "block" }}>
-        <path d={arc(Math.PI, 0, r)} fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="7" strokeLinecap="round" />
+        <path d={arc(Math.PI, 0, r)} fill="none" stroke="var(--line)" strokeWidth="7" strokeLinecap="round" />
         <path ref={arcRef} d={arc(Math.PI, a1_0, r)} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round" style={{ filter: `drop-shadow(0 0 5px ${color})` }} />
         {/* tick marks */}
         {Array.from({ length: 11 }).map((_, i) => {
@@ -279,7 +279,7 @@ export function BrgGauge({ value, label, unit = "%", color = "var(--tk-accent)",
         })}
         {/* needle */}
         <line ref={needleRef} x1={c} y1={cyy} x2={ax(a1_0, r - 6)} y2={ay(a1_0, r - 6)} stroke={color} strokeWidth="2" style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
-        <circle cx={c} cy={cyy} r="4" fill="#0a0806" stroke={color} strokeWidth="1.5" />
+        <circle cx={c} cy={cyy} r="4" fill="var(--bg-1)" stroke={color} strokeWidth="1.5" />
         <text ref={textRef} x={c} y={cyy - 14} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={size * 0.18} fontWeight="500" fill={color} style={{ filter: `drop-shadow(0 0 4px ${color})` }}>{Math.round(curRef.current)}{unit}</text>
       </svg>
       <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", color: "var(--ink-40)", marginTop: 2 }}>{label}</div>
@@ -347,11 +347,11 @@ export function BrgFeeScope({ data }: { data: MoneroLive }) {
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
         <defs>
           <linearGradient id="brg-scope" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(255,122,26,0.4)" />
-            <stop offset="100%" stopColor="rgba(255,122,26,0)" />
+            <stop offset="0%" stopColor="var(--accent-data)" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="var(--accent-data)" stopOpacity="0" />
           </linearGradient>
         </defs>
-        {[0.25, 0.5, 0.75].map((t) => <line key={t} x1={padL} x2={W - padR} y1={padT + ih * t} y2={padT + ih * t} stroke="rgba(255,255,255,0.04)" strokeDasharray="2 3" />)}
+        {[0.25, 0.5, 0.75].map((t) => <line key={t} x1={padL} x2={W - padR} y1={padT + ih * t} y2={padT + ih * t} stroke="var(--line-d)" strokeDasharray="2 3" />)}
         <path d={area} fill="url(#brg-scope)" />
         <path d={path} fill="none" stroke="var(--tk-accent)" strokeWidth="1.4" style={{ filter: "drop-shadow(0 0 3px var(--tk-accent))" }} />
         <circle cx={pts[scanI][0]} cy={pts[scanI][1]} r="3" fill="var(--y-50)" style={{ filter: "drop-shadow(0 0 5px var(--y-50))" }} />
@@ -416,7 +416,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
         : <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> locked</>}>
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <svg viewBox="0 0 90 90" width="100%" style={{ maxWidth: 90, display: "block" }}>
-          <circle cx="45" cy="45" r="34" fill="none" stroke="rgba(255,255,255,0.07)" strokeWidth="6" />
+          <circle cx="45" cy="45" r="34" fill="none" stroke="var(--line)" strokeWidth="6" />
           <circle cx="45" cy="45" r="34" fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round"
             strokeDasharray={ring} strokeDashoffset={dashOffset} transform="rotate(-90 45 45)"
             style={{
@@ -558,7 +558,7 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
         {rows.length === 0 && !pinned ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
         ) : rows.map((r) => (
-          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)", animation: "brg-slidein 0.4s ease" }}>
+          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein 0.4s ease" }}>
             <span className="dim2">{r.ts}</span>
             <span style={{ color: col[r.tone] }}>{r.lvl}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.msg}</span>
@@ -589,13 +589,13 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
             <div onClick={() => onPickTx(t.id)}
               style={{
                 display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-mono)",
-                padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)",
+                padding: "7px 8px", borderBottom: "1px solid var(--line-d)",
                 borderLeft: isTracked ? "2px solid var(--y-50)" : "2px solid transparent",
-                background: isTracked ? "rgba(255,212,0,0.07)" : undefined,
+                background: isTracked ? "color-mix(in srgb, var(--status-warn) 7%, transparent)" : undefined,
                 cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center",
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = isTracked ? "rgba(255,212,0,0.12)" : "rgba(255,122,26,0.07)"}
-              onMouseLeave={(e) => e.currentTarget.style.background = isTracked ? "rgba(255,212,0,0.07)" : "transparent"}>
+              onMouseEnter={(e) => e.currentTarget.style.background = isTracked ? "color-mix(in srgb, var(--status-warn) 12%, transparent)" : "color-mix(in srgb, var(--accent-structural) 7%, transparent)"}
+              onMouseLeave={(e) => e.currentTarget.style.background = isTracked ? "color-mix(in srgb, var(--status-warn) 7%, transparent)" : "transparent"}>
               <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
               <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
               <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>

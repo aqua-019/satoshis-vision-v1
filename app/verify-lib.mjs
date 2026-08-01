@@ -60,7 +60,13 @@ export const ROUTES = [
 /** Routes that render a ProtoArtboard (.proto-stage) — the §1 occlusion set. */
 export const SIM_ROUTES = ROUTES.filter((r) => r.startsWith('/simulate'));
 
-export const THEMES = ['indigo', 'classic'];
+// v6.1.2 — classic is the DEFAULT and is listed first; phosphor is new.
+// Note for anyone adding a fourth: gates that diff against a baseline tree built
+// from an older commit will have no baseline for a new theme. verify-shots.mjs
+// handles that explicitly (it reports unmatched shots separately rather than
+// counting them as compared) — a gate that skips a missing baseline silently
+// will overstate what it verified.
+export const THEMES = ['classic', 'indigo', 'phosphor'];
 
 /** Stamp the theme before any app script runs, exactly as index.html's
  *  pre-paint script does, so a gate never measures a mid-flip frame. */
