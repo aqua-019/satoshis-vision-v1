@@ -96,10 +96,19 @@ const CLASSIC_BASELINE = {
   '--tk-accent': 7.63, '--ui-accent-text': 7.63,
 };
 
-for (const theme of ['indigo', 'classic']) {
+// v6.1.2: phosphor joins, and is held to the same absolute AA floors as indigo.
+// Only classic gets the no-regression baseline treatment, because only classic
+// makes the "unchanged since v5" claim.
+//
+// Navigation waits below are `domcontentloaded` + an explicit selector, not
+// `networkidle` (prompt 02 did the same to verify-future.mjs). The app's FAST
+// polling tier fires every 3s, so the network is never idle for long: idle
+// either races or waits out the full timeout. Wait for what is being measured.
+for (const theme of ['indigo', 'classic', 'phosphor']) {
   R.group(`── ${theme} · ink and status colours on --surface-ground ────`);
   const page = await newThemedPage(browser, { width: 1440, height: 900 }, theme);
-  await page.goto(BASE + '/markets', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/markets', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.panel', { timeout: 15000 });
   const m = await page.evaluate(MEASURE);
   R.info(`ground = ${m.ground}`);
 
@@ -125,8 +134,13 @@ for (const theme of ['indigo', 'classic']) {
 // back to transparent for a frame — the aurora would flash through the page.
 {
   R.group('── 390px · ⌘ DESIGN theme flip ─────────────────────────────');
-  const page = await newThemedPage(browser, { width: 390, height: 844 }, 'indigo');
-  await page.goto(BASE + '/markets', { waitUntil: 'networkidle' });
+  // Seed the app's DEFAULT theme and flip AWAY from it. Seeding the target of
+  // the click would make the click a no-op: an already-selected radio fires no
+  // change, --surface-ground never moves, and the assertion below would be
+  // measuring nothing while still going green.
+  const page = await newThemedPage(browser, { width: 390, height: 844 }, 'classic');
+  await page.goto(BASE + '/markets', { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('.panel', { timeout: 15000 });
 
   const sample = () => page.evaluate(() => {
     const cv = document.createElement('canvas');
@@ -148,20 +162,29 @@ for (const theme of ['indigo', 'classic']) {
   });
 
   const before = await sample();
-  R.ok(before.theme === 'indigo', `starts on indigo (got ${before.theme})`);
+  // v6.1.2: classic, not indigo, is now the app's default theme
+  // (VisualContext.tsx) — this expectation changed because the default moved,
+  // not because the test was wrong. Resist "fixing" it back to 'indigo'.
+  R.ok(before.theme === 'classic', `starts on classic (got ${before.theme})`);
 
-  const trigger = await page.$('.ticker-strip .pill:last-child, .ticker-strip > :last-child');
+  // Both selectors below are testid-based, not positional — HomePage.tsx now
+  // mounts its own <ThemeToggle/> beside the hero CTA row, so a page can
+  // carry two theme controls with identical "Classic"/"Phosphor"/"Indigo"
+  // labels at once, and a positional or unscoped text match can silently
+  // bind to the wrong one.
+  const trigger = await page.$('[data-testid="design-panel-trigger"]');
   if (!trigger) {
     R.ok(false, 'the ⌘ DESIGN trigger is reachable at 390px');
   } else {
     await trigger.click();
-    // the panel lists both themes; pick the one we are not on
-    const classic = await page.getByText(/classic/i).first();
-    await classic.click({ timeout: 5000 }).catch(() => {});
+    // Scoped to THIS control (the popover's <ThemeToggle/>), not a page-wide
+    // .first() — see the comment above.
+    const target = page.getByTestId('theme-toggle').getByText(/indigo/i);
+    await target.click({ timeout: 5000 }).catch(() => {});
     await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
     const after = await sample();
 
-    R.ok(after.theme === 'classic', `flips to classic (got ${after.theme})`);
+    R.ok(after.theme === 'indigo', `flips to indigo (got ${after.theme})`);
     R.ok(!!after.ground && after.ground !== before.ground,
       `--surface-ground re-resolves and actually changes ("${before.ground}" → "${after.ground}")`);
     R.ok(!!after.inkFloor, 'the ink ramp still resolves after the flip — no dangling token');

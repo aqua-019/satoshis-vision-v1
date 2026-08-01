@@ -27,7 +27,7 @@ interface ViewProps {
 
 export function ChamberPanel({ side, tick, phase }: any) {
   const isAlice = side === "alice";
-  const color = isAlice ? "#ff7a1a" : "#5ed3f4";
+  const color = isAlice ? "var(--accent-data)" : "#5ed3f4";
   const glow = isAlice ? "var(--glow-1)" : "0 0 14px rgba(94,211,244,0.55)";
   const portraitRef = React.useRef<HTMLDivElement>(null);
   const { u, fs, minWidth } = useChartMetrics(portraitRef, { vbWidth: 200 });

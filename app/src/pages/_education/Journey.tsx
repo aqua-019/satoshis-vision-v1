@@ -32,7 +32,7 @@ function JrnStatGrid({ items }: { items: { v: React.ReactNode; k: React.ReactNod
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 10 }}>
       {items.map((s, i) => (
-        <div key={i} style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "16px 14px", background: "rgba(0,0,0,0.3)" }}>
+        <div key={i} style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "16px 14px", background: "color-mix(in srgb, var(--surface-sunk) 30%, transparent)" }}>
           <div className="mono" style={{ fontSize: 28, fontWeight: 500, color: s.tone || "var(--tk-accent)", textShadow: "var(--glow-1)", lineHeight: 1 }}>{s.v}</div>
           <div className="mono dim" style={{ fontSize: "var(--fs-label)", marginTop: 8, lineHeight: 1.4, letterSpacing: "0.04em" }}>{s.k}</div>
         </div>
@@ -63,7 +63,7 @@ function JrnCompareTable() {
   ];
   return (
     <div style={{ border: "1px solid var(--rule)", borderRadius: 3, overflow: "hidden" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr", background: "rgba(255,122,26,0.05)", borderBottom: "1px solid var(--rule)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "150px 1fr 1fr", background: "color-mix(in srgb, var(--accent-structural) 5%, transparent)", borderBottom: "1px solid var(--rule)" }}>
         <div className="kicker" style={{ padding: "12px 14px" }}>Dimension</div>
         <div className="kicker" style={{ padding: "12px 14px", color: "var(--c-50)" }}>Bitcoin</div>
         <div className="kicker" style={{ padding: "12px 14px", color: "var(--tk-accent)" }}>Monero</div>
@@ -84,7 +84,7 @@ function JrnSpectrum() {
     <Card style={{ padding: 22 }}>
       <div className="kicker">The privacy spectrum</div>
       <div style={{ position: "relative", height: 10, borderRadius: 6, margin: "20px 0 10px",
-        background: "linear-gradient(to right, var(--c-50), var(--ink-40) 50%, var(--tk-accent))", boxShadow: "0 0 16px rgba(255,122,26,0.2)" }}>
+        background: "linear-gradient(to right, var(--c-50), var(--ink-40) 50%, var(--tk-accent))", boxShadow: "0 0 16px color-mix(in srgb, var(--accent-structural) 20%, transparent)" }}>
         <div style={{ position: "absolute", left: "8%", top: -6, width: 14, height: 22, transform: "translateX(-50%)" }}>
           <div style={{ width: 2, height: 22, background: "var(--c-50)", margin: "0 auto", boxShadow: "0 0 6px var(--c-50)" }} />
         </div>
@@ -117,7 +117,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
         </EduMilestone>
         <EduMilestone date="January 3, 2009 · 18:15 UTC" title="Block zero: the genesis">
           Satoshi mines the first block. Embedded in the coinbase — a headline from The Times of London. A timestamp. A manifesto. Proof that Bitcoin was born not from greed, but from disgust at a system that privatized profits and socialized losses.
-          <div className="mono" style={{ marginTop: 12, padding: "12px 14px", border: "1px solid var(--rule)", borderLeft: "2px solid var(--tk-accent)", background: "rgba(0,0,0,0.35)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)" }}>
+          <div className="mono" style={{ marginTop: 12, padding: "12px 14px", border: "1px solid var(--rule)", borderLeft: "2px solid var(--tk-accent)", background: "color-mix(in srgb, var(--surface-sunk) 35%, transparent)", fontSize: "var(--fs-mono)", color: "var(--tk-accent)" }}>
             // The Times 03/Jan/2009<br />Chancellor on brink of second bailout for banks
           </div>
         </EduMilestone>
@@ -289,7 +289,7 @@ export function EduJourney({ navigate }: { navigate: (to: string) => void }) {
       {/* 10 CHOICE */}
       <EduChapter n="10" kicker="The choice" title="Your Financial Privacy Is Not Negotiable"
         sub="Satoshi created Bitcoin to free money from institutional control — and wrestled publicly with its incomplete privacy. Years later, Monero finished what Satoshi started." />
-      <Card style={{ padding: 28, textAlign: "center", background: "rgba(255,122,26,0.04)", borderColor: "rgba(255,122,26,0.25)" }}>
+      <Card style={{ padding: 28, textAlign: "center", background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderColor: "color-mix(in srgb, var(--accent-structural) 25%, transparent)" }}>
         <p className="serif" style={{ fontSize: 26, lineHeight: 1.4, color: "var(--ink-100)", margin: "0 auto 6px", maxWidth: "44ch" }}>
           The question isn't whether you need privacy today. It's whether you'll still have the option tomorrow.
         </p>

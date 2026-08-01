@@ -21,7 +21,7 @@ const WRAP: React.CSSProperties = {
   position: "fixed",
   inset: 0,
   overflow: "auto",
-  background: "#121218",
+  background: "#050505",
   color: "#a8a094",
   boxSizing: "border-box",
   fontFamily: 'ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace',
@@ -33,18 +33,18 @@ const INNER: React.CSSProperties = { maxWidth: 640, margin: "0 auto" };
 const MARK: React.CSSProperties = { fontSize: 22, letterSpacing: "0.04em", color: "#a8a094" };
 const DESC: React.CSSProperties = { margin: "6px 0 28px", fontSize: 14, color: "#6f6a61" };
 const NOTE: React.CSSProperties = {
-  border: "1px solid rgba(110,94,240,.28)",
+  border: "1px solid rgba(255,122,26,.28)",
   borderRadius: 6,
   padding: "14px 16px",
   fontSize: 14,
   color: "#a8a094",
   marginBottom: 24,
-  background: "rgba(110,94,240,.04)",
+  background: "rgba(255,122,26,.04)",
 };
 const LINK: React.CSSProperties = {
-  color: "#8B7BF5",
+  color: "#ff7a1a",
   textDecoration: "none",
-  borderBottom: "1px solid rgba(110,94,240,.4)",
+  borderBottom: "1px solid rgba(255,122,26,.4)",
 };
 const NAV: React.CSSProperties = {
   listStyle: "none",
@@ -107,7 +107,7 @@ export class RootBoundary extends React.Component<RootBoundaryProps, RootBoundar
       <div style={WRAP} role="alert">
         <div style={INNER}>
           <div style={MARK}>
-            xmr<b style={{ color: "#8B7BF5", fontWeight: 600 }}>.irish</b>
+            xmr<b style={{ color: "#ff7a1a", fontWeight: 600 }}>.irish</b>
           </div>
           <div style={DESC}>Monero education + live mempool, network &amp; market data.</div>
           <div style={NOTE}>

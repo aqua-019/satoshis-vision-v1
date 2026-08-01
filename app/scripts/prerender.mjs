@@ -40,7 +40,7 @@ if (!existsSync(shellPath)) {
   console.error("prerender: dist/index.html not found — run `vite build` first");
   process.exit(1);
 }
-const shell = readFileSync(shellPath, "utf8");
+let shell = readFileSync(shellPath, "utf8");
 
 // The built shell carries the hashed asset links, so every prerendered page
 // still boots the same bundle. Only #root's contents differ.
@@ -48,6 +48,24 @@ const ROOT_RE = /(<div id="root">)(<\/div>)/;
 if (!ROOT_RE.test(shell)) {
   console.error('prerender: could not find an empty <div id="root"></div> in dist/index.html');
   process.exit(1);
+}
+
+// Stamp the default theme onto the emitted shell's <html> tag. The Vite
+// shell ships `<html lang="en">` with no `data-theme`, and index.html's
+// pre-paint script (the thing that normally sets it) only runs once the
+// bundle executes — so a cold prerendered load painted unthemed until then,
+// and with JS off it never ran at all. Classic is the site's default theme
+// (see VisualContext.tsx), so that's what an un-attributed load should show.
+// Defensive: if the tag shape ever changes, log and continue with the
+// unstamped shell rather than emitting a broken page for every route.
+const HTML_TAG_RE = /<html([^>]*)>/;
+const htmlTagMatch = HTML_TAG_RE.exec(shell);
+if (!htmlTagMatch) {
+  console.error('prerender: could not find an <html> tag in dist/index.html — emitting without a data-theme stamp');
+} else if (/\sdata-theme=/.test(htmlTagMatch[1])) {
+  // Already stamped (e.g. the shell was built with one) — don't double-attribute.
+} else {
+  shell = shell.replace(HTML_TAG_RE, `<html$1 data-theme="classic">`);
 }
 
 const { render } = await import(join(dist + "-ssr", "entry-ssr.js"));

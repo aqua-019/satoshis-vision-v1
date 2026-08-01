@@ -24,7 +24,7 @@ import * as React from "react";
 
 export const VB_W = 1000;
 export const AXIS = "var(--ink-40)";
-export const GRID = "rgba(255,255,255,0.05)";
+export const GRID = "var(--line-d)";
 
 /* ── cursor tracking ──────────────────────────────────────────────── */
 
@@ -128,6 +128,10 @@ export function ChartTip({ x, y = 18, bounds, width, height, rows, children }: C
     // finds the readout on every chart on the site, so the gate keeps working
     // when new charts (or new mempool views) are added.
     <g pointerEvents="none" data-charttip="" transform={`translate(${tx}, ${y})`}>
+      {/* EXCEPTION — do not tokenise: verify-chartkit.mjs:88-93 asserts this
+          exact literal appears in exactly one file across the tree (the
+          chart tooltip fill). Binding it to a surface role would take that
+          count to 0 and fail the gate. */}
       <rect x={0} y={0} width={w} height={h} rx={2} fill="rgba(8,7,5,0.94)" stroke="var(--rule)" />
       {rows?.length
         ? rows.map((r, i) => (
@@ -150,7 +154,7 @@ export function ChartTip({ x, y = 18, bounds, width, height, rows, children }: C
 
 /** Vertical crosshair rule. */
 export function ChartCrosshair(p: { x: number; y1: number; y2: number; color?: string }): JSX.Element {
-  const { x, y1, y2, color = "rgba(236,234,246,0.22)" } = p;
+  const { x, y1, y2, color = "var(--line)" } = p;
   return (
     <g pointerEvents="none">
       <line x1={x} y1={y1} x2={x} y2={y2} stroke={color} strokeWidth={0.8} strokeDasharray="3 3" />

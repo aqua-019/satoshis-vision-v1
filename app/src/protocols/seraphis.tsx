@@ -17,7 +17,13 @@ interface ViewProps {
 }
 
 const MONO = "'JetBrains Mono', ui-monospace, monospace";
-const ACCENT = "#ff7a1a"; // Seraphis card colour
+// The old fixed-literal ACCENT constant is gone — it was consumed exclusively
+// by ctx.fillStyle / ctx.strokeStyle inside drawAssembly() and drawLadder()
+// below, both canvas 2D draw callbacks, never SVG or a CSS string, despite
+// the name reading like the latter. Canvas cannot consume var(), and
+// ctx.fillStyle = "var(--accent-data)" fails SILENTLY (previous colour just
+// persists, no error) — so each draw pass now resolves the real value itself
+// via resolveAccentData() below instead of closing over a module constant.
 const PURPLE = "#b87aff";
 const CYAN = "#5ed3f4";
 const GREEN = "#4ade80";
@@ -25,6 +31,24 @@ const INK_80 = "rgba(168,160,148,0.85)";
 const INK_60 = "rgba(168,160,148,0.55)";
 const INK_40 = "rgba(168,160,148,0.32)";
 const RULE = "rgba(255,255,255,0.12)";
+
+/**
+ * Resolve --accent-data to a concrete colour for canvas. Call once per draw
+ * pass (drawAssembly/drawLadder each call this once, at the top), never per
+ * fillStyle/strokeStyle assignment. Falls back to --tk-accent (always
+ * declared, orange in both current themes) rather than a hardcoded hex, so
+ * this file carries no literal duplicate of the token's value. Sibling of
+ * the same-named helper in ospead.tsx/cuprate.tsx and of cssColor() in
+ * mempool/useMemCanvas.ts.
+ */
+function resolveAccentData(): string {
+  if (typeof document === "undefined") return "#ffffff";
+  const root = getComputedStyle(document.documentElement);
+  const v = root.getPropertyValue("--accent-data").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v;
+  const fallback = root.getPropertyValue("--tk-accent").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(fallback) ? fallback : "#ffffff";
+}
 
 type Backend = "grootle" | "fcmp";
 
@@ -85,6 +109,7 @@ export function SeraphisView({ bg }: ViewProps) {
   // ── Act one: three modules bolting into one tx, vs one entangled blob ──
   const drawAssembly: ProtoDrawFn = (ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
+    const accent = resolveAccentData(); // resolved once per draw pass — canvas can't read var()
     const pad = 14;
     const leftW = Math.min(150, w * 0.32);
     const cx = pad + leftW / 2;
@@ -118,7 +143,7 @@ export function SeraphisView({ bg }: ViewProps) {
 
     const rx = arrowX + 30, rw = w - rx - pad, rowH = (h - 32) / 3;
     const rows: [string, string, string][] = [
-      ["MEMBERSHIP", backend === "fcmp" ? "FCMP++ slot (projected)" : "Grootle (beta)", backend === "fcmp" ? PURPLE : ACCENT],
+      ["MEMBERSHIP", backend === "fcmp" ? "FCMP++ slot (projected)" : "Grootle (beta)", backend === "fcmp" ? PURPLE : accent],
       ["OWNERSHIP", "composition proof", CYAN],
       ["AMOUNT", "Bulletproof+ range", GREEN],
     ];
@@ -141,29 +166,30 @@ export function SeraphisView({ bg }: ViewProps) {
   // ── Act two: the six-tier permission ladder ──
   const drawLadder: ProtoDrawFn = (ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
+    const accent = resolveAccentData(); // resolved once per draw pass — canvas can't read var()
     const pad = 20, y = h * 0.58;
     const x0 = pad, x1 = w - pad, step = (x1 - x0) / (TIERS.length - 1);
 
     ctx.strokeStyle = RULE; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke();
-    ctx.strokeStyle = ACCENT; ctx.lineWidth = 2;
+    ctx.strokeStyle = accent; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x0 + step * (tier - 1), y); ctx.stroke();
 
     for (const tr of TIERS) {
       const x = x0 + step * (tr.n - 1);
       const on = tr.n === tier, passed = tr.n <= tier;
       ctx.beginPath(); ctx.arc(x, y, on ? 7 : 4.5, 0, Math.PI * 2);
-      ctx.fillStyle = on ? ACCENT : passed ? "rgba(255,122,26,0.5)" : "rgba(255,255,255,0.14)";
+      ctx.fillStyle = on ? accent : passed ? "rgba(255,122,26,0.5)" : "rgba(255,255,255,0.14)";
       ctx.fill();
       if (on) {
-        ctx.strokeStyle = ACCENT; ctx.lineWidth = 1;
+        ctx.strokeStyle = accent; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(x, y, 12, 0, Math.PI * 2); ctx.stroke();
       }
       ctx.font = `10px ${MONO}`; ctx.textAlign = "center";
-      ctx.fillStyle = on ? ACCENT : INK_60;
+      ctx.fillStyle = on ? accent : INK_60;
       ctx.fillText(String(tr.n), x, y + 20);
       if (tr.tag) {
-        ctx.font = `9px ${MONO}`; ctx.fillStyle = on ? ACCENT : INK_40;
+        ctx.font = `9px ${MONO}`; ctx.fillStyle = on ? accent : INK_40;
         ctx.fillText(tr.tag, x, y - 14);
       }
     }

@@ -1,9 +1,10 @@
 /**
  * design/DesignPanel.tsx — the ⌘ DESIGN trigger + popover.
  *
- * Exactly two knobs, mirroring design/VisualContext.tsx: Theme (indigo /
- * classic) and Ambient (calm / busy / chaotic). This is NOT a general
- * tweaks panel — see PORTING.md's "what's deliberately NOT in this repo".
+ * Exactly two knobs, mirroring design/VisualContext.tsx: Theme (classic /
+ * phosphor / indigo, via <ThemeToggle/> — see design/ThemeToggle.tsx) and
+ * Ambient (calm / busy / chaotic). This is NOT a general tweaks panel — see
+ * PORTING.md's "what's deliberately NOT in this repo".
  *
  * layout/NavTop.tsx renders <DesignPanel /> as the LAST CHILD of
  * `.ticker-strip`. That placement is required, not cosmetic — see
@@ -21,14 +22,11 @@
  */
 
 import * as React from "react";
-import { useVisual, type ThemeKey, type AmbientKey } from "./VisualContext";
+import { useVisual, type AmbientKey } from "./VisualContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 const PANEL_ID = "design-panel-popover";
 
-const THEME_OPTIONS: ReadonlyArray<{ value: ThemeKey; label: string }> = [
-  { value: "indigo", label: "Indigo" },
-  { value: "classic", label: "Classic" },
-];
 const AMBIENT_OPTIONS: ReadonlyArray<{ value: AmbientKey; label: string }> = [
   { value: "calm", label: "Calm" },
   { value: "busy", label: "Busy" },
@@ -36,7 +34,7 @@ const AMBIENT_OPTIONS: ReadonlyArray<{ value: AmbientKey; label: string }> = [
 ];
 
 export function DesignPanel() {
-  const { theme, ambient, setTheme, setAmbient } = useVisual();
+  const { ambient, setAmbient } = useVisual();
   const [open, setOpen] = React.useState(false);
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
@@ -77,6 +75,7 @@ export function DesignPanel() {
         ref={triggerRef}
         type="button"
         className="pill"
+        data-testid="design-panel-trigger"
         aria-expanded={open}
         aria-controls={PANEL_ID}
         onClick={() => setOpen((v) => !v)}
@@ -101,7 +100,7 @@ export function DesignPanel() {
             gap: 14,
           }}
         >
-          <RadioGroup name="theme" label="Theme" options={THEME_OPTIONS} value={theme} onChange={setTheme} />
+          <ThemeToggle />
           <RadioGroup name="ambient" label="Ambient" options={AMBIENT_OPTIONS} value={ambient} onChange={setAmbient} />
         </div>
       ) : null}

@@ -71,7 +71,7 @@ function PrivacyBadges() {
   return ["CLSAG", "BP+", "View Tags", "Stealth", "Dandelion++"].map((b) => (
     <span key={b} style={{
       padding: "4px 10px", border: "1px solid var(--g-50)", color: "var(--g-50)",
-      background: "rgba(74,222,128,0.06)", borderRadius: 3,
+      background: "color-mix(in srgb, var(--status-up) 6%, transparent)", borderRadius: 3,
       fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase",
     }}>{b}</span>
   ));
@@ -115,7 +115,7 @@ export function LiveTxDetail({ txid, data, onBack }: {
         <BackBtn onBack={onBack} />
         <div className="kicker">Transaction</div>
         <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
-        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
+        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
           <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
           <div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
             The node did not return this transaction. It may be too recent to have propagated, pruned,
@@ -153,7 +153,7 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
         <BackBtn onBack={onBack} />
         <div className="kicker">Block</div>
         <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
-        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
+        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
           <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
           <div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
             The node did not return this block. The RPC relay may be unreachable from this browser.
@@ -219,7 +219,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       </Section>
 
       {/* Privacy strip — protocol facts, NO fabricated score */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginTop: 18, border: "1px solid var(--g-50)", background: "rgba(74,222,128,0.05)", borderRadius: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginTop: 18, border: "1px solid var(--g-50)", background: "color-mix(in srgb, var(--status-up) 5%, transparent)", borderRadius: 4 }}>
         <span style={{ color: "var(--g-50)", fontSize: 22, lineHeight: 1 }}>✓</span>
         <div>
           <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>
@@ -278,7 +278,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       <Section title="tx_extra" kicker="On-chain metadata" right={<span>{tx.extraSize} bytes</span>}>
         {tx.extraHex ? (
           <DKV k="raw_extra_hex"
-            v={<code style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "block", padding: 10, background: "rgba(0,0,0,0.4)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
+            v={<code style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "block", padding: 10, background: "var(--surface-sunk)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
             copy={tx.extraHex} />
         ) : <DKV k="raw_extra_hex" v="(empty)" tone="dim" />}
         <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 6 }}>
@@ -296,7 +296,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
               <button key={i} onClick={() => setOpenIn(i)}
                 style={{
                   appearance: "none", cursor: "pointer", padding: "5px 10px",
-                  background: openIn === i ? "rgba(255,122,26,0.1)" : "transparent",
+                  background: openIn === i ? "color-mix(in srgb, var(--accent-structural) 10%, transparent)" : "transparent",
                   border: "1px solid " + (openIn === i ? "var(--tk-accent)" : "var(--ink-20)"),
                   color: openIn === i ? "var(--tk-accent)" : "var(--ink-60)",
                   borderRadius: 2, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
@@ -310,7 +310,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
           if (!inp) return <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>No inputs returned.</div>;
           const decoyInput = decoys.inputs?.find((d) => d.inputIdx === openIn);
           return (
-            <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
+            <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
               <DKV k="key_image" v={inp.keyImage} tone="cyan" copy={inp.keyImage} />
               <DKV k="amount" v="HIDDEN (Pedersen commitment)" tone="dim" />
               <DKV k="ring members" v={`${inp.ringMembers} · one is the real spender, ${Math.max(0, inp.ringMembers - 1)} are decoys`} />
@@ -369,7 +369,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
         right={<span>view tag · 1 byte · 256× scan</span>}>
         <div style={{ display: "grid", gap: 10 }}>
           {tx.outputs.map((o, i) => (
-            <div key={i} style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "rgba(0,0,0,0.25)" }}>
+            <div key={i} style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
               <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
                 <div className="kicker" style={{ color: "var(--p-50)" }}>Output #{i}</div>
               </div>
@@ -434,7 +434,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
           {showJson ? "▼ Hide JSON" : "▶ Show JSON"}
         </button>
         {showJson ? (
-          <pre style={{ marginTop: 10, padding: 14, background: "rgba(0,0,0,0.5)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
+          <pre style={{ marginTop: 10, padding: 14, background: "var(--surface-sunk)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
 {JSON.stringify(tx, null, 2)}
           </pre>
         ) : null}
@@ -528,7 +528,7 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
                 color: "var(--ink-100)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
                 transition: "background 0.12s",
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.05)"}
+              onMouseEnter={(e) => e.currentTarget.style.background = "color-mix(in srgb, var(--accent-structural) 5%, transparent)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
               <span className={row.coinbase ? "acc" : "dim"} style={{ fontSize: "var(--fs-label)" }}>{row.coinbase ? "COINBASE" : String(i).padStart(2, "0")}</span>
               <span style={{ color: "var(--c-50)", wordBreak: "break-all" }}>{row.id}</span>
@@ -553,7 +553,7 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
           {showJson ? "▼ Hide JSON" : "▶ Show JSON"}
         </button>
         {showJson ? (
-          <pre style={{ marginTop: 10, padding: 14, background: "rgba(0,0,0,0.5)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
+          <pre style={{ marginTop: 10, padding: 14, background: "var(--surface-sunk)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
 {JSON.stringify(block, null, 2)}
           </pre>
         ) : null}

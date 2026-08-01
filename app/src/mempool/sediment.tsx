@@ -39,7 +39,7 @@ interface ViewProps {
 
 export function SedCard({ title, right, children, pad = "14px 16px", style }: any) {
   return (
-    <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
+    <div style={{ background: "var(--surface-raised)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
           <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
@@ -91,9 +91,9 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
       </div>
 
       {/* tube */}
-      <div style={{ position: "absolute", inset: 0, border: "1px solid rgba(255,122,26,0.32)", borderRadius: "4px 4px 0 0",
-        background: "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(255,122,26,0.04) 52%, rgba(255,122,26,0.07) 100%)",
-        boxShadow: "inset 0 0 60px rgba(255,122,26,0.08), 0 0 70px rgba(255,122,26,0.10)" }} />
+      <div style={{ position: "absolute", inset: 0, border: "1px solid color-mix(in srgb, var(--accent-structural) 32%, transparent)", borderRadius: "4px 4px 0 0",
+        background: "linear-gradient(180deg, color-mix(in srgb, var(--bg-0) 60%, transparent) 0%, color-mix(in srgb, var(--accent-structural) 4%, transparent) 52%, color-mix(in srgb, var(--accent-structural) 7%, transparent) 100%)",
+        boxShadow: "inset 0 0 60px color-mix(in srgb, var(--accent-structural) 8%, transparent), 0 0 70px color-mix(in srgb, var(--accent-structural) 10%, transparent)" }} />
 
       {/* incoming streamers */}
       <div style={{ position: "absolute", left: 0, top: 0, right: 0, height: 70, overflow: "hidden", pointerEvents: "none" }}>
@@ -115,10 +115,10 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
           return (
             <React.Fragment key={tx.id}>
               <div title={ShortHash(tx.id)} data-tracked-tx={isTracked ? tx.id : undefined} style={{ position: "absolute", left: x, top: y, width: sz, height: sz, borderRadius: "50%",
-                background: `radial-gradient(circle at 32% 30%, rgba(255,222,164,${0.5 + t * 0.5}), rgba(255,122,26,${0.2 + t * 0.5}) 60%, transparent 80%)`,
+                background: `radial-gradient(circle at 32% 30%, color-mix(in srgb, var(--accent-data-hi) ${Math.round((0.5 + t * 0.5) * 100)}%, transparent), color-mix(in srgb, var(--accent-data) ${Math.round((0.2 + t * 0.5) * 100)}%, transparent) 60%, transparent 80%)`,
                 boxShadow: isTracked
-                  ? `0 0 ${6 + t * 13}px rgba(255,122,26,${0.4 + t * 0.6}), 0 0 0 3px var(--y-50)`
-                  : `0 0 ${6 + t * 13}px rgba(255,122,26,${0.4 + t * 0.6})`,
+                  ? `0 0 ${6 + t * 13}px color-mix(in srgb, var(--accent-data) ${Math.round((0.4 + t * 0.6) * 100)}%, transparent), 0 0 0 3px var(--y-50)`
+                  : `0 0 ${6 + t * 13}px color-mix(in srgb, var(--accent-data) ${Math.round((0.4 + t * 0.6) * 100)}%, transparent)`,
                 zIndex: isTracked ? 2 : 1,
                 animation: `sed-bob ${(3 + (i % 7) * 0.5).toFixed(2)}s ease-in-out ${(i * 0.09).toFixed(2)}s infinite` }} />
               {/* halo ring — "you are here" on the core log */}
@@ -152,7 +152,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
       </div>
 
       {/* meniscus */}
-      <div style={{ position: "absolute", left: 5, right: 5, top: memH - 2, height: 4, background: "linear-gradient(to right, transparent, rgba(255,206,138,0.85), transparent)", boxShadow: "0 0 14px var(--tk-accent)", animation: "sed-bob 7s ease-in-out infinite" }} />
+      <div style={{ position: "absolute", left: 5, right: 5, top: memH - 2, height: 4, background: "linear-gradient(to right, transparent, color-mix(in srgb, var(--accent-structural) 85%, transparent), transparent)", boxShadow: "0 0 14px var(--tk-accent)", animation: "sed-bob 7s ease-in-out infinite" }} />
       <div style={{ position: "absolute", right: -78, top: memH - 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--tk-accent)", letterSpacing: "0.12em" }}>⟵ CONFIRMATION</div>
 
       {/* strata = confirmed blocks */}
@@ -163,14 +163,14 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
             data-tracked-block={isTrackedStratum ? b.height : undefined}
             data-tracked-tx={isTrackedStratum ? trackedTxId ?? undefined : undefined}
             style={{ position: "absolute", left: 5, right: 5, top, height: stratH,
-            background: `linear-gradient(180deg, rgba(255,180,80,${0.55 - i * 0.04}) 0%, rgba(214,98,15,${0.85 - i * 0.05}) 100%)`,
-            borderTop: isTrackedStratum ? "2px solid var(--y-50)" : (i === 0 ? "1px solid rgba(255,220,160,0.85)" : "1px solid rgba(255,140,40,0.4)"),
-            borderBottom: "1px solid rgba(100,40,4,0.6)",
+            background: `linear-gradient(180deg, color-mix(in srgb, var(--accent-structural) ${Math.round((0.55 - i * 0.04) * 100)}%, transparent) 0%, color-mix(in srgb, var(--accent-structural-dim) ${Math.round((0.85 - i * 0.05) * 100)}%, transparent) 100%)`,
+            borderTop: isTrackedStratum ? "2px solid var(--y-50)" : (i === 0 ? "1px solid color-mix(in srgb, var(--accent-structural) 85%, transparent)" : "1px solid color-mix(in srgb, var(--accent-structural-dim) 40%, transparent)"),
+            borderBottom: "1px solid color-mix(in srgb, var(--accent-structural-dim) 60%, transparent)",
             boxShadow: isTrackedStratum
-              ? "0 0 18px var(--y-50), inset 0 1px 0 rgba(255,255,200,0.5)"
-              : (i === 0 ? "0 0 22px rgba(255,122,26,0.5), inset 0 1px 0 rgba(255,255,200,0.5)" : "inset 0 0 8px rgba(0,0,0,0.4)"),
+              ? "0 0 18px var(--y-50), inset 0 1px 0 color-mix(in srgb, var(--accent-structural) 50%, transparent)"
+              : (i === 0 ? "0 0 22px color-mix(in srgb, var(--accent-structural) 50%, transparent), inset 0 1px 0 color-mix(in srgb, var(--accent-structural) 50%, transparent)" : "inset 0 0 8px color-mix(in srgb, var(--bg-0) 40%, transparent)"),
             display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
-            color: i < 3 ? "#1a0a02" : "rgba(20,8,2,0.8)", fontWeight: 600, opacity: 1 - i * 0.06 }}>
+            color: i < 3 ? "var(--bg-0)" : "color-mix(in srgb, var(--bg-0) 80%, transparent)", fontWeight: 600, opacity: 1 - i * 0.06 }}>
             <span>#{b.height.toLocaleString()}</span>
             <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.txs}tx · {b.conf}c</span>
             {isTrackedStratum && tracking ? (
@@ -198,7 +198,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
       </div>
 
       {/* stopper */}
-      <div style={{ position: "absolute", left: -4, right: -4, bottom: -10, height: 12, background: "linear-gradient(to bottom, rgba(255,122,26,0.5), rgba(40,16,2,0.95))", borderBottom: "1px solid var(--tk-accent)", boxShadow: "0 6px 24px rgba(255,122,26,0.4)" }} />
+      <div style={{ position: "absolute", left: -4, right: -4, bottom: -10, height: 12, background: "linear-gradient(to bottom, color-mix(in srgb, var(--accent-structural) 50%, transparent), color-mix(in srgb, var(--accent-structural-dim) 95%, transparent))", borderBottom: "1px solid var(--tk-accent)", boxShadow: "0 6px 24px color-mix(in srgb, var(--accent-structural) 40%, transparent)" }} />
 
       <style>{`
         @keyframes sed-stream { from { transform: translateY(-12px); opacity: 0; } 12% { opacity: 1; } to { transform: translateY(64px); opacity: 0; } }
@@ -223,11 +223,11 @@ export function SedGrainScatter({ data }: { data: MoneroLive }) {
   return (
     <SedCard title="Grain-size analysis" right={<span className="dim">fee/B × weight</span>}>
       <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: "block" }}>
-        {[0, 0.25, 0.5, 0.75, 1].map((t) => <line key={t} x1={padL} x2={W - padR} y1={padT + ih * t} y2={padT + ih * t} stroke="rgba(255,255,255,0.04)" strokeDasharray="2 3" />)}
+        {[0, 0.25, 0.5, 0.75, 1].map((t) => <line key={t} x1={padL} x2={W - padR} y1={padT + ih * t} y2={padT + ih * t} stroke="var(--line-d)" strokeDasharray="2 3" />)}
         <line x1={padL} y1={padT} x2={padL} y2={padT + ih} stroke="var(--ink-20)" strokeWidth="1" />
         <line x1={padL} y1={padT + ih} x2={W - padR} y2={padT + ih} stroke="var(--ink-20)" strokeWidth="1" />
         {/* settling trend */}
-        <line x1={padL} y1={padT + ih} x2={W - padR} y2={padT} stroke="rgba(255,122,26,0.2)" strokeDasharray="3 4" strokeWidth="1" />
+        <line x1={padL} y1={padT + ih} x2={W - padR} y2={padT} stroke="var(--accent-structural)" strokeOpacity={0.2} strokeDasharray="3 4" strokeWidth="1" />
         {pts.map((t, i) => {
           const x = padL + (t.size / maxSz) * iw;
           const y = padT + ih - (t.perB / maxFee) * ih;
@@ -248,25 +248,25 @@ function SedRingFan() {
     <SedCard title="Ring · 16 anonymity" right={<span className="dim">1 real · 15 decoys</span>}>
       <svg width="100%" viewBox="0 0 200 188" style={{ display: "block" }}>
         <defs>
-          <radialGradient id="sed-ringpulse"><stop offset="0%" stopColor="#ff7a1a" stopOpacity="0.55" /><stop offset="100%" stopColor="#ff7a1a" stopOpacity="0" /></radialGradient>
-          <linearGradient id="sed-ringline" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="rgba(255,122,26,0.05)" /><stop offset="60%" stopColor="rgba(255,122,26,0.5)" /><stop offset="100%" stopColor="rgba(255,200,120,0.95)" /></linearGradient>
+          <radialGradient id="sed-ringpulse"><stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.55" /><stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0" /></radialGradient>
+          <linearGradient id="sed-ringline" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.05" /><stop offset="60%" stopColor="var(--accent-structural)" stopOpacity="0.5" /><stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0.95" /></linearGradient>
         </defs>
         <circle cx={cx} cy={cy} r="50" fill="url(#sed-ringpulse)"><animate attributeName="r" values="46;66;46" dur="3.4s" repeatCount="indefinite" /></circle>
-        <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,122,26,0.18)" strokeDasharray="3 3" />
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.18} strokeDasharray="3 3" />
         {Array.from({ length: N }).map((_, i) => {
           const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
           const x2 = cx + Math.cos(ang) * r, y2 = cy + Math.sin(ang) * r;
           const real = i === 11;
           return (
             <g key={i}>
-              <line x1={cx} y1={cy} x2={x2} y2={y2} stroke={real ? "url(#sed-ringline)" : "rgba(255,122,26,0.15)"} strokeWidth={real ? 1.6 : 0.5} />
-              <circle cx={x2} cy={y2} r={real ? 4 : 2.4} fill={real ? "#ffb978" : "rgba(255,122,26,0.65)"} style={{ filter: `drop-shadow(0 0 ${real ? 4 : 2}px ${real ? "#ffb978" : "rgba(255,122,26,0.6)"})` }}>
+              <line x1={cx} y1={cy} x2={x2} y2={y2} stroke={real ? "url(#sed-ringline)" : "var(--accent-structural-dim)"} strokeOpacity={real ? undefined : 0.15} strokeWidth={real ? 1.6 : 0.5} />
+              <circle cx={x2} cy={y2} r={real ? 4 : 2.4} fill={real ? "var(--accent-structural)" : "var(--accent-structural-dim)"} fillOpacity={real ? undefined : 0.65} style={{ filter: `drop-shadow(0 0 ${real ? 4 : 2}px ${real ? "var(--accent-structural)" : "color-mix(in srgb, var(--accent-structural-dim) 60%, transparent)"})` }}>
                 {real ? <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" /> : null}
               </circle>
             </g>
           );
         })}
-        <circle cx={cx} cy={cy} r="6" fill="#ffce8a" style={{ filter: "drop-shadow(0 0 5px #ff7a1a)" }} />
+        <circle cx={cx} cy={cy} r="6" fill="var(--accent-structural)" style={{ filter: "drop-shadow(0 0 5px var(--accent-structural))" }} />
       </svg>
     </SedCard>
   );
@@ -297,8 +297,8 @@ export function SedStrataLog({ data, trackedHeight }: { data: MoneroLive; tracke
               style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", opacity: isTracked ? 1 : Math.max(0.25, 0.9 - i * 0.05) }}>
               <span className="dim2" style={{ fontSize: "var(--fs-label)" }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
               <span style={{ color: isTracked ? "var(--y-50)" : i === 0 ? "var(--tk-accent)" : "var(--ink-60)" }}>#{b.height.toLocaleString()}</span>
-              <div style={{ height: 9, background: "rgba(255,255,255,0.04)", borderRadius: 2, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: (b.txs / maxTx * 100).toFixed(0) + "%", background: isTracked ? "var(--y-50)" : `linear-gradient(90deg, rgba(214,98,15,${0.9 - i * 0.05}), rgba(255,180,80,${0.85 - i * 0.05}))`, boxShadow: isTracked ? "0 0 8px var(--y-50)" : (i === 0 ? "0 0 8px rgba(255,122,26,0.5)" : "none") }} />
+              <div style={{ height: 9, background: "var(--line-d)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: (b.txs / maxTx * 100).toFixed(0) + "%", background: isTracked ? "var(--y-50)" : `linear-gradient(90deg, color-mix(in srgb, var(--accent-structural-dim) ${Math.round((0.9 - i * 0.05) * 100)}%, transparent), color-mix(in srgb, var(--accent-structural) ${Math.round((0.85 - i * 0.05) * 100)}%, transparent))`, boxShadow: isTracked ? "0 0 8px var(--y-50)" : (i === 0 ? "0 0 8px color-mix(in srgb, var(--accent-structural) 50%, transparent)" : "none") }} />
               </div>
               <span className="dim" style={{ textAlign: "right" }}>{b.txs}tx</span>
             </div>
@@ -373,14 +373,14 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
       {rows.map((t) => {
         const depth = 1 - t.perB / max;
         return (
-          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-mono)", padding: "7px 8px", borderBottom: "1px solid rgba(255,255,255,0.03)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
-            onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,122,26,0.07)"}
+          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-mono)", padding: "7px 8px", borderBottom: "1px solid var(--line-d)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
+            onMouseEnter={(e) => e.currentTarget.style.background = "color-mix(in srgb, var(--accent-structural) 7%, transparent)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
             <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
             <span className="dim">{fmtBytes(t.size)}</span>
             <span className="acc">{t.fee.toFixed(7)}</span>
             <span className="dim">{Math.round(t.perB).toLocaleString()}</span>
-            <div style={{ height: 6, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden", alignSelf: "center" }}>
+            <div style={{ height: 6, background: "var(--line)", borderRadius: 3, overflow: "hidden", alignSelf: "center" }}>
               <div style={{ height: "100%", width: ((1 - depth) * 100).toFixed(0) + "%", background: "var(--tk-accent)", boxShadow: "0 0 4px var(--tk-accent)" }} />
             </div>
             <span className="dim2">{t.age}s</span>

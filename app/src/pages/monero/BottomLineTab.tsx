@@ -13,7 +13,7 @@ import type { MoneroTabProps } from "./tabs";
 /* ── shared atoms (prefixed Btm) ────────────────────────────── */
 function BtmStat({ v, k, tone }: { v: React.ReactNode; k: React.ReactNode; tone?: string }) {
   return (
-    <div style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "18px 16px", background: "rgba(0,0,0,0.3)" }}>
+    <div style={{ border: "1px solid var(--rule)", borderRadius: 3, padding: "18px 16px", background: "color-mix(in srgb, var(--surface-sunk) 30%, transparent)" }}>
       <div className="mono" style={{ fontSize: 34, fontWeight: 500, lineHeight: 1, color: tone || "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{v}</div>
       <div className="mono dim" style={{ fontSize: "var(--fs-label)", marginTop: 8, letterSpacing: "0.04em" }}>{k}</div>
     </div>
@@ -41,13 +41,13 @@ function BtmDivergence() {
   );
   return (
     <div className="table-scroll" style={{ border: "1px solid var(--rule)", borderRadius: 3, overflow: "hidden" }}>
-      <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", background: "rgba(255,122,26,0.05)", borderBottom: "1px solid var(--rule)" }}>
+      <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", background: "color-mix(in srgb, var(--accent-structural) 5%, transparent)", borderBottom: "1px solid var(--rule)" }}>
         <div className="kicker" style={{ padding: "12px 14px" }}>TradFi requirement</div>
         <div className="kicker" style={{ padding: "12px 14px", color: "var(--c-50)" }}>Bitcoin</div>
         <div className="kicker" style={{ padding: "12px 14px", color: "var(--tk-accent)" }}>Monero</div>
       </div>
       {ROWS.map((r, i) => (
-        <div key={i} className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", borderBottom: i < ROWS.length - 1 ? "1px solid var(--rule)" : "none", background: i === ROWS.length - 1 ? "rgba(255,122,26,0.04)" : "transparent" }}>
+        <div key={i} className="keep-cols" style={{ display: "grid", gridTemplateColumns: "1.1fr 1.3fr 1.3fr", borderBottom: i < ROWS.length - 1 ? "1px solid var(--rule)" : "none", background: i === ROWS.length - 1 ? "color-mix(in srgb, var(--accent-structural) 4%, transparent)" : "transparent" }}>
           <div className="mono" style={{ padding: "11px 14px", fontSize: "var(--fs-label)", color: "var(--ink-60)", letterSpacing: "0.04em", textTransform: "uppercase", alignSelf: "center" }}>{r[0]}</div>
           {cell(r[1], r[2], false)}
           {cell(r[3], r[4], r[4])}
@@ -110,7 +110,7 @@ function BtmDelistings() {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
       {D.map((d, i) => (
-        <div key={i} style={{ border: "1px solid var(--rule)", borderLeft: "2px solid " + d[3], borderRadius: 2, padding: "14px 16px", background: "rgba(8,7,5,0.6)" }}>
+        <div key={i} style={{ border: "1px solid var(--rule)", borderLeft: "2px solid " + d[3], borderRadius: 2, padding: "14px 16px", background: "color-mix(in srgb, var(--surface-raised) 60%, transparent)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
             <span className="serif" style={{ fontSize: 17, color: "var(--ink-100)", fontWeight: 500 }}>{d[0]}</span>
             <span className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>{d[1]}</span>
@@ -182,7 +182,7 @@ export function BottomLineTab({ data }: MoneroTabProps) {
         <BtmDelistings />
       </section>
 
-      <Card style={{ padding: 28, textAlign: "center", background: "rgba(255,122,26,0.04)", borderColor: "rgba(255,122,26,0.25)" }}>
+      <Card style={{ padding: 28, textAlign: "center", background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderColor: "color-mix(in srgb, var(--accent-structural) 25%, transparent)" }}>
         <p className="serif" style={{ fontSize: 25, lineHeight: 1.42, color: "var(--ink-100)", margin: "0 auto", maxWidth: "52ch" }}>
           The surveillance state sees everything. Monero is the one thing they cannot see. That is not a bug — that is the entire point.
         </p>

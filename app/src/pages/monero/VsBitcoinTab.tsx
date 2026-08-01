@@ -44,14 +44,14 @@ export function VsBitcoinTab(_props: MoneroTabProps) {
         <div className="table-scroll">
         <div className="keep-cols" style={{ display: "grid", gridTemplateColumns: "200px 1fr 1fr 1fr", gap: 0 }}>
           {["Property", "XMR", "BTC", "Note"].map((h) => (
-            <div key={h} className="kicker" style={{ padding: "12px 16px", background: "rgba(255,122,26,0.04)", borderBottom: "1px solid var(--rule)" }}>{h}</div>
+            <div key={h} className="kicker" style={{ padding: "12px 16px", background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderBottom: "1px solid var(--rule)" }}>{h}</div>
           ))}
           {ROWS.map((r, i) => (
             <React.Fragment key={r.k}>
-              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: "var(--fs-mono)", color: "var(--ink-80)" }}>{r.k}</div>
-              <div className="mono acc" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: "var(--fs-mono)" }}>{r.xmr}</div>
-              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", color: "var(--c-50)", fontSize: "var(--fs-mono)" }}>{r.btc}</div>
-              <div className="mono dim" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "rgba(255,255,255,0.01)" : "transparent", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{r.note}</div>
+              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "color-mix(in srgb, var(--text-primary) 1%, transparent)" : "transparent", fontSize: "var(--fs-mono)", color: "var(--ink-80)" }}>{r.k}</div>
+              <div className="mono acc" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "color-mix(in srgb, var(--text-primary) 1%, transparent)" : "transparent", fontSize: "var(--fs-mono)" }}>{r.xmr}</div>
+              <div className="mono" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "color-mix(in srgb, var(--text-primary) 1%, transparent)" : "transparent", color: "var(--c-50)", fontSize: "var(--fs-mono)" }}>{r.btc}</div>
+              <div className="mono dim" style={{ padding: "10px 16px", borderBottom: "1px solid var(--rule)", background: i % 2 ? "color-mix(in srgb, var(--text-primary) 1%, transparent)" : "transparent", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>{r.note}</div>
             </React.Fragment>
           ))}
         </div>

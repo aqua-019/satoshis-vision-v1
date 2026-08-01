@@ -232,7 +232,8 @@ for (const vp of VIEWPORTS) {
     // the device screenshots (decoy density curve, Dandelion stem/fluff).
     const probes = ['/simulate?p=decoy', '/simulate?p=dandelion', '/simulate?p=bloodhound'];
     for (const route of probes) {
-      await page.goto(BASE + route, { waitUntil: 'networkidle' });
+      await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('.page-shell, .proto-stage, main', { timeout: 15000 });
       await freezeAmbient(page);
       await page.waitForSelector('.proto-stage', { timeout: 10_000 }).catch(() => {});
 
@@ -249,7 +250,8 @@ for (const vp of VIEWPORTS) {
 
     // Data panels on the two densest pages.
     for (const route of ['/markets', '/network']) {
-      await page.goto(BASE + route, { waitUntil: 'networkidle' });
+      await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('.page-shell, .proto-stage, main', { timeout: 15000 });
       await freezeAmbient(page);
       await page.waitForSelector('.panel', { timeout: 10_000 }).catch(() => {});
       const panel = await occludes(page, '.panel');
@@ -264,7 +266,8 @@ for (const vp of VIEWPORTS) {
     // Classic has no aurora at all (§6b) — assert the layers are actually gone
     // rather than merely retinted, which is what the v5 pixel-diff requires.
     if (theme === 'classic') {
-      await page.goto(BASE + '/', { waitUntil: 'networkidle' });
+      await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+      await page.waitForSelector('.page-shell, main', { timeout: 15000 });
       const shown = await page.evaluate((sels) => sels.filter((s) => {
         const el = document.querySelector(s);
         return el && getComputedStyle(el).display !== 'none';

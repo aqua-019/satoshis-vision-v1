@@ -89,7 +89,7 @@ export function Murmuration({ tick, t }: any) {
         const opacity = Math.min(1, t * 1.6) * (0.25 + Math.random() * 0.5);
         return (
           <circle key={p.i} cx={x} cy={y} r={1.0 + (p.i % 3) * 0.4}
-            fill={p.i % 14 === 0 ? "#b87aff" : "#ff7a1a"}
+            fill={p.i % 14 === 0 ? "#b87aff" : "var(--accent-data)"}
             opacity={opacity}
             style={p.i % 80 === 0 && t > 0.5 ? { filter: "drop-shadow(0 0 3px var(--tk-accent))" } : undefined} />
         );

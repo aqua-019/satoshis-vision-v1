@@ -37,7 +37,7 @@ const newestFirst = (txs: Tx[]): Tx[] => [...txs].sort((a, b) => a.age - b.age);
 
 export function ConCard({ title, right, children, pad = "14px 16px", style }: any) {
   return (
-    <div style={{ background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
+    <div style={{ background: "var(--surface-raised)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
           <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
@@ -115,19 +115,19 @@ export function ConSphere({ txs, tiers, ready, trackedTxId, size = 460 }: { txs:
   return (
     <svg width="100%" viewBox={`0 0 ${size} ${size}`} style={{ display: "block" }}>
       <defs>
-        <radialGradient id="con-sph" cx="40%" cy="35%"><stop offset="0%" stopColor="rgba(255,180,80,0.18)" /><stop offset="55%" stopColor="rgba(255,122,26,0.06)" /><stop offset="100%" stopColor="rgba(0,0,0,0.7)" /></radialGradient>
-        <radialGradient id="con-atmo"><stop offset="60%" stopColor="rgba(255,122,26,0)" /><stop offset="100%" stopColor="rgba(255,122,26,0.32)" /></radialGradient>
-        <linearGradient id="con-arc" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="rgba(255,200,120,0)" /><stop offset="50%" stopColor="rgba(255,200,120,1)" /><stop offset="100%" stopColor="rgba(255,122,26,0)" /></linearGradient>
+        <radialGradient id="con-sph" cx="40%" cy="35%"><stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.18" /><stop offset="55%" stopColor="var(--accent-structural)" stopOpacity="0.06" /><stop offset="100%" stopColor="var(--bg-0)" stopOpacity="0.7" /></radialGradient>
+        <radialGradient id="con-atmo"><stop offset="60%" stopColor="var(--accent-structural)" stopOpacity="0" /><stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0.32" /></radialGradient>
+        <linearGradient id="con-arc" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0" /><stop offset="50%" stopColor="var(--accent-structural)" stopOpacity="1" /><stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0" /></linearGradient>
       </defs>
       <circle cx={cx} cy={cy} r={r + 14} fill="url(#con-atmo)" opacity="0.7" />
-      <circle cx={cx} cy={cy} r={r} fill="url(#con-sph)" stroke="rgba(255,122,26,0.25)" strokeWidth="0.5" />
+      <circle cx={cx} cy={cy} r={r} fill="url(#con-sph)" stroke="var(--accent-structural)" strokeOpacity={0.25} strokeWidth="0.5" />
       {/* parallels */}
       {[-Math.PI / 3, -Math.PI / 6, 0, Math.PI / 6, Math.PI / 3].map((lat, i) => (
-        <ellipse key={i} cx={cx} cy={cy - Math.sin(lat) * r} rx={r * Math.cos(lat)} ry={Math.max(2, r * Math.cos(lat) * 0.06)} fill="none" stroke="rgba(255,122,26,0.12)" strokeWidth="0.5" strokeDasharray="2 4" />
+        <ellipse key={i} cx={cx} cy={cy - Math.sin(lat) * r} rx={r * Math.cos(lat)} ry={Math.max(2, r * Math.cos(lat) * 0.06)} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.12} strokeWidth="0.5" strokeDasharray="2 4" />
       ))}
       {/* meridians */}
       {[0, 30, 60, 90, 120, 150].map((deg, i) => (
-        <ellipse key={i} cx={cx} cy={cy} rx={Math.max(1, Math.abs(Math.sin((deg + rot * 180 / Math.PI) * Math.PI / 180)) * r)} ry={r} fill="none" stroke="rgba(255,122,26,0.09)" strokeWidth="0.5" />
+        <ellipse key={i} cx={cx} cy={cy} rx={Math.max(1, Math.abs(Math.sin((deg + rot * 180 / Math.PI) * Math.PI / 180)) * r)} ry={r} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.09} strokeWidth="0.5" />
       ))}
       {/* real mempool txs — dimmed slightly while a star is tracked, so it reads */}
       {pts.map((p) => {
@@ -225,7 +225,7 @@ export function ConMempoolRadar({ data, trackedTxId }: { data: MoneroLive; track
   return (
     <ConCard title="Mempool polar · age vs fee" right={<span className="dim">{txs.length ? `${txs.length} tx` : "—"}</span>}>
       <svg viewBox={`0 0 ${W} ${W}`} width="100%" style={{ display: "block", maxWidth: 220, margin: "0 auto" }}>
-        {[0.33, 0.66, 1].map((f, i) => <circle key={i} cx={c} cy={c} r={R * f} fill="none" stroke="rgba(255,122,26,0.14)" strokeWidth="1" strokeDasharray={i === 2 ? "none" : "2 5"} />)}
+        {[0.33, 0.66, 1].map((f, i) => <circle key={i} cx={c} cy={c} r={R * f} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.14} strokeWidth="1" strokeDasharray={i === 2 ? "none" : "2 5"} />)}
         {txs.length ? [0.33, 0.66, 1].map((f, i) => (
           <text key={i} x={c + 3} y={c - R * f + 9} fontFamily="var(--f-mono)" fontSize="7" fill="var(--ink-40)">{Math.round(maxAge * f)}s</text>
         )) : null}
@@ -237,7 +237,7 @@ export function ConMempoolRadar({ data, trackedTxId }: { data: MoneroLive; track
           const color = isTracked ? "var(--y-50)" : tierColor(feeTierIndex(t.perB, data.feeTiers));
           return (
             <g key={t.id} data-tracked-tx={isTracked ? t.id : undefined}>
-              <line x1={c} y1={c} x2={c + Math.cos(ang) * R} y2={c + Math.sin(ang) * R} stroke={isTracked ? "var(--y-50)" : "rgba(255,255,255,0.04)"} strokeWidth={isTracked ? 1.2 : 0.5} opacity={isTracked ? 0.9 : undefined} />
+              <line x1={c} y1={c} x2={c + Math.cos(ang) * R} y2={c + Math.sin(ang) * R} stroke={isTracked ? "var(--y-50)" : "var(--line-d)"} strokeWidth={isTracked ? 1.2 : 0.5} opacity={isTracked ? 0.9 : undefined} />
               <circle cx={x} cy={y} r={isTracked ? 4 : 3} fill={color} style={{ filter: `drop-shadow(0 0 ${isTracked ? 6 : 4}px ${color})` }} />
             </g>
           );
@@ -307,7 +307,7 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
         {events.length ? events.map((e) => {
           const row = logRow(e);
           return (
-            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed rgba(255,255,255,0.04)", animation: "con-slidein 0.4s ease" }}>
+            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed var(--line-d)", animation: "con-slidein 0.4s ease" }}>
               <span className="dim2">{new Date(e.ts).toISOString().slice(11, 23)}</span>
               <span style={{ color: LOG_TONE[e.kind] }}>{row.ev}</span>
               <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.msg}</span>
@@ -337,7 +337,7 @@ function ConFeeTierBars({ data }: { data: MoneroLive }) {
           <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
             <span className="dim2">{label}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ok ? `${data.feeTiers[i].toLocaleString()} pcn/B` : "—"}</span>
-            <div style={{ height: 7, background: "rgba(255,255,255,0.05)", borderRadius: 3, overflow: "hidden" }}>
+            <div style={{ height: 7, background: "var(--line)", borderRadius: 3, overflow: "hidden" }}>
               <div style={{ height: "100%", width: ok ? `${(counts[i] / max) * 100}%` : "0%", background: TIER_COLORS[i], boxShadow: ok ? `0 0 6px ${TIER_COLORS[i]}` : "none", borderRadius: 3, transition: "width 0.8s ease" }} />
             </div>
             <span style={{ textAlign: "right", color: ok ? "var(--ink-100)" : "var(--ink-40)" }}>{ok ? counts[i] : "—"}</span>
@@ -362,7 +362,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
     <ConCard title="Mempool · bytes by fee tier" right={<span className="acc">{ok ? fmtBytes(totalBytes) : "—"}</span>}>
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
         <svg viewBox="0 0 140 140" width="100%" style={{ display: "block", maxWidth: 124 }}>
-          <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={sw} />
+          <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--line)" strokeWidth={sw} />
           {ok && totalBytes > 0 ? FEE_TIER_LABELS.map((label, i) => {
             const len = (bytes[i] / totalBytes) * circ;
             const el = <circle key={label} cx={cx} cy={cy} r={r} fill="none" stroke={TIER_COLORS[i]} strokeWidth={sw} strokeDasharray={len + " " + (circ - len)} strokeDashoffset={-acc} transform={`rotate(-90 ${cx} ${cy})`} style={{ filter: `drop-shadow(0 0 4px ${TIER_COLORS[i]})` }} />;

@@ -23,7 +23,7 @@ export interface Pool {
 }
 
 export const POOLS: Pool[] = [
-  { name: "P2Pool",         share: 0.072, fee: 0.000, type: "decentralized", rec: true,  color: "#ff7a1a" },
+  { name: "P2Pool",         share: 0.072, fee: 0.000, type: "decentralized", rec: true,  color: "var(--accent-data)" },
   { name: "Nanopool",       share: 0.058, fee: 0.010, type: "centralized",   rec: false, color: "#5ed3f4" },
   { name: "SupportXMR",     share: 0.310, fee: 0.006, type: "centralized",   rec: false, color: "#ff4d6d" },
   { name: "MineXMR",        share: 0.018, fee: 0.010, type: "centralized",   rec: false, color: "#ffd400" },

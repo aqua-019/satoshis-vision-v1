@@ -52,10 +52,10 @@ import {
   type NormPoint,
 } from "./geometry";
 
-const UP_FILL = "rgba(74,222,128,0.72)";
-const UP_STROKE = "rgba(74,222,128,1)";
-const DN_FILL = "rgba(255,77,109,0.72)";
-const DN_STROKE = "rgba(255,77,109,1)";
+const UP_FILL = "color-mix(in srgb, var(--status-up) 72%, transparent)";
+const UP_STROKE = "var(--status-up)";
+const DN_FILL = "color-mix(in srgb, var(--status-down) 72%, transparent)";
+const DN_STROKE = "var(--status-down)";
 
 /* ── helpers ───────────────────────────────────────────────────────── */
 
@@ -303,7 +303,7 @@ function CandleChartImpl({ candles, days, height = 300, status = "live" }: Candl
       <line x1={padL} y1={py(last)} x2={padL + innerW} y2={py(last)} stroke={lastUp ? UP_STROKE : DN_STROKE} strokeWidth="0.8" strokeDasharray="1 3" opacity={0.8} />
       <g transform={`translate(${padL + innerW + 3}, ${py(last)})`}>
         <rect x="0" y="-8" width={padR - 6} height="16" rx="2" fill={lastUp ? UP_STROKE : DN_STROKE} />
-        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="#0b0a08" fontWeight={600}>{fmtPrice(last)}</text>
+        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--surface-base)" fontWeight={600}>{fmtPrice(last)}</text>
       </g>
 
       {/* period-change badge */}
@@ -477,7 +477,7 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }:
       {/* y gridlines + % labels */}
       {yTicks.map((t) => (
         <g key={"y" + t}>
-          <line x1={padL} y1={y(t)} x2={padL + innerW} y2={y(t)} stroke={t === 0 ? "rgba(255,255,255,0.14)" : GRID} strokeDasharray={t === 0 ? undefined : "2 4"} />
+          <line x1={padL} y1={y(t)} x2={padL + innerW} y2={y(t)} stroke={t === 0 ? "var(--line)" : GRID} strokeDasharray={t === 0 ? undefined : "2 4"} />
           <text x={yInside ? padL + 3 : padL - 6} y={yInside ? y(t) - 4 : y(t) + 3} textAnchor={yInside ? "start" : "end"} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{(t > 0 ? "+" : "") + t.toFixed(0)}%</text>
         </g>
       ))}
@@ -717,7 +717,7 @@ function AreaSeriesImpl({
       <line x1={padL} y1={py(last)} x2={padL + innerW} y2={py(last)} stroke={color} strokeWidth="0.8" strokeDasharray="1 3" opacity={0.8} />
       <g transform={`translate(${padL + innerW + 3}, ${py(last)})`}>
         <rect x="0" y="-8" width={padR - 6} height="16" rx="2" fill={color} />
-        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="#0b0a08" fontWeight={600}>{format(last)}</text>
+        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--surface-base)" fontWeight={600}>{format(last)}</text>
       </g>
 
       {/* period-change badge */}

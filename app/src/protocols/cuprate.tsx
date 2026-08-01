@@ -31,6 +31,28 @@ function memoHash(cache: Map<number, string>, height: number): string {
   return v;
 }
 
+/**
+ * Resolve --accent-data to a concrete colour for canvas — canvas cannot
+ * consume var(), and ctx.fillStyle = "var(--accent-data)" fails silently
+ * (previous colour just persists, no error). Call once per draw pass, never
+ * per drawBlock() call. Validated to a strict 6-digit hex because drawBlock()
+ * below does `color + "1f"` / `color + "99"` string concatenation to derive
+ * translucent variants — that only produces a valid 8-digit hex-with-alpha
+ * colour if `color` itself is a clean "#rrggbb" string. Falls back to
+ * --tk-accent (always declared, orange in both current themes) rather than a
+ * hardcoded hex, so this file carries no literal duplicate of the token's
+ * value. Sibling of the same-named helper in ospead.tsx and of cssColor() in
+ * mempool/useMemCanvas.ts.
+ */
+function resolveAccentData(): string {
+  if (typeof document === "undefined") return "#ffffff";
+  const root = getComputedStyle(document.documentElement);
+  const v = root.getPropertyValue("--accent-data").trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) return v;
+  const fallback = root.getPropertyValue("--tk-accent").trim();
+  return /^#[0-9a-fA-F]{6}$/.test(fallback) ? fallback : "#ffffff";
+}
+
 function drawBlock(ctx: CanvasRenderingContext2D, x: number, y: number, colW: number, boxH: number, color: string, height: number, hash: string, isTip: boolean) {
   const bw = colW - 14;
   ctx.fillStyle = color + "1f";
@@ -85,6 +107,7 @@ export function CuprateView({ bg }: ViewProps) {
 
   const draw: ProtoDrawFn = (ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
+    const accentData = resolveAccentData(); // resolved once per draw pass — canvas can't read var()
     let flagged = diverged;
     let curBug = bugBlock;
     if (pendingRef.current === "freeze") {
@@ -108,7 +131,7 @@ export function CuprateView({ bg }: ViewProps) {
     const yTop = h * 0.32, yBot = h * 0.76, boxH = Math.min(38, h * 0.16);
 
     ctx.textAlign = "left"; ctx.font = `700 12px ${MONO}`;
-    ctx.fillStyle = "#ff7a1a"; ctx.fillText("MONEROD · reference, C++", padX, 16);
+    ctx.fillStyle = accentData; ctx.fillText("MONEROD · reference, C++", padX, 16);
     ctx.fillStyle = "#ffd400"; ctx.fillText("CUPRATE · alpha, Rust", padX, h - 26);
     ctx.textAlign = "right"; ctx.font = `11px ${MONO}`;
     ctx.fillStyle = "rgba(168,160,148,0.6)";
@@ -139,7 +162,7 @@ export function CuprateView({ bg }: ViewProps) {
         ctx.beginPath(); ctx.moveTo(x - colW, yBot); ctx.lineTo(x - colW / 2 - 12, yBot); ctx.stroke();
       }
 
-      drawBlock(ctx, x, yTop, colW, boxH, "#ff7a1a", height, mHash, isTip);
+      drawBlock(ctx, x, yTop, colW, boxH, accentData, height, mHash, isTip);
       drawBlock(ctx, x, yBot, colW, boxH, "#ffd400", height, cHash, isTip);
 
       ctx.lineWidth = agree ? 1 : 2;

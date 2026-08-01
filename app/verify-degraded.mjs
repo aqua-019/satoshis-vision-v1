@@ -73,12 +73,33 @@ const stripCssComments = (src) =>
   // exactly the case this block exists for.
   const floorBlock = html.slice(styleAt, html.indexOf('</style>', styleAt));
   ok(/#121218/i.test(floorBlock), '0 · floor declares the indigo hex literally');
+  ok(/#050505/i.test(floorBlock), '0 · floor declares the classic hex literally');
+  ok(/#030603/i.test(floorBlock), '0 · floor declares the phosphor hex literally');
   ok(/color-scheme:\s*dark/i.test(floorBlock), '0 · floor declares color-scheme:dark');
   ok(!/var\(/.test(floorBlock), '0 · floor contains no var() — literals only');
 
+  // v6.1.2 — the UNQUALIFIED html{} rule must be CLASSIC, because classic is now
+  // the default. It is also what an unstamped document gets: with JS off the
+  // pre-paint script never runs, so no data-theme attribute is ever set and only
+  // this rule applies. Getting the polarity backwards doesn't fail anything
+  // loudly — it just gives every default visitor a one-frame flash of the wrong
+  // theme on every cold load, which is exactly what this block exists to prevent.
+  const bareHtml = /html\s*\{[^}]*background-color:\s*(#[0-9a-f]{6})/i.exec(floorBlock);
+  ok(bareHtml?.[1]?.toLowerCase() === '#050505',
+     `0 · the unqualified html{} floor is classic (got ${bareHtml?.[1] ?? 'no match'})`);
+
   // Anti-drift: the hand-copied hexes must equal styles-theme.css's --amb-floor.
+  // v6.1.2 — classic is no longer expressed as ":not(indigo)". With phosphor in
+  // the tree that exclusion would have matched phosphor too and handed it
+  // classic's floor, so every theme is named explicitly now.
   const indigoFloor = /:root\[data-theme="indigo"\][^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
-  const classicFloor = /:root:not\(\[data-theme="indigo"\]\)[^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
+  const classicFloor = /:root\[data-theme="classic"\][^{]*\{[^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
+  const phosphorFloor = /:root\[data-theme="phosphor"\][^}]*?--amb-floor:\s*(#[0-9a-f]{6})/is.exec(theme);
+  ok(phosphorFloor?.[1]?.toLowerCase() === '#030603',
+     `0 · inline phosphor floor matches --amb-floor (${phosphorFloor?.[1] ?? 'not found'})`);
+  // The unstamped (JS-off) case must resolve to the default theme, not dangle.
+  ok(/:root:not\(\[data-theme\]\)/.test(theme),
+     '0 · styles-theme.css handles the unstamped :root:not([data-theme]) case');
   ok(indigoFloor?.[1]?.toLowerCase() === '#121218', `0 · inline indigo floor matches --amb-floor (${indigoFloor?.[1] ?? 'not found'})`);
   // v6.0.10 §6b: classic's floor is v5's literal #050505. It was #0b0b0c — a
   // 1.5-point lift v6.0.2 introduced and nothing asked for, and exactly the

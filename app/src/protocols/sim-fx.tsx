@@ -161,12 +161,12 @@ export function SvgDefs({ id = "fx" }: any) {
       <radialGradient id={id + "-flame-core"}>
         <stop offset="0%"   stopColor="#ffe2a8" stopOpacity="1" />
         <stop offset="30%"  stopColor="#ffb978" stopOpacity="0.95" />
-        <stop offset="60%"  stopColor="#ff7a1a" stopOpacity="0.7" />
+        <stop offset="60%"  stopColor="var(--accent-data)" stopOpacity="0.7" />
         <stop offset="100%" stopColor="#8a3e07" stopOpacity="0" />
       </radialGradient>
       <radialGradient id={id + "-ember"}>
         <stop offset="0%"   stopColor="#ffce8a" stopOpacity="1" />
-        <stop offset="60%"  stopColor="#ff7a1a" stopOpacity="0.7" />
+        <stop offset="60%"  stopColor="var(--accent-data)" stopOpacity="0.7" />
         <stop offset="100%" stopColor="#4a2104" stopOpacity="0" />
       </radialGradient>
       <radialGradient id={id + "-orb-purple"}>

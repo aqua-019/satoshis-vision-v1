@@ -1,3 +1,4 @@
+@layer components {
 /* ═══ L3 · AMBIENT BACKGROUND — v6.0.2, tier-gated v6.0.8 ═══════════════
    ALWAYS ON, with an intensity knob (⌘ DESIGN → Ambient). Geometry and
    timing are unconditional; every COLOUR routes through an --amb-* token
@@ -70,11 +71,14 @@ body::before {
   background: var(--amb-floor, #121218);
   animation: aurora-breath 40s ease-in-out infinite;
 }
+}
+
 @keyframes aurora-breath {
   0%, 100% { background-color: var(--amb-floor, #121218); }
   50%      { background-color: var(--amb-breath, #161622); }
 }
 
+@layer components {
 /* styles.css:116 painted four grey radial-gradients here on a 64s pulse.
    That pulse animates OPACITY through 0.80→1.00, so anything reusing this
    pseudo-element inherits it — which would have blown the film grain from
@@ -84,7 +88,24 @@ body::after { content: none; }
 
 /* ── #bg-plates · eight aurora orbs on relatively-prime clocks ────────
    Sizes in vmax so the field scales with the viewport; offsets pull each
-   orb partly off-screen so no edge is ever visible. */
+   orb partly off-screen so no edge is ever visible.
+
+   v6.1.2 — colour was a hardcoded violet rgba() pair per plate (a distinct
+   RGB per plate, each with its own alpha for the two gradient stops). That
+   got away with being theme-agnostic-in-name-only only because classic hid
+   the whole field; a third theme with its own aurora hue needed this to
+   actually be theme-bound, and this file may not gain a per-theme selector
+   (verify-legibility.mjs forbids it, even inside a comment).
+   Now routed through two hue tokens, --aurora-a (bright/outer stop) and
+   --aurora-b (dim/inner stop) — declared in styles.css's base :root and
+   rebound per theme in styles-theme.css. color-mix() supplies the alpha
+   (each plate keeps its OWN original per-stop alpha exactly, as a mix
+   percentage against transparent); only the HUE is now shared across all
+   eight plates, which is what makes it swappable by theme at all.
+   color-mix() is not new to this codebase — mempool/*.tsx and pages/*.tsx
+   already use `color-mix(in srgb, var(--x) N%, transparent)` throughout
+   with no @supports guard, so this follows the same already-accepted
+   baseline rather than introducing a new one. */
 #bg-plates {
   position: fixed; inset: 0; z-index: -4;
   pointer-events: none; overflow: hidden;
@@ -94,14 +115,15 @@ body::after { content: none; }
   border-radius: 50%;
   will-change: transform, opacity;
 }
-#bg-plates .plate:nth-child(1) { top: -22%; left: -14%; width: var(--amb-plate-1-size); height: var(--amb-plate-1-size); background: radial-gradient(circle, rgba(52,48,88,0.126) 0%, rgba(42,38,70,0.060) 40%, transparent 68%); animation: plate-a 72s ease-in-out -8s infinite; }
-#bg-plates .plate:nth-child(2) { top: 38%; left: 56%; width: var(--amb-plate-2-size); height: var(--amb-plate-2-size); background: radial-gradient(circle, rgba(42,38,74,0.132) 0%, rgba(34,31,58,0.066) 42%, transparent 70%); animation: plate-b 88s ease-in-out -31s infinite; }
-#bg-plates .plate:nth-child(3) { top: 52%; left: -24%; width: var(--amb-plate-3-size); height: var(--amb-plate-3-size); background: radial-gradient(circle, rgba(56,47,96,0.096) 0%, rgba(43,37,72,0.048) 42%, transparent 68%); animation: plate-c 64s ease-in-out -17s infinite; }
-#bg-plates .plate:nth-child(4) { top: -28%; left: 44%; width: var(--amb-plate-4-size); height: var(--amb-plate-4-size); background: radial-gradient(circle, rgba(38,34,64,0.120) 0%, rgba(31,28,52,0.060) 44%, transparent 70%); animation: plate-b 78s ease-in-out -55s infinite; }
-#bg-plates .plate:nth-child(5) { top: 16%; left: 22%; width: var(--amb-plate-5-size); height: var(--amb-plate-5-size); background: radial-gradient(circle, rgba(62,52,108,0.072) 0%, rgba(48,42,82,0.036) 40%, transparent 66%); animation: plate-a 56s ease-in-out -40s infinite; }
-#bg-plates .plate:nth-child(6) { top: 66%; left: 30%; width: var(--amb-plate-6-size); height: var(--amb-plate-6-size); background: radial-gradient(circle, rgba(46,40,80,0.102) 0%, rgba(37,33,62,0.048) 42%, transparent 68%); animation: plate-c 96s ease-in-out -66s infinite; }
-#bg-plates .plate:nth-child(7) { top: 2%; left: 74%; width: var(--amb-plate-7-size); height: var(--amb-plate-7-size); background: radial-gradient(circle, rgba(66,56,114,0.060) 0%, rgba(51,44,88,0.030) 38%, transparent 64%); animation: plate-a 84s ease-in-out -23s infinite; }
-#bg-plates .plate:nth-child(8) { top: 34%; left: 4%; width: var(--amb-plate-8-size); height: var(--amb-plate-8-size); background: radial-gradient(circle, rgba(34,31,60,0.132) 0%, rgba(28,26,48,0.066) 44%, transparent 70%); animation: plate-b 68s ease-in-out -12s infinite; }
+#bg-plates .plate:nth-child(1) { top: -22%; left: -14%; width: var(--amb-plate-1-size); height: var(--amb-plate-1-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 12.6%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 6%, transparent) 40%, transparent 68%); animation: plate-a 72s ease-in-out -8s infinite; }
+#bg-plates .plate:nth-child(2) { top: 38%; left: 56%; width: var(--amb-plate-2-size); height: var(--amb-plate-2-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 13.2%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 6.6%, transparent) 42%, transparent 70%); animation: plate-b 88s ease-in-out -31s infinite; }
+#bg-plates .plate:nth-child(3) { top: 52%; left: -24%; width: var(--amb-plate-3-size); height: var(--amb-plate-3-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 9.6%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 4.8%, transparent) 42%, transparent 68%); animation: plate-c 64s ease-in-out -17s infinite; }
+#bg-plates .plate:nth-child(4) { top: -28%; left: 44%; width: var(--amb-plate-4-size); height: var(--amb-plate-4-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 12%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 6%, transparent) 44%, transparent 70%); animation: plate-b 78s ease-in-out -55s infinite; }
+#bg-plates .plate:nth-child(5) { top: 16%; left: 22%; width: var(--amb-plate-5-size); height: var(--amb-plate-5-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 7.2%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 3.6%, transparent) 40%, transparent 66%); animation: plate-a 56s ease-in-out -40s infinite; }
+#bg-plates .plate:nth-child(6) { top: 66%; left: 30%; width: var(--amb-plate-6-size); height: var(--amb-plate-6-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 10.2%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 4.8%, transparent) 42%, transparent 68%); animation: plate-c 96s ease-in-out -66s infinite; }
+#bg-plates .plate:nth-child(7) { top: 2%; left: 74%; width: var(--amb-plate-7-size); height: var(--amb-plate-7-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 6%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 3%, transparent) 38%, transparent 64%); animation: plate-a 84s ease-in-out -23s infinite; }
+#bg-plates .plate:nth-child(8) { top: 34%; left: 4%; width: var(--amb-plate-8-size); height: var(--amb-plate-8-size); background: radial-gradient(circle, color-mix(in srgb, var(--aurora-a) 13.2%, transparent) 0%, color-mix(in srgb, var(--aurora-b) 6.6%, transparent) 44%, transparent 70%); animation: plate-b 68s ease-in-out -12s infinite; }
+}
 
 /* namespaced: bare `drift`/`sweep`/`bg-pulse` are already declared (and
    unused) in styles.css — re-declaring them would silently collide. */
@@ -121,6 +143,7 @@ body::after { content: none; }
   65%  { transform: translate3d(-4.5vmax, -5vmax, 0) scale(1); opacity: 0.9; }
 }
 
+@layer components {
 /* ── #bg-fx · dust, sweep, ribbon ────────────────────────────────────
    dust  = twinkling particle field, two parallax layers
    sweep = slow specular sheen crossing once a minute
@@ -146,6 +169,8 @@ body::after { content: none; }
   animation-delay: -60s, -5s;
   opacity: 0.065;
 }
+}
+
 @keyframes dust-drift {
   from { transform: translate3d(0, 0, 0); }
   to   { transform: translate3d(-4%, -2.5%, 0); }
@@ -155,6 +180,7 @@ body::after { content: none; }
   50%      { opacity: 0.045; }
 }
 
+@layer components {
 #bg-fx .sweep {
   position: absolute; top: -30%; bottom: -30%; left: -70%; width: 90%;
   background: linear-gradient(105deg,
@@ -166,11 +192,14 @@ body::after { content: none; }
   transform: skewX(-8deg);
   animation: sweep-x 52s ease-in-out infinite;
 }
+}
+
 @keyframes sweep-x {
   0%, 12%   { transform: translateX(0) skewX(-8deg); }
   55%, 100% { transform: translateX(320%) skewX(-8deg); }
 }
 
+@layer components {
 #bg-fx .ribbon {
   position: absolute; left: 50%; top: 58%;
   width: var(--amb-ribbon-size); height: var(--amb-ribbon-size);
@@ -186,8 +215,11 @@ body::after { content: none; }
     transparent 360deg);
   animation: ribbon-spin 260s linear infinite;
 }
+}
+
 @keyframes ribbon-spin { to { transform: rotate(360deg); } }
 
+@layer components {
 /* ── rising orb field ────────────────────────────────────────────────
    Seeded in React (design/AmbientField.tsx) — count comes from the
    Ambient knob: calm 10 · busy 30 · chaotic 60. Each orb carries its own
@@ -202,6 +234,8 @@ body::after { content: none; }
   animation: orb-rise var(--d) linear var(--dl) infinite;
   will-change: transform, opacity;
 }
+}
+
 @keyframes orb-rise {
   0%   { transform: translate3d(0, 0, 0) scale(1); opacity: 0; }
   10%  { opacity: var(--o); }
@@ -210,10 +244,27 @@ body::after { content: none; }
   100% { transform: translate3d(calc(var(--sw) * 0.35), -132vh, 0) scale(0.94); opacity: 0; }
 }
 
+@layer components {
 /* ── film grain ──────────────────────────────────────────────────────
    Fills the "-2 film grain (svg noise, very low opacity)" slot that
    styles.css:103 has documented since v5 but never actually built.
-   Static — no animation, so reduced-motion leaves it alone. */
+   Static — no animation, so reduced-motion leaves it alone.
+
+   v6.1.2 — NOT theme-bound, and it can't become theme-bound by the usual
+   var() route. The feColorMatrix tint below is baked into a literal
+   string inside a data: URI; a custom property is only substituted in a
+   normal CSS value position, never inside the text of a url()'s string
+   argument, and an SVG loaded this way is an isolated document that
+   doesn't inherit this page's custom properties even where SVG itself
+   can read them. A theme-scoped selector in THIS file is also not
+   available as a workaround (verify-legibility.mjs forbids one here).
+   The fix that would work — hoist the whole data: URI into a per-theme
+   custom property, e.g. `--amb-grain-img`, declared in styles-theme.css
+   and consumed here as `var(--amb-grain-img, url(...))` — is a real,
+   available option, just out of scope for this pass; reported rather
+   than done. At opacity 0.04 with an overlay blend the visible effect of
+   staying untinted is small, but it is real: this is indigo's tint on
+   every theme, phosphor included. */
 #bg-grain {
   position: fixed; inset: 0; z-index: -2;
   pointer-events: none;
@@ -245,9 +296,18 @@ body::after { content: none; }
 /* ── reduced motion ──────────────────────────────────────────────────
    All three layers stop dead; the floor falls back to a flat colour so
    the page stays legible rather than freezing mid-gradient. The grain
-   and the static orb positions are harmless and stay. */
+   and the static orb positions are harmless and stay.
+
+   v6.1.2 — was a hardcoded #15151f, a hand-picked tone sitting between
+   indigo's floor and breath colours. That was already a second, silently
+   drifting copy of --amb-floor for indigo alone; with phosphor's floor
+   nowhere near that value it would have painted every phosphor page a
+   dim indigo-violet the instant a reader with reduced-motion turned on.
+   var() with the same fallback the non-reduced-motion rule above already
+   uses keeps this in sync with whichever theme is active by construction
+   instead of by memory. */
 @media (prefers-reduced-motion: reduce) {
-  body::before { animation: none; background: #15151f; }
+  body::before { animation: none; background: var(--amb-floor, #121218); }
   #bg-plates .plate { animation: none !important; transform: none !important; }
   #bg-fx .dust, #bg-fx .sweep, #bg-fx .ribbon { animation: none !important; }
   #bg-fx .sweep { display: none; }
@@ -256,4 +316,5 @@ body::after { content: none; }
   /* pre-existing offenders in styles.css that were never covered */
   .panel, .shell .main .panel, .tilt-card.tilt-pulse,
   .led.pulse, .footer-tele .blink, .spin-slow, .spin-med { animation: none !important; }
+}
 }

@@ -259,7 +259,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
 
       {/* ── THE THESIS · manifesto block ───────────────────── */}
       <Card style={{ padding: 32, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at top right, rgba(255,122,26,0.06), transparent 60%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at top right, color-mix(in srgb, var(--accent-structural) 6%, transparent), transparent 60%)", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div className="kicker">The thesis · what Monero represents</div>
           <h2 className="serif" style={{ margin: "12px 0 18px", fontSize: 30, fontWeight: 400, color: "var(--ink-100)", lineHeight: 1.2, letterSpacing: "-0.005em" }}>
@@ -340,7 +340,7 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
       </div>
 
       {/* ── THE CONVERGENCE ─────────────────────────────────── */}
-      <Card style={{ padding: 32, background: "rgba(255,122,26,0.04)", borderColor: "rgba(255,122,26,0.3)" }}>
+      <Card style={{ padding: 32, background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderColor: "color-mix(in srgb, var(--accent-structural) 30%, transparent)" }}>
         <div className="kicker">The convergence</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 24, marginTop: 14, alignItems: "stretch" }}>
           <div>

@@ -239,24 +239,35 @@ const SPRITES = new Map<string, HTMLCanvasElement>();
 
 /**
  * Pre-render a soft radial glow to an offscreen canvas so draw loops can blit
- * it instead of paying ctx.shadowBlur per particle. Memoised per (color,
- * radius) — call it freely, it builds at most once.
+ * it instead of paying ctx.shadowBlur per particle. Memoised per (resolved
+ * colour, radius) — call it freely, it builds at most once per theme.
  *
  * Returns a 2r × 2r sprite whose CENTRE is the particle position; blit at
  * (x − r, y − r), which is what blitGlow does for you.
  */
 export function glowSprite(color: string, radius: number): HTMLCanvasElement {
   const r = Math.max(1, Math.ceil(radius));
-  const key = `${color}@${r}`;
+
+  // Resolve BEFORE keying the cache, not after — two reasons, not one:
+  //
+  //   1. addColorStop THROWS on anything it cannot parse — including a
+  //      `var(--x)` that never got resolved — and an exception inside a rAF
+  //      draw loop unmounts the entire view rather than degrading one
+  //      particle. Resolving up front means a bad token fails here, not
+  //      inside the gradient call.
+  //   2. Keying on the raw TOKEN name (e.g. "var(--tk-accent)@12") would
+  //      serve the first theme's baked pixels forever, because the token
+  //      string itself never changes across a theme flip — only what it
+  //      resolves to. Keying on the resolved colour instead makes the cache
+  //      theme-safe for free: a flip yields a different resolved string,
+  //      which is a cache miss and a fresh sprite; repeated calls under the
+  //      same theme keep hitting the same key, so this still builds at most
+  //      once per (resolved colour, radius) — same memoisation cost as
+  //      before, just keyed correctly.
+  const resolved = cssColor(color);
+  const key = `${resolved}@${r}`;
   const hit = SPRITES.get(key);
   if (hit) return hit;
-
-  // Resolve here as well as at the call site. addColorStop THROWS on anything
-  // it cannot parse — including a `var(--x)` that never got resolved — and an
-  // exception inside a rAF draw loop unmounts the entire view rather than
-  // degrading one particle. Since sprites are memoised this costs one
-  // getComputedStyle per (color, radius), not one per frame.
-  const resolved = cssColor(color);
 
   const c = document.createElement("canvas");
   c.width = r * 2;

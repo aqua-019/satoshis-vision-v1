@@ -94,7 +94,7 @@ export function EcoPopup({ e, onClose }: EcoPopupProps) {
                 style={{
                   border: "1px dashed var(--ink-20)", height: s.h || 120,
                   display: "grid", placeItems: "center",
-                  background: "repeating-linear-gradient(-45deg, rgba(255,255,255,0.015) 0 10px, rgba(255,255,255,0.04) 10px 20px)",
+                  background: "repeating-linear-gradient(-45deg, color-mix(in srgb, var(--text-primary) 1.5%, transparent) 0 10px, color-mix(in srgb, var(--text-primary) 4%, transparent) 10px 20px)",
                 }}
               >
                 <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>{s.label}</span>

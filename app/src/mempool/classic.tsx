@@ -63,17 +63,17 @@ export function ClassicBlock({ block, status, confLabel, tracked, tracking, data
       <div style={{
         minHeight: 132, padding: "12px 10px",
         borderRadius: 6,
-        border: tracked ? "1.5px solid var(--y-50)" : isQueued ? "1px dashed var(--ink-20)" : "1px solid rgba(255,122,26,0.45)",
+        border: tracked ? "1.5px solid var(--y-50)" : isQueued ? "1px dashed var(--ink-20)" : "1px solid color-mix(in srgb, var(--accent-structural) 45%, transparent)",
         background: isQueued
-          ? "rgba(0,0,0,0.3)"
-          : "linear-gradient(180deg, rgba(255,122,26,0.42), rgba(255,138,42,0.78))",
-        color: isQueued ? "var(--ink-60)" : "#1a0f04",
-        boxShadow: tracked ? "0 0 12px rgba(255,212,0,0.4)" : "none",
+          ? "color-mix(in srgb, var(--surface-sunk) 30%, transparent)"
+          : "linear-gradient(180deg, color-mix(in srgb, var(--accent-structural) 42%, transparent), color-mix(in srgb, var(--accent-structural) 78%, transparent))",
+        color: isQueued ? "var(--ink-60)" : "var(--bg-0)",
+        boxShadow: tracked ? "0 0 12px color-mix(in srgb, var(--status-warn) 40%, transparent)" : "none",
         display: "flex", flexDirection: "column", justifyContent: "space-between",
         fontFamily: "var(--f-mono)",
       }}>
         <div>
-          <div style={{ fontSize: 24, fontWeight: 500, lineHeight: 1, color: isQueued ? "var(--ink-80)" : "#0e0805" }}>
+          <div style={{ fontSize: 24, fontWeight: 500, lineHeight: 1, color: isQueued ? "var(--ink-80)" : "var(--bg-0)" }}>
             {isQueued && status === "queued" ? "—" : block.txs}
           </div>
           {!isQueued ? (
@@ -165,8 +165,8 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
                 <div aria-hidden style={{ alignSelf: "stretch", flex: "0 0 auto", display: "flex",
                      flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 4px" }}>
                   <div style={{ width: 2, flex: 1, borderRadius: 1,
-                       background: "linear-gradient(180deg, rgba(255,212,0,0.12), rgba(255,212,0,0.85), rgba(255,212,0,0.12))",
-                       boxShadow: "0 0 8px rgba(255,212,0,0.5)" }} />
+                       background: "linear-gradient(180deg, color-mix(in srgb, var(--status-warn) 12%, transparent), color-mix(in srgb, var(--status-warn) 85%, transparent), color-mix(in srgb, var(--status-warn) 12%, transparent))",
+                       boxShadow: "0 0 8px color-mix(in srgb, var(--status-warn) 50%, transparent)" }} />
                   <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", color: "var(--y-50)",
                        writingMode: "vertical-rl", transform: "rotate(180deg)" }}>UNLOCK</div>
                 </div>
@@ -279,11 +279,17 @@ export function ClassicBlockDetail({ block, onBack }: any) {
    Mirrors mempool-explorer.html: Priority / Fast / Normal /
    Economy, each with rate (pcn/B), per-tx cost, ETA, color.
    ──────────────────────────────────────────────────────────── */
+// Tier colour is a 4-way qualitative legend (fastest → slowest), the same
+// concept as terminal.tsx's TIER_COLORS array — not a single accent axis, so
+// it draws from the existing ramp rather than accent-structural/accent-data:
+// no blue role exists in the new vocabulary (economy was true blue) and forcing
+// this array through the structural/data split would leave three of the four
+// hues untouched while "fast" alone became theme-reactive.
 const CLASSIC_TIERS = [
-  { id: "priority", label: "PRIORITY", color: "#FF4455", eta: "Next block",  desc: "Confirms in the next block" },
-  { id: "fast",     label: "FAST",     color: "#FF7A1A", eta: "~4 min",      desc: "Within 1–2 blocks"          },
-  { id: "normal",   label: "NORMAL",   color: "#4ADE80", eta: "~10 min",     desc: "Within ~5 blocks"           },
-  { id: "economy",  label: "ECONOMY",  color: "#3D8EFF", eta: "~60 min+",    desc: "When mempool clears"        },
+  { id: "priority", label: "PRIORITY", color: "var(--r-50)",     eta: "Next block",  desc: "Confirms in the next block" },
+  { id: "fast",     label: "FAST",     color: "var(--tk-accent)", eta: "~4 min",      desc: "Within 1–2 blocks"          },
+  { id: "normal",   label: "NORMAL",   color: "var(--g-50)",     eta: "~10 min",     desc: "Within ~5 blocks"           },
+  { id: "economy",  label: "ECONOMY",  color: "var(--c-50)",     eta: "~60 min+",    desc: "When mempool clears"        },
 ];
 
 // Quartile-based thresholds computed from the live mempool, so bucketing
@@ -335,7 +341,7 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
         const costUsd = costXmr * xmrUsd;
         return (
           <div key={tier.id} style={{
-            background: "rgba(0,0,0,0.45)",
+            background: "var(--surface-raised)",
             border: "1px solid var(--rule)",
             borderTop: "3px solid " + tier.color,
             borderRadius: 8,
@@ -366,8 +372,8 @@ function ClassicCaption() {
   return (
     <div className="mono" style={{
       fontSize: "var(--fs-body)", color: "var(--ink-60)", lineHeight: 1.55,
-      padding: "10px 14px", borderLeft: "2px solid rgba(255,122,26,0.5)",
-      background: "rgba(255,122,26,0.04)", borderRadius: "0 4px 4px 0",
+      padding: "10px 14px", borderLeft: "2px solid color-mix(in srgb, var(--accent-structural) 50%, transparent)",
+      background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderRadius: "0 4px 4px 0",
     }}>
       <b style={{ color: "var(--ink-100)" }}>pcn/B</b> = piconero per byte. One piconero is 10⁻¹² XMR — the smallest unit. Monero fees scale with transaction size in bytes; a typical 2-input transaction is ≈ 1.8 KB.
     </div>
@@ -390,7 +396,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
   const fill = weightLimit > 0 ? Math.min(1, totalBytes / weightLimit) : null;
   return (
     <div style={{
-      background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)",
+      background: "var(--surface-raised)", border: "1px solid var(--rule)",
       borderRadius: 8, padding: "14px 18px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -398,7 +404,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
         <span className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", letterSpacing: "0.06em" }}>ETA ~<BlockEta data={data} /></span>
       </div>
       {/* segmented bar */}
-      <div style={{ height: 22, background: "rgba(0,0,0,0.6)", borderRadius: 5, overflow: "hidden", display: "flex", border: "1px solid var(--ink-10)" }}>
+      <div style={{ height: 22, background: "var(--surface-sunk)", borderRadius: 5, overflow: "hidden", display: "flex", border: "1px solid var(--ink-10)" }}>
         {CLASSIC_TIERS.map((tier, i) => {
           const tx = buckets[tier.id];
           const pct = tx.length / total;
@@ -407,7 +413,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
               width: (pct * 100) + "%", height: "100%",
               background: tier.color,
               opacity: 0.78,
-              borderRight: i < 3 ? "1px solid rgba(0,0,0,0.4)" : "none",
+              borderRight: i < 3 ? "1px solid color-mix(in srgb, var(--bg-0) 40%, transparent)" : "none",
               transition: reduceMotion ? "none" : "width 0.6s ease",
             }} />
           );
@@ -436,7 +442,7 @@ export function ClassicFeeDepth({ buckets }: any) {
   const total = CLASSIC_TIERS.reduce((a, tier) => a + buckets[tier.id].reduce((s: number, t: any) => s + t.size, 0), 0) || 1;
   return (
     <div style={{
-      background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)",
+      background: "var(--surface-raised)", border: "1px solid var(--rule)",
       borderRadius: 8, padding: "14px 18px",
     }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
@@ -451,12 +457,12 @@ export function ClassicFeeDepth({ buckets }: any) {
           return (
             <div key={tier.id} style={{ display: "grid", gridTemplateColumns: "84px 1fr 80px 60px", gap: 12, alignItems: "center" }}>
               <span className="mono" style={{ fontSize: "var(--fs-label)", color: tier.color, letterSpacing: "0.12em", fontWeight: 600 }}>{tier.label}</span>
-              <div style={{ position: "relative", height: 18, background: "rgba(255,255,255,0.04)", borderRadius: 3, overflow: "hidden" }}>
+              <div style={{ position: "relative", height: 18, background: "var(--line-d)", borderRadius: 3, overflow: "hidden" }}>
                 <div style={{
                   position: "absolute", inset: "0 auto 0 0",
                   width: Math.max(2, pct * 100) + "%", height: "100%",
-                  background: "linear-gradient(90deg, " + tier.color + "40, " + tier.color + "ee)",
-                  boxShadow: "0 0 8px " + tier.color + "55",
+                  background: `linear-gradient(90deg, color-mix(in srgb, ${tier.color} 25%, transparent), color-mix(in srgb, ${tier.color} 93%, transparent))`,
+                  boxShadow: `0 0 8px color-mix(in srgb, ${tier.color} 33%, transparent)`,
                   transition: reduceMotion ? "none" : "width 0.6s ease",
                 }} />
               </div>
@@ -507,7 +513,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
 
   return (
     <div style={{
-      background: "rgba(0,0,0,0.45)", border: "1px solid var(--rule)",
+      background: "var(--surface-raised)", border: "1px solid var(--rule)",
       borderRadius: 8, padding: "12px 14px",
     }}>
       <style>{CLASSIC_TX_ENTER_CSS}</style>
@@ -535,11 +541,11 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
               onAnimationEnd={(e) => e.currentTarget.classList.remove("classic-tx-enter")}
               style={{
                 fontSize: "var(--fs-mono)", padding: "8px 8px",
-                borderBottom: "1px solid rgba(255,255,255,0.03)",
+                borderBottom: "1px solid var(--line-d)",
                 cursor: "pointer", transition: "background 0.12s",
                 fontFamily: "var(--f-mono)",
               }}
-              onMouseEnter={(e) => e.currentTarget.style.background = "rgba(255,255,255,0.025)"}
+              onMouseEnter={(e) => e.currentTarget.style.background = "var(--line-d)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
               <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
               <span style={{ color: "var(--ink-80)" }}>{fmtBytes(t.size)}</span>
@@ -574,7 +580,7 @@ export function ClassicLanding({ data, onPickTx, trackedTxId }: any) {
 
 export function ClassicStat({ k, v, tone }: any) {
   return (
-    <div style={{ padding: "12px 14px", border: "1px solid var(--rule)", borderRadius: 6, background: "rgba(0,0,0,0.25)" }}>
+    <div style={{ padding: "12px 14px", border: "1px solid var(--rule)", borderRadius: 6, background: "var(--surface-raised)" }}>
       <div className="kicker">{k}</div>
       <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 20, marginTop: 4, fontWeight: 500 }}>{v}</div>
     </div>

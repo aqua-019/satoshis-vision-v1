@@ -272,7 +272,7 @@ export function JamtisView({ bg }: ViewProps) {
           </div>
 
           <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
-            <em>Paired protocol:</em> Jamtis is the addressing layer for <span style={{ color: "#ff7a1a" }}>Seraphis</span>'s transaction format — see <span style={{ color: "#ff7a1a" }}>F1 · Seraphis</span>. Neither ships without the other.
+            <em>Paired protocol:</em> Jamtis is the addressing layer for <span style={{ color: "var(--accent-data)" }}>Seraphis</span>'s transaction format — see <span style={{ color: "var(--accent-data)" }}>F1 · Seraphis</span>. Neither ships without the other.
           </div>
         </>
       }

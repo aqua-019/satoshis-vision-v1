@@ -134,7 +134,7 @@ export function EduTimeline({ data }: { data: MoneroLive }) {
             const color = k === "all" ? "var(--ink-100)" : TL_CAT[k as TlCat].color;
             return (
               <button key={k} type="button" onClick={() => setFilter(k)}
-                style={{ appearance: "none", cursor: "pointer", background: on ? "rgba(255,255,255,0.06)" : "transparent",
+                style={{ appearance: "none", cursor: "pointer", background: on ? "color-mix(in srgb, var(--text-primary) 6%, transparent)" : "transparent",
                   border: "1px solid " + (on ? color : "var(--ink-20)"), borderRadius: 999, padding: "5px 12px",
                   color: on ? color : "var(--ink-60)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
                 {k === "all" ? "All" : TL_CAT[k as TlCat].label}

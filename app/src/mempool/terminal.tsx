@@ -88,7 +88,7 @@ function TermPalette({ data }: { data: MoneroLive }) {
   }, [typed, phase, ci, cmds, paused, charScale]);
   const showResults = phase === "hold" && cmds.length > 0;
   return (
-    <div style={{ border: "1px solid var(--tk-accent)", background: "rgba(0,0,0,0.65)", boxShadow: "0 0 24px rgba(255,122,26,0.22), inset 0 0 30px rgba(255,122,26,0.05)", borderRadius: 4 }}>
+    <div style={{ border: "1px solid var(--tk-accent)", background: "var(--surface-raised)", boxShadow: "0 0 24px color-mix(in srgb, var(--accent-structural) 22%, transparent), inset 0 0 30px color-mix(in srgb, var(--accent-structural) 5%, transparent)", borderRadius: 4 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
         <span style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>›</span>
         <span style={{ color: "var(--ink-100)" }}>{typed}</span>
@@ -97,7 +97,7 @@ function TermPalette({ data }: { data: MoneroLive }) {
       </div>
       <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", minHeight: 96 }}>
         {(showResults ? cmds[ci % cmds.length].rows : []).map((r, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "rgba(255,122,26,0.12)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein 0.25s ease" }}>
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "color-mix(in srgb, var(--accent-structural) 12%, transparent)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein 0.25s ease" }}>
             <span className="dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em" }}>{r[0]}</span>
             <span className={i === 0 ? "acc" : ""}>{r[1]}</span>
             <span className="dim">{r[2]}</span>
@@ -135,7 +135,7 @@ export function TermAsciiBlocks({ data, trackedTxId, trackedHeight }: { data: Mo
         <div style={{ textAlign: "center", marginBottom: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: q ? "none" : tracked ? "0 0 6px var(--y-50)" : "var(--glow-1)" }}>
           {q ? "~+" + label : (tracked ? "▲" : "") + height.toString().slice(-3)}
         </div>
-        <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px rgba(255,122,26,0.7)" : tracked ? "0 0 7px rgba(255,212,0,0.5)" : "0 0 6px rgba(255,122,26,0.4)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
+        <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px color-mix(in srgb, var(--accent-data) 70%, transparent)" : tracked ? "0 0 7px color-mix(in srgb, var(--status-warn) 50%, transparent)" : "0 0 6px color-mix(in srgb, var(--accent-data) 40%, transparent)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
         <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
         {!q ? <div style={{ textAlign: "center", color: tracked ? "var(--y-50)" : "var(--ink-40)", fontSize: "var(--fs-label)" }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
         {tracked ? <div style={{ textAlign: "center", color: "var(--y-50)", fontSize: "var(--fs-label)" }}>{confOf(height, data)}/{CONF_UNLOCK}</div> : null}
@@ -219,7 +219,7 @@ export function TermFeeHisto({ data }: { data: MoneroLive }) {
   const medianBin = bins.indexOf(Math.max(...bins));
   const bar = (v: number) => "█".repeat(Math.round((v / max) * 24));
   return (
-    <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--tk-accent)", textShadow: "0 0 4px rgba(255,122,26,0.4)" }}>
+    <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--tk-accent)", textShadow: "0 0 4px color-mix(in srgb, var(--accent-data) 40%, transparent)" }}>
       {bins.map((v, i) => `${String(i * 40).padStart(3, " ")} |${bar(v).padEnd(24, " ")} ${String(v).padStart(3, " ")}${i === medianBin ? "  ← median" : ""}`).join("\n")}
       <div className="dim" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginTop: 6 }}>fee in piconero/byte · {data.mempool.length} tx sample</div>
     </pre>
@@ -232,7 +232,7 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
       <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ display: "block", maxWidth: size, aspectRatio: `${size} / ${size * 0.78}` }}>
-        <circle cx={c} cy={c} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="5" strokeDasharray={ring * 0.75 + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" />
+        <circle cx={c} cy={c} r={r} fill="none" stroke="var(--line)" strokeWidth="5" strokeDasharray={ring * 0.75 + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" />
         <circle cx={c} cy={c} r={r} fill="none" stroke={color} strokeWidth="5" strokeDasharray={dash + " " + ring} transform={`rotate(135 ${c} ${c})`} strokeLinecap="round" style={{ filter: `drop-shadow(0 0 4px ${color})` }} />
         <text x={c} y={c + 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize="15" fontWeight="500" fill={color}>{value}</text>
       </svg>
@@ -275,7 +275,7 @@ export function TerminalHubView({ data }: ViewProps) {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
               <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>}>
-                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px rgba(255,122,26,0.18)" }}>
+                <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px color-mix(in srgb, var(--accent-structural) 18%, transparent)" }}>
 {`╭─ monerod ${data.version || "—"} `.padEnd(52, "─") + "\n│ Status:    "}
 {data.ready ? (
   <>

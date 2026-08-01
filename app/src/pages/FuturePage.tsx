@@ -57,7 +57,7 @@ export function FuturePage() {
       </section>
 
       {/* stressnet hero band */}
-      <Card onClick={() => setEco("stressnet")} style={{ padding: "26px 30px", display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 28, alignItems: "center", borderColor: "rgba(74,222,128,0.35)" }}>
+      <Card onClick={() => setEco("stressnet")} style={{ padding: "26px 30px", display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 28, alignItems: "center", borderColor: "color-mix(in srgb, var(--status-up) 35%, transparent)" }}>
         <div style={{ width: 64, height: 64, border: "1px solid var(--g-50)", display: "grid", placeItems: "center", boxShadow: "var(--glow-g)", borderRadius: 2 }}>
           <span className="mono" style={{ color: "var(--g-50)", fontSize: 22, textShadow: "var(--glow-g)" }}>β</span>
         </div>
