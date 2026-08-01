@@ -33,6 +33,7 @@ const base = 'http://localhost:4173';
 // trusted. rgb() form is what getComputedStyle returns.
 const INDIGO_RGB = 'rgb(18, 18, 24)';  // #121218
 const CLASSIC_RGB = 'rgb(5, 5, 5)'; // #050505 — v6.0.10 §6b: classic is v5's literal floor
+const PHOSPHOR_RGB = 'rgb(3, 6, 3)'; // #030603 — v6.1.2
 const ACCENT_HEX = '#6E5EF0';
 const ACCENT_RGB = 'rgb(110, 94, 240)';
 
@@ -141,7 +142,11 @@ console.log('engine:', engine);
   await p.waitForTimeout(300);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `A: html background is the dark floor with CSS blocked (got ${bg})`);
+  // v6.1.2 — the DEFAULT is classic now, so an unseeded page boots to #050505.
+  // This is the unqualified html{} rule in index.html's inline floor doing its job;
+  // if this ever reads the indigo hex again, the floor's polarity has been flipped
+  // back and every default visitor is eating a wrong-theme flash on cold load.
+  ok(bg === CLASSIC_RGB, `A: html background is the dark floor with CSS blocked (got ${bg})`);
   ok(bg !== 'rgba(0, 0, 0, 0)' && bg !== 'rgb(255, 255, 255)', 'A: html background is neither transparent nor white');
 
   const scheme = await p.evaluate(() => getComputedStyle(document.documentElement).colorScheme);
@@ -161,11 +166,20 @@ console.log('engine:', engine);
   ok(linkRules === 0, `A: the bundled stylesheet contributed zero rules (link rules: ${linkRules})`);
   ok(styleRules > 0, `A: the inline floor is what is painting (inline rules: ${styleRules})`);
 
-  const classicBg = await p.evaluate(() => {
-    document.documentElement.setAttribute('data-theme', 'classic');
-    return getComputedStyle(document.documentElement).backgroundColor;
+  // Flip to a NON-default theme: the default is already proven above, so
+  // re-asserting classic here would test nothing. The attribute-qualified
+  // branches are the half that could silently go missing from the inline floor.
+  const altFloors = await p.evaluate(() => {
+    const out = {};
+    for (const t of ['indigo', 'phosphor']) {
+      document.documentElement.setAttribute('data-theme', t);
+      out[t] = getComputedStyle(document.documentElement).backgroundColor;
+    }
+    document.documentElement.removeAttribute('data-theme');
+    return out;
   });
-  ok(classicBg === CLASSIC_RGB, `A: classic theme floor also holds with CSS blocked (got ${classicBg})`);
+  ok(altFloors.indigo === INDIGO_RGB, `A: indigo floor holds with CSS blocked (got ${altFloors.indigo})`);
+  ok(altFloors.phosphor === PHOSPHOR_RGB, `A: phosphor floor holds with CSS blocked (got ${altFloors.phosphor})`);
   await ctx.close();
 }
 
@@ -186,7 +200,7 @@ console.log('engine:', engine);
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `B1: page is still dark with the JS bundle blocked (got ${bg})`);
+  ok(bg === CLASSIC_RGB, `B1: page is still dark with the JS bundle blocked (got ${bg})`);
 
   const rootText = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
   ok(rootText.trim().length > 300, `B1: prerendered content survives a dead bundle (${rootText.trim().length} chars)`);
@@ -225,7 +239,7 @@ console.log('engine:', engine);
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
-  ok(bg === INDIGO_RGB, `B2: un-prerenderable deep link is still dark (got ${bg})`);
+  ok(bg === CLASSIC_RGB, `B2: un-prerenderable deep link is still dark (got ${bg})`);
 
   const rootText = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
   ok(rootText.trim().length > 300, `B2: it degrades to the readable home prerender, not a blank page (${rootText.trim().length} chars)`);
@@ -285,6 +299,15 @@ console.log('engine:', engine);
 // simulation of a pre-oklch engine.
 {
   const ctx = await b.newContext({ viewport: { width: 1440, height: 900 } });
+  // v6.1.2 — SEED INDIGO. This scenario exists to prove the oklch->sRGB fallback,
+  // and indigo is the only theme that declares any oklch at all. Once classic
+  // became the default, an unseeded page measured classic, where there is no
+  // oklch to fall back FROM — so the check still went green-or-red on a value
+  // that had nothing to do with what it claims to test.
+  await ctx.addInitScript(() => {
+    try { localStorage.setItem('xmri.theme', 'indigo'); } catch { /* storage disabled */ }
+    document.documentElement.setAttribute('data-theme', 'indigo');
+  });
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.abort());
   await p.route('**/assets/*.css', async (route) => {
@@ -296,9 +319,12 @@ console.log('engine:', engine);
   await p.goto(base + '/', { waitUntil: 'load' });
   await p.waitForTimeout(400);
 
+  // Either serialisation is correct. --accent-structural is @property-registered
+  // as <color>, so it COMPUTES to rgb(...); --ui-accent is a plain alias onto it
+  // and inherits that computed form rather than the authored hex.
   const accent = await p.evaluate(() =>
     getComputedStyle(document.documentElement).getPropertyValue('--ui-accent').trim());
-  ok(accent.toLowerCase() === ACCENT_HEX.toLowerCase(),
+  ok([ACCENT_HEX.toLowerCase(), ACCENT_RGB].includes(accent.toLowerCase()),
      `D: --ui-accent falls back to sRGB without oklch support (got "${accent}")`);
 
   // styles-legibility.css:38 :focus-visible { outline: 2px solid var(--ui-accent) }

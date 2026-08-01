@@ -261,7 +261,12 @@
      brief's verify commands. */
   --ink-100: #C8F0C8;
   --ink-80:  rgba(200, 240, 200, 0.85);
-  --ink-60:  rgba(200, 240, 200, 0.55);
+  /* --ink-60 is the BODY-TEXT FLOOR and carries the ≥7:1 bar, so it does not
+     get to inherit classic's 0.55 by symmetry — measured, it lands at 5.18:1
+     on this ground and fails. 0.661 is the exact minimum for 7:1; 0.70 (7.74:1)
+     is used instead so a later nudge to --surface-ground doesn't silently drop
+     it back under. verify-contrast.mjs measures this rather than trusting it. */
+  --ink-60:  rgba(200, 240, 200, 0.70);
   --ink-40:  rgba(200, 240, 200, 0.32);
   --ink-20:  rgba(200, 240, 200, 0.16);
   --ink-10:  rgba(200, 240, 200, 0.08);
