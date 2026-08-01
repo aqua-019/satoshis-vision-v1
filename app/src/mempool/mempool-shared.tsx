@@ -65,7 +65,11 @@ export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
       <span
         key={data.lastUpdate}
         className="led"
-        style={{ animation: "mp-beat 0.5s ease-out" }}
+        // D0651/D0652: 0.5s exact → var(--d-4). `ease-out` (cubic-bezier(0,0,.58,1)) kept
+        // literal, not mapped to var(--e-decel) — sampled at y=0.2/0.5/0.9 the two curves
+        // sit ~0.05-0.15 apart in x, a materially bigger gap than the reconciled cases
+        // elsewhere (~0.03-0.08), so this is a genuinely different curve, not a rename.
+        style={{ animation: "mp-beat var(--d-4) ease-out" }}
       />
       LIVE · updated {ageSec}s ago
     </span>

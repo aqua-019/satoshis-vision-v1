@@ -83,6 +83,8 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
               transition: "background var(--d-2) var(--e-standard)", // D0651: 0.15s exact → --d-2
             }} title={`output #${i} · tag=0x${c.tag.toString(16).padStart(2, "0")}`}>
               {matched ? (
+                // D0651: pulseScale 1.5s reuses styles.css's global @keyframes pulseScale as an
+                // ambient "matched" pulse — not an interaction, same category as panel-breathe.
                 <div style={{
                   position: "absolute", inset: -3,
                   border: "1.5px solid #b87aff",

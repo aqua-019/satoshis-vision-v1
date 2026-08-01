@@ -485,12 +485,15 @@ export function ClassicFeeDepth({ buckets }: any) {
 // counts that exact name; a collision would silently corrupt an already-green
 // gate). Applying the class is gated in JS via useReducedMotion() below, so
 // both mechanisms honour prefers-reduced-motion.
+// D0651/D0652: 0.4s tie → var(--d-4) (round-half-up, same as styles.css:.panel). `ease-out`
+// kept literal, not mapped to var(--e-decel) — see mempool-shared.tsx's TrackChip comment
+// for the numeric reconciliation (sampled ~0.05-0.15 apart in x, a real curve difference).
 const CLASSIC_TX_ENTER_CSS = `
 @keyframes classic-tx-enter-kf {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.classic-tx-enter { animation: classic-tx-enter-kf 0.4s ease-out; }
+.classic-tx-enter { animation: classic-tx-enter-kf var(--d-4) ease-out; }
 `;
 
 export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {

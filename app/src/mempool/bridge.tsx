@@ -562,7 +562,8 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
         {rows.length === 0 && !pinned ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
         ) : rows.map((r) => (
-          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein 0.4s ease" }}>
+          // D0651: brg-slidein 0.4s (bare) — tie between --d-3/--d-4, round-half-up to --d-4 var(--e-standard)
+          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein var(--d-4) var(--e-standard)" }}>
             <span className="dim2">{r.ts}</span>
             <span style={{ color: col[r.tone] }}>{r.lvl}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.msg}</span>

@@ -122,7 +122,9 @@ export function ChamberPanel({ side, tick, phase }: any) {
         )}
       </div>
 
-      {/* glow markers when active */}
+      {/* glow markers when active — D0651: ledpulse 1s reuses styles.css's global @keyframes
+          ledpulse at a locally-chosen 1s cadence (vs. the 1.4s LED default) — same "real-world
+          blink rate, not an interaction" category as that token's own justification. Literal. */}
       {phase === 0 && isAlice ? <div style={{ position: "absolute", top: 18, right: 18, width: 6, height: 6, borderRadius: "50%", background: color, animation: "ledpulse 1s infinite", boxShadow: glow }} /> : null}
       {phase === 3 && !isAlice ? <div style={{ position: "absolute", top: 18, right: 18, width: 6, height: 6, borderRadius: "50%", background: color, animation: "ledpulse 1s infinite", boxShadow: glow }} /> : null}
     </div>
