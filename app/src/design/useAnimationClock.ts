@@ -25,6 +25,7 @@
 import * as React from "react";
 import { getDeviceTier, type Tier } from "./deviceTier";
 import { isPageActive, onPageActiveChange } from "./usePageActive";
+import { governorStep } from "./governor";
 
 interface Subscriber {
   fps: number;
@@ -45,8 +46,73 @@ let unbindVisibility: (() => void) | null = null;
  *  a stall must not teleport an animation forward. */
 const MAX_STEP_MS = 50;
 
+/* ── D0692 · frame-budget governor ──────────────────────────────────────────
+ * Rides the loop that already exists rather than adding a second one: this rAF
+ * is the only per-frame heartbeat in the app, so it is the only place that can
+ * measure the real frame budget without paying for the measurement.
+ *
+ * `scale` is a 0.5–1 quality dial consumers multiply their particle or plate
+ * count by. The asymmetry is the whole design — it sheds at .012/frame and
+ * recovers at .004/frame, i.e. roughly 3× slower to give quality back than to
+ * take it away. Symmetric rates produce visible pumping: the moment shedding
+ * relieves the load, the fps recovers, quality returns, and the load comes
+ * straight back. Slow recovery makes that oscillation converge instead.
+ *
+ * SURFACED, NOT SILENT. A governor that quietly degrades output is the same
+ * failure as a gate that passes what it did not check — you cannot tell a
+ * deliberate low-quality render from a broken one. Whenever the dial is off
+ * full, `data-gov` lands on <html> carrying the current percentage, so a human
+ * reading DevTools and verify-govern.mjs read the same number from the same
+ * place. It is removed (not set to "100") at full quality, so its mere presence
+ * means "something is being held back right now".
+ */
+const GOV = { scale: 1, ema: 60 };
+
+/** Frame gap above which we assume a RESUME, not a stall, and skip the sample.
+ *  Deliberately well above MAX_STEP_MS: a 50ms frame IS the 20fps stall this
+ *  governor exists to catch, so clamping the sample at MAX_STEP_MS would blind
+ *  it to exactly the condition it is measuring. A quarter-second gap is not a
+ *  slow frame — it is a backgrounded tab, a GC pause, or the first frame after
+ *  start(), none of which say anything about sustainable framerate. */
+const RESUME_GAP_MS = 250;
+
+let lastFrameTs = 0;
+
+/** Current quality dial, 0.5–1. Read per frame; never cached across frames. */
+export function governorScale(): number {
+  return GOV.scale;
+}
+
+/** Smoothed framerate the dial is reacting to. Exposed for gates and diagnostics. */
+export function governorFps(): number {
+  return GOV.ema;
+}
+
+function publishGovernor(): void {
+  if (typeof document === "undefined") return;
+  const el = document.documentElement;
+  if (GOV.scale < 0.99) el.setAttribute("data-gov", String(Math.round(GOV.scale * 100)));
+  else el.removeAttribute("data-gov");
+}
+
+function sampleFrame(now: number): void {
+  // First frame after a start(), or a resume: establish a baseline and take no
+  // reading. `lastFrameTs` is reset to 0 by start(), which is what makes a tab
+  // that was hidden for a minute not read as one catastrophic frame.
+  if (lastFrameTs === 0 || now - lastFrameTs > RESUME_GAP_MS) {
+    lastFrameTs = now;
+    return;
+  }
+  const dt = now - lastFrameTs;
+  lastFrameTs = now;
+  const before = GOV.scale;
+  governorStep(GOV, 1000 / Math.max(1, dt));
+  if (GOV.scale !== before) publishGovernor();
+}
+
 function loop(now: number): void {
   raf = requestAnimationFrame(loop);
+  sampleFrame(now);
   for (const s of subscribers) {
     const interval = 1000 / s.fps;
     const gap = now - s.last;
@@ -66,6 +132,13 @@ function start(): void {
   // Reset every subscriber's clock so resuming from a hidden tab delivers one
   // frame promptly instead of one frame per elapsed interval.
   for (const s of subscribers) s.last = 0;
+  // Same reasoning for the governor's own clock: the gap across a stop/start
+  // is wall-time the page spent hidden or unsubscribed, not a slow frame. The
+  // accumulated `scale` deliberately SURVIVES — a device that could not hold
+  // 60fps a moment ago is the same device now, and re-probing from 1 on every
+  // subscriber churn would make the dial oscillate with mount/unmount traffic
+  // rather than with actual load.
+  lastFrameTs = 0;
   raf = requestAnimationFrame(loop);
 }
 
