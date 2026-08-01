@@ -164,8 +164,9 @@ const blogItems = {
   })),
 };
 
-/** Serve /api/feeds from fixtures. `blogFails` forces the announcements 502. */
-async function mockFeeds(ctx, { blogFails = false } = {}, counter) {
+/** Serve /api/feeds from fixtures. `blogFails` forces the announcements 502;
+ *  `pulseFails` forces every repo-pulse request to 500 (v6.1.4 scenario F). */
+async function mockFeeds(ctx, { blogFails = false, pulseFails = false } = {}, counter) {
   await ctx.route('**/api/feeds*', (route) => {
     const u = new URL(route.request().url());
     const src = u.searchParams.get('src') || 'getmonero';
@@ -174,6 +175,9 @@ async function mockFeeds(ctx, { blogFails = false } = {}, counter) {
     // the four registry pulses each fetch exactly once and dedup holds.
     if (counter && src === 'ghrepo') counter.repos.push(u.searchParams.get('repo'));
     if (src === 'ghrepo') {
+      if (pulseFails) {
+        return route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ error: 'upstream', hint: null }) });
+      }
       return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(repoPulse(u.searchParams.get('repo'))) });
     }
     if (src === 'mrl') {
@@ -528,6 +532,46 @@ console.log('engine:', engine, '\n');
   await page.waitForSelector('text=Bottom Line', { timeout: 15000 });
   const tabs = await page.innerText('body');
   ok(!/\bFuture\b/.test(tabs.split('Bottom Line')[0] || ''), '12 · the Monero tab bar no longer offers a Future tab');
+
+  await ctx.close();
+}
+
+/* ── Scenario F · repo-pulse proxy fails — name the endpoint, never spin ──
+ *
+ * v6.1.4. `useRepoPulse` used to destructure `{ data }` from useCachedFeed and
+ * throw away `state`, so a caller could not tell "still loading" from "the
+ * proxy is dead" — both were null — and every pulse surface rendered
+ * "fetching via /api/feeds …" forever against a dead proxy.
+ *
+ * This is the only place in the repo that drives /api/feeds to a 5xx for the
+ * PULSE path specifically. It asserts the same contract scenario B asserts for
+ * the announcements column: explain, name the endpoint, never blank, and never
+ * claim to still be fetching once the answer is in. */
+{
+  const ctx = await b.newContext();
+  await mockFeeds(ctx, { pulseFails: true });
+  const page = await ctx.newPage();
+  await page.goto(base + '/future', { waitUntil: 'domcontentloaded' });
+
+  // Wait on the state attribute rather than the network: every pulse surface
+  // stamps data-pulse-state, so "all of them have settled" is observable.
+  await page.waitForFunction(() => {
+    const els = document.querySelectorAll('[data-pulse-state]');
+    return els.length > 0 && [...els].every((e) => e.getAttribute('data-pulse-state') === 'fail');
+  }, { timeout: 20000 });
+
+  const failed = await page.locator('[data-pulse-state="fail"]').count();
+  ok(failed >= 9, `F · every at-rest pulse surface reports state="fail" (${failed} ≥ 9)`);
+
+  const body = await page.innerText('body');
+  ok(body.includes('/api/feeds'), 'F · the failure copy names the /api/feeds proxy');
+  ok(body.includes('src=ghrepo'), 'F · …and names the repo-pulse source specifically');
+  ok(!/fetching via \/api\/feeds/.test(body),
+     'F · no surface still claims to be fetching once the proxy has answered');
+  ok(!body.includes('pinging…'), 'F · the protocol cards stop saying "pinging…" too');
+
+  // The failure must be CONTAINED: a dead pulse proxy must not blank the page.
+  ok(/FCMP/i.test(body), 'F · the rest of /future still renders (failure is contained)');
 
   await ctx.close();
 }

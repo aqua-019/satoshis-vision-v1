@@ -12,7 +12,11 @@
 //      /api/coingecko aborted: /markets renders the cached series with a
 //      "COINGECKO · stale" badge.
 //
-// Run: npm run build && (npm run preview &) && sleep 2 && node verify-allreal-dom.mjs
+// Run: npm run build && (node scripts/serve-dist.mjs &) && npm run wait-preview \
+//      && node verify-allreal-dom.mjs
+//      (serve-dist, NOT `vite preview`: preview falls back to index.html for
+//       every path, which would serve the "/" prerender everywhere and let a
+//       broken prerender pass unnoticed. Same reason ci.yml uses it.)
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
 
