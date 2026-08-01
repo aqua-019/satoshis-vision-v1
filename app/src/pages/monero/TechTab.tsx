@@ -136,7 +136,7 @@ function EmissionCurve() {
       data-diagram
       viewBox={`0 0 ${W} ${H}`}
       width={svgW}
-      style={{ display: "block", maxWidth: "none", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      style={{ display: "block", maxWidth: "none", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 */ }}
       {...handlers}
     >
       {/* supply gridlines + y ticks */}

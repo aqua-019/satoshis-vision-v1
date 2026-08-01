@@ -154,7 +154,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
       border: "1px solid " + (on ? "var(--tk-accent)" : "var(--rule)"),
       boxShadow: on ? "0 0 20px rgba(255,122,26,0.18)" : "none",
       width: w, minHeight: h,
-      transition: "box-shadow 0.3s, border-color 0.3s",
+      transition: "box-shadow var(--d-3) var(--e-standard), border-color var(--d-3) var(--e-standard)", // D0651: 0.3s exact → --d-3
     }}>
       <span className="tick tl" />
       <span className="tick tr" />

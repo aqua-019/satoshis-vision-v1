@@ -324,7 +324,12 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
 }
 
 /* ── fee-tier distribution bars ─────────────────────────────────
-   Counts of real mempool txs per node fee tier (slow → fastest). */
+   Counts of real mempool txs per node fee tier (slow → fastest).
+   D0651: the bar's `width 0.8s ease` transition is left literal, not
+   mapped to --d-4 (500ms) — at 300ms past the top of the --d-* scale
+   it's a materially slower, deliberately readable "distribution
+   shifted" reveal, not interaction chrome; forcing it onto --d-4 would
+   be a real, noticeable speed-up disguised as a token count going down. */
 function ConFeeTierBars({ data }: { data: MoneroLive }) {
   const ok = data.ready && data.feeTiers.length === 4;
   const counts = [0, 0, 0, 0];

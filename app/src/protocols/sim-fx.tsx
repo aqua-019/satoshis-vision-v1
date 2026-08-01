@@ -391,7 +391,11 @@ export function Volumetric3D({ children, depth = 800, intensity = 1, style, clas
       <div style={{
         transform: `rotateX(${(-p.y * 4).toFixed(2)}deg) rotateY(${(p.x * 6).toFixed(2)}deg)`,
         transformStyle: "preserve-3d",
-        transition: "transform 0.5s cubic-bezier(0.2, 0.7, 0.3, 1)",
+        // D0651/D0652: 0.5s exact → var(--d-4). cubic-bezier(0.2, 0.7, 0.3, 1)
+        // reconciled to var(--e-decel) — same reasoning as styles.css:.panel,
+        // which shares this exact curve: sampled at y=0.2/0.5/0.9 it tracks
+        // Material's decelerate curve (0,0,.2,1) to within ~0.03-0.08 in x.
+        transition: "transform var(--d-4) var(--e-decel)",
         width: "100%", height: "100%",
       }}>
         {children}

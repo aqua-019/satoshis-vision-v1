@@ -346,7 +346,8 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
             borderTop: "3px solid " + tier.color,
             borderRadius: 8,
             padding: "16px 18px",
-            transition: reduceMotion ? "border-color 0.18s" : "transform 0.18s, border-color 0.18s",
+            // D0651: 0.18s (bare, no easing keyword) → var(--d-2) var(--e-standard)
+            transition: reduceMotion ? "border-color var(--d-2) var(--e-standard)" : "transform var(--d-2) var(--e-standard), border-color var(--d-2) var(--e-standard)",
           }}
             onMouseEnter={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(0)"; }}>
@@ -414,7 +415,7 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
               background: tier.color,
               opacity: 0.78,
               borderRight: i < 3 ? "1px solid color-mix(in srgb, var(--bg-0) 40%, transparent)" : "none",
-              transition: reduceMotion ? "none" : "width 0.6s ease",
+              transition: reduceMotion ? "none" : "width var(--d-4) var(--e-standard)", // D0651: 0.6s → --d-4 (+100ms drift, only larger token available)
             }} />
           );
         })}
@@ -463,7 +464,7 @@ export function ClassicFeeDepth({ buckets }: any) {
                   width: Math.max(2, pct * 100) + "%", height: "100%",
                   background: `linear-gradient(90deg, color-mix(in srgb, ${tier.color} 25%, transparent), color-mix(in srgb, ${tier.color} 93%, transparent))`,
                   boxShadow: `0 0 8px color-mix(in srgb, ${tier.color} 33%, transparent)`,
-                  transition: reduceMotion ? "none" : "width 0.6s ease",
+                  transition: reduceMotion ? "none" : "width var(--d-4) var(--e-standard)", // D0651: 0.6s → --d-4 (+100ms drift, only larger token available)
                 }} />
               </div>
               <span className="mono dim" style={{ fontSize: "var(--fs-mono)", textAlign: "right" }}>{fmtBytes(bytes)}</span>
@@ -542,7 +543,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
               style={{
                 fontSize: "var(--fs-mono)", padding: "8px 8px",
                 borderBottom: "1px solid var(--line-d)",
-                cursor: "pointer", transition: "background 0.12s",
+                cursor: "pointer", transition: "background var(--d-2) var(--e-standard)", // D0651: 0.12s → --d-2 (nearest)
                 fontFamily: "var(--f-mono)",
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = "var(--line-d)"}

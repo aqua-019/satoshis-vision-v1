@@ -196,7 +196,7 @@ function CycleHighsChart() {
       ref={ref}
       viewBox={`0 0 ${VB_W} ${H}`}
       width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 */ }}
       {...handlers}
     >
       <text x={padL} y={20} fontFamily="var(--f-mono)" fontSize="9" fill="var(--tk-accent)" letterSpacing="0.1em">CYCLE HIGH · USD (log)</text>

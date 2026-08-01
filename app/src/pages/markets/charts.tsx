@@ -240,7 +240,7 @@ function CandleChartImpl({ candles, days, height = 300, status = "live" }: Candl
       ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
       {...cursorHandlers}
     >
       {/* y gridlines + price labels */}
@@ -462,7 +462,7 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }:
       ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
       {...cursorHandlers}
     >
       <defs>
@@ -671,7 +671,7 @@ function AreaSeriesImpl({
       ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
       {...cursorHandlers}
     >
       <defs>
@@ -850,7 +850,7 @@ function BarSeriesImpl({
       ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity 0.35s ease" }}
+      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
       {...cursorHandlers}
     >
       {/* y gridlines + labels */}

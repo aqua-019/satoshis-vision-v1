@@ -165,7 +165,9 @@ export function ChamberMath({ phase, tick }: any) {
 
           {/* secret materializes */}
           <circle cx="110" cy="120" r={matched ? 36 : 8} fill="url(#chamberCore)"
-            style={{ filter: matched ? "drop-shadow(0 0 22px rgba(255,200,120,0.8))" : undefined, transition: "r 0.4s, filter 0.4s" }} />
+            // D0651: 0.4s (bare) sits exactly equidistant between --d-3 (300ms) and
+            // --d-4 (500ms); resolved round-half-up to --d-4, per styles.css:.panel.
+            style={{ filter: matched ? "drop-shadow(0 0 22px rgba(255,200,120,0.8))" : undefined, transition: "r var(--d-4) var(--e-standard), filter var(--d-4) var(--e-standard)" }} />
           {matched ? (
             <circle cx="110" cy="120" r="36" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="0.5">
               <animate attributeName="r" values="36;50;36" dur="2.5s" repeatCount="indefinite" />

@@ -80,7 +80,7 @@ export function ScannerWall({ t, viewTag, onCounter }: { t: number; viewTag: boo
               border: matched ? "1px solid #b87aff" : (viewTag && candidate ? "1px solid rgba(255,180,80,0.6)" : "1px solid var(--ink-10)"),
               position: "relative",
               boxShadow: matched ? "0 0 8px #b87aff" : showFullScanGlow ? "0 0 4px var(--tk-accent)" : "none",
-              transition: "background 0.15s",
+              transition: "background var(--d-2) var(--e-standard)", // D0651: 0.15s exact → --d-2
             }} title={`output #${i} · tag=0x${c.tag.toString(16).padStart(2, "0")}`}>
               {matched ? (
                 <div style={{

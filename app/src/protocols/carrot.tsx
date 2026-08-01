@@ -218,11 +218,11 @@ export function CarrotView({ bg }: ViewProps) {
               <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
                 <div style={{ flex: 1 }}>
                   <div className="dim2" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", marginBottom: 3 }}>CARROT</div>
-                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "25%", background: "var(--c-50)", transition: "width 0.5s" }} /></div>
+                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "25%", background: "var(--c-50)", transition: "width var(--d-4) var(--e-standard)" /* D0651: 0.5s exact → --d-4 */ }} /></div>
                 </div>
                 <div style={{ flex: 1 }}>
                   <div className="dim2" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", marginBottom: 3 }}>TODAY</div>
-                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "100%", background: "var(--y-50)", transition: "width 0.5s" }} /></div>
+                  <div style={{ height: 6, background: "var(--ink-10)" }}><div style={{ height: "100%", width: "100%", background: "var(--y-50)", transition: "width var(--d-4) var(--e-standard)" /* D0651: 0.5s exact → --d-4 */ }} /></div>
                 </div>
               </div>
             </div>

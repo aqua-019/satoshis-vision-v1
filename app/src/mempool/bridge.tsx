@@ -421,7 +421,11 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
             strokeDasharray={ring} strokeDashoffset={dashOffset} transform="rotate(-90 45 45)"
             style={{
               filter: `drop-shadow(0 0 4px ${tone})`,
-              transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke 0.3s ease",
+              // D0651: stroke-dashoffset 0.95s linear stays literal — it approximates the
+              // real 1s clock tick of the elapsed-time ring, and forcing an eased curve onto
+              // a per-second countdown would make its speed visibly non-uniform. `stroke`
+              // (the colour swap on lock/overdue) is a genuine UI timing: 0.3s exact → --d-3.
+              transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke var(--d-3) var(--e-standard)",
             }} />
           <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
           <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
