@@ -12,6 +12,7 @@ import { Footer } from "@/layout/Footer";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MoneroLive } from "@/data/types";
 
 interface ViewProps {
@@ -25,6 +26,13 @@ interface ViewProps {
 // Bulletproofs+ range proof → CLSAG ring signature seal.
 
 export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 220 }: any) {
+  // v6.1.3 audit: two loops ran under reduce. Neither carries information — the
+  // active station is already named by its ACTIVE/DONE header and by `on`'s
+  // colour treatment, and the CLSAG seal reads identically stopped. The seal's
+  // `spin` invokes styles.css's global keyframe from an INLINE style, so
+  // styles-ambient.css's `.spin-slow/.spin-med` reduce gate (`!important`)
+  // never reaches it; the gate has to be here.
+  const reduced = useReducedMotion();
   const renderInside = () => {
     if (kind === "input") {
       // an input commitment "vault" with a Pedersen lock
@@ -87,8 +95,9 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
                 <text x={x + bw / 2} y={104} textAnchor="middle" fontFamily="var(--f-mono)" className="c-tick" fill="var(--ink-60)">x'=stealth</text>
                 {/* "sealing" pulse */}
                 {on ? (
-                  <rect x={x} y={42} width={bw} height={h - 90} fill="none" stroke="#5ed3f4" strokeWidth="1.5">
-                    <animate attributeName="opacity" values="0.2;1;0.2" dur="1.4s" repeatCount="indefinite" />
+                  <rect x={x} y={42} width={bw} height={h - 90} fill="none" stroke="#5ed3f4" strokeWidth="1.5"
+                    opacity={reduced ? 0.6 : undefined}>
+                    {reduced ? null : <animate attributeName="opacity" values="0.2;1;0.2" dur="1.4s" repeatCount="indefinite" />}
                   </rect>
                 ) : null}
               </g>
@@ -131,7 +140,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
               rotation rate — same "long loop, not an interaction" category as spin-slow/spin-med. */}
           <circle cx={w / 2} cy={h / 2 - 16} r="46" fill="none"
             stroke="var(--tk-accent)" strokeWidth="0.6" strokeDasharray="2 4"
-            style={{ transformOrigin: `${w / 2}px ${h / 2 - 16}px`, animation: "spin 14s linear infinite" }} />
+            style={{ transformOrigin: `${w / 2}px ${h / 2 - 16}px`, animation: reduced ? undefined : "spin 14s linear infinite" }} />
           <circle cx={w / 2} cy={h / 2 - 16} r="34" fill="rgba(255,122,26,0.25)" stroke="var(--tk-accent)" strokeWidth="2"
             style={{ filter: "drop-shadow(0 0 6px var(--tk-accent))" }} />
           <text x={w / 2} y={h / 2 - 18} textAnchor="middle" fontFamily="var(--f-mono)" className="c-label" fill="var(--ink-80)" letterSpacing="0.1em" style={{ textShadow: "var(--glow-1)" }}>CLSAG</text>

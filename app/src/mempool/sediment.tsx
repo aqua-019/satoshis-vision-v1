@@ -53,6 +53,12 @@ export function SedCard({ title, right, children, pad = "14px 16px", style }: an
 
 /* ── the core column — suspended txs → meniscus → strata ────── */
 export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLive; tracking?: Tracking; w?: number; h?: number }) {
+  // v6.1.3 audit: this was read but applied to ONE of four loops (the tracked-tx
+  // halo). The streamers, the per-tx bob and the meniscus bob all kept running
+  // under reduce — 13 CSS animations measured. All four are gated now. Nothing
+  // is lost: a tx's y-position encodes fee/byte and is set by `perB`, not by the
+  // bob; the meniscus is a static line either way; the streamers are decoration
+  // over the same txs the `table` slot lists as rows.
   const reduced = useReducedMotion();
   const txs = data.mempool.slice(0, 70);
   const max = Math.max(...txs.map((t) => t.perB), 1);
@@ -102,7 +108,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
         {Array.from({ length: 12 }).map((_, i) => (
           <div key={i} style={{ position: "absolute", left: (10 + (i * 31) % (w - 24)) + "px", top: -12, width: 2.5, height: 13,
             background: "linear-gradient(to bottom, transparent, var(--tk-accent))", boxShadow: "0 0 6px var(--tk-accent)",
-            animation: `sed-stream ${(1.9 + (i % 5) * 0.4).toFixed(2)}s linear ${(i * -0.22).toFixed(2)}s infinite` }} />
+            animation: reduced ? undefined : `sed-stream ${(1.9 + (i % 5) * 0.4).toFixed(2)}s linear ${(i * -0.22).toFixed(2)}s infinite` }} />
         ))}
       </div>
 
@@ -124,7 +130,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
                 zIndex: isTracked ? 2 : 1,
                 // D0651: per-tx duration/delay is deterministic desync (index-derived, same
                 // reasoning as the streamers above) — ambient float, not an interaction.
-                animation: `sed-bob ${(3 + (i % 7) * 0.5).toFixed(2)}s ease-in-out ${(i * 0.09).toFixed(2)}s infinite` }} />
+                animation: reduced ? undefined : `sed-bob ${(3 + (i % 7) * 0.5).toFixed(2)}s ease-in-out ${(i * 0.09).toFixed(2)}s infinite` }} />
               {/* halo ring — "you are here" on the core log. D0651: sed-track-pulse 1.8s is
                   an ambient "you are here" marker, same category as view-tags.tsx's pulseScale
                   — not an interaction. Literal. */}
@@ -159,7 +165,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
 
       {/* meniscus — D0651: sed-bob 7s is an ambient bob loop (the liquid surface breathing),
           not an interaction, same category as styles.css's panel-breathe/tilt-pulse. Literal. */}
-      <div style={{ position: "absolute", left: 5, right: 5, top: memH - 2, height: 4, background: "linear-gradient(to right, transparent, color-mix(in srgb, var(--accent-structural) 85%, transparent), transparent)", boxShadow: "0 0 14px var(--tk-accent)", animation: "sed-bob 7s ease-in-out infinite" }} />
+      <div style={{ position: "absolute", left: 5, right: 5, top: memH - 2, height: 4, background: "linear-gradient(to right, transparent, color-mix(in srgb, var(--accent-structural) 85%, transparent), transparent)", boxShadow: "0 0 14px var(--tk-accent)", animation: reduced ? undefined : "sed-bob 7s ease-in-out infinite" }} />
       <div style={{ position: "absolute", right: -78, top: memH - 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--tk-accent)", letterSpacing: "0.12em" }}>⟵ CONFIRMATION</div>
 
       {/* strata = confirmed blocks */}
@@ -250,6 +256,10 @@ export function SedGrainScatter({ data }: { data: MoneroLive }) {
 
 /* ── ring-16 anonymity fan ──────────────────────────────────── */
 function SedRingFan() {
+  // v6.1.3 audit: SMIL cannot be stopped from CSS — the elements have to not be
+  // rendered. Both keep their static geometry and fill, so the halo and the one
+  // real member among 15 decoys still read exactly as they do mid-animation.
+  const reduced = useReducedMotion();
   const N = 16, cx = 100, cy = 96, r = 74;
   return (
     <SedCard title="Ring · 16 anonymity" right={<span className="dim">1 real · 15 decoys</span>}>
@@ -262,7 +272,7 @@ function SedRingFan() {
             consume a CSS custom property (var()) token at all, here or at any of the other
             SVG animate durations in src. Reported as its own not-applicable count, not
             folded into "literal, justified" or silently dropped — see the handoff. */}
-        <circle cx={cx} cy={cy} r="50" fill="url(#sed-ringpulse)"><animate attributeName="r" values="46;66;46" dur="3.4s" repeatCount="indefinite" /></circle>
+        <circle cx={cx} cy={cy} r="50" fill="url(#sed-ringpulse)">{reduced ? null : <animate attributeName="r" values="46;66;46" dur="3.4s" repeatCount="indefinite" />}</circle>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.18} strokeDasharray="3 3" />
         {Array.from({ length: N }).map((_, i) => {
           const ang = (i / N) * Math.PI * 2 - Math.PI / 2;
@@ -272,7 +282,7 @@ function SedRingFan() {
             <g key={i}>
               <line x1={cx} y1={cy} x2={x2} y2={y2} stroke={real ? "url(#sed-ringline)" : "var(--accent-structural-dim)"} strokeOpacity={real ? undefined : 0.15} strokeWidth={real ? 1.6 : 0.5} />
               <circle cx={x2} cy={y2} r={real ? 4 : 2.4} fill={real ? "var(--accent-structural)" : "var(--accent-structural-dim)"} fillOpacity={real ? undefined : 0.65} style={{ filter: `drop-shadow(0 0 ${real ? 4 : 2}px ${real ? "var(--accent-structural)" : "color-mix(in srgb, var(--accent-structural-dim) 60%, transparent)"})` }}>
-                {real ? <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" /> : null}
+                {real && !reduced ? <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" /> : null}
               </circle>
             </g>
           );

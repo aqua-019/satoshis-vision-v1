@@ -208,12 +208,28 @@ r.group('5 · particle-field distribution contract (ArtBackground.tsx arithmetic
   );
 }
 
-/* ── 6 · no Math.random() left in app/src/design/ ────────────────── */
+/* ── 6 · no Math.random() anywhere in app/src/ outside protocols/ ──────────
+ *
+ * SCOPE, and why it is the whole tree rather than src/design/.
+ *
+ * The standing rule (CLAUDE.md) is "Math.random() only inside
+ * app/src/protocols/" — sitewide. Enforcement was not: this section only
+ * walked src/design/ (the directory prompt 04 was fixing) and
+ * verify-memshell.mjs only walks src/mempool/. Everything else — src/pages,
+ * src/routes, src/data, src/layout, src/mempool's siblings — was ungated, and
+ * an adversarial pass proved it live: Math.random() dropped into
+ * src/routes/useUrlState.ts passed the entire verify:static chain green.
+ *
+ * CLAUDE.md records that this invariant "has regressed once already", which is
+ * exactly the case for gating the rule as written instead of the directory
+ * that happened to be under repair. So: walk all of src/, exempt protocols/.
+ */
 
-r.group('6 · Math.random() is gone from app/src/design/');
+r.group('6 · Math.random() is gone from app/src/ (except src/protocols/)');
 
 {
-  const dir = new URL('./src/design/', import.meta.url).pathname;
+  const dir = new URL('./src/', import.meta.url).pathname;
+  const EXEMPT = 'protocols/'; // the educational simulators — the rule's one carve-out
   const files = [];
   const walk = (p) => {
     for (const name of readdirSync(p)) {
@@ -223,10 +239,11 @@ r.group('6 · Math.random() is gone from app/src/design/');
     }
   };
   walk(dir);
-  r.info(`scanned ${files.length} .ts/.tsx files under src/design/`);
+  const scanned = files.filter((f) => !f.replace(dir, '').startsWith(EXEMPT));
+  r.info(`scanned ${scanned.length} .ts/.tsx files under src/ (${files.length - scanned.length} under src/protocols/ exempt by rule)`);
 
   const offenders = [];
-  for (const f of files) {
+  for (const f of scanned) {
     const src = readFileSync(f, 'utf8');
     // Strip comments first so a documentation line naming Math.random()
     // (this gate's own migration comments, e.g.) doesn't false-positive.
@@ -237,7 +254,16 @@ r.group('6 · Math.random() is gone from app/src/design/');
       .join('\n');
     if (/Math\.random\(/.test(stripped)) offenders.push(f.replace(dir, ''));
   }
-  r.ok(offenders.length === 0, 'zero Math.random() call sites in app/src/design/', offenders.join(', '));
+  r.ok(offenders.length === 0, 'zero Math.random() call sites in app/src/ outside src/protocols/', offenders.join(', '));
+
+  // The exemption is only honest if it is a real carve-out rather than a
+  // vacuous one: assert the simulators DO use it, so a future refactor that
+  // empties protocols/ makes this line fail loudly instead of passing silently.
+  const inProtocols = files
+    .filter((f) => f.replace(dir, '').startsWith(EXEMPT))
+    .filter((f) => /Math\.random\(/.test(readFileSync(f, 'utf8')));
+  r.ok(inProtocols.length > 0,
+    `the src/protocols/ exemption is load-bearing — ${inProtocols.length} simulator file(s) use Math.random()`);
 }
 
 process.exit(r.finish());

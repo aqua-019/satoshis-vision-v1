@@ -26,6 +26,7 @@ import { feeRateHistogram } from "@/data/histogram";
 import { useMempoolTracking, MemViewShell, TrackChip, type Tracking, MemTxTable} from "@/mempool/mempool-shared";
 import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
+import { useReducedMotion } from "@/design/useReducedMotion";
 
 interface ViewProps {
   data: MoneroLive;
@@ -47,6 +48,11 @@ type HexCell = { x: number; y: number; intensity: number; tx?: Tx; i: number };
 
 /* ── hex-grid mempool: each cell = one mempool tx, colour/glow tied to fee/byte ── */
 function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols?: number; rows?: number }) {
+  // v6.1.3 audit: the pulse below was gated on `intensity > 0.75` only, so the
+  // hottest cells kept breathing under reduce. Colour and glow already encode
+  // fee/byte on every cell — the pulse adds no information, so it is dropped
+  // outright rather than slowed.
+  const reduced = useReducedMotion();
   const cells: HexCell[] = [];
   const txs = mempool.slice(0, cols * rows);
   const maxPerB = Math.max(...txs.map((t) => t.perB), 1);
@@ -86,7 +92,7 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
               // D0651: this is an ambient per-cell desync loop, not an interaction — the
               // whole point of the jitter is that no two cells share a --d-* token's exact
               // cadence, same reasoning as styles-ambient.css's per-plate offsets. Literal.
-              animation: intensity > 0.75
+              animation: !reduced && intensity > 0.75
                 ? `hexpulse ${(1.6 + hashToUnit(tx.id) * 1.2).toFixed(2)}s ease-in-out ${(-(i * 0.02)).toFixed(2)}s infinite`
                 : undefined,
             }}
@@ -208,6 +214,12 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
 function RingSigFan() {
   const N = 16;
   const cx = 100, cy = 100, r = 80;
+  // v6.1.3 audit: SMIL <animate> is invisible to CSS, so no reduced-motion rule
+  // can reach these two — the only way to honour it is to not render them. Both
+  // elements they animate stay: the halo circle keeps its static r/opacity and
+  // the real member keeps its full-opacity fill and drop-shadow, which is what
+  // distinguishes it from the 15 decoys. Only the breathing is suppressed.
+  const reduced = useReducedMotion();
   return (
     <svg width="100%" viewBox="0 0 210 210" style={{ display: "block", maxWidth: 210 }}>
       <defs>
@@ -222,7 +234,7 @@ function RingSigFan() {
         </linearGradient>
       </defs>
       <circle cx={cx} cy={cy} r="55" fill="url(#ringPulse)" opacity="0.5">
-        <animate attributeName="r" values="50;70;50" dur="3.5s" repeatCount="indefinite" />
+        {reduced ? null : <animate attributeName="r" values="50;70;50" dur="3.5s" repeatCount="indefinite" />}
       </circle>
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.18} strokeDasharray="3 3" />
       {Array.from({ length: N }).map((_, i) => {
@@ -240,7 +252,7 @@ function RingSigFan() {
               fill={isReal ? "var(--accent-structural)" : "var(--accent-structural-dim)"}
               fillOpacity={isReal ? undefined : 0.65}
               style={{ filter: `drop-shadow(0 0 ${isReal ? 8 : 3}px ${isReal ? "var(--accent-structural)" : "color-mix(in srgb, var(--accent-structural-dim) 60%, transparent)"})` }}>
-              {isReal ? (
+              {isReal && !reduced ? (
                 <animate attributeName="opacity" values="0.4;1;0.4" dur="1.6s" repeatCount="indefinite" />
               ) : null}
             </circle>
@@ -271,6 +283,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
   // the ribbon renders from — so the FLIP fires exactly when the block list
   // shifts, not on every get_info (data.height) tick.
   const glideRef = useRibbonGlide(chainTip(data));
+  const reduced = useReducedMotion();
 
   const clear = () => { clearTracking(); onClearFocus?.(); };
   const onSelectBlock = (height: number) => onSearch({ kind: "block", height });
@@ -376,12 +389,16 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 })}
                 {/* glow track — D0651: flow 6s linear is an ambient current-flow loop along
                     the confirmation track, not an interaction; same category as the
-                    spin-slow/spin-med ambient rotations in styles.css. Left literal. */}
+                    spin-slow/spin-med ambient rotations in styles.css. Left literal.
+                    v6.1.3 audit: those ambient classes are gated `!important` in
+                    styles-ambient.css's reduce block; an inline `animation` never reaches
+                    that rule, so the gate has to be here. The track itself — gradient,
+                    glow, and the confirmation slots above it — renders either way. */}
                 <div style={{
                   position: "absolute", left: 0, right: 0, bottom: 0, height: 3,
                   background: "linear-gradient(to right, transparent, var(--tk-accent), transparent)",
                   boxShadow: "0 0 12px var(--tk-accent)",
-                  animation: "flow 6s linear infinite",
+                  animation: reduced ? undefined : "flow 6s linear infinite",
                 }} />
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 4px 0", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>

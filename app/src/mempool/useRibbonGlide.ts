@@ -24,13 +24,23 @@
 import * as React from "react";
 import { useReducedMotion } from "@/design/useReducedMotion";
 
+/** `useLayoutEffect` warns under renderToString — scripts/prerender.mjs runs the
+ *  app on the server to emit the no-JS HTML, and `/mempool` mounts ClassicRibbon
+ *  there. There is no layout to measure and no FLIP to run on the server, so it
+ *  takes the passive variant (which React also never runs) purely to keep the
+ *  prerender log clean; the browser always gets the layout effect. Same shape as
+ *  routes/useRouteChrome.ts:124 — copied here rather than shared because a hook
+ *  that imports another module's private isomorphic helper reads as a dependency
+ *  it does not have. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
+
 export function useRibbonGlide(depKey: unknown) {
   const ref = React.useRef<HTMLDivElement | null>(null);
   const prev = React.useRef<Map<string, DOMRect>>(new Map());
   const raf = React.useRef<number | null>(null);
   const reduce = useReducedMotion();
 
-  React.useLayoutEffect(() => {
+  useIsoLayoutEffect(() => {
     const root = ref.current;
     if (!root) return;
 

@@ -408,7 +408,12 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
           `5 · ${route} · every card has a DISTINCT delay — ${distinct.length} distinct across ${delays.length} cards`);
         const ms = delays.map((d) => parseFloat(d) * 1000).sort((a, b) => a - b);
         const steps = ms.slice(1).map((v, i) => v - ms[i]);
-        const inBand = steps.every((s) => s >= 30 && s <= 60);
+        // `[].every()` is true, so a starved card count would print a green
+        // "steps sit in band" line having measured nothing. The delays.length
+        // assertion above already fails the section in that case, but a
+        // misleading ✅ next to a red ✗ is exactly the reporting failure this
+        // suite exists to avoid. Require at least one measured step.
+        const inBand = steps.length > 0 && steps.every((s) => s >= 30 && s <= 60);
         ok(inBand,
           `5 · ${route} · consecutive steps sit in the 30-60ms band (steps: [${steps.join(', ')}]ms)`);
         ok(ms[0] === 0, `5 · ${route} · the first card starts immediately (${ms[0]}ms)`);
