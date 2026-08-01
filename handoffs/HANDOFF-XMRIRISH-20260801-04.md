@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260801-04
 branch: claude/motion-transition-foundation-4452ip
-status: in_progress        # open -> in_progress -> done | blocked
+status: done               # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, no cowork handoff)
 owner: claude-code
 ---
