@@ -13,6 +13,7 @@
 
 import * as React from "react";
 import { Stat, Provenance } from "@/design/primitives";
+import { usePendingDelay } from "@/design/usePendingDelay";
 import {
   useLiveTx,
   useLiveBlock,
@@ -96,16 +97,25 @@ export function LiveTxDetail({ txid, data, onBack }: {
   onBack?: () => void;
 }) {
   const { status, tx } = useLiveTx(txid, data);
+  // D0697 — gate the PENDING INDICATOR, never the data. A tx already in the
+  // feed resolves from memory, so the row below renders and unmounts inside one
+  // frame; that flicker reads as instability rather than as feedback. The txid
+  // and the back button still render immediately, because they are known before
+  // the lookup starts and hiding them would replace a 90ms spinner with a 90ms
+  // hole. Declared before the early return so the hook order is unconditional.
+  const showPending = usePendingDelay(status === "loading");
   if (status === "loading") {
     return (
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Transaction</div>
         <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
-        <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="led pulse" /> resolving from the node…
-          <span style={{ color: "var(--ink-40)" }}>pending · awaiting first block</span>
-        </div>
+        {showPending ? (
+          <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="led pulse" /> resolving from the node…
+            <span style={{ color: "var(--ink-40)" }}>pending · awaiting first block</span>
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -135,15 +145,20 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
   onPickTx?: (id: string, blockHeight: number) => void;
 }) {
   const { status, block } = useLiveBlock(height, data);
+  // D0697 — same shape as LiveTxDetail above: the height is known before the
+  // lookup and renders at once; only the spinner waits out the threshold.
+  const showPending = usePendingDelay(status === "loading");
   if (status === "loading") {
     return (
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Block</div>
         <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
-        <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="led pulse" /> resolving from the node…
-        </div>
+        {showPending ? (
+          <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
+            <span className="led pulse" /> resolving from the node…
+          </div>
+        ) : null}
       </div>
     );
   }
@@ -173,6 +188,10 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
   const [openIn, setOpenIn] = React.useState(0);
   const [wantDecoys, setWantDecoys] = React.useState(false);
   const decoys = useLiveDecoys(tx.id, wantDecoys);
+  // D0697 — the ring-age resolve is an explicit user action, so unlike the two
+  // skeletons above it always has a visible cause; the threshold only stops
+  // "resolving…" strobing when the node answers immediately.
+  const showDecoysPending = usePendingDelay(decoys.status === "loading");
 
   const remaining = Math.max(0, 10 - tx.confirmations);
 
@@ -327,7 +346,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
                         borderRadius: 3, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                       ▶ Resolve ring ages (extra RPC)
                     </button>
-                  ) : decoys.status === "loading" ? (
+                  ) : showDecoysPending ? (
                     <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>resolving…</span>
                   ) : null}
                 </div>

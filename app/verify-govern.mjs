@@ -273,6 +273,24 @@ R.group("── 6 · consumers: micro-delay (D0697) + the dial ─────�
   R.ok(/setShown\(false\)/.test(pending) && /clearTimeout/.test(pending),
     "it clears synchronously and tears its timer down, so quick bursts cannot accumulate into a spinner");
 
+  // A hook nobody calls is not a shipped feature. D0697 sat as a well-documented
+  // module with ZERO consumers until this assertion was written — its own header
+  // listed where it "should be adopted" and that list stayed a list. Asserting
+  // the threshold constant while nothing imports the hook is exactly the class of
+  // defect this suite exists to catch: a gate green on something that does not run.
+  const detail = read("src/mempool/tx-detail.tsx");
+  R.ok(/import \{ usePendingDelay \}/.test(detail),
+    "D0697 is actually ADOPTED — src/mempool/tx-detail.tsx imports the hook");
+  const calls = (detail.match(/usePendingDelay\(/g) || []).length;
+  R.ok(calls >= 3,
+    `all three tx-detail loading sites are gated (${calls} usePendingDelay call sites)`,
+    'LiveTxDetail, LiveBlockDetail and the ring-age decoy resolve — the three the hook\'s own header names as the strongest candidates');
+  // The hook must gate the INDICATOR, never the identity the page already knows.
+  // Hiding the txid behind the threshold replaces a 90ms spinner with a 90ms
+  // hole, which is the same flicker wearing different clothes.
+  R.ok(/\{showPending \? \(/.test(detail) && /\{txid\}/.test(detail),
+    "it gates the pending INDICATOR, not the data — the txid still renders while the lookup is in flight");
+
   const art = read("src/design/ArtBackground.tsx");
   R.ok(/governorScale\(\)/.test(art), "ParticleField consumes the dial");
   R.ok(/sampleFrameBudget\(now\)/.test(art),

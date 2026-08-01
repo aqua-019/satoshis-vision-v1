@@ -1536,6 +1536,13 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 @media (prefers-reduced-motion: no-preference) {
   .v6-stagger {
     animation: stagger-rise var(--d-3) var(--e-spring) backwards;
+    /* D0661: 45ms is the per-item STEP, not a duration — it is multiplied by the
+       item index, so it is the same category as styles-ambient.css's per-plate
+       desync offsets and stays literal for the same reason: folding an
+       index-derived offset into a shared --d-* token puts every card back in
+       lockstep, which is the one thing a cascade must not do. 45ms sits mid-band
+       in D0661's 30-60ms range; the switcher below uses 30ms because it has six
+       items in a small box and 45 would leave the last one visibly late. */
     animation-delay: calc(var(--stagger-i, 0) * 45ms);
   }
 
@@ -1555,6 +1562,12 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      the list is fully present and readable with zero animation. */
   .mp-switcher__list.is-open > .mp-switcher__item {
     animation: stagger-rise var(--d-3) var(--e-spring) backwards;
+    /* D0661: per-item STEP, literal for the same reason as the 45ms above — it
+       is index-multiplied, so a shared token would collapse the cascade. 30ms
+       is the bottom of D0661's band: six tiles at 45ms would put the last one
+       225ms behind the first inside a small popover, which reads as lag rather
+       than as cascade. verify-nav.mjs §6 measures the resulting
+       0/30/60/90/120/150ms and asserts all six are distinct. */
     animation-delay: calc(var(--stagger-i, 0) * 30ms);
   }
 }

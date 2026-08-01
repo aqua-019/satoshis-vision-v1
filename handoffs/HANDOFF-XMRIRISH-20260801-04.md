@@ -112,7 +112,7 @@ OUT (non-goals, each stated in the PR as a decision rather than an omission):
 - [~] Full-branch sweep: every diff enumerated by route with a cause — **the `unexplained` bucket is NOT empty**: `/monero/markets` @1440 is reproducible, sub-perceptual (every delta exactly ±1 channel on background), and its cause is unproven. Recorded as unproven rather than given a plausible story; see §7.2
 - [x] `verify-shots.mjs` reports compared / no-baseline / **skipped-by-filter** as separate numbers
 - [x] The acyclicity assertion exists, runs, is named correctly by `verify-legibility.mjs`, and goes red when a role is deliberately cycled
-- [x] Zero ad-hoc durations left in `app/src` (each remaining literal justified in a comment)
+- [x] Zero ad-hoc durations left in `app/src` (each remaining literal justified in a comment) — **re-audited by script, not asserted**: 43 raw-duration declarations survive `transition:`/`animation:` outside `var(--d-*)`, and all 43 now carry a justification either at the line (`// D0651:`) or in a file-level `D0651` header covering the whole sheet. The audit found 3 that did not and they are fixed: the two D0661 stagger STEPS (45ms/30ms — index-multiplied, so a shared token would collapse the cascade) and `styles-motion.css`'s view-transition durations (a `--d-*` that goes to 0ms under reduce never fires `finished`, turning "instant" into "never happened")
 - [x] All 27 surfaces enumerated below with three separate counts
 - [x] CI grep for layout-property animation returns zero hits under `mempool/` and `protocols/`
 - [x] Route changes morph in Chromium and cut cleanly without View Transition support
@@ -190,6 +190,38 @@ open questions:
     xmr.irish. Every gate here runs against skeleton/degraded data.
   · `verify-shots.mjs` navigates with `waitUntil: 'networkidle'` against a 3s FAST polling
     tier — the anti-pattern every other gate carries a comment about. See §7.4.
+
+### 7.0 · Scope coverage — every decision ID in the prompt, audited against the tree
+
+Not asserted from memory: each row was resolved by grepping the ID and then confirming the
+behaviour at its call sites. Two gaps were found by this audit *after* the PR was opened and
+are closed in it.
+
+| ID | What | Where | State |
+|---|---|---|---|
+| D0651 | duration tokens `--d-1..4` | `styles.css` + 20 files | done |
+| D0652 | easing tokens `--e-*` | `styles.css` + 4 files | done |
+| D0655 | critically damped spring | `--e-spring`, adopted at 6 functional-movement sites (`.mp-fit` zoom, drawer, dialog, stagger) | done |
+| D0661 | stagger cascade 30–60ms | `stagger-rise`, `--stagger-i` on the Future grid, `/peers` cards and the mempool switcher; gated by `verify-discrete` §5 + `verify-nav` §6 (measured 0/30/60/90/120/150ms) | done |
+| D0663 | FLIP for layout-position change | `mempool/useRibbonGlide.ts`, consumed by `classic.tsx` and `reactor.tsx` | **pre-existing — tagged and verified, not rebuilt.** The block ribbon is the repo's one reorder; adding a second FLIP where nothing reorders would be inventing work. Stagger is not FLIP: those elements enter, they do not move. |
+| D0665 | `@starting-style` | `styles.css`, `verify-discrete` §1 | done |
+| D0666 | `transition-behavior: allow-discrete` | switcher list + `V6Modal`/`EcoPopup`/`ProtoPopup` exit frames | done |
+| D0673 | GPU-only property discipline | 5 bar fills rewritten; `verify-gpu.mjs` | done |
+| D0692 | frame-budget governor | `design/governor.ts` + `useAnimationClock`, consumed by `ArtBackground` and `AmbientField` | done |
+| D0693 | reduced-motion variant set | `verify-reduce.mjs`, 27 surfaces | done |
+| **D0697** | **micro-delay debouncing** | `design/usePendingDelay.ts` → `mempool/tx-detail.tsx` ×3 | **GAP FOUND AND CLOSED.** The hook shipped fully documented with **zero consumers** — its own header listed where it "should be adopted" and that list stayed a list, while `verify-govern` §6 asserted its threshold constant. A gate green on a module nothing imports is the exact defect class this change exists to catch. Now adopted at all three `tx-detail` loading sites, gating the *indicator* only (the txid still renders), with three new assertions in `verify-govern` §6 — break-tested. |
+| D0699 | paused-until-visible | already implemented by `observeDrawable()`; policy + `verify-govern` §5 | done (gate task, not build task) |
+| D0701 | View Transitions | `design/viewTransition.ts`, `useViewTransitionNavigate.ts`, `routes/NavTransitions.tsx` | done |
+| D0703 | shared-element morph | `viewTransitionName: "proto-title"` on `future/cards.tsx` → `future/ProtoPopup.tsx`, cleared on `finished` | done (Future pair only — the mempool tile pair was dropped with reasons, see deviations) |
+| D0721 | persistent shell | — | **deferred to prompt 07**, on the record |
+| D0723 | speculation rules | — | **deferred to prompt 07**, on the record |
+| D0724 | hover prefetch | — | **deferred to prompt 07**, on the record |
+| D0726 | scroll restoration | `routes/useRouteChrome.ts`, three targets | done |
+| D0737 | theme crossfade | `design/VisualContext.tsx`, one function | done |
+| D0743 | reduced-motion route fades | `styles-motion.css` — spatial keyframes live inside `@media (prefers-reduced-motion: no-preference)`, so reduce collapses to the UA opacity crossfade by ABSENCE, with no second code path | done |
+| D0744 | focus handoff | `AppShell` `<main id tabIndex aria-labelledby>` + `#page-title` on every route | done |
+| D0745 | route announcement | `routes/RouteAnnouncer.tsx`, mounted once in `App.tsx` | done |
+| D0746 | URL-synced state | `routes/useUrlState.ts`; two sibling-param drops fixed | done (three of the prompt's targets do not exist — see deviations) |
 
 ### 7.1 · Reduced-motion audit — 27 surfaces
 
