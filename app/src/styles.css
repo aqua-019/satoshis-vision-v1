@@ -96,7 +96,17 @@
      is what keeps `alias → role → scale` acyclic: an alias declared as
      var(--role) below, with a role declared back as var(--alias) here,
      computes to guaranteed-invalid and every theme falls back to this
-     block's initial-value in silence. See THEME-SPEC.md.
+     block's initial-value in silence.
+     app/verify-roles.mjs is what catches that: it resolves every role,
+     per theme, at runtime and fails if a theme's own declared value ever
+     falls back to this block's initial-value. Classic needs a stronger
+     check than the other two — its healthy value IS the initial-value by
+     construction, so a cycle here self-heals to the identical number and
+     "differs from initial" proves nothing. That gate therefore also
+     re-resolves classic's declared expression through a separate probe
+     property and compares. (There is no THEME-SPEC.md; an earlier version
+     of this comment pointed at one, and at a check in verify-contrast.mjs
+     that was never written.)
      These are classic's values — the theme blocks in styles-theme.css
      override the ones that differ; anything a theme doesn't mention
      (e.g. the three --status-* are theme-invariant) just inherits this. */
