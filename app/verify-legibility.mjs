@@ -92,11 +92,19 @@ const legPath = "src/styles-legibility.css";
 const themePath = "src/styles-theme.css";
 const ambPath = "src/styles-ambient.css";
 const stylesPath = "src/styles.css";
+// v6.1.3 — the fifth sheet. Adding a stylesheet WITHOUT adding it here is the
+// silent-coverage failure this file exists to prevent: every layer assertion
+// below iterates STYLESHEETS, so an omitted sheet is not "passing", it is
+// unexamined. ::view-transition-* pseudo-elements are the specific hazard —
+// they match on the document root and read like they belong at top level, so
+// an unlayered rule there would outrank every layered rule in the app.
+const motionPath = "src/styles-motion.css";
 
 const legSrc = read(legPath);
 const themeSrc = read(themePath);
 const ambSrc = read(ambPath);
 const stylesSrc = read(stylesPath);
+const motionSrc = read(motionPath);
 
 let failed = false;
 const checks = [];
@@ -494,7 +502,7 @@ for (const [label, src, path] of [
 }
 
 // ── 8) cascade layers · v6.0.11 retrofit ────────────────────────────────────
-// 8a) the layer order is declared exactly once, verbatim, across the four
+// 8a) the layer order is declared exactly once, verbatim, across the
 // stylesheets. THE governing hazard: an unlayered rule beats every layered
 // rule, silently — so the order statement itself must exist exactly once
 // (declaring it more than once is harmless per spec, but a second, drifted
@@ -507,6 +515,7 @@ for (const [label, src, path] of [
     [legPath, legSrc],
     [themePath, themeSrc],
     [ambPath, ambSrc],
+    [motionPath, motionSrc],
   ];
 
   const occurrences = [];
@@ -519,14 +528,14 @@ for (const [label, src, path] of [
     }
   }
   assert(
-    `the layer order statement ("${LAYER_STMT}") appears exactly once across styles.css / styles-ambient.css / styles-theme.css / styles-legibility.css`,
+    `the layer order statement ("${LAYER_STMT}") appears exactly once across ${STYLESHEETS.map(([p]) => p.replace("src/", "")).join(" / ")}`,
     occurrences.length === 1,
     occurrences.length === 0
-      ? "not found in any of the four files"
+      ? `not found in any of the ${STYLESHEETS.length} files`
       : `found ${occurrences.length} time(s): ${occurrences.join(", ")}`
   );
 
-  // 8b) no top-level rule in any of the four stylesheets sits outside a
+  // 8b) no top-level rule in any of the layered stylesheets sits outside a
   // @layer block. Exempt: @font-face, @keyframes, @property, @charset, @import
   // (none of which participate in layering) and the @layer statement itself (it
   // has no body, so topLevelBlocks — which only ever sees brace-delimited
@@ -538,8 +547,17 @@ for (const [label, src, path] of [
   // @property is exempt for a specific reason, not by analogy: a registration
   // is not a declaration and takes part in no cascade, so a layer around it
   // would change nothing. Its `initial-value` is a last-resort fallback, and
-  // the thing that actually matters about it — that no theme ever falls back
-  // TO that value — is asserted at runtime by verify-contrast.mjs instead.
+  // the thing that actually matters about it — that no theme ever silently
+  // falls back TO that value (a custom-property cycle, a bad var()
+  // reference, or a value the engine rejects all self-heal a registered
+  // property straight to initial-value, with nothing else signalling it) —
+  // is asserted at runtime by verify-roles.mjs instead. It resolves all 18
+  // role tokens per theme via getComputedStyle and fails if a role that
+  // theme actually declares resolves to its initial-value (classic gets a
+  // stronger self-consistency check, since classic's healthy value equals
+  // initial-value by construction and that comparison alone can't tell a
+  // working classic from a broken one); a role a theme doesn't declare is
+  // checked against the value it's actually inheriting instead.
   const EXEMPT_AT_RULE = /^@(font-face|keyframes|property|charset|import)\b/;
   const LAYER_BLOCK = /^@layer\b/;
   const unlayered = [];
@@ -558,7 +576,7 @@ for (const [label, src, path] of [
     }
   }
   assert(
-    "no top-level rule in styles.css / styles-ambient.css / styles-theme.css / styles-legibility.css sits outside a @layer block",
+    `no top-level rule in ${STYLESHEETS.map(([p]) => p.replace("src/", "")).join(" / ")} sits outside a @layer block`,
     unlayered.length === 0,
     unlayered.length === 0
       ? ""

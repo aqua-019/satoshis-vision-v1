@@ -351,7 +351,8 @@ export function Card({ children, onClick, accentBorder, style }: CardProps) {
       style={{
         cursor: onClick ? "pointer" : "default",
         borderColor: accentBorder ? "var(--tk-accent)" : "var(--rule)",
-        transition: "transform 0.18s, border-color 0.18s, box-shadow 0.18s",
+        // D0651: 0.18s → var(--d-2); bare (no easing keyword) → var(--e-standard)
+        transition: "transform var(--d-2) var(--e-standard), border-color var(--d-2) var(--e-standard), box-shadow var(--d-2) var(--e-standard)",
         ...style,
       }}
     >

@@ -14,6 +14,16 @@
      -3  #bg-fx        · dust ×2, sweep, ribbon, N rising orbs
      -2  #bg-grain     · film grain (breaks banding on the gradients)
 
+   D0651 — every duration/delay in this file (6s–260s, plus the negative
+   -5s…-66s start offsets used as desync phase shifts) is a long ambient
+   loop, not an interaction timing: the whole point of the mismatched,
+   relatively-prime-ish numbers is that the layers drift out of phase and
+   never visibly re-sync. Quantising them onto the 4-step --d-* interaction
+   scale (75/150/300/500ms, declared in styles.css) would either collapse
+   them to the same bucket (killing the desync) or misrepresent a 40-second
+   breath as "the same kind of timing" as a 150ms hover. Left fully literal
+   throughout this file; not called out per-line below.
+
    v6.0.8 adds `[data-tier]` (design/deviceTier.ts) on top of this: the
    ELEMENT COUNTS above are `high` only. design/AmbientField.tsx gates plate
    count (8/4/2), orb count, dust sheet count (2/1/0) and whether sweep/

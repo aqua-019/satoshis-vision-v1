@@ -2,7 +2,7 @@
  * views/index.tsx — registry for the mempool view-engine components.
  *
  * Holds the shared ViewProps contract and the 6 mempool surfaces
- * (src/mempool/*.tsx). The 15 protocol simulators are deliberately NOT here:
+ * (src/mempool/*.tsx). The 21 protocol simulators are deliberately NOT here:
  * their component registry lives in views/protocols.tsx (reached only via the
  * lazy-loaded /simulate route, so @/protocols/* compiles into its own chunk)
  * and their pure metadata lives in views/protocol-meta.ts for main-chunk

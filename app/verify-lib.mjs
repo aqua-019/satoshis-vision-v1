@@ -38,7 +38,17 @@ export async function launch() {
 
 /** Every addressable surface in the app. Tabs and simulator query params are
  *  separate entries because they are separate LAYOUTS — walking only the seven
- *  top-level routes is how the legality tab shipped broken twice. */
+ *  top-level routes is how the legality tab shipped broken twice.
+ *
+ *  v6.1.3 — the simulator list below carries all 21 `?p=` ids registered in
+ *  src/views/protocols.tsx's COMPONENTS map (verified against that file and
+ *  its metadata twin, src/views/protocol-meta.ts, not just trusted from a
+ *  prior copy of this comment). It previously listed 15 and silently skipped
+ *  the six-member "Future protocol" group (seraphis, jamtis, carrot, cuprate,
+ *  stressnet, ospead) in every browser gate that iterates ROUTES — those six
+ *  routes existed in the app and were never walked here. Total route count is
+ *  now 43 (was 37): 8 top-level + 4 education tabs + 9 monero tabs + 21
+ *  simulators + 1 404. */
 export const ROUTES = [
   '/',
   '/mempool',
@@ -52,6 +62,7 @@ export const ROUTES = [
   ...['overview', 'origin', 'tech', 'legality', 'markets', 'comparison', 'attacks', 'bottomline', 'outlook']
     .map((t) => `/monero/${t}`),
   ...['decoy', 'dandelion', 'viewtags', 'ringct', 'stealth', 'fcmp',
+      'seraphis', 'jamtis', 'carrot', 'cuprate', 'stressnet', 'ospead',
       'hearth', 'metronome', 'silo', 'thermostat', 'lighthouse', 'auction',
       'skyline', 'bloodhound', 'balance'].map((p) => `/simulate?p=${p}`),
   '/no-such-route',           // 404

@@ -33,8 +33,10 @@
  */
 
 import * as React from "react";
+import { flushSync } from "react-dom";
 import { safeStore } from "@/data/useMarketHistory";
 import { getDeviceTier, type Tier } from "./deviceTier";
+import { startVt } from "./viewTransition";
 
 export type ThemeKey = "indigo" | "classic" | "phosphor";
 export type AmbientKey = "calm" | "busy" | "chaotic";
@@ -140,9 +142,26 @@ export function VisualProvider({ children }: { children: React.ReactNode }) {
     document.documentElement.setAttribute("data-tier", tier);
   }, [tier]);
 
+  // D0737 theme crossfade. `data-theme` is written IMPERATIVELY here, inside
+  // the transition's update callback, rather than left to the `useEffect`
+  // below — the browser needs the attribute change to land as part of the
+  // same synchronous DOM update whose before/after it is snapshotting.
+  // `flushSync` forces React's state catch-up (`setThemeState`) to commit in
+  // that same synchronous pass, so anything reading `theme` from context
+  // (ThemeToggle's active radio, etc.) is correct in both snapshots too.
+  // The `useEffect` at line ~130 that also stamps `data-theme` is NOT
+  // changed to `useLayoutEffect` to compensate — React 18 does not
+  // guarantee passive effects flush inside `flushSync`, and swapping it
+  // would additionally raise the SSR "useLayoutEffect does nothing on the
+  // server" warning during scripts/prerender.mjs (VisualProvider renders
+  // under SSR). Left as a passive effect, it now just re-stamps a value
+  // that is already correct — an intentional no-op, not an oversight.
   const setTheme = React.useCallback((t: ThemeKey) => {
-    setThemeState(t);
     writePref(THEME_KEY, t);
+    startVt("theme", undefined, () => {
+      document.documentElement.setAttribute("data-theme", t);
+      flushSync(() => setThemeState(t));
+    });
   }, []);
 
   const setAmbient = React.useCallback((a: AmbientKey | null) => {

@@ -15,10 +15,12 @@
  */
 
 import * as React from "react";
+import { flushSync } from "react-dom";
 
 import { PageShell } from "@/layout/PageShell";
 import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
+import { startVt } from "@/design/viewTransition";
 import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS, DEV_LAB_PULSES, roadmapStatus } from "./future/data";
 import { ProtocolCard, DevLabPulseCard, MoneroNewsCard } from "./future/cards";
 import { ProtoPopup } from "./future/ProtoPopup";
@@ -27,8 +29,41 @@ import { EcoPopup } from "./future/EcoPopup";
 export function FuturePage() {
   const [popup, setPopup] = React.useState<string | null>(null); // protocol id
   const [eco, setEco] = React.useState<string | null>(null); // ecosystem id
+  // §6 shared-element morph (design/viewTransition.ts's contract). Names the
+  // ONE protocol id, if any, currently morphing between its card <h3> and
+  // its popup <h2> — never both surfaces at once (a duplicate
+  // view-transition-name in one DOM snapshot aborts the whole transition).
+  // See openProtocol/closeProtocol below and the `morphed` props passed to
+  // ProtocolCard/ProtoPopup for how exactly one side holds it at a time.
+  const [morph, setMorph] = React.useState<string | null>(null);
   const openP = FUTURE_PROTOCOLS.find((p) => p.id === popup);
   const openE = ECOSYSTEM.find((e) => e.id === eco);
+
+  const openProtocol = React.useCallback((id: string) => {
+    // Two-phase: at the moment startVt captures the "old" snapshot the
+    // modal does not exist yet, so the name has to land on the CARD's <h3>
+    // FIRST — flushSync, because a plain setState would not have committed
+    // before startVt reads the DOM — and only then does the transition's
+    // own update swap `popup`, which is what mounts <ProtoPopup> and moves
+    // the name onto its <h2> (see the `morphed` props below).
+    flushSync(() => setMorph(id));
+    startVt("modal", undefined, () => flushSync(() => setPopup(id)))
+      // Clears once the OPEN transition truly settles, not immediately —
+      // the modal stays named for the whole entrance animation, then loses
+      // it, so a popup just sitting open carries no stale
+      // view-transition-name (verify-motion.mjs's "lingering-name"
+      // assertion checks exactly this).
+      .then(() => setMorph((m) => (m === id ? null : m)));
+  }, []);
+
+  const closeProtocol = React.useCallback(() => {
+    // Both cleared in the SAME synchronous update: whichever of {card,
+    // modal} held the name at close time simply loses it (a name present in
+    // the "old" snapshot with no match in "new" is a well-defined exit, not
+    // a duplicate), rather than handing it back to the card for a reverse
+    // morph — this feature is card→modal only, per §6's title.
+    startVt("modal", undefined, () => flushSync(() => { setPopup(null); setMorph(null); }));
+  }, []);
 
   return (
     <PageShell width="wide" bg={{ intensity: "busy" }}>
@@ -53,7 +88,14 @@ export function FuturePage() {
 
       {/* five protocol cards — each pings its own repo on mount */}
       <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(290px, 1fr))", gap: 14 }}>
-        {FUTURE_PROTOCOLS.map((p) => <ProtocolCard key={p.id} p={p} onOpen={() => setPopup(p.id)} />)}
+        {FUTURE_PROTOCOLS.map((p) => (
+          <ProtocolCard
+            key={p.id}
+            p={p}
+            onOpen={() => openProtocol(p.id)}
+            morphed={morph === p.id && popup !== p.id}
+          />
+        ))}
       </section>
 
       {/* stressnet hero band */}
@@ -105,7 +147,7 @@ export function FuturePage() {
         </div>
       </Card>
 
-      {openP ? <ProtoPopup p={openP} onClose={() => setPopup(null)} /> : null}
+      {openP ? <ProtoPopup p={openP} onClose={closeProtocol} morphed={morph === openP.id} /> : null}
       {openE ? <EcoPopup e={openE} onClose={() => setEco(null)} /> : null}
     </PageShell>
   );

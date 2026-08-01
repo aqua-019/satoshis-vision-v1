@@ -307,7 +307,7 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
         {events.length ? events.map((e) => {
           const row = logRow(e);
           return (
-            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed var(--line-d)", animation: "con-slidein 0.4s ease" }}>
+            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed var(--line-d)", animation: "con-slidein var(--d-4) var(--e-standard)" /* D0651: 0.4s tie → --d-4 (round-half-up) */ }}>
               <span className="dim2">{new Date(e.ts).toISOString().slice(11, 23)}</span>
               <span style={{ color: LOG_TONE[e.kind] }}>{row.ev}</span>
               <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.msg}</span>
@@ -324,7 +324,12 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
 }
 
 /* ── fee-tier distribution bars ─────────────────────────────────
-   Counts of real mempool txs per node fee tier (slow → fastest). */
+   Counts of real mempool txs per node fee tier (slow → fastest).
+   D0651: the bar's `width 0.8s ease` transition is left literal, not
+   mapped to --d-4 (500ms) — at 300ms past the top of the --d-* scale
+   it's a materially slower, deliberately readable "distribution
+   shifted" reveal, not interaction chrome; forcing it onto --d-4 would
+   be a real, noticeable speed-up disguised as a token count going down. */
 function ConFeeTierBars({ data }: { data: MoneroLive }) {
   const ok = data.ready && data.feeTiers.length === 4;
   const counts = [0, 0, 0, 0];

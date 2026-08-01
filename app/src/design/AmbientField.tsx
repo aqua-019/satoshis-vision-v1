@@ -18,6 +18,7 @@ import * as React from "react";
 import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
 import { byTier } from "./deviceTier";
+import { mulberry32 } from "./prng";
 
 const ORB_COUNT = { calm: 10, busy: 30, chaotic: 60 } as const;
 
@@ -31,24 +32,18 @@ const ORB_COUNT = { calm: 10, busy: 30, chaotic: 60 } as const;
 const PLATE_COUNT = { high: 8, mid: 4, low: 2 } as const;
 const DUST_COUNT = { high: 2, mid: 1, low: 0 } as const;
 
-// mulberry32 — tiny deterministic 32-bit PRNG (xorshift + multiply). Not
-// cryptographic; the only property that matters here is that a fixed seed
-// always reproduces the identical field, so the layout is stable across
-// re-renders and reloads (load-bearing for visual review/screenshots).
+// mulberry32 (design/prng.ts) — tiny deterministic 32-bit PRNG (xorshift +
+// multiply). Not cryptographic; the only property that matters here is that
+// a fixed seed always reproduces the identical field, so the layout is
+// stable across re-renders and reloads (load-bearing for visual
+// review/screenshots). It's a sequential stream — right for this one-shot
+// "walk the array in order" seeding pass — not the index-addressable `h3`
+// also exported from that module; see its header for when each applies.
 //
 // protocols/sim-random.ts already has a random-hex helper, but its own file
 // header restricts it to the educational simulators' illustrative output —
 // this is a different consumer (decor, not data) with a different contract,
-// so it gets its own generator rather than reaching across that boundary.
-function mulberry32(seed: number): () => number {
-  let a = seed | 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// so prng.ts is a separate module rather than reaching across that boundary.
 
 // Fixed, arbitrary seed. Only `count` (from the Ambient knob) varies the
 // output — the same count always yields the same field.

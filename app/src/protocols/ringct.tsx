@@ -127,6 +127,8 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
       const pulse = on ? (Math.sin(tick * 0.2) + 1) * 0.5 : 0.6;
       return (
         <g>
+          {/* D0651: spin 14s reuses styles.css's global @keyframes spin at an ambient wax-seal
+              rotation rate — same "long loop, not an interaction" category as spin-slow/spin-med. */}
           <circle cx={w / 2} cy={h / 2 - 16} r="46" fill="none"
             stroke="var(--tk-accent)" strokeWidth="0.6" strokeDasharray="2 4"
             style={{ transformOrigin: `${w / 2}px ${h / 2 - 16}px`, animation: "spin 14s linear infinite" }} />
@@ -154,7 +156,7 @@ export function AssemblyStation({ n, title, kind, on, done, tick, w = 200, h = 2
       border: "1px solid " + (on ? "var(--tk-accent)" : "var(--rule)"),
       boxShadow: on ? "0 0 20px rgba(255,122,26,0.18)" : "none",
       width: w, minHeight: h,
-      transition: "box-shadow 0.3s, border-color 0.3s",
+      transition: "box-shadow var(--d-3) var(--e-standard), border-color var(--d-3) var(--e-standard)", // D0651: 0.3s exact → --d-3
     }}>
       <span className="tick tl" />
       <span className="tick tr" />

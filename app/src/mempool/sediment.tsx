@@ -95,7 +95,9 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
         background: "linear-gradient(180deg, color-mix(in srgb, var(--bg-0) 60%, transparent) 0%, color-mix(in srgb, var(--accent-structural) 4%, transparent) 52%, color-mix(in srgb, var(--accent-structural) 7%, transparent) 100%)",
         boxShadow: "inset 0 0 60px color-mix(in srgb, var(--accent-structural) 8%, transparent), 0 0 70px color-mix(in srgb, var(--accent-structural) 10%, transparent)" }} />
 
-      {/* incoming streamers */}
+      {/* incoming streamers — D0651: per-item duration/delay is deterministic desync (index-
+          derived, like styles-ambient.css's per-plate offsets), not an interaction; a shared
+          --d-* token would collapse the desync back into 12 streamers ticking in lockstep. */}
       <div style={{ position: "absolute", left: 0, top: 0, right: 0, height: 70, overflow: "hidden", pointerEvents: "none" }}>
         {Array.from({ length: 12 }).map((_, i) => (
           <div key={i} style={{ position: "absolute", left: (10 + (i * 31) % (w - 24)) + "px", top: -12, width: 2.5, height: 13,
@@ -120,8 +122,12 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
                   ? `0 0 ${6 + t * 13}px color-mix(in srgb, var(--accent-data) ${Math.round((0.4 + t * 0.6) * 100)}%, transparent), 0 0 0 3px var(--y-50)`
                   : `0 0 ${6 + t * 13}px color-mix(in srgb, var(--accent-data) ${Math.round((0.4 + t * 0.6) * 100)}%, transparent)`,
                 zIndex: isTracked ? 2 : 1,
+                // D0651: per-tx duration/delay is deterministic desync (index-derived, same
+                // reasoning as the streamers above) — ambient float, not an interaction.
                 animation: `sed-bob ${(3 + (i % 7) * 0.5).toFixed(2)}s ease-in-out ${(i * 0.09).toFixed(2)}s infinite` }} />
-              {/* halo ring — "you are here" on the core log */}
+              {/* halo ring — "you are here" on the core log. D0651: sed-track-pulse 1.8s is
+                  an ambient "you are here" marker, same category as view-tags.tsx's pulseScale
+                  — not an interaction. Literal. */}
               {isTracked ? (
                 <div aria-hidden style={{
                   position: "absolute", left: x - 7, top: y - 7, width: sz + 14, height: sz + 14, borderRadius: "50%",
@@ -151,7 +157,8 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
         </div>
       </div>
 
-      {/* meniscus */}
+      {/* meniscus — D0651: sed-bob 7s is an ambient bob loop (the liquid surface breathing),
+          not an interaction, same category as styles.css's panel-breathe/tilt-pulse. Literal. */}
       <div style={{ position: "absolute", left: 5, right: 5, top: memH - 2, height: 4, background: "linear-gradient(to right, transparent, color-mix(in srgb, var(--accent-structural) 85%, transparent), transparent)", boxShadow: "0 0 14px var(--tk-accent)", animation: "sed-bob 7s ease-in-out infinite" }} />
       <div style={{ position: "absolute", right: -78, top: memH - 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", color: "var(--tk-accent)", letterSpacing: "0.12em" }}>⟵ CONFIRMATION</div>
 
@@ -251,6 +258,10 @@ function SedRingFan() {
           <radialGradient id="sed-ringpulse"><stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.55" /><stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0" /></radialGradient>
           <linearGradient id="sed-ringline" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="var(--accent-structural)" stopOpacity="0.05" /><stop offset="60%" stopColor="var(--accent-structural)" stopOpacity="0.5" /><stop offset="100%" stopColor="var(--accent-structural)" stopOpacity="0.95" /></linearGradient>
         </defs>
+        {/* D0651: SMIL <animate>'s dur attribute is XML, not a CSS property — it cannot
+            consume a CSS custom property (var()) token at all, here or at any of the other
+            SVG animate durations in src. Reported as its own not-applicable count, not
+            folded into "literal, justified" or silently dropped — see the handoff. */}
         <circle cx={cx} cy={cy} r="50" fill="url(#sed-ringpulse)"><animate attributeName="r" values="46;66;46" dur="3.4s" repeatCount="indefinite" /></circle>
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--accent-structural)" strokeOpacity={0.18} strokeDasharray="3 3" />
         {Array.from({ length: N }).map((_, i) => {

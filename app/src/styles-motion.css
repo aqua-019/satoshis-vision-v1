@@ -1,0 +1,150 @@
+/* styles-motion.css — view-transition pseudo-element policy. All policy,
+ * zero JS branching: design/viewTransition.ts stamps `data-vt` (the kind —
+ * "route" / "theme" / "modal") and `data-vt-dir` ("fwd" / "back", route
+ * navigation only) onto <html> for the lifetime of one transition; every
+ * rule below reads those two attributes and nothing else decides what a
+ * transition looks like.
+ *
+ * Loaded from main.tsx between styles-theme.css (L2) and styles-legibility.css
+ * (L1) — see that file's load-order comment, now updated with this line.
+ * Legibility still loads LAST unconditionally so no palette or motion rule
+ * can ever override a readability rule.
+ *
+ * `::view-transition-*` pseudo-elements render on the document root's own
+ * generated tree, which reads like it belongs at the CSS top level. It does
+ * not: verify-legibility.mjs fails any top-level rule outside a @layer block
+ * (font-face/keyframes/property/charset/import are the only exemptions), so
+ * every rule here that isn't a @keyframes sits inside @layer components —
+ * same layer styles.css's own motion rules (.glide-enter, ledpulse, …) use.
+ *
+ * Duration tokens (v6.1.x, styles.css :root): --d-1 75ms · --d-2 150ms ·
+ * --d-3 300ms · --d-4 500ms, plus --e-standard/decel/accel/expressive. Used
+ * below WHEREVER a rule is itself scoped inside a
+ * `@media (prefers-reduced-motion: no-preference)` block — the root
+ * :root's own reduced-motion block already zeroes --d-1..4 globally, so a
+ * token read from inside a no-preference-guarded rule is safe (that rule
+ * simply never runs under reduce) but a token read from a rule that must
+ * stay NON-ZERO in EITHER preference state would collapse to 0 under
+ * reduce and silently defeat the point. The root crossfade below is
+ * exactly that second case — a view transition must still visibly run
+ * under reduce (verify-motion.mjs asserts ≥1 animation on a
+ * ::view-transition-* pseudo even then) — so its durations are literal ms,
+ * not tokens, deliberately.
+ */
+
+@layer components {
+  /* Base crossfade for EVERY kind of transition (route / theme / modal) —
+     the platform's default old→new opacity crossfade, just re-timed. More
+     specific selectors below (the theme override, the route slide names)
+     layer on top of this; they never need to repeat the duration unless
+     they deliberately want a different one. */
+  ::view-transition-old(root), ::view-transition-new(root) {
+    animation-duration: 220ms;
+    animation-timing-function: var(--e-standard);
+  }
+
+  /* Theme swap gets its own, shorter duration — matching the 180ms this
+     codebase's D0651/D0652 migration comment (styles.css) names as the
+     crossfade's original value, kept here as the literal 180ms rather than
+     the migrated var(--d-2) (150ms) token: this is a DIFFERENT crossfade
+     (the whole-viewport view-transition snapshot) layered ON TOP of that
+     token-driven one (the 18 @property-registered role tokens, which
+     already transition themselves via styles.css's :root `transition:`
+     list) — not a redeclaration of it, so it is not obligated to match the
+     token exactly, and a literal keeps that independence legible at the
+     read site instead of implying a shared source of truth that doesn't
+     exist. */
+  html[data-vt="theme"]::view-transition-old(root),
+  html[data-vt="theme"]::view-transition-new(root) {
+    animation-duration: 180ms;
+  }
+}
+
+/* Route slide keyframes. Explicit names (not the UA defaults) so
+ * verify-motion.mjs can assert on them via document.getAnimations(). Both
+ * transform AND opacity are set in each — `animation-name` fully replaces
+ * whatever name a less specific rule would have applied, so leaving opacity
+ * out here would silently drop the crossfade the base rule above provides
+ * everywhere else, not just skip the slide.
+ *
+ * ≤3vw translation only: a 220ms slide any wider starts exposing
+ * --surface-ground (the dark page floor) at the viewport edge before the
+ * incoming snapshot has covered it — see the GOVERNING RULE in styles.css
+ * about opaque surfaces over the ambient layers; the same "nothing shows
+ * through by accident" principle applies to a transient animation frame. */
+@keyframes vt-slide-out-l { to   { transform: translateX(-3vw); opacity: 0; } }
+@keyframes vt-slide-in-r  { from { transform: translateX(3vw);  opacity: 0; } }
+@keyframes vt-slide-out-r { to   { transform: translateX(3vw);  opacity: 0; } }
+@keyframes vt-slide-in-l  { from { transform: translateX(-3vw); opacity: 0; } }
+
+@layer components {
+  /* Spatial motion ONLY when motion is welcome. Under reduce this block
+     does not apply and the UA's built-in opacity crossfade (the base rule
+     above, at its reduced 110ms — see the reduce block below) is what
+     remains — "spatial collapses to a fade" expressed as an absence, not a
+     second code path. */
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-vt="route"][data-vt-dir="fwd"]::view-transition-old(root)  { animation-name: vt-slide-out-l; }
+    html[data-vt="route"][data-vt-dir="fwd"]::view-transition-new(root)  { animation-name: vt-slide-in-r; }
+    html[data-vt="route"][data-vt-dir="back"]::view-transition-old(root) { animation-name: vt-slide-out-r; }
+    html[data-vt="route"][data-vt-dir="back"]::view-transition-new(root) { animation-name: vt-slide-in-l; }
+
+    /* §6 shared-element morph — Future card <h3> → ProtoPopup <h2>, the
+       ONLY named (non-"root") view-transition in this app. `proto-title` is
+       assigned inline (React `style={{ viewTransitionName: … }}`) in
+       pages/future/cards.tsx and pages/future/ProtoPopup.tsx, never here —
+       this rule only re-times the browser's automatic position/size morph
+       once a name exists; it does not create one. Guarded to no-preference
+       only: under reduce, the reduce block below kills every named group's
+       animation outright (no spatial travel), so this duration would never
+       apply anyway — scoping it here just keeps that fact visible at the
+       read site instead of relying on the other block to make it moot. */
+    ::view-transition-group(proto-title) {
+      animation-duration: var(--d-3);
+      animation-timing-function: var(--e-expressive);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    /* Kills spatial travel for ANY named shared-element transition — today
+       only `proto-title`, but scoped to `*` rather than that one name so a
+       future named transition inherits the same policy by construction.
+       This targets the GROUP pseudo specifically (position/size/transform
+       interpolation) and deliberately leaves `::view-transition-image-pair`/
+       `::view-transition-old`/`::view-transition-new` alone, so the old/new
+       CONTENT still crossfades in place — "movement suppressed, content
+       still transitions", the same principle the route slide follows via
+       the no-preference guard above, just expressed as an explicit kill
+       switch instead of an absent rule (a *named* transition's move
+       animation has no other selector gating it, so it needs one). */
+    ::view-transition-group(*) {
+      animation: none;
+    }
+
+    /* Root crossfade survives, shortened. Must stay NON-ZERO: this is the
+       one thing standing between "a transition still ran" and "nothing
+       observable happened" for verify-motion.mjs's reduced-motion check —
+       it asserts ≥1 real Animation on a ::view-transition-* pseudo even
+       under reduce, specifically to prove reduced motion suppresses
+       MOVEMENT, not the transition itself (verify-glide.mjs's scenario 4
+       encodes the identical principle for the mempool block ribbon). */
+    ::view-transition-old(root), ::view-transition-new(root) {
+      animation-duration: 110ms;
+    }
+
+    /* Theme swap alone cuts INSTANTLY under reduce — it is the one kind
+       that should show no crossfade at all, matching the pre-existing
+       policy at styles.css's :root reduced-motion block (which already
+       zeroes --d-1..4, making the 18-role-token property crossfade instant
+       there). Without this override the 110ms rule above would still apply
+       to data-vt="theme" too (same pseudo-elements, and this selector is
+       more specific so it wins regardless of source order) and reintroduce
+       a fade the token-level swap no longer has. This is exactly why
+       data-vt carries a KIND, not just a boolean "a transition is
+       happening": route fades survive reduce, theme swaps don't. */
+    html[data-vt="theme"]::view-transition-old(root),
+    html[data-vt="theme"]::view-transition-new(root) {
+      animation-duration: 0ms;
+    }
+  }
+}

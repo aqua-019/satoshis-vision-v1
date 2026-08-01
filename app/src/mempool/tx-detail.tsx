@@ -526,7 +526,7 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
                 padding: "8px 12px", background: "transparent",
                 border: "1px solid " + (row.coinbase ? "var(--tk-accent)" : "var(--ink-10)"), borderRadius: 3,
                 color: "var(--ink-100)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
-                transition: "background 0.12s",
+                transition: "background var(--d-2) var(--e-standard)", // D0651: 0.12s → --d-2 (nearest)
               }}
               onMouseEnter={(e) => e.currentTarget.style.background = "color-mix(in srgb, var(--accent-structural) 5%, transparent)"}
               onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>

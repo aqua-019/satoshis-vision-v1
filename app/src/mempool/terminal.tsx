@@ -92,12 +92,15 @@ function TermPalette({ data }: { data: MoneroLive }) {
       <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
         <span style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>›</span>
         <span style={{ color: "var(--ink-100)" }}>{typed}</span>
+        {/* D0651: term-blink 1s steps(2) — a terminal cursor blink rate, same category as
+            styles.css's calc(1.4s/…) LED pulse and .footer-tele .blink; steps() has no
+            --e-* analogue (all four tokens are cubic-bezier curves). Left fully literal. */}
         <span style={{ width: 8, height: 16, background: "var(--tk-accent)", boxShadow: "var(--glow-1)", animation: "term-blink 1s steps(2) infinite", display: "inline-block" }} />
         <span style={{ marginLeft: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>⌘K · ESC</span>
       </div>
       <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", minHeight: 96 }}>
         {(showResults ? cmds[ci % cmds.length].rows : []).map((r, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "color-mix(in srgb, var(--accent-structural) 12%, transparent)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein 0.25s ease" }}>
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "color-mix(in srgb, var(--accent-structural) 12%, transparent)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein var(--d-3) var(--e-standard)" /* D0651: 0.25s → --d-3 */ }}>
             <span className="dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em" }}>{r[0]}</span>
             <span className={i === 0 ? "acc" : ""}>{r[1]}</span>
             <span className="dim">{r[2]}</span>
@@ -135,6 +138,8 @@ export function TermAsciiBlocks({ data, trackedTxId, trackedHeight }: { data: Mo
         <div style={{ textAlign: "center", marginBottom: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: q ? "none" : tracked ? "0 0 6px var(--y-50)" : "var(--glow-1)" }}>
           {q ? "~+" + label : (tracked ? "▲" : "") + height.toString().slice(-3)}
         </div>
+        {/* D0651: term-flash 1.4s — an ambient "this block is newest" signal, same 1.4s
+            cadence as styles.css's global LED pulse; not an interaction. Literal. */}
         <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px color-mix(in srgb, var(--accent-data) 70%, transparent)" : tracked ? "0 0 7px color-mix(in srgb, var(--status-warn) 50%, transparent)" : "0 0 6px color-mix(in srgb, var(--accent-data) 40%, transparent)", animation: newest ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
         <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
         {!q ? <div style={{ textAlign: "center", color: tracked ? "var(--y-50)" : "var(--ink-40)", fontSize: "var(--fs-label)" }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
@@ -191,7 +196,7 @@ function TermLiveLog({ data, trackedTx }: {
       ) : events.map((e, i) => {
         const l = line(e);
         return (
-          <div key={`${e.ts}-${i}`} style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: 8, padding: "1px 0", animation: "term-logslide 0.35s ease" }}>
+          <div key={`${e.ts}-${i}`} style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: 8, padding: "1px 0", animation: "term-logslide var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 */ }}>
             <span style={{ color: colorFor(l.lvl), fontWeight: 600 }}>{l.lvl}</span>
             <span className="dim2">{fmtTs(e.ts)}</span>
             <span style={{ color: colorFor(l.lvl, l.cat) }}>{l.cat}</span>
@@ -330,6 +335,7 @@ export function TerminalHubView({ data }: ViewProps) {
               </div>
             </PanelFrame>
 
+            {/* D0651: term-blink — same justification as the first use above (~line 95) */}
             <PanelFrame title="$ tail -f · feed" right={<><Provenance source="node" fresh="live" inline /><span>−f</span><span className="acc" style={{ animation: "term-blink 1s steps(2) infinite" }}>●</span></>}>
               <TermLiveLog data={data} trackedTx={trackedTx} />
             </PanelFrame>

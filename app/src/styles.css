@@ -96,7 +96,17 @@
      is what keeps `alias → role → scale` acyclic: an alias declared as
      var(--role) below, with a role declared back as var(--alias) here,
      computes to guaranteed-invalid and every theme falls back to this
-     block's initial-value in silence. See THEME-SPEC.md.
+     block's initial-value in silence.
+     app/verify-roles.mjs is what catches that: it resolves every role,
+     per theme, at runtime and fails if a theme's own declared value ever
+     falls back to this block's initial-value. Classic needs a stronger
+     check than the other two — its healthy value IS the initial-value by
+     construction, so a cycle here self-heals to the identical number and
+     "differs from initial" proves nothing. That gate therefore also
+     re-resolves classic's declared expression through a separate probe
+     property and compares. (There is no THEME-SPEC.md; an earlier version
+     of this comment pointed at one, and at a check in verify-contrast.mjs
+     that was never written.)
      These are classic's values — the theme blocks in styles-theme.css
      override the ones that differ; anything a theme doesn't mention
      (e.g. the three --status-* are theme-invariant) just inherits this. */
@@ -172,21 +182,38 @@
   --tk-density: 1;
   --tk-anim: 1;
 
+  /* ── D0651/D0652 · duration + easing token scale ──────────────────
+     Declared ONCE here at unscoped :root, alongside --tk-anim/--tk-density/
+     --tk-glow above — same rule as the alias block below: durations and
+     easings are theme-invariant (no theme should ever move faster or
+     slower than another), so they never get a per-theme redeclaration. */
+  --d-1:75ms; --d-2:150ms; --d-3:300ms; --d-4:500ms;
+  --e-standard:cubic-bezier(.4,0,.2,1);
+  --e-decel:cubic-bezier(0,0,.2,1);
+  --e-accel:cubic-bezier(.4,0,1,1);
+  --e-expressive:cubic-bezier(.2,.9,.1,1);
+
   /* ── crossfade · v6.1.2 ──────────────────────────────────────────
      Every role above is @property-registered as a <color>, which makes
      it individually animatable. One transition list at :root therefore
      crossfades EVERYTHING derived from a theme swap in a single pass —
      backgrounds, borders, text, glows — instead of each consumer
      flickering to its new value on its own frame. */
+  /* D0651/D0652 migration: 180ms(×18) → var(--d-2) (150ms). A 30ms delta,
+     deliberate and imperceptible on a full-theme crossfade — not a fifth
+     duration invented to preserve a number nobody chose. Also tokenised the
+     bare `ease` keyword to var(--e-standard): the two curves are the same
+     "no reason to be anything but generic" case as every other bare `ease`
+     migrated below. */
   transition:
-    --surface-base 180ms ease, --surface-raised 180ms ease, --surface-sunk 180ms ease,
-    --accent-structural 180ms ease, --accent-structural-dim 180ms ease,
-    --accent-data 180ms ease, --accent-data-hi 180ms ease,
-    --text-primary 180ms ease, --text-secondary 180ms ease,
-    --text-muted 180ms ease, --text-faint 180ms ease,
-    --status-up 180ms ease, --status-down 180ms ease, --status-warn 180ms ease,
-    --line 180ms ease, --line-d 180ms ease,
-    --aurora-a 180ms ease, --aurora-b 180ms ease;
+    --surface-base var(--d-2) var(--e-standard), --surface-raised var(--d-2) var(--e-standard), --surface-sunk var(--d-2) var(--e-standard),
+    --accent-structural var(--d-2) var(--e-standard), --accent-structural-dim var(--d-2) var(--e-standard),
+    --accent-data var(--d-2) var(--e-standard), --accent-data-hi var(--d-2) var(--e-standard),
+    --text-primary var(--d-2) var(--e-standard), --text-secondary var(--d-2) var(--e-standard),
+    --text-muted var(--d-2) var(--e-standard), --text-faint var(--d-2) var(--e-standard),
+    --status-up var(--d-2) var(--e-standard), --status-down var(--d-2) var(--e-standard), --status-warn var(--d-2) var(--e-standard),
+    --line var(--d-2) var(--e-standard), --line-d var(--d-2) var(--e-standard),
+    --aurora-a var(--d-2) var(--e-standard), --aurora-b var(--d-2) var(--e-standard);
 
   /* Page gutters compose: .main supplies --pad-main, and .page-shell (nested
      inside it) supplies --pad-page. Total desktop gutter = 22 + 48 = 70px.
@@ -219,7 +246,13 @@
    the duration here loses nothing and matches every other animated
    surface in this file. */
 @media (prefers-reduced-motion: reduce) {
-  :root { transition-duration: 0ms; }
+  :root {
+    transition-duration: 0ms;
+    /* D0651: zero the token scale too, so any consumer that reads
+       var(--d-*) directly (rather than relying on the longhand above)
+       also collapses to instant under this preference. */
+    --d-1: 0ms; --d-2: 0ms; --d-3: 0ms; --d-4: 0ms;
+  }
 }
 }
 
@@ -268,6 +301,12 @@ body::after {
     radial-gradient(52vmax 40vmax at 50% 50%, #070707 0%, transparent 70%),
     radial-gradient(34vmax 30vmax at 86% 18%, #080808 0%, transparent 60%);
   background-size: 200% 200%, 220% 220%, 180% 180%, 160% 160%;
+  /* D0651: 23/31/41/53s (+ 64s below) are a long ambient background loop,
+     not an interaction timing — relatively-prime cycles are the desync
+     mechanism itself (see the comment below), so quantising them onto the
+     4-step --d-* interaction scale would collapse the very thing that
+     makes them look aperiodic. Left literal, same reasoning as the long
+     loops in styles-ambient.css. */
   animation: bg-pulse-a 23s ease-in-out infinite,
              bg-pulse-b 31s ease-in-out infinite,
              bg-pulse-c 41s ease-in-out infinite,
@@ -423,7 +462,7 @@ header > div > h1.serif {
 .brand b { color: var(--tk-accent); text-shadow: var(--glow-1); font-weight: 500; }
 
 .topnav { display: flex; gap: 24px; align-items: center; font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; }
-.topnav a { color: var(--ink-60); text-decoration: none; padding: 6px 0; border-bottom: 1px solid transparent; transition: 0.15s; }
+.topnav a { color: var(--ink-60); text-decoration: none; padding: 6px 0; border-bottom: 1px solid transparent; transition: var(--d-2) var(--e-standard); /* D0651: 0.15s exact → --d-2 */ }
 .topnav a.on { color: var(--tk-accent); border-bottom-color: var(--tk-accent); text-shadow: var(--glow-1); }
 .topnav a:hover { color: var(--ink-100); }
 
@@ -467,6 +506,10 @@ header > div > h1.serif {
 @keyframes ledpulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 
 @layer components {
+/* D0651: 1.4s LED pulse — a real-world blink rate, not an interaction
+   timing; a token would misrepresent it as interchangeable with a hover
+   transition. calc()-wrapped so --tk-anim can still scale it. Reused
+   verbatim at .prov-dot below. */
 .led.pulse { animation: ledpulse calc(1.4s / var(--tk-anim, 1)) ease-in-out infinite; }
 
 .peerlist { display: flex; flex-direction: column; gap: 3px; }
@@ -728,6 +771,10 @@ header > div > h1.serif {
   font: 10.5px/1 var(--f-mono); letter-spacing: 0.05em; color: var(--ink-60);
   background: linear-gradient(to top, rgba(255,122,26,0.04), transparent);
 }
+/* D0651/D0652: 0.9s STALE blink — a signal cadence, not an interaction, and
+   steps(2, end) has no --e-* analogue (all four tokens are cubic-bezier
+   curves; a stepped blink isn't a curve at all). Left fully literal.
+   Reused verbatim at .prov-fresh--stale below. */
 .footer-tele .blink { animation: blink calc(0.9s / var(--tk-anim, 1)) steps(2, end) infinite; }
 }
 
@@ -761,6 +808,9 @@ header > div > h1.serif {
 }
 
 @layer components {
+/* D0651: 60s/20s ambient rotation loops, not interactions — left literal.
+   calc()-wrapped so the ⌘ DESIGN Ambient knob (--tk-anim) can still scale
+   them; a --d-* token would fight that division. */
 .spin-slow { animation: spin calc(60s / var(--tk-anim, 1)) linear infinite; }
 .spin-med  { animation: spin calc(20s / var(--tk-anim, 1)) linear infinite; transform-origin: center; }
 
@@ -778,9 +828,16 @@ header > div > h1.serif {
    border. No mouse-tracking RAF loop — pure CSS so it scales to
    20+ panels without any cost. */
 .panel {
-  transition: transform 0.4s cubic-bezier(0.2, 0.7, 0.3, 1),
-              border-color 0.4s ease,
-              box-shadow 0.4s ease;
+  /* D0651/D0652: 400ms sits exactly equidistant between --d-3 (300ms) and
+     --d-4 (500ms) — resolved round-half-up to --d-4, applied to all three
+     properties so the hover lift stays synchronised. cubic-bezier(0.2, 0.7,
+     0.3, 1) reconciled to var(--e-decel): sampled against Material's
+     decelerate curve (0,0,.2,1) at y=0.2/0.5/0.9, the two agree in x to
+     within ~0.03-0.08 — the same "ease-out, fast-start" family, close
+     enough to consolidate rather than keep a private curve. */
+  transition: transform var(--d-4) var(--e-decel),
+              border-color var(--d-4) var(--e-standard),
+              box-shadow var(--d-4) var(--e-standard);
 }
 .panel:hover {
   transform: translateY(-2px);
@@ -798,7 +855,7 @@ header > div > h1.serif {
   border-radius: inherit;
   background: radial-gradient(120% 80% at 50% 0%, rgba(255, 122, 26, 0.04), transparent 60%);
   opacity: 0;
-  transition: opacity 0.6s ease;
+  transition: opacity var(--d-4) var(--e-standard); /* D0651: 0.6s → --d-4 (500ms), +100ms drift like the other 0.55s/0.6s cases */
   z-index: 0;
 }
 .panel:hover::before { opacity: 1; }
@@ -813,6 +870,9 @@ header > div > h1.serif {
 }
 
 @layer components {
+/* D0651: panel-breathe (8s) and tilt-pulse (6s, below) are slow ambient
+   breathing loops, not interactions — left literal, same reasoning as the
+   body::after bg-pulse group above. */
 .shell .main .panel { animation: panel-breathe 8s ease-in-out infinite; animation-delay: var(--breathe-d, 0s); }
 
 /* ── tilt-card · mouse-reactive panel ──────────────────────────
@@ -859,7 +919,7 @@ header > div > h1.serif {
    fit/100% toggle; live re-fits move sub-pixel so the easing is imperceptible there.
    Disabled under prefers-reduced-motion (see the reduce block below). */
 .mp-view--fit { display: block; overflow: hidden; }
-.mp-fit { width: max-content; transform-origin: top left; transition: transform 0.25s ease; }
+.mp-fit { width: max-content; transform-origin: top left; transition: transform var(--d-3) var(--e-standard); /* D0651: 0.25s → --d-3 (closer to 300ms than 150ms) */ }
 /* v6.0.4 — Classic's live-tx feed. Header row and body rows share one template
    so the two halves stay aligned when .table-scroll swipes on phones. Values are
    the exact former inline ones from classic.tsx, so desktop is pixel-unchanged. */
@@ -949,7 +1009,7 @@ header > div > h1.serif {
   padding: 10px 8px;
   font-family: var(--f-mono);
   box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 10px rgba(255,122,26,0.18);
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform var(--d-2) var(--e-standard), box-shadow var(--d-2) var(--e-standard); /* D0651: 0.18s → --d-2 */
 }
 .mblock:hover {
   transform: translateY(-2px);
@@ -967,14 +1027,20 @@ header > div > h1.serif {
    Reactor tiles that carry both classes; box-shadow kept short so hover stays crisp. */
 .glide-block {
   /* P6: smoother ease-out cubic (Penner easeOutCubic), ~0.55s, transform-only.
-     The tracked ▲ is a child of the tile, so it travels with its block. */
-  transition: transform 0.55s cubic-bezier(0.215, 0.61, 0.355, 1), box-shadow 0.18s ease;
+     The tracked ▲ is a child of the tile, so it travels with its block.
+     D0651/D0652: 550ms is past --d-4 (500ms) with no larger token to reach
+     for — nearest available, +50ms drift. cubic-bezier(0.215, 0.61, 0.355, 1)
+     [Penner easeOutCubic] reconciled to var(--e-decel): sampled at
+     y=0.2/0.5/0.9 it lands within ~0.015-0.05 of Material's decelerate
+     curve (0,0,.2,1) in x — both are the same "fast start, long decelerate
+     tail" ease-out family, so this is a consolidation, not a re-cast. */
+  transition: transform var(--d-4) var(--e-decel), box-shadow var(--d-2) var(--e-standard);
   will-change: transform;
 }
 /* Incoming head block: same ease-out cubic slide + fade from the head (GPU
    transform only), so a freshly-landed block enters fluidly rather than popping. */
 .glide-enter {
-  animation: glide-enter-kf 0.55s cubic-bezier(0.215, 0.61, 0.355, 1);
+  animation: glide-enter-kf var(--d-4) var(--e-decel);
   will-change: transform, opacity;
 }
 }
@@ -1161,7 +1227,7 @@ button.proto-btn, a.proto-btn {
   padding: 8px 14px; font: 10.5px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase;
   box-shadow: var(--glow-1);
   text-decoration: none; display: inline-block;
-  transition: background 0.15s;
+  transition: background var(--d-2) var(--e-standard); /* D0651: 0.15s exact → --d-2 */
 }
 button.proto-btn:hover, a.proto-btn:hover { background: rgba(255,122,26,0.1); }
 button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: default; box-shadow: none; }
@@ -1213,7 +1279,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   border: 1px solid var(--ink-20);
   color: var(--ink-60);
   font: 14px/1 var(--f-mono);
-  transition: border-color 0.15s, color 0.15s;
+  transition: border-color var(--d-2) var(--e-standard), color var(--d-2) var(--e-standard); /* D0651: 0.15s exact → --d-2 */
 }
 .v6-x:hover { border-color: var(--tk-accent); color: var(--tk-accent); }
 .v6-x:focus-visible { outline: none; border-color: var(--tk-accent); color: var(--tk-accent); box-shadow: var(--glow-1); }
@@ -1244,7 +1310,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 /* mirrors the inline display:contents on the card wrapper — kept in CSS
    so the hover/focus hook below is documented, not just implied by JS */
 .v6-future-card { display: contents; }
-.open-cue { font: 11px/1 var(--f-mono); letter-spacing: 0.1em; color: var(--ink-40); opacity: 0; transition: opacity 0.18s; }
+.open-cue { font: 11px/1 var(--f-mono); letter-spacing: 0.1em; color: var(--ink-40); opacity: 0; transition: opacity var(--d-2) var(--e-standard); /* D0651: 0.18s → --d-2 */ }
 .panel:hover .open-cue,
 .panel:focus-within .open-cue { opacity: 1; }
 
@@ -1395,7 +1461,7 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
     border-left: 1px solid var(--rule);
     transform: translateX(100%);
-    transition: transform 0.2s ease;
+    transition: transform var(--d-2) var(--e-standard); /* D0651: 0.2s → --d-2 (closer to 150ms than 300ms) */
     overflow-y: auto;
   }
   .topnav.is-open { transform: translateX(0); }

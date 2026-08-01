@@ -83,6 +83,9 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
               // repo bans random on live surfaces, and a hash-derived duration is
               // better anyway: a cell keeps its cadence across re-renders instead
               // of resampling every commit.
+              // D0651: this is an ambient per-cell desync loop, not an interaction — the
+              // whole point of the jitter is that no two cells share a --d-* token's exact
+              // cadence, same reasoning as styles-ambient.css's per-plate offsets. Literal.
               animation: intensity > 0.75
                 ? `hexpulse ${(1.6 + hashToUnit(tx.id) * 1.2).toFixed(2)}s ease-in-out ${(-(i * 0.02)).toFixed(2)}s infinite`
                 : undefined,
@@ -371,7 +374,9 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                     </div>
                   );
                 })}
-                {/* glow track */}
+                {/* glow track — D0651: flow 6s linear is an ambient current-flow loop along
+                    the confirmation track, not an interaction; same category as the
+                    spin-slow/spin-med ambient rotations in styles.css. Left literal. */}
                 <div style={{
                   position: "absolute", left: 0, right: 0, bottom: 0, height: 3,
                   background: "linear-gradient(to right, transparent, var(--tk-accent), transparent)",

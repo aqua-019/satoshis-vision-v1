@@ -421,7 +421,11 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
             strokeDasharray={ring} strokeDashoffset={dashOffset} transform="rotate(-90 45 45)"
             style={{
               filter: `drop-shadow(0 0 4px ${tone})`,
-              transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke 0.3s ease",
+              // D0651: stroke-dashoffset 0.95s linear stays literal — it approximates the
+              // real 1s clock tick of the elapsed-time ring, and forcing an eased curve onto
+              // a per-second countdown would make its speed visibly non-uniform. `stroke`
+              // (the colour swap on lock/overdue) is a genuine UI timing: 0.3s exact → --d-3.
+              transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke var(--d-3) var(--e-standard)",
             }} />
           <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
           <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
@@ -558,7 +562,8 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
         {rows.length === 0 && !pinned ? (
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
         ) : rows.map((r) => (
-          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein 0.4s ease" }}>
+          // D0651: brg-slidein 0.4s (bare) — tie between --d-3/--d-4, round-half-up to --d-4 var(--e-standard)
+          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein var(--d-4) var(--e-standard)" }}>
             <span className="dim2">{r.ts}</span>
             <span style={{ color: col[r.tone] }}>{r.lvl}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.msg}</span>

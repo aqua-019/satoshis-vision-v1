@@ -20,6 +20,7 @@ import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
 import { byTier, getDeviceTier } from "./deviceTier";
 import { isPageActive, observeDrawable, onPageActiveChange } from "./usePageActive";
+import { h3 } from "./prng";
 
 type Intensity = "calm" | "busy" | "chaotic";
 
@@ -61,7 +62,23 @@ interface ParticleFieldProps {
 }
 
 interface Star { x: number; y: number; vx: number; vy: number; r: number; a: number; ph: number }
-interface Stream { x: number; y: number; vy: number; life: number; age: number; hue: number }
+interface Stream {
+  x: number; y: number; vy: number; life: number; age: number; hue: number;
+  /** How many times this stream has respawned. Folded into the h3 seed on
+   *  every respawn (see `tick()` below) so the Nth respawn of a given stream
+   *  draws an independent value from the (N-1)th, deterministically — a
+   *  plain `h3(i, role, SEED)` would hand every respawn of stream `i` back
+   *  the exact same x/vy/hue forever. */
+  gen: number;
+}
+
+/** Fixed, arbitrary seed for the star/stream field (design/prng.ts's `h3`).
+ *  Only the entity index and role vary the output — the same box (and the
+ *  same respawn count, for streams) always yields the same field. Picking a
+ *  different constant reshuffles the whole field; it is not tuned to
+ *  anything and may be changed freely if it's ever needed as an escape hatch
+ *  (e.g. a visibly unlucky clump), same as ORB_SEED in AmbientField.tsx. */
+const SEED = 0x5eed;
 
 /** Longest frame we integrate. A tab that was hidden, a GC pause or a slow
  *  first paint must not teleport every particle across the field. Matches the
@@ -189,22 +206,35 @@ export function ParticleField({
     // intrinsic size, see that file's "BUGFIX" comment); now that a resize
     // can genuinely change w/h, seeding once at mount left every star keyed
     // to a stale box after the next one.
+    //
+    // Every draw below goes through `h3(i, role, s)` (design/prng.ts) rather
+    // than the JS runtime's own unseeded generator — index-addressable, so
+    // this is not merely "seeded once": a later reseed against the same box
+    // reproduces the identical field with zero extra bookkeeping, because
+    // star/stream `i`'s value was never a function of draw ORDER to begin
+    // with (a sequential PRNG would need its own cursor reset here to get
+    // the same guarantee). Each of the 7 star fields and 5 stream fields
+    // gets its own `role` index (0–6, 7–11) so they draw independently —
+    // reusing one role for two fields would correlate them (e.g. x and vx
+    // always moving together), which the old unseeded draws never did and
+    // this must not either.
     const seed = () => {
       const N = budget.stars;
-      stars = Array.from({ length: N }, () => ({
-        x: Math.random() * w, y: Math.random() * h,
-        vx: (Math.random() - 0.5) * 0.15 * speed,
-        vy: (Math.random() - 0.5) * 0.15 * speed,
-        r: Math.random() * 1.3 + 0.2,
-        a: Math.random() * 0.7 + 0.1,
-        ph: Math.random() * Math.PI * 2,
+      stars = Array.from({ length: N }, (_, i) => ({
+        x: h3(i, 0, SEED) * w, y: h3(i, 1, SEED) * h,
+        vx: (h3(i, 2, SEED) - 0.5) * 0.15 * speed,
+        vy: (h3(i, 3, SEED) - 0.5) * 0.15 * speed,
+        r: h3(i, 4, SEED) * 1.3 + 0.2,
+        a: h3(i, 5, SEED) * 0.7 + 0.1,
+        ph: h3(i, 6, SEED) * Math.PI * 2,
       }));
-      streams = Array.from({ length: budget.streams }, () => ({
-        x: Math.random() * w, y: h + Math.random() * h,
-        vy: -(Math.random() * 1.6 + 0.6) * speed,
-        life: Math.random() * 200 + 200,
+      streams = Array.from({ length: budget.streams }, (_, i) => ({
+        x: h3(i, 7, SEED) * w, y: h + h3(i, 8, SEED) * h,
+        vy: -(h3(i, 9, SEED) * 1.6 + 0.6) * speed,
+        life: h3(i, 10, SEED) * 200 + 200,
         age: 0,
-        hue: Math.random() < 0.85 ? 28 : 280,
+        hue: h3(i, 11, SEED) < 0.85 ? 28 : 280,
+        gen: 0,
       }));
     };
 
@@ -231,12 +261,27 @@ export function ParticleField({
         ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
         ctx.fill();
       }
-      for (const s of streams) {
+      // Indexed (not `for...of`) so each stream has a stable identity `i` to
+      // hash against — the respawn draws below key off (stream index, role,
+      // generation), and "generation" only means something per-stream.
+      for (let i = 0; i < streams.length; i++) {
+        const s = streams[i];
         s.y += s.vy * k; s.age += k;
         if (s.y < -20 || s.age > s.life) {
-          s.x = Math.random() * w; s.y = h + 20; s.age = 0;
-          s.vy = -(Math.random() * 1.6 + 0.6) * speed;
-          s.hue = Math.random() < 0.85 ? 28 : 280;
+          // NOT a reseed — this fires whenever ANY one stream individually
+          // expires, in real-time, in whatever order that happens to be. `gen`
+          // is this stream's own respawn counter (see the Stream interface),
+          // folded into the hash seed so respawn #2 of stream 3 draws
+          // independently from respawn #1 — a bare `h3(i, role, SEED)` would
+          // hand every respawn of the same stream back its ORIGINAL spawn
+          // values forever, which reads as the stream "resetting" instead of
+          // moving on. Role indices 12–14 continue past seed()'s 0–11 so a
+          // respawn draw can never coincide with an initial-seed draw either.
+          s.gen += 1;
+          const rs = SEED + s.gen;
+          s.x = h3(i, 12, rs) * w; s.y = h + 20; s.age = 0;
+          s.vy = -(h3(i, 13, rs) * 1.6 + 0.6) * speed;
+          s.hue = h3(i, 14, rs) < 0.85 ? 28 : 280;
         }
         // The old code encoded the head's brightness ramp as an hsl()
         // lightness between 60% and 20%. The sprite is baked at full

@@ -1,6 +1,7 @@
 /**
- * views/protocols.tsx — component-bearing registry for the 15 protocol
- * simulators (src/protocols/*.tsx).
+ * views/protocols.tsx — component-bearing registry for the 21 protocol
+ * simulators (src/protocols/*.tsx), across 16 modules: metaphors.tsx alone
+ * exports 8 of them.
  *
  * This is the ONLY module that statically imports @/protocols/* — it is
  * reached exclusively through the lazy-loaded /simulate route (SimulatePage),

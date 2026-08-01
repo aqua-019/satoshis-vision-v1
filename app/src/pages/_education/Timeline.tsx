@@ -93,7 +93,7 @@ const TL_ERAS: TlEra[] = [
 function TlNode({ ev, dimmed }: { ev: TlEvent; dimmed: boolean }) {
   const cat = TL_CAT[ev.c];
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "24px 1fr", gap: 16, opacity: dimmed ? 0.18 : 1, transition: "opacity 0.3s ease" }}>
+    <div style={{ display: "grid", gridTemplateColumns: "24px 1fr", gap: 16, opacity: dimmed ? 0.18 : 1, transition: "opacity var(--d-3) var(--e-standard)" /* D0651: 0.3s exact → --d-3 */ }}>
       <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
         <div style={{ position: "absolute", top: 6, bottom: -22, width: 1, background: "var(--rule)" }} />
         <div style={{ width: 11, height: 11, borderRadius: 6, background: cat.color, boxShadow: `0 0 8px ${cat.color}`, marginTop: 4, zIndex: 1 }} />

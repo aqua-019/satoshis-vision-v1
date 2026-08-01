@@ -18,11 +18,15 @@ import { RootBoundary } from "./design/RootBoundary";
 //   base      · the v5 terminal-dense identity, unchanged
 //   L3 ambient· aurora/dust/grain; owns the html+body background
 //   L2 theme  · [data-theme="indigo"] chrome palette (+ classic identity)
+//   motion    · view-transition pseudo-element policy (route slide, theme
+//               crossfade, Future card→modal morph); between theme and
+//               legibility so legibility still loads LAST, unconditionally
 //   L1 legibility · unconditional; loads LAST so no palette rule can
 //                   override a readability rule
 import "./styles.css";
 import "./styles-ambient.css";
 import "./styles-theme.css";
+import "./styles-motion.css";
 import "./styles-legibility.css";
 
 // v6.0.7 — boot defensively. Every failure path here used to end in a blank
