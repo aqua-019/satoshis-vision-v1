@@ -56,6 +56,20 @@ for (const theme of THEME_SET) {
     const page = await newThemedPage(browser, { width, height: width === 390 ? 844 : 900 }, theme);
     // Animation off, so a sweep is reproducible and a diff means a real change
     // rather than "the aurora had drifted 40px".
+    //
+    // v6.1.2 — KNOWN LIMIT, read before trusting a --baseline run. This freezes
+    // CSS animation but NOT a canvas rAF, and design/ArtBackground.tsx's
+    // ParticleField seeds ~120 particles with Math.random() (13 call sites). So
+    // at any width where the device tier resolves above `low`, the particle
+    // canvas renders and TWO SWEEPS OF THE SAME BUILD differ byte-for-byte.
+    // Measured: /sources at 1440 classic, same dist, 135366B vs 135439B.
+    //
+    // Consequence: byte-equality is only a valid acceptance test at widths where
+    // ParticleField is skipped — 390 resolves to tier `low` and is deterministic,
+    // 1440 is not. A classic diff at 1440 therefore proves nothing on its own, and
+    // this gate was orphaned long enough that nobody had run it against a baseline
+    // to find out. Either seed the field deterministically or force `?tier=low`
+    // before this can claim to be the classic pixel-parity test at every width.
     await page.emulateMedia({ reducedMotion: 'reduce' });
 
     for (const route of routes) {

@@ -205,6 +205,22 @@ notes for ARCHITECTURE.md patch: none — no ARCHITECTURE.md in this repo. `app/
 and `CLAUDE.md` were corrected where this change made them false.
 
 open questions:
+- **`verify-shots.mjs` cannot serve as a byte-equality acceptance test above tier
+  `low`, and this was not known before.** `design/ArtBackground.tsx`'s ParticleField
+  seeds ~120 particles with `Math.random()` (13 call sites) and `freezeAmbient()`
+  stops CSS animation but not a canvas rAF. Two sweeps of the SAME build differ:
+  /sources at 1440 classic measured 135366B vs 135439B. So the 37 classic diffs at
+  1440 in this change's run are **not attributable to the change** — 390px, where the
+  tier resolves to `low` and ParticleField is skipped, showed **zero** classic diffs
+  across all 37 routes, which is the signal that actually carries information.
+  Fix is either a deterministic seed or forcing `?tier=low` in the sweep. Until then
+  the classic-parity claim rests on the 390px column plus `verify-contrast`'s pinned
+  `CLASSIC_BASELINE` ratios, not on the 1440 column.
+- Relatedly: those 13 `Math.random()` calls sit in `app/src/design/`, outside
+  `app/src/protocols/`, which `CLAUDE.md` names as the only permitted location. They
+  predate this change (present on `origin/main`) and are decorative rather than a
+  displayed value, so they were left alone — but the rule as written does not carve
+  that out.
 - **`verify-shots.mjs` still uses `waitUntil: 'networkidle'`** (line 55), the pattern
   prompt 02 removed from `verify-future.mjs`. It is hand-run so it can wait, but it
   makes a full 333-shot sweep take ~45 min. `verify-contrast.mjs` and
