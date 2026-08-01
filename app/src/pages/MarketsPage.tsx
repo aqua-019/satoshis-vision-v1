@@ -182,7 +182,7 @@ export function MarketsPage() {
     key: "range",
     values: RANGE_KEYS,
     fallback: DEFAULT_RANGE,
-    replace: false,
+    replace: true,
     clearAtFallback: true,
   });
   const days = RANGE_DAYS[range];

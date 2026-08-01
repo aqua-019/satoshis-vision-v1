@@ -90,7 +90,7 @@ export function PageHeader({ kicker, title, sub, right }: PageHeaderProps) {
         {/* id="page-title" — the <main> landmark's accessible name, and what
             routes/RouteAnnouncer.tsx reads to name the route it just entered.
             One edit, nine pages. */}
-        <h1 className="serif" style={{ margin: "6px 0 4px", fontSize: 34, fontWeight: 500, letterSpacing: "-0.01em", color: "var(--ink-100)" }}>
+        <h1 id="page-title" className="serif" style={{ margin: "6px 0 4px", fontSize: 34, fontWeight: 500, letterSpacing: "-0.01em", color: "var(--ink-100)" }}>
           <span dangerouslySetInnerHTML={{ __html: title }} />
         </h1>
         {sub ? <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{sub}</p> : null}

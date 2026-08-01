@@ -20,7 +20,7 @@ import { useVisual } from "./VisualContext";
 import { useReducedMotion } from "./useReducedMotion";
 import { byTier, getDeviceTier } from "./deviceTier";
 import { isPageActive, observeDrawable, onPageActiveChange } from "./usePageActive";
-import { governorScale } from "./useAnimationClock";
+import { governorScale, resetFrameBudgetBaseline, sampleFrameBudget } from "./useAnimationClock";
 import { h3 } from "./prng";
 
 type Intensity = "calm" | "busy" | "chaotic";
@@ -355,6 +355,15 @@ export function ParticleField({
     let raf = 0;
     let lastTs: number | null = null;
     const loop = (now: number) => {
+      // D0692 — feed the shared frame-budget dial from the loop that already
+      // exists here. NOT a second governor and not a second loop: there is one
+      // GOV state in useAnimationClock, and duplicate samples for the same
+      // frame (this loop and the shared clock both running) are dropped by the
+      // non-advancing-timestamp guard in governor.ts. Driving it from here is
+      // what makes the dial work on `/` at all — the shared clock has
+      // subscribers only under /mempool and /simulate, and this canvas is the
+      // most expensive thing on the home page.
+      sampleFrameBudget(now);
       // Clamp so a tab returning after minutes in the background doesn't
       // teleport every particle across the canvas in a single step.
       const elapsed = lastTs === null ? FRAME_MS : Math.min(now - lastTs, MAX_FRAME_MS);
@@ -365,6 +374,7 @@ export function ParticleField({
     const start = () => {
       if (raf) return;
       lastTs = null; // avoid a dt spike on resume
+      resetFrameBudgetBaseline(); // …and the same spike reaching the governor
       raf = requestAnimationFrame(loop);
     };
     const stop = () => { cancelAnimationFrame(raf); raf = 0; };

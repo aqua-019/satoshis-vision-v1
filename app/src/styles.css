@@ -1538,6 +1538,25 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     animation: stagger-rise var(--d-3) var(--e-spring) backwards;
     animation-delay: calc(var(--stagger-i, 0) * 45ms);
   }
+
+  /* Third stagger surface: the mempool view switcher. Same keyframe, same
+     backwards fill, same inert-by-absence behaviour under reduce — but 30ms
+     per step rather than 45ms, and the difference is not arbitrary. This is
+     six items in a fixed 220px panel that opens directly under the pointer, so
+     the cascade has to finish inside the click-to-read gap: 6 x 45ms = 270ms
+     is longer than that gap and the last tile would still be arriving as the
+     eye reached it. The two card grids can afford 45ms because they are
+     page-level content the reader scans, not a menu they are already pointing
+     at.
+
+     Scoped to `.is-open` so the cascade plays on OPEN rather than on every
+     render of a closed list, and a child combinator so a future nested list
+     cannot inherit it. Nothing the switcher means is carried by the movement —
+     the list is fully present and readable with zero animation. */
+  .mp-switcher__list.is-open > .mp-switcher__item {
+    animation: stagger-rise var(--d-3) var(--e-spring) backwards;
+    animation-delay: calc(var(--stagger-i, 0) * 30ms);
+  }
 }
 
 /* D0666 · reduced motion: no entrance, no exit, no delayed unmount.
@@ -1568,17 +1587,29 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
    its first focusable element. Visually hidden until it takes focus, then it
    appears top-left over the chrome with an opaque ground and a visible ring.
 
-   Hidden with clip-path + a 1px box rather than `display: none` /
-   `visibility: hidden` / `width: 0`: the first two remove the element from
-   the accessibility tree AND from the focus order, which defeats the entire
-   purpose (a skip link nobody can Tab to is decoration), and a zero-size box
-   is treated as unfocusable by some engines. 1px + clip-path is the standard
-   visually-hidden recipe precisely because it stays focusable.
+   HIDDEN BY POSITION, not by `display: none` / `visibility: hidden` /
+   `width: 0`: the first two remove the element from the accessibility tree
+   AND from the focus order, which defeats the entire purpose (a skip link
+   nobody can Tab to is decoration), and a zero-size box is treated as
+   unfocusable by some engines. `position: fixed` at a negative `top` keeps
+   the box at its full, real size — just above the viewport — so it stays
+   focusable, stays in the reading order, and needs no size change on focus.
+
+   Deliberately NOT the 1px + clip-path visually-hidden recipe, which is the
+   other standard answer and was the first version of this rule. A 1px box
+   with `overflow: hidden` around 131px of text has
+   `scrollWidth > clientWidth`, which is the exact signature of silently
+   clipped text — verify-responsive.mjs flags it on all 43 routes × 3 themes,
+   and rightly so: its detector cannot tell "hidden on purpose" from "cut off
+   by accident" (it carries a hand-written exemption for `.sr-only` for this
+   very reason). Off-screen positioning has no `overflow: hidden` at all, so
+   it never enters that check, and the box it reports is the box the reader
+   will actually see.
 
    `:focus`, not only `:focus-visible`: this element is reached by keyboard
    or by an AT's own focus call, both of which set :focus — and on the
    engines where a programmatic focus does not qualify as :focus-visible, a
-   :focus-visible-only rule would leave the link invisible at the moment it
+   :focus-visible-only rule would leave the link off-screen at the moment it
    matters. `:focus-visible` is listed alongside for the ring, not instead.
 
    No transition: this must be on screen the instant it is focused. An
@@ -1587,21 +1618,19 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
    afford. Nothing here is motion, so there is nothing for reduced motion to
    suppress. */
 .skip-link {
-  position: fixed; top: 8px; left: 8px; z-index: 9999;
-  width: 1px; height: 1px; padding: 0; margin: 0;
-  overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  position: fixed; top: -100px; left: 8px; z-index: 9999;
+  max-width: calc(100vw - 16px);
+  padding: 10px 16px;
   font-family: var(--f-mono); font-size: var(--fs-mono);
   letter-spacing: 0.1em; text-transform: uppercase;
-  text-decoration: none;
+  text-decoration: none; white-space: nowrap;
   color: var(--tk-accent);
   background: var(--surface-ground);
+  border: 1px solid var(--tk-accent);
 }
 .skip-link:focus,
 .skip-link:focus-visible {
-  width: auto; height: auto;
-  padding: 10px 16px;
-  overflow: visible; clip-path: none;
-  border: 1px solid var(--tk-accent);
+  top: 8px;
   outline: 2px solid var(--tk-accent);
   outline-offset: 2px;
   box-shadow: var(--glow-1);

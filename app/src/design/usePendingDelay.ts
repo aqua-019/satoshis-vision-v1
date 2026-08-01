@@ -31,6 +31,31 @@
  * renderToString and the prerendered HTML never contains a loading state. That
  * matters concretely here — scripts/prerender.mjs FAILS any route whose emitted
  * HTML matches /loading[….]/.
+ *
+ * ── WHERE THIS SHOULD BE ADOPTED ───────────────────────────────────────────
+ * Listed rather than done: those files belong to other owners in this change,
+ * and every one of them needs a judgement call this hook cannot make for it.
+ * Verified present in the tree at the time of writing, not guessed:
+ *
+ *   src/mempool/tx-detail.tsx:99,138,330 — `status === "loading"` branches.
+ *     The strongest candidates in the app. A tx already in the feed resolves
+ *     from memory, so the skeleton at :99 renders and unmounts within one
+ *     frame; :330's decoy panel is the same shape one level down.
+ *   src/mempool/mempool-shared.tsx:51 — the "CONNECTING…" skeleton.
+ *   src/layout/NavTop.tsx:86 · src/layout/Footer.tsx:15 ·
+ *   src/pages/NetworkPage.tsx:152 · src/pages/HomePage.tsx:54 — the CONNECTING
+ *     pills. These share one feed, so they flash TOGETHER on a warm
+ *     localStorage cache (data/feedcache), which is the most visible instance
+ *     of this defect on the site.
+ *
+ * The judgement call, in every case: this hook must gate the PENDING indicator
+ * only, never the data. Wrapping a whole panel in it would replace a 90ms
+ * spinner with a 90ms hole, which is the same flicker wearing different
+ * clothes. And a distinction worth keeping: CONNECTING is a first-load state,
+ * not a per-operation one, so a surface that shows it for two full seconds on a
+ * cold node cascade is being honest — this hook exists for the warm path, where
+ * that same pill appears for 40ms. It must never suppress the STALE ·
+ * reconnecting degradation state, which is information, not chrome.
  */
 
 import * as React from "react";

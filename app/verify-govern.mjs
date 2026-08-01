@@ -1,25 +1,42 @@
 // verify-govern.mjs — D0692 frame-budget governor, D0697 micro-delay, D0699
 // paused-until-visible. Run from app/: `node verify-govern.mjs`
 //
-// Offline. Two halves:
+// Four halves, offline first and browser only where the claim genuinely needs
+// a browser:
 //
-//  §1-3 replay the governor's update rule against synthetic frame series. The
-//  rule is pure arithmetic, so it can be tested exactly — no browser, no
-//  timing flake, and a regression in the constants fails deterministically
-//  rather than "sometimes on a slow runner".
+//  §1-4 replay the governor's real update rule against synthetic frame series.
+//  The rule is pure arithmetic, so it can be tested exactly — no timing flake,
+//  and a regression in the constants fails deterministically rather than
+//  "sometimes on a slow runner". §4 covers the two traps that are the actual
+//  hazard here (a resuming tab read as a stall; two loops feeding one dial).
 //
-//  §4-5 are source assertions over every rAF driver in app/src. That is the
+//  §5-6 are source assertions over every rAF driver in app/src. That is the
 //  D0699 half: "paused until visible" is already implemented by
 //  observeDrawable(), and this is what stops the next author from adding a
 //  sixth loop that runs in a hidden tab. It REPORTS the drivers it found and
 //  checked rather than printing a bare pass — a gate that says "ok" without
 //  saying over what is the failure mode this repo has hit repeatedly.
+//
+//  §7 is the one browser check: that a shed is OBSERVABLE and that it actually
+//  removes DOM. Both are end-to-end claims about the shipped bundle — a source
+//  assertion could only prove the code says the right words.
+//
+// Needs a server for §7: `npm run build && node scripts/serve-dist.mjs 4173 &`.
+//
+//   node verify-govern.mjs            all seven sections (needs the server)
+//   node verify-govern.mjs --static   §1-6 only, no browser
+//
+// The flag exists for the same reason verify-origins.mjs has one: CI splits
+// into a no-browser `verify:static` job and a `verify:e2e` job that runs against
+// scripts/serve-dist.mjs, and this gate has assertions of both kinds. WITHOUT
+// the flag a missing server is a FAILURE, never a skip — see §7.
 
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative } from "node:path";
-import { makeReporter } from "./verify-lib.mjs";
+import { makeReporter, launch, BASE } from "./verify-lib.mjs";
 
+const staticOnly = process.argv.includes("--static");
 const appDir = dirname(fileURLToPath(import.meta.url));
 const R = makeReporter("verify-govern");
 const read = (rel) => readFileSync(join(appDir, rel), "utf8");
@@ -31,9 +48,18 @@ const read = (rel) => readFileSync(join(appDir, rel), "utf8");
    are wrong, and including when the loop stops calling the rule entirely. The
    thresholds below are the SPEC and are asserted against the source separately
    in §1, so changing a constant still has to be a deliberate two-file edit. */
-import { governorStep, SHED_RATE, RECOVER_RATE, FLOOR } from "./src/design/governor.ts";
+import {
+  governorStep,
+  governorSample,
+  governorReset,
+  SHED_RATE,
+  RECOVER_RATE,
+  RESUME_GAP_MS,
+  NO_BASELINE,
+  FLOOR,
+} from "./src/design/governor.ts";
 
-const makeGov = () => ({ scale: 1, ema: 60 });
+const makeGov = () => ({ scale: 1, ema: 60, lastTs: NO_BASELINE });
 const step = (gov, fps) => governorStep(gov, fps);
 function framesUntil(gov, fps, predicate, cap = 5000) {
   let n = 0;
@@ -51,12 +77,17 @@ R.group("── 1 · the source matches this spec ──────────
   ];
   const missing = pairs.filter(([, lit]) => !src.includes(lit)).map(([name]) => name);
   R.ok(missing.length === 0,
-    `useAnimationClock.ts still uses the constants this file asserts (${pairs.length} checked)`,
+    `the governor still uses the constants this file asserts (${pairs.length} checked)`,
     missing.length ? `not found in source: ${missing.join(", ")}` : "");
   R.ok(/data-gov/.test(src), "the dial is published to the DOM (data-gov) — a silent governor is unreviewable");
+  R.ok(/__XMR_GOV__/.test(src),
+    "the exact dial is readable from a page context (window.__XMR_GOV__), in the __MEM_FPS__ idiom");
   R.ok(/RESUME_GAP_MS/.test(src),
     "a resume threshold exists, distinct from MAX_STEP_MS",
     "without it a returning hidden tab reads as one catastrophic frame and sheds quality for nothing");
+  R.ok(RESUME_GAP_MS > 50,
+    `RESUME_GAP_MS (${RESUME_GAP_MS}ms) is above MAX_STEP_MS (50ms)`,
+    "at or below it, the 20fps stall the governor exists to catch would be discarded as a resume");
 }
 
 R.group("── 2 · it sheds under load and clamps at the floor ─────────");
@@ -64,8 +95,8 @@ R.group("── 2 · it sheds under load and clamps at the floor ─────
   const gov = makeGov();
   const n = framesUntil(gov, 30, (g) => g.scale < 1);
   R.ok(gov.scale < 1, `sustained 30fps sheds quality (scale ${gov.scale.toFixed(3)} after ${n} frames to first shed)`);
-  framesUntil(gov, 30, (g) => g.scale <= FLOOR);
-  R.ok(Math.abs(gov.scale - FLOOR) < 1e-9, `it clamps at the ${FLOOR} floor and never below (got ${gov.scale.toFixed(3)})`);
+  const toFloor = framesUntil(gov, 30, (g) => g.scale <= FLOOR);
+  R.ok(Math.abs(gov.scale - FLOOR) < 1e-9, `it clamps at the ${FLOOR} floor and never below (got ${gov.scale.toFixed(3)}, ${n + toFloor} frames total)`);
   // 500 more frames of the same load must not push it lower.
   for (let i = 0; i < 500; i++) step(gov, 30);
   R.ok(gov.scale === FLOOR, `500 further stalled frames leave it pinned at the floor (${gov.scale})`);
@@ -79,11 +110,11 @@ R.group("── 3 · recovery is ASYMMETRIC — the whole point ─────�
   // most of the recovery time is the EMA climbing from 30 back over the 56
   // threshold, not the dial moving. Isolating the rate is what makes the
   // assertion actually about asymmetry.
-  const shedding = { scale: 0.8, ema: 20 };   // ema already well below SHED_BELOW
+  const shedding = { scale: 0.8, ema: 20, lastTs: NO_BASELINE };   // ema already well below SHED_BELOW
   governorStep(shedding, 20);
   const shedStep = 0.8 - shedding.scale;
 
-  const recovering = { scale: 0.8, ema: 120 }; // ema already well above RECOVER_ABOVE
+  const recovering = { scale: 0.8, ema: 120, lastTs: NO_BASELINE }; // ema already well above RECOVER_ABOVE
   governorStep(recovering, 120);
   const recoverStep = recovering.scale - 0.8;
 
@@ -94,14 +125,87 @@ R.group("── 3 · recovery is ASYMMETRIC — the whole point ─────�
     `shedding is materially faster than recovery (${(shedStep / recoverStep).toFixed(1)}x, need >2.5x)`,
     "symmetric rates pump: shedding relieves load, fps recovers, quality returns, load returns");
 
+  // And end to end, on timestamp series rather than on fps numbers: a 30fps
+  // stall must shed in materially fewer frames than a 60fps run takes to give
+  // the same quality back.
+  const shedGov = makeGov();
+  let t = 1000;
+  let shedFrames = 0;
+  while (shedGov.scale > 0.9 && shedFrames < 5000) { governorSample(shedGov, (t += 33.3)); shedFrames++; }
+  let backFrames = 0;
+  while (shedGov.scale < 1 && backFrames < 20000) { governorSample(shedGov, (t += 16.6)); backFrames++; }
+  R.info(`1.0 → 0.9 took ${shedFrames} frames at 30fps · 0.9 → 1.0 took ${backFrames} frames at 60fps`);
+  R.ok(backFrames > shedFrames * 2,
+    `recovery is materially longer than the shed that caused it (${(backFrames / shedFrames).toFixed(1)}x)`);
+
   // Hysteresis: between the two thresholds the dial must sit still, or it
   // oscillates every frame it spends on the boundary.
-  const idle = { scale: 0.8, ema: 50 };  // between SHED_BELOW 42 and RECOVER_ABOVE 56
+  const idle = { scale: 0.8, ema: 50, lastTs: NO_BASELINE };  // between SHED_BELOW 42 and RECOVER_ABOVE 56
   governorStep(idle, 50);
   R.ok(idle.scale === 0.8, `between the thresholds the dial holds (hysteresis band, got ${idle.scale})`);
 }
 
-R.group("── 4 · every rAF driver is visibility-gated (D0699) ────────");
+R.group("── 4 · the two traps, as arithmetic ───────────────────────");
+{
+  // TRAP 1 — a tab that was hidden for a minute comes back as one enormous
+  // "frame". MAX_STEP_MS clamps how far the ANIMATION may advance; it must not
+  // be what clamps the MEASUREMENT, so the sampler needs its own resume rule.
+  const resumed = makeGov();
+  governorSample(resumed, 1000);           // baseline
+  governorSample(resumed, 1000 + 60_000);  // one minute hidden
+  R.ok(resumed.scale === 1 && resumed.ema === 60,
+    `a 60s gap is read as a RESUME, not a stall (scale ${resumed.scale}, ema ${resumed.ema})`,
+    "shedding here would degrade quality for a stall that never happened");
+  // …and the very next real frame after that resume is measured normally.
+  governorSample(resumed, 1000 + 60_000 + 16.6);
+  R.ok(resumed.ema > 59 && resumed.ema <= 61,
+    `sampling resumes immediately after (ema ${resumed.ema.toFixed(2)} from one 60fps frame)`);
+
+  // The boundary itself: just under RESUME_GAP_MS is a stall and must be read.
+  const edge = makeGov();
+  governorSample(edge, 0);
+  governorSample(edge, RESUME_GAP_MS - 1);
+  R.ok(edge.ema < 60, `a ${RESUME_GAP_MS - 1}ms frame is still measured as a stall (ema ${edge.ema.toFixed(2)})`);
+  // …and that case only works because the "no baseline" sentinel is not 0. rAF
+  // timestamps are measured from navigation start, so the first frames of a page
+  // load ARE single-digit ms — a 0 sentinel makes an early real timestamp
+  // indistinguishable from "never sampled", and this gate caught exactly that.
+  R.ok(NO_BASELINE < 0, `the no-baseline sentinel (${NO_BASELINE}) cannot collide with a real rAF timestamp`);
+  const early = makeGov();
+  governorSample(early, 0);          // a genuine timestamp of 0 must BASELINE…
+  R.ok(early.lastTs === 0, "a timestamp of 0 establishes the baseline rather than being discarded");
+  governorSample(early, 16.6);       // …so the next frame is a real reading
+  R.ok(early.ema > 60, `and the frame after it is measured (ema ${early.ema.toFixed(2)})`);
+
+  // TRAP 2 — the dial is fed by more than one pre-existing loop (the shared
+  // clock and ParticleField's own rAF). rAF gives every callback in a frame the
+  // SAME timestamp, so an unguarded second feeder measures a 0ms gap = 1000fps.
+  const shared = makeGov();
+  governorSample(shared, 0);
+  governorSample(shared, 33.3);
+  const emaOnce = shared.ema;
+  governorSample(shared, 33.3);            // the second loop, same frame
+  governorSample(shared, 33.3);            // and a third, for good measure
+  R.ok(shared.ema === emaOnce,
+    `duplicate samples for one frame are dropped (ema stayed ${emaOnce.toFixed(2)})`,
+    "without this guard a second feeder reads 0ms gaps as 1000fps and the dial never sheds");
+  const backwards = makeGov();
+  governorSample(backwards, 100);
+  governorSample(backwards, 116);
+  const emaFwd = backwards.ema;
+  governorSample(backwards, 90);           // a stale timestamp arriving late
+  R.ok(backwards.ema === emaFwd, `a non-advancing timestamp is ignored (ema stayed ${emaFwd.toFixed(2)})`);
+
+  // Subscriber churn must not re-probe the dial from 1: a loop that stops and
+  // starts is not new evidence about the device.
+  const churn = { scale: 0.62, ema: 30, lastTs: 12_345 };
+  governorReset(churn);
+  R.ok(churn.scale === 0.62 && churn.ema === 30 && churn.lastTs === NO_BASELINE,
+    `a loop restart drops only the timing baseline (scale ${churn.scale} and ema ${churn.ema} survive)`,
+    "re-probing from 1 on every mount/unmount makes the dial track subscriber churn, not load");
+}
+
+R.group("── 5 · every rAF driver is visibility-gated (D0699) ────────");
 {
   // Walk app/src for requestAnimationFrame, then check each owning file
   // reaches the shared visibility machinery. Measurement-only rAFs (a single
@@ -162,7 +266,7 @@ R.group("── 4 · every rAF driver is visibility-gated (D0699) ────�
   for (const p of privatelyGated) R.info(`    ${p}`);
 }
 
-R.group("── 5 · micro-delay + governor consumer (D0697) ─────────────");
+R.group("── 6 · consumers: micro-delay (D0697) + the dial ───────────");
 {
   const pending = read("src/design/usePendingDelay.ts");
   R.ok(/PENDING_DELAY_MS\s*=\s*100/.test(pending), "the pending threshold is 100ms — below it a spinner is a flicker, not feedback");
@@ -171,9 +275,138 @@ R.group("── 5 · micro-delay + governor consumer (D0697) ──────�
 
   const art = read("src/design/ArtBackground.tsx");
   R.ok(/governorScale\(\)/.test(art), "ParticleField consumes the dial");
+  R.ok(/sampleFrameBudget\(now\)/.test(art),
+    "ParticleField's existing rAF FEEDS the dial",
+    "the shared clock only has subscribers on /mempool and /simulate — without this the governor is inert on /");
   R.ok(!/seed\(\)[\s\S]{0,200}governorScale/.test(art),
     "the dial gates DRAWING, not seeding",
     "reseeding on a dial move would re-scatter the field and break the determinism verify-prng.mjs asserts");
+
+  const amb = read("src/design/AmbientField.tsx");
+  R.ok(/useGovernorScale\(\)/.test(amb), "AmbientField consumes the dial for its orb count");
+  R.ok(/ORBS\.slice\(0, drawnOrbs\)/.test(amb),
+    "it SLICES the seeded field rather than reseeding a shorter one",
+    "reseeding would rebuild the array on every dial move and re-key the memo");
+  // Cross-gate invariant: verify-perf.mjs §2 asserts plates/dust/sweep/ribbon
+  // as an EXACT per-tier census. If they ever become governor-dependent, that
+  // gate turns flaky under load — so the coupling is asserted from this side too.
+  const governedFixedLayer = /(plateCount|dustCount)\s*\*\s*gov|gov\s*\*\s*(plateCount|dustCount)/.test(amb);
+  R.ok(!governedFixedLayer,
+    "plates/dust stay a FIXED per-tier mount budget (verify-perf.mjs §2 asserts them exactly)",
+    "governing them makes that census load-dependent; it would have to become a range in the same change");
+}
+
+R.group("── 7 · a shed is visible from outside (browser) ────────────");
+{
+  const reachable = staticOnly
+    ? false
+    : await fetch(BASE, { method: "GET" }).then((r) => r.ok).catch(() => false);
+  if (staticOnly) {
+    // An EXPLICIT, caller-requested split — not the gate deciding on its own
+    // that it could not be bothered. §1-6 already covered the rule, the traps,
+    // the driver sweep and every consumer; what is deferred here is named.
+    R.info("§7 not run: --static. It asserts data-gov, __XMR_GOV__ and the orb");
+    R.info("   count against a real browser, and belongs in verify:e2e.");
+  } else if (!R.ok(reachable, `${BASE} is serving the built app`,
+    "start it: npm run build && node scripts/serve-dist.mjs 4173 &")) {
+    // Deliberately a FAILURE, not a skip. A gate that quietly drops its only
+    // end-to-end assertion when the server is down reports green for a claim it
+    // never checked — the exact failure mode this file exists to prevent.
+  } else {
+    const { browser, engine } = await launch();
+    R.info(`engine: ${engine}`);
+    const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    // domcontentloaded + an explicit selector, never networkidle: the FAST
+    // polling tier fires every 3s, so the network is never idle. And `attached`,
+    // not the default `visible` — an orb can legitimately be at opacity 0 at any
+    // moment in its 22–48s rise, and this loop is also actively removing and
+    // re-adding orbs, so waiting on one particular span being paintable hangs.
+    await page.goto(`${BASE}/?tier=high`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("#bg-fx .orb", { state: "attached", timeout: 15000 });
+
+    const hook = await page.evaluate(() => typeof window.__XMR_GOV__?.scale);
+    R.ok(hook === "number", `window.__XMR_GOV__.scale is readable from the page (typeof ${hook})`);
+
+    // Feed the real rule a synthetic timestamp series. Only the TIMESTAMPS are
+    // synthetic — the arithmetic, the publish path and the React subscription
+    // are all the shipped ones. `__govT` is kept monotonic across calls and runs
+    // ahead of wall-clock, which has a second, deliberate effect: real rAF
+    // samples arriving meanwhile are non-advancing and get dropped, so this
+    // measures the rule rather than the CI runner's framerate. (Headless
+    // Chromium genuinely misses frame budget here — the first draft of this
+    // section was flaky precisely because the page was shedding on its own.)
+    const drive = (frames, stepMs) =>
+      page.evaluate(([n, ms]) => {
+        window.__govT = Math.max(window.__govT ?? 0, performance.now());
+        for (let i = 0; i < n; i++) window.__XMR_GOV__.sample((window.__govT += ms));
+        return {
+          scale: window.__XMR_GOV__.scale,
+          gov: document.documentElement.getAttribute("data-gov"),
+        };
+      }, [frames, stepMs]);
+    const orbs = () => page.evaluate(() => document.querySelectorAll("#bg-fx .orb").length);
+
+    // Settle to full quality first, so the counts below are measured against a
+    // known state rather than against whatever this machine happened to manage.
+    const full = await drive(4000, 16.6);
+    await page.waitForTimeout(200);
+    const before = await orbs();
+    R.ok(full.scale === 1 && full.gov === null,
+      `a sustained 60fps run holds the dial at full and publishes nothing (scale ${full.scale}, data-gov ${full.gov})`);
+    R.ok(before > 0, `orb field mounted at full quality (${before} orbs)`);
+
+    const shed = await drive(400, 33.3);
+    await page.waitForTimeout(200); // let React flush the shorter list
+    const after = await orbs();
+
+    R.ok(shed.scale < 0.99, `400 frames at 30fps shed the dial to ${shed.scale.toFixed(3)}`);
+    R.ok(shed.gov !== null, `data-gov is present on <html> while the dial is low (data-gov="${shed.gov}")`,
+      "a governor that degrades output without saying so is unreviewable");
+    // `shed.gov !== null` is repeated here on purpose: without it, deleting the
+    // publish entirely satisfies this assertion (Number(null) === 0, 0 % 5 === 0,
+    // 0 < 100) and the gate reports 1 failure where it should report 2. Found by
+    // deliberately breaking the publish path, which is the only way to find it.
+    R.ok(shed.gov !== null && Number(shed.gov) % 5 === 0 && Number(shed.gov) < 100,
+      `the published value is quantised to 5% and never rounds up to "100" (${shed.gov})`,
+      "an unquantised write restyles <html> on every frame of a shed");
+    R.ok(after < before, `the shed actually removed DOM: ${before} orbs → ${after}`);
+    R.ok(Math.abs(after - Math.round(before * shed.scale)) <= Math.ceil(before * 0.1) + 1,
+      `the surviving orb count tracks the dial (${after} ≈ ${before} × ${shed.scale.toFixed(2)}, quantised to 0.1)`);
+
+    const rec = await drive(4000, 16.6);
+    await page.waitForTimeout(200);
+    const restored = await orbs();
+    R.ok(rec.scale === 1 && rec.gov === null,
+      `a sustained 60fps run recovers to full and REMOVES data-gov (scale ${rec.scale}, data-gov ${rec.gov})`,
+      "the attribute must mean 'something is being held back right now', so it cannot linger at 100");
+    R.ok(restored === before, `the full field comes back (${restored} orbs, was ${before})`);
+
+    // …and the escape hatch: `?gov=off` pins the dial, so a screenshot gate can
+    // get a deterministic layer count out of a CI box that misses frame budget.
+    const pinned = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    await pinned.goto(`${BASE}/?tier=high&gov=off`, { waitUntil: "domcontentloaded" });
+    await pinned.waitForSelector("#bg-fx .orb", { state: "attached", timeout: 15000 });
+    const off = await pinned.evaluate(() => {
+      let t = performance.now();
+      for (let i = 0; i < 400; i++) window.__XMR_GOV__.sample((t += 33.3)); // a hard 30fps stall
+      return {
+        scale: window.__XMR_GOV__.scale,
+        gov: document.documentElement.getAttribute("data-gov"),
+      };
+    });
+    // Read the orb count only AFTER React has had a chance to flush. Reading it
+    // inside the evaluate above returns the pre-render count and would report
+    // "30 orbs" even on a page that was about to drop to 15 — proven by
+    // deliberately breaking the pin, which is the only reason this line exists.
+    await pinned.waitForTimeout(200);
+    off.orbs = await pinned.evaluate(() => document.querySelectorAll("#bg-fx .orb").length);
+    R.ok(off.scale === 1 && off.gov === null && off.orbs === before,
+      `?gov=off pins the dial through the same 30fps stall (scale ${off.scale}, data-gov ${off.gov}, ${off.orbs} orbs)`,
+      "without this a shot baseline diffs whenever CI is loaded, with no defect behind it");
+    await pinned.close();
+
+    await browser.close();
+  }
 }
 
 process.exit(R.finish());

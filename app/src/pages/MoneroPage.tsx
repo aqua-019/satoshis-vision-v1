@@ -54,8 +54,10 @@ export function MoneroPage() {
 
   // Width is a property of the active tab, not of the page: Bottom Line is long-form
   // prose so it drops to the reading tier while every other tab stays standard. The
-  // container therefore changes width on tab switch — the scrollTo(0, 0) effect above
-  // already masks that reflow, since the switch repaints from the top either way.
+  // container therefore changes width on tab switch — the scroll reset masks that
+  // reflow, since the switch repaints from the top either way. That reset used to be
+  // the `scrollTo(0, 0)` effect that lived here; it is now useRouteChrome's rule 3,
+  // which is the first version of this claim that is actually TRUE on desktop.
   return (
     <PageShell width={active === "bottomline" ? "reading" : "standard"} bg={{ intensity: "calm" }}>
       <Crumbs items={["xmr.irish", "v5.0", "monero", active]} />

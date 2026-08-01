@@ -155,7 +155,7 @@ export function MempoolPage() {
                   type="button"
                   className="mp-switcher__item"
                   aria-current={on ? "true" : undefined}
-                  onClick={() => { setParams({ v: it.id }); setOpen(false); }}
+                  onClick={() => { setActive(it.id); setOpen(false); }}
                   style={{
                     /* D0661 — per-item index for the open cascade. The DELAY is
                        computed in CSS (`calc(var(--stagger-i) * 30ms)`) so the

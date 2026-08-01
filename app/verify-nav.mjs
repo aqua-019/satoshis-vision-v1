@@ -56,17 +56,30 @@ const { browser, engine } = await launch();
 R.info(`engine: ${engine}`);
 R.info(`base:   ${BASE}`);
 
+/**
+ * Every wait below is SOFT: a timeout resolves instead of throwing.
+ *
+ * This is not laziness about error handling, it is what makes the gate useful
+ * when it fails. The first run against a deliberately broken build died at
+ * §2's `waitForSelector('#page-title')` and never reported §3, §4 or §5 at all
+ * — so a single regression hid four unrelated sections. Timeouts here degrade
+ * into the assertion that follows them reading a wrong value and printing ❌,
+ * which is the whole point: a gate should say everything that is broken, not
+ * the first thing.
+ */
+const soft = (p) => p.catch(() => null);
+
 /** domcontentloaded + the shell selector. Never networkidle — see the header. */
 async function open(page, route) {
   await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('.art-stage', { timeout: 20000 });
+  await soft(page.waitForSelector('.art-stage', { timeout: 20000 }));
 }
 
-const liveText = (page) =>
-  page.evaluate(() => {
-    const el = document.querySelector('div.sr-only[role="status"]');
-    return el ? (el.textContent || '') : null;
-  });
+/** Wait for at least one #page-title to be in the DOM. `waitForSelector`
+ *  cannot be used for this: four pages render theirs as `.sr-only`, and a
+ *  visibility-gated wait on a 1×1 clipped box is engine-dependent. */
+const waitForHeading = (page, timeout = 12000) =>
+  soft(page.waitForFunction(() => document.querySelectorAll('#page-title').length > 0, null, { timeout }));
 
 const navDebug = (page) => page.evaluate(() => window.__XMR_NAV_DEBUG__ || null);
 
@@ -127,7 +140,13 @@ async function keyActivate(page, selector, text) {
     },
     [selector, text],
   );
-  if (!found) throw new Error(`keyActivate: no focusable ${selector} containing ${JSON.stringify(text)}`);
+  if (!found) {
+    // A reported failure, not a throw — see `soft` above. A missing control is
+    // exactly as interesting as a wrong measurement, and killing the process
+    // here would hide every section that follows.
+    R.ok(false, `keyActivate: no focusable ${selector} containing ${JSON.stringify(text)}`);
+    return;
+  }
   await page.keyboard.press('Enter');
 }
 
@@ -145,8 +164,7 @@ R.group(`── §1 · one <h1 id="page-title"> per route · ${ROUTES.length} ro
     // The heading may arrive a frame after the shell on a lazy route; wait for
     // it, but do not let the wait DECIDE the assertion — the count is read
     // afterwards either way, so 0 and 2 both still fail.
-    await page.waitForFunction(() => document.querySelectorAll('#page-title').length > 0, null, { timeout: 12000 })
-      .catch(() => {});
+    await waitForHeading(page);
     const n = await page.evaluate(() => document.querySelectorAll('#page-title').length);
     counts.set(n, (counts.get(n) || 0) + 1);
     if (n !== 1) {
@@ -212,8 +230,8 @@ R.group('── §2 · live region + post-navigation focus ───────
 
   const before = await page.evaluate(() => history.length);
   await page.click('nav.topnav a[href="/markets"]');
-  await page.waitForFunction(() => location.pathname === '/markets', null, { timeout: 15000 });
-  await page.waitForSelector('#page-title', { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/markets', null, { timeout: 15000 }));
+  await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
 
   const after = await page.evaluate(() => ({
@@ -229,7 +247,7 @@ R.group('── §2 · live region + post-navigation focus ───────
 
   // A search-only change must NOT steal focus from the control that caused it.
   await page.click('button[aria-pressed="false"].proto-btn');
-  await page.waitForFunction(() => location.search.includes('range='), null, { timeout: 10000 });
+  await soft(page.waitForFunction(() => location.search.includes('range='), null, { timeout: 10000 }));
   await page.waitForTimeout(SETTLE);
   const afterRange = await page.evaluate(() => ({
     active: document.activeElement ? document.activeElement.tagName : null,
@@ -260,7 +278,7 @@ R.group('── §3a · main.main (the desktop scroller) at 1440 ─────
   R.ok(Math.abs((parked.main ?? -1) - 400) <= TOL, `parked main.main at 400 (got ${parked.main})`);
 
   await keyActivate(page, '.tabstrip button', 'legality');
-  await page.waitForFunction(() => location.pathname === '/monero/legality', null, { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/monero/legality', null, { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
   const afterTab = await scrollTops(page);
   const decTab = await navDebug(page);
@@ -268,7 +286,7 @@ R.group('── §3a · main.main (the desktop scroller) at 1440 ─────
   R.ok(decTab?.decision === 'top', `precedence rule 3 fired: decision="${decTab?.decision}" (expected "top")`);
 
   await page.goBack();
-  await page.waitForFunction(() => location.pathname === '/monero/tech', null, { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/monero/tech', null, { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
   const back = await scrollTops(page);
   const decBack = await navDebug(page);
@@ -293,15 +311,15 @@ R.group('── §3b · .mp-canvas-scroll (mempool pan box) at 1440 ────
   R.ok(Math.abs((parked.canvas ?? -1) - 400) <= TOL, `parked .mp-canvas-scroll at 400 (got ${parked.canvas})`);
 
   await page.click('nav.topnav a[href="/markets"]');
-  await page.waitForFunction(() => location.pathname === '/markets', null, { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/markets', null, { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
   const away = await scrollTops(page);
   R.ok(away.canvas === null, 'the pan box is gone on /markets (nothing to compare against)');
   R.ok(away.main === 0, `/markets opens at the top (main.main ${away.main})`);
 
   await page.goBack();
-  await page.waitForFunction(() => location.pathname === '/mempool', null, { timeout: 15000 });
-  await page.waitForSelector('.mp-canvas-scroll', { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/mempool', null, { timeout: 15000 }));
+  await soft(page.waitForSelector('.mp-canvas-scroll', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE * 2);
   const back = await scrollTops(page);
   const dec = await navDebug(page);
@@ -329,13 +347,13 @@ R.group('── §3c · document.scrollingElement at 390 (dual-target) ───
   R.ok(Math.abs((parked.doc ?? -1) - 400) <= TOL, `parked document at 400 (got ${parked.doc})`);
 
   await keyActivate(page, '.tabstrip button', 'legality');
-  await page.waitForFunction(() => location.pathname === '/monero/legality', null, { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/monero/legality', null, { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
   const afterTab = await scrollTops(page);
   R.ok(afterTab.doc === 0, `tab switch resets the document to 0 (got ${afterTab.doc})`);
 
   await page.goBack();
-  await page.waitForFunction(() => location.pathname === '/monero/tech', null, { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/monero/tech', null, { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
   const back = await scrollTops(page);
   R.ok(Math.abs((back.doc ?? -1) - 400) <= TOL, `Back restores the document to 400 ±${TOL} (got ${back.doc})`);
@@ -352,7 +370,7 @@ R.group('── §3d · precedence rules 2 and 4 ──────────�
   await open(page, '/');
   await page.waitForTimeout(SETTLE);
   await page.click('.brand-col a[href="/sources#release-notes"]');
-  await page.waitForFunction(() => location.pathname === '/sources', null, { timeout: 15000 });
+  await soft(page.waitForFunction(() => location.pathname === '/sources', null, { timeout: 15000 }));
   await page.waitForTimeout(1800); // the anchor scroll is `behavior: "smooth"`
   const hashDec = await navDebug(page);
   const hashPos = await scrollTops(page);
@@ -364,13 +382,13 @@ R.group('── §3d · precedence rules 2 and 4 ──────────�
   // not a synthetic pushState: a hand-rolled popstate carries no router key
   // and is read as a POP into an existing entry, which is rule 1, not rule 4.
   await open(page, '/markets');
-  await page.waitForSelector('#page-title', { timeout: 15000 });
+  await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE * 2);
   const marketsExtent = await scrollTops(page);
   R.ok((marketsExtent.mainMax ?? 0) >= 400, `/markets main.main is scrollable past 400 (max ${marketsExtent.mainMax})`);
   await parkScroll(page, 'main.main', 400);
   await keyActivate(page, 'button.proto-btn', '90D');
-  await page.waitForFunction(() => location.search.includes('range=90D'), null, { timeout: 10000 });
+  await soft(page.waitForFunction(() => location.search.includes('range=90D'), null, { timeout: 10000 }));
   await page.waitForTimeout(SETTLE);
   const keep = await scrollTops(page);
   const keepDec = await navDebug(page);
@@ -394,9 +412,9 @@ R.group('── §4a · ?v= pushes and must not clobber ?block= ─────�
 
   // The switcher list is collapsed until its trigger is pressed (desktop too).
   await page.click('.mp-switcher__trigger');
-  await page.waitForSelector('.mp-switcher__list.is-open', { timeout: 10000 });
+  await soft(page.waitForSelector('.mp-switcher__list.is-open', { timeout: 10000 }));
   await page.click('.mp-switcher__list button:has-text("Terminal")');
-  await page.waitForFunction(() => location.search.includes('v=terminal'), null, { timeout: 10000 });
+  await soft(page.waitForFunction(() => location.search.includes('v=terminal'), null, { timeout: 10000 }));
   await page.waitForTimeout(SETTLE);
 
   const end = await page.evaluate(() => ({ url: location.search, len: history.length }));
@@ -405,7 +423,7 @@ R.group('── §4a · ?v= pushes and must not clobber ?block= ─────�
   R.ok(end.len === start.len + 1, `?v= PUSHES exactly one history entry (${start.len} → ${end.len})`);
 
   await page.goBack();
-  await page.waitForFunction(() => location.search.includes('v=classic'), null, { timeout: 10000 });
+  await soft(page.waitForFunction(() => location.search.includes('v=classic'), null, { timeout: 10000 }));
   const backUrl = await page.evaluate(() => location.search);
   R.ok(/v=classic/.test(backUrl) && /block=2900000/.test(backUrl), `Back returns to the previous view (${backUrl})`);
 
@@ -417,7 +435,7 @@ R.group('── §4b · ?range= replaces, and 30D writes no param ────�
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
 
   await open(page, '/markets');
-  await page.waitForSelector('#page-title', { timeout: 15000 });
+  await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
 
   const initial = await page.evaluate(() => ({
@@ -431,9 +449,9 @@ R.group('── §4b · ?range= replaces, and 30D writes no param ────�
   R.ok(initial.pressed.includes('30D'), `30D is the rendered default (pressed: ${initial.pressed.join(',')})`);
 
   await page.click('button.proto-btn:has-text("90D")');
-  await page.waitForFunction(() => location.search.includes('range=90D'), null, { timeout: 10000 });
+  await soft(page.waitForFunction(() => location.search.includes('range=90D'), null, { timeout: 10000 }));
   await page.click('button.proto-btn:has-text("1Y")');
-  await page.waitForFunction(() => location.search.includes('range=1Y'), null, { timeout: 10000 });
+  await soft(page.waitForFunction(() => location.search.includes('range=1Y'), null, { timeout: 10000 }));
   await page.waitForTimeout(SETTLE);
 
   const twoClicks = await page.evaluate(() => ({ search: location.search, len: history.length }));
@@ -441,7 +459,7 @@ R.group('── §4b · ?range= replaces, and 30D writes no param ────�
   R.ok(/range=1Y/.test(twoClicks.search), `?range reflects the last click (${twoClicks.search})`);
 
   await page.click('button.proto-btn:has-text("30D")');
-  await page.waitForFunction(() => !location.search.includes('range='), null, { timeout: 10000 }).catch(() => {});
+  await soft(page.waitForFunction(() => !location.search.includes('range='), null, { timeout: 10000 }));
   const backToDefault = await page.evaluate(() => ({ search: location.search, len: history.length }));
   R.ok(!/range=/.test(backToDefault.search), `selecting the default DELETES the param (search=${JSON.stringify(backToDefault.search)})`);
   R.ok(backToDefault.len === initial.len, `still no history growth (${backToDefault.len})`);
@@ -480,6 +498,91 @@ R.group('── §5 · skip link ───────────────�
   R.ok(landed.id === 'main', `activating the skip link moves focus to #main (got ${landed.tag}#${landed.id})`);
 
   await page.context().close();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §6 · D0661 · the mempool switcher's open cascade
+// ─────────────────────────────────────────────────────────────────────────────
+// verify-discrete.mjs §5 gates the /future and /peers CARD grids (`.v6-stagger`)
+// and §6 gates this list's open/close TRANSITION — but nothing gated the
+// per-item cascade on the switcher tiles, which is a second call site of the
+// same `--stagger-i` contract split across two streams (MempoolPage.tsx emits
+// the index and the class; styles.css owns the keyframe and the delay). A
+// contract with one half in each of two files and no gate is how the index
+// silently stops matching the selector.
+R.group('── §6 · D0661 · mempool switcher stagger ─────────────────────');
+{
+  const readTiles = (page) =>
+    page.evaluate(() => {
+      const list = document.querySelector('.mp-switcher__list');
+      const items = [...document.querySelectorAll('.mp-switcher__list > .mp-switcher__item')];
+      return {
+        open: !!list && list.classList.contains('is-open'),
+        count: items.length,
+        tiles: items.map((el) => {
+          const cs = getComputedStyle(el);
+          const r = el.getBoundingClientRect();
+          return {
+            idx: cs.getPropertyValue('--stagger-i').trim(),
+            name: cs.animationName,
+            delay: cs.animationDelay,
+            // Content presence, measured — the reduced-motion invariant is
+            // "suppress ANIMATION, not CONTENT", so the tiles must still be
+            // real boxes with real text when the cascade is off.
+            w: Math.round(r.width),
+            h: Math.round(r.height),
+            text: (el.textContent || '').trim().length,
+          };
+        }),
+      };
+    });
+
+  // — motion allowed —
+  {
+    const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+    await open(page, '/mempool');
+    await page.waitForTimeout(SETTLE);
+    await page.click('.mp-switcher__trigger');
+    await soft(page.waitForSelector('.mp-switcher__list.is-open', { timeout: 10000 }));
+    await page.waitForTimeout(120);
+
+    const m = await readTiles(page);
+    R.ok(m.open === true, 'the switcher list opens on its trigger');
+    R.ok(m.count === 6, `all six view tiles carry .mp-switcher__item (got ${m.count})`);
+    const idx = m.tiles.map((t) => t.idx);
+    R.ok(idx.join(',') === '0,1,2,3,4,5', `--stagger-i is the tile index, 0..5 (got ${idx.join(',')})`);
+    // `[].every(...)` is TRUE — a vacuous pass. Proved by the break-test: with
+    // the class renamed, three of this section's assertions went green on an
+    // empty node list while the count assertion went red. Every `every` below
+    // is therefore paired with a length check.
+    R.ok(m.tiles.length === 6 && m.tiles.every((t) => t.name === 'stagger-rise'),
+      `every tile animates stagger-rise (got ${[...new Set(m.tiles.map((t) => t.name))].join('/')})`);
+    const delays = m.tiles.map((t) => t.delay);
+    R.ok(delays.join(',') === '0s,0.03s,0.06s,0.09s,0.12s,0.15s',
+      `delays resolve to a 30ms cascade (got ${delays.join(',')})`);
+    R.ok(new Set(delays).size === 6, `all six delays are DISTINCT — a cascade, not a single flash (${new Set(delays).size}/6)`);
+    await page.context().close();
+  }
+
+  // — reduced motion —
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+    const page = await ctx.newPage();
+    await open(page, '/mempool');
+    await page.waitForTimeout(SETTLE);
+    await page.click('.mp-switcher__trigger');
+    await soft(page.waitForSelector('.mp-switcher__list.is-open', { timeout: 10000 }));
+    await page.waitForTimeout(120);
+
+    const r = await readTiles(page);
+    R.ok(r.open === true, 'the list still opens under prefers-reduced-motion: reduce');
+    R.ok(r.count === 6, `all six tiles still RENDER under reduce (got ${r.count}) — content is not suppressed`);
+    R.ok(r.tiles.length === 6 && r.tiles.every((t) => t.name === 'none'),
+      `zero animation applied under reduce (got ${[...new Set(r.tiles.map((t) => t.name))].join('/')})`);
+    R.ok(r.tiles.length === 6 && r.tiles.every((t) => t.w > 0 && t.h > 0 && t.text > 0),
+      'every tile still has a real box and real text under reduce (nothing is conveyed by the movement alone)');
+    await ctx.close();
+  }
 }
 
 await browser.close();
