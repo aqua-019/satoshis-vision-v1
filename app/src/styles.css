@@ -511,6 +511,13 @@ header > div > h1.serif {
 /* ── left telemetry rail ──────────────────────────────────────── */
 
 .shell {
+  /* D0888: containing block for the degraded/offline banner. One line, and it
+     is what lets that banner anchor to the topbar's bottom edge without ever
+     naming the topbar's height — which varies three ways (desktop grid,
+     <=768px flex + env(safe-area-inset-top), and the narrow two-row wrap) and
+     is about to change again in prompt 07. Compare `.mp-switcher`'s hardcoded
+     `top: 60px` below, which is the same coupling done the brittle way. */
+  position: relative;
   flex: 1; min-height: 0;
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -801,6 +808,37 @@ header > div > h1.serif {
   min-width: 7ch; text-align: right;
 }
 .panel-b { padding: 10px 12px; }
+
+/* ── D0888/D0870 · degraded + offline banner ────────────────────────────────
+   Out of flow on purpose: verify-cls loads with NO route mocking and
+   serve-dist answers /api/xmr/* with 200 text/html, so failures accumulate and
+   feedDegraded can go true inside the 3s measurement window. In flow this would
+   be ~32px at an 844px viewport = ~0.038 CLS, roughly 4x the gate ceiling.
+   Spans the rail column too — the claim is global, so scoping it to the content
+   column would understate it. */
+.degraded-banner {
+  position: absolute; inset: 0 0 auto 0; z-index: 300;
+  /* Above page content and .mp-switcher (50) and the mobile bar (200);
+     below the modal layer (1000) and the skip link (9999). */
+  display: flex; align-items: center; gap: 8px;
+  min-height: var(--degraded-h, 44px);
+  padding: 10px 16px;
+  font: var(--fs-label)/1.45 var(--f-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-80);
+  background: rgba(12, 9, 6, 0.94);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--rule);
+  /* D0612: opacity only. NO transform, no slide — a banner that animates in
+     moves content perceptually even when it does not move it in layout. Reduce
+     zeroes --d-2, which turns this into a hard cut and loses nothing. */
+  transition: opacity var(--d-2) var(--e-standard);
+}
+.degraded-banner[data-kind="offline"] { border-bottom-color: var(--r-50); }
+.degraded-banner[data-kind="degraded"] { border-bottom-color: var(--y-50); }
+.degraded-banner b { color: var(--y-50); letter-spacing: 0.1em; }
+.degraded-banner[data-kind="offline"] b { color: var(--r-50); }
+.degraded-banner__paths { color: var(--ink-100); }
 /* D0858: reserved like .panel-updated's 7ch above — the chip appears and
    disappears on every refresh round, so an unreserved slot would reflow the
    header twice a minute on a healthy feed. `· checking` is 10 chars. */
