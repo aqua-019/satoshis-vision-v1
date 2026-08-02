@@ -1929,6 +1929,23 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     border: 1px solid var(--ink-20); border-radius: 4px;
     color: var(--tk-accent);
     font-family: var(--f-mono); font-size: 18px; line-height: 1;
+    /* Above the drawer, or the drawer covers its own close button. `.topnav`
+       below is `position: fixed; right: 0; width: min(78vw, 320px)` at
+       `z-index: 200`, which at 390px spans x86-390 — and this toggle sits at
+       x330-374, entirely inside it, with no z-index of its own. So when the
+       drawer opened it painted over the ✕ at 97% opacity: invisible, and
+       `elementFromPoint` at the button's centre returned the NAV, so a real tap
+       hit the drawer instead of the button.
+
+       On a pointer device Escape still closed it (NavTop.tsx:45), which is why
+       this survived — but this rule only applies at <=768px, where there is no
+       Escape key and no backdrop. A touch user who opened the drawer and did
+       not want to navigate had no way to close it.
+
+       Found by verify-vitals: `/`'s second scripted interaction was failing its
+       actionability check and reporting SKIPPED, while the row still printed a
+       worstInt from the first click. A skip is not a pass. */
+    position: relative; z-index: 201;
   }
   .topnav {
     position: fixed; top: 0; right: 0; z-index: 200;
