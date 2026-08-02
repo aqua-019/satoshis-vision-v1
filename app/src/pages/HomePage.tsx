@@ -7,14 +7,19 @@ import { Link, useNavigate } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtBytes } from "@/data/types";
-import { assertNever, CHAIN_MARKET_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
+import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData, isStale } from "@/data/feed-status";
+import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { Card, Crumbs, Pill, Sparkline, Stat, Provenance } from "@/design/primitives";
 import { ThemeToggle } from "@/design/ThemeToggle";
 
 export function HomePage() {
   const data = useMoneroLive();
   const navigate = useNavigate();
+  const chromeState = useChromeState(data.status, CHAIN_MARKET_CHROME_KEYS);
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
+  const marketFresh = isStale(data.status.market)
+    ? "stale"
+    : hasData(data.status.market) ? "live" : "loading";
 
   return (
     <PageShell width="wide" className="home-hero" bg={{ intensity: "busy" }}>
@@ -52,21 +57,30 @@ export function HomePage() {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
             <div className="kicker">Live snapshot</div>
             {(() => {
-              // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
-              const phase = chromePhase(data.status, CHAIN_MARKET_CHROME_KEYS);
-              switch (phase) {
-                case "loading":
-                case "error": return <Pill>CONNECTING</Pill>;
-                case "stale": return <Pill tone="warn" dot>STALE · reconnecting</Pill>;
+              // Exhaustive over ChromeState — the FIFTH chrome surface, missed
+              // when the other four were converted. It was still collapsing
+              // `error` onto CONNECTING, i.e. still telling the lie.
+              const title = chromeDetail(chromeState, data.status, CHAIN_MARKET_CHROME_KEYS) ?? undefined;
+              switch (chromeState) {
+                case "offline": return <Pill dot title={title}>{CHROME_LABEL.offline}</Pill>;
+                case "loading": return <Pill title={title}>{CHROME_LABEL.loading}</Pill>;
+                case "error": return <Pill tone="warn" dot title={title}>{CHROME_LABEL.error}</Pill>;
+                case "stale": return <Pill tone="warn" dot title={title}>{CHROME_LABEL.stale}</Pill>;
                 case "live": return <Pill tone="live" dot>SYNCED</Pill>;
-                default: return assertNever(phase, "HomePage pill");
+                default: return assertNever(chromeState, "HomePage pill");
               }
             })()}
           </div>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase" }}>XMR / USD</div>
-              <Provenance source="coingecko" fresh={feedDegraded(data.status) ? "stale" : hasData(data.status.market) ? "live" : "loading"} />
+              {/* status.market, not feedDegraded: this badge is labelled
+                  COINGECKO, and feedDegraded is the chain-feed pair-AND, which
+                  deliberately EXCLUDES market. So a dead node cascade used to
+                  grey a badge for an upstream that may have been answering
+                  perfectly — the same class of mis-attribution as a /network
+                  chart dimming on someone else's endpoint. */}
+              <Provenance source="coingecko" fresh={marketFresh} />
             </div>
             <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>{hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"}</div>
             <div className="mono" style={{ marginTop: 6, fontSize: "var(--fs-mono)", color: data.change24h >= 0 ? "var(--g-50)" : "var(--r-50)" }}>
