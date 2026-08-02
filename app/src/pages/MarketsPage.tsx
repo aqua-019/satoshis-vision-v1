@@ -39,7 +39,7 @@ import {
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 import { SITE_VERSION } from "@/data/releases";
-import { hasData } from "@/data/feed-status";
+import { assertNever, hasData } from "@/data/feed-status";
 import { useUrlState } from "@/routes/useUrlState";
 
 /** Hoisted so useUrlState's setter identity is stable across renders. The
@@ -65,7 +65,13 @@ const fmtSat = (v: number): string => (v * 1e5).toFixed(0) + " sat";
  * nothing", rather than inventing a second spelling of it.
  */
 function freshProps(status: SeriesStatus): { fresh: ProvFreshness; detail?: string } {
-  return status === "error" ? { fresh: "none", detail: "unavailable" } : { fresh: status };
+  switch (status) {
+    case "error": return { fresh: "none", detail: "unavailable" };
+    case "loading": return { fresh: "loading" };
+    case "live": return { fresh: "live" };
+    case "stale": return { fresh: "stale" };
+    default: return assertNever(status, "MarketsPage freshProps", { fresh: "none" as ProvFreshness });
+  }
 }
 
 /** Source label for a single series — COINGECKO with a freshness suffix.
@@ -81,12 +87,21 @@ function SourceBadge({ status, prefix }: { status: SeriesStatus; prefix?: string
 function GroupBadge({ result }: { result: GroupResult }) {
   // `error` IS "attempted, still nothing" — assembleGroup promotes it now, so
   // this no longer reconstructs the condition from a boolean beside the union.
-  if (result.status === "error") return <Provenance source="coingecko" fresh="none" detail="unavailable" />;
-  if (result.status === "loading") return <Provenance source="coingecko" fresh="loading" />;
   const total = result.data.length;
   const stales = result.data.filter((s) => s.status !== "live").length;
-  if (stales === 0) return <Provenance source="coingecko" fresh="live" detail={`${total} live`} />;
-  return <Provenance source="coingecko" fresh="stale" detail={`${total - stales}/${total} live · ${stales} stale`} />;
+  switch (result.status) {
+    case "error":
+      return <Provenance source="coingecko" fresh="none" detail="unavailable" />;
+    case "loading":
+      return <Provenance source="coingecko" fresh="loading" />;
+    case "live":
+    case "stale":
+      return stales === 0
+        ? <Provenance source="coingecko" fresh="live" detail={`${total} live`} />
+        : <Provenance source="coingecko" fresh="stale" detail={`${total - stales}/${total} live · ${stales} stale`} />;
+    default:
+      return assertNever(result.status, "MarketsPage GroupBadge");
+  }
 }
 
 /** Compact color-swatch legend for a `labels={false}` MultiLine — one line

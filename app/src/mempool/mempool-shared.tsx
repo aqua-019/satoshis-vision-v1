@@ -9,7 +9,7 @@ import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
-import { assertNever, CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
+import { CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
 import { MemStatStrip } from "@/mempool/mem-stats";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
@@ -63,6 +63,10 @@ export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
       </span>
     );
   }
+  // Exhaustiveness, by `satisfies` rather than an assertNever default: after the
+  // two guards above `phase` has narrowed to "live", and a fifth FeedPhase would
+  // widen that union and fail this line at compile time (TS1360). Same protection
+  // as the switch sites, one line, and no unreachable branch to render.
   phase satisfies "live";
   return (
     <span className="pill live" title={"Feed polling ~every 2.5s · source: " + data.source}>

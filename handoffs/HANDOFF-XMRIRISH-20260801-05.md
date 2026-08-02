@@ -133,9 +133,12 @@ item named in the body, per the operator's explicit request for the split.
 
 **deps added:** none.
 
-**effect census (D1625, the required deliverable).** Six effects survive in
-`src/data/`, all true external sync, now pinned by `verify-effects.mjs` against
-a table carrying a written justification per file:
+**effect census (D1625, the required deliverable).** **Seven** effects survive
+across **six** files in `src/data/` — `useMarketHistory` carries two. (An earlier
+draft of this report said "six effects", conflating the file count with the
+effect count; the committed `verify-effects.mjs` ledger has always had all seven
+and is what the gate checks.) All are true external sync, each with a written
+justification:
 
 | file | n | why it is external sync |
 |---|---|---|
@@ -158,9 +161,15 @@ Found in passing and NOT fixed here: `MempoolPage.tsx:73`
    `FeedState`. `success` would have created a fourth vocabulary inside the one
    change whose purpose is to leave exactly one.
 2. "Every consumer switches on the union exhaustively" is delivered as: pure
-   predicates at the ~85 sites that only ask "do I have a number", and an
-   exhaustive switch with an `assertNever` default at the 5 sites that RENDER a
-   phase. A switch at all 92 would be ceremony, not safety.
+   predicates at the ~85 sites that only ask "do I have a number", and a
+   compile-time exhaustiveness guard at the **six** sites that RENDER a phase —
+   `assertNever` defaults at NavTop, Footer, NetworkPage, HomePage and both
+   MarketsPage badges, plus `phase satisfies "live"` at `mempool-shared.tsx:70`,
+   which is the same protection in one line with no unreachable branch to render.
+   A switch at all 92 would be ceremony, not safety.
+   Verified by construction rather than by reading: adding a fifth `FeedPhase`
+   breaks compilation in all six files, and does so AT THE GUARD even when
+   `ProvFreshness` is widened alongside it.
 3. `assertNever` logs and returns a fallback rather than throwing. There is no
    panel-level boundary yet, so a throw from a data surface would unwind to
    `main.tsx` and blank the app — the opposite of the goal. It is unreachable
