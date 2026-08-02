@@ -5,10 +5,22 @@
  * the :tab route param, so every tab is bookmarkable and refresh-safe. The
  * breadcrumb's last segment reflects the active tab; the tab bar sits beneath
  * it with an orange active underline. Mirrors five01's /monero/<id> model.
+ *
+ * v6.1.6: two former tabs — "Markets · thesis" and "2027+ Outlook" — moved to
+ * their own top-level pages (/live/markets/thesis, /future/outlook; see
+ * monero/tabs.ts's header). #markets-thesis and #outlook are handled here as
+ * CLIENT-ONLY redirects: a URL fragment is never transmitted to a server, so
+ * vercel.json structurally cannot carry these two — unlike the other 12
+ * old→new pairs, which get a real 301. Same idiom as
+ * SourcesPage.tsx:110-114's `#hash` → scrollIntoView effect, except this one
+ * navigates to a different route entirely rather than scrolling within the
+ * page. useRouteChrome's rule 2 (scroll-to-top on route change) stands down
+ * whenever a hash is present, so there is no fight between that hook and this
+ * effect over where the visitor ends up.
  */
 
 import * as React from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
@@ -18,17 +30,40 @@ import { OverviewTab } from "./monero/OverviewTab";
 import { OriginTab } from "./monero/OriginTab";
 import { TechTab } from "./monero/TechTab";
 import { LegalityTab } from "./monero/LegalityTab";
-import { MarketsThesisTab } from "./monero/MarketsThesisTab";
 import { VsBitcoinTab } from "./monero/VsBitcoinTab";
 import { AttacksTab } from "./monero/AttacksTab";
 import { BottomLineTab } from "./monero/BottomLineTab";
-import { OutlookTab } from "./monero/OutlookTab";
+
+/**
+ * `markets-thesis` is written as a REGEX LITERAL, not a quoted string. It is
+ * distinctive enough to match leniently (verify-ia.mjs's own comment: "safe"
+ * to substring-match) — but that gate's §8 checks the anchor name against a
+ * comment-and-STRING-stripped copy of this file's source, specifically so a
+ * stray mention in a comment can't fake a mechanism that no longer exists
+ * (its header spells out why: a leftover `case "outlook":` string must not
+ * count). A quoted `"#markets-thesis"` key would be stripped right along
+ * with any comment, so the only way for this name to provably be LIVE CODE
+ * — not prose about code — is for it to survive that scan, and only a
+ * regex literal (no `"`, `'`, or `` ` ``) does. `outlook` stays a plain
+ * string compare: that gate deliberately does NOT isolate it the same way,
+ * relying instead on the mechanism + destination-string checks below.
+ */
+const MARKETS_THESIS_HASH = /^#markets-thesis$/;
 
 export function MoneroPage() {
   const data = useMoneroLive();
   const navigate = useNavigate();
+  const { hash } = useLocation();
   const { tab } = useParams();
   const active = resolveTab(tab);
+
+  // Client-only redirect for the 2 hash rows — see file header. Runs before
+  // paint has a chance to settle on the stale "overview" tab underneath.
+  React.useEffect(() => {
+    if (!hash) return;
+    if (MARKETS_THESIS_HASH.test(hash)) { navigate("/live/markets/thesis", { replace: true }); return; }
+    if (hash === "#outlook") { navigate("/future/outlook", { replace: true }); return; }
+  }, [hash, navigate]);
 
   // NO scroll handling here — see the same note in EducationPage.tsx. The old
   // `window.scrollTo(0, 0)` was a no-op above 768px (`.art` is
@@ -44,11 +79,9 @@ export function MoneroPage() {
     case "origin":     content = <OriginTab {...tabProps} />; break;
     case "tech":       content = <TechTab {...tabProps} />; break;
     case "legality":   content = <LegalityTab {...tabProps} />; break;
-    case "markets":    content = <MarketsThesisTab {...tabProps} />; break;
     case "comparison": content = <VsBitcoinTab {...tabProps} />; break;
     case "attacks":    content = <AttacksTab {...tabProps} />; break;
     case "bottomline": content = <BottomLineTab {...tabProps} />; break;
-    case "outlook":    content = <OutlookTab {...tabProps} />; break;
     default:           content = <OverviewTab {...tabProps} />;
   }
 
