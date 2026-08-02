@@ -78,7 +78,27 @@ const BUDGETS = {
   '/':         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
   '/mempool':  { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
   '/markets':  { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
+  '/simulate': { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
 };
+
+/* /simulate is NEW in v6.1.5 PR B, and its budget is deliberately loose in a
+ * file that argues against loose budgets. The reason is measured, not assumed.
+ *
+ * Its LCP is BIMODAL: 8 runs came back 2248, 2268, 2268, 2276, 2308, 2312 and
+ * then 5504, 5520. Six runs in a 64ms band and two at 2.4x that — not spread,
+ * two modes. /simulate is the largest chunk in the tree (SimulatePage 180,572 B
+ * raw), so a chunk-arrival race under Slow-4G is the obvious suspect, and item
+ * 6 of this PR changes exactly that.
+ *
+ * A budget near the 2292 median would flake: assert mode runs 3, and with a
+ * ~25% slow mode the median of 3 lands slow ~15% of the time. That is the
+ * verify-v510 failure — a gate red often enough to be ignored. 6000 clears the
+ * slow mode and still catches a real regression, which is the honest trade
+ * until the bimodality is understood.
+ *
+ * NOT the same claim as the other three rows. Those are "measured, with runner
+ * headroom". This one is "measured, with a known unexplained second mode".
+ * Re-tighten it after item 6 lands and the cause is either fixed or named. */
 
 /** Worst single scripted interaction, all routes. One ceiling: this measures
  *  the app's event-handling floor, not anything route-specific.
@@ -259,7 +279,16 @@ async function measure(route) {
   let missing = null;
   for (const sel of sels) {
     const el = page.locator(sel).first();
-    if ((await el.count()) === 0) { missing = sel; break; }
+    // waitFor, not count(). A bare count() asks "is it in the DOM at this
+    // instant", and the instant is 250ms after the previous click — under 6x
+    // CPU throttle React may not have committed the re-render that CREATES the
+    // next selector. Hardening, not a bug fix: this was NOT what made `/` skip.
+    // That was the click failing its actionability check, because the open nav
+    // drawer covered the very button meant to close it — a product defect, now
+    // fixed at styles.css's `.navtop-toggle` z-index. Recorded because the
+    // wrong diagnosis was written here first and the run disproved it: a skip
+    // whose cause is assumed is the same species of error as this PR's subject.
+    try { await el.waitFor({ state: 'visible', timeout: 3000 }); } catch { missing = sel; break; }
     try { await el.click({ timeout: 2000 }); } catch { missing = sel; break; }
     await page.waitForTimeout(250);
   }

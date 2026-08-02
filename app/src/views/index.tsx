@@ -62,7 +62,7 @@ export interface MempoolViewMeta {
  * reaching into the module for them — same separation `protocol-meta.ts`
  * already makes for the simulators, see this file's header.)
  */
-const lazyView = (load: () => Promise<{ [k: string]: unknown }>, name: string): ViewComponent =>
+export const lazyView = (load: () => Promise<{ [k: string]: unknown }>, name: string): ViewComponent =>
   React.lazy(async () => ({ default: (await load())[name] as ViewComponent }));
 
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [

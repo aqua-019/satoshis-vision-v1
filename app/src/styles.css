@@ -1875,6 +1875,34 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   .ticker-strip { margin-left: auto; gap: 10px; }
   .tk--btc { display: none; }   /* keep LIVE pill + XMR only */
 
+  /* ── CLS: the topbar's wrap solution must not depend on the status label ──
+     This is the fix for `/` reading CLS 0.3483 in verify-cls's healthy pass —
+     70x the 0.005 every other route holds, and 3.5x the Web Vitals bound. Every
+     cold visit to the live site paid it.
+
+     Mechanism, from the layout-shift entry's own `sources` (verify-cls.mjs now
+     captures them, so this is reproducible rather than remembered). `.topbar` is
+     `flex-wrap: wrap` here and `.ticker-strip` carries `margin-left: auto`.
+     While loading, the strip is 202px and brand + strip + toggle exactly fill the
+     390px row. When CONNECTING becomes LIVE the strip narrows to 159px, the auto
+     margin eats the freed space and pushes the strip up beside the brand — which
+     leaves no room for the hamburger, so it wraps to a second row and travels
+     **314px horizontally**. 314/844 is a distance fraction of 0.372, and that,
+     not the 3px `.shell` nudge that rides along with it, is the whole score.
+
+     A `min-height` reserve cannot fix this: measured, it only reaches 0.0304,
+     because the toggle still moves. `flex-wrap: nowrap` measures WORSE (0.1020)
+     and introduces an 824px vertical shift. Pinning the pill's width so the
+     strip's width is label-independent measures **0.0008**.
+
+     29ch, not a round number: the five labels measure LIVE 67px, OFFLINE 88,
+     CONNECTING 110, NO NODE RESPONSE 153, STALE · reconnecting 181, against
+     1ch = 6.3125px at this font. 29ch = 183px clears the widest. `ch` rather
+     than px so it tracks styles-legibility.css:78's font-size override with no
+     second number to keep in sync. Nothing is truncated, so no state loses a
+     word. Centred because the pill is now wider than its shortest label. */
+  .ticker-strip > .pill:first-child { min-width: 29ch; justify-content: center; }
+
   /* ── footer telemetry wraps + safe area ───────────────────────── */
   .footer-tele {
     flex-wrap: wrap;
@@ -1901,6 +1929,23 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     border: 1px solid var(--ink-20); border-radius: 4px;
     color: var(--tk-accent);
     font-family: var(--f-mono); font-size: 18px; line-height: 1;
+    /* Above the drawer, or the drawer covers its own close button. `.topnav`
+       below is `position: fixed; right: 0; width: min(78vw, 320px)` at
+       `z-index: 200`, which at 390px spans x86-390 — and this toggle sits at
+       x330-374, entirely inside it, with no z-index of its own. So when the
+       drawer opened it painted over the ✕ at 97% opacity: invisible, and
+       `elementFromPoint` at the button's centre returned the NAV, so a real tap
+       hit the drawer instead of the button.
+
+       On a pointer device Escape still closed it (NavTop.tsx:45), which is why
+       this survived — but this rule only applies at <=768px, where there is no
+       Escape key and no backdrop. A touch user who opened the drawer and did
+       not want to navigate had no way to close it.
+
+       Found by verify-vitals: `/`'s second scripted interaction was failing its
+       actionability check and reporting SKIPPED, while the row still printed a
+       worstInt from the first click. A skip is not a pass. */
+    position: relative; z-index: 201;
   }
   .topnav {
     position: fixed; top: 0; right: 0; z-index: 200;

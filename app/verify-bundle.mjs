@@ -220,15 +220,28 @@ const ROUTE_BUDGET_GZ = {
   '/markets':    105_000, //  95,007
   '/network':    106_000, //  95,610
   '/education':  107_000, //  97,034
-  '/monero':     121_000, // 109,514 — 10 tab modules
+  '/monero':     121_000, // 109,514 — 9 tab modules (was recorded as 10; the
+                          //           directory holds 9 *Tab.tsx plus MoneroTabs.tsx,
+                          //           the container, and tabs.ts, the metadata)
   '/future':     106_000, //  96,034
   '/peers':      100_000, //  90,243
-  '/simulate':   148_000, // 133,676 — carries all 16 protocol modules
+  '/simulate':    95_000, //  84,934 — v6.1.5 PR B: was 133,676/148,000 when this
+                          //           carried all 16 protocol modules eagerly. The 21
+                          //           simulators are lazy now, so this is the shell plus
+                          //           only the default sim's chunk: -48,742 B gzip, -36%.
   '/node':        91_000, //  82,493
   '/sources':     95_000, //  85,770
 };
 
-const CHUNK_COUNT = 35;
+/* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
+ * adds 18. The BAND stays 4 rather than widening with the count — the band
+ * exists to catch a chunking-strategy change, and that signal does not get
+ * weaker just because there are more chunks. A count budget is not a size
+ * budget: 53 chunks is not worse than 35, it is 48,742 fewer gzip bytes on the
+ * route that pays for them. What it does cost is request count, which is why
+ * the per-route "first load ∪ static closure" row above is the number that
+ * actually governs — /simulate went 7 chunks to 6. */
+const CHUNK_COUNT = 53;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);
