@@ -23,7 +23,7 @@ satoshis-vision-v1/
 │   │   ├── prerender.mjs   # emits dist/<route>/index.html (works with JS off)
 │   │   ├── gen-sitemap.mjs # emits dist/sitemap.xml + dist/robots.txt
 │   │   └── serve-dist.mjs  # local mirror of Vercel's resolution order
-│   └── verify-*.mjs        # 49 gates + verify-lib.mjs (shared, not a gate)
+│   └── verify-*.mjs        # 54 gates + verify-lib.mjs and verify-reporter.mjs (shared, not gates)
 ├── api/                    # Vercel serverless functions — CommonJS
 │   └── verify-*.mjs        # 4 offline gates
 ├── relay/                  # websocket relay (not currently deployed)
@@ -67,23 +67,24 @@ read it, so the two stay in step. Register the route in `app/src/App.tsx` as wel
 
 ## ✅ Verification
 
-53 gates guard this repo (49 in `app/`, 4 in `api/`).
-`.github/workflows/ci.yml` runs **39 distinct** files on every PR to `main`, in
-two jobs: 9 named offline gates, then `verify:static` and `verify:e2e` (four of
-the 9 also appear in `verify:static`, and `verify-origins` appears in both
-chains, which is why 9 + 15 + 20 is not 44).
+59 gates guard this repo (54 in `app/`, 5 in `api/`; `verify-lib.mjs` and
+`verify-reporter.mjs` are shared modules, not gates).
+`.github/workflows/ci.yml` runs **45 distinct** files on every PR to `main`, in
+two jobs: 10 named offline gates, then `verify:static` and `verify:e2e` (four of
+the 10 also appear in `verify:static`, and `verify-origins` appears in both
+chains, which is why 10 + 17 + 23 is not 50).
 
 ```bash
 cd app
 npm run typecheck
 npm run build
 
-npm run verify:static   # 15 source-assertion gates, no browser, ~30s
+npm run verify:static   # 17 source-assertion gates, no browser, ~30s
 
 npx playwright install --with-deps chromium
 node scripts/serve-dist.mjs &
 npm run wait-preview
-npm run verify:e2e      # 20 Playwright gates
+npm run verify:e2e      # 23 Playwright gates
 ```
 
 Three more are npm-wired but deliberately not in CI — `verify:shots`,
