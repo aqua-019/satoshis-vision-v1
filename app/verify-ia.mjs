@@ -2,7 +2,7 @@
  * verify-ia.mjs — Information Architecture Agreement Gate
  *
  * Offline assertion that four source artifacts agree on navigation restructure.
- * Verifies: routes.mjs (canonical), vercel.json (12 server 301s), App.tsx (12 client Navigate),
+ * Verifies: routes.mjs (canonical), vercel.json (13 server 301s), App.tsx (13 client mirrors, derived),
  * nav/ia.ts (6-section IA), and MoneroPage.tsx (hash-based nav for 2 client-only transitions).
  *
  * Cannot verify: HTTP 301 status codes (marked R.fixture), runtime routing, URL fragment delivery.
@@ -13,6 +13,11 @@
  */
 
 import { makeReporter } from './verify-reporter.mjs';
+// REDIRECTS is the canonical old->new map. It lives in scripts/routes.mjs so that
+// App.tsx, ia.ts and this gate all read ONE list; vercel.json restates it as static
+// JSON only because JSON cannot import, and verify-redirects.mjs proves they agree.
+let REDIRECTS = [];
+try { ({ REDIRECTS } = await import('./scripts/routes.mjs')); REDIRECTS ??= []; } catch { REDIRECTS = []; }
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -105,9 +110,9 @@ try {
 }
 
 // ============================================================================
-// §2 · vercel.json structure: 12 redirects + SPA catch-all in rewrites
+// §2 · vercel.json structure: 13 redirects + SPA catch-all in rewrites
 // ============================================================================
-R.group('§2 · vercel.json: 12 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
+R.group('§2 · vercel.json: 13 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
 
 let vercelJsonContent;
 try {
@@ -116,13 +121,13 @@ try {
 
   // Check redirects array (destination-based nav redirects, 12 entries expected)
   if (!Array.isArray(vercelJsonContent.redirects)) {
-    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 12)`);
+    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 13)`);
   } else {
-    R.ok(vercelJsonContent.redirects.length === 12, `redirects.length: ${vercelJsonContent.redirects.length} (expected 12)`);
+    R.ok(vercelJsonContent.redirects.length === 13, `redirects.length: ${vercelJsonContent.redirects.length} (expected 13)`);
 
     if (vercelJsonContent.redirects.length > 0) {
       const all301 = vercelJsonContent.redirects.every(r => r.statusCode === 301);
-      R.ok(all301, all301 ? 'All 12 have statusCode 301' : 'Some redirects lack statusCode 301');
+      R.ok(all301, all301 ? `All ${vercelJsonContent.redirects.length} have statusCode 301` : 'Some redirects lack statusCode 301');
 
       const hasApiSource = vercelJsonContent.redirects.some(r => r.source.startsWith('/api/'));
       R.ok(!hasApiSource, hasApiSource ? 'Found /api/ sources in redirects' : 'No /api/ sources');
@@ -151,50 +156,87 @@ try {
 // ============================================================================
 // §3 · App.tsx Navigate routes (client-side)
 // ============================================================================
-R.group('§3 · App.tsx contains exactly 12 <Route path="X" element={<Navigate to="Y" replace />} />');
+/* §3 · App.tsx DERIVES its client mirrors; it does not restate them.
+ *
+ * This assertion was rewritten, and the reason matters more than the code.
+ * It used to regex App.tsx for literal
+ *   <Route path="X" element={<Navigate to="Y" replace />} />
+ * and count 12 of them. Two things were wrong with that.
+ *
+ * First, it mandated a defect. React Router's `to` is `string | Partial<Path>`,
+ * and a string literal cannot carry `location.search` — so every one of those
+ * redirects DROPPED THE QUERY STRING. `/mempool?v=reactor` would have landed
+ * on `/live/mempool` with the view silently gone, on exactly the shared-link
+ * shape requirement 1 exists to protect. A gate that requires the broken form
+ * is worse than no gate: it converts a defect into a compliance obligation.
+ * The correct component is `routes/RedirectTo.tsx`, which appends
+ * `search + hash` and substitutes `:params`.
+ *
+ * Second, the redirect map now has ONE authority — `scripts/routes.mjs`'s
+ * REDIRECTS — and App.tsx maps over it. There are no literal <Route path="/old">
+ * strings left to count, and there should not be. Counting them would push the
+ * list back into being hand-maintained, which is the duplication this whole
+ * change removes.
+ *
+ * So what is checked here is DERIVATION, not enumeration: App.tsx imports
+ * REDIRECTS, maps it, and restates no redirect source of its own. The
+ * REDIRECTS <-> vercel.json agreement is a separate gate (verify-redirects.mjs)
+ * because vercel.json is static JSON and cannot import the source of truth.
+ */
+R.group('§3 · App.tsx derives its client mirrors from REDIRECTS (does not restate them)');
 
 try {
   const appPath = join(__dirname, 'src', 'App.tsx');
-  const appSource = readFileSync(appPath, 'utf8');
+  const appSource = stripComments(readFileSync(appPath, 'utf8'));
 
-  // Regex with s flag to match newlines between attributes; require 'replace' keyword
-  // Pattern: <Route path="..." element={<Navigate to="..." replace />} />
-  const navigateRegex = /<Route\s+path="([^"]+)"\s+element=\{<Navigate[\s\S]*?to="([^"]+)"[\s\S]*?replace[\s\S]*?\/>\}\s*\/>/g;
+  R.ok(/from\s+["'][^"']*scripts\/routes\.mjs["']/.test(appSource),
+    'imports the canonical route module');
+  R.ok(/\bREDIRECTS\b/.test(appSource) && /REDIRECTS\s*\.\s*map\s*\(/.test(appSource),
+    'maps over REDIRECTS to generate its redirect routes');
+  R.ok(/\bRedirectTo\b/.test(appSource),
+    'uses RedirectTo (preserves search + hash) rather than a bare <Navigate to="literal">');
 
-  let match;
-  while ((match = navigateRegex.exec(appSource)) !== null) {
-    appNavigates.push({ source: match[1], destination: match[2] });
-  }
-
-  R.ok(appNavigates.length === 12, `Found ${appNavigates.length} Navigate routes (expected 12)`);
-
-  // Guard: 12 routes found before doing set comparisons (prevent vacuous pass on empty arrays)
-  if (appNavigates.length !== 12) {
-    R.info('Extracted Navigate pairs — stopping further comparisons to surface incomplete structure');
-  }
-
+  // A literal old path in App.tsx means the list drifted back to hand-maintained.
+  const restated = REDIRECTS
+    .map((r) => r.from)
+    .filter((from) => !from.includes(':'))
+    .filter((from) => new RegExp(`["']${from}["']`).test(appSource));
+  R.ok(restated.length === 0,
+    restated.length === 0
+      ? 'restates no redirect source as a literal'
+      : `restates ${restated.length} redirect source(s) literally: ${restated.join(', ')} — the map has one authority`);
 } catch (e) {
-  R.ok(false, `parse failed: ${e.message}`);
+  R.ok(false, `App.tsx parse failed: ${e.message}`);
 }
 
 // ============================================================================
 // §4 · /pro absence
 // ============================================================================
-R.group('§4 · /pro does not appear (never existed, is fiction from mockup)');
+/* §4 · /pro is a redirect SOURCE and never a route.
+ *
+ * Reversed by operator ruling, and the distinction is the whole point.
+ * `/pro` has never existed as a live route in this repo — it comes from
+ * docs/v6-mockups/nav-ia-mockup.html, whose IA is aspirational. An earlier
+ * revision of this gate asserted it was absent everywhere. It is now honoured
+ * verbatim from the mockup's map, on the reasoning that a 301 for a URL that
+ * never existed costs nothing and cannot break a link that was never shared.
+ *
+ * What must still hold is that it is a source, not a destination and not a
+ * route: it must never enter ROUTES, or prerender.mjs would emit a page for it
+ * and gen-sitemap.mjs would advertise a URL with no content of its own. That is
+ * the same rule routes.mjs already applies to /monero/future.
+ */
+R.group('§4 · /pro is a redirect source only — never a route, never a destination');
 
 if (routes.length > 0) {
-  R.ok(!routes.includes('/pro'), 'absent from ROUTES');
+  R.ok(!routes.includes('/pro'),
+    'absent from ROUTES (a redirect source must not be prerendered or sitemapped)');
 }
 
-if (vecelRedirects.length > 0) {
-  const proInRedirects = vecelRedirects.some(r => r.source === '/pro' || r.destination === '/pro');
-  R.ok(!proInRedirects, 'absent from vercel redirects');
-}
-
-if (appNavigates.length > 0) {
-  const proInApp = appNavigates.some(r => r.source === '/pro' || r.destination === '/pro');
-  R.ok(!proInApp, 'absent from App.tsx Navigate');
-}
+R.ok(REDIRECTS.some((r) => r.from === '/pro'),
+  'present in the canonical REDIRECTS map as a source');
+R.ok(!REDIRECTS.some((r) => r.to === '/pro'),
+  'never a redirect destination');
 
 // ============================================================================
 // §5 · No collision between redirect sources and ROUTES
@@ -234,7 +276,15 @@ if (vecelRedirects.length === 0 || routes.length === 0) {
     }
     prefix = prefix.replace(/\/$/, ''); // Trim trailing /
 
-    const found = routes.includes(destWithoutQuery) || routes.includes(prefix);
+    // A destination resolves if it IS a route, or if it sits UNDER one.
+    // /live/mempool/tx/:txid is deliberately absent from ROUTES (parameterised,
+    // no finite set to prerender) but is served by App.tsx beneath
+    // /live/mempool. Requiring an exact ROUTES hit would fail a correct tree —
+    // the same class of unsatisfiable assertion already removed from §2.
+    // Segment boundary matters: `startsWith(route)` alone would let
+    // /live/marketsX resolve against /live/markets.
+    const under = (p) => routes.some((r) => r !== '/' && (p === r || p.startsWith(r + '/')));
+    const found = routes.includes(destWithoutQuery) || routes.includes(prefix) || under(prefix);
     if (!found) {
       unresolved.push(`${redirect.destination} (prefix: ${prefix})`);
     }
@@ -242,41 +292,10 @@ if (vecelRedirects.length === 0 || routes.length === 0) {
 
   R.ok(unresolved.length === 0,
     unresolved.length === 0
-      ? `All 12 destinations resolve`
+      ? `All ${vecelRedirects.length} destinations resolve`
       : `${unresolved.length} unresolved: ${unresolved.join('; ')}`);
 
   R.info('Prefix resolution: /learn/:tab and /learn/sim?p=:id match against /learn prefix, not proof the :param route exists in App.tsx');
-}
-
-// ============================================================================
-// §3b · App.tsx Navigate destinations match vercel.json destinations
-// ============================================================================
-R.group('§3b · App.tsx Navigate pairs match vercel.json redirect pairs (byte-for-byte)');
-
-if (appNavigates.length !== 12 || vecelRedirects.length !== 12) {
-  R.skip('prerequisites not met', `appNavigates: ${appNavigates.length}, redirects: ${vecelRedirects.length} (both need 12)`);
-} else {
-  const appMap = Object.fromEntries(appNavigates.map(r => [r.source, r.destination]));
-  const vercelMap = Object.fromEntries(vecelRedirects.map(r => [r.source, r.destination]));
-
-  const mismatches = [];
-  for (const [source, appDest] of Object.entries(appMap)) {
-    const vercelDest = vercelMap[source];
-    if (vercelDest !== appDest) {
-      mismatches.push(`${source}: App=${appDest}, Vercel=${vercelDest}`);
-    }
-  }
-
-  for (const source of Object.keys(vercelMap)) {
-    if (!(source in appMap)) {
-      mismatches.push(`${source}: only in Vercel`);
-    }
-  }
-
-  R.ok(mismatches.length === 0,
-    mismatches.length === 0
-      ? 'All 12 pairs match'
-      : `${mismatches.length} mismatches: ${mismatches.slice(0, 3).join('; ')}`);
 }
 
 // ============================================================================
@@ -394,8 +413,8 @@ R.fixture('Vercel 301 responses', 'Cannot be checked without an HTTP client. Sta
 // ============================================================================
 R.info('');
 R.info('═══════════════════════════════════════════════════════════════════');
-R.info('Tally: 12 server redirects · 12 client <Navigate> · 2 hash rows · 3 identity rows');
-R.info('  (12 vercel 301s + 12 App.tsx Navigate are independently verified above)');
+R.info('Tally: 13 server redirects · 13 client mirrors · 2 hash rows · 3 identity rows');
+R.info('  (13 vercel 301s <-> REDIRECTS drift is owned by verify-redirects.mjs, not this gate)');
 R.info('  (2 hash: #markets-thesis, #outlook — client-only, no server redirect needed)');
 R.info('  (3 identity: /, /monero, /future — unchanged, no redirect needed)');
 R.info('═══════════════════════════════════════════════════════════════════');
