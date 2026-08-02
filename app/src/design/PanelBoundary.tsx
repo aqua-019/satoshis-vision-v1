@@ -80,6 +80,37 @@ const ATTEMPTS: React.CSSProperties = {
   margin: 0,
 };
 
+declare global {
+  interface Window {
+    /**
+     * TEST-ONLY. FeedKeys whose PanelBoundary should throw during render, so
+     * verify-resilience-dom.mjs can prove containment REPEATABLY in CI rather
+     * than by a one-off source mutation that has to be reverted by hand.
+     *
+     * Precedent: `window.__XMR_TIER_MS__` in usePolling.ts is exactly this
+     * shape — a documented test-only global, set via addInitScript before app
+     * boot, never written by production code.
+     *
+     * A deliberate throw is the only way to test an error boundary, and a hook
+     * that ships beats a mutation that might not get reverted: v6.1.3 shipped a
+     * session in which precisely that restore was skipped, and every "green"
+     * run taken while it sat there measured a tree that no longer existed.
+     */
+    __XMR_PANEL_THROW__?: string[];
+  }
+}
+
+/** Throws if this panel's endpoint is named in the test-only global. */
+function ThrowProbe({ keys, children }: { keys: readonly FeedKey[]; children: React.ReactNode }) {
+  if (typeof window !== "undefined") {
+    const want = window.__XMR_PANEL_THROW__;
+    if (Array.isArray(want) && keys.some((k) => want.includes(k))) {
+      throw new Error(`[test] deliberate panel throw for ${keys.join(",")}`);
+    }
+  }
+  return <>{children}</>;
+}
+
 export interface PanelBoundaryProps {
   /** The endpoint(s) this panel reads. Named in the failure message. */
   keys: readonly [FeedKey, ...FeedKey[]];
@@ -142,7 +173,9 @@ export class PanelBoundary extends React.Component<PanelBoundaryProps, PanelBoun
 
   override render() {
     const { error, attempts } = this.state;
-    if (!error) return this.props.children;
+    if (!error) {
+      return <ThrowProbe keys={this.props.keys}>{this.props.children}</ThrowProbe>;
+    }
 
     const named = this.props.keys.map((k) => FEED_ENDPOINT[k]);
     if (this.props.also) named.push(this.props.also);

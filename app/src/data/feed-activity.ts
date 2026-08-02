@@ -96,6 +96,7 @@ export function setFeedActivity(keys: readonly FeedKey[], a: FeedActivity): void
 /** TEST/RESET — drop all recorded activity. Not used by the app. */
 export function _resetFeedActivity(): void {
   state.clear();
+  snapCache.clear();
   emit();
 }
 
@@ -113,8 +114,19 @@ const subscribe = (cb: () => void): (() => void) => {
  * `useSyncExternalStore` compares snapshots by identity and a fresh object per
  * call is an infinite render loop.
  */
-let cacheKey = "";
-let cacheVal: FeedActivity = IDLE;
+/*
+ * A cache PER KEY SET, not a single slot.
+ *
+ * The first version of this used one module-level `cacheKey`/`cacheVal` pair,
+ * which is an infinite render loop the moment two components subscribe with
+ * DIFFERENT keys: each call overwrites the other's cache, so every
+ * getSnapshot() returns a fresh object, useSyncExternalStore sees a changed
+ * snapshot every time, and React throws #185 (maximum update depth). It took
+ * down the whole route through RootBoundary rather than showing up as a
+ * flicker. Caught by verify-resilience-dom, which is exactly why that gate
+ * serves real payloads instead of inheriting the degraded default.
+ */
+const snapCache = new Map<string, { sig: string; val: FeedActivity }>();
 
 function snapshotFor(keys: readonly FeedKey[]): FeedActivity {
   let busy = false;
@@ -125,12 +137,13 @@ function snapshotFor(keys: readonly FeedKey[]): FeedActivity {
     if (a.busy) busy = true;
     if (a.nextAt > 0 && (nextAt === 0 || a.nextAt < nextAt)) nextAt = a.nextAt;
   }
-  const key = `${keys.join(",")}|${busy ? 1 : 0}|${nextAt}`;
-  if (key !== cacheKey) {
-    cacheKey = key;
-    cacheVal = { busy, nextAt };
-  }
-  return cacheVal;
+  const id = keys.join(",");
+  const sig = `${busy ? 1 : 0}|${nextAt}`;
+  const hit = snapCache.get(id);
+  if (hit && hit.sig === sig) return hit.val;
+  const val: FeedActivity = { busy, nextAt };
+  snapCache.set(id, { sig, val });
+  return val;
 }
 
 /**

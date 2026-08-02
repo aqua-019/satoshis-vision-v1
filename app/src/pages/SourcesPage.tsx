@@ -12,10 +12,14 @@ import * as React from "react";
 import { useLocation } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { PageHeader } from "@/layout/AppShell";
-import { Card, Crumbs, Provenance } from "@/design/primitives";
+import { Card, Crumbs, Provenance, NodeProvenance } from "@/design/primitives";
 import type { ProvSource } from "@/design/primitives";
+import { Swap, SkeletonRows } from "@/design/Skeleton";
 import { useReleaseNotes } from "@/data/useCachedFeed";
 import { mergeReleases } from "@/data/releases";
+import { useApiStatus } from "@/data/useApiStatus";
+import { useMoneroLive } from "@/data/DataContext";
+import { FEED_KEYS, FEED_ENDPOINT } from "@/data/feed-status";
 
 // ── small in-page atoms ─────────────────────────────────────────
 
@@ -53,6 +57,54 @@ export function SourcesPage() {
   const { hash } = useLocation();
   const { releases, state: releaseState } = useReleaseNotes(12);
   const mergedReleases = mergeReleases(releases);
+
+  // D0891 · configuration (from /api/status) vs. observation (from the live
+  // feed this browser has actually been polling). Two different hooks, two
+  // different questions — see the new Section below for why they must not be
+  // read as one.
+  const apiStatus = useApiStatus();
+  const data = useMoneroLive();
+  const configRows = apiStatus.data
+    ? [
+        {
+          k: "primary node",
+          v: apiStatus.data.cascade.primaryConfigured
+            ? "configured via env"
+            : "not set — falls straight to the reference cascade",
+        },
+        {
+          k: "networks",
+          v: (Object.entries(apiStatus.data.cascade.networks) as [string, number][])
+            .map(([net, n]) => `${net} ${n}`)
+            .join(" · "),
+        },
+        {
+          k: "reference hosts",
+          v:
+            apiStatus.data.cascade.referenceHosts.length > 0
+              ? apiStatus.data.cascade.referenceHosts.join(", ")
+              : apiStatus.data.cascade.referenceCount > 0
+                ? "operator-configured — not from the public default list, so no hostnames are named here"
+                : "none configured",
+        },
+        {
+          k: "endpoints",
+          v: apiStatus.data.endpoints.map((e) => `${e.path} (${e.kind})`).join(" · "),
+        },
+        { k: "note", v: `“${apiStatus.data.note}”` },
+        { k: "reported at", v: apiStatus.data.at },
+      ]
+    : [];
+  // Reused verbatim from SourceRow's own row grid (:42) so the two new columns
+  // line up with the rest of the page instead of inventing a second rhythm.
+  const legendRow: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "150px 1fr",
+    gap: 16,
+    padding: "10px 0",
+    borderTop: "1px solid var(--rule)",
+    alignItems: "start",
+  };
 
   // react-router v6 BrowserRouter does not auto-scroll to #hash on navigation.
   React.useEffect(() => {
@@ -138,6 +190,73 @@ export function SourcesPage() {
           will populate the moment a dedicated node is pointed at the site. No peer data is
           fabricated in the meantime.
         </P>
+      </Section>
+
+      <Section kicker="configuration vs. observation · two different questions" title="What this deployment answers">
+        <P>
+          The two columns below answer different questions, and neither stands in for the other.
+          The left column is what this deployment is <b>wired to</b> — env vars and file routes,
+          read straight from <code className="hash">/api/status</code> — and it is{" "}
+          <b>not a reachability check</b>: that endpoint cannot see whether any node actually
+          answers, because on Vercel it runs as its own function with no way to read another
+          function&rsquo;s in-memory health state. The right column is what{" "}
+          <b>this browser has actually observed</b> this session, live, from the same feed every
+          other page on this site reads.
+        </P>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 24, marginTop: 6 }}>
+          <div>
+            <h3
+              className="mono"
+              style={{ margin: "0 0 4px", fontSize: "var(--fs-label)", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}
+            >
+              Configured <span className="dim2">· not a reachability check</span>
+            </h3>
+            <Swap
+              ready={apiStatus.status !== "loading"}
+              reserve={260}
+              skeleton={<SkeletonRows n={6} cols="150px 1fr" />}
+            >
+              {apiStatus.status === "error" ? (
+                <P>
+                  <code className="hash">/api/status</code> did not answer with a usable
+                  configuration payload just now. That is a fetch failure of this one meta
+                  endpoint, not a statement about node health either way.{" "}
+                  <button
+                    type="button"
+                    onClick={apiStatus.retry}
+                    className="mono acc"
+                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", textDecoration: "underline", fontSize: "var(--fs-body)" }}
+                  >
+                    try again
+                  </button>
+                </P>
+              ) : (
+                configRows.map((row) => (
+                  <div key={row.k} style={legendRow}>
+                    <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{row.k}</span>
+                    <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6, wordBreak: "break-word" }}>{row.v}</span>
+                  </div>
+                ))
+              )}
+            </Swap>
+          </div>
+
+          <div>
+            <h3
+              className="mono"
+              style={{ margin: "0 0 4px", fontSize: "var(--fs-label)", letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--ink-60)" }}
+            >
+              Observed by your browser <span className="dim2">· this session, live</span>
+            </h3>
+            {FEED_KEYS.map((k) => (
+              <div key={k} style={legendRow}>
+                <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{FEED_ENDPOINT[k]}</span>
+                <NodeProvenance source={k === "market" ? "coingecko" : "node"} keys={[k]} status={data.status} />
+              </div>
+            ))}
+          </div>
+        </div>
       </Section>
 
       <section id="release-notes" style={{ scrollMarginTop: 24 }}>
