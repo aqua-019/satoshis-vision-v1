@@ -258,11 +258,51 @@ async function measure(route, mocked) {
   // BEFORE app code: a shift during hydration is the shift that matters.
   await ctx.addInitScript(() => {
     window.__CLS__ = 0;
+    // ATTRIBUTION, not just magnitude. Until v6.1.5 PR B this observer read
+    // `value` and nothing else, so the only record of WHICH element moved was
+    // prose in this file's header — written from ad-hoc instrumentation that was
+    // never committed, and which PR B then disproved three ways. That is exactly
+    // the defect PR A found at PERF-BASELINE.md:17 (a documented measurement
+    // whose harness does not exist), committed by the PR that flagged it. The
+    // fix is to make the diagnosis a gate output reproduced every run.
+    window.__CLS_ENTRIES__ = [];
+    const box = (r) => (r ? { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) } : null);
+    // A selector-ish path, 4 levels deep. `source.node` is null for a node that
+    // has since been removed, which is itself informative — say so rather than
+    // dropping the source and under-reporting the entry.
+    const ident = (n) => {
+      if (!n) return '(node removed)';
+      if (n.nodeType !== 1) return String(n.nodeName || 'node');
+      const parts = [];
+      let el = n;
+      for (let d = 0; el && el.nodeType === 1 && d < 4; d++, el = el.parentElement) {
+        let s = el.nodeName;
+        if (el.id) s += '#' + el.id;
+        else if (el.classList && el.classList.length) s += '.' + [...el.classList].slice(0, 3).join('.');
+        parts.unshift(s);
+      }
+      return parts.join('>');
+    };
     try {
       new PerformanceObserver((list) => {
         for (const e of list.getEntries()) {
           // Shifts within 500ms of a real interaction are the user's doing.
-          if (!e.hadRecentInput) window.__CLS__ += e.value;
+          if (e.hadRecentInput) continue;
+          window.__CLS__ += e.value;
+          // PER-ENTRY, never aggregated. CLS is a SUM, so one reading of 0.35 is
+          // equally consistent with a single ~294px shift and with ~98 repeats of
+          // a 3px one — and those have opposite fixes. A reserve cures the first
+          // and does nothing for the second, which is something relayouting over
+          // and over. Only the entry list can tell them apart.
+          window.__CLS_ENTRIES__.push({
+            value: e.value,
+            at: Math.round(e.startTime),
+            sources: (e.sources || []).map((s) => ({
+              node: ident(s.node),
+              prev: box(s.previousRect),
+              cur: box(s.currentRect),
+            })),
+          });
         }
       }).observe({ type: 'layout-shift', buffered: true });
     } catch { /* feature-detected above; belt-and-braces */ }
@@ -280,8 +320,23 @@ async function measure(route, mocked) {
   await page.waitForTimeout(3000);
 
   const cls = await page.evaluate(() => window.__CLS__ ?? 0);
+  const entries = await page.evaluate(() => window.__CLS_ENTRIES__ ?? []);
   await ctx.close();
-  return cls + INFLATE;
+  return { cls: cls + INFLATE, entries };
+}
+
+/** The largest-moving source of one entry, as a one-line string. */
+function topSource(entry) {
+  const moved = (s) => (s.prev && s.cur
+    ? Math.max(Math.abs(s.cur.y - s.prev.y), Math.abs(s.cur.x - s.prev.x))
+    : 0);
+  const best = [...(entry.sources || [])].sort((a, b) => moved(b) - moved(a))[0];
+  if (!best) return 'no sources reported';
+  const d = moved(best);
+  const geom = best.prev && best.cur
+    ? `${best.prev.w}x${best.prev.h}@y${best.prev.y} → ${best.cur.w}x${best.cur.h}@y${best.cur.y}`
+    : 'no rects';
+  return `${best.node}  moved ${d}px  ${geom}`;
 }
 
 const PASSES = [
@@ -302,15 +357,27 @@ for (const pass of PASSES) {
   recorded[pass.key] = { harness: pass.harness, runs: RUNS, routes: {} };
 
   for (const route of ROUTES) {
-    const runs = [];
-    for (let i = 0; i < RUNS; i++) runs.push(await measure(route, pass.mocked));
-    const worst = Math.max(...runs);
-    const shown = runs.map((v) => v.toFixed(4)).join(', ');
-    recorded[pass.key].routes[route] = { worst, runs };
+    const results = [];
+    for (let i = 0; i < RUNS; i++) results.push(await measure(route, pass.mocked));
+    const values = results.map((r) => r.cls);
+    const worst = Math.max(...values);
+    const shown = values.map((v) => v.toFixed(4)).join(', ');
+    const worstRun = results[values.indexOf(worst)];
+    recorded[pass.key].routes[route] = { worst, runs: values, entries: worstRun.entries };
 
     // The measurement is printed EVERY run, pass or fail. This is the line that
     // makes drift visible long before it becomes a failure.
     R.info(`${route.padEnd(10)} CLS ${worst.toFixed(4)}  (runs: ${shown})  ceiling ${pass.table[route]}`);
+
+    // Attribution for the worst run, per entry. Printed only when there is
+    // something to explain, so a clean route stays one line. The entry COUNT is
+    // load-bearing: many small entries and one large one need opposite fixes.
+    const ents = worstRun.entries || [];
+    if (worst > 0.005 && ents.length) {
+      const top = [...ents].sort((a, b) => b.value - a.value).slice(0, 5);
+      R.info(`  └─ ${ents.length} shift entr${ents.length === 1 ? 'y' : 'ies'} in the worst run; largest ${top.length}:`);
+      for (const e of top) R.info(`     ${e.value.toFixed(4)} @${e.at}ms  ${topSource(e)}`);
+    }
 
     if (!MEASURE_ONLY) {
       R.ok(worst <= pass.table[route],
