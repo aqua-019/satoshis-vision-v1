@@ -7,10 +7,10 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
-import { Sparkline, Provenance } from "@/design/primitives";
+import { Sparkline, NodeProvenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
-import { feedDegraded, freshAt, hasData } from "@/data/feed-status";
+import { freshAt, hasData } from "@/data/feed-status";
 
 export interface NetRailProps {
   /** Optional extra blocks to render below the standard set. */
@@ -26,7 +26,7 @@ export function NetRail({ extra }: NetRailProps) {
   return (
     <aside className="rail">
       <div className="rail-block">
-        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Network <Provenance source="node" fresh="live" bare /></h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Network <NodeProvenance source="node" keys={["network", "mempool"]} status={data.status} bare /></h6>
         <KV k={<><span className="led pulse" />Block height</>} v={ready ? data.height.toLocaleString() : "—"} accent />
         <KV k="Hashrate"      v={ready ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"} />
         <KV k="Difficulty"    v={ready ? `${(data.difficulty / 1e9).toFixed(2)}G` : "—"} />
@@ -36,7 +36,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Remote node <Provenance source="node" fresh="live" bare /></h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Remote node <NodeProvenance source="node" keys={["network", "mempool"]} status={data.status} bare /></h6>
         <KV k="Daemon"     v={data.version || "—"} />
         <KV k="Network"    v={data.nettype || "—"} />
         <KV k="DB size"    v={data.databaseSize ? `${(data.databaseSize / 1e9).toFixed(1)} GB` : "—"} />
@@ -47,7 +47,10 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Fee tiers <Provenance source="node" fresh="live" bare /></h6>
+        {/* data.feeTiers is written by both mapFees and mapNetwork (data/map.ts),
+            so this panel genuinely has two source endpoints — worst-of across
+            both is the honest resolution. */}
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Fee tiers <NodeProvenance source="node" keys={["fees", "network"]} status={data.status} bare /></h6>
         {FEE_TIER_LABELS.map((label, i) => (
           <KV
             key={label}
@@ -64,7 +67,7 @@ export function NetRail({ extra }: NetRailProps) {
       </div>
 
       <div className="rail-block">
-        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Market <Provenance source="coingecko" fresh="live" bare /></h6>
+        <h6 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>Market <NodeProvenance source="coingecko" keys={["market"]} status={data.status} bare /></h6>
         <KV k="XMR/USD" v={hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"} accent />
         <KV k="24h Δ" v={hasData(data.status.market) ? (
           <span className={data.change24h >= 0 ? "up" : "dn"}>
@@ -88,7 +91,7 @@ export function NetRail({ extra }: NetRailProps) {
       {extra}
 
       <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>
-        <Provenance source="node" fresh={feedDegraded(data.status) ? "stale" : "live"} detail={data.source} />
+        <NodeProvenance source="node" keys={["network"]} status={data.status} detail={data.source} />
         <div style={{ marginTop: 4 }}>{/* the NODE endpoint's own last success, not the feed heartbeat: during an
             outage this clock now FREEZES at last-good rather than ticking on as
             though the number beside it were still being refreshed. */}

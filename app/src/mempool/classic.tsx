@@ -6,7 +6,7 @@ import type { MoneroLive, Tx } from "@/data/types";
 import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable} from "@/mempool/mempool-shared";
 import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { BlockEta } from "@/mempool/mem-stats";
-import { Provenance } from "@/design/primitives";
+import { NodeProvenance } from "@/design/primitives";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 import { useReducedMotion } from "@/design/useReducedMotion";
 
@@ -140,7 +140,7 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   return (
     <div style={{ position: "relative", padding: "18px 20px 30px" }}>
       <div className="mono" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>
-        Confirmations <Provenance source="session" /> <span className="dim2">tip − block height</span>
+        Confirmations <NodeProvenance source="session" keys={["blocks"]} status={data.status} /> <span className="dim2">tip − block height</span>
       </div>
       <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 12 }}>
         {ribbon.map((r, i) => {
@@ -557,7 +557,7 @@ const CLASSIC_TX_ENTER_CSS = `
 .classic-tx-enter { animation: classic-tx-enter-kf var(--d-4) ease-out; }
 `;
 
-export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
+export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: any) {
   const rows = mempool.slice(0, 14);
   const reduceMotion = useReducedMotion();
 
@@ -583,7 +583,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId }: any) {
     }}>
       <style>{CLASSIC_TX_ENTER_CSS}</style>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)", display: "flex", alignItems: "center", gap: 8 }}><Provenance source="node" fresh="live" inline /> last {rows.length} tx in mempool</span>
+        <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)", display: "flex", alignItems: "center", gap: 8 }}><NodeProvenance source="node" keys={["mempool"]} status={status} inline /> last {rows.length} tx in mempool</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
           <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> streaming
         </span>
@@ -638,7 +638,7 @@ export function ClassicLanding({ data, onPickTx, trackedTxId }: any) {
       <ClassicCaption />
       <ClassicProjBlock buckets={buckets} mempool={data.mempool} height={data.height} data={data} />
       <ClassicFeeDepth buckets={buckets} />
-      <ClassicTxFeed mempool={data.mempool} onPickTx={onPickTx} thr={buckets.thr} trackedTxId={trackedTxId} />
+      <ClassicTxFeed mempool={data.mempool} onPickTx={onPickTx} thr={buckets.thr} trackedTxId={trackedTxId} status={data.status} />
     </div>
   );
 }

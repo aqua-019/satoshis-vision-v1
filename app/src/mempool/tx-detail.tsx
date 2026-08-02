@@ -12,12 +12,13 @@
 // loading / error / placeholder states.
 
 import * as React from "react";
-import { Stat, Provenance } from "@/design/primitives";
+import { Stat, NodeProvenance } from "@/design/primitives";
 import { usePendingDelay } from "@/design/usePendingDelay";
 import {
   useLiveTx,
   useLiveBlock,
   useLiveDecoys,
+  detailPhase,
   type RealTxView,
   type RealBlockView,
 } from "@/mempool/live-detail";
@@ -135,7 +136,7 @@ export function LiveTxDetail({ txid, data, onBack }: {
       </div>
     );
   }
-  return <FullTxDetail tx={tx} onBack={onBack} />;
+  return <FullTxDetail tx={tx} data={data} txStatus={status} onBack={onBack} />;
 }
 
 export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
@@ -178,12 +179,17 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
       </div>
     );
   }
-  return <FullBlockDetail block={block} onBack={onBack} onPickTx={onPickTx} />;
+  return <FullBlockDetail block={block} blockStatus={status} onBack={onBack} onPickTx={onPickTx} />;
 }
 
 /* ─── FULL TX DETAIL ───────────────────────────────────────────── */
 
-export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => void }) {
+export function FullTxDetail({ tx, data, txStatus, onBack }: {
+  tx: RealTxView;
+  data: MoneroLive;
+  txStatus: "loading" | "ready" | "error";
+  onBack?: () => void;
+}) {
   const [showJson, setShowJson] = React.useState(false);
   const [openIn, setOpenIn] = React.useState(0);
   const [wantDecoys, setWantDecoys] = React.useState(false);
@@ -226,7 +232,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
       </div>
 
       {/* KPI tiles (all real; size/fee null → "—") */}
-      <Section title="Summary" kicker={<>Top-line <Provenance source="node" bare /></>}>
+      <Section title="Summary" kicker={<>Top-line <NodeProvenance source="node" bare phase={detailPhase(txStatus)} /></>}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
           <Stat k="Fee" v={tx.fee != null ? tx.fee.toFixed(7) : "—"} sub="XMR" tone="acc" />
           <Stat k="Fee rate" v={tx.feePerB != null ? tx.feePerB.toFixed(2) : "—"} sub="piconero / B" />
@@ -255,7 +261,7 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
 
       {/* Confirmation panel */}
       <Section title="Confirmation status" kicker="10-conf unlock"
-        right={<Provenance source="session" fresh="live" />}>
+        right={<NodeProvenance source="session" keys={["blocks"]} status={data.status} />}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
           <Stat k="of 10 confirmations" v={tx.confirmations} tone="acc" big />
           <Stat k="Blocks remaining" v={remaining} big />
@@ -467,7 +473,12 @@ export function FullTxDetail({ tx, onBack }: { tx: RealTxView; onBack?: () => vo
 
 const BLOCK_TX_RENDER_CAP = 50;
 
-export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockView; onBack?: () => void; onPickTx?: (id: string, blockHeight: number) => void }) {
+export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
+  block: RealBlockView;
+  blockStatus: "loading" | "ready" | "error";
+  onBack?: () => void;
+  onPickTx?: (id: string, blockHeight: number) => void;
+}) {
   const [showJson, setShowJson] = React.useState(false);
 
   // Coinbase first, then real non-coinbase hashes (render-capped for performance).
@@ -496,7 +507,7 @@ export function FullBlockDetail({ block, onBack, onPickTx }: { block: RealBlockV
       </div>
 
       {/* KPI tiles */}
-      <Section title="Block summary" kicker={<>At a glance <Provenance source="node" bare /></>}>
+      <Section title="Block summary" kicker={<>At a glance <NodeProvenance source="node" bare phase={detailPhase(blockStatus)} /></>}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
           <Stat k="Transactions" v={block.txCount} tone="acc" />
           <Stat k="Weight" v={(block.weightBytes / 1024).toFixed(1)} sub="KB" />

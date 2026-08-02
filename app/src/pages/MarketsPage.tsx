@@ -26,7 +26,7 @@ import * as React from "react";
 import { PageShell } from "@/layout/PageShell";
 import { PageHeader } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
-import { Stat, PanelFrame, Crumbs, Provenance, DataLegend } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs, Provenance, NodeProvenance, DataLegend } from "@/design/primitives";
 import { ProvNote, type ProvFreshness } from "@/design/provenance";
 import {
   useMarketHistory,
@@ -66,7 +66,7 @@ const fmtSat = (v: number): string => (v * 1e5).toFixed(0) + " sat";
  */
 function freshProps(status: SeriesStatus): { fresh: ProvFreshness; detail?: string } {
   switch (status) {
-    case "error": return { fresh: "none", detail: "unavailable" };
+    case "error": return { fresh: "error" };
     case "loading": return { fresh: "loading" };
     case "live": return { fresh: "live" };
     case "stale": return { fresh: "stale" };
@@ -91,7 +91,7 @@ function GroupBadge({ result }: { result: GroupResult }) {
   const stales = result.data.filter((s) => s.status !== "live").length;
   switch (result.status) {
     case "error":
-      return <Provenance source="coingecko" fresh="none" detail="unavailable" />;
+      return <Provenance source="coingecko" fresh="error" />;
     case "loading":
       return <Provenance source="coingecko" fresh="loading" />;
     case "live":
@@ -260,7 +260,7 @@ export function MarketsPage() {
 
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={hasData(data.status.market) ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
+      <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={<NodeProvenance source="coingecko" keys={["market"]} status={data.status} />} />
       <DataLegend sources={["coingecko"]} />
       <PageHeader
         kicker="Markets · price, volume, liquidity"

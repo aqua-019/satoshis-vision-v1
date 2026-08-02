@@ -245,6 +245,23 @@ export function chromePhase(m: FeedStatusMap, keys: readonly FeedKey[]): FeedPha
 export const freshAt = (s: FeedStatus): number => s.at ?? 0;
 
 /**
+ * The OLDEST last-success time across the keys a panel reads — "when was this
+ * panel as a whole last true".
+ *
+ * Oldest rather than newest, to agree with NodeProvenance's worst-of freshness:
+ * a panel showing mempool and fees together is only as current as its more
+ * stagnant half, and reporting the fresher one would let a dead endpoint hide
+ * behind a live neighbour. `freshAt` returns 0 for "never answered", so a panel
+ * with any never-answered key collapses to 0 and renders "—" rather than a time
+ * that describes only part of what is on screen.
+ */
+export const oldestFreshAt = (m: FeedStatusMap, keys: readonly FeedKey[]): number => {
+  let oldest = Infinity;
+  for (const k of keys) oldest = Math.min(oldest, freshAt(m[k]));
+  return Number.isFinite(oldest) ? oldest : 0;
+};
+
+/**
  * Newest successful response across every key.
  *
  * Used by the differs whose job is "something landed" rather than "this

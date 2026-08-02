@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { observeDrawable } from "@/design/usePageActive";
-import { Stat, Provenance } from "@/design/primitives";
+import { Stat, NodeProvenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { hashToUnit, FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
@@ -563,7 +563,7 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
     </div>
   ) : null;
   return (
-    <BrgCard title="Alert tape" right={<><Provenance source="node" fresh="live" inline /> −f</>}>
+    <BrgCard title="Alert tape" right={<><NodeProvenance source="node" keys={["blocks", "mempool", "network", "fees"]} status={data.status} inline /> −f</>}>
       <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5 }}>
         {pinned}
         {rows.length === 0 && !pinned ? (
