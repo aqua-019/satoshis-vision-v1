@@ -1172,7 +1172,12 @@ header > div > h1.serif {
      query adds no specificity — so at equal specificity the later rule would
      win and this block would silently do nothing. styles-ambient.css's
      reduced-motion block uses `!important` for the same reason. */
-  .led.pulse, .prov-dot, .blink { animation: none !important; opacity: 1; }
+  /* `.prov-fresh--stale` invokes the `blink` KEYFRAME but carries no `.blink`
+     CLASS, so it slipped past this list for three versions and kept blinking at
+     exactly the readers who asked it not to. Named explicitly here, along with
+     `.prov-fresh--error`, which is static today — listed anyway so that giving
+     it motion later cannot silently reintroduce the same defect. */
+  .led.pulse, .prov-dot, .prov-fresh--stale, .prov-fresh--error, .blink { animation: none !important; opacity: 1; }
 }
 
 /* queued / next blocks (outline only) */
@@ -1288,9 +1293,19 @@ header > div > h1.serif {
 /* compound divider (e.g. SESSION ∣ NODE) */
 .prov-sep { width: 1px; height: 11px; background: var(--ink-20); display: inline-block; }
 
-/* freshness — gold STALE blinks; loading is dim. Orthogonal to source. */
+/* freshness — gold STALE blinks; loading is dim; error is red and still.
+   Orthogonal to source. Three colours, three distinct claims:
+     gold  = we HAVE a number, it is just old (last-good, still rendered)
+     red   = we have NOTHING and the endpoint is down (nothing to render)
+     dim   = we asked and are waiting; no claim either way yet
+   Error does NOT blink. Gold blinks because a stale number sits next to live
+   ones and needs to separate itself from them; an "unavailable" suffix has no
+   number beside it to be confused with, so motion would add nothing and cost a
+   reader something. Both are in the reduced-motion kill-list regardless — see
+   the `.prov-dot` block above — so a future animation here cannot regress. */
 .prov-fresh--stale   { color: var(--y-50); animation: blink calc(0.9s / var(--tk-anim, 1)) steps(2, end) infinite; }
 .prov-fresh--loading { color: var(--ink-40); }
+.prov-fresh--error   { color: var(--r-50); }
 .prov-detail { color: var(--ink-40); }
 
 /* data legend — one-line key explaining the source vocabulary */
