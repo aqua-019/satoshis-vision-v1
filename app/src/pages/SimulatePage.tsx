@@ -117,8 +117,24 @@ export function SimulatePage() {
             })}
           </div>
         </div>
+        {/* The boundary sits INSIDE the `1fr` grid row, whose height comes from
+            the grid and not from its content — so swapping fallback for
+            simulator cannot move anything around it. That is why this needed no
+            explicit reserve: the box was already reserved by the layout.
+            Verified, not assumed — /simulate measures CLS 0.0000 in both
+            verify-cls passes with the simulators lazy.
+
+            The fallback copy deliberately MATCHES entry-ssr.tsx:34's
+            SUSPENDED_RE. That is not a hazard to avoid here, it is the
+            mechanism: prerender re-renders until nothing matches, so a matching
+            fallback is what forces the real simulator into dist/simulate/
+            index.html instead of baking a loading state into the static HTML. */}
         <div style={{ position: "relative", overflow: "hidden" }}>
-          {notFound ? <SimNotFound requested={requested!} /> : <View data={data} />}
+          {notFound ? <SimNotFound requested={requested!} /> : (
+            <React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulator…</div>}>
+              <View data={data} />
+            </React.Suspense>
+          )}
         </div>
       </div>
     </PageShell>

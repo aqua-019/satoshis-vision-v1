@@ -90,8 +90,22 @@ async function census(ctx, url) {
     // never idle. domcontentloaded + an explicit selector, as everywhere else.
     await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await page.waitForSelector('main', { timeout: 15000 });
+    // MOUNT, not just `main`. v6.1.5 PR B made the 21 simulators lazy, so on a
+    // /simulate surface `main` now resolves while the simulator's chunk is
+    // still in flight and only the Suspense fallback is on screen. Censusing
+    // there finds zero animations and zero SMIL — and §1 would pass, green and
+    // vacuous, for exactly the surfaces it exists to check. §2's control probe
+    // would NOT catch it: it drives two fixed URLs and would keep finding
+    // motion while all 21 simulator rows silently measured a fallback.
+    // `.art.proto` is ProtoArtboard's root (design/ProtoArtboard.tsx:59) — the
+    // simulator is on screen only once it exists.
+    let mounted = true;
+    if (url.includes('/simulate')) {
+      try { await page.waitForSelector('.art.proto', { timeout: 20000 }); }
+      catch { mounted = false; }   // reported as a failure, not thrown as a crash
+    }
     await page.waitForTimeout(SETTLE_MS);
-    return await page.evaluate(() => {
+    const seen = await page.evaluate(() => {
       const running = (document.getAnimations ? document.getAnimations() : [])
         .filter((a) => a.playState === 'running');
       const label = (a) => {
@@ -108,6 +122,7 @@ async function census(ctx, url) {
         .map((e) => `${e.getAttribute('attributeName') || e.nodeName}@${(e.parentElement || {}).nodeName || '?'}`);
       return { css: running.map(label), smil };
     });
+    return { ...seen, mounted };
   } finally {
     await page.close();
   }
@@ -123,8 +138,17 @@ const reduceCtx = await browser.newContext({
 });
 
 let stillMoving = 0;
+let unmounted = 0;
 for (const s of SURFACES) {
-  const { css, smil } = await census(reduceCtx, s.url);
+  const { css, smil, mounted } = await census(reduceCtx, s.url);
+  // Asserted BEFORE the motion result, because it qualifies it: a surface that
+  // never mounted has a meaningless census, and "0 animations" on a fallback is
+  // the shape of a green that proves nothing.
+  if (!mounted) {
+    unmounted++;
+    R.ok(false, `1 · ${s.name} · simulator mounted (.art.proto) before census`,
+      'the lazy chunk never arrived, so the census below measured a Suspense fallback');
+  }
   const clean = css.length === 0 && smil.length === 0;
   if (!clean) stillMoving++;
   R.ok(clean, `1 · ${s.name} · still under reduce (css ${css.length}, smil ${smil.length})`,
@@ -132,6 +156,8 @@ for (const s of SURFACES) {
      smil.length ? `SMIL: ${[...new Set(smil)].slice(0, 6).join(' | ')}` : ''].filter(Boolean).join('\n     '));
 }
 R.ok(stillMoving === 0, `1 · ${SURFACES.length - stillMoving} of ${SURFACES.length} surfaces reach zero motion under reduce`);
+R.ok(unmounted === 0, `1 · all ${SIMS.length} simulator surfaces mounted before being censused`,
+  `${unmounted} censused a Suspense fallback — their motion results above are vacuous`);
 await reduceCtx.close();
 
 /* ── 2 · the gate is measuring something ─────────────────────────────────────
