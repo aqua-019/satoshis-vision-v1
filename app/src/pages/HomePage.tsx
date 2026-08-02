@@ -11,14 +11,6 @@ import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-stat
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { Card, Crumbs, Pill, Sparkline, Stat, Provenance, NodeProvenance } from "@/design/primitives";
 import { ThemeToggle } from "@/design/ThemeToggle";
-// TEMPORARY — reverted in the very next commit. Eagerly importing the protocol
-// registry from the LCP route drags all 16 simulator modules into the entry
-// closure: a real +50KB gzip regression, and the realistic version of the
-// mistake verify-bundle exists to catch.
-import { PROTOCOL_VIEWS } from "@/views/protocols";
-
-const __breakTestKeys = Object.keys(PROTOCOL_VIEWS).length;
-if (__breakTestKeys < 0) console.log(__breakTestKeys);
 
 export function HomePage() {
   const data = useMoneroLive();
