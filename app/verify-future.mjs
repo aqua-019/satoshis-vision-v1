@@ -49,6 +49,7 @@ import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { mockStatus } from './verify-lib.mjs';
 
 const base = 'http://localhost:4173';
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -195,6 +196,11 @@ async function mockFeeds(ctx, { blogFails = false, pulseFails = false } = {}, co
   await ctx.route('**/api/xmr/**', (r) => r.abort());
   await ctx.route('**/api/monero*', (r) => r.abort());
   await ctx.route('**/api/coingecko*', (r) => r.abort());
+  /* D0891: /api/status matches NONE of the three globs above, so before this it
+     fell through unrouted — and serve-dist answers an unmatched path with 200
+     text/html, not a 404, so /sources was silently exercising an unhandled
+     request. One call here covers all five mockFeeds call sites. */
+  await mockStatus(ctx);
   // Partner sites: intercept so clicking a card never leaves the sandbox.
   for (const host of ['xmrhub.org', 'kyc.rip', 'xmr.club']) {
     await ctx.route(`**://${host}/**`, (r) => r.fulfill({ status: 200, contentType: 'text/html', body: `<title>${host}</title>` }));
