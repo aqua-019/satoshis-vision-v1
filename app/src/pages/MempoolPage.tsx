@@ -207,9 +207,11 @@ export function MempoolPage() {
             fallback={
               // `minHeight` is load-bearing, not cosmetic. A bare padded <div>
               // is far shorter than the view that replaces it, so the swap
-              // pushed everything below it down and cost ~0.07 CLS — measured,
-              // not theoretical. Reserving roughly the view's height keeps the
-              // shift inside the noise.
+              // pushed everything below it down and cost ~0.085 CLS — measured,
+              // not theoretical. Both recorded runs of that experiment, and the
+              // harness each was measured under, are in app/PERF-BASELINE.md;
+              // do not restate a number here. Reserving roughly the view's
+              // height keeps the shift inside the noise.
               <div className="mono dim" style={{ padding: 40, minHeight: "70vh" }}>
                 loading {meta.label.toLowerCase()}…
               </div>

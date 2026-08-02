@@ -130,6 +130,39 @@ R.group('3 · verify-reporter.mjs imports nothing but node: builtins');
   }
 }
 
+/* ── 3b · the measurement profile has ONE home ─────────────────────────────
+   v6.1.5 added verify-vitals.mjs beside verify-cls.mjs. Both measure under
+   "PERF-BASELINE.md's documented profile", and before the extraction each
+   would have owned its own copy of the throttle literals. Two copies of an
+   invariant drift apart with nothing failing — the same reasoning that split
+   makeReporter out in §3 above. The literals now live in verify-lib.mjs and
+   this asserts neither gate re-declares them locally, because a local
+   redeclaration would silently win and the two gates would be measuring
+   different conditions while both claiming the documented one. */
+R.group('3b · SLOW_4G / CPU_THROTTLE / PHONE are declared once, in verify-lib.mjs');
+{
+  const lib = readOr('./verify-lib.mjs');
+  R.ok(lib !== null && /export const SLOW_4G = \{/.test(lib) && /export const CPU_THROTTLE =/.test(lib)
+    && /export const PHONE = \{/.test(lib) && /export async function throttle\(/.test(lib),
+    'verify-lib.mjs owns SLOW_4G, CPU_THROTTLE, PHONE and throttle()');
+
+  for (const gate of ['./verify-cls.mjs', './verify-vitals.mjs']) {
+    const src = readOr(gate);
+    if (src === null) { R.ok(false, `${gate} exists`); continue; }
+    // Strip comments first: both files legitimately DISCUSS these names in
+    // their headers, and three assertions in v6.1.4 failed on comment prose
+    // for exactly this reason.
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+    const redeclared = ['SLOW_4G', 'CPU_THROTTLE', 'PHONE']
+      .filter((n) => new RegExp(`(const|let|var)\\s+${n}\\s*=`).test(code));
+    R.ok(redeclared.length === 0,
+      `${gate} imports the profile rather than re-declaring it`,
+      `re-declared locally: ${redeclared.join(', ')} — delete them and import from verify-lib.mjs`);
+    R.ok(/from '\.\/verify-lib\.mjs'/.test(code) && /CPU_THROTTLE/.test(code),
+      `${gate} imports CPU_THROTTLE from verify-lib.mjs`);
+  }
+}
+
 /* ── 4 · in-flight stayed off MoneroLive ───────────────────────────────────── */
 R.group('4 · the in-flight axis did not leak into the feed snapshot');
 {

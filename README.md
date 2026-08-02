@@ -67,12 +67,12 @@ read it, so the two stay in step. Register the route in `app/src/App.tsx` as wel
 
 ## ✅ Verification
 
-59 gates guard this repo (54 in `app/`, 5 in `api/`; `verify-lib.mjs` and
+61 gates guard this repo (56 in `app/`, 5 in `api/`; `verify-lib.mjs` and
 `verify-reporter.mjs` are shared modules, not gates).
-`.github/workflows/ci.yml` runs **45 distinct** files on every PR to `main`, in
-two jobs: 10 named offline gates, then `verify:static` and `verify:e2e` (four of
-the 10 also appear in `verify:static`, and `verify-origins` appears in both
-chains, which is why 10 + 17 + 23 is not 50).
+`.github/workflows/ci.yml` runs **47 distinct** files on every PR to `main`, in
+two jobs: 11 named offline gates, then `verify:static` and `verify:e2e` (four of
+the 11 also appear in `verify:static`, and `verify-origins` appears in both
+chains, which is why 11 + 17 + 24 is not 52).
 
 ```bash
 cd app
@@ -80,12 +80,38 @@ npm run typecheck
 npm run build
 
 npm run verify:static   # 17 source-assertion gates, no browser, ~30s
+npm run verify:bundle   # byte budgets — offline, but reads dist/
 
 npx playwright install --with-deps chromium
 node scripts/serve-dist.mjs &
 npm run wait-preview
-npm run verify:e2e      # 23 Playwright gates
+npm run verify:e2e      # 24 Playwright gates
+
+npm run verify:all      # all of the above in one command, with one tally
 ```
+
+`verify:all` builds, starts `serve-dist`, runs every gate CI reaches (plus the
+cost gates), tears the server down and prints a single
+`passed · fixtured · skipped · failed` line naming every command it ran. It is
+an orchestrator rather than a gate — the "no gate spawns a server" rule is
+intact — and it is deliberately **not** wired into CI, because CI runs its two
+jobs in parallel and this would serialise them for no extra coverage.
+
+### Cost gates (v6.1.5)
+
+Everything above checks correctness. Two gates check **cost**:
+
+- **`verify-bundle.mjs`** — per-route first-load bytes, eager JS, CSS, total JS
+  and Vite's own 500 kB chunk backstop. Deterministic (gzip pinned to level 9),
+  so its ceilings hold on any machine. Runs in the `build` job *after* Build —
+  it cannot live in `verify:static`, which runs before the build.
+- **`verify-vitals.mjs`** — LCP, main-thread blocking, and worst scripted
+  interaction latency, against a mocked feed. Wall-clock, so its ceilings are
+  calibrated against the CI runner. An environment too contended to measure
+  honestly reports `skip` — its own counter — never a silent pass.
+
+Both print their measured numbers on every run, pass or fail. A `--measure`
+flag on each prints without asserting, which is how baselines are re-taken.
 
 Three more are npm-wired but deliberately not in CI — `verify:shots`,
 `verify:perf`, `verify:mem:perf`. `verify-shots.mjs`'s `--baseline` diff needs a
