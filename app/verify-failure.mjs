@@ -132,6 +132,14 @@ async function panelsByKey(page) {
       // called the other two healthy — they were rendering last-good numbers
       // formatted exactly like live ones.
       stale: el.getAttribute('data-stale') === 'true',
+      // The marker a reader actually sees INSIDE the panel. Charts draw a
+      // decorative STALE watermark from their own `stale` prop, which is a
+      // second expression of the same fact — and a second expression can
+      // disagree. `charts` is 0 for the table/stat panels, which draw nothing.
+      // Any <svg> in the body is a chart here; the series components carry no
+      // marker attribute of their own, and the table/stat panels have none.
+      charts: el.querySelectorAll('.panel-b svg').length,
+      watermark: el.querySelectorAll('text[data-decorative]').length > 0,
       title: (el.querySelector('.panel-h .l')?.textContent || '').trim(),
     })));
 }
@@ -180,6 +188,17 @@ R.group('A · killing ONE endpoint degrades exactly the panels it feeds');
   const body = await page.innerText('body');
   R.ok(body.includes(H.toLocaleString('en-US')),
     'A: last-good height is retained — a dead endpoint blanks nothing');
+
+  /* The panel says one thing via data-stale (derived from the endpoints it
+     advertises) and the chart inside says another via its own `stale` prop.
+     Both are claims to the reader, so they have to agree — otherwise a chart
+     can dim on the wrong endpoint entirely and every assertion above still
+     passes, which is precisely what a break test of this gate revealed. */
+  const charted = after.filter((p) => p.charts > 0);
+  R.ok(charted.length > 0 && charted.every((p) => p.watermark === p.stale),
+    `A: every charted panel's STALE watermark agrees with the endpoint it names (${charted.length} charted)`,
+    charted.filter((p) => p.watermark !== p.stale)
+      .map((p) => `${p.title} [${p.keys}] panel=${p.stale} chart=${p.watermark}`).join(' · '));
 
   await ctx.close();
 }
