@@ -789,6 +789,17 @@ header > div > h1.serif {
    body-level dim would double up on them while still leaving the table and
    stat panels — the ones that cannot draw a watermark — saying nothing. */
 .panel-stale { color: var(--y-50); letter-spacing: 0.08em; white-space: nowrap; }
+/* "UPD 12s" — when this panel's own endpoint last answered. Same header slot as
+   .panel-stale and for the same reason. The width is RESERVED rather than fitted:
+   this text changes once a second, and an unreserved slot would shift its
+   neighbours on every 9s->10s and 59s->1m rollover — a layout shift per second,
+   per panel, which is exactly what verify-cls exists to catch. `ch` against the
+   mono face plus tabular figures makes every rendering the same width. */
+.panel-updated {
+  color: var(--ink-40); letter-spacing: 0.08em; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 7ch; text-align: right;
+}
 .panel-b { padding: 10px 12px; }
 
 /* corner ticks (HUD framing) */
@@ -1172,7 +1183,12 @@ header > div > h1.serif {
      query adds no specificity — so at equal specificity the later rule would
      win and this block would silently do nothing. styles-ambient.css's
      reduced-motion block uses `!important` for the same reason. */
-  .led.pulse, .prov-dot, .blink { animation: none !important; opacity: 1; }
+  /* `.prov-fresh--stale` invokes the `blink` KEYFRAME but carries no `.blink`
+     CLASS, so it slipped past this list for three versions and kept blinking at
+     exactly the readers who asked it not to. Named explicitly here, along with
+     `.prov-fresh--error`, which is static today — listed anyway so that giving
+     it motion later cannot silently reintroduce the same defect. */
+  .led.pulse, .prov-dot, .prov-fresh--stale, .prov-fresh--error, .blink { animation: none !important; opacity: 1; }
 }
 
 /* queued / next blocks (outline only) */
@@ -1288,9 +1304,19 @@ header > div > h1.serif {
 /* compound divider (e.g. SESSION ∣ NODE) */
 .prov-sep { width: 1px; height: 11px; background: var(--ink-20); display: inline-block; }
 
-/* freshness — gold STALE blinks; loading is dim. Orthogonal to source. */
+/* freshness — gold STALE blinks; loading is dim; error is red and still.
+   Orthogonal to source. Three colours, three distinct claims:
+     gold  = we HAVE a number, it is just old (last-good, still rendered)
+     red   = we have NOTHING and the endpoint is down (nothing to render)
+     dim   = we asked and are waiting; no claim either way yet
+   Error does NOT blink. Gold blinks because a stale number sits next to live
+   ones and needs to separate itself from them; an "unavailable" suffix has no
+   number beside it to be confused with, so motion would add nothing and cost a
+   reader something. Both are in the reduced-motion kill-list regardless — see
+   the `.prov-dot` block above — so a future animation here cannot regress. */
 .prov-fresh--stale   { color: var(--y-50); animation: blink calc(0.9s / var(--tk-anim, 1)) steps(2, end) infinite; }
 .prov-fresh--loading { color: var(--ink-40); }
+.prov-fresh--error   { color: var(--r-50); }
 .prov-detail { color: var(--ink-40); }
 
 /* data legend — one-line key explaining the source vocabulary */

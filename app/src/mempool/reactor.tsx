@@ -17,9 +17,10 @@
 // lookups).
 import * as React from "react";
 import { Link } from "react-router-dom";
-import { PanelFrame, MiniBar, Provenance } from "@/design/primitives";
+import { PanelFrame, MiniBar, NodeProvenance } from "@/design/primitives";
 import { fmtBytes, fmtFee, shortHash as ShortHash } from "@/data/types";
 import type { MoneroLive, Tx } from "@/data/types";
+import { oldestFreshAt } from "@/data/feed-status";
 import { FEE_TIER_LABELS, feeTierIndex, hashToUnit } from "@/data/map";
 import { BlockEta } from "@/mempool/mem-stats";
 import { feeRateHistogram } from "@/data/histogram";
@@ -341,6 +342,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             <PanelFrame
               title={<><span>● Block stream</span><span className="dim2">queued ⟶ confirmed</span></>}
               right={<><span>FEE-SORTED</span><span className="acc">▣ AUTO-SCROLL</span></>}
+              updatedAt={oldestFreshAt(data.status, ["blocks", "mempool", "network"])}
             >
               <div ref={glideRef} style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "8px 4px" }}>
                 {/* queued + next placeholders */}
@@ -406,7 +408,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 <span className="acc">{CONF_UNLOCK} confs · UNLOCK ▸</span>
               </div>
             </PanelFrame>
-            <PanelFrame title={`Iso stack · last ${CONF_UNLOCK}`} right={<><Provenance source="node" fresh="live" /><span>BLOCK GEOMETRY</span></>}>
+            <PanelFrame title={`Iso stack · last ${CONF_UNLOCK}`} right={<><NodeProvenance source="node" keys={["blocks"]} status={data.status} /><span>BLOCK GEOMETRY</span></>} updatedAt={oldestFreshAt(data.status, ["blocks"])}>
               <IsoBlockStack blocks={data.blocks} w={340} h={300} onSelectBlock={onSelectBlock} />
             </PanelFrame>
           </div>
@@ -421,7 +423,8 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: 14, minHeight: 360 }}>
                 <PanelFrame
                   title={<><span>● Mempool · hex lattice</span><span className="dim2">cells = tx · color = fee/B</span></>}
-                  right={<><Provenance source="node" fresh="live" /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
+                  right={<><NodeProvenance source="node" keys={["mempool"]} status={data.status} /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
+                  updatedAt={oldestFreshAt(data.status, ["mempool"])}
                 >
                   <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                     <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />
@@ -442,7 +445,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                   <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
                   <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
                 </PanelFrame>
-                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
+                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>} updatedAt={oldestFreshAt(data.status, ["blocks", "network"])}>
                   <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
                       <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
@@ -466,6 +469,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
               <PanelFrame
                 title={<><span>● Live tx feed</span><span className="dim2">newest first</span></>}
                 right={<><span>STREAM ACTIVE</span><span className="acc">FEE TIER · LIVE</span></>}
+                updatedAt={oldestFreshAt(data.status, ["mempool", "fees", "network"])}
               >
                 <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                   <div className="kicker">TIER</div>

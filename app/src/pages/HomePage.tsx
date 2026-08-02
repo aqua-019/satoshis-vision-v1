@@ -7,9 +7,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { fmtBytes } from "@/data/types";
-import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData, isStale } from "@/data/feed-status";
+import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
-import { Card, Crumbs, Pill, Sparkline, Stat, Provenance } from "@/design/primitives";
+import { Card, Crumbs, Pill, Sparkline, Stat, Provenance, NodeProvenance } from "@/design/primitives";
 import { ThemeToggle } from "@/design/ThemeToggle";
 
 export function HomePage() {
@@ -17,9 +17,6 @@ export function HomePage() {
   const navigate = useNavigate();
   const chromeState = useChromeState(data.status, CHAIN_MARKET_CHROME_KEYS);
   const memBytes = data.mempool.reduce((a, t) => a + t.size, 0);
-  const marketFresh = isStale(data.status.market)
-    ? "stale"
-    : hasData(data.status.market) ? "live" : "loading";
 
   return (
     <PageShell width="wide" className="home-hero" bg={{ intensity: "busy" }}>
@@ -80,7 +77,7 @@ export function HomePage() {
                   grey a badge for an upstream that may have been answering
                   perfectly — the same class of mis-attribution as a /network
                   chart dimming on someone else's endpoint. */}
-              <Provenance source="coingecko" fresh={marketFresh} />
+              <NodeProvenance source="coingecko" keys={["market"]} status={data.status} />
             </div>
             <div className="mono acc glow" style={{ fontSize: 64, fontWeight: 500, lineHeight: 1, marginTop: 6 }}>{hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"}</div>
             <div className="mono" style={{ marginTop: 6, fontSize: "var(--fs-mono)", color: data.change24h >= 0 ? "var(--g-50)" : "var(--r-50)" }}>
@@ -99,7 +96,7 @@ export function HomePage() {
           )}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase" }}>On-chain</div>
-            <Provenance source="node" fresh={hasData(data.status.network) ? "live" : "loading"} detail={data.source !== "coingecko" ? data.source : undefined} />
+            <NodeProvenance source="node" keys={["network"]} status={data.status} detail={data.source !== "coingecko" ? data.source : undefined} />
           </div>
           <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 3, gap: 8 }}>
             <Stat k="Block height" v={hasData(data.status.network) ? data.height.toLocaleString() : "—"} tone="acc" />

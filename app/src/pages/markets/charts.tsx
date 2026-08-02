@@ -410,7 +410,7 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }:
     return (
       <EmptyBox boxRef={boxRef} height={height}>
         <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Provenance source="coingecko" fresh="none" detail="unavailable" />
+          <Provenance source="coingecko" fresh="error" />
           {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
         </div>
       </EmptyBox>

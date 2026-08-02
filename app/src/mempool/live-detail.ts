@@ -10,6 +10,7 @@ import * as React from "react";
 import { getJSON } from "@/data/http";
 import { isPageActive, onPageActiveChange } from "@/design/usePageActive";
 import { confOf, chainTip } from "@/mempool/conf";
+import { assertNever, type FeedPhase } from "@/data/feed-status";
 import type { MoneroLive } from "@/data/types";
 import {
   mapTxDetail,
@@ -30,6 +31,31 @@ export type { RealTxView, RealBlockView, DecoyInputView, DecoyRingMember } from 
 export interface TxDetailResult {
   status: "loading" | "ready" | "error";
   tx: RealTxView | null;
+}
+
+/**
+ * FeedPhase equivalent for the one-shot /api/xmr/tx and /api/xmr/block fetches
+ * this module runs (useLiveTx / useLiveBlock, both typed on this same
+ * "loading"|"ready"|"error" union — see TxDetailResult["status"]).
+ *
+ * Deliberately NO "stale" arm. FeedStatus's "stale" means "last poll
+ * succeeded, this one didn't" — a reading only a POLLED FeedKey can offer,
+ * because it has a last-good value and a failure streak to threshold against.
+ * A txid/height fetch here runs ONCE and then stops forever once
+ * confirmed/found; there is no cadence and no streak, so there is no
+ * last-good to fall back to. It is either never-resolved (error) or exactly
+ * as fresh as its one successful fetch (ready → live). Inventing "stale"
+ * would be synthesising a state this data flow cannot actually be in — the
+ * thing this repo bans. `assertNever` makes a future fourth status a compile
+ * error here, not a silently-stale badge.
+ */
+export function detailPhase(s: TxDetailResult["status"]): FeedPhase {
+  switch (s) {
+    case "loading": return "loading";
+    case "ready":   return "live";
+    case "error":   return "error";
+    default:        return assertNever(s, "detailPhase", "loading");
+  }
 }
 
 const TXID_RE = /^[0-9a-f]{64}$/i;

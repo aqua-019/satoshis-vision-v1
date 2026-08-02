@@ -7,6 +7,7 @@
 
 import * as React from "react";
 import { fmtN } from "@/data/types";
+import { fmtAge, useFreshSecond } from "./useFreshClock";
 import {
   ChartCrosshair,
   ChartTip,
@@ -18,8 +19,8 @@ import {
 
 // Canonical data-source attribution badge — re-exported so the many
 // `@/design/primitives` import sites can pull it from one place.
-export { Provenance, DataLegend } from "./provenance";
-export type { ProvSource, ProvFreshness, ProvenanceProps, DataLegendProps } from "./provenance";
+export { Provenance, NodeProvenance, DataLegend } from "./provenance";
+export type { ProvSource, ProvFreshness, ProvenanceProps, NodeProvenanceProps, DataLegendProps } from "./provenance";
 
 // ── Stat tile ───────────────────────────────────────────────────
 
@@ -90,9 +91,47 @@ export interface PanelFrameProps {
    * not double-dim the chart bodies that already handle themselves.
    */
   stale?: boolean;
+  /**
+   * When this panel's OWN endpoint last answered — `freshAt(status[key])`, or
+   * the oldest of them when the panel reads several. 0 / undefined = never.
+   *
+   * Never `lastUpdate`. That is the feed heartbeat: it stamps whenever ANY tier
+   * commits, so a panel fed by a dead endpoint would show a time that keeps
+   * advancing because some other endpoint is healthy. verify-feedstatus.mjs
+   * fails the build on any UI read of it, which is the mechanised version of
+   * this sentence.
+   */
+  updatedAt?: number;
 }
 
-export function PanelFrame({ title, right, children, scrollable, style, ticks = true, dataKey, stale }: PanelFrameProps) {
+/**
+ * "UPD 12s" — how long ago this panel's endpoint answered.
+ *
+ * Two readouts from one stamp, and the split is the point. `at` is LAST-GOOD on
+ * the stale variant, so during an outage the absolute instant in the `title`
+ * FREEZES — it is the last time anything was actually received — while the
+ * visible relative age keeps climbing off the shared clock. The number a reader
+ * needs during an outage is the age, and an age that stops growing is the same
+ * lie in a different font.
+ *
+ * Rendered unconditionally, including in the prerender where every `at` is 0 and
+ * this reads "UPD —". No node is inserted after hydration, so it contributes no
+ * layout shift; `min-width` + tabular figures absorb 9s→10s and 59s→1m.
+ */
+function PanelUpdated({ at }: { at?: number }) {
+  useFreshSecond();
+  const has = typeof at === "number" && at > 0;
+  return (
+    <span
+      className="panel-updated"
+      title={has ? `last response ${new Date(at).toISOString().slice(11, 19)} UTC` : "this endpoint has not answered yet"}
+    >
+      UPD {has ? fmtAge(Date.now() - at) : "—"}
+    </span>
+  );
+}
+
+export function PanelFrame({ title, right, children, scrollable, style, ticks = true, dataKey, stale, updatedAt }: PanelFrameProps) {
   return (
     <div className="panel" style={style} data-panel-key={dataKey} data-stale={stale ? "true" : undefined}>
       {ticks ? (<>
@@ -106,6 +145,7 @@ export function PanelFrame({ title, right, children, scrollable, style, ticks = 
           <div className="l">{typeof title === "string" ? <span>{title}</span> : title}</div>
           <div className="r">
             {stale ? <span className="panel-stale" title="last-good values — this endpoint is not answering">· stale</span> : null}
+            {updatedAt !== undefined ? <PanelUpdated at={updatedAt} /> : null}
             {right}
           </div>
         </div>

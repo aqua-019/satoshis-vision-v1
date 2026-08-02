@@ -2,7 +2,7 @@
 // Run `npm run port` to refresh. Manual fixups land in MIGRATION.md.
 import * as React from "react";
 import { useReducedMotion } from "@/design/useReducedMotion";
-import { Provenance } from "@/design/primitives";
+import { NodeProvenance } from "@/design/primitives";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { MemViewShell, TrackChip, useMempoolTracking, type Tracking, MemTxTable} from "@/mempool/mempool-shared";
 import { useMemStats, BlockEta } from "@/mempool/mem-stats";
@@ -299,7 +299,7 @@ export function SedStrataLog({ data, trackedHeight }: { data: MoneroLive; tracke
   const blocks = data.blocks.slice(0, BLOCKS_CAP);
   const maxTx = Math.max(...blocks.map((b) => b.txs), 1);
   return (
-    <SedCard title={"Stratigraphy log · " + blocks.length + " strata"} right={<><Provenance source="node" fresh="live" /><span className="acc">surface → unlock</span></>}>
+    <SedCard title={"Stratigraphy log · " + blocks.length + " strata"} right={<><NodeProvenance source="node" keys={["blocks"]} status={data.status} /><span className="acc">surface → unlock</span></>}>
       {/* top pane — markets-grade tx-count-per-stratum bars (oldest → newest) */}
       <BarSeries
         data={blocks.slice().reverse().map((b) => b.txs)}
@@ -367,7 +367,7 @@ export function SedClearance({ data }: { data: MoneroLive }) {
   const poolReady = hasData(data.status.network) && stats.txCount > 0;
   const p90 = poolReady ? p90PerB(data.mempool) : null;
   return (
-    <SedCard title="Clearance rate" right={<Provenance source="node" fresh="live" />}>
+    <SedCard title="Clearance rate" right={<NodeProvenance source="node" keys={["mempool", "network"]} status={data.status} />}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
         <span className="mono acc glow" style={{ fontSize: 24, fontWeight: 500 }}>{data.mempool.length}</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>tx suspended</span>
@@ -388,7 +388,7 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
   const max = Math.max(...data.mempool.map((t) => t.perB), 1);
   const rows = data.mempool.slice(0, 12);
   return (
-    <SedCard title={"Suspended transactions · " + rows.length + " of " + data.mempool.length} right={<><Provenance source="node" fresh="live" /><span className="acc">sorted by depth</span></>}>
+    <SedCard title={"Suspended transactions · " + rows.length + " of " + data.mempool.length} right={<><NodeProvenance source="node" keys={["mempool"]} status={data.status} /><span className="acc">sorted by depth</span></>}>
       <div className="mono" style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
         <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Fee/B</span><span>Depth</span><span>Age</span>
       </div>

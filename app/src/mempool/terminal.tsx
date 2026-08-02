@@ -3,7 +3,7 @@
 import * as React from "react";
 import { byTier, getDeviceTier } from "@/design/deviceTier";
 import { usePageActive } from "@/design/usePageActive";
-import { PanelFrame, Provenance } from "@/design/primitives";
+import { PanelFrame, NodeProvenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
@@ -13,7 +13,7 @@ import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { useMemStats, BlockEta, fmtMMSS } from "@/mempool/mem-stats";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import type { MoneroLive, Block } from "@/data/types";
-import { hasData } from "@/data/feed-status";
+import { hasData, oldestFreshAt } from "@/data/feed-status";
 
 interface ViewProps {
   data: MoneroLive;
@@ -306,7 +306,7 @@ export function TerminalHubView({ data }: ViewProps) {
         <div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-              <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>}>
+              <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>} updatedAt={oldestFreshAt(data.status, ["network", "mempool"])}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px color-mix(in srgb, var(--accent-structural) 18%, transparent)" }}>
 {`╭─ monerod ${data.version || "—"} `.padEnd(52, "─") + "\n│ Status:    "}
 {hasData(data.status.network) ? (
@@ -350,12 +350,12 @@ export function TerminalHubView({ data }: ViewProps) {
                 </div>
               </PanelFrame>
 
-              <PanelFrame title="$ jump · ⌘K" right={<span className="acc">PALETTE</span>}>
+              <PanelFrame title="$ jump · ⌘K" right={<span className="acc">PALETTE</span>} updatedAt={oldestFreshAt(data.status, ["network", "blocks", "fees", "mempool"])}>
                 <TermPalette data={data} />
               </PanelFrame>
             </div>
 
-            <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>}>
+            <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>} updatedAt={oldestFreshAt(data.status, ["blocks", "network"])}>
               <TermAsciiBlocks data={data} trackedTxId={trackedTxId} trackedHeight={trackedBlockHeight} />
               <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
                 <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+{CONF_UNLOCK}c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target={fmtMMSS(data.blockTarget || 120)}</span><span className="dim2 acc">scroll ←→</span>
@@ -363,15 +363,18 @@ export function TerminalHubView({ data }: ViewProps) {
             </PanelFrame>
 
             {/* D0651: term-blink — same justification as the first use above (~line 95) */}
-            <PanelFrame title="$ tail -f · feed" right={<><Provenance source="node" fresh="live" inline /><span>−f</span><span className="acc" style={{ animation: reduced ? undefined : "term-blink 1s steps(2) infinite" }}>●</span></>}>
+            <PanelFrame title="$ tail -f · feed" right={<><NodeProvenance source="node" keys={["blocks", "mempool"]} status={data.status} inline /><span>−f</span><span className="acc" style={{ animation: reduced ? undefined : "term-blink 1s steps(2) infinite" }}>●</span></>} updatedAt={oldestFreshAt(data.status, ["blocks", "mempool"])}>
               <TermLiveLog data={data} trackedTx={trackedTx} />
             </PanelFrame>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-              <PanelFrame title="$ awk · fee distribution">
+              <PanelFrame title="$ awk · fee distribution" updatedAt={oldestFreshAt(data.status, ["mempool"])}>
                 <TermFeeHisto data={data} />
               </PanelFrame>
-              <PanelFrame title="$ fee · tiers" right={<Provenance source="node" fresh="live" />}>
+              {/* feeTiers is written by BOTH mapFees and mapNetwork (src/data/map.ts) — either
+                  endpoint refreshing it is enough, so worst-of across ["fees","network"] is the
+                  honest freshness read here, not "fees" alone. */}
+              <PanelFrame title="$ fee · tiers" right={<NodeProvenance source="node" keys={["fees", "network"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["fees", "network"])}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.7 }}>
                   {FEE_TIER_LABELS.map((label, i) => (
                     <div key={label} style={{ color: tiersKnown ? TIER_COLORS[i] : "var(--ink-40)" }}>
@@ -382,7 +385,7 @@ export function TerminalHubView({ data }: ViewProps) {
                   ))}
                 </pre>
               </PanelFrame>
-              <PanelFrame title="$ env · runtime">
+              <PanelFrame title="$ env · runtime" updatedAt={oldestFreshAt(data.status, ["network"])}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55, color: "var(--ink-80)" }}>
 {`MONEROD_VERSION=${data.version || "—"}
 NETTYPE=${data.nettype || "—"}

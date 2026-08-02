@@ -72,6 +72,9 @@ export interface SeriesResult<T> {
   status: SeriesStatus;
   /** human granularity, e.g. "4h" / "4d" */
   granularityLabel: string;
+  /** ms epoch this data actually arrived; 0 = unknown/never (never
+   *  fabricated — no fetch/cache-hit has ever produced this value). */
+  at: number;
 }
 
 export interface LineSeries {
@@ -196,20 +199,32 @@ export function safeStore(): Storage | null {
   }
 }
 
-/** In-memory last-good values (survive within the session even if localStorage
- *  is unavailable). Keyed identically to the localStorage entries. */
-const lastGood = new Map<string, unknown>();
+/** In-memory last-good values (data + the honest time they were last known
+ *  good), surviving within the session even if localStorage is unavailable.
+ *  Keyed identically to the localStorage entries. */
+const lastGood = new Map<string, { at: number; data: unknown }>();
 
-function keep<T>(key: string, data: T): T {
-  lastGood.set(key, data);
-  writeCache(safeStore(), key, data);
+function keep<T>(key: string, data: T, at: number = Date.now()): T {
+  lastGood.set(key, { at, data });
+  writeCache(safeStore(), key, data, at);
   return data;
 }
 
 function recall<T>(key: string): T | null {
-  if (lastGood.has(key)) return lastGood.get(key) as T;
-  const hit = readCache<T>(safeStore(), key);
+  const hit = recallAt<T>(key);
   return hit ? hit.data : null;
+}
+
+/** Same lookup as recall(), but also returns the honest arrival time of the
+ *  value it serves — the in-memory keep() time if this session set it, else
+ *  the localStorage cached WRITE time (never the moment it's being recalled,
+ *  which is the whole point: a cache hit reports when the data actually
+ *  arrived, not now). null when nothing is known at all. */
+function recallAt<T>(key: string): { at: number; data: T } | null {
+  const mem = lastGood.get(key);
+  if (mem) return { at: mem.at, data: mem.data as T };
+  const hit = readCache<T>(safeStore(), key);
+  return hit ? { at: hit.at, data: hit.data } : null;
 }
 
 /* ── in-memory promise cache (module scope; survives strict-mode remount) ── */
@@ -300,10 +315,10 @@ export function groupStatus(g: { status: SeriesStatus }[]): SeriesStatus {
 }
 
 function hydrate<T>(key: string, empty: T, gl: string): SeriesResult<T> {
-  const hit = recall<T>(key);
+  const hit = recallAt<T>(key);
   return hit
-    ? { data: hit, status: "stale", granularityLabel: gl }
-    : { data: empty, status: "loading", granularityLabel: gl };
+    ? { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at }
+    : { data: empty, status: "loading", granularityLabel: gl, at: 0 };
 }
 
 /* ── /api/markets aggregator (server-ranked group membership) ──────── */
@@ -365,6 +380,15 @@ function assembleGroup(
   seriesLookup?: (id: string) => SeriesMember | undefined,
 ): GroupResult {
   const charted = members.filter((m) => m.charted);
+  // A GroupResult renders SEVERAL series (one per charted member), each with
+  // its own honest arrival time — a live member's is the aggregator's own
+  // per-coin fetch stamp (entry.at; the aggregator itself edge-caches, so
+  // "now" would overstate freshness), a cache-served member's is the
+  // localStorage write time. `oldest` follows oldestFreshAt's contract
+  // (feed-status.ts): the group is only as current as its most stagnant
+  // rendered member, and a member with nothing at all (`0`) collapses the
+  // whole group's stamp to "unknown" rather than hiding behind its neighbours.
+  let oldest = Infinity;
   const data: LineSeries[] = charted.map((m, i) => {
     const key = cacheKey("chart", m.id, "usd", days);
     const color = seriesColor(group, i);
@@ -379,13 +403,17 @@ function assembleGroup(
       if (p.length > 0) {
         const line: CachedLine = { data: p, t };
         keep(key, line);
+        oldest = Math.min(oldest, entry.at);
         return { label: m.symbol, color, status: "live", ...line };
       }
     }
-    const hit = recall<CachedLine>(key);
-    return hit
-      ? { label: m.symbol, color, status: "stale", ...hit }
-      : { label: m.symbol, color, status: "loading", data: [] };
+    const hit = recallAt<CachedLine>(key);
+    if (hit) {
+      oldest = Math.min(oldest, hit.at);
+      return { label: m.symbol, color, status: "stale", ...hit.data };
+    }
+    oldest = 0;
+    return { label: m.symbol, color, status: "loading", data: [] };
   });
   /* "We asked, and there is nothing" is a real state, and it now lives in the
      union instead of being reconstructed at the call site. MarketsPage's
@@ -393,7 +421,8 @@ function assembleGroup(
      data.length === 0`; same condition, moved to where the facts are. */
   const status = groupStatus(data);
   const settled: SeriesStatus = status === "loading" && attempted && data.length === 0 ? "error" : status;
-  return { data, status: settled, granularityLabel: gl, members, rankStatus, attempted };
+  const at = charted.length === 0 || !Number.isFinite(oldest) ? 0 : oldest;
+  return { data, status: settled, granularityLabel: gl, members, rankStatus, attempted, at };
 }
 
 /** Aggregator responded (HTTP success): resolve this group's membership —
@@ -429,18 +458,19 @@ function initGroup(group: "peers" | "majors", days: number, gl: string): GroupRe
 const metaCacheKey = () => cacheKey("meta", "monero", "usd", 0);
 
 function metaFromCache(gl: string): SeriesResult<XmrMeta | null> {
-  const hit = recall<XmrMeta>(metaCacheKey());
+  const hit = recallAt<XmrMeta>(metaCacheKey());
   return hit
-    ? { data: hit, status: "stale", granularityLabel: gl }
-    : { data: null, status: "loading", granularityLabel: gl };
+    ? { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at }
+    : { data: null, status: "loading", granularityLabel: gl, at: 0 };
 }
 
 function buildMeta(env: MarketsEnvelope, gl: string): SeriesResult<XmrMeta | null> {
   const m = env.meta;
   if (m && m.status === "live" && m.ath != null && m.athDate != null && m.atl != null && m.atlDate != null) {
     const data: XmrMeta = { ath: m.ath, athDate: m.athDate, atl: m.atl, atlDate: m.atlDate };
-    keep(metaCacheKey(), data);
-    return { data, status: "live", granularityLabel: gl };
+    const now = Date.now();
+    keep(metaCacheKey(), data, now);
+    return { data, status: "live", granularityLabel: gl, at: now };
   }
   return metaFromCache(gl);
 }
@@ -492,10 +522,11 @@ export function useMarketHistory(days: number): MarketHistory {
             (): ChartData => ({ prices: [], volumes: [] }),
           ),
         ]);
-        set({ xmrCandles: { data: keep(kCandles, attachVolume(candles, chart.volumes)), status: "live", granularityLabel: gl } });
+        const now = Date.now();
+        set({ xmrCandles: { data: keep(kCandles, attachVolume(candles, chart.volumes), now), status: "live", granularityLabel: gl, at: now } });
       } catch {
-        const hit = recall<Candle[]>(kCandles);
-        if (hit) set({ xmrCandles: { data: hit, status: "stale", granularityLabel: gl } });
+        const hit = recallAt<Candle[]>(kCandles);
+        if (hit) set({ xmrCandles: { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at } });
         // no cache → leave the current (loading) entry; the retry timer re-runs us
       }
     })();
@@ -503,19 +534,25 @@ export function useMarketHistory(days: number): MarketHistory {
     // XMR/BTC ratio
     const kRatio = cacheKey("ratio", "monero", "btc", days);
     const pBtc = fetchChart("monero", "btc", days)
-      .then((r) => set({ xmrBtc: { data: keep(kRatio, r.prices.map((p) => p[1])), status: "live", granularityLabel: gl } }))
+      .then((r) => {
+        const now = Date.now();
+        set({ xmrBtc: { data: keep(kRatio, r.prices.map((p) => p[1]), now), status: "live", granularityLabel: gl, at: now } });
+      })
       .catch(() => {
-        const hit = recall<number[]>(kRatio);
-        if (hit) set({ xmrBtc: { data: hit, status: "stale", granularityLabel: gl } });
+        const hit = recallAt<number[]>(kRatio);
+        if (hit) set({ xmrBtc: { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at } });
       });
 
     // BTC/USD line
     const kBtcLine = cacheKey("line", "bitcoin", "usd", days);
     const pBtcLine = fetchChart("bitcoin", "usd", days)
-      .then((r) => set({ btcLine: { data: keep(kBtcLine, r.prices.map((p) => p[1])), status: "live", granularityLabel: gl } }))
+      .then((r) => {
+        const now = Date.now();
+        set({ btcLine: { data: keep(kBtcLine, r.prices.map((p) => p[1]), now), status: "live", granularityLabel: gl, at: now } });
+      })
       .catch(() => {
-        const hit = recall<number[]>(kBtcLine);
-        if (hit) set({ btcLine: { data: hit, status: "stale", granularityLabel: gl } });
+        const hit = recallAt<number[]>(kBtcLine);
+        if (hit) set({ btcLine: { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at } });
       });
 
     // peers + majors ranking/series + XMR meta — one aggregator round trip,

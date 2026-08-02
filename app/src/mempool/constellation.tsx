@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useAnimationSeconds } from "@/design/useAnimationClock";
 import { useReducedMotion } from "@/design/useReducedMotion";
-import { Provenance } from "@/design/primitives";
+import { NodeProvenance } from "@/design/primitives";
 import { MemViewShell, TrackChip, useMempoolTracking, type Tracking, MemTxTable} from "@/mempool/mempool-shared";
 import { useMemStats } from "@/mempool/mem-stats";
 import { CONF_UNLOCK, confOf, RIBBON_BLOCKS } from "@/mempool/conf";
@@ -194,7 +194,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
   const tx = hasData(data.status.network) && data.mempool.length ? newestFirst(data.mempool)[0] : null;
   const tierIdx = tx ? feeTierIndex(tx.perB, data.feeTiers) : -1;
   return (
-    <ConCard title="Newest tx · mempool" right={<Provenance source="node" fresh={tx ? "live" : "none"} />}>
+    <ConCard title="Newest tx · mempool" right={<NodeProvenance source="node" keys={["mempool"]} status={data.status} />}>
       {tx ? (
         <>
           <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginBottom: 10, letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
@@ -466,7 +466,7 @@ export function ConOverview({ data, tracking }: { data: MoneroLive; tracking: Tr
   return (
     <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
       <section style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, alignItems: "start" }}>
-        <ConCard title="Mempool constellation" right={<Provenance source="node" also="session" fresh="live" detail="positions hash-derived" />} style={{ display: "flex", flexDirection: "column" }}>
+        <ConCard title="Mempool constellation" right={<NodeProvenance source="node" also="session" keys={["mempool", "fees", "network"]} status={data.status} detail="positions hash-derived" />} style={{ display: "flex", flexDirection: "column" }}>
           <ConSphere txs={data.mempool} tiers={data.feeTiers} ready={ready} trackedTxId={trackedTxId} size={460} />
         </ConCard>
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>

@@ -20,13 +20,13 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/layout/AppShell";
 import { PageShell } from "@/layout/PageShell";
-import { Stat, PanelFrame, Crumbs, Pill, Provenance, DataLegend, type PanelFrameProps } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs, Pill, Provenance, NodeProvenance, DataLegend, type PanelFrameProps, type ProvSource } from "@/design/primitives";
 import { AreaSeries, BarSeries } from "./markets/charts";
 import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
-import { assertNever, CHAIN_CHROME_KEYS, freshAt, hasData, isStale, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
+import { assertNever, CHAIN_CHROME_KEYS, freshAt, hasData, isStale, oldestFreshAt, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
@@ -88,15 +88,44 @@ function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
 }
 
 /**
- * PanelFrame, with its staleness derived from the very keys it advertises.
+ * PanelFrame, with everything it says about freshness derived from the very
+ * keys it advertises.
  *
  * Passing `dataKey` and `stale` separately invites them to disagree — the
  * attribute a gate reads saying one thing and the chip a reader sees saying
- * another. One string, both derived from it.
+ * another. One array, now FOUR things derived from it: the `data-panel-key`
+ * attribute, the `· stale` chip, the "UPD" timestamp, and the provenance badge.
+ *
+ * The badge is in here for a reason worth stating. Before v6.1.4 two of these
+ * panels passed `right={<Provenance source="node" fresh="live" …/>}` by hand
+ * while DataPanel computed staleness correctly from the same keys — so on a
+ * degraded network endpoint they rendered the literal text `· stale` and a
+ * pulsing LIVE dot side by side, in the same flex row, four words apart. The
+ * fix is not to correct those two call sites; it is to make the badge
+ * underivable from anywhere except the keys, so the disagreement has no way to
+ * be expressed.
+ *
+ * `keys` is a tuple rather than the space-separated string it used to be, so
+ * the members are typed. `dataKey` still receives the joined string, byte for
+ * byte, because verify-failure.mjs splits that attribute on whitespace.
  */
-function DataPanel({ keys, status, ...rest }: PanelFrameProps & { keys: string; status: FeedStatusMap }) {
-  const stale = keys.split(/\s+/).filter(Boolean).some((k) => isStale(status[k as FeedKey]));
-  return <PanelFrame {...rest} dataKey={keys} stale={stale} />;
+function DataPanel({ keys, status, provSource, provDetail, right, ...rest }: PanelFrameProps & {
+  keys: readonly [FeedKey, ...FeedKey[]];
+  status: FeedStatusMap;
+  provSource?: ProvSource;
+  provDetail?: React.ReactNode;
+}) {
+  const stale = keys.some((k) => isStale(status[k]));
+  const badge = provSource ? <NodeProvenance source={provSource} keys={keys} status={status} detail={provDetail} /> : null;
+  return (
+    <PanelFrame
+      {...rest}
+      dataKey={keys.join(" ")}
+      stale={stale}
+      updatedAt={oldestFreshAt(status, keys)}
+      right={badge ? <>{badge}{right}</> : right}
+    />
+  );
 }
 
 export function NetworkPage() {
@@ -165,7 +194,7 @@ export function NetworkPage() {
       <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
       <DataLegend sources={["node"]} />
       <PageHeader
-        kicker={<>Network telemetry <Provenance source="node" fresh="live" bare /></>}
+        kicker={<>Network telemetry <NodeProvenance source="node" keys={["network", "blocks", "mempool", "fees"]} status={data.status} bare /></>}
         title='Network — <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">the numbers</em>.'
         sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
         right={<>
@@ -198,7 +227,7 @@ export function NetworkPage() {
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys="network" status={data.status} title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
+        <DataPanel keys={["network"]} status={data.status} title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
           {hashSeries.length ? (
             <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
               baseline="auto" xLabels={false} stale={isStale(data.status.network)}
@@ -207,7 +236,7 @@ export function NetworkPage() {
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
           )}
         </DataPanel>
-        <DataPanel keys="blocks" status={data.status} title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
+        <DataPanel keys={["blocks"]} status={data.status} title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
           {diffSeries.length ? (
             <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
               baseline="auto" xLabels={false} stale={isStale(data.status.blocks)}
@@ -219,7 +248,7 @@ export function NetworkPage() {
       </section>
 
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys="mempool" status={data.status} title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
+        <DataPanel keys={["mempool"]} status={data.status} title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
           {mempoolSeries.length ? (
             <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
               baseline="zero" xLabels={false} stale={isStale(data.status.mempool)}
@@ -228,7 +257,7 @@ export function NetworkPage() {
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
           )}
         </DataPanel>
-        <DataPanel keys="blocks" status={data.status} title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
+        <DataPanel keys={["blocks"]} status={data.status} title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
           {fullness.length ? (
             <BarSeries data={fullness} height={180} color="var(--tk-accent)"
               baseline="zero" stale={isStale(data.status.blocks)} endLabels={["older", "newer"]}
@@ -241,7 +270,7 @@ export function NetworkPage() {
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
       <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
-        <DataPanel keys="blocks" status={data.status} title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
+        <DataPanel keys={["blocks"]} status={data.status} title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
           {ivHist.counts.length ? (
             <>
               <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
@@ -257,7 +286,7 @@ export function NetworkPage() {
           )}
         </DataPanel>
 
-        <DataPanel keys="mempool fees" status={data.status} title="Fee histogram" right={<span>tx count · piconero / B</span>}>
+        <DataPanel keys={["mempool", "fees"]} status={data.status} title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
             <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
               baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound}
@@ -276,7 +305,7 @@ export function NetworkPage() {
 
       {/* Pool attribution + Remote node */}
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys="blocks" status={data.status} title="Pool attribution" right={<span className="dim">unattributed</span>}>
+        <DataPanel keys={["blocks"]} status={data.status} title="Pool attribution" right={<span className="dim">unattributed</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             {/* lead with the real signal as a compact stat, not a paragraph */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -305,7 +334,7 @@ export function NetworkPage() {
           </div>
         </DataPanel>
 
-        <DataPanel keys="network" status={data.status} title="Remote node" right={<Provenance source="node" fresh="live" detail="public node cascade" />}>
+        <DataPanel keys={["network"]} status={data.status} title="Remote node" provSource="node" provDetail="public node cascade">
           <KVRows rows={[
             ["Daemon", ready && data.version ? data.version : "—"],
             ["Network", ready && data.nettype ? data.nettype : "—"],
@@ -348,7 +377,7 @@ export function NetworkPage() {
 
       {/* Chain meta + Block weight */}
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys="network fees" status={data.status} title="Chain meta" right={<Provenance source="node" fresh="live" detail="node reported" />}>
+        <DataPanel keys={["network", "fees"]} status={data.status} title="Chain meta" provSource="node" provDetail="node reported">
           <KVRows rows={[
             ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
             ["Adjusted time", ready && data.adjustedTime > 0 ? new Date(data.adjustedTime * 1000).toISOString().slice(11, 19) + " UTC" : "—"],
@@ -360,7 +389,7 @@ export function NetworkPage() {
           ]} />
         </DataPanel>
 
-        <DataPanel keys="network" status={data.status} title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
+        <DataPanel keys={["network"]} status={data.status} title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)" }}>
               <span style={{ color: "var(--tk-accent)" }}>median {ready && data.blockWeightMedian > 0 ? fmtBytes(data.blockWeightMedian) : "—"}</span>
@@ -382,7 +411,7 @@ export function NetworkPage() {
       </section>
 
       {/* Recent blocks table */}
-      <DataPanel keys="blocks" status={data.status} title="Recent blocks" right={<span>height ↓</span>}>
+      <DataPanel keys={["blocks"]} status={data.status} title="Recent blocks" right={<span>height ↓</span>}>
         <div className="table-scroll">
         <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: "var(--fs-mono)" }} className="mono keep-cols">
           {["#", "Hash", "Txs", "Size", "Reward", "Pool", "Age"].map((h, i) => (
