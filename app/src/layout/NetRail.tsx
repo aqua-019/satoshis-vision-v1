@@ -10,7 +10,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { Sparkline, Provenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
-import { feedDegraded, hasData } from "@/data/feed-status";
+import { feedDegraded, freshAt, hasData } from "@/data/feed-status";
 
 export interface NetRailProps {
   /** Optional extra blocks to render below the standard set. */
@@ -89,7 +89,10 @@ export function NetRail({ extra }: NetRailProps) {
 
       <div className="rail-block" style={{ marginTop: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>
         <Provenance source="node" fresh={feedDegraded(data.status) ? "stale" : "live"} detail={data.source} />
-        <div style={{ marginTop: 4 }}>{data.lastUpdate ? `${new Date(data.lastUpdate).toISOString().slice(11, 19)} UTC` : "—"}</div>
+        <div style={{ marginTop: 4 }}>{/* the NODE endpoint's own last success, not the feed heartbeat: during an
+            outage this clock now FREEZES at last-good rather than ticking on as
+            though the number beside it were still being refreshed. */}
+        {freshAt(data.status.network) ? `${new Date(freshAt(data.status.network)).toISOString().slice(11, 19)} UTC` : "—"}</div>
         <div style={{ marginTop: 6 }}>
           <Link to="/sources" style={{ color: "var(--ink-60)", textDecoration: "none", letterSpacing: "0.04em" }}>Data &amp; sources →</Link>
         </div>

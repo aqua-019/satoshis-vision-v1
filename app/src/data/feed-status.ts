@@ -235,9 +235,23 @@ export function chromePhase(m: FeedStatusMap, keys: readonly FeedKey[]): FeedPha
 }
 
 /**
+ * The last-success time of one endpoint, or 0 if it has never answered.
+ *
+ * `at` is `null` on the loading and error variants — that is the type doing its
+ * job, since there is no timestamp when nothing has ever landed. Elapsed maths
+ * and remount keys want a number, and 0 is the same sentinel `lastUpdate`
+ * carried before this, so every existing `> 0` guard keeps working.
+ */
+export const freshAt = (s: FeedStatus): number => s.at ?? 0;
+
+/**
  * Newest successful response across every key.
  *
- * NOT YET CONSUMED, and deliberately not wired to `MoneroLive.lastUpdate`.
+ * Used by the differs whose job is "something landed" rather than "this
+ * endpoint landed" — a snapshot diff has to run whenever any tier commits, so
+ * keying it on one endpoint would make it miss the others.
+ *
+ * Deliberately NOT wired to `MoneroLive.lastUpdate`.
  * `lastUpdate` is the feed's HEARTBEAT, not a freshness stamp: map.ts stamps it
  * at each commit, and consumers use it as tick identity — a React remount key at
  * mempool-shared.tsx (which replays the `mp-beat` flash once per tick) and a dep

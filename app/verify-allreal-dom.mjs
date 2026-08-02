@@ -106,13 +106,42 @@ async function newPage(opts) {
 }
 
 /* ── Scenario A: total outage from first paint ───────────────────────── */
+/*
+ * v6.1.4: this scenario is a SETTLED outage, not a boot. With the compressed
+ * 500ms chain tier and STALE_AFTER.network = 2, the network key reaches
+ * `fails >= 2` at roughly 1000ms — inside the 1500ms wait below — so by assert
+ * time the phase is `error`, not `loading`. The old single assertion was
+ * `/CONNECTING/i`, unanchored, which could not tell those two apart and would
+ * also have passed any rename that merely CONTAINED the substring. Split, and
+ * both halves anchored, so a regression in either direction is visible.
+ */
 {
   const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', (r) => r.abort());
   await p.goto(base + '/network', { waitUntil: 'load' });
+
+  // A1 · the first frames, before any failure has been recorded: still LOADING.
+  await p.waitForTimeout(200);
+  const early = await p.evaluate(() => document.body.innerText);
+  ok(/\bCONNECTING\b/.test(early) && !/NO NODE RESPONSE/.test(early),
+     'A1: before any poll has failed the pill says CONNECTING, not a failure');
+
   await p.waitForTimeout(1500);
   const body = await p.evaluate(() => document.body.innerText);
-  ok(/CONNECTING/i.test(body), 'A: NavTop pill shows CONNECTING during boot/outage');
+
+  // A2 · once the failures have accumulated, it must STOP saying CONNECTING.
+  // This is the defect the release exists to fix: a cold load with every node
+  // down used to say CONNECTING forever — a spinner that would never resolve.
+  ok(/NO NODE RESPONSE/.test(body),
+     'A2: a settled total outage says NO NODE RESPONSE, not CONNECTING forever');
+  ok(!/\bCONNECTING\b/.test(body),
+     'A2: …and the CONNECTING copy is gone once the answer is in');
+  // The endpoint is named — in the tooltip, because the pill has to fit a
+  // 202px ticker strip at 390px. Same contract verify-future asserts for feeds.
+  const titles = await p.evaluate(() =>
+    [...document.querySelectorAll('[title]')].map((e) => e.getAttribute('title')).join(' | '));
+  ok(/\/api\/xmr\/network/.test(titles),
+     'A2: the failure names the endpoint that returned nothing');
   ok(!ZERO_PRICE.test(body), 'A: no $0.00 fabricated zero-price anywhere');
   ok(!body.includes('$NaN') && !body.includes('NaN'), 'A: no NaN leaked to the DOM');
   const heightKpi = await p.evaluate(() => {

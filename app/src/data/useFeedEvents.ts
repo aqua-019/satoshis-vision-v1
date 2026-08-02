@@ -13,7 +13,7 @@
 
 import * as React from "react";
 import type { MoneroLive } from "./types";
-import { feedDegraded, hasData } from "./feed-status";
+import { feedDegraded, hasData, lastOkAt } from "./feed-status";
 
 export type FeedEvent =
   | { kind: "block"; ts: number; height: number; hash: string; txs: number; sizeKB: number; reward: number }
@@ -86,7 +86,9 @@ export function useFeedEvents(data: MoneroLive, cap = 40): FeedEvent[] {
     }
     // Diff exactly once per feed tick (lastUpdate) and on stale edges.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.lastUpdate, stale]);
+  // lastOkAt, not lastUpdate: this diffs whole snapshots, so it has to run
+  // whenever ANY endpoint commits rather than tracking one of them.
+  }, [lastOkAt(data.status), stale]);
 
   return events;
 }

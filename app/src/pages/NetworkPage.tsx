@@ -9,22 +9,25 @@
  * Standalone page: owns its <PageShell> chrome. Every number on this page
  * comes from `useMoneroLive()` — node RPC via the public node cascade plus
  * CoinGecko for market data elsewhere. Chain values render "—" until the
- * first snapshot lands (`hasData(data.status.network)`); if polling fails after a healthy
- * start, the header pill flips to STALE · RECONNECTING and the charts dim
- * (`feedDegraded(data.status)`). Nothing on this page is synthesized or hard-coded.
+ * first snapshot lands; if polling fails after a healthy start the header pill
+ * flips to STALE · reconnecting. Each chart dims on the status of the ENDPOINT
+ * ITS OWN DATA COMES FROM (`isStale(data.status.<key>)`), not on a page-wide
+ * flag — so a dead /api/xmr/blocks dims the block panels and leaves the mempool
+ * chart live. Nothing on this page is synthesized or hard-coded.
  */
 
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/layout/AppShell";
 import { PageShell } from "@/layout/PageShell";
-import { Stat, PanelFrame, Crumbs, Pill, Provenance, DataLegend } from "@/design/primitives";
+import { Stat, PanelFrame, Crumbs, Pill, Provenance, DataLegend, type PanelFrameProps } from "@/design/primitives";
 import { AreaSeries, BarSeries } from "./markets/charts";
 import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
-import { assertNever, CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
+import { assertNever, CHAIN_CHROME_KEYS, freshAt, hasData, isStale, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
+import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -84,9 +87,25 @@ function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
   );
 }
 
+/**
+ * PanelFrame, with its staleness derived from the very keys it advertises.
+ *
+ * Passing `dataKey` and `stale` separately invites them to disagree — the
+ * attribute a gate reads saying one thing and the chip a reader sees saying
+ * another. One string, both derived from it.
+ */
+function DataPanel({ keys, status, ...rest }: PanelFrameProps & { keys: string; status: FeedStatusMap }) {
+  const stale = keys.split(/\s+/).filter(Boolean).some((k) => isStale(status[k as FeedKey]));
+  return <PanelFrame {...rest} dataKey={keys} stale={stale} />;
+}
+
 export function NetworkPage() {
   const data = useMoneroLive();
+  const chromeState = useChromeState(data.status, CHAIN_CHROME_KEYS);
   const ready = hasData(data.status.network);
+  /** The mempool endpoint answers independently of the chain one — /api/xmr/mempool
+   *  is on the 3s fast tier, /api/xmr/network on the 15s chain tier. */
+  const poolReady = hasData(data.status.mempool);
 
   // Real, honestly-windowed series for the network charts (no synthesis).
   // hashSeries is the rolling buffer of real hashrate samples; pin its last point
@@ -96,11 +115,15 @@ export function NetworkPage() {
   const hashSeries = ready
     ? (data.hashSeries.length ? [...data.hashSeries.slice(0, -1), data.hashrate] : [data.hashrate])
     : [];
-  const mempoolBuf = useSessionSeries(data.mempool.length, data.lastUpdate);
+  // Keyed on the MEMPOOL endpoint: a sample is appended when pool data
+  // actually arrives, not when any tier happens to commit.
+  const mempoolBuf = useSessionSeries(data.mempool.length, freshAt(data.status.mempool));
   // If this page mounted before the first snapshot, the buffer's mount-time seed
   // was a placeholder zero, not a reading — drop it rather than chart it.
   const seededPreReady = React.useRef(!ready);
-  const mempoolSeries = ready ? (seededPreReady.current ? mempoolBuf.slice(1) : mempoolBuf) : [];
+  // Gated on the MEMPOOL endpoint: this series counts data.mempool, so a cold
+  // /api/xmr/network used to blank a chart whose data was arriving fine.
+  const mempoolSeries = poolReady ? (seededPreReady.current ? mempoolBuf.slice(1) : mempoolBuf) : [];
   // BLOCKS_CAP is now 100 (Sediment); these mini-charts intentionally keep the recent 14-block window.
   const recentBlocks = data.blocks.slice(0, 14);
   const diffSeries = recentBlocks.map((b) => b.difficulty).reverse();          // oldest → newest
@@ -147,17 +170,19 @@ export function NetworkPage() {
         sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
         right={<>
           {(() => {
-            // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
-            const phase = chromePhase(data.status, CHAIN_CHROME_KEYS);
-            switch (phase) {
-              case "stale": return <Pill tone="warn" dot>STALE · RECONNECTING</Pill>;
+            // Exhaustive over ChromeState. `error` and `offline` are separate
+            // facts from `loading` and now say so — see design/useOnline.ts.
+            const title = chromeDetail(chromeState, data.status, CHAIN_CHROME_KEYS) ?? undefined;
+            switch (chromeState) {
+              case "stale": return <Pill tone="warn" dot title={title}>{CHROME_LABEL.stale}</Pill>;
               case "live": return <Pill tone="live" dot>LIVE</Pill>;
-              case "loading":
-              case "error": return <Pill dot>CONNECTING</Pill>;
-              default: return assertNever(phase, "NetworkPage pill");
+              case "loading": return <Pill dot title={title}>{CHROME_LABEL.loading}</Pill>;
+              case "error": return <Pill tone="warn" dot title={title}>{CHROME_LABEL.error}</Pill>;
+              case "offline": return <Pill dot title={title}>{CHROME_LABEL.offline}</Pill>;
+              default: return assertNever(chromeState, "NetworkPage pill");
             }
           })()}
-          <Pill>UPDATED {data.lastUpdate > 0 ? new Date(data.lastUpdate).toISOString().slice(11, 19) : "—"}</Pill>
+          <Pill>UPDATED {freshAt(data.status.network) > 0 ? new Date(freshAt(data.status.network)).toISOString().slice(11, 19) : "—"}</Pill>
         </>}
       />
 
@@ -173,54 +198,54 @@ export function NetworkPage() {
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
+        <DataPanel keys="network" status={data.status} title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
           {hashSeries.length ? (
             <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
-              baseline="auto" xLabels={false} stale={feedDegraded(data.status)}
+              baseline="auto" xLabels={false} stale={isStale(data.status.network)}
               format={fmtGiga} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
           )}
-        </PanelFrame>
-        <PanelFrame title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
+        </DataPanel>
+        <DataPanel keys="blocks" status={data.status} title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
           {diffSeries.length ? (
             <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
-              baseline="auto" xLabels={false} stale={feedDegraded(data.status)}
+              baseline="auto" xLabels={false} stale={isStale(data.status.blocks)}
               format={fmtGigaSuffix} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
-        </PanelFrame>
+        </DataPanel>
       </section>
 
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
+        <DataPanel keys="mempool" status={data.status} title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
           {mempoolSeries.length ? (
             <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
-              baseline="zero" xLabels={false} stale={feedDegraded(data.status)}
+              baseline="zero" xLabels={false} stale={isStale(data.status.mempool)}
               format={fmtRound} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
           )}
-        </PanelFrame>
-        <PanelFrame title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
+        </DataPanel>
+        <DataPanel keys="blocks" status={data.status} title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
           {fullness.length ? (
             <BarSeries data={fullness} height={180} color="var(--tk-accent)"
-              baseline="zero" stale={feedDegraded(data.status)} endLabels={["older", "newer"]}
+              baseline="zero" stale={isStale(data.status.blocks)} endLabels={["older", "newer"]}
               format={fmtPct} />
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
-        </PanelFrame>
+        </DataPanel>
       </section>
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
       <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
-        <PanelFrame title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
+        <DataPanel keys="blocks" status={data.status} title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
           {ivHist.counts.length ? (
             <>
               <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
-                baseline="zero" stale={feedDegraded(data.status)} format={fmtRound}
+                baseline="zero" stale={isStale(data.status.blocks)} format={fmtRound}
                 marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
               <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
                 μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
@@ -230,28 +255,28 @@ export function NetworkPage() {
           ) : (
             <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
           )}
-        </PanelFrame>
+        </DataPanel>
 
-        <PanelFrame title="Fee histogram" right={<span>tx count · piconero / B</span>}>
+        <DataPanel keys="mempool fees" status={data.status} title="Fee histogram" right={<span>tx count · piconero / B</span>}>
           {feeHist.counts.length ? (
             <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
-              baseline="zero" stale={feedDegraded(data.status)} format={fmtRound}
+              baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound}
               marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
           ) : (
             <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
-              baseline="zero" stale={feedDegraded(data.status)} format={fmtRound} />
+              baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound} />
           )}
           <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
             {data.mempool.length
               ? <>Over <b className="acc">{data.mempool.length}</b> mempool tx · median fee marked on-chart</>
               : <>Awaiting mempool sample</>}
           </p>
-        </PanelFrame>
+        </DataPanel>
       </section>
 
       {/* Pool attribution + Remote node */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title="Pool attribution" right={<span className="dim">unattributed</span>}>
+        <DataPanel keys="blocks" status={data.status} title="Pool attribution" right={<span className="dim">unattributed</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             {/* lead with the real signal as a compact stat, not a paragraph */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -278,9 +303,9 @@ export function NetworkPage() {
               <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
             </p>
           </div>
-        </PanelFrame>
+        </DataPanel>
 
-        <PanelFrame title="Remote node" right={<Provenance source="node" fresh="live" detail="public node cascade" />}>
+        <DataPanel keys="network" status={data.status} title="Remote node" right={<Provenance source="node" fresh="live" detail="public node cascade" />}>
           <KVRows rows={[
             ["Daemon", ready && data.version ? data.version : "—"],
             ["Network", ready && data.nettype ? data.nettype : "—"],
@@ -293,13 +318,15 @@ export function NetworkPage() {
             ["Top block", ready ? shortHash(data.topBlockHash) : "—"],
             ["Alt blocks", ready ? String(data.altBlocksCount) : "—"],
           ]} />
-        </PanelFrame>
+        </DataPanel>
       </section>
 
       {/* Peer telemetry — paused placeholder. Peer topology can't come from a public
           restricted node (all peer fields read 0; get_connections / get_peer_list are
           admin-only), so instead of a misleading "0 peers" we reserve the space for real,
           node-pointed telemetry. No fabricated peers, IPs, latencies, counts, or geography. */}
+      {/* No dataKey, deliberately: this panel renders no feed data at all, so
+          there is no endpoint whose failure could degrade it. */}
       <PanelFrame
         title="Connections · peer telemetry"
         right={<><Provenance source="node" /><span className="soon-badge">Soon</span></>}
@@ -321,7 +348,7 @@ export function NetworkPage() {
 
       {/* Chain meta + Block weight */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title="Chain meta" right={<Provenance source="node" fresh="live" detail="node reported" />}>
+        <DataPanel keys="network fees" status={data.status} title="Chain meta" right={<Provenance source="node" fresh="live" detail="node reported" />}>
           <KVRows rows={[
             ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
             ["Adjusted time", ready && data.adjustedTime > 0 ? new Date(data.adjustedTime * 1000).toISOString().slice(11, 19) + " UTC" : "—"],
@@ -331,9 +358,9 @@ export function NetworkPage() {
               ? <span title={FEE_TIER_LABELS.join(" / ")}>{`${fmtPcnB(t[0])}/${fmtPcnB(t[1])}/${fmtPcnB(t[2])}/${fmtPcnB(t[3])} pcn/B`}</span>
               : "—"],
           ]} />
-        </PanelFrame>
+        </DataPanel>
 
-        <PanelFrame title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
+        <DataPanel keys="network" status={data.status} title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)" }}>
               <span style={{ color: "var(--tk-accent)" }}>median {ready && data.blockWeightMedian > 0 ? fmtBytes(data.blockWeightMedian) : "—"}</span>
@@ -351,11 +378,11 @@ export function NetworkPage() {
               is 2× the median — so the limit grows only as sustained demand lifts the median.
             </p>
           </div>
-        </PanelFrame>
+        </DataPanel>
       </section>
 
       {/* Recent blocks table */}
-      <PanelFrame title="Recent blocks" right={<span>height ↓</span>}>
+      <DataPanel keys="blocks" status={data.status} title="Recent blocks" right={<span>height ↓</span>}>
         <div className="table-scroll">
         <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: "var(--fs-mono)" }} className="mono keep-cols">
           {["#", "Hash", "Txs", "Size", "Reward", "Pool", "Age"].map((h, i) => (
@@ -374,7 +401,7 @@ export function NetworkPage() {
           ))}
         </div>
         </div>
-      </PanelFrame>
+      </DataPanel>
     </PageShell>
   );
 }

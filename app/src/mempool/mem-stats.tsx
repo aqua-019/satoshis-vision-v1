@@ -22,7 +22,7 @@ import * as React from "react";
 import type { MoneroLive, Tx } from "@/data/types";
 import { fmtBytes, fmtN } from "@/data/types";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
-import { hasData } from "@/data/feed-status";
+import { freshAt, hasData } from "@/data/feed-status";
 import { Stat } from "@/design/primitives";
 import { useTick } from "@/design/ArtBackground";
 
@@ -70,7 +70,10 @@ function medianOfPerB(txs: Tx[]): number {
  *  fabricated reading of exactly the kind the ALL-REAL-DATA invariant exists to
  *  prevent. Callers render a negative value as "+0:37 overdue". */
 function nextBlockEtaSec(data: MoneroLive): number {
-  const sinceTip = (data.blocks[0]?.age ?? 0) + Math.floor((Date.now() - data.lastUpdate) / 1000);
+  // Elapsed since the BLOCKS endpoint last answered — that is where
+  // blocks[0].age comes from, so measuring from the feed-wide heartbeat
+  // would keep the countdown moving on a snapshot that never arrived.
+  const sinceTip = (data.blocks[0]?.age ?? 0) + Math.floor((Date.now() - freshAt(data.status.blocks)) / 1000);
   const target = data.blockTarget || 120;
   return target - sinceTip;
 }
@@ -101,7 +104,7 @@ export function useMemStats(data: MoneroLive): MemStats {
       nextBlockEtaSec: nextBlockEtaSec(data),
       overdue: nextBlockEtaSec(data) < 0,
     };
-  }, [data.mempool, data.feeTiers, data.blocks, data.lastUpdate, data.blockTarget]);
+  }, [data.mempool, data.feeTiers, data.blocks, data.status, data.blockTarget]);
 }
 
 /** The ticking next-block countdown. Isolated so only this text re-renders

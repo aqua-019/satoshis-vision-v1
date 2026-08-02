@@ -12,7 +12,8 @@ import { useMoneroLive } from "@/data/DataContext";
 import { Provenance } from "@/design/primitives";
 import { DesignPanel } from "@/design/DesignPanel";
 import { SITE_VERSION } from "@/data/releases";
-import { assertNever, CHAIN_MARKET_CHROME_KEYS, chromePhase, hasData } from "@/data/feed-status";
+import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-status";
+import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
@@ -32,6 +33,7 @@ const NAV_MENU_ID = "navtop-menu";
 
 export function NavTop() {
   const data = useMoneroLive();
+  const chromeState = useChromeState(data.status, CHAIN_MARKET_CHROME_KEYS);
   const [menu, setMenu] = React.useState(false);
   const toggleRef = React.useRef<HTMLButtonElement>(null);
   const navRef = React.useRef<HTMLElement>(null);
@@ -81,25 +83,39 @@ export function NavTop() {
       </nav>
 
       <div className="ticker-strip">
-        {/* Exhaustive over FeedPhase: a fifth phase stops compiling here rather
-            than silently falling through to LIVE. "error" deliberately shares
-            the CONNECTING copy for now — see chromePhase's note. */}
+        {/* Exhaustive over ChromeState: a fifth FeedPhase stops compiling here
+            rather than silently falling through to LIVE. `error` and `offline`
+            are separate facts and say separate things — see design/useOnline.ts. */}
         {(() => {
-          const phase = chromePhase(data.status, CHAIN_MARKET_CHROME_KEYS);
-          switch (phase) {
+          const state = chromeState;
+          const title = chromeDetail(state, data.status, CHAIN_MARKET_CHROME_KEYS) ?? undefined;
+          switch (state) {
+            case "offline":
+              return (
+                <span className="pill" title={title}>
+                  <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+                  {CHROME_LABEL.offline}
+                </span>
+              );
             case "loading":
+              return (
+                <span className="pill" title={title}>
+                  <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+                  {CHROME_LABEL.loading}
+                </span>
+              );
             case "error":
               return (
-                <span className="pill">
-                  <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
-                  CONNECTING
+                <span className="pill" title={title}>
+                  <span className="led" style={{ background: "var(--r-50)", boxShadow: "0 0 6px var(--r-50)" }} />
+                  {CHROME_LABEL.error}
                 </span>
               );
             case "stale":
               return (
-                <span className="pill">
+                <span className="pill" title={title}>
                   <span className="led pulse" style={{ background: "var(--y-50)" }} />
-                  STALE · reconnecting
+                  {CHROME_LABEL.stale}
                 </span>
               );
             case "live":
@@ -110,7 +126,7 @@ export function NavTop() {
                 </span>
               );
             default:
-              return assertNever(phase, "NavTop pill");
+              return assertNever(state, "NavTop pill");
           }
         })()}
         <span className="tk dim">

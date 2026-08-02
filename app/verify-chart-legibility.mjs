@@ -167,7 +167,11 @@ for (const vp of PASSES) {
       // text would let an unmigrated route pass.
       const nodeDependent = route === '/network' || route === '/mempool';
       const skeleton = nodeDependent && await page.evaluate(() =>
-        /CONNECTING|Awaiting|STALE · reconnecting/i.test(document.body.innerText));
+        // v6.1.4: NO NODE RESPONSE joined the vocabulary — in this sandbox the
+        // node cascade is unreachable, so a settled outage now reports that
+        // rather than CONNECTING, and without it this gate reads the honest
+        // failure state as an unmigrated route.
+        /CONNECTING|NO NODE RESPONSE|OFFLINE|Awaiting|STALE · reconnecting/i.test(document.body.innerText));
       R.ok(skeleton, `${route} · renders a chart, or is a node-dependent route in its documented no-data state`,
         nodeDependent
           ? 'node-dependent, but no skeleton either — the selector or the route is wrong'
