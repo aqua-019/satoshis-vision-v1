@@ -789,6 +789,17 @@ header > div > h1.serif {
    body-level dim would double up on them while still leaving the table and
    stat panels — the ones that cannot draw a watermark — saying nothing. */
 .panel-stale { color: var(--y-50); letter-spacing: 0.08em; white-space: nowrap; }
+/* "UPD 12s" — when this panel's own endpoint last answered. Same header slot as
+   .panel-stale and for the same reason. The width is RESERVED rather than fitted:
+   this text changes once a second, and an unreserved slot would shift its
+   neighbours on every 9s->10s and 59s->1m rollover — a layout shift per second,
+   per panel, which is exactly what verify-cls exists to catch. `ch` against the
+   mono face plus tabular figures makes every rendering the same width. */
+.panel-updated {
+  color: var(--ink-40); letter-spacing: 0.08em; white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  min-width: 7ch; text-align: right;
+}
 .panel-b { padding: 10px 12px; }
 
 /* corner ticks (HUD framing) */
