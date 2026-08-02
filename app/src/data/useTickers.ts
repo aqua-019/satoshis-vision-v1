@@ -11,6 +11,10 @@
 import * as React from "react";
 import { cacheKey, readCache, writeCache, type SeriesStatus } from "./useMarketHistory";
 import { isPageActive, onPageActiveChange } from "../design/usePageActive";
+// D0868: this module is NOT bare-Node-loaded (it already imports extensionless
+// relative paths above), so it can share usePolling's jitter rather than
+// inlining a twin the way useMarketHistory.ts must.
+import { jitterMs, clientSeed } from "./usePolling";
 
 export interface Ticker {
   /** exchange display name, e.g. "Kraken" */
@@ -87,6 +91,8 @@ export function useTickers(): TickersResult {
     let timer: ReturnType<typeof setTimeout> | undefined;
     // What the next wait would have been, when a hide cut it short.
     let pendingDelay: number | null = null;
+    /** D0868: advances per scheduled wait so consecutive waits spread apart. */
+    let seq = 0;
 
     const run = async () => {
       let nextDelay = REFRESH_MS;
@@ -113,8 +119,11 @@ export function useTickers(): TickersResult {
       // backoff rather than resetting it to the 5-minute happy path — a
       // CoinGecko failure that happened just before the hide is still a
       // failure when we come back.
+      // D0868: jitter both the happy-path refresh and the retry. Without it
+      // every client that failed in the same minute retries in the same
+      // second, which is what turns one CoinGecko 429 into a sustained one.
       if (!alive) return;
-      if (isPageActive()) timer = setTimeout(run, nextDelay);
+      if (isPageActive()) timer = setTimeout(run, jitterMs(nextDelay, seq++, clientSeed()));
       else pendingDelay = nextDelay;
     };
 

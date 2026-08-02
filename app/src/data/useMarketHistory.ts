@@ -37,6 +37,46 @@ import type { FeedPhase } from "./feed-status";
 const pageActive = (): boolean =>
   typeof document === "undefined" || document.visibilityState !== "hidden";
 
+/* ── D0868 · jitter, inlined for the SAME reason as the visibility helpers ──
+   usePolling.ts exports jitterMs/jitterFrac/clientSeed, and useTickers.ts
+   imports them from there. This module cannot: the paragraph above is why —
+   `./usePolling` is an extensionless relative specifier and verify-stale.mjs
+   loads this file in bare Node.
+
+   WHY THIS DUPLICATION IS ACCEPTABLE WHERE THE makeReporter ONE WAS NOT.
+   That reporter's invariant is behavioural counter semantics — "12 passed ·
+   3 fixtured · 1 skipped can never read as 16 passed" — which is not cheaply
+   assertable, so two copies drift silently and each stays locally plausible.
+   This invariant is a pure function of two integers, and verify-tiers.mjs
+   asserts the two implementations agree over seq in [0,200] x seed in
+   {1, 7, 4294967295}. Duplication under an exhaustive gate is fine;
+   duplication under no gate is not. Change one, the gate reddens. */
+const JITTER_RATIO_MH = 0.25;
+const PHI_FRAC_MH = 0.6180339887498949;
+
+/** Twin of usePolling.ts's jitterFrac. Gate-pinned to agree with it. */
+export function jitterFracMH(seq: number, seed: number): number {
+  const x = (seed + seq) * PHI_FRAC_MH;
+  return x - Math.floor(x);
+}
+
+/** Twin of usePolling.ts's jitterMs. Only ever lengthens. */
+export function jitterMsMH(delay: number, seq: number, seed: number, ratio: number = JITTER_RATIO_MH): number {
+  if (!(delay > 0)) return delay;
+  return Math.round(delay * (1 + jitterFracMH(seq, seed) * ratio));
+}
+
+/* Not Math.random — see usePolling.ts's clientSeed for the full reasoning. */
+let seedMH = 0;
+const clientSeedMH = (): number => {
+  if (seedMH) return seedMH;
+  const g = globalThis as { crypto?: { getRandomValues?: (a: Uint32Array) => Uint32Array } };
+  seedMH = g.crypto && typeof g.crypto.getRandomValues === "function"
+    ? g.crypto.getRandomValues(new Uint32Array(1))[0] || 1
+    : (Date.now() >>> 0) || 1;
+  return seedMH;
+};
+
 function onPageActiveChange(fn: (active: boolean) => void): () => void {
   if (typeof document === "undefined") return () => {};
   const handler = () => fn(pageActive());
@@ -598,7 +638,9 @@ export function useMarketHistory(days: number): MarketHistory {
 
     let id: ReturnType<typeof setTimeout> | null = null;
     const bump = () => setRetryNonce((n) => n + 1);
-    const start = () => { if (!id) id = setTimeout(bump, RETRY_MS); };
+    // D0868: `retryNonce` doubles as the sequence counter — it advances exactly
+    // once per retry, which is the cadence the spread needs to vary over.
+    const start = () => { if (!id) id = setTimeout(bump, jitterMsMH(RETRY_MS, retryNonce, clientSeedMH())); };
     const stop = () => { if (id) { clearTimeout(id); id = null; } };
 
     if (pageActive()) start();

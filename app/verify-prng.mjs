@@ -223,6 +223,23 @@ r.group('5 · particle-field distribution contract (ArtBackground.tsx arithmetic
  * CLAUDE.md records that this invariant "has regressed once already", which is
  * exactly the case for gating the rule as written instead of the directory
  * that happened to be under repair. So: walk all of src/, exempt protocols/.
+ *
+ * ── COMMENT STRIPPING HAS A SHARP EDGE. Know it before you lose an hour. ──
+ *
+ * The filter below removes block comments and lines whose FIRST non-space
+ * characters are `//`. It does not remove a trailing comment on a code line.
+ * Measured against these four cases (v6.1.4, by deliberate injection):
+ *
+ *     stripped      / * ... Math.random( ... * /        (block)
+ *     stripped      // ... Math.random( ...             (line-start)
+ *     stripped          // ... Math.random( ...         (indented line-start)
+ *     TRIPS         const x = 1; // ... Math.random( ...   (TRAILING)
+ *
+ * So a file may freely explain why it avoids the call — usePolling.ts and
+ * useMarketHistory.ts both do at length — as long as the prose is in a block
+ * comment or on its own line. Put it after code on the same line and this gate
+ * fails on the documentation rather than on an offence, and the message gives
+ * you no hint which of the two it found.
  */
 
 r.group('6 · Math.random() is gone from app/src/ (except src/protocols/)');
