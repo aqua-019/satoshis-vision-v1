@@ -12,7 +12,7 @@
 // whole point of the change — it is what stops a dead-from-cold feed rendering
 // a spinner forever — so it gets asserted over every cell, not spot-checked.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 
 const f = await import('./src/data/feed-status.ts');
 const {
@@ -172,12 +172,31 @@ group('D1624 · derived, not stored');
   ok(/useMemo/.test(feed), 'the derived snapshot is memoised (12 context consumers read it)');
   ok(!/\blive\s*:\s*true/.test(map), 'map.ts no longer stamps `live: true`');
 
-  // lastUpdate stays the heartbeat map.ts stamps — NOT max(at). Swapping it would
-  // freeze the mempool LED and NetRail's clock during an outage, which is the
-  // freshness work's job, not this one's.
+  /* lastUpdate is still the per-commit heartbeat map.ts stamps — its meaning
+     was never redefined. What changed in v6.1.4 is that the UI stopped READING
+     it: every clock, elapsed calculation, remount key and dep array now reads
+     the specific endpoint it reports on (`status[key].at` via freshAt) or, for
+     the two snapshot differs whose job really is "anything landed", lastOkAt.
+
+     That migration is what makes an outage legible — NetRail's clock freezes at
+     last-good instead of ticking on, the mempool LED stops flashing, and
+     "updated Ns ago" counts up. All three were impossible while they measured a
+     heartbeat that advanced on any tier committing. So the assertion below is
+     no longer "don't redefine it" but "don't drift back to it". */
   ok(/lastUpdate\s*=\s*Date\.now\(\)/.test(map) || /lastUpdate:\s*Date\.now\(\)/.test(map),
-     'map.ts still stamps lastUpdate per commit (the feed heartbeat is unchanged)');
+     'map.ts still stamps lastUpdate per commit (its meaning is unchanged)');
   ok(!/lastUpdate:\s*lastOkAt/.test(feed), 'the feed does NOT redefine lastUpdate as max(at)');
+
+  const uiReads = [];
+  for (const f of readdirSync(new URL('./src/', import.meta.url), { recursive: true })) {
+    if (!/\.(ts|tsx)$/.test(String(f))) continue;
+    const rel = 'src/' + String(f).replace(/\\/g, '/');
+    if (rel.startsWith('src/data/')) continue;            // map.ts writes it
+    if (stripComments(read('./' + rel)).includes('.lastUpdate')) uiReads.push(rel);
+  }
+  ok(uiReads.length === 0,
+     'no UI file reads data.lastUpdate — freshness is per-endpoint now',
+     uiReads.join(', '));
 }
 
 /* ── 7 · one vocabulary ──────────────────────────────────────────────── */

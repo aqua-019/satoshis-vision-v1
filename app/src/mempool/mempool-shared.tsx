@@ -9,7 +9,7 @@ import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
-import { CHAIN_CHROME_KEYS, hasData } from "@/data/feed-status";
+import { CHAIN_CHROME_KEYS, freshAt, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { MemStatStrip } from "@/mempool/mem-stats";
 
@@ -47,7 +47,10 @@ export type Tracking =
 // polls now failing — values shown are last-good), LIVE.
 export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
   useTick(1000, { motion: false });
-  const ageSec = Math.max(0, Math.round((Date.now() - data.lastUpdate) / 1000));
+  // Age of the NODE snapshot this pill reports on. During an outage it now
+  // counts UP instead of resetting every tick — the reading the pill was
+  // always meant to give, and could not while it measured the heartbeat.
+  const ageSec = Math.max(0, Math.round((Date.now() - freshAt(data.status.network)) / 1000));
   const state = useChromeState(data.status, CHAIN_CHROME_KEYS);
   const detail = chromeDetail(state, data.status, CHAIN_CHROME_KEYS) ?? undefined;
   if (state === "offline" || state === "loading") {
@@ -82,7 +85,9 @@ export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
   return (
     <span className="pill live" title={"Feed polling ~every 2.5s · source: " + data.source}>
       <span
-        key={data.lastUpdate}
+        // Remounts (replaying mp-beat) when the NETWORK endpoint delivers, not
+        // on any tier commit — so the LED stops flashing while it is down.
+        key={freshAt(data.status.network)}
         className="led"
         // D0651/D0652: 0.5s exact → var(--d-4). `ease-out` (cubic-bezier(0,0,.58,1)) kept
         // literal, not mapped to var(--e-decel) — sampled at y=0.2/0.5/0.9 the two curves

@@ -26,7 +26,7 @@ import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
-import { assertNever, CHAIN_CHROME_KEYS, hasData, isStale, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
+import { assertNever, CHAIN_CHROME_KEYS, freshAt, hasData, isStale, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
@@ -115,7 +115,9 @@ export function NetworkPage() {
   const hashSeries = ready
     ? (data.hashSeries.length ? [...data.hashSeries.slice(0, -1), data.hashrate] : [data.hashrate])
     : [];
-  const mempoolBuf = useSessionSeries(data.mempool.length, data.lastUpdate);
+  // Keyed on the MEMPOOL endpoint: a sample is appended when pool data
+  // actually arrives, not when any tier happens to commit.
+  const mempoolBuf = useSessionSeries(data.mempool.length, freshAt(data.status.mempool));
   // If this page mounted before the first snapshot, the buffer's mount-time seed
   // was a placeholder zero, not a reading — drop it rather than chart it.
   const seededPreReady = React.useRef(!ready);
@@ -180,7 +182,7 @@ export function NetworkPage() {
               default: return assertNever(chromeState, "NetworkPage pill");
             }
           })()}
-          <Pill>UPDATED {data.lastUpdate > 0 ? new Date(data.lastUpdate).toISOString().slice(11, 19) : "—"}</Pill>
+          <Pill>UPDATED {freshAt(data.status.network) > 0 ? new Date(freshAt(data.status.network)).toISOString().slice(11, 19) : "—"}</Pill>
         </>}
       />
 

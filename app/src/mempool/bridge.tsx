@@ -13,7 +13,7 @@ import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable} from "@/mempoo
 import type { Tracking } from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import type { MoneroLive } from "@/data/types";
-import { hasData } from "@/data/feed-status";
+import { freshAt, hasData, lastOkAt } from "@/data/feed-status";
 
 interface ViewProps {
   data: MoneroLive;
@@ -383,7 +383,9 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
   const reduced = useReducedMotion();
   const TARGET = 120;
   const ready = hasData(data.status.network);
-  const elapsed = ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - data.lastUpdate) / 1000)) : 0;
+  // From the BLOCKS endpoint, for the same reason as mem-stats: the ring
+  // measures a block's age, so it must stop advancing when block data stops.
+  const elapsed = ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - freshAt(data.status.blocks)) / 1000)) : 0;
   const overdue = ready && elapsed > TARGET;
   const pct = Math.min(1, elapsed / TARGET);
   const ring = 2 * Math.PI * 34;
@@ -543,7 +545,8 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
     if (fresh.length) setRows((r) => [...fresh, ...r].slice(0, 7));
     // Diff once per successful feed tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.lastUpdate, ready]);
+  // lastOkAt: this differ fires on ANY tier committing, not on one endpoint.
+  }, [lastOkAt(data.status), ready]);
 
   const col: Record<string, string> = { g: "var(--g-50)", acc: "var(--tk-accent)", p: "var(--p-50)", y: "var(--y-50)" };
   // A tracked tx that has left the mempool (real block height resolved) has
