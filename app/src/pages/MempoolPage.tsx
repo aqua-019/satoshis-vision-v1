@@ -212,7 +212,7 @@ export function MempoolPage() {
               // harness each was measured under, are in app/PERF-BASELINE.md;
               // do not restate a number here. Reserving roughly the view's
               // height keeps the shift inside the noise.
-              <div className="mono dim" style={{ padding: 40, minHeight: "70vh" }}>
+              <div className="mono dim" style={{ padding: 40 }}>
                 loading {meta.label.toLowerCase()}…
               </div>
             }
