@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260802-10
 branch: claude/verify-gates-performance-budgets-iwbv21
-status: done             # open -> in_progress -> done | blocked
+status: in_progress      # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, self-authored)
 owner: claude-code
 ---
@@ -131,7 +131,7 @@ npm run verify:all
 
 ## 7 · REPORT
 
-**status:** done. Items 1-4 of the prompt landed; items 5-9 are PR B and are
+**status:** in_progress until the two break-test boxes close. Items 1-4 landed; items 5-9 are PR B and are
 explicitly not in this PR — see §3 OUT and the seam argument in §2.
 **pr:** see `handoffs/LOG.md`.
 **deps added:** none. `app/package-lock.json` is byte-identical to `origin/main`.

@@ -64,7 +64,14 @@ jobs:
           # Repo-root-relative on purpose: `defaults.run.working-directory`
           # applies to `run:` steps only, never to `uses:` steps.
           path: app/.perf/
-          if-no-files-found: warn
+          # .perf is a DOTFILE directory and upload-artifact@v4 skips hidden
+          # files by default — without this the step logs "No files were found"
+          # and succeeds anyway, so the artifact silently never exists. Caught
+          # on this PR's own break-test run, where the warning sat in a green
+          # step. `error` rather than `warn` for the same reason: a report that
+          # quietly stops being produced is worse than no report.
+          include-hidden-files: true
+          if-no-files-found: error
 
       # Offline gates only — no browser, no network. The Playwright gates
       # (verify-tiers-dom, verify-glide, verify-allreal-dom, …) need a built
@@ -173,4 +180,5 @@ jobs:
         with:
           name: vitals-measurements
           path: app/.perf/
-          if-no-files-found: warn
+          include-hidden-files: true   # .perf is hidden; see the build job's note
+          if-no-files-found: error
