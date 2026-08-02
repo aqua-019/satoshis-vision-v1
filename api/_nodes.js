@@ -148,4 +148,5 @@ module.exports = {
   _healthSnapshot,
   COOLDOWN_BASE_MS,
   COOLDOWN_MAX_MS,
+  REFERENCE_MAINNET,
 };
