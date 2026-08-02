@@ -176,6 +176,62 @@ window is `load + 3000ms` and the MARKET tier is 60s, so at most one market tick
 tier polls faster, so a repeating small shift is live rather than hypothetical. The instrumentation
 therefore records **per-entry** values and each entry's own top source, never an aggregate.
 
+### What the instrument found, and what the superseded diagnosis would have cost
+
+`0.3483 → 0.0012`, worst of 16 readings across two independent `CLS_RUNS=8` runs.
+
+The capture shows the dominant entry carries **four** sources. PR A's two observations are both
+**confirmed exactly** — `.ticker-strip` really does go `202x25 → 159x38`, `.shell` really is displaced
+`749 → 746` at +3px. What was never recorded is `BUTTON.navtop-toggle` moving **Δx−314**. The cause is
+a `flex-wrap` bistability: `.topbar` wraps, `.ticker-strip` carries `margin-left: auto`, and when
+`CONNECTING` (202px) becomes `LIVE` (159px) the auto margin eats the freed space, pulls the strip up
+beside the brand, and evicts the hamburger to a second row 314px away.
+
+**The prediction and the measurement meet.** The arithmetic disproof, derived from the spec alone, said
+~294px of movement was required. The instrument measured 314px at impact ~0.93 — and 314 × 0.93 = 292.
+Forward: 314/844 = 0.372 distance fraction × 0.93 impact = 0.346, against a measured 0.3475. A number
+derived from the spec and a number derived from the instrument landing on each other is the strongest
+evidence either could have.
+
+**Candidates, measured by stylesheet injection before a single source file was edited:**
+
+```
+baseline                        0.3483
+min-height reserve on .topbar   0.0304   ← what the superseded diagnosis implied
+flex-wrap: nowrap variants      0.1018 – 0.1020   (+824px vertical shift)
+pin the pill's min-width        0.0008
+```
+
+**The conclusion, stated rather than left for the reader:** the fix the original note pointed at —
+reserve the ticker strip's populated height — reaches only **0.0304, 6× the ceiling**, and it would
+have *looked* like a fix: a 91% reduction, a plausible mechanism, a green-ish number. An unverified
+diagnosis was on track to produce an unverified fix that measurably did not work. **That is the case
+for capturing `entry.sources` in the gate**, and it is worth more than any description of what the
+property does.
+
+**Method, kept because the method is the transferable part:** candidates were tested by injecting
+stylesheets into the running gate harness and re-measuring, so four mechanisms were ranked before any
+file changed. And the `min-width` constant was set by **measuring all five rendered label widths**
+(LIVE 67px · OFFLINE 88 · CONNECTING 110 · NO NODE RESPONSE 153 · STALE · reconnecting 181, at
+1ch = 6.3125px) rather than by accepting a proposed constant.
+
+**A recorded error of the reviewer's, kept because of where it happened.** The advisory constant was
+`21ch`. It is wrong: 21 × 6.3125 = 132.56px, so `NO NODE RESPONSE` (153px) and `STALE · reconnecting`
+(181px) would both still have shifted. It was derived by counting characters in the longest label
+rather than measuring its rendered width — the §6 failure this project keeps relearning, and the same
+shape as the badge-census error in the §8 log: **a number taken from a count instead of a
+measurement.** It belongs in the record because of where it landed — in a fix for a defect whose entire
+cause was a diagnosis recorded without measurement, the advisory number was also produced without
+measurement. Measuring the five labels instead of taking the constant is what caught it. Shipped value:
+`29ch` = 183.06px, clearing the widest at 181px.
+
+**Two smaller results, reported rather than smoothed over.** Degraded `/` reads 0.0009 against PR A's
+recorded 0.0006 — **runner variance, not drift**, stated rather than silently adopted as a new number.
+And its distribution improved as a side effect of the fix (from mostly-0.0009 to mostly-0.0002), which
+is consistent: the same bistability exists in the degraded pass across `CONNECTING → NO NODE RESPONSE`,
+just narrower. Geometry is stable and marginally *more* compact, not taller — the topbar holds h95 in
+both states where it previously went 95 → 98.
+
 ### Two structural admissions worth keeping
 
 - **`verify-cls` never scrolls.** So a wrong `contain-intrinsic-size` on the containment work is
