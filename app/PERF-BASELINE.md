@@ -120,7 +120,13 @@ a `minHeight`. The unreserved version has been measured **twice**:
 | **0.0841** | the #152 harness, on a later re-run | `handoffs/HANDOFF-XMRIRISH-20260802-06.md` |
 
 Two runs of one experiment, ~1.4 % apart; the spread is the harness change, not
-a code change. Quote it as **~0.085** and cite this table rather than repeating
+a code change. **v6.1.5 re-ran the experiment a third time**, as the break test
+for the tightened ceilings: removing `minHeight` from that fallback and
+measuring under `HARNESS_DEGRADED` reproduced **0.0841 exactly** — independent
+confirmation of the 06 handoff's figure under a harness two revisions newer.
+The same break under the *healthy* pass measured **0.1102**, i.e. the shift is
+worse when data actually arrives, and only that pass puts it above the Web
+Vitals 0.1 bound at all. Quote it as **~0.085** and cite this table rather than repeating
 a bare figure — `verify-cls.mjs` and `src/pages/MempoolPage.tsx` both now point
 here instead of carrying their own number. (`MempoolPage.tsx:210` previously
 said `~0.07`, which matches neither recorded run; it was either a third
