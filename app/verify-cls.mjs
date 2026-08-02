@@ -325,18 +325,27 @@ async function measure(route, mocked) {
   return { cls: cls + INFLATE, entries };
 }
 
+const movedPx = (s) => (s.prev && s.cur
+  ? Math.max(Math.abs(s.cur.y - s.prev.y), Math.abs(s.cur.x - s.prev.x))
+  : 0);
+
+/** One source as a line. BOTH axes are printed: the shift that motivated this
+ *  instrumentation moves 314px horizontally and 3px vertically, and a y-only
+ *  rendering makes it look like a 3px shift — which is how the previous
+ *  diagnosis went wrong in the first place. */
+function fmtSource(s) {
+  if (!s.prev || !s.cur) return `${s.node}  (no rects)`;
+  const dx = s.cur.x - s.prev.x;
+  const dy = s.cur.y - s.prev.y;
+  const sign = (n) => (n > 0 ? `+${n}` : String(n));
+  return `${s.node}  Δx${sign(dx)} Δy${sign(dy)}  `
+    + `${s.prev.w}x${s.prev.h}@(${s.prev.x},${s.prev.y}) → ${s.cur.w}x${s.cur.h}@(${s.cur.x},${s.cur.y})`;
+}
+
 /** The largest-moving source of one entry, as a one-line string. */
 function topSource(entry) {
-  const moved = (s) => (s.prev && s.cur
-    ? Math.max(Math.abs(s.cur.y - s.prev.y), Math.abs(s.cur.x - s.prev.x))
-    : 0);
-  const best = [...(entry.sources || [])].sort((a, b) => moved(b) - moved(a))[0];
-  if (!best) return 'no sources reported';
-  const d = moved(best);
-  const geom = best.prev && best.cur
-    ? `${best.prev.w}x${best.prev.h}@y${best.prev.y} → ${best.cur.w}x${best.cur.h}@y${best.cur.y}`
-    : 'no rects';
-  return `${best.node}  moved ${d}px  ${geom}`;
+  const best = [...(entry.sources || [])].sort((a, b) => movedPx(b) - movedPx(a))[0];
+  return best ? fmtSource(best) : 'no sources reported';
 }
 
 const PASSES = [
@@ -377,6 +386,14 @@ for (const pass of PASSES) {
       const top = [...ents].sort((a, b) => b.value - a.value).slice(0, 5);
       R.info(`  └─ ${ents.length} shift entr${ents.length === 1 ? 'y' : 'ies'} in the worst run; largest ${top.length}:`);
       for (const e of top) R.info(`     ${e.value.toFixed(4)} @${e.at}ms  ${topSource(e)}`);
+      // Every source of the dominant entry. One entry routinely carries several
+      // displaced nodes, and the largest mover is not always the one whose box
+      // changed — the cause and the casualty are different elements.
+      const worstEntry = top[0];
+      if (worstEntry && (worstEntry.sources || []).length > 1) {
+        R.info(`     all ${worstEntry.sources.length} sources of the dominant entry:`);
+        for (const s of worstEntry.sources.slice(0, 6)) R.info(`       · ${fmtSource(s)}`);
+      }
     }
 
     if (!MEASURE_ONLY) {
