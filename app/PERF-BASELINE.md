@@ -14,7 +14,7 @@ Chromium via Playwright + CDP:
 | CPU | `Emulation.setCPUThrottlingRate(6)` — 6× slowdown |
 | Network | `Network.emulateNetworkConditions` ≈ Slow 4G: 1.6 Mbps down, 750 Kbps up, 150 ms RTT |
 | FPS | 8 s `requestAnimationFrame` inter-frame sample, taken 2.5 s after load |
-| Long tasks / CLS / LCP | `PerformanceObserver` (`longtask`, `layout-shift`, `largest-contentful-paint`), installed via `addInitScript` before app code |
+| Long tasks / CLS / LCP | `PerformanceObserver` (`longtask`, `layout-shift`, `largest-contentful-paint`), installed via `addInitScript` before app code — **but see the correction below: that harness was never committed** |
 | Background | `visibilityState` forced to `hidden` + `visibilitychange` dispatched, then rAF callbacks counted over 3 s |
 
 > These are **CDP-derived metrics, not a Lighthouse run.** Lighthouse is not
@@ -80,7 +80,7 @@ Total bytes rise ~2% (per-chunk overhead); **bytes needed for first paint fall
 visitor re-downloads only what changed — the same goal the config's stable
 chunk hashes already serve for Tor.
 
-### LCP / CLS
+### LCP / CLS — v6.0.8, **SUPERSEDED**, and the LCP half is unreproducible
 
 | Route | LCP before | LCP after | CLS before | CLS after |
 |---|---:|---:|---:|---:|
@@ -88,10 +88,48 @@ chunk hashes already serve for Tor.
 | `/mempool` | 2520 ms | **2376 ms** | 0.0117 | **0** |
 | `/markets` | 2308 ms | **1916 ms** | 0.0124 | 0.0078 |
 
-All three LCPs are under the 2.5 s target and all CLS values are far under
-0.1. `/mempool`'s CLS reached 0 only after the lazy-view Suspense fallback was
-given a `minHeight` — an unreserved fallback measured 0.0853, worse than
-baseline. Reserving the space is why it is there.
+**Correction, v6.1.5 — read this before quoting any LCP figure above.**
+The Method table says these came from a `PerformanceObserver` over `longtask`
+and `largest-contentful-paint`. **That harness was never committed.** Before
+v6.1.5 the tree contained zero references to `largest-contentful-paint`,
+`longtask` or `interactionId`; the only `PerformanceObserver` in the repo was
+`verify-cls.mjs`'s `layout-shift`. So the LCP column cannot be reproduced, and
+for three independent reasons it cannot be *continued* either:
+
+1. **The harness does not exist.** It was a throwaway script.
+2. **v6.0.9 added prerendering.** These numbers were measured against an empty
+   SPA shell where LCP *required* the JS bundle to arrive first. Every route
+   now ships real HTML, so the critical path is a different one.
+3. **`scripts/serve-dist.mjs` serves assets uncompressed** — no gzip, no
+   brotli, a raw `content-length`. Vercel compresses. Any local LCP is
+   inflated by an artifact production never pays (the one stylesheet is
+   73,031 B raw against 14,863 B gzipped), and these figures were presumably
+   measured the same way.
+
+`verify-vitals.mjs` (v6.1.5) is the first *committed* LCP harness. It starts a
+new series and stamps every number with the harness that produced it; see
+§ Current below.
+
+**The unreserved-fallback experiment — the single source of truth.**
+`/mempool`'s CLS reached 0 only after the lazy-view Suspense fallback was given
+a `minHeight`. The unreserved version has been measured **twice**:
+
+| reading | harness | recorded in |
+|---|---|---|
+| **0.0853** | v6.0.8, this document's Method section | `app/PERF-BASELINE.md` (here) |
+| **0.0841** | the #152 harness, on a later re-run | `handoffs/HANDOFF-XMRIRISH-20260802-06.md` |
+
+Two runs of one experiment, ~1.4 % apart; the spread is the harness change, not
+a code change. Quote it as **~0.085** and cite this table rather than repeating
+a bare figure — `verify-cls.mjs` and `src/pages/MempoolPage.tsx` both now point
+here instead of carrying their own number. (`MempoolPage.tsx:210` previously
+said `~0.07`, which matches neither recorded run; it was either a third
+unrecorded measurement or a slip, and is corrected to ~0.085 with a pointer.)
+
+Decisively, **both readings sit below the Web Vitals 0.1 "good" bound.** That
+is the empirical reason `verify-cls.mjs`'s ceilings are measured from this tree
+rather than taken from that bound: a 0.1 threshold would have waved through a
+real, documented regression.
 
 ## Gates
 

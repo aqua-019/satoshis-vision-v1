@@ -19,24 +19,34 @@ chain and market data.
 
 - `app/` — React 18 · Vite 5 · TS strict. The only front-end. `app/package.json` is the
   only real package manifest (`relay/` has one; there is no root `package.json`).
-- `api/` — Vercel serverless, **CommonJS**. Mixing module systems here has broken this
-  project before.
+- `api/` — Vercel serverless, and **mixed**: `_nodes.js`, `feeds.js`, `monero.js`,
+  `status.js` and `xmr.js` are CommonJS; `coingecko.js` and `markets.js` are ESM
+  (`export default`). This entry said "CommonJS" until v6.1.5 measured it per file.
+  Mixing module systems here has broken this project before, so match the file you are
+  editing rather than a rule — and a NEW file that must `require('./_nodes.js')` has to
+  be CommonJS, because the ESM ones cannot.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 61 `verify-*.mjs` files (`app/` ×56, `api/` ×5) — 59 gates plus
+- Verification: 63 `verify-*.mjs` files (`app/` ×58, `api/` ×5) — 61 gates plus
   `verify-lib.mjs` and `verify-reporter.mjs`, two shared modules (v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **45 distinct files** on
-  PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
-  (16 gates, no browser) and `verify:e2e` (22 gates, against `scripts/serve-dist.mjs`).
+  are offline source assertions. `.github/workflows/ci.yml` runs **47 distinct files** on
+  PRs to `main`, in two jobs: 11 individually-named offline gates, then `verify:static`
+  (17 gates, no browser) and `verify:e2e` (24 gates, against `scripts/serve-dist.mjs`).
   Four gates appear in both the named list and `verify:static`, and `verify-origins` runs
-  in both `verify:static` (with `--static`) and `verify:e2e`, which is why 9 + 16 + 22
-  is not 47. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
+  in both `verify:static` (with `--static`) and `verify:e2e`, which is why 11 + 17 + 24
+  is not 52. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
   `verify-motion`, `verify-nav`, `verify-discrete`, `verify-govern`, `verify-reduce` (e2e).
   v6.1.4 added four more: `verify-feedstatus` and `verify-provenance` (static),
   `verify-cls` and `verify-failure` (e2e).
+  v6.1.5 added the first two **cost** gates — every gate before them checked
+  correctness and nothing checked bytes or timings: `verify-bundle` (a named step in
+  the `build` job, after Build — it reads `dist/`, and `verify:static` runs *before*
+  the build in the other job, so it cannot live there) and `verify-vitals` (e2e).
+  `npm run verify:all` runs the whole CI-reached set locally in one command with one
+  tally; it is an orchestrator, not a gate, and is deliberately not in CI.
   Three more are npm-wired but deliberately not in CI (`verify:shots`, `verify:perf`,
   `verify:mem:perf` — a baseline shot tree and a framerate measurement are both things a
   shared runner cannot produce honestly). The remaining 11 are wired to neither npm nor
@@ -181,7 +191,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 45 of the 59 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 47 of the 61 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs
@@ -205,7 +215,8 @@ list that expands tabs and query permutations). Those three are not yet unified.
   predicting the v6.1.3 sweep. `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=`
   explicitly, so the views are not unverified — but no human ever sees them in a shot tree,
   and a `--route /mempool` sweep silently means "classic only".
-- **Orphaned gates**: 13 `verify-*.mjs` are wired to neither npm nor CI (v6.1.2 wired in
+- **Orphaned gates**: 11 `verify-*.mjs` are wired to neither npm nor CI (this said 13 until
+  v6.1.5 measured it; `:184` in this same file already said 11, and 11 is right) (v6.1.2 wired in
   `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots` npm script,
   `verify-shots.mjs`) — `verify-shots.mjs` is npm-wired only, deliberately not CI: a
   `--baseline` diff needs a shot tree built from another commit, which CI has no way to

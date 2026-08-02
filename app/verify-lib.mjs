@@ -58,6 +58,46 @@ export async function launchChromium() {
   return { browser, engine: 'chromium' };
 }
 
+/* ── The documented measurement profile — declared ONCE ───────────────────
+ * PERF-BASELINE.md's Method section defines the conditions every perf number
+ * in this repo is measured under. verify-cls.mjs owned the only copy until
+ * v6.1.5 added verify-vitals.mjs; two gates each holding their own copy of
+ * "the documented profile" is the second-home-for-an-invariant failure that
+ * verify-reporter.mjs:16-29 was split out to prevent, and the two would drift
+ * apart with nothing failing. verify-resilience.mjs asserts neither gate
+ * re-declares these locally.
+ *
+ * KNOWN ASYMMETRIES, because a profile that hides them overclaims:
+ *  1. scripts/serve-dist.mjs serves assets UNCOMPRESSED — no gzip, no brotli,
+ *     no content-encoding (it sets a raw content-length at :44). Vercel
+ *     compresses. So CSS/JS here arrive at ~5x their production transfer size:
+ *     the one stylesheet is 73,031 B raw against 14,863 B gzip.
+ *  2. Playwright's route.fulfill() short-circuits BEFORE the network stack, so
+ *     these conditions throttle the document, bundle and fonts but NOT any
+ *     mocked /api/* response. Use MOCK_LATENCY_MS to give the feed a stated
+ *     latency rather than an unrealistic instant one.
+ * Neither is chased: serve-dist has already changed once (v6.1.4's 501) and
+ * changing it again would invalidate every number recorded against it. */
+export const SLOW_4G = {
+  offline: false,
+  downloadThroughput: (1.6 * 1024 * 1024) / 8,
+  uploadThroughput: (750 * 1024) / 8,
+  latency: 150,
+};
+export const CPU_THROTTLE = 6;
+export const PHONE = { width: 390, height: 844, deviceScaleFactor: 3 };
+/** Deterministic stand-in for real feed latency. See asymmetry 2 above. */
+export const MOCK_LATENCY_MS = 120;
+
+/** Apply SLOW_4G + CPU_THROTTLE to one page via CDP. Chromium only. */
+export async function throttle(ctx, page) {
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send('Network.enable');
+  await cdp.send('Network.emulateNetworkConditions', SLOW_4G);
+  await cdp.send('Emulation.setCPUThrottlingRate', { rate: CPU_THROTTLE });
+  return cdp;
+}
+
 /** Every addressable surface in the app. Tabs and simulator query params are
  *  separate entries because they are separate LAYOUTS — walking only the seven
  *  top-level routes is how the legality tab shipped broken twice.

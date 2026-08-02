@@ -39,6 +39,33 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Byte budgets. This step MUST sit after Build and cannot move into
+      # `verify:static`: in the `verify` job below, `npm run verify:static` runs
+      # BEFORE its own Build step, so a dist-reading gate placed there would
+      # fail on every single run. Deterministic — `vite build` emits
+      # byte-identical assets for a given tree, and gzip is pinned to level 9
+      # inside the gate — so unlike the vitals budgets these ceilings need no
+      # per-runner calibration.
+      - name: "Gate: bundle budgets"
+        run: npm run verify:bundle
+
+      # Reports, asserts nothing, and is deliberately NOT part of the gate
+      # above. "An HTML file was produced" checks nothing about the bundle, so
+      # it must never be able to contribute to a pass.
+      - name: Bundle report
+        if: always()
+        run: npm run verify:report
+
+      - name: Upload bundle report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-report
+          # Repo-root-relative on purpose: `defaults.run.working-directory`
+          # applies to `run:` steps only, never to `uses:` steps.
+          path: app/.perf/
+          if-no-files-found: warn
+
       # Offline gates only — no browser, no network. The Playwright gates
       # (verify-tiers-dom, verify-glide, verify-allreal-dom, …) need a built
       # preview server and are still run by hand; see app/README.md.
@@ -133,3 +160,17 @@ jobs:
       # response held open for 4s. All routes are intercepted, so no egress.
       - name: Degraded-mode, Tor and single-origin gates
         run: npm run verify:e2e
+
+      # verify-vitals and verify-cls both stamp their measurements, with the
+      # harness that produced them, into app/.perf/. Keeping those makes drift
+      # readable across runs instead of scrolling away with the log — and it is
+      # how the wall-clock ceilings get calibrated against THIS runner rather
+      # than against whatever laptop last touched them. `always()` because a
+      # failed budget is exactly when the numbers are worth reading.
+      - name: Upload measured vitals
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitals-measurements
+          path: app/.perf/
+          if-no-files-found: warn
