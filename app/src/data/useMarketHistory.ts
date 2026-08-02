@@ -169,6 +169,22 @@ export interface MarketHistory {
   top: GroupResult;
   /** XMR all-time-high/low, from the aggregator envelope */
   meta: SeriesResult<XmrMeta | null>;
+
+  /* ── D0858 · in-flight vs waiting ────────────────────────────────────────
+     These three are held OUTSIDE `state` and merged at the return. The retry
+     effect's dep array is [state], so putting `refreshing` inside it would
+     tear down and re-arm the 45s timer on every flip of the boolean.
+
+     `refreshing` is deliberately NOT `loading`: the retry effect early-returns
+     on `state.loading`, so overloading it would deadlock the retry chain. */
+
+  /** A fetch round is on the wire now. Distinct from `loading` (first ever). */
+  refreshing: boolean;
+  /** ms epoch of the next scheduled retry; 0 = nothing scheduled. */
+  nextRetryAt: number;
+  /** Force a refetch now. This is `retryNonce`'s bump, exposed so an inline
+   *  panel retry can actually retry rather than just clearing an error. */
+  retry: () => void;
 }
 
 export const RANGE_DAYS = { "7D": 7, "30D": 30, "90D": 90, "1Y": 365 } as const;
@@ -519,6 +535,9 @@ function initialHistory(days: number): MarketHistory {
   const gl = granLabel(days);
   return {
     loading: true,
+    refreshing: false,
+    nextRetryAt: 0,
+    retry: () => {},
     days,
     xmrCandles: hydrate<Candle[]>(cacheKey("ohlc", "monero", "usd", days), [], gl),
     xmrBtc: hydrate<number[]>(cacheKey("ratio", "monero", "btc", days), [], gl),
@@ -538,9 +557,16 @@ export function useMarketHistory(days: number): MarketHistory {
   const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days));
   const [retryNonce, setRetryNonce] = React.useState(0);
   const lastDaysRef = React.useRef(days);
+  /* D0858 · held outside `state` on purpose — see the MarketHistory docblock.
+     The retry effect below keys on [state]; folding these in would re-arm its
+     45s timer on every flip. */
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [nextRetryAt, setNextRetryAt] = React.useState(0);
+  const retry = React.useCallback(() => setRetryNonce((n) => n + 1), []);
 
   React.useEffect(() => {
     let alive = true;
+    setRefreshing(true);
     const gl = granLabel(days);
     // Reset to the (cache-hydrated) skeleton only when the RANGE changes;
     // retry runs keep whatever is on screen and upgrade series in place.
@@ -611,7 +637,9 @@ export function useMarketHistory(days: number): MarketHistory {
       }));
 
     Promise.allSettled([pCandles, pBtc, pBtcLine, pMarkets]).then(() => {
-      if (alive) setState((s) => ({ ...s, loading: false }));
+      if (!alive) return;
+      setState((s) => ({ ...s, loading: false }));
+      setRefreshing(false);
     });
 
     return () => { alive = false; };
@@ -640,8 +668,18 @@ export function useMarketHistory(days: number): MarketHistory {
     const bump = () => setRetryNonce((n) => n + 1);
     // D0868: `retryNonce` doubles as the sequence counter — it advances exactly
     // once per retry, which is the cadence the spread needs to vary over.
-    const start = () => { if (!id) id = setTimeout(bump, jitterMsMH(RETRY_MS, retryNonce, clientSeedMH())); };
-    const stop = () => { if (id) { clearTimeout(id); id = null; } };
+    const start = () => {
+      if (id) return;
+      const wait = jitterMsMH(RETRY_MS, retryNonce, clientSeedMH());
+      id = setTimeout(bump, wait);
+      setNextRetryAt(Date.now() + wait);
+    };
+    const stop = () => {
+      if (id) { clearTimeout(id); id = null; }
+      // Nothing scheduled is a REPORTABLE state, not an absence — it is what
+      // stops a hidden tab claiming "reconnecting" while nothing reconnects.
+      setNextRetryAt(0);
+    };
 
     if (pageActive()) start();
     const offVisibility = onPageActiveChange((active) => {
@@ -652,7 +690,10 @@ export function useMarketHistory(days: number): MarketHistory {
     });
 
     return () => { offVisibility(); stop(); };
-  }, [state]);
+  }, [state, retryNonce]);
 
-  return state;
+  return React.useMemo(
+    () => ({ ...state, refreshing, nextRetryAt, retry }),
+    [state, refreshing, nextRetryAt, retry],
+  );
 }

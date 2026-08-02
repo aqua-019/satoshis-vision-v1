@@ -221,11 +221,16 @@ ok(!/genTx|randHex/.test(feed) && !/genTx|randHex/.test(map),
   const polling = read('./src/data/usePolling.ts');
   const tickers = read('./src/data/useTickers.ts');
   const mh = read('./src/data/useMarketHistory.ts');
-  ok(/setTimeout\(\s*\(\)\s*=>\s*void run\(\),\s*\n?\s*jitterMs\(backoffMs\(/.test(polling),
-     'usePolling schedules through jitterMs(backoffMs(...))');
+  /* Match on the composition, not on one formatting of it: these assertions
+     exist to catch a jitter that was deleted or bypassed, not to freeze a line
+     break. An earlier version pinned the exact `setTimeout(...)` spelling and
+     reddened the moment the wait was hoisted into a local — a gate failing on
+     formatting teaches people to edit the gate, which is how gates die. */
+  ok(/jitterMs\(backoffMs\(tierMs\(tier\), failures\)/.test(polling),
+     'usePolling schedules through jitterMs(backoffMs(...)) — jitter wraps backoff, not the reverse');
   ok(/setTimeout\(run,\s*jitterMs\(nextDelay/.test(tickers),
      'useTickers jitters both its refresh and its retry wait');
-  ok(/setTimeout\(bump,\s*jitterMsMH\(RETRY_MS/.test(mh),
+  ok(/jitterMsMH\(RETRY_MS,/.test(mh) && /setTimeout\(bump,\s*wait\)/.test(mh),
      'useMarketHistory jitters its 45s retry');
   /* Strip comments before grepping — all three files legitimately NAME the
      banned call while explaining why they avoid it, and a raw grep flags the

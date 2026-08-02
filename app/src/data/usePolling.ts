@@ -193,9 +193,25 @@ export function usePolling(
   tier: TierName,
   task: (signal: AbortSignal) => Promise<boolean>,
   enabled = true,
+  /**
+   * D0858: called whenever this tier starts a request, schedules the next one,
+   * or goes quiet. The caller maps tier -> FeedKeys, because that mapping lives
+   * with the tick functions and not here.
+   *
+   * `{busy:false, nextAt:0}` is the honest report for a hidden tab or a torn-
+   * down tier: nothing in flight AND nothing scheduled. That state was
+   * previously unrepresentable, which is why panels said "reconnecting" while
+   * nothing was reconnecting.
+   *
+   * Held in a ref like `task`, so a fresh closure per render cannot restart the
+   * loop — the effect deps stay [tier, enabled].
+   */
+  onActivity?: (a: { busy: boolean; nextAt: number }) => void,
 ): void {
   const taskRef = React.useRef(task);
   taskRef.current = task;
+  const activityRef = React.useRef(onActivity);
+  activityRef.current = onActivity;
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -222,9 +238,11 @@ export function usePolling(
       // A hidden tab does nothing; `onVisibility` fires the catch-up tick.
       if (isHidden()) {
         clear();
+        activityRef.current?.({ busy: false, nextAt: 0 });
         return;
       }
       running = true;
+      activityRef.current?.({ busy: true, nextAt: 0 });
       let succeeded = false;
       // Race the task against TICK_TIMEOUT_MS so a socket that never settles
       // can't hold `running` true forever and silently kill this tier, AND
@@ -258,17 +276,20 @@ export function usePolling(
         clear();
         // D0868: jitter composes OUTSIDE backoffMs so that function stays the
         // pure doubling/cap/floor contract verify-tiers.mjs pins by equality.
-        timer = setTimeout(
-          () => void run(),
-          jitterMs(backoffMs(tierMs(tier), failures), seq++, clientSeed()),
-        );
+        const wait = jitterMs(backoffMs(tierMs(tier), failures), seq++, clientSeed());
+        timer = setTimeout(() => void run(), wait);
+        activityRef.current?.({ busy: false, nextAt: Date.now() + wait });
+      } else {
+        activityRef.current?.({ busy: false, nextAt: 0 });
       }
     };
 
     const onVisibility = () => {
       if (!alive) return;
-      if (isHidden()) clear();
-      else void run(); // resume: immediate catch-up, then re-arm
+      if (isHidden()) {
+        clear();
+        activityRef.current?.({ busy: false, nextAt: 0 });
+      } else void run(); // resume: immediate catch-up, then re-arm
     };
 
     document.addEventListener("visibilitychange", onVisibility);
@@ -281,6 +302,7 @@ export function usePolling(
       // request running to completion — on Tor, another 10s of pointless
       // circuit traffic per navigation.
       inFlight?.abort();
+      activityRef.current?.({ busy: false, nextAt: 0 });
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [tier, enabled]);
