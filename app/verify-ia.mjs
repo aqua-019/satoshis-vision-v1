@@ -201,7 +201,9 @@ if (appNavigates.length > 0) {
 // ============================================================================
 R.group('§5 · No redirect source collides with a prerendered ROUTES entry');
 
-if (routes.length > 0 && vecelRedirects.length > 0) {
+if (vecelRedirects.length === 0 || routes.length === 0) {
+  R.skip('redirects or ROUTES unavailable', `redirects: ${vecelRedirects.length}, routes: ${routes.length}`);
+} else {
   const collisions = vecelRedirects.filter(r => routes.includes(r.source));
   R.ok(collisions.length === 0,
     collisions.length === 0
@@ -214,7 +216,9 @@ if (routes.length > 0 && vecelRedirects.length > 0) {
 // ============================================================================
 R.group('§6 · Every redirect destination resolves (static prefix in ROUTES or parameterised)');
 
-if (routes.length > 0 && vecelRedirects.length > 0) {
+if (vecelRedirects.length === 0 || routes.length === 0) {
+  R.skip('redirects or ROUTES unavailable', `redirects: ${vecelRedirects.length}, routes: ${routes.length}`);
+} else {
   const unresolved = [];
 
   for (const redirect of vecelRedirects) {
@@ -249,7 +253,9 @@ if (routes.length > 0 && vecelRedirects.length > 0) {
 // ============================================================================
 R.group('§3b · App.tsx Navigate pairs match vercel.json redirect pairs (byte-for-byte)');
 
-if (appNavigates.length === 12 && vecelRedirects.length === 12) {
+if (appNavigates.length !== 12 || vecelRedirects.length !== 12) {
+  R.skip('prerequisites not met', `appNavigates: ${appNavigates.length}, redirects: ${vecelRedirects.length} (both need 12)`);
+} else {
   const appMap = Object.fromEntries(appNavigates.map(r => [r.source, r.destination]));
   const vercelMap = Object.fromEntries(vecelRedirects.map(r => [r.source, r.destination]));
 
@@ -337,7 +343,7 @@ try {
     }
   }
 } catch (e) {
-  R.skip(`ia.ts: ${e.message}`);
+  R.skip('ia.ts import failed', e.message);
 }
 
 // ============================================================================
@@ -381,7 +387,7 @@ try {
 // ============================================================================
 R.group('§2b · vercel.json 301 status codes are not verifiable offline');
 
-R.fixture('Vercel 301 responses cannot be checked without an HTTP client. Status codes are asserted in source but observed only at deploy time. This finding is marked R.fixture() because offline verification cannot measure HTTP responses.');
+R.fixture('Vercel 301 responses', 'Cannot be checked without an HTTP client. Status codes are asserted in source but observed only at deploy time. Marked as fixture because offline verification cannot measure HTTP responses.');
 
 // ============================================================================
 // Tally
