@@ -121,55 +121,18 @@ export async function freezeAmbient(page) {
 }
 
 /**
- * The shared reporter.
+ * The shared reporter — MOVED to ./verify-reporter.mjs, re-exported here.
  *
- * `skip` and `fixture` exist because a gate must never report a pass on
- * something it did not check, and this repo has been bitten by that repeatedly:
- * verify-v510 stayed permanently red until people learned to ignore red,
- * verify-future sat orphaned so twelve assertions never ran at all, and
- * verify-shots counted screenshots it never compared toward a
- * "pixel-identical" claim. The fix is not to check more — sometimes you
- * genuinely cannot — it is to make the unchecked items their own NUMBER
- * instead of letting them vanish into a success count.
+ * Re-exported rather than relocated-with-edits so all 16 gates that already do
+ * `import { makeReporter } from './verify-lib.mjs'` keep working byte-for-byte.
  *
- *   ok(cond, label)        a real assertion against real behaviour
- *   skip(label, why)       could not be checked here (API absent, engine
- *                          lacking, upstream unreachable). NOT a pass.
- *   fixture(label, what)   checked against a fixture rather than the real
- *                          upstream. Real coverage, but of the fixture — say so.
- *
- * `finish()` prints all four counts, so "12 passed · 3 fixtured · 1 skipped"
- * can never be read as "16 passed".
+ * It lives in its own module because api/verify-status.mjs needs `fixture()`
+ * and this file's first import is `playwright`. That import resolves fine in
+ * CI's offline `build` job — playwright is a devDependency and `npm ci` runs
+ * there — so the split is not about a missing package. It is about the `build`
+ * job's stated contract ("Offline gates only — no browser, no network") and,
+ * decisively, about not giving the four-counter invariant a second home: a
+ * copied reporter is a second place where "12 passed · 3 fixtured · 1 skipped"
+ * could drift into reading as "16 passed". See verify-reporter.mjs's header.
  */
-export function makeReporter(name) {
-  let failed = false;
-  let passed = 0;
-  let failures = 0;
-  let skipped = 0;
-  let fixtured = 0;
-  return {
-    ok(cond, label, detail = '') {
-      if (cond) { passed++; console.log(`  ✅ ${label}`); }
-      else { failed = true; failures++; console.log(`  ❌ ${label}${detail ? '\n     ' + detail : ''}`); }
-      return cond;
-    },
-    /** Could not be checked in this environment. Never counts as a pass. */
-    skip(label, why) {
-      skipped++;
-      console.log(`  ⏭  ${label} — SKIPPED: ${why}`);
-    },
-    /** Checked, but against a fixture rather than the real upstream. */
-    fixture(label, what) {
-      fixtured++;
-      console.log(`  🧪 ${label} — fixtured: ${what}`);
-    },
-    info(msg) { console.log(`  ·  ${msg}`); },
-    group(title) { console.log(`\n${title}`); },
-    finish() {
-      const tally =
-        `${passed} passed · ${fixtured} fixtured · ${skipped} skipped · ${failures} failed`;
-      console.log('\n' + (failed ? `❌ ${name}: FAILURES — ${tally}` : `✅ ${name}: ${tally}`));
-      return failed ? 1 : 0;
-    },
-  };
-}
+export { makeReporter } from './verify-reporter.mjs';
