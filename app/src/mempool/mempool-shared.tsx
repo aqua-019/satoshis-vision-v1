@@ -9,7 +9,8 @@ import { useTick } from "@/design/ArtBackground";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
-import { CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
+import { CHAIN_CHROME_KEYS, hasData } from "@/data/feed-status";
+import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { MemStatStrip } from "@/mempool/mem-stats";
 
 // mempool-shared.tsx — search + tracking state shared by all mempool views.
@@ -39,35 +40,45 @@ export type Tracking =
 // not decoration — `motion: false` keeps its 1s cadence exact on the mid/low
 // tiers instead of being floored to 80/200ms, and it stays live under
 // prefers-reduced-motion instead of freezing (see design/ArtBackground.tsx's
-// UseTickOptions doc comment). Three states: CONNECTING… (no node snapshot
-// yet), STALE (feed was live then polls started failing — values shown are
-// last-good), and LIVE (healthy feed).
+// UseTickOptions doc comment). Five states, one vocabulary shared with the
+// other chrome surfaces (design/useOnline.ts): OFFLINE (the browser never
+// dialled), CONNECTING (no node snapshot yet), NO NODE RESPONSE (asked,
+// nothing came back, and nothing cached to fall back to), STALE (was live,
+// polls now failing — values shown are last-good), LIVE.
 export function MempoolHeartbeat({ data }: { data: MoneroLive }) {
   useTick(1000, { motion: false });
   const ageSec = Math.max(0, Math.round((Date.now() - data.lastUpdate) / 1000));
-  // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
-  const phase = chromePhase(data.status, CHAIN_CHROME_KEYS);
-  if (phase === "loading" || phase === "error") {
+  const state = useChromeState(data.status, CHAIN_CHROME_KEYS);
+  const detail = chromeDetail(state, data.status, CHAIN_CHROME_KEYS) ?? undefined;
+  if (state === "offline" || state === "loading") {
     return (
-      <span className="pill" title="Waiting for the first node snapshot">
+      <span className="pill" title={detail}>
         <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
-        CONNECTING…
+        {CHROME_LABEL[state]}
       </span>
     );
   }
-  if (phase === "stale") {
+  if (state === "error") {
     return (
-      <span className="pill" title={`Last good snapshot ${ageSec}s ago · retrying every 2.5s`}>
+      <span className="pill" title={detail}>
+        <span className="led" style={{ background: "var(--r-50)", boxShadow: "0 0 6px var(--r-50)" }} />
+        {CHROME_LABEL.error}
+      </span>
+    );
+  }
+  if (state === "stale") {
+    return (
+      <span className="pill" title={`Last good snapshot ${ageSec}s ago · ${detail}`}>
         <span className="led" style={{ background: "var(--y-50)", boxShadow: "0 0 6px var(--y-50)" }} />
-        STALE · reconnecting
+        {CHROME_LABEL.stale}
       </span>
     );
   }
   // Exhaustiveness, by `satisfies` rather than an assertNever default: after the
-  // two guards above `phase` has narrowed to "live", and a fifth FeedPhase would
-  // widen that union and fail this line at compile time (TS1360). Same protection
-  // as the switch sites, one line, and no unreachable branch to render.
-  phase satisfies "live";
+  // guards above `state` has narrowed to "live", and a fifth FeedPhase would
+  // widen ChromeState and fail this line at compile time (TS1360). Same
+  // protection as the switch sites, one line, no unreachable branch to render.
+  state satisfies "live";
   return (
     <span className="pill live" title={"Feed polling ~every 2.5s · source: " + data.source}>
       <span

@@ -46,12 +46,15 @@ export function Stat({ k, v, sub, tone, big }: StatProps) {
 export interface PillProps {
   tone?: "live" | "warn" | "acc";
   dot?: boolean;
+  /** Tooltip. A degraded pill names the endpoint here rather than in its label,
+   *  which has to stay short enough not to reflow the 390px ticker strip. */
+  title?: string;
   children: React.ReactNode;
 }
 
-export function Pill({ tone, dot, children }: PillProps) {
+export function Pill({ tone, dot, title, children }: PillProps) {
   return (
-    <span className={"pill" + (tone ? " " + tone : "")}>
+    <span className={"pill" + (tone ? " " + tone : "")} title={title}>
       {dot ? <span className="led pulse" style={{ width: 5, height: 5 }} /> : null}
       {children}
     </span>

@@ -24,7 +24,8 @@ import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
-import { assertNever, CHAIN_CHROME_KEYS, chromePhase, feedDegraded, hasData } from "@/data/feed-status";
+import { assertNever, CHAIN_CHROME_KEYS, feedDegraded, hasData } from "@/data/feed-status";
+import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -86,6 +87,7 @@ function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
 
 export function NetworkPage() {
   const data = useMoneroLive();
+  const chromeState = useChromeState(data.status, CHAIN_CHROME_KEYS);
   const ready = hasData(data.status.network);
 
   // Real, honestly-windowed series for the network charts (no synthesis).
@@ -147,14 +149,16 @@ export function NetworkPage() {
         sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
         right={<>
           {(() => {
-            // Exhaustive over FeedPhase; "error" shares the CONNECTING copy for now.
-            const phase = chromePhase(data.status, CHAIN_CHROME_KEYS);
-            switch (phase) {
-              case "stale": return <Pill tone="warn" dot>STALE · RECONNECTING</Pill>;
+            // Exhaustive over ChromeState. `error` and `offline` are separate
+            // facts from `loading` and now say so — see design/useOnline.ts.
+            const title = chromeDetail(chromeState, data.status, CHAIN_CHROME_KEYS) ?? undefined;
+            switch (chromeState) {
+              case "stale": return <Pill tone="warn" dot title={title}>{CHROME_LABEL.stale}</Pill>;
               case "live": return <Pill tone="live" dot>LIVE</Pill>;
-              case "loading":
-              case "error": return <Pill dot>CONNECTING</Pill>;
-              default: return assertNever(phase, "NetworkPage pill");
+              case "loading": return <Pill dot title={title}>{CHROME_LABEL.loading}</Pill>;
+              case "error": return <Pill tone="warn" dot title={title}>{CHROME_LABEL.error}</Pill>;
+              case "offline": return <Pill dot title={title}>{CHROME_LABEL.offline}</Pill>;
+              default: return assertNever(chromeState, "NetworkPage pill");
             }
           })()}
           <Pill>UPDATED {data.lastUpdate > 0 ? new Date(data.lastUpdate).toISOString().slice(11, 19) : "—"}</Pill>
