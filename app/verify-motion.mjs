@@ -15,7 +15,39 @@
 //
 // Run from app/: `npm run build && (node scripts/serve-dist.mjs &) && node verify-motion.mjs`
 
+import { readFileSync } from 'node:fs';
 import { launch, makeReporter, BASE } from './verify-lib.mjs';
+
+/**
+ * The app's OWN definition of "this DOM is still showing a Suspense fallback",
+ * lifted from src/entry-ssr.tsx rather than re-typed. entry-ssr and
+ * prerender.mjs already share this one pattern precisely because two copies of
+ * it drifted by a single space once and shipped /simulate with an empty #root.
+ *
+ * Assertion 2 below used a bare /loading/i over body innerText. That was a
+ * PROXY for "did the transition snapshot a fallback", and it was over-broad: it
+ * matches any occurrence of the word anywhere on the page. v6.1.4 made
+ * provenance badges derive their freshness from real endpoints, so a badge
+ * whose endpoint has not answered now renders the honest suffix " · loading" —
+ * which is not a Suspense fallback, is not a defect, and tripped the proxy on
+ * every /mempool badge at once.
+ *
+ * SUSPENDED_RE requires a trailing "." or "…" after `loading`, so it matches
+ * "loading…" and "loading simulators…" and does NOT match " · loading". Using
+ * it here makes this assertion test the thing it is named after, and makes it
+ * strictly more precise than the pattern it replaces.
+ */
+const SUSPENDED_RE = (() => {
+  const src = readFileSync(new URL('./src/entry-ssr.tsx', import.meta.url), 'utf8');
+  const m = src.match(/export const SUSPENDED_RE\s*=\s*\/(.+)\/([a-z]*);/);
+  if (!m) throw new Error('verify-motion: could not extract SUSPENDED_RE from src/entry-ssr.tsx');
+  const re = new RegExp(m[1], m[2]);
+  // Self-check: a botched extraction would make assertion 2 pass vacuously.
+  if (!re.test('loading simulators…') || re.test('COINGECKO · loading')) {
+    throw new Error('verify-motion: extracted SUSPENDED_RE does not behave as expected');
+  }
+  return re;
+})();
 
 const R = makeReporter('verify-motion');
 const { browser, engine } = await launch();
@@ -51,8 +83,9 @@ async function newProbePage(browser, { width, height }, { theme = 'classic', red
     try { localStorage.setItem('xmri.theme', t); } catch { /* storage disabled */ }
     document.documentElement?.setAttribute('data-theme', t);
   }, theme);
-  await ctx.addInitScript((remove) => {
+  await ctx.addInitScript(({ remove, suspendedSource, suspendedFlags }) => {
     window.__vt = { calls: [] };
+    window.__suspendedRe = new RegExp(suspendedSource, suspendedFlags);
     if (remove) {
       Object.defineProperty(document, 'startViewTransition', { value: undefined, configurable: true });
       return;
@@ -77,7 +110,7 @@ async function newProbePage(browser, { width, height }, { theme = 'classic', red
         // real API, which is as close to "the instant after update" as
         // page-context JS can observe.
         rec.hasMain = !!document.querySelector('main.main');
-        rec.bodyHasLoading = /loading/i.test(document.body.innerText);
+        rec.bodySuspended = window.__suspendedRe.test(document.body.innerText);
         rec.morphCountAfterUpdate = morphCount();
         return ret;
       };
@@ -86,7 +119,7 @@ async function newProbePage(browser, { width, height }, { theme = 'classic', red
       rec.transition = transition;
       return transition;
     };
-  }, removeApi);
+  }, { remove: removeApi, suspendedSource: SUSPENDED_RE.source, suspendedFlags: SUSPENDED_RE.flags });
   return ctx.newPage();
 }
 
@@ -123,7 +156,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   const rec = await lastCall(page);
   R.ok(!!rec && rec.vt === 'route', `1 · dataset.vt === "route" (got ${rec && rec.vt})`);
   R.ok(!!rec && rec.hasMain === true, '2 · after-state contains main.main');
-  R.ok(!!rec && rec.bodyHasLoading === false, '2 · after-state body text does NOT contain "loading"');
+  R.ok(!!rec && rec.bodySuspended === false, '2 · after-state shows no Suspense fallback (SUSPENDED_RE, the app\'s own definition)');
 
   await page.context().close();
 }

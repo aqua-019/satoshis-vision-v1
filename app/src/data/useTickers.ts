@@ -32,6 +32,8 @@ export interface Ticker {
 export interface TickersResult {
   data: Ticker[];
   status: SeriesStatus;
+  /** ms epoch this data actually arrived; 0 = unknown/never. */
+  at: number;
 }
 
 interface CgTicker {
@@ -77,7 +79,7 @@ function mapTickers(raw: unknown): Ticker[] {
 export function useTickers(): TickersResult {
   const [result, setResult] = React.useState<TickersResult>(() => {
     const hit = readCache<Ticker[]>(safeStore(), KEY);
-    return hit ? { data: hit.data, status: "stale" } : { data: [], status: "loading" };
+    return hit ? { data: hit.data, status: "stale", at: hit.at } : { data: [], status: "loading", at: 0 };
   });
 
   React.useEffect(() => {
@@ -93,15 +95,16 @@ export function useTickers(): TickersResult {
         if (!r.ok) throw new Error(`CG ${r.status}`);
         const data = mapTickers(await r.json());
         if (data.length === 0) throw new Error("empty tickers");
-        writeCache(safeStore(), KEY, data);
-        if (alive) setResult({ data, status: "live" });
+        const now = Date.now();
+        writeCache(safeStore(), KEY, data, now);
+        if (alive) setResult({ data, status: "live", at: now });
       } catch {
         nextDelay = RETRY_MS;
         if (alive) {
           setResult((prev) => {
-            if (prev.data.length) return { data: prev.data, status: "stale" };
+            if (prev.data.length) return { data: prev.data, status: "stale", at: prev.at };
             const hit = readCache<Ticker[]>(safeStore(), KEY);
-            return hit ? { data: hit.data, status: "stale" } : { data: [], status: "loading" };
+            return hit ? { data: hit.data, status: "stale", at: hit.at } : { data: [], status: "loading", at: 0 };
           });
         }
       }

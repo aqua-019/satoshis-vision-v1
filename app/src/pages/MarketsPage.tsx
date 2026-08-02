@@ -307,13 +307,14 @@ export function MarketsPage() {
       <PanelFrame
         title={`XMR / USD · ${range} candles`}
         right={<SourceBadge status={hist.xmrCandles.status} prefix={`${xmrCandles.length} bars · ${hist.xmrCandles.granularityLabel}`} />}
+        updatedAt={hist.xmrCandles.at}
       >
         <CandleChart candles={xmrCandles} days={days} status={hist.xmrCandles.status} height={320} />
       </PanelFrame>
 
       {/* XMR/BTC ratio + XMR vs Top majors */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />}>
+        <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />} updatedAt={hist.xmrBtc.at}>
           <AreaSeries data={xmrBtcSeries} days={days} height={RATIO_CHART_HEIGHT}
             color="var(--tk-accent)" baseline="auto"
             format={fmtSat}
@@ -326,7 +327,7 @@ export function MarketsPage() {
             )}
           </p>
         </PanelFrame>
-        <PanelFrame title={`XMR vs Top ${majorsCount || "—"} · normalized % · ${range}`} right={<GroupBadge result={hist.top} />}>
+        <PanelFrame title={`XMR vs Top ${majorsCount || "—"} · normalized % · ${range}`} right={<GroupBadge result={hist.top} />} updatedAt={hist.top.at}>
           <MultiLine series={topSeries} days={days} height={MAJORS_CHART_HEIGHT} labels={false} />
           <SeriesSwatchLegend series={topSeries} />
         </PanelFrame>
@@ -335,6 +336,7 @@ export function MarketsPage() {
       {/* Privacy peer group — full width, live-ranked membership */}
       <PanelFrame
         title={`Privacy peer group · normalized · ${range}`}
+        updatedAt={hist.peers.at}
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {chartedPeerSymbols ? (
@@ -363,7 +365,7 @@ export function MarketsPage() {
 
       {/* Exchange volume (real) + swap-venue directory */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title="Exchange volume · 24h · top pairs" right={<SourceBadge status={tickers.status} />}>
+        <PanelFrame title="Exchange volume · 24h · top pairs" right={<SourceBadge status={tickers.status} />} updatedAt={tickers.at}>
           {/* v6.0.10 §4 — .keep-cols forces `min-width: max-content` on mobile,
               so this was a horizontal swipe that never reached its last column.
               .mk-* stacks it to one card per row below 768px; the desktop track
@@ -431,7 +433,7 @@ export function MarketsPage() {
       </section>
 
       {/* Liquidity by venue (real tickers) */}
-      <PanelFrame title="Liquidity by venue · 24h converted volume" right={<SourceBadge status={tickers.status} prefix={venues.length ? `${venues.length} venues` : undefined} />}>
+      <PanelFrame title="Liquidity by venue · 24h converted volume" right={<SourceBadge status={tickers.status} prefix={venues.length ? `${venues.length} venues` : undefined} />} updatedAt={tickers.at}>
         {venues.length === 0 ? (
           <p className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>Awaiting CoinGecko tickers…</p>
         ) : (
