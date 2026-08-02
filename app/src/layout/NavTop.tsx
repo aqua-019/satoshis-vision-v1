@@ -12,6 +12,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { Provenance } from "@/design/primitives";
 import { DesignPanel } from "@/design/DesignPanel";
 import { SITE_VERSION } from "@/data/releases";
+import { assertNever, CHAIN_MARKET_CHROME_KEYS, chromePhase, hasData } from "@/data/feed-status";
 
 const NAV: ReadonlyArray<{ to: string; label: string }> = [
   { to: "/",           label: "Home" },
@@ -80,32 +81,48 @@ export function NavTop() {
       </nav>
 
       <div className="ticker-strip">
-        {!data.ready && !data.marketReady ? (
-          <span className="pill">
-            <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
-            CONNECTING
-          </span>
-        ) : data.stale ? (
-          <span className="pill">
-            <span className="led pulse" style={{ background: "var(--y-50)" }} />
-            STALE · reconnecting
-          </span>
-        ) : (
-          <span className="pill live">
-            <span className="led pulse" />
-            LIVE
-          </span>
-        )}
+        {/* Exhaustive over FeedPhase: a fifth phase stops compiling here rather
+            than silently falling through to LIVE. "error" deliberately shares
+            the CONNECTING copy for now — see chromePhase's note. */}
+        {(() => {
+          const phase = chromePhase(data.status, CHAIN_MARKET_CHROME_KEYS);
+          switch (phase) {
+            case "loading":
+            case "error":
+              return (
+                <span className="pill">
+                  <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+                  CONNECTING
+                </span>
+              );
+            case "stale":
+              return (
+                <span className="pill">
+                  <span className="led pulse" style={{ background: "var(--y-50)" }} />
+                  STALE · reconnecting
+                </span>
+              );
+            case "live":
+              return (
+                <span className="pill live">
+                  <span className="led pulse" />
+                  LIVE
+                </span>
+              );
+            default:
+              return assertNever(phase, "NavTop pill");
+          }
+        })()}
         <span className="tk dim">
-          XMR <b className="acc">{data.marketReady ? `$${data.price.toFixed(2)}` : "—"}</b>
+          XMR <b className="acc">{hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"}</b>
           <em className={data.change24h < 0 ? "dn" : ""}>
-            {data.marketReady ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}%` : "—"}
+            {hasData(data.status.market) ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}%` : "—"}
           </em>
         </span>
         <span className="tk dim tk--btc">
-          BTC <b>{data.marketReady ? `$${Math.round(data.btc).toLocaleString()}` : "—"}</b>
+          BTC <b>{hasData(data.status.market) ? `$${Math.round(data.btc).toLocaleString()}` : "—"}</b>
           <em className={data.btcChg < 0 ? "dn" : ""}>
-            {data.marketReady ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
+            {hasData(data.status.market) ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
           </em>
         </span>
         {/* Must stay the LAST child of .ticker-strip — see

@@ -27,7 +27,7 @@ import { PageShell } from "@/layout/PageShell";
 import { PageHeader } from "@/layout/AppShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Stat, PanelFrame, Crumbs, Provenance, DataLegend } from "@/design/primitives";
-import { ProvNote } from "@/design/provenance";
+import { ProvNote, type ProvFreshness } from "@/design/provenance";
 import {
   useMarketHistory,
   RANGE_DAYS,
@@ -39,6 +39,7 @@ import {
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 import { SITE_VERSION } from "@/data/releases";
+import { assertNever, hasData } from "@/data/feed-status";
 import { useUrlState } from "@/routes/useUrlState";
 
 /** Hoisted so useUrlState's setter identity is stable across renders. The
@@ -54,23 +55,53 @@ const DEFAULT_RANGE: RangeKey = "30D";
 const fmtSat = (v: number): string => (v * 1e5).toFixed(0) + " sat";
 
 
+/**
+ * SeriesStatus → <Provenance> props.
+ *
+ * `SeriesStatus` gained an "error" member in v6.1.4 (it is `FeedPhase` now), and
+ * `ProvFreshness` has no matching member yet — extending the badge's own
+ * vocabulary belongs with the freshness work, not with the type unification. So
+ * "error" reuses the phrase this page ALREADY uses for "we asked and there is
+ * nothing", rather than inventing a second spelling of it.
+ */
+function freshProps(status: SeriesStatus): { fresh: ProvFreshness; detail?: string } {
+  switch (status) {
+    case "error": return { fresh: "none", detail: "unavailable" };
+    case "loading": return { fresh: "loading" };
+    case "live": return { fresh: "live" };
+    case "stale": return { fresh: "stale" };
+    default: return assertNever(status, "MarketsPage freshProps", { fresh: "none" as ProvFreshness });
+  }
+}
+
 /** Source label for a single series — COINGECKO with a freshness suffix.
  *  Stale renders the canonical "COINGECKO · stale" (freshness, orthogonal to source). */
 function SourceBadge({ status, prefix }: { status: SeriesStatus; prefix?: string }) {
-  return <Provenance source="coingecko" fresh={status} detail={prefix} />;
+  const f = freshProps(status);
+  return <Provenance source="coingecko" fresh={f.fresh} detail={prefix ?? f.detail} />;
 }
 
 /** Source label for a group of series (counts stale fallbacks). Covers the
  *  "attempted, still nothing" case honestly instead of showing a bare
  *  "loading" forever. */
 function GroupBadge({ result }: { result: GroupResult }) {
-  if (result.status === "loading" && result.attempted && result.data.length === 0)
-    return <Provenance source="coingecko" fresh="none" detail="unavailable" />;
-  if (result.status === "loading") return <Provenance source="coingecko" fresh="loading" />;
+  // `error` IS "attempted, still nothing" — assembleGroup promotes it now, so
+  // this no longer reconstructs the condition from a boolean beside the union.
   const total = result.data.length;
   const stales = result.data.filter((s) => s.status !== "live").length;
-  if (stales === 0) return <Provenance source="coingecko" fresh="live" detail={`${total} live`} />;
-  return <Provenance source="coingecko" fresh="stale" detail={`${total - stales}/${total} live · ${stales} stale`} />;
+  switch (result.status) {
+    case "error":
+      return <Provenance source="coingecko" fresh="none" detail="unavailable" />;
+    case "loading":
+      return <Provenance source="coingecko" fresh="loading" />;
+    case "live":
+    case "stale":
+      return stales === 0
+        ? <Provenance source="coingecko" fresh="live" detail={`${total} live`} />
+        : <Provenance source="coingecko" fresh="stale" detail={`${total - stales}/${total} live · ${stales} stale`} />;
+    default:
+      return assertNever(result.status, "MarketsPage GroupBadge");
+  }
 }
 
 /** Compact color-swatch legend for a `labels={false}` MultiLine — one line
@@ -206,7 +237,7 @@ export function MarketsPage() {
   const peerRemainder = hist.peers.members.filter((m) => !m.charted).slice(0, PEER_REMAINDER_LIMIT);
 
   // Real circulating supply from the chain height (tail emission is linear).
-  const circ = data.ready ? SUPPLY_AT_TAIL + Math.max(0, data.height - TAIL_START_HEIGHT) * TAIL_REWARD : 0;
+  const circ = hasData(data.status.network) ? SUPPLY_AT_TAIL + Math.max(0, data.height - TAIL_START_HEIGHT) * TAIL_REWARD : 0;
 
   const tickerVolume = tickers.data.reduce((a, t) => a + t.volUsd, 0);
   const topTickers = tickers.data.slice(0, TOP_TICKERS_LIMIT);
@@ -229,7 +260,7 @@ export function MarketsPage() {
 
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={data.marketReady ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
+      <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={hasData(data.status.market) ? <Provenance source="coingecko" fresh="live" /> : "Connecting…"} />
       <DataLegend sources={["coingecko"]} />
       <PageHeader
         kicker="Markets · price, volume, liquidity"
@@ -252,23 +283,23 @@ export function MarketsPage() {
 
       {/* KPI row */}
       <section className="kpi-grid" style={{ ["--kpi-cols" as any]: 6, gap: 10 }}>
-        <Stat k="XMR / USD" v={data.marketReady ? `$${data.price.toFixed(2)}` : "—"} sub={data.marketReady ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}% · 24h` : "connecting"} tone="acc" />
-        <Stat k="XMR / BTC" v={data.marketReady ? data.btcRatio.toFixed(6) : "—"} sub={xmrBtcSeries.length ? `Range ${ratioFloor.toFixed(5)}–${ratioPeak.toFixed(5)}` : "—"} />
+        <Stat k="XMR / USD" v={hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"} sub={hasData(data.status.market) ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}% · 24h` : "connecting"} tone="acc" />
+        <Stat k="XMR / BTC" v={hasData(data.status.market) ? data.btcRatio.toFixed(6) : "—"} sub={xmrBtcSeries.length ? `Range ${ratioFloor.toFixed(5)}–${ratioPeak.toFixed(5)}` : "—"} />
         <Stat
           k="Market cap"
-          v={data.marketReady && circ > 0 ? `$${((data.price * circ) / 1e9).toFixed(2)}B` : "—"}
+          v={hasData(data.status.market) && circ > 0 ? `$${((data.price * circ) / 1e9).toFixed(2)}B` : "—"}
           sub={circ > 0 ? (<>{(circ / 1e6).toFixed(2)}M circ · tail emission <Provenance source="coingecko" also="session" bare /></>) : "—"}
         />
         <Stat k="24h volume" v={tickers.status === "loading" ? "—" : fmtUsd(tickerVolume)} sub={tickers.status === "loading" ? "CG tickers" : `CG tickers · ${tickers.data.length} pairs`} />
         <Stat
           k="ATH"
           v={hist.meta.data ? `$${hist.meta.data.ath.toFixed(2)}` : "—"}
-          sub={hist.meta.data ? (<>{monthYear(hist.meta.data.athDate)} <Provenance source="coingecko" fresh={hist.meta.status} bare /></>) : "—"}
+          sub={hist.meta.data ? (<>{monthYear(hist.meta.data.athDate)} <Provenance source="coingecko" {...freshProps(hist.meta.status)} bare /></>) : "—"}
         />
         <Stat
           k="ATL"
           v={hist.meta.data ? `$${hist.meta.data.atl.toFixed(2)}` : "—"}
-          sub={hist.meta.data ? (<>{monthYear(hist.meta.data.atlDate)} <Provenance source="coingecko" fresh={hist.meta.status} bare /></>) : "—"}
+          sub={hist.meta.data ? (<>{monthYear(hist.meta.data.atlDate)} <Provenance source="coingecko" {...freshProps(hist.meta.status)} bare /></>) : "—"}
         />
       </section>
 

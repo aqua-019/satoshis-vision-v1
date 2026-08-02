@@ -22,6 +22,7 @@ import * as React from "react";
 import type { MoneroLive, Tx } from "@/data/types";
 import { fmtBytes, fmtN } from "@/data/types";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
+import { hasData } from "@/data/feed-status";
 import { Stat } from "@/design/primitives";
 import { useTick } from "@/design/ArtBackground";
 
@@ -115,7 +116,7 @@ export function BlockEta({ data, offsetSec = 0 }: { data: MoneroLive; offsetSec?
   // cadence exact on every tier; it is still paused while the tab is hidden and
   // still fires one tick immediately on return, so nothing is wasted either.
   useTick(1000, { motion: false });
-  if (!data.ready) return <>—</>;
+  if (!hasData(data.status.network)) return <>—</>;
   const eta = nextBlockEtaSec(data) + offsetSec;
   // Overdue is normal for Poisson arrivals, so say so rather than parking on
   // "0:00" — the reading stays true for as long as the wait lasts.
@@ -126,14 +127,14 @@ export function BlockEta({ data, offsetSec = 0 }: { data: MoneroLive; offsetSec?
 /** Dense five-figure strip: mempool count, pool weight, oldest tx age, median
  *  fee/B, next-block ETA. `compact` collapses it to a single inline row for
  *  views with little chrome budget (Reactor, Terminal). Renders "—" — never a
- *  fabricated 0 — while `!data.ready` or the pool is empty. */
+ *  fabricated 0 — while `!hasData(data.status.network)` or the pool is empty. */
 export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: boolean }): JSX.Element {
   const stats = useMemStats(data);
   // txCount/poolBytes are honest zeros for an empty pool (there really are 0
   // txs); medianPerB/oldestAgeSec have no defined value over an empty set, so
   // both gate on emptiness too — treat the whole mempool-derived group
   // uniformly to avoid a strip that half-shows numbers, half-shows dashes.
-  const poolReady = data.ready && stats.txCount > 0;
+  const poolReady = hasData(data.status.network) && stats.txCount > 0;
   const dash = "—";
 
   if (compact) {
@@ -148,8 +149,8 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
         <span data-memstat="bytes" data-memstat-value={poolReady ? stats.poolBytes : ""}>{poolReady ? fmtBytes(stats.poolBytes) : dash}</span>
         <span data-memstat="oldest" data-memstat-value={poolReady ? stats.oldestAgeSec : ""}>{poolReady ? `${stats.oldestAgeSec}s oldest` : dash}</span>
         <span data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""}>{poolReady ? `${Math.round(stats.medianPerB).toLocaleString()} pcn/B med` : dash}</span>
-        <span style={{ color: "var(--p-50)" }} data-memstat="eta" data-memstat-value={data.ready ? stats.nextBlockEtaSec : ""}>
-          {data.ready ? <BlockEta data={data} /> : dash} next block
+        <span style={{ color: "var(--p-50)" }} data-memstat="eta" data-memstat-value={hasData(data.status.network) ? stats.nextBlockEtaSec : ""}>
+          {hasData(data.status.network) ? <BlockEta data={data} /> : dash} next block
         </span>
       </div>
     );
@@ -176,8 +177,8 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
       <div data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""} style={{ display: "contents" }}>
         <Stat k="MEDIAN" v={poolReady ? Math.round(stats.medianPerB).toLocaleString() : dash} sub="pcn/B" />
       </div>
-      <div data-memstat="eta" data-memstat-value={data.ready ? stats.nextBlockEtaSec : ""} style={{ display: "contents" }}>
-        <Stat k="NEXT BLOCK" v={data.ready ? <BlockEta data={data} /> : dash} sub="eta" tone="p" />
+      <div data-memstat="eta" data-memstat-value={hasData(data.status.network) ? stats.nextBlockEtaSec : ""} style={{ display: "contents" }}>
+        <Stat k="NEXT BLOCK" v={hasData(data.status.network) ? <BlockEta data={data} /> : dash} sub="eta" tone="p" />
       </div>
     </section>
   );

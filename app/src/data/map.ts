@@ -6,7 +6,8 @@
  * or the relay WebSocket payloads, and fold them onto a previous MoneroLive
  * snapshot — a field a given response doesn't include is *carried* from the
  * prior state, never left NaN/undefined. Surfaces gate number rendering on
- * `data.ready` / `data.marketReady`, so carried boot zeros are never shown.
+ * `hasData(status.network)` / `hasData(status.market)`, so carried boot zeros
+ * are never shown.
  *
  * Units honoured exactly (see types.ts):
  *  - mempool/block sizes that v4 gives in BYTES stay bytes; Block.sizeKB is KB
@@ -311,9 +312,10 @@ export interface FoldOptions {
  * Fold a polled snapshot onto the previous MoneroLive state.
  *
  * Only the sources that actually returned are applied; everything else is
- * carried from `prev`. This sets `source`/`live`/`lastUpdate`; the feed hook
- * spreads `ready`/`marketReady`/`stale` AFTER this result so the meta flags
- * stay truthful at every degrade step.
+ * carried from `prev`. This sets `source`/`lastUpdate`; the feed hook derives
+ * `status` from its own per-endpoint observations AFTER this result, so the
+ * union stays truthful at every degrade step (v6.1.4 — this used to spread
+ * `ready`/`marketReady`/`stale` here instead).
  *
  * Called once per tier tick with only that tier's sources (v6.0.6).
  * `priceSeries` needs no equivalent flag: `mapMarket` is the only thing that
@@ -337,7 +339,6 @@ export function mapToMoneroLive(
   // roll the hashrate sparkline forward — chain tier only, see FoldOptions
   if (opts.pushHash) next.hashSeries = pushSeries(prev.hashSeries, next.hashrate);
   next.source = source;
-  next.live = true;
   next.lastUpdate = Date.now();
   return next;
 }
@@ -356,7 +357,6 @@ export function applyWsBlock(prev: MoneroLive, data: XmrBlock): MoneroLive {
     difficulty: num(data.difficulty, prev.difficulty),
     hashSeries: pushSeries(prev.hashSeries, prev.hashrate),
     source: "ws",
-    live: true,
     lastUpdate: Date.now(),
   };
 }
@@ -368,7 +368,6 @@ export function applyWsMempool(prev: MoneroLive, data: XmrMempool): MoneroLive {
     ...prev,
     ...merged,
     source: "ws",
-    live: true,
     lastUpdate: Date.now(),
   };
 }
@@ -379,7 +378,6 @@ export function applyWsNetwork(prev: MoneroLive, data: XmrNetwork): MoneroLive {
   const next = { ...prev, ...merged };
   next.hashSeries = pushSeries(prev.hashSeries, next.hashrate);
   next.source = "ws";
-  next.live = true;
   next.lastUpdate = Date.now();
   return next;
 }

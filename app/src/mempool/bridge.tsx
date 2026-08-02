@@ -13,6 +13,7 @@ import { useMempoolTracking, MemViewShell, TrackChip, MemTxTable} from "@/mempoo
 import type { Tracking } from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import type { MoneroLive } from "@/data/types";
+import { hasData } from "@/data/feed-status";
 
 interface ViewProps {
   data: MoneroLive;
@@ -25,7 +26,7 @@ interface ViewProps {
 // sweeping the live mempool, a bank of easing gauges over real node health,
 // a fee oscilloscope, a block-cadence countdown, pool attribution and a
 // scrolling alert tape — every number comes from the live MoneroLive feed.
-// Chain figures gate on data.ready, market figures on data.marketReady.
+// Chain figures gate on hasData(data.status.network), market figures on hasData(data.status.market).
 //
 // Every helper is prefixed `Brg` so it can't collide with Reactor / Terminal
 // / monero-pages in the shared babel global scope.
@@ -293,7 +294,7 @@ export function BrgGaugeBank({ data }: { data: MoneroLive }) {
   //  FORK      — current hard-fork major version vs the v16 ruleset
   //  WEIGHT    — median block weight vs the dynamic limit (penalty-zone proximity)
   //  FEE FLOOR — slow tier as a fraction of the normal tier
-  const ready = data.ready;
+  const ready = hasData(data.status.network);
   const sync = ready && data.synchronized ? 100 : 0;
   const fork = ready && data.majorVersion >= 16 ? 100 : 0;
   const weight = ready && data.blockWeightLimit > 0
@@ -381,8 +382,9 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
   const now = Date.now();
   const reduced = useReducedMotion();
   const TARGET = 120;
-  const elapsed = data.ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - data.lastUpdate) / 1000)) : 0;
-  const overdue = data.ready && elapsed > TARGET;
+  const ready = hasData(data.status.network);
+  const elapsed = ready ? (data.blocks?.[0]?.age || 0) + Math.max(0, Math.floor((now - data.lastUpdate) / 1000)) : 0;
+  const overdue = ready && elapsed > TARGET;
   const pct = Math.min(1, elapsed / TARGET);
   const ring = 2 * Math.PI * 34;
   // The dasharray pair stays fixed at the full ring length; only dashoffset
@@ -409,7 +411,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
   const hiIv = Math.max(TARGET * 2, ...ivs.map((x) => x.iv));
 
   return (
-    <BrgCard title="Block cadence · 2:00 target" right={!data.ready
+    <BrgCard title="Block cadence · 2:00 target" right={!hasData(data.status.network)
       ? <span className="dim">awaiting node</span>
       : overdue
         ? <span style={{ color: "var(--y-50)" }}>OVERDUE</span>
@@ -428,7 +430,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
               transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke var(--d-3) var(--e-standard)",
             }} />
           <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
-          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{data.ready ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
+          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{hasData(data.status.network) ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
         </svg>
         <div style={{ flex: 1 }}>
           <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
@@ -451,7 +453,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
             })}
           </div>
           <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 5 }}>
-            <span>#{data.ready ? data.height.toLocaleString() : "—"}</span><span>μ {mu != null ? mu + "s" : "—"}</span><span>alt {data.ready ? data.altBlocksCount : "—"}</span>
+            <span>#{hasData(data.status.network) ? data.height.toLocaleString() : "—"}</span><span>μ {mu != null ? mu + "s" : "—"}</span><span>alt {hasData(data.status.network) ? data.altBlocksCount : "—"}</span>
           </div>
         </div>
       </div>
@@ -508,8 +510,10 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
 
   // Threshold alerts diffed against the previous tick's real values.
   const prevRef = React.useRef<{ poolLen: number | null; feeFloor: number | null; weightHot: boolean }>({ poolLen: null, feeFloor: null, weightHot: false });
+  // Derived once so the effect body and its dep array read the same expression.
+  const ready = hasData(data.status.network);
   React.useEffect(() => {
-    if (!data.ready) return;
+    if (!ready) return;
     const fresh: BrgAlertRow[] = [];
     const now = Date.now();
     const p = prevRef.current;
@@ -539,7 +543,7 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
     if (fresh.length) setRows((r) => [...fresh, ...r].slice(0, 7));
     // Diff once per successful feed tick.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data.lastUpdate, data.ready]);
+  }, [data.lastUpdate, ready]);
 
   const col: Record<string, string> = { g: "var(--g-50)", acc: "var(--tk-accent)", p: "var(--p-50)", y: "var(--y-50)" };
   // A tracked tx that has left the mempool (real block height resolved) has
@@ -626,7 +630,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
 // shared MemStatStrip, rendered by MemViewShell above this component — so
 // this grid keeps only Bridge's own network/market instruments.
 export function BrgOverview({ data, tracking, onPickTx }: { data: MoneroLive; tracking: Tracking; onPickTx: (id: string) => void }) {
-  const ready = data.ready, mkt = data.marketReady;
+  const ready = hasData(data.status.network), mkt = hasData(data.status.market);
 
   // Tracked tx, resolved once via useMempoolTracking + confOf everywhere —
   // pending (still in mempool) shows on the radar/console; confirmed (left

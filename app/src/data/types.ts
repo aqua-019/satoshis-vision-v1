@@ -5,6 +5,12 @@
  * live data source (Monero RPC, websocket, your worker, claude.ai's stack),
  * implement a provider that yields this shape and pass it via DataContext.
  *
+ * BREAKING, v6.1.4: the four status booleans (`live` / `ready` / `marketReady` /
+ * `stale`) were removed in favour of one per-endpoint discriminated union,
+ * `status` (see feed-status.ts). A host runtime implementing `useFeed` gets a
+ * COMPILE error rather than a silent behaviour change — see the migration table
+ * on the field itself, and app/PORTING.md.
+ *
  * Numeric fields use:
  *  - bytes   in B (not KB)
  *  - fees    in XMR  (e.g. 0.0000125)
@@ -72,6 +78,18 @@ export interface Peer {
 
 export type DataSource = "coingecko" | "rpc" | "ws" | "host";
 
+/* Status vocabulary lives in feed-status.ts and is re-exported here so the 13
+   consumer files keep one import path. Type-only, so this file stays loadable
+   in bare Node (Node's type stripping erases `export type … from`). */
+export type {
+  FeedKey,
+  FeedPhase,
+  FeedStatus,
+  FeedStatusMap,
+  FailReason,
+} from "./feed-status";
+import type { FeedStatusMap } from "./feed-status";
+
 export interface MoneroLive {
   // ── network ──
   height: number;
@@ -138,16 +156,23 @@ export interface MoneroLive {
 
   // ── meta ──
   source: DataSource;
-  /** time of the last SUCCESSFUL update (0 until the first one lands) */
+  /** time of the last SUCCESSFUL snapshot fold (0 until the first one lands),
+   *  stamped by map.ts. For a per-ENDPOINT freshness time, read
+   *  `status[key].at` — that is the one a panel should show. */
   lastUpdate: number;
-  /** true when the feed is healthy (= ready && !stale) */
-  live: boolean;
-  /** first successful chain snapshot has landed — gate chain numbers on this */
-  ready: boolean;
-  /** first successful market (CoinGecko) response has landed — gate prices on this */
-  marketReady: boolean;
-  /** the feed was live, then repeated polls failed — values are last-good */
-  stale: boolean;
+  /**
+   * D1622 — per-endpoint status. Replaces the four booleans `live` / `ready` /
+   * `marketReady` / `stale`, which between them described sixteen states, most
+   * of them nonsense, while failing to express the two that mattered:
+   * "never succeeded and now failing", and "the market specifically is down".
+   *
+   * Migration, for anyone reading an older call site:
+   *   `.ready`       →  hasData(data.status.network)
+   *   `.marketReady` →  hasData(data.status.market)
+   *   `.stale`       →  feedDegraded(data.status)
+   *   `.live`        →  !feedDegraded(data.status)
+   */
+  status: FeedStatusMap;
 }
 
 // ── helpers ──────────────────────────────────────────────────────

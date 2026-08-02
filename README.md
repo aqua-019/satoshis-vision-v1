@@ -23,7 +23,7 @@ satoshis-vision-v1/
 │   │   ├── prerender.mjs   # emits dist/<route>/index.html (works with JS off)
 │   │   ├── gen-sitemap.mjs # emits dist/sitemap.xml + dist/robots.txt
 │   │   └── serve-dist.mjs  # local mirror of Vercel's resolution order
-│   └── verify-*.mjs        # 47 gates + verify-lib.mjs (shared, not a gate)
+│   └── verify-*.mjs        # 49 gates + verify-lib.mjs (shared, not a gate)
 ├── api/                    # Vercel serverless functions — CommonJS
 │   └── verify-*.mjs        # 4 offline gates
 ├── relay/                  # websocket relay (not currently deployed)
@@ -67,22 +67,23 @@ read it, so the two stay in step. Register the route in `app/src/App.tsx` as wel
 
 ## ✅ Verification
 
-51 gates guard this repo (47 in `app/`, 4 in `api/`).
-`.github/workflows/ci.yml` runs **35 distinct** files on every PR to `main`, in
-two jobs: 9 named offline gates, then `verify:static` and `verify:e2e` (four
-gates appear in both lists, which is why 9 + 13 + 18 is not 40).
+53 gates guard this repo (49 in `app/`, 4 in `api/`).
+`.github/workflows/ci.yml` runs **39 distinct** files on every PR to `main`, in
+two jobs: 9 named offline gates, then `verify:static` and `verify:e2e` (four of
+the 9 also appear in `verify:static`, and `verify-origins` appears in both
+chains, which is why 9 + 15 + 20 is not 44).
 
 ```bash
 cd app
 npm run typecheck
 npm run build
 
-npm run verify:static   # 13 source-assertion gates, no browser, ~30s
+npm run verify:static   # 15 source-assertion gates, no browser, ~30s
 
 npx playwright install --with-deps chromium
 node scripts/serve-dist.mjs &
 npm run wait-preview
-npm run verify:e2e      # 18 Playwright gates
+npm run verify:e2e      # 20 Playwright gates
 ```
 
 Three more are npm-wired but deliberately not in CI — `verify:shots`,
@@ -90,8 +91,12 @@ Three more are npm-wired but deliberately not in CI — `verify:shots`,
 shot tree built from another commit, which CI has no way to produce; the two
 perf gates measure framerate, which a shared runner cannot measure honestly.
 
-The remaining 13 are wired to neither npm nor CI. Several expect live upstreams
-the sandbox cannot reach; auditing and wiring them is its own task.
+The remaining 11 are wired to neither npm nor CI. Several expect live upstreams
+the sandbox cannot reach; auditing and wiring them is its own task. (v6.1.4
+wired in `verify-allreal-dom.mjs` and `verify-tiers-dom.mjs`, which between them
+already asserted the CONNECTING / LIVE / STALE vocabulary, last-good retention
+under outage, and the tier cadence — exactly the regression surface of that
+release's status refactor.)
 
 ---
 

@@ -19,7 +19,11 @@
 // flaky under CI load. Tiers are compressed via the documented
 // window.__XMR_TIER_MS__ override so the run takes seconds, not minutes.
 //
-// Run: npm run build && (npm run preview &) && sleep 2 && node verify-tiers-dom.mjs
+// Run: npm run build && (node scripts/serve-dist.mjs &) && npm run wait-preview \
+//      && node verify-tiers-dom.mjs
+//      (serve-dist, NOT `vite preview`: preview falls back to index.html for
+//       every path, which would serve the "/" prerender everywhere and let a
+//       broken prerender pass unnoticed. Same reason ci.yml uses it.)
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
 

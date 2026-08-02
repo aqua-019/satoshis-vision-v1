@@ -59,6 +59,17 @@ ok(groupStatus([s('stale'), s('stale')]) === 'stale', 'group [stale,stale] → s
 ok(groupStatus([s('loading'), s('loading')]) === 'loading', 'group [loading,loading] → loading');
 ok(groupStatus([s('stale'), s('loading')]) === 'stale', 'group [stale,loading] → stale');
 
+// 6b) v6.1.4 — SeriesStatus is FeedPhase now, so `error` joined the union.
+// It ranks BELOW live and stale (either of those means something is renderable)
+// and is only reached when every member is down. A mix of error and loading is
+// still partly in flight, and "loading" is the honest word for that.
+ok(groupStatus([s('error'), s('error')]) === 'error', 'group [error,error] → error');
+ok(groupStatus([s('error'), s('loading')]) === 'loading',
+   'group [error,loading] → loading (still partly in flight — never overstate a failure)');
+ok(groupStatus([s('live'), s('error')]) === 'live', 'group [live,error] → live (something renders)');
+ok(groupStatus([s('stale'), s('error')]) === 'stale', 'group [stale,error] → stale (last-good renders)');
+ok(groupStatus([]) === 'loading', 'group [] → loading, never error (nothing was attempted)');
+
 // 7) the synthetic generators are GONE — nothing can fabricate a series.
 ok(mh.genCandles === undefined, 'genCandles removed from module');
 ok(mh.simCandles === undefined, 'simCandles removed from module');

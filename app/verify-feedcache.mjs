@@ -14,6 +14,7 @@
 // ".ts" appended. See https://nodejs.org/api/module.html#moduleregister.
 
 import { register } from 'node:module';
+import { readFileSync } from 'node:fs';
 
 const RESOLVE_TS_FALLBACK = `
   export async function resolve(specifier, context, nextResolve) {
@@ -93,6 +94,51 @@ ok(agoStr(new Date(t0 - 9 * 86_400_000).toISOString(), t0) === '9d ago', 'agoStr
 ok(agoStr(null, t0) === '—', 'agoStr: null → "—"');
 ok(agoStr(undefined, t0) === '—', 'agoStr: undefined → "—"');
 ok(agoStr('garbage', t0) === '—', 'agoStr: garbage → "—"');
+
+/* 7) v6.1.4 — every wrapper SURFACES the state machine it was handed.
+ *
+ * useCachedFeed produces `{ data, at, state }`. Three of its four wrappers
+ * returned all three; `useRepoPulse` destructured `{ data }` alone and returned
+ * `RepoPulse | null`, so its callers could not tell "still loading" from "the
+ * proxy is dead" — both were null — and every pulse surface rendered a spinner
+ * that would never resolve against a dead proxy.
+ *
+ * The TYPE now prevents it (each wrapper declares `state` in its return type,
+ * so dropping it fails to compile). This is the belt to that pair of braces: a
+ * type can be widened by a later edit, and a source assertion cannot be widened
+ * by accident. It reads the shipped source rather than calling the hooks,
+ * because calling them needs React and a DOM. */
+{
+  const src = readFileSync(new URL('./src/data/useCachedFeed.ts', import.meta.url), 'utf8');
+  const body = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  // Every exported hook that CALLS useCachedFeed must name `state` in its
+  // signature and destructure it from the call.
+  // The return types are object literals, so the capture has to run past their
+  // own braces and stop at the one that opens the function BODY — which is the
+  // only `{` followed by a newline.
+  const hooks = [...body.matchAll(/export function (use[A-Za-z]+)\s*\([^)]*\)\s*:\s*([\s\S]*?)\{\s*\n/g)];
+  const consumers = hooks
+    .map(([, name, ret]) => ({ name, ret }))
+    .filter(({ name }) => new RegExp(`function ${name}[\\s\\S]{0,900}?useCachedFeed<`).test(body));
+
+  ok(consumers.length === 4, `four hooks consume useCachedFeed (found ${consumers.length})`);
+  for (const { name, ret } of consumers) {
+    ok(/\bstate\b/.test(ret), `${name}() declares \`state\` in its return type`);
+  }
+
+  // And none of them may destructure `{ data }` alone from the call.
+  const lone = [...body.matchAll(/const\s*\{\s*data\s*\}\s*=\s*useCachedFeed</g)];
+  ok(lone.length === 0,
+     lone.length
+       ? `a wrapper destructures { data } alone from useCachedFeed — the v6.1.4 bug, reintroduced`
+       : 'no wrapper destructures { data } alone from useCachedFeed');
+
+  ok(/export function useRepoPulse\([^)]*\)\s*:\s*\{[^}]*\bstate\b/.test(body),
+     'useRepoPulse returns { pulse, at, state } like its three siblings');
+  ok(/export const repoPulseEndpoint/.test(body),
+     'the repo-pulse endpoint is exported so a failing surface can name it');
+}
 
 console.log(fail ? '\n❌ verify-feedcache FAILED' : '\n✅ verify-feedcache: all assertions passed');
 process.exit(fail ? 1 : 0);
