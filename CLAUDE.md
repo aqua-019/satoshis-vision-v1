@@ -24,17 +24,20 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 54 `verify-*.mjs` files (`app/` ×50, `api/` ×4) — 53 gates plus
+- Verification: 57 `verify-*.mjs` files (`app/` ×53, `api/` ×4) — 56 gates plus
   `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **39 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **42 distinct files** on
   PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
-  (15 gates, no browser) and `verify:e2e` (20 gates, against `scripts/serve-dist.mjs`).
-  Four gates appear in both the named list and `verify:static`, which is why 9 + 15 + 20
-  is not 40. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
+  (16 gates, no browser) and `verify:e2e` (22 gates, against `scripts/serve-dist.mjs`).
+  Four gates appear in both the named list and `verify:static`, and `verify-origins` runs
+  in both `verify:static` (with `--static`) and `verify:e2e`, which is why 9 + 16 + 22
+  is not 47. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
   `verify-motion`, `verify-nav`, `verify-discrete`, `verify-govern`, `verify-reduce` (e2e).
+  v6.1.4 added four more: `verify-feedstatus` and `verify-provenance` (static),
+  `verify-cls` and `verify-failure` (e2e).
   Three more are npm-wired but deliberately not in CI (`verify:shots`, `verify:perf`,
   `verify:mem:perf` — a baseline shot tree and a framerate measurement are both things a
-  shared runner cannot produce honestly). The remaining 13 are wired to neither npm nor
+  shared runner cannot produce honestly). The remaining 11 are wired to neither npm nor
   CI — several expect live upstreams.
 
 ## Site Routes
@@ -72,6 +75,15 @@ list that expands tabs and query permutations). Those three are not yet unified.
   Every displayed figure names where it came from. (A `NETWORK` source is sometimes
   listed as a fifth; it has never existed in the code. If one is ever added it would
   come from a per-node health surface, and it must be added to `ProvSource` first.)
+- **Freshness is the other axis, and it is DERIVED — never written by hand.**
+  `ProvFreshness` is FIVE (`live | loading | stale | error | none`, v6.1.4 added `error`),
+  rendered by an exhaustive `freshSuffix` switch in `provenance.tsx`. Reach for
+  `<NodeProvenance keys={[…]} status={data.status}>`, which resolves worst-of across the
+  endpoints a panel actually reads; a literal `fresh="live"` is a claim no call site can
+  keep — it stays green through a total outage — and `verify-provenance.mjs` fails the
+  build on one that is not in its reasoned allowlist. Panels report their own endpoint's
+  last-success time via `oldestFreshAt(status, keys)` → `PanelFrame`'s `updatedAt`, never
+  `lastUpdate` (that is the feed heartbeat, and a gate fails the build on any UI read).
 - Fonts are self-hosted from `app/public/fonts/` (12 woff2: Geist, JetBrains Mono,
   Newsreader). No CDN, no `fonts.googleapis`, no `fonts.bunny.net`. The site is used over
   Tor and the count of third-party browser requests must stay at **zero** — gated by
@@ -167,7 +179,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 39 of the 53 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 42 of the 56 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs

@@ -141,6 +141,26 @@ async function panelsByKey(page) {
       charts: el.querySelectorAll('.panel-b svg').length,
       watermark: el.querySelectorAll('text[data-decorative]').length > 0,
       title: (el.querySelector('.panel-h .l')?.textContent || '').trim(),
+      // v6.1.4 — the PROVENANCE badge's own freshness claim, which before this
+      // was a hardcoded fresh="live" and therefore agreed with nothing. It is a
+      // third expression of the same fact (after `data-stale` and the chart
+      // watermark), so like the watermark it gets compared rather than trusted:
+      // on /network all three now derive from one `keys` array, and this is what
+      // proves it. `null` = the panel renders no badge at all.
+      badge: (() => {
+        const p = el.querySelector('.panel-h .prov');
+        if (!p) return null;
+        if (p.querySelector('.prov-fresh--stale')) return 'stale';
+        if (p.querySelector('.prov-fresh--error')) return 'error';
+        if (p.querySelector('.prov-fresh--loading')) return 'loading';
+        return p.querySelector('.prov-dot') ? 'live' : 'none';
+      })(),
+      // "UPD 12s" — the visible relative age, and the frozen absolute instant it
+      // is measured from. The age must keep climbing during an outage while the
+      // instant stays put; an age that stops growing is the same lie in a
+      // different font.
+      stampAge: (el.querySelector('.panel-updated')?.textContent || '').trim(),
+      stampAt: el.querySelector('.panel-updated')?.getAttribute('title') || '',
     })));
 }
 
@@ -188,6 +208,59 @@ R.group('A · killing ONE endpoint degrades exactly the panels it feeds');
   const body = await page.innerText('body');
   R.ok(body.includes(H.toLocaleString('en-US')),
     'A: last-good height is retained — a dead endpoint blanks nothing');
+
+  /* v6.1.4 · the BADGE follows the same endpoints as the chip.
+     Before this, /network's Remote-node and Chain-meta panels passed a
+     hardcoded fresh="live" while their own header computed staleness correctly
+     from the same keys — so a degraded endpoint rendered the literal text
+     "· stale" and a pulsing LIVE dot four words apart in one flex row. */
+  const badged = after.filter((p) => p.badge !== null);
+  R.ok(badged.length > 0, `A: /network panels carry provenance badges (${badged.length})`);
+  R.ok(badged.every((p) => (p.badge === 'stale') === p.stale),
+    'A: every badge agrees with its own panel\'s data-stale — no panel shows a live dot beside its own "· stale"',
+    badged.filter((p) => (p.badge === 'stale') !== p.stale)
+      .map((p) => `${p.title} [${p.keys}] badge=${p.badge} stale=${p.stale}`).join(', '));
+
+  /* And the timestamp is scoped the same way: killing `blocks` must not age the
+     mempool panels' stamps. */
+  const blocksStamped = after.filter((p) => p.keys.includes('blocks') && p.stampAge);
+  const othersStamped = after.filter((p) => !p.keys.includes('blocks') && p.stampAge);
+  R.ok(blocksStamped.length > 0 && othersStamped.length > 0,
+    `A: panels report their own last-response time (${blocksStamped.length} blocks-fed, ${othersStamped.length} other)`);
+  R.ok(othersStamped.every((p) => p.stampAt && !/has not answered/.test(p.stampAt)),
+    'A: panels on healthy endpoints still show a real last-response instant',
+    othersStamped.filter((p) => /has not answered/.test(p.stampAt)).map((p) => p.title).join(', '));
+
+  /* THE freeze test, and it has to cut BOTH ways to mean anything.
+     A panel fed by the DEAD endpoint must freeze its absolute instant — that
+     time is last-good and nothing has arrived since — while the relative age
+     beside it keeps climbing, because the number a reader needs during an
+     outage is how stale this is.
+     A panel on a HEALTHY endpoint must do the opposite and keep advancing.
+     Asserting only the freeze would pass a build where every clock on the page
+     had simply stopped; asserting only the advance would pass one where they
+     all track wall-time regardless of what answered. */
+  const frozenBefore = await panelsByKey(page);
+  await page.waitForTimeout(3000);
+  const frozenAfter = await panelsByKey(page);
+
+  const pairs = frozenBefore
+    .map((b, i) => ({ b, a: frozenAfter[i] }))
+    .filter(({ b, a }) => b.stampAt && a && a.stampAt && !/has not answered/.test(b.stampAt));
+  const deadPairs = pairs.filter(({ b }) => b.keys.includes('blocks'));
+  const livePairs = pairs.filter(({ b }) => !b.keys.includes('blocks'));
+
+  R.ok(deadPairs.length > 0 && livePairs.length > 0,
+    `A: stamps observed across a 3s outage window (${deadPairs.length} on the dead endpoint, ${livePairs.length} on healthy ones)`);
+  R.ok(deadPairs.every(({ b, a }) => b.stampAt === a.stampAt),
+    'A: a dead endpoint\'s last-response instant FREEZES — it reports last-good, not now',
+    deadPairs.filter(({ b, a }) => b.stampAt !== a.stampAt).map(({ b, a }) => `${b.title}: ${b.stampAt} -> ${a.stampAt}`).join(', '));
+  R.ok(deadPairs.some(({ b, a }) => b.stampAge !== a.stampAge),
+    'A: …while its relative age KEEPS COUNTING UP — an age that stops growing is the same lie in a different font',
+    deadPairs.map(({ b, a }) => `${b.title}: "${b.stampAge}" -> "${a.stampAge}"`).slice(0, 3).join(', '));
+  R.ok(livePairs.every(({ b, a }) => b.stampAt !== a.stampAt),
+    'A: EXACTLY those — every panel on a healthy endpoint kept advancing its instant',
+    livePairs.filter(({ b, a }) => b.stampAt === a.stampAt).map(({ b }) => `${b.title} [${b.keys}]`).join(', '));
 
   /* The panel says one thing via data-stale (derived from the endpoints it
      advertises) and the chart inside says another via its own `stale` prop.
