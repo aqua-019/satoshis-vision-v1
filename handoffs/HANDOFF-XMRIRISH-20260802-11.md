@@ -232,6 +232,79 @@ is consistent: the same bistability exists in the degraded pass across `CONNECTI
 just narrower. Geometry is stable and marginally *more* compact, not taller — the topbar holds h95 in
 both states where it previously went 95 → 98.
 
+### An unplanned defect, found by chasing a skip
+
+`verify-vitals` reported `/ · interaction — SKIPPED` while the same row printed `worstInt 160.0` from
+the first click — a skip that reads like a measurement. Chasing it found a **real, shipped mobile
+defect**: `.topnav` is a fixed drawer at `z-index: 200` spanning x86–390 at a 390px viewport, and
+`.navtop-toggle` sits at x330–374 with no z-index of its own, so opening the drawer painted over its
+own close button at 97% opacity. `elementFromPoint` at the button's centre returned the NAV — a real
+tap hit the drawer. The affordance was already correct (`NavTop.tsx:153` swaps to `✕`/`Close menu`);
+only the stacking was missing.
+
+It survived because Escape closes the drawer (`NavTop.tsx:45`) and a nav link closes it (`:76`) — but
+the rule lives inside `@media (max-width: 768px)`, **where there is no Escape key and no backdrop**. A
+touch user who opened the drawer and did not want to navigate had no way to close it.
+
+**Two wrong diagnoses were written before the right one**, and both were disproved by probe rather
+than by argument: first inter-click timing (disproved — a 3s `waitFor` still skipped), then a
+feed-driven remount of `NavTop` (disproved — the menu stays open under the mocked feed for 6s). The
+timing explanation had already been committed into a code comment; it is **corrected in the file**
+rather than quietly dropped. Writing an assumed cause into the tree is the exact failure this PR
+exists to fix, and it recurred inside the PR.
+
+Scope note: this is a defect fix in an optimisation PR. It is here because it stood between item 5 and
+a measured `/` interaction number, and shipping a mobile-CLS PR while knowingly leaving a dead close
+button on the same bar would be indefensible.
+
+### `/simulate`'s vitals baseline is bimodal, and the budget says so
+
+`LCP 2292 median · block 253.5`, taken **before** items 5 and 6 touched anything. But the eight runs
+were 2248, 2268, 2268, 2276, 2308, 2312 — then **5504, 5520**. Six in a 64ms band and two at 2.4×:
+two modes, not spread. Assert mode runs 3, so a ~25% slow mode takes the median ~15% of the time; a
+budget near 2292 would flake, which is the gate that teaches people to ignore red. It ships at
+6000/500 with the second mode named in-file as **unexplained**, to be re-tightened once item 6 either
+fixes or explains it. That is a different claim from the other three rows ("measured, with runner
+headroom") and is labelled differently.
+
+### Item 6 — component-level splitting of the 21 simulators
+
+Not a new idiom: `views/index.tsx:65`'s `lazyView` already did this for the six mempool surfaces, and
+its own header describes the separation "`protocol-meta.ts` already makes for the simulators". The
+split was designed for and never taken. `lazyView` is now exported and `views/protocols.tsx` uses it;
+`metaphors.tsx` exports 8 of the 21, so those 8 share one importer — splitting a single source file
+into 8 chunks would be worse, and opening one metaphor legitimately loads its siblings.
+
+| metric | before | after | delta |
+|---|--:|--:|--|
+| `/simulate` first load (gzip) | 133,680 | 84,934 | **−48,746 B (−36.5%)** |
+| `/simulate` chunks on first load | 7 | 6 | −1 |
+| largest chunk (raw) | `SimulatePage` 180,572 | `vendor` 164,505 | dethroned |
+| total JS (raw) | 849,267 | 855,706 | **+6,439 (+0.8%)** |
+| eager JS (gzip) | 79,919 | 79,947 | +28 |
+| chunk count | 35 | 53 | +18 |
+
+**The cost is stated, not buried:** total JS goes *up* 6,439 B in per-chunk overhead, and the count
+budget moves 35 → 53. A count budget is not a size budget — 53 chunks is not worse than 35, it is
+48,742 fewer gzip bytes on the route that pays for them — but the number that governs is the
+per-route "first load ∪ static closure" row, and that went *down* in both bytes and requests.
+`CHUNK_BAND` deliberately stays 4 rather than widening with the count: the band exists to catch a
+chunking-strategy change, and that signal does not weaken because there are more chunks.
+
+**No reserve was needed for the new Suspense boundary, and that is a measured claim.** It sits inside
+`SimulatePage`'s `1fr` grid row, whose height comes from the grid rather than its content, so
+fallback→simulator cannot move anything around it. The fallback copy deliberately **matches**
+`entry-ssr.tsx:34`'s `SUSPENDED_RE` — not a hazard here but the mechanism: prerender re-renders until
+nothing matches, which is what forces the real simulator into `dist/simulate/index.html`. Confirmed
+against the built artefact: 0 occurrences of the loading copy, 1 of `art proto`.
+
+**`verify-reduce` §1 would have gone green and vacuous.** It waits for `main` + 1500ms, which after
+this change resolves while the simulator's chunk is still in flight — censusing a Suspense fallback
+finds zero animations and zero SMIL for all 21 surfaces it exists to check. §2's control probe would
+**not** have caught it: it drives two fixed URLs and would have kept finding motion. A `.art.proto`
+mount assertion lands in the same commit, break-tested to red on all 21 surfaces, and reported before
+the motion result because it qualifies it. `verify-reduce` 30 → 31 assertions, §2 still passing.
+
 ### Two structural admissions worth keeping
 
 - **`verify-cls` never scrolls.** So a wrong `contain-intrinsic-size` on the containment work is
