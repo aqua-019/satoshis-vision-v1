@@ -72,7 +72,30 @@ export function App({ useFeed }: AppProps = {}) {
             single lazy route the per-route <Suspense> was fine; at eleven it is
             eleven copies of the same fallback. Placing it outside <Routes> also
             means a navigation between two lazy routes shows the fallback once,
-            in one place, instead of unmounting and remounting a boundary. */}
+            in one place, instead of unmounting and remounting a boundary.
+
+            DELIBERATELY UNRESERVED, measured rather than assumed. v6.1.5 PR B
+            set out to give this fallback and /simulate's a reserved box, on the
+            theory that a ~100px fallback replacing a full-viewport route must
+            shift layout. It does not, on either path:
+
+              cold load  — React 18 keeps the prerendered HTML for a boundary
+                           that suspends during hydration, so the fallback is
+                           never painted. All six routes in verify-cls read
+                           0.0000-0.0012 behind these unreserved fallbacks.
+              client nav — measured directly (verify-cls only ever cold-loads,
+                           so no committed gate covers this): 0.0001 with and
+                           without a `min-height` reserve, 3 runs each, to both
+                           /markets and /simulate.
+
+            And the null result is not vacuous — the treatment demonstrably
+            engaged. The probe captured "loading…", "loading simulators…" and
+            "loading simulator…" actually rendering, with `main` swinging
+            0..4786px across the swap. A route change REPLACES nodes rather than
+            moving them, and layout-shift scores moved elements, so the swap
+            produces no entries to score.
+
+            If you add a reserve here, measure first. */}
         <React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading…</div>}>
         <Routes>
           <Route path="/"          element={<HomePage />} />

@@ -305,6 +305,52 @@ finds zero animations and zero SMIL for all 21 surfaces it exists to check. §2'
 mount assertion lands in the same commit, break-tested to red on all 21 surfaces, and reported before
 the motion result because it qualifies it. `verify-reduce` 30 → 31 assertions, §2 still passing.
 
+### Items 5, 7, 8, 9 — three measured no-changes and one measured DON'T
+
+Each carries a number, and none was dropped for being uninteresting.
+
+**Item 5 · INP.** Measured, no work needed. Worst scripted interaction per route, median of 8:
+`/` **96ms**, `/mempool` **152ms**, `/markets` **184ms**, against a 400ms budget. The real finding
+here was not latency but that `/`'s interaction had never been measured at all — it was reporting
+SKIPPED while its row printed a `worstInt` from the first click. That is fixed (see the nav-drawer
+defect above), so item 5's `/` number exists for the first time rather than being improved.
+
+**Items 7 + 8 · `content-visibility` and containment — MEASURED, AND DELIBERATELY NOT SHIPPED.**
+The plan specified `content-visibility: auto` with `contain-intrinsic-size: auto <value>`, `auto`
+never `hidden`, never on the first section, plus `contain: layout style` for item 8. Built as
+specified, injected against the running gate, and measured over 3 runs per cell:
+
+```
+                              blocking (median of 3)        scrollHeight drift
+/education  as shipped        479ms  (479, 584, 472)        0, 0, 0
+/education  + content-vis     512ms  (512, 490, 513)        -1235, -1235, -1235
+/network    as shipped        565ms  (632, 376, 565)        0, 0, 0
+/network    + content-vis     616ms  (546, 616, 621)        0, 0, 0
+```
+
+**No blocking benefit on either route** — medians overlap heavily and trend slightly *worse* — while
+`/education` gains a **reproducible −1235px scroll-height lie**: `contain-intrinsic-size: auto 300px`
+over-estimates the 13 panels (real heights 102–716px, median 180), so the scrollbar is wrong until
+you scroll it away. 3 of 3 identical, so not noise.
+
+Why no benefit, stated rather than shrugged at: `content-visibility` skips *rendering* work for
+off-screen content, and this app's cost is **script** — hydration, React render, rAF — not layout and
+paint of cheap off-screen panels. The optimisation is aimed at a bottleneck this tree does not have.
+
+A first single-run pass showed `/network` at +278ms and `/education` at −74ms; **both were noise**,
+and repeating at 3 runs reversed the sign of the second. Shipping on the strength of that first run
+would have been the same error this PR exists to correct, one step further down the pipeline.
+
+This is the item where the measurement said *don't*, and the honest output is the numbers plus a
+decision, not a shipped change with a plausible story. The `-1235px` drift is also the concrete
+instance of the structural admission below: **no committed gate could have caught it**, because
+`verify-cls` never scrolls.
+
+**Item 9 · passive listeners and throttling.** Measured, already correct. The entire app contains
+**one** scroll/touch/wheel listener — `routes/useRouteChrome.ts:274` — and it already registers
+`{ capture: true, passive: true }`. There is no non-passive scroll path to fix. The item presumed a
+problem the tree does not have.
+
 ### Two structural admissions worth keeping
 
 - **`verify-cls` never scrolls.** So a wrong `contain-intrinsic-size` on the containment work is
