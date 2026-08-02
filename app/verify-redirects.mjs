@@ -144,6 +144,8 @@ if (comparable) {
   const matched = canon.filter((k) => json.includes(k)).length;
   const drift = (canon.length - matched) + json.filter((k) => !canon.includes(k)).length;
   R.info(`canonical ${canon.length} · vercel.json ${json.length} · matched ${matched} · drift ${drift}`);
+  R.ok(canon.length === 12, `the canonical map has 12 rows (9 map-derived + 3 completeness), got ${canon.length}`,
+    '/pro is deliberately NOT among them — it never existed as a live route');
   R.ok(drift === 0 && matched === canon.length && matched === json.length,
     `${matched} matched / ${drift} drift`,
     'the two lists must agree exactly, in both directions');

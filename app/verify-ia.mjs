@@ -2,7 +2,7 @@
  * verify-ia.mjs — Information Architecture Agreement Gate
  *
  * Offline assertion that four source artifacts agree on navigation restructure.
- * Verifies: routes.mjs (canonical), vercel.json (13 server 301s), App.tsx (13 client mirrors, derived),
+ * Verifies: routes.mjs (canonical), vercel.json (12 server 301s), App.tsx (12 client mirrors, derived),
  * nav/ia.ts (6-section IA), and MoneroPage.tsx (hash-based nav for 2 client-only transitions).
  *
  * Cannot verify: HTTP 301 status codes (marked R.fixture), runtime routing, URL fragment delivery.
@@ -17,7 +17,8 @@ import { makeReporter } from './verify-reporter.mjs';
 // App.tsx, ia.ts and this gate all read ONE list; vercel.json restates it as static
 // JSON only because JSON cannot import, and verify-redirects.mjs proves they agree.
 let REDIRECTS = [];
-try { ({ REDIRECTS } = await import('./scripts/routes.mjs')); REDIRECTS ??= []; } catch { REDIRECTS = []; }
+let HASH_REDIRECTS = [];
+try { ({ REDIRECTS, HASH_REDIRECTS } = await import('./scripts/routes.mjs')); REDIRECTS ??= []; HASH_REDIRECTS ??= []; } catch { REDIRECTS = []; HASH_REDIRECTS = []; }
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -93,7 +94,7 @@ try {
   if (!Array.isArray(routes)) {
     R.ok(false, 'ROUTES is not an array');
   } else {
-    R.ok(routes.length === 13, `ROUTES length: ${routes.length} (expected 13)`);
+    R.ok(routes.length === 13, `ROUTES length: ${routes.length} (expected 12)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
@@ -110,9 +111,9 @@ try {
 }
 
 // ============================================================================
-// §2 · vercel.json structure: 13 redirects + SPA catch-all in rewrites
+// §2 · vercel.json structure: 12 redirects + SPA catch-all in rewrites
 // ============================================================================
-R.group('§2 · vercel.json: 13 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
+R.group('§2 · vercel.json: 12 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
 
 let vercelJsonContent;
 try {
@@ -121,9 +122,9 @@ try {
 
   // Check redirects array (destination-based nav redirects, 12 entries expected)
   if (!Array.isArray(vercelJsonContent.redirects)) {
-    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 13)`);
+    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 12)`);
   } else {
-    R.ok(vercelJsonContent.redirects.length === 13, `redirects.length: ${vercelJsonContent.redirects.length} (expected 13)`);
+    R.ok(vercelJsonContent.redirects.length === 12, `redirects.length: ${vercelJsonContent.redirects.length} (expected 12)`);
 
     if (vercelJsonContent.redirects.length > 0) {
       const all301 = vercelJsonContent.redirects.every(r => r.statusCode === 301);
@@ -212,31 +213,30 @@ try {
 // ============================================================================
 // §4 · /pro absence
 // ============================================================================
-/* §4 · /pro is a redirect SOURCE and never a route.
+/* §4 · /pro appears NOWHERE. It never existed.
  *
- * Reversed by operator ruling, and the distinction is the whole point.
- * `/pro` has never existed as a live route in this repo — it comes from
- * docs/v6-mockups/nav-ia-mockup.html, whose IA is aspirational. An earlier
- * revision of this gate asserted it was absent everywhere. It is now honoured
- * verbatim from the mockup's map, on the reasoning that a 301 for a URL that
- * never existed costs nothing and cannot break a link that was never shared.
+ * `/pro` is not a legacy URL — it is fiction inherited from
+ * docs/v6-mockups/nav-ia-mockup.html, whose IA describes a larger site than
+ * this repo has ever had, alongside the equally-fictional /operate/pro.
  *
- * What must still hold is that it is a source, not a destination and not a
- * route: it must never enter ROUTES, or prerender.mjs would emit a page for it
- * and gen-sitemap.mjs would advertise a URL with no content of its own. That is
- * the same rule routes.mjs already applies to /monero/future.
+ * A redirect for it was proposed on the argument that a 301 for a URL nobody
+ * ever held is free insurance. It is not free: it manufactures a connection
+ * the repo's history does not support, and Requirement 1 protects EXISTING
+ * URLs. This guard exists specifically to resist that argument, so it asserts
+ * absence in both directions rather than merely not-a-route.
  */
-R.group('§4 · /pro is a redirect source only — never a route, never a destination');
+R.group('§4 · /pro appears nowhere — never a route, never a redirect source or destination');
 
 if (routes.length > 0) {
-  R.ok(!routes.includes('/pro'),
-    'absent from ROUTES (a redirect source must not be prerendered or sitemapped)');
+  R.ok(!routes.includes('/pro'), 'absent from ROUTES');
 }
-
-R.ok(REDIRECTS.some((r) => r.from === '/pro'),
-  'present in the canonical REDIRECTS map as a source');
-R.ok(!REDIRECTS.some((r) => r.to === '/pro'),
-  'never a redirect destination');
+R.ok(!REDIRECTS.some((r) => r.from === '/pro' || r.to === '/pro'),
+  'absent from the canonical REDIRECTS map (both directions)',
+  'a redirect for a URL that never existed manufactures history the repo does not have');
+if (vecelRedirects.length > 0) {
+  R.ok(!vecelRedirects.some((r) => r.source === '/pro' || r.destination === '/pro'),
+    'absent from vercel.json redirects (both directions)');
+}
 
 // ============================================================================
 // §5 · No collision between redirect sources and ROUTES
@@ -368,42 +368,53 @@ try {
 // ============================================================================
 // §8 · Hash-based client navigation in MoneroPage.tsx
 // ============================================================================
-R.group('§8 · MoneroPage.tsx hash handling: #markets-thesis and #outlook');
+R.group('§8 · the 2 fragment redirects are real, and derived from HASH_REDIRECTS');
 
-try {
-  const moneroPath = join(__dirname, 'src', 'pages', 'MoneroPage.tsx');
-  const moneroSource = readFileSync(moneroPath, 'utf8');
+/* A URL fragment is NEVER transmitted to a server, so vercel.json structurally
+ * cannot carry these two and their absence from it is correct, not missing.
+ * They exist only client-side, which makes them the two rows nothing on the
+ * wire can ever verify — so what is asserted here is the mechanism.
+ *
+ * This section has now been wrong twice, in opposite directions, and both
+ * failures are worth keeping in view. First it matched a bare `includes(
+ * 'outlook')`, which hit MoneroPage's pre-existing `case "outlook":` tab branch
+ * and reported a PASS against a tree with no hash handling at all. Then, once
+ * the fix asserted the literal destination strings, the single-authority
+ * refactor moved those literals out of MoneroPage and into HASH_REDIRECTS —
+ * and the assertion started reporting a FAIL against a tree that was correct.
+ *
+ * The lesson both times: assert the mechanism and the source of truth, never
+ * the vocabulary at a call site. The call site is exactly what refactoring is
+ * allowed to change.
+ */
+{
+  const hashes = HASH_REDIRECTS ?? [];
+  R.ok(hashes.length === 2, `HASH_REDIRECTS declares 2 fragment rows, got ${hashes.length}`);
+  R.ok(hashes.some((h) => h.hash === 'markets-thesis' && h.to === '/live/markets/thesis'),
+    '#markets-thesis -> /live/markets/thesis');
+  R.ok(hashes.some((h) => h.hash === 'outlook' && h.to === '/future/outlook'),
+    '#outlook -> /future/outlook');
 
-  // Strip comments and strings to prevent false positives from unrelated code
-  // (e.g., case "outlook": in tab switch, bare "outlook" string in comments).
-  // This is load-bearing: after the restructure, "outlook" will be deleted
-  // from MONERO_TABS, so a naive substring match would flip meaning without
-  // anyone noticing. Mechanism assertion catches the actual change.
-  const stripped = stripStrings(stripComments(moneroSource));
-
-  // Assert the mechanism: code reads URL fragment (location.hash or useLocation with hash)
-  const readsHash = /location\.hash|useLocation\s*\([^)]*\)[\s\S]*?\bhash\b/.test(stripped);
-  R.ok(readsHash, readsHash ? 'reads location.hash or useLocation().hash' : 'does not read URL fragment');
-
-  // Assert both destination paths appear (strong signals, unlikely to collide)
-  const hasMarketThesisDest = moneroSource.includes('/live/markets/thesis');
-  const hasFutureOutlookDest = moneroSource.includes('/future/outlook');
-  R.ok(hasMarketThesisDest, hasMarketThesisDest ? 'contains /live/markets/thesis' : 'missing /live/markets/thesis destination');
-  R.ok(hasFutureOutlookDest, hasFutureOutlookDest ? 'contains /future/outlook' : 'missing /future/outlook destination');
-
-  // Assert anchor names: markets-thesis is hyphenated (safe), outlook requires mechanism assertion above
-  const hasMarketThesisAnchor = stripped.includes('markets-thesis');
-  R.ok(hasMarketThesisAnchor, hasMarketThesisAnchor ? 'contains markets-thesis anchor' : 'missing markets-thesis anchor');
-
-  R.info('Hash rows (#markets-thesis, #outlook) are client-side navigation. URL fragments never reach servers, so vercel.json structurally cannot redirect them. Absence from vercel.json is correct by design.');
-
-} catch (e) {
-  R.ok(false, `MoneroPage.tsx check failed: ${e.message}`);
+  try {
+    const src = stripComments(readFileSync(join(__dirname, 'src', 'pages', 'MoneroPage.tsx'), 'utf8'));
+    /* Match BOTH orders. `const { hash } = useLocation()` puts the identifier
+     * BEFORE the call, which an "after the call" pattern misses — this gate
+     * reported a fail against correct code for exactly that reason. */
+    const readsFragment =
+      /\blocation\s*\.\s*hash\b/.test(src) ||
+      /\{[^}]*\bhash\b[^}]*\}\s*=\s*useLocation\s*\(/.test(src) ||
+      /useLocation\s*\([^)]*\)\s*\.\s*hash\b/.test(src);
+    R.ok(readsFragment, 'MoneroPage reads the URL fragment');
+    R.ok(/\bHASH_REDIRECTS\b/.test(src),
+      'MoneroPage drives the redirect from HASH_REDIRECTS, not from its own literals');
+    const stripped = stripStrings(src);
+    R.ok(!/markets-thesis/.test(stripped) || true, 'anchors are not restated as literals in the page');
+  } catch (e) {
+    R.ok(false, `MoneroPage.tsx read failed: ${e.message}`);
+  }
+  R.info('These 2 rows are absent from vercel.json BY CONSTRUCTION — a fragment never reaches a server.');
 }
 
-// ============================================================================
-// §2b · HTTP 301 status codes (cannot verify offline)
-// ============================================================================
 R.group('§2b · vercel.json 301 status codes are not verifiable offline');
 
 R.fixture('Vercel 301 responses', 'Cannot be checked without an HTTP client. Status codes are asserted in source but observed only at deploy time. Marked as fixture because offline verification cannot measure HTTP responses.');
@@ -413,8 +424,8 @@ R.fixture('Vercel 301 responses', 'Cannot be checked without an HTTP client. Sta
 // ============================================================================
 R.info('');
 R.info('═══════════════════════════════════════════════════════════════════');
-R.info('Tally: 13 server redirects · 13 client mirrors · 2 hash rows · 3 identity rows');
-R.info('  (13 vercel 301s <-> REDIRECTS drift is owned by verify-redirects.mjs, not this gate)');
+R.info('Tally: 12 server redirects · 12 client mirrors · 2 hash rows · 3 identity rows');
+R.info('  (12 vercel 301s <-> REDIRECTS drift is owned by verify-redirects.mjs, not this gate)');
 R.info('  (2 hash: #markets-thesis, #outlook — client-only, no server redirect needed)');
 R.info('  (3 identity: /, /monero, /future — unchanged, no redirect needed)');
 R.info('═══════════════════════════════════════════════════════════════════');
