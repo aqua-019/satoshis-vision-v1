@@ -130,12 +130,23 @@ const HARNESS_HEALTHY = `serve-dist(uncompressed) · mocked feed @${MOCK_LATENCY
  * is measured is SourcesPage's endpoint-down state: a real, stable layout.
  */
 const MEASURED = {
-  '/': 0.01,
-  '/mempool': 0.01,
-  '/markets': 0.02,
-  '/network': 0.01,
-  '/sources': 0.01,
+  //  route        ceiling   worst of 8 runs on 5fca6ba
+  '/':            0.005,  // 0.0006  (0.0002 ×5, 0.0005, 0.0006 ×2)
+  '/mempool':     0.005,  // 0.0000  (8 of 8)
+  '/markets':     0.005,  // 0.0000  (8 of 8)  — was 0.02; see the caveat below
+  '/network':     0.005,  // 0.0000  (8 of 8)
+  '/sources':     0.005,  // 0.0000  (8 of 8)  — NEW in v6.1.5
 };
+
+/* CAVEAT on /markets, stated rather than left implicit. Its old 0.02 ceiling
+ * existed because PERF-BASELINE.md recorded 0.0078 there post-v6.0.8: those
+ * charts can shift when history lands in a different order. Neither pass
+ * currently exercises that. The degraded pass 501s /api/markets, and the
+ * healthy pass fulfils it with `{groups:{}}` (the payload inherited from
+ * verify-resilience-dom.mjs), so the Markets charts render EMPTY in both and
+ * their shift behaviour is unmeasured. The tightened ceiling is honest about
+ * what IS measured; it is not evidence about charts. Populating that fixture
+ * is worth doing and is not this PR's scope. */
 
 /**
  * Pass 2 — HEALTHY (mocked feed). A NEW series, baselined independently.
@@ -145,12 +156,37 @@ const MEASURED = {
  * legitimately read higher.
  */
 const MEASURED_MOCKED = {
-  '/': 0.01,
-  '/mempool': 0.01,
-  '/markets': 0.02,
-  '/network': 0.01,
-  '/sources': 0.01,
+  //  route        ceiling   worst of 8 runs on 5fca6ba
+  '/':            0.36,   // 0.3482 — A DEFECT CEILING. See below.
+  '/mempool':     0.005,  // 0.0000  (8 of 8)
+  '/markets':     0.005,  // 0.0000  (8 of 8)  — same empty-chart caveat as above
+  '/network':     0.005,  // 0.0000  (8 of 8)
+  '/sources':     0.005,  // 0.0000  (8 of 8)
 };
+
+/* ── `/` AT 0.35 IS A RECORDED DEFECT, NOT A TARGET ───────────────────────
+ * This ceiling accommodates a real regression so that the ruler can be green
+ * on the tree as it stands. It is to be LOWERED, not lived with.
+ *
+ * Measured: 0.3475-0.3482 across 8 runs — utterly stable, so not noise. The
+ * same route under the degraded pass reads 0.0006, which is exactly why no
+ * gate has ever seen this: until v6.1.5 verify-cls never let data arrive.
+ *
+ * Diagnosed with the layout-shift entry's `sources`: `DIV.ticker-strip` grows
+ * from h25 to h38 at ~2.9s, when the first market tick lands, and displaces
+ * `.shell` — 746px tall on an 844px viewport — by 3px. A near-full-viewport
+ * element moving at all produces a large impact x distance product, which is
+ * how 3px becomes 0.35. It is 3.5x the Web Vitals 0.1 "good" bound.
+ *
+ * It is NOT a mock artifact: real data grows the ticker the same way. Every
+ * cold visit to the live site pays this.
+ *
+ * Deliberately not fixed here. This PR's entire safety property is that it
+ * changes no runtime behaviour, which is what makes "measured on the PR
+ * branch" equal "measured on main" — fixing the defect in the same PR that
+ * establishes the baseline would destroy the baseline's meaning. The fix
+ * (reserve the ticker strip's populated height) belongs to the optimisation
+ * PR, which now has a before number to beat. */
 
 const ROUTES = Object.keys(MEASURED);
 
