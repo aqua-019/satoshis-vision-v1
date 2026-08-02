@@ -104,7 +104,7 @@ OUT — deferred, carried forward from handoff 06 §3:
       relative age keeps counting up
 - [x] `.prov-fresh--stale` and the new error suffix are both in the reduce kill-list
 - [x] Working tree clean; `grep -rn "MUTATION\|BREAK TEST" app/src app/*.mjs` empty
-- [ ] Branch pushed · PR opened ready for review (not draft) · `mergeable: true`,
+- [x] Branch pushed · PR opened ready for review (not draft) · `mergeable: true`,
       `mergeable_state: clean`, every CI check concluded green
 
 ## 6 · VERIFY COMMANDS
