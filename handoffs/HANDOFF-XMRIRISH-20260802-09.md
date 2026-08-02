@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260802-09
 branch: claude/resilience-ui-failing-feed-euwiwt
-status: in_progress      # open -> in_progress -> done | blocked
+status: done             # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, self-authored)
 owner: claude-code
 ---
@@ -55,7 +55,7 @@ reduced motion loses no information. New deps: **none**.
 - [x] `npm run test` — **N/A**; the verify gates are this repo's tests
 - [x] `npm run build` exits 0 — 11/11 routes prerender
 - [x] `npm run verify:static` exits 0 (**17**, incl. new `verify-resilience`)
-- [ ] `npm run verify:e2e` exits 0 (**23**, incl. new `verify-resilience-dom`)
+- [x] `npm run verify:e2e` exits 0 (**23**, incl. new `verify-resilience-dom`)
 - [x] `node verify-tiers.mjs` exits 0
 - [x] the five `api/verify-*.mjs` exit 0 (incl. new `verify-status`)
 - [x] Four surfaces show a structure-aware skeleton reserving its box
