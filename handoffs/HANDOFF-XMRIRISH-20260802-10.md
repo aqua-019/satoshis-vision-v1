@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260802-10
 branch: claude/verify-gates-performance-budgets-iwbv21
-status: in_progress      # open -> in_progress -> done | blocked
+status: done             # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, self-authored)
 owner: claude-code
 ---
@@ -94,8 +94,15 @@ OUT (non-goals):
       **Row count measured, not quoted.**
 - [x] Every new gate reports a **number**, not just pass/fail, and uses
       `makeReporter`'s separate `ok` / `skip` / `fixture` counters
-- [ ] A deliberate 50KB bundle regression fails CI — proven, then reverted
-- [ ] A deliberate CLS regression fails CI — proven, then reverted
+- [x] A deliberate 50KB bundle regression fails CI — **run #63**, `Gate: bundle
+      budgets` → FAILURE in 34s. Report printed `eager 127.6 KB gzip · 32 chunks`
+      against the 78.05 KB / 35-chunk baseline. Reverted; `git diff 924c57f HEAD
+      -- app/src/pages/HomePage.tsx` empty.
+- [x] A deliberate CLS regression fails CI — **run #66**, `verify-cls` →
+      `8 passed · 0 fixtured · 0 skipped · 2 failed`, and nothing else failed:
+      `degraded · /mempool CLS 0.0841 ≤ 0.005` · `healthy · /mempool CLS 0.1102
+      ≤ 0.005`. CI reproduced the sandbox figures to four decimals. Reverted;
+      `git diff 924c57f HEAD -- app/src/pages/MempoolPage.tsx` empty.
 - [x] CLS thresholds re-measured (8 runs/route/pass) and **tightened** from #152's
       0.01/0.01/0.02/0.01 to a uniform **0.005**; printed every run
 - [x] The 0.0853 / 0.0841 unreserved-fallback discrepancy is stated once with its
@@ -131,7 +138,7 @@ npm run verify:all
 
 ## 7 · REPORT
 
-**status:** in_progress until the two break-test boxes close. Items 1-4 landed; items 5-9 are PR B and are
+**status:** done. Both break-test boxes are closed with CI evidence. Items 1-4 landed; items 5-9 are PR B and are
 explicitly not in this PR — see §3 OUT and the seam argument in §2.
 **pr:** see `handoffs/LOG.md`.
 **deps added:** none. `app/package-lock.json` is byte-identical to `origin/main`.
@@ -171,6 +178,13 @@ executed against `node scripts/serve-dist.mjs` on :4173.
   it never checked**: every one of its six views reports `n/a — DOM/SVG (no rAF
   loop to sample)` and it then prints `✅ every canvas view holds >=30fps at the
   5th percentile`. Zero views measured, all views claimed.
+- **A fourth instance turned up in MY OWN CI wiring**, not in the orphans:
+  `actions/upload-artifact@v4` skips hidden files, so `app/.perf/` uploaded
+  nothing while the step reported success. Same species as the two above —
+  a green result standing in for work that never happened — and it survived
+  precisely because the failure mode was a warning, not an error. Recorded
+  here rather than only in the fix's commit message, because the pattern is
+  the finding, not the YAML key.
 - **`verify-perf-classic` is the live proof of the INCONCLUSIVE hazard** that
   shaped `verify-vitals.mjs`. It printed `⚠️ INCONCLUSIVE … Exiting 0` and its
   exit code says success. That is why the new gate reports `R.skip()` — a
@@ -198,6 +212,38 @@ per-gate decision this table exists to inform.
 — `verify-v510` deleted as dead code, `verify-future` fixed and wired — both
 individually, on evidence. That pattern is kept deliberately: wiring all 14
 wholesale would trade one silent problem for a red build.
+
+### Three findings from the break test itself
+
+Each is worth more than the gate it came from, and all three are the same
+species as the audit-table findings below: a check that reports success while
+having verified nothing.
+
+1. **`git checkout -- <file>` restores from the INDEX, so it silently no-ops on
+   an already-committed break.** I used it to revert the bundle half, the break
+   was already in `HEAD`, and the command did nothing — CI ran the identical
+   regression twice more and I read the second red as a new problem rather than
+   the same one. This is v6.1.3's uncommitted-mutation failure recurring inside
+   the very PR that adds the gate meant to catch it. **The correct idiom is
+   `git checkout <sha> -- <file>`**, and the revert must then be *proven*:
+   `git diff <sha> HEAD -- <file>` empty, not assumed.
+
+2. **A failing `build` job silently skips every hardening gate.** `verify`
+   declares `needs: build`, so two red builds produced ZERO e2e evidence and the
+   absence looked like nothing had gone wrong — the `verify` check simply did
+   not appear. Any break test that trips a `build`-job gate can therefore never
+   prove anything about a `verify`-job gate: the two proofs must be separate
+   commits. Structural, not a one-off.
+
+3. **`actions/upload-artifact@v4` skips hidden files by default**, so
+   `app/.perf/` uploaded NOTHING while the step stayed green and logged only
+   `No files were found with the provided path`. The visualiser this release was
+   asked for did not exist on any run, and a warning inside a green step is
+   exactly how that stays true for months. Fixed with `include-hidden-files:
+   true` and `if-no-files-found: error` — the second half matters more than the
+   first, because it converts a future silent regression into a failure. Now
+   confirmed uploading: `there will be 4 files uploaded` (bundle report) and
+   `1 file uploaded` (vitals).
 
 ### Deviations from spec
 
