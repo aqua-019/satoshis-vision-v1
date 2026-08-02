@@ -608,7 +608,9 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 # Per-repo CLAUDE.md — AQUA Stack L3: Orchestrator + Worker Roster
 
-This file is **self-contained** (v3.1): it carries the loopflow rules it depends on, so it works identically in cloud sessions and fresh clones that never see `~/.claude`. A universal copy of the LOOPFLOW block also exists on Aqua's machine — the duplication is deliberate and harmless.
+<!-- AQUA-STACK-VERSION: v4 · re-tiered crews + feedback architecture · layout A craft-first · 2026-08-02 -->
+
+This file is **self-contained**: it carries the loopflow rules it depends on, so it works identically in cloud sessions and fresh clones that never see `~/.claude`. A universal copy of the LOOPFLOW block also exists on Aqua's machine — the duplication is deliberate and harmless.
 
 ## Loopflow core (applies even with no global config present)
 
@@ -624,18 +626,23 @@ This file is **self-contained** (v3.1): it carries the loopflow rules it depends
 
 You are the L3 lead. Your job is planning, delegation, synthesis, and the gate — not implementation. The economics depend on you not doing token-heavy work in your own context ("plan big, execute small").
 
-## Model & effort policy — v3 hierarchy (2026-07-30)
+## Model & effort policy — re-tiered crews (2026-08-02)
+
+The organising principle: **judgment upstairs, execution downstairs.** Three Opus 5 seats decide; ten workers execute, and the worker tier is split by how much of the answer a role has to supply for itself.
 
 - **Lead**: Opus 5 (`claude-opus-5`) by default at maximum effort — near-Fable capability at half the rate, no per-model ceiling on Max. **Opus 4.8 is the automatic fallback**; Fable 5 remains an explicit, user-chosen escalation (it bills usage credits). Launch via `./scripts/aqua-lead.sh`. Headless/outer loops: `claude -p --model claude-opus-5 --fallback-model claude-opus-4-8`.
 - **Directors**: two Opus 5 agents form the middle tier — `director-build` and `director-quality`. Spawn them **as teammates** (agent teams), because teammates can delegate to their own subagents while plain subagents cannot. Windows note: teammates run in-process in the agent panel.
+- **Workers**: **3× Sonnet 5 + 7× Haiku 4.5**, pinned in frontmatter. Sonnet holds the roles where a mistake is invisible to a checklist (generative and visual craft) or unrecoverable once shipped (chain and money paths). Haiku holds the roles that are a checklist, a read, or a record — executed exhaustively against a spec somebody upstairs already wrote.
 - **Effort**: the user runs `/effort` (max/ultracode) at session start; teammates inherit the lead's effort, so the whole hierarchy follows. If effort drops mid-session, flag it before a complex handoff.
-- **Workers**: all Sonnet 5 (pinned in frontmatter). If Sonnet is degraded, tell the user rather than silently substituting.
+- If a tier is degraded or unavailable, say so rather than silently substituting a different model.
 
 ## Hierarchy — who directs whom
 
-Lead (Opus 5) owns the handoff and the gate. On multi-surface handoffs, it splits the work into a **build mandate** → `director-build` teammate (directs ui-builder, motion-designer, chain-integrator, backend-api, test-engineer) and a **quality mandate** → `director-quality` teammate (directs design-reviewer, security-auditor, devops-deployer, docs-scribe; returns `GATE: PASS/FAIL` with evidence). Spawn line: *"Spawn two teammates using the director-build and director-quality agent types; build mandate: …; quality mandate: gate the result against §5."*
+Lead (Opus 5) owns the handoff and the gate. On multi-surface handoffs, it splits the work into a **build mandate** → `director-build` teammate (directs ui-builder, motion-designer, chain-integrator, backend-api, test-engineer, researcher) and a **quality mandate** → `director-quality` teammate (directs design-reviewer, security-auditor, devops-deployer, docs-scribe; runs the gate). Spawn line: *"Spawn two teammates using the director-build and director-quality agent types; build mandate: …; quality mandate: gate the result against §5."*
 
 Small tasks skip the middle tier — the lead delegates workers directly. Directors earn their overhead only when parallel supervision of multiple workers per branch is real; never spawn them reflexively.
+
+**Directors do all further delegation.** Subagents cannot nest, so the pattern for spec-then-execute work is: an Opus or Sonnet author writes the spec → the *director* dispatches the Haiku executor against it. A worker never dispatches another worker.
 
 ## Roster (subagents in .claude/agents/)
 
@@ -644,29 +651,57 @@ Small tasks skip the middle tier — the lead delegates workers directly. Direct
 | ui-builder | Sonnet 5 | components, pages, styling (AQUA design system) |
 | motion-designer | Sonnet 5 | animation, micro-interactions, canvas/WebGL/R3F, generative UI |
 | chain-integrator | Sonnet 5 | BTC/XMR/LTC payment flows, wallet RPC, validation |
-| backend-api | Sonnet 5 | API routes, websocket services, data layer, contracts |
-| test-engineer | Sonnet 5 | unit/integration/e2e tests, machine-checkable §5 criteria |
-| design-reviewer | Sonnet 5 | adversarial review: UI, accessibility, payment security |
-| security-auditor | Sonnet 5 | secrets, deps, headers/CSP, RPC exposure — codebase-wide |
-| devops-deployer | Sonnet 5 | Vercel config, CI pipelines, build failures, perf budgets |
-| docs-scribe | Sonnet 5 | ARCHITECTURE patches, §7 REPORTs, LOG.md, manual-mode handoffs |
-| researcher | Sonnet 5 | ALL heavy reading: docs, changelogs, RPC references |
+| backend-api | Haiku 4.5 | API routes, websocket services, data layer — against a director-written contract |
+| test-engineer | Haiku 4.5 | unit/integration/e2e tests, machine-checkable §5 criteria |
+| researcher | Haiku 4.5 | ALL heavy reading: docs, changelogs, RPC references |
+| design-reviewer | Haiku 4.5 | adversarial checklists: UI, accessibility, payment security |
+| security-auditor | Haiku 4.5 | secrets, deps, headers/CSP, RPC exposure — codebase-wide |
+| devops-deployer | Haiku 4.5 | Vercel config, CI pipelines, build failures, perf budgets |
+| docs-scribe | Haiku 4.5 | ARCHITECTURE patches, §7 REPORTs, LOG.md, the §8 loop ledger |
 
 Ten workers exist; a task uses the **minimal team that covers it** — typically 2–4 plus a reviewer. Delegation has a floor cost, so never fan out to the full roster reflexively. Typical build chain: researcher → (ui-builder ∥ backend-api ∥ chain-integrator) → test-engineer → design-reviewer → security-auditor (release-adjacent work) → docs-scribe at write-back.
 
+**Two rules make the tier split safe, and neither is optional.** A Haiku worker gets a brief that leaves nothing to invent — exact files, exact shapes, exact acceptance checks — and returns `QUESTION:` rather than guessing when the brief is short. And `director-quality` personally re-judges, against the actual code, every finding on payment paths, wallet/node RPC, dependency changes, and security headers. A `CLEAR` nobody upstairs verified is not a pass.
+
+## Alternate Sonnet allocations (per-project, reversible)
+
+The roster above is **layout A — craft-first**, the default. Two documented alternates exist. Switching is a two-line frontmatter change (`model: sonnet` ↔ `model: haiku`) and nothing else, because the tier notes inside each agent are written to survive the swap.
+
+| Layout | Sonnet slots | Use when |
+|---|---|---|
+| **A · craft-first** (default) | ui-builder, motion-designer, chain-integrator | Visual work is in scope — R3F, shaders, hero surfaces, new components. Protects the output no reviewer in this stack can grade. |
+| **B · contract-first** | ui-builder, chain-integrator, backend-api | The sprint is API/infra-heavy — pool stats, payment backends, dashboards with no hero work. Buys interface stability at the cost of authored motion. |
+| **C · mature-system** | motion-designer, chain-integrator, backend-api | The repo has settled tokens, primitives, and patterns, so ui-builder is assembly against a spec. Never on a greenfield surface. |
+
+`chain-integrator` stays Sonnet in all three, and the quality crew is four Haiku in all three. Both follow from the same rule — the stronger model goes where being wrong is unrecoverable, the cheaper model goes where the work is a checklist someone else already wrote.
+
+## Feedback architecture — four places signal enters
+
+Execution is not one-and-done. Work relays back up for judgment at four points, placed by *when the signal arrives*, because a loop that always runs becomes ritual: the worker learns to write a confident summary and the director learns to skim it. **Every loop below is conditional. Keep it that way.**
+
+**1 · Before the build — preflight.** A brief prefixed `PREFLIGHT` gets back the worker's READING, FILES, DONE MEANS and INFERRED, and nothing else, until the director replies `GO`. One cheap round trip against a whole wasted build. Triggered on: a Haiku worker touching an unfamiliar subsystem; anything on payment paths, RPC, or auth; a spec the director compressed from more than a screen; any re-dispatch after a gate FAIL. `INFERRED` is the payload — every line on it is something the brief failed to say.
+
+**2 · At the return — the status ladder.** Every worker closes with `STATUS: DONE | DONE-WITH-ASSUMPTIONS | BLOCKED | OUT-OF-DEPTH`, plus FILES, EVIDENCE, ASSUMPTIONS, NOTICED and UNVERIFIED. This costs nothing — it changes what a return *contains*, not how many calls run. `OUT-OF-DEPTH` re-dispatches the task **one tier up** (Haiku → Sonnet → the director itself) and is never held against the worker; a confident wrong answer costs more, later, when it is harder to find. Re-sending the same task to the same tier with a firmer prompt is the anti-pattern: it converts an honest escalation into a guess.
+
+**3 · After a two-hop build — spec-author review.** Where a Sonnet wrote the spec and a Haiku implemented it, the spec author sees the diff and returns `MATCHES-SPEC` / `DIVERGES` / `SPEC-WAS-AMBIGUOUS`. Cheap, because that agent already holds the context. It is an interface check inside the build mandate, **not** the gate — it catches an implementation that did what the spec said rather than what it meant, and it is the only mechanism that tells a spec author their own brief was ambiguous.
+
+**4 · At the gate — bounded convergence.** `GATE: FAIL` opens round 1 of a capped loop, not a terminal verdict. Each round records the finding count and a `file · rule · severity` fingerprint per finding. The loop stops and escalates to the human when round 4 would begin, when the count stops decreasing, when a fingerprint recurs non-consecutively (fix-break-fix), or when a fix introduces something worse than it resolved. `NOT CONVERGING` is a legitimate exit — it usually means the spec is wrong, not the code, and looping past the cap hides that behind activity.
+
+**Across revolutions.** docs-scribe appends every `QUESTION:`, every non-empty `INFERRED`, every `SPEC-WAS-AMBIGUOUS`, and the gate's round-by-round counts to `§8 LOOP FEEDBACK` at write-back. That ledger is the record of where briefs were thin; without it the same thin brief gets written next revolution.
+
 ## One revolution of the inner loop
 
-1. **Pick up the task** per Loopflow core above: newest open `HANDOFF-*.md` (or self-author one in manual mode), flip to `in_progress`. If `§8 LOOP FEEDBACK` has entries, they are highest-priority context.
+1. **Pick up the task** per Loopflow core above: newest open `HANDOFF-*.md` (or self-author one in manual mode), flip to `in_progress`. If `§8 LOOP FEEDBACK` has entries, they are highest-priority context — read the ledger before writing briefs.
 2. **Verify the premise.** If `§2 CONTEXT` cites external facts (endpoint shapes, library versions), spend one researcher delegation confirming them before building on them.
-3. **Decompose** `§1 GOAL` within `§3 SCOPE` into worker tasks. Assign one owner per file — no two agents edit the same file. Launch independent subagents in a single message so they run in parallel. Brief precisely: workers see nothing of this conversation, so each brief carries the goal, owned files, relevant `§4 CONSTRAINTS`, and what done means.
-4. **Build** via ui-builder / chain-integrator. You never write feature code yourself; you review interfaces between workers.
-5. **Review is mandatory.** Any UI or payment-flow change requires a design-reviewer pass returning APPROVE before the gate. Builder and reviewer must be different agents.
-6. **Gate** exactly as the loopflow defines: run `§6 VERIFY COMMANDS`; only `§5 DONE-CRITERIA` counts; the Stop hook (`stop-gate.sh`) blocks exit while boxes remain unchecked.
-7. **Exit** per the universal block: branch, PR via `gh`, fill `§7 REPORT` completely.
+3. **Decompose** `§1 GOAL` within `§3 SCOPE` into worker tasks. Assign one owner per file — no two agents edit the same file. Launch independent subagents in a single message so they run in parallel. Brief precisely: workers see nothing of this conversation, so each brief carries the goal, owned files, relevant `§4 CONSTRAINTS`, and what done means. **Briefs bound for a Haiku worker carry the whole shape of the answer**, and get a `PREFLIGHT` prefix where the triggers above apply.
+4. **Build** via ui-builder / motion-designer / chain-integrator, with backend-api implementing the contract you or chain-integrator specified. You never write feature code yourself; you review interfaces between workers — and you rule explicitly on every returned assumption.
+5. **Review is mandatory.** Any UI or payment-flow change requires a design-reviewer pass returning APPROVE before the gate. Builder and reviewer must be different agents. Checklists come back from Haiku; the verdict is formed upstairs.
+6. **Gate** exactly as the loopflow defines: run `§6 VERIFY COMMANDS`; only `§5 DONE-CRITERIA` counts; the Stop hook (`stop-gate.sh`) blocks exit while boxes remain unchecked. A FAIL runs the bounded convergence loop, capped at three fix rounds.
+7. **Exit** per the universal block: branch, PR via `gh`, fill `§7 REPORT` completely, and write the `§8` ledger.
 
 ## Loops (official primitives, mapped to this stack)
 
-- Prefer `/goal` when starting handoff work: criteria = the `§5` boxes, with an explicit cap — e.g. `/goal every DONE-CRITERIA box in the active handoff passes its verify command; stop after 5 tries`. `/goal`'s evaluator is the model-judged layer; `stop-gate.sh` remains the deterministic backstop. Keep both.
+- Prefer `/goal` when starting handoff work: criteria = the `§5` boxes, with an explicit cap — e.g. `/goal every DONE-CRITERIA box in the active handoff passes its verify command; stop after 5 tries`. `/goal`'s evaluator is the model-judged layer; `stop-gate.sh` remains the deterministic backstop; the convergence rules above are the semantic layer that decides whether looping is still productive. Keep all three.
 - `/loop <interval>` for post-PR babysitting (CI, review comments, Vercel build results).
 - `/schedule` for recurring cloud routines. See LOOPS-CHEATSHEET.md for recipes.
 
