@@ -24,9 +24,11 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 57 `verify-*.mjs` files (`app/` ×53, `api/` ×4) — 56 gates plus
-  `verify-lib.mjs`, a shared module. Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **42 distinct files** on
+- Verification: 61 `verify-*.mjs` files (`app/` ×56, `api/` ×5) — 59 gates plus
+  `verify-lib.mjs` and `verify-reporter.mjs`, two shared modules (v6.1.4 split
+  `makeReporter` out of the former so an offline `api/` gate could use
+  `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
+  are offline source assertions. `.github/workflows/ci.yml` runs **45 distinct files** on
   PRs to `main`, in two jobs: 9 individually-named offline gates, then `verify:static`
   (16 gates, no browser) and `verify:e2e` (22 gates, against `scripts/serve-dist.mjs`).
   Four gates appear in both the named list and `verify:static`, and `verify-origins` runs
@@ -179,7 +181,7 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 42 of the 56 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 45 of the 59 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs

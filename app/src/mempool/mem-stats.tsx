@@ -24,6 +24,7 @@ import { fmtBytes, fmtN } from "@/data/types";
 import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { freshAt, hasData } from "@/data/feed-status";
 import { Stat } from "@/design/primitives";
+import { SkeletonBox } from "@/design/Skeleton";
 import { useTick } from "@/design/ArtBackground";
 
 export interface FeeBand {
@@ -140,6 +141,21 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
   const poolReady = hasData(data.status.network) && stats.txCount > 0;
   const dash = "—";
 
+  /* D0851 · the fourth skeleton surface, and the narrowest of the four.
+     The <Stat> boxes are ALREADY box-exact: `.stat .val` is `font: 18px/1.1`,
+     so the line box is fixed whatever the content, and an inline-block
+     placeholder of 0.8em is zero-CLS by construction. Nothing needs reserving.
+
+     What was missing is the DISTINCTION. A dash meant three different things:
+     still arriving, answered-and-empty, and endpoint dead. Only the first is a
+     skeleton. Shimmering a dead endpoint would claim "arriving" about something
+     that is not coming — the fabrication rule applied to motion rather than to
+     a number. So: phase "loading" (never answered, not yet failed) shimmers;
+     everything else keeps the honest em-dash. */
+  const arriving = data.status.network.phase === "loading";
+  const pending = (w: number) =>
+    arriving ? <SkeletonBox w={w} h="0.8em" style={{ display: "inline-block", verticalAlign: "-0.05em" }} /> : dash;
+
   if (compact) {
     return (
       <div
@@ -169,19 +185,19 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
           zero-pads its tx count to "038" where the strip renders "38". Those
           are the same reading, and the gate has to be able to say so. */}
       <div data-memstat="mempool" data-memstat-value={poolReady ? stats.txCount : ""} style={{ display: "contents" }}>
-        <Stat k="MEMPOOL" v={poolReady ? fmtN(stats.txCount) : dash} sub="txs" tone="acc" />
+        <Stat k="MEMPOOL" v={poolReady ? fmtN(stats.txCount) : pending(38)} sub="txs" tone="acc" />
       </div>
       <div data-memstat="bytes" data-memstat-value={poolReady ? stats.poolBytes : ""} style={{ display: "contents" }}>
-        <Stat k="WEIGHT" v={poolReady ? fmtBytes(stats.poolBytes) : dash} sub="pool" />
+        <Stat k="WEIGHT" v={poolReady ? fmtBytes(stats.poolBytes) : pending(56)} sub="pool" />
       </div>
       <div data-memstat="oldest" data-memstat-value={poolReady ? stats.oldestAgeSec : ""} style={{ display: "contents" }}>
-        <Stat k="OLDEST" v={poolReady ? `${stats.oldestAgeSec}s` : dash} sub="age" />
+        <Stat k="OLDEST" v={poolReady ? `${stats.oldestAgeSec}s` : pending(44)} sub="age" />
       </div>
       <div data-memstat="median" data-memstat-value={poolReady ? Math.round(stats.medianPerB) : ""} style={{ display: "contents" }}>
-        <Stat k="MEDIAN" v={poolReady ? Math.round(stats.medianPerB).toLocaleString() : dash} sub="pcn/B" />
+        <Stat k="MEDIAN" v={poolReady ? Math.round(stats.medianPerB).toLocaleString() : pending(52)} sub="pcn/B" />
       </div>
       <div data-memstat="eta" data-memstat-value={hasData(data.status.network) ? stats.nextBlockEtaSec : ""} style={{ display: "contents" }}>
-        <Stat k="NEXT BLOCK" v={hasData(data.status.network) ? <BlockEta data={data} /> : dash} sub="eta" tone="p" />
+        <Stat k="NEXT BLOCK" v={hasData(data.status.network) ? <BlockEta data={data} /> : pending(48)} sub="eta" tone="p" />
       </div>
     </section>
   );

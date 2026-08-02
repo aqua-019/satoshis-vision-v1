@@ -37,6 +37,7 @@ import { NetRail } from "./NetRail";
 import { Footer } from "./Footer";
 import { ArtBackground } from "@/design/ArtBackground";
 import { useRouteChrome } from "@/routes/useRouteChrome";
+import { ChromeStatus } from "@/design/ChromeStatus";
 
 export interface AppShellProps {
   /** Hide the left telemetry rail (e.g. for content-only pages). */
@@ -63,6 +64,12 @@ export function AppShell({ hideRail, fluid, scan, bg, children }: AppShellProps)
         <a className="skip-link" href="#main">Skip to content</a>
         <NavTop />
         <div className="shell" style={hideRail ? { gridTemplateColumns: "1fr" } : undefined}>
+          {/* D0888/D0870: absolutely positioned against `.shell`, whose top edge
+              IS the topbar's bottom edge by construction — so no offset constant
+              and nothing to keep in sync with the topbar's three heights. First
+              child so it reads before the rail and the content for a screen
+              reader. Out of flow, so zero CLS. */}
+          <ChromeStatus />
           {hideRail ? null : <NetRail />}
           <main id="main" tabIndex={-1} aria-labelledby="page-title" className={"main" + (fluid ? " main--fluid" : "")}>
             {children}

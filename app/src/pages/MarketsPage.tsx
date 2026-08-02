@@ -41,6 +41,9 @@ import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
 import { SITE_VERSION } from "@/data/releases";
 import { assertNever, hasData } from "@/data/feed-status";
 import { useUrlState } from "@/routes/useUrlState";
+import { Swap, SkeletonBox, SkeletonRows } from "@/design/Skeleton";
+import { PanelBoundary } from "@/design/PanelBoundary";
+import { usePendingDelay } from "@/design/usePendingDelay";
 
 /** Hoisted so useUrlState's setter identity is stable across renders. The
  *  order here is RANGE_DAYS' own key order, which is also the button order. */
@@ -110,7 +113,7 @@ function GroupBadge({ result }: { result: GroupResult }) {
  *  in the half-width slot (currently majors). */
 function SeriesSwatchLegend({ series }: { series: LineSeries[] }) {
   return (
-    <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: "var(--fs-label)" }}>
+    <div className="mono" style={{ display: "flex", flexWrap: "wrap", gap: "6px 14px", marginTop: 8, fontSize: "var(--fs-label)", minHeight: "1.6em" }}>
       {series.map((s) => {
         const base = s.data.find((v) => v > 0) ?? s.data[0] ?? 1;
         const lastPct = s.data.length ? (s.data[s.data.length - 1] / base - 1) * 100 : null;
@@ -179,6 +182,54 @@ const SPREAD_OK_MAX = 1;
 const RATIO_CHART_HEIGHT = 318;
 const MAJORS_CHART_HEIGHT = 340;
 const PRIVACY_CHART_HEIGHT = 300;
+/** The candle panel's chart height — hoisted to a name so the CandleChart
+ *  prop, its Swap `reserve` and its PanelBoundary `reserve` read the same
+ *  number instead of three independently-typed 320s. */
+const CANDLE_CHART_HEIGHT = 320;
+
+/** Column templates, each declared once and consumed by BOTH the real grid
+ *  (the table's `--mk-cols` / row `gridTemplateColumns`) and its SkeletonRows
+ *  placeholder — so a skeleton row can never drift out of alignment with the
+ *  columns it is standing in for. */
+const TICKER_COLS = "130px 1fr 80px 70px";
+const LIQUIDITY_COLS = "minmax(90px, 120px) 1fr minmax(70px, 90px) minmax(64px, 80px)";
+
+/** Minimum height for an N-row skeleton reservation, matching SkeletonRows'
+ *  own defaults (rowH=18, gap=8) so the placeholder and the reservation agree
+ *  on what "N rows" means — one pair of numbers driving both, not two guesses
+ *  that can drift apart. */
+function rowsHeight(n: number, rowH = 18, gap = 8): number {
+  return n * rowH + Math.max(0, n - 1) * gap;
+}
+
+/**
+ * Three distinct "nothing to chart" reasons a MultiLine group panel (XMR vs
+ * Top N / privacy peers) can be in, replacing an empty state that used to
+ * claim COINGECKO · unavailable unconditionally regardless of whether the
+ * group was still arriving or had genuinely failed. Mirrors tickerEmptyCopy's
+ * split below; worded for a ranked history group so the two never share a
+ * sentence. None of the three contains "loading" — see SUSPENDED_RE in
+ * entry-ssr.tsx, which fails the prerendered build on that substring.
+ */
+function historyEmptyCopy(status: SeriesStatus): string {
+  if (status === "error") return "/api/markets is not responding — group ranking unavailable.";
+  if (status === "loading") return "Awaiting CoinGecko history…";
+  return "No members normalized to a usable history — nothing to chart.";
+}
+
+/**
+ * Same three-way split as historyEmptyCopy, worded for the tickers endpoint
+ * that feeds the exchange-volume table and the liquidity-by-venue panel
+ * (both read useTickers → /api/coingecko). Replaces the single "Awaiting
+ * CoinGecko tickers…" string that used to stand for "still cold", "answered
+ * with nothing" and "endpoint down" alike — the same conflation this file's
+ * brief called out.
+ */
+function tickerEmptyCopy(status: SeriesStatus): string {
+  if (status === "error") return "/api/coingecko is not responding — exchange data unavailable.";
+  if (status === "loading") return "Awaiting CoinGecko tickers…";
+  return "CoinGecko listed zero active XMR pairs — nothing to show.";
+}
 
 /** Exchanges that delisted XMR — factual events, shown without numbers. */
 const DELISTED = [
@@ -226,6 +277,19 @@ export function MarketsPage() {
   const xmrBtcSeries = hist.xmrBtc.data;
   const peerSeries = hist.peers.data;
   const topSeries = hist.top.data;
+
+  // D0858: a fetch round for useMarketHistory's endpoints is on the wire right
+  // now. usePendingDelay keeps a fast (cached-TTL) round from flickering the
+  // header chip; it gates the INDICATOR only — none of the data above waits
+  // on it. useTickers exposes no equivalent flag, so the two ticker-fed panels
+  // below pass no `refreshing` prop at all rather than a fabricated one.
+  const historyPending = usePendingDelay(hist.refreshing);
+  // Same "still cold" signal PanelFrame's chart panels use, expressed for the
+  // two ticker-driven table panels: topTickers/venues are provably non-empty
+  // whenever tickers.status is anything but "loading" (useTickers never
+  // resolves to "live"/"stale" with a zero-length array — see useTickers.ts),
+  // so this is the exact complement of "still waiting".
+  const tickersReady = tickers.status !== "loading";
 
   const ratioFloor = xmrBtcSeries.length ? Math.min(...xmrBtcSeries) : 0;
   const ratioPeak = xmrBtcSeries.length ? Math.max(...xmrBtcSeries) : 0;
@@ -308,17 +372,26 @@ export function MarketsPage() {
         title={`XMR / USD · ${range} candles`}
         right={<SourceBadge status={hist.xmrCandles.status} prefix={`${xmrCandles.length} bars · ${hist.xmrCandles.granularityLabel}`} />}
         updatedAt={hist.xmrCandles.at}
+        refreshing={historyPending}
       >
-        <CandleChart candles={xmrCandles} days={days} status={hist.xmrCandles.status} height={320} />
+        <PanelBoundary keys={["market"]} also="/api/markets" reserve={CANDLE_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.xmrCandles.at]}>
+          <Swap ready={hist.xmrCandles.status !== "loading"} reserve={CANDLE_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={CANDLE_CHART_HEIGHT} radius={3} />}>
+            <CandleChart candles={xmrCandles} days={days} status={hist.xmrCandles.status} height={CANDLE_CHART_HEIGHT} />
+          </Swap>
+        </PanelBoundary>
       </PanelFrame>
 
       {/* XMR/BTC ratio + XMR vs Top majors */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />} updatedAt={hist.xmrBtc.at}>
-          <AreaSeries data={xmrBtcSeries} days={days} height={RATIO_CHART_HEIGHT}
-            color="var(--tk-accent)" baseline="auto"
-            format={fmtSat}
-            stale={hist.xmrBtc.status === "stale"} />
+        <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />} updatedAt={hist.xmrBtc.at} refreshing={historyPending}>
+          <PanelBoundary keys={["market"]} also="/api/markets" reserve={RATIO_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.xmrBtc.at]}>
+            <Swap ready={hist.xmrBtc.status !== "loading"} reserve={RATIO_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={RATIO_CHART_HEIGHT} radius={3} />}>
+              <AreaSeries data={xmrBtcSeries} days={days} height={RATIO_CHART_HEIGHT}
+                color="var(--tk-accent)" baseline="auto"
+                format={fmtSat}
+                stale={hist.xmrBtc.status === "stale"} />
+            </Swap>
+          </PanelBoundary>
           <p className="mono dim" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}>
             {xmrBtcSeries.length ? (
               <>Floor: <b className="acc">{(ratioFloor * 1e5).toFixed(2)} sat</b> · Peak: <b className="acc">{(ratioPeak * 1e5).toFixed(2)} sat</b></>
@@ -327,8 +400,14 @@ export function MarketsPage() {
             )}
           </p>
         </PanelFrame>
-        <PanelFrame title={`XMR vs Top ${majorsCount || "—"} · normalized % · ${range}`} right={<GroupBadge result={hist.top} />} updatedAt={hist.top.at}>
-          <MultiLine series={topSeries} days={days} height={MAJORS_CHART_HEIGHT} labels={false} />
+        <PanelFrame title={`XMR vs Top ${majorsCount || "—"} · normalized % · ${range}`} right={<GroupBadge result={hist.top} />} updatedAt={hist.top.at} refreshing={historyPending}>
+          <PanelBoundary keys={["market"]} also="/api/markets" reserve={MAJORS_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.top.at]}>
+            <Swap ready={hist.top.status !== "loading"} reserve={MAJORS_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={MAJORS_CHART_HEIGHT} radius={3} />}>
+              <MultiLine series={topSeries} days={days} height={MAJORS_CHART_HEIGHT} labels={false}
+                emptyIsError={hist.top.status === "error"}
+                emptyNote={historyEmptyCopy(hist.top.status)} />
+            </Swap>
+          </PanelBoundary>
           <SeriesSwatchLegend series={topSeries} />
         </PanelFrame>
       </section>
@@ -337,6 +416,7 @@ export function MarketsPage() {
       <PanelFrame
         title={`Privacy peer group · normalized · ${range}`}
         updatedAt={hist.peers.at}
+        refreshing={historyPending}
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {chartedPeerSymbols ? (
@@ -348,63 +428,82 @@ export function MarketsPage() {
           </div>
         }
       >
-        <MultiLine series={peerSeries} days={days} height={PRIVACY_CHART_HEIGHT} labels={true} />
-        {peerRemainder.length > 0 ? (
-          <div className="mono" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", marginTop: 10, fontSize: "var(--fs-label)" }}>
-            <span className="kicker">also in top {hist.peers.members.length}</span>
-            {peerRemainder.map((m) => (
-              <span key={m.id} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
-                <b className="dim">{m.symbol}</b>
-                <span>{fmtPeerPrice(m.price)}</span>
-                <span className="dim">{m.marketCap == null ? "—" : fmtUsd(m.marketCap)}</span>
-              </span>
-            ))}
-          </div>
-        ) : null}
+        <PanelBoundary keys={["market"]} also="/api/markets" reserve={PRIVACY_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.peers.at]}>
+          <Swap ready={hist.peers.status !== "loading"} reserve={PRIVACY_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={PRIVACY_CHART_HEIGHT} radius={3} />}>
+            <MultiLine series={peerSeries} days={days} height={PRIVACY_CHART_HEIGHT} labels={true}
+              emptyIsError={hist.peers.status === "error"}
+              emptyNote={historyEmptyCopy(hist.peers.status)} />
+          </Swap>
+        </PanelBoundary>
+        <div className="mono" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "6px 14px", marginTop: 10, fontSize: "var(--fs-label)", minHeight: "1.6em" }}>
+          {peerRemainder.length > 0 ? (
+            <>
+              <span className="kicker">also in top {hist.peers.members.length}</span>
+              {peerRemainder.map((m) => (
+                <span key={m.id} style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                  <b className="dim">{m.symbol}</b>
+                  <span>{fmtPeerPrice(m.price)}</span>
+                  <span className="dim">{m.marketCap == null ? "—" : fmtUsd(m.marketCap)}</span>
+                </span>
+              ))}
+            </>
+          ) : null}
+        </div>
       </PanelFrame>
 
       {/* Exchange volume (real) + swap-venue directory */}
       <section className="col-2" style={{ gap: 12 }}>
         <PanelFrame title="Exchange volume · 24h · top pairs" right={<SourceBadge status={tickers.status} />} updatedAt={tickers.at}>
-          {/* v6.0.10 §4 — .keep-cols forces `min-width: max-content` on mobile,
-              so this was a horizontal swipe that never reached its last column.
-              .mk-* stacks it to one card per row below 768px; the desktop track
-              list rides --mk-cols so the inline-grid blanket rule can't see it. */}
-          <div className="mk-table" style={{ ["--mk-cols" as string]: "130px 1fr 80px 70px" } as React.CSSProperties}>
-            {["Venue", "Pair", "24h $", "Spread"].map((h) => (
-              <div key={h} className="kicker mk-head">{h}</div>
-            ))}
-            {topTickers.length === 0 ? (
-              <span className="mono dim" style={{ padding: "10px 0" }}>Awaiting CoinGecko tickers…</span>
-            ) : (
-              topTickers.map((t, i) => (
-                <div className="mk-row" key={t.venue + t.pair + i}>
-                  <span className="mk-cell" style={{ color: "var(--ink-100)" }}>
+          {/* Swap wraps the WHOLE .mk-table (header + rows + delisted), not just
+              the ternary — .mk-row is `display: contents` on desktop (see
+              styles.css:706-710), so its .mk-cell children only become
+              .mk-table's own grid items when .mk-table is their DIRECT grid
+              ancestor with nothing but display:contents between them. Nesting
+              Swap's .sk-swap/.sk-body (real boxes, not display:contents) between
+              .mk-table and a row would break that column alignment the moment
+              real tickers land. Wrapping outside .mk-table entirely avoids the
+              question — the grid is self-contained regardless of what wraps it. */}
+          <Swap ready={tickersReady} reserve={rowsHeight(TOP_TICKERS_LIMIT)} skeleton={<SkeletonRows n={TOP_TICKERS_LIMIT} cols={TICKER_COLS} />}>
+            {/* v6.0.10 §4 — .keep-cols forces `min-width: max-content` on mobile,
+                so this was a horizontal swipe that never reached its last column.
+                .mk-* stacks it to one card per row below 768px; the desktop track
+                list rides --mk-cols so the inline-grid blanket rule can't see it. */}
+            <div className="mk-table" style={{ ["--mk-cols" as string]: TICKER_COLS } as React.CSSProperties}>
+              {["Venue", "Pair", "24h $", "Spread"].map((h) => (
+                <div key={h} className="kicker mk-head">{h}</div>
+              ))}
+              {topTickers.length === 0 ? (
+                <span className="mono dim" style={{ padding: "10px 0" }}>{tickerEmptyCopy(tickers.status)}</span>
+              ) : (
+                topTickers.map((t, i) => (
+                  <div className="mk-row" key={t.venue + t.pair + i}>
+                    <span className="mk-cell" style={{ color: "var(--ink-100)" }}>
+                      <span className="mk-lbl">Venue</span>
+                      <span>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
+                    </span>
+                    <span className="mk-cell dim"><span className="mk-lbl">Pair</span><span>{t.pair}</span></span>
+                    <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-80)" }}>
+                      <span className="mk-lbl">24h $</span><span>{fmtUsd(t.volUsd)}</span>
+                    </span>
+                    <span className="mk-cell" style={{ textAlign: "right", color: t.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : t.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>
+                      <span className="mk-lbl">Spread</span><span>{t.spreadPct.toFixed(2)}%</span>
+                    </span>
+                  </div>
+                ))
+              )}
+              {DELISTED.map((e) => (
+                <div className="mk-row" key={e.name}>
+                  <span className="mk-cell" style={{ color: "var(--r-50)" }}>
                     <span className="mk-lbl">Venue</span>
-                    <span>{t.venue}{t.anomalous ? <span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·FLAGGED</span> : ""}</span>
+                    <span>{e.name}<span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·DELISTED</span></span>
                   </span>
-                  <span className="mk-cell dim"><span className="mk-lbl">Pair</span><span>{t.pair}</span></span>
-                  <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-80)" }}>
-                    <span className="mk-lbl">24h $</span><span>{fmtUsd(t.volUsd)}</span>
-                  </span>
-                  <span className="mk-cell" style={{ textAlign: "right", color: t.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : t.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>
-                    <span className="mk-lbl">Spread</span><span>{t.spreadPct.toFixed(2)}%</span>
-                  </span>
+                  <span className="mk-cell dim"><span className="mk-lbl">Pair</span><span>{e.note}</span></span>
+                  <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-20)" }}><span className="mk-lbl">24h $</span><span>—</span></span>
+                  <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-20)" }}><span className="mk-lbl">Spread</span><span>—</span></span>
                 </div>
-              ))
-            )}
-            {DELISTED.map((e) => (
-              <div className="mk-row" key={e.name}>
-                <span className="mk-cell" style={{ color: "var(--r-50)" }}>
-                  <span className="mk-lbl">Venue</span>
-                  <span>{e.name}<span className="dim" style={{ fontSize: "var(--fs-label)", marginLeft: 4 }}>·DELISTED</span></span>
-                </span>
-                <span className="mk-cell dim"><span className="mk-lbl">Pair</span><span>{e.note}</span></span>
-                <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-20)" }}><span className="mk-lbl">24h $</span><span>—</span></span>
-                <span className="mk-cell" style={{ textAlign: "right", color: "var(--ink-20)" }}><span className="mk-lbl">Spread</span><span>—</span></span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </Swap>
         </PanelFrame>
 
         <PanelFrame title="Atomic swap + P2P venues" right={<ProvNote>directory · volume not published</ProvNote>}>
@@ -434,23 +533,25 @@ export function MarketsPage() {
 
       {/* Liquidity by venue (real tickers) */}
       <PanelFrame title="Liquidity by venue · 24h converted volume" right={<SourceBadge status={tickers.status} prefix={venues.length ? `${venues.length} venues` : undefined} />} updatedAt={tickers.at}>
-        {venues.length === 0 ? (
-          <p className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>Awaiting CoinGecko tickers…</p>
-        ) : (
-          <div style={{ display: "grid", gap: 6 }}>
-            {venues.map((v) => (
-              <div key={v.venue} className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: "minmax(90px, 120px) 1fr minmax(70px, 90px) minmax(64px, 80px)", gap: 10, alignItems: "center", fontSize: "var(--fs-mono)" }}>
-                <span style={{ color: "var(--ink-100)" }}>{v.venue}</span>
-                <span style={{ position: "relative", height: 12, background: "color-mix(in srgb, var(--surface-sunk) 60%, transparent)", borderRadius: 1, overflow: "hidden" }}>
-                  {/* fill length encodes real venUsd volume — accent-data, not chrome */}
-                  <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "color-mix(in srgb, var(--accent-data) 35%, transparent)", boxShadow: "0 0 6px color-mix(in srgb, var(--accent-data) 25%, transparent)" }} />
-                </span>
-                <span className="dim" style={{ textAlign: "right" }}>{fmtUsd(v.volUsd)}</span>
-                <span style={{ textAlign: "right", color: v.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : v.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>{v.spreadPct.toFixed(2)}% spr</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <Swap ready={tickersReady} reserve={rowsHeight(VENUES_LIMIT)} skeleton={<SkeletonRows n={VENUES_LIMIT} cols={LIQUIDITY_COLS} />}>
+          {venues.length === 0 ? (
+            <p className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>{tickerEmptyCopy(tickers.status)}</p>
+          ) : (
+            <div style={{ display: "grid", gap: 6 }}>
+              {venues.map((v) => (
+                <div key={v.venue} className="mono keep-cols" style={{ display: "grid", gridTemplateColumns: LIQUIDITY_COLS, gap: 10, alignItems: "center", fontSize: "var(--fs-mono)" }}>
+                  <span style={{ color: "var(--ink-100)" }}>{v.venue}</span>
+                  <span style={{ position: "relative", height: 12, background: "color-mix(in srgb, var(--surface-sunk) 60%, transparent)", borderRadius: 1, overflow: "hidden" }}>
+                    {/* fill length encodes real venUsd volume — accent-data, not chrome */}
+                    <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${(v.volUsd / maxVenueVol) * 100}%`, background: "color-mix(in srgb, var(--accent-data) 35%, transparent)", boxShadow: "0 0 6px color-mix(in srgb, var(--accent-data) 25%, transparent)" }} />
+                  </span>
+                  <span className="dim" style={{ textAlign: "right" }}>{fmtUsd(v.volUsd)}</span>
+                  <span style={{ textAlign: "right", color: v.spreadPct <= SPREAD_GOOD_MAX ? "var(--g-50)" : v.spreadPct <= SPREAD_OK_MAX ? "var(--y-50)" : "var(--r-50)" }}>{v.spreadPct.toFixed(2)}% spr</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </Swap>
       </PanelFrame>
     </PageShell>
   );

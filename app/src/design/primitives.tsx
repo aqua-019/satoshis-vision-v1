@@ -102,6 +102,19 @@ export interface PanelFrameProps {
    * this sentence.
    */
   updatedAt?: number;
+
+  /**
+   * D0858: a refresh for this panel's endpoint is on the wire right now.
+   *
+   * Orthogonal to `stale`, not a replacement for it — "last-good AND a refresh
+   * in flight" and "last-good AND nothing scheduled" are different claims, and
+   * before this the UI could only make the first one by implication. Comes from
+   * `useFeedActivity(keys).busy`, wrapped in `usePendingDelay` at the call site
+   * so a 40ms response never flickers a chip.
+   *
+   * Stamped as `data-refreshing` so a gate can read it without parsing text.
+   */
+  refreshing?: boolean;
 }
 
 /**
@@ -131,9 +144,15 @@ function PanelUpdated({ at }: { at?: number }) {
   );
 }
 
-export function PanelFrame({ title, right, children, scrollable, style, ticks = true, dataKey, stale, updatedAt }: PanelFrameProps) {
+export function PanelFrame({ title, right, children, scrollable, style, ticks = true, dataKey, stale, updatedAt, refreshing }: PanelFrameProps) {
   return (
-    <div className="panel" style={style} data-panel-key={dataKey} data-stale={stale ? "true" : undefined}>
+    <div
+      className="panel"
+      style={style}
+      data-panel-key={dataKey}
+      data-stale={stale ? "true" : undefined}
+      data-refreshing={refreshing ? "true" : undefined}
+    >
       {ticks ? (<>
         <span className="tick tl" />
         <span className="tick tr" />
@@ -145,6 +164,15 @@ export function PanelFrame({ title, right, children, scrollable, style, ticks = 
           <div className="l">{typeof title === "string" ? <span>{title}</span> : title}</div>
           <div className="r">
             {stale ? <span className="panel-stale" title="last-good values — this endpoint is not answering">· stale</span> : null}
+            {/* Slot rendered unconditionally at a reserved width, exactly as
+                PanelUpdated is, so the header never reflows when a refresh
+                starts or ends. An unreserved chip appearing twice a minute is
+                a layout shift verify-cls would catch and a reader would feel. */}
+            {refreshing !== undefined ? (
+              <span className="panel-refreshing" aria-hidden={refreshing ? undefined : "true"}>
+                {refreshing ? "· checking" : ""}
+              </span>
+            ) : null}
             {updatedAt !== undefined ? <PanelUpdated at={updatedAt} /> : null}
             {right}
           </div>

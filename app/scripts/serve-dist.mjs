@@ -56,6 +56,33 @@ createServer((req, res) => {
   if (existsSync(target) && statSync(target).isFile()) {
     return send(res, 200, readFileSync(target), MIME[extname(target)] ?? "application/octet-stream");
   }
+  // 1b · /api/* has no serverless runtime here. Say so, loudly.
+  //
+  // Vercel's filesystem lookup never resolves /api/* to dist/index.html — those
+  // paths are functions, and vercel.json's catch-all rewrite explicitly excludes
+  // them (`/((?!api/).*)`). This mirror did not model that: an unmatched
+  // /api/whatever fell through to branch 3 and returned the SPA shell with
+  // **HTTP 200 and text/html**.
+  //
+  // That is the worst possible answer. A gate's fetch RESOLVES, `res.ok` is
+  // true, and the failure only surfaces as a JSON parse error deep in a
+  // component — or, if the client only checks `res.ok`, does not surface at
+  // all and reads as a healthy response. v6.1.4 found /api/status doing exactly
+  // this on /sources, and it is why ten gates in verify:e2e have been measuring
+  // a totally degraded feed without reporting it.
+  //
+  // 501 + JSON is honest: the path exists in production, this harness cannot
+  // serve it, and a gate that wanted it answered must route it with
+  // verify-lib.mjs's mockStatus() (or its own ctx.route) rather than silently
+  // parsing HTML.
+  if (pathname === "/api" || pathname.startsWith("/api/")) {
+    return send(res, 501, JSON.stringify({
+      error: "no serverless runtime in serve-dist",
+      hint: "route this path in your gate — see mockStatus() in verify-lib.mjs",
+      path: pathname,
+    }), MIME[".json"]);
+  }
+
   // 2 · a directory index — this is what makes prerendered routes resolve
   const asIndex = join(target, "index.html");
   if (existsSync(asIndex)) {

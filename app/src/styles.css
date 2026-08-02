@@ -511,6 +511,13 @@ header > div > h1.serif {
 /* ── left telemetry rail ──────────────────────────────────────── */
 
 .shell {
+  /* D0888: containing block for the degraded/offline banner. One line, and it
+     is what lets that banner anchor to the topbar's bottom edge without ever
+     naming the topbar's height — which varies three ways (desktop grid,
+     <=768px flex + env(safe-area-inset-top), and the narrow two-row wrap) and
+     is about to change again in prompt 07. Compare `.mp-switcher`'s hardcoded
+     `top: 60px` below, which is the same coupling done the brittle way. */
+  position: relative;
   flex: 1; min-height: 0;
   display: grid;
   grid-template-columns: 260px 1fr;
@@ -801,6 +808,75 @@ header > div > h1.serif {
   min-width: 7ch; text-align: right;
 }
 .panel-b { padding: 10px 12px; }
+
+/* ── D0888/D0870 · degraded + offline banner ────────────────────────────────
+   Out of flow on purpose: verify-cls loads with NO route mocking and
+   serve-dist answers /api/xmr/* with 200 text/html, so failures accumulate and
+   feedDegraded can go true inside the 3s measurement window. In flow this would
+   be ~32px at an 844px viewport = ~0.038 CLS, roughly 4x the gate ceiling.
+   Spans the rail column too — the claim is global, so scoping it to the content
+   column would understate it. */
+.degraded-banner {
+  position: absolute; inset: 0 0 auto 0; z-index: 300;
+  /* Above page content and .mp-switcher (50) and the mobile bar (200);
+     below the modal layer (1000) and the skip link (9999). */
+  display: flex; align-items: center; gap: 8px;
+  min-height: var(--degraded-h, 44px);
+  padding: 10px 16px;
+  font: var(--fs-label)/1.45 var(--f-mono);
+  letter-spacing: 0.04em;
+  color: var(--ink-80);
+  background: rgba(12, 9, 6, 0.94);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--rule);
+  /* D0612: opacity only. NO transform, no slide — a banner that animates in
+     moves content perceptually even when it does not move it in layout. Reduce
+     zeroes --d-2, which turns this into a hard cut and loses nothing. */
+  transition: opacity var(--d-2) var(--e-standard);
+}
+.degraded-banner[data-kind="offline"] { border-bottom-color: var(--r-50); }
+.degraded-banner[data-kind="degraded"] { border-bottom-color: var(--y-50); }
+.degraded-banner b { color: var(--y-50); letter-spacing: 0.1em; }
+.degraded-banner[data-kind="offline"] b { color: var(--r-50); }
+.degraded-banner__paths { color: var(--ink-100); }
+/* D0858: reserved like .panel-updated's 7ch above — the chip appears and
+   disappears on every refresh round, so an unreserved slot would reflow the
+   header twice a minute on a healthy feed. `· checking` is 10 chars. */
+.panel-refreshing {
+  color: var(--ink-40); white-space: nowrap;
+  display: inline-block; min-width: 10ch; text-align: right;
+}
+
+/* ── D0851/D0612 · structure-aware skeletons and the swap into content ──────
+   Placed here, beside .panel-updated's `min-width: 7ch` reservation, because
+   this is the same idiom extended: reserve the box, then fill it. Deliberately
+   BEFORE the giant @layer components block below that carries every @media
+   query — appending down there would nest these inside a breakpoint. */
+
+/* The content is always mounted; the veil sits on top. See Skeleton.tsx for
+   why replacing the content instead would permanently break useChartMetrics. */
+.sk-swap { position: relative; }
+.sk-swap > .sk-body { opacity: 0; transition: opacity var(--d-3) var(--e-standard); }
+.sk-swap[data-ready="true"] > .sk-body { opacity: 1; }
+.sk-swap > .sk-veil {
+  position: absolute; inset: 0; opacity: 1;
+  transition: opacity var(--d-3) var(--e-standard);
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 8px;
+  padding: 2px 0;
+}
+.sk-swap[data-ready="true"] > .sk-veil { opacity: 0; pointer-events: none; }
+
+.sk-box {
+  display: block;
+  background: linear-gradient(90deg, var(--ink-06) 0%, var(--ink-10) 50%, var(--ink-06) 100%);
+  background-size: 200% 100%;
+  /* D0612: a LOOP, so a literal over --tk-anim, never var(--d-*) — reduce
+     zeroes the token set and a zeroed loop is a stopped loop mid-sweep. The
+     reduce block below turns this off properly instead. */
+  animation: sk-shimmer calc(1.6s / var(--tk-anim, 1)) linear infinite;
+}
+.sk-text, .sk-rows { display: flex; flex-direction: column; width: 100%; }
+.sk-row { display: grid; width: 100%; align-items: center; }
 
 /* corner ticks (HUD framing) */
 .tick { position: absolute; width: 8px; height: 8px; border-color: var(--tk-accent); pointer-events: none; opacity: 0.65; }
@@ -1189,6 +1265,11 @@ header > div > h1.serif {
      `.prov-fresh--error`, which is static today — listed anyway so that giving
      it motion later cannot silently reintroduce the same defect. */
   .led.pulse, .prov-dot, .prov-fresh--stale, .prov-fresh--error, .blink { animation: none !important; opacity: 1; }
+  /* D0612: the shimmer stops; the skeleton stays. A static box still says
+     "reserved, not yet arrived", so no information is lost — and the crossfade
+     it precedes collapses to a hard cut on its own, because --d-* is zeroed
+     above. Both halves of the reduce contract, and neither hides arrival. */
+  .sk-box { animation: none !important; }
 }
 
 /* queued / next blocks (outline only) */
@@ -1372,6 +1453,9 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   to { r: 60; opacity: 0; }
 }
 @keyframes sweep { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+/* D0612 · skeleton shimmer. NOT the dead `sweep` above (0 consumers) — that one
+   translates a whole element; this slides a gradient inside a static box. */
+@keyframes sk-shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 
 @layer components {
 /* ── view-tags ScannerWall · v6.1.3 ──────────────────────────────────

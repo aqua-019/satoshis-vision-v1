@@ -121,55 +121,84 @@ export async function freezeAmbient(page) {
 }
 
 /**
- * The shared reporter.
+ * D0891 · the shared /api/status fixture and its route mock.
  *
- * `skip` and `fixture` exist because a gate must never report a pass on
- * something it did not check, and this repo has been bitten by that repeatedly:
- * verify-v510 stayed permanently red until people learned to ignore red,
- * verify-future sat orphaned so twelve assertions never ran at all, and
- * verify-shots counted screenshots it never compared toward a
- * "pixel-identical" claim. The fix is not to check more — sometimes you
- * genuinely cannot — it is to make the unchecked items their own NUMBER
- * instead of letting them vanish into a success count.
+ * WHY EVERY GATE THAT LOADS /sources NEEDS THIS. `scripts/serve-dist.mjs` has
+ * three branches — exact file, directory index, SPA fallback — and the third
+ * returns `dist/index.html` with **HTTP 200 and text/html** for ANY unmatched
+ * path. So an unrouted `/api/status` does not 404; it looks like a SUCCESS
+ * carrying HTML, and only explodes at `res.json()`. A gate that loads /sources
+ * without this is testing an unhandled request and calling it a page.
  *
- *   ok(cond, label)        a real assertion against real behaviour
- *   skip(label, why)       could not be checked here (API absent, engine
- *                          lacking, upstream unreachable). NOT a pass.
- *   fixture(label, what)   checked against a fixture rather than the real
- *                          upstream. Real coverage, but of the fixture — say so.
+ * Correcting a note recorded elsewhere while we are here: verify-future's
+ * `mockFeeds` does NOT "abort every other /api/*". It aborts three named globs
+ * (`**‍/api/xmr/**`, `**‍/api/monero*`, `**‍/api/coingecko*`) and fulfils
+ * `**‍/api/feeds*`. `/api/status` matches none of them, so the mechanism is
+ * "an unmatched pattern falls through", not "everything else is aborted".
  *
- * `finish()` prints all four counts, so "12 passed · 3 fixtured · 1 skipped"
- * can never be read as "16 passed".
+ * `at` is FIXED, not generated. verify-shots.mjs walks /sources and a moving
+ * timestamp would diff every screenshot.
+ *
+ * api/verify-status.mjs asserts the real handler's key set matches this
+ * fixture's, so the mock cannot quietly rot away from the endpoint it stands in
+ * for — which is the only thing that makes a fixture better than no mock.
  */
-export function makeReporter(name) {
-  let failed = false;
-  let passed = 0;
-  let failures = 0;
-  let skipped = 0;
-  let fixtured = 0;
-  return {
-    ok(cond, label, detail = '') {
-      if (cond) { passed++; console.log(`  ✅ ${label}`); }
-      else { failed = true; failures++; console.log(`  ❌ ${label}${detail ? '\n     ' + detail : ''}`); }
-      return cond;
-    },
-    /** Could not be checked in this environment. Never counts as a pass. */
-    skip(label, why) {
-      skipped++;
-      console.log(`  ⏭  ${label} — SKIPPED: ${why}`);
-    },
-    /** Checked, but against a fixture rather than the real upstream. */
-    fixture(label, what) {
-      fixtured++;
-      console.log(`  🧪 ${label} — fixtured: ${what}`);
-    },
-    info(msg) { console.log(`  ·  ${msg}`); },
-    group(title) { console.log(`\n${title}`); },
-    finish() {
-      const tally =
-        `${passed} passed · ${fixtured} fixtured · ${skipped} skipped · ${failures} failed`;
-      console.log('\n' + (failed ? `❌ ${name}: FAILURES — ${tally}` : `✅ ${name}: ${tally}`));
-      return failed ? 1 : 0;
-    },
-  };
+export const STATUS_FIXTURE = {
+  v: 1,
+  at: '2026-01-01T00:00:00.000Z',
+  probed: false,
+  note: 'configuration only — this endpoint does not probe any upstream',
+  cascade: {
+    primaryConfigured: false,
+    referenceCount: 6,
+    referenceHosts: [
+      'node.moneroworld.com:18089',
+      'nodes.hashvault.pro:18081',
+      'node.community.rino.io:18081',
+      'opennode.xmr-tw.org:18089',
+      'node.sethforprivacy.com:18089',
+      'xmr-node.cakewallet.com:18081',
+    ],
+    networks: { mainnet: 6, stagenet: 0, testnet: 0, betanet: 0 },
+  },
+  endpoints: [
+    { path: '/api/xmr', file: 'xmr.js', kind: 'node' },
+    { path: '/api/monero', file: 'monero.js', kind: 'node' },
+    { path: '/api/coingecko', file: 'coingecko.js', kind: 'market' },
+    { path: '/api/markets', file: 'markets.js', kind: 'market' },
+    { path: '/api/feeds', file: 'feeds.js', kind: 'editorial' },
+    { path: '/api/status', file: 'status.js', kind: 'meta' },
+  ],
+};
+
+/** Route `/api/status` to the fixture. Pass `{ fail: true }` to drive the
+ *  endpoint-down branch, or an object to merge over the payload. */
+export async function mockStatus(ctx, { fail = false, ...overrides } = {}) {
+  await ctx.route('**/api/status*', (route) => {
+    if (fail) {
+      return route.fulfill({ status: 503, contentType: 'application/json', body: '{"error":"upstream"}' });
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ...STATUS_FIXTURE, ...overrides }),
+    });
+  });
 }
+
+/**
+ * The shared reporter — MOVED to ./verify-reporter.mjs, re-exported here.
+ *
+ * Re-exported rather than relocated-with-edits so all 16 gates that already do
+ * `import { makeReporter } from './verify-lib.mjs'` keep working byte-for-byte.
+ *
+ * It lives in its own module because api/verify-status.mjs needs `fixture()`
+ * and this file's first import is `playwright`. That import resolves fine in
+ * CI's offline `build` job — playwright is a devDependency and `npm ci` runs
+ * there — so the split is not about a missing package. It is about the `build`
+ * job's stated contract ("Offline gates only — no browser, no network") and,
+ * decisively, about not giving the four-counter invariant a second home: a
+ * copied reporter is a second place where "12 passed · 3 fixtured · 1 skipped"
+ * could drift into reading as "16 passed". See verify-reporter.mjs's header.
+ */
+export { makeReporter } from './verify-reporter.mjs';

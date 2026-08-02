@@ -97,6 +97,85 @@ export function backoffMs(base: number, failures: number): number {
   return Math.max(base, Math.min(BACKOFF_CAP_MS, base * 2 ** failures));
 }
 
+/*
+ * ── D0868 · jittered retry, WITHOUT Math.random() ──────────────────────────
+ *
+ * Every visitor's tiers fire on the same deterministic schedule today. Because
+ * backoffMs() floors at `base`, the chain (15s) and market (60s) tiers never
+ * back off at all — so a blip that resolves re-synchronises every client's
+ * timer exactly, and they stampede the upstream together on the next tick.
+ * Jitter is the fix, and it applies at base cadence, not only after a failure.
+ *
+ * WHY NOT Math.random(): CLAUDE.md restricts it to app/src/protocols/, and
+ * verify-prng.mjs section 6 fails the build on a call site anywhere else under
+ * src/. That rule has regressed once already. Note also that this jitter is a
+ * SCHEDULE, never a displayed value, so the zero-fabrication rule is not
+ * engaged either way — but a deterministic source is strictly better here:
+ * it makes the spread reproducible in a gate.
+ *
+ * WHY A GOLDEN-RATIO WEYL SEQUENCE rather than a hash or a PRNG: frac(n·phi)
+ * is low-discrepancy, which is strictly BETTER than uniform randomness for
+ * de-synchronising a herd — consecutive retries spread maximally instead of
+ * clumping the way independent uniform draws do. It is also stateless and a
+ * pure function of two integers, which is what lets verify-tiers.mjs assert it
+ * exhaustively rather than statistically.
+ *
+ * It deliberately does NOT reuse design/prng.ts's h3/mulberry32: this module is
+ * loaded in bare Node by verify-tiers.mjs and verify-stale.mjs, which have no
+ * alias resolution and no extensionless relative resolution, so it may import
+ * nothing but bare package specifiers. See useMarketHistory.ts's header for the
+ * same constraint stated at length.
+ *
+ * IT ONLY EVER ADDS. The range is [delay, delay × (1 + JITTER_RATIO)] — never
+ * below `delay`. Subtracting would undo backoffMs()'s Math.max(base, …) floor,
+ * whose entire purpose is stopping a failing 60s tier from polling faster.
+ */
+
+/** Upper bound of the added spread, as a fraction of the delay. */
+export const JITTER_RATIO = 0.25;
+
+/** frac(1/phi). The classic low-discrepancy additive-recurrence constant. */
+const PHI_FRAC = 0.6180339887498949;
+
+/**
+ * Deterministic spread in [0, 1) for the `seq`-th wait of a client seeded
+ * `seed`. Pure; same inputs, same output, forever.
+ *
+ * Exported for the offline gate — verify-tiers.mjs asserts this against
+ * useMarketHistory.ts's inlined twin over a fixed grid, so the two copies
+ * cannot drift apart unnoticed.
+ */
+export function jitterFrac(seq: number, seed: number): number {
+  const x = (seed + seq) * PHI_FRAC;
+  return x - Math.floor(x);
+}
+
+/** `delay`, lengthened by up to JITTER_RATIO. Never shortened. */
+export function jitterMs(delay: number, seq: number, seed: number, ratio: number = JITTER_RATIO): number {
+  if (!(delay > 0)) return delay;
+  return Math.round(delay * (1 + jitterFrac(seq, seed) * ratio));
+}
+
+/**
+ * One spread per client, resolved once and memoised.
+ *
+ * crypto.getRandomValues is a real entropy source and is NOT the banned call —
+ * verify-prng.mjs section 6 bans the literal `Math.random(` and nothing else.
+ * The Date.now() branch is the SSR/no-crypto fallback; prerender never schedules
+ * a retry, so it exists to keep the module total rather than to be used.
+ */
+let clientSeedCache = 0;
+export function clientSeed(): number {
+  if (clientSeedCache) return clientSeedCache;
+  const g = globalThis as { crypto?: { getRandomValues?: (a: Uint32Array) => Uint32Array } };
+  if (g.crypto && typeof g.crypto.getRandomValues === "function") {
+    clientSeedCache = g.crypto.getRandomValues(new Uint32Array(1))[0] || 1;
+  } else {
+    clientSeedCache = (Date.now() >>> 0) || 1;
+  }
+  return clientSeedCache;
+}
+
 const isHidden = (): boolean =>
   typeof document !== "undefined" && document.visibilityState === "hidden";
 
@@ -114,9 +193,25 @@ export function usePolling(
   tier: TierName,
   task: (signal: AbortSignal) => Promise<boolean>,
   enabled = true,
+  /**
+   * D0858: called whenever this tier starts a request, schedules the next one,
+   * or goes quiet. The caller maps tier -> FeedKeys, because that mapping lives
+   * with the tick functions and not here.
+   *
+   * `{busy:false, nextAt:0}` is the honest report for a hidden tab or a torn-
+   * down tier: nothing in flight AND nothing scheduled. That state was
+   * previously unrepresentable, which is why panels said "reconnecting" while
+   * nothing was reconnecting.
+   *
+   * Held in a ref like `task`, so a fresh closure per render cannot restart the
+   * loop — the effect deps stay [tier, enabled].
+   */
+  onActivity?: (a: { busy: boolean; nextAt: number }) => void,
 ): void {
   const taskRef = React.useRef(task);
   taskRef.current = task;
+  const activityRef = React.useRef(onActivity);
+  activityRef.current = onActivity;
 
   React.useEffect(() => {
     if (!enabled) return;
@@ -125,6 +220,8 @@ export function usePolling(
     let timer: ReturnType<typeof setTimeout> | null = null;
     let running = false;
     let failures = 0;
+    /** Advances once per scheduled wait, so consecutive waits get distinct spreads. */
+    let seq = 0;
     /** The controller for the tick currently on the wire, so teardown can cancel it. */
     let inFlight: AbortController | null = null;
 
@@ -141,9 +238,11 @@ export function usePolling(
       // A hidden tab does nothing; `onVisibility` fires the catch-up tick.
       if (isHidden()) {
         clear();
+        activityRef.current?.({ busy: false, nextAt: 0 });
         return;
       }
       running = true;
+      activityRef.current?.({ busy: true, nextAt: 0 });
       let succeeded = false;
       // Race the task against TICK_TIMEOUT_MS so a socket that never settles
       // can't hold `running` true forever and silently kill this tier, AND
@@ -175,14 +274,22 @@ export function usePolling(
       // Don't re-arm if the tab went hidden while the request was in flight.
       if (!isHidden()) {
         clear();
-        timer = setTimeout(() => void run(), backoffMs(tierMs(tier), failures));
+        // D0868: jitter composes OUTSIDE backoffMs so that function stays the
+        // pure doubling/cap/floor contract verify-tiers.mjs pins by equality.
+        const wait = jitterMs(backoffMs(tierMs(tier), failures), seq++, clientSeed());
+        timer = setTimeout(() => void run(), wait);
+        activityRef.current?.({ busy: false, nextAt: Date.now() + wait });
+      } else {
+        activityRef.current?.({ busy: false, nextAt: 0 });
       }
     };
 
     const onVisibility = () => {
       if (!alive) return;
-      if (isHidden()) clear();
-      else void run(); // resume: immediate catch-up, then re-arm
+      if (isHidden()) {
+        clear();
+        activityRef.current?.({ busy: false, nextAt: 0 });
+      } else void run(); // resume: immediate catch-up, then re-arm
     };
 
     document.addEventListener("visibilitychange", onVisibility);
@@ -195,6 +302,7 @@ export function usePolling(
       // request running to completion — on Tor, another 10s of pointless
       // circuit traffic per navigation.
       inFlight?.abort();
+      activityRef.current?.({ busy: false, nextAt: 0 });
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [tier, enabled]);

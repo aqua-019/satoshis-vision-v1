@@ -26,8 +26,12 @@ import { fmtN, fmtBytes, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { useMoneroLive } from "@/data/DataContext";
 import { feeRateHistogram, intervalHistogram } from "@/data/histogram";
-import { assertNever, CHAIN_CHROME_KEYS, freshAt, hasData, isStale, oldestFreshAt, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
+import { assertNever, CHAIN_CHROME_KEYS, FEED_ENDPOINT, freshAt, hasData, isDown, isStale, oldestFreshAt, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
+import { Swap, SkeletonBox, SkeletonRows } from "@/design/Skeleton";
+import { PanelBoundary } from "@/design/PanelBoundary";
+import { useFeedActivity } from "@/data/feed-activity";
+import { usePendingDelay } from "@/design/usePendingDelay";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -88,6 +92,101 @@ function KVRows({ rows }: { rows: [React.ReactNode, React.ReactNode][] }) {
 }
 
 /**
+ * `DataPanel`'s `keys` is read by `useFeedActivity` (via `DataPanel` itself,
+ * below), which requires a referentially STABLE array — a fresh `["blocks"]`
+ * literal every render would resubscribe on every tick. Module-scope `as
+ * const` tuples give every call site below the same array identity across
+ * renders (and across the several panels that read the same endpoint), so
+ * the hook sees a real no-op re-render rather than a constant identity churn.
+ */
+const KEYS_NETWORK = ["network"] as const;
+const KEYS_BLOCKS = ["blocks"] as const;
+const KEYS_MEMPOOL = ["mempool"] as const;
+const KEYS_MEMPOOL_FEES = ["mempool", "fees"] as const;
+const KEYS_NETWORK_FEES = ["network", "fees"] as const;
+
+/** Shared by the recent-blocks table's real grid and its `SkeletonRows`
+ *  placeholder, so the placeholder's columns line up with the real table's
+ *  exactly — one string, two consumers, and the swap moves nothing. */
+const BLOCKS_TABLE_COLS = "100px 1fr 60px 80px 80px 110px 60px";
+
+/**
+ * The three non-overlapping situations a chart/table with nothing to draw can
+ * be in (brief §3). "waiting" carries no copy of its own — the `Swap`
+ * skeleton already says it, and prose over a shimmer would say it twice.
+ */
+type EmptyReason = "waiting" | "empty" | "down";
+
+function emptyReason(status: FeedStatusMap, keys: readonly FeedKey[]): EmptyReason {
+  if (keys.some((k) => isDown(status[k]))) return "down";
+  if (keys.some((k) => hasData(status[k]))) return "empty";
+  return "waiting";
+}
+
+/**
+ * Failure copy for a chart/table whose endpoint answered before and is now
+ * failing. Names the actual DOWN key(s) via `FEED_ENDPOINT` — the same
+ * vocabulary `PanelBoundary` uses for a thrown render, so a live data hole and
+ * a thrown one read as one system rather than two.
+ */
+function downNote(status: FeedStatusMap, keys: readonly FeedKey[], tail: string): string {
+  const down = keys.filter((k) => isDown(status[k]));
+  const named = (down.length ? down : keys).map((k) => FEED_ENDPOINT[k]);
+  return `${named.join(" · ")} not answering — ${tail}`;
+}
+
+/** One line of dim mono text, reserving the same height the chart it replaces
+ *  would occupy — the "down"/"empty" states cost no layout shift either. */
+function ChartNote({ height, children }: { height: number; children: React.ReactNode }) {
+  return (
+    <div
+      className="mono dim"
+      style={{ minHeight: height, display: "flex", alignItems: "center", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * One measured chart's body: the real chart when there is anything to draw,
+ * else exactly one of the three §3 situations.
+ *
+ * `chart` is rendered both when ready AND while still waiting — never
+ * swapped for a different root — because every chart in `./markets/charts`
+ * already mounts its own ref-attached `.chart-box` via `EmptyBox` even when
+ * its `data` is `[]`. Swapping it for `ChartNote` mid-flight would only be
+ * safe for "down"/"empty" (definitive, not a data type the chart will ever
+ * populate without a real endpoint recovery, which remounts this component
+ * tree via `resetKeys` anyway).
+ */
+function ChartBody({
+  status, keys, height, hasContent, chart, emptyNote, downTail,
+}: {
+  status: FeedStatusMap;
+  keys: readonly [FeedKey, ...FeedKey[]];
+  height: number;
+  /** True once there is real content to draw. */
+  hasContent: boolean;
+  chart: React.ReactNode;
+  /** Copy for "answered, genuinely nothing to show". */
+  emptyNote: React.ReactNode;
+  /** Trailing clause for the down sentence; `downNote()` supplies the rest. */
+  downTail: string;
+}) {
+  const reason = emptyReason(status, keys);
+  const ready = hasContent || reason !== "waiting";
+  return (
+    <Swap ready={ready} reserve={height} skeleton={<SkeletonBox h={height} />}>
+      {hasContent ? chart
+        : reason === "down" ? <ChartNote height={height}>{downNote(status, keys, downTail)}</ChartNote>
+        : reason === "empty" ? <ChartNote height={height}>{emptyNote}</ChartNote>
+        : chart}
+    </Swap>
+  );
+}
+
+/**
  * PanelFrame, with everything it says about freshness derived from the very
  * keys it advertises.
  *
@@ -117,12 +216,21 @@ function DataPanel({ keys, status, provSource, provDetail, right, ...rest }: Pan
 }) {
   const stale = keys.some((k) => isStale(status[k]));
   const badge = provSource ? <NodeProvenance source={provSource} keys={keys} status={status} detail={provDetail} /> : null;
+  /* D0858: derived HERE, not at each of eleven call sites — same reasoning as
+   * dataKey/stale/updatedAt above. Each `DataPanel` invocation is its own
+   * component instance, so calling hooks in its body is unconditional per
+   * render; the only obligation this pushes onto callers is that `keys` be
+   * referentially stable, which useFeedActivity itself already requires (see
+   * the module-scope KEYS_* consts above). Wrapped in usePendingDelay so a
+   * refresh that resolves in under 100ms never flickers the chip. */
+  const refreshing = usePendingDelay(useFeedActivity(keys).busy);
   return (
     <PanelFrame
       {...rest}
       dataKey={keys.join(" ")}
       stale={stale}
       updatedAt={oldestFreshAt(status, keys)}
+      refreshing={refreshing}
       right={badge ? <>{badge}{right}</> : right}
     />
   );
@@ -188,6 +296,22 @@ export function NetworkPage() {
   const unattributedPct = recentBlocks.length ? Math.round((unattributed / recentBlocks.length) * 100) : 0;
   const t = data.feeTiers;
   const weightKnown = ready && data.blockWeightMedian > 0 && data.blockWeightLimit > 0;
+  // Recent-blocks table: a DIFFERENT window (12) than the 14-block mini-chart
+  // sample above — kept as its own const so the skeleton's row count and the
+  // real map() below can never drift apart.
+  const blocksTableRows = data.blocks.slice(0, 12);
+  // No `height` prop exists for the pool-attribution stat+bar block (it isn't
+  // an SVG chart), so there is no pre-existing literal to reuse the way the
+  // six real charts do. Derived instead from its own two rendered pieces —
+  // the 26px stat row plus its 12px gap plus the 14px bar — so the reserve
+  // still describes real layout rather than an invented number.
+  /* MEASURED, not derived. The arithmetic 26 + 12 + 14 = 52 describes the
+     POPULATED state; the empty state renders 56, so a 52 reserve sat below both
+     and never dominated — the wrapper simply tracked its content and shifted
+     4px on arrival. verify-resilience-dom §A caught it (56 -> 52). Unlike the
+     six chart panels, this one has no `height` prop to borrow, so the constant
+     is the measured maximum of the two states and must stay >= both. */
+  const POOL_ATTR_H = 56;
 
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>
@@ -227,114 +351,174 @@ export function NetworkPage() {
 
       {/* Hashrate + Difficulty + Mempool size + Block fullness */}
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys={["network"]} status={data.status} title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
-          {hashSeries.length ? (
-            <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
-              baseline="auto" xLabels={false} stale={isStale(data.status.network)}
-              format={fmtGiga} />
-          ) : (
-            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting chain sample</p>
-          )}
+        <DataPanel keys={KEYS_NETWORK} status={data.status} title={`Hashrate · session · ${hashSeries.length} sample${hashSeries.length === 1 ? "" : "s"}`} right={<span>GH/s</span>}>
+          <PanelBoundary keys={KEYS_NETWORK} reserve={180} resetKeys={[oldestFreshAt(data.status, KEYS_NETWORK)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_NETWORK} height={180}
+              hasContent={hashSeries.length > 0}
+              chart={
+                <AreaSeries data={hashSeries} height={180} color="var(--tk-accent)"
+                  baseline="auto" xLabels={false} stale={isStale(data.status.network)}
+                  format={fmtGiga} />
+              }
+              emptyNote="Node reported no hashrate for this sample"
+              downTail="no hashrate to chart"
+            />
+          </PanelBoundary>
         </DataPanel>
-        <DataPanel keys={["blocks"]} status={data.status} title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
-          {diffSeries.length ? (
-            <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
-              baseline="auto" xLabels={false} stale={isStale(data.status.blocks)}
-              format={fmtGigaSuffix} />
-          ) : (
-            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
-          )}
+        <DataPanel keys={KEYS_BLOCKS} status={data.status} title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
+          <PanelBoundary keys={KEYS_BLOCKS} reserve={180} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_BLOCKS} height={180}
+              hasContent={diffSeries.length > 0}
+              chart={
+                <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
+                  baseline="auto" xLabels={false} stale={isStale(data.status.blocks)}
+                  format={fmtGigaSuffix} />
+              }
+              emptyNote="Node answered with zero blocks in range — no difficulty to plot"
+              downTail="no difficulty series"
+            />
+          </PanelBoundary>
         </DataPanel>
       </section>
 
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys={["mempool"]} status={data.status} title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
-          {mempoolSeries.length ? (
-            <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
-              baseline="zero" xLabels={false} stale={isStale(data.status.mempool)}
-              format={fmtRound} />
-          ) : (
-            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting mempool sample</p>
-          )}
+        <DataPanel keys={KEYS_MEMPOOL} status={data.status} title={`Mempool size · session · ${mempoolSeries.length} sample${mempoolSeries.length === 1 ? "" : "s"}`} right={<span>{ready ? `${data.mempool.length} tx now` : "—"}</span>}>
+          <PanelBoundary keys={KEYS_MEMPOOL} reserve={180} resetKeys={[oldestFreshAt(data.status, KEYS_MEMPOOL)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_MEMPOOL} height={180}
+              hasContent={mempoolSeries.length > 0}
+              chart={
+                <AreaSeries data={mempoolSeries} height={180} color="var(--c-50)"
+                  baseline="zero" xLabels={false} stale={isStale(data.status.mempool)}
+                  format={fmtRound} />
+              }
+              emptyNote="Mempool reachable — no size samples recorded yet"
+              downTail="no mempool-size series"
+            />
+          </PanelBoundary>
         </DataPanel>
-        <DataPanel keys={["blocks"]} status={data.status} title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
-          {fullness.length ? (
-            <BarSeries data={fullness} height={180} color="var(--tk-accent)"
-              baseline="zero" stale={isStale(data.status.blocks)} endLabels={["older", "newer"]}
-              format={fmtPct} />
-          ) : (
-            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
-          )}
+        <DataPanel keys={KEYS_BLOCKS} status={data.status} title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
+          <PanelBoundary keys={KEYS_BLOCKS} reserve={180} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_BLOCKS} height={180}
+              hasContent={fullness.length > 0}
+              chart={
+                <BarSeries data={fullness} height={180} color="var(--tk-accent)"
+                  baseline="zero" stale={isStale(data.status.blocks)} endLabels={["older", "newer"]}
+                  format={fmtPct} />
+              }
+              emptyNote="Node answered with zero blocks in range — nothing to measure"
+              downTail="fullness unknown"
+            />
+          </PanelBoundary>
         </DataPanel>
       </section>
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
       <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
-        <DataPanel keys={["blocks"]} status={data.status} title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
-          {ivHist.counts.length ? (
-            <>
-              <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
-                baseline="zero" stale={isStale(data.status.blocks)} format={fmtRound}
-                marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
+        <DataPanel keys={KEYS_BLOCKS} status={data.status} title="Block intervals · last ~100 blocks" right={<span>count · seconds</span>}>
+          <PanelBoundary keys={KEYS_BLOCKS} reserve={230} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_BLOCKS} height={230}
+              hasContent={ivHist.counts.length > 0}
+              chart={
+                <BarSeries data={ivHist.counts} labels={ivHist.labels} height={230} color="var(--tk-accent)"
+                  baseline="zero" stale={isStale(data.status.blocks)} format={fmtRound}
+                  marker={ivHist.medBin >= 0 ? { index: ivHist.medBin, label: `median ~${Math.round(ivHist.med)}s` } : undefined} />
+              }
+              emptyNote="Node answered with zero blocks in range — no intervals to bucket"
+              downTail="interval histogram unavailable"
+            />
+            {ivHist.counts.length ? (
               <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
                 μ <b className="acc">{Math.round(ivHist.mean)}s</b> · target 120 s · {intervals.length} intervals
                 · timestamps are miner-set, filtered to 5–1800 s
               </p>
-            </>
-          ) : (
-            <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>Awaiting block sample</p>
-          )}
+            ) : null}
+          </PanelBoundary>
         </DataPanel>
 
-        <DataPanel keys={["mempool", "fees"]} status={data.status} title="Fee histogram" right={<span>tx count · piconero / B</span>}>
-          {feeHist.counts.length ? (
-            <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
-              baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound}
-              marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
-          ) : (
-            <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
-              baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound} />
-          )}
-          <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
-            {data.mempool.length
-              ? <>Over <b className="acc">{data.mempool.length}</b> mempool tx · median fee marked on-chart</>
-              : <>Awaiting mempool sample</>}
-          </p>
+        <DataPanel keys={KEYS_MEMPOOL_FEES} status={data.status} title="Fee histogram" right={<span>tx count · piconero / B</span>}>
+          <PanelBoundary keys={KEYS_MEMPOOL_FEES} reserve={230} resetKeys={[oldestFreshAt(data.status, KEYS_MEMPOOL_FEES)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_MEMPOOL_FEES} height={230}
+              hasContent={feeHist.counts.length > 0 || data.feeHist.length > 0}
+              chart={feeHist.counts.length ? (
+                <BarSeries data={feeHist.counts} labels={feeHist.labels} height={230} color="var(--p-50)"
+                  baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound}
+                  marker={medBucket >= 0 ? { index: medBucket, label: `median ~${Math.round(medPerB).toLocaleString()} pcn/B` } : undefined} />
+              ) : (
+                <BarSeries data={data.feeHist} endLabels={["low", "high"]} height={230} color="var(--p-50)"
+                  baseline="zero" stale={isStale(data.status.mempool)} format={fmtRound} />
+              )}
+              emptyNote="Mempool answered with no fee-paying transactions"
+              downTail="no fee data to bucket"
+            />
+            {(() => {
+              if (data.mempool.length) return (
+                <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
+                  Over <b className="acc">{data.mempool.length}</b> mempool tx · median fee marked on-chart
+                </p>
+              );
+              const reason = emptyReason(data.status, KEYS_MEMPOOL_FEES);
+              // "waiting" says nothing here on purpose: the skeleton above is
+              // already saying it, and this caption would say it twice.
+              if (reason === "waiting") return null;
+              return (
+                <p className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 6, color: "var(--ink-40)" }}>
+                  {reason === "down" ? downNote(data.status, KEYS_MEMPOOL_FEES, "fee sample unavailable") : "Mempool answered with no fee-paying transactions"}
+                </p>
+              );
+            })()}
+          </PanelBoundary>
         </DataPanel>
       </section>
 
       {/* Pool attribution + Remote node */}
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys={["blocks"]} status={data.status} title="Pool attribution" right={<span className="dim">unattributed</span>}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
-            {/* lead with the real signal as a compact stat, not a paragraph */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-              <span style={{ fontSize: 26, color: "var(--ink-100)" }}>{recentBlocks.length ? `${unattributedPct}%` : "—"}</span>
-              <span className="dim" style={{ fontSize: "var(--fs-mono)" }}>
-                {recentBlocks.length
-                  ? <>unattributed · {unattributed}/{recentBlocks.length} recent blocks report pool "Unknown"</>
-                  : <>awaiting block sample</>}
-              </span>
-            </div>
-            {/* single full-width bar, matching the block-weight idiom below */}
-            <div style={{ height: 14, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
-              {recentBlocks.length ? (
-                <div style={{ position: "absolute", inset: "0 auto 0 0", width: unattributedPct + "%", background: "var(--ink-40)", opacity: 0.5, boxShadow: "0 0 8px var(--ink-40)" }} />
-              ) : null}
-            </div>
-            {/* one-line caption: the why lives in a hover tooltip; Skyline link stays visible */}
-            <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
-              Coinbase outputs are one-time stealth addresses — pools can't be matched on-chain{" "}
-              <span
-                title="Real explorers show pool names from a maintained dataset of coinbase tx_extra signatures, or a third-party pool API. Both are off-limits here: a bundled list goes stale and is partial, and an API would break the zero-third-party privacy invariant. So 'Unknown' from the node alone is the honest representation."
-                style={{ cursor: "help", color: "var(--ink-60)", borderBottom: "1px dotted var(--ink-40)" }}
-              >why ⓘ</span>. HHI concentration is explored in the{" "}
-              <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
-            </p>
-          </div>
+        <DataPanel keys={KEYS_BLOCKS} status={data.status} title="Pool attribution" right={<span className="dim">unattributed</span>}>
+          <PanelBoundary keys={KEYS_BLOCKS} reserve={POOL_ATTR_H} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
+            <ChartBody
+              status={data.status} keys={KEYS_BLOCKS} height={POOL_ATTR_H}
+              hasContent={recentBlocks.length > 0}
+              chart={
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
+                  {/* lead with the real signal as a compact stat, not a paragraph */}
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+                    <span style={{ fontSize: 26, color: "var(--ink-100)" }}>{recentBlocks.length ? `${unattributedPct}%` : "—"}</span>
+                    <span className="dim" style={{ fontSize: "var(--fs-mono)" }}>
+                      {recentBlocks.length
+                        ? <>unattributed · {unattributed}/{recentBlocks.length} recent blocks report pool "Unknown"</>
+                        : <>—</>}
+                    </span>
+                  </div>
+                  {/* single full-width bar, matching the block-weight idiom below */}
+                  <div style={{ height: 14, background: "var(--ink-10)", position: "relative", borderRadius: 1 }}>
+                    {recentBlocks.length ? (
+                      <div style={{ position: "absolute", inset: "0 auto 0 0", width: unattributedPct + "%", background: "var(--ink-40)", opacity: 0.5, boxShadow: "0 0 8px var(--ink-40)" }} />
+                    ) : null}
+                  </div>
+                </div>
+              }
+              emptyNote="Node answered with zero blocks in range — nothing to attribute"
+              downTail="pool attribution unavailable"
+            />
+          </PanelBoundary>
+          {/* one-line caption: the why lives in a hover tooltip; Skyline link stays visible.
+              Static prose — not gated on block data, so it stays outside PanelBoundary/ChartBody. */}
+          <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: "12px 0 0", lineHeight: 1.5, color: "var(--ink-40)" }}>
+            Coinbase outputs are one-time stealth addresses — pools can't be matched on-chain{" "}
+            <span
+              title="Real explorers show pool names from a maintained dataset of coinbase tx_extra signatures, or a third-party pool API. Both are off-limits here: a bundled list goes stale and is partial, and an API would break the zero-third-party privacy invariant. So 'Unknown' from the node alone is the honest representation."
+              style={{ cursor: "help", color: "var(--ink-60)", borderBottom: "1px dotted var(--ink-40)" }}
+            >why ⓘ</span>. HHI concentration is explored in the{" "}
+            <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
+          </p>
         </DataPanel>
 
-        <DataPanel keys={["network"]} status={data.status} title="Remote node" provSource="node" provDetail="public node cascade">
+        <DataPanel keys={KEYS_NETWORK} status={data.status} title="Remote node" provSource="node" provDetail="public node cascade">
           <KVRows rows={[
             ["Daemon", ready && data.version ? data.version : "—"],
             ["Network", ready && data.nettype ? data.nettype : "—"],
@@ -377,7 +561,7 @@ export function NetworkPage() {
 
       {/* Chain meta + Block weight */}
       <section className="col-2" style={{ gap: 12 }}>
-        <DataPanel keys={["network", "fees"]} status={data.status} title="Chain meta" provSource="node" provDetail="node reported">
+        <DataPanel keys={KEYS_NETWORK_FEES} status={data.status} title="Chain meta" provSource="node" provDetail="node reported">
           <KVRows rows={[
             ["RandomX seed", ready ? shortHash(data.randomxSeedHash) : "—"],
             ["Adjusted time", ready && data.adjustedTime > 0 ? new Date(data.adjustedTime * 1000).toISOString().slice(11, 19) + " UTC" : "—"],
@@ -389,7 +573,7 @@ export function NetworkPage() {
           ]} />
         </DataPanel>
 
-        <DataPanel keys={["network"]} status={data.status} title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
+        <DataPanel keys={KEYS_NETWORK} status={data.status} title="Block weight · median vs limit" right={<span>dynamic block size</span>}>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)" }}>
               <span style={{ color: "var(--tk-accent)" }}>median {ready && data.blockWeightMedian > 0 ? fmtBytes(data.blockWeightMedian) : "—"}</span>
@@ -411,24 +595,47 @@ export function NetworkPage() {
       </section>
 
       {/* Recent blocks table */}
-      <DataPanel keys={["blocks"]} status={data.status} title="Recent blocks" right={<span>height ↓</span>}>
+      <DataPanel keys={KEYS_BLOCKS} status={data.status} title="Recent blocks" right={<span>height ↓</span>}>
         <div className="table-scroll">
-        <div style={{ display: "grid", gridTemplateColumns: "100px 1fr 60px 80px 80px 110px 60px", gap: 10, fontSize: "var(--fs-mono)" }} className="mono keep-cols">
+        <div style={{ display: "grid", gridTemplateColumns: BLOCKS_TABLE_COLS, gap: 10, fontSize: "var(--fs-mono)" }} className="mono keep-cols">
           {["#", "Hash", "Txs", "Size", "Reward", "Pool", "Age"].map((h, i) => (
             <div key={i} className="kicker" style={{ borderBottom: "1px solid var(--rule)", paddingBottom: 6, marginBottom: 2 }}>{h}</div>
           ))}
-          {data.blocks.slice(0, 12).map((b) => (
-            <React.Fragment key={b.height}>
-              <span className="acc">{b.height.toLocaleString()}</span>
-              <span style={{ color: "var(--c-50)" }}>{shortHash(b.hash)}</span>
-              <span>{b.txs}</span>
-              <span className="dim">{b.sizeKB.toFixed(1)} KB</span>
-              <span className="up">{b.reward.toFixed(3)}</span>
-              <span style={{ color: "var(--ink-80)" }}>{b.pool}</span>
-              <span className="dim">{Math.floor(b.age / 60)}m{b.age % 60}s</span>
-            </React.Fragment>
-          ))}
         </div>
+        {(() => {
+          const reason = emptyReason(data.status, KEYS_BLOCKS);
+          // Same 12 rows / 18px / 8px gap SkeletonRows uses by default, so the
+          // reservation and the skeleton it wraps can't drift apart.
+          const RESERVE = 12 * 18 + 11 * 8;
+          return (
+            <Swap ready={blocksTableRows.length > 0 || reason !== "waiting"} reserve={RESERVE}
+              skeleton={<SkeletonRows n={12} cols={BLOCKS_TABLE_COLS} />}>
+              {blocksTableRows.length ? (
+                <div style={{ display: "grid", gridTemplateColumns: BLOCKS_TABLE_COLS, gap: 10, fontSize: "var(--fs-mono)" }} className="mono keep-cols">
+                  {blocksTableRows.map((b) => (
+                    <React.Fragment key={b.height}>
+                      <span className="acc">{b.height.toLocaleString()}</span>
+                      <span style={{ color: "var(--c-50)" }}>{shortHash(b.hash)}</span>
+                      <span>{b.txs}</span>
+                      <span className="dim">{b.sizeKB.toFixed(1)} KB</span>
+                      <span className="up">{b.reward.toFixed(3)}</span>
+                      <span style={{ color: "var(--ink-80)" }}>{b.pool}</span>
+                      <span className="dim">{Math.floor(b.age / 60)}m{b.age % 60}s</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+              ) : reason === "down" ? (
+                <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+                  {downNote(data.status, KEYS_BLOCKS, "no recent blocks to list")}
+                </p>
+              ) : reason === "empty" ? (
+                <p className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+                  Node answered with zero blocks in range — table is empty
+                </p>
+              ) : null}
+            </Swap>
+          );
+        })()}
         </div>
       </DataPanel>
     </PageShell>

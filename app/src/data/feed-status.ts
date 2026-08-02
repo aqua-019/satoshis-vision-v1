@@ -295,11 +295,19 @@ export function lastOkAt(m: FeedStatusMap): number {
  * updating a renderer becomes a COMPILE error rather than a silently-missing
  * branch.
  *
- * It deliberately does NOT throw. There is no panel-level error boundary yet
- * (RootBoundary is mounted at the app root and on /simulate only), so a throw
- * from a data surface would unwind to main.tsx and blank the entire site — the
- * opposite of what this vocabulary exists to achieve. It is unreachable while
- * the union stays closed; logging costs nothing and removes the tail risk.
+ * It deliberately does NOT throw, and the reason has CHANGED — read this before
+ * "fixing" it. The original reason was that no panel-level error boundary
+ * existed: RootBoundary was mounted only at the app root and on /simulate, so a
+ * throw from any data surface unwound to main.tsx and blanked the entire site.
+ *
+ * v6.1.4 added `design/PanelBoundary.tsx`, so on surfaces that mount one, a
+ * throw would now be contained to its own panel. That removes the original
+ * objection but not the behaviour, because two weaker reasons remain: coverage
+ * is per-call-site rather than global (an unwrapped surface would still take
+ * the route), and a phase this code has never seen is a rendering question, not
+ * a reason to destroy a panel that could otherwise show last-good data.
+ * Returning a fallback degrades; throwing escalates. It stays unreachable while
+ * the union is closed either way.
  */
 export function assertNever<T = null>(x: never, ctx: string, fallback: T = null as T): T {
   console.error(`[xmr.irish] ${ctx}: unhandled feed phase`, x);

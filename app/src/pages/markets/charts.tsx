@@ -347,6 +347,15 @@ export interface MultiLineProps {
   labels?: boolean;
   /** Rendered under the empty-state badge when nothing is usable to plot. */
   emptyNote?: React.ReactNode;
+  /**
+   * True when the group's own fetch attempt has settled with nothing usable
+   * (its SeriesStatus is "error") — the empty-state badge then renders
+   * COINGECKO · unavailable. Omit (or false) while the group is merely still
+   * arriving, which is the honest default: a series with no data yet is not
+   * yet broken, and rendering "error" unconditionally (the previous literal
+   * `fresh="error"`) claimed a failure the caller had no way to know about.
+   */
+  emptyIsError?: boolean;
 }
 
 const ML_X_TICKS = 7;
@@ -376,7 +385,7 @@ function pointAtTime(pts: NormPoint[], t: number, tol: number): NormPoint | null
   return best !== null && bestDt <= tol ? best : null;
 }
 
-function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }: MultiLineProps) {
+function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote, emptyIsError }: MultiLineProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
   const boxRef = React.useRef<HTMLDivElement>(null);
@@ -410,7 +419,7 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote }:
     return (
       <EmptyBox boxRef={boxRef} height={height}>
         <div style={{ height, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          <Provenance source="coingecko" fresh="error" />
+          <Provenance source="coingecko" fresh={emptyIsError ? "error" : "loading"} />
           {emptyNote ? <div className="mono dim" style={{ fontSize: "var(--fs-label)" }}>{emptyNote}</div> : null}
         </div>
       </EmptyBox>

@@ -62,6 +62,14 @@ jobs:
       - name: "Gate: markets aggregator"
         run: node ../api/verify-markets.mjs
 
+      # Offline: the handler makes zero network calls by design, and the gate
+      # proves it with a fetch counter. Its six node-reachability lines are
+      # counted as FIXTURED, never as passes — this sandbox and this runner both
+      # lack egress to a Monero node, and fixture() exists so that cannot be
+      # read as coverage.
+      - name: "Gate: status endpoint"
+        run: node ../api/verify-status.mjs
+
       - name: "Gate: market stale-cache"
         run: node verify-stale.mjs
 

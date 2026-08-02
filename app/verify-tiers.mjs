@@ -11,7 +11,8 @@
    load again — which is exactly the regression v6.0.6 exists to remove. */
 
 import { readFileSync } from 'node:fs';
-import { TIER_MS, BACKOFF_CAP_MS, backoffMs } from './src/data/usePolling.ts';
+import { TIER_MS, BACKOFF_CAP_MS, backoffMs, jitterFrac, jitterMs, JITTER_RATIO } from './src/data/usePolling.ts';
+import { jitterFracMH, jitterMsMH } from './src/data/useMarketHistory.ts';
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
@@ -160,6 +161,89 @@ ok(budget && Number(budget[1].replace(/_/g, '')) < 30_000,
 // 11) simulators stay off the live data path (prompt §5.9 — still true)
 ok(!/genTx|randHex/.test(feed) && !/genTx|randHex/.test(map),
    'no simulator helpers on the live data path');
+
+/* 12) D0868 · jittered retry — the properties, not a sample of the output.
+   The floor is the load-bearing one: backoffMs() exists partly to stop a
+   failing 60s tier polling FASTER than its base rate, and a jitter that could
+   subtract would quietly undo that. */
+{
+  let everBelow = false, everAbove = false, everNonZero = false;
+  for (let seed of [1, 7, 4294967295]) {
+    for (let seq = 0; seq <= 200; seq++) {
+      const f = jitterFrac(seq, seed);
+      if (f < 0 || f >= 1) everAbove = true;
+      for (const base of [3_000, 15_000, 60_000]) {
+        const j = jitterMs(base, seq, seed);
+        if (j < base) everBelow = true;
+        if (j > Math.round(base * (1 + JITTER_RATIO))) everAbove = true;
+        if (j !== base) everNonZero = true;
+      }
+    }
+  }
+  ok(!everBelow, 'jitter only ever ADDS — never below the tier floor backoffMs() protects');
+  ok(!everAbove, `jitter stays inside [delay, delay x ${1 + JITTER_RATIO}] and frac stays in [0,1)`);
+  ok(everNonZero, 'jitter actually spreads — it is not a no-op dressed up as one');
+
+  ok(jitterMs(3_000, 5, 12345) === jitterMs(3_000, 5, 12345),
+     'jitter is deterministic for a fixed (delay, seq, seed)');
+  ok(jitterFrac(5, 1) !== jitterFrac(5, 2),
+     'two clients with different seeds do not share a schedule');
+
+  // Low-discrepancy is the whole reason for the golden-ratio recurrence: 64
+  // consecutive waits must cover the unit interval evenly, not clump. Uniform
+  // random draws would routinely fail this bound; frac(n*phi) cannot.
+  const xs = Array.from({ length: 64 }, (_, i) => jitterFrac(i, 1)).sort((a, b) => a - b);
+  let maxGap = xs[0];
+  for (let i = 1; i < xs.length; i++) maxGap = Math.max(maxGap, xs[i] - xs[i - 1]);
+  ok(maxGap < 3 / 64, `64 consecutive waits spread evenly (largest gap ${maxGap.toFixed(4)} < ${(3 / 64).toFixed(4)})`);
+
+  ok(backoffMs(3_000, 1) === 6_000 && backoffMs(60_000, 5) === 60_000,
+     'backoffMs itself is untouched by the jitter work — composition happens at the call site');
+
+  /* The twin sweep. useMarketHistory.ts cannot import usePolling.ts (bare-Node
+     load, no extensionless relative resolution), so it inlines a copy. That is
+     only safe while this assertion exists: change one implementation and this
+     reddens. See the comment above jitterFracMH for why this duplication is
+     acceptable where the makeReporter one was not. */
+  let drift = 0;
+  for (const seed of [1, 7, 4294967295]) {
+    for (let seq = 0; seq <= 200; seq++) {
+      if (jitterFrac(seq, seed) !== jitterFracMH(seq, seed)) drift++;
+      if (jitterMs(45_000, seq, seed) !== jitterMsMH(45_000, seq, seed)) drift++;
+    }
+  }
+  ok(drift === 0, `usePolling and useMarketHistory jitter agree over 603 x 2 samples (${drift} disagreements)`);
+}
+
+/* 13) D0868 · the call sites are actually jittered. A pure function nothing
+   calls is not a fix, and this is exactly the "wired but unreached" shape. */
+{
+  const polling = read('./src/data/usePolling.ts');
+  const tickers = read('./src/data/useTickers.ts');
+  const mh = read('./src/data/useMarketHistory.ts');
+  /* Match on the composition, not on one formatting of it: these assertions
+     exist to catch a jitter that was deleted or bypassed, not to freeze a line
+     break. An earlier version pinned the exact `setTimeout(...)` spelling and
+     reddened the moment the wait was hoisted into a local — a gate failing on
+     formatting teaches people to edit the gate, which is how gates die. */
+  ok(/jitterMs\(backoffMs\(tierMs\(tier\), failures\)/.test(polling),
+     'usePolling schedules through jitterMs(backoffMs(...)) — jitter wraps backoff, not the reverse');
+  ok(/setTimeout\(run,\s*jitterMs\(nextDelay/.test(tickers),
+     'useTickers jitters both its refresh and its retry wait');
+  ok(/jitterMsMH\(RETRY_MS,/.test(mh) && /setTimeout\(bump,\s*wait\)/.test(mh),
+     'useMarketHistory jitters its 45s retry');
+  /* Strip comments before grepping — all three files legitimately NAME the
+     banned call while explaining why they avoid it, and a raw grep flags the
+     documentation as the offence. verify-prng.mjs:250-254 does the same, and
+     its stripping has a sharp edge worth restating: it removes block comments
+     and LINE-START `//` only, so a TRAILING `// ... Math.random( ...` on a code
+     line still trips it. Keep such notes on their own line. */
+  const strip = (s) => s
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  ok(![polling, tickers, mh].some((s) => /Math\.random\(/.test(strip(s))),
+     'none of the three jitter sites reached for Math.random() (comment-stripped)');
+}
 
 console.log(fail ? '\n❌ verify-tiers FAILED' : '\n✅ verify-tiers: all assertions passed');
 process.exit(fail ? 1 : 0);

@@ -50,6 +50,7 @@ import * as React from "react";
 import type { MoneroLive } from "./types";
 import { getJSON } from "./http";
 import { usePolling } from "./usePolling";
+import { setFeedActivity } from "./feed-activity";
 import {
   BOOT_OBS,
   deriveAll,
@@ -92,6 +93,18 @@ const FULL_REFRESH_FLOOR_MS = 5 * 60_000;
 
 const COINGECKO =
   "/api/coingecko?path=simple/price&ids=monero,bitcoin&vs_currencies=usd&include_24hr_change=true";
+
+/* D0858 · which endpoints each tier owns, for the activity store.
+   Module-level constants, not inline arrows: usePolling holds the callback in a
+   ref so a fresh closure would not restart the loop, but a stable identity is
+   still the honest thing to hand a hook, and these never close over anything. */
+const FAST_KEYS = ["mempool", "fees"] as const;
+const CHAIN_KEYS = ["tip", "network", "blocks"] as const;
+const MARKET_KEYS = ["market"] as const;
+
+const FAST_ACTIVITY = (a: { busy: boolean; nextAt: number }) => setFeedActivity(FAST_KEYS, a);
+const CHAIN_ACTIVITY = (a: { busy: boolean; nextAt: number }) => setFeedActivity(CHAIN_KEYS, a);
+const MARKET_ACTIVITY = (a: { busy: boolean; nextAt: number }) => setFeedActivity(MARKET_KEYS, a);
 
 /** /api/xmr/tip — the cheap 1-RPC tip watch. */
 interface XmrTip {
@@ -293,9 +306,18 @@ export function useXmrIrishFeed(): MoneroLive {
     return true;
   };
 
-  usePolling("fast", fastTick, !wsLive);
-  usePolling("chain", chainTick, !wsLive);
-  usePolling("market", marketTick);
+  /* D0858: tier -> FeedKeys. The mapping lives here because this is where the
+     tick functions already encode which endpoints they touch; usePolling has no
+     business knowing about FeedKey at all.
+
+     Note the chain tier reports for all three of its keys while only ever
+     GUARANTEEING a /tip request — `network` and `blocks` are pulled only when
+     the tip moved. So a busy chain tier means "the loop that owns these
+     endpoints is running", not "these URLs are on the wire", and the UI copy
+     for it says "checking" rather than naming a path. */
+  usePolling("fast", fastTick, !wsLive, FAST_ACTIVITY);
+  usePolling("chain", chainTick, !wsLive, CHAIN_ACTIVITY);
+  usePolling("market", marketTick, true, MARKET_ACTIVITY);
 
   // ── Optional relay WebSocket ────────────────────────────────────────────
   React.useEffect(() => {
