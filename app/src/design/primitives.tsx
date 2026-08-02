@@ -18,8 +18,8 @@ import {
 
 // Canonical data-source attribution badge — re-exported so the many
 // `@/design/primitives` import sites can pull it from one place.
-export { Provenance, DataLegend } from "./provenance";
-export type { ProvSource, ProvFreshness, ProvenanceProps, DataLegendProps } from "./provenance";
+export { Provenance, NodeProvenance, DataLegend } from "./provenance";
+export type { ProvSource, ProvFreshness, ProvenanceProps, NodeProvenanceProps, DataLegendProps } from "./provenance";
 
 // ── Stat tile ───────────────────────────────────────────────────
 

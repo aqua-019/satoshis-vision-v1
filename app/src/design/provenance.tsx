@@ -161,6 +161,83 @@ export function Provenance({
   );
 }
 
+/* ── NodeProvenance — freshness DERIVED from the endpoints a panel reads ───── */
+
+/**
+ * FeedPhase → ProvFreshness. Exhaustive, with assertNever.
+ *
+ * The parameter is annotated `FeedPhase` DELIBERATELY, not `FeedStatus["phase"]`.
+ * `FeedStatus` is a union of variants each carrying a *literal* phase and does
+ * not reference `FeedPhase` at all, so a switch narrowed over `status.phase`
+ * would keep compiling when `FeedPhase` grows — invisible to the guard sweep and
+ * protected by nothing. Callers pass `status[k].phase`, which is assignable.
+ */
+function freshOfPhase(p: FeedPhase): ProvFreshness {
+  switch (p) {
+    case "live": return "live";
+    case "loading": return "loading";
+    case "stale": return "stale";
+    case "error": return "error";
+    default: return assertNever(p, "freshOfPhase", "none");
+  }
+}
+
+/** Worst-of, by severity. Ranked so a two-endpoint panel reports the endpoint
+ *  that is doing worse — a panel is only as fresh as its least fresh input. */
+const PHASE_RANK: Record<FeedPhase, number> = { live: 0, loading: 1, stale: 2, error: 3 };
+
+function worstPhase(keys: readonly FeedKey[], status: FeedStatusMap): FeedPhase {
+  let worst: FeedPhase = "live";
+  for (const k of keys) {
+    if (PHASE_RANK[status[k].phase] > PHASE_RANK[worst]) worst = status[k].phase;
+  }
+  return worst;
+}
+
+/**
+ * Props. `fresh` is OMITTED rather than merely unused: leaving it in the
+ * pass-through would let a call site write
+ * `<NodeProvenance keys={…} status={…} fresh="live" />` and win, which is the
+ * exact hole this component exists to close.
+ *
+ * Two mutually-exclusive forms, discriminated so passing both is a type error:
+ *   keys + status — the normal case, for anything the polled feed covers.
+ *   phase         — for live surfaces OUTSIDE the FeedKey union. There are two
+ *                   classes: /api/xmr/tx/<txid> and /api/xmr/block/<h>, which
+ *                   live-detail.ts fetches one-shot per id, and the market
+ *                   history series, whose SeriesStatus IS FeedPhase. Neither is
+ *                   a polled endpoint with a failure streak, so neither can have
+ *                   a FeedKey without putting a lie in feed-status.ts.
+ *
+ * The `phase` form is not an escape hatch: verify-provenance.mjs bans a literal
+ * `phase="live"` exactly as it bans a literal `fresh="live"`, so the only way to
+ * use it is with a computed FeedPhase.
+ */
+export type NodeProvenanceProps = Omit<ProvenanceProps, "fresh"> &
+  (
+    | { keys: readonly [FeedKey, ...FeedKey[]]; status: FeedStatusMap; phase?: never }
+    | { phase: FeedPhase; keys?: never; status?: never }
+  );
+
+/**
+ * A provenance badge whose freshness it does not get to choose.
+ *
+ * THIS DOES NOT CALL `feedDegraded`, and that is the whole point. `feedDegraded`
+ * is a pair-AND global — it reports healthy while a single endpoint is dead. A
+ * panel with keys={["mempool"]} must go stale when /api/xmr/mempool alone fails,
+ * even though the feed as a whole is fine. That difference IS the per-endpoint
+ * claim this component makes.
+ *
+ * `keys` is a NON-EMPTY tuple because a worst-of fold seeded at "live" would
+ * otherwise return "live" for keys={[]} — a live dot derived from nothing, which
+ * is the defect in a new costume.
+ */
+export function NodeProvenance(props: NodeProvenanceProps) {
+  const { keys, status, phase, ...rest } = props;
+  const resolved: FeedPhase = phase ?? worstPhase(keys, status);
+  return <Provenance {...rest} fresh={freshOfPhase(resolved)} />;
+}
+
 /** Same chrome as <Provenance>, no source tag — for curated editorial content
  *  that has no upstream (e.g. the swap-venue directory). */
 export function ProvNote({ children, style }: { children: React.ReactNode; style?: React.CSSProperties }) {
