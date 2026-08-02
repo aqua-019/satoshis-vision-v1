@@ -132,12 +132,24 @@ const HARNESS_HEALTHY = `serve-dist(uncompressed) · mocked feed @${MOCK_LATENCY
  */
 const MEASURED = {
   //  route        ceiling   worst of 8 runs on 5fca6ba
-  '/':            0.005,  // 0.0006  (0.0002 ×5, 0.0005, 0.0006 ×2)
+  '/':            0.005,  // 0.0009  (v6.1.5 PR B, e618c14; was 0.0006 on 5fca6ba)
   '/mempool':     0.005,  // 0.0000  (8 of 8)
   '/markets':     0.005,  // 0.0000  (8 of 8)  — was 0.02; see the caveat below
   '/network':     0.005,  // 0.0000  (8 of 8)
   '/sources':     0.005,  // 0.0000  (8 of 8)  — NEW in v6.1.5
+  '/simulate':    0.005,  // NEW in v6.1.5 PR B — see the note below
 };
+
+/* /simulate is NEW in PR B, and it is here for one reason: PR B makes the 21
+ * protocol simulators lazy, which puts a Suspense boundary on the stage. An
+ * unreserved lazy swap is exactly the arrival-shift class this gate's mocked
+ * pass was built to catch, and /simulate is the largest chunk in the tree.
+ *
+ * Provenance, stated rather than implied: this row is baselined at e618c14 —
+ * that is, AFTER the ticker fix and BEFORE the splitting. The splitting is the
+ * change this row exists to guard, so that is the honest "before" for it. It
+ * was not measured on 4be3003; the ticker fix is a topbar change measured on
+ * the five routes above, and the sim stage is not downstream of it. */
 
 /* CAVEAT on /markets, stated rather than left implicit. Its old 0.02 ceiling
  * existed because PERF-BASELINE.md recorded 0.0078 there post-v6.0.8: those
@@ -157,37 +169,51 @@ const MEASURED = {
  * legitimately read higher.
  */
 const MEASURED_MOCKED = {
-  //  route        ceiling   worst of 8 runs on 5fca6ba
-  '/':            0.36,   // 0.3482 — A DEFECT CEILING. See below.
+  //  route        ceiling   worst of 8 runs
+  '/':            0.005,  // 0.0012  (v6.1.5 PR B, e618c14; was 0.3483 — see below)
   '/mempool':     0.005,  // 0.0000  (8 of 8)
   '/markets':     0.005,  // 0.0000  (8 of 8)  — same empty-chart caveat as above
   '/network':     0.005,  // 0.0000  (8 of 8)
   '/sources':     0.005,  // 0.0000  (8 of 8)
+  '/simulate':    0.005,  // NEW in v6.1.5 PR B — see the note above
 };
 
-/* ── `/` AT 0.35 IS A RECORDED DEFECT, NOT A TARGET ───────────────────────
- * This ceiling accommodates a real regression so that the ruler can be green
- * on the tree as it stands. It is to be LOWERED, not lived with.
+/* ── `/`'s 0.35 DEFECT: RESOLVED in v6.1.5 PR B (e618c14) ─────────────────
+ * Kept as a record rather than deleted, because the SUPERSEDED DIAGNOSIS is
+ * the more useful half of this note.
  *
- * Measured: 0.3475-0.3482 across 8 runs — utterly stable, so not noise. The
- * same route under the degraded pass reads 0.0006, which is exactly why no
- * gate has ever seen this: until v6.1.5 verify-cls never let data arrive.
+ *   measured 0.3483 (PR A recorded 0.3482)  ->  0.0012, worst of 8
  *
- * Diagnosed with the layout-shift entry's `sources`: `DIV.ticker-strip` grows
- * from h25 to h38 at ~2.9s, when the first market tick lands, and displaces
- * `.shell` — 746px tall on an 844px viewport — by 3px. A near-full-viewport
- * element moving at all produces a large impact x distance product, which is
- * how 3px becomes 0.35. It is 3.5x the Web Vitals 0.1 "good" bound.
+ * PR A recorded the cause as: `DIV.ticker-strip` grows from h25 to h38 when the
+ * first market tick lands and displaces `.shell` — 746px on an 844px viewport —
+ * by 3px, and "a near-full-viewport element moving at all produces a large
+ * impact x distance product, which is how 3px becomes 0.35."
  *
- * It is NOT a mock artifact: real data grows the ticker the same way. Every
- * cold visit to the live site pays this.
+ * THAT LAST STEP IS NOT HOW THE METRIC WORKS, and the number disproves it three
+ * ways. (a) Arithmetic: score is impact fraction x distance fraction, where the
+ * distance fraction is the greatest movement over the viewport's LARGEST
+ * dimension. 3/844 = 0.00355, so one such entry caps at 0.0036 even at impact
+ * 1.0 — two orders short. 0.3482 requires ~294px of movement. (b) Polarity: the
+ * degraded pass renders NO NODE RESPONSE, the LONGEST of the five labels, and
+ * reads 0.0006; the healthy pass lands on LIVE, the SHORTEST, and read 0.3483.
+ * If label-driven ticker geometry were the cause, degraded would be the worse
+ * pass — it was better by 580x. (c) Layout: at 390px `styles.css:2347` hides
+ * every `.ticker-strip > .tk`, so no price element remains for a tick to grow.
  *
- * Deliberately not fixed here. This PR's entire safety property is that it
- * changes no runtime behaviour, which is what makes "measured on the PR
- * branch" equal "measured on main" — fixing the defect in the same PR that
- * establishes the baseline would destroy the baseline's meaning. The fix
- * (reserve the ticker strip's populated height) belongs to the optimisation
- * PR, which now has a before number to beat. */
+ * The observations were right; the attribution was wrong. `sources` capture (now
+ * committed, above) shows the dominant entry carries FOUR nodes: `.ticker-strip`
+ * really does go 202x25 -> 159x38, and `.shell` really is displaced 3px — but
+ * `BUTTON.navtop-toggle` moves **314px horizontally** when `.topbar`'s
+ * `flex-wrap` re-solves, and 314/844 = 0.372 is the entire score. See the fix
+ * and its measured alternatives at `styles.css`'s `.ticker-strip > .pill`
+ * rule.
+ *
+ * HOW THE WRONG STORY GOT IN, which is the part worth carrying forward: until
+ * PR B this observer read `entry.value` and never `entry.sources`, so that
+ * diagnosis came from ad-hoc instrumentation that was never committed and could
+ * not be re-run. It is the same defect PR A itself found at PERF-BASELINE.md:17
+ * — a documented measurement whose harness does not exist — committed by the PR
+ * that flagged it. The capture above exists so this cannot recur silently. */
 
 const ROUTES = Object.keys(MEASURED);
 
