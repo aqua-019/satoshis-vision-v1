@@ -783,6 +783,12 @@ header > div > h1.serif {
 .panel-h { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--rule); font: 10px/1 var(--f-mono); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-60); }
 .panel-h .l { display: flex; gap: 10px; align-items: center; }
 .panel-h .r { display: flex; gap: 8px; align-items: center; color: var(--ink-40); }
+/* A panel whose endpoint stopped answering. Gold, matching every other stale
+   signal on the site (.prov-fresh--stale, the STALE chart watermark). It sits
+   in the HEADER on purpose: chart bodies already dim themselves, and a second
+   body-level dim would double up on them while still leaving the table and
+   stat panels — the ones that cannot draw a watermark — saying nothing. */
+.panel-stale { color: var(--y-50); letter-spacing: 0.08em; white-space: nowrap; }
 .panel-b { padding: 10px 12px; }
 
 /* corner ticks (HUD framing) */

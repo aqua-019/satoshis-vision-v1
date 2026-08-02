@@ -70,11 +70,31 @@ export interface PanelFrameProps {
   scrollable?: string | number;
   style?: React.CSSProperties;
   ticks?: boolean;
+  /**
+   * The FeedKey(s) this panel's numbers actually come from, space-separated.
+   * Rendered as `data-panel-key` so a gate can assert that killing ONE endpoint
+   * degrades exactly the panels fed by it and leaves the rest live — which is
+   * not observable from rendered text, since a stale chart and a live one
+   * differ only by opacity and a decorative watermark.
+   */
+  dataKey?: string;
+  /**
+   * This panel's data is last-good, not current.
+   *
+   * Renders a header chip and stamps `data-stale`, which is what makes
+   * staleness observable on panels that are not charts. The chart components
+   * draw their own STALE watermark inside the body; a table or a stat-plus-bar
+   * has nowhere to draw one, so before this the Pool-attribution and
+   * Recent-blocks panels showed last-good numbers formatted exactly like live
+   * ones and said nothing. The chip lives in the HEADER precisely so it does
+   * not double-dim the chart bodies that already handle themselves.
+   */
+  stale?: boolean;
 }
 
-export function PanelFrame({ title, right, children, scrollable, style, ticks = true }: PanelFrameProps) {
+export function PanelFrame({ title, right, children, scrollable, style, ticks = true, dataKey, stale }: PanelFrameProps) {
   return (
-    <div className="panel" style={style}>
+    <div className="panel" style={style} data-panel-key={dataKey} data-stale={stale ? "true" : undefined}>
       {ticks ? (<>
         <span className="tick tl" />
         <span className="tick tr" />
@@ -84,7 +104,10 @@ export function PanelFrame({ title, right, children, scrollable, style, ticks = 
       {title ? (
         <div className="panel-h">
           <div className="l">{typeof title === "string" ? <span>{title}</span> : title}</div>
-          <div className="r">{right}</div>
+          <div className="r">
+            {stale ? <span className="panel-stale" title="last-good values — this endpoint is not answering">· stale</span> : null}
+            {right}
+          </div>
         </div>
       ) : null}
       <div className="panel-b" style={scrollable ? { overflow: "auto", maxHeight: scrollable } : undefined}>
