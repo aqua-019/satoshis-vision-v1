@@ -105,47 +105,47 @@ try {
 }
 
 // ============================================================================
-// §2 · vercel.json structure and redirects
+// §2 · vercel.json structure: 12 redirects + SPA catch-all in rewrites
 // ============================================================================
-R.group('§2 · vercel.json: exactly 12 redirects with statusCode 301, SPA catch-all, no /api/ sources');
+R.group('§2 · vercel.json: 12 redirects (statusCode 301, no /api/ sources) + SPA catch-all in rewrites');
 
 let vercelJsonContent;
 try {
   const vercelPath = join(__dirname, '..', 'vercel.json');
   vercelJsonContent = JSON.parse(readFileSync(vercelPath, 'utf8'));
 
+  // Check redirects array (destination-based nav redirects, 12 entries expected)
   if (!Array.isArray(vercelJsonContent.redirects)) {
-    R.ok(false, 'redirects is not an array');
+    R.ok(false, `redirects is ${typeof vercelJsonContent.redirects} (expected array of 12)`);
   } else {
-    // Filter out the SPA catch-all to count real redirects
-    const nonCatchAll = vercelJsonContent.redirects.filter(r => r.source !== '/((?!api/).*)/');
+    R.ok(vercelJsonContent.redirects.length === 12, `redirects.length: ${vercelJsonContent.redirects.length} (expected 12)`);
 
-    R.ok(nonCatchAll.length === 12, `${nonCatchAll.length} non-catch-all redirects (expected 12)`);
-
-    if (nonCatchAll.length > 0) {
-      const all301 = nonCatchAll.every(r => r.statusCode === 301);
+    if (vercelJsonContent.redirects.length > 0) {
+      const all301 = vercelJsonContent.redirects.every(r => r.statusCode === 301);
       R.ok(all301, all301 ? 'All 12 have statusCode 301' : 'Some redirects lack statusCode 301');
 
-      const hasApiSource = nonCatchAll.some(r => r.source.startsWith('/api/'));
+      const hasApiSource = vercelJsonContent.redirects.some(r => r.source.startsWith('/api/'));
       R.ok(!hasApiSource, hasApiSource ? 'Found /api/ sources in redirects' : 'No /api/ sources');
 
-      vecelRedirects = nonCatchAll.map(r => ({ source: r.source, destination: r.destination }));
+      vecelRedirects = vercelJsonContent.redirects.map(r => ({ source: r.source, destination: r.destination }));
     }
   }
 
-  // SPA catch-all must exist and come AFTER redirects
-  const spaIdx = vercelJsonContent.redirects.findIndex(r => r.source === '/((?!api/).*)/');
-  const hasSpaCatchAll = spaIdx !== -1;
-  R.ok(hasSpaCatchAll, hasSpaCatchAll ? 'SPA catch-all /((?!api/).*/) exists' : 'SPA catch-all missing');
-
-  if (hasSpaCatchAll && nonCatchAll.length > 0) {
-    const lastRedirectIdx = vercelJsonContent.redirects.length - 2; // Last actual redirect before catch-all
-    const spaIsLast = spaIdx === vercelJsonContent.redirects.length - 1;
-    R.ok(spaIsLast, spaIsLast ? 'SPA catch-all sits after all redirects' : 'SPA catch-all not in final position');
+  // Check rewrites array (must contain SPA catch-all + /api/xmr rewrite)
+  if (!Array.isArray(vercelJsonContent.rewrites)) {
+    R.ok(false, `rewrites is ${typeof vercelJsonContent.rewrites} (expected array with SPA catch-all)`);
+  } else {
+    // SPA catch-all: source '/((?!api).*)', destination '/index.html' (no trailing slash on source)
+    const spaRewrite = vercelJsonContent.rewrites.find(
+      r => r.source === '/((?!api/).*)'  && r.destination === '/index.html'
+    );
+    R.ok(spaRewrite !== undefined, spaRewrite ? 'SPA catch-all /((?!api/).*) → /index.html exists' : 'SPA catch-all missing or mismatched');
   }
 
+  R.info('Vercel evaluates rewrites and redirects before filesystem lookup — array position does not determine evaluation order.');
+
 } catch (e) {
-  R.ok(false, `parse failed: ${e.message}`);
+  R.ok(false, `parse error: ${e.message}`);
 }
 
 // ============================================================================
@@ -349,15 +349,26 @@ try {
   const moneroPath = join(__dirname, 'src', 'pages', 'MoneroPage.tsx');
   const moneroSource = readFileSync(moneroPath, 'utf8');
 
-  const hasMarketThesis = moneroSource.includes('markets-thesis');
-  const hasOutlook = moneroSource.includes('outlook');
-  const mapsToLiveMarkets = moneroSource.includes('/live/markets/thesis');
-  const mapsToFuture = moneroSource.includes('/future/outlook');
+  // Strip comments and strings to prevent false positives from unrelated code
+  // (e.g., case "outlook": in tab switch, bare "outlook" string in comments).
+  // This is load-bearing: after the restructure, "outlook" will be deleted
+  // from MONERO_TABS, so a naive substring match would flip meaning without
+  // anyone noticing. Mechanism assertion catches the actual change.
+  const stripped = stripStrings(stripComments(moneroSource));
 
-  R.ok(hasMarketThesis, 'contains "markets-thesis"');
-  R.ok(hasOutlook, 'contains "outlook"');
-  R.ok(mapsToLiveMarkets, 'contains "/live/markets/thesis"');
-  R.ok(mapsToFuture, 'contains "/future/outlook"');
+  // Assert the mechanism: code reads URL fragment (location.hash or useLocation with hash)
+  const readsHash = /location\.hash|useLocation\s*\([^)]*\)[\s\S]*?\bhash\b/.test(stripped);
+  R.ok(readsHash, readsHash ? 'reads location.hash or useLocation().hash' : 'does not read URL fragment');
+
+  // Assert both destination paths appear (strong signals, unlikely to collide)
+  const hasMarketThesisDest = moneroSource.includes('/live/markets/thesis');
+  const hasFutureOutlookDest = moneroSource.includes('/future/outlook');
+  R.ok(hasMarketThesisDest, hasMarketThesisDest ? 'contains /live/markets/thesis' : 'missing /live/markets/thesis destination');
+  R.ok(hasFutureOutlookDest, hasFutureOutlookDest ? 'contains /future/outlook' : 'missing /future/outlook destination');
+
+  // Assert anchor names: markets-thesis is hyphenated (safe), outlook requires mechanism assertion above
+  const hasMarketThesisAnchor = stripped.includes('markets-thesis');
+  R.ok(hasMarketThesisAnchor, hasMarketThesisAnchor ? 'contains markets-thesis anchor' : 'missing markets-thesis anchor');
 
   R.info('Hash rows (#markets-thesis, #outlook) are client-side navigation. URL fragments never reach servers, so vercel.json structurally cannot redirect them. Absence from vercel.json is correct by design.');
 
