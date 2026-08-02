@@ -1,0 +1,1681 @@
+<!doctype html>
+<html lang="en" data-theme="classic">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>xmr.irish v6 — Cold Boot splash · v2</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   xmr.irish v6 · COLD BOOT — v2
+   Phase 1   full-bleed decrypt, no HUD column, density MAX
+   Phase 2   HUD + RING (left) · LOG + decoys + CTA (centre) · ORB (right)
+   Locked    5.00 s base · 0.9× · end-state B (console is the home hero)
+             · gating: once per session · field density MAX
+   Theme     classic (v4/v5 black + Monero orange)
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --bg-0:#050505; --bg-1:#0a0907; --bg-2:#11100c; --bg-3:#1a1812;
+  --line:rgba(255,122,26,.14); --line-d:rgba(255,122,26,.06);
+  --rule:rgba(255,255,255,.05);
+  --o-100:#ffce8a; --o-80:#ffb978; --o-60:#ff8a2a; --o-50:#ff7a1a;
+  --o-40:#d6620f; --o-30:#8a3e07; --o-20:#4a2104; --o-10:#1f0d02;
+  --g-50:#4ade80; --r-50:#ff4d6d; --y-50:#ffd400; --p-50:#b87aff; --c-50:#5ed3f4;
+  --ink-100:#a8a094;
+  --ink-80:rgba(168,160,148,.85); --ink-60:rgba(168,160,148,.55);
+  --ink-40:rgba(168,160,148,.32); --ink-20:rgba(168,160,148,.16);
+  --ink-10:rgba(168,160,148,.08);
+  --f-serif:"Newsreader","Source Serif Pro","Charter",Georgia,serif;
+  --f-sans:"Geist","Söhne","Inter",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono","Berkeley Mono","IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --d-1:75ms; --d-2:150ms; --d-3:300ms; --d-4:500ms;          /* D0651 */
+  --e-standard:cubic-bezier(.4,0,.2,1); --e-decel:cubic-bezier(0,0,.2,1);
+  --e-accel:cubic-bezier(.4,0,1,1);   --e-expressive:cubic-bezier(.2,.9,.1,1);  /* D0652 */
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#050505;color:var(--ink-100);
+  font-family:var(--f-sans);color-scheme:dark;-webkit-font-smoothing:antialiased}
+body{overflow:hidden}
+body.gone{overflow:auto}
+
+#stage{position:fixed;inset:0;background:#050505;overflow:hidden;isolation:isolate;z-index:3;
+  transform-origin:50% 50%;will-change:transform,filter}
+body.gone #stage{display:none}
+/* the CRT line the console collapses into, and the home expands out of */
+#crt{position:fixed;left:0;right:0;top:50%;height:2px;z-index:5;opacity:0;pointer-events:none;
+  background:linear-gradient(to right,transparent,var(--o-100),var(--o-100),transparent);
+  box-shadow:0 0 18px rgba(255,206,138,.9),0 0 60px rgba(255,122,26,.5)}
+#field{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:2}
+/* ring + orb ride ABOVE the console so the panes can stay opaque */
+#fx{position:fixed;inset:0;width:100%;height:100%;display:block;z-index:6;pointer-events:none}
+
+/* ── MAIN HOME ─────────────────────────────────────────────────── */
+#home{position:fixed;inset:0;z-index:1;overflow-y:auto;overflow-x:hidden;background:#050505;
+  opacity:0;pointer-events:none;transform-origin:50% 50%;will-change:transform,filter}
+body.gone #home{pointer-events:auto}
+.hm-nav{position:sticky;top:0;z-index:4;display:flex;align-items:center;gap:2px;padding:0 20px;
+  height:56px;border-bottom:1px solid var(--line);background:rgba(5,5,5,.94);backdrop-filter:blur(8px)}
+.hm-mark{display:flex;align-items:center;gap:8px;margin-right:24px}
+.hm-mark b{font-family:var(--f-serif);font-size:18px;font-weight:400;color:var(--o-60);white-space:nowrap}
+.hm-mark b i{font-style:normal;color:var(--ink-60)}
+.shamrock.sm{width:20px;height:23px;opacity:1;transform:none}
+.hm-nav a{font-family:var(--f-mono);font-size:12px;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-60);text-decoration:none;padding:8px 13px;border:1px solid transparent;border-radius:2px;
+  transition:color var(--d-2) var(--e-standard),border-color var(--d-2) var(--e-standard)}
+.hm-nav a:hover{color:var(--o-60);border-color:var(--line)}
+.hm-nav a[aria-current]{color:var(--o-50);border-color:var(--line)}
+.hm-k{margin-left:14px;font-family:var(--f-mono);font-size:12px;color:var(--ink-40);
+  border:1px solid var(--line-d);border-radius:3px;padding:3px 7px}
+.hm-slots{margin-left:auto;display:flex;gap:16px;align-items:center}
+.slot{font-family:var(--f-mono);font-size:12px;line-height:1.4;display:flex;gap:7px;align-items:baseline}
+.slot .sk{color:var(--ink-40);letter-spacing:.13em;text-transform:uppercase}
+.slot .sv{color:var(--o-60);font-size:13px;font-variant-numeric:tabular-nums}
+
+.hm-hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:40px;
+  padding:64px 44px 52px;max-width:1720px;margin-inline:auto;align-items:center}
+.hm-kick{font-family:var(--f-mono);font-size:12px;letter-spacing:.24em;color:var(--o-40);
+  text-transform:uppercase;font-variant-numeric:tabular-nums}
+.hm-h1{font-family:var(--f-serif);font-size:clamp(30px,4.1vw,60px);line-height:1.04;
+  margin:18px 0 18px;color:var(--ink-100);letter-spacing:-.01em;
+  min-height:4.2em;display:flex;flex-direction:column;justify-content:flex-end}
+.hm-h1 .ln{display:block;overflow:hidden}
+.hm-h1 .ln i{display:block;font-style:normal;will-change:transform,opacity}
+.hm-rot{display:flex;flex-direction:column}
+.hm-lede{min-height:4.85em}
+.hm-attr{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:-8px 0 20px;
+  font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;color:var(--ink-40)}
+.hm-attr b{color:var(--o-40);font-weight:400;letter-spacing:.12em;text-transform:uppercase}
+.hm-attr a{color:var(--ink-40);text-decoration:none;border-bottom:1px solid var(--line-d)}
+.hm-attr a:hover{color:var(--o-60);border-color:rgba(255,122,26,.4)}
+.hm-dots{display:flex;gap:6px;align-items:center;margin-bottom:24px}
+.hm-dots button{all:unset;cursor:pointer;width:26px;height:3px;border-radius:2px;
+  background:var(--ink-10);position:relative;overflow:hidden;
+  transition:background var(--d-2) var(--e-standard)}
+.hm-dots button:hover{background:var(--ink-20)}
+.hm-dots button i{position:absolute;inset:0;background:var(--o-50);
+  transform:scaleX(var(--fill,0));transform-origin:left center}
+.hm-dots button[aria-current] {background:rgba(255,122,26,.2)}
+.hm-dots .pz{width:auto;height:auto;background:none;font-family:var(--f-mono);font-size:12px;
+  color:var(--ink-20);margin-left:6px}
+.hm-lede{font-size:15px;line-height:1.6;color:var(--ink-60);max-width:58ch;margin:0 0 18px}
+.hm-cta{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:30px}
+.hm-cta button{font-family:var(--f-mono);font-size:13px;letter-spacing:.13em;text-transform:uppercase;
+  padding:12px 20px;background:transparent;color:var(--ink-60);border:1px solid var(--line);
+  border-radius:2px;cursor:pointer;transition:all var(--d-2) var(--e-standard)}
+.hm-cta button:hover{color:var(--o-60);border-color:rgba(255,122,26,.36)}
+.hm-cta button.pri{background:rgba(255,122,26,.11);color:var(--o-100);border-color:rgba(255,122,26,.36)}
+.hm-cta button.pri:hover{background:rgba(255,122,26,.2)}
+.hm-strip{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--line-d);
+  border:1px solid var(--line-d);border-radius:3px;overflow:hidden;margin-bottom:12px}
+.hm-strip div{background:var(--bg-1);padding:10px 12px}
+.hm-strip b{display:block;font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;
+  color:var(--ink-40);text-transform:uppercase;font-weight:400;margin-bottom:3px}
+.hm-strip span{font-family:var(--f-mono);font-size:15px;color:var(--o-60);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.hm-prov{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.hm-prov .pv{font-family:var(--f-mono);font-size:12px;color:var(--ink-20);margin-left:4px}
+.hm-hero-r{position:relative;display:flex;flex-direction:column;gap:12px}
+.hm-orb{position:relative;width:100%;aspect-ratio:1/1;max-height:52vh}
+.hm-orbcap{font-family:var(--f-mono);font-size:12px;color:var(--ink-40);text-align:center;line-height:1.5}
+.hm-orbcap b{color:var(--o-60);font-weight:400}
+
+.hm-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(226px,1fr));gap:12px;
+  padding:0 44px 52px;max-width:1720px;margin-inline:auto}
+.hm-card{display:flex;flex-direction:column;gap:6px;border:1px solid var(--line);background:var(--bg-1);
+  padding:16px;border-radius:3px;text-decoration:none;position:relative;overflow:hidden;
+  transition:border-color var(--d-2) var(--e-standard),transform var(--d-2) var(--e-standard)}
+.hm-card:hover{border-color:rgba(255,122,26,.34);transform:translateY(-2px)}
+.hm-card b{font-family:var(--f-mono);font-size:13px;letter-spacing:.18em;color:var(--o-50);text-transform:uppercase}
+.hm-card em{font-family:var(--f-mono);font-size:12px;color:var(--ink-40);font-style:normal;letter-spacing:.04em}
+.hm-card span{font-size:13px;line-height:1.55;color:var(--ink-60);margin-top:4px}
+.hm-card u{margin-top:auto;padding-top:10px;font-family:var(--f-mono);font-size:12px;
+  color:var(--o-40);text-decoration:none;letter-spacing:.1em}
+
+.hm-thesis{border-block:1px solid var(--line);padding:52px 44px;max-width:1720px;margin-inline:auto}
+.hm-thesis blockquote{margin:0;font-family:var(--f-serif);font-size:clamp(20px,2.6vw,34px);
+  line-height:1.34;color:var(--ink-100);font-style:italic;max-width:26ch}
+.hm-thesis cite{display:block;margin-top:16px;font-family:var(--f-mono);font-size:12px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink-40);font-style:normal}
+.hm-foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;padding:24px 44px 40px;
+  max-width:1720px;margin-inline:auto;font-family:var(--f-mono);font-size:12px;color:var(--ink-20)}
+
+@media (max-width:1000px){
+  .hm-hero{grid-template-columns:1fr;padding:36px 18px 32px;gap:26px}
+  .hm-hero-r{order:-1} .hm-orb{max-height:38vh;margin-inline:auto;max-width:340px}
+  .hm-grid,.hm-thesis,.hm-foot{padding-inline:18px}
+  .hm-strip{grid-template-columns:repeat(2,1fr)}
+  .hm-nav{gap:0;overflow-x:auto;padding:0 12px} .hm-nav a{padding:8px 9px}
+  .hm-slots{display:none}
+}
+
+/* ── console ───────────────────────────────────────────────────── */
+#console{position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;
+  visibility:hidden;opacity:0;pointer-events:none}
+#console.on{visibility:visible;pointer-events:auto}
+.con-top{display:flex;align-items:center;gap:14px;height:46px;padding:0 18px;flex:none;
+  border-bottom:1px solid var(--line);background:#050505}
+.con-mark{font-family:var(--f-serif);font-size:16px;color:var(--o-60);white-space:nowrap}
+.con-mark i{font-style:normal;color:var(--ink-60)}
+.con-tag{font-family:var(--f-mono);font-size:12px;letter-spacing:.22em;color:var(--ink-40);text-transform:uppercase}
+.con-right{margin-left:auto;display:flex;align-items:center;gap:9px}
+.badge{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;padding:3px 7px;
+  border:1px solid var(--line);border-radius:2px;color:var(--o-40);text-transform:uppercase;white-space:nowrap}
+.badge.ok{color:var(--g-50);border-color:rgba(74,222,128,.22)}
+.badge.net{color:var(--c-50);border-color:rgba(94,211,244,.22)}
+
+/* ── masthead · shamrock + wordmark, above the pane row ───────── */
+.masthead{flex:none;display:flex;align-items:center;gap:14px;padding:0 18px;height:58px;
+  border-bottom:1px solid var(--line-d);width:100%;max-width:2100px;margin-inline:auto;
+  overflow:hidden}
+.shamrock{width:31px;height:35px;flex:none;opacity:var(--mh,0);
+  transform:scale(calc(.82 + .18*var(--mh,0))) rotate(calc((1 - var(--mh,0)) * -14deg));
+  transform-origin:50% 60%}
+.shamrock .leaf{fill:var(--o-50)}
+.shamrock .leaf.b{fill:var(--o-40)}
+.shamrock .stem{fill:none;stroke:var(--o-40);stroke-width:2.4;stroke-linecap:round}
+.mh-word{font-family:var(--f-serif);font-size:clamp(19px,2.1vw,26px);line-height:1;
+  color:var(--o-60);white-space:nowrap;opacity:var(--mh,0);
+  letter-spacing:calc(0.20em + (1 - var(--mh,0)) * 0.42em)}
+.mh-rule{flex:1;height:1px;background:linear-gradient(to right,
+  rgba(255,122,26,.34),rgba(255,122,26,.06));transform:scaleX(var(--mh,0));
+  transform-origin:left center;min-width:20px}
+.mh-tag{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-40);white-space:nowrap;opacity:calc(var(--mh,0) * .9)}
+
+.con-grid{flex:1;min-height:0;display:grid;
+  grid-template-columns:minmax(0,1.00fr) minmax(0,1.12fr) minmax(0,1.04fr);
+  gap:14px;padding:14px;width:100%;max-width:2100px;margin-inline:auto}
+
+.pane{position:relative;min-height:0;display:flex;flex-direction:column;
+  background:#050505;                    /* opaque — canvas fx ride above, not behind */
+  border:1px solid rgba(255,122,26,calc(.16*var(--draw,0)));border-radius:3px;overflow:hidden}
+.pane::before,.pane::after{content:"";position:absolute;pointer-events:none;
+  width:calc(46% * var(--draw,0));height:calc(34% * var(--draw,0))}
+.pane::before{top:-1px;left:-1px;border-top:1px solid var(--o-40);border-left:1px solid var(--o-40)}
+.pane::after{bottom:-1px;right:-1px;border-bottom:1px solid var(--o-40);border-right:1px solid var(--o-40)}
+.pane-hd{flex:none;display:flex;align-items:baseline;gap:9px;padding:8px 11px;
+  border-bottom:1px solid var(--line-d)}
+.pane-hd b{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;color:var(--o-50);
+  text-transform:uppercase;font-weight:500}
+.pane-hd span{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--ink-40);letter-spacing:.08em}
+.pane-bd{flex:1;min-height:0;padding:10px 11px;overflow:hidden;display:flex;flex-direction:column;gap:8px}
+.sub{font-family:var(--f-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-40);border-bottom:1px solid var(--ink-10);padding-bottom:4px;flex:none;
+  display:flex;justify-content:space-between;gap:8px}
+.sub.nocaps{text-transform:none;letter-spacing:.1em}
+.sub u{text-decoration:none;color:var(--ink-20)}
+
+/* ── LEFT · HUD + VERIFICATION + RING ──────────────────────────── */
+.hud-row{display:grid;grid-template-columns:1fr auto;align-items:baseline;gap:8px;padding:3px 0}
+.hud-k{font-family:var(--f-mono);font-size:12px;letter-spacing:.13em;color:var(--ink-40);
+  text-transform:uppercase;white-space:nowrap}
+.hud-v{font-family:var(--f-mono);font-size:13px;color:var(--o-60);white-space:nowrap;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}     /* D0142 / D1314 */
+.hud-v.g{color:var(--g-50)}
+.vf{display:flex;flex-direction:column;gap:2px;flex:none}
+.vf div{display:grid;grid-template-columns:14px 1fr auto;gap:7px;align-items:baseline;
+  font-family:var(--f-mono);font-size:12px;color:var(--ink-60);opacity:0}
+.vf .mk{color:var(--g-50)} .vf .vv{color:var(--ink-40)}
+.vf .bad,.vf .bad .mk,.vf .bad .vv{color:var(--r-50)}
+.vf-note{font-family:var(--f-mono);font-size:12px;line-height:1.45;color:var(--ink-40);
+  border-left:1px solid rgba(255,77,109,.35);padding-left:8px;flex:none;opacity:0}
+.ring-stage{position:relative;flex:none;height:clamp(140px,16.5vh,206px)}
+.probe{flex:none;border:1px solid var(--line-d);border-radius:2px;background:var(--bg-1);
+  padding:6px 8px;font-family:var(--f-mono);font-size:12px;line-height:1.5;color:var(--ink-60);opacity:0}
+.probe b{color:var(--o-60);font-weight:400}
+.probe .quiet{color:var(--ink-40)}
+.probe em{font-style:normal;color:var(--ink-40);display:block;margin-top:2px}
+.matrix{flex:1 1 auto;min-height:80px;overflow-y:auto;overflow-x:hidden;opacity:0}
+.mx-hd,.mx-r{display:grid;grid-template-columns:22px minmax(0,1fr) 52px 44px 50px;gap:6px;
+  font-family:var(--f-mono);font-size:12px;padding:2px 3px;align-items:baseline}
+.mx-hd{color:var(--ink-20);letter-spacing:.1em;text-transform:uppercase;
+  border-bottom:1px solid var(--ink-10);position:sticky;top:0;background:#050505;z-index:1}
+.mx-r{color:var(--ink-60);border-radius:2px}
+.mx-r span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mx-r:hover,.mx-r.on{background:rgba(255,122,26,.12);color:var(--o-80)}
+.mx-r .n{color:var(--ink-20)}
+.mx-r.real .n,.mx-r.on .n{color:var(--o-100)}
+.mx-r .amt{color:var(--ink-20);letter-spacing:.06em}
+
+/* ── CENTRE · LOG + DECOYS + CTA ───────────────────────────────── */
+.log{font-family:var(--f-mono);font-size:12px;line-height:1.6;color:var(--ink-60);
+  flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end}
+.log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log .t{color:var(--ink-20)}
+.log .ok{color:var(--g-50)} .log .warn{color:var(--y-50)} .log .acc{color:var(--o-50)}
+.log .dim{color:var(--ink-40)} .log .p{color:var(--p-50)}
+.cursor{display:inline-block;width:7px;height:12px;background:var(--o-50);vertical-align:-1px;margin-left:2px}
+body:not(.reduced) .cursor{animation:blink 1.06s steps(1,end) infinite}
+@keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+.hist{position:relative;height:clamp(70px,10vh,106px);flex:none;display:flex;align-items:flex-end;gap:1px;
+  border-bottom:1px solid var(--ink-20);opacity:0}
+.hist i{flex:1;background:linear-gradient(to top,rgba(255,122,26,.30),rgba(255,122,26,.07));
+  min-height:1px;display:block}
+.hist .pt{position:absolute;width:5px;height:5px;border-radius:50%;background:var(--ink-40);
+  transform:translate(-50%,50%);box-shadow:0 0 0 2px #050505}
+.hist .pt.real{background:var(--o-100);width:7px;height:7px;
+  box-shadow:0 0 9px rgba(255,206,138,.9),0 0 0 2px #050505;z-index:2}
+.hist .pt.hot{background:var(--o-50);z-index:3}
+.hist-ax{display:flex;justify-content:space-between;font-family:var(--f-mono);font-size:12px;
+  color:var(--ink-20);flex:none;opacity:0}
+.hist-key{font-family:var(--f-mono);font-size:12px;line-height:1.42;color:var(--ink-40);flex:none;opacity:0}
+.statstrip{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;flex:none;opacity:0}
+.statstrip div{border:1px solid var(--line-d);border-radius:2px;padding:6px 8px;background:var(--bg-1)}
+.statstrip b{display:block;font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;
+  color:var(--ink-40);text-transform:uppercase;font-weight:400}
+.statstrip span{font-family:var(--f-mono);font-size:14px;color:var(--o-60);font-variant-numeric:tabular-nums}
+.cta{display:flex;gap:8px;flex:none;opacity:0}
+.cta button{flex:1;font-family:var(--f-mono);font-size:13px;letter-spacing:.16em;text-transform:uppercase;
+  padding:10px;background:rgba(255,122,26,.10);color:var(--o-100);border:1px solid rgba(255,122,26,.34);
+  border-radius:2px;cursor:pointer;transition:background var(--d-2) var(--e-standard)}
+.cta button:hover{background:rgba(255,122,26,.2)}
+.cta button.ghost{flex:0 0 auto;background:transparent;color:var(--ink-40);border-color:var(--line-d)}
+.cta button:focus-visible{outline:2px solid var(--o-50);outline-offset:2px}
+
+/* ── RIGHT · THE NETWORK (orb) ─────────────────────────────────── */
+.net-stage{position:relative;flex:1 1 auto;min-height:190px}
+.net-cap{position:absolute;left:0;right:0;bottom:0;text-align:center;font-family:var(--f-mono);
+  font-size:12px;color:var(--ink-40);letter-spacing:.05em;opacity:0}
+.net-legend{display:flex;gap:10px;flex-wrap:wrap;line-height:1.5;flex:none;font-family:var(--f-mono);font-size:12px;
+  color:var(--ink-40);opacity:0}
+.net-legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px}
+.split{display:flex;height:5px;border-radius:3px;overflow:hidden;flex:none;opacity:0;background:var(--bg-2)}
+.split i{display:block;height:100%}
+.net-rows{flex:none;display:flex;flex-direction:column;opacity:0}
+.nr{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:baseline;padding:3px 0;
+  border-bottom:1px solid var(--ink-10)}
+.nr:last-child{border-bottom:0}
+.nr b{font-family:var(--f-mono);font-size:12px;letter-spacing:.13em;color:var(--ink-40);
+  text-transform:uppercase;font-weight:400}
+.nr span{font-family:var(--f-mono);font-size:13px;color:var(--o-60);font-variant-numeric:tabular-nums}
+.nr span.c{color:var(--c-50)} .nr span.w{color:var(--y-50)}
+.net-src{font-family:var(--f-mono);font-size:12px;color:var(--ink-20);flex:none;opacity:0;padding-top:2px}
+.nsrc-l div{display:flex;align-items:baseline;gap:6px;line-height:1.45;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nsrc-l b{color:var(--ink-40);font-weight:400}
+.badge.ill{color:var(--p-50);border-color:rgba(184,122,255,.24)}
+.net-legend .quietk{color:var(--ink-20);flex-basis:100%}
+
+/* — */
+.flier{position:fixed;z-index:6;font-family:var(--f-mono);font-size:13px;color:var(--o-60);
+  font-variant-numeric:tabular-nums;pointer-events:none;white-space:nowrap;
+  transform-origin:left top;will-change:transform,opacity}
+
+#skip{position:fixed;top:14px;right:14px;z-index:7;font-family:var(--f-mono);font-size:12px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--ink-40);background:rgba(5,5,5,.7);
+  border:1px solid var(--line);border-radius:2px;padding:7px 12px;cursor:pointer;opacity:0;
+  transition:opacity var(--d-3) var(--e-standard),color var(--d-2),border-color var(--d-2)}
+#skip:hover{color:var(--o-50);border-color:rgba(255,122,26,.3)}
+#skip:focus-visible{outline:2px solid var(--o-50);outline-offset:2px}
+#scan{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:0;
+  background:repeating-linear-gradient(to bottom,rgba(0,0,0,0) 0 2px,rgba(0,0,0,.3) 2px 3px);
+  mix-blend-mode:multiply}
+
+/* ── control panel ─────────────────────────────────────────────── */
+#panel{position:fixed;right:12px;bottom:12px;z-index:20;width:318px;max-height:calc(100vh - 24px);
+  overflow:auto;background:rgba(8,8,8,.96);border:1px solid var(--line);border-radius:4px;
+  font-family:var(--f-mono);font-size:12px;color:var(--ink-80);backdrop-filter:blur(8px);
+  box-shadow:0 16px 44px rgba(0,0,0,.6);transition:transform var(--d-4) var(--e-expressive)}
+#panel.hid{transform:translateY(calc(100% - 34px))}
+.p-hd{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--line);
+  cursor:pointer;user-select:none;position:sticky;top:0;background:rgba(8,8,8,.99);z-index:2}
+.p-hd b{font-size:12px;letter-spacing:.2em;color:var(--o-50);text-transform:uppercase;font-weight:500}
+.p-hd em{margin-left:auto;font-style:normal;color:var(--ink-40);font-size:12px}
+.p-sec{padding:10px 11px;border-bottom:1px solid var(--rule)}
+.p-sec:last-child{border-bottom:0}
+.p-lab{display:block;font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-40);margin-bottom:6px}
+.p-lab u{text-decoration:none;color:var(--o-40);float:right;letter-spacing:.02em}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1;min-width:46px;font-family:var(--f-mono);font-size:12px;padding:7px 4px;
+  background:var(--bg-2);color:var(--ink-60);border:1px solid var(--line-d);border-radius:2px;
+  cursor:pointer;transition:all var(--d-2) var(--e-standard)}
+.seg button:hover{color:var(--o-60);border-color:var(--line)}
+.seg button[aria-pressed="true"]{background:rgba(255,122,26,.13);color:var(--o-100);border-color:rgba(255,122,26,.4)}
+.seg.col{flex-direction:column}
+.seg.col button{text-align:left;padding:7px 9px}
+.seg.col button small{display:block;color:var(--ink-40);font-size:12px;margin-top:2px;white-space:normal;line-height:1.42}
+.seg.col button[aria-pressed="true"] small{color:var(--ink-60)}
+input[type=range]{width:100%;accent-color:var(--o-50);margin:2px 0}
+.row{display:flex;align-items:center;gap:8px;margin-top:6px}
+.row label{flex:1;color:var(--ink-60);font-size:12px}
+.tog{width:38px;height:20px;border-radius:11px;background:var(--bg-3);border:1px solid var(--line-d);
+  position:relative;cursor:pointer;flex:none;transition:background var(--d-2) var(--e-standard)}
+.tog::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;
+  background:var(--ink-40);transition:transform var(--d-2) var(--e-expressive),background var(--d-2)}
+.tog[aria-pressed="true"]{background:rgba(255,122,26,.22);border-color:rgba(255,122,26,.4)}
+.tog[aria-pressed="true"]::after{transform:translateX(18px);background:var(--o-50)}
+.tl{position:relative;height:34px;margin-top:3px;border:1px solid var(--line-d);border-radius:2px;
+  background:var(--bg-1);overflow:hidden;cursor:pointer}
+.tl-fill{position:absolute;left:0;top:0;bottom:0;background:rgba(255,122,26,.16);width:0}
+.tl-mark{position:absolute;top:0;bottom:0;width:1px;background:rgba(255,122,26,.42)}
+.tl-mark b{position:absolute;left:3px;font-size:12px;font-weight:400;color:var(--o-40);white-space:nowrap}
+.tl-head{position:absolute;top:0;bottom:0;width:2px;background:var(--o-100);box-shadow:0 0 8px rgba(255,206,138,.8)}
+.tl-t{position:absolute;bottom:2px;left:5px;font-size:12px;color:var(--ink-40)}
+.beat{margin-top:6px;font-size:12px;color:var(--o-40);min-height:16px}
+.hint{font-size:12px;color:var(--ink-40);line-height:1.5;margin-top:6px}
+.hint b{color:var(--o-40);font-weight:400}
+.lnk{all:unset;font-family:var(--f-mono);font-size:12px;color:var(--o-40);cursor:pointer;text-decoration:underline}
+
+@media (max-width:1100px){
+  .con-grid{grid-template-columns:1fr;grid-auto-rows:min-content;overflow-y:auto;padding:10px;gap:10px}
+  .ring-stage{height:180px}
+  .net-stage{min-height:240px}
+  .matrix{max-height:150px;flex:none}
+  .log{min-height:150px}
+  .con-top{height:42px;padding:0 12px;gap:10px}
+  .con-tag{display:none}
+  #panel{max-height:58vh}
+}
+@media (max-width:520px){ .sh-nav{gap:0;overflow-x:auto;padding:0 10px} .sh-nav a{padding:8px 9px} }
+body.reduced #scan{opacity:0!important}
+@media (prefers-reduced-motion:reduce){ #panel,.tog::after{transition:none} }
+</style>
+</head>
+<body>
+
+  <div id="home" aria-hidden="true">
+  <nav class="hm-nav" id="hm-nav">
+    <span class="hm-mark"><svg class="shamrock sm" viewBox="-22 -22 44 50" aria-hidden="true"><g>
+      <path class="leaf" transform="rotate(180)" d="M0 2C-4 5-10 9-10 13C-10 17.5-5.5 19.5 0 15.5C5.5 19.5 10 17.5 10 13C10 9 4 5 0 2Z"/>
+      <path class="leaf b" transform="rotate(60)" d="M0 2C-4 5-10 9-10 13C-10 17.5-5.5 19.5 0 15.5C5.5 19.5 10 17.5 10 13C10 9 4 5 0 2Z"/>
+      <path class="leaf b" transform="rotate(300)" d="M0 2C-4 5-10 9-10 13C-10 17.5-5.5 19.5 0 15.5C5.5 19.5 10 17.5 10 13C10 9 4 5 0 2Z"/>
+      <path class="stem" d="M0 4C0.4 11 1.2 18 4.6 24"/></g></svg>
+      <b>xmr<i>.</i>irish</b></span>
+    <a href="#" aria-current="page">Live</a><a href="#">Monero</a><a href="#">Learn</a>
+    <a href="#">Future</a><a href="#">Operate</a><a href="#">About</a>
+    <span class="hm-k">⌘K</span>
+    <span class="hm-slots">
+      <span class="slot" data-slot="height"><span class="sk">Height</span><span class="sv">3 729 557</span></span>
+      <span class="slot" data-slot="price"><span class="sk">XMR</span><span class="sv">$164.20</span></span>
+    </span>
+  </nav>
+
+  <header class="hm-hero">
+    <div class="hm-hero-l">
+      <div class="hm-kick" id="hm-kick">LIVE · MONERO NETWORK · BLOCK 3 729 557</div>
+      <div class="hm-rot" id="hm-rot">
+        <h1 class="hm-h1" id="hm-h1"></h1>
+        <p class="hm-lede" id="hm-lede"></p>
+        <div class="hm-attr" id="hm-attr"></div>
+        <div class="hm-dots" id="hm-dots"></div>
+      </div>
+      <div class="hm-cta">
+        <button type="button" class="pri">Open the mempool ▸</button>
+        <button type="button">Read the case</button>
+      </div>
+      <div class="hm-strip" id="hm-strip">
+        <div><b>Height</b><span data-hs="0">3 729 557</span></div>
+        <div><b>Hashrate</b><span data-hs="1">2.81 GH/s</span></div>
+        <div><b>Mempool</b><span data-hs="4">114 tx</span></div>
+        <div><b>Block Δ</b><span data-hs="3">118 s</span></div>
+        <div><b>XMR / USD</b><span data-hs="6">$164.20</span></div>
+      </div>
+      <div class="hm-prov"><span class="badge">Node</span><span class="badge net">Network</span>
+        <span class="badge">CoinGecko</span><span class="pv">every figure carries where it came from</span></div>
+    </div>
+    <div class="hm-hero-r"><div class="hm-orb" id="hm-orb"></div>
+      <div class="hm-orbcap">public node population · <b>1 284</b> reachable ·
+        71 / 24 / 5 clear · tor · i2p</div>
+    </div>
+  </header>
+
+  <section class="hm-grid">
+    <a class="hm-card" href="#"><b>Live</b><em>11 mempool views · network · markets</em>
+      <span>The chain as it happens. Eleven ways of seeing one pool of unconfirmed transactions.</span>
+      <u>3 729 557 ▸</u></a>
+    <a class="hm-card" href="#"><b>Monero</b><em>7 chapters</em>
+      <span>Origin, tech, legality, versus Bitcoin, the attacks, the bottom line.</span><u>read ▸</u></a>
+    <a class="hm-card" href="#"><b>Learn</b><em>12 simulators · timeline · quotes</em>
+      <span>Ring signatures, stealth addresses, Dandelion++ — run them, don't read them.</span><u>run ▸</u></a>
+    <a class="hm-card" href="#"><b>Future</b><em>5 protocols · stressnet</em>
+      <span>FCMP++ and what comes after it, with a betanet you can actually run.</span><u>roadmap ▸</u></a>
+    <a class="hm-card" href="#"><b>Operate</b><em>node · pro · mining</em>
+      <span>Run your own. The only version of this that needs no trust at all.</span><u>start ▸</u></a>
+    <a class="hm-card" href="#"><b>About</b><em>sources · trusted peers</em>
+      <span>Where every number comes from, and who else is worth reading.</span><u>sources ▸</u></a>
+  </section>
+
+  <section class="hm-thesis">
+    <blockquote>“You can't be as deterministic as Bitcoin. In tracing Monero, it's really more of
+      a probabilistic game.”</blockquote>
+    <cite>Dave Jevans · CEO, CipherTrace</cite>
+  </section>
+
+  <footer class="hm-foot">
+    <span>xmr.irish — Satoshi's vision</span>
+    <span>node cascade · monero.fail · coingecko · getmonero.org — all proxied, nothing third-party in your browser</span>
+  </footer>
+</div>
+
+
+<div id="stage">
+  <canvas id="field"></canvas>
+  <div id="scan"></div>
+
+  <div id="console" aria-hidden="true">
+    <div class="con-top">
+      <span class="con-tag">Cold boot · v6.1.0</span>
+      <span class="con-right">
+        <span class="badge">Node</span><span class="badge net">Network</span>
+        <span class="badge">CoinGecko</span><span class="badge ok">Sync</span>
+      </span>
+    </div>
+
+    <!-- ── masthead ─────────────────────────────────────────── -->
+    <div class="masthead" id="masthead">
+      <svg class="shamrock" viewBox="-22 -22 44 50" aria-label="xmr.irish">
+        <g>
+          <path class="leaf" transform="rotate(180)"
+            d="M0 2C-4 5-10 9-10 13C-10 17.5-5.5 19.5 0 15.5C5.5 19.5 10 17.5 10 13C10 9 4 5 0 2Z"/>
+          <path class="leaf b" transform="rotate(60)"
+            d="M0 2C-4 5-10 9-10 13C-10 17.5-5.5 19.5 0 15.5C5.5 19.5 10 17.5 10 13C10 9 4 5 0 2Z"/>
+          <path class="leaf b" transform="rotate(300)"
+            d="M0 2C-4 5-10 9-10 13C-10 17.5-5.5 19.5 0 15.5C5.5 19.5 10 17.5 10 13C10 9 4 5 0 2Z"/>
+          <path class="stem" d="M0 4C0.4 11 1.2 18 4.6 24"/>
+        </g>
+      </svg>
+      <span class="mh-word">XMR IRISH</span>
+      <span class="mh-rule"></span>
+      <span class="mh-tag">Satoshi's vision · Monero, live</span>
+    </div>
+
+    <div class="con-grid">
+
+      <!-- ── LEFT · HUD + VERIFICATION + RING ─────────────────── -->
+      <section class="pane pane-hud">
+        <div class="pane-hd"><b>HUD</b><span>chain state</span></div>
+        <div class="pane-bd">
+          <div id="hud"></div>
+          <div class="sub">Verification</div>
+          <div class="vf" id="vf"></div>
+          <div class="vf-note" id="vf-note">Four checks pass. The fifth has no answer — not because
+            the proof is weak, but because the protocol never encoded one.</div>
+          <div class="sub" id="ring-sub-hd" style="opacity:0">Ring <u>16 members · 1 signer</u></div>
+          <div class="ring-stage" id="ring-stage"></div>
+          <div class="probe" id="probe"></div>
+          <div class="matrix" id="matrix"></div>
+        </div>
+      </section>
+
+      <!-- ── CENTRE · LOG + DECOYS + CTA ──────────────────────── -->
+      <section class="pane pane-log">
+        <div class="pane-hd"><b>Log</b><span id="log-sub">boot</span></div>
+        <div class="pane-bd">
+          <div class="log" id="log"></div>
+          <div class="sub nocaps">DECOY AGE DISTRIBUTION <u>log-normal µ 1.70 σ 0.85</u></div>
+          <div class="hist" id="hist"></div>
+          <div class="hist-ax" id="hist-ax"><span>0 d</span><span>10 d</span><span>30 d</span><span>60 d</span></div>
+          <div class="hist-key" id="hist-key">The bright point is the true spender — marked here because
+            this is a demonstration. Nothing in the transaction records which one it is.</div>
+          <div class="statstrip" id="strip">
+            <div><b>Mempool</b><span id="s-mem">114 tx</span></div>
+            <div><b>Pool</b><span id="s-pool">216 kB</span></div>
+            <div><b>Next block</b><span id="s-next">~46 s</span></div>
+          </div>
+          <div class="cta" id="cta">
+            <button type="button" id="cta-enter">Enter ▸</button>
+            <button type="button" class="ghost" id="cta-replay">↺</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── RIGHT · THE NETWORK ──────────────────────────────── -->
+      <section class="pane pane-net">
+        <div class="pane-hd"><b>Network</b><span>public node population</span></div>
+        <div class="pane-bd">
+          <div class="net-stage" id="net-stage">
+            <div class="net-cap" id="net-cap">Dandelion++ · stem privately, then fluff to the world</div>
+          </div>
+          <div class="net-legend" id="net-legend">
+            <span><i style="background:#ff7a1a"></i>clearnet</span>
+            <span><i style="background:#b87aff"></i>tor</span>
+            <span><i style="background:#5ed3f4"></i>i2p</span>
+            <span><i style="background:#ffd400"></i>≥2 behind</span>
+            <span class="quietk">tor/i2p orbit — no location to place them at</span>
+          </div>
+          <div class="split" id="split"><i></i><i></i><i></i></div>
+          <div class="net-rows" id="net-rows">
+            <div class="nr"><b>Reachable nodes</b><span id="n-reach">1 284</span></div>
+            <div class="nr"><b>clear / tor / i2p</b><span class="c" id="n-split">71 / 24 / 5 %</span></div>
+            <div class="nr"><b>Propagation</b><span id="n-prop">stem 4 · fluff 12</span></div>
+            <div class="nr"><b>Height agreement</b><span id="n-agree">99.2 % at tip</span></div>
+            <div class="nr"><b>Lagging set</b><span class="w" id="n-lag">9 nodes ≥2 behind</span></div>
+          </div>
+          <div class="net-src" id="net-src">
+            <div class="nsrc-l">
+              <div><span class="badge net">Live</span><b>population · transports · agreement</b>
+                — monero.fail</div>
+              <div><span class="badge ill">Illustrative</span><b>propagation paths</b>
+                — not observable from a node</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+</div>
+<canvas id="fx"></canvas>
+<div id="crt"></div>
+
+<button id="skip" type="button">Skip ▸</button>
+
+<aside id="panel" aria-label="Mockup controls">
+  <div class="p-hd" id="p-hd"><b>Cold boot v2</b><em id="p-state">playing · H hides</em></div>
+
+  <div class="p-sec">
+    <span class="p-lab">Timeline <u id="tl-pct">0%</u></span>
+    <div class="tl" id="tl">
+      <div class="tl-fill" id="tl-fill"></div><div class="tl-head" id="tl-head" style="left:0"></div>
+      <div class="tl-t" id="tl-t">0.00 s</div>
+    </div>
+    <div class="beat" id="beat">—</div>
+    <div class="seg" style="margin-top:7px">
+      <button id="b-play" aria-pressed="true">⏸ Pause</button>
+      <button id="b-replay">↺ Replay</button>
+      <button id="b-end">⇥ End</button>
+    </div>
+    <div class="hint">Space play/pause · R replay · ←/→ step 1% · ⇧ 5% · H panel</div>
+  </div>
+
+  <div class="p-sec">
+    <span class="p-lab">Speed <u id="spd-r">0.9×</u></span>
+    <div class="seg" id="seg-spd">
+      <button data-spd="0.6">0.6×</button><button data-spd="0.9" aria-pressed="true">0.9×</button>
+      <button data-spd="1">1×</button><button data-spd="1.8">1.8×</button>
+    </div>
+    <span class="p-lab" style="margin-top:9px">Base duration <u id="dur-r">5.00 s</u></span>
+    <div class="seg">
+      <button data-dur="2600">2.6 s</button><button data-dur="4000">4.0 s</button>
+      <button data-dur="5000" aria-pressed="true">5.0 s</button>
+    </div>
+    <input type="range" id="dur" min="1200" max="8000" step="100" value="5000" aria-label="Base duration">
+    <div class="hint">Runs <b id="eff-r">5.56 s</b> end to end at this speed.</div>
+  </div>
+
+  <div class="p-sec">
+    <span class="p-lab">Enter handoff <u id="xtl-pct">0%</u></span>
+    <div class="tl" id="xtl">
+      <div class="tl-fill" id="xtl-fill"></div><div class="tl-head" id="xtl-head" style="left:0"></div>
+    </div>
+    <div class="beat" id="x-beat">waiting on Enter</div>
+    <div class="seg" style="margin-top:7px">
+      <button id="x-go">▸ Enter</button><button id="x-back">↺ Console</button>
+    </div>
+    <span class="p-lab" style="margin-top:9px">Handoff duration <u id="xdur-r">1.20 s</u></span>
+    <div class="seg">
+      <button data-xdur="900">0.9 s</button><button data-xdur="1200" aria-pressed="true">1.2 s</button>
+      <button data-xdur="1700">1.7 s</button>
+    </div>
+    <div class="hint">Scrub it like the decrypt. <b>Enter</b> key also fires it.</div>
+  </div>
+
+  <div class="p-sec">
+    <span class="p-lab">Gating <u id="gate-r">once / session</u></span>
+    <div class="seg col" id="seg-gate">
+      <button data-gate="first" aria-pressed="true">Once per session ✓
+        <small>Chosen. sessionStorage flag — decrypt runs once, then you land on the console hero.</small></button>
+      <button data-gate="every">Every cold load
+        <small>Full page loads only, never SPA route changes.</small></button>
+      <button data-gate="hero">No decrypt
+        <small>Console hero with no decrypt sequence at all — what a return visit sees.</small></button>
+    </div>
+    <div class="row"><label id="gate-state">Visit flag: not set</label>
+      <button class="lnk" id="gate-clear">clear</button></div>
+  </div>
+
+  <div class="p-sec">
+    <span class="p-lab">Phase 1 · decrypt field</span>
+    <div class="row"><label>Density <span id="den-r" style="color:var(--o-40)">MAX</span></label></div>
+    <input type="range" id="den" min="0.35" max="1.6" step="0.05" value="1.6" aria-label="Field density">
+    <div class="row"><label>Ring ghost opacity <span id="gh-r" style="color:var(--o-40)">34%</span></label></div>
+    <input type="range" id="gh" min="0" max="1" step="0.01" value="0.34" aria-label="Ghost opacity">
+    <div class="row"><label>Ghost-in mark <span id="gm-r" style="color:var(--o-40)">62%</span></label></div>
+    <input type="range" id="gm" min="0.3" max="0.9" step="0.01" value="0.62" aria-label="Ghost-in mark">
+  </div>
+
+  <div class="p-sec">
+    <span class="p-lab">Options</span>
+    <div class="row"><label for="t-live">Live tail after resolve</label><button class="tog" id="t-live" aria-pressed="true"></button></div>
+    <div class="row"><label for="t-gov">Frame-budget governor <b>D0692</b></label><button class="tog" id="t-gov" aria-pressed="true"></button></div>
+    <div class="row"><label for="t-scan">Scanlines</label><button class="tog" id="t-scan" aria-pressed="false"></button></div>
+    <div class="row"><label for="t-red">Reduced-motion preview</label><button class="tog" id="t-red" aria-pressed="false"></button></div>
+    <div class="row"><label for="t-loop">Loop</label><button class="tog" id="t-loop" aria-pressed="false"></button></div>
+    <div class="hint" id="fps">—</div>
+    <div class="hint">Every number here is a placeholder for a real feed. Nothing ships as a value.</div>
+  </div>
+</aside>
+
+<script>
+"use strict";
+/* ══════════════════════════════════════════════════════════════════
+   The SEQUENCE is a pure function of T ∈ [0,1] — scrub and play give
+   identical frames. Ambient life after resolve (orb rotation,
+   propagation, live tail) runs on a wall clock, because a hero that
+   freezes is a screenshot, not an instrument.
+   ══════════════════════════════════════════════════════════════════ */
+const clamp01=v=>v<0?0:v>1?1:v;
+const seg=(t,a,b)=>clamp01((t-a)/(b-a));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const E={ standard:t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2,
+          decel:t=>1-Math.pow(1-t,3), accel:t=>t*t*t,
+          expressive:t=>1-Math.pow(1-t,5) };
+function h3(x,y,s){ let h=(x|0)*374761393+(y|0)*668265263+(s|0)*2246822519;
+  h=(h^(h>>>13))>>>0; h=(h*1274126177)>>>0; return ((h^(h>>>16))>>>0)/4294967296; }
+let _rs=20140418;                                     /* D1851 seeded PRNG */
+function srand(){ _rs=(_rs*1664525+1013904223)>>>0; return _rs/4294967296; }
+function seedTo(v){ _rs=v>>>0; }
+const grp=n=>String(n).replace(/\B(?=(\d{3})+(?!\d))/g,' ');
+
+const B={ ignite:[0,.10], decay:[.46,.82], converge:[.80,.95], settle:[.86,1] };
+let GHOST_AT=.62, GHOST_OP=.34;
+const BEAT_TEXT=[[0,'ignite · field blooms out of black'],
+  [.16,'churn · full-bleed scramble, hex fields begin locking'],
+  [.46,'decay · noise thins, cipher sharpens'],[.62,'GHOST'],
+  [.80,'converge · ring drops into the HUD column, orb assembles right'],
+  [.86,'settle · HUD locks, log types, decoys plot, network wakes'],
+  [1,'resolved · live hero']];
+
+const S={ T:0,X:0,playing:true,handing:false,dur:5000,xdur:1200,spd:.9,gate:'first',
+          density:1.6,scan:false,reduced:false,loop:false,live:true,gov:true };
+/* ── the Enter handoff ────────────────────────────────────────────
+   url → decrypt → HUD home (holds) → Enter → Main Home.
+   X ∈ [0,1] is its own clock, scrubbable in the panel, so the
+   transition gets approved frame by frame the same way the decrypt did. */
+const HB={ press:[0,.12], deres:[.10,.42], collapse:[.34,.54], line:[.44,.68],
+           expand:[.54,.80], settle:[.72,1] };
+let DERES=0, HAND={ring:null,orb:null};
+/* D0692 frame-budget governor. MAX density is the intent; on hardware
+   that cannot hold it, the decrypt field thins rather than judders.
+   Ambient sheds first, data never — the field is the only thing this
+   is allowed to touch. */
+const GOV={scale:1,ema:60};
+function governor(dt){
+  GOV.ema = GOV.ema*.92 + (1000/Math.max(1,dt))*.08;
+  if(!S.gov || S.T>=1){ if(!S.gov) GOV.scale=1; return; }
+  if(GOV.ema<42 && GOV.scale>.5) GOV.scale=Math.max(.5,GOV.scale-.012);
+  else if(GOV.ema>56 && GOV.scale<1) GOV.scale=Math.min(1,GOV.scale+.004);
+}
+S.reduced=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const cv=$('#field'), ctx=cv.getContext('2d',{alpha:false});
+const fx=$('#fx'), fxc=fx.getContext('2d');
+const consoleEl=$('#console'), homeEl=$('#home'), stageEl=$('#stage'), crt=$('#crt');
+let MONO='ui-monospace,monospace', SANS='system-ui,sans-serif';
+function readFonts(){ const cs=getComputedStyle(document.body);
+  MONO=cs.getPropertyValue('--f-mono')||MONO; SANS=cs.getPropertyValue('--f-sans')||SANS; }
+
+/* ══ ring decoys — log-normal µ1.70 σ0.85 via Box-Muller ══════════ */
+const MU=1.70,SIGMA=.85,REAL=7;
+function boxMuller(){ const u=Math.max(1e-9,srand()),v=srand();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+function hexs(n){ let s=''; for(let i=0;i<n;i++) s+='0123456789abcdef'[(srand()*16)|0]; return s; }
+const pdf=a=>a<=0?0:Math.exp(-Math.pow(Math.log(a)-MU,2)/(2*SIGMA*SIGMA))/(a*SIGMA*Math.sqrt(2*Math.PI));
+let RING=[];
+(function buildRing(){
+  seedTo(20140418);
+  for(let i=0;i<16;i++) RING.push({i,age:Math.min(59.5,Math.exp(MU+SIGMA*boxMuller())),
+    id:hexs(8),oidx:3210000+Math.floor(srand()*480000),weight:0,real:i===REAL});
+  const tot=RING.reduce((s,r)=>s+pdf(r.age),0);
+  RING.forEach(r=>r.weight=pdf(r.age)/tot);
+})();
+
+/* ══ THE ORB — the network as a body ══════════════════════════════
+   170 reachable nodes on a Fibonacci lattice, tinted by transport
+   (clearnet / tor / i2p) and flagged when lagging the tip. Positions
+   are seeded, so it is the same globe every load and can be
+   screenshot-diffed. Great-circle arcs carry Dandelion++: a private
+   stem walks peer to peer, then fluffs to the world. Block arrivals
+   ripple outward as a geodesic circle from the finding node.
+   Reads directly onto P4's monero.fail dataset — node population,
+   transport split, and height-agreement clustering.
+   ══════════════════════════════════════════════════════════════════ */
+const SHELL=[1.0,1.17,1.30];   /* clearnet · tor · i2p */
+const ORB={nodes:[],events:[],tilt:.36,nextStem:0,nextBlock:0,stem:4,fluff:12};
+(function buildOrb(){
+  seedTo(880301);
+  const N=170;
+  for(let i=0;i<N;i++){
+    const y=1-(i/(N-1))*2, r=Math.sqrt(Math.max(0,1-y*y));
+    const th=Math.PI*(3-Math.sqrt(5))*i, u=srand();
+    const kind=u<.71?0:u<.95?1:2;
+    ORB.nodes.push({ x:Math.cos(th)*r, y, z:Math.sin(th)*r,   /* unit direction */
+      kind, rr:SHELL[kind], lag:kind===0&&srand()<.075, s:srand() });
+  }
+})();
+const KIND=[[255,122,26],[184,122,255],[94,211,244]];
+const rotY=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);
+  return {x:p.x*c-p.z*s,y:p.y,z:p.x*s+p.z*c};};
+const tiltX=(p,a)=>{const c=Math.cos(a),s=Math.sin(a);
+  return {x:p.x,y:p.y*c-p.z*s,z:p.y*s+p.z*c};};
+function slerp(a,b,t){
+  let d=Math.max(-1,Math.min(1,a.x*b.x+a.y*b.y+a.z*b.z));
+  const o=Math.acos(d), so=Math.sin(o);
+  if(so<1e-5) return {x:a.x,y:a.y,z:a.z};
+  const s1=Math.sin((1-t)*o)/so, s2=Math.sin(t*o)/so;
+  return {x:a.x*s1+b.x*s2,y:a.y*s1+b.y*s2,z:a.z*s1+b.z*s2};
+}
+function nearest(i,k,skip){
+  const a=ORB.nodes[i], out=[];
+  for(let j=0;j<ORB.nodes.length;j++){
+    if(j===i||(skip&&skip.has(j)))continue;
+    const b=ORB.nodes[j]; out.push([a.x*b.x+a.y*b.y+a.z*b.z,j]);
+  }
+  out.sort((p,q)=>q[0]-p[0]);
+  return out.slice(0,k).map(p=>p[1]);
+}
+function spawnStem(clock){
+  seedTo(((clock/900)|0)^0x5f3a);
+  let cur=(srand()*ORB.nodes.length)|0;
+  const path=[cur], used=new Set([cur]);
+  for(let h=0;h<ORB.stem;h++){
+    const c=nearest(cur,6,used); if(!c.length)break;
+    cur=c[(srand()*c.length)|0]; used.add(cur); path.push(cur);
+  }
+  ORB.events.push({type:'stem',t0:clock,path,fluff:nearest(cur,ORB.fluff,used),dur:1600});
+}
+function spawnBlock(clock){
+  seedTo(((clock/1700)|0)^0x2c19);
+  ORB.events.push({type:'block',t0:clock,n:(srand()*ORB.nodes.length)|0,dur:2600});
+}
+let netRect={x:0,y:0,w:0,h:0};
+function drawOrb(clock,alpha,grow){
+  /* during the handoff the orb crosses from the console pane into the
+     home hero — the one element that survives the collapse */
+  let rect=netRect;
+  if(S.X>0 && HAND.orb && homeOrbRect.w>20)
+    rect=lerpRect(HAND.orb, homeOrbRect, E.expressive(seg(S.X,.46,.88)));
+  if(alpha<=.01||rect.w<20) return;
+  const D=DPR, cx=rect.x+rect.w/2, cy=rect.y+rect.h/2;
+  const R=Math.min(rect.w,rect.h)*.43*lerp(.86,1,grow);
+  const a=S.reduced?.7:clock*.000085;
+  /* p is a unit direction; rr is which shell it lives on */
+  const P=(p,rr)=>{ const q=tiltX(rotY(p,a),ORB.tilt), k=(rr||1);
+    return {sx:(cx+q.x*R*k)*D, sy:(cy-q.y*R*k)*D, d:q.z}; };
+  const dep=d=>.18+.82*((d+1)/2);
+  fxc.save(); fxc.globalAlpha=alpha;
+
+  const g=fxc.createRadialGradient(cx*D,cy*D,R*D*.55,cx*D,cy*D,R*D*1.5);
+  g.addColorStop(0,'rgba(255,122,26,.085)'); g.addColorStop(.55,'rgba(255,122,26,.03)');
+  g.addColorStop(1,'rgba(255,122,26,0)');
+  fxc.beginPath(); fxc.arc(cx*D,cy*D,R*D*1.5,0,Math.PI*2); fxc.fillStyle=g; fxc.fill();
+  fxc.beginPath(); fxc.arc(cx*D,cy*D,R*D,0,Math.PI*2);
+  fxc.strokeStyle='rgba(255,122,26,.22)'; fxc.lineWidth=Math.max(1,1.1*D); fxc.stroke();
+  /* Tor and I2P have no location to place on a sphere, so they orbit it.
+     The visualisation is then structurally unable to claim a geography
+     for a node that deliberately does not have one. */
+  fxc.setLineDash([2*D,4*D]);
+  fxc.beginPath(); fxc.arc(cx*D,cy*D,R*D*SHELL[1],0,Math.PI*2);
+  fxc.strokeStyle=`rgba(184,122,255,${(.26*grow).toFixed(3)})`; fxc.stroke();
+  fxc.beginPath(); fxc.arc(cx*D,cy*D,R*D*SHELL[2],0,Math.PI*2);
+  fxc.strokeStyle=`rgba(94,211,244,${(.24*grow).toFixed(3)})`; fxc.stroke();
+  fxc.setLineDash([]);
+
+  /* wireframe — batched. Stroking each segment separately was ~1500
+     draw calls a frame; splitting every curve into one front path and
+     one back path keeps the depth cue at 40 strokes total. */
+  fxc.lineWidth=Math.max(1,.9*D);
+  const poly=(pts,front)=>{
+    fxc.beginPath(); let open=false;
+    for(const p of pts){
+      if(front?p.d>=0:p.d<0){ open?fxc.lineTo(p.sx,p.sy):(fxc.moveTo(p.sx,p.sy),open=true); }
+      else open=false;
+    }
+    fxc.stroke();
+  };
+  const FRONT=`rgba(255,122,26,${(.135*grow).toFixed(3)})`;
+  const BACK =`rgba(255,122,26,${(.045*grow).toFixed(3)})`;
+  for(let li=1;li<8;li++){
+    const lat=(li/8)*Math.PI-Math.PI/2, yy=Math.sin(lat), rr=Math.cos(lat), pts=[];
+    for(let s=0;s<=52;s++){ const th=(s/52)*Math.PI*2;
+      pts.push(P({x:Math.cos(th)*rr,y:yy,z:Math.sin(th)*rr},1)); }
+    fxc.strokeStyle=BACK; poly(pts,false);
+    fxc.strokeStyle=FRONT; poly(pts,true);
+  }
+  for(let mi=0;mi<12;mi++){
+    const lon=(mi/12)*Math.PI*2, pts=[];
+    for(let s=0;s<=30;s++){ const ph=(s/30)*Math.PI-Math.PI/2;
+      pts.push(P({x:Math.cos(ph)*Math.cos(lon),y:Math.sin(ph),z:Math.cos(ph)*Math.sin(lon)},1)); }
+    fxc.strokeStyle=BACK; poly(pts,false);
+    fxc.strokeStyle=FRONT; poly(pts,true);
+  }
+
+  if(!S.reduced && grow>.85){
+    if(clock>ORB.nextStem){ spawnStem(clock); ORB.nextStem=clock+1800; }
+    if(clock>ORB.nextBlock){ spawnBlock(clock); ORB.nextBlock=clock+7600; }
+    ORB.events=ORB.events.filter(e=>clock-e.t0<e.dur+800);
+  }
+  const hot=new Set();
+  for(const e of ORB.events){
+    const pr=clamp01((clock-e.t0)/e.dur);
+    if(e.type==='stem'){
+      const legs=e.path.length-1, END=.60, sp=clamp01(pr/END);
+      for(let l=0;l<legs;l++){
+        const l0=l/legs, l1=(l+1)/legs;
+        if(sp<l0)break;
+        const t=clamp01((sp-l0)/(l1-l0));
+        const A=ORB.nodes[e.path[l]], Bn=ORB.nodes[e.path[l+1]];
+        let prev=null;
+        for(let s=0;s<=14;s++){
+          const u=(s/14)*t;
+          const q=slerp(A,Bn,u);
+          const p=P(q, lerp(A.rr,Bn.rr,u)+.05*Math.sin(Math.PI*u));
+          if(prev){ fxc.beginPath(); fxc.moveTo(prev.sx,prev.sy); fxc.lineTo(p.sx,p.sy);
+            fxc.strokeStyle=`rgba(184,122,255,${(.55*dep(p.d)).toFixed(3)})`;
+            fxc.lineWidth=Math.max(1,1.3*D); fxc.stroke(); }
+          prev=p;
+        }
+        if(prev&&t<1){ fxc.beginPath(); fxc.arc(prev.sx,prev.sy,2.6*D,0,Math.PI*2);
+          fxc.fillStyle='rgba(214,180,255,.95)'; fxc.fill(); }
+        hot.add(e.path[l]);
+      }
+      if(sp>=1) hot.add(e.path[e.path.length-1]);
+      if(pr>END){
+        const fp=clamp01((pr-END)/(1-END)), src=ORB.nodes[e.path[e.path.length-1]];
+        e.fluff.forEach((fi,k)=>{
+          const t=clamp01((fp-k*.018)/.55); if(t<=0)return;
+          const dst=ORB.nodes[fi]; let prev=null;
+          for(let s=0;s<=12;s++){
+            const u=(s/12)*t, q=slerp(src,dst,u);
+            const p=P(q, lerp(src.rr,dst.rr,u)+.04*Math.sin(Math.PI*u));
+            if(prev){ fxc.beginPath(); fxc.moveTo(prev.sx,prev.sy); fxc.lineTo(p.sx,p.sy);
+              fxc.strokeStyle=`rgba(255,206,138,${(.32*(1-fp*.65)*dep(p.d)).toFixed(3)})`;
+              fxc.lineWidth=Math.max(1,D); fxc.stroke(); }
+            prev=p;
+          }
+          if(t>=1) hot.add(fi);
+        });
+      }
+    } else {
+      const n=ORB.nodes[e.n], ang=pr*Math.PI*1.05;
+      const up=Math.abs(n.y)>.9?{x:1,y:0,z:0}:{x:0,y:1,z:0};
+      let ex={x:up.y*n.z-up.z*n.y, y:up.z*n.x-up.x*n.z, z:up.x*n.y-up.y*n.x};
+      const ml=Math.hypot(ex.x,ex.y,ex.z)||1; ex={x:ex.x/ml,y:ex.y/ml,z:ex.z/ml};
+      const ey={x:n.y*ex.z-n.z*ex.y, y:n.z*ex.x-n.x*ex.z, z:n.x*ex.y-n.y*ex.x};
+      let prev=null;
+      const ca=Math.cos(ang), sa=Math.sin(ang);
+      for(let s=0;s<=44;s++){
+        const th=(s/44)*Math.PI*2, ct=Math.cos(th), st=Math.sin(th);
+        const p=P({ x:n.x*ca+(ex.x*ct+ey.x*st)*sa,
+                    y:n.y*ca+(ex.y*ct+ey.y*st)*sa,
+                    z:n.z*ca+(ex.z*ct+ey.z*st)*sa }, 1.02);
+        if(prev){ fxc.beginPath(); fxc.moveTo(prev.sx,prev.sy); fxc.lineTo(p.sx,p.sy);
+          fxc.strokeStyle=`rgba(255,206,138,${(.36*(1-pr)*dep(p.d)).toFixed(3)})`;
+          fxc.lineWidth=Math.max(1,1.1*D); fxc.stroke(); }
+        prev=p;
+      }
+      hot.add(e.n);
+    }
+  }
+
+  const pts=ORB.nodes.map((n,i)=>({i,n,p:P(n,n.rr)})).sort((a,b)=>a.p.d-b.p.d);
+  for(const {i,n,p} of pts){
+    const app=clamp01((grow-n.s*.45)/.4); if(app<=0)continue;
+    const dp=dep(p.d), on=hot.has(i), [r,g2,b]=KIND[n.kind];
+    fxc.beginPath(); fxc.arc(p.sx,p.sy,(on?3.3:n.lag?2.3:1.8)*dp*app*D,0,Math.PI*2);
+    fxc.fillStyle = on?`rgba(255,206,138,${(.95*dp).toFixed(3)})`
+      : n.lag?`rgba(255,212,0,${(.62*dp*app).toFixed(3)})`
+      : `rgba(${r},${g2},${b},${(.72*dp*app).toFixed(3)})`;
+    fxc.fill();
+    if(on){ fxc.beginPath(); fxc.arc(p.sx,p.sy,7*dp*D,0,Math.PI*2);
+      fxc.strokeStyle=`rgba(255,206,138,${(.32*dp).toFixed(3)})`;
+      fxc.lineWidth=Math.max(1,D); fxc.stroke(); }
+  }
+  fxc.restore();
+}
+
+/* ══ glyph atlas ══════════════════════════════════════════════════ */
+const CHARS=(()=>{const a=[];for(let c=32;c<=126;c++)a.push(String.fromCharCode(c));
+  a.push('█','▓','▒','░','·','◆','●','○');return a;})();
+const CIDX=new Map(CHARS.map((c,i)=>[c,i]));
+const SCRAM="0123456789abcdefABCDEF!@#$%&*+=/\\<>[]{}()|~^?:;.,";
+const TINTS=[[255,122,26],[255,206,138],[168,160,148],[74,222,128]];
+const ALPHAS=[.10,.20,.32,.48,.68,1];
+let DPR=1,W=0,H=0,CW=0,CH=0,COLS=0,ROWS=0,FONT=13;
+let atlas=null,aTW=0,aTH=0,target=null,tclass=null,lockAt=null,COLX=null;
+function buildAtlas(){
+  aTW=Math.ceil(CW*DPR); aTH=Math.ceil(CH*DPR);
+  const a=document.createElement('canvas');
+  a.width=aTW*CHARS.length; a.height=aTH*TINTS.length*ALPHAS.length;
+  const g=a.getContext('2d'); g.textBaseline='middle'; g.textAlign='center';
+  g.font=`${Math.round(FONT*DPR)}px ${MONO}`;
+  for(let ti=0;ti<TINTS.length;ti++){ const[r,gg,b]=TINTS[ti];
+    for(let ai=0;ai<ALPHAS.length;ai++){
+      g.fillStyle=`rgba(${r},${gg},${b},${ALPHAS[ai]})`;
+      const row=ti*ALPHAS.length+ai;
+      for(let ci=0;ci<CHARS.length;ci++) g.fillText(CHARS[ci],ci*aTW+aTW/2,row*aTH+aTH*.55);
+    } }
+  atlas=a;
+}
+const tX=ci=>ci*aTW, tY=(ti,ai)=>(ti*ALPHAS.length+ai)*aTH;
+/* alpha → atlas row, as a 64-entry LUT. A linear search here ran once
+   per visible cell — ~8k times a frame at MAX density. */
+const ABK=new Uint8Array(64);
+(function(){ for(let k=0;k<64;k++){ const v=(k+.5)/64; let b=0,d=9;
+  for(let i=0;i<ALPHAS.length;i++){const x=Math.abs(ALPHAS[i]-v); if(x<d){d=x;b=i;}}
+  ABK[k]=b; } })();
+const CULL=0.06;   /* below this an atlas tile is invisible but not free */
+
+/* ══ the cipher ═══════════════════════════════════════════════════ */
+function hexRun(n,seed){ let s='';
+  for(let i=0;i<n;i++) s+='0123456789abcdef'[(h3(i,seed,91)*16)|0]; return s; }
+const CIPHER=[['version','2'],['unlock_time','0'],['vin','key_offsets[16] · gen 0'],
+  ['key_image',hexRun(64,3)],['vout','2 · stealth p2pk'],['rct_type','BulletproofPlus'],
+  ['fee','0.0000219 XMR']];
+const SUB1="SATOSHI'S VISION · MONERO, LIVE", KICK="▪ COLD BOOT ▪";
+function putLine(str,row,cls,spread,colStart){
+  if(row<0||row>=ROWS)return;
+  const chars=[...str], n=spread?chars.length*2-1:chars.length;
+  let c=colStart!=null?colStart:Math.floor((COLS-n)/2);
+  for(const ch of chars){
+    if(c>=0&&c<COLS&&ch!==' '){ const i=row*COLS+c;
+      target[i]=CIDX.has(ch)?CIDX.get(ch):CIDX.get('·'); tclass[i]=cls; }
+    c+=spread?2:1;
+  }
+}
+function composeTarget(){
+  target=new Int16Array(COLS*ROWS).fill(-1);
+  tclass=new Uint8Array(COLS*ROWS); lockAt=new Float32Array(COLS*ROWS);
+  const off=document.createElement('canvas');
+  off.width=Math.max(2,Math.round(W)); off.height=Math.max(2,Math.round(H));
+  const og=off.getContext('2d'); og.fillStyle='#000'; og.fillRect(0,0,off.width,off.height);
+  let px=Math.min(W*.145,H*.26);
+  og.textAlign='center'; og.textBaseline='middle'; og.fillStyle='#fff';
+  const setF=()=>{ og.font=`800 ${px}px ${SANS}`;
+    if('letterSpacing' in og) og.letterSpacing=`${Math.round(px*.05)}px`; };
+  setF();
+  if(og.measureText('XMR.IRISH').width>W*.74){ px*=W*.74/og.measureText('XMR.IRISH').width; setF(); }
+  og.fillText('XMR.IRISH', W/2, H*.335);
+  const img=og.getImageData(0,0,off.width,off.height).data;
+  const samp=(x,y)=>{ x=Math.max(0,Math.min(off.width-1,x|0)); y=Math.max(0,Math.min(off.height-1,y|0));
+    return img[(y*off.width+x)*4]; };
+  const blk=CIDX.get('█'), shd=CIDX.get('▓');
+  let mTop=ROWS,mBot=0;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=c*CW,y=r*CH;
+    const v=(samp(x+CW*.25,y+CH*.3)+samp(x+CW*.75,y+CH*.3)+
+             samp(x+CW*.25,y+CH*.75)+samp(x+CW*.75,y+CH*.75))/4;
+    if(v>108){ const i=r*COLS+c; target[i]=v>190?blk:shd; tclass[i]=1;
+      if(r<mTop)mTop=r; if(r>mBot)mBot=r; }
+  }
+  if(mTop>mBot){ mTop=Math.round(ROWS*.3); mBot=mTop; }
+  putLine(KICK,mTop-3,3,true); putLine(SUB1,mBot+2,2,false);
+  const labW=12, bodyW=Math.min(COLS-6,74), c0=Math.floor((COLS-bodyW)/2);
+  let row=mBot+4; const cipherRows=[];
+  putLine('┌ TX 0x'+hexRun(8,5)+'  ── DECRYPTING ─────────────────────'.slice(0,bodyW-16),row,3,false,c0);
+  row++;
+  for(const[k,v] of CIPHER){
+    if(row>=ROWS-3)break;
+    const val=v.length>bodyW-labW-3?v.slice(0,bodyW-labW-6)+'…':v;
+    putLine('│ '+k.padEnd(labW,' '),row,3,false,c0);
+    putLine(val,row,4,false,c0+labW+3);
+    cipherRows.push(row); row++;
+  }
+  if(row<ROWS-2) putLine('└ signer_index  ???  ── NOT ENCODED IN THE PROTOCOL',row,3,false,c0);
+  const lastRow=row, cx=COLS/2, cy=ROWS/2, maxd=Math.hypot(cx,cy);
+  const ord=new Map(); cipherRows.forEach((r,i)=>ord.set(r,i));
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const i=r*COLS+c, cls=tclass[i];
+    let t=((c/COLS)*.42+(r/ROWS)*.20)*.55
+        + ((Math.hypot(c-cx,(r-cy)*(CH/CW))/maxd)*.30)*.55 + h3(c,r,7)*.20;
+    if(cls===1) t=lerp(t,.30,.55)+.08;
+    else if(cls===2||cls===3){
+      if(ord.has(r)) t=.34+ord.get(r)*.030+(c/COLS)*.012;
+      else if(r===lastRow) t=.58; else t=lerp(t,.40,.5)+.06;
+    } else if(cls===4) t=.355+(ord.get(r)||0)*.030+(c/COLS)*.020;
+    lockAt[i]=clamp01(t*.78+.05);
+  }
+}
+
+/* ══ layout ═══════════════════════════════════════════════════════ */
+let rectsDirty=true, rTick=0, ringRect={x:0,y:0,w:0,h:0};
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  const r=stageEl.getBoundingClientRect();
+  W=Math.max(320,r.width); H=Math.max(320,r.height);
+  for(const c of [cv,fx]){ c.width=Math.round(W*DPR); c.height=Math.round(H*DPR);
+    c.style.width=W+'px'; c.style.height=H+'px'; }
+  FONT = W<560?12 : W<1000?13 : 14;
+  const p=document.createElement('canvas').getContext('2d');
+  p.font=`${FONT}px ${MONO}`;
+  CW=Math.max(6,p.measureText('M').width); CH=Math.round(FONT*1.42);
+  COLS=Math.ceil(W/CW)+1; ROWS=Math.ceil(H/CH)+1;
+  while(COLS*ROWS>18000){ CW*=1.12; CH=Math.round(CH*1.12);
+    COLS=Math.ceil(W/CW)+1; ROWS=Math.ceil(H/CH)+1; }
+  COLX=new Int32Array(COLS);
+  for(let c=0;c<COLS;c++) COLX[c]=Math.round(c*CW*DPR);
+  buildAtlas(); composeTarget(); rectsDirty=true;
+}
+let homeOrbRect={x:0,y:0,w:0,h:0};
+function rectOf(sel){ const e=$(sel); if(!e) return null;
+  const p=e.getBoundingClientRect(); return {x:p.left,y:p.top,w:p.width,h:p.height}; }
+function measureRects(force){
+  if(!force && !rectsDirty && (rTick++ % 12)) return;
+  if(S.X<=0){                       /* freeze once the stage starts transforming */
+    ringRect=rectOf('#ring-stage')||ringRect;
+    netRect =rectOf('#net-stage') ||netRect;
+  }
+  homeOrbRect=rectOf('#hm-orb')||homeOrbRect;
+  rectsDirty=false;
+}
+const lerpRect=(a,b,t)=>({x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t),
+                          w:lerp(a.w,b.w,t),h:lerp(a.h,b.h,t)});
+
+/* ══ field ════════════════════════════════════════════════════════ */
+function drawField(T){
+  const ig=E.decel(seg(T,B.ignite[0],B.ignite[1]));
+  const dec=E.standard(seg(T,B.decay[0],B.decay[1]));
+  const conv=E.standard(seg(T,B.converge[0],B.converge[1]));
+  const step=S.reduced?0:Math.floor(T*84);
+  const drift=conv*CH*2.4, fade=(1-dec*.86)*(1-conv), dens=S.density*GOV.scale;
+  for(let r=0;r<ROWS;r++){
+    const py=r*CH*DPR;
+    for(let c=0;c<COLS;c++){
+      const i=r*COLS+c, cls=tclass[i], la=lockAt[i];
+      let alpha=0,tint=0,ci=-1;
+      if(cls){
+        const lp=S.reduced?clamp01(seg(T,.10,.55)):clamp01((T-la)/.075);
+        if(T<la-.015 && !S.reduced){
+          ci=CIDX.get(SCRAM[(h3(c,r,step)*SCRAM.length)|0]);
+          alpha=ig*(cls===1?.5:.40)*Math.min(1,dens); tint=0;
+        }else{
+          ci=target[i];
+          const flash=lp<1?(1-lp):0;
+          tint=flash>.35?1:(cls===1||cls===4?0:2);
+          alpha=(cls===1?1:cls===4?.95:cls===2?.9:.55)*ig;
+          alpha*=(1-(cls===1?conv:E.accel(seg(T,.76,.92))));
+        }
+      }else{
+        if(fade<=.02) continue;
+        const sd=h3(c,r,3);
+        if(sd>(.62*dens)) continue;
+        ci=CIDX.get(SCRAM[(h3(c,r,step+((sd*11)|0))*SCRAM.length)|0]);
+        const near=1-Math.min(1,Math.abs(T-la)*3.4);
+        alpha=ig*fade*(.16+.62*Math.max(0,near))*(.5+.5*sd);
+        tint=(T>la&&near>.6)?1:(sd>.93?3:0);
+        if(T>la+.06) alpha*=.42;
+      }
+      if(ci<0||alpha<CULL) continue;
+      const ai=ABK[alpha>=1?63:(alpha*64)|0];
+      const yo=cls?0:drift*(.4+h3(c,r,19)*.6);
+      ctx.drawImage(atlas,ci*aTW,(tint*6+ai)*aTH,aTW,aTH,
+        COLX[c],Math.round(py+yo*DPR),aTW,aTH);
+    }
+  }
+}
+
+/* ══ ring ═════════════════════════════════════════════════════════ */
+let members=[], hoverI=-2;   /* -2 so the first setHover(-1) actually paints */
+function drawRing(T,clock,mul){
+  const gp=clamp01((T-GHOST_AT)/.045); members=[];
+  if(gp<=0) return;
+  const conv=E.expressive(seg(T,B.converge[0],B.converge[1]));
+  const alpha=lerp(GHOST_OP*gp,1,conv)*mul;
+  if(alpha<=.01) return;
+  const c0x=W/2,c0y=H*.42,r0=Math.min(W,H)*.30;
+  const rr0=(S.X>0&&HAND.ring)?HAND.ring:ringRect;
+  const c1x=rr0.x+rr0.w/2, c1y=rr0.y+rr0.h/2;
+  const r1=Math.max(38,Math.min(rr0.w,rr0.h)*.42);
+  const cx=lerp(c0x,c1x,conv)*DPR, cy=lerp(c0y,c1y,conv)*DPR, R=lerp(r0,r1,conv)*DPR;
+  const spin=S.reduced?0:clock*.00016;
+  fxc.save(); fxc.globalAlpha=alpha; fxc.lineWidth=Math.max(1,1.1*DPR);
+  for(const[rr,op] of [[1,.32],[.72,.24],[.46,.18]]){
+    fxc.beginPath(); fxc.arc(cx,cy,R*rr,0,Math.PI*2);
+    fxc.strokeStyle=`rgba(255,122,26,${op})`; fxc.stroke();
+  }
+  if(!S.reduced && fxc.createConicGradient){
+    const g=fxc.createConicGradient(spin*3.1,cx,cy);
+    g.addColorStop(0,'rgba(255,122,26,.15)'); g.addColorStop(.09,'rgba(255,122,26,0)');
+    g.addColorStop(1,'rgba(255,122,26,0)');
+    fxc.beginPath(); fxc.arc(cx,cy,R,0,Math.PI*2); fxc.fillStyle=g; fxc.fill();
+  }
+  for(let i=0;i<16;i++){
+    const ang=(i/16)*Math.PI*2+spin-Math.PI/2;
+    const x=cx+Math.cos(ang)*R, y=cy+Math.sin(ang)*R;
+    const na=((i+1)/16)*Math.PI*2+spin-Math.PI/2;
+    fxc.beginPath(); fxc.moveTo(x,y); fxc.lineTo(cx+Math.cos(na)*R,cy+Math.sin(na)*R);
+    fxc.strokeStyle='rgba(255,122,26,.10)'; fxc.stroke();
+    const on=i===hoverI;
+    fxc.beginPath(); fxc.arc(x,y,(on?4.4:2.5)*DPR,0,Math.PI*2);
+    fxc.fillStyle=on?'rgba(255,206,138,.98)':'rgba(255,122,26,.46)'; fxc.fill();
+    if(on){ fxc.beginPath(); fxc.arc(x,y,9*DPR,0,Math.PI*2);
+      fxc.strokeStyle='rgba(255,206,138,.5)'; fxc.stroke(); }
+    members.push({i,x:x/DPR,y:y/DPR,r:on?12:9});
+  }
+  for(const[rr,dir] of [[.72,-1.6],[.46,2.4]]){
+    const M=rr>.6?10:6;
+    for(let i=0;i<M;i++){ const ang=(i/M)*Math.PI*2+spin*dir;
+      fxc.beginPath(); fxc.arc(cx+Math.cos(ang)*R*rr,cy+Math.sin(ang)*R*rr,1.5*DPR,0,Math.PI*2);
+      fxc.fillStyle='rgba(255,122,26,.3)'; fxc.fill(); }
+  }
+  if(conv>.25){
+    fxc.globalAlpha=alpha*E.decel(seg(conv,.25,1));
+    fxc.textAlign='center'; fxc.textBaseline='middle';
+    fxc.fillStyle='rgba(255,206,138,.95)'; fxc.font=`${Math.round(14*DPR)}px ${MONO}`;
+    fxc.fillText(hoverI>=0?('#'+String(hoverI).padStart(2,'0')):'16 / 16',cx,cy-3*DPR);
+    fxc.fillStyle='rgba(168,160,148,.5)'; fxc.font=`${Math.round(11*DPR)}px ${MONO}`;
+    fxc.fillText(hoverI>=0?'MEMBER':'INDISTINGUISHABLE',cx,cy+12*DPR);
+  }
+  fxc.restore();
+}
+
+/* ══ HUD / verification / matrix ══════════════════════════════════ */
+const HUD=[
+  {k:'Height',    v:'3 729 557',       slot:'height',   at:.00},
+  {k:'Hashrate',  v:'2.81 GH/s',       slot:'hashrate', at:.09},
+  {k:'Difficulty',v:'412.94 G',        slot:null,       at:.18},
+  {k:'Block Δ',   v:'118 s',           slot:'blockdt',  at:.27, cls:'g'},
+  {k:'Mempool',   v:'114 tx · 216 kB', slot:'mempool',  at:.36},
+  {k:'Peers',     v:'12 out / 8 in',   slot:'peers',    at:.45},
+  {k:'XMR / USD', v:'$164.20',         slot:'price',    at:.54},
+];
+const VF=[['✓','ring size','16 / 16',0],['✓','key image','unique',0],
+  ['✓','range proof','bulletproof+',0],['✓','signature','valid over ring',0],
+  ['✗','signer index','indeterminate',1]];
+const DIG="0123456789ABCDEF";
+function scrambleTo(str,p,row){
+  if(p>=1)return str;
+  const cut=p*str.length;
+  return [...str].map((ch,i)=>{ if(' ·/$'.includes(ch))return ch;
+    if(i<cut-.6)return ch; return DIG[(h3(i,row,Math.floor(p*60)+i)*DIG.length)|0]; }).join('');
+}
+function buildStatics(){
+  $('#hud').innerHTML=HUD.map((h,i)=>
+    `<div class="hud-row"><span class="hud-k">${h.k}</span>`+
+    `<span class="hud-v ${h.cls||''}" data-i="${i}" ${h.slot?`data-slot="${h.slot}"`:''}>—</span></div>`).join('');
+  $('#vf').innerHTML=VF.map(([m,k,v,bad],i)=>
+    `<div class="${bad?'bad':''}" data-i="${i}"><span class="mk">${m}</span><span>${k}</span>`+
+    `<span class="vv">${v}</span></div>`).join('');
+  $('#matrix').innerHTML='<div class="mx-hd"><span>#</span><span>output</span><span>age</span>'+
+    '<span>wt</span><span>amt</span></div>'+
+    RING.map(r=>`<div class="mx-r ${r.real?'real':''}" data-i="${r.i}">`+
+      `<span class="n">${String(r.i).padStart(2,'0')}</span><span>${r.id}…</span>`+
+      `<span>${r.age.toFixed(1)} d</span><span>${r.weight.toFixed(3)}</span>`+
+      `<span class="amt">▮▮▮▮</span></div>`).join('');
+  buildHist(); setHover(-1);
+}
+function paintHUD(T){
+  const s=seg(T,B.settle[0],1);
+  $$('#hud .hud-v').forEach(el=>{
+    const i=+el.dataset.i, h=HUD[i], p=clamp01((s-h.at)/.30);
+    const q=clamp01(E.decel(p)-DERES*1.15);
+    el.textContent=p<=0?'—':scrambleTo(LIVE.vals[i]||h.v,q,i);
+    el.style.opacity=p<=0?.3:1;
+  });
+  $$('#vf div').forEach(el=>{ const i=+el.dataset.i;
+    el.style.opacity=String(E.decel(clamp01((s-(.30+i*.085))/.16))); });
+  $('#vf-note').style.opacity=String(E.decel(clamp01((s-.80)/.18)));
+  $('#ring-sub-hd').style.opacity=String(E.decel(clamp01((s-.10)/.25)));
+}
+
+/* ══ histogram + right column reveal ══════════════════════════════ */
+const BINS=46, XMAX=60;
+function buildHist(){
+  const vals=[]; let mx=0;
+  for(let b=0;b<BINS;b++){ const v=pdf(((b+.5)/BINS)*XMAX); vals.push(v); if(v>mx)mx=v; }
+  $('#hist').innerHTML=vals.map(v=>`<i style="height:${Math.max(1,(v/mx)*100).toFixed(1)}%"></i>`).join('')
+    + RING.map(r=>`<span class="pt ${r.real?'real':''}" data-i="${r.i}" style="left:${
+        ((r.age/XMAX)*100).toFixed(2)}%;bottom:${Math.min(97,(pdf(r.age)/mx)*100).toFixed(2)}%"></span>`).join('');
+}
+function paintCentre(T){
+  const s=seg(T,B.settle[0],1);
+  $('#hist').style.opacity=String(E.decel(clamp01((s-.18)/.26)));
+  $('#hist-ax').style.opacity=String(E.decel(clamp01((s-.24)/.26)));
+  $('#hist-key').style.opacity=String(E.decel(clamp01((s-.58)/.26)));
+  $('#strip').style.opacity=String(E.decel(clamp01((s-.52)/.24)));
+  $('#cta').style.opacity=String(E.decel(clamp01((s-.72)/.24)));
+  $('#cta').style.pointerEvents=s>.9?'auto':'none';
+  $('#probe').style.opacity=String(E.decel(clamp01((s-.42)/.24)));
+  $('#matrix').style.opacity=String(E.decel(clamp01((s-.30)/.30)));
+  $('#log-sub').textContent = s>.98?'live tail':'boot';
+  $$('#hist .pt').forEach(p=>{ const i=+p.dataset.i, q=clamp01((s-.22-i*.028)/.10);
+    p.style.opacity=String(q); p.style.transform=`translate(-50%,50%) scale(${(.5+.5*q).toFixed(2)})`; });
+  $('#masthead').style.setProperty('--mh',E.decel(clamp01((s-.22)/.36)).toFixed(3));
+  const n=E.decel(clamp01((s-.34)/.34));
+  for(const id of ['#net-legend','#net-rows','#net-src','#split']) $(id).style.opacity=String(n);
+  $('#net-cap').style.opacity=String(E.decel(clamp01((s-.66)/.3)));
+  const sp=$('#split').children;
+  sp[0].style.cssText=`background:#ff7a1a;width:${(71*n).toFixed(1)}%`;
+  sp[1].style.cssText=`background:#b87aff;width:${(24*n).toFixed(1)}%`;
+  sp[2].style.cssText=`background:#5ed3f4;width:${(5*n).toFixed(1)}%`;
+}
+
+/* ══ log + live tail ══════════════════════════════════════════════ */
+const LOG=[
+  [.00,'00.04','cold boot · v6.1.0','acc'],[.07,'00.09','entropy pool seeded',''],
+  [.14,'00.14','tls → node[0] moneroworld ✓','ok'],[.22,'00.19','node[1] cold · backoff 2s','warn'],
+  [.30,'00.24','node[2] sethforprivacy ✓','ok'],[.38,'00.28','chain tip 3729557',''],
+  [.46,'00.33','txpool · 114 tx / 216 kB',''],[.54,'00.38','coingecko · xmr/usd ✓','ok'],
+  [.61,'00.42','decoys sampled · log-normal 16',''],
+  [.68,'00.44','monero.fail · 1284 reachable','ok'],
+  [.75,'00.46','transports 71 / 24 / 5 · clear tor i2p',''],
+  [.82,'00.48','height agreement 99.2 % at tip','ok'],
+  [.89,'00.50','ring verified · signer ???','warn'],
+  [.94,'00.51','csp connect-src self · ok','ok'],[.98,'00.52','ready','acc'],
+];
+const LIVE={lines:[],next:0,t:52,height:3729557,mem:114,kb:216,price:164.20,n:0,
+            vals:HUD.map(h=>h.v)};
+function liveLine(){
+  const n=LIVE.n++; seedTo(0x9e37^n);
+  LIVE.t += 1.3+srand()*2.4;
+  const ts=LIVE.t.toFixed(2).padStart(5,'0'), roll=srand();
+  if(roll<.46){ LIVE.mem++; LIVE.kb+=1+((srand()*3)|0);
+    return [ts,`tx ${hexs(8)}… · ${(1.4+srand()*1.6).toFixed(1)} kB · 0.0000${180+((srand()*90)|0)} XMR`,'dim']; }
+  if(roll<.60) return [ts,`stem → peer ${1+((srand()*900)|0)} · dandelion++`,'p'];
+  if(roll<.72){ LIVE.height++; const txs=(LIVE.mem*.72)|0;
+    LIVE.mem=Math.max(6,LIVE.mem-txs); LIVE.kb=Math.max(14,(LIVE.mem*1.9)|0);
+    return [ts,`block ${LIVE.height} · ${108+((srand()*26)|0)}s · ${txs} tx`,'acc']; }
+  if(roll<.81){ LIVE.price+=(srand()-.5)*.9; return [ts,`xmr/usd ${LIVE.price.toFixed(2)}`,'']; }
+  if(roll<.90){ const ok=srand()<.5;
+    return [ts,`node[${(srand()*4)|0}] ${ok?'recovered ✓':'cold · backoff'}`, ok?'ok':'warn']; }
+  return [ts,`height agreement ${(98.4+srand()*1.5).toFixed(1)} % at tip`,'ok'];
+}
+function tickLive(clock){
+  if(!S.live||S.reduced||S.T<1||clock<LIVE.next) return;
+  LIVE.next=clock+900+((clock|0)%700);
+  LIVE.lines.push(liveLine());
+  if(LIVE.lines.length>70) LIVE.lines.shift();
+  LIVE.vals[0]=grp(LIVE.height);
+  LIVE.vals[4]=`${LIVE.mem} tx · ${LIVE.kb} kB`;
+  LIVE.vals[6]=`$${LIVE.price.toFixed(2)}`;
+  $('#s-mem').textContent=`${LIVE.mem} tx`;
+  $('#s-pool').textContent=`${LIVE.kb} kB`;
+  $('#s-next').textContent=`~${18+((clock/1000|0)%92)} s`;
+}
+function paintLog(T){
+  const s=seg(T,B.settle[0],1), out=[];
+  for(const[at,ts,msg,cls] of LOG){
+    if(s<at)break;
+    const p=clamp01((s-at)/.05);
+    const shown=msg.slice(0,Math.ceil(msg.length*(S.reduced?1:E.decel(p))));
+    out.push(`<div><span class="t">[${ts}]</span> <span class="${cls}">${shown}</span>${p<1?'<i class="cursor"></i>':''}</div>`);
+  }
+  if(T>=1){
+    for(const[ts,msg,cls] of LIVE.lines)
+      out.push(`<div><span class="t">[${ts}]</span> <span class="${cls}">${msg}</span></div>`);
+    out.push('<div><span class="t">[ ·· ]</span><i class="cursor"></i></div>');
+  }
+  $('#log').innerHTML=out.slice(-80).join('');
+}
+
+/* ══ console chrome ═══════════════════════════════════════════════ */
+function paintConsole(T,mul){
+  const draw=E.decel(seg(T,.78,.94)), op=E.decel(seg(T,.80,.93))*mul;
+  consoleEl.style.opacity=String(op);
+  consoleEl.classList.toggle('on',op>.01);
+  consoleEl.setAttribute('aria-hidden',op>.5?'false':'true');
+  $$('.pane').forEach(p=>p.style.setProperty('--draw',draw.toFixed(3)));
+  $('.con-top').style.opacity=String(E.decel(seg(T,.84,.96)));
+}
+
+/* ══ probe ════════════════════════════════════════════════════════ */
+const CAPTION='Verification confirms this output could have signed. So could the other fifteen.';
+function setHover(i){
+  if(i===hoverI)return; hoverI=i;
+  $$('.mx-r').forEach(r=>r.classList.toggle('on',+r.dataset.i===i));
+  $$('#hist .pt').forEach(p=>p.classList.toggle('hot',+p.dataset.i===i));
+  const p=$('#probe');
+  if(i<0){ p.innerHTML=`<span class="quiet">Hover a ring member or a matrix row.</span><em>${CAPTION}</em>`;
+    return; }
+  const m=RING[i];
+  p.innerHTML=`<b>#${String(i).padStart(2,'0')}</b> · out <b>${grp(m.oidx)}</b> · id <b>${m.id}…</b><br>`+
+    `age <b>${m.age.toFixed(1)} d</b> · weight <b>${m.weight.toFixed(3)}</b> · `+
+    `amount <span class="quiet">▮ hidden by RingCT ▮</span><em>${CAPTION}</em>`;
+}
+addEventListener('pointermove',e=>{
+  if(S.T<.9) return;
+  if(e.target.closest&&e.target.closest('#matrix')) return;
+  const r=fx.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  let best=-1,bd=1e9;
+  for(const m of members){ const d=Math.hypot(m.x-x,m.y-y); if(d<m.r+6&&d<bd){bd=d;best=m.i;} }
+  setHover(best);
+},{passive:true});
+document.addEventListener('pointerover',e=>{
+  const row=e.target.closest?.('.mx-r'); if(row) setHover(+row.dataset.i);
+});
+
+
+/* ══ rotating hero — real passages, real attribution ══════════════
+   Every line below is lifted verbatim from the site's own education
+   and thesis content (education-quotes, education-timeline,
+   bottom-line). Nothing here is written for the mockup — a quote
+   attributed to a real person that they did not say is worse than a
+   fabricated number, and this project already paid once for those.
+   Each slide deep-links to where it lives, which ties Main Home to
+   Education structurally rather than decoratively.
+   ══════════════════════════════════════════════════════════════════ */
+const HERO=[
+  { lines:['With group signatures,','it is possible for something','to be signed but not know','who signed it.'],
+    lede:'Satoshi described ring signatures four years before Monero implemented them — in a public forum thread about Bitcoin’s privacy limits.',
+    who:'Satoshi Nakamoto', meta:'BitcoinTalk #770 · August 2010', where:'Learn · Quotes', href:'#/education/quotes' },
+
+  { lines:['What we need is a way','to generate additional blinded','variations of a public key.'],
+    lede:'A precise description of stealth addresses, one day later in the same thread. Others could not tell the blinded keys belonged to the owner of the original.',
+    who:'Satoshi Nakamoto', meta:'BitcoinTalk #770 · August 2010', where:'Learn · Quotes', href:'#/education/quotes' },
+
+  { lines:['You can’t be as deterministic','as Bitcoin. In tracing Monero,','it’s really more of','a probabilistic game.'],
+    lede:'The CEO of a firm contracted to trace Monero, describing what tracing Monero actually amounts to.',
+    who:'Dave Jevans', meta:'CEO, CipherTrace', where:'Monero · Attacks', href:'#/monero/attacks' },
+
+  { lines:['They delist it because','they cannot see inside.'],
+    lede:'If Monero could be traced, regulators would keep it on exchanges as a honeypot. 73 delistings correlate with a +195% price increase.',
+    who:'The bottom line', meta:'xmr.irish', where:'Monero · Bottom line', href:'#/monero/bottom-line' },
+
+  { lines:['$625,000 offered.','22 companies applied.','Nobody collected.'],
+    lede:'The IRS bounty for a Monero tracing tool. Two contractors were selected and given eight months. Years later the challenge remains effectively unclaimed.',
+    who:'IRS Criminal Investigation', meta:'September 2020', where:'Monero · Attacks', href:'#/monero/attacks' },
+
+  { lines:['Privacy mandatory,','and default,','from day one.'],
+    lede:'Monero forked from Bytecoin without the premine, shipping ring signatures and stealth addresses at launch. Privacy was never a setting.',
+    who:'April 2014', meta:'BitMonero → Monero', where:'Learn · Timeline', href:'#/education/timeline' },
+
+  { lines:['Every transaction hiding','among the entire history','of the chain.'],
+    lede:'FCMP++ replaces ring signatures with full-chain membership proofs — an anonymity set of 150M+ outputs, bundled with CARROT addressing.',
+    who:'Full-Chain Membership Proofs', meta:'the next hard fork', where:'Future · Protocols', href:'#/future' },
+];
+const HERO_DWELL=9000;
+let heroI=0, heroQ=1, heroTrans=false, heroSwapped=true, heroWait=0, heroPaused=false;
+
+function heroRender(i){
+  const h=HERO[i];
+  $('#hm-h1').innerHTML=h.lines.map(l=>`<span class="ln"><i>${l}</i></span>`).join('');
+  $('#hm-lede').textContent=h.lede;
+  $('#hm-attr').innerHTML=`<b>${h.who}</b><span>${h.meta}</span>`+
+    `<a href="${h.href}">${h.where} →</a>`;
+  $$('#hm-dots button[data-i]').forEach(b=>
+    b.toggleAttribute('aria-current',+b.dataset.i===i));
+}
+function heroBuildDots(){
+  $('#hm-dots').innerHTML=HERO.map((_,i)=>
+    `<button type="button" data-i="${i}" aria-label="Passage ${i+1}"><i></i></button>`).join('')
+    +`<span class="pz" id="hm-pz"></span>`;
+  $('#hm-dots').addEventListener('click',e=>{
+    const b=e.target.closest('[data-i]'); if(!b) return;
+    heroGo(+b.dataset.i);
+  });
+  heroRender(0);
+}
+function heroGo(i){ if(i===heroI&&heroQ>=1) return;
+  heroI=i; heroQ=0; heroTrans=true; heroSwapped=false; heroWait=0; }
+function heroAdvance(){ heroGo((heroI+1)%HERO.length); }
+
+function tickHero(dt){
+  const onHome = S.X>=1;
+  if(!onHome){ heroWait=0; return; }
+  if(heroTrans){
+    heroQ=clamp01(heroQ + dt/(S.reduced?1:700));
+    if(!heroSwapped && heroQ>=.45){ heroRender(heroI); heroSwapped=true; }
+    if(heroQ>=1) heroTrans=false;
+  } else if(!heroPaused && !S.reduced){
+    heroWait+=dt;
+    if(heroWait>=HERO_DWELL) heroAdvance();
+  }
+  const fill = heroTrans?0:clamp01(heroWait/HERO_DWELL);
+  $$('#hm-dots button[data-i]').forEach(b=>
+    b.firstElementChild.style.setProperty('--fill',
+      (+b.dataset.i===heroI?fill:0).toFixed(3)));
+  const pz=$('#hm-pz');
+  if(pz) pz.textContent = S.reduced?'auto-advance off (reduced motion)'
+    : heroPaused?'paused' : `${heroI+1} / ${HERO.length}`;
+}
+function paintHero(){
+  const q=heroQ;
+  $$('#hm-h1 .ln i').forEach((el,i)=>{
+    const d=i*.05; let ty,op;
+    if(q<.45){ const p=E.accel(clamp01((q-d)/Math.max(.05,.45-d))); ty=-104*p; op=1-p; }
+    else { const p=E.decel(clamp01((q-.45-d)/.55)); ty=104*(1-p); op=p; }
+    el.style.transform=`translateY(${ty.toFixed(2)}%)`;
+    el.style.opacity=op.toFixed(3);
+  });
+  const fade = q<.45 ? 1-E.accel(q/.45) : E.decel(clamp01((q-.52)/.48));
+  $('#hm-lede').style.opacity=fade.toFixed(3);
+  $('#hm-attr').style.opacity=fade.toFixed(3);
+}
+
+/* ══ the Enter handoff ════════════════════════════════════════════
+   Console de-resolves (values scramble back to cipher), blurs, then
+   collapses to a CRT line. The line holds a beat, then Main Home
+   expands out of it and sharpens. The orb does not collapse — it
+   travels from the console's network pane into the home hero, which
+   is what makes the two screens read as one place.
+   ══════════════════════════════════════════════════════════════════ */
+function startHandoff(){
+  if(S.handing||S.T<1) return;
+  HAND.ring={...ringRect}; HAND.orb={...netRect};
+  S.handing=true;
+}
+function paintHandoff(){
+  const X=S.X;
+  if(X<=0){
+    stageEl.style.cssText=''; homeEl.style.cssText='';
+    crt.style.opacity='0'; document.body.classList.remove('gone');
+    homeEl.setAttribute('aria-hidden','true'); DERES=0;
+    heroQ=.45; heroTrans=false; heroWait=0; paintHero();
+    return;
+  }
+  DERES = E.standard(seg(X,HB.deres[0],HB.deres[1]));
+
+  /* console: blur, dim, then squeeze to a line */
+  const blur = 9*E.standard(seg(X,.10,.44));
+  const sq   = 1 - E.accel(seg(X,HB.collapse[0],HB.collapse[1]))*0.994;
+  const bri  = 1 + 1.4*E.accel(seg(X,.30,.52));
+  const cOp  = 1 - E.accel(seg(X,.46,.56));
+  stageEl.style.filter=`blur(${blur.toFixed(2)}px) brightness(${bri.toFixed(2)})`;
+  stageEl.style.transform=`scaleY(${Math.max(.002,sq).toFixed(4)})`;
+  stageEl.style.opacity=String(Math.max(0,cOp));
+
+  /* the line */
+  const lIn=E.decel(seg(X,.42,.52)), lOut=E.accel(seg(X,HB.line[1]-.10,HB.line[1]));
+  crt.style.opacity=String(Math.max(0,lIn-lOut));
+  crt.style.transform=`scaleX(${(0.25+0.75*lIn).toFixed(3)})`;
+
+  /* home: expands out of the line and sharpens */
+  const hOp=E.decel(seg(X,.50,.62));
+  const hSq=lerp(.02,1,E.expressive(seg(X,HB.expand[0],HB.expand[1])));
+  const hBl=16*(1-E.decel(seg(X,.56,.86)));
+  homeEl.style.opacity=String(hOp);
+  homeEl.style.transform=`scaleY(${hSq.toFixed(4)})`;
+  homeEl.style.filter=hBl>.05?`blur(${hBl.toFixed(2)}px)`:'none';
+  homeEl.setAttribute('aria-hidden',X>.6?'false':'true');
+  if(!heroTrans) heroQ = .45 + .55*E.decel(seg(X,HB.settle[0],1));
+
+  /* home kicker decrypts; live strip locks */
+  const kp=E.decel(seg(X,.74,.98));
+  $('#hm-kick').textContent=scrambleTo(`LIVE · MONERO NETWORK · BLOCK ${LIVE.vals[0]}`,kp,3);
+  $$('#hm-strip span[data-hs]').forEach(el=>{
+    const i=+el.dataset.hs, p=clamp01((kp-i*.03)/.7);
+    el.textContent=scrambleTo(LIVE.vals[i]||el.textContent,p,i);
+  });
+  $$('.hm-slots .slot').forEach(el=>{
+    const k=el.dataset.slot, i=HUD.findIndex(h=>h.slot===k);
+    if(i>=0) el.querySelector('.sv').textContent=LIVE.vals[i];
+  });
+
+  if(X>=1){ document.body.classList.add('gone');
+    stageEl.style.filter='none'; crt.style.opacity='0'; homeEl.style.filter='none';
+    homeEl.style.transform='none'; }
+  else document.body.classList.remove('gone');
+}
+function resetLive(){
+  LIVE.lines=[]; LIVE.next=0; LIVE.t=52; LIVE.height=3729557; LIVE.mem=114;
+  LIVE.kb=216; LIVE.price=164.20; LIVE.n=0; LIVE.vals=HUD.map(h=>h.v);
+  ORB.events=[]; ORB.nextStem=0; ORB.nextBlock=0;
+}
+function resetHandoff(){ S.X=0; S.handing=false; HAND={ring:null,orb:null}; paintHandoff(); }
+
+/* ══ frame ════════════════════════════════════════════════════════ */
+let last=performance.now(),clock=0,fAcc=0,fN=0,resolvedOnce=false;
+function frame(now){
+  const dt=Math.min(64,now-last); last=now; clock+=dt;
+  governor(dt);
+  fAcc+=dt; fN++;
+  if(fAcc>500){ $('#fps').textContent=
+    `${Math.round(1000/(fAcc/fN))} fps · ${COLS}×${ROWS} cells · ${ORB.nodes.length} nodes`+
+    ` · dpr ${DPR}${GOV.scale<.99?` · governor ${Math.round(GOV.scale*100)}%`:''}`;
+    fAcc=0; fN=0; }
+  if(S.playing && S.T<1){ S.T=clamp01(S.T+dt/(S.dur/S.spd)); if(S.T>=1) onResolved(); }
+  if(S.handing && S.X<1){ S.X=clamp01(S.X+dt/(S.xdur/S.spd)); if(S.X>=1) S.handing=false; }
+  if(S.T>=1&&S.X>=1&&S.loop&&!S._lq){ S._lq=1; setTimeout(()=>{S._lq=0;replay();},2200); }
+  tickLive(clock); tickHero(dt);
+
+  ctx.fillStyle='#050505'; ctx.fillRect(0,0,cv.width,cv.height);
+  fxc.clearRect(0,0,fx.width,fx.height);
+  measureRects();
+  drawField(S.T);
+  const st=seg(S.T,B.settle[0],1);
+  const ringMul=1-E.standard(seg(S.X,.04,.30));         /* ring goes with the console */
+  drawRing(S.T,clock,ringMul);
+  drawOrb(clock, E.decel(clamp01((st-.20)/.42)), E.decel(clamp01((st-.18)/.55)));
+  paintConsole(S.T,1-E.accel(seg(S.X,.40,.56)));
+  paintHUD(S.T); paintLog(S.T); paintCentre(S.T);
+  paintHandoff(); paintHero();
+  $('#scan').style.opacity=S.scan&&!S.reduced?String(.5*E.decel(seg(S.T,0,.2))):'0';
+  const showSkip=S.T<1&&S.gate!=='hero';
+  $('#skip').style.opacity=showSkip?String(E.decel(seg(S.T,.08,.20))):'0';
+  $('#skip').style.pointerEvents=showSkip?'auto':'none';
+  paintUI();
+  requestAnimationFrame(frame);
+}
+function onResolved(){
+  if(resolvedOnce)return; resolvedOnce=true;
+  if(S.gate==='first'){ try{sessionStorage.setItem('xmrirish.coldboot','1');}catch(e){} }
+  syncGate();
+}
+
+/* ══ UI ═══════════════════════════════════════════════════════════ */
+function beatLabel(T){
+  let l='—'; for(const[at,t] of BEAT_TEXT) if(T>=at) l=t;
+  return l==='GHOST'?`ghost · ring enters at ${Math.round(GHOST_OP*100)}%`:l;
+}
+function paintUI(){
+  $('#tl-pct').textContent=Math.round(S.T*100)+'%';
+  $('#tl-fill').style.width=(S.T*100)+'%';
+  $('#tl-head').style.left=(S.T*100)+'%';
+  $('#tl-t').textContent=(S.T*S.dur/S.spd/1000).toFixed(2)+' s';
+  $('#beat').textContent=beatLabel(S.T);
+  $('#p-state').textContent = S.X>=1?'main home · H hides'
+    : S.X>0?'handing off · H hides'
+    : S.T>=1?'console · H hides'
+    :(S.playing?'decrypting · H hides':'paused · H hides');
+  $('#xtl-fill').style.width=(S.X*100)+'%';
+  $('#xtl-head').style.left=(S.X*100)+'%';
+  $('#xtl-pct').textContent=Math.round(S.X*100)+'%';
+  $('#x-beat').textContent = S.X<=0?'waiting on Enter'
+    : S.X<.34?'de-resolve · values scramble back, blur ramps'
+    : S.X<.50?'collapse · console squeezes to a line'
+    : S.X<.56?'hold · the line'
+    : S.X<.80?'expand · Main Home opens out of it, sharpening'
+    : S.X<1?'settle · headline reveals, strip locks' : 'Main Home';
+  $('#b-play').textContent=S.playing?'⏸ Pause':'▶ Play';
+}
+function setT(v,pause){ S.T=clamp01(v);
+  if(S.T<1){ resolvedOnce=false; setHover(-1); }
+  resetHandoff();
+  if(pause) S.playing=false; }
+function replay(){ resetLive(); setT(0); resolvedOnce=false; S.playing=true; }
+function setX(v,pause){ S.X=clamp01(v); if(pause) S.handing=false; paintHandoff(); }
+function effLabel(){ $('#eff-r').textContent=(S.dur/S.spd/1000).toFixed(2)+' s'; }
+
+(function marks(){
+  const tl=$('#tl');
+  [[.16,'churn',0],[.46,'decay',0],[GHOST_AT,'ghost',1],[.80,'conv',0],[.86,'settle',1]]
+   .forEach(([p,n,lo])=>{ const d=document.createElement('div'); d.className='tl-mark';
+    d.style.left=(p*100)+'%'; d.dataset.k=n; d.innerHTML=`<b style="top:${lo?15:2}px">${n}</b>`;
+    tl.appendChild(d); });
+})();
+$('#tl').addEventListener('pointerdown',e=>{
+  const r=e.currentTarget.getBoundingClientRect();
+  const go=ev=>setT((ev.clientX-r.left)/r.width,true); go(e);
+  const mv=ev=>go(ev), up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);};
+  addEventListener('pointermove',mv); addEventListener('pointerup',up);
+});
+$('#b-play').onclick=()=>{ if(S.T>=1&&S.X>=1) replay(); else S.playing=!S.playing; };
+$('#b-replay').onclick=replay;
+$('#b-end').onclick=()=>{ setT(1,true); S.playing=true; };
+$('#skip').onclick=()=>{ setT(1,true); S.playing=true; };
+$('#cta-replay').onclick=replay;
+$('#cta-enter').onclick=()=>{ if(S.reduced){ setX(1,true); } else startHandoff(); };
+$('#x-go').onclick=()=>{ if(S.X>=1) { resetHandoff(); } else { setX(0,true); startHandoff(); } };
+$('#x-back').onclick=()=>{ resetHandoff(); };
+$('#xtl').addEventListener('pointerdown',e=>{
+  const r=e.currentTarget.getBoundingClientRect();
+  const go=ev=>setX((ev.clientX-r.left)/r.width,true); go(e);
+  const mv=ev=>go(ev), up=()=>{removeEventListener('pointermove',mv);removeEventListener('pointerup',up);};
+  addEventListener('pointermove',mv); addEventListener('pointerup',up);
+});
+$$('[data-xdur]').forEach(b=>b.onclick=()=>{ S.xdur=+b.dataset.xdur;
+  $$('[data-xdur]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('#xdur-r').textContent=(S.xdur/1000).toFixed(2)+' s'; setX(0,true); startHandoff(); });
+
+$$('[data-spd]').forEach(b=>b.onclick=()=>{ S.spd=+b.dataset.spd;
+  $$('[data-spd]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('#spd-r').textContent=S.spd+'×'; effLabel(); replay(); });
+$$('[data-dur]').forEach(b=>b.onclick=()=>{ S.dur=+b.dataset.dur; $('#dur').value=S.dur;
+  $$('[data-dur]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('#dur-r').textContent=(S.dur/1000).toFixed(2)+' s'; effLabel(); replay(); });
+$('#dur').oninput=e=>{ S.dur=+e.target.value; $('#dur-r').textContent=(S.dur/1000).toFixed(2)+' s';
+  $$('[data-dur]').forEach(x=>x.setAttribute('aria-pressed',String(+x.dataset.dur===S.dur))); effLabel(); };
+
+$('#seg-gate').addEventListener('click',e=>{
+  const b=e.target.closest('[data-gate]'); if(!b)return;
+  S.gate=b.dataset.gate;
+  $$('#seg-gate [data-gate]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('#gate-r').textContent={first:'once / session',every:'every load',hero:'no decrypt'}[S.gate];
+  syncGate();
+  if(S.gate==='hero'){ setT(1,true); S.playing=true; } else replay();
+});
+$('#gate-clear').onclick=()=>{ try{sessionStorage.removeItem('xmrirish.coldboot');}catch(e){} syncGate(); replay(); };
+function syncGate(){
+  let set=false; try{set=!!sessionStorage.getItem('xmrirish.coldboot');}catch(e){}
+  $('#gate-state').textContent = S.gate==='hero'?'No decrypt — console hero only'
+    : S.gate==='every'?'Every cold load · flag ignored'
+    : (set?'Flag SET — return visit skips decrypt':'Flag not set — decrypt would run');
+}
+$('#den').oninput=e=>{ S.density=+e.target.value;
+  $('#den-r').textContent=S.density>=1.6?'MAX':S.density.toFixed(2); };
+$('#gh').oninput=e=>{GHOST_OP=+e.target.value;$('#gh-r').textContent=Math.round(GHOST_OP*100)+'%';};
+$('#gm').oninput=e=>{GHOST_AT=+e.target.value;$('#gm-r').textContent=Math.round(GHOST_AT*100)+'%';
+  const m=$$('.tl-mark').find(x=>x.dataset.k==='ghost'); if(m)m.style.left=(GHOST_AT*100)+'%';};
+function tog(id,fn,init){ const el=$(id); el.setAttribute('aria-pressed',String(!!init));
+  el.onclick=()=>{const v=el.getAttribute('aria-pressed')!=='true';
+    el.setAttribute('aria-pressed',String(v)); fn(v);}; }
+tog('#t-live',v=>S.live=v,true);
+tog('#t-gov',v=>{S.gov=v;if(!v)GOV.scale=1;},true);
+tog('#t-scan',v=>S.scan=v,false);
+tog('#t-red',v=>{S.reduced=v;document.body.classList.toggle('reduced',v);replay();},S.reduced);
+tog('#t-loop',v=>S.loop=v,false);
+$('#p-hd').onclick=()=>$('#panel').classList.toggle('hid');
+['pointerenter','focusin'].forEach(ev=>$('#hm-rot').addEventListener(ev,()=>heroPaused=true));
+['pointerleave','focusout'].forEach(ev=>$('#hm-rot').addEventListener(ev,()=>heroPaused=false));
+
+addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  const k=e.key;
+  if(k===' '){e.preventDefault();S.playing=!S.playing;}
+  else if(k==='r'||k==='R')replay();
+  else if(k==='h'||k==='H')$('#panel').classList.toggle('hid');
+  else if(k==='ArrowLeft'){e.preventDefault();setT(S.T-(e.shiftKey?.05:.01),true);}
+  else if(k==='ArrowRight'){e.preventDefault();setT(S.T+(e.shiftKey?.05:.01),true);}
+  else if(k==='Escape'){setT(1,true);}
+  else if(k==='Enter'){e.preventDefault();startHandoff();}
+});
+let rt=null;
+addEventListener('resize',()=>{clearTimeout(rt);rt=setTimeout(()=>{resize();rectsDirty=true;},120);});
+addEventListener('scroll',()=>{rectsDirty=true;},{passive:true});
+
+/* boot */
+readFonts(); resize(); buildStatics(); heroBuildDots(); resetLive(); resetHandoff(); syncGate(); effLabel(); measureRects(true);
+if(innerWidth<760) $('#panel').classList.add('hid');
+if(document.fonts&&document.fonts.ready) document.fonts.ready.then(()=>{readFonts();resize();});
+if(S.reduced){document.body.classList.add('reduced');$('#t-red').setAttribute('aria-pressed','true');}
+requestAnimationFrame(t=>{last=t;frame(t);});
+
+/* deterministic hooks for headless verification */
+window.__setT=(v)=>{S.playing=false;setT(v,true);};
+window.__setX=(v)=>{setX(v,true);};
+window.__hover=i=>setHover(i);
+window.__clock=v=>{clock=v;};
+window.__pump=n=>{ for(let i=0;i<(n||10);i++){ LIVE.next=0; tickLive(1e9); } };
+</script>
+</body>
+</html>

@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en" data-theme="classic">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>xmr.irish v6 — D3 · Markets &amp; Network (P6–P8)</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   D3 · Markets & Network — accompanies P6, P7, P8
+   Markets  canvas candles (D0843) · brush-and-zoom (D0835)
+            annotation layer (D0833) · accessible table (D0847)
+   Network  threshold bands (D0832) · small multiples (D0837)
+            streaming line (D0828) · cadence strip · difficulty↔hashrate
+   Across   synced crosshair (D0834 + D1534 + D0385)
+   Series are seeded placeholders. The ANNOTATIONS are real — every one
+   is an actual dated event from the site's own timeline content.
+   ══════════════════════════════════════════════════════════════════ */
+:root{
+  --bg-0:#050505; --bg-1:#0a0907; --bg-2:#11100c; --bg-3:#1a1812;
+  --line:rgba(255,122,26,.14); --line-d:rgba(255,122,26,.06); --rule:rgba(255,255,255,.05);
+  --o-100:#ffce8a; --o-80:#ffb978; --o-60:#ff8a2a; --o-50:#ff7a1a; --o-40:#d6620f; --o-30:#8a3e07;
+  --g-50:#4ade80; --r-50:#ff4d6d; --y-50:#ffd400; --p-50:#b87aff; --c-50:#5ed3f4;
+  --ink-100:#a8a094; --ink-80:rgba(168,160,148,.85); --ink-60:rgba(168,160,148,.55);
+  --ink-40:rgba(168,160,148,.32); --ink-20:rgba(168,160,148,.16); --ink-10:rgba(168,160,148,.08);
+  --f-serif:"Newsreader","Source Serif Pro",Charter,Georgia,serif;
+  --f-sans:"Geist","Söhne","Inter",system-ui,sans-serif;
+  --f-mono:"JetBrains Mono","Berkeley Mono","IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --d-1:75ms; --d-2:150ms; --d-3:300ms; --d-4:500ms;
+  --e-standard:cubic-bezier(.4,0,.2,1); --e-decel:cubic-bezier(0,0,.2,1);
+  --e-expressive:cubic-bezier(.2,.9,.1,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:#050505;color:var(--ink-100);font-family:var(--f-sans);color-scheme:dark;
+  -webkit-font-smoothing:antialiased}
+.hdr{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;padding:18px 22px 12px;
+  border-bottom:1px solid var(--line)}
+.hdr h1{margin:0;font-family:var(--f-serif);font-size:21px;font-weight:400;color:var(--o-60)}
+.hdr span{font-family:var(--f-mono);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-40)}
+.hdr .tabs{margin-left:auto;display:flex;gap:6px}
+.btn{font-family:var(--f-mono);font-size:12px;padding:7px 11px;background:var(--bg-2);color:var(--ink-60);
+  border:1px solid var(--line-d);border-radius:2px;cursor:pointer;
+  transition:all var(--d-2) var(--e-standard);white-space:nowrap}
+.btn:hover{color:var(--o-60);border-color:var(--line)}
+.btn[aria-pressed="true"]{background:rgba(255,122,26,.13);color:var(--o-100);border-color:rgba(255,122,26,.4)}
+.btn:focus-visible{outline:2px solid var(--o-50);outline-offset:2px}
+.wrap{padding:14px 18px 40px;max-width:1900px;margin-inline:auto}
+.bar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.bar b{font-family:var(--f-mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-40);font-weight:400;margin-right:2px}
+.bar .sp{flex:1}
+
+.panel{border:1px solid var(--line);border-radius:4px;background:#050505;overflow:hidden;margin-bottom:12px}
+.ph{display:flex;align-items:baseline;gap:10px;padding:9px 12px;border-bottom:1px solid var(--line-d);flex-wrap:wrap}
+.ph b{font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--o-50);font-weight:500}
+.ph span{font-family:var(--f-mono);font-size:12px;color:var(--ink-40)}
+.ph .rd{margin-left:auto;font-family:var(--f-mono);font-size:12px;color:var(--ink-60);
+  font-variant-numeric:tabular-nums;white-space:nowrap}
+.ph .rd b{color:var(--o-60);letter-spacing:0;text-transform:none;font-size:13px}
+.chart{position:relative;width:100%;display:block}
+.chart canvas{display:block;width:100%;height:100%}
+.badge{font-family:var(--f-mono);font-size:12px;letter-spacing:.13em;padding:2px 6px;border-radius:2px;
+  border:1px solid var(--line);color:var(--o-40);text-transform:uppercase}
+.badge.g{color:var(--g-50);border-color:rgba(74,222,128,.24)}
+.badge.w{color:var(--y-50);border-color:rgba(255,212,0,.24)}
+.badge.r{color:var(--r-50);border-color:rgba(255,77,109,.24)}
+.badge.c{color:var(--c-50);border-color:rgba(94,211,244,.24)}
+
+/* annotation flags */
+.anns{position:absolute;left:0;right:0;top:0;height:100%;pointer-events:none}
+.ann{position:absolute;top:0;bottom:0;width:1px;pointer-events:none}
+.ann i{position:absolute;top:4px;left:0;transform:translateX(-50%);width:9px;height:9px;
+  border-radius:50%;border:1px solid #050505;pointer-events:auto;cursor:pointer}
+.ann.proto i{background:var(--p-50)} .ann.reg i{background:var(--y-50)} .ann.mkt i{background:var(--c-50)}
+.ann.cluster i{width:auto;height:auto;border-radius:8px;padding:1px 5px;font-family:var(--f-mono);
+  font-size:12px;color:#050505;line-height:1.3;transform:translateX(-50%)}
+.ann u{position:absolute;top:0;bottom:0;left:0;width:1px;display:block;opacity:.34}
+.ann.proto u{background:var(--p-50)} .ann.reg u{background:var(--y-50)} .ann.mkt u{background:var(--c-50)}
+#tip{position:fixed;z-index:30;max-width:290px;padding:9px 11px;border-radius:3px;background:#0a0a0a;
+  border:1px solid var(--line);box-shadow:0 14px 40px rgba(0,0,0,.7);font-family:var(--f-mono);
+  font-size:12px;line-height:1.5;color:var(--ink-60);display:none}
+#tip b{color:var(--o-60);font-weight:400;display:block;margin-bottom:3px}
+#tip em{font-style:normal;color:var(--ink-20);display:block;margin-top:5px}
+
+/* brush */
+.brush{position:relative;height:66px;border-top:1px solid var(--line-d);cursor:crosshair;user-select:none}
+.brush canvas{display:block;width:100%;height:100%}
+.bwin{position:absolute;top:0;bottom:0;background:rgba(255,122,26,.10);
+  border-inline:1px solid rgba(255,122,26,.55);cursor:grab}
+.bwin:active{cursor:grabbing}
+.bwin .h{position:absolute;top:0;bottom:0;width:9px;cursor:ew-resize}
+.bwin .h.l{left:-5px} .bwin .h.r{right:-5px}
+.bmask{position:absolute;top:0;bottom:0;background:rgba(5,5,5,.70);pointer-events:none}
+
+/* grids */
+.g2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(400px,100%),1fr));gap:12px}
+.g3{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(232px,100%),1fr));gap:10px;padding:10px}
+.sm{border:1px solid var(--line-d);border-radius:3px;background:var(--bg-1);overflow:hidden}
+.sm .h{display:flex;align-items:baseline;gap:7px;padding:6px 9px}
+.sm .h b{font-family:var(--f-mono);font-size:12px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--ink-40);font-weight:400}
+.sm .h span{margin-left:auto;font-family:var(--f-mono);font-size:13px;color:var(--o-60);
+  font-variant-numeric:tabular-nums}
+.sm .h span.g{color:var(--g-50)} .sm .h span.w{color:var(--y-50)} .sm .h span.r{color:var(--r-50)}
+
+/* accessible table (D0847) */
+.tbl{max-height:280px;overflow:auto;border-top:1px solid var(--line-d)}
+table{width:100%;border-collapse:collapse;font-family:var(--f-mono);font-size:12px}
+th{position:sticky;top:0;background:#050505;text-align:right;color:var(--ink-20);letter-spacing:.13em;
+  text-transform:uppercase;font-weight:400;padding:6px 9px;border-bottom:1px solid var(--ink-10)}
+th:first-child,td:first-child{text-align:left}
+td{padding:3px 9px;border-bottom:1px solid var(--ink-10);color:var(--ink-60);text-align:right;
+  font-variant-numeric:tabular-nums}
+tr:hover td{background:rgba(255,122,26,.07);color:var(--o-80)}
+
+.legend{display:flex;gap:12px;flex-wrap:wrap;padding:8px 12px;font-family:var(--f-mono);font-size:12px;
+  color:var(--ink-40);border-top:1px solid var(--line-d)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px}
+.note{font-family:var(--f-mono);font-size:12px;line-height:1.55;color:var(--ink-40);padding:9px 12px;
+  border-top:1px solid var(--line-d)}
+.note b{color:var(--o-40);font-weight:400}
+.note a{color:var(--c-50);text-decoration:none;border-bottom:1px solid rgba(94,211,244,.3)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px;margin-top:16px}
+.card{border:1px solid var(--line);background:var(--bg-1);border-radius:4px;padding:14px}
+.card h3{margin:0 0 8px;font-family:var(--f-mono);font-size:12px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--o-50);font-weight:500}
+.card p,.card li{font-size:13px;line-height:1.6;color:var(--ink-60);margin:0 0 7px}
+.card ul{margin:0;padding-left:16px} .card b{color:var(--ink-80);font-weight:500}
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>Markets &amp; Network</h1>
+  <span>D3 · accompanies P6 · P7 · P8</span>
+  <div class="tabs">
+    <button class="btn" data-tab="mk" aria-pressed="true">Markets</button>
+    <button class="btn" data-tab="nw">Network</button>
+  </div>
+</div>
+
+<div class="wrap">
+
+<!-- ══ MARKETS ══════════════════════════════════════════════════ -->
+<div id="tab-mk">
+  <div class="bar">
+    <b>Range</b>
+    <button class="btn" data-r="30">30D</button><button class="btn" data-r="90">90D</button>
+    <button class="btn" data-r="365" aria-pressed="true">1Y</button>
+    <button class="btn" data-r="1095">3Y</button><button class="btn" data-r="0">All</button>
+    <span class="sp"></span>
+    <b>Layers</b>
+    <button class="btn" data-lyr="proto" aria-pressed="true">Protocol</button>
+    <button class="btn" data-lyr="reg" aria-pressed="true">Regulatory</button>
+    <button class="btn" data-lyr="mkt" aria-pressed="true">Market</button>
+    <span class="sp"></span>
+    <b>Candles</b>
+    <button class="btn" data-fill="0.95">Tight</button>
+    <button class="btn" data-fill="0.86" aria-pressed="true">Standard</button>
+    <button class="btn" data-fill="0.62">Airy</button>
+    <button class="btn" id="b-tbl">Accessible table</button>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><b>XMR / USD</b><span id="mk-gran">daily candles</span>
+      <span class="badge">CoinGecko</span>
+      <span class="rd" id="mk-rd">hover the chart</span></div>
+    <div class="chart" id="c-hero" style="height:380px">
+      <canvas></canvas><div class="anns"></div></div>
+    <div class="brush" id="brush">
+      <canvas></canvas>
+      <div class="bmask" id="bm-l"></div><div class="bmask" id="bm-r"></div>
+      <div class="bwin" id="bwin"><span class="h l"></span><span class="h r"></span></div>
+    </div>
+    <div class="legend">
+      <span><i style="background:#b87aff"></i>protocol</span>
+      <span><i style="background:#ffd400"></i>regulatory</span>
+      <span><i style="background:#5ed3f4"></i>market</span>
+      <span style="margin-left:auto">drag the window · drag its edges to resize · double-click resets</span>
+    </div>
+    <div class="tbl hide" id="mk-tbl"></div>
+    <div class="note"><b>D0833</b> annotations come from the existing Timeline content, not a new dataset —
+      one source, two surfaces. Clicking a flag deep-links to its timeline entry.
+      <b>D0847</b> the table is not a nicety: canvas has no DOM, so it is the screen-reader path, the
+      reduced-motion path and the mobile path at once.</div>
+  </div>
+
+  <div class="g2">
+    <div class="panel">
+      <div class="ph"><b>XMR / BTC</b><span class="badge">CoinGecko</span>
+        <span class="rd" id="r-ratio">—</span></div>
+      <div class="chart" id="c-ratio" style="height:210px"><canvas></canvas><div class="anns"></div></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><b>Privacy group</b><span>top 7, live-ranked · indexed to 100 at window start</span>
+        <span class="badge">CoinGecko</span></div>
+      <div class="chart" id="c-priv" style="height:210px"><canvas></canvas><div class="anns"></div></div>
+      <div class="legend" id="priv-leg"></div>
+    </div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3>What the brush replaces</h3>
+      <p>Four fixed range buttons, each one <b>refetching</b>. Here a superset is fetched once and
+        windowed on the client — fewer requests against a Demo-tier key, and instant interaction.</p>
+      <p>Range buttons survive as presets that <em>move the brush</em> rather than swap datasets.</p></div>
+    <div class="card"><h3>Why canvas</h3>
+      <p>SVG caps out around a few hundred candles. This is <b id="ncand">—</b> candles held at
+        interactive framerates, and granularity steps with zoom — daily at 1Y, 4h at 90D, hourly at 30D.</p>
+      <p>The cost is DOM accessibility, which is exactly why <b>D0847</b> is mandatory rather than optional.</p></div>
+    <div class="card"><h3>The differentiator</h3>
+      <p>Price charts are commodity. Price charts annotated with <b>Monero's own history</b> — the IRS
+        bounty, the Binance delisting, tail emission, the FCMP++ testnet — are not.</p>
+      <p>It also ties Markets to Education structurally rather than by a link in a footer.</p></div>
+  </div>
+</div>
+
+<!-- ══ NETWORK ══════════════════════════════════════════════════ -->
+<div id="tab-nw" class="hide">
+  <div class="bar">
+    <b>Health</b><span id="nw-health"></span>
+    <span class="sp"></span>
+    <button class="btn" id="b-stream" aria-pressed="true">Streaming</button>
+    <button class="btn" id="b-bands" aria-pressed="true">Threshold bands</button>
+  </div>
+
+  <div class="g2">
+    <div class="panel">
+      <div class="ph"><b>Block interval</b><span>target 120 s</span>
+        <span class="badge">Node</span><span class="rd" id="r-bt">—</span></div>
+      <div class="chart" id="c-bt" style="height:180px"><canvas></canvas></div>
+      <div class="note"><b>Healthy</b> 96–150s · <b>warn</b> 150–200s · <b>critical</b> &gt;200s —
+        derived from the 120s target and observed variance, not invented.
+        Cross-links to the <a href="#">Metronome simulator →</a></div>
+    </div>
+    <div class="panel">
+      <div class="ph"><b>Hashrate</b><span>vs 30-day envelope</span>
+        <span class="badge">Node</span><span class="rd" id="r-hr">—</span></div>
+      <div class="chart" id="c-hr" style="height:180px"><canvas></canvas></div>
+      <div class="note"><b>Band</b> is the trailing 30-day ±1σ envelope. Leaving it downward is the
+        signal that matters — a hashrate cliff precedes a difficulty overhang.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><b>Difficulty ↔ hashrate</b><span>one feedback loop, not two series</span>
+      <span class="rd" id="r-dh">—</span></div>
+    <div class="chart" id="c-dh" style="height:200px"><canvas></canvas></div>
+    <div class="note">Difficulty chases hashrate on a per-block controller. Plotted together the
+      <b>lag is the story</b>; plotted apart it is invisible. Cross-links to the
+      <a href="#">Thermostat simulator →</a></div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><b>Block cadence</b><span>every block a tick, against the 120 s target</span>
+      <span class="rd" id="r-cad">last 60 blocks</span></div>
+    <div class="chart" id="c-cad" style="height:96px"><canvas></canvas></div>
+    <div class="note">The chain has a heartbeat. This is it — <b>above the line is slow, below is fast</b>,
+      and the run of ticks tells you more about health than any single number.</div>
+  </div>
+
+  <div class="panel">
+    <div class="ph"><b>Small multiples</b><span>D0837 · identical treatment, pattern over table</span></div>
+    <div class="g3" id="smalls"></div>
+    <div class="note">This replaces the text/table block. <b>Pattern-matching across a grid beats
+      reading a table</b>, and it scales to more metrics without more scrolling. Every tile shares
+      one axis treatment and one band grammar, so an anomaly is visible before it is read.</div>
+  </div>
+
+  <div class="cards">
+    <div class="card"><h3>Health at a glance</h3>
+      <p>Currently a visitor must already know what 2.81 GH/s means. With bands they need to know
+        one thing: <b>is the series inside its band</b>. That is the biggest conceptual upgrade
+        available to this page.</p>
+      <p>Every threshold documents its source inline — an undocumented band is just a coloured
+        rectangle asserting authority it hasn't earned.</p></div>
+    <div class="card"><h3>Streaming vs polling</h3>
+      <p>The chart scrolls left as points arrive rather than redrawing on each poll — a block becomes
+        an <b>event on a timeline</b>, not a number that changed.</p>
+      <p>Architect for the relay's WebSocket (P3) but ship on polling. Ideally the difference is a
+        data-source swap, nothing more.</p></div>
+    <div class="card"><h3>The unused advantage</h3>
+      <p>Live data sitting next to the simulator that explains it. Cadence → <b>Metronome</b>.
+        Difficulty/hashrate → <b>Thermostat</b>. Mempool fee bands → <b>Orbital</b> and <b>Abyss</b>.</p>
+      <p>No other Monero site can do this, and this one currently doesn't.</p></div>
+  </div>
+</div>
+
+</div>
+<div id="tip"></div>
+
+<script>
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const DPR=Math.min(devicePixelRatio||1,2);
+let MONO='ui-monospace,monospace';
+try{MONO=getComputedStyle(document.body).getPropertyValue('--f-mono')||MONO;}catch(e){}
+
+/* seeded — same chart every load, so it can be screenshot-diffed */
+let _s=20140418; const rnd=()=>{_s=(_s*1664525+1013904223)>>>0;return _s/4294967296;};
+const seed=v=>{_s=v>>>0;};
+const gauss=()=>{const u=Math.max(1e-9,rnd());return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*rnd());};
+
+/* ══ series ═══════════════════════════════════════════════════════
+   Placeholder OHLC. In production this is /api/coingecko market_chart,
+   cached ≥1h server-side — closed-day history never changes.
+   ══════════════════════════════════════════════════════════════════ */
+const DAY=864e5, H4=144e5, T_END=Date.UTC(2026,6,31), N=2200;
+/* The base series is 4-HOURLY, not daily. That is the whole point of
+   "granularity scales with zoom": at 30D a daily series only has 30
+   bars to draw across 1600px, which is what produced the wide gaps —
+   the spacing was a symptom of too little data, not of styling. Each
+   range now picks the finest bucket that keeps the visible count under
+   ~420, so every range draws 180–380 candles and the gaps stay tight. */
+const BASE=(()=>{
+  seed(7717); const out=[]; let p=58; const M=N*6;
+  for(let i=0;i<M;i++){
+    const t=T_END-(M-1-i)*H4;
+    const drift=0.000075 + 0.000058*Math.sin(i/1260);
+    p*=Math.exp(drift + gauss()*0.0135);
+    const o=p*(1+gauss()*0.0016), c=p*(1+gauss()*0.0016);
+    out.push({t,o,c,h:Math.max(o,c)*(1+Math.abs(gauss())*0.0045),
+              l:Math.min(o,c)*(1-Math.abs(gauss())*0.0045)});
+  }
+  const k=164.20/out[out.length-1].c;
+  out.forEach(d=>{d.o*=k;d.c*=k;d.h*=k;d.l*=k;});
+  return out;
+})();
+/* bucket = how many 4h base candles per drawn candle */
+const BUCKETS=[[1,'4-hour'],[3,'12-hour'],[6,'daily'],[18,'3-day'],[42,'weekly'],[126,'monthly']];
+const _agg={};
+function agg(k){
+  if(_agg[k]) return _agg[k];
+  const out=[];
+  for(let i=0;i<BASE.length;i+=k){
+    const g=BASE.slice(i,i+k); if(!g.length) break;
+    let h=-Infinity,l=Infinity; for(const d of g){ if(d.h>h)h=d.h; if(d.l<l)l=d.l; }
+    out.push({t:g[0].t,o:g[0].o,c:g[g.length-1].c,h,l});
+  }
+  return _agg[k]=out;
+}
+function pickBucket(span){
+  for(const [k,lab] of BUCKETS) if(span/(H4*k)<=420) return {k,lab};
+  const last=BUCKETS[BUCKETS.length-1]; return {k:last[0],lab:last[1]};
+}
+const CANDLES=agg(6).map(d=>({...d,v:0}));
+$('#ncand').textContent=BASE.length.toLocaleString('en-GB').replace(/,/g,' ');
+const NC=CANDLES.length;
+const RATIO=CANDLES.map((d,i)=>({t:d.t,v:0.0016*(1+0.22*Math.sin(i/160))*(d.c/164.2)**.35}));
+/* Seven privacy assets. On the live site membership is live-ranked
+   (v6.0.5), so this list is what the ranking currently returns, not a
+   hardcoded set — the chart has to survive a constituent changing.
+   Hues are spaced for separability on black (D0846); XMR is the subject
+   and is drawn last, thickest, so it reads above the field. */
+const PRIV=[['XMR','#ff7a1a','Monero'],['ZEC','#ffd400','Zcash'],['DASH','#5ed3f4','Dash'],
+            ['DCR','#4ade80','Decred'],['ROSE','#b87aff','Oasis'],['SCRT','#ff4d6d','Secret'],
+            ['ARRR','#9aa0a6','Pirate Chain']].map(([n,c,full],k)=>{
+  seed(991+k*137); let p=100; const s=[];
+  const dr=[0.00042,-0.00018,-0.00030,0.00006,-0.00042,-0.00055,0.00022][k];
+  const vol=[0.030,0.036,0.033,0.031,0.042,0.045,0.050][k];
+  for(let i=0;i<NC;i++){ p*=Math.exp(dr+gauss()*vol); s.push({t:CANDLES[i].t,v:p}); }
+  return {n,c,full,s,k};
+});
+
+/* ══ annotations — real, dated, from the site's own timeline ═══════ */
+const ANN=[
+  {d:'2022-05-01',k:'proto',t:'Tail emission begins',x:'0.6 XMR per block, forever. Unlike Bitcoin’s eventual zero rewards, Monero ensures perpetual miner incentives.'},
+  {d:'2022-08-01',k:'proto',t:'View tags',x:'One-byte view tags let wallets skip non-matching outputs — ~40% faster sync, no privacy trade-off.'},
+  {d:'2023-05-01',k:'reg',t:'EU MiCA adopted',x:'Traceability requirements make it very hard for exchanges to support privacy coins within the EU.'},
+  {d:'2024-02-20',k:'mkt',t:'Binance delists XMR',x:'The world’s largest exchange removes XMR globally. Price recovers and surges — independence from CEXes demonstrated.'},
+  {d:'2024-04-10',k:'mkt',t:'OKX delists',x:'Notable given Dubai’s crypto-friendly stance — reflecting a growing global regulatory consensus.'},
+  {d:'2024-09-01',k:'mkt',t:'73 delistings · +195%',x:'Surging demand despite delistings. On-chain activity stays flat or grows; P2P, atomic swaps and DEXs absorb volume.'},
+  {d:'2025-02-01',k:'proto',t:'FCMP++ design published',x:'kayabaNerve (Luke Parker) publishes the Full-Chain Membership Proofs design; the Foundation follows with an official explainer.'},
+  {d:'2025-09-15',k:'proto',t:'FCMP++ testnet fork',x:'Testnet hard fork at block 2,847,330. Alpha v1 → v1.6 ships CARROT addressing, RAM optimizations and a 5× proof speedup. Veridise audit completes.'},
+  {d:'2026-01-01',k:'reg',t:'DAC8 reporting live',x:'Crypto providers must report transaction data to tax authorities across all EU member states — the most comprehensive surveillance framework yet.'},
+  {d:'2026-04-01',k:'reg',t:'Form 1099-DA',x:'US expands crypto reporting, creating a comprehensive surveillance framework — and driving demand for privacy alternatives.'},
+  {d:'2026-06-20',k:'proto',t:'Stressnet v1.6',x:'Final scaling parameters and wallet integrations exercised before the mainnet hard fork.'},
+].map(a=>({...a,t0:Date.parse(a.d)}));
+const LYR={proto:true,reg:true,mkt:true};
+
+/* ══ shared time cursor — D0834 ═══════════════════════════════════ */
+const CUR={t:null};
+const charts=[];
+function setCur(t){ CUR.t=t; charts.forEach(c=>c.draw()); paintReadouts(); }
+
+/* ══ tiny chart kit ═══════════════════════════════════════════════ */
+function mkChart(sel,opt){
+  const host=$(sel), cv=host.querySelector('canvas'), ctx=cv.getContext('2d');
+  const c={host,cv,ctx,opt,x0:0,x1:0};
+  c.size=()=>{ const r=host.getBoundingClientRect();
+    cv.width=Math.max(2,r.width*DPR); cv.height=Math.max(2,r.height*DPR);
+    c.w=r.width; c.h=r.height; };
+  c.draw=()=>{ c.size(); c.xdom=opt.domain(); opt.render(c); };
+  host.addEventListener('pointermove',e=>{
+    const r=host.getBoundingClientRect();
+    const [a,b]=opt.domain(); const f=clamp((e.clientX-r.left)/r.width,0,1);
+    setCur(a+(b-a)*f);
+  });
+  host.addEventListener('pointerleave',()=>setCur(null));
+  charts.push(c); return c;
+}
+const PAD={l:60,r:12,t:10,b:26};
+/* Gridlines and axis labels were pitched for atmosphere over legibility.
+   Still low-opacity, but now actually readable against #050505. */
+const GRID='rgba(168,160,148,.13)', GRIDX='rgba(168,160,148,.09)',
+      AXTX='rgba(168,160,148,.52)', AXTX2='rgba(168,160,148,.38)';
+function axes(c,lo,hi,fmt,noX){
+  const {ctx,w,h}=c, D=DPR;
+  ctx.font=`${Math.round(12*D)}px ${MONO}`; ctx.textBaseline='middle';
+  for(let i=0;i<=4;i++){
+    const v=lo+(hi-lo)*i/4, y=Math.round((h-PAD.b-(h-PAD.t-PAD.b)*i/4)*D)+.5;
+    ctx.beginPath(); ctx.moveTo(PAD.l*D,y); ctx.lineTo((w-PAD.r)*D,y);
+    ctx.strokeStyle=GRID; ctx.lineWidth=Math.max(1,D*.8); ctx.stroke();
+    ctx.fillStyle=AXTX; ctx.textAlign='right';
+    ctx.fillText(fmt(v),(PAD.l-8)*D,y);
+  }
+  if(!noX && c.xdom) axesX(c,c.xdom[0],c.xdom[1]);
+}
+function fmtDate(t,span){
+  const d=new Date(t);
+  const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  if(span<6*DAY)   return String(d.getUTCHours()).padStart(2,'0')+':00';
+  if(span<70*DAY)  return d.getUTCDate()+' '+M[d.getUTCMonth()];
+  if(span<1500*DAY) return M[d.getUTCMonth()]+" '"+String(d.getUTCFullYear()).slice(2);
+  return String(d.getUTCFullYear());
+}
+function axesX(c,a,b){
+  const {ctx,w,h}=c, D=DPR, span=b-a, n=w<640?4:6;
+  ctx.font=`${Math.round(12*D)}px ${MONO}`; ctx.textBaseline='top'; ctx.textAlign='center';
+  for(let i=0;i<=n;i++){
+    const t=a+span*i/n, x=Math.round((PAD.l+(w-PAD.l-PAD.r)*i/n)*D)+.5;
+    if(i>0&&i<n){ ctx.beginPath(); ctx.moveTo(x,PAD.t*D); ctx.lineTo(x,(h-PAD.b)*D);
+      ctx.strokeStyle=GRIDX; ctx.lineWidth=Math.max(1,D*.8); ctx.stroke(); }
+    ctx.fillStyle=AXTX2;
+    ctx.textAlign = i===0?'left' : i===n?'right':'center';
+    ctx.fillText(fmtDate(t,span), x, (h-PAD.b+7)*D);
+  }
+}
+function crosshair(c,dom){
+  if(CUR.t==null) return;
+  const {ctx,w,h}=c, D=DPR, [a,b]=dom;
+  if(CUR.t<a||CUR.t>b) return;
+  const x=(PAD.l+(w-PAD.l-PAD.r)*(CUR.t-a)/(b-a))*D;
+  ctx.save(); ctx.setLineDash([3*D,3*D]);
+  ctx.beginPath(); ctx.moveTo(x,PAD.t*D); ctx.lineTo(x,(h-PAD.b)*D);
+  ctx.strokeStyle='rgba(255,206,138,.55)'; ctx.lineWidth=Math.max(1,D); ctx.stroke();
+  ctx.restore();
+}
+const at=(arr,t)=>{ let lo=0,hi=arr.length-1;
+  while(lo<hi){ const m=(lo+hi)>>1; if(arr[m].t<t) lo=m+1; else hi=m; }
+  return arr[lo]; };
+
+/* ── window state (brush) ── */
+let W0=NC-365, W1=NC-1;
+let FILL=0.88;                 /* candle body ÷ slot */
+const dom=()=>[CANDLES[Math.max(0,W0)].t, CANDLES[Math.min(NC-1,W1)].t];
+function granularity(){ const [a,b]=dom(); const bk=pickBucket(b-a);
+  const n=agg(bk.k).filter(d=>d.t>=a&&d.t<=b).length;
+  return `${bk.lab} candles · ${n}`; }
+
+/* ══ hero candles ═════════════════════════════════════════════════ */
+const hero=mkChart('#c-hero',{domain:dom,render(c){
+  const {ctx,w,h}=c, D=DPR;
+  ctx.clearRect(0,0,c.cv.width,c.cv.height);
+  const [ta,tb]=dom(), bk=pickBucket(tb-ta);
+  const s=agg(bk.k).filter(d=>d.t>=ta&&d.t<=tb);
+  if(!s.length) return;
+  let lo=Infinity,hi=-Infinity; for(const d of s){ if(d.l<lo)lo=d.l; if(d.h>hi)hi=d.h; }
+  const pad=(hi-lo)*.08; lo-=pad; hi+=pad;
+  axes(c,lo,hi,v=>'$'+v.toFixed(v<10?2:0));
+  const iw=(w-PAD.l-PAD.r)/s.length, X=i=>(PAD.l+i*iw)*D;
+  const Y=v=>(h-PAD.b-(h-PAD.t-PAD.b)*(v-lo)/(hi-lo))*D;
+  /* Body width is a RATIO of the slot, not a fixed pixel cap. The old
+     9px ceiling meant a 50px slot at 30D drew a 9px candle in a 41px
+     gap — which is what read as sparse. Now the gap stays proportional
+     at every range, so 30D reads as wide-and-deliberate and 3Y reads as
+     dense, rather than one of them reading as broken. */
+  const bw=Math.max(1*D,Math.min(iw*FILL*D, 16*D));
+  /* thin bars into a line once a candle is under ~1.2px — density
+     steps with zoom instead of drawing 2200 invisible wicks */
+  if(iw*D<1.2){
+    ctx.beginPath();
+    s.forEach((d,i)=>{ const x=X(i)+iw*D/2, y=Y(d.c); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle='rgba(255,122,26,.85)'; ctx.lineWidth=Math.max(1,1.2*D); ctx.stroke();
+  } else {
+    for(let i=0;i<s.length;i++){
+      const d=s[i], up=d.c>=d.o, x=X(i)+iw*D/2;
+      ctx.strokeStyle=up?'rgba(74,222,128,.75)':'rgba(255,77,109,.72)';
+      ctx.fillStyle  =up?'rgba(74,222,128,.55)':'rgba(255,77,109,.5)';
+      ctx.lineWidth=Math.max(1,D);
+      ctx.beginPath(); ctx.moveTo(x,Y(d.h)); ctx.lineTo(x,Y(d.l)); ctx.stroke();
+      const y0=Y(Math.max(d.o,d.c)), y1=Y(Math.min(d.o,d.c));
+      ctx.fillRect(x-bw/2,y0,bw,Math.max(1*D,y1-y0));
+    }
+  }
+  crosshair(c,dom());
+  c.scaleY=Y; c.lo=lo; c.hi=hi;
+  placeAnns('#c-hero');
+}});
+
+/* annotation flags (D0833) */
+function placeAnns(sel){
+  const host=$(sel), box=host.querySelector('.anns'); if(!box) return;
+  const [a,b]=dom(), w=host.getBoundingClientRect().width;
+  const vis=ANN.filter(x=>LYR[x.k]&&x.t0>=a&&x.t0<=b)
+    .map(x=>({...x,px:PAD.l+(w-PAD.l-PAD.r)*(x.t0-a)/(b-a)}));
+  /* collapse to a count badge when density is too high at this zoom */
+  const out=[]; const MIN=26;
+  for(const v of vis){
+    const last=out[out.length-1];
+    if(last && v.px-last.px<MIN){ last.grp.push(v); last.px=(last.px+v.px)/2; }
+    else out.push({...v,grp:[v]});
+  }
+  box.innerHTML=out.map((v,i)=>{
+    const many=v.grp.length>1;
+    return `<div class="ann ${many?'cluster ':''}${v.k}" style="left:${v.px.toFixed(1)}px" data-i="${i}">`+
+      `<u></u><i style="${many?'background:'+({proto:'#b87aff',reg:'#ffd400',mkt:'#5ed3f4'})[v.k]:''}">`+
+      `${many?v.grp.length:''}</i></div>`;
+  }).join('');
+  box._data=out;
+}
+function annTip(e){
+  const el=e.target.closest('.ann'); const box=el&&el.parentElement;
+  if(!el||!box||!box._data){ $('#tip').style.display='none'; return; }
+  const v=box._data[+el.dataset.i];
+  const many=v.grp.length>1;
+  $('#tip').innerHTML = many
+    ? `<b>${v.grp.length} events</b>`+v.grp.map(g=>
+        `${new Date(g.t0).toISOString().slice(0,10)} · ${g.t}`).join('<br>')+
+      `<em>zoom in to separate them</em>`
+    : `<b>${v.t}</b>${new Date(v.t0).toISOString().slice(0,10)} · ${
+        {proto:'protocol',reg:'regulatory',mkt:'market'}[v.k]}<br>${v.x}<em>click → timeline entry</em>`;
+  const t=$('#tip'); t.style.display='block';
+  t.style.left=Math.min(innerWidth-300,e.clientX+14)+'px';
+  t.style.top=(e.clientY+16)+'px';
+}
+document.addEventListener('pointerover',annTip);
+document.addEventListener('pointermove',e=>{ if($('#tip').style.display==='block') annTip(e); });
+
+/* ══ companion charts ═════════════════════════════════════════════ */
+function lineChart(sel,series,color,fmt){
+  return mkChart(sel,{domain:dom,render(c){
+    const {ctx,w,h}=c, D=DPR, [a,b]=dom();
+    ctx.clearRect(0,0,c.cv.width,c.cv.height);
+    const s=series.filter(d=>d.t>=a&&d.t<=b);
+    if(!s.length) return;
+    let lo=Infinity,hi=-Infinity; for(const d of s){ if(d.v<lo)lo=d.v; if(d.v>hi)hi=d.v; }
+    const p=(hi-lo)*.1||1; lo-=p; hi+=p;
+    axes(c,lo,hi,fmt);
+    ctx.beginPath();
+    s.forEach((d,i)=>{ const x=(PAD.l+(w-PAD.l-PAD.r)*(d.t-a)/(b-a))*D,
+      y=(h-PAD.b-(h-PAD.t-PAD.b)*(d.v-lo)/(hi-lo))*D; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=color; ctx.lineWidth=Math.max(1,1.3*D); ctx.stroke();
+    crosshair(c,[a,b]); placeAnns(sel);
+  }});
+}
+lineChart('#c-ratio',RATIO,'rgba(255,206,138,.9)',v=>v.toFixed(5));
+mkChart('#c-priv',{domain:dom,render(c){
+  const {ctx,w,h}=c, D=DPR, [a,b]=dom();
+  ctx.clearRect(0,0,c.cv.width,c.cv.height);
+  const RL=46;                                   /* room for end labels */
+  const sets=PRIV.map(p=>({...p,s:p.s.filter(d=>d.t>=a&&d.t<=b)})).filter(p=>p.s.length);
+  if(!sets.length) return;
+  const base=sets.map(p=>p.s[0].v);
+  let lo=Infinity,hi=-Infinity;
+  sets.forEach((p,k)=>p.s.forEach(d=>{const v=d.v/base[k]*100; if(v<lo)lo=v; if(v>hi)hi=v;}));
+  const pd=(hi-lo)*.09||1; lo-=pd; hi+=pd;
+  const PR={...PAD,r:PAD.r+RL};
+  ctx.font=`${Math.round(12*D)}px ${MONO}`; ctx.textBaseline='middle';
+  for(let i=0;i<=4;i++){
+    const v=lo+(hi-lo)*i/4, y=Math.round((h-PR.b-(h-PR.t-PR.b)*i/4)*D)+.5;
+    ctx.beginPath(); ctx.moveTo(PR.l*D,y); ctx.lineTo((w-PR.r)*D,y);
+    ctx.strokeStyle=GRID; ctx.lineWidth=Math.max(1,D*.8); ctx.stroke();
+    ctx.fillStyle=AXTX; ctx.textAlign='right'; ctx.fillText(v.toFixed(0),(PR.l-8)*D,y);
+  }
+  const X=t=>(PR.l+(w-PR.l-PR.r)*(t-a)/(b-a))*D;
+  const Y=v=>(h-PR.b-(h-PR.t-PR.b)*(v-lo)/(hi-lo))*D;
+  ctx.font=`${Math.round(12*D)}px ${MONO}`; ctx.textBaseline='top'; ctx.textAlign='center';
+  for(let i=0;i<=5;i++){ const t=a+(b-a)*i/5;
+    ctx.fillStyle=AXTX2; ctx.textAlign=i===0?'left':i===5?'right':'center';
+    ctx.fillText(fmtDate(t,b-a),X(t),(h-PR.b+7)*D); }
+  /* draw the field first, the subject last */
+  const order=[...sets].sort((p,q)=>(p.n==='XMR')-(q.n==='XMR'));
+  const ends=[];
+  for(const p of order){
+    const k=sets.indexOf(p), isX=p.n==='XMR';
+    ctx.beginPath();
+    p.s.forEach((d,i)=>{ const x=X(d.t), y=Y(d.v/base[k]*100); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=p.c; ctx.lineWidth=Math.max(1,(isX?2.0:1.25)*D);
+    ctx.globalAlpha=isX?1:.82; ctx.stroke(); ctx.globalAlpha=1;
+    const last=p.s[p.s.length-1], v=last.v/base[k]*100;
+    ends.push({p,y:Y(v),v,isX});
+  }
+  /* end labels, de-collided vertically so all seven stay readable */
+  ends.sort((m,n)=>m.y-n.y);
+  const gap=13*D;
+  for(let i=1;i<ends.length;i++) if(ends[i].y-ends[i-1].y<gap) ends[i].y=ends[i-1].y+gap;
+  const over=ends.length?ends[ends.length-1].y-(h-PR.b)*D:0;
+  if(over>0) ends.forEach(e=>e.y-=over);
+  ctx.textAlign='left'; ctx.textBaseline='middle';
+  for(const e of ends){
+    ctx.font=`${Math.round(12*D)}px ${MONO}`;
+    ctx.fillStyle=e.p.c; ctx.globalAlpha=e.isX?1:.9;
+    ctx.fillText(e.p.n,(w-PR.r+7)*D,e.y);
+    ctx.globalAlpha=1;
+  }
+  crosshair(c,[a,b]); placeAnns('#c-priv');
+  c.privBase=base; c.privSets=sets;
+}});
+
+/* ══ brush (D0835) ════════════════════════════════════════════════ */
+const bcv=$('#brush canvas'), bctx=bcv.getContext('2d');
+function drawBrush(){
+  const r=$('#brush').getBoundingClientRect();
+  bcv.width=Math.max(2,r.width*DPR); bcv.height=Math.max(2,r.height*DPR);
+  bctx.clearRect(0,0,bcv.width,bcv.height);
+  let lo=Infinity,hi=-Infinity; for(const d of CANDLES){ if(d.c<lo)lo=d.c; if(d.c>hi)hi=d.c; }
+  bctx.beginPath();
+  CANDLES.forEach((d,i)=>{ const x=i/(NC-1)*bcv.width,
+    y=bcv.height-4*DPR-(bcv.height-10*DPR)*(d.c-lo)/(hi-lo); i?bctx.lineTo(x,y):bctx.moveTo(x,y); });
+  bctx.lineTo(bcv.width,bcv.height); bctx.lineTo(0,bcv.height); bctx.closePath();
+  bctx.fillStyle='rgba(255,122,26,.20)'; bctx.fill();
+  bctx.strokeStyle='rgba(255,122,26,.72)'; bctx.lineWidth=Math.max(1,DPR); bctx.stroke();
+  for(const a of ANN){ if(!LYR[a.k]) continue;
+    const i=CANDLES.findIndex(d=>d.t>=a.t0); if(i<0) continue;
+    const x=i/(NC-1)*bcv.width;
+    bctx.beginPath(); bctx.moveTo(x,0); bctx.lineTo(x,bcv.height);
+    bctx.strokeStyle=({proto:'rgba(184,122,255,.4)',reg:'rgba(255,212,0,.4)',mkt:'rgba(94,211,244,.4)'})[a.k];
+    bctx.stroke(); }
+  const l=W0/(NC-1)*100, w=(W1-W0)/(NC-1)*100;
+  $('#bwin').style.left=l+'%'; $('#bwin').style.width=w+'%';
+  $('#bm-l').style.left='0'; $('#bm-l').style.width=l+'%';
+  $('#bm-r').style.left=(l+w)+'%'; $('#bm-r').style.right='0'; $('#bm-r').style.width=(100-l-w)+'%';
+}
+function redraw(){ drawBrush(); charts.forEach(c=>c.draw());
+  $('#mk-gran').textContent=granularity(); paintReadouts(); paintTable(); }
+(function brushDrag(){
+  const el=$('#brush'); let mode=null,sx=0,s0=0,s1=0;
+  const idx=e=>{ const r=el.getBoundingClientRect();
+    return Math.round(clamp((e.clientX-r.left)/r.width,0,1)*(NC-1)); };
+  el.addEventListener('pointerdown',e=>{
+    const t=e.target;
+    mode = t.classList.contains('l')?'l' : t.classList.contains('r')?'r'
+         : t.id==='bwin'?'move' : 'new';
+    sx=idx(e); s0=W0; s1=W1;
+    if(mode==='new'){ W0=Math.max(0,sx-30); W1=Math.min(NC-1,sx+30); redraw(); mode='r'; s0=W0; s1=W1; sx=W1; }
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(!mode) return;
+    const i=idx(e), d=i-sx;
+    if(mode==='move'){ const span=s1-s0;
+      W0=clamp(s0+d,0,NC-1-span); W1=W0+span; }
+    else if(mode==='l') W0=clamp(s0+d,0,W1-12);
+    else W1=clamp(s1+d,W0+12,NC-1);
+    redraw();
+  });
+  ['pointerup','pointercancel'].forEach(k=>el.addEventListener(k,()=>mode=null));
+  el.addEventListener('dblclick',()=>{ W0=0; W1=NC-1; redraw(); });
+})();
+
+/* ══ readouts ═════════════════════════════════════════════════════ */
+function paintReadouts(){
+  if(CUR.t==null){ $('#mk-rd').textContent='hover the chart';
+    $('#r-ratio').textContent='—'; paintPrivLegend(); return; }
+  const d=at(CANDLES,CUR.t), day=new Date(d.t).toISOString().slice(0,10);
+  $('#mk-rd').innerHTML=`${day} &nbsp; O <b>${d.o.toFixed(2)}</b> H <b>${d.h.toFixed(2)}</b> `+
+    `L <b>${d.l.toFixed(2)}</b> C <b>${d.c.toFixed(2)}</b>`;
+  $('#r-ratio').innerHTML=`${day} &nbsp; <b>${at(RATIO,CUR.t).v.toFixed(5)}</b> BTC`;
+  paintPrivLegend();
+}
+function paintPrivLegend(){
+  const el=$('#priv-leg'); if(!el) return;
+  el.innerHTML=PRIV.map(p=>{
+    const b=p.s[Math.max(0,W0)].v;
+    const d=CUR.t==null?p.s[Math.min(NC-1,W1)]:at(p.s,CUR.t);
+    const v=d.v/b*100, up=v>=100;
+    return `<span style="color:${p.n==='XMR'?p.c:'var(--ink-60)'}">`+
+      `<i style="background:${p.c}"></i><b style="font-weight:400;color:${p.c}">${p.n}</b> `+
+      `<span style="color:var(--ink-20)">${p.full}</span> `+
+      `<b style="font-weight:400;color:${up?'var(--g-50)':'var(--r-50)'}">`+
+      `${up?'+':''}${(v-100).toFixed(0)}%</b></span>`;
+  }).join('');
+}
+function paintTable(){
+  const s=CANDLES.slice(Math.max(0,W0),W1+1);
+  const step=Math.max(1,Math.ceil(s.length/220));
+  $('#mk-tbl').innerHTML='<table><thead><tr><th>Date</th><th>Open</th><th>High</th>'+
+    '<th>Low</th><th>Close</th><th>Event</th></tr></thead><tbody>'+
+    s.filter((_,i)=>i%step===0).map(d=>{
+      const a=ANN.find(x=>Math.abs(x.t0-d.t)<DAY*step&&LYR[x.k]);
+      return `<tr><td>${new Date(d.t).toISOString().slice(0,10)}</td><td>${d.o.toFixed(2)}</td>`+
+        `<td>${d.h.toFixed(2)}</td><td>${d.l.toFixed(2)}</td><td>${d.c.toFixed(2)}</td>`+
+        `<td style="text-align:left;color:var(--o-40)">${a?a.t:''}</td></tr>`;
+    }).join('')+'</tbody></table>';
+}
+
+/* ══ NETWORK ══════════════════════════════════════════════════════ */
+const NN=240;
+let BT=[],HR=[],DIFF=[],MEM=[],TXR=[],SZ=[],nowT=Date.now();
+(function netSeries(){
+  seed(4242); let hr=2.81, mem=114;
+  for(let i=0;i<NN;i++){
+    const t=nowT-(NN-1-i)*12e4;
+    BT.push({t,v:clamp(120+gauss()*34+(i>190&&i<205?46:0),42,300)});
+    hr=clamp(hr*Math.exp(gauss()*0.012),1.9,3.9); HR.push({t,v:hr});
+    mem=clamp(mem+gauss()*9,18,260); MEM.push({t,v:mem});
+    TXR.push({t,v:clamp(2.4+gauss()*.6,.4,6)});
+    SZ.push({t,v:clamp(180+gauss()*40,60,420)});
+  }
+  let d=412.9;
+  for(let i=0;i<NN;i++){ const lag=HR[Math.max(0,i-14)].v;
+    d += (lag*147 - d)*0.045; DIFF.push({t:BT[i].t,v:d}); }
+})();
+const ndom=()=>[BT[0].t,BT[NN-1].t];
+function band(c,dom,lo,hi,zones){
+  const {ctx,w,h}=c, D=DPR;
+  if(!BANDS) return;
+  for(const z of zones){
+    const y0=(h-PAD.b-(h-PAD.t-PAD.b)*(clamp(z.hi,lo,hi)-lo)/(hi-lo))*D;
+    const y1=(h-PAD.b-(h-PAD.t-PAD.b)*(clamp(z.lo,lo,hi)-lo)/(hi-lo))*D;
+    ctx.fillStyle=z.c; ctx.fillRect(PAD.l*D,y0,(w-PAD.l-PAD.r)*D,y1-y0);
+  }
+}
+let BANDS=true, STREAM=true;
+function netLine(sel,series,color,fmt,zones,rd){
+  return mkChart(sel,{domain:ndom,render(c){
+    const {ctx,w,h}=c, D=DPR, [a,b]=ndom();
+    ctx.clearRect(0,0,c.cv.width,c.cv.height);
+    let lo=Infinity,hi=-Infinity; for(const d of series){ if(d.v<lo)lo=d.v; if(d.v>hi)hi=d.v; }
+    if(zones){ for(const z of zones){ lo=Math.min(lo,z.lo===-1e9?lo:z.lo); hi=Math.max(hi,z.hi===1e9?hi:z.hi); } }
+    const p=(hi-lo)*.08||1; lo-=p; hi+=p;
+    band(c,[a,b],lo,hi,zones||[]);
+    axes(c,lo,hi,fmt);
+    ctx.beginPath();
+    series.forEach((d,i)=>{ const x=(PAD.l+(w-PAD.l-PAD.r)*(d.t-a)/(b-a))*D,
+      y=(h-PAD.b-(h-PAD.t-PAD.b)*(d.v-lo)/(hi-lo))*D; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=color; ctx.lineWidth=Math.max(1,1.3*D); ctx.stroke();
+    crosshair(c,[a,b]);
+    if(rd){ const el=$(rd);
+      if(CUR.t==null) el.innerHTML=`<b>${fmt(series[series.length-1].v)}</b> now`;
+      else { const d=at(series,CUR.t);
+        el.innerHTML=`${new Date(d.t).toISOString().slice(11,16)} &nbsp; <b>${fmt(d.v)}</b>`; } }
+  }});
+}
+netLine('#c-bt',BT,'rgba(255,206,138,.9)',v=>v.toFixed(0)+'s',
+  [{lo:-1e9,hi:96,c:'rgba(94,211,244,.07)'},{lo:96,hi:150,c:'rgba(74,222,128,.08)'},
+   {lo:150,hi:200,c:'rgba(255,212,0,.09)'},{lo:200,hi:1e9,c:'rgba(255,77,109,.10)'}],'#r-bt');
+(function(){ const m=HR.reduce((a,d)=>a+d.v,0)/NN;
+  const sd=Math.sqrt(HR.reduce((a,d)=>a+(d.v-m)**2,0)/NN);
+  netLine('#c-hr',HR,'rgba(255,122,26,.9)',v=>v.toFixed(2)+' GH',
+    [{lo:m-sd,hi:m+sd,c:'rgba(74,222,128,.07)'}],'#r-hr'); })();
+mkChart('#c-dh',{domain:ndom,render(c){
+  const {ctx,w,h}=c, D=DPR, [a,b]=ndom();
+  ctx.clearRect(0,0,c.cv.width,c.cv.height);
+  const sc=(arr,col,dash)=>{ let lo=Infinity,hi=-Infinity;
+    for(const d of arr){ if(d.v<lo)lo=d.v; if(d.v>hi)hi=d.v; }
+    const p=(hi-lo)*.12||1; lo-=p; hi+=p;
+    ctx.beginPath(); ctx.setLineDash(dash?[4*D,3*D]:[]);
+    arr.forEach((d,i)=>{ const x=(PAD.l+(w-PAD.l-PAD.r)*(d.t-a)/(b-a))*D,
+      y=(h-PAD.b-(h-PAD.t-PAD.b)*(d.v-lo)/(hi-lo))*D; i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle=col; ctx.lineWidth=Math.max(1,1.4*D); ctx.stroke(); ctx.setLineDash([]);
+    return [lo,hi]; };
+  axes(c,0,1,()=>'');
+  sc(HR,'rgba(255,122,26,.9)',false);
+  sc(DIFF,'rgba(94,211,244,.85)',true);
+  ctx.font=`${Math.round(11*D)}px ${MONO}`; ctx.textAlign='left';
+  ctx.fillStyle='rgba(255,122,26,.85)'; ctx.fillText('hashrate',(PAD.l+6)*D,(PAD.t+10)*D);
+  ctx.fillStyle='rgba(94,211,244,.85)'; ctx.fillText('difficulty — 14-block lag',(PAD.l+6)*D,(PAD.t+26)*D);
+  crosshair(c,[a,b]);
+  const el=$('#r-dh');
+  if(CUR.t==null) el.innerHTML=`<b>${HR[NN-1].v.toFixed(2)} GH</b> · <b>${DIFF[NN-1].v.toFixed(1)} G</b>`;
+  else el.innerHTML=`<b>${at(HR,CUR.t).v.toFixed(2)} GH</b> · <b>${at(DIFF,CUR.t).v.toFixed(1)} G</b>`;
+}});
+mkChart('#c-cad',{domain:ndom,render(c){
+  const {ctx,w,h}=c, D=DPR, [a,b]=ndom();
+  ctx.clearRect(0,0,c.cv.width,c.cv.height);
+  const s=BT.slice(-60), mid=h/2*D;
+  ctx.beginPath(); ctx.moveTo(0,mid); ctx.lineTo(c.cv.width,mid);
+  ctx.strokeStyle='rgba(168,160,148,.22)'; ctx.setLineDash([4*D,4*D]);
+  ctx.lineWidth=Math.max(1,D); ctx.stroke(); ctx.setLineDash([]);
+  ctx.font=`${Math.round(11*D)}px ${MONO}`; ctx.textAlign='left'; ctx.textBaseline='bottom';
+  ctx.fillStyle='rgba(168,160,148,.3)'; ctx.fillText('120 s target',6*D,mid-4*D);
+  const iw=c.cv.width/s.length;
+  s.forEach((d,i)=>{ const x=i*iw+iw/2, dev=(d.v-120)/120;
+    const len=clamp(dev,-1.1,1.1)*(h/2-8)*D;
+    ctx.strokeStyle = d.v>200?'rgba(255,77,109,.9)' : d.v>150?'rgba(255,212,0,.9)'
+      : d.v<96?'rgba(94,211,244,.85)':'rgba(74,222,128,.8)';
+    ctx.lineWidth=Math.max(1.5,iw*.44);
+    ctx.beginPath(); ctx.moveTo(x,mid); ctx.lineTo(x,mid+len); ctx.stroke(); });
+  crosshair(c,[a,b]);
+}});
+
+/* small multiples (D0837) */
+const SMALLS=[
+  ['Block interval',BT,v=>v.toFixed(0)+' s',v=>v>200?'r':v>150?'w':'g'],
+  ['Hashrate',HR,v=>v.toFixed(2)+' GH',()=>'g'],
+  ['Difficulty',DIFF,v=>v.toFixed(0)+' G',()=>'g'],
+  ['Mempool',MEM,v=>v.toFixed(0)+' tx',v=>v>210?'w':'g'],
+  ['Tx rate',TXR,v=>v.toFixed(1)+'/s',()=>'g'],
+  ['Block size',SZ,v=>v.toFixed(0)+' kB',()=>'g'],
+];
+$('#smalls').innerHTML=SMALLS.map(([n],i)=>
+  `<div class="sm"><div class="h"><b>${n}</b><span id="sv${i}">—</span></div>`+
+  `<div class="chart" id="sc${i}" style="height:64px"><canvas></canvas></div></div>`).join('');
+SMALLS.forEach(([n,ser,fmt,tone],i)=>{
+  mkChart('#sc'+i,{domain:ndom,render(c){
+    const {ctx,w,h}=c, D=DPR, [a,b]=ndom();
+    ctx.clearRect(0,0,c.cv.width,c.cv.height);
+    let lo=Infinity,hi=-Infinity; for(const d of ser){ if(d.v<lo)lo=d.v; if(d.v>hi)hi=d.v; }
+    const p=(hi-lo)*.12||1; lo-=p; hi+=p;
+    if(BANDS){ const m=(lo+hi)/2, q=(hi-lo)*.24;
+      ctx.fillStyle='rgba(74,222,128,.06)';
+      ctx.fillRect(0,(h/2-(h*q/(hi-lo)))*D,c.cv.width,(2*h*q/(hi-lo))*D); }
+    ctx.beginPath();
+    ser.forEach((d,k)=>{ const x=c.cv.width*(d.t-a)/(b-a),
+      y=(h-4-(h-8)*(d.v-lo)/(hi-lo))*D; k?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle='rgba(255,122,26,.92)'; ctx.lineWidth=Math.max(1,1.2*D); ctx.stroke();
+    if(CUR.t!=null&&CUR.t>=a&&CUR.t<=b){ const x=c.cv.width*(CUR.t-a)/(b-a);
+      ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,c.cv.height);
+      ctx.strokeStyle='rgba(255,206,138,.5)'; ctx.stroke(); }
+    const d=CUR.t==null?ser[ser.length-1]:at(ser,CUR.t);
+    const el=$('#sv'+i); el.textContent=fmt(d.v); el.className=tone(d.v);
+  }});
+});
+function health(){
+  const bt=BT[NN-1].v, mem=MEM[NN-1].v;
+  const bad=bt>200, warn=bt>150||mem>210;
+  $('#nw-health').innerHTML = bad
+    ? '<span class="badge r">Critical</span> block interval outside band'
+    : warn ? '<span class="badge w">Watch</span> block interval above target band'
+    : '<span class="badge g">Healthy</span> all series inside their bands';
+}
+
+/* streaming (D0828) */
+setInterval(()=>{
+  if(!STREAM||$('#tab-nw').classList.contains('hide')) return;
+  nowT+=12e4;
+  const push=(arr,v)=>{arr.push({t:nowT,v});arr.shift();};
+  push(BT,clamp(BT[NN-1].v+gauss()*22+(120-BT[NN-1].v)*.35,42,300));
+  push(HR,clamp(HR[NN-1].v*Math.exp(gauss()*.012),1.9,3.9));
+  push(MEM,clamp(MEM[NN-1].v+gauss()*9,18,260));
+  push(TXR,clamp(2.4+gauss()*.6,.4,6));
+  push(SZ,clamp(180+gauss()*40,60,420));
+  push(DIFF,DIFF[NN-1].v+(HR[NN-15].v*147-DIFF[NN-1].v)*.045);
+  charts.forEach(c=>{ if(c.host.closest('#tab-nw')) c.draw(); });
+  health();
+},1400);
+
+/* ══ controls ═════════════════════════════════════════════════════ */
+$$('[data-tab]').forEach(b=>b.onclick=()=>{
+  $$('[data-tab]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  $('#tab-mk').classList.toggle('hide',b.dataset.tab!=='mk');
+  $('#tab-nw').classList.toggle('hide',b.dataset.tab!=='nw');
+  setTimeout(()=>{redraw();health();},20);
+});
+$$('[data-r]').forEach(b=>b.onclick=()=>{
+  $$('[data-r]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  const n=+b.dataset.r;                       /* presets move the brush, they don't refetch */
+  W1=NC-1; W0=n?Math.max(0,NC-1-n):0; redraw();
+});
+$$('[data-lyr]').forEach(b=>b.onclick=()=>{
+  const on=b.getAttribute('aria-pressed')!=='true';
+  b.setAttribute('aria-pressed',String(on)); LYR[b.dataset.lyr]=on; redraw();
+});
+$$('[data-fill]').forEach(b=>b.onclick=()=>{
+  $$('[data-fill]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+  FILL=+b.dataset.fill; charts.forEach(c=>c.draw()); });
+$('#b-tbl').onclick=e=>{ const on=e.target.getAttribute('aria-pressed')!=='true';
+  e.target.setAttribute('aria-pressed',String(on)); $('#mk-tbl').classList.toggle('hide',!on); paintTable(); };
+$('#b-bands').onclick=e=>{ BANDS=e.target.getAttribute('aria-pressed')!=='true';
+  e.target.setAttribute('aria-pressed',String(BANDS)); charts.forEach(c=>c.draw()); };
+$('#b-stream').onclick=e=>{ STREAM=e.target.getAttribute('aria-pressed')!=='true';
+  e.target.setAttribute('aria-pressed',String(STREAM)); };
+$('.anns')&&0;
+document.addEventListener('click',e=>{ if(e.target.closest('.ann'))
+  alert('Deep-links to the matching Timeline entry in /learn/timeline'); });
+addEventListener('resize',()=>{redraw();});
+if(matchMedia('(prefers-reduced-motion:reduce)').matches){ STREAM=false;
+  $('#b-stream').setAttribute('aria-pressed','false');
+  $('#b-tbl').setAttribute('aria-pressed','true'); $('#mk-tbl').classList.remove('hide'); }
+redraw(); health();
+window.__cur=t=>setCur(t);
+window.__win=(a,b)=>{W0=a;W1=b;redraw();};
+window.__NC=()=>NC;
+window.__tab=k=>$(`[data-tab="${k}"]`).click();
+</script>
+</body>
+</html>
