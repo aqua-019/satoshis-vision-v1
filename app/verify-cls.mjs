@@ -93,9 +93,10 @@ const RUNS = Number(process.env.CLS_RUNS || (MEASURE_ONLY ? 3 : 1));
  *   1. ADDITIVE ONLY — a negative or zero value could only ever mask a
  *      regression, so it is refused rather than honoured.
  *   2. NON-AUTHORITATIVE — a run with it set refuses to write a baseline.
- *   3. ASSERTED UNSET in the finish sequence. `grep MUTATION app/src` reads
- *      FILES and cannot see an environment variable, and neither can
- *      `git status`. */
+ *   3. ASSERTED UNSET in the finish sequence. That grep reads FILES and cannot
+ *      see an environment variable, and neither can `git status`. (It does not
+ *      spell the banned break-test token on purpose — a header that names it
+ *      makes the grep match on prose forever and stop being a check.) */
 const INFLATE_RAW = process.env.CLS_INFLATE;
 let INFLATE = 0;
 if (INFLATE_RAW !== undefined && INFLATE_RAW !== '') {

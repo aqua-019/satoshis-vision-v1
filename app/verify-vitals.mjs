@@ -368,7 +368,10 @@ if (inconclusive) {
   R.info('If this happens on 3 consecutive CI runs the budget is measuring nothing — fix or delete it.');
 }
 
-// The baseline artifact. Never written from a non-authoritative run.
+// The baseline artifact, stamped with the harness that produced it. Written on
+// every run — unlike verify-bundle and verify-cls this gate has no inflater
+// env hook (its red path is driven harness-side by delaying the stylesheet),
+// so there is no non-authoritative run to guard against here.
 mkdirSync(join(APP, '.perf'), { recursive: true });
 writeFileSync(join(APP, '.perf', 'vitals.json'),
   JSON.stringify({ harness: HARNESS, runs: RUNS, measuredAt: new Date().toISOString(), results }, null, 2));

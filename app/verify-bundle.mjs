@@ -61,11 +61,15 @@ const MEASURE_ONLY = process.argv.includes('--measure');
  *   1. ADDITIVE ONLY. A negative or zero value is rejected outright, not
  *      quietly accepted.
  *   2. A run with it set is NON-AUTHORITATIVE and refuses to emit a baseline.
- *   3. The finish sequence asserts it is unset. `grep MUTATION app/src` reads
+ *   3. The finish sequence asserts it is unset. That sequence's grep reads
  *      FILES and is structurally blind to an environment variable, as is
- *      `git status` — so a hook left set in a shell is the uncommitted-mutation
- *      failure relocated to the one place neither check can see. §9 of the
- *      handoff closes that with an explicit assertion. */
+ *      `git status` — so a hook left set in a shell is the uncommitted-edit
+ *      failure relocated to the one place neither check can see, which is why
+ *      the handoff asserts it explicitly instead.
+ *      (This comment deliberately avoids spelling the banned break-test token
+ *      that grep looks for: a header that names it makes the grep match on
+ *      prose forever and quietly stops being a check. v6.1.4 lost three
+ *      assertions to exactly that.) */
 const INFLATE_RAW = process.env.BUNDLE_INFLATE_KB;
 let INFLATE = 0;
 if (INFLATE_RAW !== undefined && INFLATE_RAW !== '') {
