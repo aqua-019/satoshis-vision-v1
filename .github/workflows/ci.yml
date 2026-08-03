@@ -104,6 +104,14 @@ jobs:
       - name: "Gate: status endpoint"
         run: node ../api/verify-status.mjs
 
+      # Offline, fixture-backed gate for the monero.fail health aggregator.
+      # Upstream state transitions (live/degraded/timeout/malformed) are
+      # stubbed, proving all four reason codes are producible and mutually
+      # distinct. The live node-count assertion is SKIPPED (no egress), not
+      # passed — check it on a deploy preview.
+      - name: "Gate: monero.fail node population"
+        run: node ../api/verify-nodes.mjs
+
       - name: "Gate: market stale-cache"
         run: node verify-stale.mjs
 

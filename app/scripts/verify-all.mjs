@@ -25,8 +25,8 @@
 // `verify:static` and `verify:e2e` are `&&` chains: the first failure aborts
 // the rest, so one broken gate hides every gate after it and you learn about
 // them one twenty-minute cycle at a time. This file reads those chains out of
-// package.json — so the gate list stays defined in exactly one place — and
-// runs each command separately, reporting the whole picture in one pass.
+// package.json, plus a hardcoded list of offline api/ gates, and runs each
+// command separately, reporting the whole picture in one pass.
 import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -61,6 +61,7 @@ const PHASES = [
       'node ../api/verify-feeds.mjs',
       'node ../api/verify-markets.mjs',
       'node ../api/verify-status.mjs',
+      'node ../api/verify-nodes.mjs',
       'node verify-bundle.mjs',
     ],
   },
