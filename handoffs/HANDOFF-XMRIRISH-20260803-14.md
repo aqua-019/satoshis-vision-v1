@@ -168,16 +168,27 @@ the orphaned-gate mocks left alone deliberately · the no-hosts-on-the-wire deci
   line.** Worth carrying into 09–10 because it has now bitten a worker, the build session and the
   verifier — it is not a tier property.
 
-- **2026-08-03 · break-test reverts fail silently, four mechanisms, so the revert needs its own
-  verification.** Four break tests this session left a mutation in the tree: `cd` drift twice (paths
-  resolved against the wrong directory, so both mutate and restore no-oped — harmless), once because
-  **`git checkout -- <file>` silently does nothing for an UNTRACKED file** (a brand-new gate, so the
-  printed "restored" line was false), and once because a killed wrapper never reached its restore.
-  In every case the tree was known-clean because it was checked, never because the revert was
-  trusted. Two consequences adopted: new files need a real backup copy, not `git checkout`; and
-  **where a failing polarity can be produced by driving a state the code already reaches, prefer
-  that over mutating source** — there is no revert step to fail. The `verify-cls` mock-reach
-  assertion was proven that way, by probing the unmocked state directly.
+- **2026-08-03 · SIX stranded break-test mutations, FIVE distinct mechanisms, across BOTH sessions —
+  and the conclusion is a method, not a warning to be careful.**
+  Mechanisms observed: `cd` drift twice (paths resolved against the wrong directory, so mutate and
+  restore both no-oped) · **`git checkout -- <file>` silently does nothing for an UNTRACKED file**,
+  so the printed "restored" line was simply false · a killed wrapper that never reached its restore ·
+  **an interrupted tool call** — the patch had already written, the revert line never ran (the
+  verifier's, on its own worktree) · and one where the mutation **never applied at all**
+  (`substring not found`), so a green run would have been offered as proof of a break test that did
+  not happen.
+  Every one failed **silently**, and in every case the tree was believed clean because a line had
+  been *printed*, not because anything was checked. Discipline does not fix this: the verifier had
+  the revert on the same command line as the mutation and it still stranded, because the failure
+  mode is *the revert not executing*.
+  **METHOD ADOPTED — where a state the code already produces can demonstrate the polarity, probe it
+  instead of mutating source.** No source touched, no revert step to fail, and it is cheaper to
+  write. Two assertions this session were proven that way and both are strictly better than the
+  mutation they replaced: `verify-cls`'s mock-reach guard (probe the unmocked state) and
+  `verify-nodes-dom`'s 12px rule (inject a 9px span into the live page).
+  **COROLLARY — verify the revert by `git status` / grep, never by the line you printed saying you
+  reverted.** This is the "read the actual error, not the last line" rule from the serve-dist false
+  alarm, applied to writes instead of reads.
   (Related, minor: `pkill -f serve-dist` matches its own shell's command line and kills the caller.
   Both sessions hit it.)
 
