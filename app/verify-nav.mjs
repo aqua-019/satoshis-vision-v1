@@ -705,13 +705,28 @@ R.group('── §8 · hover-intent timing (150ms open / 220ms close) ───�
 
     // Test 4: Move mouse away, panel closes after ~220ms
     {
+      /* 120ms, not 200ms. HOVER_CLOSE_MS is 220 (NavTop.tsx:90), and a 200ms
+       * wait leaves a 20ms DESIGN margin that measured 6.8ms in practice:
+       * elapsed from pointerleave to the DOM read ran 204.2-213.2ms over 8
+       * runs on an IDLE machine, while CDP round-trip jitter alone measured
+       * 7.3-59.2ms. This gate is in verify:e2e, so it runs on every PR on a
+       * shared runner — a correct tree would have started failing here as
+       * soon as the runner was loaded, and a gate that goes red for reasons
+       * unrelated to the tree is how people learn to ignore red
+       * (verify-reporter.mjs:38 cites verify-v510 for exactly this).
+       *
+       * 120ms keeps the assertion's meaning — the panel must still be open
+       * PART WAY through the close delay, which is what distinguishes a
+       * deliberate close timer from an instant one — with ~100ms of margin.
+       * The second read only benefits from jitter: it needs elapsed > 220ms,
+       * and every source of delay pushes it further past, not nearer. */
       await page.mouse.move(0, 0); // Move mouse away
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(120);
       let panelOpen = await page.locator('#nav-dd-panel.on').count();
-      R.ok(panelOpen === 1, 'panel open 200ms after mouseaway (below 220ms close)');
+      R.ok(panelOpen === 1, 'panel open 120ms after mouseaway (below the 220ms close delay)');
 
-      // Wait another 100ms to exceed 220ms total
-      await page.waitForTimeout(100);
+      // Take the total past 220ms. Overshoot is safe here; undershoot is not.
+      await page.waitForTimeout(180);
       panelOpen = await page.locator('#nav-dd-panel.on').count();
       R.ok(panelOpen === 0, 'panel closed 300ms after mouseaway (above 220ms threshold)');
     }
@@ -839,6 +854,67 @@ R.group('── §10 · morphing pill tracking ±2px ─────────
     R.ok(wDiff <= TOL, `${label}: pill width ±${TOL}px (pill ${pillAlignment.pillW}, item ${pillAlignment.itemW}, diff ${wDiff})`);
     R.ok(xDiff <= TOL, `${label}: pill x-offset ±${TOL}px (pill ${pillAlignment.pillX}, item ${pillAlignment.itemX}, diff ${xDiff})`);
   }
+
+  await page.context().close();
+}
+
+R.group('── §11 · RedirectTo: the client mirror, at runtime ───────────');
+/* WHY THIS SECTION EXISTS, AND WHAT IT IS NOT
+ *
+ * `src/routes/RedirectTo.tsx` is new in v6.1.6 and had ZERO runtime coverage:
+ * verify-ia greps that the identifier appears in App.tsx, and
+ * verify-redirects fixtures the SERVER 301 as unobservable. That fixture is
+ * honest about the server — serve-dist emits no 3xx at all — but it was
+ * functioning as cover for the client half, which is fully observable here
+ * and is the only redirect path exercised by local dev and by every preview a
+ * human actually looks at.
+ *
+ * NOT a test of Vercel's 301. In production the server redirect fires first
+ * and this component never runs for these URLs. What is asserted is that the
+ * component preserves what a bare `<Navigate to="literal">` would drop:
+ * the query string, the fragment, and `:param` substitution. That dropped
+ * query is the defect verify-ia §3's old enumeration would have MANDATED, so
+ * leaving the replacement itself untested closes one hole by opening another.
+ *
+ * Under serve-dist an old path 200s to the HOME prerender and the bundle then
+ * redirects — so this measures the client mirror in isolation, which is
+ * exactly the half under test. */
+{
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+
+  const CASES = [
+    ['/mempool?v=reactor', '/live/mempool?v=reactor', 'query survives'],
+    ['/markets?range=90D', '/live/markets?range=90D', 'query survives'],
+    ['/simulate/decoy', '/learn/sim?p=decoy', ':param becomes a query param'],
+    ['/simulate?p=fcmp', '/learn/sim?p=fcmp', 'existing query merges, not clobbered'],
+    ['/education/timeline', '/learn/timeline', ':tab substitutes into the path'],
+    ['/mempool/tx/abc123', '/live/mempool/tx/abc123', ':txid substitutes into the path'],
+    ['/monero/future', '/future', 'plain redirect, nothing to carry'],
+    ['/sources#release-notes', '/about/sources#release-notes', 'fragment survives'],
+  ];
+
+  for (const [from, want, why] of CASES) {
+    await page.goto(BASE + from, { waitUntil: 'domcontentloaded' });
+    await soft(page.waitForFunction(
+      (expected) => location.pathname + location.search + location.hash === expected,
+      want, { timeout: 8000 }));
+    const got = await page.evaluate(() => location.pathname + location.search + location.hash);
+    R.ok(got === want, `${from} → ${want} (${why})`, got === want ? '' : `landed on ${got}`);
+  }
+
+  /* The redirect must REPLACE, not push: a redirected entry left in history
+   * makes Back bounce off it forever. Checked once rather than per case —
+   * they all go through the same <Navigate replace> in RedirectTo. */
+  await page.goto(BASE + Routes.HOME, { waitUntil: 'domcontentloaded' });
+  await waitForHeading(page);
+  await page.goto(BASE + '/markets?range=90D', { waitUntil: 'domcontentloaded' });
+  await soft(page.waitForFunction(() => location.pathname === '/live/markets', null, { timeout: 8000 }));
+  await soft(page.goBack({ waitUntil: 'domcontentloaded' }));
+  await soft(page.waitForFunction(() => location.pathname === '/', null, { timeout: 8000 }));
+  const backTo = await page.evaluate(() => location.pathname);
+  R.ok(backTo === Routes.HOME,
+    'Back from a redirected URL reaches the previous page, not the redirect source',
+    `landed on ${backTo} — a redirect that pushes instead of replacing traps Back`);
 
   await page.context().close();
 }

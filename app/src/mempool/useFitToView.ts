@@ -97,6 +97,7 @@ export function useFitToView(
           : next,
       );
     };
+    // D0699-EXEMPT: one deferred measurement, not a loop
     const schedule = () => { if (!raf) raf = requestAnimationFrame(measure); };
 
     schedule(); // first paint

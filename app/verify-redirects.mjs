@@ -4,13 +4,20 @@
  * Run from app/, offline, no browser, no dist, ~50ms:
  *   node verify-redirects.mjs
  *
- * ── OLD PATHS IN THIS FILE ARE BY DESIGN — DO NOT SWEEP ──────────────────
- * Every pre-restructure path here (/mempool, /markets, /education, …) is a
- * redirect SOURCE, i.e. the thing under test. A sweep that 'modernises' them
- * to their new destinations would delete the assertion while leaving it
- * looking green — the gate would then prove that /live/mempool redirects to
- * /live/mempool. This file and verify-redirects.mjs are the two deliberate
- * exclusions from the v6.1.6 route-literal sweep.
+ * ── IF AN OLD PATH EVER APPEARS HERE, DO NOT SWEEP IT ────────────────────
+ * As written, this file contains NO pre-restructure path literal — every
+ * path it compares is read from REDIRECTS or from vercel.json at runtime.
+ * The banner used to claim the opposite, and additionally named ITSELF as
+ * both of the two exclusions ("this file and verify-redirects.mjs") while
+ * never naming verify-ia.mjs, which is the other one. Both corrected in
+ * v6.1.6's review. The rule it states still applies the day someone needs a
+ * literal here:
+ *
+ * an old path written here would be a redirect SOURCE, i.e. the thing under
+ * test. A sweep that 'modernised' it to its destination would delete the
+ * assertion while leaving it looking green — the gate would then prove that
+ * /live/mempool redirects to /live/mempool. This file and verify-ia.mjs are
+ * the two deliberate exclusions from the v6.1.6 route-literal sweep.
  *
  * ── WHY THIS FILE EXISTS ──────────────────────────────────────────────────
  * The old→new redirect map is written down twice, and it has to be:

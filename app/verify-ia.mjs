@@ -10,14 +10,23 @@
  *
  * Run: node verify-ia.mjs (from app/ directory)
  * Exit code: result count from R.finish()
- * ── OLD PATHS IN THIS FILE ARE BY DESIGN — DO NOT SWEEP ──────────────────
- * Every pre-restructure path here (/mempool, /markets, /education, …) is a
- * redirect SOURCE, i.e. the thing under test. A sweep that 'modernises' them
- * to their new destinations would delete the assertion while leaving it
- * looking green — the gate would then prove that /live/mempool redirects to
- * /live/mempool. This file and verify-redirects.mjs are the two deliberate
- * exclusions from the v6.1.6 route-literal sweep.
+ * ── IF AN OLD PATH EVER APPEARS HERE, DO NOT SWEEP IT ────────────────────
+ * As written, this file contains NO pre-restructure path literal — every
+ * path it reasons about comes from REDIRECTS or from vercel.json, and a
+ * grep for /mempool, /markets, /education, /simulate, /node, /peers,
+ * /sources and /network returns nothing but this paragraph. The banner used
+ * to claim the opposite ("every pre-restructure path here IS a redirect
+ * source"), which read as a standing exemption over two files that had
+ * nothing to exempt — an open invitation to add a hardcoded literal under
+ * its cover. Corrected in v6.1.6's review rather than deleted, because the
+ * RULE still applies the day someone needs one:
  *
+ * an old path written here would be a redirect SOURCE, i.e. the thing under
+ * test. A sweep that 'modernised' it to its destination would delete the
+ * assertion while leaving it looking green — the gate would then prove that
+ * /live/mempool redirects to /live/mempool. This file and
+ * verify-redirects.mjs are the two deliberate exclusions from the v6.1.6
+ * route-literal sweep.
  */
 
 import { makeReporter } from './verify-reporter.mjs';
@@ -322,7 +331,14 @@ try {
   const iaModule = await import(iaPath);
 
   if (!Array.isArray(iaModule.IA)) {
-    R.skip('IA export is not an array or file does not exist');
+    /* A FAIL, for the same reason as the catch below — and this is F2's
+     * SIBLING, three lines away, found while verifying F2 was actually gone
+     * from the committed tree. `ia.ts` importing but not exporting an array
+     * `IA` is the artifact under test being malformed, not this environment
+     * being unable to check it, and `skip` does not set `failed`. Every §7
+     * assertion sits in the `else`, so this branch decided whether the whole
+     * section reports or silently evaporates. */
+    R.ok(false, `§7 could not run — ia.ts exports IA as ${typeof iaModule.IA}, expected an array`);
   } else {
     // Extract all leaf paths from section → col → item.p
     for (const section of iaModule.IA) {
@@ -358,19 +374,19 @@ try {
      * IA. The palette carries Home as its own canonical row instead.
      */
     if (routes.length > 0) {
-      const routesNotInIa = routes.filter(route => {
-        if (route === '/') return false;              // see above
-        const inLeaves = iaLeafPaths.includes(route);
-        if (inLeaves) return false;
-
-        // Check if any leaf is a child of this route (e.g., /learn/sim is child of /learn)
-        const hasChild = iaLeafPaths.some(leaf => leaf.startsWith(route + '/'));
-        return !hasChild;
-      });
+      /* DIRECT leaves only. This used to also pass a route whose DESCENDANT
+       * was a leaf (`hasChild`), which let `/learn` disappear from the IA
+       * entirely and stay green on the strength of `/learn/sim` — the opposite
+       * of what the section claims to prove, since a route with no leaf of its
+       * own is unreachable by navigating. Measured before removing it: no
+       * route in ROUTES relied on the clause, so dropping it changes no
+       * verdict today and closes the hole for tomorrow. */
+      const checked = routes.filter(route => route !== '/');   // see above
+      const routesNotInIa = checked.filter(route => !iaLeafPaths.includes(route));
 
       R.ok(routesNotInIa.length === 0,
         routesNotInIa.length === 0
-          ? `All ${routes.length} ROUTES in IA`
+          ? `all ${checked.length} of ${routes.length} ROUTES are direct IA leaves (/ exempt, see above)`
           : `${routesNotInIa.length} not in IA: ${routesNotInIa.join(', ')}`);
     }
 
@@ -393,7 +409,16 @@ try {
     }
   }
 } catch (e) {
-  R.skip('ia.ts import failed', e.message);
+  /* A FAIL, never a skip. `skip` means "this environment cannot check it" —
+   * an absent browser, an unreachable upstream. An ia.ts that will not import
+   * is not an environment limitation, it is the artifact under test being
+   * broken, and downgrading it to a skip left `failed` unset: a stray `@/`
+   * alias in ia.ts would have sailed through verify:static green with §7
+   * measuring nothing at all. The whole section's assertions live inside this
+   * try, so this catch is the only thing standing between a syntax error and a
+   * silent pass. Break-tested by pointing ia.ts's import at a `@/` alias:
+   * before this change that produced `21 passed · 0 failed`, exit 0, GREEN. */
+  R.ok(false, `§7 could not run — ia.ts import failed: ${e.message}`);
 }
 
 // ============================================================================
@@ -438,8 +463,25 @@ R.group('§8 · the 2 fragment redirects are real, and derived from HASH_REDIREC
     R.ok(readsFragment, 'MoneroPage reads the URL fragment');
     R.ok(/\bHASH_REDIRECTS\b/.test(src),
       'MoneroPage drives the redirect from HASH_REDIRECTS, not from its own literals');
-    const stripped = stripStrings(src);
-    R.ok(!/markets-thesis/.test(stripped) || true, 'anchors are not restated as literals in the page');
+    /* The single-authority property, and the one this section exists for: the
+     * page must not carry its own copy of the anchor names. `src` here is
+     * comment-stripped but string-INTACT, which is the whole point — a restated
+     * anchor would BE a string literal, so the check has to be able to see one.
+     *
+     * This assertion shipped as `R.ok(!/markets-thesis/.test(stripStrings(src))
+     * || true, …)` — a condition that cannot evaluate to false. Two independent
+     * mistakes stacked: it tested the STRING-STRIPPED text, where a string
+     * literal is blanked out by construction and the regex could therefore
+     * never match, and then `|| true` was bolted on rather than the inversion
+     * being noticed. Break-testing the FILE proved verify-ia could go red; it
+     * said nothing about whether THIS assertion could — which is why the fixed
+     * version below was break-tested on its own, by planting the anchor name
+     * back into MoneroPage.tsx and confirming this one line goes red. */
+    const restated = ['markets-thesis', 'outlook'].filter((a) => src.includes(a));
+    R.ok(restated.length === 0,
+      restated.length === 0
+        ? 'anchor names appear nowhere in the page — they are read from HASH_REDIRECTS'
+        : `anchors restated as literals in MoneroPage.tsx: ${restated.join(', ')}`);
   } catch (e) {
     R.ok(false, `MoneroPage.tsx read failed: ${e.message}`);
   }

@@ -103,6 +103,7 @@ export function useRibbonGlide(depKey: unknown) {
     // before we clear them, so the transition actually runs (a single rAF can
     // be coalesced with the synchronous invert into one paint and skip it).
     if (raf.current != null) cancelAnimationFrame(raf.current);
+    // D0699-EXEMPT: double-rAF FLIP play step, ends on its own
     raf.current = requestAnimationFrame(() => {
       raf.current = requestAnimationFrame(() => {
         for (const el of nodes) {

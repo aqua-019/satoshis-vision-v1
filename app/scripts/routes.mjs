@@ -66,10 +66,12 @@ export const ROUTES = Object.values(R);
 
 /**
  * Old URL → new home. THE place a redirect pair is written down.
- * vercel.json restates these 13 as static JSON, because Vercel's config
- * format cannot import a module — verify-ia.mjs is what proves the two
- * agree, in both directions, rather than a human eyeballing thirteen rows
- * against thirteen rows.
+ * vercel.json restates these 12 as static JSON, because Vercel's config
+ * format cannot import a module — verify-redirects.mjs is what proves the
+ * two agree, in both directions, rather than a human eyeballing twelve rows
+ * against twelve rows. (Both numbers read 13 until v6.1.6's review: 13 is
+ * the ROUTES count directly above, and it got copied onto the redirect map,
+ * which has never had 13 rows.)
  *
  * A `to` carrying a `:name` segment means the matching `from` captured that
  * name as a route param — substitution happens in src/routes/RedirectTo.tsx

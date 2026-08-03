@@ -224,6 +224,7 @@ export function NavTop() {
   React.useEffect(() => {
     if (openKey && renderedKey === openKey && focusPanelOnOpen.current) {
       focusPanelOnOpen.current = false;
+      // D0699-EXEMPT: one deferred focus after panel commit, not a loop
       const id = requestAnimationFrame(() => {
         panelRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
       });

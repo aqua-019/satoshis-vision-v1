@@ -170,6 +170,7 @@ function CycleHighsChart() {
   const [fade, setFade] = React.useState(reduced ? 1 : 0);
   React.useEffect(() => {
     if (reduced) { setFade(1); return; }
+    // D0699-EXEMPT: one-shot mount fade
     const id = requestAnimationFrame(() => setFade(1));
     return () => cancelAnimationFrame(id);
   }, [reduced]);

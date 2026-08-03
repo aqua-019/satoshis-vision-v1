@@ -42,8 +42,8 @@ export function RedirectTo({ to }: { to: string }) {
   const { search, hash } = useLocation();
 
   // Substitute every :name the destination template names, from the params
-  // the SOURCE <Route path> actually matched. A no-op for the 10 of 13
-  // templates that carry no ":" at all.
+  // the SOURCE <Route path> actually matched. A no-op for the 9 of 12
+  // REDIRECTS templates that carry no ":" at all.
   const substituted = to.replace(/:([A-Za-z0-9_]+)/g, (_match, name: string) =>
     encodeURIComponent(params[name] ?? ""),
   );

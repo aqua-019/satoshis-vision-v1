@@ -42,6 +42,10 @@
 // THRESHOLD: if this gate reports INCONCLUSIVE on 3 consecutive CI runs, it is
 // not a gate any more, it is a comment. Fix the runner or delete the budget.
 import { makeReporter, launchChromium, BASE, SLOW_4G, CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus } from './verify-lib.mjs';
+/* `RT` because `R` in this file is the reporter. Same alias verify-cls.mjs
+ * uses, and for the same reason: keys that are string literals drift away
+ * from the route table silently — see the note above ROUTES below. */
+import { R as RT } from './scripts/routes.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,10 +79,10 @@ const HARNESS = `serve-dist(uncompressed, 501 /api) · mocked feed @${MOCK_LATEN
  */
 const BUDGETS = {
   //            budget      measured (median of 8, sandbox)
-  '/':         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
-  '/live/mempool':  { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
-  '/live/markets':  { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
-  '/learn/sim': { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
+  [RT.HOME]:         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
+  [RT.LIVE_MEMPOOL]: { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
+  [RT.LIVE_MARKETS]: { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
+  [RT.LEARN_SIM]:    { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
 };
 
 /* /simulate is NEW in v6.1.5 PR B, and its budget is deliberately loose in a
@@ -114,6 +118,7 @@ const CPU_REF_MS = 260;
 const CPU_INCONCLUSIVE_RATIO = 1.6;
 
 const ROUTES = Object.keys(BUDGETS);
+
 
 /** Interactions per route. Must NOT navigate — a navigation resets every
  *  observer. A missing selector is R.skip with the selector named, never a
@@ -153,12 +158,41 @@ const INTERACTIONS = {
    *
    * MEANING CHANGE, stated rather than slipped in: `/`'s interaction number is
    * now ONE interaction, not two. It is not comparable to a pre-v6.1.6 figure. */
-  '/': ['.nav-kbd'],
-  '/live/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
-  '/live/markets': ['button.proto-btn[aria-pressed]'],
+  [RT.HOME]: ['.nav-kbd'],
+  [RT.LIVE_MEMPOOL]: ['.mp-switcher__trigger', '.mp-switcher__trigger'],
+  [RT.LIVE_MARKETS]: ['button.proto-btn[aria-pressed]'],
 };
 
 const R = makeReporter('verify-vitals');
+
+/* ── KEY-LEVEL GUARDS, because `ROUTES = Object.keys(BUDGETS)` cannot fail ──
+ * This gate already defends the SELECTOR level — "a missing selector is
+ * R.skip with the selector named, never a silently recorded zero" — and left
+ * the KEY level undefended. Two ways that bit:
+ *
+ *  1. `} else if (INTERACTIONS[route])` further down has no trailing else.
+ *     An INTERACTIONS key that stops matching a BUDGETS key means that
+ *     interaction is never exercised: no ok, no skip, no line in the tally.
+ *     Silent zero coverage — the exact shape verify-cls.mjs was fixed for in
+ *     this same PR, one file away, while this one was repointed with string
+ *     literals and left alone.
+ *  2. The keys are now computed from RT, so a renamed constant propagates.
+ *     A DELETED one does not: `[RT.GONE]` evaluates to the literal key
+ *     "undefined", which would be fetched as a URL, 404, and score well.
+ *
+ * Neither guard needs a browser, so they run before anything is launched. */
+{
+  const bad = ROUTES.filter((r) => !r || r === 'undefined' || !r.startsWith('/'));
+  R.ok(bad.length === 0,
+    `all ${ROUTES.length} budget keys resolve to a real path`,
+    bad.length ? `unresolved: ${JSON.stringify(bad)} — a deleted R.* constant keys the table "undefined"` : '');
+
+  const orphans = Object.keys(INTERACTIONS).filter((r) => !ROUTES.includes(r));
+  R.ok(orphans.length === 0,
+    `every INTERACTIONS key names a measured route (${Object.keys(INTERACTIONS).length} of ${ROUTES.length} routes script an interaction)`,
+    orphans.length ? `orphaned, so never exercised and never reported: ${orphans.join(', ')}` : '');
+  R.info(`routes with no scripted interaction (by design): ${ROUTES.filter((r) => !INTERACTIONS[r]).join(', ') || 'none'}`);
+}
 
 /* ── the mocked feed ──────────────────────────────────────────────────────
  * Unmocked, serve-dist answers /api/* with 501 and every route renders its

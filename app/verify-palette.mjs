@@ -389,15 +389,32 @@ REPORT.group(`── §11 · every one of ${NAV_DESTINATIONS.length} navigable d
 {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
   let bad = 0;
+  /* PROVE THE DISCRIMINATOR FIRST. This sweep's whole claim is "none of these
+   * 70 destinations is the 404 page", so if the 404 test stops recognising a
+   * 404 the sweep passes unconditionally and says the opposite of nothing.
+   * It used to test `/This page is not in the mempool\./` against body text —
+   * one copy string, with `hasHeading` contributing nothing beside it because
+   * NotFoundPage carries #page-title too. Rewording that headline would have
+   * silently made every destination "resolve". Now the marker is structural
+   * (`data-route-404` on NotFoundPage's wrapper) and this probe fails loudly
+   * if it ever stops being present. */
+  await page.goto(BASE + '/definitely-not-a-route-a9f3', { waitUntil: 'domcontentloaded' });
+  await soft(page.waitForSelector('#page-title', { timeout: 8000 }));
+  const detectorWorks = await page.evaluate(() => !!document.querySelector('[data-route-404]'));
+  REPORT.ok(detectorWorks,
+    'the 404 detector actually detects a 404 (data-route-404 present on an unknown route)',
+    'without this the "all destinations resolve" sweep below cannot fail');
+
   const seen = new Set();
   for (const dest of NAV_DESTINATIONS) {
     if (seen.has(dest.p)) continue; // several rows can share a base path via a query string
     seen.add(dest.p);
     await page.goto(BASE + dest.p, { waitUntil: 'domcontentloaded' });
     await soft(page.waitForSelector('#page-title', { timeout: 8000 }));
-    const body = await page.evaluate(() => document.body.innerText || '');
-    const is404 = /This page is not in the mempool\./.test(body);
-    const hasHeading = await page.evaluate(() => document.querySelectorAll('#page-title').length > 0);
+    const { is404, hasHeading } = await page.evaluate(() => ({
+      is404: !!document.querySelector('[data-route-404]'),
+      hasHeading: document.querySelectorAll('#page-title').length > 0,
+    }));
     if (is404 || !hasHeading) {
       bad++;
       REPORT.ok(false, `${dest.l} (${dest.p}) resolves`, `404=${is404} hasHeading=${hasHeading}`);
