@@ -27,7 +27,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
-import { HASH_REDIRECTS } from "../../scripts/routes.mjs";
+import { HASH_REDIRECTS, R } from "../../scripts/routes.mjs";
 import { resolveTab } from "./monero/tabs";
 import { MoneroTabs } from "./monero/MoneroTabs";
 import { OverviewTab } from "./monero/OverviewTab";
@@ -82,7 +82,7 @@ export function MoneroPage() {
   // which is the first version of this claim that is actually TRUE on desktop.
   return (
     <PageShell width={active === "bottomline" ? "reading" : "standard"} bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "monero", active]} />
+      <Crumbs path={active === "overview" ? R.MONERO : `${R.MONERO}/${active}`} />
       <MoneroTabs active={active} onChange={onChange} />
       {content}
     </PageShell>

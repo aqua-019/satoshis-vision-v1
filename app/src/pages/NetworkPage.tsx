@@ -316,7 +316,7 @@ export function NetworkPage() {
 
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "network"]} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
+      <Crumbs path={R.LIVE_NETWORK} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
       <DataLegend sources={["node"]} />
       <PageHeader
         kicker={<>Network telemetry <NodeProvenance source="node" keys={["network", "blocks", "mempool", "fees"]} status={data.status} bare /></>}

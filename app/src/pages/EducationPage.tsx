@@ -18,12 +18,13 @@ import { useNavigate, useParams } from "react-router-dom";
 import { PageShell } from "@/layout/PageShell";
 import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
-import { resolveTab } from "./_education/tabs";
+import { EDU_TABS, resolveTab } from "./_education/tabs";
 import { EduTabs } from "./_education/EduTabs";
 import { EduJourney } from "./_education/Journey";
 import { EduTimeline } from "./_education/Timeline";
 import { EduQuotes } from "./_education/Quotes";
 import { EduSimulators } from "./_education/EduSimulators";
+import { R } from "../../scripts/routes.mjs";
 
 export function EducationPage() {
   const data = useMoneroLive();
@@ -39,7 +40,7 @@ export function EducationPage() {
   // AppShell, which does see the right element — now resets all three
   // scrollers, on desktop and phone alike.
 
-  const onChange = (id: string) => navigate(id === "journey" ? "/education" : "/education/" + id);
+  const onChange = (id: string) => navigate(id === "journey" ? R.LEARN : `${R.LEARN}/${id}`);
 
   let content: React.ReactNode;
   switch (active) {
@@ -51,7 +52,11 @@ export function EducationPage() {
 
   return (
     <PageShell width="reading" bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "education", active === "journey" ? "btc → xmr" : active]} status="PRIVACY IS NOT OPTIONAL" />
+      <Crumbs
+        path={active === "journey" ? R.LEARN : `${R.LEARN}/${active}`}
+        tail={EDU_TABS.find((t) => t.id === active)?.label ?? active}
+        status="PRIVACY IS NOT OPTIONAL"
+      />
       <EduTabs active={active} onChange={onChange} />
       {content}
     </PageShell>

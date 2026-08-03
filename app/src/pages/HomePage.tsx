@@ -22,7 +22,7 @@ export function HomePage() {
   return (
     <PageShell width="wide" className="home-hero" bg={{ intensity: "busy" }}>
 
-      <Crumbs items={["xmr.irish", "v5.0", "home"]} status="Network nominal" />
+      <Crumbs path={R.HOME} status="Network nominal" />
 
       {/* Hero */}
       <section style={{ display: "grid", gridTemplateColumns: "1.4fr 1fr", gap: 48, alignItems: "stretch" }}>

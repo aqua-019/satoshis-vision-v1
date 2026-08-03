@@ -4,6 +4,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { Crumbs } from "@/design/primitives";
 import { shortHash } from "@/data/types";
 import { LiveTxDetail } from "@/mempool/tx-detail";
+import { R } from "../../scripts/routes.mjs";
 
 export function MempoolTxPage() {
   const data = useMoneroLive();
@@ -22,8 +23,8 @@ export function MempoolTxPage() {
           here, screen-reader-only. `.sr-only` is position:absolute with a 1px
           box: it occupies ZERO layout space, so this changes no pixel. */}
       <h1 id="page-title" className="sr-only">Transaction {shortHash(id)}</h1>
-      <Crumbs items={["xmr.irish", "mempool", "tx", shortHash(id)]} />
-      <LiveTxDetail txid={id} data={data} onBack={() => navigate("/mempool")} />
+      <Crumbs path={`${R.LIVE_MEMPOOL}/tx/${id}`} tail={["tx", shortHash(id)]} />
+      <LiveTxDetail txid={id} data={data} onBack={() => navigate(R.LIVE_MEMPOOL)} />
     </PageShell>
   );
 }

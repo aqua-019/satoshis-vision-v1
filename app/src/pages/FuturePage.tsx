@@ -25,6 +25,7 @@ import { FUTURE_PROTOCOLS, ECOSYSTEM, ROADMAP, AUTOMATION_ROWS, DEV_LAB_PULSES, 
 import { ProtocolCard, DevLabPulseCard, MoneroNewsCard } from "./future/cards";
 import { ProtoPopup } from "./future/ProtoPopup";
 import { EcoPopup } from "./future/EcoPopup";
+import { R } from "../../scripts/routes.mjs";
 
 export function FuturePage() {
   const [popup, setPopup] = React.useState<string | null>(null); // protocol id
@@ -91,7 +92,7 @@ export function FuturePage() {
 
   return (
     <PageShell width="wide" bg={{ intensity: "busy" }}>
-      <Crumbs items={["xmr.irish", "v6.0", "future"]} status="FCMP++ stressnet live" />
+      <Crumbs path={R.FUTURE} status="FCMP++ stressnet live" />
       <PageHeader
         kicker="Roadmap · five incoming upgrades · one live beta chain"
         title='The protocol is <em style="color:var(--p-50);text-shadow:var(--glow-soft-p);font-style:normal">still being forged</em>.'

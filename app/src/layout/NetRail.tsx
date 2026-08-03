@@ -11,6 +11,7 @@ import { Sparkline, NodeProvenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
 import { FEE_TIER_LABELS } from "@/data/map";
 import { freshAt, hasData } from "@/data/feed-status";
+import { R } from "../../scripts/routes.mjs";
 
 export interface NetRailProps {
   /** Optional extra blocks to render below the standard set. */
@@ -97,7 +98,7 @@ export function NetRail({ extra }: NetRailProps) {
             though the number beside it were still being refreshed. */}
         {freshAt(data.status.network) ? `${new Date(freshAt(data.status.network)).toISOString().slice(11, 19)} UTC` : "—"}</div>
         <div style={{ marginTop: 6 }}>
-          <Link to="/sources" style={{ color: "var(--ink-60)", textDecoration: "none", letterSpacing: "0.04em" }}>Data &amp; sources →</Link>
+          <Link to={R.ABOUT_SOURCES} style={{ color: "var(--ink-60)", textDecoration: "none", letterSpacing: "0.04em" }}>Data &amp; sources →</Link>
         </div>
       </div>
     </aside>

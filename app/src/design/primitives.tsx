@@ -6,6 +6,7 @@
  */
 
 import * as React from "react";
+import { Link } from "react-router-dom";
 import { fmtN } from "@/data/types";
 import { fmtAge, useFreshSecond } from "./useFreshClock";
 import {
@@ -16,6 +17,8 @@ import {
   useGradientId,
   useSvgCursor,
 } from "./chart-kit";
+import { sectionForPath, type IaCol, type IaItem, type IaSection } from "@/nav/ia";
+import { R, ROUTES } from "../../scripts/routes.mjs";
 
 // Canonical data-source attribution badge — re-exported so the many
 // `@/design/primitives` import sites can pull it from one place.
@@ -403,27 +406,151 @@ export function MiniBar({
 }
 
 // ── Crumbs ──────────────────────────────────────────────────────
+//
+// Derives root → section → column header → current item from `IA` +
+// `sectionForPath` (nav/ia.ts — the 6-section tree) and the page's own
+// location, rather than a hand-typed string list. `sectionForPath` is
+// reused as-is (it already does longest-prefix-with-a-segment-boundary
+// resolution); item resolution below applies the same boundary rule one
+// level down, scoped to the resolved section's columns.
+//
+// `path` should be the page's current pathname, optionally WITH a query
+// string when that's what distinguishes the real destination (a mempool
+// view, a specific simulator) — an exact `item.p` match (query included)
+// always wins over the path-only boundary match, so `/live/mempool?v=reactor`
+// resolves to the Reactor leaf, not the bare Mempool one. A page whose
+// dynamic state has no IA leaf at all (a tx hash, a "not found" id) passes
+// `tail` instead — the escape hatch: it appends after the derived trail and
+// becomes the new current (last) crumb, demoting the derived leaf to a link.
+//
+// `items` is a full manual override, kept for callers outside this file's
+// owned call sites (e.g. pages/markets/MarketsThesisPage.tsx,
+// pages/future/OutlookPage.tsx) — same plain-text rendering as before,
+// just inside the new <nav><ol> landmark.
+
+function stripQueryHash(s: string): string {
+  const i = s.search(/[?#]/);
+  return i === -1 ? s : s.slice(0, i);
+}
+
+interface CrumbEntry {
+  label: React.ReactNode;
+  to?: string;
+}
+
+function findSectionLeaf(
+  section: IaSection,
+  path: string,
+  pathOnly: string,
+): { col: IaCol; item: IaItem } | undefined {
+  const hasQuery = path !== pathOnly;
+  let best: { col: IaCol; item: IaItem } | undefined;
+  let bestLen = -1;
+  for (const col of section.cols) {
+    for (const item of col.items) {
+      // Exact match (query included) wins immediately — it is strictly more
+      // specific than any path-only boundary match could be.
+      if (hasQuery && item.p === path) return { col, item };
+      const p = stripQueryHash(item.p);
+      if ((p === pathOnly || pathOnly.startsWith(p + "/")) && p.length > bestLen) {
+        bestLen = p.length;
+        best = { col, item };
+      }
+    }
+  }
+  return best;
+}
+
+function buildDerivedTrail(path: string): CrumbEntry[] {
+  const pathOnly = stripQueryHash(path);
+  const crumbs: CrumbEntry[] = [{ label: "xmr.irish", to: pathOnly === R.HOME ? undefined : R.HOME }];
+
+  const section = sectionForPath(pathOnly);
+  if (!section) return crumbs;
+
+  const sectionIsRoute = (ROUTES as readonly string[]).includes(section.path);
+  crumbs.push({ label: section.label, to: sectionIsRoute ? section.path : undefined });
+
+  const hit = findSectionLeaf(section, path, pathOnly);
+  if (!hit) return crumbs;
+  const { col, item } = hit;
+
+  // Column header only when it disambiguates (a section with one column IS
+  // its one column — restating it is noise, not information).
+  if (section.cols.length > 1) {
+    crumbs.push({ label: col.h.split(" · ")[0] });
+  }
+  crumbs.push({ label: item.l, to: item.p });
+
+  return crumbs;
+}
+
+/** Collapses adjacent crumbs whose visible text is identical (case-insensitive) —
+ *  e.g. a column header "Mempool" immediately followed by the bare "Mempool" leaf.
+ *  The merged crumb keeps whichever `to` is more specific (the later one, if set). */
+function collapseDuplicateLabels(crumbs: CrumbEntry[]): CrumbEntry[] {
+  const out: CrumbEntry[] = [];
+  for (const c of crumbs) {
+    const prev = out[out.length - 1];
+    if (prev && typeof prev.label === "string" && typeof c.label === "string" && prev.label.toLowerCase() === c.label.toLowerCase()) {
+      out[out.length - 1] = { label: c.label, to: c.to ?? prev.to };
+    } else {
+      out.push(c);
+    }
+  }
+  return out;
+}
 
 export interface CrumbsProps {
-  items: string[];
+  /** Current location: `pathname`, or `pathname + search` for an exact leaf
+   *  match. Ignored when `items` is given. */
+  path?: string;
+  /** Dynamic trailing label(s) a static tree can't know (tx hash, active
+   *  simulator/view name, "not found"). Appended after the derived trail;
+   *  the last entry becomes the current page. */
+  tail?: React.ReactNode | React.ReactNode[];
+  /** Legacy full override — every entry rendered as plain text, last one
+   *  current. For callers this task does not own. */
+  items?: string[];
   status?: React.ReactNode;
 }
 
-export function Crumbs({ items, status }: CrumbsProps) {
+export function Crumbs({ path, tail, items, status }: CrumbsProps) {
+  let trail: CrumbEntry[];
+  if (items) {
+    trail = items.map((label) => ({ label }));
+  } else {
+    const derived = buildDerivedTrail(path ?? "");
+    const tails = tail == null ? [] : Array.isArray(tail) ? tail : [tail];
+    const withTail = [...derived, ...tails.filter((t) => t != null && t !== "").map((label) => ({ label }))];
+    trail = collapseDuplicateLabels(withTail);
+  }
+
   return (
-    <div className="crumbs">
-      {items.map((it, i) => (
-        <React.Fragment key={i}>
-          {i === items.length - 1 ? <b>{it}</b> : <span>{it}</span>}
-          {i < items.length - 1 ? <s>/</s> : null}
-        </React.Fragment>
-      ))}
+    <nav className="crumbs" aria-label="Breadcrumb">
+      <ol style={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 4, gap: 8, listStyle: "none", margin: 0, padding: 0 }}>
+        {trail.map((c, i) => {
+          const isLast = i === trail.length - 1;
+          return (
+            <li key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {isLast ? (
+                <b aria-current="page">{c.label}</b>
+              ) : c.to ? (
+                <Link to={c.to} style={{ color: "inherit", textDecoration: "none" }}>{c.label}</Link>
+              ) : (
+                <span>{c.label}</span>
+              )}
+              {!isLast ? <s aria-hidden="true">/</s> : null}
+            </li>
+          );
+        })}
+      </ol>
       {status ? (
         <span style={{ marginLeft: "auto" }}>
           <span className="led pulse" /> {status}
         </span>
       ) : null}
-    </div>
+    </nav>
   );
 }
 
