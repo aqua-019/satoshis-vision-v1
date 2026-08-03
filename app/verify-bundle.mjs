@@ -301,7 +301,27 @@ const ROUTE_BUDGET_GZ = {
  * size budget: more chunks is not worse on its own — what it costs is
  * request count, which is why the per-route "first load ∪ static closure"
  * row above is the number that actually governs. */
-const CHUNK_COUNT = 55;
+// v6.1.8 RE-CENTRED 55 -> 60. This is NOT the same kind of move as the
+// eagerJsGz raise above, and conflating them would be wrong.
+//
+// This is a CENTRED DRIFT DETECTOR — `Math.abs(n - CHUNK_COUNT) <= CHUNK_BAND`
+// — not a ceiling. The BAND is its detection power; the CENTRE is only where
+// it stands. So:
+//
+//   widening ±4 -> ±8   would LOSE sensitivity. Not done.
+//   moving 55 -> 60     keeps ±4 exactly. Sensitivity is IDENTICAL.
+//
+// Derivation: 56 at f1dc296, +4 from this PR's lazy split — ColdBoot, Orb,
+// the decoy/console chunk and the shared splash code. Those are the strategy
+// that kept eagerJsGz at 91% while adding a full-screen decrypt, a HUD console
+// and a live-wired orb; they are precisely the "feature, not a manualChunks
+// accident" case this check's own comment distinguishes. The detector fired
+// correctly at 60 and the answer is to re-centre it, not to widen it.
+//
+// Left at 55 with reality at 60, it had already spent its entire band on a
+// known deliberate delta and had nothing left for the accident it exists to
+// catch. New range [56, 64], same ±4 of headroom in both directions.
+const CHUNK_COUNT = 60;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

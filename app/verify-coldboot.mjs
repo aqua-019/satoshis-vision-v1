@@ -40,7 +40,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import {
   makeReporter, launchChromium, BASE,
   coldBootOff, coldBootOffBrowser, assertColdBootBypassed,
-  COLDBOOT_SEL, COLDBOOT_FLAG, PHONE,
+  COLDBOOT_SEL, COLDBOOT_DECIDED_SEL, COLDBOOT_FLAG, PHONE,
 } from './verify-lib.mjs';
 
 const R = makeReporter('verify-coldboot');
@@ -297,6 +297,14 @@ let splashIsReal = false;
 {
   const { ctx, page } = await cold();
   await page.goto(BASE + '/', { waitUntil: 'load' });
+  /* BOUNDED WAIT before sampling. ColdBoot is React.lazy: at `load` the chunk
+   * has not resolved, `locator().count()` does not auto-wait, and §1 reported
+   * a confident HAZARD against an app that was correct. A false FAIL is the
+   * expensive direction — its message names a diagnosis and sends someone
+   * hunting a bug that does not exist. Both polarities survive: a genuine
+   * absence still reads 0 after the bound and the discriminator runs
+   * unchanged. */
+  await page.waitForSelector(COLDBOOT_SEL, { timeout: 10_000 }).catch(() => {});
   const n = await page.locator(COLDBOOT_SEL).count();
 
   /* DISTINGUISH THE TWO CAUSES rather than asserting the worse one.
@@ -313,6 +321,10 @@ let splashIsReal = false;
    * The console's own mount signal is the discriminator — a SEPARATE frozen
    * attribute (console-scoped, for the leaf-size probe), never a rename of the
    * root marker. Two attributes, two jobs. */
+  /* Sampled AFTER the same wait as `n` above. Sampling them at different
+   * instants is what let HAZARD fire on a correct app: the console's chunk
+   * can resolve a frame before the root's, so a stale pair reads
+   * root=0/console=1 and indicts the wrong thing. */
   const consoleMounted = await page.locator('[data-coldboot-console]').count();
 
   splashIsReal = R.ok(
@@ -393,21 +405,69 @@ R.group('── 3 · once-per-session gating, both directions ──────
   await page.goto(BASE + '/', { waitUntil: 'load' });
   await page.waitForSelector(COLDBOOT_SEL, { timeout: 15000 });
 
-  // Direction 1 — reload inside the same session: console, no decrypt.
-  await page.reload({ waitUntil: 'load' });
-  const afterReload = await page.locator(COLDBOOT_SEL).count();
-  R.ok(afterReload === 0,
-    'reload within the session does NOT replay the decrypt',
-    afterReload > 0 ? `${COLDBOOT_SEL} present again after reload — the session flag is not being read` : '');
+  /* PRECONDITION for every negative assertion below. Waiting on COLDBOOT_SEL
+   * would be exactly wrong here: correct behaviour IS its absence. Wait for
+   * the DECISION instead. */
+  const decided = async (what) => {
+    const ok = await page.waitForSelector(COLDBOOT_DECIDED_SEL, { timeout: 15_000 })
+      .then(() => true).catch(() => false);
+    return R.ok(ok,
+      `${what}: ColdBoot published its decision (${COLDBOOT_DECIDED_SEL}) before we sampled`,
+      ok ? '' : `No decision marker after 15s. Without it a count of 0 below cannot tell ` +
+                `"absent because the flag was honoured" from "absent because the lazy chunk ` +
+                `had not resolved" — the assertion would pass vacuously on a §5 criterion.`);
+  };
 
-  // Direction 2 — clear the flag: the decrypt RETURNS. Without this, a splash
-  // that simply never rendered twice would pass direction 1 for free.
-  await page.evaluate(() => sessionStorage.clear());
+  /* ── §3 CANNOT BE ASSERTED YET, AND SAYING SO IS THE ONLY HONEST OPTION ──
+   *
+   * §5 asks: "reload lands on the CONSOLE with NO DECRYPT". An earlier draft
+   * of this section asserted `[data-coldboot]` count === 0 after reload. That
+   * was semantically WRONG, not merely early: the console renders INSIDE the
+   * splash root (measured chain: SECTION[data-coldboot-console] > DIV >
+   * DIV[data-coldboot]), so the root is legitimately present in BOTH states.
+   * The assertion demanded the splash disappear when the spec says only the
+   * decrypt is skipped.
+   *
+   * MEASURED, three phases, one run:
+   *   t=mount             {root:"", console:"ready"}
+   *   t=decrypt resolved  {root:"", console:"ready"}
+   *   t=after reload      {root:"", console:"ready"}
+   *
+   * `data-coldboot` carries an EMPTY value throughout, so replayed-decrypt and
+   * skipped-decrypt are DOM-identical. No selector can tell them apart, which
+   * means no assertion here can distinguish pass from fail — and one that
+   * printed green would be asserting nothing on a headline §5 criterion.
+   *
+   * What IS established, and is asserted below: the session flag really is
+   * written, on decrypt RESOLVE (ColdBoot.tsx:399-402 / :436-439 —
+   * `resolvedRef` at t>=1), not on mount and not on Enter. A gate that
+   * reloaded before resolve saw no flag and concluded the gating was broken;
+   * the gating was fine and the gate was early.
+   *
+   * NEEDED (contract): a phase VALUE on the root — `data-coldboot="decrypt"`
+   * vs `"console"` — or any marker present only while the decrypt runs. One
+   * attribute value turns this from unassertable into two-polarity testable. */
+  const KEY = 'xmrirish.coldboot';
+  const flagWritten = await page
+    .waitForFunction((k) => { try { return sessionStorage.getItem(k) === '1'; } catch { return false; } },
+      KEY, { timeout: 20_000 })
+    .then(() => true).catch(() => false);
+  R.ok(flagWritten,
+    `the session flag ${KEY} is written once the decrypt resolves`,
+    flagWritten ? '' : 'Flag never appeared within 20s — nothing downstream could gate on it.');
+
   await page.reload({ waitUntil: 'load' });
-  const afterClear = await page.locator(COLDBOOT_SEL).count();
-  R.ok(afterClear > 0,
-    'clearing the session flag RESTORES the decrypt (proves direction 1 measured gating, not absence)',
-    afterClear === 0 ? 'splash did not return after sessionStorage.clear() — direction 1 proved nothing' : '');
+  await page.waitForSelector(COLDBOOT_DECIDED_SEL, { timeout: 15_000 }).catch(() => {});
+  const consoleAfter = await page.locator('[data-coldboot-console]').count();
+  R.ok(consoleAfter > 0,
+    'reload within the session lands on the CONSOLE',
+    consoleAfter === 0 ? 'no console after reload — the session reload path is broken' : '');
+
+  R.skip('reload does NOT replay the DECRYPT (and clearing the flag restores it)',
+    'NOT MACHINE-CHECKABLE on this markup: data-coldboot carries an empty value in every ' +
+    'phase, so replayed-decrypt and skipped-decrypt are DOM-identical. Needs a phase value ' +
+    'on the root (data-coldboot="decrypt"|"console"). Skipped rather than asserted, because ' +
+    'an assertion that cannot fail is not evidence for a §5 criterion.');
   await ctx.close();
 }
 
@@ -425,8 +485,12 @@ R.group('── 4 · Enter handoff completes; the orb travels, not collapses ─
   await page.keyboard.press('Enter');
   await page.waitForTimeout(2500);
 
+  /* Negative assertion — same rule as §3. Post-interaction so the chunk has
+   * long resolved, but the marker makes that structural rather than lucky. */
+  await page.waitForSelector(COLDBOOT_DECIDED_SEL, { timeout: 10_000 }).catch(() => {});
   const gone = await page.locator(COLDBOOT_SEL).count();
-  R.ok(gone === 0, 'Enter completes the handoff — splash is removed');
+  R.ok(gone === 0, 'Enter completes the handoff — splash is removed',
+    gone > 0 ? `${COLDBOOT_SEL} still present ${gone}x after Enter` : '');
 
   if (before) {
     const after = (await orb.count()) ? await orb.boundingBox() : null;

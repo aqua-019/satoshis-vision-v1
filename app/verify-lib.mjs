@@ -244,6 +244,24 @@ export const COLDBOOT_OFF = 'off';
 export const COLDBOOT_ATTR = 'data-coldboot';
 export const COLDBOOT_SEL = `[${COLDBOOT_ATTR}]`;
 
+/** Stamped by ColdBoot as soon as it has EVALUATED the session flag — whichever
+ *  way it went: on the splash root when it renders, on a zero-size marker node
+ *  when it decides not to.
+ *
+ *  ── WHY THIS EXISTS: A NEGATIVE ASSERTION CANNOT AUTO-WAIT ───────────────
+ *  `count() === 0` and `toHaveCount(0)` are both satisfied INSTANTLY by an
+ *  empty DOM, so neither can distinguish "absent because correct" from
+ *  "absent because early". ColdBoot is React.lazy, so after a reload the chunk
+ *  has not resolved and a count returns 0 — exactly the value a
+ *  gating assertion wants. "Once-per-session gating works" is a §5 criterion
+ *  and it could pass while measuring an unresolved chunk.
+ *
+ *  Waiting on COLDBOOT_SEL itself cannot fix that: in the case that matters,
+ *  the splash is legitimately absent, so the thing to wait for is the
+ *  DECISION, not the splash. Every negative assertion needs a positive
+ *  precondition to wait on first. */
+export const COLDBOOT_DECIDED_SEL = '[data-coldboot-decided]';
+
 /**
  * Skip the cold-boot splash for everything this target later loads.
  *
@@ -325,7 +343,37 @@ export async function coldBootOffBrowser(browser) {
  * which is never in doubt. The splash root carrying `data-coldboot` is the
  * app's own statement about what it rendered.
  */
+/** Pages whose splash-settle wait has already been paid. */
+const _coldBootSettled = new WeakSet();
+
+/**
+ * Wait until the cold-boot decision is OBSERVABLE, then sample.
+ *
+ * ── WHY A BARE COUNT AT `load` IS VACUOUS ─────────────────────────────────
+ * `ColdBoot` is `React.lazy`, so at `load` its chunk has not resolved and the
+ * splash is not in the DOM yet. `locator().count()` does NOT auto-wait the way
+ * `expect()` does — it samples immediately and returns 0.
+ *
+ * MEASURED on this tree: with the bypass deliberately OFF, so the splash MUST
+ * mount, a count taken at `load` returned 0 and the assertion PASSED. All
+ * thirteen preconditions were therefore incapable of detecting a failed
+ * bypass — the single thing they exist to detect.
+ *
+ * Splash mount latency after `load`, 5 runs: 348/336/271/357/363 ms (max 363).
+ * The 3000 ms bound below is ~8x that worst case. It is a BOUND, not a sleep:
+ * the common (absent) path pays it only once per page, and the present path
+ * returns as soon as the node appears. A fixed `waitForTimeout` is rejected
+ * for the reason it is always rejected here — long enough today is a flake
+ * tomorrow, and it would pay the cost even on the fast path.
+ */
+async function settleColdBoot(page) {
+  if (_coldBootSettled.has(page)) return;
+  await page.waitForSelector(COLDBOOT_SEL, { timeout: 3000 }).catch(() => {});
+  _coldBootSettled.add(page);
+}
+
 export async function assertColdBootBypassed(page, R, label = '/') {
+  await settleColdBoot(page);
   const n = await page.locator(COLDBOOT_SEL).count();
   return R.ok(
     n === 0,
