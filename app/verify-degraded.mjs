@@ -213,7 +213,7 @@ console.log('engine:', engine);
 
   const hrefs = await p.evaluate(() =>
     [...document.querySelectorAll('#root a')].map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } }));
-  for (const route of ['/mempool', '/markets', '/network']) {
+  for (const route of ['/live/mempool', '/live/markets', '/live/network']) {
     ok(hrefs.includes(route), `B1: ${route} is still a real anchor with the bundle dead`);
   }
   await ctx.close();
@@ -235,7 +235,7 @@ console.log('engine:', engine);
   await ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 400; });
   const p = await ctx.newPage();
   await p.route('**/assets/*.js', (r) => r.abort());
-  await p.goto(base + '/mempool/tx/0000000000000000000000000000000000000000000000000000000000000000', { waitUntil: 'load' });
+  await p.goto(base + '/live/mempool/tx/0000000000000000000000000000000000000000000000000000000000000000', { waitUntil: 'load' });
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
@@ -246,7 +246,7 @@ console.log('engine:', engine);
 
   const hrefs = await p.evaluate(() =>
     [...document.querySelectorAll('#root a')].map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } }));
-  ok(hrefs.includes('/education'), 'B2: the nav still works from an un-prerenderable deep link');
+  ok(hrefs.includes('/learn'), 'B2: the nav still works from an un-prerenderable deep link');
   await ctx.close();
 }
 
@@ -278,7 +278,7 @@ console.log('engine:', engine);
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.abort());
   await p.route('**/assets/SimulatePage-*.js', (r) => r.abort());
-  await p.goto(base + '/simulate', { waitUntil: 'load' });
+  await p.goto(base + '/learn/sim', { waitUntil: 'load' });
   await p.waitForTimeout(2000);
 
   const text = await p.evaluate(() => document.body.innerText);

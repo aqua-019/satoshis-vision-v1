@@ -118,7 +118,7 @@ async function newPage(opts) {
 {
   const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', (r) => r.abort());
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
 
   // A1 · the first frames, before any failure has been recorded: still LOADING.
   await p.waitForTimeout(200);
@@ -158,7 +158,7 @@ async function newPage(opts) {
   const p = await newPage({ viewport: { width: 1440, height: 900 } });
   let dead = false;
   await p.route('**/api/**', (r) => (dead ? r.abort() : fulfil(r)));
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForFunction((h) => document.body.innerText.includes(h), H.toLocaleString('en-US'), { timeout: 8000 })
     .catch(() => {});
   let body = await p.evaluate(() => document.body.innerText);
@@ -182,7 +182,7 @@ async function newPage(opts) {
     localStorage.setItem(key, payload);
   }, ['mh:v1:ohlc|monero|usd|30', JSON.stringify({ at: Date.now() - 60_000, data: candles })]);
   await p.route('**/api/**', (r) => r.abort());
-  await p.goto(base + '/markets', { waitUntil: 'load' });
+  await p.goto(base + '/live/markets', { waitUntil: 'load' });
   await p.waitForTimeout(1500);
   const body = await p.evaluate(() => document.body.innerText);
   ok(/COINGECKO · stale/i.test(body), 'C: cached candle series is labelled "COINGECKO · stale"');
@@ -226,7 +226,7 @@ async function newPage(opts) {
     ['mh:v1:chart|decred|usd|30', stamp(line(12))],
   ]);
   await p.route('**/api/**', (r) => r.abort());
-  await p.goto(base + '/markets', { waitUntil: 'load' });
+  await p.goto(base + '/live/markets', { waitUntil: 'load' });
   await p.waitForTimeout(1500);
   const body = await p.evaluate(() => document.body.innerText);
   ok(/\bZEC\b/.test(body) && /\bDCR\b/.test(body), 'D: last-known charted membership renders from the manifest');

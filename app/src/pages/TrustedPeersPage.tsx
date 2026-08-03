@@ -18,6 +18,7 @@ import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
 import { ECOSYSTEM } from "./future/data";
 import { EcoPopup } from "./future/EcoPopup";
+import { R } from "../../scripts/routes.mjs";
 
 export function TrustedPeersPage() {
   const [eco, setEco] = React.useState<string | null>(null);
@@ -33,7 +34,7 @@ export function TrustedPeersPage() {
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v6.0", "trusted peers"]} status={partners.length + " collaborators"} />
+      <Crumbs path={R.ABOUT_PEERS} status={partners.length + " collaborators"} />
       <PageHeader
         kicker="Trusted peers · the surfaces around the protocol"
         title='The projects we <em style="color:var(--p-50);text-shadow:var(--glow-soft-p);font-style:normal">stand beside</em>.'

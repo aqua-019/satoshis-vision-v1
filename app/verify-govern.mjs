@@ -209,18 +209,28 @@ R.group("── 5 · every rAF driver is visibility-gated (D0699) ────�
 {
   // Walk app/src for requestAnimationFrame, then check each owning file
   // reaches the shared visibility machinery. Measurement-only rAFs (a single
-  // deferred read, a double-rAF settle) are not drivers and are exempt by
-  // name with the reason attached.
-  const MEASURE_ONLY = new Map([
-    ["src/design/useChartMetrics.ts", "one deferred measurement, not a loop"],
-    ["src/mempool/useFitToView.ts", "one deferred measurement, not a loop"],
-    ["src/mempool/useRibbonGlide.ts", "double-rAF FLIP play step, ends on its own"],
-    ["src/pages/markets/charts.tsx", "one-shot mount fade"],
-    ["src/pages/monero/MarketsThesisTab.tsx", "one-shot mount fade"],
-    ["src/pages/monero/TechTab.tsx", "one-shot mount fade"],
-    ["src/routes/useRouteChrome.ts", "rAF-throttled scroll save, ends on its own"],
-    ["src/routes/RouteAnnouncer.tsx", "bounded retry for the new heading, stops after READ_FRAMES"],
-  ]);
+  // deferred read, a bounded settle) are not drivers and are exempt — but the
+  // exemption lives AT THE CALL SITE, not in a table here.
+  //
+  // ── WHY THIS IS PER-CALL-SITE ─────────────────────────────────────────
+  // This was a Map keyed by FILE PATH. v6.1.6 added
+  // `src/layout/NavTop.tsx → "one deferred focus after panel commit"`, which
+  // is true of the rAF that was there and became a blanket, permanent
+  // exemption for the file — and NavTop is the always-mounted nav shell, on
+  // every route, so it is close to the worst file in the tree to switch the
+  // check off in. Proven rather than argued: an infinite self-rescheduling rAF
+  // planted in NavTop.tsx passed this gate green.
+  //
+  // A marker now attaches to the individual rAF:
+  //
+  //     // D0699-EXEMPT: one deferred focus after panel commit, not a loop
+  //     const id = requestAnimationFrame(() => …);
+  //
+  // A file is exempt only when EVERY rAF call site in it carries one, so a new
+  // rAF added tomorrow to an "exempt" file is a driver and must be gated. The
+  // reason also sits where the person adding the next one will read it.
+  const EXEMPT_RE = /D0699-EXEMPT:\s*(.+?)\s*(?:\*\/)?\s*$/;
+  const LOOKBACK = 3;   // marker may sit up to 3 lines above its call site
   // The SHARED machinery in design/usePageActive.ts…
   const SHARED = /observeDrawable|isPageActive|onPageActiveChange|usePageActive|useElementActive/;
   // …and the primitives it wraps. A driver that rolls its own IntersectionObserver
@@ -245,19 +255,50 @@ R.group("── 5 · every rAF driver is visibility-gated (D0699) ────�
   const exempt = [];
   const ungated = [];
   const privatelyGated = [];
+  const orphanMarkers = [];
+  let sites = 0;
   for (const f of walk(join(appDir, "src"))) {
     const src = readFileSync(f, "utf8");
     if (!/requestAnimationFrame/.test(src)) continue;
     const rel = relative(appDir, f);
-    if (MEASURE_ONLY.has(rel)) { exempt.push(`${rel} — ${MEASURE_ONLY.get(rel)}`); continue; }
+    const lines = src.split("\n");
+
+    // Every rAF call site in this file, and whether a marker sits on or above it.
+    let unmarked = 0;
+    const markedLines = new Set();
+    lines.forEach((line, i) => {
+      if (!/requestAnimationFrame\s*\(/.test(line)) return;
+      sites++;
+      let reason = null;
+      for (let k = i; k >= Math.max(0, i - LOOKBACK); k--) {
+        const m = lines[k].match(EXEMPT_RE);
+        if (m) { reason = m[1]; markedLines.add(k); break; }
+      }
+      if (reason) exempt.push(`${rel}:${i + 1} — ${reason}`);
+      else unmarked++;
+    });
+
+    // A marker whose call site moved away would silently exempt whatever
+    // arrived in its place, which is the file-keyed failure in miniature.
+    lines.forEach((line, i) => {
+      if (!EXEMPT_RE.test(line) || markedLines.has(i)) return;
+      orphanMarkers.push(`${rel}:${i + 1}`);
+    });
+
+    if (unmarked === 0) continue;              // every site here is exempt
     drivers.push(rel);
     if (SHARED.test(src)) continue;
     if (PRIVATE.test(src)) privatelyGated.push(rel);
     else ungated.push(rel);
   }
 
-  R.info(`${drivers.length} rAF driver(s) checked · ${exempt.length} measurement-only, exempt by name:`);
+  R.info(`${sites} rAF call site(s) · ${drivers.length} driver file(s) checked · ${exempt.length} exempt AT THE CALL SITE:`);
   for (const e of exempt) R.info(`    ${e}`);
+  R.ok(orphanMarkers.length === 0,
+    orphanMarkers.length === 0
+      ? "every D0699-EXEMPT marker sits on a real rAF call site"
+      : `${orphanMarkers.length} orphaned marker(s) — a marker whose rAF moved away exempts whatever lands next`,
+    orphanMarkers.join(", "));
   R.ok(drivers.length > 0, `the sweep actually found drivers (${drivers.length}) — zero would mean a broken scan, not a clean repo`);
   R.ok(ungated.length === 0,
     `no rAF driver runs unpaused in a hidden tab (${drivers.length} checked)`,

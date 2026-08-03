@@ -37,6 +37,11 @@ import { flushSync } from "react-dom";
 import { useLocation, useNavigate, matchRoutes, type RouteObject } from "react-router-dom";
 
 import { startVt } from "./viewTransition";
+// R is scripts/routes.mjs's single authority for the 13 real route paths —
+// see that file's header. ROUTE_TABLE and ROUTE_ORDER below are built from
+// it rather than retyping path literals, the same discipline App.tsx and
+// nav/ia.ts follow.
+import { R } from "../../scripts/routes.mjs";
 
 const resolved = new Set<string>();
 
@@ -69,37 +74,53 @@ export function resetResolvedChunksForTests(): void {
 //
 // `handle` is react-router's own arbitrary-per-route-data extension point
 // (the same field `useMatches()` reads); a string handle here is that
-// route's key into the `resolved` Set above. `handle: null` means "this
-// route has no lazy chunk of its own to gate on" — the eager Home page (see
-// the seed above) and the `/monero/future` client-side `<Navigate>` redirect
-// (which never renders a chunk; it immediately re-routes via its own
-// internal mechanism, not through this hook).
+// route's key into the `resolved` Set above, and must agree with the key
+// each lazy import's own `markChunkResolved(...)` call in App.tsx uses — a
+// mismatch here silently disables transitions for that route (see this
+// file's header). `handle: null` means "this route has no lazy chunk of its
+// own to gate on" — the eager Home page (see the seed above) and the
+// `/monero/future` redirect (generated from scripts/routes.mjs's REDIRECTS,
+// same as the other 12 — it never renders a chunk of its own; it
+// immediately re-routes via RedirectTo, not through this hook). Without this
+// entry "/monero/future" would fall through to the `${R.MONERO}/:tab` match
+// below and be treated as the Monero chunk, which is wrong: it is a redirect
+// source, not a real MoneroPage load.
 const ROUTE_TABLE: RouteObject[] = [
-  { path: "/", handle: "home" },
-  { path: "/mempool", handle: "mempool" },
-  { path: "/mempool/tx/:txid", handle: "mempool-tx" },
-  { path: "/markets", handle: "markets" },
-  { path: "/network", handle: "network" },
-  { path: "/education", handle: "education" },
-  { path: "/education/:tab", handle: "education" },
-  { path: "/monero", handle: "monero" },
+  { path: R.HOME, handle: "home" },
+  { path: R.LIVE_MEMPOOL, handle: "mempool" },
+  { path: `${R.LIVE_MEMPOOL}/tx/:txid`, handle: "mempool-tx" },
+  { path: R.LIVE_MARKETS, handle: "markets" },
+  { path: R.MARKETS_THESIS, handle: "markets-thesis" },
+  { path: R.LIVE_NETWORK, handle: "network" },
+  { path: R.LEARN, handle: "education" },
+  { path: `${R.LEARN}/:tab`, handle: "education" },
+  { path: R.LEARN_SIM, handle: "simulate" },
+  { path: R.MONERO, handle: "monero" },
   { path: "/monero/future", handle: null },
-  { path: "/monero/:tab", handle: "monero" },
-  { path: "/future", handle: "future" },
-  { path: "/peers", handle: "peers" },
-  { path: "/simulate", handle: "simulate" },
-  { path: "/node", handle: "node" },
-  { path: "/sources", handle: "sources" },
+  { path: `${R.MONERO}/:tab`, handle: "monero" },
+  { path: R.FUTURE, handle: "future" },
+  { path: R.FUTURE_OUTLOOK, handle: "outlook" },
+  { path: R.OPERATE_NODE, handle: "node" },
+  { path: R.ABOUT_PEERS, handle: "peers" },
+  { path: R.ABOUT_SOURCES, handle: "sources" },
   { path: "*", handle: "notfound" },
 ];
 
-// Direction for the slide, in the same left-to-right order NavTop.tsx lists
-// its links. Purely cosmetic: an unranked pathname (a deep link like
-// `/mempool/tx/:txid`, or the `/monero/future` redirect) just always reads
-// as "forward" rather than picking a direction that means nothing.
+// Direction for the slide, in the new nav order (nav/ia.ts's IA section
+// order: Live → Monero → Learn → Future → Operate → About), not R's own
+// declaration order in scripts/routes.mjs — Monero sits right after the
+// three Live surfaces here, ahead of Learn. Purely cosmetic: an unranked
+// pathname (a deep link like a mempool txid, or the `/monero/future`
+// redirect) just always reads as "forward" rather than picking a direction
+// that means nothing.
 const ROUTE_ORDER = [
-  "/", "/mempool", "/markets", "/network", "/monero", "/education",
-  "/future", "/peers", "/simulate", "/node", "/sources",
+  R.HOME,
+  R.LIVE_MEMPOOL, R.LIVE_MARKETS, R.MARKETS_THESIS, R.LIVE_NETWORK,
+  R.MONERO,
+  R.LEARN, R.LEARN_SIM,
+  R.FUTURE, R.FUTURE_OUTLOOK,
+  R.OPERATE_NODE,
+  R.ABOUT_PEERS, R.ABOUT_SOURCES,
 ];
 
 function directionFor(fromPath: string, toPath: string): "fwd" | "back" {

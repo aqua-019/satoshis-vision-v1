@@ -24,6 +24,7 @@ import { PageShell } from "@/layout/PageShell";
 import { Crumbs } from "@/design/primitives";
 import { Provenance } from "@/design/provenance";
 import { useUrlState } from "@/routes/useUrlState";
+import { R } from "../../scripts/routes.mjs";
 
 const DEFAULT_ID = "decoy";
 
@@ -70,7 +71,10 @@ export function SimulatePage() {
         </h1>
         <div style={{ padding: "12px 20px", display: "flex", gap: 18, alignItems: "flex-start", borderBottom: "1px solid var(--rule)", flexWrap: "wrap" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 220 }}>
-            <Crumbs items={["xmr.irish", "v5.0", "simulate", notFound ? "not found" : meta.label]} />
+            <Crumbs
+              path={notFound ? R.LEARN_SIM : `${R.LEARN_SIM}?p=${activeSim}`}
+              tail={notFound ? "not found" : undefined}
+            />
             <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <Provenance source="model" />
               <span className="mono" style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.04em" }}>

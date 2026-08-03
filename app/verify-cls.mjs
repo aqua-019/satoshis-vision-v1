@@ -76,6 +76,11 @@ import {
   makeReporter, launchChromium, BASE,
   CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus,
 } from './verify-lib.mjs';
+// Aliased: `R` is already the reporter in this file. Keys below are derived
+// from the canonical route constants rather than retyped, because five of them
+// silently went stale in the nav restructure and the gate could not notice —
+// ROUTES is Object.keys(MEASURED), so a key can never miss its own lookup.
+import { R as RT } from './scripts/routes.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -132,12 +137,12 @@ const HARNESS_HEALTHY = `serve-dist(uncompressed) · mocked feed @${MOCK_LATENCY
  */
 const MEASURED = {
   //  route        ceiling   worst of 8 runs on 5fca6ba
-  '/':            0.005,  // 0.0009  (v6.1.5 PR B, e618c14; was 0.0006 on 5fca6ba)
-  '/mempool':     0.005,  // 0.0000  (8 of 8)
-  '/markets':     0.005,  // 0.0000  (8 of 8)  — was 0.02; see the caveat below
-  '/network':     0.005,  // 0.0000  (8 of 8)
-  '/sources':     0.005,  // 0.0000  (8 of 8)  — NEW in v6.1.5
-  '/simulate':    0.005,  // NEW in v6.1.5 PR B — see the note below
+  [RT.HOME]:            0.005,  // 0.0009  (v6.1.5 PR B, e618c14; was 0.0006 on 5fca6ba)
+  [RT.LIVE_MEMPOOL]:     0.005,  // 0.0000  (8 of 8)
+  [RT.LIVE_MARKETS]:     0.005,  // 0.0000  (8 of 8)  — was 0.02; see the caveat below
+  [RT.LIVE_NETWORK]:     0.005,  // 0.0000  (8 of 8)
+  [RT.ABOUT_SOURCES]:     0.005,  // 0.0000  (8 of 8)  — NEW in v6.1.5
+  [RT.LEARN_SIM]:    0.005,  // NEW in v6.1.5 PR B — see the note below
 };
 
 /* /simulate is NEW in PR B, and it is here for one reason: PR B makes the 21
@@ -170,12 +175,12 @@ const MEASURED = {
  */
 const MEASURED_MOCKED = {
   //  route        ceiling   worst of 8 runs
-  '/':            0.005,  // 0.0012  (v6.1.5 PR B, e618c14; was 0.3483 — see below)
-  '/mempool':     0.005,  // 0.0000  (8 of 8)
-  '/markets':     0.005,  // 0.0000  (8 of 8)  — same empty-chart caveat as above
-  '/network':     0.005,  // 0.0000  (8 of 8)
-  '/sources':     0.005,  // 0.0000  (8 of 8)
-  '/simulate':    0.005,  // NEW in v6.1.5 PR B — see the note above
+  [RT.HOME]:            0.005,  // 0.0012  (v6.1.5 PR B, e618c14; was 0.3483 — see below)
+  [RT.LIVE_MEMPOOL]:     0.005,  // 0.0000  (8 of 8)
+  [RT.LIVE_MARKETS]:     0.005,  // 0.0000  (8 of 8)  — same empty-chart caveat as above
+  [RT.LIVE_NETWORK]:     0.005,  // 0.0000  (8 of 8)
+  [RT.ABOUT_SOURCES]:     0.005,  // 0.0000  (8 of 8)
+  [RT.LEARN_SIM]:    0.005,  // NEW in v6.1.5 PR B — see the note above
 };
 
 /* ── `/`'s 0.35 DEFECT: RESOLVED in v6.1.5 PR B (e618c14) ─────────────────

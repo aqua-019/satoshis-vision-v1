@@ -179,8 +179,10 @@ function restoreSnap(snap: Snap): () => void {
       return;
     }
     applySnap(snap);
+    // D0699-EXEMPT: bounded restore loop, stops at snapReached or RESTORE_FRAMES
     raf = requestAnimationFrame(tick);
   };
+  // D0699-EXEMPT: kicks off the bounded restore loop above; cancelled on cleanup
   raf = requestAnimationFrame(tick);
 
   return () => {
@@ -268,6 +270,7 @@ export function useRouteChrome(): void {
     const onScroll = (): void => {
       if (performance.now() < saveBlockedUntil) return;
       pending = readSnap();
+      // D0699-EXEMPT: rAF-coalesced scroll save, one frame per burst
       if (!raf) raf = requestAnimationFrame(commit);
     };
 

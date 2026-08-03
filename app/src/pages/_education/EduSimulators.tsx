@@ -12,6 +12,7 @@ import * as React from "react";
 import { PageHeader } from "@/layout/AppShell";
 import { Card } from "@/design/primitives";
 import { PROTOCOL_PRIMITIVES_META, PROTOCOL_METAPHORS_META, type ProtocolMetaBase } from "@/views/protocol-meta";
+import { R } from "../../../scripts/routes.mjs";
 
 export interface EduSimulatorsProps {
   navigate: (to: string) => void;
@@ -38,7 +39,7 @@ export function EduSimulators({ navigate }: EduSimulatorsProps) {
           <div className="kicker">{group}</div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 14 }}>
             {items.map((p) => (
-              <Card key={p.id} onClick={() => navigate("/simulate?p=" + p.id)} style={{ padding: 18, cursor: "pointer" }}>
+              <Card key={p.id} onClick={() => navigate(`${R.LEARN_SIM}?p=` + p.id)} style={{ padding: 18, cursor: "pointer" }}>
                 <div className="kicker" style={{ color: p.tone === "priv" ? "var(--p-50)" : "var(--tk-accent)" }}>{p.kicker}</div>
                 <div className="serif" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)", margin: "8px 0 6px" }}>{p.label}</div>
                 <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{p.sub}</p>

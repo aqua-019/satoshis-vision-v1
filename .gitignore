@@ -49,3 +49,11 @@ yarn-error.log*
 .claude/settings.local.json
 # Phase 1 design reference (never commit on this branch)
 handoff_xmrirish_v5/
+
+# Scratch probes written by review/verification agents at runtime. They are not
+# gates: unwired to npm and CI, and not part of the delivered suite. Ignored
+# because `git add -A` swept one into a docs commit whose message never
+# mentioned it — the third time an agent's in-flight files landed in an
+# unrelated commit this session.
+app/test-*.mjs
+app/probe*.mjs

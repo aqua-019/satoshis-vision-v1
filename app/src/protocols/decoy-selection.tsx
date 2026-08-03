@@ -15,6 +15,7 @@ import { fmtN, fmtFee, fmtBytes, shortHash as ShortHash } from "@/data/types";
 import { randHex } from "@/protocols/sim-random";
 import { useChartMetrics, estTextW } from "@/design/useChartMetrics";
 import type { MoneroLive } from "@/data/types";
+import { R } from "../../scripts/routes.mjs";
 
 interface ViewProps {
   data: MoneroLive;
@@ -305,7 +306,7 @@ export function DecoySelectionView({ data, bg }: ViewProps) {
             <em>And here's what's wrong with it:</em> this whole mechanism rests on the decoy
             distribution matching how outputs are really spent. Monero Research Lab's OSPEAD
             work asks whether it does.{" "}
-            <Link to="/simulate?p=ospead" style={{ color: "var(--tk-accent)" }}>
+            <Link to={`${R.LEARN_SIM}?p=ospead`} style={{ color: "var(--tk-accent)" }}>
               Open the OSPEAD simulator →
             </Link>
           </div>

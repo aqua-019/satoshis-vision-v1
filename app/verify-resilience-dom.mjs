@@ -119,7 +119,7 @@ R.group('A · structure-aware skeletons');
   const page = await ctx.newPage();
 
   // Read at t=0, before data lands, on every surface that carries a Swap.
-  await page.goto(BASE + '/network', { waitUntil: 'commit' });
+  await page.goto(BASE + '/live/network', { waitUntil: 'commit' });
   const early = await page.evaluate(() => {
     const out = [];
     for (const el of document.querySelectorAll('.sk-swap')) {
@@ -167,7 +167,7 @@ R.group('B · crossfade + reduce');
   const ctx = await newCtx(browser);
   await mock(ctx);
   const page = await ctx.newPage();
-  await page.goto(BASE + '/network', { waitUntil: 'load' });
+  await page.goto(BASE + '/live/network', { waitUntil: 'load' });
   await page.waitForTimeout(1200);
   const motion = await page.evaluate(() => {
     const el = document.querySelector('.sk-swap > .sk-body');
@@ -181,7 +181,7 @@ R.group('B · crossfade + reduce');
   const rctx = await newCtx(browser, { reducedMotion: 'reduce' });
   await mock(rctx);
   const rp = await rctx.newPage();
-  await rp.goto(BASE + '/network', { waitUntil: 'load' });
+  await rp.goto(BASE + '/live/network', { waitUntil: 'load' });
   await rp.waitForTimeout(1200);
   const reduced = await rp.evaluate(() => {
     const el = document.querySelector('.sk-swap > .sk-body');
@@ -204,7 +204,7 @@ R.group('C · PanelBoundary containment');
   await mock(ctx);
   await ctx.addInitScript(() => { window.__XMR_PANEL_THROW__ = ['blocks']; });
   const page = await ctx.newPage();
-  await page.goto(BASE + '/network', { waitUntil: 'load' });
+  await page.goto(BASE + '/live/network', { waitUntil: 'load' });
   await page.waitForTimeout(1500);
 
   const seen = await page.evaluate(() => {
@@ -237,7 +237,7 @@ R.group('D · offline precedence');
   const ctx = await newCtx(browser);
   await mock(ctx, { dead: ['mempool', 'fees', 'network', 'blocks'] });
   const page = await ctx.newPage();
-  await page.goto(BASE + '/network', { waitUntil: 'load' });
+  await page.goto(BASE + '/live/network', { waitUntil: 'load' });
   await page.waitForTimeout(1500);
   await ctx.setOffline(true);
   await page.evaluate(() => window.dispatchEvent(new Event('offline')));
@@ -269,7 +269,7 @@ R.group('E · feedDegraded is a pair-AND global');
   const one = await newCtx(browser);
   await mock(one, { dead: ['mempool'] });
   const p1 = await one.newPage();
-  await p1.goto(BASE + '/network', { waitUntil: 'load' });
+  await p1.goto(BASE + '/live/network', { waitUntil: 'load' });
   await p1.waitForTimeout(2000);
   const single = await p1.evaluate(() => !!document.querySelector('.degraded-banner'));
   R.ok(!single,
@@ -279,7 +279,7 @@ R.group('E · feedDegraded is a pair-AND global');
   const two = await newCtx(browser);
   await mock(two, { dead: ['mempool', 'fees'] });
   const p2 = await two.newPage();
-  await p2.goto(BASE + '/network', { waitUntil: 'load' });
+  await p2.goto(BASE + '/live/network', { waitUntil: 'load' });
   await p2.waitForTimeout(2500);
   const pair = await p2.evaluate(() => {
     const b = document.querySelector('.degraded-banner');
@@ -297,7 +297,7 @@ R.group('F · stale-while-revalidate has a vocabulary');
   const ctx = await newCtx(browser);
   await mock(ctx, { slowMs: 700 });
   const page = await ctx.newPage();
-  await page.goto(BASE + '/network', { waitUntil: 'load' });
+  await page.goto(BASE + '/live/network', { waitUntil: 'load' });
   await page.waitForTimeout(3000);
 
   const before = await page.evaluate(() => {
@@ -340,7 +340,7 @@ R.group('G · empty / zero-result / failure copy is distinct');
     const ctx = await newCtx(browser);
     await mock(ctx, opts);
     const page = await ctx.newPage();
-    await page.goto(BASE + '/network', { waitUntil: 'load' });
+    await page.goto(BASE + '/live/network', { waitUntil: 'load' });
     await page.waitForTimeout(2500);
     const txt = await page.evaluate(() => document.body.innerText || '');
     await ctx.close();

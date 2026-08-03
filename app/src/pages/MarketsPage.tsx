@@ -38,12 +38,12 @@ import {
 } from "@/data/useMarketHistory";
 import { useTickers } from "@/data/useTickers";
 import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
-import { SITE_VERSION } from "@/data/releases";
 import { assertNever, hasData } from "@/data/feed-status";
 import { useUrlState } from "@/routes/useUrlState";
 import { Swap, SkeletonBox, SkeletonRows } from "@/design/Skeleton";
 import { PanelBoundary } from "@/design/PanelBoundary";
 import { usePendingDelay } from "@/design/usePendingDelay";
+import { R } from "../../scripts/routes.mjs";
 
 /** Hoisted so useUrlState's setter identity is stable across renders. The
  *  order here is RANGE_DAYS' own key order, which is also the button order. */
@@ -324,7 +324,7 @@ export function MarketsPage() {
 
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", SITE_VERSION, "markets"]} status={<NodeProvenance source="coingecko" keys={["market"]} status={data.status} />} />
+      <Crumbs path={R.LIVE_MARKETS} status={<NodeProvenance source="coingecko" keys={["market"]} status={data.status} />} />
       <DataLegend sources={["coingecko"]} />
       <PageHeader
         kicker="Markets · price, volume, liquidity"

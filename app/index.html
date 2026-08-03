@@ -135,6 +135,15 @@
         var r = document.getElementById("root");
         var f = document.getElementById("boot-fallback");
         if (f && r && r.childElementCount === 0) f.hidden = false;
+        // A dead module also means NavTop's six <button> triggers do nothing
+        // and its dropdown never opens, so 6 of the 13 prerendered routes have
+        // no reachable link. .nav-noscript is in the DOM already (hidden, so it
+        // costs the healthy path no layout shift); this reveals it. Keyed off
+        // main.tsx's data-boot="ok" rather than #root emptiness: prerendering
+        // means #root is never empty, so that check cannot detect this case.
+        if (document.documentElement.dataset.boot !== "ok") {
+          document.documentElement.dataset.boot = "dead";
+        }
       }, window.__xmriBootTimeoutMs || 10000);
     </script>
   </head>
@@ -147,6 +156,10 @@
          genuinely missing without JS — the live figures, which render as "—"
          because the app never invents a number it did not receive. -->
     <noscript>
+      <!-- Scripting off: reveal the full route list. It ships display:none so
+           a scripted visitor never pays a layout shift for it; this is the
+           only path that shows it without waiting for the boot watchdog. -->
+      <style>.nav-noscript { display: flex !important; }</style>
       <style>
         /* Literal hex, no var(): this renders before any bundled CSS, and on a
            JS-off load the bundle's palette may be all that is missing. */
@@ -211,22 +224,79 @@
           blocker, a strict privacy setting, or a dropped connection stopped it — the site itself is
           read-only and non-custodial, so nothing was at risk. Reloading often resolves it; allowing
           scripts for this one origin will too. Every page below is a plain link and still works.</div>
+        <!-- Plain HTML cannot import — kept hand-in-sync with the 13 real
+             route paths declared once in scripts/routes.mjs's `R`. Order
+             matches nav/ia.ts's IA sections: Live → Monero → Learn → Future
+             → Operate → About. -->
         <ul class="shell__nav">
           <li><a class="shell__a" href="/">Home</a></li>
-          <li><a class="shell__a" href="/mempool">Mempool</a></li>
-          <li><a class="shell__a" href="/markets">Markets</a></li>
-          <li><a class="shell__a" href="/network">Network</a></li>
-          <li><a class="shell__a" href="/education">Education</a></li>
+          <li><a class="shell__a" href="/live/mempool">Mempool</a></li>
+          <li><a class="shell__a" href="/live/markets">Markets</a></li>
+          <li><a class="shell__a" href="/live/markets/thesis">Market thesis</a></li>
+          <li><a class="shell__a" href="/live/network">Network</a></li>
           <li><a class="shell__a" href="/monero">Monero</a></li>
+          <li><a class="shell__a" href="/learn">Learn</a></li>
+          <li><a class="shell__a" href="/learn/sim">Simulators</a></li>
           <li><a class="shell__a" href="/future">Future</a></li>
-          <li><a class="shell__a" href="/peers">Peers</a></li>
-          <li><a class="shell__a" href="/simulate">Simulate</a></li>
-          <li><a class="shell__a" href="/node">Node</a></li>
-          <li><a class="shell__a" href="/sources">Sources</a></li>
+          <li><a class="shell__a" href="/future/outlook">Outlook</a></li>
+          <li><a class="shell__a" href="/operate/node">Run a node</a></li>
+          <li><a class="shell__a" href="/about/peers">Peers</a></li>
+          <li><a class="shell__a" href="/about/sources">Sources</a></li>
         </ul>
         <a class="shell__a" href="https://getmonero.org" rel="noopener noreferrer">Learn about Monero → getmonero.org</a>
       </div></div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <!-- D0723 speculation rules — a same-origin prefetch hint for engines that
+         implement the API (Chromium 121+). NOT Firefox: Tor Browser tracks
+         Firefox ESR and Firefox has never shipped Speculation Rules, so the
+         site's primary audience gets zero benefit from this block — the exact
+         asymmetry design/viewTransition.ts already documents for View
+         Transitions ("the fallback is the MAIN path"). src/nav/usePrefetch.ts
+         is that fallback: a JS same-origin fetch() triggered on D1542 hover
+         intent, reaching every engine this block cannot.
+
+         ROUTE-AGNOSTIC BY CONSTRUCTION, and it has to be: scripts/prerender.mjs
+         clones this exact built shell — byte for byte, this block included —
+         into all 13 prerendered routes and only swaps out #root's contents. A
+         candidate list naming specific paths would be correct on the one page
+         it was written for and wrong on the other twelve. A "document" rule
+         with a bare href_matches pattern has no such problem: it is identical
+         HTML on every route and simply watches whatever <a> elements that
+         particular page already has — nothing here names a path.
+
+         "prefetch", never "prerender": prerender is heavyweight — it stands up
+         a second, off-screen copy of the target page's DOM/CSS/JS, which for
+         this app means mounting a second polling tier and opening a second
+         cascade of requests against api/xmr and api/markets before the visitor
+         has committed to anything. "prefetch" only warms the HTTP cache for
+         the document a hover MIGHT turn into a navigation.
+
+         Eagerness "conservative" — the more cautious of the two eagerness
+         levels the brief allows, deliberately chosen over "moderate": it
+         fires only on pointerdown/touchstart, i.e. the moment a click is
+         already underway, rather than on a bare ~200ms hover. That keeps this
+         native hint from doing the same job twice as usePrefetch.ts's D1542
+         hover-timer fetch() (which already covers the earlier, speculative
+         part of a hover on every engine) — this block only has to catch the
+         last few dozen milliseconds before a real navigation, on the one
+         engine that can act on it that fast.
+
+         href_matches "/*" is same-origin by construction — URLPattern resolves
+         a scheme-less pattern string against the document's own origin, so
+         this can never target a third party. Belt-and-braces: connect-src
+         'self' and the site is used over Tor, so a cross-origin candidate
+         would be blocked outright regardless. -->
+    <script type="speculationrules">
+      {
+        "prefetch": [
+          {
+            "source": "document",
+            "where": { "href_matches": "/*" },
+            "eagerness": "conservative"
+          }
+        ]
+      }
+    </script>
   </body>
 </html>

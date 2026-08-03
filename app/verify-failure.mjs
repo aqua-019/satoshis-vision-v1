@@ -172,7 +172,7 @@ R.group('A · killing ONE endpoint degrades exactly the panels it feeds');
   const ctx = await newCtx(browser);
   await mock(ctx, []);                       // everything healthy first
   const page = await ctx.newPage();
-  await page.goto(base + '/network', { waitUntil: 'load' });
+  await page.goto(base + '/live/network', { waitUntil: 'load' });
   await page.waitForFunction((h) => document.body.innerText.includes(h),
     H.toLocaleString('en-US'), { timeout: 15000 }).catch(() => {});
 
@@ -282,7 +282,7 @@ R.group('B · the mirror image — a different endpoint degrades a different set
   const ctx = await newCtx(browser);
   await mock(ctx, []);
   const page = await ctx.newPage();
-  await page.goto(base + '/network', { waitUntil: 'load' });
+  await page.goto(base + '/live/network', { waitUntil: 'load' });
   await page.waitForFunction((h) => document.body.innerText.includes(h),
     H.toLocaleString('en-US'), { timeout: 15000 }).catch(() => {});
 

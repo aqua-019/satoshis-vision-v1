@@ -20,6 +20,7 @@ import { mergeReleases } from "@/data/releases";
 import { useApiStatus } from "@/data/useApiStatus";
 import { useMoneroLive } from "@/data/DataContext";
 import { FEED_KEYS, FEED_ENDPOINT } from "@/data/feed-status";
+import { R } from "../../scripts/routes.mjs";
 
 // ── small in-page atoms ─────────────────────────────────────────
 
@@ -115,7 +116,7 @@ export function SourcesPage() {
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "Data & sources"]} />
+      <Crumbs path={R.ABOUT_SOURCES} />
 
       <PageHeader
         kicker="provenance · where every number comes from"

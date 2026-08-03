@@ -9,6 +9,7 @@ import { Card, Crumbs, Stat } from "@/design/primitives";
 import { ProtoStep } from "@/design/ProtoArtboard";
 import { useMoneroLive } from "@/data/DataContext";
 import { hasData } from "@/data/feed-status";
+import { R } from "../../scripts/routes.mjs";
 
 function Cmd({ id, cmd, copied, setCopied }: { id: string; cmd: string; copied: string | null; setCopied: (v: string | null) => void }) {
   const copy = () => {
@@ -36,7 +37,7 @@ export function NodePage() {
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
-      <Crumbs items={["xmr.irish", "v5.0", "run a node"]} />
+      <Crumbs path={R.OPERATE_NODE} />
       <PageHeader
         kicker="monerod · five paths · pick one"
         title='Run a <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">node</em>. Sovereign in 12 minutes.'

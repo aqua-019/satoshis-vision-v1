@@ -230,7 +230,7 @@ for (const vp of VIEWPORTS) {
 
     // One representative simulator per family plus the two worst offenders from
     // the device screenshots (decoy density curve, Dandelion stem/fluff).
-    const probes = ['/simulate?p=decoy', '/simulate?p=dandelion', '/simulate?p=bloodhound'];
+    const probes = ['/learn/sim?p=decoy', '/learn/sim?p=dandelion', '/learn/sim?p=bloodhound'];
     for (const route of probes) {
       await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('.page-shell, .proto-stage, main', { timeout: 15000 });
@@ -249,7 +249,7 @@ for (const vp of VIEWPORTS) {
     }
 
     // Data panels on the two densest pages.
-    for (const route of ['/markets', '/network']) {
+    for (const route of ['/live/markets', '/live/network']) {
       await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector('.page-shell, .proto-stage, main', { timeout: 15000 });
       await freezeAmbient(page);

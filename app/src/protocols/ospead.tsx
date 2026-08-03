@@ -21,6 +21,7 @@ import type { ProtoDrawFn } from "@/protocols/use-proto-canvas";
 import { Stat } from "@/design/primitives";
 import { Provenance } from "@/design/provenance";
 import type { MoneroLive } from "@/data/types";
+import { R } from "../../scripts/routes.mjs";
 
 interface ViewProps {
   data: MoneroLive;
@@ -234,7 +235,7 @@ export function OspeadView({ bg }: ViewProps) {
 
           <div className="body" style={{ borderTop: "1px dashed var(--ink-10)", paddingTop: 12 }}>
             <em>Where this sits:</em> the mechanism itself is in{" "}
-            <Link to="/simulate?p=decoy" style={{ color: "var(--tk-accent)" }}>Decoy selection · Time tide →</Link>{" "}
+            <Link to={`${R.LEARN_SIM}?p=decoy`} style={{ color: "var(--tk-accent)" }}>Decoy selection · Time tide →</Link>{" "}
             — read that first; this is its sequel. And note the horizon: <b>FCMP++</b> retires decoy sampling altogether by proving membership in the whole chain, at which point there is no distribution left to fit or to attack.
           </div>
         </>

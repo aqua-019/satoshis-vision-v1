@@ -301,7 +301,7 @@ const results = {}; // theme -> { actual, initial }
 for (const theme of THEMES) {
   R.group(`── ${theme} · role tokens ──────────────────────────────────`);
   const page = await newThemedPage(browser, { width: 1440, height: 900 }, theme);
-  await page.goto(BASE + '/markets', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/live/markets', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.panel', { timeout: 15000 });
 
   const roleNames = ROLES.map((r) => r.name);

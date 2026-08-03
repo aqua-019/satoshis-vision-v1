@@ -28,6 +28,7 @@ import { useMempoolTracking, MemViewShell, TrackChip, type Tracking, MemTxTable}
 import { chainTip, confOf, CONF_UNLOCK, RIBBON_BLOCKS } from "@/mempool/conf";
 import { useRibbonGlide } from "@/mempool/useRibbonGlide";
 import { useReducedMotion } from "@/design/useReducedMotion";
+import { R } from "../../scripts/routes.mjs";
 
 interface ViewProps {
   data: MoneroLive;
@@ -458,7 +459,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                       unattributed, so per-pool share can't be measured on-chain. Live network
                       hashrate: <span className="acc">{netGh} GH/s</span>.
                     </p>
-                    <Link to="/simulate?p=skyline" className="acc" style={{ fontSize: "var(--fs-mono)" }}>
+                    <Link to={`${R.LEARN_SIM}?p=skyline`} className="acc" style={{ fontSize: "var(--fs-mono)" }}>
                       Decentralization &amp; HHI → Skyline simulator
                     </Link>
                   </div>

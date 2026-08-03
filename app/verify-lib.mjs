@@ -7,6 +7,10 @@
 
 import { webkit, chromium } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
+// The canonical route constants. Imported rather than retyped so a rename
+// cannot leave a filter here pointing at a path that no longer exists — which
+// is exactly how SIM_ROUTES silently became [] (see its comment below).
+import { R } from './scripts/routes.mjs';
 
 export const BASE = process.env.VERIFY_BASE || 'http://localhost:4173';
 
@@ -99,7 +103,7 @@ export async function throttle(ctx, page) {
 }
 
 /** Every addressable surface in the app. Tabs and simulator query params are
- *  separate entries because they are separate LAYOUTS — walking only the seven
+ *  separate entries because they are separate LAYOUTS — walking only the
  *  top-level routes is how the legality tab shipped broken twice.
  *
  *  v6.1.3 — the simulator list below carries all 21 `?p=` ids registered in
@@ -108,30 +112,66 @@ export async function throttle(ctx, page) {
  *  prior copy of this comment). It previously listed 15 and silently skipped
  *  the six-member "Future protocol" group (seraphis, jamtis, carrot, cuprate,
  *  stressnet, ospead) in every browser gate that iterates ROUTES — those six
- *  routes existed in the app and were never walked here. Total route count is
- *  now 43 (was 37): 8 top-level + 4 education tabs + 9 monero tabs + 21
- *  simulators + 1 404. */
+ *  routes existed in the app and were never walked here.
+ *
+ *  Nav restructure (13-route IA, scripts/routes.mjs's `R`) — the 8 old
+ *  top-level routes are renamed in place (`/mempool` → `/live/mempool`, etc.)
+ *  and two more top-level entries are ADDED: `/live/markets/thesis` and
+ *  `/future/outlook`, both of which used to be `/monero/:tab` members
+ *  (`markets`, `outlook`) and are gone from that tab set as a result — it
+ *  drops from 9 to 7. The 21 simulators move from `/simulate?p=<id>` to
+ *  `/learn/sim?p=<id>`. Total route count stays 43: 10 top-level (8 renamed +
+ *  2 new) + 4 education tabs (renamed to /learn/<tab>) + 7 monero tabs
+ *  (markets/outlook removed) + 21 simulators + 1 404. */
 export const ROUTES = [
   '/',
-  '/mempool',
-  '/markets',
-  '/network',
-  '/node',
-  '/sources',
-  '/peers',
+  '/live/mempool',
+  '/live/markets',
+  '/live/markets/thesis',
+  '/live/network',
+  '/operate/node',
+  '/about/sources',
+  '/about/peers',
   '/future',
-  ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/education/${t}`),
-  ...['overview', 'origin', 'tech', 'legality', 'markets', 'comparison', 'attacks', 'bottomline', 'outlook']
+  '/future/outlook',
+  ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/learn/${t}`),
+  ...['overview', 'origin', 'tech', 'legality', 'comparison', 'attacks', 'bottomline']
     .map((t) => `/monero/${t}`),
   ...['decoy', 'dandelion', 'viewtags', 'ringct', 'stealth', 'fcmp',
       'seraphis', 'jamtis', 'carrot', 'cuprate', 'stressnet', 'ospead',
       'hearth', 'metronome', 'silo', 'thermostat', 'lighthouse', 'auction',
-      'skyline', 'bloodhound', 'balance'].map((p) => `/simulate?p=${p}`),
+      'skyline', 'bloodhound', 'balance'].map((p) => `/learn/sim?p=${p}`),
   '/no-such-route',           // 404
 ];
 
-/** Routes that render a ProtoArtboard (.proto-stage) — the §1 occlusion set. */
-export const SIM_ROUTES = ROUTES.filter((r) => r.startsWith('/simulate'));
+/** Routes that render a ProtoArtboard (.proto-stage) — the §1 occlusion set.
+ *
+ *  v6.1.6: the prefix moved with the routes. ROUTES above was migrated to
+ *  `/learn/sim?p=<id>` and this filter was not, so SIM_ROUTES silently became
+ *  []. Nothing threw, because an empty array is a perfectly good array.
+ *
+ *  What it broke is worth recording, because it is not the failure you would
+ *  guess. verify-shots.mjs:141 builds SIM_SET from this to EXEMPT the 21
+ *  simulator routes from its pixel-diff assertion — they are inherently
+ *  nondeterministic (17 of 63 classic sim shots differ between two sweeps of
+ *  one unchanged tree). With the set empty the exemption stopped applying, so
+ *  the gate would fail on jitter its own header calls expected and unfixable,
+ *  AND its `if (simShots.length)` guard went false, so the NOISE FLOOR caveat
+ *  stopped printing. A false failure and a silenced honesty line at once —
+ *  the caveat being exactly what stops "pixel-identical across N shots" from
+ *  being read as coverage it never had.
+ *
+ *  Derived from R so a future rename cannot desynchronise them again.
+ *
+ *  The boundary check is not decoration. A bare `startsWith(R.LEARN_SIM)`
+ *  also matches `/learn/simulators` — the Learn TAB, which renders a grid of
+ *  cards and no ProtoArtboard at all — silently widening the occlusion set to
+ *  22 and exempting a deterministic page from verify-shots' pixel diff. Same
+ *  missing-boundary bug as `/futures-x` matching `/future`, and it was
+ *  introduced in the very commit that fixed the empty-array one. */
+export const SIM_ROUTES = ROUTES.filter(
+  (r) => r === R.LEARN_SIM || r.startsWith(R.LEARN_SIM + '?') || r.startsWith(R.LEARN_SIM + '/'),
+);
 
 // v6.1.2 — classic is the DEFAULT and is listed first; phosphor is new.
 // Note for anyone adding a fourth: gates that diff against a baseline tree built

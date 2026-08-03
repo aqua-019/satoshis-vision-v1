@@ -27,6 +27,20 @@
     ]}
   ],
   "functions": { "api/monero.js": { "maxDuration": 15 }, "api/xmr.js": { "maxDuration": 30 }, "api/feeds.js": { "maxDuration": 15 }, "api/markets.js": { "maxDuration": 30 } },
+  "redirects": [
+    { "source": "/mempool", "destination": "/live/mempool", "statusCode": 301 },
+    { "source": "/network", "destination": "/live/network", "statusCode": 301 },
+    { "source": "/markets", "destination": "/live/markets", "statusCode": 301 },
+    { "source": "/education", "destination": "/learn", "statusCode": 301 },
+    { "source": "/education/:tab", "destination": "/learn/:tab", "statusCode": 301 },
+    { "source": "/simulate", "destination": "/learn/sim", "statusCode": 301 },
+    { "source": "/simulate/:id", "destination": "/learn/sim?p=:id", "statusCode": 301 },
+    { "source": "/node", "destination": "/operate/node", "statusCode": 301 },
+    { "source": "/peers", "destination": "/about/peers", "statusCode": 301 },
+    { "source": "/sources", "destination": "/about/sources", "statusCode": 301 },
+    { "source": "/mempool/tx/:txid", "destination": "/live/mempool/tx/:txid", "statusCode": 301 },
+    { "source": "/monero/future", "destination": "/future", "statusCode": 301 }
+  ],
   "rewrites": [
     { "source": "/api/xmr/:path*", "destination": "/api/xmr?_p=:path*" },
     { "source": "/((?!api/).*)", "destination": "/index.html" }

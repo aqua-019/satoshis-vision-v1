@@ -18,6 +18,7 @@ import { PageShell } from "@/layout/PageShell";
 import { Crumbs, DataLegend } from "@/design/primitives";
 import { useMoneroLive } from "@/data/DataContext";
 import { MEMPOOL_VIEWS } from "@/views";
+import { R } from "../../scripts/routes.mjs";
 import { MempoolHeartbeat } from "@/mempool/mempool-shared";
 import { useDragPan } from "@/mempool/useDragPan";
 import { FitView } from "@/mempool/FitView";
@@ -105,7 +106,7 @@ export function MempoolPage() {
           {/* breadcrumb + fit/100% zoom toggle on the LEFT (the fixed .mp-switcher
               occupies the top-right, so the toggle must not live in the right group). */}
           <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-            <Crumbs items={["xmr.irish", "mempool", "explorer", meta.label]} />
+            <Crumbs path={`${R.LIVE_MEMPOOL}?v=${active}`} />
             {meta.fit ? (
               <div className="mp-zoom" role="group" aria-label="Zoom">
                 {(["fit", "100"] as const).map((z) => (

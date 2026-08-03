@@ -42,6 +42,10 @@
 // THRESHOLD: if this gate reports INCONCLUSIVE on 3 consecutive CI runs, it is
 // not a gate any more, it is a comment. Fix the runner or delete the budget.
 import { makeReporter, launchChromium, BASE, SLOW_4G, CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus } from './verify-lib.mjs';
+/* `RT` because `R` in this file is the reporter. Same alias verify-cls.mjs
+ * uses, and for the same reason: keys that are string literals drift away
+ * from the route table silently — see the note above ROUTES below. */
+import { R as RT } from './scripts/routes.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -75,10 +79,10 @@ const HARNESS = `serve-dist(uncompressed, 501 /api) · mocked feed @${MOCK_LATEN
  */
 const BUDGETS = {
   //            budget      measured (median of 8, sandbox)
-  '/':         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
-  '/mempool':  { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
-  '/markets':  { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
-  '/simulate': { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
+  [RT.HOME]:         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
+  [RT.LIVE_MEMPOOL]: { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
+  [RT.LIVE_MARKETS]: { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
+  [RT.LEARN_SIM]:    { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
 };
 
 /* /simulate is NEW in v6.1.5 PR B, and its budget is deliberately loose in a
@@ -115,16 +119,80 @@ const CPU_INCONCLUSIVE_RATIO = 1.6;
 
 const ROUTES = Object.keys(BUDGETS);
 
+
 /** Interactions per route. Must NOT navigate — a navigation resets every
  *  observer. A missing selector is R.skip with the selector named, never a
  *  silently recorded zero. */
 const INTERACTIONS = {
-  '/': ['button[aria-label="Open menu"]', 'button[aria-label="Close menu"]'],
-  '/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
-  '/markets': ['button.proto-btn[aria-pressed]'],
+  /* SELF-PAIRING IS NOT THE RULE — "stays clickable while active" is.
+   *
+   * The line below self-pairs `.mp-switcher__trigger` and works, because that
+   * trigger is a TOGGLE that remains clickable when open: click 1 opens, click
+   * 2 closes, both hit the same live element. `/` used to self-pair the same
+   * way with the drawer's Open/Close buttons — two DIFFERENT elements.
+   *
+   * v6.1.6 deleted that drawer, so `button[aria-label="Open menu"]` matched
+   * nothing and this probe SKIPPED. Repointing it at the ⌘K trigger while
+   * KEEPING the pair shape then failed differently: V6Modal mounts
+   * `.v6-modal-veil` across the viewport, so the second click on `.nav-kbd`
+   * lost its actionability check and skipped again.
+   *
+   * So: a self-paired selector is valid only for a toggle that stays clickable
+   * while active, and breaks for anything that mounts an overlay. The map
+   * cannot express that distinction, which is why it is written here.
+   *
+   * `.v6-modal-veil` is NOT the fix for the second slot either. Its handler is
+   * `if (open && e.target === e.currentTarget) onClose()` — backdrop-close
+   * fires only on a click landing directly on the veil, and Playwright clicks
+   * an element's CENTRE, where `.v6-modal` sits. The click would pass
+   * actionability and simply not close anything: a SILENT failure leaving the
+   * palette open for whatever ran next, which is worse than the loud skip.
+   * There is no close button; the footer says "Esc", and Escape reaches
+   * V6Modal's own document listener by design.
+   *
+   * ONE selector, therefore — the runner iterates whatever length it is given
+   * and '/live/markets' is already a one-element list. The open is also the
+   * interaction worth measuring: the first ⌘K triggers the lazy chunk fetch
+   * plus first render, comfortably the heaviest interaction on this route,
+   * while closing a modal is cheap and measuring it adds nothing.
+   *
+   * MEANING CHANGE, stated rather than slipped in: `/`'s interaction number is
+   * now ONE interaction, not two. It is not comparable to a pre-v6.1.6 figure. */
+  [RT.HOME]: ['.nav-kbd'],
+  [RT.LIVE_MEMPOOL]: ['.mp-switcher__trigger', '.mp-switcher__trigger'],
+  [RT.LIVE_MARKETS]: ['button.proto-btn[aria-pressed]'],
 };
 
 const R = makeReporter('verify-vitals');
+
+/* ── KEY-LEVEL GUARDS, because `ROUTES = Object.keys(BUDGETS)` cannot fail ──
+ * This gate already defends the SELECTOR level — "a missing selector is
+ * R.skip with the selector named, never a silently recorded zero" — and left
+ * the KEY level undefended. Two ways that bit:
+ *
+ *  1. `} else if (INTERACTIONS[route])` further down has no trailing else.
+ *     An INTERACTIONS key that stops matching a BUDGETS key means that
+ *     interaction is never exercised: no ok, no skip, no line in the tally.
+ *     Silent zero coverage — the exact shape verify-cls.mjs was fixed for in
+ *     this same PR, one file away, while this one was repointed with string
+ *     literals and left alone.
+ *  2. The keys are now computed from RT, so a renamed constant propagates.
+ *     A DELETED one does not: `[RT.GONE]` evaluates to the literal key
+ *     "undefined", which would be fetched as a URL, 404, and score well.
+ *
+ * Neither guard needs a browser, so they run before anything is launched. */
+{
+  const bad = ROUTES.filter((r) => !r || r === 'undefined' || !r.startsWith('/'));
+  R.ok(bad.length === 0,
+    `all ${ROUTES.length} budget keys resolve to a real path`,
+    bad.length ? `unresolved: ${JSON.stringify(bad)} — a deleted R.* constant keys the table "undefined"` : '');
+
+  const orphans = Object.keys(INTERACTIONS).filter((r) => !ROUTES.includes(r));
+  R.ok(orphans.length === 0,
+    `every INTERACTIONS key names a measured route (${Object.keys(INTERACTIONS).length} of ${ROUTES.length} routes script an interaction)`,
+    orphans.length ? `orphaned, so never exercised and never reported: ${orphans.join(', ')}` : '');
+  R.info(`routes with no scripted interaction (by design): ${ROUTES.filter((r) => !INTERACTIONS[r]).join(', ') || 'none'}`);
+}
 
 /* ── the mocked feed ──────────────────────────────────────────────────────
  * Unmocked, serve-dist answers /api/* with 501 and every route renders its

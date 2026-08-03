@@ -8,6 +8,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import { fmtN } from "@/data/types";
 import { assertNever, CHAIN_CHROME_KEYS, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState, type ChromeState } from "@/design/useOnline";
+import { R } from "../../scripts/routes.mjs";
 
 /** Exhaustive over ChromeState. The degraded words come from the shared map so
  *  this strip stops being a fourth dialect of the same three facts; only the
@@ -40,7 +41,7 @@ export function Footer() {
       <span>RING 16</span>
       <span>FORK {data.majorVersion ? "v" + data.majorVersion : "—"} · FCMP++ Q3</span>
       <span style={{ marginLeft: "auto" }}>UTC {t.toISOString().slice(11, 19)}</span>
-      <span><Link to="/sources" style={{ color: "inherit", textDecoration: "none" }}>SOURCES</Link></span>
+      <span><Link to={R.ABOUT_SOURCES} style={{ color: "inherit", textDecoration: "none" }}>SOURCES</Link></span>
       <span>©2026 XMR.IRISH</span>
     </div>
   );

@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 
 import { DataProvider } from "@/data/DataContext";
 import { VisualProvider } from "@/design/VisualContext";
@@ -15,6 +15,13 @@ import { RootBoundary } from "@/design/RootBoundary";
 import { markChunkResolved } from "@/design/useViewTransitionNavigate";
 import { NavTransitions } from "@/routes/NavTransitions";
 import { RouteAnnouncer } from "@/routes/RouteAnnouncer";
+import { RedirectTo } from "@/routes/RedirectTo";
+// R (named route constants) + REDIRECTS (the 12 old->new pairs) are the
+// single authority scripts/routes.mjs declares — see that file's header.
+// Every <Route path> below reads through R rather than restating a path
+// literal, and the 12 <RedirectTo> routes are GENERATED from REDIRECTS
+// (below the real route table) rather than hand-typed one at a time.
+import { R, REDIRECTS } from "../scripts/routes.mjs";
 // HomePage stays EAGER. It is the LCP route — lazy-loading it would add a
 // round trip to the exact metric this pass exists to improve.
 import { HomePage } from "@/pages/HomePage";
@@ -33,18 +40,20 @@ import { HomePage } from "@/pages/HomePage";
 // whether it is safe to view-transition into (chunk already resolved) or
 // must fall back to a plain navigate (first visit — see that hook's header
 // for why a naive transition here would morph into the Suspense fallback).
-const MempoolPage      = React.lazy(() => import("@/pages/MempoolPage").then((m) => { markChunkResolved("mempool"); return { default: m.MempoolPage }; }));
-const MempoolTxPage    = React.lazy(() => import("@/pages/MempoolTxPage").then((m) => { markChunkResolved("mempool-tx"); return { default: m.MempoolTxPage }; }));
-const MarketsPage      = React.lazy(() => import("@/pages/MarketsPage").then((m) => { markChunkResolved("markets"); return { default: m.MarketsPage }; }));
-const NetworkPage      = React.lazy(() => import("@/pages/NetworkPage").then((m) => { markChunkResolved("network"); return { default: m.NetworkPage }; }));
-const EducationPage    = React.lazy(() => import("@/pages/EducationPage").then((m) => { markChunkResolved("education"); return { default: m.EducationPage }; }));
-const MoneroPage       = React.lazy(() => import("@/pages/MoneroPage").then((m) => { markChunkResolved("monero"); return { default: m.MoneroPage }; }));
-const FuturePage       = React.lazy(() => import("@/pages/FuturePage").then((m) => { markChunkResolved("future"); return { default: m.FuturePage }; }));
-const TrustedPeersPage = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => { markChunkResolved("peers"); return { default: m.TrustedPeersPage }; }));
-const NodePage         = React.lazy(() => import("@/pages/NodePage").then((m) => { markChunkResolved("node"); return { default: m.NodePage }; }));
-const SourcesPage      = React.lazy(() => import("@/pages/SourcesPage").then((m) => { markChunkResolved("sources"); return { default: m.SourcesPage }; }));
-const NotFoundPage     = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
-const SimulatePage     = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
+const MempoolPage        = React.lazy(() => import("@/pages/MempoolPage").then((m) => { markChunkResolved("mempool"); return { default: m.MempoolPage }; }));
+const MempoolTxPage      = React.lazy(() => import("@/pages/MempoolTxPage").then((m) => { markChunkResolved("mempool-tx"); return { default: m.MempoolTxPage }; }));
+const MarketsPage        = React.lazy(() => import("@/pages/MarketsPage").then((m) => { markChunkResolved("markets"); return { default: m.MarketsPage }; }));
+const MarketsThesisPage  = React.lazy(() => import("@/pages/markets/MarketsThesisPage").then((m) => { markChunkResolved("markets-thesis"); return { default: m.MarketsThesisPage }; }));
+const NetworkPage        = React.lazy(() => import("@/pages/NetworkPage").then((m) => { markChunkResolved("network"); return { default: m.NetworkPage }; }));
+const EducationPage      = React.lazy(() => import("@/pages/EducationPage").then((m) => { markChunkResolved("education"); return { default: m.EducationPage }; }));
+const MoneroPage         = React.lazy(() => import("@/pages/MoneroPage").then((m) => { markChunkResolved("monero"); return { default: m.MoneroPage }; }));
+const FuturePage         = React.lazy(() => import("@/pages/FuturePage").then((m) => { markChunkResolved("future"); return { default: m.FuturePage }; }));
+const OutlookPage        = React.lazy(() => import("@/pages/future/OutlookPage").then((m) => { markChunkResolved("outlook"); return { default: m.OutlookPage }; }));
+const TrustedPeersPage   = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => { markChunkResolved("peers"); return { default: m.TrustedPeersPage }; }));
+const NodePage           = React.lazy(() => import("@/pages/NodePage").then((m) => { markChunkResolved("node"); return { default: m.NodePage }; }));
+const SourcesPage        = React.lazy(() => import("@/pages/SourcesPage").then((m) => { markChunkResolved("sources"); return { default: m.SourcesPage }; }));
+const NotFoundPage       = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
+const SimulatePage       = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
 
 export interface AppProps {
   /** Swap in your own MoneroLive hook from the host runtime. */
@@ -98,38 +107,59 @@ export function App({ useFeed }: AppProps = {}) {
             If you add a reserve here, measure first. */}
         <React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading…</div>}>
         <Routes>
-          <Route path="/"          element={<HomePage />} />
-          <Route path="/mempool"   element={<MempoolPage />} />
-          <Route path="/mempool/tx/:txid" element={<MempoolTxPage />} />
-          <Route path="/markets"   element={<MarketsPage />} />
-          <Route path="/network"   element={<NetworkPage />} />
-          <Route path="/education" element={<EducationPage />} />
-          <Route path="/education/:tab" element={<EducationPage />} />
-          <Route path="/monero"    element={<MoneroPage />} />
-          {/* v6.0.1: the static Future tab was retired in favour of the live
-              /future page. Static segments outrank the :tab param in v6, so this
-              wins over /monero/:tab regardless of order. */}
-          <Route path="/monero/future" element={<Navigate to="/future" replace />} />
-          <Route path="/monero/:tab" element={<MoneroPage />} />
-          <Route path="/future"    element={<FuturePage />} />
-          <Route path="/peers"     element={<TrustedPeersPage />} />
+          {/* ── Live ─────────────────────────────────────────────── */}
+          <Route path={R.HOME}                            element={<HomePage />} />
+          <Route path={R.LIVE_MEMPOOL}                     element={<MempoolPage />} />
+          <Route path={`${R.LIVE_MEMPOOL}/tx/:txid`}       element={<MempoolTxPage />} />
+          <Route path={R.LIVE_MARKETS}                     element={<MarketsPage />} />
+          <Route path={R.MARKETS_THESIS}                   element={<MarketsThesisPage />} />
+          <Route path={R.LIVE_NETWORK}                     element={<NetworkPage />} />
+
+          {/* ── Learn ────────────────────────────────────────────── */}
+          <Route path={R.LEARN}                            element={<EducationPage />} />
+          <Route path={`${R.LEARN}/:tab`}                  element={<EducationPage />} />
           {/* v6.0.7: the lazy chunk needs an error boundary, not just Suspense.
               Suspense handles "still loading"; it does NOT handle "the fetch
               failed" — that throw propagated uncaught and blanked the whole app.
               A dropped chunk is a routine Tor outcome, so this degrades to an
               inline message and leaves every other route working. */}
-          <Route path="/simulate"  element={
+          <Route path={R.LEARN_SIM}  element={
             <RootBoundary inline={() => (
               <div className="mono dim" style={{ padding: 40 }}>
                 the simulators failed to load — this is usually a blocked or dropped
-                request. <a href="/simulate">Retry</a>, or carry on with the rest of the site.
+                request. <a href={R.LEARN_SIM}>Retry</a>, or carry on with the rest of the site.
               </div>
             )}>
               <React.Suspense fallback={<div className="mono dim" style={{ padding: 40 }}>loading simulators…</div>}><SimulatePage /></React.Suspense>
             </RootBoundary>
           } />
-          <Route path="/node"      element={<NodePage />} />
-          <Route path="/sources"   element={<SourcesPage />} />
+
+          {/* ── Monero ───────────────────────────────────────────── */}
+          <Route path={R.MONERO}                           element={<MoneroPage />} />
+          <Route path={`${R.MONERO}/:tab`}                 element={<MoneroPage />} />
+
+          {/* ── Future ───────────────────────────────────────────── */}
+          <Route path={R.FUTURE}                           element={<FuturePage />} />
+          <Route path={R.FUTURE_OUTLOOK}                   element={<OutlookPage />} />
+
+          {/* ── Operate ──────────────────────────────────────────── */}
+          <Route path={R.OPERATE_NODE}                     element={<NodePage />} />
+
+          {/* ── About ────────────────────────────────────────────── */}
+          <Route path={R.ABOUT_PEERS}                      element={<TrustedPeersPage />} />
+          <Route path={R.ABOUT_SOURCES}                    element={<SourcesPage />} />
+
+          {/* ── Redirects · the 12 old paths, generated from REDIRECTS ──
+              (scripts/routes.mjs — vercel.json's server 301s mirrored 1:1).
+              Static segments outrank a `:param` in react-router v6 by
+              specificity, not declaration order, so e.g. /monero/future
+              (in this list) wins over /monero/:tab (above) regardless of
+              where either is written. RedirectTo owns :param substitution
+              and search/hash preservation — see that file's header. */}
+          {REDIRECTS.map(({ from, to }) => (
+            <Route key={from} path={from} element={<RedirectTo to={to} />} />
+          ))}
+
           <Route path="*"          element={<NotFoundPage />} />
         </Routes>
         </React.Suspense>

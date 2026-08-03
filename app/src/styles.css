@@ -471,6 +471,16 @@ header > div > h1.serif {
 
 /* ── top bar ─────────────────────────────────────────────────────── */
 
+/* D1207 container root. NOT `.topbar` itself: `@container` measures a
+   container's CONTENT box, and `.topbar`'s own 24px/16px horizontal padding
+   would then shrink every threshold below by that much (900/780/720 would
+   silently mean ~852/732/~688, and the amount changes again at 768px where
+   the padding itself does) — a padding-free wrapper keeps 900/780/720
+   meaning what they say. Zero other styling: a plain block div contributes
+   no height/margin of its own, so `.art-stage`'s flex column is unaffected
+   and `.topbar`'s box is unchanged. */
+.nav-shell { container-type: inline-size; container-name: navshell; }
+
 .topbar {
   display: grid;
   grid-template-columns: 220px 1fr auto;
@@ -497,10 +507,108 @@ header > div > h1.serif {
 .brand-mark::before { content: "☘"; color: var(--tk-accent); font-size: 14px; line-height: 1; filter: drop-shadow(0 0 4px var(--tk-accent)); }
 .brand b { color: var(--tk-accent); text-shadow: var(--glow-1); font-weight: 500; }
 
-.topnav { display: flex; gap: 24px; align-items: center; font-family: var(--f-mono); font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; }
-.topnav a { color: var(--ink-60); text-decoration: none; padding: 6px 0; border-bottom: 1px solid transparent; transition: var(--d-2) var(--e-standard); /* D0651: 0.15s exact → --d-2 */ }
-.topnav a.on { color: var(--tk-accent); border-bottom-color: var(--tk-accent); text-shadow: var(--glow-1); }
-.topnav a:hover { color: var(--ink-100); }
+/* ── D2/P5 nav: 6-section IA, hover-intent dropdown, morphing pill ──── */
+.nav-main { position: relative; display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.nav-main::-webkit-scrollbar { display: none; }
+
+/* JS-off navigation. Renders ONLY inside <noscript>, so it costs a scripted
+   visitor nothing and cannot interact with the container queries below. Six
+   <button> triggers plus a dropdown that is absent while closed left 6 of the
+   13 prerendered routes with no anchor anywhere when scripting is disabled;
+   this is what reaches them. See NavTop.tsx's <noscript> block. */
+.nav-noscript { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 16px; border-top: 1px solid var(--line-d); font-family: var(--f-mono); font-size: 12px; }
+.nav-noscript a { color: var(--ink-60); text-decoration: none; }
+.nav-noscript a:hover { color: var(--ui-accent-text); }
+/* DEFAULT HIDDEN, revealed only on a proven-degraded boot.
+   It was the other way round for one commit and that cost 0.1769 CLS on every
+   route: the block paints in the prerendered HTML, then main.tsx hides it and
+   everything below jumps up (measured Δy-161, "node removed"). A fallback that
+   degrades the healthy path is not a fallback.
+   Presence in the DOM is what verify-degraded §B1 asserts — it reads
+   querySelectorAll('#root a'), which returns display:none anchors — so hiding
+   by default costs nothing there. Two things reveal it: <noscript> in
+   index.html for scripting-off, and the boot watchdog for a dead module. */
+.nav-noscript { display: none; }
+html[data-boot="dead"] .nav-noscript { display: flex; }
+.navitem {
+  position: relative; flex: none;
+  font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.11em; text-transform: uppercase;
+  color: var(--ink-60); background: none; border: 1px solid transparent; border-radius: 2px;
+  padding: 9px 13px; cursor: pointer; white-space: nowrap;
+  transition: color var(--d-2) var(--e-standard), border-color var(--d-2) var(--e-standard);
+}
+.navitem:hover, .navitem[aria-expanded="true"] { color: var(--ui-accent-text); border-color: var(--line); }
+.navitem[aria-current] { color: var(--ui-accent-text); text-shadow: var(--glow-v-soft); }
+.navitem .cnt { color: var(--ink-20); margin-left: 6px; letter-spacing: 0; }
+/* D0235 morphing pill — the active marker slides instead of jumping. Width
+   goes to 0 (see NavTop.tsx recomputePill) when its button is missing or
+   `display: none`, so it never strands at a stale offset under a container
+   query that hides `.navitem`. */
+#pill {
+  position: absolute; left: 0; bottom: -1px; height: 2px; width: 0;
+  background: var(--ui-accent); border-radius: 2px; box-shadow: var(--glow-v);
+  pointer-events: none;
+  transition: transform var(--d-3) var(--e-expressive), width var(--d-3) var(--e-expressive);
+}
+
+/* ── dropdown panel (D1542 hover intent, mechanics in NavTop.tsx) ──── */
+.dd {
+  position: absolute; top: 100%; z-index: 55;
+  min-width: 290px; max-width: min(720px, 92cqi);
+  background: var(--surface-ground);
+  border: 1px solid var(--line); border-top-color: transparent;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+  padding: 12px;
+  opacity: 0; visibility: hidden; transform: translateY(-6px); pointer-events: none;
+  transition: opacity var(--d-2) var(--e-standard), transform var(--d-2) var(--e-decel), visibility var(--d-2);
+}
+.dd.on { opacity: 1; visibility: visible; transform: none; pointer-events: auto; }
+.dd-grid { display: grid; gap: 12px; }
+.dd-col h4 {
+  margin: 0 0 7px; font: 12px var(--f-mono); letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-40); font-weight: 400; border-bottom: 1px solid var(--ink-10); padding-bottom: 5px;
+}
+.dd a {
+  display: flex; align-items: baseline; gap: 8px; padding: 5px 7px; border-radius: 2px;
+  text-decoration: none; color: var(--ink-60); font-size: 13px;
+  transition: background var(--d-1) var(--e-standard), color var(--d-1) var(--e-standard);
+}
+.dd a:hover, .dd a:focus-visible { background: color-mix(in srgb, var(--ui-accent) 10%, transparent); color: var(--ui-accent-text); }
+.dd a small { margin-left: auto; font: 12px var(--f-mono); color: var(--ink-20); }
+.dd-foot {
+  margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--ink-10);
+  font: 12px/1.5 var(--f-mono); color: var(--ink-20);
+  /* display:flex is new (was a single plain-text child) — added so the
+     restored "⌘K to type instead" hint can sit at the end of the row via
+     margin-left:auto on .dd-foot-kbd below. A flex row with one child (every
+     render before this addition) is visually identical to a block, so this
+     is backward compatible with the rule's only prior consumer. */
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.dd-foot-kbd { margin-left: auto; white-space: nowrap; flex: none; }
+
+/* ── ⌘K trigger chip · layout/NavTop.tsx ─────────────────────────────
+   A plain `.nav-main` child, deliberately NOT `.navitem` — the D1207
+   container query below (`@container navshell (max-width: 720px)`) hides
+   `.navitem`/`#pill`/`.dd` and shows `.tabbar` instead, but names none of
+   THIS class, so the trigger stays reachable at every container width with
+   no rule of its own needed here. */
+.nav-kbd {
+  flex: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 10px;
+  font-family: var(--f-mono); font-size: var(--fs-label);
+  letter-spacing: 0.04em;
+  color: var(--ink-40);
+  background: none;
+  border: 1px solid var(--line-d);
+  border-radius: 3px;
+  padding: 5px 8px;
+  cursor: pointer;
+  transition: color var(--d-2) var(--e-standard), border-color var(--d-2) var(--e-standard);
+}
+.nav-kbd:hover { color: var(--ui-accent-text); border-color: var(--line); }
 
 .ticker-strip { display: flex; gap: 18px; align-items: center; font-family: var(--f-mono); font-size: 11px; }
 .ticker-strip .tk { display: flex; gap: 6px; align-items: baseline; }
@@ -1070,7 +1178,12 @@ header > div > h1.serif {
 .mp-zoom__btn + .mp-zoom__btn { border-left: 1px solid var(--ink-10); }
 .mp-zoom__btn.is-on { background: rgba(255,122,26,0.08); color: var(--tk-accent); box-shadow: var(--glow-1); }
 .mp-switcher {
-  position: fixed; top: 60px; right: 16px; z-index: 50;
+  /* Re-measured for the P5 nav restructure (was 60px against an 88px-tall
+     11-item topbar — already stale before this change): the 6-item topbar
+     renders 61px at desktop widths. Still the brittle hardcoded coupling
+     `.shell`'s own comment above warns about, just no longer a further-drifted
+     one. */
+  position: fixed; top: 61px; right: 16px; z-index: 50;
   padding: 10px;
   background: rgba(5,5,5,0.86);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
@@ -1136,8 +1249,45 @@ header > div > h1.serif {
 @starting-style {
   .mp-switcher__list.is-open { opacity: 0; transform: translateY(-4px); }
 }
-/* navtop toggle is mobile-only — hidden on desktop (revealed inside the media query) */
-.navtop-toggle { display: none; }
+/* ── D0212 bottom tab bar — container-driven, not media-query-driven ──
+   `.tabbar-anchor` is BOTH `position: fixed` (viewport-pinned) and the
+   `container-type` root for this instance of the `navshell` container name
+   (a second instance alongside `.topbar`'s — see layout/BottomTabBar.tsx's
+   header for why one element can't be both). `.tabbar` itself is a plain
+   in-flow descendant, toggled by the same `@container navshell` block below
+   that hides `.navitem`. */
+.tabbar-anchor {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 90; pointer-events: none;
+  container-type: inline-size; container-name: navshell;
+}
+.tabbar {
+  display: none;
+  height: 60px;
+  border-top: 1px solid var(--line);
+  background: rgba(5, 5, 5, 0.94);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  padding-bottom: env(safe-area-inset-bottom);
+  pointer-events: auto;
+}
+.tabbar-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  color: var(--ink-40); text-decoration: none;
+  font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+  transition: color var(--d-2) var(--e-standard);
+}
+.tabbar-item svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 1.6; }
+.tabbar-item[aria-current], .tabbar-item:active { color: var(--ui-accent-text); }
+
+/* D1207 — container queries, not viewport media queries, drive the nav's
+   own responsive story (both `navshell` instances share these rules). */
+@container navshell (max-width: 900px) {
+  .navitem .cnt { display: none; }
+}
+@container navshell (max-width: 720px) {
+  .navitem, #pill, .dd { display: none; }
+  .tabbar { display: flex; }
+}
+
 /* desktop view switcher: a compact collapsible pill (mobile @media bumps it to a
    44px touch target). The list stays collapsed until the trigger toggles .is-open. */
 .mp-switcher__trigger {
@@ -1568,6 +1718,74 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
 .v6-x:hover { border-color: var(--tk-accent); color: var(--tk-accent); }
 .v6-x:focus-visible { outline: none; border-color: var(--tk-accent); color: var(--tk-accent); box-shadow: var(--glow-1); }
 
+/* ── ⌘K command palette · nav/CommandPalette.tsx ─────────────────────
+   Built on the same .v6-modal-veil/.v6-modal shell every future dialog
+   uses (see V6Modal's own header) — these rules style the CONTENT this
+   component renders inside that shell, plus one narrow `:has()` override
+   that resizes the shared `.v6-modal` box for THIS content specifically,
+   without editing the base rule other consumers (EcoPopup, ProtoPopup,
+   TrustedPeersPage's brief) rely on at their own, much wider, 1180px
+   measure. Additive and self-contained: an engine without `:has()` support
+   just keeps the base 1180px box — bigger than intended, never broken;
+   Chrome/Firefox/Safari have all shipped it since well before this site's
+   documented Firefox-ESR floor. */
+.v6-modal:has(.cmdk-pal) { width: min(660px, 92vw); max-height: 70vh; overflow: hidden; }
+.cmdk-pal { display: flex; flex-direction: column; height: 100%; max-height: 70vh; }
+
+.cmdk-in { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--rule); flex: none; }
+.cmdk-search-ic { width: 15px; height: 15px; color: var(--ink-40); flex: none; }
+.cmdk-in input {
+  flex: 1; min-width: 0;
+  background: none; border: 0; outline: 0;
+  color: var(--ink-100);
+  font-family: var(--f-mono); font-size: var(--fs-mono);
+}
+.cmdk-in input::placeholder { color: var(--ink-20); }
+.cmdk-in kbd {
+  flex: none;
+  font-family: var(--f-mono); font-size: var(--fs-label);
+  color: var(--ink-40);
+  border: 1px solid var(--line-d); border-radius: 3px;
+  padding: 3px 6px;
+}
+
+.cmdk-list { overflow-y: auto; padding: 6px; flex: 1 1 auto; min-height: 0; }
+.cmdk-grp {
+  font-family: var(--f-mono); font-size: var(--fs-label);
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--ink-20);
+  padding: 9px 10px 5px;
+}
+.cmdk-row {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  padding: 8px 10px; border-radius: 3px;
+  border: 0; background: none;
+  cursor: pointer; text-decoration: none; text-align: left;
+  font-family: var(--f-mono);
+  transition: background var(--d-1) var(--e-standard);
+}
+.cmdk-row.is-sel { background: color-mix(in srgb, var(--ui-accent) 14%, transparent); }
+.cmdk-row .cmdk-ic { width: 18px; flex: none; text-align: center; color: var(--ink-40); font-size: var(--fs-label); }
+.cmdk-row .cmdk-lb { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-mono); color: var(--ink-80); }
+.cmdk-row .cmdk-hit { background: none; color: var(--ui-accent-text); font-weight: 600; }
+.cmdk-row .cmdk-note { flex: none; font-size: var(--fs-label); color: var(--y-50); }
+.cmdk-row .cmdk-pt {
+  flex: none; margin-left: auto; max-width: 34%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: var(--fs-label); color: var(--ink-20);
+}
+.cmdk-row.is-sel .cmdk-pt { color: var(--ink-40); }
+
+.cmdk-empty { padding: 26px 14px; text-align: center; font-family: var(--f-mono); font-size: var(--fs-label); color: var(--ink-40); }
+
+.cmdk-foot {
+  display: flex; gap: 14px; flex-wrap: wrap; flex: none;
+  padding: 9px 14px; border-top: 1px solid var(--rule);
+  font-family: var(--f-mono); font-size: var(--fs-label); color: var(--ink-20);
+}
+.cmdk-foot b { color: var(--ink-40); font-weight: 400; }
+.cmdk-foot-count { margin-left: auto; }
+
 /* ── roadmap rail (five milestone stops) ──────────────────────── */
 .v6-rail { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
 /* descendant-scoped — a bare .stop would be far too generic to claim */
@@ -1917,60 +2135,6 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
   a, button, [role="button"], input, select, textarea {
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-  }
-
-  /* ── NavTop: hamburger + slide-in drawer ──────────────────────── */
-  .navtop-toggle {
-    display: inline-flex;
-    align-items: center; justify-content: center;
-    min-width: 44px; min-height: 44px;
-    appearance: none; cursor: pointer;
-    background: transparent;
-    border: 1px solid var(--ink-20); border-radius: 4px;
-    color: var(--tk-accent);
-    font-family: var(--f-mono); font-size: 18px; line-height: 1;
-    /* Above the drawer, or the drawer covers its own close button. `.topnav`
-       below is `position: fixed; right: 0; width: min(78vw, 320px)` at
-       `z-index: 200`, which at 390px spans x86-390 — and this toggle sits at
-       x330-374, entirely inside it, with no z-index of its own. So when the
-       drawer opened it painted over the ✕ at 97% opacity: invisible, and
-       `elementFromPoint` at the button's centre returned the NAV, so a real tap
-       hit the drawer instead of the button.
-
-       On a pointer device Escape still closed it (NavTop.tsx:45), which is why
-       this survived — but this rule only applies at <=768px, where there is no
-       Escape key and no backdrop. A touch user who opened the drawer and did
-       not want to navigate had no way to close it.
-
-       Found by verify-vitals: `/`'s second scripted interaction was failing its
-       actionability check and reporting SKIPPED, while the row still printed a
-       worstInt from the first click. A skip is not a pass. */
-    position: relative; z-index: 201;
-  }
-  .topnav {
-    position: fixed; top: 0; right: 0; z-index: 200;
-    width: min(78vw, 320px); height: 100dvh;
-    flex-direction: column; align-items: stretch; gap: 4px;
-    padding: calc(16px + env(safe-area-inset-top)) 16px
-             calc(16px + env(safe-area-inset-bottom)) 16px;
-    background: rgba(5,5,5,0.97);
-    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
-    border-left: 1px solid var(--rule);
-    transform: translateX(100%);
-    /* D0655: --e-standard → --e-spring. A drawer sliding in from the edge is
-       the canonical functional movement — it exists to say WHERE the nav came
-       from — so it takes the no-overshoot default. Overshoot here would push
-       the panel past the viewport edge and expose the page behind it for a
-       frame, which is the one thing a full-height 100dvh drawer must not do. */
-    transition: transform var(--d-2) var(--e-spring); /* D0651: 0.2s → --d-2 (closer to 150ms than 300ms) */
-    overflow-y: auto;
-  }
-  .topnav.is-open { transform: translateX(0); }
-  .topnav a {
-    min-height: 44px;
-    display: flex; align-items: center;
-    padding: 6px 4px;
-    border-bottom: 1px solid var(--ink-10);
   }
 
   /* ── Mempool switcher → inline collapsible dropdown in the header ─ */
@@ -2390,5 +2554,19 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      trigger stays reachable. `> .tk` scoped like styles-legibility.css:133
      does — a bare `.tk` would also catch the trigger's chrome. */
   .ticker-strip > .tk { display: none; }
+}
+
+/* D0212 — page content needs clearance from the fixed bottom tab bar. This
+   is the one deliberate plain `@media` in the nav system (D1207 otherwise
+   uses `@container navshell` throughout, see above): `.main` is a sibling of
+   `.topbar`/`.tabbar-anchor` under `.art-stage`, not a descendant of either
+   `navshell` container instance, so no container query rooted at either one
+   can ever reach it. Placed AFTER the small-phone band above (not beside the
+   768 block it conceptually belongs with) for the same reason that band
+   gives for its own position: `.main`'s shorthand `padding` at ≤479px would
+   otherwise win back over this longhand `padding-bottom` at equal
+   specificity, by source order alone. */
+@media (max-width: 720px) {
+  .main, .main--fluid { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
 }
 }

@@ -119,7 +119,7 @@ console.log('engine:', engine);
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(20000);
 
   ok(peak <= ROUND_SIZE,
@@ -146,7 +146,7 @@ console.log('engine:', engine);
   // test-only override to shipping code for a scenario that runs once.
   await p.route('**/api/**', async () => { await sleep(120000); });
 
-  await p.goto(base + '/network', { waitUntil: 'load' }).catch(() => {});
+  await p.goto(base + '/live/network', { waitUntil: 'load' }).catch(() => {});
   await p.waitForTimeout(26000);
 
   ok(aborted.length > 0, `2: a hung request is aborted rather than wedging the tier (${aborted.length} aborted)`);
@@ -164,7 +164,7 @@ console.log('engine:', engine);
     await route.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
   });
 
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   count = 0; // measure the steady state, not the boot burst
   await p.waitForTimeout(30000);
 
@@ -190,7 +190,7 @@ console.log('engine:', engine);
     return route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(12000);
 
   // One boot round is expected; HIDDEN_MS (60s) means no second round lands.

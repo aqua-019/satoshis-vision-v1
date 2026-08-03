@@ -109,7 +109,12 @@ const routes = await p.evaluate(() =>
   [...document.querySelectorAll('#root a')]
     .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
     .filter(Boolean));
-for (const r of ['/', '/mempool', '/markets', '/network', '/education', '/monero', '/future', '/peers', '/node', '/sources']) {
+// The 13-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
+// no import (see verify-lib.mjs's ROUTES for the same constraint reasoned
+// out in full).
+for (const r of ['/', '/live/mempool', '/live/markets', '/live/markets/thesis', '/live/network',
+                  '/monero', '/learn', '/learn/sim', '/future', '/future/outlook',
+                  '/operate/node', '/about/peers', '/about/sources']) {
   ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }
 
@@ -119,7 +124,7 @@ for (const r of ['/', '/mempool', '/markets', '/network', '/education', '/monero
 // whole site collapsed to one page — the links navigated and changed nothing.
 // Distinct, substantial bodies are the proof that is fixed.
 const bodies = new Map();
-for (const r of ['/education', '/network', '/sources', '/monero', '/future']) {
+for (const r of ['/learn', '/live/network', '/about/sources', '/monero', '/future']) {
   await p.goto(base + r, { waitUntil: 'load' });
   const text = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
   bodies.set(r, text.replace(/\s+/g, ' ').trim());

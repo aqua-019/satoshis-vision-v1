@@ -116,6 +116,7 @@ export function RouteAnnouncer(): React.ReactElement {
         return;
       }
       if (++frames < READ_FRAMES) {
+        // D0699-EXEMPT: bounded retry for the new heading, stops after READ_FRAMES
         raf = requestAnimationFrame(attempt);
         return;
       }

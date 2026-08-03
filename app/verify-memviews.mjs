@@ -140,7 +140,7 @@ const watchErrors = (p, label) => {
 };
 
 const open = async (p, id) => {
-  await p.goto(`${base}/mempool?v=${id}`, { waitUntil: 'load' });
+  await p.goto(`${base}/live/mempool?v=${id}`, { waitUntil: 'load' });
   await p.waitForSelector(`.mem-view[data-mem-view="${id}"]`, { timeout: 9000 });
   await p.waitForFunction(
     () => document.querySelector('[data-memstat-value="txCount"]')?.textContent?.trim() !== '—',
@@ -168,7 +168,7 @@ const readStrip = (p) => p.evaluate(() =>
   for (const id of VIEWS) {
     let mounted = true;
     try { await open(p, id); } catch { mounted = false; }
-    ok(mounted, `item 12: /mempool?v=${id} resolves and mounts .mem-view[data-mem-view="${id}"]`);
+    ok(mounted, `item 12: /live/mempool?v=${id} resolves and mounts .mem-view[data-mem-view="${id}"]`);
     if (mounted) strips[id] = await readStrip(p);
   }
 

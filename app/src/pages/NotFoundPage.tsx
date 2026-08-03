@@ -12,7 +12,13 @@ export function NotFoundPage() {
     <PageShell width="standard" bg={{ intensity: "calm" }}>
       {/* .page-shell is align-items:stretch, so the 404's centring lives on an
           inner wrapper rather than as a one-off prop on the shared container. */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 18, alignItems: "center", textAlign: "center" }}>
+      {/* data-route-404 is the MACHINE-READABLE "this is the fallback" marker.
+          verify-palette.mjs's "all 70 destinations resolve" sweep used to
+          discriminate a 404 by matching the h1's copy — so rewording this
+          page's headline would have made every destination "resolve"
+          unconditionally, turning the sweep's central claim into a tautology.
+          Copy is not an interface; this attribute is. */}
+      <div data-route-404="" style={{ display: "flex", flexDirection: "column", gap: 18, alignItems: "center", textAlign: "center" }}>
         <div className="mono acc glow" style={{ fontSize: 96, letterSpacing: "0.05em" }}>404</div>
         {/* This line was already the page's heading in everything but name, so
             it becomes the real <h1> rather than growing an .sr-only twin.

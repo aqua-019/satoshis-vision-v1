@@ -148,19 +148,26 @@ function staticClosure(fileName) {
  * the repo's designated anti-drift source (prerender.mjs and gen-sitemap.mjs
  * already consume it), so a new route inherits a budget instead of escaping
  * one.
+ *
+ * Nav restructure (13-route IA): 8 old top-level routes renamed in place to
+ * their new paths, plus two new entries — `/live/markets/thesis` and
+ * `/future/outlook` — for the two pages split out of the old `/monero/:tab`
+ * set. `/monero` and `/future` are otherwise unmoved.
  */
 const PAGE_MODULE = {
   '/': null,
-  '/mempool': 'src/pages/MempoolPage.tsx',
-  '/markets': 'src/pages/MarketsPage.tsx',
-  '/network': 'src/pages/NetworkPage.tsx',
-  '/education': 'src/pages/EducationPage.tsx',
+  '/live/mempool': 'src/pages/MempoolPage.tsx',
+  '/live/markets': 'src/pages/MarketsPage.tsx',
+  '/live/markets/thesis': 'src/pages/markets/MarketsThesisPage.tsx',
+  '/live/network': 'src/pages/NetworkPage.tsx',
+  '/learn': 'src/pages/EducationPage.tsx',
+  '/learn/sim': 'src/pages/SimulatePage.tsx',
   '/monero': 'src/pages/MoneroPage.tsx',
   '/future': 'src/pages/FuturePage.tsx',
-  '/peers': 'src/pages/TrustedPeersPage.tsx',
-  '/simulate': 'src/pages/SimulatePage.tsx',
-  '/node': 'src/pages/NodePage.tsx',
-  '/sources': 'src/pages/SourcesPage.tsx',
+  '/future/outlook': 'src/pages/future/OutlookPage.tsx',
+  '/operate/node': 'src/pages/NodePage.tsx',
+  '/about/peers': 'src/pages/TrustedPeersPage.tsx',
+  '/about/sources': 'src/pages/SourcesPage.tsx',
 };
 
 /** Rollup leaves facadeModuleId null when a chunk is not a pure facade —
@@ -190,7 +197,10 @@ const eagerJs = [...EAGER];
 const BUDGETS = {
   // Entry + vendor + every shared static chunk: what a cold visitor downloads
   // before ANY route renders. Successor to PERF-BASELINE.md:73's 69.70 kB
-  // (v6.0.8); measured 79,919 here, ~15% growth over 15 commits of features.
+  // (v6.0.8); measured 79,919 at 5fca6ba, 80,731 after the 13-route nav
+  // restructure (R/REDIRECTS/RedirectTo added to the eager closure) — kept
+  // at 88,000 rather than re-tightened since the new measurement still
+  // clears it with ~8% headroom.
   eagerJsGz: 88_000,
   // One render-blocking stylesheet. All five sheets are imported from
   // main.tsx:26-30 (203,896 bytes of SOURCE) and Vite minifies them to one
@@ -209,39 +219,48 @@ const BUDGETS = {
 };
 
 /** Per-route cold-landing cost, gzip. Measured; ~10% headroom, rounded.
- *  /simulate gets its own (large) line rather than sharing a ceiling:
+ *  `/learn/sim` gets its own (large) line rather than sharing a ceiling:
  *  views/protocols.tsx statically imports all 16 src/protocols/*.tsx modules
  *  (5,320 lines), so one shared ceiling would either flake there or be
- *  useless everywhere else. */
+ *  useless everywhere else.
+ *
+ * Nav restructure — every number below is a FRESH measurement taken after
+ * the 13-route IA landed (`npm run build && node verify-bundle.mjs
+ * --measure`), not the old table copied across renamed routes: chunking
+ * shifted for several of them. `/live/markets/thesis` and `/future/outlook`
+ * are new lines (split out of the old `/monero/:tab` set, which is why
+ * `/monero` itself measures smaller than before — 2 fewer tab modules). */
 const ROUTE_BUDGET_GZ = {
-  //  route        budget   measured on 5fca6ba (gzip -9)
-  '/':            88_000, //  79,919 — the entry closure itself; HomePage is eager
-  '/mempool':    105_000, //  95,236
-  '/markets':    105_000, //  95,007
-  '/network':    106_000, //  95,610
-  '/education':  107_000, //  97,034
-  '/monero':     121_000, // 109,514 — 9 tab modules (was recorded as 10; the
-                          //           directory holds 9 *Tab.tsx plus MoneroTabs.tsx,
-                          //           the container, and tabs.ts, the metadata)
-  '/future':     106_000, //  96,034
-  '/peers':      100_000, //  90,243
-  '/simulate':    95_000, //  84,934 — v6.1.5 PR B: was 133,676/148,000 when this
-                          //           carried all 16 protocol modules eagerly. The 21
-                          //           simulators are lazy now, so this is the shell plus
-                          //           only the default sim's chunk: -48,742 B gzip, -36%.
-  '/node':        91_000, //  82,493
-  '/sources':     95_000, //  85,770
+  //  route                   budget   measured post-restructure (gzip -9)
+  '/':                       89_000, //  80,731 — the entry closure itself; HomePage is eager
+  '/live/mempool':          107_000, //  96,835
+  '/live/markets':          105_000, //  95,817
+  '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
+  '/live/network':          106_000, //  96,436
+  '/learn':                 108_000, //  97,870
+  '/learn/sim':              94_000, //  85,723 — v6.1.5 PR B: was 133,676/148,000 when this
+                                     //           carried all 16 protocol modules eagerly. The 21
+                                     //           simulators are lazy now, so this is the shell plus
+                                     //           only the default sim's chunk.
+  '/monero':                115_000, // 104,154 — 7 tab modules now (was 9: markets and outlook
+                                     //           moved out to their own top-level routes above)
+  '/future':                107_000, //  96,895
+  '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
+  '/operate/node':           92_000, //  83,305
+  '/about/peers':           100_000, //  91,082
+  '/about/sources':          95_000, //  86,581
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks
- * adds 18. The BAND stays 4 rather than widening with the count — the band
- * exists to catch a chunking-strategy change, and that signal does not get
- * weaker just because there are more chunks. A count budget is not a size
- * budget: 53 chunks is not worse than 35, it is 48,742 fewer gzip bytes on the
- * route that pays for them. What it does cost is request count, which is why
- * the per-route "first load ∪ static closure" row above is the number that
- * actually governs — /simulate went 7 chunks to 6. */
-const CHUNK_COUNT = 53;
+ * adds 18. 53 -> 55 in the nav restructure: two new lazy pages,
+ * MarketsThesisPage and OutlookPage, each get their own chunk (App.tsx's
+ * React.lazy list). The BAND stays 4 rather than widening with the count —
+ * the band exists to catch a chunking-strategy change, and that signal does
+ * not get weaker just because there are more chunks. A count budget is not a
+ * size budget: more chunks is not worse on its own — what it costs is
+ * request count, which is why the per-route "first load ∪ static closure"
+ * row above is the number that actually governs. */
+const CHUNK_COUNT = 55;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

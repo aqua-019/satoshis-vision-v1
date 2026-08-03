@@ -47,6 +47,7 @@
 // unscrollable element would pass forever and prove nothing.
 
 import { BASE, launch, makeReporter, ROUTES } from './verify-lib.mjs';
+import { R as Routes } from './scripts/routes.mjs';
 
 const R = makeReporter('verify-nav');
 const SETTLE = 500;
@@ -176,7 +177,7 @@ R.group(`── §1 · one <h1 id="page-title"> per route · ${ROUTES.length} ro
   R.info(`counts: ${[...counts.entries()].map(([n, c]) => `${c}×${n}`).join(' · ')}`);
 
   // The landmark itself, and the fact that it points at a real element.
-  await open(page, '/mempool');
+  await open(page, Routes.LIVE_MEMPOOL);
   const landmark = await page.evaluate(() => {
     const m = document.getElementById('main');
     if (!m) return null;
@@ -229,17 +230,26 @@ R.group('── §2 · live region + post-navigation focus ───────
   R.ok(region?.text === '', `live region is EMPTY on first load (got ${JSON.stringify(region?.text)})`);
 
   const before = await page.evaluate(() => history.length);
-  await page.click('nav.topnav a[href="/markets"]');
-  await soft(page.waitForFunction(() => location.pathname === '/markets', null, { timeout: 15000 }));
+  // Navigate to Markets using the dropdown nav. Open with arrow key and click the link.
+  const firstNavItem = page.locator('button.navitem').first();
+  await firstNavItem.focus();
+  await page.keyboard.press('ArrowDown'); // Open dropdown
+  await page.waitForTimeout(100);
+  // Click the Markets link in the dropdown panel
+  const marketsLink = page.locator(`#nav-dd-panel a[href="${Routes.LIVE_MARKETS}"]`);
+  await soft(marketsLink.click());
+  await soft(page.waitForFunction(() => location.pathname === Routes.LIVE_MARKETS, null, { timeout: 15000 }));
   await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
 
   const after = await page.evaluate(() => ({
+    pathname: location.pathname,
     active: document.activeElement ? document.activeElement.id : null,
     activeTag: document.activeElement ? document.activeElement.tagName : null,
     text: document.querySelector('div.sr-only[role="status"]')?.textContent ?? '',
     len: history.length,
   }));
+  R.ok(after.pathname === Routes.LIVE_MARKETS, `nav link changed pathname to ${Routes.LIVE_MARKETS} (got ${after.pathname})`);
   R.ok(after.active === 'main', `focus moved to #main after a client-side nav (got ${after.activeTag}#${after.active})`);
   R.ok(after.text.length > 0, 'live region is non-empty after the nav');
   R.ok(/markets/i.test(after.text), `live region names the route: ${JSON.stringify(after.text)}`);
@@ -301,7 +311,7 @@ R.group('── §3b · .mp-canvas-scroll (mempool pan box) at 1440 ────
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
 
   // ?v=classic's canvas has only 355px of overflow here; terminal has ~525.
-  await open(page, '/mempool?v=terminal');
+  await open(page, `${Routes.LIVE_MEMPOOL}?v=terminal`);
   await page.waitForTimeout(SETTLE * 2);
   const extent = await scrollTops(page);
   R.ok((extent.canvasMax ?? 0) >= 400, `.mp-canvas-scroll is scrollable past 400 on ?v=terminal (max ${extent.canvasMax})`);
@@ -310,19 +320,29 @@ R.group('── §3b · .mp-canvas-scroll (mempool pan box) at 1440 ────
   const parked = await scrollTops(page);
   R.ok(Math.abs((parked.canvas ?? -1) - 400) <= TOL, `parked .mp-canvas-scroll at 400 (got ${parked.canvas})`);
 
-  await page.click('nav.topnav a[href="/markets"]');
-  await soft(page.waitForFunction(() => location.pathname === '/markets', null, { timeout: 15000 }));
+  // Navigate to Markets using keyboard navigation through dropdown
+  const navItem = page.locator('button.navitem').first();
+  await navItem.focus();
+  await page.keyboard.press('ArrowDown'); // Open dropdown
+  await page.waitForTimeout(100);
+  const link = page.locator(`#nav-dd-panel a[href="${Routes.LIVE_MARKETS}"]`);
+  await soft(link.click());
+  await soft(page.waitForFunction(() => location.pathname === Routes.LIVE_MARKETS, null, { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
   const away = await scrollTops(page);
+  const awayPath = await page.evaluate(() => location.pathname);
+  R.ok(awayPath === Routes.LIVE_MARKETS, `nav link changed pathname to ${Routes.LIVE_MARKETS} (got ${awayPath})`);
   R.ok(away.canvas === null, 'the pan box is gone on /markets (nothing to compare against)');
   R.ok(away.main === 0, `/markets opens at the top (main.main ${away.main})`);
 
   await page.goBack();
-  await soft(page.waitForFunction(() => location.pathname === '/mempool', null, { timeout: 15000 }));
+  await soft(page.waitForFunction(() => location.pathname === Routes.LIVE_MEMPOOL, null, { timeout: 15000 }));
   await soft(page.waitForSelector('.mp-canvas-scroll', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE * 2);
   const back = await scrollTops(page);
+  const backPath = await page.evaluate(() => location.pathname);
   const dec = await navDebug(page);
+  R.ok(backPath === Routes.LIVE_MEMPOOL, `Back restored pathname to ${Routes.LIVE_MEMPOOL} (got ${backPath})`);
   R.ok(Math.abs((back.canvas ?? -1) - 400) <= TOL, `Back restores .mp-canvas-scroll to 400 ±${TOL} (got ${back.canvas})`);
   R.ok(dec?.decision === 'restore', `decision="${dec?.decision}" (expected "restore")`);
 
@@ -369,11 +389,13 @@ R.group('── §3d · precedence rules 2 and 4 ──────────�
   // This hook must decide "hash" and touch nothing, or the two fight visibly.
   await open(page, '/');
   await page.waitForTimeout(SETTLE);
-  await page.click('.brand-col a[href="/sources#release-notes"]');
-  await soft(page.waitForFunction(() => location.pathname === '/sources', null, { timeout: 15000 }));
+  await page.click(`.brand-col a[href="${Routes.ABOUT_SOURCES}#release-notes"]`);
+  await soft(page.waitForFunction(() => location.pathname === Routes.ABOUT_SOURCES, null, { timeout: 15000 }));
   await page.waitForTimeout(1800); // the anchor scroll is `behavior: "smooth"`
   const hashDec = await navDebug(page);
+  const hashPath = await page.evaluate(() => location.pathname);
   const hashPos = await scrollTops(page);
+  R.ok(hashPath === Routes.ABOUT_SOURCES, `nav link changed pathname to ${Routes.ABOUT_SOURCES} (got ${hashPath})`);
   R.ok(hashDec?.decision === 'hash', `precedence rule 2 fired: decision="${hashDec?.decision}" (expected "hash")`);
   R.ok((hashPos.main ?? 0) > 0, `SourcesPage's own anchor scroll survived (main.main at ${hashPos.main})`);
 
@@ -381,7 +403,12 @@ R.group('── §3d · precedence rules 2 and 4 ──────────�
   // through the app's own control (Markets' range buttons write `?range=`),
   // not a synthetic pushState: a hand-rolled popstate carries no router key
   // and is read as a POP into an existing entry, which is rule 1, not rule 4.
-  await open(page, '/markets');
+  // R.LIVE_MARKETS, not '/markets'. The old path still LOADS via the client
+  // mirror, so this block passed — but it tests scroll precedence rule 4, whose
+  // logic turns on router-key and history-entry semantics, and a <Navigate
+  // replace> redirect inserts exactly the entry type that logic is sensitive to.
+  // It was asserting rule 4 against a different navigation than it names.
+  await open(page, Routes.LIVE_MARKETS);
   await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE * 2);
   const marketsExtent = await scrollTops(page);
@@ -405,7 +432,7 @@ R.group('── §4a · ?v= pushes and must not clobber ?block= ─────�
 {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
 
-  await open(page, '/mempool?v=classic&block=2900000');
+  await open(page, `${Routes.LIVE_MEMPOOL}?v=classic&block=2900000`);
   await page.waitForTimeout(SETTLE * 2);
   const start = await page.evaluate(() => ({ url: location.search, len: history.length }));
   R.ok(/block=2900000/.test(start.url), `?block= present before the click (${start.url})`);
@@ -423,8 +450,10 @@ R.group('── §4a · ?v= pushes and must not clobber ?block= ─────�
   R.ok(end.len === start.len + 1, `?v= PUSHES exactly one history entry (${start.len} → ${end.len})`);
 
   await page.goBack();
-  await soft(page.waitForFunction(() => location.search.includes('v=classic'), null, { timeout: 10000 }));
+  await soft(page.waitForFunction(() => location.pathname === Routes.LIVE_MEMPOOL && location.search.includes('v=classic'), null, { timeout: 10000 }));
   const backUrl = await page.evaluate(() => location.search);
+  const backPath = await page.evaluate(() => location.pathname);
+  R.ok(backPath === Routes.LIVE_MEMPOOL, `Back returned to ${Routes.LIVE_MEMPOOL} (got ${backPath})`);
   R.ok(/v=classic/.test(backUrl) && /block=2900000/.test(backUrl), `Back returns to the previous view (${backUrl})`);
 
   await page.context().close();
@@ -434,7 +463,7 @@ R.group('── §4b · ?range= replaces, and 30D writes no param ────�
 {
   const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
 
-  await open(page, '/markets');
+  await open(page, Routes.LIVE_MARKETS);
   await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE);
 
@@ -540,7 +569,7 @@ R.group('── §6 · D0661 · mempool switcher stagger ───────�
   // — motion allowed —
   {
     const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
-    await open(page, '/mempool');
+    await open(page, Routes.LIVE_MEMPOOL);
     await page.waitForTimeout(SETTLE);
     await page.click('.mp-switcher__trigger');
     await soft(page.waitForSelector('.mp-switcher__list.is-open', { timeout: 10000 }));
@@ -568,7 +597,7 @@ R.group('── §6 · D0661 · mempool switcher stagger ───────�
   {
     const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
     const page = await ctx.newPage();
-    await open(page, '/mempool');
+    await open(page, Routes.LIVE_MEMPOOL);
     await page.waitForTimeout(SETTLE);
     await page.click('.mp-switcher__trigger');
     await soft(page.waitForSelector('.mp-switcher__list.is-open', { timeout: 10000 }));
@@ -583,6 +612,311 @@ R.group('── §6 · D0661 · mempool switcher stagger ───────�
       'every tile still has a real box and real text under reduce (nothing is conveyed by the movement alone)');
     await ctx.close();
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §7 · navigation layout: 6 top-level items, no wrap at ≥360px
+// ─────────────────────────────────────────────────────────────────────────────
+R.group('── §7 · 6 top-level items, no wrap at widths ≥360px ──────────');
+{
+  const widths = [360, 390, 480, 720, 725, 900, 1200, 1440];
+  for (const w of widths) {
+    const page = await (await browser.newContext({ viewport: { width: w, height: 900 } })).newPage();
+    await open(page, Routes.HOME);
+    await page.waitForTimeout(SETTLE);
+
+    // Get all 6 navitem buttons and their Y coordinates
+    const items = await page.evaluate(() => {
+      const buttons = document.querySelectorAll('button.navitem');
+      if (buttons.length === 0) return { count: 0, items: [] };
+      return {
+        count: buttons.length,
+        items: Array.from(buttons).map((b) => {
+          const r = b.getBoundingClientRect();
+          return { top: r.top, display: getComputedStyle(b).display };
+        }),
+      };
+    });
+
+    R.ok(items.count === 6, `${w}px: exactly 6 navitem buttons (got ${items.count})`);
+
+    // At ≤720px, navitems should be hidden (display:none due to container query)
+    if (w <= 720) {
+      const allHidden = items.items.every((it) => it.display === 'none');
+      R.ok(allHidden, `${w}px (mobile): all navitems are display:none`);
+    } else {
+      // Above 720px, all 6 should be visible and on the same row (same top coordinate)
+      const visible = items.items.filter((it) => it.display !== 'none');
+      const allVisible = visible.length === 6;
+      R.ok(allVisible, `${w}px (desktop): all 6 navitems are visible`);
+
+      if (visible.length === 6) {
+        const tops = visible.map((it) => it.top);
+        const sameRow = tops.every((t) => Math.abs(t - tops[0]) <= 1);
+        R.ok(sameRow, `${w}px: all 6 navitems on same row (tops: ${tops.join(', ')})`);
+      }
+    }
+
+    await page.context().close();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §8 · hover intent: 150ms to open, 220ms to close
+// ─────────────────────────────────────────────────────────────────────────────
+R.group('── §8 · hover-intent timing (150ms open / 220ms close) ────────');
+{
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+  await open(page, Routes.HOME);
+  await page.waitForTimeout(SETTLE);
+
+  const navitem = page.locator('button.navitem').first();
+  const navitemBox = await navitem.boundingBox();
+  if (!navitemBox) {
+    R.ok(false, 'could not find navitem element');
+  } else {
+    const centerX = navitemBox.x + navitemBox.width / 2;
+    const centerY = navitemBox.y + navitemBox.height / 2;
+
+    // Test 1: Quick hover (enter and leave at 80ms) should NOT open
+    {
+      await page.mouse.move(centerX, centerY);
+      await page.waitForTimeout(80);
+      await page.mouse.move(0, 0); // Move mouse away
+      await page.waitForTimeout(250);
+      const panelOpen = await page.locator('#nav-dd-panel.on').count();
+      R.ok(panelOpen === 0, 'quick hover (80ms) does not open panel (below 150ms)');
+    }
+
+    // Test 2: Hover for 200ms should open (above 150ms)
+    {
+      await page.mouse.move(centerX, centerY);
+      await page.waitForTimeout(200);
+      const panelOpen = await page.locator('#nav-dd-panel.on').count();
+      R.ok(panelOpen === 1, 'hover 200ms opens panel (above 150ms threshold)');
+    }
+
+    // Test 3: Panel stays open while hovering
+    {
+      await page.waitForTimeout(140); // Total ~340ms
+      const panelStillOpen = await page.locator('#nav-dd-panel.on').count();
+      R.ok(panelStillOpen === 1, 'panel still open at 340ms');
+    }
+
+    // Test 4: Move mouse away, panel closes after ~220ms
+    {
+      /* 120ms, not 200ms. HOVER_CLOSE_MS is 220 (NavTop.tsx:90), and a 200ms
+       * wait leaves a 20ms DESIGN margin that measured 6.8ms in practice:
+       * elapsed from pointerleave to the DOM read ran 204.2-213.2ms over 8
+       * runs on an IDLE machine, while CDP round-trip jitter alone measured
+       * 7.3-59.2ms. This gate is in verify:e2e, so it runs on every PR on a
+       * shared runner — a correct tree would have started failing here as
+       * soon as the runner was loaded, and a gate that goes red for reasons
+       * unrelated to the tree is how people learn to ignore red
+       * (verify-reporter.mjs:38 cites verify-v510 for exactly this).
+       *
+       * 120ms keeps the assertion's meaning — the panel must still be open
+       * PART WAY through the close delay, which is what distinguishes a
+       * deliberate close timer from an instant one — with ~100ms of margin.
+       * The second read only benefits from jitter: it needs elapsed > 220ms,
+       * and every source of delay pushes it further past, not nearer. */
+      await page.mouse.move(0, 0); // Move mouse away
+      await page.waitForTimeout(120);
+      let panelOpen = await page.locator('#nav-dd-panel.on').count();
+      R.ok(panelOpen === 1, 'panel open 120ms after mouseaway (below the 220ms close delay)');
+
+      // Take the total past 220ms. Overshoot is safe here; undershoot is not.
+      await page.waitForTimeout(180);
+      panelOpen = await page.locator('#nav-dd-panel.on').count();
+      R.ok(panelOpen === 0, 'panel closed 300ms after mouseaway (above 220ms threshold)');
+    }
+  }
+
+  await page.context().close();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §9 · mobile bottom tab bar: visible ≤720px, 6 tabs, aria-current, ≥12px labels
+// ─────────────────────────────────────────────────────────────────────────────
+R.group('── §9 · mobile bottom tab bar (≤720px) ──────────────────────');
+{
+  // Test at 720px (should be visible)
+  const page = await (await browser.newContext({ viewport: { width: 720, height: 844 } })).newPage();
+  await open(page, Routes.LIVE_MEMPOOL); // Use a route with an active section
+  await page.waitForTimeout(SETTLE);
+
+  const tabbarAnchor = await page.locator('.tabbar-anchor').count();
+  R.ok(tabbarAnchor === 1, 'tabbar-anchor element exists at 720px');
+
+  const tabs = await page.evaluate(() => {
+    const items = document.querySelectorAll('a.tabbar-item');
+    return {
+      count: items.length,
+      items: Array.from(items).map((el) => {
+        const span = el.querySelector('span');
+        const cs = getComputedStyle(span || el);
+        return {
+          current: el.getAttribute('aria-current'),
+          fontSize: cs.fontSize,
+          text: (el.textContent || '').trim(),
+        };
+      }),
+    };
+  });
+
+  R.ok(tabs.count === 6, `exactly 6 tabbar-items (got ${tabs.count})`);
+
+  const hasActive = tabs.items.filter((t) => t.current === 'page').length;
+  R.ok(hasActive === 1, `exactly 1 item has aria-current="page" (got ${hasActive})`);
+
+  const fontSizes = tabs.items.map((t) => {
+    const match = t.fontSize.match(/(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  });
+  const allValid = fontSizes.every((fs) => fs >= 12);
+  R.ok(allValid, `all tab labels ≥12px (got ${fontSizes.join(', ')}px)`);
+
+  await page.context().close();
+
+  // Test at 721px (should be hidden)
+  const widePage = await (await browser.newContext({ viewport: { width: 721, height: 844 } })).newPage();
+  await open(widePage, Routes.LIVE_MEMPOOL);
+  await widePage.waitForTimeout(SETTLE);
+
+  const tabbarVisibility = await widePage.evaluate(() => {
+    const anchor = document.querySelector('.tabbar-anchor');
+    const nav = document.querySelector('.tabbar');
+    return {
+      anchorDisplay: anchor ? getComputedStyle(anchor).display : 'N/A',
+      navDisplay: nav ? getComputedStyle(nav).display : 'N/A',
+    };
+  });
+  R.ok(
+    tabbarVisibility.anchorDisplay === 'none' || tabbarVisibility.navDisplay === 'none',
+    `tabbar-anchor or nav hidden at 721px (anchor: ${tabbarVisibility.anchorDisplay}, nav: ${tabbarVisibility.navDisplay})`
+  );
+
+  await widePage.context().close();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// §10 · morphing pill: width and x-offset track active navitem ±2px
+// ─────────────────────────────────────────────────────────────────────────────
+R.group('── §10 · morphing pill tracking ±2px ──────────────────────');
+{
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+
+  // Navigate through several routes (skip HOME since it has no active section pill)
+  const testRoutes = [
+    { route: Routes.LIVE_MEMPOOL, label: 'Live/Mempool' },
+    { route: Routes.MONERO, label: 'Monero' },
+    { route: Routes.ABOUT_SOURCES, label: 'About/Sources' },
+    { route: Routes.FUTURE, label: 'Future' },
+  ];
+
+  for (const { route, label } of testRoutes) {
+    await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
+    await soft(page.waitForSelector('.art-stage', { timeout: 20000 }));
+    await page.waitForTimeout(SETTLE);
+
+    const pillAlignment = await page.evaluate(() => {
+      const pill = document.querySelector('#pill');
+      const activeItem = document.querySelector('button.navitem[aria-current="page"]');
+
+      if (!pill || !activeItem) {
+        return { error: 'missing pill or active item' };
+      }
+
+      const nav = activeItem.closest('nav.nav-main');
+      if (!nav) return { error: 'no nav ancestor' };
+
+      const pillStyle = pill.style;
+      const pillW = parseFloat(pillStyle.width) || 0;
+      const pillTransform = pillStyle.transform;
+      const pillX = pillTransform ? parseFloat(pillTransform.match(/translateX\(([^)]+)px/)?.[1] || '0') : 0;
+
+      const navRect = nav.getBoundingClientRect();
+      const itemRect = activeItem.getBoundingClientRect();
+      const itemW = itemRect.width;
+      const itemX = itemRect.left - navRect.left;
+
+      return { pillW, pillX, itemW, itemX };
+    });
+
+    if (pillAlignment.error) {
+      R.ok(false, `${label}: ${pillAlignment.error}`);
+      continue;
+    }
+
+    const wDiff = Math.abs(pillAlignment.pillW - pillAlignment.itemW);
+    const xDiff = Math.abs(pillAlignment.pillX - pillAlignment.itemX);
+
+    R.ok(wDiff <= TOL, `${label}: pill width ±${TOL}px (pill ${pillAlignment.pillW}, item ${pillAlignment.itemW}, diff ${wDiff})`);
+    R.ok(xDiff <= TOL, `${label}: pill x-offset ±${TOL}px (pill ${pillAlignment.pillX}, item ${pillAlignment.itemX}, diff ${xDiff})`);
+  }
+
+  await page.context().close();
+}
+
+R.group('── §11 · RedirectTo: the client mirror, at runtime ───────────');
+/* WHY THIS SECTION EXISTS, AND WHAT IT IS NOT
+ *
+ * `src/routes/RedirectTo.tsx` is new in v6.1.6 and had ZERO runtime coverage:
+ * verify-ia greps that the identifier appears in App.tsx, and
+ * verify-redirects fixtures the SERVER 301 as unobservable. That fixture is
+ * honest about the server — serve-dist emits no 3xx at all — but it was
+ * functioning as cover for the client half, which is fully observable here
+ * and is the only redirect path exercised by local dev and by every preview a
+ * human actually looks at.
+ *
+ * NOT a test of Vercel's 301. In production the server redirect fires first
+ * and this component never runs for these URLs. What is asserted is that the
+ * component preserves what a bare `<Navigate to="literal">` would drop:
+ * the query string, the fragment, and `:param` substitution. That dropped
+ * query is the defect verify-ia §3's old enumeration would have MANDATED, so
+ * leaving the replacement itself untested closes one hole by opening another.
+ *
+ * Under serve-dist an old path 200s to the HOME prerender and the bundle then
+ * redirects — so this measures the client mirror in isolation, which is
+ * exactly the half under test. */
+{
+  const page = await (await browser.newContext({ viewport: { width: 1440, height: 900 } })).newPage();
+
+  const CASES = [
+    ['/mempool?v=reactor', '/live/mempool?v=reactor', 'query survives'],
+    ['/markets?range=90D', '/live/markets?range=90D', 'query survives'],
+    ['/simulate/decoy', '/learn/sim?p=decoy', ':param becomes a query param'],
+    ['/simulate?p=fcmp', '/learn/sim?p=fcmp', 'existing query merges, not clobbered'],
+    ['/education/timeline', '/learn/timeline', ':tab substitutes into the path'],
+    ['/mempool/tx/abc123', '/live/mempool/tx/abc123', ':txid substitutes into the path'],
+    ['/monero/future', '/future', 'plain redirect, nothing to carry'],
+    ['/sources#release-notes', '/about/sources#release-notes', 'fragment survives'],
+  ];
+
+  for (const [from, want, why] of CASES) {
+    await page.goto(BASE + from, { waitUntil: 'domcontentloaded' });
+    await soft(page.waitForFunction(
+      (expected) => location.pathname + location.search + location.hash === expected,
+      want, { timeout: 8000 }));
+    const got = await page.evaluate(() => location.pathname + location.search + location.hash);
+    R.ok(got === want, `${from} → ${want} (${why})`, got === want ? '' : `landed on ${got}`);
+  }
+
+  /* The redirect must REPLACE, not push: a redirected entry left in history
+   * makes Back bounce off it forever. Checked once rather than per case —
+   * they all go through the same <Navigate replace> in RedirectTo. */
+  await page.goto(BASE + Routes.HOME, { waitUntil: 'domcontentloaded' });
+  await waitForHeading(page);
+  await page.goto(BASE + '/markets?range=90D', { waitUntil: 'domcontentloaded' });
+  await soft(page.waitForFunction(() => location.pathname === '/live/markets', null, { timeout: 8000 }));
+  await soft(page.goBack({ waitUntil: 'domcontentloaded' }));
+  await soft(page.waitForFunction(() => location.pathname === '/', null, { timeout: 8000 }));
+  const backTo = await page.evaluate(() => location.pathname);
+  R.ok(backTo === Routes.HOME,
+    'Back from a redirected URL reaches the previous page, not the redirect source',
+    `landed on ${backTo} — a redirect that pushes instead of replacing traps Back`);
+
+  await page.context().close();
 }
 
 await browser.close();

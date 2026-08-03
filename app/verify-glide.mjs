@@ -197,7 +197,7 @@ for (const v of ['classic', 'reactor']) {
   resetFix();
   const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', fulfil);
-  await p.goto(`${base}/mempool?v=${v}`, { waitUntil: 'load' });
+  await p.goto(`${base}/live/mempool?v=${v}`, { waitUntil: 'load' });
   await p.waitForSelector('[data-glide-key]', { timeout: 9000 });
   await waitHead(p, H0);
   await installGlideSpy(p);
@@ -240,7 +240,7 @@ for (const v of ['classic', 'reactor']) {
   resetFix();
   const p = await newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   await p.route('**/api/**', fulfil);
-  await p.goto(`${base}/mempool?v=classic`, { waitUntil: 'load' });
+  await p.goto(`${base}/live/mempool?v=classic`, { waitUntil: 'load' });
   await p.waitForSelector('[data-glide-key]', { timeout: 9000 });
   await waitHead(p, H0);
   await installGlideSpy(p);
@@ -264,7 +264,7 @@ for (const v of ['classic', 'reactor']) {
   resetFix();
   const p = await newPage({ viewport: { width: 1440, height: 900 } });
   await p.route('**/api/**', fulfil);
-  await p.goto(`${base}/mempool?v=${v}`, { waitUntil: 'load' });
+  await p.goto(`${base}/live/mempool?v=${v}`, { waitUntil: 'load' });
   await p.waitForSelector('[data-glide-key]', { timeout: 9000 });
   await waitHead(p, H0);
 
