@@ -326,10 +326,8 @@ async function mockFeed(ctx) {
    * The live path, where six rows of varying-width numbers land into that
    * reserve, was the thing at risk and the thing not covered.
    *
-   * Built from the committed fixture THROUGH THE REAL HELPERS rather than
-   * hand-written, so this mock cannot drift away from the envelope it stands
-   * in for — a stale hand-copied body would silently go back to measuring
-   * something the app never receives. */
+   * The body is NODES_LIVE — see its own comment above for why it is produced
+   * by running the handler rather than rebuilt or transcribed. */
   await ctx.route('**/api/nodes*', async (route) => {
     await new Promise((r) => setTimeout(r, MOCK_LATENCY_MS));
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(NODES_LIVE) });
@@ -409,8 +407,22 @@ async function measure(route, mocked) {
 
   const cls = await page.evaluate(() => window.__CLS__ ?? 0);
   const entries = await page.evaluate(() => window.__CLS_ENTRIES__ ?? []);
+  /* Did the /api/nodes mock actually REACH the panel? Carried out of measure()
+     so the pass loop can assert it. Without this the mock's reach is proven
+     once, by hand, and its absence is undetectable: if the route glob ever
+     stops matching — a path change, a query string, a rename — serve-dist's
+     501 comes back, the panel renders its EMPTY state, and CLS reports the
+     same 0.0000. Nothing in the output moves. That is not a vacuous assertion
+     but an UNGUARDED PRECONDITION to a real one, and this file's own `:31`
+     exists because a past version of exactly that went unnoticed. */
+  const nodePanel = await page.evaluate(() => {
+    const el = document.querySelector('[data-aux-key="nodes"]');
+    if (!el) return null;
+    const t = el.innerText || '';
+    return { hasDigit: /\d/.test(t), saysDidNotAnswer: /did not answer/i.test(t) };
+  });
   await ctx.close();
-  return { cls: cls + INFLATE, entries };
+  return { cls: cls + INFLATE, entries, nodePanel };
 }
 
 const movedPx = (s) => (s.prev && s.cur
@@ -465,6 +477,20 @@ for (const pass of PASSES) {
     // The measurement is printed EVERY run, pass or fail. This is the line that
     // makes drift visible long before it becomes a failure.
     R.info(`${route.padEnd(10)} CLS ${worst.toFixed(4)}  (runs: ${shown})  ceiling ${pass.table[route]}`);
+
+    /* THE MOCK ACTUALLY REACHED THE PANEL — asserted, not assumed.
+       Healthy pass and /live/network only: this is the one route whose CLS
+       number is meaningless if /api/nodes fell through to serve-dist's 501,
+       because the panel's EMPTY state has a fixed reserve and therefore cannot
+       shift. Both states score 0.0000, so without this the precondition to a
+       real assertion is itself unguarded and its failure is invisible. */
+    if (pass.mocked && route === RT.LIVE_NETWORK) {
+      const np = worstRun.nodePanel;
+      R.ok(np !== null, 'healthy · /live/network · the node-population panel is present');
+      R.ok(!!np && np.hasDigit && !np.saysDidNotAnswer,
+        'healthy · /live/network · the /api/nodes mock REACHED the panel (live readout, not the empty state)',
+        np ? `hasDigit=${np.hasDigit} saysDidNotAnswer=${np.saysDidNotAnswer} — a 501 fallthrough scores the same 0.0000, so this is what distinguishes them` : 'panel not found');
+    }
 
     // Attribution for the worst run, per entry. Printed only when there is
     // something to explain, so a clean route stays one line. The entry COUNT is
