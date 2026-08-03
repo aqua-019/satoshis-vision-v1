@@ -113,7 +113,6 @@ const PRICE = { monero: { usd: 321.45, usd_24h_change: 1.23 }, bitcoin: { usd: 9
 function fulfil(route) {
   const url = route.request().url();
   const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
-  if (url.includes('/api/monero')) return json({ result: { height: head + 1, difficulty: 7.7e11, target: 120, major_version: 16, top_block_hash: hex('b') } });
   if (url.includes('/api/xmr/network')) return json(mkNetwork());
   if (url.includes('/api/xmr/mempool')) return json(mkMempool());
   if (url.includes('/api/xmr/tx/')) return json(mkTx());

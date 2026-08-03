@@ -212,7 +212,7 @@ export async function freezeAmbient(page) {
  *
  * Correcting a note recorded elsewhere while we are here: verify-future's
  * `mockFeeds` does NOT "abort every other /api/*". It aborts three named globs
- * (`**‍/api/xmr/**`, `**‍/api/monero*`, `**‍/api/coingecko*`) and fulfils
+ * (`**‍/api/xmr/**`, `**‍/api/nodes*`, `**‍/api/coingecko*`) and fulfils
  * `**‍/api/feeds*`. `/api/status` matches none of them, so the mechanism is
  * "an unmatched pattern falls through", not "everything else is aborted".
  *
@@ -243,7 +243,7 @@ export const STATUS_FIXTURE = {
   },
   endpoints: [
     { path: '/api/xmr', file: 'xmr.js', kind: 'node' },
-    { path: '/api/monero', file: 'monero.js', kind: 'node' },
+    { path: '/api/nodes', file: 'nodes.js', kind: 'network' },
     { path: '/api/coingecko', file: 'coingecko.js', kind: 'market' },
     { path: '/api/markets', file: 'markets.js', kind: 'market' },
     { path: '/api/feeds', file: 'feeds.js', kind: 'editorial' },

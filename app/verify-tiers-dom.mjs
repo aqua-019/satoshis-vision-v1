@@ -89,6 +89,9 @@ function bucket(url) {
   if (url.includes('/api/xmr/fees')) return 'fees';
   if (url.includes('/api/xmr/mempool')) return 'mempool';
   if (url.includes('/api/coingecko')) return 'coingecko';
+  // v6.1.7: api/monero.js was deleted; this classifier must remain to assert it
+  // stays deleted — if this line vanishes, the negative assertion at :144 becomes
+  // vacuous and silent.
   if (url.includes('/api/monero')) return 'monero';
   return 'other';
 }

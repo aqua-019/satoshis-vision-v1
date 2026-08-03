@@ -108,7 +108,7 @@ function networkCounts() {
 
 const ENDPOINTS = [
   { path: '/api/xmr', file: 'xmr.js', kind: 'node' },
-  { path: '/api/monero', file: 'monero.js', kind: 'node' },
+  { path: '/api/nodes', file: 'nodes.js', kind: 'network' },
   { path: '/api/coingecko', file: 'coingecko.js', kind: 'market' },
   { path: '/api/markets', file: 'markets.js', kind: 'market' },
   { path: '/api/feeds', file: 'feeds.js', kind: 'editorial' },
@@ -117,9 +117,9 @@ const ENDPOINTS = [
 
 module.exports = async function handler(req, res) {
   // CORS + Cache-Control set IN-HANDLER, mirroring api/xmr.js:579-582 — this
-  // route needs its own headers because vercel.json's blanket no-store rule
-  // (vercel.json:25-27) scopes to `/api/monero(.*)` only, and the `functions`
-  // block is optional (api/coingecko.js has no entry there either).
+  // route needs its own headers because vercel.json declares no `Cache-Control`
+  // header rule for any `/api/*` path, and the `functions` block is optional
+  // (api/coingecko.js has no entry there either).
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');

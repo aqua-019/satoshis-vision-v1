@@ -344,7 +344,7 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
    fee estimate), CHAIN 15s (tip watch, full pull only when the tip moves),
    MARKET 60s (CoinGecko) — not the single 2.5s loop this comment and three
    of the rows below used to claim, and `POST /api/monero` was dropped from
-   the React client in that same change.
+   the React client in that same change and the endpoint was deleted in v6.1.7.
    GitHub and getmonero.org route through the same-origin /api/feeds proxy
    (24h edge cache + 24h localStorage) — also live. Genuinely still pending:
    X ingest (X publishes no unauthenticated read API), stressnet telemetry

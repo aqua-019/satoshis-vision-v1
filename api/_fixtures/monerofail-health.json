@@ -1,0 +1,166 @@
+{
+  "monero": {
+    "clear": {
+      "http://clear-mode-a:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:00:00Z",
+        "last_height": 3729557
+      },
+      "http://clear-mode-b:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:00:15Z",
+        "last_height": 3729557
+      },
+      "http://clear-mode-c:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:00:30Z",
+        "last_height": 3729557
+      },
+      "http://clear-mode-d:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:00:45Z",
+        "last_height": 3729557
+      },
+      "http://clear-1behind:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:01:00Z",
+        "last_height": 3729556
+      },
+      "http://clear-1behind-2:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:01:15Z",
+        "last_height": 3729556
+      },
+      "http://clear-2behind-boundary:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:01:30Z",
+        "last_height": 3729555
+      },
+      "http://clear-2behind-boundary-2:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:01:45Z",
+        "last_height": 3729555
+      },
+      "http://clear-2behind-boundary-3:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:02:00Z",
+        "last_height": 3729555
+      },
+      "http://clear-lagging-3behind:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:02:15Z",
+        "last_height": 3729554
+      },
+      "http://clear-lagging-4behind:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:02:30Z",
+        "last_height": 3729553
+      },
+      "http://clear-ahead:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:02:45Z",
+        "last_height": 3729558
+      },
+      "http://clear-unavailable:18081": {
+        "available": false,
+        "checks": [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        "datetime_checked": "2026-08-03T12:03:00Z",
+        "last_height": 3729540
+      },
+      "http://clear-stale-no-checks:18081": {
+        "available": true,
+        "checks": [],
+        "datetime_checked": "2026-08-03T12:03:15Z",
+        "last_height": 3729557
+      },
+      "http://clear-missing-height:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:03:30Z"
+      },
+      "http://clear-zero-height:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:03:45Z",
+        "last_height": 0
+      },
+      "http://clear-perfect-window:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:04:00Z",
+        "last_height": 3729557
+      },
+      "http://clear-malformed:18081": {
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:04:00Z",
+        "last_height": 3729557
+      }
+    },
+    "onion": {
+      "http://onion-mode:7081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:04:15Z",
+        "last_height": 3729557
+      },
+      "http://onion-1behind:7081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:04:30Z",
+        "last_height": 3729556
+      },
+      "http://onion-2behind:7081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:04:45Z",
+        "last_height": 3729555
+      },
+      "http://onion-lagging:7081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:05:00Z",
+        "last_height": 3729553
+      }
+    },
+    "i2p": {
+      "http://i2p-mode:14080": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:05:15Z",
+        "last_height": 3729557
+      },
+      "http://i2p-2behind:14080": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:05:30Z",
+        "last_height": 3729555
+      },
+      "http://i2p-lagging:14080": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:05:45Z",
+        "last_height": 3729552
+      }
+    },
+    "web_compatible": {
+      "http://clear-mode-a:18081": {
+        "available": true,
+        "checks": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+        "datetime_checked": "2026-08-03T12:06:00Z",
+        "last_height": 3729557
+      }
+    }
+  }
+}

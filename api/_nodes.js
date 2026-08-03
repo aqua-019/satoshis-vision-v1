@@ -34,7 +34,7 @@ const REFERENCE_MAINNET = [
   'http://nodes.hashvault.pro:18081',
   'http://node.community.rino.io:18081',
   'http://opennode.xmr-tw.org:18089',
-  // additional proven fallbacks (previously isolated in api/monero.js):
+  // additional proven fallbacks (previously isolated in api/monero.js, deleted in v6.1.7):
   'https://node.sethforprivacy.com:18089',
   'https://xmr-node.cakewallet.com:18081',
 ];

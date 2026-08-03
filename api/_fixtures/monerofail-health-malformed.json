@@ -1,0 +1,4 @@
+{
+  "error": "upstream service error",
+  "message": "database connection failed"
+}

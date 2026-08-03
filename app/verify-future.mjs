@@ -194,7 +194,7 @@ async function mockFeeds(ctx, { blogFails = false, pulseFails = false } = {}, co
   });
   // Everything else the app polls — keep it quiet and off the network.
   await ctx.route('**/api/xmr/**', (r) => r.abort());
-  await ctx.route('**/api/monero*', (r) => r.abort());
+  await ctx.route('**/api/nodes*', (r) => r.abort());
   await ctx.route('**/api/coingecko*', (r) => r.abort());
   /* D0891: /api/status matches NONE of the three globs above, so before this it
      fell through unrouted — and serve-dist answers an unmatched path with 200
