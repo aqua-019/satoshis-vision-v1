@@ -25,6 +25,27 @@ import { EXPECTED } from './_fixtures/monerofail-health-spec.mjs';
 let OBSERVED_REASONS = [];
 
 const R = makeReporter('verify-nodes');
+
+/* ── OFFLINE BY CONSTRUCTION ────────────────────────────────────────────────
+ * CI's `build` job is contractually "offline gates only — no browser, no
+ * network", and this gate proxies an upstream. Until v6.1.7 group 2's
+ * `GET → 200` invoked the handler with NO fetch stub, so on a runner with real
+ * egress it made a live HTTPS request to monero.fail — and hung the job. It
+ * looked offline in the authoring sandbox only because egress there fails fast
+ * (403 on CONNECT), which is the sandbox lying by being stricter than CI.
+ *
+ * So the default is now a THROWING sentinel rather than the real fetch. Any
+ * invocation that forgets to stub fails loudly and locally instead of reaching
+ * the network; each group installs its own stub deliberately, and
+ * `UNSTUBBED_FETCH_CALLS` is asserted to be the number we intend at the end.
+ * The real fetch is captured and never restored — nothing in this file may use
+ * it. */
+const REAL_FETCH = globalThis.fetch;
+let UNSTUBBED_FETCH_CALLS = 0;
+globalThis.fetch = async (...args) => {
+  UNSTUBBED_FETCH_CALLS++;
+  throw new Error(`verify-nodes: unstubbed fetch to ${String(args[0]).slice(0, 60)} — this gate must be offline; stub globalThis.fetch in the enclosing block`);
+};
 const API_DIR = dirname(fileURLToPath(import.meta.url));
 
 /* ── env sandbox ── */
@@ -88,9 +109,18 @@ try {
   R.ok(state.body?.error === 'GET only', 'POST error message is "GET only"');
 }
 {
-  const { res, state } = makeRes();
-  await nodesMod(makeReq('GET'), res);
-  R.ok(state.statusCode === 200, 'GET → 200');
+  /* Stubbed deliberately: an unstubbed GET here reached the real upstream. */
+  const originalFetch = globalThis.fetch;
+  const fixture = JSON.parse(readFileSync(join(API_DIR, '_fixtures/monerofail-health.json'), 'utf8'));
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => fixture });
+  try {
+    nodesMod._resetCache();
+    const { res, state } = makeRes();
+    await nodesMod(makeReq('GET'), res);
+    R.ok(state.statusCode === 200, 'GET → 200');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 }
 
 /* ── 3) Cache-Control on EVERY exit path ── */
@@ -790,6 +820,14 @@ R.fixture('parseHealth and heightClusters', 'tested against api/_fixtures/monero
 R.fixture('16-check window (availability bucket edge case)', 'fixture includes a 16-check perfect node for boundary testing');
 R.skip('node count matches monero.fail\'s own page (± sampling)',
   'sandbox has no egress to https://monero.fail — run on a deploy preview with: curl https://monero.fail/health.json | jq .monero | keys | length');
+
+/* ── 14) this gate never touched the network ──────────────────────────────
+ * The sentinel throws, so a stray call cannot reach monero.fail — but it can
+ * still be SWALLOWED by the handler's own catch and reported as
+ * `upstream-unreachable`, which would look like a passing offline test. This
+ * counts them so a forgotten stub is visible rather than absorbed. */
+R.ok(UNSTUBBED_FETCH_CALLS === 0,
+  `no unstubbed fetch was attempted (${UNSTUBBED_FETCH_CALLS}) — the build job's "no network" contract`);
 
 restoreEnv();
 process.exit(R.finish());
