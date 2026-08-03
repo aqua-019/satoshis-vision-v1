@@ -11,6 +11,11 @@ import { existsSync, readdirSync } from 'node:fs';
 // cannot leave a filter here pointing at a path that no longer exists — which
 // is exactly how SIM_ROUTES silently became [] (see its comment below).
 import { R } from './scripts/routes.mjs';
+// The /api/status fixture, re-exported so all 25+ e2e gates that import it
+// keep working, but imported from verify-fixtures.mjs so that api/verify-status.mjs
+// can load it without pulling in playwright (which would break the build job's
+// offline-only contract).
+import { STATUS_FIXTURE } from './verify-fixtures.mjs';
 
 export const BASE = process.env.VERIFY_BASE || 'http://localhost:4173';
 
@@ -200,56 +205,9 @@ export async function freezeAmbient(page) {
   });
 }
 
-/**
- * D0891 · the shared /api/status fixture and its route mock.
- *
- * WHY EVERY GATE THAT LOADS /sources NEEDS THIS. `scripts/serve-dist.mjs` has
- * three branches — exact file, directory index, SPA fallback — and the third
- * returns `dist/index.html` with **HTTP 200 and text/html** for ANY unmatched
- * path. So an unrouted `/api/status` does not 404; it looks like a SUCCESS
- * carrying HTML, and only explodes at `res.json()`. A gate that loads /sources
- * without this is testing an unhandled request and calling it a page.
- *
- * Correcting a note recorded elsewhere while we are here: verify-future's
- * `mockFeeds` does NOT "abort every other /api/*". It aborts three named globs
- * (`**‍/api/xmr/**`, `**‍/api/nodes*`, `**‍/api/coingecko*`) and fulfils
- * `**‍/api/feeds*`. `/api/status` matches none of them, so the mechanism is
- * "an unmatched pattern falls through", not "everything else is aborted".
- *
- * `at` is FIXED, not generated. verify-shots.mjs walks /sources and a moving
- * timestamp would diff every screenshot.
- *
- * api/verify-status.mjs asserts the real handler's key set matches this
- * fixture's, so the mock cannot quietly rot away from the endpoint it stands in
- * for — which is the only thing that makes a fixture better than no mock.
- */
-export const STATUS_FIXTURE = {
-  v: 1,
-  at: '2026-01-01T00:00:00.000Z',
-  probed: false,
-  note: 'configuration only — this endpoint does not probe any upstream',
-  cascade: {
-    primaryConfigured: false,
-    referenceCount: 6,
-    referenceHosts: [
-      'node.moneroworld.com:18089',
-      'nodes.hashvault.pro:18081',
-      'node.community.rino.io:18081',
-      'opennode.xmr-tw.org:18089',
-      'node.sethforprivacy.com:18089',
-      'xmr-node.cakewallet.com:18081',
-    ],
-    networks: { mainnet: 6, stagenet: 0, testnet: 0, betanet: 0 },
-  },
-  endpoints: [
-    { path: '/api/xmr', file: 'xmr.js', kind: 'node' },
-    { path: '/api/nodes', file: 'nodes.js', kind: 'network' },
-    { path: '/api/coingecko', file: 'coingecko.js', kind: 'market' },
-    { path: '/api/markets', file: 'markets.js', kind: 'market' },
-    { path: '/api/feeds', file: 'feeds.js', kind: 'editorial' },
-    { path: '/api/status', file: 'status.js', kind: 'meta' },
-  ],
-};
+// Re-export STATUS_FIXTURE so all existing importers are unaffected.
+// The fixture itself now lives in verify-fixtures.mjs (see the import above).
+export { STATUS_FIXTURE };
 
 /** Route `/api/status` to the fixture. Pass `{ fail: true }` to drive the
  *  endpoint-down branch, or an object to merge over the payload. */

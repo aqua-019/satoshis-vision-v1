@@ -28,6 +28,7 @@ import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { makeReporter } from '../app/verify-reporter.mjs';
+import { STATUS_FIXTURE } from '../app/verify-fixtures.mjs';
 
 const R = makeReporter('verify-status');
 const API_DIR = dirname(fileURLToPath(import.meta.url));
@@ -194,6 +195,90 @@ try {
   for (const [re, label] of banned) {
     R.ok(!re.test(stripped), `status.js executable source never references ${label} (comments stripped first)`);
   }
+}
+
+/* ── 9) endpoint key-set parity — the handler's declared endpoints match the
+   fixture on ALL THREE FIELDS: path, file, AND kind. This assertion is the
+   only thing that makes the fixture better than no mock — it proves the mock
+   cannot quietly rot away from the endpoint it stands in for. Two distinct
+   assertions with distinct messages: membership (same set, all three fields
+   equal) and ordering (same order). Reason: these arrays are literal parallels,
+   so positional divergence IS divergence — but a cosmetic reorder reding with
+   "parity failed" invites loosening the gate, and a loosened parity assertion
+   in the gate written to replace a phantom one is the vacuity class returning
+   through the front door. Two messages mean a reorder reds with "order differs"
+   so nobody widens the wrong one. ── */
+{
+  const { res, state } = makeRes();
+  await statusMod(makeReq('GET'), res);
+  const body = state.body || {};
+  const handlerEndpoints = Array.isArray(body.endpoints) ? body.endpoints : [];
+  const fixtureEndpoints = STATUS_FIXTURE.endpoints;
+
+  // Build membership map: path => { file, kind }
+  const handlerMap = new Map(handlerEndpoints.map((ep) => [ep.path, { file: ep.file, kind: ep.kind }]));
+  const fixtureMap = new Map(fixtureEndpoints.map((ep) => [ep.path, { file: ep.file, kind: ep.kind }]));
+
+  // Check membership: same paths, and for each path the same file and kind
+  const handlerPaths = new Set(handlerEndpoints.map((ep) => ep.path));
+  const fixturePaths = new Set(fixtureEndpoints.map((ep) => ep.path));
+  const membershipMismatches = [];
+
+  // Check paths only in handler (not in fixture)
+  for (const path of handlerPaths) {
+    if (!fixturePaths.has(path)) {
+      membershipMismatches.push(`handler has ${path} (fixture does not)`);
+    } else {
+      const hh = handlerMap.get(path);
+      const ff = fixtureMap.get(path);
+      if (hh.file !== ff.file) {
+        membershipMismatches.push(`${path} file: handler="${hh.file}" vs fixture="${ff.file}"`);
+      }
+      if (hh.kind !== ff.kind) {
+        membershipMismatches.push(`${path} kind: handler="${hh.kind}" vs fixture="${ff.kind}"`);
+      }
+    }
+  }
+
+  // Check paths only in fixture (not in handler)
+  for (const path of fixturePaths) {
+    if (!handlerPaths.has(path)) {
+      membershipMismatches.push(`fixture has ${path} (handler does not)`);
+    }
+  }
+
+  R.ok(membershipMismatches.length === 0,
+    'handler endpoints membership matches fixture on path, file, and kind',
+    membershipMismatches.join('; '));
+}
+
+/* ── 10) endpoint ordering — the handler's endpoints array has the same order
+    as the fixture. Positional divergence is divergence. ── */
+{
+  const { res, state } = makeRes();
+  await statusMod(makeReq('GET'), res);
+  const body = state.body || {};
+  const handlerEndpoints = Array.isArray(body.endpoints) ? body.endpoints : [];
+  const fixtureEndpoints = STATUS_FIXTURE.endpoints;
+
+  // Compare order by path (since path is the unique identifier)
+  const handlerPaths = handlerEndpoints.map((ep) => ep.path);
+  const fixturePaths = fixtureEndpoints.map((ep) => ep.path);
+
+  const orderMismatches = [];
+  for (let i = 0; i < Math.max(handlerPaths.length, fixturePaths.length); i++) {
+    if (i >= handlerPaths.length) {
+      orderMismatches.push(`index ${i}: fixture has "${fixturePaths[i]}" (handler does not)`);
+    } else if (i >= fixturePaths.length) {
+      orderMismatches.push(`index ${i}: handler has "${handlerPaths[i]}" (fixture does not)`);
+    } else if (handlerPaths[i] !== fixturePaths[i]) {
+      orderMismatches.push(`index ${i}: handler="${handlerPaths[i]}" vs fixture="${fixturePaths[i]}"`);
+    }
+  }
+
+  R.ok(orderMismatches.length === 0,
+    'handler endpoints order matches fixture',
+    orderMismatches.join('; '));
 }
 
 /* ── fixtures — one per reachability question this sandbox cannot answer ── */
