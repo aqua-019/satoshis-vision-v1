@@ -51,6 +51,7 @@ import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-stat
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { IA, sectionForPath, type IaSection } from "@/nav/ia";
 import { usePaletteHotkey } from "@/nav/usePaletteHotkey";
+import { usePrefetch } from "@/nav/usePrefetch";
 import { R, ROUTES } from "../../scripts/routes.mjs";
 import { BottomTabBar } from "./BottomTabBar";
 
@@ -153,6 +154,19 @@ export function NavTop() {
     setOpenKey((cur) => (cur === key ? cur : key));
   }, []);
   const closeDD = React.useCallback(() => setOpenKey(null), []);
+
+  // D0724 hover prefetch — fires exactly when a dropdown ACTUALLY opens
+  // (openKey transitioning from null/another key to this one), never on raw
+  // pointerenter. That transition already sat behind the D1542 hover-intent
+  // timers above (openDD is only ever called from the HOVER_OPEN_MS timeout
+  // or an ArrowDown keydown) — this effect adds no timer of its own, it just
+  // observes the state that timer already produces. See nav/usePrefetch.ts's
+  // header for why a fetch() exists here at all alongside index.html's
+  // speculation-rules block.
+  const prefetchSection = usePrefetch();
+  React.useEffect(() => {
+    if (openKey) prefetchSection(openKey);
+  }, [openKey, prefetchSection]);
 
   const focusPanelOnOpen = React.useRef(false);
 

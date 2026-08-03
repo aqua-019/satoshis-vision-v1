@@ -519,10 +519,17 @@ header > div > h1.serif {
 .nav-noscript { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 16px; border-top: 1px solid var(--line-d); font-family: var(--f-mono); font-size: 12px; }
 .nav-noscript a { color: var(--ink-60); text-decoration: none; }
 .nav-noscript a:hover { color: var(--ui-accent-text); }
-/* Hidden only once main.tsx has proven the module bundle executed. Absent that
-   flag — bundle blocked by Shields, chunk 404 over Tor, scripting disabled —
-   these stay as the only real anchors to 6 of the 13 prerendered routes. */
-html[data-boot="ok"] .nav-noscript { display: none; }
+/* DEFAULT HIDDEN, revealed only on a proven-degraded boot.
+   It was the other way round for one commit and that cost 0.1769 CLS on every
+   route: the block paints in the prerendered HTML, then main.tsx hides it and
+   everything below jumps up (measured Δy-161, "node removed"). A fallback that
+   degrades the healthy path is not a fallback.
+   Presence in the DOM is what verify-degraded §B1 asserts — it reads
+   querySelectorAll('#root a'), which returns display:none anchors — so hiding
+   by default costs nothing there. Two things reveal it: <noscript> in
+   index.html for scripting-off, and the boot watchdog for a dead module. */
+.nav-noscript { display: none; }
+html[data-boot="dead"] .nav-noscript { display: flex; }
 .navitem {
   position: relative; flex: none;
   font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.11em; text-transform: uppercase;
