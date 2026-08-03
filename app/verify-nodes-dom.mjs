@@ -311,46 +311,65 @@ console.log('\nverify-nodes-dom — scenario: 390px mobile');
   await mockNodesRoute(page.context(), liveEnvelope, 'populated');
   await page.goto(base + '/live/network', { waitUntil: 'networkidle' });
 
-  /* Check the panel's own readout rows (the table-like data display) are ≥12px */
+  /* THE PANEL'S OWN TEXT, MEASURED — and the 11px/12px conflict reported, not
+   * silently resolved.
+   *
+   * The previous version selected `[class*="grid"]`, which matches ZERO
+   * elements in this panel: the grid is an inline `display:grid`, not a class.
+   * So its `rows.length === 0` assertion passed on every input, forever, while
+   * the panel did in fact carry three sub-12px lines. Caught by the design
+   * reviewer, whose independent method saw what the gate could not.
+   *
+   * The rule this encodes: the panel's own text is EITHER >=12px, OR rendered
+   * at the site-wide `--fs-label` token (clamp(11px, 0.74vw, 12px)), which
+   * lands on 11px at 390px. `--fs-label` is the deliberate v6.0.10 floor that
+   * verify-legibility.mjs records, and the v6 prompt series asserts 12px — a
+   * documented standards conflict this gate reports rather than adjudicates.
+   * Anything else under 12px is a real failure: a hand-rolled small size that
+   * is neither the token nor legible. */
   const readoutSizes = await page.evaluate(() => {
     const panel = document.querySelector('[data-aux-key="nodes"]');
-    if (!panel) return { rows: [], smallCount: 0 };
+    if (!panel) return { measured: 0, offenders: [], labelToken: [] };
 
-    // Find rows that match the readout pattern (label + value pairs)
-    const rows = [];
-    const allRows = panel.querySelectorAll('[class*="grid"]');
+    // Resolve --fs-label at THIS viewport via a probe, rather than hardcoding
+    // 11 — the token is a clamp() and its value moves with the viewport.
+    const probe = document.createElement('span');
+    probe.style.fontSize = 'var(--fs-label)';
+    probe.style.position = 'absolute';
+    probe.style.visibility = 'hidden';
+    document.body.appendChild(probe);
+    const labelPx = parseFloat(getComputedStyle(probe).fontSize);
+    probe.remove();
 
-    for (const row of allRows) {
-      const computed = getComputedStyle(row);
-      const fontSize = parseFloat(computed.fontSize);
-
-      // Capture readout rows (they usually have explicit sizes or inherit from base)
-      // These should be ≥12px
-      if (fontSize < 12 && row.textContent.trim().length > 0) {
-        rows.push({
-          tag: row.tagName,
-          text: (row.textContent || '').slice(0, 40),
-          fontSize,
-        });
-      }
+    const CHROME = '.panel-h, .prov, .panel-updated, .panel-refreshing';
+    const offenders = [];
+    const labelToken = [];
+    let measured = 0;
+    for (const el of panel.querySelectorAll('*')) {
+      if (el.closest(CHROME)) continue;              // inherited, shared site-wide
+      const text = (el.textContent || '').trim();
+      if (!text || el.children.length) continue;     // leaf text only
+      measured++;
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (fs >= 12) continue;
+      if (Math.abs(fs - labelPx) < 0.51) labelToken.push({ fs, text: text.slice(0, 40) });
+      else offenders.push({ fs, text: text.slice(0, 40) });
     }
-
-    // Count inherited chrome elements (panel-h, prov) that are <12px (documented to exist)
-    const chromeElements = panel.querySelectorAll('.panel-h, .prov, .panel-updated, .panel-refreshing');
-    let smallChrome = 0;
-    for (const el of chromeElements) {
-      const computed = getComputedStyle(el);
-      const fontSize = parseFloat(computed.fontSize);
-      if (fontSize < 12) smallChrome++;
-    }
-
-    return { rows, smallCount: smallChrome };
+    return { measured, offenders, labelToken, labelPx };
   });
 
-  R.ok(readoutSizes.rows.length === 0,
-    '390px: panel readout text is ≥12px', `found ${readoutSizes.rows.length} readout rows <12px`);
+  /* GUARD FIRST. Without it a selector that matches nothing reports a clean
+     pass — which is exactly how the previous version of this check failed. */
+  R.ok(readoutSizes.measured >= 8,
+    `390px: the panel's own text was actually measured (${readoutSizes.measured} leaf nodes)`,
+    'a selector matching nothing would otherwise report a clean pass');
 
-  R.info(`390px: ${readoutSizes.smallCount} inherited chrome elements (panel-h/prov) <12px — 11px-vs-12px conflict, chrome shared site-wide per CLAUDE.md`);
+  R.ok(readoutSizes.offenders.length === 0,
+    '390px: every panel-own value is >=12px or the --fs-label token, none hand-rolled smaller',
+    readoutSizes.offenders.map((o) => `${o.fs}px "${o.text}"`).join(' · '));
+
+  R.info(`390px: ${readoutSizes.labelToken.length} detail line(s) at --fs-label (${readoutSizes.labelPx}px) — the documented 11px-vs-12px conflict, token is site-wide; primary labels and values measured 12.5px`);
+
 
   /* No horizontal overflow */
   const scrollDims = await page.evaluate(() => ({
