@@ -185,6 +185,10 @@ await coldBootOffBrowser(b);
 
   for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
+    // v6.1.8 PRECONDITION — Home only. This gate counts OFF-ORIGIN REQUESTS;
+    // if the splash covered Home and issued none, the zero would be the
+    // splash's zero, not the route's.
+    if (route === '/') await assertColdBootBypassed(p, { ok }, route);
     await p.waitForTimeout(300);
   }
   ok(offOrigin.length === 0,

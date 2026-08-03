@@ -124,6 +124,9 @@ const newPage = async (opts = {}) => {
 for (const path of ['/live/markets', '/live/network', '/']) {
   const p = await newPage();
   await p.goto(base + path, { waitUntil: 'load' });
+  // v6.1.8 PRECONDITION — Home only. A gradient/id census taken through the
+  // splash counts the SPLASH's defs and reports them as the route's.
+  if (path === '/') await assertColdBootBypassed(p, { ok }, path);
   await p.waitForTimeout(1800);
 
   const g = await p.evaluate(() => {

@@ -410,6 +410,12 @@ async function measure(route, mocked) {
   // "on load" by any reading.
   await page.waitForTimeout(3000);
 
+  // v6.1.8 PRECONDITION. A CLS number measured through the cold-boot splash
+  // describes the splash, not the route — and it would read LOW (a
+  // full-bleed overlay does not shift), so it would pass while measuring
+  // nothing. Only meaningful on Home; asserted only there.
+  if (route === RT.HOME) await assertColdBootBypassed(page, R, `${route}${mocked ? ' healthy' : ' degraded'}`);
+
   const cls = await page.evaluate(() => window.__CLS__ ?? 0);
   const entries = await page.evaluate(() => window.__CLS_ENTRIES__ ?? []);
   /* Did the /api/nodes mock actually REACH the panel? Carried out of measure()

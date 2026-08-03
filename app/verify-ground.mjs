@@ -272,6 +272,9 @@ for (const vp of VIEWPORTS) {
     // rather than merely retinted, which is what the v5 pixel-diff requires.
     if (theme === 'classic') {
       await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+      // v6.1.8 PRECONDITION. This asserts ambient layers are ABSENT. A
+      // full-bleed splash would hide them and read as a pass.
+      await assertColdBootBypassed(page, R, '/ classic');
       await page.waitForSelector('.page-shell, main', { timeout: 15000 });
       const shown = await page.evaluate((sels) => sels.filter((s) => {
         const el = document.querySelector(s);

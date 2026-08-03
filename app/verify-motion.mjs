@@ -175,6 +175,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   R.group('── 1+2 · route transitions gate on the resolved-chunk Set ────');
   const page = await newProbePage(browser, { width: 1440, height: 900 }, {});
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
   await page.waitForSelector('main.main');
 
   await resetCalls(page);
@@ -210,6 +211,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   for (const reducedMotion of ['no-preference', 'reduce']) {
     const page = await newProbePage(browser, { width: 1440, height: 900 }, { reducedMotion });
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
     await page.waitForSelector('main.main');
     await clickNavLink(page, '/live/mempool'); // resolve the chunk (no transition expected)
     await page.waitForSelector('.mp-shell', { timeout: 15000 });
@@ -323,6 +325,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   page.on('pageerror', (e) => errors.push(String(e)));
 
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
   await page.waitForSelector('main.main');
   const hasApi = await page.evaluate(() => typeof document.startViewTransition === 'function');
   R.ok(hasApi === false, '6 · startViewTransition is genuinely absent in this context');

@@ -337,6 +337,11 @@ async function measure(route) {
   // ORDER IS LOAD-BEARING. LCP keeps updating until the first user input, so
   // it must be read BEFORE any interaction. Interacting first truncates LCP
   // into a number that improves whenever the harness gets faster.
+  // v6.1.8 PRECONDITION. The splash IS a large paint: an LCP measured
+  // against it is an LCP for the wrong element and can pass a budget the
+  // real Home would miss.
+  if (route === RT.HOME) await assertColdBootBypassed(page, R, route);
+
   const load = await page.evaluate(() => ({
     lcp: window.__V__.lcp,
     lcpEl: window.__V__.lcpEl,

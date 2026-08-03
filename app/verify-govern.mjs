@@ -385,6 +385,7 @@ R.group("── 7 · a shed is visible from outside (browser) ──────
     // moment in its 22–48s rise, and this loop is also actively removing and
     // re-adding orbs, so waiting on one particular span being paintable hangs.
     await page.goto(`${BASE}/?tier=high`, { waitUntil: "domcontentloaded" });
+    await assertColdBootBypassed(page, R, "/?tier=high");
     await page.waitForSelector("#bg-fx .orb", { state: "attached", timeout: 15000 });
 
     const hook = await page.evaluate(() => typeof window.__XMR_GOV__?.scale);
@@ -448,6 +449,7 @@ R.group("── 7 · a shed is visible from outside (browser) ──────
     // get a deterministic layer count out of a CI box that misses frame budget.
     const pinned = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await pinned.goto(`${BASE}/?tier=high&gov=off`, { waitUntil: "domcontentloaded" });
+    await assertColdBootBypassed(pinned, R, "/?tier=high&gov=off");
     await pinned.waitForSelector("#bg-fx .orb", { state: "attached", timeout: 15000 });
     const off = await pinned.evaluate(() => {
       let t = performance.now();

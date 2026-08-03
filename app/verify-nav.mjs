@@ -78,6 +78,11 @@ const soft = (p) => p.catch(() => null);
 async function open(page, route) {
   await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
   await soft(page.waitForSelector('.art-stage', { timeout: 20000 }));
+  // v6.1.8 PRECONDITION, centralised here because every navigation in
+  // this file goes through open(). Home only — the splash exists on no
+  // other route, and asserting its absence elsewhere would manufacture
+  // passes that mean nothing.
+  if (route === '/' || route === Routes.HOME) await assertColdBootBypassed(page, R, route);
 }
 
 /** Wait for at least one #page-title to be in the DOM. `waitForSelector`

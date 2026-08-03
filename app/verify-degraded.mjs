@@ -143,6 +143,7 @@ await coldBootOffBrowser(b);
   const p = await ctx.newPage();
   await p.route('**/assets/*.css', (r) => r.abort());
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(300);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
@@ -201,6 +202,7 @@ await coldBootOffBrowser(b);
   const p = await ctx.newPage();
   await p.route('**/assets/*.js', (r) => r.abort());
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
@@ -261,6 +263,7 @@ await coldBootOffBrowser(b);
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.abort()); // no egress; app boots to skeletons
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(1200);
 
   const mounted = await p.evaluate(() => {
@@ -321,6 +324,7 @@ await coldBootOffBrowser(b);
     await route.fulfill({ status: 200, contentType: 'text/css', body: css });
   });
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(400);
 
   // Either serialisation is correct. --accent-structural is @property-registered

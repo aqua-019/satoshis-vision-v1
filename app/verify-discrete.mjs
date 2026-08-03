@@ -159,6 +159,7 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
   group('── 0 · engine support (a gate for a feature the engine lacks proves nothing) ─');
   const page = await browser.newPage();
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
   const sup = await page.evaluate(() => ({
     behavior: CSS.supports('transition-behavior', 'allow-discrete'),
     // @starting-style has no CSS.supports() surface, so detect it by
