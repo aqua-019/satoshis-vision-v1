@@ -22,6 +22,7 @@ import { V6Modal } from "./V6Modal";
 import { FutureMini } from "./FutureMini";
 import { SIM_IDS, type FutureProtocol } from "./data";
 import { FeedEmpty } from "./cards";
+import { R } from "../../../scripts/routes.mjs";
 
 export interface ProtoPopupProps {
   p: FutureProtocol;
@@ -102,7 +103,7 @@ export function ProtoPopup({ p, open, onClose, morphed }: ProtoPopupProps) {
               <button
                 type="button"
                 className="proto-btn"
-                onClick={() => { onClose(); navigate("/simulate?p=" + p.sim); }}
+                onClick={() => { onClose(); navigate(`${R.LEARN_SIM}?p=` + p.sim); }}
                 style={{ borderColor: p.c, color: p.c, boxShadow: `0 0 10px ${p.c}44` }}
               >
                 ▶ RUN THE {p.tag.toUpperCase()} SIMULATOR

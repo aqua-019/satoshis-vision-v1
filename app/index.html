@@ -211,18 +211,24 @@
           blocker, a strict privacy setting, or a dropped connection stopped it — the site itself is
           read-only and non-custodial, so nothing was at risk. Reloading often resolves it; allowing
           scripts for this one origin will too. Every page below is a plain link and still works.</div>
+        <!-- Plain HTML cannot import — kept hand-in-sync with the 13 real
+             route paths declared once in scripts/routes.mjs's `R`. Order
+             matches nav/ia.ts's IA sections: Live → Monero → Learn → Future
+             → Operate → About. -->
         <ul class="shell__nav">
           <li><a class="shell__a" href="/">Home</a></li>
-          <li><a class="shell__a" href="/mempool">Mempool</a></li>
-          <li><a class="shell__a" href="/markets">Markets</a></li>
-          <li><a class="shell__a" href="/network">Network</a></li>
-          <li><a class="shell__a" href="/education">Education</a></li>
+          <li><a class="shell__a" href="/live/mempool">Mempool</a></li>
+          <li><a class="shell__a" href="/live/markets">Markets</a></li>
+          <li><a class="shell__a" href="/live/markets/thesis">Market thesis</a></li>
+          <li><a class="shell__a" href="/live/network">Network</a></li>
           <li><a class="shell__a" href="/monero">Monero</a></li>
+          <li><a class="shell__a" href="/learn">Learn</a></li>
+          <li><a class="shell__a" href="/learn/sim">Simulators</a></li>
           <li><a class="shell__a" href="/future">Future</a></li>
-          <li><a class="shell__a" href="/peers">Peers</a></li>
-          <li><a class="shell__a" href="/simulate">Simulate</a></li>
-          <li><a class="shell__a" href="/node">Node</a></li>
-          <li><a class="shell__a" href="/sources">Sources</a></li>
+          <li><a class="shell__a" href="/future/outlook">Outlook</a></li>
+          <li><a class="shell__a" href="/operate/node">Run a node</a></li>
+          <li><a class="shell__a" href="/about/peers">Peers</a></li>
+          <li><a class="shell__a" href="/about/sources">Sources</a></li>
         </ul>
         <a class="shell__a" href="https://getmonero.org" rel="noopener noreferrer">Learn about Monero → getmonero.org</a>
       </div></div>

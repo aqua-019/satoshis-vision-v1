@@ -14,6 +14,7 @@ import type { Tracking } from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import type { MoneroLive } from "@/data/types";
 import { freshAt, hasData, lastOkAt } from "@/data/feed-status";
+import { R } from "../../scripts/routes.mjs";
 
 interface ViewProps {
   data: MoneroLive;
@@ -476,7 +477,7 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
         </div>
         <span className="dim" style={{ color: "var(--ink-40)" }}>
           Monero coinbases don't tag pools, so per-pool share isn't measurable on-chain.
-          Decentralization &amp; HHI live in the <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
+          Decentralization &amp; HHI live in the <Link to={`${R.LEARN_SIM}?p=skyline`} className="acc">Skyline simulator</Link>.
         </span>
       </div>
     </BrgCard>

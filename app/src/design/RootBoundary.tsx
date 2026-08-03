@@ -17,6 +17,14 @@
 
 import * as React from "react";
 
+// R is scripts/routes.mjs's single authority for the 13 real route paths —
+// see that file's header. Safe to import here (plain data, no CSS/JS
+// dependency): the literal-hex-only rule below governs colours only, so a
+// boundary that reaches for var(--ui-accent) stays useless in exactly the
+// case where the stylesheet failed, but the route PATHS themselves are not
+// styling and carry no such risk.
+import { R } from "../../scripts/routes.mjs";
+
 const WRAP: React.CSSProperties = {
   position: "fixed",
   inset: 0,
@@ -56,19 +64,23 @@ const NAV: React.CSSProperties = {
   gap: "8px 18px",
 };
 
-/** Same route list as index.html's shell fallback and App.tsx's <Routes>. */
+/** Same route list as index.html's shell fallback and App.tsx's <Routes>,
+ *  in nav/ia.ts's section order (Live → Monero → Learn → Future → Operate →
+ *  About). Built from R rather than retyped path literals. */
 const ROUTES: ReadonlyArray<readonly [string, string]> = [
-  ["/", "Home"],
-  ["/mempool", "Mempool"],
-  ["/markets", "Markets"],
-  ["/network", "Network"],
-  ["/education", "Education"],
-  ["/monero", "Monero"],
-  ["/future", "Future"],
-  ["/peers", "Peers"],
-  ["/simulate", "Simulate"],
-  ["/node", "Node"],
-  ["/sources", "Sources"],
+  [R.HOME, "Home"],
+  [R.LIVE_MEMPOOL, "Mempool"],
+  [R.LIVE_MARKETS, "Markets"],
+  [R.MARKETS_THESIS, "Market thesis"],
+  [R.LIVE_NETWORK, "Network"],
+  [R.MONERO, "Monero"],
+  [R.LEARN, "Learn"],
+  [R.LEARN_SIM, "Simulators"],
+  [R.FUTURE, "Future"],
+  [R.FUTURE_OUTLOOK, "Outlook"],
+  [R.OPERATE_NODE, "Run a node"],
+  [R.ABOUT_PEERS, "Peers"],
+  [R.ABOUT_SOURCES, "Sources"],
 ];
 
 export interface RootBoundaryProps {

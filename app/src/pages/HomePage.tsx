@@ -11,6 +11,7 @@ import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-stat
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { Card, Crumbs, Pill, Sparkline, Stat, Provenance, NodeProvenance } from "@/design/primitives";
 import { ThemeToggle } from "@/design/ThemeToggle";
+import { R } from "../../scripts/routes.mjs";
 
 export function HomePage() {
   const data = useMoneroLive();
@@ -41,8 +42,8 @@ export function HomePage() {
             Dandelion++, View tags, FCMP++.
           </p>
           <div style={{ display: "flex", gap: 10, marginTop: 6, alignItems: "center", flexWrap: "wrap" }}>
-            <Link to="/mempool" className="proto-btn" style={{ textDecoration: "none" }}>Open mempool →</Link>
-            <Link to="/education" className="proto-btn"
+            <Link to={R.LIVE_MEMPOOL} className="proto-btn" style={{ textDecoration: "none" }}>Open mempool →</Link>
+            <Link to={R.LEARN} className="proto-btn"
               style={{ textDecoration: "none", borderColor: "var(--p-50)", color: "var(--p-50)", boxShadow: "var(--glow-p)" }}>
               Learn the protocols
             </Link>
@@ -114,7 +115,7 @@ export function HomePage() {
           {data.blocks.slice(0, 14).map((b) => (
             <Link
               key={b.height}
-              to={`/mempool?v=classic&block=${b.height}`}
+              to={`${R.LIVE_MEMPOOL}?v=classic&block=${b.height}`}
               className="mblock"
               style={{ textDecoration: "none", color: "inherit", display: "block" }}
               aria-label={`Block ${b.height}, ${b.txs} transactions — open in mempool`}
@@ -133,18 +134,18 @@ export function HomePage() {
         <div className="kicker" style={{ marginBottom: 12 }}>The site · 7 surfaces</div>
         <div className="kpi-grid" style={{ ["--kpi-cols" as any]: 4, gap: 12 }}>
           {[
-            { to: "/mempool",   t: "Mempool",   d: "5 visualisations. Reactor · Bridge · Sediment · Constellation · Terminal.", c: "var(--tk-accent)" },
-            { to: "/markets",   t: "Markets",   d: "Spot price, volume, order-book depth, the XMR/BTC ratio. Where XMR trades.", c: "var(--c-50)" },
-            { to: "/network",   t: "Network",   d: "Pools, hashrate, difficulty, block weight, fork readiness. Raw chain telemetry · peer telemetry soon.", c: "var(--y-50)" },
-            { to: "/monero",    t: "Monero",    d: "Origin story, tail emission, the eternal hearth. Why this coin won't die.", c: "var(--g-50)" },
-            { to: "/education", t: "Education", d: "The BTC→XMR journey, privacy timeline, Satoshi quotes, and metaphor-driven protocol simulators (educational).", c: "var(--p-50)" },
-            { to: "/simulate",  t: "Simulate",  d: "Educational protocol models — run any one with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--tk-accent)" },
-            { to: "/node",      t: "Run a node", d: "monerod in one command. Tor + I2P optional. Free seed peers.", c: "var(--y-50)" },
+            { to: R.LIVE_MEMPOOL, t: "Mempool",   d: "5 visualisations. Reactor · Bridge · Sediment · Constellation · Terminal.", c: "var(--tk-accent)" },
+            { to: R.LIVE_MARKETS, t: "Markets",   d: "Spot price, volume, order-book depth, the XMR/BTC ratio. Where XMR trades.", c: "var(--c-50)" },
+            { to: R.LIVE_NETWORK, t: "Network",   d: "Pools, hashrate, difficulty, block weight, fork readiness. Raw chain telemetry · peer telemetry soon.", c: "var(--y-50)" },
+            { to: R.MONERO,       t: "Monero",    d: "Origin story, tail emission, the eternal hearth. Why this coin won't die.", c: "var(--g-50)" },
+            { to: R.LEARN,        t: "Learn",     d: "The BTC→XMR journey, privacy timeline, Satoshi quotes, and metaphor-driven protocol simulators (educational).", c: "var(--p-50)" },
+            { to: R.LEARN_SIM,    t: "Simulate",  d: "Educational protocol models — run any one with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--tk-accent)" },
+            { to: R.OPERATE_NODE, t: "Run a node", d: "monerod in one command. Tor + I2P optional. Free seed peers.", c: "var(--y-50)" },
           ].map((s) => (
             <Card key={s.to} onClick={() => navigate(s.to)} style={{ padding: 14 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
                 <div className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.18em", textTransform: "uppercase", color: s.c }}>{s.t}</div>
-                {s.to === "/simulate" ? <Provenance source="model" /> : null}
+                {s.to === R.LEARN_SIM ? <Provenance source="model" /> : null}
               </div>
               <p className="mono" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55, color: "var(--ink-60)" }}>{s.d}</p>
             </Card>

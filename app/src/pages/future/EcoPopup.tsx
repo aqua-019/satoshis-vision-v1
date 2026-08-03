@@ -17,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 import { V6Modal } from "./V6Modal";
 import { SIM_IDS, type EcoEntry } from "./data";
+import { R } from "../../../scripts/routes.mjs";
 
 export interface EcoPopupProps {
   e: EcoEntry;
@@ -74,7 +75,7 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
               <button
                 type="button"
                 className="proto-btn"
-                onClick={() => { onClose(); navigate("/simulate?p=" + simId); }}
+                onClick={() => { onClose(); navigate(`${R.LEARN_SIM}?p=` + simId); }}
                 style={{ alignSelf: "flex-start", borderColor: e.c, color: e.c, boxShadow: `0 0 10px ${e.c}44` }}
               >
                 ▶ {e.simLabel}

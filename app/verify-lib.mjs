@@ -99,7 +99,7 @@ export async function throttle(ctx, page) {
 }
 
 /** Every addressable surface in the app. Tabs and simulator query params are
- *  separate entries because they are separate LAYOUTS — walking only the seven
+ *  separate entries because they are separate LAYOUTS — walking only the
  *  top-level routes is how the legality tab shipped broken twice.
  *
  *  v6.1.3 — the simulator list below carries all 21 `?p=` ids registered in
@@ -108,25 +108,35 @@ export async function throttle(ctx, page) {
  *  prior copy of this comment). It previously listed 15 and silently skipped
  *  the six-member "Future protocol" group (seraphis, jamtis, carrot, cuprate,
  *  stressnet, ospead) in every browser gate that iterates ROUTES — those six
- *  routes existed in the app and were never walked here. Total route count is
- *  now 43 (was 37): 8 top-level + 4 education tabs + 9 monero tabs + 21
- *  simulators + 1 404. */
+ *  routes existed in the app and were never walked here.
+ *
+ *  Nav restructure (13-route IA, scripts/routes.mjs's `R`) — the 8 old
+ *  top-level routes are renamed in place (`/mempool` → `/live/mempool`, etc.)
+ *  and two more top-level entries are ADDED: `/live/markets/thesis` and
+ *  `/future/outlook`, both of which used to be `/monero/:tab` members
+ *  (`markets`, `outlook`) and are gone from that tab set as a result — it
+ *  drops from 9 to 7. The 21 simulators move from `/simulate?p=<id>` to
+ *  `/learn/sim?p=<id>`. Total route count stays 43: 10 top-level (8 renamed +
+ *  2 new) + 4 education tabs (renamed to /learn/<tab>) + 7 monero tabs
+ *  (markets/outlook removed) + 21 simulators + 1 404. */
 export const ROUTES = [
   '/',
-  '/mempool',
-  '/markets',
-  '/network',
-  '/node',
-  '/sources',
-  '/peers',
+  '/live/mempool',
+  '/live/markets',
+  '/live/markets/thesis',
+  '/live/network',
+  '/operate/node',
+  '/about/sources',
+  '/about/peers',
   '/future',
-  ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/education/${t}`),
-  ...['overview', 'origin', 'tech', 'legality', 'markets', 'comparison', 'attacks', 'bottomline', 'outlook']
+  '/future/outlook',
+  ...['journey', 'timeline', 'quotes', 'simulators'].map((t) => `/learn/${t}`),
+  ...['overview', 'origin', 'tech', 'legality', 'comparison', 'attacks', 'bottomline']
     .map((t) => `/monero/${t}`),
   ...['decoy', 'dandelion', 'viewtags', 'ringct', 'stealth', 'fcmp',
       'seraphis', 'jamtis', 'carrot', 'cuprate', 'stressnet', 'ospead',
       'hearth', 'metronome', 'silo', 'thermostat', 'lighthouse', 'auction',
-      'skyline', 'bloodhound', 'balance'].map((p) => `/simulate?p=${p}`),
+      'skyline', 'bloodhound', 'balance'].map((p) => `/learn/sim?p=${p}`),
   '/no-such-route',           // 404
 ];
 

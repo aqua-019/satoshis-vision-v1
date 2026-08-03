@@ -32,6 +32,7 @@ import { Swap, SkeletonBox, SkeletonRows } from "@/design/Skeleton";
 import { PanelBoundary } from "@/design/PanelBoundary";
 import { useFeedActivity } from "@/data/feed-activity";
 import { usePendingDelay } from "@/design/usePendingDelay";
+import { R } from "../../scripts/routes.mjs";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
    across renders. `AreaSeries`/`BarSeries` are React.memo'd (see
@@ -514,7 +515,7 @@ export function NetworkPage() {
               title="Real explorers show pool names from a maintained dataset of coinbase tx_extra signatures, or a third-party pool API. Both are off-limits here: a bundled list goes stale and is partial, and an API would break the zero-third-party privacy invariant. So 'Unknown' from the node alone is the honest representation."
               style={{ cursor: "help", color: "var(--ink-60)", borderBottom: "1px dotted var(--ink-40)" }}
             >why ⓘ</span>. HHI concentration is explored in the{" "}
-            <Link to="/simulate?p=skyline" className="acc">Skyline simulator</Link>.
+            <Link to={`${R.LEARN_SIM}?p=skyline`} className="acc">Skyline simulator</Link>.
           </p>
         </DataPanel>
 

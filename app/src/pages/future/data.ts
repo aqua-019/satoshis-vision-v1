@@ -18,6 +18,7 @@ import {
   PROTOCOL_FUTURE_META,
   PROTOCOL_METAPHORS_META,
 } from "@/views/protocol-meta";
+import { R } from "../../../scripts/routes.mjs";
 
 export type MiniMode = "fcmp" | "seraphis" | "jamtis" | "carrot" | "cuprate" | "stressnet";
 export type Metric = readonly [k: string, v: string];
@@ -104,7 +105,7 @@ export const DEV_LAB_PULSES: readonly DevLabPulse[] = [
   { repo: "monero-project/research-lab", label: "MRL · research", href: "https://github.com/monero-project/research-lab" },
   // Links to /sources, not github.com: this site's release feed is rendered
   // there from its own commit log.
-  { repo: "aqua-019/satoshis-vision-v1", label: "This site", href: "/sources" },
+  { repo: "aqua-019/satoshis-vision-v1", label: "This site", href: R.ABOUT_SOURCES },
   { repo: "brainchainz/Monero-Superbrain", label: "Superstress · Umbrel apps", href: "https://github.com/brainchainz/Monero-Superbrain" },
 ];
 
@@ -287,7 +288,7 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // The wind-tunnel simulator tells this same story from the modelling side:
     // storm intensity in, dynamic block size and fee response out. Gated on
     // SIM_IDS by EcoPopup, exactly like the protocol cards' CTAs.
-    simLink: "/simulate?p=stressnet",
+    simLink: `${R.LEARN_SIM}?p=stressnet`,
     simLabel: "RUN THE STRESSNET SIMULATOR",
     slots: [
       { label: "screenshot · umbrel node dashboard", h: 130 },

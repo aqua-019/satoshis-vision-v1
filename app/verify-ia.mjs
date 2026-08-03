@@ -94,7 +94,12 @@ try {
   if (!Array.isArray(routes)) {
     R.ok(false, 'ROUTES is not an array');
   } else {
-    R.ok(routes.length === 13, `ROUTES length: ${routes.length} (expected 12)`);
+    // 13 ROUTES and 12 REDIRECTS are different numbers; a blanket rename of one
+    // caught the other and left this message reading "expected 12" while the
+    // assertion correctly tested 13. Harmless to the result, corrosive to trust
+    // in the output — a gate whose text disagrees with its own condition is the
+    // reason people stop reading gate logs.
+    R.ok(routes.length === 13, `ROUTES length: ${routes.length} (expected 13)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
