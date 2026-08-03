@@ -65,7 +65,7 @@ import { useMoneroLive } from "@/data/DataContext";
 import type { MoneroLive } from "@/data/types";
 import { fmtBytes } from "@/data/types";
 import { useFeedEvents, type FeedEvent } from "@/data/useFeedEvents";
-import { useNodePopulation, type NodeHeight } from "@/data/useNodePopulation";
+import { useNodePopulation, heightAgreementPct, type NodeHeight } from "@/data/useNodePopulation";
 import { useMemStats, BlockEta } from "@/mempool/mem-stats";
 import { NodeProvenance, Provenance } from "@/design/primitives";
 import { useReducedMotion } from "@/design/useReducedMotion";
@@ -319,15 +319,10 @@ const MATRIX_HD_STYLE: React.CSSProperties = {
  * data helpers
  * ══════════════════════════════════════════════════════════════════════════ */
 
-/** Same lag <= 2 formula NodePopulationPanel.tsx:216-218 already uses — two
- *  surfaces computing "height agreement" two different ways is a defect
- *  waiting for a user to find it, not a design choice. */
-function heightAgreementPct(height: NodeHeight): number | null {
-  const sample = height.clusters.reduce((a, c) => a + c.count, 0);
-  if (sample <= 0) return null;
-  const withinTwo = height.clusters.filter((c) => Math.abs(c.lag) <= 2).reduce((a, c) => a + c.count, 0);
-  return (withinTwo / sample) * 100;
-}
+/* `heightAgreementPct` was defined here, character-identical to the copy in
+ * NodePopulationPanel.tsx, under a comment naming that exact hazard. It now
+ * lives once in @/data/useNodePopulation beside the type it reads, so the two
+ * surfaces cannot drift rather than being checked for drift. */
 
 interface HudRow {
   readonly label: string;
@@ -498,6 +493,10 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
   const clearPct = nodeD && splitTotal > 0 ? (nodeD.split.clear / splitTotal) * 100 : 0;
   const torPct = nodeD && splitTotal > 0 ? (nodeD.split.tor / splitTotal) * 100 : 0;
   const i2pPct = nodeD && splitTotal > 0 ? (nodeD.split.i2p / splitTotal) * 100 : 0;
+  // Evaluated ONCE per render. The previous form called it twice in one JSX
+  // expression — for the null check and again for the value — inside a render
+  // path on the LCP route.
+  const agreementPct = nodeD ? heightAgreementPct(nodeD.height) : null;
 
   const hovered: RingMember | null = hoverI >= 0 ? DECOY_RING[hoverI] : null;
 
@@ -767,7 +766,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
             <NetRow label="clear / tor / i2p" value={nodeD ? `${nodeD.split.clear} / ${nodeD.split.tor} / ${nodeD.split.i2p}` : "—"} />
             <NetRow
               label="Height agreement"
-              value={nodeD ? (heightAgreementPct(nodeD.height) != null ? `${heightAgreementPct(nodeD.height)!.toFixed(1)} %` : "—") : "—"}
+              value={agreementPct != null ? `${agreementPct.toFixed(1)} %` : "—"}
             />
           </div>
 

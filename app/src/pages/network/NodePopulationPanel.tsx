@@ -73,7 +73,7 @@
 import * as React from "react";
 import { PanelFrame, NodeProvenance, MiniBar } from "@/design/primitives";
 import { Swap, SkeletonRows } from "@/design/Skeleton";
-import { useNodePopulation } from "@/data/useNodePopulation";
+import { useNodePopulation, heightAgreementPct } from "@/data/useNodePopulation";
 import { usePendingDelay } from "@/design/usePendingDelay";
 
 /* ── fixed-height budget — see the docblock's NODE_PANEL_H note ────────────
@@ -213,9 +213,11 @@ export function NodePopulationPanel() {
     const torPct = splitPct(split.tor, split.total);
     const i2pPct = splitPct(split.i2p, split.total);
 
+    // Shared with the cold-boot console via the one implementation in
+    // @/data/useNodePopulation — both surfaces render this statistic under the
+    // same label, so it cannot be allowed to exist twice.
     const heightSample = height.clusters.reduce((a, c) => a + c.count, 0);
-    const withinTwo = height.clusters.filter((c) => Math.abs(c.lag) <= 2).reduce((a, c) => a + c.count, 0);
-    const agreementPct = heightSample > 0 ? (withinTwo / heightSample) * 100 : null;
+    const agreementPct = heightAgreementPct(height);
 
     const lagCount = height.lagging.count;
     const lagClusters = height.lagging.clusters;
