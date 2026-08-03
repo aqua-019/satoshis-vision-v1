@@ -218,8 +218,26 @@ const BUDGETS = {
   // Raised NOW, at 99%, rather than after the cold-boot mount pushes it past
   // 100%: at that point the number would be chosen by the constraint rather
   // than by measurement, and "we had to" is not a calibration argument.
-  // §7's self-test still bites — a +50 KB regression measures 138,328 and
-  // fails this ceiling.
+  //
+  // WHAT THIS COST, stated because a bigger number with no trade beside it is
+  // a decision a future reader cannot weigh:
+  //
+  //   smallest eager regression this table still catches
+  //     before   873 B
+  //     after  8,873 B      — 10.2x looser
+  //
+  // For scale: the entire Main Home rewrite cost 2,072 B. This ceiling would
+  // now absorb four more of them silently. It still catches a careless
+  // heavyweight import; it no longer catches a rewrite. That is what ~10%
+  // headroom BUYS and what it COSTS, and both halves belong here.
+  //
+  // Do NOT cite §7's self-test as evidence this number is well-calibrated.
+  // §7 fails only once the budget reaches 87,128 + 51,200 = 138,328, so it
+  // passes at ANY ceiling up to 138,327 — it would have been just as green at
+  // 120,000. It is a catastrophe backstop, not a calibration check, and
+  // leaning on it makes a sound argument look like a weak one to anyone who
+  // checks its slack. The evidence for 96,000 is the ~10% rule applied to a
+  // measurement, plus the irreducibility check above. That is all it needs.
   eagerJsGz: 96_000,
   // One render-blocking stylesheet. All five sheets are imported from
   // main.tsx:26-30 (203,896 bytes of SOURCE) and Vite minifies them to one
