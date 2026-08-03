@@ -635,7 +635,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 # Per-repo CLAUDE.md — AQUA Stack L3: Orchestrator + Worker Roster
 
-<!-- AQUA-STACK-VERSION: v4 · re-tiered crews + feedback architecture · layout A craft-first · 2026-08-02 -->
+<!-- AQUA-STACK-VERSION: v4.1 · re-tiered crews + feedback architecture + lead contract · layout A craft-first · 2026-08-03 -->
 
 This file is **self-contained**: it carries the loopflow rules it depends on, so it works identically in cloud sessions and fresh clones that never see `~/.claude`. A universal copy of the LOOPFLOW block also exists on Aqua's machine — the duplication is deliberate and harmless.
 
@@ -647,7 +647,7 @@ This file is **self-contained**: it carries the loopflow rules it depends on, so
 
 **Records on exit** — every completed task fills its handoff's `§7 REPORT` and appends one line to `handoffs/LOG.md`: `task_id · outcome · PR link`. Genuinely blocked after 3 distinct attempts on the same failure → `status: blocked`, exact error in REPORT, stop. Blocked is a valid exit; silent failure is not.
 
-**Git** — branch name from the handoff front-matter, conventional commits, exit via `gh pr create`. Never commit straight to main.
+**Git** — branch name from the handoff front-matter, conventional commits, exit via `gh pr create`. Never commit straight to main. **Cloud sessions:** `gh` is not installed — exit via the GitHub MCP and confirm the opened PR reports mergeable with every check concluded; and the Stop hook is machine-scope, so it does not exist in your checkout — map the task's Verify list onto §5 yourself and hold your own gate.
 
 ## Role
 
@@ -671,6 +671,8 @@ Small tasks skip the middle tier — the lead delegates workers directly. Direct
 
 **Directors do all further delegation.** Subagents cannot nest, so the pattern for spec-then-execute work is: an Opus or Sonnet author writes the spec → the *director* dispatches the Haiku executor against it. A worker never dispatches another worker.
 
+**The lead's own outputs carry contracts too (v4.1).** The lead's report names every director it spawned and the spawn mode each proved by attempting its delegation tool — a director that was never created must be visible as an absence, and each director's own first output is that same proof. Spawn `director-build` when three or more workers will run concurrently on one branch and their outputs need reconciling before the gate; below that, delegate workers directly. Flat mode is legal — but work containing a mandatory re-judgment class (gate tooling, payment-adjacent) requires a **named re-judgment home**: `director-quality`, or the lead itself performing the re-judgment against execution transcripts and saying so in the report. And the lead disposes of every returned assumption in writing — `ACCEPTED`, `CORRECTED`, or `DEFERRED — <reason>` — with every `DEFERRED` carried into §8.
+
 ## Roster (subagents in .claude/agents/)
 
 | Agent | Model | Owns |
@@ -688,7 +690,7 @@ Small tasks skip the middle tier — the lead delegates workers directly. Direct
 
 Ten workers exist; a task uses the **minimal team that covers it** — typically 2–4 plus a reviewer. Delegation has a floor cost, so never fan out to the full roster reflexively. Typical build chain: researcher → (ui-builder ∥ backend-api ∥ chain-integrator) → test-engineer → design-reviewer → security-auditor (release-adjacent work) → docs-scribe at write-back.
 
-**Two rules make the tier split safe, and neither is optional.** A Haiku worker gets a brief that leaves nothing to invent — exact files, exact shapes, exact acceptance checks — and returns `QUESTION:` rather than guessing when the brief is short. And `director-quality` personally re-judges, against the actual code, every finding on payment paths, wallet/node RPC, dependency changes, and security headers. A `CLEAR` nobody upstairs verified is not a pass.
+**Three rules make the tier split safe, and none is optional.** A Haiku worker gets a brief that leaves nothing to invent — exact files, exact shapes, exact acceptance checks — and returns `QUESTION:` rather than guessing when the brief is short. `director-quality` personally re-judges, against the actual code, every finding on payment paths, wallet/node RPC, dependency changes, security headers, **and any change to gate scripts, verification tooling, or the acceptance criteria themselves**. And a verification artifact is `DONE` only with a two-polarity execution transcript per new or modified assertion — a state that passes it and a state that fails it, actuals for both; untouched assertions grandfathered — because artifact-level polarity proves nothing about the assertions it did not exercise, and a vacuously-passing assertion is textually indistinguishable from a correct one. A `CLEAR` nobody upstairs verified is not a pass.
 
 ## Alternate Sonnet allocations (per-project, reversible)
 
@@ -706,9 +708,9 @@ The roster above is **layout A — craft-first**, the default. Two documented al
 
 Execution is not one-and-done. Work relays back up for judgment at four points, placed by *when the signal arrives*, because a loop that always runs becomes ritual: the worker learns to write a confident summary and the director learns to skim it. **Every loop below is conditional. Keep it that way.**
 
-**1 · Before the build — preflight.** A brief prefixed `PREFLIGHT` gets back the worker's READING, FILES, DONE MEANS and INFERRED, and nothing else, until the director replies `GO`. One cheap round trip against a whole wasted build. Triggered on: a Haiku worker touching an unfamiliar subsystem; anything on payment paths, RPC, or auth; a spec the director compressed from more than a screen; any re-dispatch after a gate FAIL. `INFERRED` is the payload — every line on it is something the brief failed to say.
+**1 · Before the build — preflight.** A brief prefixed `PREFLIGHT` gets back the worker's READING, FILES, DONE MEANS and INFERRED, and nothing else, until the director replies `GO`. One cheap round trip against a whole wasted build. Triggered on: a Haiku worker touching an unfamiliar subsystem; anything on payment paths, RPC, or auth; a spec the director compressed from more than a screen; any re-dispatch after a gate FAIL; and any dispatch handing over a pattern, rule, or selector set for mechanical application — whose reply adds `NOT-MATCHED:`, the cases the pattern cannot catch, because a brief can be unambiguous and still incomplete. `INFERRED` is the payload — every line on it is something the brief failed to say.
 
-**2 · At the return — the status ladder.** Every worker closes with `STATUS: DONE | DONE-WITH-ASSUMPTIONS | BLOCKED | OUT-OF-DEPTH`, plus FILES, EVIDENCE, ASSUMPTIONS, NOTICED and UNVERIFIED. This costs nothing — it changes what a return *contains*, not how many calls run. `OUT-OF-DEPTH` re-dispatches the task **one tier up** (Haiku → Sonnet → the director itself) and is never held against the worker; a confident wrong answer costs more, later, when it is harder to find. Re-sending the same task to the same tier with a firmer prompt is the anti-pattern: it converts an honest escalation into a guess.
+**2 · At the return — the status ladder.** Every worker closes with `STATUS: DONE | DONE-WITH-ASSUMPTIONS | BLOCKED | OUT-OF-DEPTH`, plus FILES, EVIDENCE, ASSUMPTIONS, NOTICED and UNVERIFIED. This costs nothing — it changes what a return *contains*, not how many calls run. `OUT-OF-DEPTH` re-dispatches the task **one tier up** (Haiku → Sonnet → the director itself) and is never held against the worker; a confident wrong answer costs more, later, when it is harder to find. Re-sending the same task to the same tier with a firmer prompt is the anti-pattern: it converts an honest escalation into a guess. The ladder has a return leg: the director or lead records `ACCEPTED / CORRECTED / DEFERRED — <reason>` per assumption, and every `DEFERRED` lands in §8 — the pilot showed a deferred assumption becoming a shipped bug precisely because the report was honest and the triage was silent. Every claim in any return is **executed** (output shown), **read** (cited with the state it was read at), or **UNVERIFIED** — stale is a citation failure, fabricated is never acceptable, and an APPROVE is a return like any other.
 
 **3 · After a two-hop build — spec-author review.** Where a Sonnet wrote the spec and a Haiku implemented it, the spec author sees the diff and returns `MATCHES-SPEC` / `DIVERGES` / `SPEC-WAS-AMBIGUOUS`. Cheap, because that agent already holds the context. It is an interface check inside the build mandate, **not** the gate — it catches an implementation that did what the spec said rather than what it meant, and it is the only mechanism that tells a spec author their own brief was ambiguous.
 
