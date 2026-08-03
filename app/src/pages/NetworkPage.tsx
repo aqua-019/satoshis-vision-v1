@@ -306,13 +306,27 @@ export function NetworkPage() {
   // six real charts do. Derived instead from its own two rendered pieces —
   // the 26px stat row plus its 12px gap plus the 14px bar — so the reserve
   // still describes real layout rather than an invented number.
-  /* MEASURED, not derived. The arithmetic 26 + 12 + 14 = 52 describes the
-     POPULATED state; the empty state renders 56, so a 52 reserve sat below both
-     and never dominated — the wrapper simply tracked its content and shifted
-     4px on arrival. verify-resilience-dom §A caught it (56 -> 52). Unlike the
-     six chart panels, this one has no `height` prop to borrow, so the constant
-     is the measured maximum of the two states and must stay >= both. */
-  const POOL_ATTR_H = 56;
+  /* MEASURED, not derived, across ALL THREE states — and the third is the one
+     that bit. The arithmetic 26 + 12 + 14 = 52 describes the POPULATED state;
+     the empty note renders 56; and the LOADING state — the stat row rendered
+     with placeholder em-dashes at opacity 0 beneath the skeleton — renders 61
+     once Geist replaces the fallback font. 56 therefore sat 5px BELOW its own
+     content's tallest state, so the wrapper stopped tracking the reservation
+     and tracked its content instead.
+
+     That is why it was intermittent rather than constant: the height is only
+     wrong while the loading state is on screen, so a run where fixtures land
+     before §A's t=2500 sample measures 56 and passes. It reproduces on
+     origin/main identically (56 -> 61), so it predates the nav work; CI is
+     simply slower than this sandbox and sampled the state that was always
+     wrong. A reservation that is correct only when the network is fast is not
+     a reservation.
+
+     Measured from the rendered boxes, not counted from a formula — counting is
+     what produced 52 and then 56. Unlike the six chart panels this one has no
+     `height` prop to borrow, so the constant must be >= the tallest state, and
+     the tallest state is the loading one. */
+  const POOL_ATTR_H = 61;
 
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>

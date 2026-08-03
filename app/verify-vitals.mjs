@@ -119,7 +119,14 @@ const ROUTES = Object.keys(BUDGETS);
  *  observer. A missing selector is R.skip with the selector named, never a
  *  silently recorded zero. */
 const INTERACTIONS = {
-  '/': ['button[aria-label="Open menu"]', 'button[aria-label="Close menu"]'],
+  // v6.1.6: the mobile drawer and its hamburger are gone — BottomTabBar
+  // replaced them, so `button[aria-label="Open menu"]` matched nothing and this
+  // route's interaction probe SKIPPED. It skipped loudly (the reporter names the
+  // selector) rather than recording a zero, which is the only reason it was not
+  // read as "no interaction latency". A dead selector is invisible to a
+  // route-literal sweep — it is neither a path nor a string the pattern matches.
+  // The ⌘K trigger is the equivalent always-present, non-navigating control.
+  '/': ['.nav-kbd', '.nav-kbd'],
   '/live/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
   '/live/markets': ['button.proto-btn[aria-pressed]'],
 };
