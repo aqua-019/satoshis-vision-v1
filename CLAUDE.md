@@ -39,14 +39,24 @@ chain and market data.
   are offline source assertions. `.github/workflows/ci.yml` runs **54 distinct files** on
   PRs to `main`, in two jobs: 11 individually-named offline gates, then `verify:static`
   (20 gates, no browser) and `verify:e2e` (27 gates, against `scripts/serve-dist.mjs`).
-  v6.1.8 added two: `verify-hero` (static) and `verify-coldboot` (e2e). Both sit FIRST in
-  their chains deliberately — `verify-coldboot` §1 is the only positive control proving the
-  cold-boot bypass has something to bypass, and the thirteen gates that install that bypass
-  assert an ABSENCE, which is vacuous if the splash selector ever dies. An &&-chain that ran
-  it last would let every dependent report before its own liveness proof executed.
-  Four gates appear in both the named list and `verify:static`, and `verify-origins` runs
-  in both `verify:static` (with `--static`) and `verify:e2e`, which is why 11 + 19 + 25
-  is not 55. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
+  v6.1.8 added two: `verify-hero` (static, FIRST in its chain) and `verify-coldboot`
+  (e2e, **LAST** in its chain). The asymmetry is deliberate and was got backwards once.
+  Thirteen gates install the cold-boot bypass and then assert an ABSENCE, which is vacuous
+  if the splash selector ever dies; `verify-coldboot` §1 is the only positive control that
+  proves the bypass has something to bypass. That looks like an argument for running it
+  first — it is not. These are `&&` chains, so a §1 failure ABORTS the run and the thirteen
+  never report at all; there is no window in which they pass vacuously behind a dead proof.
+  Order therefore has no bearing on correctness, only on how much one failure teaches — and
+  first position is the maximum-masking slot (`scripts/verify-all.mjs:24-29`: "one broken
+  gate hides every gate after it"). `verify-coldboot` drives a canvas decrypt on a timeline
+  behind a click gate, so it is the likeliest flake in the suite; last is where that costs
+  no other gate its result. `verify-hero` is source-reading in a ~30s chain, so failing
+  first is nearly free. **The chain is ordered so a failure teaches the most; `verify-all`
+  is where you go when you want it to teach fastest.**
+  Four gates appear in both the named list and `verify:static` (`verify-stale`,
+  `verify-confirmations`, `verify-txdetail`, `verify-feedcache`), and `verify-origins` runs
+  in both `verify:static` (with `--static`) and `verify:e2e` — so 11 + 20 + 27 plus
+  `verify-bundle`'s own build-job step is 59 invocations of 54 distinct files, not 59 gates. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
   `verify-motion`, `verify-nav`, `verify-discrete`, `verify-govern`, `verify-reduce` (e2e).
   v6.1.4 added four more: `verify-feedstatus` and `verify-provenance` (static),
   `verify-cls` and `verify-failure` (e2e).
