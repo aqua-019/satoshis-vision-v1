@@ -32,6 +32,7 @@ import { Swap, SkeletonBox, SkeletonRows } from "@/design/Skeleton";
 import { PanelBoundary } from "@/design/PanelBoundary";
 import { useFeedActivity } from "@/data/feed-activity";
 import { usePendingDelay } from "@/design/usePendingDelay";
+import { NodePopulationPanel } from "./network/NodePopulationPanel";
 import { R } from "../../scripts/routes.mjs";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
@@ -549,30 +550,37 @@ export function NetworkPage() {
         </DataPanel>
       </section>
 
-      {/* Peer telemetry — paused placeholder. Peer topology can't come from a public
-          restricted node (all peer fields read 0; get_connections / get_peer_list are
-          admin-only), so instead of a misleading "0 peers" we reserve the space for real,
-          node-pointed telemetry. No fabricated peers, IPs, latencies, counts, or geography. */}
-      {/* No dataKey, deliberately: this panel renders no feed data at all, so
-          there is no endpoint whose failure could degrade it. */}
-      <PanelFrame
-        title="Connections · peer telemetry"
-        right={<><Provenance source="node" /><span className="soon-badge">Soon</span></>}
-        style={{ opacity: 0.62 }}
-      >
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
-          <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
-            <span style={{ fontSize: 26, color: "var(--ink-60)" }}>—</span>
-            <span className="dim" style={{ fontSize: "var(--fs-mono)" }}>Not live network data — peer telemetry paused</span>
+      {/* Two-part shell: the live public node population (NETWORK) beside this
+          site's own paused peer telemetry (NODE). .col-2 stacks at ≤1279px and
+          ≤768px in source order, so at 390px the live panel leads. */}
+      <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
+        <NodePopulationPanel />
+
+        {/* Peer telemetry — paused placeholder. Peer topology can't come from a public
+            restricted node (all peer fields read 0; get_connections / get_peer_list are
+            admin-only), so instead of a misleading "0 peers" we reserve the space for real,
+            node-pointed telemetry. No fabricated peers, IPs, latencies, counts, or geography. */}
+        {/* No dataKey, deliberately: this panel renders no feed data at all, so
+            there is no endpoint whose failure could degrade it. */}
+        <PanelFrame
+          title="Your node · peer telemetry"
+          right={<><Provenance source="node" /><span className="soon-badge">Soon</span></>}
+          style={{ opacity: 0.62 }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, fontFamily: "var(--f-mono)" }}>
+            <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+              <span style={{ fontSize: 26, color: "var(--ink-60)" }}>—</span>
+              <span className="dim" style={{ fontSize: "var(--fs-mono)" }}>Not live network data — peer telemetry paused</span>
+            </div>
+            <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
+              Peer topology — connection counts, the peer list, and latencies — requires a dedicated
+              unrestricted node. The public node cascade this site reads runs restricted RPC (all peer
+              fields report 0, peer lists are admin-only), so this panel stays paused and populates
+              once a node is pointed at the site — your own node's peers, not the network census beside it.
+            </p>
           </div>
-          <p className="mono dim" style={{ fontSize: "var(--fs-body)", margin: 0, lineHeight: 1.5, color: "var(--ink-40)" }}>
-            Peer topology — connection counts, the peer list, and latencies — requires a dedicated
-            unrestricted node. The public node cascade this site reads runs restricted RPC (all peer
-            fields report 0, peer lists are admin-only), so this panel stays paused and populates
-            once a node is pointed at the site. No peer data is shown here until then.
-          </p>
-        </div>
-      </PanelFrame>
+        </PanelFrame>
+      </section>
 
       {/* Chain meta + Block weight */}
       <section className="col-2" style={{ gap: 12 }}>
