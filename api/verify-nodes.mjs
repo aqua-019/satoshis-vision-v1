@@ -132,6 +132,41 @@ try {
     await nodesMod(makeReq('GET'), res);
     R.ok(headers['Cache-Control'] === 'public, s-maxage=45, stale-while-revalidate=45',
       'unavailable (upstream failure) sets Cache-Control: public, s-maxage=45, stale-while-revalidate=45');
+
+    /* THE CENSUS-ABSENCE RULE — positively specified, by name, in BOTH
+     * directions. This is the property the endpoint's 200-not-502 design
+     * exists to serve, and it was previously asserted nowhere.
+     *
+     * Spec §5 #15 phrases it as "no numeric fields present at all". Taken
+     * literally that is UNSATISFIABLE and always has been: `v: 1` is a number
+     * and has been in every envelope since wave 1, so a blanket
+     * `typeof x === 'number'` sweep reds on correct code. The standard repair
+     * for a gate that reds on correct code is to loosen it — and a loosened
+     * assertion in the one gate whose job is proving no fabricated census
+     * reaches the panel would be the vacuity class arriving inside the gate
+     * written to catch it. So: named keys, not a type sweep.
+     *
+     * The rule's real content is §2.5's surviving rationale — never an
+     * empty-but-well-formed success envelope, because a zero-count success is
+     * indistinguishable from a real network with no reachable nodes. That is
+     * about CENSUS fields. `v` is a schema version and `upstreamStatus` is
+     * metadata about the HTTP exchange; neither can be misread as
+     * "0 reachable nodes", which is the only thing the rule prevents. */
+    const CENSUS = ['counts', 'split', 'availability', 'height', 'sampledAt', 'partial', 'nodes'];
+    const leaked = CENSUS.filter((k) => state.body != null && k in state.body);
+    R.ok(leaked.length === 0,
+      `unavailable envelope carries NO census key (absent: ${CENSUS.join(', ')})`,
+      leaked.length ? `present but must not be: ${leaked.join(', ')}` : '');
+
+    const META = ['v', 'at', 'source', 'status', 'reason', 'upstreamStatus'];
+    const missing = META.filter((k) => !(state.body != null && k in state.body));
+    R.ok(missing.length === 0,
+      `unavailable envelope carries every meta key (${META.join(', ')})`,
+      missing.length ? `missing: ${missing.join(', ')}` : '');
+    R.ok(typeof state.body?.reason === 'string' && state.body.reason.length > 0,
+      `unavailable envelope's reason is a non-empty string (got ${JSON.stringify(state.body?.reason)})`);
+    R.ok(state.body?.upstreamStatus === null || typeof state.body?.upstreamStatus === 'number',
+      `unavailable envelope's upstreamStatus is a number or null (got ${JSON.stringify(state.body?.upstreamStatus)})`);
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -436,8 +471,15 @@ try {
     nodesMod._resetCache();
     const { res, state } = makeRes();
     await nodesMod(makeReq('GET'), res);
-    R.ok(state.body?.reason === 'upstream-malformed',
-      'json() throws → reason:upstream-malformed');
+    /* `upstreamStatus: 200` here is CORRECT and must not be "tidied" to null.
+     * monero.fail genuinely answered 200; the body was garbage. Neither field
+     * tells that story alone — the true reading is the PAIR
+     * `reason: 'upstream-malformed'` + `upstreamStatus: 200`, and it is what
+     * distinguishes a malformed 200 from a host that was never reached
+     * (`upstream-unreachable` + `upstreamStatus: null`). Asserted as a pair
+     * below for exactly that reason. */
+    R.ok(state.body?.reason === 'upstream-malformed' && state.body?.upstreamStatus === 200,
+      'json() throws → the PAIR reason:upstream-malformed + upstreamStatus:200 (a 200 that answered with garbage, not a host never reached)');
   } finally {
     globalThis.fetch = originalFetch;
   }
