@@ -220,6 +220,15 @@ R.group("── 5 · every rAF driver is visibility-gated (D0699) ────�
     ["src/pages/monero/TechTab.tsx", "one-shot mount fade"],
     ["src/routes/useRouteChrome.ts", "rAF-throttled scroll save, ends on its own"],
     ["src/routes/RouteAnnouncer.tsx", "bounded retry for the new heading, stops after READ_FRAMES"],
+    // v6.1.6. One deferred focus() after the dropdown panel commits — the
+    // element must be rendered before focus will take, and a target the engine
+    // has not yet recomputed as "being rendered" silently no-ops the call
+    // rather than queuing it. Fires once, cancelAnimationFrame on cleanup, no
+    // reschedule; it cannot outlive the open panel, let alone a hidden tab.
+    // Exempted rather than gated: adding usePageActive to a one-shot focus
+    // deferral would make the nav's keyboard path depend on visibility
+    // machinery for no benefit.
+    ["src/layout/NavTop.tsx", "one deferred focus after panel commit, not a loop"],
   ]);
   // The SHARED machinery in design/usePageActive.ts…
   const SHARED = /observeDrawable|isPageActive|onPageActiveChange|usePageActive|useElementActive/;

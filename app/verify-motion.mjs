@@ -18,6 +18,46 @@
 import { readFileSync } from 'node:fs';
 import { launch, makeReporter, BASE } from './verify-lib.mjs';
 
+
+/** Click a real in-app link through the v6.1.6 nav.
+ *
+ *  The flat `nav.topnav` link row is gone: six <button class="navitem">
+ *  section triggers, with the page links inside `#nav-dd-panel`, which only
+ *  renders while a section is open. So a `nav.topnav a[href=...]` click now
+ *  waits 30s and throws — this gate died there, uncaught, before §1's first
+ *  assertion. Updating the HREF alone was not enough; the SELECTOR moved too.
+ *
+ *  Opens the owning section with focus + ArrowDown rather than clicking the
+ *  trigger: a trigger click NAVIGATES (to cols[0].items[0].p), which would be a
+ *  side effect in the middle of a navigation test.
+ *
+ *  `.nav-noscript` carries the same hrefs but ships display:none, so it is
+ *  deliberately not a click target here. */
+async function clickNavLink(page, href) {
+  if (href === '/') { await page.click('a.brand'); return; }
+  const sel = `#nav-dd-panel a[href="${href}"]`;
+  // Visibility, NOT count(). The panel keeps rendering the LAST opened
+  // section's content while it fades out (NavTop keeps `renderedKey` after
+  // close, so the closing transition doesn't play over an empty box), so the
+  // link is in the DOM for the wrong section too. A count() check breaks on
+  // the first trigger and then clicks a hidden node for 30s.
+  const visible = async () =>
+    page.locator(sel).first().waitFor({ state: 'visible', timeout: 800 }).then(() => true, () => false);
+
+  if (!(await visible())) {
+    const items = page.locator('button.navitem');
+    const n = await items.count();
+    if (n === 0) throw new Error('clickNavLink: no button.navitem — nav markup changed again');
+    for (let i = 0; i < n; i++) {
+      await items.nth(i).focus();
+      await page.keyboard.press('ArrowDown');
+      if (await visible()) break;
+      await page.keyboard.press('Escape');
+    }
+  }
+  await page.locator(sel).first().click();
+}
+
 /**
  * The app's OWN definition of "this DOM is still showing a Suspense fallback",
  * lifted from src/entry-ssr.tsx rather than re-typed. entry-ssr and
@@ -135,19 +175,19 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   await page.waitForSelector('main.main');
 
   await resetCalls(page);
-  await page.click('nav.topnav a[href="/live/mempool"]');
+  await clickNavLink(page, '/live/mempool');
   await page.waitForSelector('.mp-shell', { timeout: 15000 });
   const firstVisitCalls = await callCount(page);
   R.ok(firstVisitCalls === 0, `1 · first visit to /live/mempool calls startViewTransition 0 times (got ${firstVisitCalls})`,
     'a transition on an unresolved chunk would morph into the Suspense fallback');
 
   await resetCalls(page);
-  await page.click('nav.topnav a[href="/"]');
+  await clickNavLink(page, '/');
   await page.waitForSelector('main.main');
   const homeCalls = await callCount(page);
 
   await resetCalls(page);
-  await page.click('nav.topnav a[href="/live/mempool"]');
+  await clickNavLink(page, '/live/mempool');
   await page.waitForSelector('.mp-shell', { timeout: 15000 });
   const secondVisitCalls = await callCount(page);
   R.ok(secondVisitCalls === 1, `1 · second visit to /live/mempool calls startViewTransition exactly once (got ${secondVisitCalls})`);
@@ -168,13 +208,13 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
     const page = await newProbePage(browser, { width: 1440, height: 900 }, { reducedMotion });
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('main.main');
-    await page.click('nav.topnav a[href="/live/mempool"]'); // resolve the chunk (no transition expected)
+    await clickNavLink(page, '/live/mempool'); // resolve the chunk (no transition expected)
     await page.waitForSelector('.mp-shell', { timeout: 15000 });
-    await page.click('nav.topnav a[href="/"]');
+    await clickNavLink(page, '/');
     await page.waitForSelector('main.main');
 
     await resetCalls(page);
-    await page.click('nav.topnav a[href="/live/mempool"]'); // second visit — transitions
+    await clickNavLink(page, '/live/mempool'); // second visit — transitions
     await page.waitForSelector('.mp-shell', { timeout: 15000 });
 
     const anims = await page.evaluate(async () => {
@@ -284,7 +324,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   const hasApi = await page.evaluate(() => typeof document.startViewTransition === 'function');
   R.ok(hasApi === false, '6 · startViewTransition is genuinely absent in this context');
 
-  await page.click('nav.topnav a[href="/live/mempool"]');
+  await clickNavLink(page, '/live/mempool');
   await page.waitForSelector('.mp-shell', { timeout: 15000 });
   const url = new URL(page.url());
   R.ok(url.pathname === '/live/mempool', `6 · navigation still lands on the right route (got ${url.pathname})`);

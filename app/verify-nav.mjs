@@ -403,7 +403,12 @@ R.group('── §3d · precedence rules 2 and 4 ──────────�
   // through the app's own control (Markets' range buttons write `?range=`),
   // not a synthetic pushState: a hand-rolled popstate carries no router key
   // and is read as a POP into an existing entry, which is rule 1, not rule 4.
-  await open(page, '/markets');
+  // R.LIVE_MARKETS, not '/markets'. The old path still LOADS via the client
+  // mirror, so this block passed — but it tests scroll precedence rule 4, whose
+  // logic turns on router-key and history-entry semantics, and a <Navigate
+  // replace> redirect inserts exactly the entry type that logic is sensitive to.
+  // It was asserting rule 4 against a different navigation than it names.
+  await open(page, Routes.LIVE_MARKETS);
   await soft(page.waitForSelector('#page-title', { timeout: 15000 }));
   await page.waitForTimeout(SETTLE * 2);
   const marketsExtent = await scrollTops(page);

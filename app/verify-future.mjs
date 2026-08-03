@@ -412,7 +412,10 @@ console.log('engine:', engine, '\n');
 
     // The button must reach ITS OWN simulator, not a silent substitute.
     await dlg.locator('button.proto-btn', { hasText: label }).click();
-    await page.waitForURL(/\/simulate/);
+    // /learn/sim, not /simulate. This is a REGEX literal, so the v6.1.6 sweep's
+    // quoted-string pattern could not see it and it timed out for 30s instead of
+    // failing an assertion — a route reference is not always a string.
+    await page.waitForURL(/\/learn\/sim/);
     ok(new URL(page.url()).searchParams.get('p') === simId,
       `11 · ${tag} button lands on ?p=${simId} (${page.url()})`);
     await page.goBack();
