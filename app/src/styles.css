@@ -89,6 +89,7 @@
   --y-50:    #ffd400;     /* warning / queued */
   --p-50:    #b87aff;     /* monero privacy purple */
   --c-50:    #5ed3f4;     /* cyan secondary data */
+  --b-50:    #5b9dff;     /* blue — NETWORK provenance source (not "--bg-*") */
 
   /* ── role tokens · v6.1.2 · @property-registered above ─────────────
      Declared FROM the hue scale, a --bg-N or --ink-N step, or a literal —
@@ -1497,11 +1498,12 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
   color: var(--y-50); opacity: 0.85;
 }
 
-/* ── provenance · canonical 4-source attribution badge ───────────────────────
-   ONE vocabulary, ONE badge, everywhere. NODE=green, COINGECKO=soft-amber,
-   SESSION=cyan ("computed"), MODEL=edu-purple. Stale/loading is a FRESHNESS
-   suffix (gold), never a source — gold therefore means exactly one thing
-   site-wide: degraded freshness. See design/provenance.tsx. */
+/* ── provenance · canonical 5-source attribution badge ───────────────────────
+   ONE vocabulary, ONE badge, everywhere. NODE=green, NETWORK=blue,
+   COINGECKO=soft-amber, SESSION=cyan ("computed"), MODEL=edu-purple.
+   Stale/loading is a FRESHNESS suffix (gold), never a source — gold therefore
+   still means exactly one thing site-wide: degraded freshness. See
+   design/provenance.tsx. */
 /* Rendered `inline` (not inline-flex) so innerText reads "COINGECKO · stale"
    on one logical line — flex items would inject newlines into the text layer
    (breaks screen-reader flow + string asserts) while looking identical. */
@@ -1521,6 +1523,7 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 .prov--compact .prov-tag { padding: 2px 6px; gap: 4px; letter-spacing: 0.1em; }
 
 .prov--node      .prov-tag { color: var(--g-50);  border-color: var(--g-50); }
+.prov--network   .prov-tag { color: var(--b-50);  border-color: var(--b-50); }
 .prov--coingecko .prov-tag { color: var(--o-100); border-color: var(--o-100); }
 .prov--session   .prov-tag { color: var(--c-50);  border-color: var(--c-50); }
 .prov--model     .prov-tag { color: var(--p-50);  border-color: var(--p-50); }
