@@ -28,16 +28,16 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 63 `verify-*.mjs` files (`app/` ×58, `api/` ×5) — 61 gates plus
+- Verification: 66 `verify-*.mjs` files (`app/` ×61, `api/` ×5) — 64 gates plus
   `verify-lib.mjs` and `verify-reporter.mjs`, two shared modules (v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **47 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **50 distinct files** on
   PRs to `main`, in two jobs: 11 individually-named offline gates, then `verify:static`
-  (17 gates, no browser) and `verify:e2e` (24 gates, against `scripts/serve-dist.mjs`).
+  (19 gates, no browser) and `verify:e2e` (25 gates, against `scripts/serve-dist.mjs`).
   Four gates appear in both the named list and `verify:static`, and `verify-origins` runs
-  in both `verify:static` (with `--static`) and `verify:e2e`, which is why 11 + 17 + 24
-  is not 52. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
+  in both `verify:static` (with `--static`) and `verify:e2e`, which is why 11 + 19 + 25
+  is not 55. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
   `verify-motion`, `verify-nav`, `verify-discrete`, `verify-govern`, `verify-reduce` (e2e).
   v6.1.4 added four more: `verify-feedstatus` and `verify-provenance` (static),
   `verify-cls` and `verify-failure` (e2e).
@@ -54,20 +54,27 @@ chain and market data.
 
 ## Site Routes
 
-The 11 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
+The 13 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
 both `scripts/prerender.mjs` (emits `dist/<route>/index.html` so the site works with JS
 off) and `scripts/gen-sitemap.mjs` (emits `dist/sitemap.xml` + `dist/robots.txt`).
 Add or remove a route there and both follow.
 
-`/` · `/mempool` · `/markets` · `/network` · `/education` · `/monero` · `/future` ·
-`/peers` · `/simulate` · `/node` · `/sources`
+`/` · `/live/mempool` · `/live/markets` · `/live/markets/thesis` · `/live/network` ·
+`/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` ·
+`/operate/node` · `/about/peers` · `/about/sources`
 
-Not in that list, by design: `/mempool/tx/:txid` (unbounded param, falls through to the
-SPA shell) and `/monero/future` (a `<Navigate>` redirect to `/future`).
+Not in that list, by design: `/live/mempool/tx/:txid` (unbounded param, falls through to
+the SPA shell), the `:tab` paths (`/monero/:tab`, `/learn/:tab`), the `?v=` / `?p=` /
+`?range=` query surfaces, and every REDIRECT SOURCE — v6.1.6 added 12 of those, each a
+301 in `vercel.json` mirrored 1:1 by a client `<Navigate>`, plus 2 fragment redirects that
+a server structurally cannot see. Listing a redirect source would advertise a URL that
+never serves its own content; `verify-redirects.mjs` proves the two lists agree.
 
-The route set is also duplicated, by hand, in `src/layout/NavTop.tsx` (`NAV`),
-`src/design/RootBoundary.tsx` (`ROUTES`) and `verify-lib.mjs` (`ROUTES`, a test-surface
-list that expands tabs and query permutations). Those three are not yet unified.
+v6.1.6 folded the duplicates in: `routes.mjs` now also exports `R` (named path
+constants), `REDIRECTS` and `HASH_REDIRECTS`, and `src/layout/NavTop.tsx`,
+`src/design/RootBoundary.tsx`, `src/nav/ia.ts` and `src/App.tsx` all derive from it rather
+than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs`'s
+`ROUTES`, a test-surface list that expands tabs and query permutations into 43 entries.
 
 ## Development Conventions
 
@@ -187,11 +194,11 @@ list that expands tabs and query permutations). Those three are not yet unified.
 
 <!-- Update this section as work progresses -->
 - The React SPA in `app/` is the only front-end. The v4 static site was deleted in v6.1.0.
-- 11 static routes, all prerendered to real HTML so the site works with JavaScript off.
+- 13 static routes, all prerendered to real HTML so the site works with JavaScript off.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 47 of the 61 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 50 of the 64 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs
@@ -200,9 +207,12 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - **`api/monero.js` is orphaned** (v6.1.0): its last caller, the legacy `js/monero-network.js`,
   was deleted. Removing it also means dropping two `vercel.json` entries — the `functions`
   maxDuration and the `/api/monero(.*)` no-store header.
-- **Four route lists, one truth**: `app/scripts/routes.mjs` is canonical, but `NavTop.tsx`
-  (`NAV`), `RootBoundary.tsx` (`ROUTES`) and `verify-lib.mjs` (`ROUTES`) still duplicate it
-  by hand. Fold them in during the routing restructure.
+- **Four route lists, one truth — RESOLVED in v6.1.6, except one by design.** `NavTop.tsx`,
+  `RootBoundary.tsx`, `index.html`'s `#boot-fallback`, `useViewTransitionNavigate.ts` and
+  `App.tsx` all derive from `routes.mjs`'s `R` now. `verify-lib.mjs`'s `ROUTES` stays hand-
+  maintained deliberately — it is a 43-entry TEST SURFACE that expands tabs and query
+  permutations, not a route list. `vercel.json` also restates the 12 redirects because JSON
+  cannot import; `verify-redirects.mjs` makes drift between those two a build failure.
 - **`useChartMetrics` measures in a `useLayoutEffect` keyed on the ref object**, whose
   identity never changes — so a component that returns `null` before its box mounts never
   attaches its ResizeObserver. The durable fix is a callback ref inside the hook; it touches
@@ -210,11 +220,28 @@ list that expands tabs and query permutations). Those three are not yet unified.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
 - **The shot matrix cannot see five of the six mempool views.** `verify-lib.mjs`'s `ROUTES`
-  carries `/mempool` once, at its default `?v=classic`; `reactor`, `bridge`, `sediment`,
+  carries `/live/mempool` once, at its default `?v=classic`; `reactor`, `bridge`, `sediment`,
   `constellation` and `terminal` are never screenshotted at any width or theme. Found while
   predicting the v6.1.3 sweep. `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=`
   explicitly, so the views are not unverified — but no human ever sees them in a shot tree,
-  and a `--route /mempool` sweep silently means "classic only".
+  and a `--route /live/mempool` sweep silently means "classic only".
+- **68 stale route literals sit in orphaned gates, knowingly.** v6.1.6 renamed every
+  top-level route and swept the CI-reached and npm-wired gates. The gates wired to NEITHER
+  npm nor CI were deliberately left: nothing runs them, so a fix there cannot be proven
+  correct, and 68 literals of unverifiable churn on an already-large PR is a bad trade.
+  Per file: `verify-pageshell` 28 · `verify-chart-legibility` 12 · `verify-perf` 11 ·
+  `verify-mobile` 7 · `verify-desktop` 6 · `verify-gradients` 3 · `verify-responsive` 1.
+  Note `verify:perf` runs `verify-perf-classic.mjs`, NOT `verify-perf.mjs` — the latter is
+  orphaned despite the similar name. Recorded here so they are knowingly stale rather than
+  silently wrong; wiring or deleting them is its own task.
+- **19 sub-12px `font-size` declarations in `styles-legibility.css`** (L63-66, 71, 73-75,
+  77-78, 81, 84, 93-95, 98-100, 102). This is a STANDARDS CONFLICT, not a defect:
+  `verify-legibility.mjs:124` records "v6.0.10: floor raised 10.5 -> 11. Nothing below 11
+  ships" and `--fs-label` is `clamp(11px, 0.74vw, 12px)`, so the repo deliberately runs an
+  11px floor — while the v6 prompt series asserts 12px. `verify-legibility.mjs` asserts NO
+  rendered floor on any CSS selector; it checks inline TSX `fontSize` (sub-14) and SVG
+  `fontSize` attributes (sub-11) only. Deciding the floor, and writing a gate that reads
+  computed font-size on a named selector set, belong together in their own change.
 - **Orphaned gates**: 11 `verify-*.mjs` are wired to neither npm nor CI (this said 13 until
   v6.1.5 measured it; `:184` in this same file already said 11, and 11 is right) (v6.1.2 wired in
   `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots` npm script,

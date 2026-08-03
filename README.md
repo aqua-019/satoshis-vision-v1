@@ -19,13 +19,13 @@ satoshis-vision-v1/
 │   ├── src/                # routes, layout, data hooks, protocol simulators
 │   ├── public/             # favicon + 12 self-hosted woff2
 │   ├── scripts/
-│   │   ├── routes.mjs      # the 11 static routes — single source of truth
+│   │   ├── routes.mjs      # the 13 static routes + R/REDIRECTS — single source of truth
 │   │   ├── prerender.mjs   # emits dist/<route>/index.html (works with JS off)
 │   │   ├── gen-sitemap.mjs # emits dist/sitemap.xml + dist/robots.txt
 │   │   └── serve-dist.mjs  # local mirror of Vercel's resolution order
-│   └── verify-*.mjs        # 54 gates + verify-lib.mjs and verify-reporter.mjs (shared, not gates)
+│   └── verify-*.mjs        # 59 gates + verify-lib.mjs and verify-reporter.mjs (shared, not gates)
 ├── api/                    # Vercel serverless functions — CommonJS
-│   └── verify-*.mjs        # 4 offline gates
+│   └── verify-*.mjs        # 5 offline gates
 ├── relay/                  # websocket relay (not currently deployed)
 ├── docs/                   # design specs and historical v4 audits
 ├── vercel.json             # deploy config: build, rewrites, CSP, HSTS
@@ -60,32 +60,37 @@ npm run wait-preview
 
 ### Adding or removing a route
 
-Edit **`app/scripts/routes.mjs`**. The prerenderer and the sitemap generator both
-read it, so the two stay in step. Register the route in `app/src/App.tsx` as well.
+Add the path to `R` in **`app/scripts/routes.mjs`** — it is the one place a route
+path is written down. The prerenderer, the sitemap generator, `App.tsx`,
+`src/nav/ia.ts`, `NavTop.tsx` and `RootBoundary.tsx` all read it. Then add a
+`<Route path={R.NEW}>` in `app/src/App.tsx` and place the leaf in the right
+section of `app/src/nav/ia.ts`, which feeds the nav, breadcrumbs, the mobile tab
+bar and the ⌘K palette. `verify-ia.mjs` enforces that those agree, and
+`verify-bundle.mjs` fails a route with no measured byte budget.
 
 ---
 
 ## ✅ Verification
 
-61 gates guard this repo (56 in `app/`, 5 in `api/`; `verify-lib.mjs` and
+64 gates guard this repo (59 in `app/`, 5 in `api/`; `verify-lib.mjs` and
 `verify-reporter.mjs` are shared modules, not gates).
-`.github/workflows/ci.yml` runs **47 distinct** files on every PR to `main`, in
+`.github/workflows/ci.yml` runs **50 distinct** files on every PR to `main`, in
 two jobs: 11 named offline gates, then `verify:static` and `verify:e2e` (four of
 the 11 also appear in `verify:static`, and `verify-origins` appears in both
-chains, which is why 11 + 17 + 24 is not 52).
+chains, which is why 11 + 19 + 25 is 55 and not 50).
 
 ```bash
 cd app
 npm run typecheck
 npm run build
 
-npm run verify:static   # 17 source-assertion gates, no browser, ~30s
+npm run verify:static   # 19 source-assertion gates, no browser, ~30s
 npm run verify:bundle   # byte budgets — offline, but reads dist/
 
 npx playwright install --with-deps chromium
 node scripts/serve-dist.mjs &
 npm run wait-preview
-npm run verify:e2e      # 24 Playwright gates
+npm run verify:e2e      # 25 Playwright gates
 
 npm run verify:all      # all of the above in one command, with one tally
 ```

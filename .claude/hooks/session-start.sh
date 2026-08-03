@@ -12,8 +12,14 @@ for f in CLAUDE.md vercel.json .mcp.json app/index.html app/package.json; do
   fi
 done
 
-# Count app routes as a sanity check (was: HTML pages in the project root)
-route_count=$(grep -c '^  "/' app/scripts/routes.mjs 2>/dev/null || echo 0)
+# Count app routes as a sanity check (was: HTML pages in the project root).
+# v6.1.6: routes.mjs changed shape from a bare array of `  "/path",` lines to
+# `export const R = { HOME: "/", LIVE_MEMPOOL: "/live/mempool", ... }`, so the
+# old `^  "/` pattern matched nothing. grep -c then returned 0 AND exited 1, so
+# the `|| echo 0` fired too and the variable became the two-line string "0\n0",
+# printing "Environment ready: 0 / 0 static routes" on every session start.
+route_count=$(grep -cE '^\s+[A-Z_]+: "/' app/scripts/routes.mjs 2>/dev/null || true)
+[ -n "$route_count" ] || route_count=0
 echo "Environment ready: $route_count static routes in app/scripts/routes.mjs"
 
 # Confirm tooling availability
