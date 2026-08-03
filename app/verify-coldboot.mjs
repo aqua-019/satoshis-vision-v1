@@ -203,9 +203,24 @@ const { browser } = await launchChromium();
   const EXEMPT = [
     ['.stat .lbl',        'styles-legibility.css:75 · <Stat> primitive · 23 files'],
     ['.pill',             'styles-legibility.css:78 · shared pill · 16 files'],
-    ['button.proto-btn',  'styles-legibility.css:95 · shared button · 18 files'],
+    // `button.proto-btn, a.proto-btn` — BOTH variants. An earlier draft of this
+    // exemption said `button.proto-btn` only and therefore did not match Home's
+    // two anchor CTAs: the IDENTICAL selector-reach gap this section had just
+    // found in styles-legibility.css:95, reproduced in the gate that found it.
+    // A selector is a claim about which elements it reaches, and that claim is
+    // only checkable by measuring rendered elements — never by reading it.
+    ['button.proto-btn, a.proto-btn', 'styles-legibility.css:95 · shared button · 18 files (17 button, 2 anchor)'],
     ['.prov-tag, .prov-fresh', 'design/provenance.tsx · the NODE/COINGECKO/... vocabulary'],
+    ['.crumbs, .crumbs *',     'styles-legibility.css:63 · breadcrumb chrome · AppShell-wide'],
   ];
+
+  /* `.crumbs *` and not just `.crumbs`: the leaf that computes 11.5px is the
+   * <b> root label INSIDE nav.crumbs (chain b > li > ol > nav.crumbs), which
+   * INHERITS the size rather than declaring it. Exempting only the container
+   * would leave the leaf asserted and the family half-covered — the same
+   * selector-reach gap as `button.proto-btn` missing `a.proto-btn`, which is
+   * the bug this section just found. Verified by ancestor measurement
+   * (closest('.crumbs') === true), not inferred from the class name. */
 
   const m = await page.evaluate((exemptSels) => {
     const probeEl = document.createElement('span');
