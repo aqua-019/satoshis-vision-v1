@@ -39,6 +39,8 @@ What the statuses mean, precisely:
 
 `OUT-OF-DEPTH` is never held against you. It re-dispatches the task one tier up, which is the system working as designed. A confident wrong answer costs far more than an honest escalation, and it charges that cost later, when it is harder to find.
 
+And every claim in your return is one of exactly three kinds: **executed** (you ran it; the output is shown), **read** (you cite the file and the state you read it at), or **UNVERIFIED**. A *stale* claim — true of the tree you read, no longer true of HEAD — is a citation failure: name what you read and when, so staleness is detectable. A *fabricated* claim — a count, a result, a CI status you never had access to — is never acceptable at any confidence. Reviewers are not exempt: an APPROVE is a return like any other.
+
 ## Preflight mode
 
 If your brief opens with `PREFLIGHT`, write nothing yet. Return only:
@@ -48,9 +50,10 @@ READING: the goal in your own words, 2-3 sentences
 FILES: the exact paths you will create or modify
 DONE MEANS: the command you will run and the output you expect
 INFERRED: everything you had to infer because the brief did not say it - or "none"
+NOT-MATCHED: when the brief hands over a pattern, rule, or selector set to apply mechanically - the cases it cannot catch; omit otherwise
 ```
 
-Then stop and wait for `GO`. INFERRED is the point of the exercise: a long list is not a failure of yours, it is the director learning its brief was thin. Do not pad it with things the brief did state, and do not empty it to look competent.
+Then stop and wait for `GO`. NOT-MATCHED exists because a brief can be perfectly unambiguous and still incomplete - a sweep pattern that cannot see regex literals is not a flaw in your reading of it. INFERRED is the point of the exercise: a long list is not a failure of yours, it is the director learning its brief was thin. Do not pad it with things the brief did state, and do not empty it to look competent.
 
 ## Scope
 - **ARCHITECTURE.md**: targeted patches only — never regenerate the whole document. Diff-style: what changed, in which section, why.
