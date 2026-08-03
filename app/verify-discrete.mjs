@@ -184,7 +184,7 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
   group('── 1 · mempool view switcher · motion allowed ───────────────────');
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await ctx.newPage();
-  await page.goto(BASE + '/mempool', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/live/mempool', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.mp-switcher__trigger', { timeout: 15000 });
   await hydrateSwitcher(page);
 
@@ -252,7 +252,7 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
   group('── 2 · mempool view switcher · prefers-reduced-motion: reduce ────');
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
   const page = await ctx.newPage();
-  await page.goto(BASE + '/mempool', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/live/mempool', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.mp-switcher__trigger', { timeout: 15000 });
   await hydrateSwitcher(page);
 
@@ -387,7 +387,7 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
 
     for (const [route, sel, label] of [
       ['/future', '.v6-proto-grid > .v6-stagger', 'protocol cards'],
-      ['/peers', '.v6-peer-grid > .v6-stagger', 'partner cards'],
+      ['/about/peers', '.v6-peer-grid > .v6-stagger', 'partner cards'],
     ]) {
       await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
       await page.waitForSelector(sel, { timeout: 15000 });

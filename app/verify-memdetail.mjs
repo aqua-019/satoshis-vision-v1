@@ -138,7 +138,7 @@ const open = async (view) => {
   const p = await b.newPage({ viewport: { width: 1600, height: 1000 } });
   await p.addInitScript((t) => { window.__XMR_TIER_MS__ = t; }, TIERS);
   await p.route('**/api/**', fulfil);
-  await p.goto(`${base}/mempool?v=${view}`, { waitUntil: 'load' });
+  await p.goto(`${base}/live/mempool?v=${view}`, { waitUntil: 'load' });
   await p.waitForTimeout(2600);
   return p;
 };

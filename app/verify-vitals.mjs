@@ -76,9 +76,9 @@ const HARNESS = `serve-dist(uncompressed, 501 /api) · mocked feed @${MOCK_LATEN
 const BUDGETS = {
   //            budget      measured (median of 8, sandbox)
   '/':         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
-  '/mempool':  { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
-  '/markets':  { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
-  '/simulate': { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
+  '/live/mempool':  { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
+  '/live/markets':  { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
+  '/learn/sim': { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
 };
 
 /* /simulate is NEW in v6.1.5 PR B, and its budget is deliberately loose in a
@@ -120,8 +120,8 @@ const ROUTES = Object.keys(BUDGETS);
  *  silently recorded zero. */
 const INTERACTIONS = {
   '/': ['button[aria-label="Open menu"]', 'button[aria-label="Close menu"]'],
-  '/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
-  '/markets': ['button.proto-btn[aria-pressed]'],
+  '/live/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
+  '/live/markets': ['button.proto-btn[aria-pressed]'],
 };
 
 const R = makeReporter('verify-vitals');

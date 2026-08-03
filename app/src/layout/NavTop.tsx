@@ -51,8 +51,26 @@ import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-stat
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { IA, sectionForPath, type IaSection } from "@/nav/ia";
 import { usePaletteHotkey } from "@/nav/usePaletteHotkey";
-import { R } from "../../scripts/routes.mjs";
+import { R, ROUTES } from "../../scripts/routes.mjs";
 import { BottomTabBar } from "./BottomTabBar";
+
+/** Human label for a prerendered route, for the JS-off nav below.
+ *
+ *  Reads the IA rather than carrying a fourteenth hand-typed list: if a leaf
+ *  names the route, its label is already the one the nav shows. The fallback
+ *  is derived from the path itself, so a route added to ROUTES without an IA
+ *  leaf still gets a usable link instead of an empty <a>. */
+function noscriptLabel(path: string): string {
+  if (path === R.HOME) return "Home";
+  for (const s of IA) {
+    for (const c of s.cols) {
+      const hit = c.items.find((i) => i.p === path);
+      if (hit) return `${s.label} · ${hit.l}`;
+    }
+  }
+  const tail = path.split("/").filter(Boolean).pop() ?? path;
+  return tail.replace(/-/g, " ").replace(/^./, (ch) => ch.toUpperCase());
+}
 
 // CommandPalette.tsx is React.lazy and imported ONLY here, on first ⌘K — see
 // nav/usePaletteHotkey.ts's header for why the hook that triggers it is
@@ -342,6 +360,43 @@ export function NavTop() {
             ⌘K
           </button>
           <span id="pill" ref={pillRef} />
+        </nav>
+
+        {/* ── DEGRADED NAVIGATION ──────────────────────────────────────────
+            Six <button> triggers replaced eleven flat <a href> links, and the
+            dropdown that holds the real links is only in the DOM while it is
+            open. With scripting disabled that left 6 of 13 routes with NO
+            anchor anywhere on the page — /live/markets, /live/network,
+            /about/peers, /live/markets/thesis, /future/outlook and /learn/sim
+            were simply unreachable. Every one of them is prerendered to real
+            HTML, so the pages existed and nothing could get to them.
+
+            index.html's #boot-fallback does not cover this: it reveals itself
+            only when #root is EMPTY, and prerendering means #root is never
+            empty. Caught by verify-degraded.mjs §B1.
+
+            It is NOT a <noscript> block, and that distinction cost a round to
+            learn. <noscript> renders only when scripting is DISABLED; §B1
+            blocks the module bundle with scripting ON, where <noscript>
+            content is never parsed into elements at all, so
+            querySelectorAll('#root a') cannot see it. Both degraded modes need
+            real anchors in the prerendered DOM.
+
+            So it is always rendered, and hidden by CSS keyed on
+            html[data-boot="ok"] — a flag main.tsx sets from inside the MODULE
+            bundle. Blocked bundle or scripting off, the flag never lands and
+            these links stay. index.html's inline pre-paint script would be the
+            wrong signal: it runs even when the module is blocked, which is
+            precisely the case this covers.
+
+            Rendered from ROUTES rather than IA leaves on purpose: only those 13
+            are prerendered to real documents. A ?v= / ?p= leaf would advertise
+            a URL that needs the bundle to mean anything, which is the same
+            broken promise one level down. */}
+        <nav className="nav-noscript" aria-label="All pages">
+          {ROUTES.map((path) => (
+            <a key={path} href={path}>{noscriptLabel(path)}</a>
+          ))}
         </nav>
 
         <div className="ticker-strip">

@@ -135,10 +135,10 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   await page.waitForSelector('main.main');
 
   await resetCalls(page);
-  await page.click('nav.topnav a[href="/mempool"]');
+  await page.click('nav.topnav a[href="/live/mempool"]');
   await page.waitForSelector('.mp-shell', { timeout: 15000 });
   const firstVisitCalls = await callCount(page);
-  R.ok(firstVisitCalls === 0, `1 · first visit to /mempool calls startViewTransition 0 times (got ${firstVisitCalls})`,
+  R.ok(firstVisitCalls === 0, `1 · first visit to /live/mempool calls startViewTransition 0 times (got ${firstVisitCalls})`,
     'a transition on an unresolved chunk would morph into the Suspense fallback');
 
   await resetCalls(page);
@@ -147,10 +147,10 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   const homeCalls = await callCount(page);
 
   await resetCalls(page);
-  await page.click('nav.topnav a[href="/mempool"]');
+  await page.click('nav.topnav a[href="/live/mempool"]');
   await page.waitForSelector('.mp-shell', { timeout: 15000 });
   const secondVisitCalls = await callCount(page);
-  R.ok(secondVisitCalls === 1, `1 · second visit to /mempool calls startViewTransition exactly once (got ${secondVisitCalls})`);
+  R.ok(secondVisitCalls === 1, `1 · second visit to /live/mempool calls startViewTransition exactly once (got ${secondVisitCalls})`);
   R.info(`(home navigation in between called it ${homeCalls} time(s) — home is eager, seeded resolved on load)`);
 
   const rec = await lastCall(page);
@@ -168,13 +168,13 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
     const page = await newProbePage(browser, { width: 1440, height: 900 }, { reducedMotion });
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('main.main');
-    await page.click('nav.topnav a[href="/mempool"]'); // resolve the chunk (no transition expected)
+    await page.click('nav.topnav a[href="/live/mempool"]'); // resolve the chunk (no transition expected)
     await page.waitForSelector('.mp-shell', { timeout: 15000 });
     await page.click('nav.topnav a[href="/"]');
     await page.waitForSelector('main.main');
 
     await resetCalls(page);
-    await page.click('nav.topnav a[href="/mempool"]'); // second visit — transitions
+    await page.click('nav.topnav a[href="/live/mempool"]'); // second visit — transitions
     await page.waitForSelector('.mp-shell', { timeout: 15000 });
 
     const anims = await page.evaluate(async () => {
@@ -207,7 +207,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
 {
   R.group('── 4 · theme toggle runs a "theme"-kind transition ────────────');
   const page = await newProbePage(browser, { width: 1440, height: 900 }, { theme: 'classic' });
-  await page.goto(BASE + '/markets', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/live/markets', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.panel', { timeout: 15000 });
 
   const before = await page.evaluate(() => document.documentElement.getAttribute('data-theme'));
@@ -284,10 +284,10 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   const hasApi = await page.evaluate(() => typeof document.startViewTransition === 'function');
   R.ok(hasApi === false, '6 · startViewTransition is genuinely absent in this context');
 
-  await page.click('nav.topnav a[href="/mempool"]');
+  await page.click('nav.topnav a[href="/live/mempool"]');
   await page.waitForSelector('.mp-shell', { timeout: 15000 });
   const url = new URL(page.url());
-  R.ok(url.pathname === '/mempool', `6 · navigation still lands on the right route (got ${url.pathname})`);
+  R.ok(url.pathname === '/live/mempool', `6 · navigation still lands on the right route (got ${url.pathname})`);
   R.ok(errors.length === 0, `6 · no page errors thrown (got ${errors.length}: ${errors.join(' | ')})`);
 
   await page.context().close();

@@ -297,8 +297,8 @@ console.log('engine:', engine, '\n');
   const self = pulseRows.filter({ hasText: NO_ISSUES_REPO });
   const selfIssue = await norm(self.locator('[data-readout="issue"]'));
   ok(/^last issue activity · —$/.test(selfIssue), `16 · a repo with no issue activity renders "—" (got "${selfIssue}")`);
-  ok((await self.locator('a[href="/sources"]').count()) === 1,
-    '16 · this site\'s own row links to /sources, not to github.com');
+  ok((await self.locator('a[href="/about/sources"]').count()) === 1,
+    '16 · this site\'s own row links to /about/sources, not to github.com');
   const sb = pulseRows.filter({ hasText: 'brainchainz/Monero-Superbrain' });
   ok((await sb.locator('a[href="https://github.com/brainchainz/Monero-Superbrain"]').count()) === 1,
     '16 · the Superbrain row links its repo with GitHub\'s exact casing');
@@ -426,7 +426,7 @@ console.log('engine:', engine, '\n');
   ok(/SIMULATOR PENDING/.test(gateSrc), '11b · the PENDING affordance is still in the code path');
 
   // 11c — an unknown ?p= must name what it could not find, never substitute.
-  await page.goto(base + '/simulate?p=definitely-not-a-simulator');
+  await page.goto(base + '/learn/sim?p=definitely-not-a-simulator');
   await page.locator('[role="alert"]').waitFor();
   const nf = await page.locator('[role="alert"]').innerText();
   ok(nf.includes('definitely-not-a-simulator'), '11c · unknown ?p= names the requested id');
@@ -459,7 +459,7 @@ console.log('engine:', engine, '\n');
   const ctx = await b.newContext();
   await mockFeeds(ctx);
   const page = await ctx.newPage();
-  await page.goto(base + '/peers', { waitUntil: 'domcontentloaded' });
+  await page.goto(base + '/about/peers', { waitUntil: 'domcontentloaded' });
 
   const cards = page.locator('.panel').filter({ has: page.locator('h3') });
   // The partner cards ARE the assertion — wait on them, not on the network.
@@ -475,14 +475,14 @@ console.log('engine:', engine, '\n');
     ]);
     ok(popup.url().includes(host), `8 · "${name}" card opens ${host} in a new tab (got ${popup.url()})`);
     await popup.close();
-    ok(new URL(page.url()).pathname === '/peers', `8 · "${name}" card click did not navigate the app away`);
+    ok(new URL(page.url()).pathname === '/about/peers', `8 · "${name}" card click did not navigate the app away`);
   }
 
   // 9 — "our brief" opens the modal without navigating
   await page.locator('button', { hasText: 'our brief' }).first().click();
   const dialog = page.locator('[role="dialog"]');
   ok(await dialog.isVisible(), '9 · "our brief" opens the in-site modal');
-  ok(new URL(page.url()).pathname === '/peers', '9 · "our brief" did not navigate');
+  ok(new URL(page.url()).pathname === '/about/peers', '9 · "our brief" did not navigate');
 
   // 10 — VISIT button present, safe, and actually styled
   const visit = dialog.locator('a.proto-btn');

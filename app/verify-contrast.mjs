@@ -107,7 +107,7 @@ const CLASSIC_BASELINE = {
 for (const theme of ['indigo', 'classic', 'phosphor']) {
   R.group(`── ${theme} · ink and status colours on --surface-ground ────`);
   const page = await newThemedPage(browser, { width: 1440, height: 900 }, theme);
-  await page.goto(BASE + '/markets', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/live/markets', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.panel', { timeout: 15000 });
   const m = await page.evaluate(MEASURE);
   R.info(`ground = ${m.ground}`);
@@ -139,7 +139,7 @@ for (const theme of ['indigo', 'classic', 'phosphor']) {
   // change, --surface-ground never moves, and the assertion below would be
   // measuring nothing while still going green.
   const page = await newThemedPage(browser, { width: 390, height: 844 }, 'classic');
-  await page.goto(BASE + '/markets', { waitUntil: 'domcontentloaded' });
+  await page.goto(BASE + '/live/markets', { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('.panel', { timeout: 15000 });
 
   const sample = () => page.evaluate(() => {

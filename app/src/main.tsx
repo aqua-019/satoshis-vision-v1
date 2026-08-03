@@ -54,6 +54,16 @@ if (!root) {
         </RootBoundary>
       </React.StrictMode>
     );
+    // Proof that the MODULE bundle executed, which is a different claim from
+    // "scripting is enabled". styles.css hides `.nav-noscript` on this flag:
+    // NavTop's six section triggers are <button>s and the dropdown holding the
+    // real links is absent while closed, so without that always-rendered list
+    // 6 of the 13 prerendered routes have no anchor at all when the bundle is
+    // blocked (Shields, a 404'd chunk over Tor) or scripting is off.
+    // index.html's inline pre-paint script cannot serve as this signal — it
+    // runs even when the module is blocked, which is exactly the case covered.
+    document.documentElement.dataset.boot = "ok";
+
     // createRoot's initial commit is synchronous, so reaching this line means
     // we really did paint. Cancel the watchdog. (On a very slow boot the
     // watchdog may have already shown the fallback — hiding it here is what

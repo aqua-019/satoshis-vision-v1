@@ -117,7 +117,7 @@ const newPage = async (opts = {}) => {
 };
 
 /* ── 1 · gradient uniqueness ───────────────────────────────────────── */
-for (const path of ['/markets', '/network', '/']) {
+for (const path of ['/live/markets', '/live/network', '/']) {
   const p = await newPage();
   await p.goto(base + path, { waitUntil: 'load' });
   await p.waitForTimeout(1800);
@@ -139,7 +139,7 @@ for (const path of ['/markets', '/network', '/']) {
 /* ── 2+3 · hover readout, and the resize-mid-hover lock ────────────── */
 {
   const p = await newPage();
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(2000);
 
   // Any chart svg that carries the cursor handlers has a crosshair cursor
@@ -229,7 +229,7 @@ for (const path of ['/markets', '/network', '/']) {
 /* ── 4 · reduced motion: readable and still interactive ────────────── */
 {
   const p = await newPage({ reducedMotion: 'reduce' });
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(2000);
 
   const vis = await p.evaluate(() => {

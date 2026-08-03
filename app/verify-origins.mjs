@@ -179,7 +179,7 @@ console.log('engine:', engine);
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{}' }));
 
-  for (const route of ['/', '/markets', '/mempool', '/network', '/future', '/monero', '/education']) {
+  for (const route of ['/', '/live/markets', '/live/mempool', '/live/network', '/future', '/monero', '/learn']) {
     await p.goto(base + route, { waitUntil: 'load' }).catch(() => {});
     await p.waitForTimeout(300);
   }

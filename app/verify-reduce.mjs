@@ -70,8 +70,8 @@ const SIMS = [
 const MEM = ['reactor', 'bridge', 'sediment', 'constellation', 'terminal', 'classic'];
 
 const SURFACES = [
-  ...SIMS.map((p) => ({ name: `simulate?p=${p}`, url: `${BASE}/simulate?p=${p}` })),
-  ...MEM.map((v) => ({ name: `mempool?v=${v}`, url: `${BASE}/mempool?v=${v}` })),
+  ...SIMS.map((p) => ({ name: `simulate?p=${p}`, url: `${BASE}/learn/sim?p=${p}` })),
+  ...MEM.map((v) => ({ name: `mempool?v=${v}`, url: `${BASE}/live/mempool?v=${v}` })),
 ];
 
 /** Long enough for entrance transitions to settle and for a 1.2s-3.5s ambient
@@ -100,7 +100,7 @@ async function census(ctx, url) {
     // `.art.proto` is ProtoArtboard's root (design/ProtoArtboard.tsx:59) — the
     // simulator is on screen only once it exists.
     let mounted = true;
-    if (url.includes('/simulate')) {
+    if (url.includes('/learn/sim')) {
       try { await page.waitForSelector('.art.proto', { timeout: 20000 }); }
       catch { mounted = false; }   // reported as a failure, not thrown as a crash
     }
@@ -178,7 +178,7 @@ const motionCtx = await browser.newContext({
   // (deviceTier.ts folds low-core/small-viewport into it) cannot silently
   // suppress the very motion this control is looking for.
 });
-for (const probe of [`${BASE}/simulate?p=dandelion&tier=high`, `${BASE}/mempool?v=sediment&tier=high`]) {
+for (const probe of [`${BASE}/learn/sim?p=dandelion&tier=high`, `${BASE}/live/mempool?v=sediment&tier=high`]) {
   const { css, smil } = await census(motionCtx, probe);
   R.ok(css.length + smil.length > 0,
     `2 · ${probe.replace(BASE, '')} · animates when motion is allowed (css ${css.length}, smil ${smil.length}) — proves §1 measured a live page`);

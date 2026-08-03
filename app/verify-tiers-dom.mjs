@@ -126,7 +126,7 @@ async function setup({ count = true } = {}) {
 {
   tipHeight = H - 1;
   const { p, hits } = await setup();
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(3000); // ~10 fast ticks, ~2 chain ticks at compressed rates
 
   const fast = (hits.mempool || 0);
@@ -149,7 +149,7 @@ async function setup({ count = true } = {}) {
 {
   tipHeight = H - 1;
   const { p, hits } = await setup();
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(2500);
 
   const tipsBefore = hits.tip || 0;
@@ -171,7 +171,7 @@ async function setup({ count = true } = {}) {
 {
   tipHeight = H - 1;
   const { p, hits } = await setup();
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(1200);
   const beforeHide = hits.mempool || 0;
   ok(beforeHide > 0, `C: polling is running while visible (${beforeHide} mempool hits)`);
@@ -201,7 +201,7 @@ async function setup({ count = true } = {}) {
 {
   tipHeight = H - 1;
   const { p, kill } = await setup({ count: false });
-  await p.goto(base + '/network', { waitUntil: 'load' });
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForFunction((h) => document.body.innerText.includes(h), H.toLocaleString('en-US'), { timeout: 8000 })
     .catch(() => {});
   let body = await p.evaluate(() => document.body.innerText);

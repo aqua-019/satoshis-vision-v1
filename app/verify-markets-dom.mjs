@@ -170,7 +170,7 @@ page.on('request', (r) => {
   if (u.includes('/api/')) { upstream++; seen.push(u.replace(base, '')); }
 });
 await page.route('**/api/**', fulfil);
-await page.goto(base + '/markets', { waitUntil: 'load' });
+await page.goto(base + '/live/markets', { waitUntil: 'load' });
 await page.waitForTimeout(2500);
 
 const text = await page.evaluate(() => document.body.innerText);
@@ -279,7 +279,7 @@ console.log('\nverify-markets-dom — 1440px layout');
 {
   const d = await b.newPage({ viewport: { width: 1440, height: 1000 } });
   await d.route('**/api/**', fulfil);
-  await d.goto(base + '/markets', { waitUntil: 'load' });
+  await d.goto(base + '/live/markets', { waitUntil: 'load' });
   await d.waitForTimeout(2500);
   /* The two chart props differ ON PURPOSE (318 ratio vs 340 majors): the ratio
      panel carries a caption line under its chart, so equal PANEL heights need
@@ -366,7 +366,7 @@ is(perRangeCharts <= 3, `≤3 market_chart calls per range regardless of group s
 console.log('\nverify-markets-dom — outage');
 const off = await b.newPage({ viewport: { width: 1440, height: 900 } });
 await off.route('**/api/**', (r) => r.abort());
-await off.goto(base + '/markets', { waitUntil: 'load' });
+await off.goto(base + '/live/markets', { waitUntil: 'load' });
 await off.waitForTimeout(2500);
 const offText = await off.evaluate(() => document.body.innerText);
 is(/unavailable/i.test(offText), 'outage: an honest "unavailable" badge is rendered');

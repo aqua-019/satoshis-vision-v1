@@ -510,6 +510,19 @@ header > div > h1.serif {
 /* ── D2/P5 nav: 6-section IA, hover-intent dropdown, morphing pill ──── */
 .nav-main { position: relative; display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto; scrollbar-width: none; }
 .nav-main::-webkit-scrollbar { display: none; }
+
+/* JS-off navigation. Renders ONLY inside <noscript>, so it costs a scripted
+   visitor nothing and cannot interact with the container queries below. Six
+   <button> triggers plus a dropdown that is absent while closed left 6 of the
+   13 prerendered routes with no anchor anywhere when scripting is disabled;
+   this is what reaches them. See NavTop.tsx's <noscript> block. */
+.nav-noscript { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 8px 16px; border-top: 1px solid var(--line-d); font-family: var(--f-mono); font-size: 12px; }
+.nav-noscript a { color: var(--ink-60); text-decoration: none; }
+.nav-noscript a:hover { color: var(--ui-accent-text); }
+/* Hidden only once main.tsx has proven the module bundle executed. Absent that
+   flag — bundle blocked by Shields, chunk 404 over Tor, scripting disabled —
+   these stay as the only real anchors to 6 of the 13 prerendered routes. */
+html[data-boot="ok"] .nav-noscript { display: none; }
 .navitem {
   position: relative; flex: none;
   font-family: var(--f-mono); font-size: 12px; letter-spacing: 0.11em; text-transform: uppercase;
