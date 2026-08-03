@@ -180,6 +180,9 @@ try {
     { name: 'degraded', fetch: async () => ({ ok: true, status: 200, json: async () => ({ monero: {} }) }) },
     { name: 'timeout', fetch: async () => { throw { name: 'AbortError' }; } },
   ];
+  /* Pinned like the other collection-driven groups: a states array that shrank
+     would quietly shrink this group's coverage with no failure. */
+  R.ok(states.length === 3, `no-store sweep drives 3 states (found ${states.length})`);
   for (const s of states) {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = s.fetch;
@@ -329,7 +332,14 @@ try {
   R.fixture('mode height', `${analysis.mode} === ${EXPECTED.height.mode}`);
   R.fixture('lagging count', `${analysis.lagging.count} === ${EXPECTED.height.laggingCount}`);
 
-  /* Every lagging cluster has lag > 2 */
+  /* Every lagging cluster has lag > 2.
+     Guarded: this is the prompt's own Verify-list item ("height-disagreement
+     clusters surface correctly — construct a fixture with a lagging set").
+     The fixture is deliberately built with a lagging cohort; if it ever loses
+     one, these per-cluster assertions vanish and the gate stays green on the
+     single readout the panel exists to show. */
+  R.ok(analysis.lagging.clusters.length > 0 && analysis.lagging.count > 0,
+    `fixture yields a lagging set to check (${analysis.lagging.clusters.length} cluster(s), ${analysis.lagging.count} node(s))`);
   for (const cluster of analysis.lagging.clusters) {
     R.ok(cluster.lag > 2, `lagging cluster at height ${cluster.height} has lag > 2 (lag=${cluster.lag})`);
   }
@@ -511,6 +521,7 @@ try {
     ['unreachable',async () => { throw new TypeError('getaddrinfo ENOTFOUND monero.fail'); }],
     ['malformed',  async () => ({ ok: true, status: 200, json: async () => { throw new SyntaxError('bad'); } })],
   ];
+  R.ok(states.length === 4, `reason-distinctness drives 4 failure states (found ${states.length})`);
   try {
     for (const [, stub] of states) {
       globalThis.fetch = stub;
@@ -664,6 +675,10 @@ try {
     [/\bmarkNode\w*\b/, 'markNodeDown/markNodeUp'],
     [/\bMONERO_\w+\b/, 'MONERO_*'],
   ];
+  /* Pinned: comment one entry out and the ban silently narrows with no
+     failure. Gate-local literal, so low risk — but it is the source-ban list,
+     and a narrowed ban is indistinguishable from a passing one. */
+  R.ok(banned.length === 5, `source-ban list covers 5 identifiers (found ${banned.length})`);
   for (const [re, label] of banned) {
     R.ok(!re.test(stripped), `nodes.js executable source never references ${label}`);
   }
@@ -691,6 +706,17 @@ try {
 {
   const vercelJson = JSON.parse(readFileSync(join(API_DIR, '..', 'vercel.json'), 'utf8'));
   const functions = vercelJson.functions || {};
+  /* PIN THE COUNT, not merely non-emptiness. This assertion's whole purpose is
+     that a `functions` key naming a file not on disk is a hard VERCEL BUILD
+     error — it fails at deploy, not at any gate here. Unguarded, emptying the
+     block made three assertions vanish and the gate still printed a clean
+     tally: nothing distinguished "three keys, all verified" from "no keys,
+     nothing verified". And this PR just DELETED a key from that block, so the
+     count moving is now the normal-looking thing; the next move to zero would
+     read as more of the same. A bare non-empty guard is not enough either —
+     it cannot tell "legitimately smaller" from "found nothing". */
+  R.ok(Object.keys(functions).length === 3,
+    `vercel.json functions declares exactly 3 entries (found ${Object.keys(functions).length}: ${Object.keys(functions).join(', ') || 'none'})`);
   for (const key of Object.keys(functions)) {
     R.ok(existsSync(join(API_DIR, '..', key)),
       `vercel.json functions key "${key}" exists on disk (no stale keys)`);
