@@ -295,6 +295,23 @@ the kind that goes unverified, and my confirmation made it worse, not better. Tw
 premises also failed measurement: the mockup's inventory (~20 fictional destinations) and its
 "11 mempool views / 12 simulators" (really 6 and 21).
 
+**5 · `git add -A` swept a concurrent agent's in-flight files into an unrelated commit —
+three times, which makes it a pattern and not an accident.** `0a0d92d` (a CLS commit) took
+the in-flight Requirement 9 files, so its message describes less than it contains.
+`92657cd` (a handoff-documentation commit) took `app/test-nav-interactive.mjs`, a
+design-reviewer scratch probe wired to neither npm nor CI, which does not belong in the PR
+at all. The two needed different remedies and got them: the first is RECORDED in §7, because
+the files belonged in the PR and only the message was wrong, and rewriting a pushed message
+to look tidier is worse than an accurate note; the second was UNTRACKED with `git rm
+--cached` — not deleted, because the agent was still running and still using the file.
+
+The structural fix is a `.gitignore` rule covering `app/test-*.mjs` and `app/probe*.mjs`, so
+a concurrent agent's scratch can no longer ride into a commit. Recorded here rather than
+treated as tidying, because the failure is a property of the ORCHESTRATION, not of any
+agent: a lead that commits while subagents are mid-write will keep doing this, and the only
+reliable guard is that scratch paths are ignored by default. Staging by explicit path is the
+discipline; the ignore rule is what survives forgetting it.
+
 **Cross-cutting: my own briefs were the limiting factor at least three times.** The sweep
 pattern I handed every agent (`['"]/(mempool|…)`) structurally could not see a REGEX literal
 (`waitForURL(/\/simulate/)`, which killed the e2e chain for 30s) and I explicitly told the
