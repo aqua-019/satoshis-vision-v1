@@ -372,11 +372,23 @@ module.exports = async function handler(req, res) {
       }
     }
   } catch (err) {
-    if (err.name === 'AbortError') {
-      upstreamReason = 'upstream-timeout';
-    } else {
-      upstreamReason = 'upstream-timeout'; // treat all errors as timeout
-    }
+    /* FOUR reasons, FOUR producible states — and that is the whole point.
+       This block previously read `if (err.name === 'AbortError') { timeout }
+       else { timeout }`, with a comment saying "treat all errors as timeout".
+       Both arms were identical, so no input could distinguish them: a DNS
+       failure, a refused connection and a TLS error all reported that
+       monero.fail TIMED OUT when it was never reached. That is a fabricated
+       cause on a live surface, in the one field whose only job is to say why —
+       and any gate asserting the timeout path would have been green on every
+       throwing input while testing nothing.
+
+       Scope, stated honestly: this try covers `fetch` and reading
+       `.status`/`.ok` only. A throw inside parseHealth or the aggregation is
+       OUTSIDE it, becomes a platform 500, and correctly reaches the panel as
+       "/api/nodes did not answer" — which is a different and also true claim. */
+    upstreamReason = err && err.name === 'AbortError'
+      ? 'upstream-timeout'      // the 8s AbortController fired
+      : 'upstream-unreachable'; // DNS, refused, TLS, socket — never reached
   } finally {
     clearTimeout(timeoutId);
   }
@@ -396,17 +408,35 @@ module.exports = async function handler(req, res) {
       return res.status(200).json(staleBody);
     }
 
-    // No cache: return unavailable with no numeric fields
-    const reason = upstreamReason || 'upstream-timeout';
+    /* No cache: unavailable, with NO numeric fields at all — a zero-count
+       success is indistinguishable from a real network with no reachable
+       nodes, which is exactly the fabrication this endpoint exists to avoid.
+       `upstreamReason` is non-null inside this branch by construction (it is
+       the branch condition), so it is used directly; an earlier
+       `upstreamReason || 'upstream-timeout'` here had an unreachable right
+       arm that read as a safety net while being decoration. */
     const body = {
       v: 1,
       at: new Date().toISOString(),
       source: 'monero.fail',
       status: 'unavailable',
-      reason,
+      reason: upstreamReason,
+      /* The status code, when there was one. F2: this was captured and
+         discarded, so the envelope could not say WHICH status the upstream
+         returned. A bare code — no URL echo, no body, nothing that could
+         carry an upstream error string onto our surface. */
+      upstreamStatus,
     };
 
-    res.setHeader('Cache-Control', 'no-store');
+    /* 45/45, NOT no-store — matching the two sibling degraded exits above and
+       this file's own header. `no-store` here would remove the CDN collapse
+       precisely during an outage, turning every visitor request into a fresh
+       upstream fetch: an origin stampede against a third party that is
+       already struggling. DEGRADED_S_MAXAGE exists to retry SOON while still
+       collapsing concurrent visitors; opting out of the second half is not a
+       faster retry, it is an amplifier. */
+    const { sMaxAge: dm, swr: dw } = cacheHeadersFor('degraded');
+    res.setHeader('Cache-Control', `public, s-maxage=${dm}, stale-while-revalidate=${dw}`);
     res.setHeader('X-Nodes-Quality', 'degraded');
     return res.status(200).json(body);
   }
@@ -439,6 +469,12 @@ module.exports = async function handler(req, res) {
     source: 'monero.fail',
     sampledAt,
     status: 'live',
+    /* Explicit null, not absent. The client narrows a discriminated union on
+       `status`, and a shape guard that reads `typeof body.reason` sees
+       `undefined` for a missing key — indistinguishable from a malformed
+       payload. Present-and-null says "nothing went wrong"; absent says
+       nothing at all. */
+    reason: null,
     quality: null, // will be set after building
     counts: {
       seen,
