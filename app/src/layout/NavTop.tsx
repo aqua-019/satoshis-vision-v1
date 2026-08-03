@@ -50,8 +50,19 @@ import { SITE_VERSION } from "@/data/releases";
 import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { IA, sectionForPath, type IaSection } from "@/nav/ia";
+import { usePaletteHotkey } from "@/nav/usePaletteHotkey";
 import { R } from "../../scripts/routes.mjs";
 import { BottomTabBar } from "./BottomTabBar";
+
+// CommandPalette.tsx is React.lazy and imported ONLY here, on first ⌘K — see
+// nav/usePaletteHotkey.ts's header for why the hook that triggers it is
+// eager while this is not. Defining the lazy wrapper at module scope (rather
+// than inside the component) does not by itself fetch anything: React.lazy's
+// factory only runs the first time the resulting component is actually
+// rendered, which only happens once `everOpened` below goes true.
+const LazyCommandPalette = React.lazy(() =>
+  import("@/nav/CommandPalette").then((m) => ({ default: m.CommandPalette })),
+);
 
 /** D1542 — 150ms to open, 220ms to close. Zeroed under reduced motion (the
  *  delay is UX smoothing tied to motion, not a functional gate — every
@@ -73,6 +84,23 @@ export function NavTop() {
   const reducedMotion = useReducedMotion();
 
   const activeKey = sectionForPath(location.pathname)?.key ?? null;
+
+  // ── ⌘K command palette trigger ──────────────────────────────────────────
+  // usePaletteHotkey (eager, tiny) owns `open`. `everOpened` is this
+  // component's own — the palette chunk must not even be REQUESTED until
+  // the first ⌘K/click, but once it has been, the mounted LazyCommandPalette
+  // stays in the tree (toggling its own `open` prop) rather than being
+  // torn down and re-fetched on every close; V6Modal (which it wraps) is
+  // itself what keeps `[role="dialog"]` absent from the DOM while closed,
+  // so "mounted" here does not mean "a dialog exists" — see
+  // verify-future.mjs:259's zero-dialogs-before-any-open assertion, which
+  // this satisfies through V6Modal's own present/open split, not through
+  // this flag.
+  const palette = usePaletteHotkey();
+  const [paletteEverOpened, setPaletteEverOpened] = React.useState(false);
+  React.useEffect(() => {
+    if (palette.open) setPaletteEverOpened(true);
+  }, [palette.open]);
 
   const topbarRef = React.useRef<HTMLDivElement>(null);
   const navRef = React.useRef<HTMLElement>(null);
@@ -306,6 +334,13 @@ export function NavTop() {
               </button>
             );
           })}
+          {/* Plain `.nav-main` child, not `.navitem` — the D1207 container
+              query at 720px hides `.navitem`/`#pill`/`.dd` and shows the
+              tab bar, but names none of THIS class, so the trigger stays
+              reachable at every width without a rule of its own. */}
+          <button type="button" className="nav-kbd" onClick={() => palette.setOpen(true)} aria-label="Open command palette (⌘K)">
+            ⌘K
+          </button>
           <span id="pill" ref={pillRef} />
         </nav>
 
@@ -403,7 +438,10 @@ export function NavTop() {
                   </div>
                 ))}
               </div>
-              <div className="dd-foot">{renderedSection.blurb}</div>
+              <div className="dd-foot">
+                <span>{renderedSection.blurb}</span>
+                <span className="dd-foot-kbd">⌘K to type instead</span>
+              </div>
             </>
           ) : null}
         </div>
@@ -411,6 +449,17 @@ export function NavTop() {
       </div>
 
       <BottomTabBar />
+
+      {/* Not requested until the first ⌘K/click — see LazyCommandPalette's
+          own comment above. `fallback={null}` is safe: the chunk is tiny
+          and already resolving by the time React would need to paint
+          anything in its place, and a visible "loading…" here would be a
+          worse first frame than a one-tick-late dialog. */}
+      {paletteEverOpened ? (
+        <React.Suspense fallback={null}>
+          <LazyCommandPalette open={palette.open} onClose={() => palette.setOpen(false)} />
+        </React.Suspense>
+      ) : null}
     </>
   );
 }
