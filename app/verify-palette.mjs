@@ -68,11 +68,27 @@ const waitDialogHidden = (page) => soft(dialog(page).waitFor({ state: 'hidden', 
 // ═════════════════════════════════════════════════════════════════════════
 REPORT.group('── §0 · offline destination breakdown (from nav/ia.ts) ─────────');
 
+// Mirrors CommandPalette.tsx's `sectionRootPath` exactly — see that file's
+// header for why this is NOT a bare `cols[0].items[0].p`: for the Live
+// section specifically that would resolve to the SAME "Home" leaf this
+// gate's Home row already covers (confirmed against the real running app —
+// clicking "Live" in the actual top nav lands on "/", a pre-existing defect
+// in layout/NavTop.tsx's onItemClick / nav/ia.ts's data shape, outside this
+// gate's and CommandPalette.tsx's owned files). Walking to the first
+// non-Home leaf is a no-op for the other five sections.
+function sectionRootPath(section) {
+  for (const col of section.cols) {
+    for (const item of col.items) {
+      if (item.p !== R.HOME) return item.p;
+    }
+  }
+  return section.path;
+}
+
 function buildNavDestinations() {
   const rows = [{ l: 'Home', p: R.HOME, sec: 'Home', kind: 'home' }];
   for (const section of IA) {
-    const rootPath = section.cols[0]?.items[0]?.p ?? section.path;
-    rows.push({ l: section.label, p: rootPath, sec: section.label, kind: 'section' });
+    rows.push({ l: section.label, p: sectionRootPath(section), sec: section.label, kind: 'section' });
     for (const col of section.cols) {
       for (const item of col.items) {
         if (item.p === R.HOME) continue; // Home has its own row above — see file header

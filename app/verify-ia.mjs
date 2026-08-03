@@ -331,9 +331,27 @@ try {
       }
     }
 
-    // Every ROUTES entry should appear as an IA leaf or be a parent
+    /* Every ROUTES entry appears as an IA leaf, or is the parent of one.
+     *
+     * `/` is EXEMPT, and the exemption is load-bearing rather than cosmetic.
+     * Home is owned by the brand mark; it is not a child of any of the six
+     * sections. This rule previously had the exemption in its prose and not in
+     * its code, so `/` reported as "not in IA" and the only way to go green was
+     * to put a Home leaf inside a section. That is exactly what happened — Home
+     * was added as the FIRST leaf of Live's Mempool column — and because a
+     * section's click target is `cols[0].items[0].p`, clicking **Live in the
+     * real nav navigated to Home**. Confirmed against the running build, not
+     * inferred.
+     *
+     * So a gate whose prose and code disagreed did not merely fail to catch a
+     * bug: it manufactured one, by making the wrong shape the only passing
+     * shape. Note `hasChild` cannot rescue `/` either — nothing starts with
+     * `//` — so without this exemption the rule is unsatisfiable by any correct
+     * IA. The palette carries Home as its own canonical row instead.
+     */
     if (routes.length > 0) {
       const routesNotInIa = routes.filter(route => {
+        if (route === '/') return false;              // see above
         const inLeaves = iaLeafPaths.includes(route);
         if (inLeaves) return false;
 

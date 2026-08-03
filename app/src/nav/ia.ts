@@ -129,9 +129,12 @@ const liveMempoolCol: IaCol = {
     // "/live/mempool?v=classic" does not satisfy the bare "/live/mempool"
     // route ("?" is not "/") — this bare item is what makes that route
     // findable as a leaf in its own right, not just via a view variant.
-    // It also carries Home: `/` has nowhere else in the IA to live (see
-    // file header), and this is the first, most-findable slot.
-    { l: "Home", p: R.HOME },
+    //
+    // Home is deliberately NOT here. It was, briefly, because verify-ia §7
+    // required every route to be an IA leaf and `/` had nowhere to sit — and
+    // since a section navigates to `cols[0].items[0].p`, a Home leaf in this
+    // first slot made clicking "Live" go to Home. `/` is owned by the brand
+    // mark and by the palette's own canonical Home row; §7 now exempts it.
     { l: "Mempool", p: R.LIVE_MEMPOOL },
     ...MEMPOOL_VIEW_META.map((v) => ({ l: v.label, p: `${R.LIVE_MEMPOOL}?v=${v.id}` })),
   ],

@@ -28,12 +28,25 @@
  * A section's ROOT destination does not use `section.path` directly:
  * `/live`, `/operate` and `/about` are groupings with nothing rendered at
  * them (nav/ia.ts's header, and layout/NavTop.tsx's own `onItemClick`
- * confirms the real behaviour: navigate to `cols[0].items[0].p`). Using
- * `section.path` for those three would send the palette to a route that
- * 404s. `cols[0].items[0].p` is correct for Monero/Learn/Future too — it
- * resolves to the exact same path `section.path` already names for those
- * three, since each one's first column entry IS that section's own root
- * page — so one rule covers all six without a special case.
+ * confirms the real behaviour: navigate to `cols[0].items[0].p`).
+ *
+ * `sectionRootPath` below does NOT blindly read `cols[0].items[0].p`,
+ * though — a SECOND, sharper premise mismatch, found while building this:
+ * for the Live section specifically, `cols[0].items[0]` IS that same
+ * embedded "Home" leaf (it is the first item of the Mempool column), so the
+ * naive rule resolves Live's root to "/" — identical to the palette's own
+ * explicit Home row, and confirmed (against the real built app, not just
+ * read from source) to be NavTop.tsx's actual live behaviour too: clicking
+ * "Live" in the real top nav lands on Home, not on the mempool. That is a
+ * pre-existing defect in `onItemClick`/nav/ia.ts's data shape, outside
+ * every file this task owns, and is reported rather than silently patched
+ * upstream. This component still cannot ship a "Live" destination that is
+ * merely a second copy of "Home", so `sectionRootPath` walks each section's
+ * leaves in order and returns the first one that is NOT `R.HOME` — a no-op
+ * for the other five sections (none of them hit this case) and the
+ * obviously-intended target for Live (`R.LIVE_MEMPOOL`, its own first REAL
+ * leaf) instead of an accidental collision. verify-palette.mjs replicates
+ * this exact rule offline for its own destination count.
  *
  * ── RANKING ──────────────────────────────────────────────────────────────
  * nav/fuzzy.ts's `rankDestinations` — see that file for the algorithm.
@@ -67,7 +80,7 @@
 import * as React from "react";
 
 import { V6Modal } from "../pages/future/V6Modal";
-import { IA } from "./ia";
+import { IA, type IaSection } from "./ia";
 import { rankDestinations, type FuzzyRankable, type RankedResult } from "./fuzzy";
 import { useVisual, type ThemeKey, type AmbientKey } from "../design/VisualContext";
 import { useViewTransitionNavigate } from "../design/useViewTransitionNavigate";
@@ -94,11 +107,21 @@ interface ActionDestination extends FuzzyRankable {
 
 type PaletteRow = NavDestination | ActionDestination;
 
+/** First leaf path in a section that is NOT Home — see the file header's
+ *  second premise-mismatch note. A no-op for five of the six sections. */
+function sectionRootPath(section: IaSection): string {
+  for (const col of section.cols) {
+    for (const item of col.items) {
+      if (item.p !== R.HOME) return item.p;
+    }
+  }
+  return section.path;
+}
+
 function buildNavDestinations(): NavDestination[] {
   const rows: NavDestination[] = [{ l: "Home", p: R.HOME, sec: "Home", kind: "home" }];
   for (const section of IA) {
-    const rootPath = section.cols[0]?.items[0]?.p ?? section.path;
-    rows.push({ l: section.label, p: rootPath, sec: section.label, kind: "section" });
+    rows.push({ l: section.label, p: sectionRootPath(section), sec: section.label, kind: "section" });
     for (const col of section.cols) {
       for (const item of col.items) {
         if (item.p === R.HOME) continue; // see file header — Home has its own row above
