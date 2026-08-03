@@ -10,11 +10,11 @@
  * their own top-level pages (/live/markets/thesis, /future/outlook; see
  * monero/tabs.ts's header). #markets-thesis and #outlook are handled here as
  * CLIENT-ONLY redirects, driven by scripts/routes.mjs's `HASH_REDIRECTS` —
- * the same single-authority table App.tsx maps over for its 13 path
- * redirects, so a hash target is written down exactly once, not restated as
- * a literal here. A URL fragment is never transmitted to a server, so
- * vercel.json structurally cannot carry these two — unlike the other 13
- * old→new pairs, which get a real 301. Same idiom as
+ * the same single-authority pattern App.tsx follows for its 12 path
+ * redirects (REDIRECTS), so a hash target is written down exactly once, not
+ * restated as a literal here. A URL fragment is never transmitted to a
+ * server, so vercel.json structurally cannot carry these two — unlike the
+ * other 12 old→new pairs, which get a real 301. Same idiom as
  * SourcesPage.tsx:110-114's `#hash` → scrollIntoView effect, except this one
  * navigates to a different route entirely rather than scrolling within the
  * page. useRouteChrome's rule 2 (scroll-to-top on route change) stands down
