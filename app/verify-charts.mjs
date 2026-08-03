@@ -24,6 +24,10 @@
 // Run: npm run build && (npm run preview &) && sleep 2 && node verify-charts.mjs
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
+// v6.1.8 cold boot: this gate's route array at :119 is
+// ['/live/markets', '/live/network', '/'] — Home is the THIRD element, which
+// is why a grep for a leading '/' route literal missed this file.
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 
 const base = 'http://localhost:4173';
 
@@ -46,6 +50,7 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+await coldBootOffBrowser(b);
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };

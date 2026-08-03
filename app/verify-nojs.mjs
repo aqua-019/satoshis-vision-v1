@@ -29,6 +29,9 @@ function findChrome() {
   return undefined;
 }
 
+// v6.1.8 cold boot: navigates to `/` at :48 and :138.
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
+
 let b, engine = 'chromium';
 try {
   const executablePath = findChrome();
@@ -38,6 +41,7 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+await coldBootOffBrowser(b);
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };

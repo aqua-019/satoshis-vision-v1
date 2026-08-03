@@ -34,7 +34,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative } from "node:path";
-import { makeReporter, launch, BASE } from "./verify-lib.mjs";
+import { makeReporter, launch, BASE, coldBootOffBrowser, assertColdBootBypassed } from "./verify-lib.mjs";
 
 const staticOnly = process.argv.includes("--static");
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -373,6 +373,10 @@ R.group("── 7 · a shed is visible from outside (browser) ──────
     // never checked — the exact failure mode this file exists to prevent.
   } else {
     const { browser, engine } = await launch();
+    // v6.1.8: `${BASE}/?tier=high` IS Home — the literal '/' never appears as
+    // a standalone token here, which is why a grep-based sweep missed this
+    // file. See verify-lib.mjs's COLD BOOT block.
+    await coldBootOffBrowser(browser);
     R.info(`engine: ${engine}`);
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     // domcontentloaded + an explicit selector, never networkidle: the FAST

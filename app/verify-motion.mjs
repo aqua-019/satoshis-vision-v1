@@ -16,7 +16,7 @@
 // Run from app/: `npm run build && (node scripts/serve-dist.mjs &) && node verify-motion.mjs`
 
 import { readFileSync } from 'node:fs';
-import { launch, makeReporter, BASE } from './verify-lib.mjs';
+import { launch, makeReporter, BASE, coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 
 
 /** Click a real in-app link through the v6.1.6 nav.
@@ -91,6 +91,9 @@ const SUSPENDED_RE = (() => {
 
 const R = makeReporter('verify-motion');
 const { browser, engine } = await launch();
+// v6.1.8: this gate navigates to `/` three times and also reaches it by
+// clicking a.brand. See verify-lib.mjs's COLD BOOT block.
+await coldBootOffBrowser(browser);
 console.log('engine:', engine);
 
 /**

@@ -123,6 +123,9 @@ const stripCssComments = (src) =>
   ok(!/var\(--in-(bg|surface|raised)[,)]/.test(theme), '0 · dead --in-* tokens are gone');
 }
 
+// v6.1.8 cold boot: navigates to `/` four times (:141 :199 :259 :319).
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
+
 let b, engine = 'chromium';
 try {
   const executablePath = findChrome();
@@ -132,6 +135,7 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+await coldBootOffBrowser(b);
 
 // ── A) stylesheet blocked, scripting ON — the reported Brave case ───────────
 {

@@ -25,10 +25,15 @@
 //
 // Run against `vite preview` on :4173 (see verify-lib.mjs BASE).
 
-import { launch, newThemedPage, freezeAmbient, makeReporter, BASE, SIM_ROUTES } from './verify-lib.mjs';
+import { launch, newThemedPage, freezeAmbient, makeReporter, BASE, SIM_ROUTES,
+         coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 
 const R = makeReporter('verify-ground');
 const { browser, engine } = await launch();
+// v6.1.8: the classic-theme branch navigates to `/` to assert the ambient
+// layers are absent. A splash would occlude them and read as a pass.
+// See verify-lib.mjs's COLD BOOT block.
+await coldBootOffBrowser(browser);
 console.log('engine:', engine);
 
 const VIEWPORTS = [

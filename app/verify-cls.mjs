@@ -75,6 +75,7 @@
 import {
   makeReporter, launchChromium, BASE,
   CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus,
+  coldBootOffBrowser, assertColdBootBypassed,
 } from './verify-lib.mjs';
 // Aliased: `R` is already the reporter in this file. Keys below are derived
 // from the canonical route constants rather than retyped, because five of them
@@ -228,6 +229,10 @@ const ROUTES = Object.keys(MEASURED);
 const R = makeReporter('verify-cls');
 
 const { browser } = await launchChromium();
+// v6.1.8: `/` is one of the MEASURED routes and now boots behind a splash.
+// Without this every `/` number below would describe the splash. See
+// verify-lib.mjs's COLD BOOT block for why the wrapper, not per-site edits.
+await coldBootOffBrowser(browser);
 
 /* Feature-detect once, on a throwaway page, before claiming anything. */
 const probe = await browser.newPage();

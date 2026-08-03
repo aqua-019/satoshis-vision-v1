@@ -158,6 +158,9 @@ function findChrome() {
   return undefined;
 }
 
+// v6.1.8 cold boot: its route list at :182 leads with '/'.
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
+
 let b, engine = 'chromium';
 try {
   const executablePath = findChrome();
@@ -167,6 +170,7 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+await coldBootOffBrowser(b);
 
 // ── 2) the built app makes no off-origin request ───────────────────────────
 {

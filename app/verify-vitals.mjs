@@ -41,7 +41,8 @@
 // yellow.
 // THRESHOLD: if this gate reports INCONCLUSIVE on 3 consecutive CI runs, it is
 // not a gate any more, it is a comment. Fix the runner or delete the budget.
-import { makeReporter, launchChromium, BASE, SLOW_4G, CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus } from './verify-lib.mjs';
+import { makeReporter, launchChromium, BASE, SLOW_4G, CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus,
+         coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 /* `RT` because `R` in this file is the reporter. Same alias verify-cls.mjs
  * uses, and for the same reason: keys that are string literals drift away
  * from the route table silently — see the note above ROUTES below. */
@@ -289,6 +290,9 @@ const CPU_PROBE = () => {
 };
 
 const { browser } = await launchChromium();
+// v6.1.8: `/` is a budgeted route. An LCP measured against the splash is a
+// number about the wrong page. See verify-lib.mjs's COLD BOOT block.
+await coldBootOffBrowser(browser);
 
 /* Feature-detect once, before claiming anything. */
 const probePage = await browser.newPage();

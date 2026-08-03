@@ -36,7 +36,7 @@
 // string does not appear). Every navigation is `domcontentloaded` plus an
 // explicit selector wait.
 
-import { BASE, launch, makeReporter } from './verify-lib.mjs';
+import { BASE, launch, makeReporter, coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 import { IA } from './src/nav/ia.ts';
 import { R } from './scripts/routes.mjs';
 
@@ -44,6 +44,9 @@ const REPORT = makeReporter('verify-palette');
 const SETTLE = 300;
 
 const { browser, engine } = await launch();
+// v6.1.8: open(page, '/') appears 11x in this file. See verify-lib.mjs's
+// COLD BOOT block.
+await coldBootOffBrowser(browser);
 REPORT.info(`engine: ${engine}`);
 REPORT.info(`base:   ${BASE}`);
 

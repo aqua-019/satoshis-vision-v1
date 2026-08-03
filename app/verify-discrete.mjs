@@ -47,6 +47,8 @@
 //   npm run build && (node scripts/serve-dist.mjs 4173 &) \
 //     && npm run wait-preview && node verify-discrete.mjs
 import { chromium } from 'playwright';
+// v6.1.8 cold boot: navigates to `/` at :158.
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 const BASE = process.env.VERIFY_BASE || 'http://localhost:4173';
@@ -146,6 +148,7 @@ const TOGGLE_PROBE = `new Promise((res) => {
 
 const executablePath = findChrome();
 const browser = await chromium.launch(executablePath ? { executablePath } : {});
+await coldBootOffBrowser(browser);
 const uaVersion = browser.version();
 
 console.log(`verify-discrete — @starting-style + transition-behavior: allow-discrete`);
