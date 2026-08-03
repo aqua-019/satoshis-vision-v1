@@ -201,7 +201,26 @@ const BUDGETS = {
   // restructure (R/REDIRECTS/RedirectTo added to the eager closure) — kept
   // at 88,000 rather than re-tightened since the new measurement still
   // clears it with ~8% headroom.
-  eagerJsGz: 88_000,
+  // v6.1.8 RAISED 88,000 -> 96,000, deliberately, per this block's own rule.
+  // Main Home was rewritten from a static hero into a seven-passage rotating
+  // hero + live strip + six IA-derived section cards + thesis + theme toggle.
+  // Measured 85,056 -> 87,128 (+2,072 B gzip), leaving 1.0% headroom against
+  // 88,000 — and this block defines headroom as "slack for ordinary feature
+  // work", which 1% is not. A rewritten LCP route IS ordinary feature work;
+  // it is exactly what the slack was for, and it consumed it.
+  //
+  // 96,000 restores the stated ~10% (87,128 * 1.10 = 95,841, rounded up).
+  // NOT chosen to fit: chosen by re-applying the calibration rule already
+  // written above. The alternative was lazy-loading passages 2-7 and the
+  // below-fold cards to reclaim <1 KB, which buys complexity and two chunks
+  // on the most latency-critical route in the app for a rounding error.
+  //
+  // Raised NOW, at 99%, rather than after the cold-boot mount pushes it past
+  // 100%: at that point the number would be chosen by the constraint rather
+  // than by measurement, and "we had to" is not a calibration argument.
+  // §7's self-test still bites — a +50 KB regression measures 138,328 and
+  // fails this ceiling.
+  eagerJsGz: 96_000,
   // One render-blocking stylesheet. All five sheets are imported from
   // main.tsx:26-30 (203,896 bytes of SOURCE) and Vite minifies them to one
   // file: measured 73,031 raw / 14,863 gzip. Budgeted because it blocks the
@@ -232,7 +251,11 @@ const BUDGETS = {
  * `/monero` itself measures smaller than before — 2 fewer tab modules). */
 const ROUTE_BUDGET_GZ = {
   //  route                   budget   measured post-restructure (gzip -9)
-  '/':                       89_000, //  80,731 — the entry closure itself; HomePage is eager
+  '/':                       97_000, //  87,128 — the entry closure itself; HomePage is eager.
+                                     //  v6.1.8: 89,000 -> 97,000 alongside eagerJsGz, same
+                                     //  reasoning and same ~10% rule. This row IS the eager
+                                     //  closure (2 chunks: entry + vendor), so it tracks that
+                                     //  ceiling +1,000 rather than moving independently.
   '/live/mempool':          107_000, //  96,835
   '/live/markets':          105_000, //  95,817
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
