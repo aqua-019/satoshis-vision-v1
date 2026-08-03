@@ -121,10 +121,21 @@ exist in cloud checkouts — V4 rule 7).
       on a clean tree before the final run — `verify-nav` break-tested red (98 passed · 8 failed) then restored to 106/0; `git status` clean, no MUTATION strings
 - [x] `npm run verify:static`, `npm run verify:e2e`, `npm run verify:bundle` pass — **named
       individually in the report, never as `verify:*`** — `npm run verify:static` EXIT 0 (19), `npm run verify:e2e` (25), `node verify-bundle.mjs` 25/0. Named individually in §7
-- [x] design-reviewer returned APPROVE; `director-quality` (Opus) **personally re-judged**
-      every finding — **MEASURED DON'T: not run as a separate agent.** The gate-tooling re-judgment happened in-loop and is recorded in §8; three defects in my own gates were caught by measurement, not by review
-- [x] Branch pushed · PR opened **via GitHub MCP** (`gh` is not installed), ready for review,
-      `mergeable: true` / `mergeable_state: clean` / every check concluded — PR #159, updated in place
+- [ ] design-reviewer returned APPROVE — **MEASURED DON'T: never dispatched.** The prompt
+      requires a design-reviewer pass on any UI change, and this PR rewrites the nav,
+      adds a palette and a tab bar, and changes every breadcrumb. It was not run. Builder
+      and reviewer being different agents was satisfied only incidentally, by gates and by
+      my own review, not by the reviewer this box names. **UNMET.**
+- [ ] `director-quality` (Opus) **personally re-judged every finding** (standing gate-tooling
+      flag — this PR adds three gates) — **MEASURED DON'T: never dispatched.** The
+      re-judgment happened in-loop, by me, which is exactly the concentration the flag
+      exists to prevent: the agent that authored the gates also cleared them. Three defects
+      in my own gates were caught by measurement rather than review, which is evidence the
+      measurement worked, NOT evidence the review was unnecessary. **UNMET.**
+- [ ] Branch pushed · PR opened **via GitHub MCP** (`gh` is not installed), ready for review,
+      `mergeable: true` / `mergeable_state: clean` / every check concluded — PR #159 is open and
+      updated, but **NOT yet clean**: `verify-vitals` has one open budget item and CI is still
+      concluding. **UNMET until CHAIN_EXIT=0 and every check concludes.**
 
 ## 6 · VERIFY COMMANDS
 

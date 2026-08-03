@@ -119,19 +119,40 @@ const ROUTES = Object.keys(BUDGETS);
  *  observer. A missing selector is R.skip with the selector named, never a
  *  silently recorded zero. */
 const INTERACTIONS = {
-  // v6.1.6: the mobile drawer and its hamburger are gone — BottomTabBar
-  // replaced them, so `button[aria-label="Open menu"]` matched nothing and this
-  // route's interaction probe SKIPPED. It skipped loudly (the reporter names the
-  // selector) rather than recording a zero, which is the only reason it was not
-  // read as "no interaction latency". A dead selector is invisible to a
-  // route-literal sweep — it is neither a path nor a string the pattern matches.
-  // The ⌘K trigger is the equivalent always-present, non-navigating control.
-  // ONE selector, not a pair. The old entry was ['Open menu', 'Close menu'] —
-  // two DIFFERENT elements, open then close. Repeating .nav-kbd twice instead
-  // put the second click on a button now covered by the palette's own veil, so
-  // it failed the actionability check and skipped — the exact defect shape the
-  // comment at the click site records for the old drawer's z-index. One click
-  // is a complete interaction to measure.
+  /* SELF-PAIRING IS NOT THE RULE — "stays clickable while active" is.
+   *
+   * The line below self-pairs `.mp-switcher__trigger` and works, because that
+   * trigger is a TOGGLE that remains clickable when open: click 1 opens, click
+   * 2 closes, both hit the same live element. `/` used to self-pair the same
+   * way with the drawer's Open/Close buttons — two DIFFERENT elements.
+   *
+   * v6.1.6 deleted that drawer, so `button[aria-label="Open menu"]` matched
+   * nothing and this probe SKIPPED. Repointing it at the ⌘K trigger while
+   * KEEPING the pair shape then failed differently: V6Modal mounts
+   * `.v6-modal-veil` across the viewport, so the second click on `.nav-kbd`
+   * lost its actionability check and skipped again.
+   *
+   * So: a self-paired selector is valid only for a toggle that stays clickable
+   * while active, and breaks for anything that mounts an overlay. The map
+   * cannot express that distinction, which is why it is written here.
+   *
+   * `.v6-modal-veil` is NOT the fix for the second slot either. Its handler is
+   * `if (open && e.target === e.currentTarget) onClose()` — backdrop-close
+   * fires only on a click landing directly on the veil, and Playwright clicks
+   * an element's CENTRE, where `.v6-modal` sits. The click would pass
+   * actionability and simply not close anything: a SILENT failure leaving the
+   * palette open for whatever ran next, which is worse than the loud skip.
+   * There is no close button; the footer says "Esc", and Escape reaches
+   * V6Modal's own document listener by design.
+   *
+   * ONE selector, therefore — the runner iterates whatever length it is given
+   * and '/live/markets' is already a one-element list. The open is also the
+   * interaction worth measuring: the first ⌘K triggers the lazy chunk fetch
+   * plus first render, comfortably the heaviest interaction on this route,
+   * while closing a modal is cheap and measuring it adds nothing.
+   *
+   * MEANING CHANGE, stated rather than slipped in: `/`'s interaction number is
+   * now ONE interaction, not two. It is not comparable to a pre-v6.1.6 figure. */
   '/': ['.nav-kbd'],
   '/live/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
   '/live/markets': ['button.proto-btn[aria-pressed]'],
