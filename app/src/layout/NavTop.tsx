@@ -1,162 +1,416 @@
 /**
- * layout/NavTop.tsx — global navigation strip + live ticker.
+ * layout/NavTop.tsx — global navigation strip: 6-section IA (nav/ia.ts) with
+ * hover-intent dropdowns, a morphing active-pill, and a mobile bottom tab bar
+ * (layout/BottomTabBar.tsx) below the D1207 720px container-query threshold.
  *
- * Uses react-router-dom <NavLink>, so the "active" highlight is computed
- * from the URL, not from a prop. Every link is a real route — bookmarkable,
- * shareable, refresh-safe.
+ * Rebuilt from the flat 11-item `NavLink` list per the P5 nav restructure —
+ * see docs/v6-mockups/nav-ia-mockup.html for the mechanics this copies
+ * (D1542 hover intent, D0235 morphing pill, D1207 container queries), and
+ * nav/ia.ts for the real 6-section data the mockup's own inventory is
+ * fiction for. Every destination below is read from `IA`; nothing here
+ * hardcodes a path except the two structural links (brand → `/`, version →
+ * `${R.ABOUT_SOURCES}#release-notes`) that predate the section data and
+ * aren't part of it.
+ *
+ * ── WHAT SURVIVED THE REWRITE (D0744-adjacent, unchanged) ──────────────────
+ * Brand `<Link>` + version `<Link>`, the exhaustive `ChromeState` status pill,
+ * XMR + BTC tickers, `<DesignPanel/>` as the LAST child of `.ticker-strip`
+ * (see design/DesignPanel.tsx's header for why that position is load-bearing).
+ * The old hamburger + slide-in drawer is gone; BottomTabBar replaces it below
+ * 720px instead of hiding the same 6 destinations inside a drawer.
+ *
+ * ── CONTAINER, NOT VIEWPORT (D1207) ─────────────────────────────────────────
+ * `.topbar` is the `container-type: inline-size; container-name: navshell`
+ * root (styles.css). `.dd` (the shared dropdown panel) is nested inside it so
+ * `top: 100%` and its left-clamp read the SAME box the container query does —
+ * no hardcoded topbar-height constant (compare the `.mp-switcher { top: 60px
+ * }` trap CLAUDE.md documents). BottomTabBar registers a SECOND `navshell`
+ * container of its own (`.tabbar-anchor`) for a reason specific to it — see
+ * that file's header — and container-query rule blocks in styles.css target
+ * both by name, not by DOM nesting.
+ *
+ * ── FOCUS, NOT JUST HOVER ────────────────────────────────────────────────
+ * The mockup has no keyboard/focus handling for the dropdown at all — that is
+ * a gap in the mockup, not the spec. This version: ArrowDown on a `.navitem`
+ * opens its panel and moves focus to the first link inside it; Escape (from
+ * either the item or the panel) closes and returns focus to the trigger;
+ * focus leaving the combined item+panel region closes it too (`onBlur` with a
+ * `relatedTarget` containment check); a document-level pointerdown outside
+ * both closes it for mouse/touch users who click elsewhere without hovering
+ * out first.
  */
 
 import * as React from "react";
-import { NavLink, Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+
 import { useMoneroLive } from "@/data/DataContext";
-import { Provenance } from "@/design/primitives";
 import { DesignPanel } from "@/design/DesignPanel";
+import { useReducedMotion } from "@/design/useReducedMotion";
 import { SITE_VERSION } from "@/data/releases";
 import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
+import { IA, sectionForPath, type IaSection } from "@/nav/ia";
+import { R } from "../../scripts/routes.mjs";
+import { BottomTabBar } from "./BottomTabBar";
 
-const NAV: ReadonlyArray<{ to: string; label: string }> = [
-  { to: "/",           label: "Home" },
-  { to: "/mempool",    label: "Mempool" },
-  { to: "/markets",    label: "Markets" },
-  { to: "/network",    label: "Network" },
-  { to: "/monero",     label: "Monero" },
-  { to: "/education",  label: "Education" },
-  { to: "/future",     label: "Future" },
-  { to: "/peers",      label: "Peers" },
-  { to: "/simulate",   label: "Simulate" },
-  { to: "/node",       label: "Run a node" },
-  { to: "/sources",    label: "Sources" },
-];
+/** D1542 — 150ms to open, 220ms to close. Zeroed under reduced motion (the
+ *  delay is UX smoothing tied to motion, not a functional gate — every
+ *  destination stays reachable at 0ms, just without the smoothing). */
+const HOVER_OPEN_MS = 150;
+const HOVER_CLOSE_MS = 220;
 
-const NAV_MENU_ID = "navtop-menu";
+/** `useLayoutEffect` warns under renderToString (scripts/prerender.mjs runs
+ *  this component on the server for the no-JS HTML) — same shape as
+ *  routes/useRouteChrome.ts:124 / mempool/useRibbonGlide.ts:45, copied rather
+ *  than shared for the same reason those two don't share it either. */
+const useIsoLayoutEffect = typeof window !== "undefined" ? React.useLayoutEffect : React.useEffect;
 
 export function NavTop() {
   const data = useMoneroLive();
   const chromeState = useChromeState(data.status, CHAIN_MARKET_CHROME_KEYS);
-  const [menu, setMenu] = React.useState(false);
-  const toggleRef = React.useRef<HTMLButtonElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const reducedMotion = useReducedMotion();
+
+  const activeKey = sectionForPath(location.pathname)?.key ?? null;
+
+  const topbarRef = React.useRef<HTMLDivElement>(null);
   const navRef = React.useRef<HTMLElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
+  const pillRef = React.useRef<HTMLSpanElement>(null);
+  const itemRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
 
-  // Escape closes the drawer; focus management mirrors a standard disclosure
-  // menu (focus into the drawer on open, back to the trigger on close).
+  // ── D1542 hover-intent open/close ─────────────────────────────────────
+  const [openKey, setOpenKey] = React.useState<string | null>(null);
+  // The panel keeps rendering the LAST open section's content while it
+  // fades out, exactly like the mockup's renderDD (never cleared on close)
+  // — otherwise the closing transition plays over an empty box.
+  const [renderedKey, setRenderedKey] = React.useState<string | null>(null);
   React.useEffect(() => {
-    if (!menu) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenu(false); };
-    document.addEventListener("keydown", onKey);
-    navRef.current?.querySelector<HTMLElement>("a")?.focus();
-    return () => document.removeEventListener("keydown", onKey);
-  }, [menu]);
+    if (openKey) setRenderedKey(openKey);
+  }, [openKey]);
+  const renderedSection: IaSection | undefined = renderedKey
+    ? IA.find((s) => s.key === renderedKey)
+    : undefined;
 
-  const closeMenu = () => {
-    setMenu(false);
-    toggleRef.current?.focus();
+  const tIn = React.useRef<number | undefined>(undefined);
+  const tOut = React.useRef<number | undefined>(undefined);
+  const clearTimers = React.useCallback(() => {
+    window.clearTimeout(tIn.current);
+    window.clearTimeout(tOut.current);
+  }, []);
+  React.useEffect(() => clearTimers, [clearTimers]);
+
+  // openDD early-returns when already open on this section — re-entrant
+  // hover/keyboard events must not restart the panel's own effects.
+  const openDD = React.useCallback((key: string) => {
+    setOpenKey((cur) => (cur === key ? cur : key));
+  }, []);
+  const closeDD = React.useCallback(() => setOpenKey(null), []);
+
+  const focusPanelOnOpen = React.useRef(false);
+
+  const onItemPointerEnter = (key: string) => () => {
+    // Clear the pending CLOSE first — this is the whole mechanism that makes
+    // crossing an item on the way somewhere else fire nothing; do not
+    // paraphrase the order.
+    window.clearTimeout(tOut.current);
+    tIn.current = window.setTimeout(() => openDD(key), reducedMotion ? 0 : HOVER_OPEN_MS);
+  };
+  const onItemPointerLeave = () => {
+    window.clearTimeout(tIn.current);
+    tOut.current = window.setTimeout(closeDD, reducedMotion ? 0 : HOVER_CLOSE_MS);
+  };
+  const onPanelPointerEnter = () => window.clearTimeout(tOut.current);
+  const onPanelPointerLeave = () => {
+    tOut.current = window.setTimeout(closeDD, reducedMotion ? 0 : HOVER_CLOSE_MS);
+  };
+
+  const escapeClose = (key: string | null) => {
+    closeDD();
+    if (key) itemRefs.current.get(key)?.focus();
+  };
+
+  const onItemKeyDown = (key: string) => (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      clearTimers();
+      focusPanelOnOpen.current = true;
+      openDD(key);
+    } else if (e.key === "Escape" && openKey !== null) {
+      e.preventDefault();
+      escapeClose(openKey);
+    }
+  };
+  const onPanelKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      escapeClose(openKey);
+    }
+  };
+
+  // Move focus into the panel's first link — but only when the open was
+  // triggered from the keyboard (ArrowDown), never on a hover-opened panel;
+  // stealing focus on mouse hover is its own accessibility bug. Gated on
+  // `renderedKey === openKey`, not just `openKey`: the panel's content is
+  // populated by the SEPARATE renderedKey-sync effect above, which commits
+  // one render later — focusing here on the bare `[openKey]` transition
+  // would run before any `<a>` exists yet and silently find nothing.
+  // The rAF is load-bearing, not decoration: `.dd` starts `visibility:
+  // hidden` and only flips on the SAME frame `.on` is applied — measured
+  // flaky (~1/3 of runs) calling `.focus()` synchronously in the effect,
+  // because a target that the engine hasn't yet recomputed as "being
+  // rendered" silently no-ops a focus call instead of queuing it.
+  React.useEffect(() => {
+    if (openKey && renderedKey === openKey && focusPanelOnOpen.current) {
+      focusPanelOnOpen.current = false;
+      const id = requestAnimationFrame(() => {
+        panelRef.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+      });
+      return () => cancelAnimationFrame(id);
+    }
+  }, [openKey, renderedKey]);
+
+  // Focus leaving the combined item+panel region closes the panel — Tabbing
+  // past the last link, or a click landing somewhere else that also moves
+  // focus, both count.
+  const onRegionBlur = (e: React.FocusEvent) => {
+    const next = e.relatedTarget as Node | null;
+    if (next && (navRef.current?.contains(next) || panelRef.current?.contains(next))) return;
+    closeDD();
+  };
+
+  // Outside POINTER activity (a click that doesn't move focus, e.g. on a
+  // non-focusable element) also closes an open panel.
+  React.useEffect(() => {
+    if (!openKey) return;
+    const onPointerDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (navRef.current?.contains(t) || panelRef.current?.contains(t)) return;
+      closeDD();
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [openKey, closeDD]);
+
+  // ── dropdown panel geometry ──────────────────────────────────────────
+  // Adapted from the mockup's nav-relative clamp: here `.dd`'s positioned
+  // ancestor is `.topbar` (not `.nav-main`, which is only the middle grid
+  // column) so both the panel and its clamp read the SAME box — see the
+  // file header.
+  const positionPanel = React.useCallback((key: string) => {
+    const topbar = topbarRef.current;
+    const btn = itemRefs.current.get(key);
+    const panel = panelRef.current;
+    if (!topbar || !btn || !panel) return;
+    const topbarRect = topbar.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const left = Math.max(
+      8,
+      Math.min(btnRect.left - topbarRect.left - 12, topbarRect.width - panel.offsetWidth - 8),
+    );
+    panel.style.left = `${left}px`;
+  }, []);
+  useIsoLayoutEffect(() => {
+    if (openKey) positionPanel(openKey);
+  }, [openKey, renderedKey, positionPanel]);
+  React.useEffect(() => {
+    if (!openKey) return;
+    const onResize = () => positionPanel(openKey);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [openKey, positionPanel]);
+
+  // ── D0235 morphing pill ──────────────────────────────────────────────
+  const recomputePill = React.useCallback(() => {
+    const nav = navRef.current;
+    const pill = pillRef.current;
+    if (!nav || !pill) return;
+    const btn = activeKey ? itemRefs.current.get(activeKey) : undefined;
+    if (!btn || getComputedStyle(btn).display === "none") {
+      pill.style.width = "0";
+      return;
+    }
+    const navRect = nav.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    pill.style.width = `${btnRect.width}px`;
+    pill.style.transform = `translateX(${btnRect.left - navRect.left}px)`;
+  }, [activeKey]);
+  useIsoLayoutEffect(() => {
+    recomputePill();
+  }, [recomputePill, location.pathname]);
+  React.useEffect(() => {
+    window.addEventListener("resize", recomputePill);
+    let ro: ResizeObserver | undefined;
+    if (navRef.current) {
+      ro = new ResizeObserver(recomputePill);
+      ro.observe(navRef.current);
+    }
+    return () => {
+      window.removeEventListener("resize", recomputePill);
+      ro?.disconnect();
+    };
+  }, [recomputePill]);
+
+  const onItemClick = (section: IaSection) => () => {
+    navigate(section.cols[0].items[0].p);
+    closeDD();
   };
 
   return (
-    <div className="topbar">
-      <div className="brand-col" style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <Link to="/" className="brand" style={{ textDecoration: "none", color: "inherit" }}>
-          <span className="brand-mark" />
-          <span>xmr<b>.irish</b></span>
-        </Link>
-        <Link to="/sources#release-notes" className="kicker" style={{ textDecoration: "none" }} title="Release notes">{SITE_VERSION}</Link>
-      </div>
-
-      <nav
-        ref={navRef}
-        id={NAV_MENU_ID}
-        className={"topnav" + (menu ? " is-open" : "")}
-      >
-        {NAV.map((n) => (
-          <NavLink
-            key={n.to}
-            to={n.to}
-            end={n.to === "/"}
-            onClick={() => setMenu(false)}
-            className={({ isActive }) => (isActive ? "on" : "")}
+    <>
+      {/* `.nav-shell` is the D1207 container root (styles.css) — `.topbar`
+          keeps its own padding, unowned by containment maths. */}
+      <div className="nav-shell">
+      <div className="topbar" ref={topbarRef}>
+        <div className="brand-col" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <Link to={R.HOME} className="brand" style={{ textDecoration: "none", color: "inherit" }}>
+            <span className="brand-mark" />
+            <span>xmr<b>.irish</b></span>
+          </Link>
+          <Link
+            to={`${R.ABOUT_SOURCES}#release-notes`}
+            className="kicker"
+            style={{ textDecoration: "none" }}
+            title="Release notes"
           >
-            {n.label}
-            {n.to === "/simulate" ? <Provenance source="model" compact style={{ marginLeft: 6 }} /> : null}
-          </NavLink>
-        ))}
-      </nav>
+            {SITE_VERSION}
+          </Link>
+        </div>
 
-      <div className="ticker-strip">
-        {/* Exhaustive over ChromeState: a fifth FeedPhase stops compiling here
-            rather than silently falling through to LIVE. `error` and `offline`
-            are separate facts and say separate things — see design/useOnline.ts. */}
-        {(() => {
-          const state = chromeState;
-          const title = chromeDetail(state, data.status, CHAIN_MARKET_CHROME_KEYS) ?? undefined;
-          switch (state) {
-            case "offline":
-              return (
-                <span className="pill" title={title}>
-                  <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
-                  {CHROME_LABEL.offline}
-                </span>
-              );
-            case "loading":
-              return (
-                <span className="pill" title={title}>
-                  <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
-                  {CHROME_LABEL.loading}
-                </span>
-              );
-            case "error":
-              return (
-                <span className="pill" title={title}>
-                  <span className="led" style={{ background: "var(--r-50)", boxShadow: "0 0 6px var(--r-50)" }} />
-                  {CHROME_LABEL.error}
-                </span>
-              );
-            case "stale":
-              return (
-                <span className="pill" title={title}>
-                  <span className="led pulse" style={{ background: "var(--y-50)" }} />
-                  {CHROME_LABEL.stale}
-                </span>
-              );
-            case "live":
-              return (
-                <span className="pill live">
-                  <span className="led pulse" />
-                  LIVE
-                </span>
-              );
-            default:
-              return assertNever(state, "NavTop pill");
-          }
-        })()}
-        <span className="tk dim">
-          XMR <b className="acc">{hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"}</b>
-          <em className={data.change24h < 0 ? "dn" : ""}>
-            {hasData(data.status.market) ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}%` : "—"}
-          </em>
-        </span>
-        <span className="tk dim tk--btc">
-          BTC <b>{hasData(data.status.market) ? `$${Math.round(data.btc).toLocaleString()}` : "—"}</b>
-          <em className={data.btcChg < 0 ? "dn" : ""}>
-            {hasData(data.status.market) ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
-          </em>
-        </span>
-        {/* Must stay the LAST child of .ticker-strip — see
-            design/DesignPanel.tsx's header comment for why. */}
-        <DesignPanel />
+        <nav ref={navRef} className="nav-main" aria-label="Primary" onBlur={onRegionBlur}>
+          {IA.map((section) => {
+            const count = section.cols.reduce((n, c) => n + c.items.length, 0);
+            const isOpen = openKey === section.key;
+            const isActive = section.key === activeKey;
+            return (
+              <button
+                key={section.key}
+                type="button"
+                ref={(el) => {
+                  if (el) itemRefs.current.set(section.key, el);
+                  else itemRefs.current.delete(section.key);
+                }}
+                className="navitem"
+                aria-expanded={isOpen}
+                aria-haspopup="true"
+                aria-controls="nav-dd-panel"
+                aria-current={isActive ? "page" : undefined}
+                onPointerEnter={onItemPointerEnter(section.key)}
+                onPointerLeave={onItemPointerLeave}
+                onKeyDown={onItemKeyDown(section.key)}
+                onClick={onItemClick(section)}
+              >
+                {section.label}
+                <span className="cnt">{count}</span>
+              </button>
+            );
+          })}
+          <span id="pill" ref={pillRef} />
+        </nav>
+
+        <div className="ticker-strip">
+          {/* Exhaustive over ChromeState: a fifth FeedPhase stops compiling here
+              rather than silently falling through to LIVE. `error` and `offline`
+              are separate facts and say separate things — see design/useOnline.ts. */}
+          {(() => {
+            const state = chromeState;
+            const title = chromeDetail(state, data.status, CHAIN_MARKET_CHROME_KEYS) ?? undefined;
+            switch (state) {
+              case "offline":
+                return (
+                  <span className="pill" title={title}>
+                    <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+                    {CHROME_LABEL.offline}
+                  </span>
+                );
+              case "loading":
+                return (
+                  <span className="pill" title={title}>
+                    <span className="led" style={{ background: "var(--ink-40)", boxShadow: "none" }} />
+                    {CHROME_LABEL.loading}
+                  </span>
+                );
+              case "error":
+                return (
+                  <span className="pill" title={title}>
+                    <span className="led" style={{ background: "var(--r-50)", boxShadow: "0 0 6px var(--r-50)" }} />
+                    {CHROME_LABEL.error}
+                  </span>
+                );
+              case "stale":
+                return (
+                  <span className="pill" title={title}>
+                    <span className="led pulse" style={{ background: "var(--y-50)" }} />
+                    {CHROME_LABEL.stale}
+                  </span>
+                );
+              case "live":
+                return (
+                  <span className="pill live">
+                    <span className="led pulse" />
+                    LIVE
+                  </span>
+                );
+              default:
+                return assertNever(state, "NavTop pill");
+            }
+          })()}
+          <span className="tk dim">
+            XMR <b className="acc">{hasData(data.status.market) ? `$${data.price.toFixed(2)}` : "—"}</b>
+            <em className={data.change24h < 0 ? "dn" : ""}>
+              {hasData(data.status.market) ? `${data.change24h >= 0 ? "+" : ""}${data.change24h.toFixed(2)}%` : "—"}
+            </em>
+          </span>
+          <span className="tk dim tk--btc">
+            BTC <b>{hasData(data.status.market) ? `$${Math.round(data.btc).toLocaleString()}` : "—"}</b>
+            <em className={data.btcChg < 0 ? "dn" : ""}>
+              {hasData(data.status.market) ? `${data.btcChg >= 0 ? "+" : ""}${data.btcChg.toFixed(2)}%` : "—"}
+            </em>
+          </span>
+          {/* Must stay the LAST child of .ticker-strip — see
+              design/DesignPanel.tsx's header comment for why. */}
+          <DesignPanel />
+        </div>
+
+        <div
+          id="nav-dd-panel"
+          ref={panelRef}
+          className={"dd" + (openKey ? " on" : "")}
+          onPointerEnter={onPanelPointerEnter}
+          onPointerLeave={onPanelPointerLeave}
+          onKeyDown={onPanelKeyDown}
+          onBlur={onRegionBlur}
+          role="region"
+          aria-label={renderedSection ? `${renderedSection.label} menu` : undefined}
+          aria-hidden={!openKey}
+        >
+          {renderedSection ? (
+            <>
+              <div
+                className="dd-grid"
+                style={{ gridTemplateColumns: `repeat(${renderedSection.cols.length}, minmax(0, 1fr))` }}
+              >
+                {renderedSection.cols.map((col) => (
+                  <div className="dd-col" key={col.h}>
+                    <h4>{col.h}</h4>
+                    {col.items.map((it) => (
+                      <Link key={it.p} to={it.p} onClick={closeDD} tabIndex={openKey ? 0 : -1}>
+                        {it.l}
+                        {it.note ? <small>{it.note}</small> : null}
+                      </Link>
+                    ))}
+                  </div>
+                ))}
+              </div>
+              <div className="dd-foot">{renderedSection.blurb}</div>
+            </>
+          ) : null}
+        </div>
+      </div>
       </div>
 
-      <button
-        ref={toggleRef}
-        type="button"
-        className="navtop-toggle"
-        aria-label={menu ? "Close menu" : "Open menu"}
-        aria-expanded={menu}
-        aria-controls={NAV_MENU_ID}
-        onClick={() => (menu ? closeMenu() : setMenu(true))}
-      >
-        {menu ? "✕" : "☰"}
-      </button>
-    </div>
+      <BottomTabBar />
+    </>
   );
 }
