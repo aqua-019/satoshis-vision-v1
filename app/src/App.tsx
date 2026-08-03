@@ -55,6 +55,23 @@ const SourcesPage        = React.lazy(() => import("@/pages/SourcesPage").then((
 const NotFoundPage       = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
 const SimulatePage       = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
 
+// v6.1.8 cold boot (app/src/coldboot/ColdBoot.tsx) — lazy so the splash costs
+// HomePage's eager entry chunk nothing; `fallback={null}` is also what makes
+// prerendering (renderToString, which never awaits a lazy import) resolve to
+// "nothing here" for this boundary rather than a "loading…"-shaped string
+// that would trip the prerenderer's own SUSPENDED_RE resolution loop.
+const ColdBoot = React.lazy(() => import("@/coldboot/ColdBoot").then((m) => ({ default: m.ColdBoot })));
+
+// The orb is mounted as its OWN sibling, deliberately NOT inside <ColdBoot>.
+// A ColdBoot-owned orb would unmount the instant ColdBoot reaches phase
+// "done" — which is exactly when the Enter handoff completes — and
+// verify-coldboot §4 requires [data-orb] to be the SAME node before and
+// after Enter, persisting and moving. Mounting it here makes "the orb
+// survives the collapse" true by construction: nothing has to remember not
+// to unmount it, because nothing is in a position to. The rect flows the
+// other way, via ColdBoot's exported useColdBootOrbState().
+const Orb = React.lazy(() => import("@/coldboot/Orb").then((m) => ({ default: m.Orb })));
+
 export interface AppProps {
   /** Swap in your own MoneroLive hook from the host runtime. */
   useFeed?: Parameters<typeof DataProvider>[0]["useFeed"];
@@ -71,6 +88,20 @@ export function App({ useFeed }: AppProps = {}) {
       <AmbientField />
       <NavTransitions />
       <DataProvider useFeed={useFeed}>
+        {/* v6.1.8 cold boot — INSIDE DataProvider: ColdBoot renders
+            <ColdBootConsole>, which reads useMoneroLive() and therefore
+            throws outside this provider (caught the hard way — see the
+            return notes). Sibling of <AmbientField/> is about z-order/DOM
+            position, not about which provider wraps it. */}
+        <React.Suspense fallback={null}>
+          <ColdBoot />
+        </React.Suspense>
+        {/* Sibling of <ColdBoot/>, not a child — see the Orb declaration above.
+            Its own boundary too, so a slow orb chunk can never delay the
+            splash root appearing, and vice versa. */}
+        <React.Suspense fallback={null}>
+          <Orb />
+        </React.Suspense>
         {/* D0745 — the route announcer is a SIBLING of <Suspense>, not a
             descendant of any page. A live region has to be in the DOM BEFORE
             the text it announces changes; one that is created in the same

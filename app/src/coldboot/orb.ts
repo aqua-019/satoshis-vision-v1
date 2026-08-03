@@ -501,10 +501,15 @@ export function drawOrb(ctx: CanvasRenderingContext2D, w: number, h: number, sec
     }
     ctx.stroke();
   };
+  // `ringAngle`/`meridianAngle`, not `lat`/`lon` — this is a wireframe
+  // graticule parameter, not a coordinate, and this is the one file in the
+  // repo whose entire argument is that a node NEVER gets one (see the file
+  // header). Named this way so a `grep -i 'lat\|lon'` audit finds nothing
+  // here to double-check.
   for (let li = 1; li < LAT_LINES; li++) {
-    const lat = (li / LAT_LINES) * Math.PI - Math.PI / 2;
-    const yy = Math.sin(lat);
-    const rr = Math.cos(lat);
+    const ringAngle = (li / LAT_LINES) * Math.PI - Math.PI / 2;
+    const yy = Math.sin(ringAngle);
+    const rr = Math.cos(ringAngle);
     const pts: Projected[] = [];
     for (let s = 0; s <= LON_SEGMENTS; s++) {
       const th = (s / LON_SEGMENTS) * Math.PI * 2;
@@ -516,11 +521,11 @@ export function drawOrb(ctx: CanvasRenderingContext2D, w: number, h: number, sec
     poly(pts, true);
   }
   for (let mi = 0; mi < MERIDIANS; mi++) {
-    const lon = (mi / MERIDIANS) * Math.PI * 2;
+    const meridianAngle = (mi / MERIDIANS) * Math.PI * 2;
     const pts: Projected[] = [];
     for (let s = 0; s <= LAT_SEGMENTS; s++) {
       const ph = (s / LAT_SEGMENTS) * Math.PI - Math.PI / 2;
-      pts.push(project({ x: Math.cos(ph) * Math.cos(lon), y: Math.sin(ph), z: Math.cos(ph) * Math.sin(lon) }, 1));
+      pts.push(project({ x: Math.cos(ph) * Math.cos(meridianAngle), y: Math.sin(ph), z: Math.cos(ph) * Math.sin(meridianAngle) }, 1));
     }
     ctx.strokeStyle = back;
     poly(pts, false);

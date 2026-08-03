@@ -253,13 +253,20 @@ function useHomeOrbRect(enabled: boolean): Rect | null {
 // spawn time) and prunes expired ones — see `./useOrbData.ts`'s header on
 // why that clock-stamping cannot happen inside that hook itself.
 
+/** A plain mutable box, not `React.RefObject<T>` — that type's `.current` is
+ *  `T | null` (the DOM-ref shape, nullable until attached), which does not
+ *  match a `useRef(nonNullInitialValue)` box used purely as shared mutable
+ *  state between effects. Structurally compatible with the real ref objects
+ *  passed in below either way, since this only ever reads/writes `.current`. */
+type Box<T> = { current: T };
+
 function useOrbEvents(
   nodes: readonly OrbNode[],
   txEvents: readonly FeedTxEvent[],
   blockEvents: readonly FeedBlockEvent[],
   reduced: boolean,
-  secondsRef: React.RefObject<number>,
-): React.RefObject<readonly OrbEvent[]> {
+  secondsRef: Box<number>,
+): Box<readonly OrbEvent[]> {
   const eventsRef = React.useRef<readonly OrbEvent[]>([]);
   const seenTx = React.useRef<Set<string>>(new Set());
   const seenBlock = React.useRef<Set<string>>(new Set());
