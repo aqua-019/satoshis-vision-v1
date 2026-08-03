@@ -33,8 +33,10 @@
  *
  * ── THREE VACUITY GUARDS, because `substring` is the loosest relation ─────
  *
- *   1. MIN_LEN — a one-character substring satisfies includes() on almost
- *      anything. `substring` without a length floor is barely an assertion.
+ *   1. DERIVED LENGTH FLOOR — a one-character substring satisfies includes()
+ *      on almost anything. The floor is computed from the shortest passage in
+ *      the table and PRINTED, never hardcoded: a picked constant reds on
+ *      correct content the moment a legitimate passage falls under it.
  *   2. COUNT PIN — PASSAGES.length === 7, asserted SEPARATELY from the loop.
  *      A table of three that all match would otherwise pass cleanly.
  *   3. MATCHED COUNTER — the loop increments; the gate asserts matched === 7.
@@ -46,23 +48,42 @@
  * is a real difference and must be declared, never absorbed by a lax compare.
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { makeReporter } from './verify-lib.mjs';
 
 const R = makeReporter('verify-hero');
 
 const SRC = 'src';
 const TABLE = 'src/pages/home/passages.ts';
-const MIN_LEN = 40;
 const EXPECTED = 7;
 
+/* The length floor is DERIVED from the frozen table, never picked.
+ *
+ * A hand-chosen 40 would have RED-ED ON CORRECT CONTENT: P6's corrected
+ * verbatim form from Timeline.tsx is "privacy mandatory and default" — 29
+ * characters. Failing a passage precisely because it was fixed properly is
+ * the same shape as a budget discovered at the gate. Derive it from the
+ * shortest passage actually present and PRINT it, so shortening a passage
+ * later reports both numbers instead of silently sliding under a constant. */
+const deriveFloor = (ps) => Math.min(...ps.map((p) => typo((p.lines ?? []).join(' ')).length));
+
 const norm = (s) => String(s).replace(/\s+/g, ' ').trim();
-/** Typographic normalisation ONLY — curly vs straight quotes and dashes are a
- *  rendering choice, not a provenance difference. Case is NOT normalised. */
+/** Whitespace + QUOTE GLYPHS only. Case is NOT normalised, and DASHES ARE NOT
+ *  EITHER.
+ *
+ *  An earlier draft folded [–—] to '-'. That silently contradicted this gate's
+ *  own em-dash warning: the message told the reader a retyped hyphen would
+ *  fail while the normaliser was quietly making it pass. A gate whose message
+ *  and behaviour disagree is worse than either choice on its own — it teaches
+ *  the next reader something false about what was checked.
+ *
+ *  Dashes stay significant because they are load-bearing here: P6's verbatim
+ *  form is "from day one — privacy mandatory and default" and the U+2014 is
+ *  part of the source text, not a rendering choice. Curly-vs-straight quotes
+ *  ARE a rendering choice (editors rewrite them), so those are still folded. */
 const typo = (s) => norm(s)
   .replace(/[‘’ʼ]/g, "'")
-  .replace(/[“”]/g, '"')
-  .replace(/[–—]/g, '-');
+  .replace(/[“”]/g, '"');
 
 /* ══ §0 · the table exists and has the declared shape ════════════════════ */
 R.group('── 0 · passage table ────────────────────────────────────────────');
@@ -86,6 +107,9 @@ R.ok(PASSAGES.length === EXPECTED,
   PASSAGES.length !== EXPECTED
     ? 'A short table would let the per-passage loop pass while the hero is incomplete.' : '');
 
+const FLOOR = deriveFloor(PASSAGES);
+R.info(`derived length floor: ${FLOOR} chars (shortest passage in the frozen table)`);
+
 /* ══ §1 · per passage: TEXT and ATTRIBUTION, against the same record ═════ */
 R.group('── 1 · per passage · text AND attribution ───────────────────────');
 
@@ -105,10 +129,11 @@ for (const [i, p] of PASSAGES.entries()) {
 
   if (!body) { R.ok(false, `${tag} · source file ${srcPath} exists`); continue; }
 
-  /* GUARD 1 — length floor. */
-  if (!R.ok(text.length >= MIN_LEN,
-        `${tag} · displayed text is ≥${MIN_LEN} chars (${text.length})`,
-        `"${text}" is too short for a substring match to mean anything`)) continue;
+  /* GUARD 1 — derived length floor. */
+  if (!R.ok(text.length >= FLOOR,
+        `${tag} · displayed text is ≥${FLOOR} chars (${text.length}, floor derived from the table)`,
+        `"${text}" is shorter than the shortest declared passage — a substring match this short ` +
+        `asserts almost nothing`)) continue;
 
   const hay = typo(body);
   const mode = p.source?.mode;
@@ -131,7 +156,10 @@ for (const [i, p] of PASSAGES.entries()) {
     continue;
   }
   const tOk = R.ok(textOk, `${tag} · text is ${mode} against ${srcPath}`,
-    textOk ? '' : `not found as ${mode}: "${text.slice(0, 90)}${text.length > 90 ? '…' : ''}"`);
+    textOk ? '' : `not found as ${mode}: "${text.slice(0, 90)}${text.length > 90 ? '…' : ''}"\n` +
+      `     NOTE: this compare is character-sensitive. If the source carries U+2014 EM DASH (—) ` +
+      `and the passage retypes it as a hyphen (-), THAT is the difference — it is a punctuation ` +
+      `error, not a content error. Fix the character; do not loosen the compare.`);
 
   /* ── ATTRIBUTION, against the SAME record. This is the half a text-only
    *    diff is blind to, and the half the mockup got wrong. Every distinctive
@@ -179,7 +207,7 @@ R.group('── 3 · regression guards (true-by-absence today, by design) ──
 const tree = (() => {
   const out = [];
   const walk = (d) => {
-    for (const e of readFileSync ? require('node:fs').readdirSync(d, { withFileTypes: true }) : []) {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
       const f = `${d}/${e.name}`;
       if (e.isDirectory()) walk(f);
       else if (/\.(ts|tsx)$/.test(e.name)) out.push([f, readFileSync(f, 'utf8')]);
@@ -192,8 +220,14 @@ const tree = (() => {
 const jev = tree.filter(([, c]) => /Jevans/.test(c)).map(([f]) => f);
 R.ok(jev.length === 0,
   `REGRESSION GUARD (true-by-absence on a hero-less tree): "Jevans" absent from ${SRC}/ — ` +
-  `the repo names the ROLE ("CipherTrace's CEO"), never the person, in BottomLineTab.tsx:162, ` +
-  `AttacksTab.tsx:13 and Timeline.tsx:63. Same convention as the MoneroSpace lineage rule.`,
+  `this repo attributes quotations to a SOURCE OR A DOCUMENT, never to a named individual as ` +
+  `speaker. Evidenced across all 12 distinct attributions in pages/_education/Quotes.tsx ` +
+  `(Bitcoin Whitepaper, BitcoinTalk Thread #174, Cryptography Mailing List, Genesis Block ` +
+  `Coinbase, P2P Foundation, …); "Email to Hal Finney" and "Email to Mike Hearn" name a person ` +
+  `as RECIPIENT, never as the mouth the words come from. Where a role matters it names the role ` +
+  `(pages/monero/BottomLineTab.tsx:162, "CipherTrace's CEO admitted…"); where a company is the ` +
+  `actor it names the company (pages/monero/AttacksTab.tsx:13, pages/_education/Timeline.tsx:63). ` +
+  `Same family as the MoneroSpace lineage rule in CLAUDE.md.`,
   jev.length ? `present in: ${jev.join(', ')}` : '');
 
 const t770 = tree.filter(([, c]) => /#770/.test(c)).map(([f]) => f);

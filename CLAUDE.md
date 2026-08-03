@@ -28,7 +28,7 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 70 `verify-*.mjs` files (`app/` ×63, `app/scripts/` ×1, `api/` ×6) — 66 gates
+- Verification: 72 `verify-*.mjs` files (`app/` ×65, `app/scripts/` ×1, `api/` ×6) — 68 gates
   plus `verify-lib.mjs`, `verify-reporter.mjs` and `verify-fixtures.mjs`, three shared modules,
   and `scripts/verify-all.mjs`, an orchestrator. (This entry read "66 (app/ ×61, api/ ×5)" until
   v6.1.7 counted at full depth: an `app/verify-*.mjs` glob cannot see `app/scripts/verify-all.mjs`,
@@ -36,9 +36,14 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **50 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **54 distinct files** on
   PRs to `main`, in two jobs: 11 individually-named offline gates, then `verify:static`
-  (19 gates, no browser) and `verify:e2e` (25 gates, against `scripts/serve-dist.mjs`).
+  (20 gates, no browser) and `verify:e2e` (27 gates, against `scripts/serve-dist.mjs`).
+  v6.1.8 added two: `verify-hero` (static) and `verify-coldboot` (e2e). Both sit FIRST in
+  their chains deliberately — `verify-coldboot` §1 is the only positive control proving the
+  cold-boot bypass has something to bypass, and the thirteen gates that install that bypass
+  assert an ABSENCE, which is vacuous if the splash selector ever dies. An &&-chain that ran
+  it last would let every dependent report before its own liveness proof executed.
   Four gates appear in both the named list and `verify:static`, and `verify-origins` runs
   in both `verify:static` (with `--static`) and `verify:e2e`, which is why 11 + 19 + 25
   is not 55. v6.1.3 added eight — `verify-prng`, `verify-gpu` (static) and `verify-roles`,
@@ -205,7 +210,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 52 of the 66 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 54 of the 68 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs
