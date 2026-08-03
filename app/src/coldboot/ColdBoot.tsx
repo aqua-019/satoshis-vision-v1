@@ -61,6 +61,31 @@
  * already 1 by the time it can fire at all, matching the mockup's own
  * `if (S.handing || S.T < 1) return`).
  *
+ * ── `data-coldboot-decided` — WHY A SECOND MARKER, NOT JUST `data-coldboot` ──
+ * `data-coldboot` means "the splash is on screen right now" — thirteen sweep
+ * gates assert its ABSENCE and that meaning must never drift. But an absence
+ * assertion cannot auto-wait: `locator().count() === 0` is satisfied
+ * instantly by an empty DOM, so it cannot tell "absent because the session
+ * flag correctly suppressed the splash" from "absent because this lazy
+ * chunk hasn't resolved yet." verify-coldboot §3 direction 1 needs exactly
+ * the first, checked immediately after a reload — and a `React.lazy`
+ * boundary is racy with "immediately" by construction.
+ *
+ * `data-coldboot-decided` is the positive thing to wait on instead. It is
+ * stamped in BOTH branches of the phase check below — on the splash root
+ * when the splash renders, on a standalone marker when it does not — so a
+ * gate can `waitForSelector('[data-coldboot-decided]')` and then read
+ * `data-coldboot`'s count with the answer already settled, whichever way it
+ * went. The off-branch marker is `display:none` with no `tabIndex` and
+ * `aria-hidden` — it cannot be the thing that regresses `/`'s measured
+ * 0.0006 CLS baseline, cannot enter focus order, and is inert to hit-testing
+ * and assistive tech alike. It is declared in the SAME render as the
+ * decision (`phase` is computed synchronously before either branch runs),
+ * so there is no intermediate render in which this component exists but the
+ * marker does not — which is what "absent before the decision is made"
+ * requires: the marker's absence is otherwise indistinguishable from the
+ * lazy chunk simply not having arrived, the exact ambiguity it exists to end.
+ *
  * ── REDUCED MOTION ───────────────────────────────────────────────────────
  * Per the coordinator's ruling from brief A/field.ts's header: under reduce,
  * mount STRAIGHT to the console at a conceptual T=1 — no `<canvas>` is even
@@ -86,24 +111,38 @@
  * OWN sibling in App.tsx (not inside this file's tree) and subscribes here
  * for positioning data only:
  *
- *   rect    — a viewport-fixed target `{x,y,w,h}` (CSS px, `getBoundingClientRect`
- *             semantics — i.e. `position: fixed; left:x; top:y; width:w; height:h`
- *             on the orb positions it correctly), or `null` when this file has
- *             nothing to report (phase "off" — no splash showing at all).
- *   active  — true while THIS file has an opinion about where the orb goes
- *             (console showing, or handoff in flight). Goes false the instant
- *             `phase` reaches "done": at that point `rect` is set ONE FINAL
- *             TIME to `#hm-orb`'s own rect and this file stops touching the
- *             store entirely — permanently, for the rest of the session. From
- *             then on the orb is responsible for tracking `#hm-orb` itself
- *             (its own resize handling), because nothing here will do it
- *             again. `active === false` is the "you're on your own now"
- *             signal, not "hide yourself."
+ *   rect      — a viewport-fixed target `{x,y,w,h}` (CSS px, `getBoundingClientRect`
+ *               semantics — i.e. `position: fixed; left:x; top:y; width:w; height:h`
+ *               on the orb positions it correctly), or `null` when this file
+ *               has nothing to report (phase "off" — no splash showing at all).
+ *   active    — true while THIS file has an opinion about where the orb goes
+ *               (console showing, or handoff in flight). Goes false the instant
+ *               `phase` reaches "done": at that point `rect` is set ONE FINAL
+ *               TIME to `#hm-orb`'s own rect and this file stops touching the
+ *               store entirely — permanently, for the rest of the session. From
+ *               then on the orb is responsible for tracking `#hm-orb` itself
+ *               (its own resize handling), because nothing here will do it
+ *               again. `active === false` is the "you're on your own now"
+ *               signal, not "hide yourself."
+ *   assemble  — [0,1], how VISUALLY FORMED the orb should be right now.
+ *               `active`/`rect` say WHERE; this says HOW MUCH — a `rect` can
+ *               be valid (the console's slot is measured) long before the
+ *               orb should look like anything, because the decrypt is the
+ *               show and a fully-formed second bright object competing with
+ *               it from T=0 undercuts the field's own "thins as the message
+ *               sharpens" point. Mirrors the mockup's `drawOrb` exactly —
+ *               `seg(T, .86, 1)` — so the orb assembles over the field's own
+ *               final 14%, not before. `1` whenever there is no decrypt to
+ *               compete with (already-resolved revisit, reduced motion) and
+ *               throughout the handoff/steady state, since by then it is
+ *               already fully formed and only moving. `Orb.tsx` reads this
+ *               to gate its own alpha/scale; it does not infer phase itself.
  *
  * Before the splash ever shows (phase "off" — wrong route, `__XMR_COLDBOOT__`
- * off, or SSR), the store never leaves its `{rect: null, active: false}`
- * default — the orb sees no opinion from this file on any route but a live
- * cold-boot Home, which is correct: everywhere else, it manages itself.
+ * off, or SSR), the store never leaves its `{rect: null, active: false,
+ * assemble: 0}` default — the orb sees no opinion from this file on any
+ * route but a live cold-boot Home, which is correct: everywhere else, it
+ * manages itself.
  *
  * ── WHAT WAS DELIBERATELY TRIMMED FROM THE MOCKUP ──────────────────────────
  * The mockup's `#crt` element (a bright collapsing horizontal line at the
@@ -189,9 +228,18 @@ function readHmOrbRect(): Rect | null {
 export interface ColdBootOrbState {
   rect: Rect | null;
   active: boolean;
+  /** [0,1] — see the file header's "THE ORB CONTRACT" section. `seg(T,.86,1)`
+   *  during the decrypt; `1` whenever there is no decrypt in play. */
+  assemble: number;
 }
 
-const ORB_INITIAL: ColdBootOrbState = { rect: null, active: false };
+/** Verbatim shape of the mockup's own assemble ramp (`drawOrb`'s `alpha`/
+ *  `grow`, both `seg(T, .86, 1)`) — the orb forms over the field's final 14%,
+ *  never before. */
+const ORB_ASSEMBLE_FROM = 0.86;
+const ORB_ASSEMBLE_TO = 1;
+
+const ORB_INITIAL: ColdBootOrbState = { rect: null, active: false, assemble: 0 };
 let orbState: ColdBootOrbState = ORB_INITIAL;
 const orbListeners = new Set<() => void>();
 
@@ -335,6 +383,10 @@ const ROOT_STYLE: React.CSSProperties = {
 const CANVAS_STYLE: React.CSSProperties = { position: "absolute", inset: 0, display: "block" };
 const CONSOLE_WRAP_BASE: React.CSSProperties = { position: "relative", width: "100%", maxWidth: 1200, zIndex: 1 };
 
+/** `display:none` — see the `data-coldboot-decided` render branch below for
+ *  why this exists and why it must be provably zero-footprint. */
+const DECIDED_MARKER_STYLE: React.CSSProperties = { display: "none" };
+
 function consoleWrapStyle(visible: boolean): React.CSSProperties {
   return { ...CONSOLE_WRAP_BASE, opacity: visible ? 1 : 0, pointerEvents: visible ? "auto" : "none" };
 }
@@ -360,6 +412,9 @@ export function ColdBoot(): React.JSX.Element | null {
 
   const resolvedRef = React.useRef(false);
   const consoleRectRef = React.useRef<Rect | null>(null);
+  // 1 whenever there is no decrypt in play (already-resolved revisit,
+  // reduced motion) — the T-loop overwrites this every frame otherwise.
+  const assembleRef = React.useRef(skipDecrypt ? 1 : 0);
 
   const stageRef = React.useRef<HTMLDivElement | null>(null);
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
@@ -378,8 +433,10 @@ export function ColdBoot(): React.JSX.Element | null {
     consoleRectRef.current = plain;
     // Handoff drives the store itself (lerping toward #hm-orb); once "done"
     // this file never touches the store again — see the header contract.
+    // `assembleRef` (not a literal) — a resize firing mid-decrypt must not
+    // reset how visually formed the orb already is.
     if (phaseRef.current === "splash") {
-      setOrbState({ rect: plain, active: plain !== null });
+      setOrbState({ rect: plain, active: plain !== null, assemble: assembleRef.current });
     }
   }, []);
 
@@ -432,6 +489,18 @@ export function ColdBoot(): React.JSX.Element | null {
         consoleWrapRef.current.style.pointerEvents = op > 0.9 ? "auto" : "none";
       }
 
+      // The orb assembles over the field's own final 14% (seg(T,.86,1),
+      // mirroring the mockup's drawOrb exactly) — not from mount, which
+      // would put a second fully-formed bright object in the corner
+      // competing with the decrypt from its first frame. Rounded before the
+      // equality check so 60fps of float noise below .86 doesn't push
+      // hundreds of no-op store writes through every Orb.tsx subscriber.
+      const assemble = Math.round(seg(t, ORB_ASSEMBLE_FROM, ORB_ASSEMBLE_TO) * 500) / 500;
+      if (assemble !== assembleRef.current) {
+        assembleRef.current = assemble;
+        setOrbState({ rect: consoleRectRef.current, active: consoleRectRef.current !== null, assemble });
+      }
+
       if (t >= 1) {
         if (!resolvedRef.current) {
           resolvedRef.current = true;
@@ -456,10 +525,14 @@ export function ColdBoot(): React.JSX.Element | null {
     const mainEl = document.getElementById("main");
     const startRect = consoleRectRef.current;
 
+    // Enter cannot fire before T === 1 (see handleEnter/ColdBootConsole's own
+    // fire-once guard), so the orb is already fully formed the instant a
+    // handoff can begin — assemble is 1 for the whole phase, literal rather
+    // than assembleRef, since reaching "handoff" already proves it.
     if (reduced) {
       clearHandoffStyles(stageEl, mainEl);
       const homeRect = readHmOrbRect();
-      setOrbState({ rect: homeRect ?? startRect, active: false });
+      setOrbState({ rect: homeRect ?? startRect, active: false, assemble: 1 });
       setPhase("done");
       return;
     }
@@ -477,13 +550,13 @@ export function ColdBoot(): React.JSX.Element | null {
       if (stageEl) applyHandoffFrame(x, stageEl, mainEl);
 
       const homeRect = readHmOrbRect();
-      if (startRect && homeRect) setOrbState({ rect: lerpRect(startRect, homeRect, x), active: true });
-      else if (homeRect) setOrbState({ rect: homeRect, active: true });
-      else if (startRect) setOrbState({ rect: startRect, active: true });
+      if (startRect && homeRect) setOrbState({ rect: lerpRect(startRect, homeRect, x), active: true, assemble: 1 });
+      else if (homeRect) setOrbState({ rect: homeRect, active: true, assemble: 1 });
+      else if (startRect) setOrbState({ rect: startRect, active: true, assemble: 1 });
 
       if (x >= 1) {
         clearHandoffStyles(stageEl, mainEl);
-        setOrbState({ rect: homeRect ?? startRect, active: false });
+        setOrbState({ rect: homeRect ?? startRect, active: false, assemble: 1 });
         setPhase("done");
         return;
       }
@@ -493,10 +566,42 @@ export function ColdBoot(): React.JSX.Element | null {
     return () => cancelAnimationFrame(raf);
   }, [phase, reduced]);
 
-  if (phase === "off" || phase === "done") return null;
+  if (phase === "off" || phase === "done") {
+    // SSR renders NOTHING here, not the marker either — `computeInitial`
+    // already forces phase "off" under `typeof window === "undefined"", but
+    // that alone does not keep the marker out of `dist/index.html`:
+    // scripts/prerender.mjs's resolution loop DOES let this lazy boundary's
+    // real component run once the dynamic import settles in Node, so without
+    // this second, explicit check the marker was measured landing in every
+    // prerendered route's HTML — caught by grepping dist/index.html for
+    // `data-coldboot`, not by inspection. The marker's entire job is to give
+    // a BROWSER-based gate something to wait on for a CLIENT decision; a
+    // static prerender never makes one, so it must never carry either
+    // attribute — a JS-off/crawler visitor's HTML stays exactly Main Home.
+    if (typeof window === "undefined") return null;
+
+    // The mount decision resolved to "no splash" — session flag set, the
+    // `__XMR_COLDBOOT__` bypass, the wrong route, or the handoff finishing.
+    // A gate proving "the splash correctly did not render" (verify-coldboot
+    // §3 direction 1: reload within the session → 0 [data-coldboot]) cannot
+    // wait on the splash itself, because the splash is precisely what is
+    // legitimately absent in the case being tested — `[data-coldboot]`
+    // reading 0 is indistinguishable from "this file's lazy chunk just
+    // hasn't resolved yet" without a SEPARATE, always-present signal that
+    // fires the instant the decision is known either way. This marker is
+    // that signal: present in EVERY decided CLIENT state (this branch
+    // included), absent for the brief window before the chunk resolves and
+    // a decision exists at all (there is no client render of this component
+    // before `phase` is computed, so there is no render in which the marker
+    // could leak early). `display:none` — zero layout box, so it cannot be
+    // the thing that regresses `/`'s 0.0006 CLS baseline; no tabIndex, so it
+    // cannot enter focus order; `aria-hidden` + no pointer surface, so it is
+    // inert to both assistive tech and hit-testing.
+    return <span data-coldboot-decided="" aria-hidden="true" style={DECIDED_MARKER_STYLE} />;
+  }
 
   return (
-    <div ref={stageRef} data-coldboot="" style={ROOT_STYLE}>
+    <div ref={stageRef} data-coldboot="" data-coldboot-decided="" style={ROOT_STYLE}>
       {!skipDecrypt && <canvas ref={canvasRef} style={CANVAS_STYLE} aria-hidden="true" />}
       <div ref={consoleWrapRef} style={consoleWrapStyle(skipDecrypt)}>
         <ColdBootConsole onEnter={handleEnter} onOrbRectChange={handleConsoleOrbRect} />

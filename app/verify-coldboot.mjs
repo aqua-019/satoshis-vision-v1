@@ -378,24 +378,81 @@ if (!splashIsReal) {
   await ctx.close();
 }
 
-/* ══ §2 · DECRYPT DETERMINISM — same seed, same frames ═══════════════════ */
-R.group('── 2 · decrypt is deterministic ─────────────────────────────────');
+/* ══ §2 · DECRYPT DETERMINISM — same seed, same frames ══════════════════
+ *
+ * ── TWO DEFECTS THIS SECTION SHIPPED WITH, both mine, both the same shape ─
+ *
+ * 1. WRONG SUBJECT. It screenshotted the whole splash ROOT, which contains
+ *    the orb. The orb rotates on `useAnimationSeconds`, accumulating REAL rAF
+ *    deltas by deliberate ruling — ambient rotation on a wall clock is correct
+ *    for a live network visualisation. So two runs differed for a legitimate
+ *    reason and the gate blamed the decrypt. The §5 claim is about the
+ *    DECRYPT, not the viewport: an assertion over a wider subject than its
+ *    claim fails (or passes) for reasons outside the claim. Same class as the
+ *    attribution check being file-scoped rather than record-bound.
+ *
+ * 2. WRONG SAMPLING POINT. It froze at `waitForTimeout(1200)` — wall clock —
+ *    directly contradicting this section's own comment saying not to. Two runs
+ *    do not reach the same frame at the same millisecond, so that diff
+ *    measured the runner.
+ *
+ * ── THE SUBJECT, AND WHY toDataURL AND NOT A SCREENSHOT ──────────────────
+ * A Playwright element screenshot composites whatever is painted OVER the
+ * element's box, so scoping to the canvas element still admits the orb —
+ * measured: two canvas-element screenshots 60ms apart differed 753717 vs
+ * 653963 B. `canvas.toDataURL()` reads the BACKING STORE: only what field.ts
+ * painted, and the orb is a separate DOM node that cannot contaminate it.
+ * Structural exclusion, not lucky geometry.
+ *
+ * ── THE POINT: LOCKED T=1, not a wall-clock offset ──────────────────────
+ * ColdBoot.tsx:436-440 locks T at 1 on resolve ("no further frames needed
+ * until Enter") and writes the session flag there. That is the one instant
+ * both runs provably share. Measured across two cold runs: identical length
+ * 38334 and identical sha256 e9051c6aca813f2a. */
 {
-  const shots = [];
-  for (const run of [1, 2]) {
-    const { ctx, page } = await cold();
+  const KEY = 'xmrirish.coldboot';
+  const SEL = `${COLDBOOT_SEL} canvas`;
+  const grab = async () => {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const page = await ctx.newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });
-    await page.waitForSelector(COLDBOOT_SEL, { timeout: 15000 });
-    // Freeze at a fixed point in the sequence rather than a wall-clock one:
-    // two runs on a contended runner do not reach the same frame at the same
-    // millisecond, and diffing those would measure the runner, not the seed.
-    await page.waitForTimeout(1200);
-    shots.push(await page.locator(COLDBOOT_SEL).screenshot());
+    await page.waitForSelector(COLDBOOT_SEL, { timeout: 15_000 }).catch(() => {});
+    await page.waitForFunction((k) => { try { return sessionStorage.getItem(k) === '1'; } catch { return false; } },
+      KEY, { timeout: 20_000 }).catch(() => {});
+    await page.waitForTimeout(400);
+    const info = await page.evaluate((s) => {
+      const c = document.querySelector(s);
+      if (!c) return { found: false };
+      const b = c.getBoundingClientRect();
+      return { found: true, w: Math.round(b.width), h: Math.round(b.height), data: c.toDataURL() };
+    }, SEL);
     await ctx.close();
+    return info;
+  };
+
+  const A = await grab(), B = await grab();
+
+  /* GUARD 1 — the element exists and has area. A missing selector yields two
+   * identical empty results and a green "deterministic": the exact vacuity
+   * shape this task has now hunted four times. */
+  const found = R.ok(A.found && B.found && A.w > 0 && A.h > 0,
+    `decrypt canvas found with non-zero area (${A.w}x${A.h})`,
+    !A.found || !B.found ? `${SEL} not found — nothing was compared.` : 'canvas has zero area');
+
+  if (found) {
+    /* GUARD 2 — non-trivial payload. Two byte-identical 0-byte captures
+     * satisfy equality perfectly and prove nothing. */
+    const big = R.ok(A.data.length > 1024 && B.data.length > 1024,
+      `both captures are non-trivial (${A.data.length} / ${B.data.length} chars, need >1024)`,
+      'a near-empty capture makes the equality below meaningless');
+
+    if (big) {
+      R.ok(A.data === B.data,
+        'two cold runs produce a byte-identical decrypt canvas at locked T=1',
+        A.data === B.data ? '' :
+          `lengths ${A.data.length} vs ${B.data.length} — a seeded decrypt must not vary between runs`);
+    }
   }
-  const same = shots[0].equals(shots[1]);
-  R.ok(same, 'two cold runs produce a byte-identical decrypt frame at t=1200ms',
-    same ? '' : `run A ${shots[0].length} B ${shots[1].length} bytes — a seeded decrypt must not vary between runs`);
 }
 
 /* ══ §3 · ONCE-PER-SESSION, IN BOTH DIRECTIONS ══════════════════════════ */
