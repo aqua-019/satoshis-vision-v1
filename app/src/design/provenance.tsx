@@ -2,15 +2,23 @@
  * design/provenance.tsx — the canonical data-source attribution badge.
  *
  * ONE vocabulary, ONE badge, everywhere. Every number on the site comes from
- * exactly one of four sources; this component is the only place those four
+ * exactly one of five sources; this component is the only place those five
  * labels are written, so the vocabulary can never drift again.
  *
- *   NODE      — live telemetry from the Monero node cascade
+ *   NODE      — live telemetry from the Monero node cascade THIS SITE READS
+ *   NETWORK   — a census of the public Monero node population this site does
+ *               NOT read, sampled by monero.fail and proxied same-origin via
+ *               /api/nodes
  *   COINGECKO — live market data
  *   SESSION   — real, but computed in-browser this session from the live data
  *               (confirmation counts, hash-derived visual positions)
  *   MODEL     — educational illustration of a protocol concept (the only
  *               non-live category; the /simulate simulators)
+ *
+ * NODE vs NETWORK is the one distinction this badge exists to keep straight,
+ * precisely because the two labels sit next to each other in this list and
+ * invite being read as synonyms: NODE is telemetry from the node this site
+ * reads; NETWORK is a census of the nodes it does not.
  *
  * This is source ATTRIBUTION, not a "fake data" warning — after v5.0.14–v5.0.18
  * there is no fabricated data left. The badge only says where a number came from.
@@ -49,16 +57,17 @@
 import * as React from "react";
 import { assertNever, type FeedKey, type FeedPhase, type FeedStatusMap } from "@/data/feed-status";
 
-export type ProvSource = "node" | "coingecko" | "session" | "model";
+export type ProvSource = "node" | "network" | "coingecko" | "session" | "model";
 
 /** Freshness is orthogonal to source: a NODE/COINGECKO value can be live,
  *  loading, stale or error. "none" = no freshness suffix (MODEL, static meta).
  *  Glossed member-by-member in the header block above. */
 export type ProvFreshness = "live" | "loading" | "stale" | "error" | "none";
 
-/** The ONLY place the four canonical label strings live. */
+/** The ONLY place the five canonical label strings live. */
 const PROV_LABEL: Record<ProvSource, string> = {
   node: "NODE",
+  network: "NETWORK",
   coingecko: "COINGECKO",
   session: "SESSION",
   model: "MODEL",
@@ -67,6 +76,7 @@ const PROV_LABEL: Record<ProvSource, string> = {
 /** Three-to-four word gloss for the legend. */
 const PROV_GLOSS: Record<ProvSource, string> = {
   node: "live node telemetry",
+  network: "public node population",
   coingecko: "live market data",
   session: "computed in-browser",
   model: "educational simulator",
@@ -202,12 +212,14 @@ function worstPhase(keys: readonly FeedKey[], status: FeedStatusMap): FeedPhase 
  *
  * Two mutually-exclusive forms, discriminated so passing both is a type error:
  *   keys + status — the normal case, for anything the polled feed covers.
- *   phase         — for live surfaces OUTSIDE the FeedKey union. There are two
- *                   classes: /api/xmr/tx/<txid> and /api/xmr/block/<h>, which
+ *   phase         — for live surfaces OUTSIDE the FeedKey union: not just
+ *                   /api/xmr/tx/<txid> and /api/xmr/block/<h>, which
  *                   live-detail.ts fetches one-shot per id, and the market
- *                   history series, whose SeriesStatus IS FeedPhase. Neither is
- *                   a polled endpoint with a failure streak, so neither can have
- *                   a FeedKey without putting a lie in feed-status.ts.
+ *                   history series, whose SeriesStatus IS FeedPhase, but also
+ *                   /api/nodes, the NETWORK node-population census. None of
+ *                   these is a polled endpoint with a failure streak, so none
+ *                   can have a FeedKey without putting a lie in
+ *                   feed-status.ts.
  *
  * The `phase` form is not an escape hatch: verify-provenance.mjs bans a literal
  * `phase="live"` exactly as it bans a literal `fresh="live"`, so the only way to
@@ -250,7 +262,7 @@ export interface DataLegendProps {
   style?: React.CSSProperties;
 }
 
-/** A compact one-line key making the four-source vocabulary self-explaining.
+/** A compact one-line key making the five-source vocabulary self-explaining.
  *  Goes near the top of data-heavy pages so the badge needs no prior knowledge. */
 export function DataLegend({ sources, style }: DataLegendProps) {
   return (

@@ -2,7 +2,7 @@
  * data/map.ts — pure translators from v4's backend JSON → the MoneroLive shape.
  *
  * These functions are side-effect-free. They take the raw JSON returned by
- * v4's existing proxies (`/api/monero` get_info, `/api/xmr/*`, `/api/coingecko`)
+ * v4's existing proxies (`/api/xmr/*`, `/api/nodes`, `/api/coingecko`)
  * or the relay WebSocket payloads, and fold them onto a previous MoneroLive
  * snapshot — a field a given response doesn't include is *carried* from the
  * prior state, never left NaN/undefined. Surfaces gate number rendering on

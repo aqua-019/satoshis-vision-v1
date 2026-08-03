@@ -127,8 +127,8 @@ function feeColor(rate) {
    Routes absent from this table keep the handler's default `no-store` — that is
    deliberate for per-user/one-shot lookups (block/*, decoys/*, health, stale).
 
-   NOTE: vercel.json's `no-store` header rule matches `/api/monero(.*)` only, so
-   it does NOT override these. */
+   vercel.json declares no `Cache-Control` header rule for any `/api/*` path, so
+   these are not overridden. */
 const CACHE_CONTROL = {
   '':                    's-maxage=3, stale-while-revalidate=10',   // fast tier
   'mempool':             's-maxage=3, stale-while-revalidate=10',   // fast tier

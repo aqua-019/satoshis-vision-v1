@@ -12,14 +12,14 @@ surveillance trajectory and Monero's privacy architecture, rendered from live
 chain and market data.
 
 - **Type**: React 18 + Vite + TypeScript SPA in `app/`, prerendered to static HTML at build
-- **Hosting**: Vercel only (`vercel.json`), with CommonJS serverless functions in `api/`
+- **Hosting**: Vercel only (`vercel.json`), with serverless functions in `api/` (mixed CJS/ESM)
 - **License**: MIT
 
 ## Tech Stack
 
 - `app/` — React 18 · Vite 5 · TS strict. The only front-end. `app/package.json` is the
   only real package manifest (`relay/` has one; there is no root `package.json`).
-- `api/` — Vercel serverless, and **mixed**: `_nodes.js`, `feeds.js`, `monero.js`,
+- `api/` — Vercel serverless, and **mixed**: `_nodes.js`, `feeds.js`, `nodes.js`,
   `status.js` and `xmr.js` are CommonJS; `coingecko.js` and `markets.js` are ESM
   (`export default`). This entry said "CommonJS" until v6.1.5 measured it per file.
   Mixing module systems here has broken this project before, so match the file you are
@@ -28,8 +28,12 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 66 `verify-*.mjs` files (`app/` ×61, `api/` ×5) — 64 gates plus
-  `verify-lib.mjs` and `verify-reporter.mjs`, two shared modules (v6.1.4 split
+- Verification: 70 `verify-*.mjs` files (`app/` ×63, `app/scripts/` ×1, `api/` ×6) — 66 gates
+  plus `verify-lib.mjs`, `verify-reporter.mjs` and `verify-fixtures.mjs`, three shared modules,
+  and `scripts/verify-all.mjs`, an orchestrator. (This entry read "66 (app/ ×61, api/ ×5)" until
+  v6.1.7 counted at full depth: an `app/verify-*.mjs` glob cannot see `app/scripts/verify-all.mjs`,
+  so the old figure was one short and a shallow recount reports 69 where the answer is 70.)
+  v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
   are offline source assertions. `.github/workflows/ci.yml` runs **50 distinct files** on
@@ -89,11 +93,14 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   `loading | live | stale | error` per endpoint (`app/src/data/feed-status.ts`), derived
   during render, never stored. It replaced four booleans in v6.1.4; read it through
   `hasData()` / `feedDegraded()` rather than comparing phases by hand.
-- Provenance vocabulary, used verbatim in the UI: `NODE` / `COINGECKO` / `SESSION` /
-  `MODEL` — FOUR, declared once as `ProvSource` in `app/src/design/provenance.tsx`.
-  Every displayed figure names where it came from. (A `NETWORK` source is sometimes
-  listed as a fifth; it has never existed in the code. If one is ever added it would
-  come from a per-node health surface, and it must be added to `ProvSource` first.)
+- Provenance vocabulary, used verbatim in the UI: `NODE` / `COINGECKO` / `NETWORK` /
+  `SESSION` / `MODEL` — FIVE since v6.1.7, declared once as `ProvSource` in
+  `app/src/design/provenance.tsx`. Every displayed figure names where it came from.
+  `NODE` and `NETWORK` are adjacent and the distinction is the point: NODE is telemetry
+  from the node this site reads, NETWORK is a census of the nodes it does not
+  (`/api/nodes`, sampled by monero.fail). **Nothing pins the member count** — the two
+  `Record<ProvSource, …>` maps are the entire exhaustiveness mechanism, and both are
+  compile errors until filled; `verify-provenance.mjs` pins `ProvFreshness`, not this.
 - **Freshness is the other axis, and it is DERIVED — never written by hand.**
   `ProvFreshness` is FIVE (`live | loading | stale | error | none`, v6.1.4 added `error`),
   rendered by an exhaustive `freshSuffix` switch in `provenance.tsx`. Reach for
@@ -198,15 +205,12 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 50 of the 64 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 52 of the 66 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs
 
 <!-- Track open items here -->
-- **`api/monero.js` is orphaned** (v6.1.0): its last caller, the legacy `js/monero-network.js`,
-  was deleted. Removing it also means dropping two `vercel.json` entries — the `functions`
-  maxDuration and the `/api/monero(.*)` no-store header.
 - **Four route lists, one truth — RESOLVED in v6.1.6, except one by design.** `NavTop.tsx`,
   `RootBoundary.tsx`, `index.html`'s `#boot-fallback`, `useViewTransitionNavigate.ts` and
   `App.tsx` all derive from `routes.mjs`'s `R` now. `verify-lib.mjs`'s `ROUTES` stays hand-
@@ -534,10 +538,12 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   on a hidden tab and resumes with an immediate catch-up; failures back off to a 10s cap
   — via `Math.max(base, …)` so the 60s market tier can never "back off" into polling a
   rate-limited upstream *faster*. `POST /api/monero` is dropped from the React client
-  (`api/monero.js` stays — the legacy static site's `js/monero-network.js` still uses it).
-  **Superseded by v6.1.0**: that consumer was deleted with the rest of the v4 front-end, so
-  `api/monero.js` and its two `vercel.json` entries are now orphaned. Left in place
-  deliberately — see Known Issues / TODOs.
+  (`api/monero.js` stayed at the time — the legacy static site's `js/monero-network.js` still used it; both are now deleted, the endpoint in v6.1.7).
+  **Superseded by v6.1.0, then closed in v6.1.7**: that consumer was deleted with the rest of
+  the v4 front-end, leaving `api/monero.js` orphaned. v6.1.7 deleted the file along with both
+  its `vercel.json` entries — the `functions` maxDuration key and the `/api/monero(.*)`
+  no-store header — in one commit, because a `functions` key naming a file not on disk is a
+  hard Vercel BUILD error rather than a gate failure.
   Three traps handled: `hashSeries` now advances only under a `pushHash` flag set by the
   chain tier (a 3s push would fake sparkline resolution); `/api/xmr/tip` returns
   `height - 1` (tip block) vs `/api/xmr/network`'s raw block *count*, so tip is used

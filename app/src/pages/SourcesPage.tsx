@@ -41,7 +41,7 @@ function P({ children }: { children: React.ReactNode }) {
   return <p className="mono dim" style={{ margin: "0 0 10px", fontSize: "var(--fs-body)", lineHeight: 1.7, letterSpacing: "0.01em" }}>{children}</p>;
 }
 
-/** One row of the four-source legend: the real badge + a one-line gloss + detail. */
+/** One row of the five-source legend: the real badge + a one-line gloss + detail. */
 function SourceRow({ source, gloss, children }: { source: ProvSource; gloss: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "150px 1fr", gap: 16, padding: "14px 0", borderTop: "1px solid var(--rule)", alignItems: "start" }}>
@@ -121,7 +121,7 @@ export function SourcesPage() {
       <PageHeader
         kicker="provenance · where every number comes from"
         title='Data &amp; <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">sources</em>'
-        sub="Every figure on this site is attributed to exactly one of four sources. This is the legend."
+        sub="Every figure on this site is attributed to exactly one of five sources. This is the legend."
       />
 
       <Section kicker="read-only · non-custodial" title="What this is">
@@ -137,7 +137,7 @@ export function SourcesPage() {
         </P>
       </Section>
 
-      <Section kicker="the four-source legend" title="Where every number comes from">
+      <Section kicker="the five-source legend" title="Where every number comes from">
         <P>
           This vocabulary matches the badge you see beside data across the site — the badge only says
           where a number came from. It is source attribution, not a &ldquo;fake data&rdquo; warning:
@@ -175,6 +175,23 @@ export function SourcesPage() {
             The <code className="hash">/simulate</code> simulators: illustrative, metaphor-driven
             animations of how each Monero privacy primitive works. This is the only non-live category
             — educational models, not network data.
+          </P>
+        </SourceRow>
+
+        <SourceRow source="network" gloss="public node population">
+          <P>
+            A census of the public Monero node population — how many nodes are reachable, and
+            which versions and protocol features they advertise — sampled by{" "}
+            <b>monero.fail</b>, a third-party node-health tracker. It is read{" "}
+            <b>server-side</b>, through a same-origin <code className="hash">/api/nodes</code>{" "}
+            proxy: your browser never talks to monero.fail directly, exactly as with every other
+            source on this page — CSP here is <code className="hash">connect-src &apos;self&apos;</code>.
+          </P>
+          <P>
+            It reports <b>hosts</b>, not locations: a count of reachable nodes and the software
+            they run, never an IP-to-place mapping. This site names no node hosts. NODE, above,
+            is different — it is telemetry from the one node cascade this site actually reads;
+            NETWORK is a census of the nodes it does not.
           </P>
         </SourceRow>
       </Section>

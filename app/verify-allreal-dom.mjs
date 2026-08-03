@@ -81,7 +81,6 @@ const FIX = {
 function fulfil(route) {
   const url = route.request().url();
   const json = (data) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(data) });
-  if (url.includes('/api/monero')) return json(FIX.info);
   if (url.includes('/api/xmr/network')) return json(FIX.network);
   // v6.0.6 tiering: the chain tier watches /tip, the fast tier polls /fees.
   if (url.includes('/api/xmr/tip')) return json({ height: H - 1, target: 120, difficulty: FIX.network.difficulty });

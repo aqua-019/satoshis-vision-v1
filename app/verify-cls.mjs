@@ -84,6 +84,9 @@ import { R as RT } from './scripts/routes.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// api/nodes.js is CommonJS; createRequire is the bridge an .mjs gate uses for
+// it — same idiom as api/verify-status.mjs:25-26.
+import { createRequire } from 'node:module';
 
 const APP = dirname(fileURLToPath(import.meta.url));
 const base = process.env.VERIFY_BASE || BASE;
@@ -258,6 +261,42 @@ const FIX = {
   fees: () => ({ fees: [20_000, 80_000, 320_000, 4_000_000] }),
 };
 
+/* The live /api/nodes envelope — produced by RUNNING THE REAL HANDLER against
+ * the committed fixture, not rebuilt from its helpers and not transcribed.
+ *
+ * The first version of this block did rebuild it, and was wrong within one
+ * commit: it derived `counts.seen` as `nodes.length + excluded` (25) where the
+ * handler produces 24. A mock that reassembles an envelope is a second
+ * implementation of the envelope, and a second implementation drifts — which
+ * would quietly restore the very gap this mock was added to close, while
+ * looking like it had closed it. Invoking the handler makes drift structurally
+ * impossible: there is only one implementation and this is it.
+ *
+ * Offline by construction — `globalThis.fetch` is stubbed with the fixture for
+ * the duration of the call and restored in `finally`, so nothing leaves. */
+const NODES_LIVE = await (async () => {
+  const req = createRequire(import.meta.url);
+  const handler = req('../api/nodes.js');
+  const fixture = req('../api/_fixtures/monerofail-health.json');
+  const captured = { body: null };
+  const res = {
+    setHeader() { return res; }, getHeader() { return undefined; },
+    status() { return res; }, json(b) { captured.body = b; return res; }, end() { return res; },
+  };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => fixture });
+  try {
+    handler._resetCache();
+    await handler({ method: 'GET', query: {}, url: '/api/nodes' }, res);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  if (!captured.body || captured.body.status !== 'live') {
+    throw new Error(`verify-cls: /api/nodes mock did not produce a live envelope (got ${JSON.stringify(captured.body)?.slice(0, 120)}) — the mock would otherwise silently measure the panel's EMPTY state, which is the one state whose height cannot shift`);
+  }
+  return captured.body;
+})();
+
 async function mockFeed(ctx) {
   await ctx.route('**/api/xmr/**', async (route) => {
     await new Promise((r) => setTimeout(r, MOCK_LATENCY_MS));
@@ -277,6 +316,22 @@ async function mockFeed(ctx) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ groups: {}, excluded: [], meta: null }) });
   });
   await ctx.route('**/api/feeds*', (route) => route.abort());
+  /* /api/nodes — added v6.1.7, and the reason is this file's own history.
+   * `:31` records that until v6.1.5 this gate called ctx.route() ZERO times,
+   * so serve-dist's 501 fell through and every route was measured in a fully
+   * degraded state. Four endpoints were mocked then; /api/nodes arrived after,
+   * and inherited exactly the same hole — /live/network's CLS was being
+   * measured with the node-population panel in its EMPTY state, which is the
+   * one state whose height is a fixed reserve and therefore cannot shift.
+   * The live path, where six rows of varying-width numbers land into that
+   * reserve, was the thing at risk and the thing not covered.
+   *
+   * The body is NODES_LIVE — see its own comment above for why it is produced
+   * by running the handler rather than rebuilt or transcribed. */
+  await ctx.route('**/api/nodes*', async (route) => {
+    await new Promise((r) => setTimeout(r, MOCK_LATENCY_MS));
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(NODES_LIVE) });
+  });
   await mockStatus(ctx);
 }
 
@@ -352,8 +407,22 @@ async function measure(route, mocked) {
 
   const cls = await page.evaluate(() => window.__CLS__ ?? 0);
   const entries = await page.evaluate(() => window.__CLS_ENTRIES__ ?? []);
+  /* Did the /api/nodes mock actually REACH the panel? Carried out of measure()
+     so the pass loop can assert it. Without this the mock's reach is proven
+     once, by hand, and its absence is undetectable: if the route glob ever
+     stops matching — a path change, a query string, a rename — serve-dist's
+     501 comes back, the panel renders its EMPTY state, and CLS reports the
+     same 0.0000. Nothing in the output moves. That is not a vacuous assertion
+     but an UNGUARDED PRECONDITION to a real one, and this file's own `:31`
+     exists because a past version of exactly that went unnoticed. */
+  const nodePanel = await page.evaluate(() => {
+    const el = document.querySelector('[data-aux-key="nodes"]');
+    if (!el) return null;
+    const t = el.innerText || '';
+    return { hasDigit: /\d/.test(t), saysDidNotAnswer: /did not answer/i.test(t) };
+  });
   await ctx.close();
-  return { cls: cls + INFLATE, entries };
+  return { cls: cls + INFLATE, entries, nodePanel };
 }
 
 const movedPx = (s) => (s.prev && s.cur
@@ -408,6 +477,20 @@ for (const pass of PASSES) {
     // The measurement is printed EVERY run, pass or fail. This is the line that
     // makes drift visible long before it becomes a failure.
     R.info(`${route.padEnd(10)} CLS ${worst.toFixed(4)}  (runs: ${shown})  ceiling ${pass.table[route]}`);
+
+    /* THE MOCK ACTUALLY REACHED THE PANEL — asserted, not assumed.
+       Healthy pass and /live/network only: this is the one route whose CLS
+       number is meaningless if /api/nodes fell through to serve-dist's 501,
+       because the panel's EMPTY state has a fixed reserve and therefore cannot
+       shift. Both states score 0.0000, so without this the precondition to a
+       real assertion is itself unguarded and its failure is invisible. */
+    if (pass.mocked && route === RT.LIVE_NETWORK) {
+      const np = worstRun.nodePanel;
+      R.ok(np !== null, 'healthy · /live/network · the node-population panel is present');
+      R.ok(!!np && np.hasDigit && !np.saysDidNotAnswer,
+        'healthy · /live/network · the /api/nodes mock REACHED the panel (live readout, not the empty state)',
+        np ? `hasDigit=${np.hasDigit} saysDidNotAnswer=${np.saysDidNotAnswer} — a 501 fallthrough scores the same 0.0000, so this is what distinguishes them` : 'panel not found');
+    }
 
     // Attribution for the worst run, per entry. Printed only when there is
     // something to explain, so a clean route stays one line. The entry COUNT is

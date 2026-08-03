@@ -136,7 +136,7 @@ export function HomePage() {
           {[
             { to: R.LIVE_MEMPOOL, t: "Mempool",   d: "5 visualisations. Reactor · Bridge · Sediment · Constellation · Terminal.", c: "var(--tk-accent)" },
             { to: R.LIVE_MARKETS, t: "Markets",   d: "Spot price, volume, order-book depth, the XMR/BTC ratio. Where XMR trades.", c: "var(--c-50)" },
-            { to: R.LIVE_NETWORK, t: "Network",   d: "Pools, hashrate, difficulty, block weight, fork readiness. Raw chain telemetry · peer telemetry soon.", c: "var(--y-50)" },
+            { to: R.LIVE_NETWORK, t: "Network",   d: "Pools, hashrate, difficulty, block weight, fork readiness. Raw chain telemetry · a public node census arrives next.", c: "var(--y-50)" },
             { to: R.MONERO,       t: "Monero",    d: "Origin story, tail emission, the eternal hearth. Why this coin won't die.", c: "var(--g-50)" },
             { to: R.LEARN,        t: "Learn",     d: "The BTC→XMR journey, privacy timeline, Satoshi quotes, and metaphor-driven protocol simulators (educational).", c: "var(--p-50)" },
             { to: R.LEARN_SIM,    t: "Simulate",  d: "Educational protocol models — run any one with knobs. Spend a stealth output, watch RingCT sign.", c: "var(--tk-accent)" },

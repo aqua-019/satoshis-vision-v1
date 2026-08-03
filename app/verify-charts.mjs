@@ -90,7 +90,6 @@ const FIX = {
 function fulfil(route) {
   const url = route.request().url();
   const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
-  if (url.includes('/api/monero')) return json(FIX.info);
   if (url.includes('/api/xmr/network')) return json(FIX.network);
   if (url.includes('/api/xmr/mempool')) return json(FIX.mempool);
   if (url.includes('/api/xmr/blocks')) return json(FIX.blocks);
