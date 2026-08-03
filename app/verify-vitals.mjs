@@ -126,7 +126,13 @@ const INTERACTIONS = {
   // read as "no interaction latency". A dead selector is invisible to a
   // route-literal sweep — it is neither a path nor a string the pattern matches.
   // The ⌘K trigger is the equivalent always-present, non-navigating control.
-  '/': ['.nav-kbd', '.nav-kbd'],
+  // ONE selector, not a pair. The old entry was ['Open menu', 'Close menu'] —
+  // two DIFFERENT elements, open then close. Repeating .nav-kbd twice instead
+  // put the second click on a button now covered by the palette's own veil, so
+  // it failed the actionability check and skipped — the exact defect shape the
+  // comment at the click site records for the old drawer's z-index. One click
+  // is a complete interaction to measure.
+  '/': ['.nav-kbd'],
   '/live/mempool': ['.mp-switcher__trigger', '.mp-switcher__trigger'],
   '/live/markets': ['button.proto-btn[aria-pressed]'],
 };
