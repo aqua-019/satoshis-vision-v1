@@ -192,6 +192,43 @@ the orphaned-gate mocks left alone deliberately · the no-hosts-on-the-wire deci
   (Related, minor: `pkill -f serve-dist` matches its own shell's command line and kills the caller.
   Both sessions hit it.)
 
+- **2026-08-03 · AN ASSERTION OVER A SELECTED SET IS STRUCTURALLY BLIND TO ITS OWN EMPTINESS.**
+  `verify-nodes-dom`'s 12px check selected `[class*="grid"]`, matching **0** elements (the panel's
+  grid is inline `display:grid`, not a class), so `rows.length === 0` passed on every input forever
+  while the panel carried three 11px lines. The fix added a guard requiring ≥8 leaf nodes measured.
+  The verifier then restored the broken selector on a throwaway copy and ran it — **the measure
+  assertion still passed, vacuously, on zero elements; only the guard failed.** That is the strongest
+  available form of the claim: the defect is still present inside the assertion the guard protects,
+  and the guard catches it anyway.
+  **GENERALISED RULE: any assertion whose subject is a selected set needs a companion asserting the
+  set is non-empty.** The assertion cannot detect its own emptiness — that is structural, not an
+  oversight, and no amount of care in writing the predicate fixes it.
+
+- **2026-08-03 · the reviewer's value was the INSTRUMENT, not the diligence.** `design-reviewer`
+  found that vacuous assertion. The gate's author and the lead both missed it — in a correction the
+  lead had personally specified, during the round whose entire subject was vacuity. Neither missed it
+  through carelessness: both were **reading the assertion**, and the reviewer **measured the page**.
+  The argument for keeping an independent review step is therefore not "a second pair of eyes is more
+  careful" but "a different instrument sees a different failure class". Worth preserving when the
+  review step looks like overhead.
+
+- **2026-08-03 · two strand-free break-test techniques, for different targets.** Both avoid the
+  revert-never-executes failure that stranded six mutations.
+  **INJECTION** — drive a state the code already produces (inject a 9px span into the live page,
+  serve an unmocked route). Proves **application** behaviour. No source touched at all.
+  **THROWAWAY COPY** — copy the gate, mutate the copy, run it, delete it. Proves **gate** behaviour,
+  which injection cannot: the guard test above had the *selector* under test, not the page. Tracked
+  source is never modified; the artifact is a new file that is deleted rather than reverted.
+  Pick by what is under test, not by habit.
+
+- **2026-08-03 · the claim-kind rule fired in a THIRD direction: lead → itself, unprompted.** The
+  lead asserted that a prerender assertion "passes even if the panel is entirely absent", went to
+  prove it by cross-route comparison, saw the comparison did not isolate the claim, and narrowed the
+  statement to what reading had actually established — with the fix already correct and nobody having
+  challenged it. Previously observed worker→lead (a polarity table with fiction on its fail rows) and
+  verifier→lead (the origin-guard reversal). **This third form needs no second party present, which
+  makes it the most durable of the three** and the one worth teaching.
+
 - **2026-08-03 · a break test that breaks nothing reports success identically to one that does.**
   The `kind`-only polarity for the ENDPOINTS parity assertion passed green on first attempt because
   the mutation hit the first `kind: 'network'` in the file — which was inside the explanatory
