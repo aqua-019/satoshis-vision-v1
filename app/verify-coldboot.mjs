@@ -163,6 +163,112 @@ R.group('── 0 · derived sweep audit: every /-reaching gate installs the byp
 
 const { browser } = await launchChromium();
 
+/* ══ §L · MAIN HOME LEGIBILITY — computed style, reported not resolved ═══
+ *
+ * Runs BEFORE §1 and independent of it: Main Home exists whether or not the
+ * splash does, so gating this behind the splash would lose the measurement
+ * on exactly the trees where Home is all there is.
+ *
+ * ── THE RULING THIS ENCODES ──────────────────────────────────────────────
+ * §5 asks for "no text under 12px, or the --fs-label token resolved at
+ * runtime — standing conflict REPORTED, not resolved". The token resolves to
+ * 11px here (`clamp(11px, .74vw, 12px)`), measured, not read off the
+ * declaration.
+ *
+ * Four families on Home compute below that and are EXEMPT as inherited shared
+ * chrome — each is a shared primitive's own class governing many surfaces, so
+ * changing it is a site-wide type decision and its own task. Forcing a local
+ * override for Home alone would fragment the scale (some Stats at 10.5, one
+ * at 11–12), which is worse than the honest conflict.
+ *
+ * Three of the four are LITERALLY in the standing conflict CLAUDE.md already
+ * records — "19 sub-12px font-size declarations in styles-legibility.css
+ * (L63-66, 71, 73-75, 77-78, 81, 84, 93-95, 98-100, 102)": L75 `.stat .lbl`,
+ * L78 `.pill`, L95 `button.proto-btn`. They are not new findings and this PR
+ * is not where verify-legibility.mjs:124-127's deliberate 11px floor gets
+ * relitigated.
+ *
+ * ── THE VACUITY GUARD, and it is the whole risk here ─────────────────────
+ * If every sub-12px leaf on Home is exempt, the assertion runs over an EMPTY
+ * SET and passes for free — an exemption list can silently swallow its own
+ * subject. So the gate counts what it actually examined and fails if that
+ * number is implausible. Numbers are printed, never just a verdict. */
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await coldBootOff(ctx);
+  const page = await ctx.newPage();
+  await page.goto(BASE + '/', { waitUntil: 'load' });
+  await page.waitForTimeout(2500);
+
+  const EXEMPT = [
+    ['.stat .lbl',        'styles-legibility.css:75 · <Stat> primitive · 23 files'],
+    ['.pill',             'styles-legibility.css:78 · shared pill · 16 files'],
+    ['button.proto-btn',  'styles-legibility.css:95 · shared button · 18 files'],
+    ['.prov-tag, .prov-fresh', 'design/provenance.tsx · the NODE/COINGECKO/... vocabulary'],
+  ];
+
+  const m = await page.evaluate((exemptSels) => {
+    const probeEl = document.createElement('span');
+    probeEl.style.fontSize = 'var(--fs-label)';
+    document.body.appendChild(probeEl);
+    const tokenPx = parseFloat(getComputedStyle(probeEl).fontSize);
+    probeEl.remove();
+
+    const exemptNodes = new Set();
+    for (const sel of exemptSels) {
+      for (const el of document.querySelectorAll(sel)) exemptNodes.add(el);
+    }
+
+    const exempt = {}, offenders = [];
+    let examined = 0;
+    for (const el of document.querySelectorAll('main *')) {
+      if (el.children.length || !(el.textContent || '').trim()) continue;
+      const fs = parseFloat(getComputedStyle(el).fontSize);
+      if (exemptNodes.has(el)) {
+        const k = fs.toFixed(2);
+        (exempt[k] ||= { n: 0, eg: new Set() });
+        exempt[k].n++; exempt[k].eg.add(el.className || el.tagName);
+        continue;
+      }
+      examined++;
+      if (fs < 12 && Math.abs(fs - tokenPx) > 0.01) {
+        offenders.push({ fs: fs.toFixed(2), cls: el.className || el.tagName,
+                         txt: (el.textContent || '').trim().slice(0, 30) });
+      }
+    }
+    return {
+      tokenPx, examined, offenders,
+      exempt: Object.fromEntries(Object.entries(exempt)
+        .map(([k, v]) => [k, { n: v.n, eg: [...v.eg].slice(0, 3) }])),
+    };
+  }, EXEMPT.map(([sel]) => sel));
+
+  R.group('── L · Main Home legibility (standing conflict: reported, not resolved) ──');
+  R.info(`--fs-label resolves to ${m.tokenPx}px at 1440 (declared clamp(11px,.74vw,12px))`);
+
+  for (const [sel, why] of EXEMPT) R.info(`EXEMPT ${sel} — ${why}`);
+  for (const [px, v] of Object.entries(m.exempt).sort((a, b) => a[0] - b[0])) {
+    R.info(`EXEMPT measured ${px}px × ${v.n} — ${JSON.stringify(v.eg)}  ← STANDING CONFLICT, not resolved here`);
+  }
+
+  /* VACUITY GUARD — the exemption list must not have eaten the subject. */
+  R.ok(m.examined >= 20,
+    `panel-own leaves actually examined: ${m.examined} (need ≥20, else the exemption list swallowed the subject)`,
+    m.examined < 20
+      ? `Only ${m.examined} non-exempt text leaves. The assertion below would pass over a near-empty ` +
+        `set — an exemption list silently consuming what it was meant to carve out of.`
+      : '');
+
+  R.ok(m.offenders.length === 0,
+    `every panel-own leaf is ≥12px or exactly the --fs-label token (${m.tokenPx}px) — ` +
+    `${m.examined} examined, ${m.offenders.length} below`,
+    m.offenders.length
+      ? m.offenders.map((o) => `${o.fs}px · ${o.cls} · "${o.txt}"`).join('\n     ')
+      : '');
+
+  await ctx.close();
+}
+
 /** Fresh context WITHOUT the bypass — a real cold visitor. */
 const cold = async (opts = {}) => {
   const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts });
@@ -177,17 +283,47 @@ let splashIsReal = false;
   const { ctx, page } = await cold();
   await page.goto(BASE + '/', { waitUntil: 'load' });
   const n = await page.locator(COLDBOOT_SEL).count();
+
+  /* DISTINGUISH THE TWO CAUSES rather than asserting the worse one.
+   *
+   *   UNBUILT   nothing cold-boot rendered at all — brief D's ColdBoot.tsx is
+   *             not landed. The thirteen preconditions are then correctly
+   *             asserting an absence that is GENUINELY TRUE. Blocked on an
+   *             unbuilt dependency, not a defect in the sweep.
+   *   HAZARD    cold-boot markup IS on the page but the root marker is not.
+   *             THIS is the vacuity this gate exists for: the splash renders,
+   *             the sweep cannot see it, and thirteen gates measure an overlay
+   *             while printing green.
+   *
+   * The console's own mount signal is the discriminator — a SEPARATE frozen
+   * attribute (console-scoped, for the leaf-size probe), never a rename of the
+   * root marker. Two attributes, two jobs. */
+  const consoleMounted = await page.locator('[data-coldboot-console]').count();
+
   splashIsReal = R.ok(
     n > 0,
     `cold visit to / renders the splash (${COLDBOOT_SEL} present, count ${n})`,
-    n === 0
-      ? `NO ${COLDBOOT_SEL} ANYWHERE. Either the splash is not implemented, or the attribute was ` +
-        `renamed. Until this passes, the twelve assertColdBootBypassed() calls across verify-cls, ` +
-        `-vitals, -charts, -govern, -motion, -discrete, -palette, -nav, -degraded, -ground and ` +
-        `-origins are VACUOUS — they assert an absence that is trivially true and would stay green ` +
-        `through a total regression.`
-      : '',
+    n > 0 ? ''
+    : consoleMounted > 0
+      ? `HAZARD — the cold-boot console IS mounted ([data-coldboot-console] x${consoleMounted}) but the ` +
+        `splash ROOT carries no ${COLDBOOT_SEL}. The splash renders and the sweep is blind to it: all ` +
+        `thirteen assertColdBootBypassed() calls would pass while measuring an overlay. Put ` +
+        `${COLDBOOT_SEL} on the outermost splash element, spanning decrypt AND console phases.`
+      : `UNBUILT DEPENDENCY — no cold-boot markup on the page at all (brief D's ColdBoot.tsx not ` +
+        `landed). This is the expected state before that lands, NOT a defect in the sweep: the ` +
+        `thirteen preconditions are correctly asserting an absence that is genuinely true. This ` +
+        `assertion stays RED until the splash exists — a gate that went green on a tree without ` +
+        `the feature would be the vacuity we are guarding against, one level up.`,
   );
+
+  /* The sweep's LIVENESS is a distinct fact from §1's verdict, so it gets its
+   * own counter instead of being folded into the failure above. */
+  if (!splashIsReal && consoleMounted === 0) {
+    R.skip('the 13 cold-boot preconditions are LIVE (assert something falsifiable)',
+      'blocked on an unbuilt dependency — ColdBoot.tsx (brief D) has not landed. They go live ' +
+      'automatically the moment the splash root carries the marker; no gate edit is required, ' +
+      'because the literal is declared once in verify-lib.mjs.');
+  }
   await ctx.close();
 }
 
