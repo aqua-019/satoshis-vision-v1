@@ -120,7 +120,7 @@ the plan never became live.
 
 **pr:** https://github.com/aqua-019/satoshis-vision-v1/pull/161
 
-**commits:** 20, 37 files, +3401 / −224, based on `origin/main` = `09c35c7`. New: `api/nodes.js` ·
+**commits:** 22, 38 files, based on `origin/main` = `09c35c7`. New: `api/nodes.js` ·
 `api/_fixtures/monerofail-health.json` + `-malformed.json` + `-spec.mjs` · `api/verify-nodes.mjs` ·
 `app/verify-nodes-dom.mjs` · `app/verify-fixtures.mjs` · `app/src/data/useNodePopulation.ts` ·
 `app/src/pages/network/NodePopulationPanel.tsx`. Deleted: `api/monero.js` and both its `vercel.json`
@@ -204,11 +204,18 @@ deeper than an `app/verify-*.mjs` glob reaches — the depth trap that made `CLA
    the new panel is caught and CPU/vitals regression is not. Named, not fixed here.
 
 **Pilot-watch, as counts rather than impressions.**
-· **Gate defects surviving into lead review: 11.** The flip threshold was two across prompts 08–10;
-  it was met inside 08 alone. Both `test-engineer` hits sit on the **same axis** — fail-side evidence
-  never produced — which is the axis the rule was aimed at, so the count is not eleven unrelated
-  slips. Worth recording that the roster rule names `test-engineer` while several of these came from
-  `backend-api`, the same Haiku tier, on briefs that were complete.
+· **Gate defects: 12 — and the twelfth is the one worth reporting, because it survived lead review
+  rather than being caught by it.** Eleven reached lead review and were resolved there. The flip
+  threshold was two across prompts 08–10; it was met inside 08 alone. Both `test-engineer` hits sit
+  on the **same axis** — fail-side evidence never produced — which is the axis the rule was aimed at,
+  so the count is not eleven unrelated slips. Worth recording that the roster rule names
+  `test-engineer` while several of these came from `backend-api`, the same Haiku tier, on briefs that
+  were complete.
+  The **twelfth** — `verify-nodes` group 2 making a live HTTPS request to monero.fail — passed lead
+  review, passed a second operator's fully independent chain, and was caught only by CI, which
+  reported it by **hanging for eight minutes**: the least legible failure mode available, which is
+  why it took a fix commit rather than a review to surface. Counting it as a review catch would
+  invert what happened.
 · **`NOT-MATCHED:` came back non-empty on 2 of 3 dispatches**, both actionable: one closed two
   hypotheses by execution (longer `/api/monero…` paths and module-level path constants, both absent),
   one flagged that `excluded` had no fixture witness — which turned out to share a root with a real
@@ -353,3 +360,41 @@ deeper than an `app/verify-*.mjs` glob reaches — the depth trap that made `CLA
 - **2026-08-03 · one `UNVERIFIED` label stopped a stale claim reaching a report.** U3 marked its
   `SourcesPage` provenance prose UNVERIFIED because it had written the copy from the brief without
   reading `api/nodes.js`. That converted an assumed-correct claim into a checkable one.
+
+- **2026-08-03 · A SECOND CHAIN BUYS A SECOND JUDGEMENT, NOT A SECOND ENVIRONMENT.** Two operators
+  ran the full verification chain independently at `167ab38`. Both reported `verify-nodes` green.
+  Both were wrong in the same way and for the same reason: group 2's `GET → 200` invoked the handler
+  with no fetch stub and made a **live HTTPS request to monero.fail**, and both sandboxes hide that
+  by 403-ing on CONNECT and failing fast, so the handler's own catch absorbed the failure and
+  returned a well-formed `unavailable` envelope. A real offline violation, rendered as a clean test,
+  twice.
+  The exercise did what it was designed to do procedurally and **failed at the thing it was for**.
+  Independence of *operator* is not independence of *environment*: the second chain was independent
+  of the first's judgement and not at all independent of the instrument they shared. Every defect
+  reachable by reasoning differently had a genuine second chance; this one had none.
+  **CI was the only honest instrument in the room** — the only environment that permits the call the
+  gate needed to make — and it reported by hanging for eight minutes, the least legible failure mode
+  available.
+  **Rule:** when a gate's correctness depends on what the environment *refuses* to do, only an
+  environment that permits it can test that gate. Same shape as the blocked live-count item already
+  recorded as `R.skip` — which is the argument for the preview-deploy check, not a caveat on it.
+
+- **2026-08-03 · AN ASSERTION CANNOT SEE ITS OWN PRECONDITION — two instances, one principle, and it
+  is the durable finding of this prompt.**
+  · `readoutSizes.measured >= 8` — an assertion over a selected set is blind to the set being
+    **empty**. The 12px rule selected `[class*="grid"]`, matched zero elements, and passed on every
+    input.
+  · `UNSTUBBED_FETCH_CALLS === 0` — an assertion over behaviour is blind to the behaviour being
+    reached by the **wrong path**. With the stub removed, `GET → 200` still passes: the handler
+    swallows the sentinel throw and reports `upstream-unreachable`, a legitimate-looking offline
+    result. Only the counter sees it.
+  Neither is fixable by writing a better predicate, because the predicate is not what is broken. Both
+  need a companion that **counts** rather than checks.
+  **Standing rule for gate authoring in 09–10: any assertion with a precondition needs a second
+  assertion that the precondition held.** This subsumes the narrower "assert the selected set is
+  non-empty" recorded earlier in this ledger.
+
+- **2026-08-03 · `$?` after a pipe reads the LAST command's exit, not the one you care about.** The
+  second operator took this once on the static chain — `npm run verify:static | tail` reports
+  `tail`'s status — and caught it before reporting, re-running to capture npm's own code. Same family
+  as everything else here: a number that looks like a result and is a measurement of something else.
