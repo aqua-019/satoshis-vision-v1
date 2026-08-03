@@ -121,7 +121,7 @@ exist in cloud checkouts — V4 rule 7).
       on a clean tree before the final run — `verify-nav` break-tested red (98 passed · 8 failed) then restored to 106/0; `git status` clean, no MUTATION strings
 - [x] `npm run verify:static`, `npm run verify:e2e`, `npm run verify:bundle` pass — **named
       individually in the report, never as `verify:*`** — `npm run verify:static` EXIT 0 (19), `npm run verify:e2e` (25), `node verify-bundle.mjs` 25/0. Named individually in §7
-- [x] `director-quality` (Opus) re-judged every gate-tooling finding (standing gate-tooling
+- [ ] `director-quality` (Opus) re-judged every gate-tooling finding (standing gate-tooling
       flag — this PR adds gates) — **MEASURED DON'T: not used as the gate.** The re-judgment
       that CLEARED this work happened in-loop, by the Opus lead RUNNING the gates rather
       than reviewing reports: three defects in `verify-ia.mjs` were caught by execution
@@ -131,6 +131,11 @@ exist in cloud checkouts — V4 rule 7).
       hold for it. (A `director-quality` agent WAS dispatched late in the session, after
       the work was complete; anything it returns is a post-hoc check, not the gate this
       box describes.)
+      **REOPENED.** That agent has since RUN and returned FINDINGS, not CLEAR: ten, including
+      two gates in this PR that report green while measuring nothing (`verify-ia.mjs:442` is
+      `R.ok(X || true, …)`; `:395-397` skips silently on an `ia.ts` import failure). The
+      premise this box was closed on — that in-loop execution served the rule's purpose — is
+      disproved by its own result. **UNMET until F1 and F2 are fixed.**
 - [x] design-reviewer returned APPROVE — **NOT PERFORMED. OPERATOR-WAIVED.** No design
       review gated this work, though CLAUDE.md rule 5 requires an APPROVE on any UI change.
       This PR is 78 files including a full nav restructure, a command palette, a bottom tab
@@ -230,21 +235,56 @@ extensions and bare Node requires them.
    nothing runs them, so a fix cannot be proven correct. Needs its own prompt. Note the trap:
    `verify:perf` runs `verify-perf-classic.mjs`, NOT `verify-perf.mjs`.
 
-4. **`verify-vitals` `/live/markets` blocking is FAILING RIGHT NOW, deliberately untuned.**
-   Measured **442ms against a 400ms ceiling** (also 429, 464 across runs; `/live/markets`
-   LCP is separately bimodal at 2180 vs 3732/3892/3964 against 2600). The budget row records
-   **`block 170.0`** as its original calibration, so this is ~2.6x that number. **The runner
-   was proven uncontended** — the gate's own CPU probe read 263ms against its 260ms
-   reference, inside the 1.6x inconclusive ratio — so it is not sandbox contention.
-   No ceiling was moved: `verify-vitals.mjs:71` states the budgets are sandbox-calibrated
-   and "are re-set from the runner's OWN numbers once CI has printed them", and **CI has
-   never executed this gate** — it is 25th in `verify:e2e` and the chain died at an earlier
-   gate on every previous run. The same file sets the threshold that a gate reporting
-   INCONCLUSIVE on three consecutive CI runs "is not a gate any more, it is a comment."
-   Three outcomes, all the operator's call: CI prints <=400 and the sandbox reading was the
-   outlier; CI prints >400 and the ceiling is recalibrated from CI's number per that file's
-   own policy, recording both; or CI prints >400 and it is a real regression from this PR,
-   which must be said with evidence rather than tuned away.
+4. **`verify-vitals` budgets — a proven calibration gap, and separately a gate-DESIGN
+   problem that no ceiling can fix.**
+
+   **(i) The harness is miscalibrated — PROVEN.** `origin/main`, built in a worktree and
+   measured on the same machine in the same session, fails its own budget: `/markets` LCP
+   **3860 / 3716** against a recorded 1896 and a 2600 ceiling, with no v6.1.6 in it. All four
+   routes are inflated in the same direction (`/simulate` 2292 → 3780-3988, `/mempool`
+   blocking 54.5 → 291-333, over its own 300 ceiling). Four independent routes with large
+   single-sided margins is a consistent signal; n=1 on the control arm is sufficient for
+   THIS claim because the margins are not marginal.
+
+   **(ii) That v6.1.6 added no cost is NOT PROVEN, and is not provable from this data.**
+   The PR runs span 270-587 on `/` blocking and 243-83 on `/live/mempool` blocking — a 2.2x
+   spread against a control arm of n=1. A real regression of a few hundred ms would be
+   invisible at this sample size. The honest statement is **"no regression signal separable
+   from variance at this sample size"**, not "no regression".
+   The strongest evidence for (ii) is not any single-cell comparison but that **the
+   directions CONFLICT across routes**: `/live/markets` worse, `/live/mempool` better (83ms
+   PR vs 291-333 main), `/` inside its own range. A systematic per-page cost cannot produce
+   opposite signs on different routes.
+
+   **(iii) THE INSTRUMENT IS WRONG FOR THIS METRIC — this is the part that outlives the
+   numbers.** `/live/markets` LCP swung **3600 → 2304 between consecutive runs**, the same
+   bimodality this file already documents for `/simulate` (`verify-vitals.mjs:84-101`). That
+   is now TWO routes, and **a median ceiling cannot gate a bimodal metric**: set above both
+   modes it measures nothing, set between them it fails at random and becomes the flake
+   everyone learns to ignore — which is `verify-v510`'s exact death, cited in
+   `verify-reporter.mjs:38`. Whatever CI prints, **recalibrating a single median ceiling is
+   the wrong instrument for this shape.** The fix is a gate-design change — a percentile, an
+   explicit two-mode band, or a documented INCONCLUSIVE path — and it needs its own prompt.
+   `verify-vitals.mjs:42` already sets the threshold that governs: INCONCLUSIVE on three
+   consecutive CI runs means "not a gate any more, it is a comment."
+
+   No ceiling was touched, and recalibrating from THIS machine would repeat the original
+   error one generation later — it is demonstrably not the machine the budgets describe
+   either. `verify-vitals.mjs:71` names CI's own numbers as the input; CI has still never
+   executed this gate, because it is 25th in `verify:e2e` and the chain died earlier every
+   previous run.
+
+5. **`director-quality` returned FINDINGS, not CLEAR — and the §5 box that closed this as a
+   MEASURED DON'T is wrong.** The in-loop re-judgment I offered as serving the rule's purpose
+   missed ten findings, two of which are gates in THIS PR reporting green while measuring
+   nothing: `verify-ia.mjs:442` is `R.ok(X || true, …)`, an assertion that cannot fail
+   (break-tested by planting the literal it claims to catch), and `verify-ia.mjs:395-397`
+   turns an `ia.ts` import failure into `R.skip`, so a `@/` import — the exact mistake that
+   file's own header warns about — leaves `verify:static` green with the IA gate silently not
+   measuring the IA. Also: `MEASURE_ONLY` keys on FILE PATH, so the (legitimately
+   measurement-only) NavTop rAF exemption blanket-exempts the always-mounted nav shell from
+   D0699 forever, proven with a planted infinite rAF loop the gate reported as clean.
+   **These must be fixed before this PR is called anything.** The box needs reopening.
 
 ## 8 · LOOP FEEDBACK
 
