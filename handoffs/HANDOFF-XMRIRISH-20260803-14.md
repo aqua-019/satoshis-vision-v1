@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260803-14
 branch: claude/v6-1-7-network-nodes-336pwp
-status: in_progress    # open -> in_progress -> done | blocked
+status: done           # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, self-authored)
 owner: claude-code
 ---
@@ -114,17 +114,113 @@ npm run verify:all
 
 ## 7 · REPORT — filled on exit, completely
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+**status:** done — one PR, full scope, no split. The escape hatch was not taken: `cssGz` and
+`eagerJsGz` both stayed inside budget (`verify-bundle` 25 passed), so the sizing decision recorded in
+the plan never became live.
 
-**Must name (spec §7):** the deferred D0837 sparkline grid with its reasoning · the `--c-50`/SESSION
-contrast gap as pre-existing · the 11px vs 12px floor conflict · the blocked live-count comparison ·
-the orphaned-gate mocks left alone deliberately · the no-hosts-on-the-wire decision.
+**pr:** https://github.com/aqua-019/satoshis-vision-v1/pull/161
+
+**commits:** 20, 37 files, +3401 / −224, based on `origin/main` = `09c35c7`. New: `api/nodes.js` ·
+`api/_fixtures/monerofail-health.json` + `-malformed.json` + `-spec.mjs` · `api/verify-nodes.mjs` ·
+`app/verify-nodes-dom.mjs` · `app/verify-fixtures.mjs` · `app/src/data/useNodePopulation.ts` ·
+`app/src/pages/network/NodePopulationPanel.tsx`. Deleted: `api/monero.js` and both its `vercel.json`
+entries, in the same commit as the file (caution C1 — a `functions` key naming an absent file is a
+hard Vercel build error, so the split would have failed at deploy, not at the gate).
+
+**deps added:** none.
+
+**deviations from spec:** all of them recorded rather than silently taken.
+· The failure envelope is **HTTP 200 `status:"unavailable"`**, not 502 — `app/src/data/http.ts:13`
+collapses every non-2xx to `null`, so a 502 reaches the panel as an indistinguishable "nothing" and
+the two failure sentences could not differ. Voids spec §5 #5/#15/#16/#17 and the `verify-nodes-dom`
+502 scenario; the scenario itself survives, reached through a 200 body.
+· **Hosts are not published**, reversing spec §2.4's "Hosts ARE published." The `Node` type carries
+no `host` field at all, so "no hostname reaches the wire" is true by construction, not by
+discipline. The envelope's `nodes[]` array is dropped (its only consumer was the deferred grid) and
+`lagging` describes clusters by height and size rather than by operator.
+· **No `vercel.json` `functions` entry.** The 8s `AbortController` fires regardless of the platform
+ceiling, so `maxDuration` cannot change any outcome. Spec §2.7's justification was additionally a
+**bad citation** — see §8.
+· **No `PanelBoundary`**, so no literal `also=` (which `verify-resilience.mjs:316-322` would match).
+The union makes an unnarrowed read a compile error and the store collapses every non-conforming body
+to `status:"error"` before a component sees it; `SourcesPage`, the only other
+`useSyncExternalStore` + `/api/*` surface, ships without one too.
+· **No new `FeedKey`** — `verify-feedstatus.mjs:38` pins six and `feed-status.ts:46` is six. This is
+FORCED, not preferred: a seventh key cannot ship without editing that gate.
+· **No Monero orange for the transport split.** A transport taxonomy is not a crypto quantity, so
+orange there is decoration by the rule's own definition. Divergence from
+`docs/v6-mockups/coldboot-splash.html` is deliberate.
+· **`> 2` behind, not `≥ 2`.** The mockup legends "≥2 behind"; the task text says `> 2` and wins — at
+a 120s target a node 1–2 blocks back is propagation, not disagreement. Both sides of the boundary are
+asserted so nobody "fixes" it.
+
+**notes for ARCHITECTURE.md patch:** no `ARCHITECTURE.md` exists in this repo; the equivalent edits
+landed in `README.md` and `CLAUDE.md` (Architecture Notes + Tech Stack + Known Issues). Counts moved
+**67 → 70 files · 64 → 66 gates · 2 → 3 shared modules** (`verify-fixtures.mjs` named explicitly in
+all three count sentences, per R2 — a total-only recount would have left "two shared modules"
+standing and false), **1 orchestrator**, `verify:e2e` 25 → 26, CI named steps 11 → 12, CI distinct
+50 → 52. **Orphan count stays 11** (R3: `verify-fixtures.mjs` is imported, not run, so it is neither
+gate nor orphan). Counted at full depth, because `app/scripts/verify-all.mjs` is one directory
+deeper than an `app/verify-*.mjs` glob reaches — the depth trap that made `CLAUDE.md:31` one short.
+
+**open questions:** the six the spec requires named, plus one.
+
+1. **D0837 per-node uptime sparkline grid — DEFERRED, and this is a decision, not an omission.** Row
+   count depends on a fetched payload, on the route carrying the tightest CLS ceiling in the repo
+   (`verify-cls.mjs:143`, `0.005`). It is also the element least covered by the prompt's Verify list,
+   so shipping it means shipping a component with no acceptance criterion exactly where regression is
+   most visible. A fixed cap makes the reserve constant, but "top 24 by uptime" is itself a claim
+   needing a denominator on screen. Its own change, with its own gate.
+2. **`--c-50` / SESSION has no `verify-contrast` baseline entry — PRE-EXISTING, reported not fixed.**
+   The new `--b-50` / NETWORK token was added to neither of that gate's two tables for the same
+   reason and by the same precedent (`--o-100` likewise). Measured rather than eyeballed so the
+   decision carries a number: `--b-50` `#5b9dff` is **7.31:1** against `--surface-ground`, clearing
+   the ≥7:1 body-text bar and sitting above `--p-50`/MODEL, which already ships at 6.89:1. Adding a
+   token to `:71-76` without a matching `CLASSIC_BASELINE` entry at `:93-98` makes the classic branch
+   evaluate `ratio >= undefined - 0.05` → `>= NaN` → red, so half a fix is worse than none.
+3. **11px vs 12px floor — STANDING CONFLICT, reported not resolved.** `verify-legibility.mjs:124`
+   records "v6.0.10: floor raised 10.5 -> 11. Nothing below 11 ships" and `--fs-label` is
+   `clamp(11px, 0.74vw, 12px)`, while the v6 prompt series asserts 12px; `styles-legibility.css`
+   carries 19 sub-12px declarations. The new panel targets ≥12px and `verify-nodes-dom` asserts it on
+   the panel's own rendered text — with a guard proving the selector matched something, because the
+   first version of that assertion matched zero elements and passed clean.
+4. **"node count matches monero.fail's own page (± sampling)" — BLOCKED, not passed and not failed.**
+   Sandbox egress to `https://monero.fail` is `CONNECT tunnel failed, 403`. Carried as
+   `R.skip(…)` with the reason and the command to run by hand on a deploy preview, counted in its own
+   column and never folded into the pass total.
+5. **The three orphaned gates naming `/api/monero` were left alone deliberately**
+   (`verify-gradients:121`, `verify-memperf:88`, `verify-perf-classic:88`), against **six**
+   CI-reached ones that were cleaned. Nothing runs the orphans, so a fix there cannot be proven
+   correct — the standing decision from v6.1.6's 68 stale literals. Two more were **kept on purpose**:
+   `verify-tiers-dom.mjs:92`'s classifier feeds `:144`'s `ok(!hits.monero, …)`, and deleting the
+   classifier would make that assertion permanently green on `!undefined` — with the endpoint now
+   gone, `:144` is the assertion that the corpse stays buried, so it matters more, not less.
+6. **No hostname reaches the wire.** monero.fail's list is public, so this is not a privacy leak — it
+   is an operational one: republishing a live list of third-party operators under xmr.irish's origin
+   reads as endorsement, and this site is in no position to recommend nodes. A future `?nodes=1`
+   sub-shape with a bounded, documented selection rule is the smallest honest step.
+7. **Added, not in the spec's list: `verify-vitals.mjs` cannot see this route.** `/live/network` is
+   budgeted in `verify-cls.mjs` and absent from `verify-vitals.mjs`'s `BUDGETS`, so layout shift on
+   the new panel is caught and CPU/vitals regression is not. Named, not fixed here.
+
+**Pilot-watch, as counts rather than impressions.**
+· **Gate defects surviving into lead review: 11.** The flip threshold was two across prompts 08–10;
+  it was met inside 08 alone. Both `test-engineer` hits sit on the **same axis** — fail-side evidence
+  never produced — which is the axis the rule was aimed at, so the count is not eleven unrelated
+  slips. Worth recording that the roster rule names `test-engineer` while several of these came from
+  `backend-api`, the same Haiku tier, on briefs that were complete.
+· **`NOT-MATCHED:` came back non-empty on 2 of 3 dispatches**, both actionable: one closed two
+  hypotheses by execution (longer `/api/monero…` paths and module-level path constants, both absent),
+  one flagged that `excluded` had no fixture witness — which turned out to share a root with a real
+  defect.
+· **One `UNVERIFIED` label stopped a stale claim** (U3's SourcesPage prose, written from the brief
+  without reading `api/nodes.js`).
+· **The honest signal the prompt asked for.** Nobody reported *"no state could be produced that fails
+  this assertion, so the assertion was wrong."* The condition nevertheless occurred repeatedly, and
+  every instance was found by review against code — not by the author's own transcript. The
+  two-polarity rule is doing its work at the point of **review**, not at the point of **authorship**,
+  and that asymmetry is the thing to carry into 09–10. It is not yet boilerplate; it is unevenly
+  applied, which looks the same from a distance and is not.
 
 ## 8 · LOOP FEEDBACK
 
