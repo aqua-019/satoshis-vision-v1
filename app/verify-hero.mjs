@@ -107,17 +107,60 @@ R.ok(PASSAGES.length === EXPECTED,
   PASSAGES.length !== EXPECTED
     ? 'A short table would let the per-passage loop pass while the hero is incomplete.' : '');
 
-const FLOOR = deriveFloor(PASSAGES);
-R.info(`derived length floor: ${FLOOR} chars (shortest passage in the frozen table)`);
-
-/* ══ §1 · per passage: TEXT and ATTRIBUTION, against the same record ═════ */
-R.group('── 1 · per passage · text AND attribution ───────────────────────');
-
 const fileCache = new Map();
 const readSrc = (f) => {
   if (!fileCache.has(f)) fileCache.set(f, existsSync(f) ? readFileSync(f, 'utf8') : null);
   return fileCache.get(f);
 };
+
+/* ── RECORD-STRUCTURED SOURCES ────────────────────────────────────────────
+ *
+ * WHY A FILE-SCOPED ATTRIBUTION TEST IS NOT ENOUGH, measured on this tree:
+ *
+ * An earlier draft asserted that each numeric token of `meta` occurred
+ * SOMEWHERE IN THE SOURCE FILE. That is a presence test, and Quotes.tsx makes
+ * it nearly free: `BitcoinTalk Thread #174` appears in 5 separate records and
+ * a 2010 date in 19 of 31. So the tokens ["#174","2010"] are satisfied by a
+ * third of the file, and a passage quoting record A while citing record B's
+ * date PASSED.
+ *
+ * That is the original defect one level subtler. The first version of this
+ * gate checked the quote and was blind to the attribution; the second checked
+ * the attribution against the FILE and was blind to whether it was BOUND to
+ * the quote beside it. A wrong byline on a correct sentence still shipped.
+ *
+ * So: locate the ONE record whose `t` satisfies the passage's declared mode,
+ * then compare THAT record's `s` and `d`. Binding, not presence. */
+const RECORD_PARSERS = {
+  'pages/_education/Quotes.tsx': (src) => {
+    const RE = /\{\s*c:\s*"([^"]*)"\s*,\s*(?:key:\s*true\s*,\s*)?t:\s*"((?:[^"\\]|\\.)*)"\s*,\s*s:\s*"((?:[^"\\]|\\.)*)"\s*,\s*d:\s*"((?:[^"\\]|\\.)*)"\s*\}/g;
+    return [...src.matchAll(RE)].map((m) => ({ t: typo(m[2]), s: typo(m[3]), d: typo(m[4]) }));
+  },
+};
+
+/* VACUITY GUARD on the parser itself. This is the lesson from my own
+ * `decomment` bug in verify-coldboot: the tool that FINDS the subjects went
+ * blind, and every assertion over them passed while measuring nothing. A
+ * regex that silently returns 0 or 3 records makes every record-bound
+ * comparison below vacuous, and it looks identical to success. */
+const RECORDS = new Map();
+for (const [file, parse] of Object.entries(RECORD_PARSERS)) {
+  const body = readSrc(`${SRC}/${file}`);
+  const recs = body ? parse(body) : [];
+  RECORDS.set(file, recs);
+  R.ok(recs.length >= 25,
+    `record parser for ${file} found a plausible number of entries (${recs.length}; the file declares 31)`,
+    recs.length < 25
+      ? `Parsed ${recs.length}. The entry regex has gone stale — every record-bound attribution ` +
+        `assertion below is then vacuous, and would still print green.`
+      : '');
+}
+
+const FLOOR = deriveFloor(PASSAGES);
+R.info(`derived length floor: ${FLOOR} chars (shortest passage in the frozen table)`);
+
+/* ══ §1 · per passage: TEXT and ATTRIBUTION, against the same record ═════ */
+R.group('── 1 · per passage · text AND attribution ───────────────────────');
 
 let matched = 0;
 
@@ -161,28 +204,66 @@ for (const [i, p] of PASSAGES.entries()) {
       `and the passage retypes it as a hyphen (-), THAT is the difference — it is a punctuation ` +
       `error, not a content error. Fix the character; do not loosen the compare.`);
 
-  /* ── ATTRIBUTION, against the SAME record. This is the half a text-only
-   *    diff is blind to, and the half the mockup got wrong. Every distinctive
-   *    token of `meta` — thread numbers (#NNN) and years — must appear in the
-   *    source file. `#770` in meta against a Quotes.tsx that contains only
-   *    #174 and #82 fails here, which is the entire point of this gate. ── */
+  /* ── ATTRIBUTION, BOUND TO THE MATCHED RECORD ──────────────────────────
+   *
+   * Not "do these tokens appear in the file" — that passed while a passage
+   * cited another record's date. Find the ONE record whose text satisfies
+   * this passage's mode, then check THAT record's s/d against `meta`. */
   const meta = typo(p.meta ?? '');
-  const tokens = [...meta.matchAll(/#\d+|\b(?:19|20)\d{2}\b/g)].map((m) => m[0]);
-  let aOk;
-  if (tokens.length === 0) {
-    // No numeric token to key on — fall back to requiring the whole meta
-    // string to occur, rather than silently asserting nothing.
-    aOk = R.ok(hay.includes(meta),
-      `${tag} · attribution "${meta}" occurs in ${srcPath}`,
-      hay.includes(meta) ? '' : 'no numeric token in meta and the full string is absent');
+  const relFile = p.source.file;
+  const recs = RECORDS.get(relFile);
+  let aOk = false;
+
+  if (recs) {
+    const bound = recs.filter((r) =>
+      mode === 'exact' ? r.t === text
+      : mode === 'prefix' ? r.t.startsWith(text) && r.t.length > text.length
+      : r.t.includes(text));
+
+    /* GUARD — exactly one. Zero means the parse or the text is wrong and no
+     * comparison happened at all; more than one means the binding is
+     * ambiguous and any comparison picks arbitrarily. Both are failures. */
+    if (!R.ok(bound.length === 1,
+          `${tag} · passage text binds to exactly ONE record in ${relFile} (got ${bound.length})`,
+          bound.length === 0
+            ? 'No record matched — the attribution comparison below never ran.'
+            : bound.length > 1
+              ? `Ambiguous: ${bound.length} records match, so citing "any of them" would pass.`
+              : '')) {
+      // fall through with aOk false
+    } else {
+      const rec = bound[0];
+      const hasS = meta.includes(typo(rec.s));
+      const hasD = meta.includes(typo(rec.d));
+      aOk = R.ok(hasS && hasD,
+        `${tag} · attribution matches the BOUND record — s="${rec.s}" d="${rec.d}"`,
+        !hasS && !hasD ? `meta "${meta}" carries neither the bound record's source nor its date.`
+        : !hasS ? `meta "${meta}" does not carry the bound record's source "${rec.s}". ` +
+                  `This is the #770-vs-#174 defect: right sentence, invented byline.`
+        : `meta "${meta}" does not carry the bound record's date "${rec.d}". ` +
+          `The quote is real but dated from a DIFFERENT entry — the failure a file-scoped ` +
+          `token test cannot see, because 19 of 31 entries carry a 2010 date.`);
+    }
   } else {
-    const missing = tokens.filter((t) => !hay.includes(t));
-    aOk = R.ok(missing.length === 0,
-      `${tag} · attribution tokens ${JSON.stringify(tokens)} all appear in ${srcPath}`,
-      missing.length
-        ? `ABSENT from the source of record: ${JSON.stringify(missing)} — the text may be correct ` +
-          `while the byline is invented. This is the #770-vs-#174 defect.`
-        : '');
+    /* UNBINDABLE — prose/JSX, no record structure to bind to. Counted in its
+     * OWN column (fixtured), never as a pass: a file-scoped check standing in
+     * silently for a record-bound one is exactly what this rewrite removed. */
+    const tokens = [...meta.matchAll(/#\d+|\b(?:19|20)\d{2}\b/g)].map((m) => m[0]);
+    const present = tokens.length === 0
+      ? hay.includes(meta)
+      : tokens.every((t) => hay.includes(t));
+    if (!present) {
+      aOk = R.ok(false, `${tag} · attribution "${meta}" occurs in ${relFile}`,
+        `Not found. ${relFile} is prose/JSX with no record structure, so this is the weaker ` +
+        `file-scoped check — and it still failed.`);
+    } else {
+      R.fixture(`${tag} · attribution "${meta}" occurs in ${relFile}`,
+        `FILE-SCOPED, not record-bound — ${relFile} is prose/JSX with no {t,s,d} records to ` +
+        `bind to. This proves the attribution's tokens exist in the source; it does NOT prove ` +
+        `they belong to the sentence quoted. Weaker than the record-bound passages above, and ` +
+        `counted separately so it cannot be read as one.`);
+      aOk = true;   // text still verified; attribution coverage is declared weaker, not absent
+    }
   }
 
   if (tOk && aOk) matched++;
