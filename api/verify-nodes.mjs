@@ -20,6 +20,10 @@ import { fileURLToPath } from 'url';
 import { makeReporter } from '../app/verify-reporter.mjs';
 import { EXPECTED } from './_fixtures/monerofail-health-spec.mjs';
 
+/* Filled by group 10 from what the handler ACTUALLY emitted across its four
+   failure states; consumed by group 12b. Deliberately not a literal. */
+let OBSERVED_REASONS = [];
+
 const R = makeReporter('verify-nodes');
 const API_DIR = dirname(fileURLToPath(import.meta.url));
 
@@ -538,8 +542,10 @@ try {
   const unique = new Set(observed);
   R.ok(unique.size === observed.length,
     `the four OBSERVED upstream reasons are mutually distinct (got ${JSON.stringify([...unique])})`);
+  OBSERVED_REASONS = [...unique].sort();
 }
 
+/* Set by group 10 from what the handler ACTUALLY emitted; consumed by 12b. */
 /* ── 11) Exactly one upstream fetch per cold invocation ── */
 {
   const originalFetch = globalThis.fetch;
@@ -721,6 +727,43 @@ try {
     R.ok(existsSync(join(API_DIR, '..', key)),
       `vercel.json functions key "${key}" exists on disk (no stale keys)`);
   }
+}
+
+/* ── 12b) the client's reason vocabulary matches OBSERVED handler behaviour ──
+ *
+ * `NODE_REASONS` in app/src/data/useNodePopulation.ts is a hardcoded Set, and
+ * `isNodePopulation` returns false for any reason outside it. So a reason the
+ * handler legitimately emits but the client has not been told about makes the
+ * store treat a CORRECT 200 envelope as malformed and fall to the
+ * fetch-failure branch — and the panel then says "/api/nodes did not answer"
+ * at the exact moment /api/nodes answered fine and was explaining an upstream
+ * problem. Demonstrated in a browser, not argued: a fifth reason flips the
+ * panel from "monero.fail did not answer" to "/api/nodes did not answer",
+ * which is the two-sentence design inverted and a surface stating a cause it
+ * does not have. It cannot fire today because the sets match; it fires the
+ * first time someone adds a reason, which is exactly when something new is
+ * going wrong upstream and a fabricated cause costs most.
+ *
+ * ONE literal checked against OBSERVED BEHAVIOUR — not two literals compared
+ * to each other. An earlier draft of this assertion regex-scraped reason
+ * strings out of api/nodes.js source and compared them to the client's list.
+ * That version passes if a reason sits in dead code or a comment, and passes
+ * if the handler STOPS emitting one while the literal remains. The handler's
+ * real vocabulary is what it produces, and group 10 already produced it. */
+{
+  const clientSrc = readFileSync(join(API_DIR, '..', 'app', 'src', 'data', 'useNodePopulation.ts'), 'utf8');
+  const block = clientSrc.match(/NODE_REASONS[^=]*=\s*new Set\(\[([\s\S]*?)\]\)/);
+  const clientReasons = block
+    ? [...new Set((block[1].match(/"[a-z-]+"/g) || []).map((x) => x.slice(1, -1)))].sort()
+    : [];
+
+  R.ok(OBSERVED_REASONS.length === 4,
+    `group 10 observed 4 distinct reasons from the handler (got ${OBSERVED_REASONS.length}: ${OBSERVED_REASONS.join(', ')})`);
+  R.ok(clientReasons.length === 4,
+    `useNodePopulation.ts NODE_REASONS holds exactly 4 (got ${clientReasons.length}: ${clientReasons.join(', ')})`);
+  R.ok(JSON.stringify(clientReasons) === JSON.stringify(OBSERVED_REASONS),
+    'the client\'s NODE_REASONS equals the set the handler was OBSERVED to emit',
+    `client=[${clientReasons.join(', ')}] observed=[${OBSERVED_REASONS.join(', ')}]`);
 }
 
 /* 13b: no headers source matches /api/nodes (would override handler's Cache-Control) */

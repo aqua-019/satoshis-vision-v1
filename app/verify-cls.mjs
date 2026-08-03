@@ -84,6 +84,9 @@ import { R as RT } from './scripts/routes.mjs';
 import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+// api/nodes.js is CommonJS; createRequire is the bridge an .mjs gate uses for
+// it — same idiom as api/verify-status.mjs:25-26.
+import { createRequire } from 'node:module';
 
 const APP = dirname(fileURLToPath(import.meta.url));
 const base = process.env.VERIFY_BASE || BASE;
@@ -258,6 +261,42 @@ const FIX = {
   fees: () => ({ fees: [20_000, 80_000, 320_000, 4_000_000] }),
 };
 
+/* The live /api/nodes envelope — produced by RUNNING THE REAL HANDLER against
+ * the committed fixture, not rebuilt from its helpers and not transcribed.
+ *
+ * The first version of this block did rebuild it, and was wrong within one
+ * commit: it derived `counts.seen` as `nodes.length + excluded` (25) where the
+ * handler produces 24. A mock that reassembles an envelope is a second
+ * implementation of the envelope, and a second implementation drifts — which
+ * would quietly restore the very gap this mock was added to close, while
+ * looking like it had closed it. Invoking the handler makes drift structurally
+ * impossible: there is only one implementation and this is it.
+ *
+ * Offline by construction — `globalThis.fetch` is stubbed with the fixture for
+ * the duration of the call and restored in `finally`, so nothing leaves. */
+const NODES_LIVE = await (async () => {
+  const req = createRequire(import.meta.url);
+  const handler = req('../api/nodes.js');
+  const fixture = req('../api/_fixtures/monerofail-health.json');
+  const captured = { body: null };
+  const res = {
+    setHeader() { return res; }, getHeader() { return undefined; },
+    status() { return res; }, json(b) { captured.body = b; return res; }, end() { return res; },
+  };
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => fixture });
+  try {
+    handler._resetCache();
+    await handler({ method: 'GET', query: {}, url: '/api/nodes' }, res);
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+  if (!captured.body || captured.body.status !== 'live') {
+    throw new Error(`verify-cls: /api/nodes mock did not produce a live envelope (got ${JSON.stringify(captured.body)?.slice(0, 120)}) — the mock would otherwise silently measure the panel's EMPTY state, which is the one state whose height cannot shift`);
+  }
+  return captured.body;
+})();
+
 async function mockFeed(ctx) {
   await ctx.route('**/api/xmr/**', async (route) => {
     await new Promise((r) => setTimeout(r, MOCK_LATENCY_MS));
@@ -277,6 +316,24 @@ async function mockFeed(ctx) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ groups: {}, excluded: [], meta: null }) });
   });
   await ctx.route('**/api/feeds*', (route) => route.abort());
+  /* /api/nodes — added v6.1.7, and the reason is this file's own history.
+   * `:31` records that until v6.1.5 this gate called ctx.route() ZERO times,
+   * so serve-dist's 501 fell through and every route was measured in a fully
+   * degraded state. Four endpoints were mocked then; /api/nodes arrived after,
+   * and inherited exactly the same hole — /live/network's CLS was being
+   * measured with the node-population panel in its EMPTY state, which is the
+   * one state whose height is a fixed reserve and therefore cannot shift.
+   * The live path, where six rows of varying-width numbers land into that
+   * reserve, was the thing at risk and the thing not covered.
+   *
+   * Built from the committed fixture THROUGH THE REAL HELPERS rather than
+   * hand-written, so this mock cannot drift away from the envelope it stands
+   * in for — a stale hand-copied body would silently go back to measuring
+   * something the app never receives. */
+  await ctx.route('**/api/nodes*', async (route) => {
+    await new Promise((r) => setTimeout(r, MOCK_LATENCY_MS));
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(NODES_LIVE) });
+  });
   await mockStatus(ctx);
 }
 
