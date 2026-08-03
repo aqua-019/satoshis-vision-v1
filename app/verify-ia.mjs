@@ -10,6 +10,14 @@
  *
  * Run: node verify-ia.mjs (from app/ directory)
  * Exit code: result count from R.finish()
+ * ── OLD PATHS IN THIS FILE ARE BY DESIGN — DO NOT SWEEP ──────────────────
+ * Every pre-restructure path here (/mempool, /markets, /education, …) is a
+ * redirect SOURCE, i.e. the thing under test. A sweep that 'modernises' them
+ * to their new destinations would delete the assertion while leaving it
+ * looking green — the gate would then prove that /live/mempool redirects to
+ * /live/mempool. This file and verify-redirects.mjs are the two deliberate
+ * exclusions from the v6.1.6 route-literal sweep.
+ *
  */
 
 import { makeReporter } from './verify-reporter.mjs';
