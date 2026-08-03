@@ -152,3 +152,38 @@ the orphaned-gate mocks left alone deliberately · the no-hosts-on-the-wire deci
 - **2026-08-03 · `verify-vitals.mjs` blind spot, named not fixed.** `/live/network` is budgeted in
   `verify-cls.mjs` (`0.005`) but absent from `verify-vitals.mjs`'s `BUDGETS`, so layout shift on the
   new panel is caught and CPU/vitals regression is not.
+
+- **2026-08-03 · PATTERN, three instances, all three layers: a conclusion drawn from an artifact
+  without checking whether the wall was real.**
+  (1) A worker (U6) hit `npx playwright install` → HTTP 403 and concluded e2e was impossible here,
+  shipping a stack of UNVERIFIED items. The 403 is real; the conclusion was not. Chromium is
+  pre-installed and the repo's own `launchChromium()` finds it — every one of those items was
+  measurable, and measuring them closed the panel's biggest open risk (CLS 0.0000 live).
+  (2) The verifier session asserted a coverage gap in `verify-origins.mjs` after reading phase 1's
+  named guards, without reading phase 2 — which already held the invariant generically.
+  (3) The verifier session ran six gates that printed `Node.js v22.22.2` and nothing else, and was
+  one step from reporting that U8 had broken four gates. The real error was
+  `ERR_CONNECTION_REFUSED`: its own `serve-dist` had died. Nothing to do with the commit.
+  The remedy is identical in all three and costs nothing: **read the actual error, not the last
+  line.** Worth carrying into 09–10 because it has now bitten a worker, the build session and the
+  verifier — it is not a tier property.
+
+- **2026-08-03 · break-test reverts fail silently, four mechanisms, so the revert needs its own
+  verification.** Four break tests this session left a mutation in the tree: `cd` drift twice (paths
+  resolved against the wrong directory, so both mutate and restore no-oped — harmless), once because
+  **`git checkout -- <file>` silently does nothing for an UNTRACKED file** (a brand-new gate, so the
+  printed "restored" line was false), and once because a killed wrapper never reached its restore.
+  In every case the tree was known-clean because it was checked, never because the revert was
+  trusted. Two consequences adopted: new files need a real backup copy, not `git checkout`; and
+  **where a failing polarity can be produced by driving a state the code already reaches, prefer
+  that over mutating source** — there is no revert step to fail. The `verify-cls` mock-reach
+  assertion was proven that way, by probing the unmocked state directly.
+  (Related, minor: `pkill -f serve-dist` matches its own shell's command line and kills the caller.
+  Both sessions hit it.)
+
+- **2026-08-03 · a break test that breaks nothing reports success identically to one that does.**
+  The `kind`-only polarity for the ENDPOINTS parity assertion passed green on first attempt because
+  the mutation hit the first `kind: 'network'` in the file — which was inside the explanatory
+  comment written in that same commit, not the fixture data. Re-run against the data at `:79`, it
+  reds correctly. The lesson is not "be careful with sed": it is that a break test's *negative*
+  result is only evidence if you confirm the mutation landed where you aimed it.
