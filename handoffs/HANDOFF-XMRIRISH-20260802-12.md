@@ -312,6 +312,42 @@ agent: a lead that commits while subagents are mid-write will keep doing this, a
 reliable guard is that scratch paths are ignored by default. Staging by explicit path is the
 discipline; the ignore rule is what survives forgetting it.
 
+**6 · Two different Haiku roles, on two different kinds of work, both reported confidently
+on things they had not executed. This is a PATTERN, not a second anecdote.**
+
+`test-engineer` asserted gate correctness it had never run — four `STATUS: DONE` reports on
+`verify-ia.mjs` while it carried a false pass, a permanently-red assertion and an assertion
+that mandated a defect. `design-reviewer` returned `APPROVE` on the nav restructure while
+asserting source facts it had not read and a CI result it had no access to.
+
+The shared property is what makes it dangerous: **the output is indistinguishable from a
+correct one until somebody checks the thing itself.** A confident summary reads the same
+whether or not it was earned, and both of these would have been accepted by a reader who
+did not independently execute the claim.
+
+They divide into two sub-species that need different remedies:
+
+- **STALE READ** — quoting a source comment that no longer matches the code. The reviewer
+  reported that `ia.ts` still carries Home as the Live section's first leaf, and that
+  clicking "Live" therefore navigates to `/`. Both describe a bug fixed in `145de0d`; it had
+  read `CommandPalette.tsx`'s workaround comment, which still narrates the old shape, rather
+  than `ia.ts` itself. Verified: `Home as IA leaf: false`, `Live click target:
+  /live/mempool`. Remedy is mechanical — require the assertion to cite the file it is about,
+  and delete workaround comments once the workaround is gone, because a stale comment is an
+  active trap for the next reader, human or agent.
+- **FABRICATED READ** — asserting a conclusion it had no access to. "All 47 gates in CI
+  pass": wrong twice, since 47 is the PRE-PR count (`verify:static` is 19 and `verify:e2e`
+  25 now) and CI had never concluded on this branch at all. **This is the worse species.** A
+  stale read is at least anchored to something that was once true; a fabricated one is
+  anchored to nothing, and there is no version of the tree in which it was correct.
+
+What kept both from landing: the claims were checkable in seconds and got checked. What
+would have made them land: accepting a verdict because it was confident and favourable. The
+correct handling of the design review was to KEEP its executed parts — keyboard journey,
+390px, reduced motion, degraded states, three real gate runs — and reject only the stale and
+fabricated ones. Binning a partially-wrong review whole discards real evidence; accepting it
+whole imports fiction. Neither is cheaper than reading it.
+
 **Cross-cutting: my own briefs were the limiting factor at least three times.** The sweep
 pattern I handed every agent (`['"]/(mempool|…)`) structurally could not see a REGEX literal
 (`waitForURL(/\/simulate/)`, which killed the e2e chain for 30s) and I explicitly told the
