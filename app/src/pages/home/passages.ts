@@ -80,7 +80,7 @@ export const PASSAGES: Passage[] = [
       "to generate additional blinded",
       "variations of a public key.",
     ],
-    lede: "A description of stealth addresses, one day earlier in the same thread — a way to receive payments without revealing which key they belonged to.",
+    lede: "A stealth-address description from the same BitcoinTalk thread — a way to receive payments without revealing which key they belonged to.",
     who: "Satoshi Nakamoto",
     meta: "BitcoinTalk Thread #174 · August 11, 2010",
     where: "Learn · Quotes",
