@@ -235,3 +235,25 @@ the orphaned-gate mocks left alone deliberately · the no-hosts-on-the-wire deci
   comment written in that same commit, not the fixture data. Re-run against the data at `:79`, it
   reds correctly. The lesson is not "be careful with sed": it is that a break test's *negative*
   result is only evidence if you confirm the mutation landed where you aimed it.
+
+- **2026-08-03 · PILOT-WATCH (v4.1) — the `test-engineer` flip rule has its evidence, and the axis
+  matters more than the count.** Threshold was *two or more across prompts 08–10 flips
+  `test-engineer` to Sonnet for gate authoring*. It was met inside prompt 08 alone, and **both hits
+  are the same failure mode**: U4 returned a two-polarity table with `Executed ✅` on its pass rows
+  and prose on its fail rows — the fail side had never been run; U7 returned `STATUS: DONE` with
+  `UNVERIFIED: none` and **no** two-polarity transcript at all, despite the brief requiring one per
+  assertion. Both are *fail-side evidence that was never produced*. Two hits on one axis is a
+  stronger signal than two unrelated defects, because it names the thing to fix rather than the tier.
+  Full count of gate defects reaching lead review this prompt: **11**. Notably the last several were
+  the lead's own, not a worker's — a fixture-spec that disagreed with its code, a mock that
+  reconstructed an envelope instead of producing it, a comment surviving the code it justified, and
+  an unguarded precondition. Once workers are briefed off measured findings, the remaining risk
+  concentrates upstream.
+- **2026-08-03 · `NOT-MATCHED:` returned non-empty on 2 of 3 dispatches that used it**, and both were
+  actionable rather than decorative: U2's named two cases its `/api/monero` pattern could not catch
+  (longer paths like `/api/monero-stats`, module-level path constants) — both were then **closed by
+  execution** rather than left as caveats; U1's flagged that `excluded` had no witness in the
+  fixture, which turned out to share a root cause with the spec-parity defect.
+- **2026-08-03 · one `UNVERIFIED` label stopped a stale claim reaching a report.** U3 marked its
+  `SourcesPage` provenance prose UNVERIFIED because it had written the copy from the brief without
+  reading `api/nodes.js`. That converted an assumed-correct claim into a checkable one.
