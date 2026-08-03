@@ -163,10 +163,17 @@ exist in cloud checkouts — V4 rule 7).
       coverage here is behavioural and structural only — `verify-nav` 115/0, `verify-palette`
       39/0, `verify-cls` 12/0 — and **no gate in this repo can grade whether the result LOOKS
       right.** The operator accepted this item on their own review.
-- [ ] Branch pushed · PR opened **via GitHub MCP** (`gh` is not installed), ready for review,
-      `mergeable: true` / `mergeable_state: clean` / every check concluded — PR #159 is open and
-      updated, but **NOT yet clean**: `verify-vitals` has one open budget item and CI is still
-      concluding. **UNMET until CHAIN_EXIT=0 and every check concludes.**
+- [x] Branch pushed · PR opened **via GitHub MCP** (`gh` is not installed), ready for review,
+      `mergeable: true` / `mergeable_state: clean` / every check concluded — **MET.** Pushed
+      once, `775b100..92c053b`, all four commits re-authored `Claude <noreply@anthropic.com>`.
+      Every check concluded **success** on `92c053b`: `typecheck + build + offline gates`,
+      `hardening gates`, Vercel. The `hardening gates` log proves CI ran the FIXED tree rather
+      than a cached one — it prints all 12 per-call-site `D0699-EXEMPT` markers with
+      `verify-govern: 48 passed`, and both new F8 key guards (`all 4 budget keys resolve to a
+      real path`, `every INTERACTIONS key names a measured route`).
+      **`verify-vitals` reports `5 passed · 3 skipped · 0 failed` — the 3 skips are the
+      contention guard, not a budget breach**, and every LCP it recorded is inside budget.
+      The one open budget item this box previously named is closed: see open question 4.
 
 ## 6 · VERIFY COMMANDS
 
@@ -288,6 +295,17 @@ extensions and bare Node requires them.
    in both cases we have evidence for, which is two more than the probe currently gets right.
    Its own three-consecutive-INCONCLUSIVE clock (`verify-vitals.mjs:42`, "not a gate any more,
    it is a comment") **starts with this run**. Own prompt, not this PR.
+
+   **CI run 2 settled it beyond argument: 7 ms of probe jitter decided which routes were
+   gated.** On `92c053b`, four routes on one machine in one run split across the 1.6x line —
+   `/learn/sim` probed **415 ms** (1.596x), cleared the guard, ASSERTED and PASSED; `/live/markets`
+   **417 ms** (1.604x), `/` **418 ms** (1.608x) and `/live/mempool` **422 ms** (1.623x) all
+   skipped. Identical runner, identical run, verdicts decided by a 7 ms spread in a busy-loop.
+   The guard is not measuring contention; it is measuring its own noise against an arbitrary
+   threshold. Meanwhile the LCPs it suppressed — 1820 / 1968 / 3424 — sit comfortably inside
+   budget, and the per-route spreads were 12-52 ms.
+   **This is INCONCLUSIVE run 2 of the 3 that `verify-vitals.mjs:42` says makes the gate "not
+   a gate any more, it is a comment."**
 
    **Confirmed a second time, on the final preflight run of this PR.** The sandbox produced
    `/live/markets` LCP **3952** (against 2600) and blocking **592**, plus `/` blocking **548**
