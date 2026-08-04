@@ -293,6 +293,61 @@ of them reached a chain run:
 still measure the wrong thing, and the only way to find out is to run it against
 a state you know should fail.
 
+**Instance twelve · `verify-vitals` has never measured the page a first-time
+visitor loads.** It calls `coldBootOffBrowser` at `:305`, so its SUBJECT is the
+bypassed Home while its CLAIM is `/`. The gate reads **2128ms**; a real cold
+visit reads **4048ms** against a 2500ms budget. Same shape as the orb — a check
+that could not fail for the reason it was written — and pre-existing, so a
+finding rather than a regression.
+
+**And this is why the 1.5s hold is "free", which must be recorded honestly.**
+The hold looks costless because on the throttled profile the bundle already
+exceeds 1500ms, so `max(0, 1500 - elapsed)` contributes 0. That is true. But the
+budget it is measured against was never pointed at the real page. A future reader
+must not conclude the hold was *proven cheap* when what was proven is that **the
+instrument was aimed elsewhere.** The hold is still correct as built — a minimum,
+not an addition; 1780 / 350 / 453ms measured; the watchdog ignores it; reduced
+motion stated in `gate.ts` rather than implied — but its cheapness rests on an
+instrument with a known blind spot.
+
+**The control that made "it's the machine" a finding rather than an excuse.**
+`verify-vitals` reds on three blocking budgets here. The only thing separating
+that from a convenient story is that the UNCHANGED BASE COMMIT was measured and
+reds too — `/` at **537ms on 95316a3** against **518 / 436ms** on this branch,
+i.e. the base is SLOWER than the change. Neither the CPU probe (265-274ms, which
+read healthy throughout) nor intuition could have established that.
+
+**Timing of that control, because it decides how much the control is worth:**
+both runs were back to back in the SAME container and the same shell session,
+with no restart between them — the branch run, then `git checkout 95316a3`, a
+~40s rebuild, the baseline run, then the checkout back. Roughly two minutes
+apart on one machine. Had they straddled a container restart they would be two
+environments and the comparison would be far weaker than it reads.
+
+Reinforcing it: two routes self-skipped as UNVERIFIABLE at **80-94% run spread**,
+8-9x past the 10% threshold — the mechanism catching contention that the CPU
+probe reports as absent, on its first real outing. **No app code and no budget
+was changed.** Widening a ceiling to clear a red already shown to be
+environmental would spend the budget's meaning to buy a green badge.
+
+**What CI should be expected to do.** CI is a third machine. If `verify-vitals`
+reds there, that is consistent with this diagnosis. If it goes green, that is
+*also* consistent — it would mean a quieter runner, which is the same claim seen
+from the other side. Either outcome leaves the diagnosis standing; what would
+refute it is the base commit passing on a machine where this branch fails. The
+operator should not be surprised by a red check on a PR described as clean.
+
+### The break test that proved nothing, and was caught
+
+Forcing the console to 2300px to red-test the new reachability assertion, the
+injected `height: 2300px !important` **lost to `flex: 1`** on a flex item: the
+console stayed 796px and the predicate reported ✅. Banking that as "break-tested"
+would have shipped an assertion whose falsifiability had never been demonstrated
+— the exact vacuity this whole task is about, one level up, in the tool built to
+detect it. `min-height` is what actually reproduces the state; with it the
+predicate reds at exit 1. **A break test that does not go red has not passed; it
+has failed to run.**
+
 ### Process note for the next revolution
 
 Rule 7 ("never rebuild while `serve-dist` is serving") was violated once. The
