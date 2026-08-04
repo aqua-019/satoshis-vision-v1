@@ -548,15 +548,42 @@ await browser.close();
  * index.html, and every later gate measures a corpse at ERR_CONNECTION_REFUSED
  * or, worse, a DIFFERENT build at a healthy 200.
  *
- * This file is LAST in verify:e2e, so re-checking here brackets the whole run
- * for the cost of one fetch. Start-and-end is not continuous coverage, but it
- * converts "the chain was sound when it began" into "the chain was sound at
- * both ends", which is the difference between a claim about a moment and a
- * claim about a run.
+ * Re-checking here brackets the run for the cost of one fetch. Start-and-end is
+ * not continuous coverage, but it converts "the chain was sound when it began"
+ * into "the chain was sound at both ends", which is the difference between a
+ * claim about a moment and a claim about a run.
+ *
+ * ── WHAT THIS BRACKETS, HONESTLY — corrected in v6.1.9 ───────────────────
+ * This docblock used to open "This file is LAST in verify:e2e". That was true
+ * when it was written and is FALSE now: v6.1.9 moved `verify-vitals` to the end
+ * (it had been sitting at #27 with this file and `verify-orb` as its only
+ * downstream, so an environmental wall-clock red made the suite's own
+ * subject-under-test unreachable). The tail is now #27 this file · #28
+ * verify-orb · #29 verify-vitals.
+ *
+ * So the bracket covers #1 -> #27, not the whole chain. TWO gates run after it
+ * and are outside it. That is accepted rather than papered over, for reasons
+ * that are specific rather than general:
+ *
+ *   · The failure mode this guards is a rebuild DURING the run. Nothing in the
+ *     two gates after this one builds; the hazard is a human or a second shell,
+ *     and 27 of 29 gates' worth of exposure is where essentially all of it is.
+ *   · `verify-orb` cannot pass vacuously against a broken server — every one of
+ *     its §5/§6/§7 assertions reads the live DOM behind explicit preconditions,
+ *     so a dead server reds it rather than skipping it quietly. A STALE-but-200
+ *     dist is the residual risk, and it is two gates wide.
+ *   · It was NOT moved into `verify-vitals` despite that gate now being last,
+ *     because vitals exits 0 under `PERF_ASSERT=0` and `MEASURE_ONLY` — a wire
+ *     check living there would be silently non-binding in two documented modes,
+ *     which is worse than a bracket that is honestly two gates short.
+ *
+ * If the chain is reordered again, re-read this: the placement argument is the
+ * thing that goes stale, and a docblock claiming a property the code no longer
+ * has is the exact defect this release found twice.
  *
  * Same subject as §0b — the entry chunk resolved from dist/index.html, whose
  * bytes are a pure function of the source, never index.html itself. */
-R.group('── Z · the served dist still matches at the END of the chain ──────');
+R.group('── Z · the served dist still matches, 27 gates in (see the note above) ──');
 {
   const distIndex = new URL('./dist/index.html', import.meta.url);
   if (!existsSync(distIndex)) {
@@ -565,7 +592,7 @@ R.group('── Z · the served dist still matches at the END of the chain ─�
   } else {
     const localHtml = readFileSync(distIndex, 'utf8');
     const entry = (localHtml.match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/) || [])[1] ?? null;
-    R.ok(entry !== null, 'end-of-chain: resolved the entry chunk from dist/index.html',
+    R.ok(entry !== null, 'end-of-bracket: resolved the entry chunk from dist/index.html',
       entry !== null ? `${entry}` : 'shell shape changed — this re-check would compare nothing');
     if (entry) {
       const localJs = readFileSync(new URL(`./dist/assets/${entry}`, import.meta.url));
