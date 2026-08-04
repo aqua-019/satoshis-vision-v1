@@ -36,12 +36,24 @@ import "./styles-legibility.css";
 // index.html ships a static #boot-fallback beside #root, hidden, revealed by a
 // watchdog if nothing mounts. Mounting successfully is what cancels it.
 const bootFallback = () => document.getElementById("boot-fallback");
+
+/** THIRD remover of index.html's `cb-pending` floor — the two failure paths
+ *  below reveal #boot-fallback, and that panel is useless behind an opaque
+ *  floor covering #root. ColdBoot's layout effect is the ordinary remover and
+ *  the boot watchdog is the backstop; neither runs when the mount itself throws
+ *  or #root is missing, which is exactly when a visitor most needs to see
+ *  something. Deliberately NOT called on the success path: doing so would
+ *  un-hide #root before ColdBoot's chunk arrives and re-introduce the very
+ *  flash the floor exists to prevent. */
+const releaseColdBootFloor = () => document.documentElement.classList.remove("cb-pending");
+
 const root = document.getElementById("root");
 
 if (!root) {
   // No container at all. Nothing to render into, so surface the static
   // fallback immediately rather than throwing into a blank page.
   console.error("[xmr.irish] Missing #root element in index.html");
+  releaseColdBootFloor();
   bootFallback()?.removeAttribute("hidden");
 } else {
   try {
@@ -74,6 +86,7 @@ if (!root) {
     // mount, so it cannot help here. Reveal the fallback NOW rather than
     // leaving the user on a blank page for the rest of the 10s watchdog.
     console.error("[xmr.irish] mount failed, revealing boot fallback:", err);
+    releaseColdBootFloor();
     bootFallback()?.removeAttribute("hidden");
   }
 }

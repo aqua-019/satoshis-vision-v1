@@ -79,6 +79,15 @@ jobs:
       - name: "Gate: tiered polling contract"
         run: node verify-tiers.mjs
 
+      # Offline, and it belongs here rather than only in verify:static so it can
+      # fail before anything is built or served. It owns the one invariant that
+      # cannot be expressed in a single place: index.html's pre-paint cold-boot
+      # predicate has to answer before the bundle exists, so it is a hand copy of
+      # src/coldboot/gate.ts. This evaluates both over a truth table rather than
+      # diffing them as text.
+      - name: "Gate: cold-boot pre-paint floor + predicate parity"
+        run: node verify-cbpending.mjs
+
       - name: "Gate: node cascade health"
         run: node ../api/verify-nodehealth.mjs
 

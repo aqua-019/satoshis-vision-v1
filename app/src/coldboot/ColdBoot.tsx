@@ -162,6 +162,7 @@ import { T, E, seg, clamp01, lerp } from "./schedule";
 import { ColdBootConsole } from "./ColdBootConsole";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { R } from "../../scripts/routes.mjs";
+import { CB_FLOOR, CB_PENDING_CLASS, COLDBOOT_FLAG, coldBootWillRender } from "./gate";
 
 /* ══════════════════════════════════════════════════════════════════════════
  * the handoff clock — X, HB — owned here per schedule.ts's own header
@@ -301,9 +302,14 @@ interface Initial {
 
 function computeInitial(reduced: boolean): Initial {
   if (typeof window === "undefined") return { phase: "off", skipDecrypt: false };
-  const flagWindow = window as unknown as { __XMR_COLDBOOT__?: string };
-  if (flagWindow.__XMR_COLDBOOT__ === "off") return { phase: "off", skipDecrypt: false };
-  if (window.location.pathname !== R.HOME) return { phase: "off", skipDecrypt: false };
+  /* The two clauses that used to be inline here now live in `./gate.ts`,
+     because `index.html`'s pre-paint script has to answer the same question
+     before this bundle exists and cannot import to do it. One definition, two
+     call sites, and verify-cbpending.mjs proves they agree. */
+  const flagWindow = window as unknown as Record<string, string | undefined>;
+  if (!coldBootWillRender(flagWindow[COLDBOOT_FLAG], window.location.pathname)) {
+    return { phase: "off", skipDecrypt: false };
+  }
   const flagged = readSessionFlag();
   return { phase: "splash", skipDecrypt: flagged || reduced };
 }
@@ -382,7 +388,11 @@ const ROOT_STYLE: React.CSSProperties = {
   position: "fixed",
   inset: 0,
   zIndex: COLDBOOT_Z,
-  background: "#050505",
+  /* Frame ONE. `index.html`'s pre-paint script paints frame ZERO in the same
+     colour from the same constant, so the handover from the anti-flash floor to
+     this element is invisible. It is theme-independent on purpose — see
+     `gate.ts#CB_FLOOR`. */
+  background: CB_FLOOR,
   overflow: "hidden",
   display: "flex",
   alignItems: "center",
@@ -438,6 +448,27 @@ export function ColdBoot(): React.JSX.Element | null {
   const { skipDecrypt } = initRef.current;
 
   const [phase, setPhase] = React.useState<Phase>(initRef.current.phase);
+
+  /* ── hand frame zero over to frame one ───────────────────────────────────
+   * `index.html`'s pre-paint script stamps `cb-pending` on <html>, which hides
+   * #root behind an opaque CB_FLOOR floor so a JS-enabled visitor never sees
+   * the prerendered Main Home before the sequence starts. This is where that
+   * floor is released.
+   *
+   * useLayoutEffect, not useEffect: it runs synchronously after the DOM commit
+   * and BEFORE paint, so the frame that reveals #root is the same frame that
+   * has the splash in it. A passive effect can paint an unhidden #root for one
+   * frame first, which is the flash re-introduced at the other end.
+   *
+   * UNCONDITIONAL — it must run on the `off` path too. When the bypass flag is
+   * set the pre-paint predicate returns false and the class is never applied,
+   * so this is normally a no-op; but if that predicate and this component ever
+   * disagree, releasing the floor is the safe direction and keeping it is a
+   * permanently blank page. `index.html`'s boot watchdog is the second remover,
+   * for when this component never mounts at all. */
+  React.useLayoutEffect(() => {
+    document.documentElement.classList.remove(CB_PENDING_CLASS);
+  }, []);
   const phaseRef = React.useRef<Phase>(phase);
   React.useEffect(() => {
     phaseRef.current = phase;

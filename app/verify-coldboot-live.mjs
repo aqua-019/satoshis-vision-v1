@@ -494,6 +494,136 @@ let splashIsReal = false;
   await ctx.close();
 }
 
+/* ══ §1c · v6.1.9 anti-flash floor — a LOAD-BEARING PRECONDITION ════════
+ *
+ * `index.html` stamps `cb-pending` on <html> before first paint when the splash
+ * is going to run, and an inline rule hides #root behind an opaque floor until
+ * ColdBoot releases it. That is a mechanism which, wired wrongly, hides the page
+ * from gates that would still print green: `assertColdBootBypassed` asserts an
+ * ABSENCE of splash markup and knows nothing about visibility, so if the floor
+ * were applied on the bypassed path too, all fourteen gates that call it would
+ * measure a `visibility:hidden` #root and none of them would say so.
+ *
+ * That is why this lives HERE, in the gate that runs FIRST, rather than beside
+ * the feature assertions at the end of the chain: its failure makes the rest of
+ * the run uninterpretable, so failing fast is the cheap outcome. Three
+ * navigations and three evaluates.
+ *
+ * The watchdog is pinned far out in every context below, so any removal these
+ * observe is provably ColdBoot's rather than the timer's.
+ *
+ * `verify-cbpending.mjs` owns the STATIC half (the predicate parity truth table,
+ * the colour, the removers). This is the runtime twin: that the mechanism does
+ * on a real page what the source says it does. */
+R.group('── 1c · the anti-flash floor arms on /, and NOWHERE else ─────────');
+{
+  const firstFrame = async (ctx) => ctx.addInitScript(() => {
+    window.__cbFirst = null;
+    requestAnimationFrame(() => {
+      const root = document.getElementById('root');
+      window.__cbFirst = {
+        cls: document.documentElement.className,
+        vis: root ? getComputedStyle(root).visibility : null,
+      };
+    });
+  });
+  const pin = async (ctx) => ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 100000; });
+
+  /* 1c-1 · a cold visit to / — the floor is up at the FIRST PAINTED FRAME.
+   * Sampled in a rAF installed before any page script, not after settling: the
+   * claim is about the first frame, and a later read cannot distinguish "was
+   * never applied" from "applied and already released". */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await pin(ctx); await firstFrame(ctx);
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const f = await page.waitForFunction(() => window.__cbFirst, { timeout: 10_000 })
+      .then((h) => h.jsonValue()).catch(() => null);
+    R.ok(f !== null, 'precondition: the first-frame probe reported (cold /)',
+      f === null ? 'the rAF never ran, so nothing below has a sample to judge' : '');
+    if (f) {
+      R.ok(f.cls.includes('cb-pending') && f.vis === 'hidden',
+        `cold /: at the first painted frame <html> carries cb-pending and #root computes visibility:hidden (class "${f.cls}", visibility ${f.vis})`,
+        'The floor is not in effect at first paint, so the prerendered Main Home paints before the splash ' +
+        'covers it — the flash this mechanism exists to remove.');
+    }
+
+    /* …and it is RELEASED, by ColdBoot, provably not by the watchdog. */
+    const released = await page.waitForFunction(
+      () => !document.documentElement.classList.contains('cb-pending'), { timeout: 8000 },
+    ).then(() => true).catch(() => false);
+    R.ok(released,
+      'cold /: the floor is released within 8s while the boot watchdog is pinned at 100s — so ColdBoot released it, not the timer',
+      released ? '' :
+        'The class survived 8s and the watchdog cannot fire for 100s. ColdBoot is not releasing it on mount, ' +
+        'and in production only the 10s watchdog would rescue the page.');
+    const splashUp = await page.locator(COLDBOOT_SEL).count();
+    R.ok(splashUp > 0,
+      `cold /: …and the splash is present at that moment (${splashUp}) — the floor was handed to a real overlay, not simply dropped`);
+    await ctx.close();
+  }
+
+  /* 1c-2 · the BYPASSED path. This is the assertion protecting the other
+   * fourteen gates: with the flag off the predicate must return false and the
+   * floor must never be applied at all — not applied-then-removed, which would
+   * still flash. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await pin(ctx); await coldBootOff(ctx); await firstFrame(ctx);
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const f = await page.waitForFunction(() => window.__cbFirst, { timeout: 10_000 })
+      .then((h) => h.jsonValue()).catch(() => null);
+    R.ok(f !== null, `precondition: the first-frame probe reported (/ with ${COLDBOOT_FLAG}="off")`,
+      f === null ? 'no sample — the assertion below would have nothing to judge' : '');
+    if (f) {
+      R.ok(!f.cls.includes('cb-pending') && f.vis === 'visible',
+        `/ with ${COLDBOOT_FLAG}="off": the floor is never applied and #root is visible at the first frame (class "${f.cls}", visibility ${f.vis})`,
+        'With the bypass on, the pre-paint predicate must return false. If it applies the floor anyway, every ' +
+        'gate calling assertColdBootBypassed() measures a hidden #root — fourteen of them, all still green, ' +
+        'because that helper asserts an absence of splash markup and never looks at visibility.');
+    }
+    const stillAbsent = await page.evaluate(() => document.documentElement.classList.contains('cb-pending'));
+    R.ok(!stillAbsent, `/ with ${COLDBOOT_FLAG}="off": …and still absent after settling (not applied-then-removed)`);
+
+    /* SELF-CHECK — the rule must actually be present in this build, or every
+     * "visible" reading above is satisfied by a missing stylesheet. */
+    const sc = await page.evaluate(() => {
+      const r = document.getElementById('root');
+      document.documentElement.classList.add('cb-pending');
+      const hidden = getComputedStyle(r).visibility;
+      document.documentElement.classList.remove('cb-pending');
+      return { hidden, restored: getComputedStyle(r).visibility };
+    });
+    R.ok(sc.hidden === 'hidden' && sc.restored === 'visible',
+      `SELF-CHECK: adding cb-pending by hand hides #root and removing it restores it (${sc.hidden} -> ${sc.restored}) — proves the shipped rule exists, so "visible" above is an observation rather than a missing stylesheet`,
+      'The class had no effect. Every "the floor is absent" assertion here would pass on a build where the ' +
+      'anti-flash CSS never shipped at all.');
+    await ctx.close();
+  }
+
+  /* 1c-3 · a NON-HOME route, cold. The predicate's other false branch, at
+   * runtime — the twin of verify-cbpending's truth table. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    await pin(ctx); await firstFrame(ctx);
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/live/mempool', { waitUntil: 'load' });
+    const f = await page.waitForFunction(() => window.__cbFirst, { timeout: 10_000 })
+      .then((h) => h.jsonValue()).catch(() => null);
+    R.ok(f !== null, 'precondition: the first-frame probe reported (cold /live/mempool)',
+      f === null ? 'no sample to judge' : '');
+    if (f) {
+      R.ok(!f.cls.includes('cb-pending') && f.vis === 'visible',
+        `cold /live/mempool: the floor is never applied off Home (class "${f.cls}", visibility ${f.vis})`,
+        'location.pathname !== "/" must short-circuit the pre-paint predicate. Applying the floor on a route ' +
+        'whose splash never mounts leaves that route hidden until the watchdog fires.');
+    }
+    await ctx.close();
+  }
+}
+
 await browser.close();
 
 /* ── THIS GATE MUST NEVER REPORT A SKIP ──────────────────────────────────

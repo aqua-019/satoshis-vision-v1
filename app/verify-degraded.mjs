@@ -135,6 +135,20 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+
+/* B4 below needs a context this file's own bypass has NOT touched, and
+ * `coldBootOffBrowser` monkey-patches newContext/newPage for the whole browser
+ * — permanently, and guarded by a `__coldBootWrapped` flag, so nothing after
+ * that call can produce a cold one. Saving the original factory here is the
+ * narrowest way to get one; the wrapper still applies to every other scenario
+ * in this file, which is what they want (A/B1/B2/B3/C/D all measure degraded
+ * HOME and must not measure the splash instead).
+ *
+ * B4's subject is the opposite case, and it is the only path on which v6.1.9's
+ * anti-flash floor can strand a visitor: a REAL cold visit where the bundle
+ * never arrives, so ColdBoot never mounts to release the floor it painted. */
+const rawNewContext = b.newContext.bind(b);
+
 await coldBootOffBrowser(b);
 
 // ── A) stylesheet blocked, scripting ON — the reported Brave case ───────────
@@ -276,6 +290,81 @@ await coldBootOffBrowser(b);
   });
   ok(mounted.children > 0, `B3: React mounted normally (#root has ${mounted.children} children)`);
   ok(!mounted.fallbackShown, 'B3: a healthy boot cancels the watchdog — no "did not load" on a merely slow load');
+  await ctx.close();
+}
+
+// ── B4) v6.1.9 anti-flash floor, on a REAL cold visit with a dead bundle ────
+//
+// B1 above proves prerendered content survives a dead bundle, but it runs under
+// coldBootOffBrowser — so the pre-paint predicate returns false, the floor is
+// never applied, and B1 structurally CANNOT see the failure mode this scenario
+// exists for. Three contexts, because the interesting assertion is a REMOVAL and
+// a removal is only observable if you can also show the thing was there.
+//
+//   B4a  positive control — the raw factory really does yield a cold visitor
+//   B4b  the removal — bundle dead, floor released, prerender readable
+//   B4c  negative control — timers pinned, floor still applied and #root hidden
+//
+// Without B4c, B4b passes for free on any build where the floor was never
+// applied at all. B4c is also the honest statement of what this mechanism costs:
+// until the watchdog fires, a blocked bundle hides the prerendered page.
+{
+  // B4a · the raw factory is genuinely un-bypassed.
+  const ctx = await rawNewContext({ viewport: { width: 390, height: 844 } });
+  const p = await ctx.newPage();
+  await p.route('**/api/**', (r) => r.abort());
+  await p.goto(base + '/', { waitUntil: 'load' });
+  const flagAbsent = await p.evaluate(() => window.__XMR_COLDBOOT__ === undefined);
+  ok(flagAbsent, 'B4a: rawNewContext yields a context with no cold-boot bypass installed');
+  await p.waitForSelector('[data-coldboot]', { timeout: 15000 }).catch(() => {});
+  const splashes = await p.locator('[data-coldboot]').count();
+  ok(splashes > 0,
+    `B4a: …and a cold visit to / really does render the splash (${splashes}) — so B4b/B4c below are ` +
+    'measuring the non-bypassed path, not a bypassed one that happens to look similar');
+  await ctx.close();
+}
+{
+  // B4b · bundle dead. ColdBoot's chunk never loads, so the watchdog is the
+  // ONLY thing that can release the floor.
+  const ctx = await rawNewContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 400; });
+  const p = await ctx.newPage();
+  await p.route('**/assets/*.js', (r) => r.abort());
+  await p.goto(base + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(1200);
+
+  const st = await p.evaluate(() => ({
+    cls: document.documentElement.className,
+    vis: getComputedStyle(document.getElementById('root')).visibility,
+    len: (document.getElementById('root')?.innerText || '').trim().length,
+    boot: document.documentElement.dataset.boot,
+  }));
+  ok(!st.cls.includes('cb-pending'),
+    `B4b: the watchdog released the cold-boot floor with the bundle dead (html class "${st.cls}")`);
+  ok(st.vis === 'visible', `B4b: #root is visible again (visibility: ${st.vis})`);
+  ok(st.len > 300,
+    `B4b: the PRERENDERED page is readable rather than hidden behind the floor (${st.len} chars) — the ` +
+    'removal must be UNCONDITIONAL in the watchdog body, not inside its `childElementCount === 0` branch, ' +
+    'which prerendering made unreachable (see B1)');
+  ok(st.boot === 'dead', `B4b: the watchdog's existing work still happens too (data-boot="${st.boot}")`);
+  await ctx.close();
+}
+{
+  // B4c · the same load with both timers pinned far out. Proves B4b observed a
+  // removal rather than an absence.
+  const ctx = await rawNewContext({ viewport: { width: 390, height: 844 } });
+  await ctx.addInitScript(() => { window.__xmriBootTimeoutMs = 100000; });
+  const p = await ctx.newPage();
+  await p.route('**/assets/*.js', (r) => r.abort());
+  await p.goto(base + '/', { waitUntil: 'load' });
+  await p.waitForTimeout(1200);
+  const st = await p.evaluate(() => ({
+    cls: document.documentElement.className,
+    vis: getComputedStyle(document.getElementById('root')).visibility,
+  }));
+  ok(st.cls.includes('cb-pending') && st.vis === 'hidden',
+    `B4c: with the watchdog pinned at 100s the floor is STILL applied and #root STILL hidden ` +
+    `(class "${st.cls}", visibility ${st.vis}) — so B4b measured a REMOVAL, not an absence`);
   await ctx.close();
 }
 
