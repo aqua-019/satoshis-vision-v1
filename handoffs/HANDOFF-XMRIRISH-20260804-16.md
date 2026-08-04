@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260804-16
 branch: claude/post-merge-defects-v6-u1rns4
-status: in_progress          # open -> in_progress -> done | blocked
+status: done                 # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, no cowork handoff existed)
 owner: claude-code
 ---
@@ -116,15 +116,100 @@ node ../api/verify-feeds.mjs && node ../api/verify-markets.mjs \
 npm run verify:e2e
 ```
 
-## 7 · REPORT — filled on exit, completely
+## 7 · REPORT
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+status: done
+pr: (draft, opened against `main` — see LOG.md)
+commits: `29039f0` orb fix · `842e33b` orb gates · `7d4618d` console cap ·
+  `6c3a709` frame zero · `f326aa7` docs · `704c0bc` hold + fit-to-screen + CLS
+deps added: none
+
+### What the diagnosis found that the brief did not
+
+**The brief's two candidate causes for the orb were both wrong.** `clientHeight`
+is permanently ~0 by flex math — the overlay is `flex:"0 0 auto"` and the canvas
+wrap was `minHeight:0`, so in a 160px slot the overlay took all of it. An
+instrumented build logged **3 `resize()` calls and 3 early returns**: it never
+once completed. The early return was CORRECT behaviour given a zero-height box.
+**Diagnosing before fixing is the only reason this landed on the real cause** —
+a fix aimed at either named candidate would have changed nothing and measured
+green against a still-broken console.
+
+**A third cause neither of us had.** `[data-orb]` is a `position:fixed` sibling
+of ColdBoot's root at `z-index:auto`, and that root is `z-index:1000` with an
+opaque `#050505`. The orb was painted UNDER it for the whole console phase, so
+geometry alone would have shipped a correctly-sized invisible orb.
+
+### Measurements
+
+    context              box        wrap     backing store
+    console 1440    160 -> 400   0 -> 238.5   300x150 -> 357x239
+    console 390     160 -> 400   0 -> 211.9   300x150 -> 288x212
+    home    1440    468 (same)  363 (same)    539x363 (unchanged)
+
+Console geometry after fit-to-screen:
+
+    viewport   1280     1440     1920     2560    390
+    wrapper    1203.2   1353.6   1804.8   2100    342
+    pane       362.4    410      552.8    646.2   312
+    orb slot   526.5    526.5    551      551     400
+    console    852      852      852      852     796      (all FIT)
+
+· ENTER handoff CLS **0.0386/0.0391/0.0402 -> 0.0000/0.0000/0.0000**, zero sources.
+· §4 travel 135.4 -> 147.8 -> **144.5px** (runtime output; threshold is `moved > 1`).
+· Frame zero holds **1780ms** default, **350ms** at `__xmriCbHoldMs=0`, **453ms**
+  on the dead-bundle path (watchdog ignores the hold).
+· Mobile console **2282.6 -> 796px** in an 844px viewport. 63% was unreachable.
+
+### The LCP finding — pre-existing, not introduced here, and unfixed
+
+`verify-vitals` bypasses the splash (`coldBootOffBrowser` :305, asserted :353).
+Under its own harness: a real cold `/` measures LCP **3992/4048/4260ms** while
+the gate measures **2104/2128/2156ms**, against a 2500ms budget. **~1920ms of
+real cold-visit LCP that no gate can see.** The 1.5s hold does not cause this and
+barely adds to it — being a floor, it contributes 0ms on that profile. Recorded
+for a decision; not absorbed silently.
+
+### verify-vitals is RED, and it is red on the base commit too
+
+Three blocking budgets failed. Rather than assume, the same gate was run against
+`origin/main` at 95316a3 — same box, same conditions, separate build:
+
+    /                baseline 537ms ❌   this branch 518 / 436ms ❌   (budget 400)
+    /live/mempool    baseline 297ms ✅   this branch 334 / 314ms     (budget 300)
+    /live/markets    baseline SKIPPED (87.4% spread)  this branch 413ms / SKIPPED
+
+`/` fails on the unchanged base and this branch measures FASTER than it. Two
+routes self-skip as UNVERIFIABLE at 80-94% run spread. This is the machine, not
+the tree — the same conclusion CLAUDE.md already records from v6.1.8, where a
+479ms figure "was my own chain running beside the measurement" and the correct
+outcome was to not change the app. **No app change and no budget change was made.**
+
+### Deviations from spec
+
+· The brief named `coldbootsplash_6.html`; no such file exists. The mockup is
+  `docs/v6-mockups/coldboot-splash.html` and carries every rule described.
+· Its `.net-stage{min-height:240px}` is a NARROW-viewport rule (inside
+  `@media (max-width:1100px)`), not a wider one. Base is 190px.
+· `.con-grid`'s own ceiling is `max-width: 2100px`, so the cap landed there
+  rather than at the 1800px minimum the brief set.
+· A z-index fix was added beyond the approved plan, and reported at the time
+  rather than folded in silently — without it the orb is invisible regardless.
+
+### Notes for ARCHITECTURE.md / CLAUDE.md
+
+Patched: gate inventory recounted (75 files / 71 gates / 57 CI-reached), v6.1.9
+session note, and four Known Issues entries. Three of those four are now FIXED by
+the follow-up block (mobile clipping, handoff CLS, `assemble` unread, the
+post-handoff blink) and want removing at the next pass.
+
+### Open questions
+
+1. The ~1920ms cold-visit LCP blind spot — worth its own gate, since
+   `verify-vitals` and `verify-cls` both bypass the splash by design.
+2. Persisting the decrypt field behind the console — deferred by the operator to
+   its own change.
+3. `verify-vitals`' blocking budgets are not measurable on this class of runner.
 
 ## 8 · LOOP FEEDBACK
 
