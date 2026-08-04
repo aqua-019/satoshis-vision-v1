@@ -35,7 +35,7 @@
  * dependent runs.
  */
 
-import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -91,12 +91,45 @@ R.skip = (label, why) => { _skips++; _origSkip(label, why); };
  * attribute the bundle predated). No gate was wrong in either case. The
  * bytes and the SHA simply disagreed and nothing was looking.
  *
- * It runs FIRST in the FIRST gate of the chain, so a stale dist aborts before
- * anything measures it, rather than after twenty-seven gates have reported
- * about the wrong tree.
+ * It runs FIRST in the FIRST gate of the chain and, on a mismatch, EXITS
+ * IMMEDIATELY rather than merely recording a failure.
  *
- * "unknown" (no git at build time) is reported as UNVERIFIABLE and counted —
- * never silently treated as a match. */
+ * That exit is load-bearing and this docblock originally lied about it. It
+ * claimed a stale dist "aborts before anything measures it" — but `R.ok`
+ * records a failure and returns; the rest of THIS gate carried on and printed
+ * ~20 further assertions against the stale dist. Only the `&&` between gates
+ * protected the chain. A reader trusting that sentence would have treated
+ * exactly the assertions the guard had just declared untrustworthy as
+ * evidence. Now the code does what the prose says, which is the honest way to
+ * resolve prose contradicting code — the other way round leaves a reader
+ * correctly expecting the safer behaviour and not getting it.
+ *
+ * TWO CHECKS, because the SHA alone has a hole big enough to drive the most
+ * common version of this mistake through:
+ *
+ *   0a-1  stamp === HEAD    catches a COMMIT boundary being crossed —
+ *                           committing mid-run, or checking out another rev
+ *   0a-2  no source newer    catches the everyday case with NO commit at all:
+ *         than the stamp     edit a tracked file, forget to rebuild, measure
+ *                            the old bundle, believe the result
+ *
+ * `git rev-parse HEAD` does not move when you edit a tracked file, so 0a-1
+ * passes green on a dirty tree — the commit is right and the bytes are not.
+ * That is `built === head` being an assertion with its own unseen
+ * precondition (that HEAD still describes the working tree), which is the
+ * exact family this whole gate exists to close.
+ *
+ * 0a-2 also subsumes the no-git case: mtimes need no git, so a build stamped
+ * "unknown" is still checkable for staleness rather than merely skipped.
+ *
+ * TWO HONEST LIMITS, stated here rather than discovered later:
+ *   · it reds on a content-preserving touch (`git stash pop`, a checkout that
+ *     rewrites an unchanged file). That is a CONSERVATIVE false red costing
+ *     one rebuild, never a false green.
+ *   · SCOPE is src/ + index.html + scripts/ — the inputs prerender and vite
+ *     actually read. It says nothing about api/ or public/, and the label
+ *     names that scope rather than implying coverage it does not have, which
+ *     is the defect this PR has now found four times. */
 R.group('── 0a · the dist under test was built from HEAD ──────────────────');
 {
   const shaPath = join(APP_DIR, '.perf', 'build-sha.txt');
@@ -123,6 +156,41 @@ R.group('── 0a · the dist under test was built from HEAD ──────
         'Every assertion after this one would describe a tree that is not the one under test. ' +
         'Rebuild (`npm run build`) and restart serve-dist AFTER the build, never during — ' +
         'vite clears dist/ and the running server dies on the missing index.html.');
+    if (built !== head) { R.finish(); process.exit(1); }
+  }
+
+  /* 0a-2 · no source input is newer than the build stamp. Catches the case
+   * 0a-1 structurally cannot: a dirty tree, where HEAD is unchanged and the
+   * bytes are stale anyway. */
+  if (built !== null) {
+    const stampAt = statSync(shaPath).mtimeMs;
+    let newest = 0, newestPath = '';
+    const walk = (dir) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name);
+        if (e.isDirectory()) { walk(p); continue; }
+        const m = statSync(p).mtimeMs;
+        if (m > newest) { newest = m; newestPath = p.slice(APP_DIR.length + 1); }
+      }
+    };
+    for (const root of ['src', 'scripts']) {
+      const d = join(APP_DIR, root);
+      if (existsSync(d)) walk(d);
+    }
+    const html = join(APP_DIR, 'index.html');
+    if (existsSync(html)) {
+      const m = statSync(html).mtimeMs;
+      if (m > newest) { newest = m; newestPath = 'index.html'; }
+    }
+    const fresh = newest <= stampAt;
+    R.ok(fresh,
+      `no input under src/, scripts/ or index.html is newer than the build stamp` +
+      (fresh ? ` (newest: ${newestPath}, ${Math.round((stampAt - newest) / 1000)}s before it)` : ''),
+      fresh ? '' :
+        `STALE DIST: ${newestPath} was modified ${Math.round((newest - stampAt) / 1000)}s AFTER the ` +
+        'build. The SHA check above passed because editing a tracked file does not move HEAD — ' +
+        'the commit is right and the bytes are not. Rebuild before running the chain.');
+    if (!fresh) { R.finish(); process.exit(1); }
   }
 }
 
