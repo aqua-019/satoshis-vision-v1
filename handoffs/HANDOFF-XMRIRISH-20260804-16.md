@@ -209,6 +209,55 @@ both directions on one machine with no code change between. Two other routes
 self-skipped as UNVERIFIABLE at 93.8% and 79.8% spread while the CPU probe read
 268-271ms and flagged nothing.
 
+### The structural finding under that red, and the one-line fix
+
+The red matters less than where it sat. Measured from `package.json` before the
+change:
+
+    #27 verify-vitals     <- the noisiest measurement in the suite
+    #28 verify-coldboot
+    #29 verify-orb
+
+`verify:e2e` is a single `&&` sequence, so **the only two gates downstream of
+`verify-vitals` were the two this PR exists to add.** While vitals was red for
+ANY reason — including a contention red already shown to reproduce on base —
+this PR's own feature gates could not run in the chain at all. That is not
+hypothetical: on the final run they never executed, which is why their green
+results are reported here as separate runs rather than folded into a chain tally
+they were not part of.
+
+Same shape as the `verify-coldboot` §1 dependency hole from #162 — position
+deciding whether a load-bearing gate reports at all — and the same remedy the
+repo already wrote down: **order by what depends on what, not by age.**
+
+`verify-vitals` is neither a precondition nor a feature assertion. It has zero
+dependents and zero dependencies, and it is the most contention-sensitive gate in
+the suite, so its failure is both the least informative and the most likely —
+which is precisely what belongs last. Moved to #29; `verify-coldboot` #27 and
+`verify-orb` #28 now report before it.
+
+One line in `package.json`, and nothing else: `scripts/verify-all.mjs:48` DERIVES
+the chain from `pkg.scripts`, and `ci.yml:186` runs `npm run verify:e2e` as one
+step, so the orchestrator and CI both follow.
+
+The counter-consideration, stated rather than glossed: v6.1.8 put
+`verify-coldboot` last deliberately as "the likeliest flake in the suite", so a
+coldboot flake can now mask vitals. That is the correct trade — masking an
+environmental measurement costs nothing; masking the subject under test costs the
+result.
+
+### `/live/mempool` is an UNCALIBRATED budget, not a flaky one
+
+Across runs on one machine with no code change between, it measured **334ms,
+314ms and 271ms against a 300ms ceiling** — crossing its own budget in BOTH
+directions. That is not flake. A flaky gate invites a retry; an uncalibrated one
+invites a decision, and this budget has not been calibrated for this class of
+hardware. The same applies to `/` at 400ms, which reds at 522ms here and 537ms on
+the unchanged base commit.
+
+Recorded in these terms deliberately, because the wording determines what the
+next person does about it.
+
 ### Deviations from spec
 
 · The brief named `coldbootsplash_6.html`; no such file exists. The mockup is

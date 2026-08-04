@@ -44,8 +44,16 @@ chain and market data.
   (**21** gates, no browser) and `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`).
   v6.1.8 added three, and the two cold-boot gates sit at OPPOSITE ends of `verify:e2e` on
   DIFFERENT axes — state both, because they look contradictory: `verify-coldboot-live` runs
-  **FIRST**, `verify-coldboot` runs **LAST**, and `verify-hero` (static) runs first in its own
-  chain.
+  **FIRST**, and `verify-hero` (static) runs first in its own chain. **`verify-coldboot` no
+  longer runs last** — v6.1.9 moved `verify-vitals` there and the tail is now
+  `verify-coldboot` #27 · `verify-orb` #28 · `verify-vitals` #29. The reason is the same
+  dependency axis, applied to a gate nobody had classified: vitals sat at #27 with the two
+  cold-boot FEATURE gates as its only downstream, so a wall-clock red — which reproduces on
+  `origin/main` and is environmental — made the suite's own subject-under-test structurally
+  unreachable on any busy machine. Vitals has zero dependents AND zero dependencies, and is
+  the most contention-sensitive thing in the suite, so its failure is both the least
+  informative and the most likely: exactly what belongs last. `verify-coldboot` keeps every
+  masking-cost property it had; it now masks only vitals, which costs nothing.
   Eleven gates install the cold-boot bypass and then assert an ABSENCE, which passes whether
   the bypass worked, the selector died, or the splash never rendered. `verify-coldboot-live`
   holds the only positive control separating those.
