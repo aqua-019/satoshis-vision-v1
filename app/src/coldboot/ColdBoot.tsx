@@ -410,6 +410,15 @@ export function ColdBoot(): React.JSX.Element | null {
     phaseRef.current = phase;
   }, [phase]);
 
+  // Drives `data-coldboot`'s VALUE (see the render below). Initialised from
+  // `skipDecrypt` — already correct on the very first render for a flagged
+  // revisit or reduced motion, so there is no frame where the root mounts
+  // with the wrong phase and corrects itself a tick later. Flips to `true`
+  // exactly once, in the same T>=1 branch that already writes the session
+  // flag — a `ref` mutation there would be invisible to JSX; this is state
+  // specifically so that one flip re-renders the attribute.
+  const [decryptResolved, setDecryptResolved] = React.useState(skipDecrypt);
+
   const resolvedRef = React.useRef(false);
   const consoleRectRef = React.useRef<Rect | null>(null);
   // 1 whenever there is no decrypt in play (already-resolved revisit,
@@ -456,6 +465,9 @@ export function ColdBoot(): React.JSX.Element | null {
       if (!resolvedRef.current) {
         resolvedRef.current = true;
         writeSessionFlag();
+        // decryptResolved is already `true` here — it was initialised from
+        // `skipDecrypt` itself, so `data-coldboot="console"` was correct on
+        // this component's very first render, not corrected a tick later.
       }
       return;
     }
@@ -505,6 +517,7 @@ export function ColdBoot(): React.JSX.Element | null {
         if (!resolvedRef.current) {
           resolvedRef.current = true;
           writeSessionFlag();
+          setDecryptResolved(true); // flips data-coldboot from "decrypt" to "console"
         }
         return; // T is locked at 1 — no further frames needed until Enter.
       }
@@ -600,8 +613,25 @@ export function ColdBoot(): React.JSX.Element | null {
     return <span data-coldboot-decided="" aria-hidden="true" style={DECIDED_MARKER_STYLE} />;
   }
 
+  // `data-coldboot`'s VALUE — additive to the frozen contract, not a
+  // redefinition: `[data-coldboot]` (COLDBOOT_SEL) still matches all of
+  // "decrypt"/"console"/the old empty string, so every `assertColdBootBypassed()`
+  // absence check is untouched. What it newly answers is verify-coldboot §3's
+  // own skip: "decrypt" and "console" are DOM-distinguishable, so "reload
+  // lands on the console with no decrypt" is now a real assertion, not one
+  // that passes on markup incapable of failing it.
+  //   "handoff" always reads "console" — Enter cannot fire before T===1 (see
+  //   handleEnter/ColdBootConsole's fire-once guard), so the decrypt is
+  //   already resolved for the entirety of any handoff.
+  //   "splash" reads "console" once `decryptResolved` flips — state, not a
+  //   ref, precisely so the flip re-renders this attribute; correct on the
+  //   FIRST render already for a flagged revisit/reduced motion, because
+  //   `decryptResolved`'s own initial value IS `skipDecrypt` (see its
+  //   declaration above) — never `""` then corrected a frame later.
+  const coldbootPhase: "decrypt" | "console" = phase === "handoff" || decryptResolved ? "console" : "decrypt";
+
   return (
-    <div ref={stageRef} data-coldboot="" data-coldboot-decided="" style={ROOT_STYLE}>
+    <div ref={stageRef} data-coldboot={coldbootPhase} data-coldboot-decided="" style={ROOT_STYLE}>
       {!skipDecrypt && <canvas ref={canvasRef} style={CANVAS_STYLE} aria-hidden="true" />}
       <div ref={consoleWrapRef} style={consoleWrapStyle(skipDecrypt)}>
         <ColdBootConsole onEnter={handleEnter} onOrbRectChange={handleConsoleOrbRect} />
