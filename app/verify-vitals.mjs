@@ -118,6 +118,16 @@ const INTERACTION_BUDGET_MS = 400;
 const CPU_REF_MS = 260;
 const CPU_INCONCLUSIVE_RATIO = 1.6;
 
+/* D1910 · max/min across a route's LCP runs, above which the ENVIRONMENT is
+ * unstable and the numbers describe it rather than the tree. Calibrated on
+ * measured pairs at one SHA: 3.6% spread idle, 13.4% with one competing
+ * CPU-bound process. 1.10 sits between them with room on both sides — tight
+ * enough to catch the contention that inflates blocking up to 71%, loose
+ * enough not to fire on an idle box's ordinary jitter. LCP is the stability
+ * proxy rather than blocking itself because blocking can approach zero, where
+ * a ratio explodes on a difference of a few milliseconds. */
+const LCP_SPREAD_UNSTABLE = 1.10;
+
 const ROUTES = Object.keys(BUDGETS);
 
 
@@ -423,8 +433,55 @@ for (const route of ROUTES) {
 
   R.info(`${route.padEnd(11)} ${f1(medLcp)}  ${f1(medBlock)}   ${f1(worstInt)}     ${String(runs[0].longTasks).padStart(5)}      ${runs[0].lcpEl}`);
   R.info(`  ${' '.repeat(9)} runs: ${lcps.map((n) => n.toFixed(0)).join(', ')} ms · cpu probe ${medCpu.toFixed(0)} ms`);
+  // D1910: the blocking samples were reduced to a median and DISCARDED. Blocking
+  // is the metric with the worse variance under contention, so its spread is the
+  // one most worth seeing — and it was the one you could not see.
+  R.info(`  ${' '.repeat(9)} blocking: ${blocks.map((n) => n.toFixed(0)).join(', ')} ms`);
 
-  // Contention check, per route: a skip, never a silent pass.
+  /* ── D1910 · RUN SPREAD IS THE CONTENTION SIGNAL; THE CPU PROBE IS NOT ─────
+   *
+   * The probe below was the gate's only validity claim, and it tests the wrong
+   * quantity. Measured, one competing CPU-bound process, nothing else changed:
+   *
+   *   route            blocking IDLE→LOADED       cpu probe IDLE→LOADED
+   *   /                    196 → 336ms  (+71%)        249 → 235 ms   DOWN
+   *   /live/markets        199 → 267ms  (+34%)        254 → 252 ms   DOWN
+   *   /learn/sim           108 → 162ms  (+50%)        231 → 251 ms   up
+   *   /live/mempool         95 → 112ms  (+18%)        215 → 187 ms   DOWN
+   *
+   * Blocking rose 18-71%; the probe moved the WRONG WAY on three of four
+   * routes. A ratio of 1.02 is therefore perfectly compatible with blocking at
+   * 2.9x historical, because the probe is average throughput over one short
+   * window while Total Blocking Time is tail latency accumulated across the
+   * whole load. Preemption stretches individual tasks past the 50ms line
+   * without changing a short busy loop's wall time.
+   *
+   * So `CPU_INCONCLUSIVE_RATIO` is not a threshold this failure mode nearly
+   * reaches — it is one it does not approach. The label said the measurement
+   * was valid; the predicate tested something else. Same family this suite
+   * keeps finding, sitting inside the validity check itself.
+   *
+   * The signal was already on screen and thrown away: the per-run spread.
+   *   idle    / runs 1984, 1980, 2052   spread 3.6%
+   *   loaded  / runs 2296, 2040, 2024   spread 13.4%
+   *
+   * A contended box can currently only produce a green or a red, and a red
+   * there is as wrong as a green. UNVERIFIABLE is the honest third answer and
+   * this gate already has the vocabulary for it. */
+  const lcpSpread = lcps.length >= 2 ? Math.max(...lcps) / Math.min(...lcps) : 1;
+  if (lcpSpread > LCP_SPREAD_UNSTABLE) {
+    inconclusive++;
+    R.skip(`${route} · LCP / blocking`,
+      `UNVERIFIABLE — run spread ${((lcpSpread - 1) * 100).toFixed(1)}% exceeds ` +
+      `${((LCP_SPREAD_UNSTABLE - 1) * 100).toFixed(0)}% (runs: ${lcps.map((n) => n.toFixed(0)).join(', ')}ms). ` +
+      `The machine moved between runs, so a wall-clock number from it describes the runner, not the tree. ` +
+      `NOTE the cpu probe read ${medCpu.toFixed(0)}ms and did NOT flag this — it measures average ` +
+      `throughput, blocking measures tail latency, and under contention the two move independently.`);
+    continue;
+  }
+
+  // Kept, DEMOTED: still a skip when it fires, but it is no longer the only
+  // validity claim and it never was evidence on its own.
   if (CPU_REF_MS && medCpu > CPU_REF_MS * CPU_INCONCLUSIVE_RATIO) {
     inconclusive++;
     R.skip(`${route} · LCP / blocking`,
