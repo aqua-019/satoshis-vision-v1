@@ -95,11 +95,12 @@ import {
   spawnStemEvent,
   spawnBlockEvent,
   seedFromString,
+  ORB_MIN_CANVAS_PX,
   type OrbEvent,
   type OrbNode,
 } from "./orb";
 import { useOrbData, type FeedBlockEvent, type FeedTxEvent } from "./useOrbData";
-import { useColdBootOrbState, type ColdBootOrbState } from "./ColdBoot";
+import { COLDBOOT_Z, useColdBootOrbState, type ColdBootOrbState } from "./ColdBoot";
 
 /** Ambient rotation only needs to look smooth, not track input — matches the
  *  fps order of magnitude other ambient canvases in this repo use. */
@@ -135,10 +136,17 @@ const BASE_STYLE: React.CSSProperties = {
 
 const HIDDEN_STYLE: React.CSSProperties = { display: "none" };
 
+/* `minHeight` is the load-bearing property here and it used to be `0`.
+   `flex:"1 1 auto"` against an unshrinkable OVERLAY_STYLE below meant this box
+   collapsed to zero height in any host shorter than the captions, which starved
+   the canvas and left the backing store at the 300x150 HTML default — see
+   `orb.ts#ORB_MIN_CANVAS_PX` for the measurement and the mechanism. The floor is
+   read from there rather than restated, for the same reason verify-orb parses
+   MIN_ORB_NODES out of orb.ts instead of hard-coding it. */
 const CANVAS_WRAP_STYLE: React.CSSProperties = {
   position: "relative",
   flex: "1 1 auto",
-  minHeight: 0,
+  minHeight: ORB_MIN_CANVAS_PX,
 };
 
 const CANVAS_STYLE: React.CSSProperties = {
@@ -419,6 +427,8 @@ export function Orb(): React.JSX.Element {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let zeroWarned = false;
+
     const draw = (): void => {
       const w = Math.min(canvas.clientWidth, MAX_DIM);
       const h = Math.min(canvas.clientHeight, MAX_DIM);
@@ -430,7 +440,27 @@ export function Orb(): React.JSX.Element {
     const resize = (): void => {
       const w = Math.min(canvas.clientWidth, MAX_DIM);
       const h = Math.min(canvas.clientHeight, MAX_DIM);
-      if (!w || !h) return;
+      if (!w || !h) {
+        /* The early return is correct — there is nothing to size a buffer to.
+           What was wrong for the whole of v6.1.8 is that it was SILENT: the
+           canvas kept its 300x150 default, drawOrb painted into the wrong
+           coordinate space, and no console, gate or exception said so. One
+           warning, once per mount, on the same principle as useMemCanvas's
+           MAX_DIM notice — nothing errors here, it just quietly stops being an
+           orb. A zero box is only reachable now if a host defeats
+           ORB_MIN_CANVAS_PX (display:none is the ordinary case and is filtered
+           by `warned` staying true for the mount's lifetime). */
+        if (!zeroWarned && (canvas.clientWidth || canvas.clientHeight)) {
+          zeroWarned = true;
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[Orb] canvas box is ${canvas.clientWidth}x${canvas.clientHeight} — one dimension is 0, so the ` +
+            `backing store cannot be sized and the orb will not draw. The host box is likely shorter than ` +
+            `the badge/caption overlay; see orb.ts#ORB_MIN_CANVAS_PX.`,
+          );
+        }
+        return;
+      }
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
@@ -453,6 +483,23 @@ export function Orb(): React.JSX.Element {
     drawRef.current?.();
   }, [seconds, orbData.nodes, orbData.blockFeedEvents, orbData.txFeedEvents, effectiveRect]);
 
+  /* z-index is applied ONLY while the splash owns the rect, and that condition
+     is the whole reason it is safe.
+
+     `ColdBoot.tsx#ROOT_STYLE` is `position:fixed; inset:0; zIndex:COLDBOOT_Z`
+     with an OPAQUE `#050505` background. This element is a `position:fixed`
+     SIBLING of that root (mounted from App.tsx, deliberately not inside
+     ColdBoot) at `z-index:auto`, so during the console phase it painted
+     underneath an opaque full-viewport overlay — invisible no matter how
+     correctly it was sized or drawn. Measured on 95316a3 at 1440x900:
+     `document.elementFromPoint()` at the orb canvas's own centre returned a
+     canvas inside `[data-coldboot]`, not the orb's; raising it to COLDBOOT_Z+1
+     made the same probe return the orb's canvas.
+
+     Off the splash (`active === false`, i.e. Home after the handoff settles)
+     this stays `auto`. A permanent z-index above 1000 would float the orb over
+     NavTop's dropdown and the ⌘ DESIGN panel on every Home visit, which is a
+     bug traded for a bug — so the raise lives and dies with the splash. */
   const positionStyle: React.CSSProperties = effectiveRect
     ? {
         position: "fixed",
@@ -460,6 +507,7 @@ export function Orb(): React.JSX.Element {
         top: effectiveRect.y,
         width: effectiveRect.w,
         height: effectiveRect.h,
+        ...(coldBootOrb.active ? { zIndex: COLDBOOT_Z + 1 } : null),
       }
     : HIDDEN_STYLE;
 

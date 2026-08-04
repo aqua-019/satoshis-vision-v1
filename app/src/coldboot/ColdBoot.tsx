@@ -368,11 +368,20 @@ function clearHandoffStyles(stageEl: HTMLElement | null, mainEl: HTMLElement | n
 
 /** z-index 1000 matches `.v6-modal-veil` (styles.css:1668) — the repo's
  *  existing full-viewport-overlay convention, not a new number invented for
- *  this file. */
+ *  this file.
+ *
+ *  EXPORTED because `Orb.tsx` has to sit exactly one layer above it: the orb is
+ *  a `position:fixed` SIBLING of this root, so at `z-index:auto` it painted
+ *  beneath this element's opaque `#050505` background for the whole console
+ *  phase (v6.1.9 — measured, and invisible regardless of how it was sized).
+ *  Two files needing the same number is exactly where a second literal drifts,
+ *  so there is one literal and `Orb.tsx` says `COLDBOOT_Z + 1`. */
+export const COLDBOOT_Z = 1000;
+
 const ROOT_STYLE: React.CSSProperties = {
   position: "fixed",
   inset: 0,
-  zIndex: 1000,
+  zIndex: COLDBOOT_Z,
   background: "#050505",
   overflow: "hidden",
   display: "flex",

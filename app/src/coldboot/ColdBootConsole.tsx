@@ -115,6 +115,29 @@ const TOPBAR_STYLE: React.CSSProperties = {
   color: "var(--ink-60)",
 };
 
+/**
+ * Height of the empty box this pane reserves for the orb — the orb itself is a
+ * viewport-fixed overlay mounted from App.tsx, and only measures this rect.
+ *
+ * It was 160, and 160 is what broke the orb. `Orb.tsx` renders a flex column of
+ * [canvas wrap, badge/caption overlay] where only the wrap can shrink, so the
+ * whole 160 went to the overlay and the canvas got zero height — measured on
+ * 95316a3: overlay 153.5 in a 160 box at 1440x900, and 180.1 in the same 160 at
+ * 390x844. See `orb.ts#ORB_MIN_CANVAS_PX` for the full mechanism.
+ *
+ * 400 is derived, not chosen by eye: worst measured overlay 180.1 (390x844,
+ * 288px-wide pane) + `Orb.tsx#BASE_STYLE`'s 8px gap + a canvas worth drawing.
+ * Measured after the change, the canvas receives 238.5px at 1440x900 and
+ * 211.9px at 390x844 — both far above the 120 floor, which is the intent: the
+ * floor is insurance, this number is the feature.
+ *
+ * It costs the console no height at all on desktop. The grid is
+ * `alignItems:"start"` and its row is driven by the HUD pane, measured at 870.8
+ * against this pane's 430 at 1440x900 — 440.8px of headroom, of which this
+ * spends 240. Confirmed by re-measuring the console root after the change.
+ */
+const ORB_SLOT_MIN_PX = 400;
+
 const GRID_STYLE: React.CSSProperties = {
   display: "grid",
   // auto-fit/minmax reflows to one column under ~940px without a media
@@ -740,7 +763,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
           <div
             ref={orbSlotRef}
             data-orb-slot="coldboot-console"
-            style={{ position: "relative", flex: "1 1 auto", minHeight: 160, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ position: "relative", flex: "1 1 auto", minHeight: ORB_SLOT_MIN_PX, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             {orbSlot}
           </div>

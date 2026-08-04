@@ -125,6 +125,34 @@ export interface OrbState {
 /** Clearnet on the sphere; Tor/I2P orbiting it. See the file header. */
 export const SHELL: readonly [number, number, number] = [1.0, 1.17, 1.3];
 
+/**
+ * Floor, in CSS px, on the height of the box `drawOrb` is given — consumed by
+ * `Orb.tsx#CANVAS_WRAP_STYLE` and READ (never restated) by `verify-orb.mjs`.
+ *
+ * ── WHY A FLOOR EXISTS AT ALL — v6.1.9, measured ─────────────────────────
+ * `Orb.tsx` lays the orb out as a fixed-height flex column: the canvas wrap is
+ * `flex:"1 1 auto"` with `minHeight:0` (fully shrinkable) and the badge/caption
+ * overlay below it is `flex:"0 0 auto"` (cannot shrink). So in any host box
+ * shorter than the overlay's natural height, the canvas is allocated ZERO
+ * height — and `Orb.tsx#resize()` returns early on a zero dimension, which is
+ * the only place `canvas.width/height` is ever assigned. The backing store then
+ * keeps the 300x150 HTML default forever and `drawOrb` paints into the wrong
+ * coordinate space.
+ *
+ * That shipped. Measured on `origin/main` at 95316a3, cold-boot console at
+ * 1440x900: box 356.7x160, overlay 153.5, wrap 0, backing store 300x150, and an
+ * instrumented `resize()` logged THREE calls and THREE early returns — it never
+ * once completed. At 390x844 the same box carried a 180.1px overlay in the same
+ * 160px slot.
+ *
+ * 120 is deliberately BELOW every shipped layout (the smallest real allocation
+ * measured after the fix is 211.9px, console at 390x844), so this never binds in
+ * practice. It is not a design dimension; it is the guarantee that a future host
+ * box cannot silently starve the canvas back to zero. A floor that never binds
+ * is the point — it converts "fixed here" into "cannot happen anywhere".
+ */
+export const ORB_MIN_CANVAS_PX = 120;
+
 // ── lattice size — a presentational clamp, not a live figure ───────────────
 
 /** Floor: below this a globe reads as sparse/broken regardless of how few
