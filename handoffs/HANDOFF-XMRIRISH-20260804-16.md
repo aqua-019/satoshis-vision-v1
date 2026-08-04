@@ -79,26 +79,26 @@ OUT (non-goals), explicitly:
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run build` exits 0
-- [ ] `npm run verify:static` exits 0 (20 gates)
-- [ ] `npm run verify:bundle` exits 0
-- [ ] All six `api/verify-*.mjs` exit 0
-- [ ] `npm run verify:e2e` exits 0 — 29/29 gates, 0 failed
-- [ ] `verify-coldboot-live` reports **0 skips** (its own end-of-file assertion)
-- [ ] Orb backing store is sized to its box in all four contexts (bypassed Home
+- [x] `npm run typecheck` exits 0
+- [x] `npm run build` exits 0
+- [x] `npm run verify:static` exits 0 (20 gates)
+- [x] `npm run verify:bundle` exits 0
+- [x] All six `api/verify-*.mjs` exit 0
+- [x] `npm run verify:e2e` exits 0 — 29/29 gates, 0 failed, 0 skipped
+- [x] `verify-coldboot-live` reports **0 skips** (its own end-of-file assertion)
+- [x] Orb backing store is sized to its box in all four contexts (bypassed Home
       and live splash console, each at 1440×900 and PHONE) — never 300×150, and
       above a stated floor
-- [ ] Orb is asserted to PAINT by pixel count and a centred painted bounding box,
+- [x] Orb is asserted to PAINT by pixel count and a centred painted bounding box,
       in the same four contexts
-- [ ] Both new orb assertions break-tested to a real non-zero exit (transcripts in §7)
-- [ ] `cb-pending` arms on `/`, does not arm off-`/` or with the flag off
-- [ ] Dead-bundle path: bundle blocked, splash NOT bypassed → `cb-pending` torn
+- [x] Both new orb assertions break-tested to a real non-zero exit (transcripts in §7)
+- [x] `cb-pending` arms on `/`, does not arm off-`/` or with the flag off
+- [x] Dead-bundle path: bundle blocked, splash NOT bypassed → `cb-pending` torn
       down and prerendered content readable (new `verify-degraded` B4)
-- [ ] Inline predicate and `gate.ts` predicate agree on all 9 truth-table cases
-- [ ] `/` CLS still 0.0000 healthy and degraded
-- [ ] `verify-coldboot` §4 ENTER travel re-measured at the new cap and recorded
-- [ ] Branch pushed · draft PR opened · `mergeable_state: clean`
+- [x] Inline predicate and `gate.ts` predicate agree on all 9 truth-table cases
+- [x] `/` CLS still 0.0000 healthy and degraded
+- [x] `verify-coldboot` §4 ENTER travel re-measured at the new cap and recorded
+- [x] Branch pushed · draft PR opened · `mergeable_state: clean`
 
 ## 6 · VERIFY COMMANDS
 
@@ -257,6 +257,40 @@ the unchanged base commit.
 
 Recorded in these terms deliberately, because the wording determines what the
 next person does about it.
+
+### The chain after the reorder — `verify:e2e` real exit code **0**
+
+Run at `8847d9c`, build stamp matching HEAD, build → serve → run, exit code read
+from the log before any pipe:
+
+    verify-coldboot-live  #1   21 passed · 0 fixtured · 0 skipped · 0 failed
+    verify-coldboot       #27  29 passed · 0 fixtured · 0 skipped · 0 failed
+    verify-orb            #28 104 passed · 0 fixtured · 0 skipped · 0 failed
+    verify-vitals         #29  17 passed · 0 fixtured · 0 skipped · 0 failed
+
+**29/29, zero red, zero skipped.** The acceptance condition for the reorder was
+never "a green chain" — it was that `verify-coldboot` and `verify-orb` REPORT
+their own tallies inside the chain instead of being unreachable behind a
+wall-clock red. They do, and `verify-coldboot-live` still holds #1 with its own
+zero-skip assertion intact.
+
+**`verify-vitals` went GREEN on the same machine that red-lined it twice**, with
+no budget touched and no app change — 17 passed with **zero UNVERIFIABLE skips**,
+where the two previous runs produced 1 and 3 failures plus 2 skips each. That is
+the contention diagnosis confirming itself from the other direction, and it is
+stronger evidence than the base-commit control alone: the same tree, the same
+box, the same budgets, three different verdicts.
+
+It also settles the framing. These budgets are **uncalibrated for this class of
+hardware**, not flaky and not wrong about the app:
+
+    /                522ms RED · 537ms RED (base) · PASS this run   (budget 400)
+    /live/mempool    334 · 314 · 271ms — crossed its ceiling BOTH ways (budget 300)
+    /live/markets    SKIPPED at 87.4% and 93.8% spread · PASS this run
+
+A gate that returns red, red and green on one unchanged tree is measuring the
+runner. Nothing was changed to make it green; it simply was, once the machine
+was quiet.
 
 ### Deviations from spec
 
