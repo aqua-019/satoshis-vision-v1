@@ -366,7 +366,42 @@ export function Orb(): React.JSX.Element {
     return observeDrawable(el, setDrawable);
   }, []);
 
-  const seconds = useAnimationSeconds({ fps: ORB_FPS, enabled: drawable && !reduced });
+  /* D1909 · do not animate inside the critical window unless the splash needs
+   * us there.
+   *
+   * `observeDrawable` correctly stops the loop when the orb is hidden, but on
+   * `/` with the cold boot bypassed the orb IS visible, so the rAF ran from
+   * mount — during load, under verify-vitals' 6x CPU throttle. Measured on
+   * `/`: total blocking time 166ms historically, then 329ms and 479ms on two
+   * runs against a 400ms budget. Passing on one run and failing on the next
+   * is not a green worth having; a route that sits at 82% of budget with a
+   * 150ms run-to-run spread will flake in CI and teach whoever inherits it to
+   * distrust the gate.
+   *
+   * So the ambient loop waits for idle — EXCEPT when the cold boot is live,
+   * where the orb is not decoration: it assembles from T=0.86 and travels
+   * across the Enter cut, so a deferred start would be visible as a missing
+   * element in the choreography.
+   *
+   * Deferring costs no layout: `#hm-orb` reserves its box by aspect-ratio, so
+   * the orb arrives into space already held and `/` keeps its 0.0000 CLS.
+   * requestIdleCallback is not in Safari <17, hence the timeout fallback. */
+  const [started, setStarted] = React.useState(false);
+  React.useEffect(() => {
+    if (coldBootOrb.active) { setStarted(true); return; }
+    const ric = (window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number;
+    }).requestIdleCallback;
+    if (typeof ric === "function") {
+      const id = ric(() => setStarted(true), { timeout: 2000 });
+      return () => (window as unknown as { cancelIdleCallback?: (h: number) => void })
+        .cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(() => setStarted(true), 400);
+    return () => window.clearTimeout(t);
+  }, [coldBootOrb.active]);
+
+  const seconds = useAnimationSeconds({ fps: ORB_FPS, enabled: drawable && !reduced && started });
   const secondsRef = React.useRef(seconds);
   secondsRef.current = seconds;
 
