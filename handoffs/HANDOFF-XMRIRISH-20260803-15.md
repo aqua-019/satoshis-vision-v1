@@ -283,21 +283,40 @@ PHONE only. Measured at 1440×900 dpr1, healthy pass, the same harness:
 
 ```
 390px    pill 183px → 183px   min-width 182.699px (29ch)   CLS 0.000047
-1440px   pill 109px →  67px   min-width auto               CLS 0.002069
-  dominant entry, 5 sources:
-    DIV.ticker-strip           262x25@(1154,18) → 219x38@(1197,11)   re-solves, +13px tall
-    DIV.footer-tele>SPAN       135x15@(517,879) → 135x15@(674,879)   moves 157px
-    DIV.footer-tele>SPAN        60x15@(136,879) → 120x15@(173,879)
-    SPAN.prov / SPAN.mono      move ~70px as their row re-centres
+1440px   pill 109px →  67px   min-width auto               CLS 0.0018 – 0.0021 across runs
 ```
 
+**Read the source list with care: `LayoutShift.sources` is capped.** Both a probe of mine
+and a reviewer's returned exactly 5 sources and we each read that list as the composition.
+A direct rect diff over every candidate element says **10 move, not 5** — so a `sources`
+array is the top-N by impact, never a census, and any sentence of the form "four of the five
+are X" is a statement about the cap. Measured at 1440×900, `CONNECTING → LIVE`:
+
+```
+  footer-tele    6 moved   "HEIGHT —" 60→105 · "HASH —" 45→105 · status 90→127
+                           TXS / MEMPOOL / RING / FORK then all carry Δx +142
+                           UTC · SOURCES · ©2026 do NOT move (right-aligned group)
+  main prov/mono 3 moved   "NODE · loading" 118→60, row re-centres LEFT  Δx −11/−70/−69
+  ticker-strip   1 moved   pill "CONNECTING" 109 → "LIVE" 67            Δx +43
+```
+
+So it is three independent width changes, not one, and **the largest single driver is not a
+status chip — it is `—` becoming a number.** `HEIGHT` and `HASH` each grow ~45–60px when
+real values land, which is this repo's cardinal rule (`a live number is real or it is an
+em-dash`) working exactly as designed and shifting layout as a consequence. Suppressing that
+is not on the table; reserving width for it is.
+
 `styles.css:2125` reserves `.ticker-strip > .pill:first-child { min-width: 29ch }` — but it
-sits **inside `@media (max-width: 768px)`**, so the reservation exists at phone and not
-above it. The five pill labels measure 67 / 88 / 109 / 152 / 181 px, so the unreserved arm
-range is 114px. It is under the 0.005 ceiling today, it is **pre-existing** (the pill arms
-and the strip predate this PR), and the fix is a design call about how much permanent width
-a status chip deserves — which is its own change, not a rider on this one. Recorded with
-numbers so it is knowingly unmeasured rather than silently unmeasured.
+sits **inside `@media (max-width: 768px)`**, so the reservation exists at phone and not above
+it. Same for the footer: `.footer-tele` is `display:flex; gap:24px` with no per-span
+reservation at any width. Whoever picks this up should look in `styles.css:1005`
+(`.footer-tele`) and `Footer.tsx:47` (`statusWord`) as well as at the pill — the earlier
+draft of this note named only the pill, which is the smallest of the three.
+
+It is under the 0.005 ceiling today, it is **pre-existing** (all three predate this PR), and
+the fix is a design call about how much permanent width a live figure deserves — which is its
+own change, not a rider on this one. Recorded with numbers so it is knowingly unmeasured
+rather than silently unmeasured.
 
 **`verify-cls` does not emulate `prefers-reduced-motion` while eighteen other e2e gates do.**
 A real inconsistency, raised in review, and not this bug: `@keyframes ledpulse` is
@@ -344,6 +363,12 @@ its claim.** Seven instances, each found only by measuring the thing the label n
    headline and lede, sized to the longest of seven passages. The element **above** the
    reserve had none, and it was the one whose text changed with the feed. A reserve that
    covers the elements you were thinking about is not a reserve; it is a list.
+9. `LayoutShift.sources` read as a census. Two independent probes — one mine, one a
+   reviewer's — each returned exactly 5 sources for the desktop shift and each of us
+   described the page from that list; a direct rect diff says **10 elements move**. The
+   array is top-N by impact and the cap is invisible in the output, so "four of the five
+   are X" was a claim about Chromium's reporting limit that read as a claim about the
+   page. Two observers agreeing does not widen a truncated subject.
 
 **A margin decided by font metrics is not a property, it is a coin toss with a bias.**
 327px of text in 334px of box passed on every machine that authored it and failed on
