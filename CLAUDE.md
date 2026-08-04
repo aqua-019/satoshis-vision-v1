@@ -28,7 +28,7 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 72 `verify-*.mjs` files (`app/` ×65, `app/scripts/` ×1, `api/` ×6) — 68 gates
+- Verification: 73 `verify-*.mjs` files (`app/` ×66, `app/scripts/` ×1, `api/` ×6) — 69 gates
   plus `verify-lib.mjs`, `verify-reporter.mjs` and `verify-fixtures.mjs`, three shared modules,
   and `scripts/verify-all.mjs`, an orchestrator. (This entry read "66 (app/ ×61, api/ ×5)" until
   v6.1.7 counted at full depth: an `app/verify-*.mjs` glob cannot see `app/scripts/verify-all.mjs`,
@@ -36,23 +36,36 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **54 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **55 distinct files** on
   PRs to `main`, in two jobs: 11 individually-named offline gates, then `verify:static`
-  (20 gates, no browser) and `verify:e2e` (27 gates, against `scripts/serve-dist.mjs`).
-  v6.1.8 added two: `verify-hero` (static, FIRST in its chain) and `verify-coldboot`
-  (e2e, **LAST** in its chain). The asymmetry is deliberate and was got backwards once.
-  Thirteen gates install the cold-boot bypass and then assert an ABSENCE, which is vacuous
-  if the splash selector ever dies; `verify-coldboot` §1 is the only positive control that
-  proves the bypass has something to bypass. That looks like an argument for running it
-  first — it is not. These are `&&` chains, so a §1 failure ABORTS the run and the thirteen
-  never report at all; there is no window in which they pass vacuously behind a dead proof.
-  Order therefore has no bearing on correctness, only on how much one failure teaches — and
-  first position is the maximum-masking slot (`scripts/verify-all.mjs:24-29`: "one broken
-  gate hides every gate after it"). `verify-coldboot` drives a canvas decrypt on a timeline
-  behind a click gate, so it is the likeliest flake in the suite; last is where that costs
-  no other gate its result. `verify-hero` is source-reading in a ~30s chain, so failing
-  first is nearly free. **The chain is ordered so a failure teaches the most; `verify-all`
-  is where you go when you want it to teach fastest.**
+  (20 gates, no browser) and `verify:e2e` (28 gates, against `scripts/serve-dist.mjs`).
+  v6.1.8 added three, and the two cold-boot gates sit at OPPOSITE ends of `verify:e2e` on
+  DIFFERENT axes — state both, because they look contradictory: `verify-coldboot-live` runs
+  **FIRST**, `verify-coldboot` runs **LAST**, and `verify-hero` (static) runs first in its own
+  chain.
+  Eleven gates install the cold-boot bypass and then assert an ABSENCE, which passes whether
+  the bypass worked, the selector died, or the splash never rendered. `verify-coldboot-live`
+  holds the only positive control separating those.
+  **A previous version of this entry argued the opposite and its reasoning was wrong.** It
+  said: "these are `&&` chains, so a §1 failure ABORTS the run and the thirteen never report
+  at all; there is no window in which they pass vacuously behind a dead proof." That inverts
+  the causality. With the control LAST, the dependents run *before* it — measured on that
+  chain: 27 entries, control at index 27, eleven dependents, all before it, none after — so
+  they had already run and already printed green when the abort landed. A failing run
+  displayed eleven passing gates that had proved nothing. The abort protects only what comes
+  *after* the failure, and the whole problem was that nothing did.
+  So the axis is **what depends on what**, not masking cost and not gate age. A LOAD-BEARING
+  PRECONDITION goes first: its failure *should* abort, because everything after it is
+  uninterpretable, and this one is a single navigation plus a count, so fail-fast is nearly
+  free. It also may never `skip` — a skip there is neither a pass nor a failure, so dependents
+  would run against an unproven control with nothing red anywhere; the gate asserts its own
+  skip count is 0, which makes the dependency structural rather than documented.
+  FEATURE ASSERTIONS go last, where a failure masks nothing: `verify-coldboot` keeps §2-§6
+  (decrypt determinism, session gating, Enter handoff, reduced motion, 390px) plus §L Main
+  Home legibility. It drives a canvas decrypt on a timeline behind a click gate, so it is the
+  likeliest flake in the suite, and last is where that costs no other gate its result. Both
+  properties are real — masking cost still governs `verify-coldboot`; it just never governed
+  the control. **`verify-all` is where you go when you want the chain to teach fastest.**
   Four gates appear in both the named list and `verify:static` (`verify-stale`,
   `verify-confirmations`, `verify-txdetail`, `verify-feedcache`), and `verify-origins` runs
   in both `verify:static` (with `--static`) and `verify:e2e` — so 11 + 20 + 27 plus
@@ -220,7 +233,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 54 of the 68 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 55 of the 69 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs

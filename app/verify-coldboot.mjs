@@ -2,31 +2,30 @@
 /**
  * verify-coldboot.mjs — cold-boot FEATURE assertions (§2-§6) + Main Home legibility (§L).
  *
- * ── THIS GATE IS LOAD-BEARING FOR TWELVE OTHER GATES ──────────────────────
+ * ── THIS GATE HOLDS THE FEATURE ASSERTIONS, AND RUNS LAST ────────────────
  *
- * §1 below is the ONLY positive control for the whole cold-boot sweep.
+ * §2-§6 (decrypt determinism, session gating, Enter handoff, reduced motion,
+ * 390px) plus §L (Main Home legibility). These drive a canvas decrypt on a
+ * timeline behind a click gate, so this is the likeliest flake in the suite —
+ * last position is where that costs no other gate its result.
  *
- * Twelve CI-reached gates now call `assertColdBootBypassed()`, which asserts
- * that `[data-coldboot]` is ABSENT. An absence assertion passes for three
- * different reasons and cannot tell them apart from the inside:
+ * ── THE POSITIVE CONTROL IS NOT HERE ANY MORE ────────────────────────────
  *
- *   (a) the bypass worked                          ← the only one we mean
- *   (b) the selector is dead (attribute renamed)   ← silent, total vacuity
- *   (c) the splash never rendered for some third
- *       reason (JS disabled, SSR, route changed)   ← see verify-nojs, which
- *                                                    had exactly this and had
- *                                                    its assertion replaced
+ * It moved to `verify-coldboot-live.mjs`, which runs FIRST. An earlier version
+ * of this header described §1 as living here AND claimed "this gate runs FIRST
+ * in that chain" — both false once the split landed, in the file the split
+ * changed. Recorded rather than deleted, because it is the same defect class
+ * this task kept finding: a confident artifact describing a tree that no
+ * longer exists.
  *
- * §1 navigates to `/` WITHOUT the bypass flag and asserts the splash IS
- * there. That single assertion is what separates (a) from (b). If it is ever
- * deleted, weakened, or allowed to R.skip, the twelve preconditions silently
- * become decoration and every one of them keeps printing green.
- *
- * CONSEQUENCE FOR ORDERING, and it is not cosmetic: `verify:e2e` is an
- * `&&`-chain, so a failure stops everything after it. This gate runs FIRST in
- * that chain, ahead of all twelve dependents. If it ran last, every dependent
- * would have already reported before its own liveness proof executed — the
- * same invocation set, but a failure you cannot read. Do not reorder it.
+ * The reason for the split, in one line: eleven gates assert `[data-coldboot]`
+ * is ABSENT, an absence passes whether the bypass worked or the selector died,
+ * and only a positive control separates those. Measured on the pre-split
+ * chain — 27 entries, this gate at index 27, eleven dependents, ALL before it,
+ * none after — so a failure here aborted only what came after, and nothing
+ * did. Every dependent had already printed green. A precondition whose failure
+ * makes eleven gates uninterpretable belongs first; feature assertions belong
+ * last. Two axes, two positions, and conflating them is what got it wrong.
  *
  * ── STATUS ON THE TREE THIS WAS WRITTEN AGAINST ───────────────────────────
  * The splash did not exist when this file was authored (director-build had
@@ -324,11 +323,60 @@ R.group('── 3 · once-per-session gating, both directions ──────
     'reload within the session lands on the CONSOLE',
     consoleAfter === 0 ? 'no console after reload — the session reload path is broken' : '');
 
-  R.skip('reload does NOT replay the DECRYPT (and clearing the flag restores it)',
-    'NOT MACHINE-CHECKABLE on this markup: data-coldboot carries an empty value in every ' +
-    'phase, so replayed-decrypt and skipped-decrypt are DOM-identical. Needs a phase value ' +
-    'on the root (data-coldboot="decrypt"|"console"). Skipped rather than asserted, because ' +
-    'an assertion that cannot fail is not evidence for a §5 criterion.');
+  /* ── THE §5 CRITERION, NOW ASSERTABLE ──────────────────────────────────
+   * This was an unconditional `R.skip` while `data-coldboot` carried an empty
+   * value in every phase, which made replayed-decrypt and skipped-decrypt
+   * DOM-identical. The root now carries "decrypt" | "console", so the states
+   * are distinguishable and the skip has been replaced by the real assertion.
+   *
+   * Worth recording WHY the stale skip was a defect and not merely dead text:
+   * it was a static call with no branch reading the DOM, so it reported the
+   * identical message whatever the markup contained — a true-looking artifact
+   * describing a tree that no longer existed, telling the next reader the
+   * markup could not support an assertion it now supports. Same class as prose
+   * contradicting its own diff.
+   *
+   * Order is load-bearing: direction 2 (clear → "decrypt") is what proves
+   * direction 1 (reload → "console") measured GATING rather than a splash that
+   * simply never returns. */
+  const PHASES = ['decrypt', 'console'];
+  const phaseNow = async (what) => {
+    const decided = await page.waitForSelector(COLDBOOT_DECIDED_SEL, { timeout: 15_000 })
+      .then(() => true).catch(() => false);
+    if (!R.ok(decided, `${what}: ColdBoot published its decision before we read the phase`,
+      'Reading data-coldboot on an unmounted element yields null — a confusing failure ' +
+      'for the wrong reason, not a real verdict.')) return null;
+    const v = await page.evaluate(() =>
+      document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') ?? null);
+    /* Assert membership, never `!== "decrypt"`. A typo, a third phase or ""
+     * must go red rather than satisfy a negative by not being the bad value. */
+    R.ok(PHASES.includes(v),
+      `${what}: phase is one of ${JSON.stringify(PHASES)} (got ${JSON.stringify(v)})`,
+      PHASES.includes(v) ? '' : 'unknown phase value — a negative assertion would have passed on this');
+    return v;
+  };
+
+  // Direction 1 — reload inside the session: lands on the console, no decrypt.
+  await page.reload({ waitUntil: 'load' });
+  const afterReload = await phaseNow('after reload');
+  if (afterReload !== null) {
+    R.ok(afterReload === 'console',
+      'reload within the session does NOT replay the decrypt (phase "console")',
+      afterReload === 'console' ? '' :
+        `phase is "${afterReload}" after reload — the session flag is not being honoured`);
+  }
+
+  // Direction 2 — clear the flag: the decrypt RETURNS. Without this, a splash
+  // that simply never replayed would pass direction 1 for free.
+  await page.evaluate(() => sessionStorage.clear());
+  await page.reload({ waitUntil: 'load' });
+  const afterClear = await phaseNow('after clearing the flag');
+  if (afterClear !== null) {
+    R.ok(afterClear === 'decrypt',
+      'clearing the session flag RESTORES the decrypt (phase "decrypt") — proves direction 1 measured gating',
+      afterClear === 'decrypt' ? '' :
+        `phase is "${afterClear}" after clearing — direction 1 proved nothing`);
+  }
   await ctx.close();
 }
 
