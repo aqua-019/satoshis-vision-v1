@@ -74,7 +74,16 @@ export const HOME_SECTIONS: HomeSection[] = [
     to: R.LEARN,
     title: "Learn",
     meta: `${LEARN_SIMULATORS} simulators · timeline · quotes`,
-    body: "Ring signatures, stealth addresses, Dandelion++ — run them, don't read them.",
+    // "privacy primitives" is load-bearing copy, not decoration. With
+    // JavaScript off only the FIRST hero passage prerenders, and the rewrite's
+    // first passage is Satoshi on group signatures — so the word naming what
+    // this entire site is about had disappeared from the JS-off page, which is
+    // the version a Tor visitor at Safest actually receives. The old hero
+    // kicker ("a privacy network · since 2014") carried it and the rewrite
+    // dropped it. verify-nojs caught the absence; this sentence is where it
+    // belongs, because these three ARE the privacy primitives and naming them
+    // as such tells the reader more than the list alone did.
+    body: "Ring signatures, stealth addresses, Dandelion++ — the privacy primitives, run rather than read.",
     cta: "run",
     color: "var(--p-50)",
   },
