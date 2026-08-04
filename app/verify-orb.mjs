@@ -359,10 +359,43 @@ R.group('── 2 · honest empty state — no numeric field when unavailable �
       /\d/.test(text) ? '' : `no digit found in: "${text}"`);
 
     const expectedReachable = NODES_LIVE.counts.reachable.toLocaleString();
-    // Mirrors orb.ts's orbNodeCount() clamp (MIN_ORB_NODES 40 / MAX_ORB_NODES 320)
-    // rather than hardcoding a fixture-derived literal, so a fixture change
-    // cannot silently desync this expectation from the real formula.
-    const expectedLattice = Math.min(320, Math.max(40, Math.round(NODES_LIVE.counts.reachable)));
+    /* The clamp bounds are READ FROM orb.ts, not restated. They were a second
+     * copy of a rule that already lives at orb.ts:135-136, and this file
+     * already has that source in hand for §4 — so a literal here was a
+     * duplication with nothing keeping the two in step. Detection did work
+     * (changing MIN_ORB_NODES to 50 went red) but the message blamed the
+     * caption for a constant. Same move as heightAgreementPct: drift made
+     * impossible rather than detected. */
+    const MIN_ORB = Number(/MIN_ORB_NODES\s*=\s*(\d+)/.exec(ORB_TS_SRC)?.[1]);
+    const MAX_ORB = Number(/MAX_ORB_NODES\s*=\s*(\d+)/.exec(ORB_TS_SRC)?.[1]);
+    R.ok(Number.isFinite(MIN_ORB) && Number.isFinite(MAX_ORB),
+      `precondition: clamp bounds read from orb.ts (${MIN_ORB}-${MAX_ORB})`,
+      'Could not parse MIN_ORB_NODES / MAX_ORB_NODES — the assertion below would compare against NaN.');
+
+    /* THE PRECONDITION THAT WAS HELD BY LUCK.
+     *
+     * expectedLattice only tests orbNodeCount() when the fixture's reachable
+     * count sits OUTSIDE the clamp band. Today it does — 23 against 40-320, so
+     * expectedLattice is 40 and the derivation does real work.
+     *
+     * But monerofail-health.json is a captured upstream snapshot, and the
+     * natural reason to refresh it is that monero.fail's data moved. The moment
+     * a refreshed fixture lands with reachable anywhere in 40-320,
+     * expectedLattice collapses to reachable, the clamp expression becomes an
+     * identity, and this gate stops covering orbNodeCount() ENTIRELY while
+     * staying green. Nothing announces it; nothing fails.
+     *
+     * So the precondition is asserted rather than assumed. */
+    const reach = NODES_LIVE.counts.reachable;
+    const exercisesClamp = reach < MIN_ORB || reach > MAX_ORB;
+    R.ok(exercisesClamp,
+      `precondition: the fixture exercises the clamp (reachable ${reach} is outside ${MIN_ORB}-${MAX_ORB})`,
+      exercisesClamp ? '' :
+        `A fixture INSIDE the band makes expectedLattice === reachable, so the clamp assertion below ` +
+        `silently stops testing orbNodeCount() while still passing. Either pick a fixture outside ` +
+        `${MIN_ORB}-${MAX_ORB} or add a second mocked census that is.`);
+
+    const expectedLattice = Math.min(MAX_ORB, Math.max(MIN_ORB, Math.round(reach)));
     const expectedCaption = `${expectedReachable} reachable nodes`;
     R.ok(text.includes(expectedCaption),
       `caption shows the REAL reachable count from the mocked handler response (${expectedCaption})`,

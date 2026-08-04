@@ -456,4 +456,59 @@ R.group('── 6 · 390px ─────────────────�
 }
 
 await browser.close();
+
+/* ── §Z · the wire STILL matches, at the end of the chain ─────────────────
+ *
+ * verify-coldboot-live's §0a/§0b prove commit -> disk -> wire at the moment
+ * the chain STARTS. They say nothing about whether it held for the twenty-nine
+ * gates after — and a mid-chain rebuild passes both and poisons everything
+ * downstream. That is not hypothetical: it happened twice in this task, once
+ * on each of two machines, both times by running `npm run build` while
+ * serve-dist was serving. Vite clears dist/, the server dies on the missing
+ * index.html, and every later gate measures a corpse at ERR_CONNECTION_REFUSED
+ * or, worse, a DIFFERENT build at a healthy 200.
+ *
+ * This file is LAST in verify:e2e, so re-checking here brackets the whole run
+ * for the cost of one fetch. Start-and-end is not continuous coverage, but it
+ * converts "the chain was sound when it began" into "the chain was sound at
+ * both ends", which is the difference between a claim about a moment and a
+ * claim about a run.
+ *
+ * Same subject as §0b — the entry chunk resolved from dist/index.html, whose
+ * bytes are a pure function of the source, never index.html itself. */
+R.group('── Z · the served dist still matches at the END of the chain ──────');
+{
+  const distIndex = new URL('./dist/index.html', import.meta.url);
+  if (!existsSync(distIndex)) {
+    R.ok(false, 'dist/index.html present for the end-of-chain wire re-check',
+      'No local build to compare against — the chain cannot confirm what it measured.');
+  } else {
+    const localHtml = readFileSync(distIndex, 'utf8');
+    const entry = (localHtml.match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/) || [])[1] ?? null;
+    R.ok(entry !== null, 'end-of-chain: resolved the entry chunk from dist/index.html',
+      entry !== null ? `${entry}` : 'shell shape changed — this re-check would compare nothing');
+    if (entry) {
+      const localJs = readFileSync(new URL(`./dist/assets/${entry}`, import.meta.url));
+      let served = null, err = null;
+      try {
+        served = Buffer.from(await (await fetch(`${BASE}/assets/${entry}`)).arrayBuffer());
+      } catch (e) { err = String((e && e.message) || e); }
+      if (served === null) {
+        R.ok(false, `end-of-chain: ${BASE} still answering for ${entry}`,
+          `No response: ${err}. The server DIED during the run — every gate after that point ` +
+          'measured nothing, and the ones before it are the only results worth reading.');
+      } else {
+        const same = served.equals(localJs);
+        R.ok(same,
+          `end-of-chain: the server is STILL serving this dist (${entry}, ${localJs.length} B)`,
+          same ? '' :
+            `DIST CHANGED MID-CHAIN: ${BASE} now answers ${served.length} B for ${entry}, local has ` +
+            `${localJs.length} B. Something rebuilt or replaced the server while the chain ran, so an ` +
+            'unknown number of the gates above measured a tree that is not this one. Re-run the whole ' +
+            'chain; do not trust the passes above.');
+      }
+    }
+  }
+}
+
 process.exit(R.finish());
