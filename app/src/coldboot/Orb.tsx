@@ -163,6 +163,26 @@ const BADGE_ROW_STYLE: React.CSSProperties = {
   flexWrap: "wrap",
 };
 
+/* Deliberately NOT a `.prov-tag` and NOT a sixth ProvSource. This says what
+   kind of claim the layer makes, not where its data came from — the
+   Provenance badge beside it still answers that. Styled off --y-50, the
+   repo's warning/queued tone, so it reads as a qualifier rather than as
+   telemetry: no live dot, no colour that could be mistaken for a feed.
+   fontSize is the --fs-label token as a string, never a numeric literal
+   (verify-legibility §2 skips string values entirely, so the real floor is
+   the computed-style probe in verify-coldboot §L). */
+const ILLUSTRATIVE_BADGE_STYLE: React.CSSProperties = {
+  fontFamily: "var(--f-mono)",
+  fontSize: "var(--fs-label)",
+  letterSpacing: "0.14em",
+  textTransform: "uppercase",
+  color: "var(--y-50)",
+  border: "1px solid color-mix(in srgb, var(--y-50) 40%, transparent)",
+  borderRadius: 2,
+  padding: "2px 6px",
+  whiteSpace: "nowrap",
+};
+
 const CAPTION_STYLE: React.CSSProperties = {
   margin: 0,
   fontFamily: "var(--f-mono)",
@@ -419,10 +439,20 @@ export function Orb(): React.JSX.Element {
         </div>
         <p style={CAPTION_STYLE}>{reachableCaption(orbData.reachable, orbData.latticeSize)}</p>
         <div style={BADGE_ROW_STYLE}>
-          {/* "ILLUSTRATIVE" is this repo's existing MODEL provenance source
-              (design/provenance.tsx — five sources, one vocabulary), not a
-              new sixth label. No `fresh` prop: defaults to "none", so this
-              can never carry a live dot. */}
+          {/* TWO badges, and they answer different questions.
+              `source="model"` is WHERE the value came from — this repo's
+              provenance vocabulary is exactly five and adding a sixth would
+              break the two Record<ProvSource,…> exhaustiveness maps that are
+              the only thing enforcing it. No `fresh` prop, so it defaults to
+              "none" and can never carry a live dot.
+              The literal ILLUSTRATIVE tag is WHAT KIND OF CLAIM this is, and
+              §5 requires it by name: "Dandelion++ layer carries an
+              ILLUSTRATIVE badge". A reader should not have to know that MODEL
+              means invented to understand that this path is. Provenance and
+              epistemic status are different axes; collapsing them into one
+              badge made the surface depend on vocabulary knowledge the
+              visitor does not have. */}
+          <span style={ILLUSTRATIVE_BADGE_STYLE}>ILLUSTRATIVE</span>
           <Provenance source="model" detail="Dandelion++ stem — not observable from a node" compact />
         </div>
         <p style={CAPTION_STYLE}>{STEM_CAPTION}</p>

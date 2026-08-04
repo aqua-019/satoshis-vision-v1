@@ -127,8 +127,18 @@ export function HomePage() {
               className="serif"
               style={{ ...HEADLINE_BOX_STYLE, opacity: rotation.fading ? 0 : 1, transition: rotation.reduced ? "none" : "opacity 300ms var(--e-standard)" }}
             >
+              {/* The trailing space is NOT cosmetic. Each line is its own
+                  block span, so visually these stack correctly with or
+                  without it — but `textContent` concatenates children with
+                  nothing between them, so a copy-paste (or any consumer
+                  reading textContent) yielded "signatures,it is possible".
+                  A rendered-correct headline that copies out as a run-on is
+                  still wrong; the space collapses at end-of-line visually and
+                  survives in the text. Caught by design-reviewer, whose probe
+                  read textContent and reported it as a rendering bug — it was
+                  not one, which is why the fix is here and not in CSS. */}
               {passage.lines.map((line, i) => (
-                <span key={i}>{line}</span>
+                <span key={i}>{line}{i < passage.lines.length - 1 ? " " : ""}</span>
               ))}
             </h1>
             <p className="mono" style={{ ...LEDE_STYLE, opacity: rotation.fading ? 0 : 1, transition: rotation.reduced ? "none" : "opacity 300ms var(--e-standard)" }}>
