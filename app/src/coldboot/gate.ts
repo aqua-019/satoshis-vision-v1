@@ -59,6 +59,35 @@ export const CB_PENDING_CLASS = "cb-pending";
 export const CB_FLOOR = "#050505";
 
 /**
+ * How long frame zero holds, in ms — a MINIMUM, never an addition.
+ *
+ * Without it the floor ends whenever React mounts, which on a warm cache is
+ * ~212-1017ms (measured, unthrottled) and gives no deliberate black beat at
+ * all. ColdBoot waits `max(0, CB_HOLD_MS - elapsed)`, so a bundle that already
+ * took longer than this starts the sequence immediately and nothing is ever
+ * added on top: measured under 6x CPU + Slow-4G, a cold `/` reaches LCP at
+ * ~4048ms, where this contributes exactly 0.
+ *
+ * The cost lands only on fast loads, moving LCP from ~400ms to ~1500ms. That is
+ * real and it is under the 2500ms budget for `/`.
+ *
+ * REDUCED MOTION STILL HOLDS. This is a static frame, not motion — nothing
+ * moves, nothing animates, and a visitor who asked for less motion has not
+ * asked for less deliberate pacing. The `skipDecrypt` path (revisit OR reduced
+ * motion) waits the same beat and then shows the console directly.
+ */
+export const CB_HOLD_MS = 1500;
+
+/** Set by index.html's pre-paint script at the instant the floor goes up, so
+ *  the hold is measured from FIRST PAINT rather than from React mounting. */
+export const CB_T0_GLOBAL = "__xmriCbT0";
+
+/** Test override for the hold, mirroring `__xmriBootTimeoutMs`. One token in
+ *  prod; it lets a gate drive the hold to 0 instead of sleeping 1.5s per
+ *  scenario. */
+export const CB_HOLD_GLOBAL = "__xmriCbHoldMs";
+
+/**
  * Will this load render the cold-boot splash?
  *
  * Two clauses, and both are load-bearing. `flag` is `window[COLDBOOT_FLAG]`,

@@ -44,6 +44,7 @@ import {
   coldBootOff, coldBootOffBrowser, assertColdBootBypassed,
   COLDBOOT_SEL, COLDBOOT_DECIDED_SEL, COLDBOOT_FLAG, PHONE,
 } from './verify-lib.mjs';
+import { CB_HOLD_MS } from './src/coldboot/gate.ts';
 
 /** This file lives at app/, so its own directory IS the app root. Derived
  *  rather than assumed from process.cwd(), because `cd` drift has produced
@@ -519,6 +520,21 @@ R.group('── 1c · the anti-flash floor arms on /, and NOWHERE else ───
 {
   const firstFrame = async (ctx) => ctx.addInitScript(() => {
     window.__cbFirst = null;
+    /* How long frame zero actually held, measured from the pre-paint stamp to
+       the class being removed. Polled rather than observed, because a
+       MutationObserver installed this early can miss documentElement. */
+    window.__cbHeldMs = null;
+    let seen = false;
+    const iv = setInterval(() => {
+      const de = document.documentElement;
+      if (!de) return;
+      if (de.classList.contains('cb-pending')) { seen = true; return; }
+      if (seen && window.__cbHeldMs === null) {
+        const t0 = window.__xmriCbT0 ?? 0;
+        window.__cbHeldMs = Math.round(performance.now() - t0);
+        clearInterval(iv);
+      }
+    }, 10);
     requestAnimationFrame(() => {
       const root = document.getElementById('root');
       window.__cbFirst = {
@@ -561,6 +577,28 @@ R.group('── 1c · the anti-flash floor arms on /, and NOWHERE else ───
     const splashUp = await page.locator(COLDBOOT_SEL).count();
     R.ok(splashUp > 0,
       `cold /: …and the splash is present at that moment (${splashUp}) — the floor was handed to a real overlay, not simply dropped`);
+
+    /* THE BEAT ITSELF. verify-coldboot zeroes the hold in every one of its
+     * contexts (its subject is the sequence, not the beat), so if it were not
+     * asserted here it would be asserted nowhere and could silently become 0. */
+    const heldMs = await page.evaluate(() => window.__cbHeldMs ?? null);
+    R.ok(heldMs !== null && heldMs >= CB_HOLD_MS * 0.9,
+      `cold /: frame zero HELD for ${heldMs}ms before lifting (declared ${CB_HOLD_MS}ms, allow 10% for timer slack)`,
+      heldMs === null
+        ? 'the probe never observed a release, so there is no duration to judge'
+        : `the floor lifted after ${heldMs}ms against a declared ${CB_HOLD_MS}ms. The beat is the feature — ` +
+          'without it the floor ends whenever React mounts, measured 212-1017ms unthrottled.');
+
+    /* …and content is really there once it lifts. `visibility:hidden` makes
+     * innerText read "" — which is how a too-early sample can report an empty
+     * page and blame the app. Assert the settled state explicitly. */
+    const settled = await page.evaluate(() => ({
+      vis: getComputedStyle(document.getElementById('root')).visibility,
+      len: (document.getElementById('root')?.innerText || '').trim().length,
+    }));
+    R.ok(settled.vis === 'visible' && settled.len > 200,
+      `cold /: after the beat #root is visible with real content (${settled.len} chars, visibility ${settled.vis})`,
+      'the floor lifted but the page behind it is empty or still hidden');
     await ctx.close();
   }
 

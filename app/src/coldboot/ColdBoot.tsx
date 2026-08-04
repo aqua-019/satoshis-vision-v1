@@ -162,7 +162,10 @@ import { T, E, seg, clamp01, lerp } from "./schedule";
 import { ColdBootConsole } from "./ColdBootConsole";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { R } from "../../scripts/routes.mjs";
-import { CB_FLOOR, CB_PENDING_CLASS, COLDBOOT_FLAG, coldBootWillRender } from "./gate";
+import {
+  CB_FLOOR, CB_HOLD_GLOBAL, CB_HOLD_MS, CB_PENDING_CLASS, CB_T0_GLOBAL,
+  COLDBOOT_FLAG, coldBootWillRender,
+} from "./gate";
 
 /* ══════════════════════════════════════════════════════════════════════════
  * the handoff clock — X, HB — owned here per schedule.ts's own header
@@ -395,7 +398,10 @@ const ROOT_STYLE: React.CSSProperties = {
   background: CB_FLOOR,
   overflow: "hidden",
   display: "flex",
-  alignItems: "center",
+  /* stretch, not center: the console wrapper takes the full stage height so its
+     grid has vertical slack to hand to the orb stage. Horizontal centring is
+     `margin-inline: auto` on the wrapper instead. */
+  alignItems: "stretch",
   justifyContent: "center",
   padding: 24,
 };
@@ -422,7 +428,11 @@ const CANVAS_STYLE: React.CSSProperties = { position: "absolute", inset: 0, disp
 const CONSOLE_WRAP_BASE: React.CSSProperties = {
   position: "relative",
   width: "100%",
-  maxWidth: "clamp(1200px, 92vw, 1600px)",
+  maxWidth: "min(2100px, 94vw)",
+  marginInline: "auto",
+  display: "flex",
+  flexDirection: "column",
+  minHeight: 0,
   zIndex: 1,
 };
 
@@ -466,9 +476,31 @@ export function ColdBoot(): React.JSX.Element | null {
    * disagree, releasing the floor is the safe direction and keeping it is a
    * permanently blank page. `index.html`'s boot watchdog is the second remover,
    * for when this component never mounts at all. */
+  /* `floorLifted` starts TRUE whenever the floor was never raised — the bypass
+   * path, a non-Home route, or a browser where the pre-paint script threw. Only
+   * a load that actually painted frame zero waits. */
+  const [floorLifted, setFloorLifted] = React.useState<boolean>(
+    () => typeof document === "undefined" ||
+      !document.documentElement.classList.contains(CB_PENDING_CLASS),
+  );
+
   React.useLayoutEffect(() => {
-    document.documentElement.classList.remove(CB_PENDING_CLASS);
-  }, []);
+    if (floorLifted) return;
+    const w = window as unknown as Record<string, number | undefined>;
+    const hold = w[CB_HOLD_GLOBAL] ?? CB_HOLD_MS;
+    const t0 = w[CB_T0_GLOBAL] ?? 0;
+    const remaining = Math.max(0, hold - (performance.now() - t0));
+
+    const lift = () => {
+      document.documentElement.classList.remove(CB_PENDING_CLASS);
+      setFloorLifted(true);
+    };
+    /* Synchronous when the beat is already spent, so a slow load reveals in the
+     * same commit as before this hold existed — no frame of un-held prerender. */
+    if (remaining === 0) { lift(); return; }
+    const id = window.setTimeout(lift, remaining);
+    return () => window.clearTimeout(id);
+  }, [floorLifted]);
   const phaseRef = React.useRef<Phase>(phase);
   React.useEffect(() => {
     phaseRef.current = phase;
@@ -517,6 +549,14 @@ export function ColdBoot(): React.JSX.Element | null {
   //    reveal (revisit / reduced motion). Runs while phase === "splash". ──
   React.useEffect(() => {
     if (phase !== "splash") return;
+    /* THE SEQUENCE STARTS WHEN THE FLOOR LIFTS, NOT WHEN THIS MOUNTS.
+     * The splash renders INSIDE #root, which the floor hides — so without this
+     * guard the decrypt would run its 5.56s timeline underneath the black and
+     * be revealed already ~1.5s in, which is a sequence that starts in the
+     * middle rather than a black beat before it. Gating the whole effect also
+     * covers the skipDecrypt branch (revisit or reduced motion): black for the
+     * beat, then the console, in that order. */
+    if (!floorLifted) return;
 
     if (skipDecrypt) {
       // Console is fully visible from the first frame — no canvas element
@@ -593,7 +633,7 @@ export function ColdBoot(): React.JSX.Element | null {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, [phase, skipDecrypt]);
+  }, [phase, skipDecrypt, floorLifted]);
 
   // ── handoff: the X ramp (or an instant cut under reduce). ──────────────
   React.useEffect(() => {

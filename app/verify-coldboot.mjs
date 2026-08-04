@@ -85,7 +85,7 @@ const { browser } = await launchChromium();
  * subject. So the gate counts what it actually examined and fails if that
  * number is implausible. Numbers are printed, never just a verdict. */
 {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const ctx = await holdOff(await browser.newContext({ viewport: { width: 1440, height: 900 } }));
   await coldBootOff(ctx);
   const page = await ctx.newPage();
   await page.goto(BASE + '/', { waitUntil: 'load' });
@@ -177,9 +177,27 @@ const { browser } = await launchChromium();
 
 /** Fresh context WITHOUT the bypass — a real cold visitor. */
 const cold = async (opts = {}) => {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts });
+  const ctx = await holdOff(await browser.newContext({ viewport: { width: 1440, height: 900 }, ...opts }));
   return { ctx, page: await ctx.newPage() };
 };
+
+/** Every context in this file drives the frame-zero hold to 0.
+ *
+ * The hold (gate.ts#CB_HOLD_MS, 1500ms) keeps #root at `visibility:hidden` for
+ * a deliberate black beat before the sequence starts. This file's subject is
+ * the SEQUENCE — the decrypt, the session gate, the handoff, reduce, 390px —
+ * none of which is the beat. Sampling through it made §5 read `0 chars` and
+ * report that reduce loses information, which is a statement about the sampling
+ * point rather than about reduce.
+ *
+ * Zeroing it here is not hiding the hold: it is asserted where it belongs, in
+ * verify-cbpending (statically, including that the arithmetic is a floor) and
+ * verify-coldboot-live §1c (at runtime, both the default beat and the release).
+ * The alternative — 1.5s of sleep in each of six sections — buys nothing. */
+async function holdOff(ctx) {
+  await ctx.addInitScript(() => { window.__xmriCbHoldMs = 0; });
+  return ctx;
+}
 
 /* ══ §2 · DECRYPT DETERMINISM — same seed, same frames ══════════════════
  *
@@ -216,7 +234,7 @@ const cold = async (opts = {}) => {
   const KEY = 'xmrirish.coldboot';
   const SEL = `${COLDBOOT_SEL} canvas`;
   const grab = async () => {
-    const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+    const ctx = await holdOff(await browser.newContext({ viewport: { width: 1440, height: 900 } }));
     const page = await ctx.newPage();
     await page.goto(BASE + '/', { waitUntil: 'load' });
     await page.waitForSelector(COLDBOOT_SEL, { timeout: 15_000 }).catch(() => {});
@@ -453,6 +471,68 @@ R.group('── 6 · 390px ─────────────────�
     document.documentElement.scrollWidth - document.documentElement.clientWidth);
   R.ok(overflow <= 0, `no horizontal overflow at 390px (scrollWidth-clientWidth = ${overflow})`);
   await ctx.close();
+}
+
+/* ══ §7 · THE CONSOLE IS REACHABLE — vertically, at every width ═════════
+ *
+ * Added after verify-orb's own SKIP reason turned out to contain a defect. That
+ * skip records the console measuring 2282.6px tall in an 844px viewport at 390
+ * wide, clipped by the stage's overflow:hidden — 63% of it, including the orb,
+ * simply unreachable. Desktop scaled while mobile silently hid most of itself.
+ *
+ * Nothing checked this at ANY viewport. §6 asserts `scrollWidth - clientWidth
+ * <= 0`, which is HORIZONTAL overflow only, under a heading that reads as
+ * "usable at 390px" — a claim wider than its subject.
+ *
+ * Either outcome is acceptable and the assertion accepts both, because "fits"
+ * and "scrolls" are both fine and only SILENT CLIPPING is not: the console
+ * either fits the viewport, or it lives in a scroll container that can reach
+ * its own bottom. What must never pass is content that is neither. */
+R.group('── 7 · the console is reachable at every width (no silent clipping) ──');
+{
+  const { browser: b2 } = await launchChromium();
+  for (const [label, vp] of [
+    ['1440x900', { width: 1440, height: 900 }],
+    ['1280x800', { width: 1280, height: 800 }],
+    ['390x844', { width: PHONE.width, height: PHONE.height }],
+  ]) {
+    const ctx = await holdOff(await b2.newContext({ viewport: vp }));
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, `${label}: precondition — the console mounted (else nothing below has a subject)`);
+    if (!ready) { await ctx.close(); continue; }
+    await page.waitForTimeout(1200);
+
+    const m = await page.evaluate(() => {
+      const root = document.querySelector('[data-coldboot-console]');
+      const r = root.getBoundingClientRect();
+      /* Walk up to whichever ancestor can actually scroll this content. */
+      let sc = root.parentElement, scrollable = null;
+      while (sc && sc !== document.body) {
+        const oy = getComputedStyle(sc).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && sc.scrollHeight > sc.clientHeight + 1) { scrollable = sc; break; }
+        sc = sc.parentElement;
+      }
+      return {
+        vh: window.innerHeight, top: +r.top.toFixed(1), bottom: +r.bottom.toFixed(1), h: +r.height.toFixed(1),
+        scrollable: scrollable ? `${scrollable.tagName}${scrollable.className ? '.' + String(scrollable.className).split(' ')[0] : ''}` : null,
+        canReachBottom: scrollable ? scrollable.scrollHeight - scrollable.clientHeight : 0,
+      };
+    });
+
+    const fits = m.top >= -1 && m.bottom <= m.vh + 1;
+    const scrolls = m.scrollable !== null && m.canReachBottom > 0;
+    R.ok(fits || scrolls,
+      `${label}: the console is reachable — ${fits ? `fits the viewport (${m.h}px in ${m.vh}px, top ${m.top}, bottom ${m.bottom})` : `scrolls inside ${m.scrollable} (${m.canReachBottom}px of reachable overflow)`}`,
+      fits || scrolls ? '' :
+        `The console is ${m.h}px tall in a ${m.vh}px viewport, spanning ${m.top} to ${m.bottom}, and no ` +
+        'ancestor scrolls. That much of it is CLIPPED and unreachable — the orb included. Either let it ' +
+        'scroll or compress it to fit; silently hiding it is neither.');
+    await ctx.close();
+  }
+  await b2.close();
 }
 
 await browser.close();

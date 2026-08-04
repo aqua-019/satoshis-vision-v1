@@ -226,6 +226,12 @@
       try {
         if (window.__xmriColdBootWillRender(window.__XMR_COLDBOOT__, location.pathname)) {
           document.documentElement.classList.add("cb-pending");
+          // Stamped HERE, not when React mounts, so the hold is measured from
+          // the moment the floor actually goes up. ColdBoot waits
+          // max(0, CB_HOLD_MS - elapsed) — a MINIMUM, so a slow bundle that
+          // already exceeded it starts the sequence immediately and never pays
+          // the hold twice. See gate.ts#CB_HOLD_MS.
+          window.__xmriCbT0 = performance.now();
         }
       } catch (e) {
         /* sealed globals / hardened browser — fail OPEN, show the prerender */

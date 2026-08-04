@@ -362,7 +362,32 @@ export function Orb(): React.JSX.Element {
   const useHome = coldBootOrb.rect === null || !coldBootOrb.active;
   const isHomeRoute = location.pathname === R.HOME;
   const homeRect = useHomeOrbRect(useHome && isHomeRoute);
-  const effectiveRect: Rect | null = useHome ? homeRect : coldBootOrb.rect;
+  /* The fallback is the fix for a one-frame drop-out. ColdBoot's final handoff
+     write sets `active:false` WITH a rect; `useHome` then flips true, and
+     `useHomeOrbRect`'s effect sets its own state to null before it measures —
+     so for at least one commit `effectiveRect` was null, the orb rendered
+     display:none, and the thing that just travelled across the cut blinked out
+     at the moment it arrived. §4 sleeps 2500ms and cannot see it. Preferring
+     Home's rect but falling back to the last cold-boot rect closes the gap
+     without changing which source wins once Home has measured. */
+  const effectiveRect: Rect | null = useHome
+    ? (homeRect ?? coldBootOrb.rect)
+    : coldBootOrb.rect;
+
+  /* ASSEMBLE — computed every handoff frame by ColdBoot and, until now, never
+     read by anything. The documented "orb assembles over the field's final 14%"
+     simply did not happen: the orb appeared at full strength the instant the
+     console reported its rect, as a second fully-formed bright object competing
+     with the decrypt. Driven on opacity and transform ONLY, so it composites
+     and cannot contribute a layout shift. Off the splash it is pinned to 1 —
+     `active` false means nobody owns the value and the orb must not fade. */
+  const assemble = coldBootOrb.active ? coldBootOrb.assemble : 1;
+  const assembleStyle: React.CSSProperties = {
+    opacity: assemble,
+    transform: `scale(${(0.94 + 0.06 * assemble).toFixed(4)})`,
+    transformOrigin: "center",
+    willChange: assemble > 0 && assemble < 1 ? "opacity, transform" : undefined,
+  };
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const drawRef = React.useRef<(() => void) | null>(null);
@@ -505,20 +530,49 @@ export function Orb(): React.JSX.Element {
      this stays `auto`. A permanent z-index above 1000 would float the orb over
      NavTop's dropdown and the ⌘ DESIGN panel on every Home visit, which is a
      bug traded for a bug — so the raise lives and dies with the splash. */
-  const positionStyle: React.CSSProperties = effectiveRect
+  /* ── THE TRAVEL IS A TRANSFORM, NOT A RE-LAYOUT ─────────────────────────
+     ColdBoot re-lerps this rect every frame of the ENTER handoff. Writing that
+     into left/top/width/height animates LAYOUT properties, and the browser
+     scored it exactly as it should: measured CLS 0.0386-0.0402 across the
+     handoff at 1440x900, with `HTML>BODY>DIV#root>DIV` — this element — as the
+     dominant source, against a repo ceiling of 0.005.
+
+     So the box is pinned to whichever rect the travel STARTED from and every
+     later frame is expressed as translate + scale off it. Transform-driven
+     movement is composited and is excluded from layout-shift scoring by
+     definition, so the hitch and the CLS go together.
+
+     `base` re-anchors whenever the splash is not driving (active false), which
+     is what stops Home inheriting a permanent transform after the handoff
+     settles: at rest the base IS the current rect and the transform is
+     identity. The canvas backing store is sized from clientWidth/clientHeight,
+     which a transform does not change — so the orb scales as an image for the
+     1.2s of travel rather than re-sizing its buffer 70 times, and verify-orb's
+     "backing store tracks its CSS box" still holds at both ends. */
+  const baseRef = React.useRef<Rect | null>(null);
+  if (effectiveRect && (!coldBootOrb.active || baseRef.current === null)) {
+    baseRef.current = effectiveRect;
+  }
+  const base = baseRef.current;
+
+  const positionStyle: React.CSSProperties = effectiveRect && base
     ? {
         position: "fixed",
-        left: effectiveRect.x,
-        top: effectiveRect.y,
-        width: effectiveRect.w,
-        height: effectiveRect.h,
-        ...(coldBootOrb.active ? { zIndex: COLDBOOT_Z + 1 } : null),
+        left: base.x,
+        top: base.y,
+        width: base.w,
+        height: base.h,
+        transform:
+          `translate(${(effectiveRect.x - base.x).toFixed(2)}px, ${(effectiveRect.y - base.y).toFixed(2)}px)` +
+          ` scale(${(effectiveRect.w / base.w).toFixed(4)}, ${(effectiveRect.h / base.h).toFixed(4)})`,
+        transformOrigin: "top left",
+        ...(coldBootOrb.active ? { zIndex: COLDBOOT_Z + 1, willChange: "transform" } : null),
       }
     : HIDDEN_STYLE;
 
   return (
     <div data-orb style={{ ...BASE_STYLE, ...positionStyle }}>
-      <div style={CANVAS_WRAP_STYLE}>
+      <div style={{ ...CANVAS_WRAP_STYLE, ...assembleStyle }}>
         <canvas ref={canvasRef} style={CANVAS_STYLE} aria-hidden="true" />
       </div>
       <div style={OVERLAY_STYLE}>

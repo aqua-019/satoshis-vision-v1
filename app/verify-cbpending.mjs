@@ -36,7 +36,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { makeReporter } from './verify-reporter.mjs';
 import {
-  CB_FLOOR, CB_PENDING_CLASS, COLDBOOT_FLAG, COLDBOOT_OFF, coldBootWillRender,
+  CB_FLOOR, CB_HOLD_GLOBAL, CB_HOLD_MS, CB_PENDING_CLASS, CB_T0_GLOBAL,
+  COLDBOOT_FLAG, COLDBOOT_OFF, coldBootWillRender,
 } from './src/coldboot/gate.ts';
 
 const APP = dirname(fileURLToPath(import.meta.url));
@@ -231,7 +232,7 @@ R.ok(/__xmriBootTimeoutMs/.test(HTML ?? ''),
  * ══════════════════════════════════════════════════════════════════════ */
 R.group('── 4 · a throw shows the prerender, never a blank page ──────────');
 
-const applyBlock = /__xmriColdBootWillRender\([\s\S]{0,400}?catch\s*\(/.test(HTML ?? '');
+const applyBlock = /__xmriColdBootWillRender\([\s\S]{0,1200}?catch\s*\(/.test(HTML ?? '');
 R.ok(applyBlock,
   'the class is applied inside a try/catch that fails open',
   'A hardened browser can throw on globals this touches. On a throw the class must stay unset and the ' +
@@ -244,6 +245,44 @@ R.ok(!new RegExp(`classList\\.add\\(["']${CB_PENDING_CLASS}["']\\)[\\s\\S]{0,80}
   'xmrirish.coldboot gates whether a repeat visitor SKIPS THE DECRYPT, not whether the splash renders. ' +
   'Gating the floor on it would leave the flash in place on every visit after the first.');
 
-R.info(`flag global "${COLDBOOT_FLAG}", off value "${COLDBOOT_OFF}", class ".${CB_PENDING_CLASS}", floor ${CB_FLOOR}`);
+/* ══════════════════════════════════════════════════════════════════════
+ * §5 · the hold is a MINIMUM, and the watchdog is exempt from it
+ * ══════════════════════════════════════════════════════════════════════ */
+R.group('── 5 · frame zero holds, as a floor rather than an addition ─────');
+
+R.ok(Number.isFinite(CB_HOLD_MS) && CB_HOLD_MS > 0,
+  `gate.ts declares a hold of ${CB_HOLD_MS}ms`,
+  'without it the floor ends whenever React mounts — measured 212-1017ms unthrottled, i.e. no beat at all');
+
+R.ok(new RegExp(`${CB_T0_GLOBAL}\\s*=\\s*performance\\.now\\(\\)`).test(HTML ?? ''),
+  `index.html stamps ${CB_T0_GLOBAL} with performance.now() when the floor goes up`,
+  'The hold has to be measured from FIRST PAINT. Measuring it from React mounting instead would add the ' +
+  'full hold on top of the bundle time rather than absorbing it, which is the difference between a floor ' +
+  'and a delay.');
+
+/* The arithmetic is what makes it a minimum. Assert the SHAPE in ColdBoot,
+ * because `hold - elapsed` without the clamp is the bug that turns this into
+ * a fixed +1500ms on every load including the slowest. */
+R.ok(/Math\.max\(0,\s*hold\s*-\s*\(performance\.now\(\)\s*-\s*t0\)\)/.test(COLDBOOT_TSX ?? ''),
+  'ColdBoot waits max(0, hold - elapsed) — a floor, never an addition',
+  'Measured: under 6x CPU + Slow-4G a cold / reaches LCP at ~4048ms, where this must contribute exactly 0. ' +
+  'Without the clamp every slow load would pay the full hold on top.');
+
+/* ColdBoot reads it through the imported CB_HOLD_GLOBAL constant rather than a
+ * second string literal, which is the point — so accept either spelling and
+ * require that gate.ts is where the name is defined. */
+R.ok(/CB_HOLD_GLOBAL/.test(COLDBOOT_TSX ?? '') || new RegExp(CB_HOLD_GLOBAL).test(COLDBOOT_TSX ?? ''),
+  `the hold is overridable for tests (${CB_HOLD_GLOBAL}, read via the shared constant)`,
+  'else every scenario touching the splash sleeps 1.5s');
+
+/* The watchdog must NOT wait out the hold. A dead bundle recovering more slowly
+ * than it does today would be a regression introduced by a cosmetic feature. */
+const wdSlice = (HTML ?? '').slice((HTML ?? '').indexOf('setTimeout(function ()'));
+R.ok(wdSlice.length > 0 && !new RegExp(CB_HOLD_GLOBAL).test(wdSlice.slice(0, 900)),
+  'the boot watchdog removes the floor WITHOUT consulting the hold',
+  'A dead bundle must not recover more slowly than it did before frame zero existed. Measured: the ' +
+  'watchdog path releases at 453ms with __xmriBootTimeoutMs=400, ignoring the 1500ms hold.');
+
+R.info(`flag global "${COLDBOOT_FLAG}", off value "${COLDBOOT_OFF}", class ".${CB_PENDING_CLASS}", floor ${CB_FLOOR}, hold ${CB_HOLD_MS}ms`);
 
 process.exit(R.finish());
