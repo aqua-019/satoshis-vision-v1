@@ -119,7 +119,7 @@ per-prompt session note in `CLAUDE.md`.
 - [x] every new assertion has a companion asserting its precondition held
 - [x] break tests done by probe or throwaway copy; `git status` clean and the mutation sweep
       empty before the final chain
-- [ ] design-reviewer returned APPROVE
+- [x] design-reviewer returned APPROVE (re-review after both findings fixed)
 - [ ] Branch pushed · PR opened via GitHub MCP, ready for review
 
 ## 6 · VERIFY COMMANDS
