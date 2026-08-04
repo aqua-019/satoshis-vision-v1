@@ -185,6 +185,30 @@ the tree — the same conclusion CLAUDE.md already records from v6.1.8, where a
 479ms figure "was my own chain running beside the measurement" and the correct
 outcome was to not change the app. **No app change and no budget change was made.**
 
+### Final chain, per gate — `verify:e2e` real exit code **1**
+
+29 declared. **26 ran and passed · 1 red · 2 never ran.**
+
+`verify-charts` (#3) and `verify-memdetail` (#5) print no summary line in this
+format, but both PASSED: the chain is a single `&&` sequence, so #4 and #6
+reporting is structural proof that #3 and #5 exited 0.
+
+`verify-coldboot` (#28) and `verify-orb` (#29) DID NOT RUN — the chain aborted at
+#27. Their verdicts are therefore not from the chain; both were run separately
+against the same dist: **verify-coldboot 29 passed · 0 skipped · exit 0** and
+**verify-orb 104 passed · 0 skipped · exit 0**. Stated as a separate measurement
+rather than folded into a chain tally they were not part of.
+
+The single red is `verify-vitals`: **11 passed · 0 fixtured · 2 skipped · 1
+failed**, the failure being `/` median blocking 522ms against a 400ms budget.
+
+**The contention story confirmed itself inside this run.** `/live/mempool`
+measured **271ms and PASSED** here, having measured 334ms and 314ms in earlier
+runs against the same 300ms budget — the same route crossing its own ceiling in
+both directions on one machine with no code change between. Two other routes
+self-skipped as UNVERIFIABLE at 93.8% and 79.8% spread while the CPU probe read
+268-271ms and flagged nothing.
+
 ### Deviations from spec
 
 · The brief named `coldbootsplash_6.html`; no such file exists. The mockup is
