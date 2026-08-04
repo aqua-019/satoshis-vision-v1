@@ -120,7 +120,7 @@ per-prompt session note in `CLAUDE.md`.
 - [x] break tests done by probe or throwaway copy; `git status` clean and the mutation sweep
       empty before the final chain
 - [x] design-reviewer returned APPROVE (re-review after both findings fixed)
-- [ ] Branch pushed · PR opened via GitHub MCP, ready for review
+- [x] Branch pushed · PR opened via GitHub MCP, ready for review (#162)
 
 ## 6 · VERIFY COMMANDS
 
@@ -144,7 +144,7 @@ node verify-tiers.mjs
 
 **pr:** see `handoffs/LOG.md`
 
-**commits:** 38 on `claude/v6-1-8-cold-boot-main-home-5diiu5`, branched from `origin/main` = `f1dc296`.
+**commits:** 39 on `claude/v6-1-8-cold-boot-main-home-5diiu5`, branched from `origin/main` = `f1dc296`.
 
 ### Final verification — real exit codes, read from in-log markers, never through a pipe
 
@@ -201,6 +201,55 @@ message records that it did not fix what prompted it.
   neighbouring figure degraded to an em-dash. Fixed because it is the cardinal rule and
   because it was the sole source of build non-reproducibility (13 differing files → 1).
 
+### Gate round 1 — CI red on `/` CLS, and the fix is not a ceiling
+
+CI failed at `healthy · / · CLS 0.0158 ≤ 0.005`, deterministically on `33b158c` **and**
+`95669f2`, while three local runs read 0.0000. One entry, four sources. Fixed in `2d1f056`.
+
+```
+kicker available width at 390px                            334px
+"LIVE · MONERO NETWORK · BLOCK 3,700,124" one-line need     327px
+                                                  margin      7px
+```
+
+Seven pixels, decided by font metrics — fits on the authoring box, does not fit on the
+runner. The kicker is the ONE element above the hero's reserved rotator, so a second line
+moved the rotator, the CTA row and the live strip together by 14px.
+
+**The fourth source read as a resize and is not one.** Shift source rects are clipped to
+the viewport: the strip at `y=725` in 844px reports `844−725 = 119`, at `y=739` reports
+`105`. The topbar LED is a casualty too — the pill re-centres inside its `29ch` min-width
+when `CONNECTING` becomes `LIVE`. **Four sources, one cause**, and reading them as four
+problems is what cost the first pass.
+
+The block height is gone from the label: a live figure whose **digit count grows over
+time**, so any margin there is a countdown, and it was already rendered by the `Height`
+stat below — which unlike the label carries a provenance badge. Intrinsic one-line need
+`327px → 176px` in 334px, measured with the probe forcing `white-space: normal` so the
+number is about content, not about the `nowrap` belt now backing it.
+
+**A tighter ceiling would have been the wrong fix.** The score went red, but only just,
+and only where metrics tipped. The property is not "under 0.005" — it is "this box is the
+same height whether or not the feed answered". `verify-cls` already loads exactly those
+two states, so the assertion costs no extra page load. Four new assertions, two-polarity
+each; the `BREAK=same` case is the one worth keeping: both real assertions stayed **green
+while proving nothing**, which is the precondition earning its place. The `BREAK=wrap`
+case reproduced CI's signature exactly — same three hero sources, same `Δy+14`, same
+clipped `119 → 105`.
+
+Re-run at `2d1f056`, whole chain, real exit codes:
+
+```
+tsc --noEmit   exit 0        npm run build   exit 0
+verify:static  exit 0        verify:bundle   exit 0   25 passed · eager 87,372 B ≤ 96,000
+verify:e2e     exit 0        29 gates · 29 green · 0 red · 0 skipped · 0 fixtured
+verify-cls     16 → 20 passed     /  healthy 0.0158 → 0.0000 · degraded 0.0000 unchanged
+```
+
+`verify-vitals` read **17 passed · 0 skipped** here, where the previous chain skipped two
+as UNVERIFIABLE. That is the box being quiet, not the check weakening — recorded so the
+2-skip figure above is not read as a permanent property.
+
 ### Blocked — could not be checked here, in their own column
 
 - live monero.fail census ranking (sandbox egress 403 on CONNECT)
@@ -243,6 +292,23 @@ its claim.** Seven instances, each found only by measuring the thing the label n
 7. `verify-vitals`' CPU probe as a validity claim. It measures average throughput;
    blocking measures tail latency. Under one competing process blocking rose 18–71% while
    the probe moved the **wrong way on three of four routes**.
+
+8. the hero's zero-shift reserve was written for the rotator — `min-height` on the
+   headline and lede, sized to the longest of seven passages. The element **above** the
+   reserve had none, and it was the one whose text changed with the feed. A reserve that
+   covers the elements you were thinking about is not a reserve; it is a list.
+
+**A margin decided by font metrics is not a property, it is a coin toss with a bias.**
+327px of text in 334px of box passed on every machine that authored it and failed on
+every machine that ran CI. The same class as the `/` blocking figure earlier in this
+session, inverted: there the environment made a *green* thing look red, here it made a
+*red* thing look green. Neither is reproducible by re-running on the box that agrees
+with you. **Any measurement whose margin is smaller than the between-machine variance of
+its inputs has told you nothing.**
+
+**A live number's length is a variable even when the number is correct.** The block
+height was true, sourced and rendered — and its digit count grows forever. A layout that
+fits it today is a layout with an expiry date nobody wrote down.
 
 **A static artifact cannot notice that its premise expired.** Four: a skip message, a gate
 header describing the split that made it false, a `CLAUDE.md` paragraph, and a
