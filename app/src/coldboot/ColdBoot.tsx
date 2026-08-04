@@ -390,7 +390,31 @@ const ROOT_STYLE: React.CSSProperties = {
   padding: 24,
 };
 const CANVAS_STYLE: React.CSSProperties = { position: "absolute", inset: 0, display: "block" };
-const CONSOLE_WRAP_BASE: React.CSSProperties = { position: "relative", width: "100%", maxWidth: 1200, zIndex: 1 };
+/** The console's width cap. It was a bare `1200`, which read as a fixed island
+ *  on flat black at every desktop size — at 2560 that is ~1360px of dead space
+ *  framing a 1200px box, while the decrypt phase immediately before it fills
+ *  the whole viewport. The visual language promised full-bleed and withdrew it.
+ *
+ *  `clamp(1200px, 92vw, 1600px)` is never NARROWER than the old fixed value at
+ *  any width — `min(1600px, 92vw)` would have given 1178px at 1280, a 22px
+ *  regression on that class of laptop — and it grows to 1600 on wide screens.
+ *  Measured: 1200 at 1280, 1324.8 at 1440, 1600 at 2560.
+ *
+ *  `max-width` cannot force an element wider than its own `width: 100%`, so the
+ *  1200px lower bound is inert below 1200px of viewport and 390px is untouched.
+ *
+ *  It buys WIDER COLUMNS, not more of them. The grid is
+ *  `repeat(auto-fit, minmax(300px, 1fr))` over exactly three panes, and
+ *  `auto-fit` collapses the empty tracks, so the count is pinned at three at
+ *  every cap. Measured pane inner width: 380.7 at 1200, 422.3 at 1440, 514 at
+ *  2560. (An earlier reading of this change predicted a fourth column; that was
+ *  asserted rather than measured, and it is wrong.) */
+const CONSOLE_WRAP_BASE: React.CSSProperties = {
+  position: "relative",
+  width: "100%",
+  maxWidth: "clamp(1200px, 92vw, 1600px)",
+  zIndex: 1,
+};
 
 /** `display:none` — see the `data-coldboot-decided` render branch below for
  *  why this exists and why it must be provably zero-footprint. */
