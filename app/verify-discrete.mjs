@@ -159,7 +159,13 @@ console.log(`  engine: chromium ${uaVersion}  ·  base: ${BASE}`);
   group('── 0 · engine support (a gate for a feature the engine lacks proves nothing) ─');
   const page = await browser.newPage();
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
-  await assertColdBootBypassed(page, R, '/');
+  // This file predates makeReporter and has its own `ok(cond, label, detail)`
+  // at :67 — same signature, different name, no `R` in scope. The sweep
+  // pattern assumed a reporter object called R and crashed here with
+  // "ReferenceError: R is not defined", in section 0, before any assertion
+  // ran. Adapter rather than a rename: renaming would touch every call site
+  // in a 466-line gate to satisfy a helper's parameter name.
+  await assertColdBootBypassed(page, { ok }, '/');
   const sup = await page.evaluate(() => ({
     behavior: CSS.supports('transition-behavior', 'allow-discrete'),
     // @starting-style has no CSS.supports() surface, so detect it by
