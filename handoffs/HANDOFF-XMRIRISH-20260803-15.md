@@ -88,31 +88,36 @@ per-prompt session note in `CLAUDE.md`.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run build` exits 0
-- [ ] decrypt is deterministic — same seed, same frames; screenshot-diff two runs
-- [ ] `grep -rn "Math.random" app/src/` returns hits only inside `protocols/`
-- [ ] once-per-session gating works — reload lands on the console with no decrypt; clearing the
+- [x] `npm run typecheck` exits 0
+- [x] `npm run build` exits 0
+- [x] decrypt is deterministic — same seed, same frames; screenshot-diff two runs
+- [x] `grep -rn "Math.random" app/src/` returns hits only inside `protocols/`
+- [x] once-per-session gating works — reload lands on the console with no decrypt; clearing the
       flag restores it
-- [ ] orb population, transport split and height agreement come from `/api/nodes` **through
+- [x] orb population, transport split and height agreement come from `/api/nodes` **through
       `useNodePopulation`**, and degrade to an honest empty state on `status: "unavailable"`
       with **no numeric field rendered**
-- [ ] no hostname appears anywhere in the orb or its DOM — asserted in **both** polarities
-- [ ] Dandelion++ layer carries an `ILLUSTRATIVE` badge; no live badge on it anywhere
-- [ ] no node is placed at a geographic location; Tor/I2P render in shells
-- [ ] Enter handoff completes; the orb travels rather than collapsing
-- [ ] rotating hero: **0px layout shift across all seven passages** — measured and reported
-- [ ] `/` CLS **before and after**, both reported, with the route-intercept set named
-- [ ] hero pauses on hover and focus; no auto-advance under reduced motion
-- [ ] every hero passage matches its source file verbatim — **text and attribution**, diffed,
+- [x] no hostname appears anywhere in the orb or its DOM — asserted in **both** polarities
+- [x] Dandelion++ layer carries an `ILLUSTRATIVE` badge; no live badge on it anywhere
+- [x] no node is placed at a geographic location; Tor/I2P render in shells
+- [x] Enter handoff completes; the orb travels rather than collapsing
+- [x] rotating hero: **0px layout shift across all seven passages** — measured and reported
+      `dots 7 · DISTINCT passages rendered 7/7 · line counts 4,3,4,2,3,3,3 · h1 bottom 476 on
+      all seven (ONE distinct value) · CLS during rotation 0.000000, 0 entries`. The first
+      attempt at this used a selector matching nothing and reported seven identical rows as
+      proof — the precondition (7 distinct passages actually rendered, with line counts that
+      genuinely vary) is what separates the two.
+- [x] `/` CLS **before and after**, both reported, with the route-intercept set named
+- [x] hero pauses on hover and focus; no auto-advance under reduced motion
+- [x] every hero passage matches its source file verbatim — **text and attribution**, diffed,
       with a companion assertion that all seven matched
-- [ ] reduced motion: instant resolve, no collapse, no blur, page complete
-- [ ] 390px usable throughout
-- [ ] no text under 12px, or the `--fs-label` token resolved at runtime — standing conflict
+- [x] reduced motion: instant resolve, no collapse, no blur, page complete
+- [x] 390px usable throughout
+- [x] no text under 12px, or the `--fs-label` token resolved at runtime — standing conflict
       **reported, not resolved**
-- [ ] prompt 06's budget gate (`verify-bundle`, `verify-vitals`) stays green
-- [ ] every new assertion has a companion asserting its precondition held
-- [ ] break tests done by probe or throwaway copy; `git status` clean and the mutation sweep
+- [x] prompt 06's budget gate (`verify-bundle`, `verify-vitals`) stays green
+- [x] every new assertion has a companion asserting its precondition held
+- [x] break tests done by probe or throwaway copy; `git status` clean and the mutation sweep
       empty before the final chain
 - [ ] design-reviewer returned APPROVE
 - [ ] Branch pushed · PR opened via GitHub MCP, ready for review
