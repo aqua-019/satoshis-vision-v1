@@ -255,7 +255,54 @@ as UNVERIFIABLE. That is the box being quiet, not the check weakening — record
 - live monero.fail census ranking (sandbox egress 403 on CONNECT)
 - Tor-at-Safest sealed `sessionStorage` behaviour (no Tor runtime)
 
+### Round 1, part 2 — a proposed free fix, measured and REVERTED
+
+Review proposed giving the two dark LED arms `box-shadow: 0 0 6px transparent` instead of
+`none`, so the ink-overflow geometry stops changing between arms — described as free and
+as *provably removing a source*. The mechanism is right and the conclusion is not. Built
+it, measured it, reverted it:
+
+```
+                        LED source rect                       /  healthy CLS
+boxShadow: "none"       6x6@(145,54)  → 24x24@(158,45)          0.000047
+boxShadow: transparent  24x24@(136,45) → 24x24@(158,45)         0.000085
+```
+
+**It does not remove the source — it removes the source's rect CHANGE.** The LED still
+moves 22px, because the pill's content re-centres inside its reserved width, and the
+horizontal move is what makes it a source at all. And because the entry's impact fraction
+is the union of the previous and current rects, replacing `{6x6, 24x24}` with
+`{24x24, 24x24}` makes the union **larger**: the score went up, not down. Both figures are
+~60× under the ceiling so nothing turns on it — which is exactly why it is not worth a
+module constant, a comment and a diff. Reverted; `git status` clean, rebuilt, re-measured.
+
 ### Reported, not resolved
+
+**Desktop `/` shifts on CONNECTING → LIVE, and no gate measures it.** `verify-cls` runs at
+PHONE only. Measured at 1440×900 dpr1, healthy pass, the same harness:
+
+```
+390px    pill 183px → 183px   min-width 182.699px (29ch)   CLS 0.000047
+1440px   pill 109px →  67px   min-width auto               CLS 0.002069
+  dominant entry, 5 sources:
+    DIV.ticker-strip           262x25@(1154,18) → 219x38@(1197,11)   re-solves, +13px tall
+    DIV.footer-tele>SPAN       135x15@(517,879) → 135x15@(674,879)   moves 157px
+    DIV.footer-tele>SPAN        60x15@(136,879) → 120x15@(173,879)
+    SPAN.prov / SPAN.mono      move ~70px as their row re-centres
+```
+
+`styles.css:2125` reserves `.ticker-strip > .pill:first-child { min-width: 29ch }` — but it
+sits **inside `@media (max-width: 768px)`**, so the reservation exists at phone and not
+above it. The five pill labels measure 67 / 88 / 109 / 152 / 181 px, so the unreserved arm
+range is 114px. It is under the 0.005 ceiling today, it is **pre-existing** (the pill arms
+and the strip predate this PR), and the fix is a design call about how much permanent width
+a status chip deserves — which is its own change, not a rider on this one. Recorded with
+numbers so it is knowingly unmeasured rather than silently unmeasured.
+
+**`verify-cls` does not emulate `prefers-reduced-motion` while eighteen other e2e gates do.**
+A real inconsistency, raised in review, and not this bug: `@keyframes ledpulse` is
+`opacity` only, and opacity is compositor-only — it cannot generate a `layout-shift` entry.
+Closing it would re-baseline every CLS number in the repo, so it belongs in its own change.
 
 The 11px/12px standing conflict. `.stat .lbl` computes to 10.5px via a shared primitive
 used by 23 files; `R.info`'d with its measured value rather than asserted or "fixed"
@@ -305,6 +352,20 @@ session, inverted: there the environment made a *green* thing look red, here it 
 *red* thing look green. Neither is reproducible by re-running on the box that agrees
 with you. **Any measurement whose margin is smaller than the between-machine variance of
 its inputs has told you nothing.**
+
+**The runner differs from the sandbox in more than speed, and both directions of that
+mistake cost this session time.** The 479ms was the environment distorting a measurement —
+believe the quiet box. The kicker wrap was the environment *revealing* a defect the fast,
+lucky box could not see — believe the slow box. They look identical from a red badge, and
+what separates them is whether the discrepancy has a mechanism you can name and reproduce.
+The 479ms never got one. The kicker's is 327px in 334px, and forcing the wrap locally
+reproduced CI's source list exactly. **Reproduce the mechanism, not the number.**
+
+**A proposed fix with a correct mechanism can still be the wrong change.** The transparent
+box-shadow explained the LED's rect change correctly and then did not help: the LED's
+*movement*, not its rect change, is what makes it a source, and equalising the rects
+enlarged the entry's impact union. Building it took less time than arguing about it would
+have — which is the argument for building it.
 
 **A live number's length is a variable even when the number is correct.** The block
 height was true, sourced and rendered — and its digit count grows forever. A layout that
