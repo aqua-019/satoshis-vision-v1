@@ -153,6 +153,26 @@ export const SHELL: readonly [number, number, number] = [1.0, 1.17, 1.3];
  */
 export const ORB_MIN_CANVAS_PX = 120;
 
+/**
+ * The sphere's radius as a fraction of the canvas's SHORT side — `drawOrb`
+ * below is the only consumer, and it was an inline `0.43` there.
+ *
+ * Named and exported because it is the one number that turns "the orb painted
+ * something" into a falsifiable geometric claim: every feature `drawOrb` emits
+ * unconditionally is a circle centred on the canvas with a radius that is a
+ * fixed multiple of `ORB_RADIUS_FRAC * min(w, h)`, so the expected extent of the
+ * painting is a pure function of the backing store's dimensions. The outermost
+ * of them is the i2p shell at `SHELL[2]`, giving a structural bounding box of
+ * `2 * ORB_RADIUS_FRAC * SHELL[2] * min(w, h)`.
+ *
+ * `verify-orb.mjs` parses this and `SHELL` out of this file and predicts the
+ * bounding box rather than restating a measured constant. Checked against four
+ * live contexts and it lands within 2px every time (539x363 -> 407 wide against
+ * 405.8 predicted; 288x212 -> 238 against 237.0). Changing this number here
+ * therefore moves the gate's expectation with it, which is the point.
+ */
+export const ORB_RADIUS_FRAC = 0.43;
+
 // ── lattice size — a presentational clamp, not a live figure ───────────────
 
 /** Floor: below this a globe reads as sparse/broken regardless of how few
@@ -473,7 +493,7 @@ export function drawOrb(ctx: CanvasRenderingContext2D, w: number, h: number, sec
 
   const cx = w / 2;
   const cy = h / 2;
-  const R = Math.min(w, h) * 0.43;
+  const R = Math.min(w, h) * ORB_RADIUS_FRAC;
   const angle = seconds * ROTATION_RATE;
 
   const project = (p: Vec3, rr: number): Projected => {
