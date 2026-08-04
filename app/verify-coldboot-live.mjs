@@ -194,6 +194,77 @@ R.group('── 0a · the dist under test was built from HEAD ──────
   }
 }
 
+/* ── D1908b · the SERVER under test is serving THIS dist ──────────────────
+ *
+ * §0a proves commit <-> disk. It proves NOTHING about the wire: APP_DIR and
+ * git are both disk-side, and nothing in §0a touches the server. Those are
+ * different links and only one of them was asserted:
+ *
+ *   the commit      <-> the bytes on disk     §0a
+ *   the bytes on disk <-> the bytes on the wire   §0b (this)
+ *
+ * The gap is not hypothetical — it is the failure that produced this section.
+ * A serve-dist left running from an earlier build (or another worktree) holds
+ * 4173; every `nohup` replacement exits 1 on the busy port; you rebuild, §0a
+ * reads the local stamp and correctly reports "built from HEAD", and every
+ * gate measures a DIFFERENT tree at a perfectly healthy HTTP 200. Each
+ * "serve HTTP 200" confirms a server, never WHICH server.
+ *
+ * IT MUST COMPARE CONTENT, NOT STATUS, and the obvious cheap version is
+ * structurally broken. vercel.json's catch-all is `/((?!api/).*)` ->
+ * /index.html and serve-dist.mjs:92 faithfully mirrors it, so a MISSING asset
+ * does not 404 — measured: `GET /assets/index-DOESNOTEXIST.js` returns
+ * **200 with 41,242 bytes of index.html**. A `status === 200` freshness check
+ * therefore passes on exactly the stale server it exists to catch. That is
+ * this PR's standing family once more: an assertion whose subject is wider
+ * than its claim — "200" means the server answered, not that it has the file.
+ *
+ * The entry chunk is resolved FROM dist/index.html rather than globbed:
+ * dist/assets/ holds more than one `index-*.js`, so a `.find()` picks an
+ * arbitrary one. Vite content-hashes the filename, so the name alone
+ * discriminates between builds, and comparing bytes settles it. */
+R.group('── 0b · the server under test is serving THIS dist ────────────────');
+{
+  const distIndex = join(APP_DIR, 'dist', 'index.html');
+  if (!existsSync(distIndex)) {
+    R.ok(false, 'dist/index.html exists to compare against',
+      'No local build to compare the wire against — run `npm run build` first.');
+    R.finish(); process.exit(1);
+  }
+  const localHtml = readFileSync(distIndex);
+  const entry = (localHtml.toString().match(/\/assets\/(index-[A-Za-z0-9_-]+\.js)/) || [])[1] ?? null;
+
+  R.ok(entry !== null, 'resolved the entry chunk from dist/index.html',
+    entry !== null ? `${entry}` :
+      'Could not find /assets/index-*.js in dist/index.html — the shell shape changed and this ' +
+      'check would silently compare nothing.');
+
+  if (entry) {
+    const localJs = readFileSync(join(APP_DIR, 'dist', 'assets', entry));
+    let servedJs = null, fetchErr = null;
+    try {
+      const res = await fetch(`${BASE}/assets/${entry}`);
+      servedJs = Buffer.from(await res.arrayBuffer());
+    } catch (e) { fetchErr = String(e && e.message || e); }
+
+    if (servedJs === null) {
+      R.ok(false, `the server at ${BASE} answered for ${entry}`,
+        `No response: ${fetchErr}. Start serve-dist AFTER the build and confirm it is still up.`);
+      R.finish(); process.exit(1);
+    }
+    const match = servedJs.equals(localJs);
+    R.ok(match,
+      `the server under test is serving THIS dist (${entry}, ${localJs.length} B)`,
+      match ? '' :
+        `WRONG SERVER: ${BASE} answered ${servedJs.length} B for ${entry}; this dist has ` +
+        `${localJs.length} B. The port is held by a DIFFERENT build — most often a serve-dist ` +
+        `still running from an earlier build or another worktree, which every replacement ` +
+        `attempt silently lost the port race to. Kill it by PID (never pkill -f, the pattern ` +
+        `matches your own shell) and restart AFTER the build.`);
+    if (!match) { R.finish(); process.exit(1); }
+  }
+}
+
 R.group('── 0 · derived sweep audit: every /-reaching gate installs the bypass ──');
 {
   const files = readdirSync('.').filter((f) => /^verify-.*\.mjs$/.test(f)).sort();
