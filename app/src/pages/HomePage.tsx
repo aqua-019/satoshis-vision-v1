@@ -44,6 +44,25 @@ const HERO_LEFT_STYLE: React.CSSProperties = { display: "flex", flexDirection: "
 /** Empty, reserved — see the file header. Rendered by this file; filled by another. */
 const ORB_BOX_STYLE: React.CSSProperties = { position: "relative", width: "100%", aspectRatio: "1 / 1", maxHeight: "52vh" };
 
+/* The kicker is the ONE element above the reserved rotator, so anything that
+ * changes its height moves the entire hero — and its text changes when the feed
+ * lands. It shipped as `LIVE · MONERO NETWORK · BLOCK 3,700,124`, which needs
+ * 327px to set on one line where 390px leaves 334px: seven pixels of margin,
+ * decided by font metrics. This box fits locally and wrapped on CI, and one
+ * extra line pushed the rotator, the CTA row and the live strip down 14px for
+ * CLS 0.0158 against a 0.005 ceiling.
+ *
+ * Two changes, and the first is the one that matters:
+ *   · the block height is GONE from this string. It is a live figure whose
+ *     DIGIT COUNT GROWS OVER TIME, so any margin here is a countdown — and it
+ *     is already rendered by the `Height` stat 30 lines below, which unlike
+ *     this label carries a provenance badge. Removing it deletes a duplicate,
+ *     provenance-less figure; it does not remove information from the page.
+ *   · nowrap pins the height at one line whatever the string becomes, so a
+ *     future edit reintroduces an ellipsis rather than a layout shift. With no
+ *     number left in the label there is nothing here that can truncate. */
+const KICKER_STYLE: React.CSSProperties = { whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" };
+
 const ROTATOR_STYLE: React.CSSProperties = { display: "flex", flexDirection: "column" };
 /* Zero layout shift across all seven passages, by construction: these two
  * reserves are sized to the longest of the seven finalised strings plus
@@ -107,10 +126,8 @@ export function HomePage() {
       {/* Hero */}
       <section style={HERO_GRID_STYLE}>
         <div style={HERO_LEFT_STYLE}>
-          <div className="kicker">
-            {hasData(data.status.network)
-              ? `LIVE · MONERO NETWORK · BLOCK ${data.height.toLocaleString()}`
-              : "MONERO NETWORK"}
+          <div className="kicker" style={KICKER_STYLE}>
+            {hasData(data.status.network) ? "LIVE · MONERO NETWORK" : "MONERO NETWORK"}
           </div>
 
           <div
