@@ -17,7 +17,10 @@
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
 
-const base = 'http://localhost:4173';
+// verify-lib.mjs:20 declares BASE once precisely so this is not restated.
+// Hardcoding it made this the ONE gate that ignores VERIFY_BASE, which costs
+// a rebuild the moment anyone runs the suite against a second port.
+import { BASE as base } from './verify-lib.mjs';
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';

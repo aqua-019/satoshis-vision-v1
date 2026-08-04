@@ -106,3 +106,42 @@ if (failed) {
   process.exit(1);
 }
 console.log(`\n✅ prerendered ${ROUTES.length} routes`);
+
+/* ── D1908 · stamp the SHA this dist was built from ───────────────────────
+ *
+ * Nothing in this harness tied the BYTES being measured to the COMMIT being
+ * claimed. Two operators hit that inside one hour, from opposite ends: one
+ * rebuilt while serve-dist was serving (the server died mid-chain and every
+ * later gate reported ERR_CONNECTION_REFUSED), the other served a dist built
+ * ten minutes before the checkout and got four confident RED assertions about
+ * a `phase` attribute the bundle predated. Five false results, no defect in
+ * any gate, and nothing anywhere noticed the mismatch.
+ *
+ * It is the precondition rule applied to the harness rather than to an
+ * assertion: THE RUN CANNOT SEE ITS OWN SUBJECT. verify-coldboot-live §0
+ * compares this against `git rev-parse HEAD` and aborts the chain on drift,
+ * which is why it is written here — prerender is the last step that touches
+ * dist/, so a stamp written here cannot precede the bytes it describes.
+ *
+ * Written to .perf/ (gitignored, already the home of bundle-graph.json) and
+ * NOT into dist/, so nothing about the build ships to a visitor. On a repo
+ * where the SHA is public that is not a secrecy argument — it is that a
+ * privacy site should ship exactly what it means to ship and nothing else.
+ *
+ * A missing git binary yields "unknown" rather than a throw: the gate reports
+ * that as unverifiable-and-counted, never as a pass. */
+try {
+  const { execFileSync } = await import("node:child_process");
+  const sha = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: appDir, encoding: "utf8", stdio: ["ignore", "pipe", "ignore"],
+  }).trim();
+  const perfDir = join(appDir, ".perf");
+  mkdirSync(perfDir, { recursive: true });
+  writeFileSync(join(perfDir, "build-sha.txt"), sha + "\n", "utf8");
+  console.log(`  build stamped ${sha.slice(0, 8)} -> .perf/build-sha.txt`);
+} catch {
+  const perfDir = join(appDir, ".perf");
+  mkdirSync(perfDir, { recursive: true });
+  writeFileSync(join(perfDir, "build-sha.txt"), "unknown\n", "utf8");
+  console.log("  build stamped unknown (no git) -> .perf/build-sha.txt");
+}

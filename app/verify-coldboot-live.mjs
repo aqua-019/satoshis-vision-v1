@@ -36,11 +36,19 @@
  */
 
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   makeReporter, launchChromium, BASE,
   coldBootOff, coldBootOffBrowser, assertColdBootBypassed,
   COLDBOOT_SEL, COLDBOOT_DECIDED_SEL, COLDBOOT_FLAG, PHONE,
 } from './verify-lib.mjs';
+
+/** This file lives at app/, so its own directory IS the app root. Derived
+ *  rather than assumed from process.cwd(), because `cd` drift has produced
+ *  wrong conclusions in this repo more than once. */
+const APP_DIR = dirname(fileURLToPath(import.meta.url));
 
 
 const R = makeReporter('verify-coldboot-live');
@@ -69,6 +77,55 @@ R.skip = (label, why) => { _skips++; _origSkip(label, why); };
  * failed — nothing runs them, so a fix there cannot be proven correct, and
  * CLAUDE.md already records 68 stale route literals in them as a knowing
  * decision. Recorded as a decision rather than an omission. */
+/* ── D1908 · the run must be able to see its own subject ──────────────────
+ *
+ * Before any assertion about the served page, prove the served page was built
+ * from the commit we are claiming to test. Nothing else in this harness does:
+ * verify:e2e, every gate, and serve-dist.mjs contain no rev-parse, no
+ * BUILD_SHA, no mtime comparison.
+ *
+ * That gap produced five confident false results in one hour, from opposite
+ * directions — a rebuild while serve-dist was serving (server died mid-chain,
+ * every later gate reported ERR_CONNECTION_REFUSED), and a dist served from
+ * ten minutes before the checkout (four RED assertions about a `phase`
+ * attribute the bundle predated). No gate was wrong in either case. The
+ * bytes and the SHA simply disagreed and nothing was looking.
+ *
+ * It runs FIRST in the FIRST gate of the chain, so a stale dist aborts before
+ * anything measures it, rather than after twenty-seven gates have reported
+ * about the wrong tree.
+ *
+ * "unknown" (no git at build time) is reported as UNVERIFIABLE and counted —
+ * never silently treated as a match. */
+R.group('── 0a · the dist under test was built from HEAD ──────────────────');
+{
+  const shaPath = join(APP_DIR, '.perf', 'build-sha.txt');
+  const built = existsSync(shaPath) ? readFileSync(shaPath, 'utf8').trim() : null;
+  let head = null;
+  try {
+    head = execFileSync('git', ['rev-parse', 'HEAD'],
+      { cwd: APP_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch { /* no git — reported below, never assumed to match */ }
+
+  if (built === null) {
+    R.ok(false, 'dist carries a build stamp (.perf/build-sha.txt)',
+      'No stamp. Run `npm run build` before the chain — without it nothing ties the bytes ' +
+      'being measured to the commit being claimed, which has produced false REDs and false GREENs.');
+  } else if (built === 'unknown' || head === null) {
+    R.skip('the dist under test was built from HEAD',
+      `UNVERIFIABLE: build stamp is "${built}", git HEAD is ${head ?? 'unavailable'}. ` +
+      'Counted, not passed — this check exists precisely because an unverified match is not a match.');
+  } else {
+    R.ok(built === head,
+      `dist was built from HEAD (${head.slice(0, 8)})`,
+      built === head ? '' :
+        `STALE DIST: serving a build of ${built.slice(0, 8)} while HEAD is ${head.slice(0, 8)}. ` +
+        'Every assertion after this one would describe a tree that is not the one under test. ' +
+        'Rebuild (`npm run build`) and restart serve-dist AFTER the build, never during — ' +
+        'vite clears dist/ and the running server dies on the missing index.html.');
+  }
+}
+
 R.group('── 0 · derived sweep audit: every /-reaching gate installs the bypass ──');
 {
   const files = readdirSync('.').filter((f) => /^verify-.*\.mjs$/.test(f)).sort();
@@ -138,9 +195,18 @@ R.group('── 0 · derived sweep audit: every /-reaching gate installs the byp
   // The audit's own vacuity guard. If the detector matched nothing, the
   // assertion above passes for free — the same empty-loop failure the hero
   // gate's matched-counter exists to prevent.
-  R.ok(reaching.length >= 10,
-    `the /-reaching detector found a plausible set (${reaching.length}; expected ~12 wired + ~7 orphans)`,
-    reaching.length < 10
+  // The label used to say "expected ~12 wired + ~7 orphans" while the
+  // predicate only tested the SUM — so it stated a breakdown it never
+  // checked, and the breakdown was wrong (measured: 14 wired, 5 orphans).
+  // A label asserting more than its predicate is the same defect as an
+  // assertion whose subject is wider than its claim, pointed the other way:
+  // here the claim is wider than the check. Now both halves are asserted
+  // separately, so a shift BETWEEN the buckets — a wired gate silently
+  // becoming an orphan — reds instead of hiding inside a stable total.
+  const wiredReaching = reaching.length - orphanReaching.length;
+  R.ok(wiredReaching >= 10,
+    `the /-reaching detector found a plausible WIRED set (${wiredReaching} wired, ${orphanReaching.length} orphaned, need >=10 wired)`,
+    wiredReaching < 10
       ? 'Detector matched almost nothing — its patterns have gone stale and the assertion above is vacuous.'
       : '');
 
