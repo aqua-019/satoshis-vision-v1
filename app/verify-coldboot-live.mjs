@@ -162,7 +162,34 @@ R.group('── 0a · the dist under test was built from HEAD ──────
   /* 0a-2 · no source input is newer than the build stamp. Catches the case
    * 0a-1 structurally cannot: a dirty tree, where HEAD is unchanged and the
    * bytes are stale anyway. */
-  if (built !== null) {
+  /* SUPPRESSED when the tree is clean AND the SHA matches, and this is not a
+   * weakening — it drops the one input 0a-2 provably cannot learn from.
+   *
+   * If `git status --porcelain` is empty and stamp === HEAD, then disk content
+   * == HEAD content == the content the stamped build was made from. A newer
+   * mtime under that condition cannot indicate stale BYTES, only a rewrite:
+   * `git checkout --` restoring a file after a break test rewrites it with
+   * identical content and a fresh mtime, as do `git stash pop` and a branch
+   * bounce.
+   *
+   * The rate is what forces this. The false red is not occasional — it fires
+   * on EVERY break-test cycle, because the act of cleaning up after testing a
+   * check trips the check, and a guard that costs a pointless rebuild every
+   * time you exercise it is a guard people learn to route around.
+   *
+   * It still runs in exactly the cases that matter: a DIRTY tree (precisely
+   * when the SHA cannot help — the hole 0a-2 exists for) and no git at all
+   * (precisely when 0a-1 is a skip). */
+  let treeClean = null;
+  try {
+    treeClean = execFileSync('git', ['status', '--porcelain'],
+      { cwd: APP_DIR, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() === '';
+  } catch { /* no git — leave null so the mtime check runs */ }
+
+  if (built !== null && treeClean === true && built === head) {
+    R.info('0a-2 not run: tree is clean and stamp === HEAD, so disk content is HEAD content — ' +
+           'a newer mtime there can only be a content-preserving rewrite (checkout/stash/branch).');
+  } else if (built !== null) {
     const stampAt = statSync(shaPath).mtimeMs;
     let newest = 0, newestPath = '';
     const walk = (dir) => {
@@ -221,8 +248,17 @@ R.group('── 0a · the dist under test was built from HEAD ──────
  *
  * The entry chunk is resolved FROM dist/index.html rather than globbed:
  * dist/assets/ holds more than one `index-*.js`, so a `.find()` picks an
- * arbitrary one. Vite content-hashes the filename, so the name alone
- * discriminates between builds, and comparing bytes settles it. */
+ * arbitrary one — measured, the glob's first match is index-BBP8o3R3.js while
+ * the real entry is index-BXixSDdM.js. Vite content-hashes the filename, so
+ * the name alone discriminates between builds, and comparing bytes settles it.
+ *
+ * DO NOT "simplify" this to compare dist/index.html instead. That looks like
+ * the cheaper subject and is the wrong one: index.html was not byte-stable
+ * across two builds of an identical tree until the Footer clock was guarded
+ * (it baked the build machine's wall time into all thirteen routes), and any
+ * future prerender-time value of that kind would make an index.html
+ * comparison false-red on every innocuous rebuild. The entry chunk is the
+ * subject whose bytes are a pure function of the source. */
 R.group('── 0b · the server under test is serving THIS dist ────────────────');
 {
   const distIndex = join(APP_DIR, 'dist', 'index.html');
