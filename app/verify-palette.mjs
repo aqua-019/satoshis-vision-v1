@@ -36,7 +36,7 @@
 // string does not appear). Every navigation is `domcontentloaded` plus an
 // explicit selector wait.
 
-import { BASE, launch, makeReporter } from './verify-lib.mjs';
+import { BASE, launch, makeReporter, coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 import { IA } from './src/nav/ia.ts';
 import { R } from './scripts/routes.mjs';
 
@@ -44,6 +44,9 @@ const REPORT = makeReporter('verify-palette');
 const SETTLE = 300;
 
 const { browser, engine } = await launch();
+// v6.1.8: open(page, '/') appears 11x in this file. See verify-lib.mjs's
+// COLD BOOT block.
+await coldBootOffBrowser(browser);
 REPORT.info(`engine: ${engine}`);
 REPORT.info(`base:   ${BASE}`);
 
@@ -53,6 +56,11 @@ const soft = (p) => p.catch(() => null);
 async function open(page, route) {
   await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
   await soft(page.waitForSelector('.art-stage', { timeout: 20000 }));
+  // v6.1.8 PRECONDITION, centralised here because every navigation in
+  // this file goes through open(). Home only — the splash exists on no
+  // other route, and asserting its absence elsewhere would manufacture
+  // passes that mean nothing.
+  if (route === '/' || route === R.HOME) await assertColdBootBypassed(page, REPORT, route);
 }
 
 const dialog = (page) => page.locator('[role="dialog"]');

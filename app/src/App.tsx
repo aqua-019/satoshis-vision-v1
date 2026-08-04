@@ -6,7 +6,7 @@
  */
 
 import * as React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 
 import { DataProvider } from "@/data/DataContext";
 import { VisualProvider } from "@/design/VisualContext";
@@ -55,6 +55,36 @@ const SourcesPage        = React.lazy(() => import("@/pages/SourcesPage").then((
 const NotFoundPage       = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
 const SimulatePage       = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
 
+// v6.1.8 cold boot (app/src/coldboot/ColdBoot.tsx) — lazy so the splash costs
+// HomePage's eager entry chunk nothing; `fallback={null}` is also what makes
+// prerendering (renderToString, which never awaits a lazy import) resolve to
+// "nothing here" for this boundary rather than a "loading…"-shaped string
+// that would trip the prerenderer's own SUSPENDED_RE resolution loop.
+const ColdBoot = React.lazy(() => import("@/coldboot/ColdBoot").then((m) => ({ default: m.ColdBoot })));
+
+// The orb is mounted as its OWN sibling, deliberately NOT inside <ColdBoot>.
+// A ColdBoot-owned orb would unmount the instant ColdBoot reaches phase
+// "done" — which is exactly when the Enter handoff completes — and
+// verify-coldboot §4 requires [data-orb] to be the SAME node before and
+// after Enter, persisting and moving. Mounting it here makes "the orb
+// survives the collapse" true by construction: nothing has to remember not
+// to unmount it, because nothing is in a position to. The rect flows the
+// other way, via ColdBoot's exported useColdBootOrbState().
+const Orb = React.lazy(() => import("@/coldboot/Orb").then((m) => ({ default: m.Orb })));
+
+/**
+ * Renders children only on `/`. A wrapper rather than an early return inside
+ * Orb itself, because a guard inside the component runs AFTER its hooks —
+ * React requires a stable hook order, so `useOrbData()` and its `/api/nodes`
+ * subscription would still execute on every route before the component could
+ * decline to render. Gating at the mount point is what actually skips the
+ * work, and it also stops the orb's lazy chunk being fetched at all off-Home,
+ * which is the half that matters on Slow-4G.
+ */
+function HomeOnly({ children }: { children: React.ReactNode }) {
+  return useLocation().pathname === R.HOME ? <>{children}</> : null;
+}
+
 export interface AppProps {
   /** Swap in your own MoneroLive hook from the host runtime. */
   useFeed?: Parameters<typeof DataProvider>[0]["useFeed"];
@@ -71,6 +101,37 @@ export function App({ useFeed }: AppProps = {}) {
       <AmbientField />
       <NavTransitions />
       <DataProvider useFeed={useFeed}>
+        {/* v6.1.8 cold boot — INSIDE DataProvider: ColdBoot renders
+            <ColdBootConsole>, which reads useMoneroLive() and therefore
+            throws outside this provider (caught the hard way — see the
+            return notes). Sibling of <AmbientField/> is about z-order/DOM
+            position, not about which provider wraps it. */}
+        <React.Suspense fallback={null}>
+          <ColdBoot />
+        </React.Suspense>
+        {/* Sibling of <ColdBoot/>, not a child — see the Orb declaration above.
+            Its own boundary too, so a slow orb chunk can never delay the
+            splash root appearing, and vice versa.
+
+            HOME-ONLY, and this is a measured fix rather than tidiness. The orb
+            previously mounted on EVERY route and merely hid itself with
+            display:none — so on /live/mempool it still fetched its lazy chunk,
+            subscribed useNodePopulation (an /api/nodes request) and
+            useFeedEvents, and ran its hooks, all to render nothing. Under
+            verify-vitals' 6x CPU + Slow-4G profile that cost /live/mempool
+            about a second of LCP: 3010ms historically, 4036ms measured against
+            a 4000ms budget, on a run whose CPU probe (247ms) was inside the
+            contention threshold, so it was a real regression and not noise.
+
+            Unmounting on a route change is safe for verify-coldboot §4, which
+            requires [data-orb] to be the same node before and after ENTER —
+            that handoff happens entirely within `/`, and the route never
+            changes during it. */}
+        <HomeOnly>
+          <React.Suspense fallback={null}>
+            <Orb />
+          </React.Suspense>
+        </HomeOnly>
         {/* D0745 — the route announcer is a SIBLING of <Suspense>, not a
             descendant of any page. A live region has to be in the DOM BEFORE
             the text it announces changes; one that is created in the same

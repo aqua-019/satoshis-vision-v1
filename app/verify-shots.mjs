@@ -74,7 +74,8 @@
 // why the set is worth a human's eyes. It catches nothing that moves.
 
 import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
-import { launch, newThemedPage, freezeAmbient, makeReporter, BASE, ROUTES, THEMES, SIM_ROUTES } from './verify-lib.mjs';
+import { launch, newThemedPage, freezeAmbient, makeReporter, BASE, ROUTES, THEMES, SIM_ROUTES,
+         coldBootOffBrowser } from './verify-lib.mjs';
 
 const argv = process.argv.slice(2);
 const arg = (k, d) => { const i = argv.indexOf(k); return i >= 0 ? argv[i + 1] : d; };
@@ -118,6 +119,22 @@ const SKIPPED = FULL_MATRIX - ATTEMPTED;
 
 const R = makeReporter('verify-shots');
 const { browser, engine } = await launch();
+/* v6.1.8 COLD BOOT — and this one INVALIDATES EVERY EXISTING BASELINE TREE.
+ *
+ * ROUTES[0] is '/', so the sweep shoots Home first, in every theme and at
+ * every width. Without the bypass those shots would capture the splash
+ * instead of Main Home, and the pixel diff would compare a splash against a
+ * baseline of the old Home — a wall of differences that says nothing.
+ *
+ * WITH the bypass they capture the REWRITTEN Home, which is still a different
+ * page from the baseline's Home. So either way the `/` rows in any baseline
+ * tree built before v6.1.8 are dead. This is a NAMED CONSEQUENCE, not a
+ * silent absorption: `verify-shots` is npm-wired and deliberately not in CI
+ * precisely because a --baseline diff needs a tree built from another commit,
+ * and nobody can regenerate that automatically. Re-baseline `/` after this
+ * lands; until then read `/` rows as uncomparable, which is what the gate's
+ * own NOISE FLOOR line already reports rather than folding into a pass. */
+await coldBootOffBrowser(browser);
 console.log('engine:', engine);
 console.log(`writing ${routes.length} routes × ${THEME_SET.length} themes × ${WIDTHS.length} widths → ${OUT}`);
 if (SKIPPED > 0) {

@@ -75,6 +75,7 @@
 import {
   makeReporter, launchChromium, BASE,
   CPU_THROTTLE, PHONE, MOCK_LATENCY_MS, throttle, mockStatus,
+  coldBootOffBrowser, assertColdBootBypassed,
 } from './verify-lib.mjs';
 // Aliased: `R` is already the reporter in this file. Keys below are derived
 // from the canonical route constants rather than retyped, because five of them
@@ -228,6 +229,10 @@ const ROUTES = Object.keys(MEASURED);
 const R = makeReporter('verify-cls');
 
 const { browser } = await launchChromium();
+// v6.1.8: `/` is one of the MEASURED routes and now boots behind a splash.
+// Without this every `/` number below would describe the splash. See
+// verify-lib.mjs's COLD BOOT block for why the wrapper, not per-site edits.
+await coldBootOffBrowser(browser);
 
 /* Feature-detect once, on a throwaway page, before claiming anything. */
 const probe = await browser.newPage();
@@ -405,6 +410,12 @@ async function measure(route, mocked) {
   // "on load" by any reading.
   await page.waitForTimeout(3000);
 
+  // v6.1.8 PRECONDITION. A CLS number measured through the cold-boot splash
+  // describes the splash, not the route — and it would read LOW (a
+  // full-bleed overlay does not shift), so it would pass while measuring
+  // nothing. Only meaningful on Home; asserted only there.
+  if (route === RT.HOME) await assertColdBootBypassed(page, R, `${route}${mocked ? ' healthy' : ' degraded'}`);
+
   const cls = await page.evaluate(() => window.__CLS__ ?? 0);
   const entries = await page.evaluate(() => window.__CLS_ENTRIES__ ?? []);
   /* Did the /api/nodes mock actually REACH the panel? Carried out of measure()
@@ -421,8 +432,25 @@ async function measure(route, mocked) {
     const t = el.innerText || '';
     return { hasDigit: /\d/.test(t), saysDidNotAnswer: /did not answer/i.test(t) };
   });
+  /* Home's hero kicker, for the cross-pass assertion below. Captured here
+     rather than in a gate of its own because the two passes ALREADY load the
+     two states it needs — degraded is the feed-absent copy of this label,
+     healthy is the feed-present copy — so the check costs no extra page load. */
+  const kicker = route !== RT.HOME ? null : await page.evaluate(() => {
+    const el = document.querySelector('.home-hero .kicker');
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    return {
+      text: (el.textContent || '').trim(),
+      h: Math.round(r.height),
+      // Distinct line-box tops — the property that actually moved the page.
+      lines: new Set([...range.getClientRects()].map((x) => Math.round(x.top))).size,
+    };
+  });
   await ctx.close();
-  return { cls: cls + INFLATE, entries, nodePanel };
+  return { cls: cls + INFLATE, entries, nodePanel, kicker };
 }
 
 const movedPx = (s) => (s.prev && s.cur
@@ -472,7 +500,7 @@ for (const pass of PASSES) {
     const worst = Math.max(...values);
     const shown = values.map((v) => v.toFixed(4)).join(', ');
     const worstRun = results[values.indexOf(worst)];
-    recorded[pass.key].routes[route] = { worst, runs: values, entries: worstRun.entries };
+    recorded[pass.key].routes[route] = { worst, runs: values, entries: worstRun.entries, kicker: worstRun.kicker };
 
     // The measurement is printed EVERY run, pass or fail. This is the line that
     // makes drift visible long before it becomes a failure.
@@ -515,6 +543,50 @@ for (const pass of PASSES) {
         `${pass.key} · ${route} · CLS ${worst.toFixed(4)} ≤ ${pass.table[route]}`,
         `measured ${shown} — if this is a real layout change, move the ceiling deliberately and say why`);
     }
+  }
+}
+
+/* ── Home's hero kicker: the same box in both feed states ────────────────────
+ * Added after CI failed here at 0.0158 where this box was the whole cause. The
+ * kicker is the only element above the hero's reserved rotator, so its height
+ * is the height of everything below it. It read
+ * `LIVE · MONERO NETWORK · BLOCK 3,700,124` once the feed landed — 327px of
+ * one-line text in 334px of space at 390px, seven pixels decided by font
+ * metrics. It fitted on the authoring box and wrapped on the runner, and the
+ * resulting 14px push moved the rotator, the CTA row and the live strip
+ * together for a single 0.0158 entry with four sources.
+ *
+ * WHY THIS ASSERTION AND NOT A TIGHTER CEILING. The CLS number did its job —
+ * it went red — but only just, and only where the metrics happened to tip. The
+ * property that has to hold is not "the score stays under 0.005"; it is "this
+ * box is the same height whether or not the feed answered". That is binary,
+ * it holds by construction (the label is now nowrap and carries no growing
+ * number), and it fails on the machine where the wrap happens rather than on
+ * whichever machine also happens to exceed a threshold.
+ *
+ * The precondition is the point: both readings come from the SAME selector on
+ * pages that are supposed to differ, so a selector that matches nothing, or
+ * two passes that silently rendered the same state, would make the equality
+ * trivially true. The text-differs check is what stops that. */
+if (!MEASURE_ONLY) {
+  R.group('verify-cls · Home hero kicker — one box, both feed states');
+  const cold = recorded.degraded?.routes?.[RT.HOME]?.kicker ?? null;
+  const live = recorded.healthy?.routes?.[RT.HOME]?.kicker ?? null;
+  R.ok(!!cold && !!live,
+    'precondition: the hero kicker was found in both passes',
+    `degraded=${JSON.stringify(cold)} healthy=${JSON.stringify(live)} — .home-hero .kicker matched nothing, so the equality below would be vacuous`);
+  if (cold && live) {
+    R.info(`  degraded "${cold.text}" — ${cold.lines} line(s), ${cold.h}px`);
+    R.info(`  healthy  "${live.text}" — ${live.lines} line(s), ${live.h}px`);
+    R.ok(cold.text !== live.text,
+      'precondition: the two passes really did render different kicker text (feed-absent vs feed-present)',
+      `both read "${cold.text}" — the passes are not exercising the two states, so equal heights prove nothing`);
+    R.ok(cold.lines === 1 && live.lines === 1,
+      `the hero kicker sets on ONE line in both states (${cold.lines} / ${live.lines})`,
+      'a second line here pushes the whole hero down — it is the only element above the reserved rotator');
+    R.ok(cold.h === live.h,
+      `the hero kicker is the same height in both states (${cold.h}px / ${live.h}px)`,
+      'the feed landing must not change this box; everything below it moves by the difference');
   }
 }
 

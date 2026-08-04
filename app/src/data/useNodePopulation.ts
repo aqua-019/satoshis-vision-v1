@@ -115,6 +115,43 @@ export interface NodePopulationUnavailable {
 /** Discriminated on `status` — narrow before reading anything numeric. */
 export type NodePopulation = NodePopulationOk | NodePopulationUnavailable;
 
+/**
+ * Share of the sampled population within 2 blocks of the modal height, as a
+ * percentage — or `null` when the sample is empty (never 0, which would read
+ * as "nobody agrees" rather than "we asked nobody").
+ *
+ * ── WHY THIS LIVES HERE AND NOT AT ITS CALL SITES ─────────────────────────
+ *
+ * It shipped TWICE, character-identical, in `NodePopulationPanel.tsx` and
+ * `ColdBootConsole.tsx` — the second carrying a comment that named the hazard
+ * ("two surfaces computing height agreement two different ways is a defect
+ * waiting for a user to find it") two lines above reproducing it. Both render
+ * the same statistic under the same label on the same site. They agreed on the
+ * day they were written and nothing made them agree the day after.
+ *
+ * A gate asserting the two implementations match would work and is the wrong
+ * tool: it adds an assertion to maintain in order to protect a duplication
+ * that did not need to exist. One exported pure function over the type this
+ * module already owns makes the drift impossible instead of detectable —
+ * the same preference for "true by construction" over "true and checked" that
+ * keeps hostnames off the wire by giving `Node` no host field at all.
+ *
+ * ── THE THRESHOLD ─────────────────────────────────────────────────────────
+ *
+ * `<= 2` is deliberately the exact complement of `api/nodes.js`'s `lag > 2`
+ * lagging test, so agreement and lagging PARTITION the sample — no node is
+ * both, none is neither. Change one and you must change the other, or the two
+ * figures on `/live/network` will quietly stop summing.
+ */
+export function heightAgreementPct(height: NodeHeight): number | null {
+  const sample = height.clusters.reduce((a, c) => a + c.count, 0);
+  if (sample <= 0) return null;
+  const withinTwo = height.clusters
+    .filter((c) => Math.abs(c.lag) <= 2)
+    .reduce((a, c) => a + c.count, 0);
+  return (withinTwo / sample) * 100;
+}
+
 export interface UseNodePopulationResult {
   data: NodePopulation | null;
   status: SeriesStatus;

@@ -46,7 +46,7 @@
 // really did reach 400. A restore test that silently ran against an
 // unscrollable element would pass forever and prove nothing.
 
-import { BASE, launch, makeReporter, ROUTES } from './verify-lib.mjs';
+import { BASE, launch, makeReporter, ROUTES, coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 import { R as Routes } from './scripts/routes.mjs';
 
 const R = makeReporter('verify-nav');
@@ -54,6 +54,10 @@ const SETTLE = 500;
 const TOL = 2;
 
 const { browser, engine } = await launch();
+// v6.1.8: ROUTES[0] is '/', so the route walk reaches Home, as do the
+// explicit open(page, Routes.HOME) calls and the back-navigation check.
+// See verify-lib.mjs's COLD BOOT block.
+await coldBootOffBrowser(browser);
 R.info(`engine: ${engine}`);
 R.info(`base:   ${BASE}`);
 
@@ -74,6 +78,11 @@ const soft = (p) => p.catch(() => null);
 async function open(page, route) {
   await page.goto(BASE + route, { waitUntil: 'domcontentloaded' });
   await soft(page.waitForSelector('.art-stage', { timeout: 20000 }));
+  // v6.1.8 PRECONDITION, centralised here because every navigation in
+  // this file goes through open(). Home only — the splash exists on no
+  // other route, and asserting its absence elsewhere would manufacture
+  // passes that mean nothing.
+  if (route === '/' || route === Routes.HOME) await assertColdBootBypassed(page, R, route);
 }
 
 /** Wait for at least one #page-title to be in the DOM. `waitForSelector`

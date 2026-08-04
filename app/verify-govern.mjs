@@ -34,7 +34,7 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, relative } from "node:path";
-import { makeReporter, launch, BASE } from "./verify-lib.mjs";
+import { makeReporter, launch, BASE, coldBootOffBrowser, assertColdBootBypassed } from "./verify-lib.mjs";
 
 const staticOnly = process.argv.includes("--static");
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -373,6 +373,10 @@ R.group("── 7 · a shed is visible from outside (browser) ──────
     // never checked — the exact failure mode this file exists to prevent.
   } else {
     const { browser, engine } = await launch();
+    // v6.1.8: `${BASE}/?tier=high` IS Home — the literal '/' never appears as
+    // a standalone token here, which is why a grep-based sweep missed this
+    // file. See verify-lib.mjs's COLD BOOT block.
+    await coldBootOffBrowser(browser);
     R.info(`engine: ${engine}`);
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     // domcontentloaded + an explicit selector, never networkidle: the FAST
@@ -381,6 +385,7 @@ R.group("── 7 · a shed is visible from outside (browser) ──────
     // moment in its 22–48s rise, and this loop is also actively removing and
     // re-adding orbs, so waiting on one particular span being paintable hangs.
     await page.goto(`${BASE}/?tier=high`, { waitUntil: "domcontentloaded" });
+    await assertColdBootBypassed(page, R, "/?tier=high");
     await page.waitForSelector("#bg-fx .orb", { state: "attached", timeout: 15000 });
 
     const hook = await page.evaluate(() => typeof window.__XMR_GOV__?.scale);
@@ -444,6 +449,7 @@ R.group("── 7 · a shed is visible from outside (browser) ──────
     // get a deterministic layer count out of a CI box that misses frame budget.
     const pinned = await browser.newPage({ viewport: { width: 1440, height: 900 } });
     await pinned.goto(`${BASE}/?tier=high&gov=off`, { waitUntil: "domcontentloaded" });
+    await assertColdBootBypassed(pinned, R, "/?tier=high&gov=off");
     await pinned.waitForSelector("#bg-fx .orb", { state: "attached", timeout: 15000 });
     const off = await pinned.evaluate(() => {
       let t = performance.now();

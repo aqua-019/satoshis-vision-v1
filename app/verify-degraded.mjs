@@ -123,6 +123,9 @@ const stripCssComments = (src) =>
   ok(!/var\(--in-(bg|surface|raised)[,)]/.test(theme), '0 · dead --in-* tokens are gone');
 }
 
+// v6.1.8 cold boot: navigates to `/` four times (:141 :199 :259 :319).
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
+
 let b, engine = 'chromium';
 try {
   const executablePath = findChrome();
@@ -132,6 +135,7 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+await coldBootOffBrowser(b);
 
 // ── A) stylesheet blocked, scripting ON — the reported Brave case ───────────
 {
@@ -139,6 +143,7 @@ console.log('engine:', engine);
   const p = await ctx.newPage();
   await p.route('**/assets/*.css', (r) => r.abort());
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(300);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
@@ -197,6 +202,7 @@ console.log('engine:', engine);
   const p = await ctx.newPage();
   await p.route('**/assets/*.js', (r) => r.abort());
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(1200);
 
   const bg = await p.evaluate(() => getComputedStyle(document.documentElement).backgroundColor);
@@ -257,6 +263,7 @@ console.log('engine:', engine);
   const p = await ctx.newPage();
   await p.route('**/api/**', (r) => r.abort()); // no egress; app boots to skeletons
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(1200);
 
   const mounted = await p.evaluate(() => {
@@ -317,6 +324,7 @@ console.log('engine:', engine);
     await route.fulfill({ status: 200, contentType: 'text/css', body: css });
   });
   await p.goto(base + '/', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/');
   await p.waitForTimeout(400);
 
   // Either serialisation is correct. --accent-structural is @property-registered

@@ -17,7 +17,10 @@
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
 
-const base = 'http://localhost:4173';
+// verify-lib.mjs:20 declares BASE once precisely so this is not restated.
+// Hardcoding it made this the ONE gate that ignores VERIFY_BASE, which costs
+// a rebuild the moment anyone runs the suite against a second port.
+import { BASE as base } from './verify-lib.mjs';
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
@@ -29,6 +32,9 @@ function findChrome() {
   return undefined;
 }
 
+// v6.1.8 cold boot: navigates to `/` at :48 and :138.
+import { coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
+
 let b, engine = 'chromium';
 try {
   const executablePath = findChrome();
@@ -38,6 +44,7 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+await coldBootOffBrowser(b);
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
@@ -46,6 +53,26 @@ const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!co
 const ctx = await b.newContext({ javaScriptEnabled: false });
 const p = await ctx.newPage();
 await p.goto(base + '/', { waitUntil: 'load' });
+// v6.1.8 — POSITIVE assertion, deliberately NOT an absence check.
+//
+// An earlier draft asserted `[data-coldboot]` was absent here. That was
+// DECORATIVE and is recorded as a defect rather than quietly fixed: this
+// context runs javaScriptEnabled:false, so the client-only splash can never
+// mount, and the absence held for a THIRD reason unrelated to either the
+// bypass working or the selector being alive. Three distinct states satisfy
+// it, so it distinguished none of them — it could not fail, and an assertion
+// that cannot fail is not an assertion.
+//
+// What matters with JS off is the opposite claim, stated positively:
+// prerendered `/` must still serve MAIN HOME. Note that `/` was missing from
+// this gate's substantial-content loop below (it walks /learn, /live/network,
+// /about/sources, /monero, /future) — so Home, the one route gaining a
+// splash, was the one route whose prerender nobody measured.
+const homePrerender = await p.evaluate(() => document.getElementById('root')?.innerText ?? '');
+ok(homePrerender.trim().length > 500,
+   `no-JS: / serves substantial prerendered Main Home (${homePrerender.trim().length} chars, need >500)`);
+ok(!/\[data-coldboot\]/.test(await p.content()) && (await p.locator('[data-coldboot]').count()) === 0,
+   'no-JS: / prerender contains no splash markup (splash is client-only and must SSR to null)');
 
 const body = await p.evaluate(() => document.body.innerText);
 
@@ -136,6 +163,9 @@ ok(new Set([...bodies.values()]).size === bodies.size,
    `no-JS: every route serves DISTINCT content (${new Set([...bodies.values()]).size}/${bodies.size} unique)`);
 
 await p.goto(base + '/', { waitUntil: 'load' });
+// (v6.1.8: no cold-boot assertion here — same JS-off context as above, so
+//  it would restate a claim already made and still could not fail.)
+
 
 // And no nagging. The prior copy read "Please enable it, or use a
 // JavaScript-capable browser", which is the apology tone this fallback is

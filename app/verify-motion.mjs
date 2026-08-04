@@ -16,7 +16,7 @@
 // Run from app/: `npm run build && (node scripts/serve-dist.mjs &) && node verify-motion.mjs`
 
 import { readFileSync } from 'node:fs';
-import { launch, makeReporter, BASE } from './verify-lib.mjs';
+import { launch, makeReporter, BASE, coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 
 
 /** Click a real in-app link through the v6.1.6 nav.
@@ -91,6 +91,9 @@ const SUSPENDED_RE = (() => {
 
 const R = makeReporter('verify-motion');
 const { browser, engine } = await launch();
+// v6.1.8: this gate navigates to `/` three times and also reaches it by
+// clicking a.brand. See verify-lib.mjs's COLD BOOT block.
+await coldBootOffBrowser(browser);
 console.log('engine:', engine);
 
 /**
@@ -172,6 +175,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   R.group('── 1+2 · route transitions gate on the resolved-chunk Set ────');
   const page = await newProbePage(browser, { width: 1440, height: 900 }, {});
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
   await page.waitForSelector('main.main');
 
   await resetCalls(page);
@@ -207,6 +211,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   for (const reducedMotion of ['no-preference', 'reduce']) {
     const page = await newProbePage(browser, { width: 1440, height: 900 }, { reducedMotion });
     await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
     await page.waitForSelector('main.main');
     await clickNavLink(page, '/live/mempool'); // resolve the chunk (no transition expected)
     await page.waitForSelector('.mp-shell', { timeout: 15000 });
@@ -320,6 +325,7 @@ const callCount = (page) => page.evaluate(() => window.__vt.calls.length);
   page.on('pageerror', (e) => errors.push(String(e)));
 
   await page.goto(BASE + '/', { waitUntil: 'domcontentloaded' });
+  await assertColdBootBypassed(page, R, '/');
   await page.waitForSelector('main.main');
   const hasApi = await page.evaluate(() => typeof document.startViewTransition === 'function');
   R.ok(hasApi === false, '6 · startViewTransition is genuinely absent in this context');

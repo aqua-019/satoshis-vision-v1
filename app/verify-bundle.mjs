@@ -201,7 +201,44 @@ const BUDGETS = {
   // restructure (R/REDIRECTS/RedirectTo added to the eager closure) — kept
   // at 88,000 rather than re-tightened since the new measurement still
   // clears it with ~8% headroom.
-  eagerJsGz: 88_000,
+  // v6.1.8 RAISED 88,000 -> 96,000, deliberately, per this block's own rule.
+  // Main Home was rewritten from a static hero into a seven-passage rotating
+  // hero + live strip + six IA-derived section cards + thesis + theme toggle.
+  // Measured 85,056 -> 87,128 (+2,072 B gzip), leaving 1.0% headroom against
+  // 88,000 — and this block defines headroom as "slack for ordinary feature
+  // work", which 1% is not. A rewritten LCP route IS ordinary feature work;
+  // it is exactly what the slack was for, and it consumed it.
+  //
+  // 96,000 restores the stated ~10% (87,128 * 1.10 = 95,841, rounded up).
+  // NOT chosen to fit: chosen by re-applying the calibration rule already
+  // written above. The alternative was lazy-loading passages 2-7 and the
+  // below-fold cards to reclaim <1 KB, which buys complexity and two chunks
+  // on the most latency-critical route in the app for a rounding error.
+  //
+  // Raised NOW, at 99%, rather than after the cold-boot mount pushes it past
+  // 100%: at that point the number would be chosen by the constraint rather
+  // than by measurement, and "we had to" is not a calibration argument.
+  //
+  // WHAT THIS COST, stated because a bigger number with no trade beside it is
+  // a decision a future reader cannot weigh:
+  //
+  //   smallest eager regression this table still catches
+  //     before   873 B
+  //     after  8,873 B      — 10.2x looser
+  //
+  // For scale: the entire Main Home rewrite cost 2,072 B. This ceiling would
+  // now absorb four more of them silently. It still catches a careless
+  // heavyweight import; it no longer catches a rewrite. That is what ~10%
+  // headroom BUYS and what it COSTS, and both halves belong here.
+  //
+  // Do NOT cite §7's self-test as evidence this number is well-calibrated.
+  // §7 fails only once the budget reaches 87,128 + 51,200 = 138,328, so it
+  // passes at ANY ceiling up to 138,327 — it would have been just as green at
+  // 120,000. It is a catastrophe backstop, not a calibration check, and
+  // leaning on it makes a sound argument look like a weak one to anyone who
+  // checks its slack. The evidence for 96,000 is the ~10% rule applied to a
+  // measurement, plus the irreducibility check above. That is all it needs.
+  eagerJsGz: 96_000,
   // One render-blocking stylesheet. All five sheets are imported from
   // main.tsx:26-30 (203,896 bytes of SOURCE) and Vite minifies them to one
   // file: measured 73,031 raw / 14,863 gzip. Budgeted because it blocks the
@@ -232,7 +269,11 @@ const BUDGETS = {
  * `/monero` itself measures smaller than before — 2 fewer tab modules). */
 const ROUTE_BUDGET_GZ = {
   //  route                   budget   measured post-restructure (gzip -9)
-  '/':                       89_000, //  80,731 — the entry closure itself; HomePage is eager
+  '/':                       97_000, //  87,128 — the entry closure itself; HomePage is eager.
+                                     //  v6.1.8: 89,000 -> 97,000 alongside eagerJsGz, same
+                                     //  reasoning and same ~10% rule. This row IS the eager
+                                     //  closure (2 chunks: entry + vendor), so it tracks that
+                                     //  ceiling +1,000 rather than moving independently.
   '/live/mempool':          107_000, //  96,835
   '/live/markets':          105_000, //  95,817
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
@@ -260,7 +301,27 @@ const ROUTE_BUDGET_GZ = {
  * size budget: more chunks is not worse on its own — what it costs is
  * request count, which is why the per-route "first load ∪ static closure"
  * row above is the number that actually governs. */
-const CHUNK_COUNT = 55;
+// v6.1.8 RE-CENTRED 55 -> 60. This is NOT the same kind of move as the
+// eagerJsGz raise above, and conflating them would be wrong.
+//
+// This is a CENTRED DRIFT DETECTOR — `Math.abs(n - CHUNK_COUNT) <= CHUNK_BAND`
+// — not a ceiling. The BAND is its detection power; the CENTRE is only where
+// it stands. So:
+//
+//   widening ±4 -> ±8   would LOSE sensitivity. Not done.
+//   moving 55 -> 60     keeps ±4 exactly. Sensitivity is IDENTICAL.
+//
+// Derivation: 56 at f1dc296, +4 from this PR's lazy split — ColdBoot, Orb,
+// the decoy/console chunk and the shared splash code. Those are the strategy
+// that kept eagerJsGz at 91% while adding a full-screen decrypt, a HUD console
+// and a live-wired orb; they are precisely the "feature, not a manualChunks
+// accident" case this check's own comment distinguishes. The detector fired
+// correctly at 60 and the answer is to re-centre it, not to widen it.
+//
+// Left at 55 with reality at 60, it had already spent its entire band on a
+// known deliberate delta and had nothing left for the accident it exists to
+// catch. New range [56, 64], same ±4 of headroom in both directions.
+const CHUNK_COUNT = 60;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

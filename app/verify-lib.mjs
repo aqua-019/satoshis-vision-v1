@@ -205,6 +205,186 @@ export async function freezeAmbient(page) {
   });
 }
 
+/* ── COLD BOOT (v6.1.8) ───────────────────────────────────────────────────
+ *
+ * `/` gained a cold-boot splash: a seeded decrypt + HUD console that GATES on
+ * the user (Enter) rather than timing out. It is once-per-session, keyed in
+ * sessionStorage. Every Playwright gate opens a FRESH CONTEXT, so every gate
+ * gets an empty sessionStorage and the splash covers Home for all of them.
+ *
+ * Measured on this tree, not assumed: TWELVE CI-reached gates navigate to `/`
+ * (verify-cls, -vitals, -origins, -nav, -motion, -nojs, -degraded, -discrete,
+ * -ground, -palette, -govern, -charts), plus verify-shots (npm-wired) and four
+ * orphans. Left alone they would measure the splash and report about the wrong
+ * page state — which is exactly the v6.1.5 defect where verify-cls measured
+ * `/live/network` fully degraded and reported a number for a page nobody sees.
+ *
+ * ── WHY THE CONSTANTS BELOW ARE EXPORTED, AND WHY THAT IS THE WHOLE POINT ──
+ *
+ * The bypass and the proof-that-the-bypass-is-real MUST reference the same
+ * literals. If verify-coldboot.mjs proved `[data-coldboot]` appears using its
+ * own local string while the sweep asserted absence using a different one, the
+ * liveness proof would prove nothing about the sweep, and a rename would make
+ * every precondition assertion in twelve gates vacuously true at once — all
+ * green, all measuring nothing. That is the `R.ok(X || true, …)` failure with
+ * more steps. One declaration, imported by both.
+ *
+ * ── THE VACUITY HAZARD, STATED PLAINLY ────────────────────────────────────
+ *
+ * `assertColdBootBypassed()` asserts an ABSENCE. An absence assertion passes
+ * for two completely different reasons: the bypass worked, or the selector is
+ * dead. Those are indistinguishable from inside this helper. The ONLY thing
+ * that separates them is verify-coldboot.mjs §1, which navigates WITHOUT the
+ * flag and asserts the splash IS present. That assertion is load-bearing for
+ * every caller of this helper. If it is ever deleted, weakened, or allowed to
+ * skip, the twelve preconditions below silently become decoration.
+ */
+export const COLDBOOT_FLAG = '__XMR_COLDBOOT__';
+export const COLDBOOT_OFF = 'off';
+export const COLDBOOT_ATTR = 'data-coldboot';
+export const COLDBOOT_SEL = `[${COLDBOOT_ATTR}]`;
+
+/** Stamped by ColdBoot as soon as it has EVALUATED the session flag — whichever
+ *  way it went: on the splash root when it renders, on a zero-size marker node
+ *  when it decides not to.
+ *
+ *  ── WHY THIS EXISTS: A NEGATIVE ASSERTION CANNOT AUTO-WAIT ───────────────
+ *  `count() === 0` and `toHaveCount(0)` are both satisfied INSTANTLY by an
+ *  empty DOM, so neither can distinguish "absent because correct" from
+ *  "absent because early". ColdBoot is React.lazy, so after a reload the chunk
+ *  has not resolved and a count returns 0 — exactly the value a
+ *  gating assertion wants. "Once-per-session gating works" is a §5 criterion
+ *  and it could pass while measuring an unresolved chunk.
+ *
+ *  Waiting on COLDBOOT_SEL itself cannot fix that: in the case that matters,
+ *  the splash is legitimately absent, so the thing to wait for is the
+ *  DECISION, not the splash. Every negative assertion needs a positive
+ *  precondition to wait on first. */
+export const COLDBOOT_DECIDED_SEL = '[data-coldboot-decided]';
+
+/**
+ * Skip the cold-boot splash for everything this target later loads.
+ *
+ * Accepts a BrowserContext OR a Page — both expose `addInitScript`, and this
+ * repo's gates are split roughly evenly between `browser.newContext()` and a
+ * bare `browser.newPage()`. Passing either works; passing a context covers
+ * pages created from it afterwards.
+ *
+ * MUST be awaited BEFORE `goto()`. An init script registered after navigation
+ * applies to the NEXT navigation, so a late call leaves the very first page
+ * load — the one that renders the splash — unprotected, and does it silently.
+ */
+export async function coldBootOff(target) {
+  await target.addInitScript(
+    ([flag, off]) => {
+      try { window[flag] = off; } catch { /* sealed global — nothing to do */ }
+    },
+    [COLDBOOT_FLAG, COLDBOOT_OFF],
+  );
+}
+
+/**
+ * Apply `coldBootOff` to EVERY context and page this browser creates from now
+ * on. Call once, immediately after `launch()` / `launchChromium()`.
+ *
+ * ── WHY A WRAPPER AND NOT 40 INDIVIDUAL EDITS ─────────────────────────────
+ *
+ * This is a deliberate trade and it is the less clever of the two options
+ * despite looking like the more clever one. The twelve `/`-reaching gates
+ * create pages at FORTY-PLUS distinct sites — verify-palette at 11,
+ * verify-nav at 11, verify-discrete at 7, several of them inline
+ * `(await browser.newContext(…)).newPage()` expressions inside loops.
+ *
+ * Patching each site by hand is a diff where MISSING ONE IS SILENT: the
+ * missed page loads the splash, measures it, and reports a confident number.
+ * That is precisely the class of defect this sweep exists to prevent, so
+ * choosing a mechanism that can reintroduce it forty times over would be
+ * self-defeating. A wrapper cannot miss a site, because it does not enumerate
+ * sites.
+ *
+ * The cost is real and worth naming: this monkey-patches two Playwright
+ * methods, so a gate that constructs pages by some other route (a raw CDP
+ * target, a popup opened by the page itself) is NOT covered. That is exactly
+ * why `assertColdBootBypassed()` exists and is applied at the measurement
+ * points rather than being assumed from this call.
+ */
+export async function coldBootOffBrowser(browser) {
+  if (browser.__coldBootWrapped) return browser;
+  const origContext = browser.newContext.bind(browser);
+  const origPage = browser.newPage.bind(browser);
+  browser.newContext = async (...args) => {
+    const ctx = await origContext(...args);
+    await coldBootOff(ctx);
+    return ctx;
+  };
+  browser.newPage = async (...args) => {
+    const page = await origPage(...args);
+    // Re-applying on a page whose context was already wrapped is harmless —
+    // it assigns the same global twice — and covers browser.newPage(), which
+    // does NOT route through the public newContext() above.
+    await coldBootOff(page);
+    return page;
+  };
+  browser.__coldBootWrapped = true;
+  return browser;
+}
+
+/**
+ * Assert the skip actually TOOK, on a page that has already navigated.
+ *
+ * An assertion cannot see its own precondition: a gate that measures Home
+ * while the splash covers it does not fail, it reports a confident number
+ * about the wrong pixels. So every gate that bypasses boot also proves the
+ * bypass landed, and a helper that silently stops working reddens a counter
+ * instead of quietly measuring an overlay.
+ *
+ * Read the DOM, never the flag we ourselves set — asserting `window.__XMR_
+ * COLDBOOT__ === 'off'` would only prove this helper can write a global,
+ * which is never in doubt. The splash root carrying `data-coldboot` is the
+ * app's own statement about what it rendered.
+ */
+/** Pages whose splash-settle wait has already been paid. */
+const _coldBootSettled = new WeakSet();
+
+/**
+ * Wait until the cold-boot decision is OBSERVABLE, then sample.
+ *
+ * ── WHY A BARE COUNT AT `load` IS VACUOUS ─────────────────────────────────
+ * `ColdBoot` is `React.lazy`, so at `load` its chunk has not resolved and the
+ * splash is not in the DOM yet. `locator().count()` does NOT auto-wait the way
+ * `expect()` does — it samples immediately and returns 0.
+ *
+ * MEASURED on this tree: with the bypass deliberately OFF, so the splash MUST
+ * mount, a count taken at `load` returned 0 and the assertion PASSED. All
+ * thirteen preconditions were therefore incapable of detecting a failed
+ * bypass — the single thing they exist to detect.
+ *
+ * Splash mount latency after `load`, 5 runs: 348/336/271/357/363 ms (max 363).
+ * The 3000 ms bound below is ~8x that worst case. It is a BOUND, not a sleep:
+ * the common (absent) path pays it only once per page, and the present path
+ * returns as soon as the node appears. A fixed `waitForTimeout` is rejected
+ * for the reason it is always rejected here — long enough today is a flake
+ * tomorrow, and it would pay the cost even on the fast path.
+ */
+async function settleColdBoot(page) {
+  if (_coldBootSettled.has(page)) return;
+  await page.waitForSelector(COLDBOOT_SEL, { timeout: 3000 }).catch(() => {});
+  _coldBootSettled.add(page);
+}
+
+export async function assertColdBootBypassed(page, R, label = '/') {
+  await settleColdBoot(page);
+  const n = await page.locator(COLDBOOT_SEL).count();
+  return R.ok(
+    n === 0,
+    `${label}: cold-boot splash bypassed — no ${COLDBOOT_SEL} in the DOM`,
+    n > 0
+      ? `${n} ${COLDBOOT_SEL} element(s) present: the splash is covering this page and every ` +
+        `measurement below describes the splash, not the route. Was coldBootOff() awaited BEFORE goto()?`
+      : '',
+  );
+}
+
 // Re-export STATUS_FIXTURE so all existing importers are unaffected.
 // The fixture itself now lives in verify-fixtures.mjs (see the import above).
 export { STATUS_FIXTURE };
