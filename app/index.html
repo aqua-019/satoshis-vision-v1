@@ -134,6 +134,21 @@
       setTimeout(function () {
         var r = document.getElementById("root");
         var f = document.getElementById("boot-fallback");
+        // SECOND REMOVER of the cold-boot floor, and the one that matters.
+        // ColdBoot.tsx drops `cb-pending` in a layout effect on mount; if its
+        // chunk never arrives — Shields, a 404 over Tor, a CSP refusal — that
+        // never happens and #root stays hidden behind an opaque floor forever.
+        // A permanently blank page is a far worse failure than the flash this
+        // whole mechanism exists to remove, and it would break verify-degraded
+        // B1 ("prerendered content survives a dead bundle").
+        //
+        // UNCONDITIONAL, and deliberately OUTSIDE the `childElementCount === 0`
+        // branch below. Since v6.0.9 every route is prerendered, so #root is
+        // never empty and anything inside that branch is unreachable in
+        // production — the exact trap that would make this look wired up while
+        // never once firing. verify-degraded B4 is the assertion that catches
+        // it being moved back in.
+        document.documentElement.classList.remove("cb-pending");
         if (f && r && r.childElementCount === 0) f.hidden = false;
         // A dead module also means NavTop's six <button> triggers do nothing
         // and its dropdown never opens, so 6 of the 13 prerendered routes have
@@ -145,6 +160,82 @@
           document.documentElement.dataset.boot = "dead";
         }
       }, window.__xmriBootTimeoutMs || 10000);
+    </script>
+
+    <!-- v6.1.9 COLD-BOOT FRAME ZERO — blackness, then the sequence starts.
+         Never Main Home, then the sequence, then Main Home again.
+
+         `/` is prerendered, and main.tsx uses createRoot rather than
+         hydrateRoot, so a JS-enabled visitor paints the real Main Home while
+         the bundle downloads and parses, and only then does ColdBoot replace
+         it. Invisible on a warm cache; unmissable on a fresh tab. Both of the
+         decisions that cause it are individually correct and neither is being
+         reverted — instead this paints the cold boot's OWN opaque floor as the
+         first frame, so the splash appears to begin from black rather than to
+         interrupt a page.
+
+         THREE THINGS HERE ARE LOAD-BEARING:
+
+         1. `visibility: hidden`, never `display: none`. The prerendered box
+            keeps its geometry, so nothing reflows when it un-hides. `/` measures
+            0.0000 CLS in both the healthy and degraded passes and this must not
+            spend it.
+
+         2. The floor colour is #050505 — the literal ColdBoot.tsx's ROOT_STYLE
+            paints, NOT the per-theme --amb-floor in the critical block above
+            (#050505 / #121218 / #030603). Using the theme colour would step from
+            #121218 to #050505 between frame zero and frame one on indigo, which
+            is a flash moved rather than removed. `gate.ts#CB_FLOOR` is the one
+            definition; verify-cbpending.mjs asserts this copy equals it.
+
+         3. It FAILS OPEN. Any throw leaves the class unset and the visitor sees
+            the prerendered page — the outcome this trades away a flash to
+            avoid, but strictly better than a blank one.
+
+         The class is removed by ColdBoot on mount, by the boot watchdog above
+         if that chunk never arrives, and by main.tsx's boot-failure catch.
+
+         This is a SEPARATE <style> from the critical floor above on purpose:
+         verify-degraded.mjs slices `html.indexOf('<style')` to the first
+         `</style>` and asserts that block contains no var(), declares all three
+         theme hexes literally, and that its unqualified html{} rule is #050505.
+         Extending that block would change what those assertions read. -->
+    <style>
+      html.cb-pending { background-color: #050505; }
+      html.cb-pending #root { visibility: hidden; }
+    </style>
+    <script>
+      // The predicate below is a hand-mirrored copy of
+      // src/coldboot/gate.ts#coldBootWillRender — an inline pre-paint script
+      // cannot import, and it has to answer before the bundle exists. The
+      // markers let verify-cbpending.mjs extract this exact body, evaluate it
+      // and the TypeScript original over a truth table of every (flag,
+      // pathname) pair, and fail the build on one disagreement.
+      //
+      // NOTE there is no sessionStorage clause. `xmrirish.coldboot` decides
+      // whether a repeat visitor SKIPS THE DECRYPT, not whether the splash
+      // renders — a repeat visit still gets the console and still needs ENTER.
+      // Gating on it would leave the flash in place on every visit after the
+      // first, which is most visits.
+      window.__xmriColdBootWillRender = function (flag, pathname) {
+        /* cb-pending:predicate:start */
+        if (flag === "off") return false;
+        return pathname === "/";
+        /* cb-pending:predicate:end */
+      };
+      try {
+        if (window.__xmriColdBootWillRender(window.__XMR_COLDBOOT__, location.pathname)) {
+          document.documentElement.classList.add("cb-pending");
+          // Stamped HERE, not when React mounts, so the hold is measured from
+          // the moment the floor actually goes up. ColdBoot waits
+          // max(0, CB_HOLD_MS - elapsed) — a MINIMUM, so a slow bundle that
+          // already exceeded it starts the sequence immediately and never pays
+          // the hold twice. See gate.ts#CB_HOLD_MS.
+          window.__xmriCbT0 = performance.now();
+        }
+      } catch (e) {
+        /* sealed globals / hardened browser — fail OPEN, show the prerender */
+      }
     </script>
   </head>
   <body>

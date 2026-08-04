@@ -162,6 +162,10 @@ import { T, E, seg, clamp01, lerp } from "./schedule";
 import { ColdBootConsole } from "./ColdBootConsole";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { R } from "../../scripts/routes.mjs";
+import {
+  CB_FLOOR, CB_HOLD_GLOBAL, CB_HOLD_MS, CB_PENDING_CLASS, CB_T0_GLOBAL,
+  COLDBOOT_FLAG, coldBootWillRender,
+} from "./gate";
 
 /* ══════════════════════════════════════════════════════════════════════════
  * the handoff clock — X, HB — owned here per schedule.ts's own header
@@ -301,9 +305,14 @@ interface Initial {
 
 function computeInitial(reduced: boolean): Initial {
   if (typeof window === "undefined") return { phase: "off", skipDecrypt: false };
-  const flagWindow = window as unknown as { __XMR_COLDBOOT__?: string };
-  if (flagWindow.__XMR_COLDBOOT__ === "off") return { phase: "off", skipDecrypt: false };
-  if (window.location.pathname !== R.HOME) return { phase: "off", skipDecrypt: false };
+  /* The two clauses that used to be inline here now live in `./gate.ts`,
+     because `index.html`'s pre-paint script has to answer the same question
+     before this bundle exists and cannot import to do it. One definition, two
+     call sites, and verify-cbpending.mjs proves they agree. */
+  const flagWindow = window as unknown as Record<string, string | undefined>;
+  if (!coldBootWillRender(flagWindow[COLDBOOT_FLAG], window.location.pathname)) {
+    return { phase: "off", skipDecrypt: false };
+  }
   const flagged = readSessionFlag();
   return { phase: "splash", skipDecrypt: flagged || reduced };
 }
@@ -368,20 +377,64 @@ function clearHandoffStyles(stageEl: HTMLElement | null, mainEl: HTMLElement | n
 
 /** z-index 1000 matches `.v6-modal-veil` (styles.css:1668) — the repo's
  *  existing full-viewport-overlay convention, not a new number invented for
- *  this file. */
+ *  this file.
+ *
+ *  EXPORTED because `Orb.tsx` has to sit exactly one layer above it: the orb is
+ *  a `position:fixed` SIBLING of this root, so at `z-index:auto` it painted
+ *  beneath this element's opaque `#050505` background for the whole console
+ *  phase (v6.1.9 — measured, and invisible regardless of how it was sized).
+ *  Two files needing the same number is exactly where a second literal drifts,
+ *  so there is one literal and `Orb.tsx` says `COLDBOOT_Z + 1`. */
+export const COLDBOOT_Z = 1000;
+
 const ROOT_STYLE: React.CSSProperties = {
   position: "fixed",
   inset: 0,
-  zIndex: 1000,
-  background: "#050505",
+  zIndex: COLDBOOT_Z,
+  /* Frame ONE. `index.html`'s pre-paint script paints frame ZERO in the same
+     colour from the same constant, so the handover from the anti-flash floor to
+     this element is invisible. It is theme-independent on purpose — see
+     `gate.ts#CB_FLOOR`. */
+  background: CB_FLOOR,
   overflow: "hidden",
   display: "flex",
-  alignItems: "center",
+  /* stretch, not center: the console wrapper takes the full stage height so its
+     grid has vertical slack to hand to the orb stage. Horizontal centring is
+     `margin-inline: auto` on the wrapper instead. */
+  alignItems: "stretch",
   justifyContent: "center",
   padding: 24,
 };
 const CANVAS_STYLE: React.CSSProperties = { position: "absolute", inset: 0, display: "block" };
-const CONSOLE_WRAP_BASE: React.CSSProperties = { position: "relative", width: "100%", maxWidth: 1200, zIndex: 1 };
+/** The console's width cap. It was a bare `1200`, which read as a fixed island
+ *  on flat black at every desktop size — at 2560 that is ~1360px of dead space
+ *  framing a 1200px box, while the decrypt phase immediately before it fills
+ *  the whole viewport. The visual language promised full-bleed and withdrew it.
+ *
+ *  `clamp(1200px, 92vw, 1600px)` is never NARROWER than the old fixed value at
+ *  any width — `min(1600px, 92vw)` would have given 1178px at 1280, a 22px
+ *  regression on that class of laptop — and it grows to 1600 on wide screens.
+ *  Measured: 1200 at 1280, 1324.8 at 1440, 1600 at 2560.
+ *
+ *  `max-width` cannot force an element wider than its own `width: 100%`, so the
+ *  1200px lower bound is inert below 1200px of viewport and 390px is untouched.
+ *
+ *  It buys WIDER COLUMNS, not more of them. The grid is
+ *  `repeat(auto-fit, minmax(300px, 1fr))` over exactly three panes, and
+ *  `auto-fit` collapses the empty tracks, so the count is pinned at three at
+ *  every cap. Measured pane inner width: 380.7 at 1200, 422.3 at 1440, 514 at
+ *  2560. (An earlier reading of this change predicted a fourth column; that was
+ *  asserted rather than measured, and it is wrong.) */
+const CONSOLE_WRAP_BASE: React.CSSProperties = {
+  position: "relative",
+  width: "100%",
+  maxWidth: "min(2100px, 94vw)",
+  marginInline: "auto",
+  display: "flex",
+  flexDirection: "column",
+  minHeight: 0,
+  zIndex: 1,
+};
 
 /** `display:none` — see the `data-coldboot-decided` render branch below for
  *  why this exists and why it must be provably zero-footprint. */
@@ -405,6 +458,49 @@ export function ColdBoot(): React.JSX.Element | null {
   const { skipDecrypt } = initRef.current;
 
   const [phase, setPhase] = React.useState<Phase>(initRef.current.phase);
+
+  /* ── hand frame zero over to frame one ───────────────────────────────────
+   * `index.html`'s pre-paint script stamps `cb-pending` on <html>, which hides
+   * #root behind an opaque CB_FLOOR floor so a JS-enabled visitor never sees
+   * the prerendered Main Home before the sequence starts. This is where that
+   * floor is released.
+   *
+   * useLayoutEffect, not useEffect: it runs synchronously after the DOM commit
+   * and BEFORE paint, so the frame that reveals #root is the same frame that
+   * has the splash in it. A passive effect can paint an unhidden #root for one
+   * frame first, which is the flash re-introduced at the other end.
+   *
+   * UNCONDITIONAL — it must run on the `off` path too. When the bypass flag is
+   * set the pre-paint predicate returns false and the class is never applied,
+   * so this is normally a no-op; but if that predicate and this component ever
+   * disagree, releasing the floor is the safe direction and keeping it is a
+   * permanently blank page. `index.html`'s boot watchdog is the second remover,
+   * for when this component never mounts at all. */
+  /* `floorLifted` starts TRUE whenever the floor was never raised — the bypass
+   * path, a non-Home route, or a browser where the pre-paint script threw. Only
+   * a load that actually painted frame zero waits. */
+  const [floorLifted, setFloorLifted] = React.useState<boolean>(
+    () => typeof document === "undefined" ||
+      !document.documentElement.classList.contains(CB_PENDING_CLASS),
+  );
+
+  React.useLayoutEffect(() => {
+    if (floorLifted) return;
+    const w = window as unknown as Record<string, number | undefined>;
+    const hold = w[CB_HOLD_GLOBAL] ?? CB_HOLD_MS;
+    const t0 = w[CB_T0_GLOBAL] ?? 0;
+    const remaining = Math.max(0, hold - (performance.now() - t0));
+
+    const lift = () => {
+      document.documentElement.classList.remove(CB_PENDING_CLASS);
+      setFloorLifted(true);
+    };
+    /* Synchronous when the beat is already spent, so a slow load reveals in the
+     * same commit as before this hold existed — no frame of un-held prerender. */
+    if (remaining === 0) { lift(); return; }
+    const id = window.setTimeout(lift, remaining);
+    return () => window.clearTimeout(id);
+  }, [floorLifted]);
   const phaseRef = React.useRef<Phase>(phase);
   React.useEffect(() => {
     phaseRef.current = phase;
@@ -453,6 +549,14 @@ export function ColdBoot(): React.JSX.Element | null {
   //    reveal (revisit / reduced motion). Runs while phase === "splash". ──
   React.useEffect(() => {
     if (phase !== "splash") return;
+    /* THE SEQUENCE STARTS WHEN THE FLOOR LIFTS, NOT WHEN THIS MOUNTS.
+     * The splash renders INSIDE #root, which the floor hides — so without this
+     * guard the decrypt would run its 5.56s timeline underneath the black and
+     * be revealed already ~1.5s in, which is a sequence that starts in the
+     * middle rather than a black beat before it. Gating the whole effect also
+     * covers the skipDecrypt branch (revisit or reduced motion): black for the
+     * beat, then the console, in that order. */
+    if (!floorLifted) return;
 
     if (skipDecrypt) {
       // Console is fully visible from the first frame — no canvas element
@@ -529,7 +633,7 @@ export function ColdBoot(): React.JSX.Element | null {
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", onResize);
     };
-  }, [phase, skipDecrypt]);
+  }, [phase, skipDecrypt, floorLifted]);
 
   // ── handoff: the X ramp (or an instant cut under reduce). ──────────────
   React.useEffect(() => {

@@ -125,6 +125,54 @@ export interface OrbState {
 /** Clearnet on the sphere; Tor/I2P orbiting it. See the file header. */
 export const SHELL: readonly [number, number, number] = [1.0, 1.17, 1.3];
 
+/**
+ * Floor, in CSS px, on the height of the box `drawOrb` is given — consumed by
+ * `Orb.tsx#CANVAS_WRAP_STYLE` and READ (never restated) by `verify-orb.mjs`.
+ *
+ * ── WHY A FLOOR EXISTS AT ALL — v6.1.9, measured ─────────────────────────
+ * `Orb.tsx` lays the orb out as a fixed-height flex column: the canvas wrap is
+ * `flex:"1 1 auto"` with `minHeight:0` (fully shrinkable) and the badge/caption
+ * overlay below it is `flex:"0 0 auto"` (cannot shrink). So in any host box
+ * shorter than the overlay's natural height, the canvas is allocated ZERO
+ * height — and `Orb.tsx#resize()` returns early on a zero dimension, which is
+ * the only place `canvas.width/height` is ever assigned. The backing store then
+ * keeps the 300x150 HTML default forever and `drawOrb` paints into the wrong
+ * coordinate space.
+ *
+ * That shipped. Measured on `origin/main` at 95316a3, cold-boot console at
+ * 1440x900: box 356.7x160, overlay 153.5, wrap 0, backing store 300x150, and an
+ * instrumented `resize()` logged THREE calls and THREE early returns — it never
+ * once completed. At 390x844 the same box carried a 180.1px overlay in the same
+ * 160px slot.
+ *
+ * 120 is deliberately BELOW every shipped layout (the smallest real allocation
+ * measured after the fix is 211.9px, console at 390x844), so this never binds in
+ * practice. It is not a design dimension; it is the guarantee that a future host
+ * box cannot silently starve the canvas back to zero. A floor that never binds
+ * is the point — it converts "fixed here" into "cannot happen anywhere".
+ */
+export const ORB_MIN_CANVAS_PX = 120;
+
+/**
+ * The sphere's radius as a fraction of the canvas's SHORT side — `drawOrb`
+ * below is the only consumer, and it was an inline `0.43` there.
+ *
+ * Named and exported because it is the one number that turns "the orb painted
+ * something" into a falsifiable geometric claim: every feature `drawOrb` emits
+ * unconditionally is a circle centred on the canvas with a radius that is a
+ * fixed multiple of `ORB_RADIUS_FRAC * min(w, h)`, so the expected extent of the
+ * painting is a pure function of the backing store's dimensions. The outermost
+ * of them is the i2p shell at `SHELL[2]`, giving a structural bounding box of
+ * `2 * ORB_RADIUS_FRAC * SHELL[2] * min(w, h)`.
+ *
+ * `verify-orb.mjs` parses this and `SHELL` out of this file and predicts the
+ * bounding box rather than restating a measured constant. Checked against four
+ * live contexts and it lands within 2px every time (539x363 -> 407 wide against
+ * 405.8 predicted; 288x212 -> 238 against 237.0). Changing this number here
+ * therefore moves the gate's expectation with it, which is the point.
+ */
+export const ORB_RADIUS_FRAC = 0.43;
+
 // ── lattice size — a presentational clamp, not a live figure ───────────────
 
 /** Floor: below this a globe reads as sparse/broken regardless of how few
@@ -445,7 +493,7 @@ export function drawOrb(ctx: CanvasRenderingContext2D, w: number, h: number, sec
 
   const cx = w / 2;
   const cy = h / 2;
-  const R = Math.min(w, h) * 0.43;
+  const R = Math.min(w, h) * ORB_RADIUS_FRAC;
   const angle = seconds * ROTATION_RATE;
 
   const project = (p: Vec3, rr: number): Projected => {

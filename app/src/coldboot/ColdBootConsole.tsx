@@ -96,6 +96,9 @@ const ROOT_STYLE: React.CSSProperties = {
   position: "relative",
   display: "flex",
   flexDirection: "column",
+  /* fills the stage so the grid below has slack to give the orb stage */
+  flex: 1,
+  minHeight: 0,
   gap: 10,
   padding: 14,
   background: "var(--bg-1)",
@@ -115,21 +118,68 @@ const TOPBAR_STYLE: React.CSSProperties = {
   color: "var(--ink-60)",
 };
 
-const GRID_STYLE: React.CSSProperties = {
-  display: "grid",
-  // auto-fit/minmax reflows to one column under ~940px without a media
-  // query — see the file header's "zero new CSS" note. Order in the DOM
-  // (HUD, Log, Network) is preserved at every width.
-  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-  gap: 14,
-  alignItems: "start",
-};
+/**
+ * Height of the empty box this pane reserves for the orb — the orb itself is a
+ * viewport-fixed overlay mounted from App.tsx, and only measures this rect.
+ *
+ * It was 160, and 160 is what broke the orb. `Orb.tsx` renders a flex column of
+ * [canvas wrap, badge/caption overlay] where only the wrap can shrink, so the
+ * whole 160 went to the overlay and the canvas got zero height — measured on
+ * 95316a3: overlay 153.5 in a 160 box at 1440x900, and 180.1 in the same 160 at
+ * 390x844. See `orb.ts#ORB_MIN_CANVAS_PX` for the full mechanism.
+ *
+ * 400 is derived, not chosen by eye: worst measured overlay 180.1 (390x844,
+ * 288px-wide pane) + `Orb.tsx#BASE_STYLE`'s 8px gap + a canvas worth drawing.
+ * Measured after the change, the canvas receives 238.5px at 1440x900 and
+ * 211.9px at 390x844 — both far above the 120 floor, which is the intent: the
+ * floor is insurance, this number is the feature.
+ *
+ * It costs the console no height at all on desktop. The grid is
+ * `alignItems:"start"` and its row is driven by the HUD pane, measured at 870.8
+ * against this pane's 430 at 1440x900 — 440.8px of headroom, of which this
+ * spends 240. Confirmed by re-measuring the console root after the change.
+ */
+const ORB_SLOT_MIN_PX = 400;
+
+/** The three panes are NOT equal width. Verbatim from the mockup's `.con-grid`
+ *  (docs/v6-mockups/coldboot-splash.html:185) — LOG is deliberately widest, and
+ *  equal columns are why production read evenly divided where the mockup reads
+ *  composed. Confirmed against that file's own selector before adopting: the
+ *  rule belongs to `.con-grid`, which is the console grid, not to a neighbour.
+ *
+ *  This costs the auto-fit reflow the previous value got for free, so the
+ *  one-column collapse is now explicit and keyed to the mockup's own 1100px
+ *  breakpoint (`@media (max-width:1100px)` at :357). Resolved with matchMedia
+ *  rather than a stylesheet because this file ships zero new CSS by design. */
+const GRID_COLS_WIDE = "minmax(0,1.00fr) minmax(0,1.12fr) minmax(0,1.04fr)";
+const GRID_COLS_STACKED = "minmax(0, 1fr)";
+const GRID_STACK_QUERY = "(max-width: 1100px)";
+
+function gridStyle(stacked: boolean): React.CSSProperties {
+  return {
+    display: "grid",
+    gridTemplateColumns: stacked ? GRID_COLS_STACKED : GRID_COLS_WIDE,
+    gap: 14,
+    /* `stretch`, not `start`: the row must be as tall as the grid so the
+       Network pane can hand its slack to the orb stage. Stacked, the panes go
+       back to content height and the console scrolls instead. */
+    alignItems: stacked ? "start" : "stretch",
+    flex: 1,
+    minHeight: 0,
+    /* Stacked, the three panes are far taller than the viewport (measured 2282px
+       in 844px at 390 wide) and the stage clips with overflow:hidden, so the
+       orb was unreachable. The mockup solves it the same way — `.con-grid`
+       gains `overflow-y:auto` inside its own 1100px block. */
+    overflowY: stacked ? "auto" : "visible",
+  };
+}
 
 const PANE_STYLE: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
   gap: 10,
   minWidth: 0,
+  minHeight: 0,
   border: "1px solid var(--line-d)",
   borderRadius: 2,
   padding: 11,
@@ -500,6 +550,21 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
 
   const hovered: RingMember | null = hoverI >= 0 ? DECOY_RING[hoverI] : null;
 
+  /* Live, because the console is mounted across an orientation flip and a
+     desktop window resize, and a value read once at mount would strand the
+     wrong column count there. useSyncExternalStore rather than an effect so the
+     FIRST render already has the right answer — an effect would paint three
+     weighted columns at 390px for a frame. */
+  const stacked = React.useSyncExternalStore(
+    (cb) => {
+      const mq = window.matchMedia(GRID_STACK_QUERY);
+      mq.addEventListener("change", cb);
+      return () => mq.removeEventListener("change", cb);
+    },
+    () => window.matchMedia(GRID_STACK_QUERY).matches,
+    () => false,
+  );
+
   return (
     <section data-coldboot-console="ready" style={ROOT_STYLE} aria-label="Cold boot console">
       <div style={TOPBAR_STYLE}>
@@ -507,7 +572,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
         <NodeProvenance source="node" keys={["network", "mempool", "market"]} status={data.status} compact style={{ marginLeft: "auto" }} />
       </div>
 
-      <div style={GRID_STYLE}>
+      <div style={gridStyle(stacked)}>
         {/* ── LEFT · HUD + verification + ring + probe + matrix ── */}
         <div style={PANE_STYLE}>
           <div style={PANE_HD_STYLE}>
@@ -730,7 +795,12 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
           </div>
         </div>
 
-        {/* ── RIGHT · the network orb ── */}
+        {/* ── RIGHT · the network orb ──
+            The orb stage below is `flex:1 1 auto`, so with the grid row
+            stretched this pane's leftover height lands THERE rather than being
+            spread across every pane. That is the "fit to screen" the brief
+            asks for: the stage grows, the HUD and Log keep their content
+            height and are not stretched into clipping. */}
         <div style={PANE_STYLE}>
           <div style={PANE_HD_STYLE}>
             <span style={PANE_HD_TITLE_STYLE}>Network</span>
@@ -740,7 +810,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
           <div
             ref={orbSlotRef}
             data-orb-slot="coldboot-console"
-            style={{ position: "relative", flex: "1 1 auto", minHeight: 160, display: "flex", alignItems: "center", justifyContent: "center" }}
+            style={{ position: "relative", flex: "1 1 auto", minHeight: ORB_SLOT_MIN_PX, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             {orbSlot}
           </div>

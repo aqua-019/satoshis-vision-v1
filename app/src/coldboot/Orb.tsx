@@ -95,11 +95,12 @@ import {
   spawnStemEvent,
   spawnBlockEvent,
   seedFromString,
+  ORB_MIN_CANVAS_PX,
   type OrbEvent,
   type OrbNode,
 } from "./orb";
 import { useOrbData, type FeedBlockEvent, type FeedTxEvent } from "./useOrbData";
-import { useColdBootOrbState, type ColdBootOrbState } from "./ColdBoot";
+import { COLDBOOT_Z, useColdBootOrbState, type ColdBootOrbState } from "./ColdBoot";
 
 /** Ambient rotation only needs to look smooth, not track input — matches the
  *  fps order of magnitude other ambient canvases in this repo use. */
@@ -135,10 +136,17 @@ const BASE_STYLE: React.CSSProperties = {
 
 const HIDDEN_STYLE: React.CSSProperties = { display: "none" };
 
+/* `minHeight` is the load-bearing property here and it used to be `0`.
+   `flex:"1 1 auto"` against an unshrinkable OVERLAY_STYLE below meant this box
+   collapsed to zero height in any host shorter than the captions, which starved
+   the canvas and left the backing store at the 300x150 HTML default — see
+   `orb.ts#ORB_MIN_CANVAS_PX` for the measurement and the mechanism. The floor is
+   read from there rather than restated, for the same reason verify-orb parses
+   MIN_ORB_NODES out of orb.ts instead of hard-coding it. */
 const CANVAS_WRAP_STYLE: React.CSSProperties = {
   position: "relative",
   flex: "1 1 auto",
-  minHeight: 0,
+  minHeight: ORB_MIN_CANVAS_PX,
 };
 
 const CANVAS_STYLE: React.CSSProperties = {
@@ -354,7 +362,32 @@ export function Orb(): React.JSX.Element {
   const useHome = coldBootOrb.rect === null || !coldBootOrb.active;
   const isHomeRoute = location.pathname === R.HOME;
   const homeRect = useHomeOrbRect(useHome && isHomeRoute);
-  const effectiveRect: Rect | null = useHome ? homeRect : coldBootOrb.rect;
+  /* The fallback is the fix for a one-frame drop-out. ColdBoot's final handoff
+     write sets `active:false` WITH a rect; `useHome` then flips true, and
+     `useHomeOrbRect`'s effect sets its own state to null before it measures —
+     so for at least one commit `effectiveRect` was null, the orb rendered
+     display:none, and the thing that just travelled across the cut blinked out
+     at the moment it arrived. §4 sleeps 2500ms and cannot see it. Preferring
+     Home's rect but falling back to the last cold-boot rect closes the gap
+     without changing which source wins once Home has measured. */
+  const effectiveRect: Rect | null = useHome
+    ? (homeRect ?? coldBootOrb.rect)
+    : coldBootOrb.rect;
+
+  /* ASSEMBLE — computed every handoff frame by ColdBoot and, until now, never
+     read by anything. The documented "orb assembles over the field's final 14%"
+     simply did not happen: the orb appeared at full strength the instant the
+     console reported its rect, as a second fully-formed bright object competing
+     with the decrypt. Driven on opacity and transform ONLY, so it composites
+     and cannot contribute a layout shift. Off the splash it is pinned to 1 —
+     `active` false means nobody owns the value and the orb must not fade. */
+  const assemble = coldBootOrb.active ? coldBootOrb.assemble : 1;
+  const assembleStyle: React.CSSProperties = {
+    opacity: assemble,
+    transform: `scale(${(0.94 + 0.06 * assemble).toFixed(4)})`,
+    transformOrigin: "center",
+    willChange: assemble > 0 && assemble < 1 ? "opacity, transform" : undefined,
+  };
 
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const drawRef = React.useRef<(() => void) | null>(null);
@@ -419,6 +452,8 @@ export function Orb(): React.JSX.Element {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
+    let zeroWarned = false;
+
     const draw = (): void => {
       const w = Math.min(canvas.clientWidth, MAX_DIM);
       const h = Math.min(canvas.clientHeight, MAX_DIM);
@@ -430,7 +465,32 @@ export function Orb(): React.JSX.Element {
     const resize = (): void => {
       const w = Math.min(canvas.clientWidth, MAX_DIM);
       const h = Math.min(canvas.clientHeight, MAX_DIM);
-      if (!w || !h) return;
+      if (!w || !h) {
+        /* The early return is correct — there is nothing to size a buffer to.
+           What was wrong for the whole of v6.1.8 is that it was SILENT: the
+           canvas kept its 300x150 default, drawOrb painted into the wrong
+           coordinate space, and no console, gate or exception said so. One
+           warning, once per mount, on the same principle as useMemCanvas's
+           MAX_DIM notice — nothing errors here, it just quietly stops being an
+           orb. A zero box should be unreachable now that ORB_MIN_CANVAS_PX
+           floors the wrap, so this firing means a host has defeated it.
+
+           The `clientWidth || clientHeight` guard is what keeps this quiet on
+           the ORDINARY zero box: off Home, and before the first rect resolves,
+           this component renders `display:none`, where BOTH dimensions read 0
+           and there is nothing wrong. Only a box that has one real dimension
+           and one collapsed one — the actual defect — reaches the warning. */
+        if (!zeroWarned && (canvas.clientWidth || canvas.clientHeight)) {
+          zeroWarned = true;
+          // eslint-disable-next-line no-console
+          console.warn(
+            `[Orb] canvas box is ${canvas.clientWidth}x${canvas.clientHeight} — one dimension is 0, so the ` +
+            `backing store cannot be sized and the orb will not draw. The host box is likely shorter than ` +
+            `the badge/caption overlay; see orb.ts#ORB_MIN_CANVAS_PX.`,
+          );
+        }
+        return;
+      }
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
@@ -453,19 +513,66 @@ export function Orb(): React.JSX.Element {
     drawRef.current?.();
   }, [seconds, orbData.nodes, orbData.blockFeedEvents, orbData.txFeedEvents, effectiveRect]);
 
-  const positionStyle: React.CSSProperties = effectiveRect
+  /* z-index is applied ONLY while the splash owns the rect, and that condition
+     is the whole reason it is safe.
+
+     `ColdBoot.tsx#ROOT_STYLE` is `position:fixed; inset:0; zIndex:COLDBOOT_Z`
+     with an OPAQUE `#050505` background. This element is a `position:fixed`
+     SIBLING of that root (mounted from App.tsx, deliberately not inside
+     ColdBoot) at `z-index:auto`, so during the console phase it painted
+     underneath an opaque full-viewport overlay — invisible no matter how
+     correctly it was sized or drawn. Measured on 95316a3 at 1440x900:
+     `document.elementFromPoint()` at the orb canvas's own centre returned a
+     canvas inside `[data-coldboot]`, not the orb's; raising it to COLDBOOT_Z+1
+     made the same probe return the orb's canvas.
+
+     Off the splash (`active === false`, i.e. Home after the handoff settles)
+     this stays `auto`. A permanent z-index above 1000 would float the orb over
+     NavTop's dropdown and the ⌘ DESIGN panel on every Home visit, which is a
+     bug traded for a bug — so the raise lives and dies with the splash. */
+  /* ── THE TRAVEL IS A TRANSFORM, NOT A RE-LAYOUT ─────────────────────────
+     ColdBoot re-lerps this rect every frame of the ENTER handoff. Writing that
+     into left/top/width/height animates LAYOUT properties, and the browser
+     scored it exactly as it should: measured CLS 0.0386-0.0402 across the
+     handoff at 1440x900, with `HTML>BODY>DIV#root>DIV` — this element — as the
+     dominant source, against a repo ceiling of 0.005.
+
+     So the box is pinned to whichever rect the travel STARTED from and every
+     later frame is expressed as translate + scale off it. Transform-driven
+     movement is composited and is excluded from layout-shift scoring by
+     definition, so the hitch and the CLS go together.
+
+     `base` re-anchors whenever the splash is not driving (active false), which
+     is what stops Home inheriting a permanent transform after the handoff
+     settles: at rest the base IS the current rect and the transform is
+     identity. The canvas backing store is sized from clientWidth/clientHeight,
+     which a transform does not change — so the orb scales as an image for the
+     1.2s of travel rather than re-sizing its buffer 70 times, and verify-orb's
+     "backing store tracks its CSS box" still holds at both ends. */
+  const baseRef = React.useRef<Rect | null>(null);
+  if (effectiveRect && (!coldBootOrb.active || baseRef.current === null)) {
+    baseRef.current = effectiveRect;
+  }
+  const base = baseRef.current;
+
+  const positionStyle: React.CSSProperties = effectiveRect && base
     ? {
         position: "fixed",
-        left: effectiveRect.x,
-        top: effectiveRect.y,
-        width: effectiveRect.w,
-        height: effectiveRect.h,
+        left: base.x,
+        top: base.y,
+        width: base.w,
+        height: base.h,
+        transform:
+          `translate(${(effectiveRect.x - base.x).toFixed(2)}px, ${(effectiveRect.y - base.y).toFixed(2)}px)` +
+          ` scale(${(effectiveRect.w / base.w).toFixed(4)}, ${(effectiveRect.h / base.h).toFixed(4)})`,
+        transformOrigin: "top left",
+        ...(coldBootOrb.active ? { zIndex: COLDBOOT_Z + 1, willChange: "transform" } : null),
       }
     : HIDDEN_STYLE;
 
   return (
     <div data-orb style={{ ...BASE_STYLE, ...positionStyle }}>
-      <div style={CANVAS_WRAP_STYLE}>
+      <div style={{ ...CANVAS_WRAP_STYLE, ...assembleStyle }}>
         <canvas ref={canvasRef} style={CANVAS_STYLE} aria-hidden="true" />
       </div>
       <div style={OVERLAY_STYLE}>

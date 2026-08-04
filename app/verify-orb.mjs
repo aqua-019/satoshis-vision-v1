@@ -13,6 +13,14 @@
  *   §3  ILLUSTRATIVE badge on the Dandelion++ layer; no live badge on it
  *   §4  Tor/I2P orbit in shells; no node placed at a geographic location
  *
+ * v6.1.9 added three more, because all four above are about what the orb SAYS
+ * and the orb had stopped DRAWING without one of them noticing:
+ *
+ *   §5  the canvas backing store is sized to its box, above a parsed floor
+ *   §6  and it actually paints — pixel counts and a PREDICTED bounding box
+ *   §7  both of those again on the live cold-boot console, which is the one
+ *       surface §1-§6 never render, and the one where the orb was broken
+ *
  * ── THE SELF-CHECK PATTERN, AND WHY THE SHIPPED GATE NEVER GOES RED ON A
  *    CORRECT TREE ─────────────────────────────────────────────────────────
  * §1, §3 and §4 assert an ABSENCE ("no hostname", "no live badge", "no
@@ -43,7 +51,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createRequire } from 'node:module';
 import {
-  makeReporter, launchChromium, BASE,
+  makeReporter, launchChromium, BASE, PHONE,
   coldBootOff, assertColdBootBypassed,
 } from './verify-lib.mjs';
 
@@ -103,6 +111,28 @@ if (shellReal !== null) {
     `SHELL === [1.00, 1.17, 1.30] (clearnet on the sphere; Tor/I2P orbiting) — got [${shellReal.join(', ')}]`,
     matches ? '' : `got [${shellReal.join(', ')}] — a shell radius changed without this gate being updated`);
 }
+
+/* ── the two numeric floors §5/§6 compare against, PARSED not restated ────
+ * Same reasoning as §2's MIN_ORB_NODES/MAX_ORB_NODES parse below: a number
+ * copied into a gate is a second definition kept in step by nothing, and this
+ * file already records that lesson once. `ORB_RADIUS_FRAC` in particular is
+ * not a threshold at all — it is the input to a PREDICTION (§6-B4 derives the
+ * expected bounding box from it and SHELL), so restating it here would make
+ * the gate agree with itself rather than with drawOrb.
+ *
+ * A failed parse yields NaN, and every comparison below is `>=`, which is
+ * false for NaN — so this fails CLOSED. Asserted anyway, because a gate that
+ * reds for "NaN" without saying why costs the next reader an hour. */
+const orbNum = (name) => {
+  const m = new RegExp(`export\\s+const\\s+${name}\\s*(?::[^=]*)?=\\s*([\\d.]+)`).exec(ORB_TS_SRC);
+  return m ? Number(m[1]) : NaN;
+};
+const ORB_MIN_CANVAS_PX = orbNum('ORB_MIN_CANVAS_PX');
+const ORB_RADIUS_FRAC = orbNum('ORB_RADIUS_FRAC');
+R.ok(Number.isFinite(ORB_MIN_CANVAS_PX) && Number.isFinite(ORB_RADIUS_FRAC),
+  `precondition: orb geometry constants parsed from orb.ts — ORB_MIN_CANVAS_PX=${ORB_MIN_CANVAS_PX}, ORB_RADIUS_FRAC=${ORB_RADIUS_FRAC}`,
+  'Could not parse one of them. §5\'s canvas floor and §6\'s predicted bounding box would both compare ' +
+  'against NaN — false for every input, so the sections red, but for the wrong reason.');
 
 const strippedReal = stripComments(ORB_TS_SRC);
 const rawHits = [...ORB_TS_SRC.matchAll(/\b(lat|lon|latitude|longitude)\b/gi)].map((m) => m[0]);
@@ -186,8 +216,8 @@ async function mockNodesUnavailable(ctx) {
 
 /** Fresh Home context, splash bypassed, `[data-orb]` waited-for and its
  *  presence asserted (the precondition every section below depends on). */
-async function openHome(mocker) {
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+async function openHome(mocker, vp = { width: 1440, height: 900 }) {
+  const ctx = await browser.newContext({ viewport: vp });
   await coldBootOff(ctx);
   if (mocker) await mocker(ctx);
   const page = await ctx.newPage();
@@ -495,6 +525,471 @@ R.group('── 3 · ILLUSTRATIVE badge; no live badge on the Dandelion++ layer 
   }
 
   await ctx.close();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * §5 · the canvas is SIZED to its box   ·   §6 · and it actually PAINTS
+ * §7 · both of the above, on the live cold-boot console
+ * ══════════════════════════════════════════════════════════════════════
+ *
+ * ── WHY THESE EXIST: 26 GREEN ASSERTIONS ABOVE, AND THE ORB DID NOT DRAW ──
+ * Everything before this point checks what the orb SAYS — no hostname, an
+ * honest empty state, an ILLUSTRATIVE badge, no geographic placement. Not one
+ * asked whether the thing the component exists to do had happened. On
+ * origin/main at 95316a3 it had not: in the cold-boot console the backing
+ * store sat at 300x150, the untouched HTML default, and drawOrb painted into
+ * a coordinate space that was never on screen.
+ *
+ * The gate-side cause is this file's own shape, and it is the standing family
+ * inverted. `openHome()` is the only context factory above, and it calls
+ * `coldBootOff(ctx)` — so the SUBJECT of all 26 assertions is the bypassed
+ * Main Home, while their CLAIM reads as "the orb". Home's box is 538.9x468 and
+ * the orb draws there perfectly. The one surface where it was broken is the
+ * one surface this file had never rendered. A subject NARROWER than its claim
+ * fails in exactly the same way as one that is wider: it passes for reasons
+ * outside the claim.
+ *
+ * ── THE ORDER OF THE ASSERTIONS IS LOAD-BEARING ──────────────────────────
+ * "the backing store is not 300x150" is the WEAKEST possible form of §5 and
+ * it is deliberately last (A3) and never alone. Measured: raising the console
+ * wrapper's maxWidth — an unrelated change landed in this same PR — widens the
+ * pane, shortens the caption block, and flips the backing store from 300x150
+ * to 490x25. A3 alone goes GREEN on a 25px letterbox strip. A0/A1/A2 all still
+ * red. Do not "simplify" A0-A2 into A3.
+ *
+ * ── WHY THE BACKING STORE AND NOT A SCREENSHOT ───────────────────────────
+ * `getImageData` reads what drawOrb issued. A screenshot reads what the
+ * compositor produced, which during the console phase is a different question
+ * with a different answer: the orb is a position:fixed sibling of ColdBoot's
+ * root, and until this PR it painted UNDER that root's opaque #050505. A
+ * pixel-diff route would have reported "does not paint" for a canvas that was
+ * painting correctly. Same argument verify-coldboot.mjs:202-214 already makes
+ * for toDataURL over element screenshots, one level stronger.
+ *
+ * SCOPE, stated because the labels must not outrun it: §5/§6 prove the BACKING
+ * STORE contains a correctly-scaled orb. Whether a human sees it is a separate
+ * claim with a separate subject — §7's Z1/Z2 are the only assertions here that
+ * touch it, and they are scoped to the one occluder that was actually a
+ * problem.
+ *
+ * ── MEASURED, ON THE FIXED TREE (4 contexts, used to set every floor) ─────
+ *   context              store    painted        struct(a>=40)  dot(a>=120)  sbox
+ *   home    1440 live    539x363  147469 (75.4%)  3709           98          407x363
+ *   home    1440 unavail 539x363  147469 (75.4%)  3504            1          407x363
+ *   home     390 live    334x162   29376 (54.3%)  1914           94          182x162
+ *   console 1440 live    357x239   63933 (74.9%)  2525           99          269x239
+ *   console 1440 unavail 357x239   63933 (74.9%)  2312            1          269x239
+ *   console  390 live    288x212   50280 (82.4%)  2421           96          238x212
+ *
+ * `struct` normalised by min(W,H) spans 9.65-11.8 across all six; the floor is
+ * 4x, i.e. 41% of the observed minimum. `dot` separates live from unavailable
+ * by two orders of magnitude (94-99 against <=1), so its floor of 40 and
+ * ceiling of 5 sit in an empty gap, not on a boundary.
+ * `sbox` is NOT fitted: it is 2 * ORB_RADIUS_FRAC * SHELL[2] * min(W,H),
+ * predicted from constants parsed out of orb.ts, and it lands within 2px in
+ * all six rows (405.8 predicted vs 407; 237.0 vs 238).
+ */
+
+/** Layout box, backing store and alpha statistics — in ONE evaluate.
+ *  Orb.tsx:452-454 redraws on every `seconds` tick at ORB_FPS 24 (~42ms), so
+ *  sampling geometry and pixels in two calls can straddle a repaint and let
+ *  them describe different frames. One task cannot be interrupted by a rAF. */
+async function measureOrbCanvas(page) {
+  return page.evaluate(() => {
+    const orb = document.querySelector('[data-orb]');
+    const c = orb && orb.querySelector('canvas');
+    if (!orb || !c) return { found: false };
+    const ob = orb.getBoundingClientRect();
+    const W = c.width, H = c.height;
+    const base = {
+      found: true, W, H, cssW: c.clientWidth, cssH: c.clientHeight,
+      dprCap: Math.min(window.devicePixelRatio || 1, 2),
+      boxW: ob.width, boxH: ob.height,
+      orbZ: getComputedStyle(orb).zIndex,
+    };
+    if (!W || !H) return { ...base, px: null };
+    const d = c.getContext('2d').getImageData(0, 0, W, H).data;
+    let painted = 0, struct = 0, dot = 0, maxA = 0;
+    let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1;
+    for (let i = 3, p = 0; i < d.length; i += 4, p++) {
+      const a = d[i];
+      if (a === 0) continue;
+      painted++;
+      if (a > maxA) maxA = a;
+      if (a >= 120) dot++;
+      if (a >= 40) {
+        struct++;
+        const x = p % W, y = (p / W) | 0;
+        if (x < x0) x0 = x; if (x > x1) x1 = x;
+        if (y < y0) y0 = y; if (y > y1) y1 = y;
+      }
+    }
+    return { ...base, px: {
+      total: W * H, painted, struct, dot, maxA,
+      sbox: x1 < 0 ? null : { x0, y0, x1, y1, w: x1 - x0 + 1, h: y1 - y0 + 1 },
+    } };
+  });
+}
+
+/** Everything drawOrb paints unconditionally is a circle centred on the canvas
+ *  whose radius is a fixed multiple of ORB_RADIUS_FRAC * min(w,h) (orb.ts's
+ *  `R`). The outermost is the i2p shell at SHELL[2]. Both constants are parsed
+ *  from orb.ts above, so this PREDICTS the extent rather than remembering it —
+ *  change the source and the expectation follows. Clamped per axis because the
+ *  circle is cropped by whichever side is shorter. */
+function orbExpect(W, H) {
+  const span = 2 * ORB_RADIUS_FRAC * shellReal[2] * Math.min(W, H);
+  return { span, w: Math.min(span, W), h: Math.min(span, H) };
+}
+
+const STRUCT_FLOOR = (m) => Math.round(4 * Math.min(m.W, m.H));
+const DOT_FLOOR = 40;      // measured 94-99 with a live census
+const DOT_CEILING = 5;     // measured 0-1 with none
+
+/** The §5 + §6 body, run identically in every context. One function, so no
+ *  two contexts can drift into asserting different things under one heading. */
+function assertOrbCanvas(name, m, { census }) {
+  R.ok(m.found, `${name}: precondition — [data-orb] canvas located`,
+    m.found ? '' : 'no [data-orb] canvas in the DOM; every number below would be undefined, not zero');
+  if (!m.found) return;
+
+  /* ── §5 · sized to its box ── */
+  R.ok(m.cssH >= ORB_MIN_CANVAS_PX,
+    `${name}: the canvas box clears the ORB_MIN_CANVAS_PX floor — ${m.cssH}px CSS height, need >=${ORB_MIN_CANVAS_PX} (box ${m.boxW.toFixed(1)}x${m.boxH.toFixed(1)})`,
+    m.cssH >= ORB_MIN_CANVAS_PX
+      ? ''
+      : `The canvas has ${m.cssH} CSS px inside a ${m.boxH.toFixed(1)}px orb box. Orb.tsx's OVERLAY_STYLE ` +
+        'is flex:"0 0 auto" and cannot shrink; CANVAS_WRAP_STYLE is flex:"1 1 auto" and can. If the host ' +
+        'box is shorter than the badge/caption block, the canvas gets what is left, which is nothing. ' +
+        'Fix the host box or the overlay — not this number.');
+
+  const wantW = Math.round(m.cssW * m.dprCap), wantH = Math.round(m.cssH * m.dprCap);
+  const sized = Math.abs(m.W - wantW) <= 1 && Math.abs(m.H - wantH) <= 1;
+  R.ok(sized,
+    `${name}: backing store tracks its CSS box — ${m.W}x${m.H} for ${m.cssW}x${m.cssH} @${m.dprCap}x (want ${wantW}x${wantH})`,
+    sized ? '' :
+      `Store is ${m.W}x${m.H}; the box asks for ${wantW}x${wantH}. Orb.tsx's resize() is the ONLY writer of ` +
+      'canvas.width/height and it returns early on a zero dimension, so a store that never matched its box ' +
+      'means resize() has never once completed for this canvas.');
+
+  R.ok(!(m.W === 300 && m.H === 150),
+    `${name}: backing store is not the untouched HTML default 300x150`,
+    m.W === 300 && m.H === 150
+      ? 'The canvas has NEVER been sized. This is the weakest of the three checks above and the last to ' +
+        'fire — a 490x25 letterbox strip passes it. Read the two above first.'
+      : '');
+
+  /* ── §6 · and it paints ── */
+  if (!m.px) {
+    R.ok(false, `${name}: precondition — a non-empty backing store to read`,
+      'zero-area store; getImageData was never called, so the counts below are absent, not zero');
+    return;
+  }
+  const p = m.px, e = orbExpect(m.W, m.H);
+
+  R.ok(p.painted > 0 && p.maxA >= 40,
+    `${name}: the canvas is painted — ${p.painted}/${p.total} px carry alpha (${(100 * p.painted / p.total).toFixed(1)}%), peak alpha ${p.maxA}`,
+    p.painted === 0
+      ? 'ZERO painted pixels. The store was sized but drawOrb never ran, or ran and returned at its own ' +
+        '`if (w <= 0 || h <= 0)` guard.'
+      : `peak alpha ${p.maxA} is below any stroked circle — only the radial glow reached the buffer.`);
+
+  const floor = STRUCT_FLOOR(m);
+  R.ok(p.struct >= floor,
+    `${name}: ${p.struct} structural px (alpha>=40: equator ring + tor/i2p shells + graticule), need >=${floor}`,
+    p.struct >= floor
+      ? ''
+      : `Only ${p.struct} px above the glow's alpha ceiling. drawOrb issues its ring, both shells and the ` +
+        'graticule unconditionally — independent of the census — so this is low even for an orb with no data.');
+
+  if (p.sbox) {
+    const cx = (p.sbox.x0 + p.sbox.x1) / 2, cy = (p.sbox.y0 + p.sbox.y1) / 2;
+    const offX = Math.abs(cx - m.W / 2), offY = Math.abs(cy - m.H / 2);
+    const centred = offX <= Math.max(2, 0.03 * m.W) && offY <= Math.max(2, 0.03 * m.H);
+    R.ok(centred,
+      `${name}: the painting is centred — structural centroid ${cx.toFixed(0)},${cy.toFixed(0)} vs canvas centre ${(m.W / 2).toFixed(0)},${(m.H / 2).toFixed(0)} (off ${offX.toFixed(1)},${offY.toFixed(1)}px)`,
+      centred ? '' :
+        'drawOrb centres every unconditional circle on the canvas. An off-centre bounding box means the dpr ' +
+        'it derives from ctx.canvas.width disagrees with the store — i.e. width was set by someone else.');
+
+    const spans = p.sbox.w >= 0.95 * e.w && p.sbox.h >= 0.95 * e.h;
+    R.ok(spans,
+      `${name}: the orb spans its canvas — structural bbox ${p.sbox.w}x${p.sbox.h} against ${e.w.toFixed(0)}x${e.h.toFixed(0)} predicted by 2*ORB_RADIUS_FRAC*SHELL[2]*min(W,H) (need >=95%)`,
+      spans ? '' :
+        `The painting occupies ${p.sbox.w}x${p.sbox.h} of a ${m.W}x${m.H} store where the i2p shell alone ` +
+        `should reach ${e.w.toFixed(0)}x${e.h.toFixed(0)}. A small centred blob in a large buffer is what a ` +
+        'stale dpr or a stretched CSS box looks like.');
+  } else {
+    R.ok(false, `${name}: a structural bounding box exists to measure`,
+      'no pixel reached alpha 40 — the centring and extent checks have no subject');
+  }
+
+  /* Two polarities on the SAME metric. Each is the other's vacuity guard:
+     a permanently-blank canvas fails the live floor, and a canvas that draws
+     dots from nothing fails the empty ceiling. */
+  if (census === 'live') {
+    R.ok(p.dot >= DOT_FLOOR,
+      `${name}: the real lattice reaches the backing store — ${p.dot} px at dot alpha (>=120), need >=${DOT_FLOOR}`,
+      p.dot >= DOT_FLOOR ? '' :
+        'The caption claims an N-point sample and the buffer has no dots in it. §2 asserts the caption; this ' +
+        'is the only assertion anywhere that the lattice is DRAWN.');
+  } else {
+    R.ok(p.dot <= DOT_CEILING,
+      `${name}: no dot-alpha pixels when the census is unavailable — ${p.dot} px at alpha>=120, allow <=${DOT_CEILING}`,
+      p.dot <= DOT_CEILING ? '' :
+        `${p.dot} px at dot alpha with an empty lattice — something is drawing nodes that do not exist.`);
+  }
+
+  R.info(`${name}: box ${m.boxW.toFixed(0)}x${m.boxH.toFixed(0)} · css ${m.cssW}x${m.cssH} · store ${m.W}x${m.H} @${m.dprCap}x · painted ${p.painted} (${(100 * p.painted / p.total).toFixed(1)}%) · struct ${p.struct} · dot ${p.dot} · maxA ${p.maxA} · sbox ${p.sbox ? `${p.sbox.w}x${p.sbox.h}` : 'none'}`);
+}
+
+R.group('── 5+6 · the orb canvas is sized to its box, and paints into it ──');
+{
+  const cases = [
+    ['home 1440x900 · live census', mockNodesLive, { width: 1440, height: 900 }, 'live'],
+    ['home 390x844 · live census', mockNodesLive, { width: PHONE.width, height: PHONE.height }, 'live'],
+    ['home 1440x900 · no census', mockNodesUnavailable, { width: 1440, height: 900 }, 'none'],
+  ];
+  for (const [name, mocker, vp, census] of cases) {
+    const { ctx, page } = await openHome(mocker, vp);
+    await page.waitForTimeout(1200);
+    assertOrbCanvas(name, await measureOrbCanvas(page), { census });
+    await ctx.close();
+  }
+}
+
+/* ── SELF-CHECKS · permanent companions, in this file's established idiom ──
+ * Each injects a known violation and asserts the detector caught it, so the
+ * claim ("the detector catches this") is true on every tree forever and can
+ * run green in CI while still proving the detector is live.
+ *
+ * Injection and measurement happen inside ONE evaluate. Orb.tsx redraws on a
+ * 24fps tick, so a repaint between two calls would undo the injection and turn
+ * every one of these into a coin flip. */
+R.group('── 5+6 SELF-CHECKS · the detectors are falsifiable ──────────────');
+{
+  const { ctx, page } = await openHome(mockNodesLive);
+  await page.waitForTimeout(1200);
+
+  const sc1 = await page.evaluate(() => {
+    const c = document.querySelector('[data-orb] canvas');
+    c.width = 300; c.height = 150;                       // the exact production symptom
+    return { W: c.width, H: c.height, cssW: c.clientWidth, cssH: c.clientHeight,
+             dprCap: Math.min(window.devicePixelRatio || 1, 2) };
+  });
+  const sc1Caught = !(Math.abs(sc1.W - Math.round(sc1.cssW * sc1.dprCap)) <= 1 &&
+                      Math.abs(sc1.H - Math.round(sc1.cssH * sc1.dprCap)) <= 1) &&
+                    sc1.W === 300 && sc1.H === 150;
+  R.ok(sc1Caught,
+    `SELF-CHECK: forcing the store back to 300x150 is caught by BOTH the tracks-its-box check and the ` +
+    `named-default check (${sc1.W}x${sc1.H} against a ${sc1.cssW}x${sc1.cssH} box)`,
+    sc1Caught ? '' : 'the injected default was NOT detected — §5 cannot be trusted on the real orb either');
+
+  const sc2 = await page.evaluate(() => {
+    const c = document.querySelector('[data-orb] canvas');
+    const x = c.getContext('2d');
+    x.clearRect(0, 0, c.width, c.height);
+    const d = x.getImageData(0, 0, c.width, c.height).data;
+    let painted = 0;
+    for (let i = 3; i < d.length; i += 4) if (d[i]) painted++;
+    return { painted, total: d.length / 4 };
+  });
+  R.ok(sc2.painted === 0,
+    `SELF-CHECK: a cleared backing store reads 0/${sc2.total} painted px — proves the paint check reads the ` +
+    'buffer rather than reporting a constant',
+    sc2.painted === 0 ? '' : `${sc2.painted} px survived clearRect — the probe is reading something else`);
+
+  /* The one a naive "is anything painted?" check waves through, and the shape
+     of the false green a widened console would have produced. */
+  const sc3 = await page.evaluate(() => {
+    const c = document.querySelector('[data-orb] canvas');
+    const x = c.getContext('2d');
+    x.clearRect(0, 0, c.width, c.height);
+    x.fillStyle = 'rgba(255,122,26,1)';
+    x.fillRect(2, 2, 6, 6);
+    const W = c.width, H = c.height;
+    const d = x.getImageData(0, 0, W, H).data;
+    let painted = 0, struct = 0;
+    let x0 = Infinity, y0 = Infinity, x1 = -1, y1 = -1;
+    for (let i = 3, p = 0; i < d.length; i += 4, p++) {
+      if (!d[i]) continue;
+      painted++;
+      if (d[i] >= 40) {
+        struct++;
+        const px = p % W, py = (p / W) | 0;
+        if (px < x0) x0 = px; if (px > x1) x1 = px;
+        if (py < y0) y0 = py; if (py > y1) y1 = py;
+      }
+    }
+    return { W, H, painted, struct, w: x1 - x0 + 1, h: y1 - y0 + 1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
+  });
+  const e3 = orbExpect(sc3.W, sc3.H);
+  const sc3Centred = Math.abs(sc3.cx - sc3.W / 2) <= Math.max(2, 0.03 * sc3.W) &&
+                     Math.abs(sc3.cy - sc3.H / 2) <= Math.max(2, 0.03 * sc3.H);
+  const sc3Spans = sc3.w >= 0.95 * e3.w && sc3.h >= 0.95 * e3.h;
+  const sc3Struct = sc3.struct >= STRUCT_FLOOR({ W: sc3.W, H: sc3.H });
+  R.ok(sc3.painted > 0 && !sc3Centred && !sc3Spans && !sc3Struct,
+    `SELF-CHECK: a 6x6 blob in the corner IS painted (${sc3.painted} px) yet fails the structural floor ` +
+    `(${sc3.struct} < ${STRUCT_FLOOR({ W: sc3.W, H: sc3.H })}), the centring check and the extent check — ` +
+    'proves "it paints" is not satisfiable by any non-empty buffer',
+    'a corner blob satisfied one of the shape checks — they do not discriminate a drawn orb from noise');
+
+  /* The production mechanism itself, reproduced live: shrink the box until the
+     unshrinkable overlay consumes it. This is the only companion that exercises
+     the real failure path rather than a synthetic buffer size. */
+  /* A STYLESHEET rule, not an inline style, and the reason is load-bearing:
+     Orb.tsx writes `height` into [data-orb]'s inline style on every render and
+     it re-renders on the 24fps `seconds` tick, so an injected inline height is
+     overwritten within ~42ms. The first draft of this companion did exactly
+     that and reported "the canvas did not collapse" against a tree where the
+     mechanism was intact — a self-check that failed for a reason having
+     nothing to do with what it claims to prove. `!important` in a stylesheet
+     outranks an inline declaration, so this survives every re-render. */
+  /* The height is DERIVED from the overlay actually rendered in this context,
+     not picked. A fixed 120px was tried first and did not collapse anything:
+     Home at 1440 renders a 97px overlay, so a 120px box still leaves the wrap
+     15px. The console's overlay is 153.5px, which is why 160 starved it there
+     and the same number would not starve it here. Setting the box to exactly
+     the overlay's own height leaves `BASE_STYLE`'s 8px gap unpaid and the wrap
+     with nothing, in every context, without knowing the number in advance. */
+  const overlayH = await page.evaluate(
+    () => document.querySelector('[data-orb]').lastElementChild.getBoundingClientRect().height,
+  );
+  await page.addStyleTag({
+    content: `[data-orb] { height: ${Math.round(overlayH)}px !important; } ` +
+             '[data-orb] > div:first-child { min-height: 0 !important; }',
+  });
+  const collapsed = await page.waitForFunction(
+    () => document.querySelector('[data-orb] canvas').clientHeight === 0, { timeout: 3000 },
+  ).then(() => true).catch(() => false);
+  R.ok(collapsed,
+    `SELF-CHECK: with ORB_MIN_CANVAS_PX defeated and the box forced to its own overlay's height ` +
+    `(${Math.round(overlayH)}px), the canvas collapses to 0 CSS px — the production mechanism, reproduced ` +
+    '(OVERLAY_STYLE cannot shrink, CANVAS_WRAP_STYLE could)',
+    collapsed ? '' : 'the canvas did not collapse; the mechanism §5 guards against may have changed shape, ' +
+                     'and its failure message now names the wrong cause');
+  if (collapsed) {
+    const after = await measureOrbCanvas(page);
+    R.ok(after.cssH < ORB_MIN_CANVAS_PX,
+      `SELF-CHECK: and the canvas-floor check catches that collapse (${after.cssH} < ${ORB_MIN_CANVAS_PX})`,
+      after.cssH >= ORB_MIN_CANVAS_PX ? 'the floor check did not fire on a genuinely collapsed canvas' : '');
+  }
+  await ctx.close();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * §7 · the same two claims, on the LIVE cold-boot console
+ * ══════════════════════════════════════════════════════════════════════
+ * Deliberately does NOT install the bypass — that is the entire point of the
+ * section. verify-coldboot-live §1 runs FIRST in verify:e2e and is the
+ * positive control that a cold context gets a splash at all; if it is green
+ * and P1 here is red, suspect this context rather than the app. */
+R.group('── 7 · sized and painting on the LIVE cold-boot console ─────────');
+{
+  const fmt = (r) => (r ? `${r.w.toFixed(0)}x${r.h.toFixed(0)}@(${r.x.toFixed(0)},${r.y.toFixed(0)})` : 'none');
+  const SLOT = '[data-orb-slot="coldboot-console"]';
+
+  for (const [name, vp] of [
+    ['console 1440x900', { width: 1440, height: 900 }],
+    ['console 390x844', { width: PHONE.width, height: PHONE.height }],
+  ]) {
+    const ctx = await browser.newContext({ viewport: vp });
+    await mockNodesUnavailable(ctx);   // stated, not inherited from the network
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+
+    const splash = await page.waitForSelector('[data-coldboot]', { timeout: 15000 })
+      .then(() => true).catch(() => false);
+    R.ok(splash, `${name}: precondition — a cold visit to / rendered the splash root`,
+      splash ? '' : 'No [data-coldboot] after 15s. Everything below would measure Home while claiming to ' +
+                    'measure the console — the exact inversion this section exists to close.');
+
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, `${name}: precondition — the console pane mounted (it is what publishes the orb rect)`,
+      ready ? '' : 'the console never reported ready, so the orb was never handed a rect to sit on');
+
+    const placed = await page.waitForFunction((s) => {
+      const o = document.querySelector('[data-orb]'), sl = document.querySelector(s);
+      if (!o || !sl) return false;
+      const a = o.getBoundingClientRect(), b = sl.getBoundingClientRect();
+      return b.height > 0 && Math.abs(a.top - b.top) <= 1 && Math.abs(a.height - b.height) <= 1;
+    }, SLOT, { timeout: 15000 }).then(() => true).catch(() => false);
+
+    const rects = await page.evaluate((s) => {
+      const pick = (r) => (r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null);
+      const o = document.querySelector('[data-orb]');
+      return {
+        orb: pick(o && o.getBoundingClientRect()),
+        slot: pick(document.querySelector(s)?.getBoundingClientRect()),
+        hm: pick(document.getElementById('hm-orb')?.getBoundingClientRect()),
+      };
+    }, SLOT);
+
+    const onSlot = placed && rects.slot && rects.orb &&
+      ['x', 'y', 'w', 'h'].every((k) => Math.abs(rects.orb[k] - rects.slot[k]) <= 1);
+    R.ok(onSlot,
+      `${name}: precondition — [data-orb] is placed on the console slot (orb ${fmt(rects.orb)} vs slot ${fmt(rects.slot)})`,
+      onSlot ? '' :
+        'Orb.tsx falls back to Home\'s #hm-orb whenever the cold-boot rect is null or inactive, so this is the ' +
+        'difference between measuring the console slot and measuring Home\'s 52vh box.');
+
+    /* The precondition ON the precondition. Home is mounted underneath the
+       splash the whole time, so #hm-orb exists here too — if the two candidate
+       rects happened to coincide, the check above would be satisfied by the
+       WRONG source and could not tell them apart. Prove they are separable. */
+    const distinct = !!rects.hm && rects.orb &&
+      (Math.abs(rects.hm.h - rects.orb.h) > 8 || Math.abs(rects.hm.y - rects.orb.y) > 8);
+    R.ok(distinct,
+      `${name}: …and Home's #hm-orb rect is distinguishable from it (#hm-orb ${fmt(rects.hm)}) — so the check above discriminates`,
+      rects.hm === null
+        ? '#hm-orb is absent under the splash, so the check above cannot tell "positioned by the console" from ' +
+          '"positioned by a fallback that had nothing to fall back to" — it would pass either way.'
+        : 'the two candidate rects coincide within 8px, so the check above is satisfied by both sources at once.');
+
+    if (onSlot) {
+      assertOrbCanvas(name, await measureOrbCanvas(page), { census: 'none' });
+
+      /* ── Z1/Z2 · the one visibility claim in this file, tightly scoped ──
+         ColdBoot's root is position:fixed, z-index COLDBOOT_Z, opaque #050505.
+         [data-orb] is a fixed SIBLING of it, so at z-index:auto it painted
+         underneath — correct pixels, never seen. Z1 asserts the raise; Z2
+         confirms it against the compositor where the geometry allows. */
+      const z = await page.evaluate(() => {
+        const orb = document.querySelector('[data-orb]');
+        const cv = orb.querySelector('canvas');
+        const b = cv.getBoundingClientRect();
+        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        const inView = cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight;
+        const hit = inView ? document.elementFromPoint(cx, cy) : null;
+        const rootZ = getComputedStyle(document.querySelector('[data-coldboot]')).zIndex;
+        return { orbZ: getComputedStyle(orb).zIndex, rootZ, inView,
+                 hitIsOrbCanvas: hit === cv, hitInColdboot: !!(hit && hit.closest('[data-coldboot]')) };
+      });
+      const raised = Number(z.orbZ) > Number(z.rootZ);
+      R.ok(raised,
+        `${name}: the orb is stacked above the splash root — z-index ${z.orbZ} against the root's ${z.rootZ}`,
+        raised ? '' :
+          `orb z-index ${z.orbZ}, splash root ${z.rootZ}. The root paints an OPAQUE #050505 over the whole ` +
+          'viewport, so at a lower or auto z-index the orb is invisible for the entire console phase no ' +
+          'matter how correctly it is sized or drawn.');
+
+      if (z.inView) {
+        R.ok(z.hitIsOrbCanvas && !z.hitInColdboot,
+          `${name}: …and the compositor agrees — elementFromPoint at the canvas centre returns the orb's own canvas`,
+          z.hitIsOrbCanvas ? '' :
+            'the topmost element at the orb canvas\'s own centre is inside [data-coldboot], which is the ' +
+            'opaque overlay. The orb is behind it.');
+      } else {
+        R.skip(`${name}: elementFromPoint confirmation of the stacking order`,
+          'the orb\'s centre is outside the viewport at this size, and elementFromPoint is viewport-relative. ' +
+          'The console is taller than the viewport at 390x844 (measured 2282.6px against 844) and is clipped ' +
+          'by its own overflow:hidden, so the orb sits below the fold. The z-index assertion above still ran; ' +
+          'only the compositor cross-check is unavailable. Recorded rather than folded into a pass.');
+      }
+    }
+    await ctx.close();
+  }
 }
 
 await browser.close();
