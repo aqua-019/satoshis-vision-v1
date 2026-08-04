@@ -447,9 +447,14 @@ export function Orb(): React.JSX.Element {
            coordinate space, and no console, gate or exception said so. One
            warning, once per mount, on the same principle as useMemCanvas's
            MAX_DIM notice — nothing errors here, it just quietly stops being an
-           orb. A zero box is only reachable now if a host defeats
-           ORB_MIN_CANVAS_PX (display:none is the ordinary case and is filtered
-           by `warned` staying true for the mount's lifetime). */
+           orb. A zero box should be unreachable now that ORB_MIN_CANVAS_PX
+           floors the wrap, so this firing means a host has defeated it.
+
+           The `clientWidth || clientHeight` guard is what keeps this quiet on
+           the ORDINARY zero box: off Home, and before the first rect resolves,
+           this component renders `display:none`, where BOTH dimensions read 0
+           and there is nothing wrong. Only a box that has one real dimension
+           and one collapsed one — the actual defect — reaches the warning. */
         if (!zeroWarned && (canvas.clientWidth || canvas.clientHeight)) {
           zeroWarned = true;
           // eslint-disable-next-line no-console

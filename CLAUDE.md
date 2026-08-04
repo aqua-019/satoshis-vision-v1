@@ -28,17 +28,20 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: 73 `verify-*.mjs` files (`app/` ×66, `app/scripts/` ×1, `api/` ×6) — 69 gates
+- Verification: **75** `verify-*.mjs` files (`app/` ×68, `app/scripts/` ×1, `api/` ×6) — **71 gates**
   plus `verify-lib.mjs`, `verify-reporter.mjs` and `verify-fixtures.mjs`, three shared modules,
   and `scripts/verify-all.mjs`, an orchestrator. (This entry read "66 (app/ ×61, api/ ×5)" until
   v6.1.7 counted at full depth: an `app/verify-*.mjs` glob cannot see `app/scripts/verify-all.mjs`,
-  so the old figure was one short and a shallow recount reports 69 where the answer is 70.)
+  so the old figure was one short and a shallow recount reports 69 where the answer is 70.
+  It then read 73/69 until v6.1.9 recounted — v6.1.8's own additions were never folded in, so
+  the figure was two low before that release added `verify-cbpending.mjs`. Recount, do not
+  increment: `find . -name 'verify-*.mjs' -not -path '*/node_modules/*'`.)
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **55 distinct files** on
-  PRs to `main`, in two jobs: 11 individually-named offline gates, then `verify:static`
-  (20 gates, no browser) and `verify:e2e` (28 gates, against `scripts/serve-dist.mjs`).
+  are offline source assertions. `.github/workflows/ci.yml` runs **57 distinct files** on
+  PRs to `main`, in two jobs: **12** individually-named offline gates, then `verify:static`
+  (**21** gates, no browser) and `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`).
   v6.1.8 added three, and the two cold-boot gates sit at OPPOSITE ends of `verify:e2e` on
   DIFFERENT axes — state both, because they look contradictory: `verify-coldboot-live` runs
   **FIRST**, `verify-coldboot` runs **LAST**, and `verify-hero` (static) runs first in its own
@@ -233,12 +236,50 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 55 of the 69 gates on every PR to `main`; 3 more are npm-wired by hand and 11
+- CI runs 57 of the 71 gates on every PR to `main`; 3 more are npm-wired by hand and 11
   are wired to nothing.
 
 ## Known Issues / TODOs
 
 <!-- Track open items here -->
+- **The cold-boot console is ~2.7× the viewport on a phone, and the orb is below
+  the fold there.** Measured at 390×844: the console root is **2282.6px tall in
+  an 844px viewport** (2042.6 before v6.1.9's orb-slot change added 240), the
+  splash stage is `position:fixed; inset:0; overflow:hidden` and centres it, so
+  roughly 700px is clipped off each end and the orb slot at y≈886 is never
+  visible. Pre-existing and independent of the orb fix — but it means "feature
+  the orb" is not delivered on a phone, and `verify-coldboot` §6 does not catch
+  it because it asserts `scrollWidth - clientWidth <= 0`, i.e. **horizontal**
+  overflow only, while its heading reads as "usable at 390px". `verify-orb` §7
+  reports it as a reasoned `skip` (`elementFromPoint` is viewport-relative and
+  cannot confirm the stacking order on an off-screen element) rather than
+  passing quietly. Fixing it is a layout decision — let the stage scroll on
+  phone, or give the console a phone-specific composition — and belongs in its
+  own change.
+- **The desktop ENTER handoff carries real CLS and no gate sees it.** Measured
+  at 1440×900, pressing ENTER at the console phase and observing 2.5s: counted
+  CLS **0.0232–0.0434**, of which only 0.0049 falls inside the 500ms post-input
+  exclusion window; dominant source `HTML>BODY>DIV>DIV` at 0.0198. The same
+  measurement at 390×844 reads **0.0000** with the handoff verified to have
+  occurred (phase went decrypt → gone), so the zero is real rather than vacuous.
+  That is 5–9× the repo's own 0.005 ceiling. `verify-cls` is PHONE-only and
+  never presses ENTER, so the handoff is outside its coverage on two independent
+  axes. It follows deliberate user input and the transition is wanted, so this
+  is a decision rather than automatically a defect — recorded with numbers so it
+  can be taken deliberately.
+- **`ColdBoot.tsx` computes an `assemble` value every frame that nothing reads.**
+  It is pushed into the orb store each handoff frame and documented in that
+  file's header as the value `Orb.tsx` uses to gate its own alpha/scale, but
+  `Orb.tsx` destructures only `rect` and `active`. The documented "orb assembles
+  over the field's final 14%" does not happen — the orb is drawn at full
+  strength from the moment the console reports its rect. Found while diagnosing
+  v6.1.9; not fixed there, because it is a choreography change rather than a
+  rendering defect.
+- **The orb is `display:none` for at least one commit right after the handoff.**
+  `ColdBoot.tsx` writes a final rect with `active:false`, and `Orb.tsx` computes
+  `useHome = rect === null || !active`, so it ignores that rect and switches to
+  `useHomeOrbRect`, whose effect sets `null` before it measures. `verify-coldboot`
+  §4 sleeps 2500ms after ENTER and so cannot see the blink.
 - **Four route lists, one truth — RESOLVED in v6.1.6, except one by design.** `NavTop.tsx`,
   `RootBoundary.tsx`, `index.html`'s `#boot-fallback`, `useViewTransitionNavigate.ts` and
   `App.tsx` all derive from `routes.mjs`'s `R` now. `verify-lib.mjs`'s `ROUTES` stays hand-
@@ -305,6 +346,98 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-04**: v6.1.9 "COLD BOOT: THREE POST-MERGE DEFECTS" (app/ only). The
+  headline is not the fix, it is the shape: **the cold-boot orb had never
+  rendered in the console, and `verify-orb`'s 26 green assertions could not have
+  caught it.** That gate's only context factory calls `coldBootOff(ctx)`, so its
+  SUBJECT was the bypassed Main Home while its CLAIM read as "the orb". Home's
+  box is 538.9×468 and the orb draws there correctly; the one surface where it
+  was broken is the one surface the gate had never rendered. **A subject
+  NARROWER than its claim fails exactly as a wider one does** — it passes for
+  reasons outside the claim. Instance ten of the standing family, and the first
+  to reach users.
+  **Three causes, and the prompt's two candidates were both wrong.** (1) `Orb.tsx`
+  lays out a fixed-height flex column where the canvas wrap is `flex:"1 1 auto";
+  minHeight:0` (shrinkable) above a badge/caption overlay that is `flex:"0 0
+  auto"` (not). The console reserved 160px; the overlay measured 153.5 at
+  1440×900 and 180.1 at 390×844, so the canvas got **zero** height, `resize()` —
+  the only writer of `canvas.width/height` — returned early every time, and the
+  backing store kept the **300×150 HTML default**. An instrumented build logged
+  three calls and three early returns; it never once completed. The early return
+  was CORRECT given a zero-height box. The bug was the box, and the silence.
+  (2) Consequently it painted into the wrong coordinate space. (3) **`[data-orb]`
+  is a `position:fixed` sibling of ColdBoot's root at `z-index:auto`, and that
+  root is `z-index:1000` with an OPAQUE `#050505` background** — so even a
+  correctly sized, correctly painted orb was invisible for the whole console
+  phase. `elementFromPoint` at the orb canvas's own centre returned a canvas
+  inside `[data-coldboot]`. Fixing only the geometry would have shipped a
+  perfect invisible orb.
+  Fix: console slot `minHeight` 160 → **400** (derived: worst overlay 180.1 +
+  8px gap + a canvas worth drawing; the canvas now gets 238.5px at 1440 and
+  211.9 at 390), a hard `ORB_MIN_CANVAS_PX` floor of 120 on the canvas wrap
+  which **never binds in any shipped layout** and is there to make the class of
+  bug impossible rather than fixed, a one-shot `console.warn` when `resize()`
+  bails, and `zIndex: COLDBOOT_Z + 1` scoped to `coldBootOrb.active` (a
+  permanent raise would float the orb over NavTop's dropdown on Home).
+  **The console did not get taller**: its grid is `alignItems:"start"` and the
+  row is driven by the HUD pane at 870.8 against the Network pane's 430, so the
+  240px spent came out of 440.8px of headroom. Console root 926.3 before, 926.3
+  after.
+  **The ordering hazard, measured rather than predicted.** Raising the console's
+  `maxWidth` (an independent change in the same PR) widens the pane, shortens
+  the caption block, and flips the backing store from `300×150` to **`490×25`**
+  at 2560 — so an assertion of the form "the store is not the default" goes
+  GREEN on a 25px letterbox strip. That is why `verify-orb` §5 leads with a
+  parsed floor and a box-tracking check and keeps "not 300×150" **last and never
+  alone**. The break test confirmed it: reverting the fix at runtime turns 4 of
+  6 shipped assertions red, and the two that stay GREEN are precisely "not
+  300×150" and "the canvas is painted", both satisfied by a stale buffer.
+  **§6 predicts rather than remembers.** Every feature `drawOrb` emits
+  unconditionally is a circle centred on the canvas, so the expected structural
+  bounding box is `2 · ORB_RADIUS_FRAC · SHELL[2] · min(W,H)` — both constants
+  PARSED out of `orb.ts`, not restated — and it lands within 2px in all six
+  measured contexts. Dot-alpha (≥120) separates a live census from none by two
+  orders of magnitude (94–99 px against ≤1), so the floor of 40 and ceiling of 5
+  sit in an empty gap; each polarity is the other's vacuity guard. Pixels are
+  read from the BACKING STORE via `getImageData`, never a screenshot — during
+  the console phase a screenshot would have reported "does not paint" for a
+  canvas painting correctly, because of cause (3).
+  **Frame zero.** `/` is prerendered and `main.tsx` uses `createRoot`, so Main
+  Home painted for the length of the bundle download before the splash replaced
+  it. `index.html` now stamps `cb-pending` pre-paint and hides `#root` behind an
+  opaque floor. **The floor's colour is `#050505` — ColdBoot's own hard literal,
+  NOT the per-theme `--amb-floor`**; using the theme colour would step
+  `#121218 → #050505` on indigo, moving the flash rather than removing it.
+  **The predicate has TWO clauses, not three**: `xmrirish.coldboot` gates
+  `skipDecrypt`, not whether the splash renders, so a sessionStorage term would
+  have left the flash on every repeat visit. It is necessarily encoded twice
+  (a pre-paint script cannot import), so `verify-cbpending.mjs` extracts the
+  inline copy and evaluates BOTH over a 56-row truth table — an equivalence
+  proof, not a text diff.
+  **The most important assertion in the release is a placement.** The watchdog's
+  removal sits OUTSIDE its `childElementCount === 0` branch, because prerendering
+  means `#root` is never empty and anything inside that branch never runs. Moving
+  it inside turns all three `verify-degraded` B4b assertions red with `#root`
+  reading **0 chars** — a permanently blank page, far worse than the flash. B4c
+  pins the timers and proves B4b measured a REMOVAL rather than an absence.
+  **Two gate defects found while writing the gates, both worth knowing.** A
+  self-check injected an inline `height` and reported the canvas had not
+  collapsed — `Orb.tsx` rewrites that inline style on its 24fps tick, so the
+  injection was reverted within ~42ms and the check failed for a reason
+  unrelated to its claim; it now uses a stylesheet rule, which an inline
+  declaration cannot beat. And `verify-cbpending`'s placement check first
+  searched for `childElementCount === 0` and matched **the comment written three
+  lines above the removal explaining why the removal is not inside that
+  branch**, going red against a correct file — the same shape as `verify-orb`
+  §4's naive lat/lon grep finding six hits inside the prose that exists to
+  prevent it.
+  This release adds exactly ONE gate (`verify-cbpending`), so gates went **70 →
+  71** and CI-reached **56 → 57** — the entries above read 69 and 55 because
+  v6.1.8's own additions were never folded in, and both were stale by one.
+  Recount, never increment. `verify:static` 20 → 21. `verify-orb` 26 → 103
+  passed + 1 reasoned skip. §4's ENTER travel re-measured at the new cap:
+  **135.4px → 147.8px**.
 
 - **2026-08-01**: v6.1.3 "MOTION & TRANSITION FOUNDATION" (app/ only; nothing in
   `api/` changed). The site had no motion vocabulary — 37 `transition:`
