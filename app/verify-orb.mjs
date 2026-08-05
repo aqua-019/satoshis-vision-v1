@@ -631,6 +631,67 @@ async function measureOrbCanvas(page) {
   });
 }
 
+/** BOTH children of [data-orb] plus the splash phase, in ONE evaluate.
+ *
+ *  The caption block is located by the SAME literal §3 uses — the <span> whose
+ *  trimmed text is exactly "ILLUSTRATIVE", walked up to whichever ancestor is a
+ *  direct child of [data-orb] — so §3 and §7 cannot end up describing different
+ *  nodes. One evaluate for the same reason measureOrbCanvas gives above: Orb.tsx
+ *  redraws on a 24fps tick, and two calls can straddle a commit and report two
+ *  different frames as though they were one.
+ *
+ *  Returns `found: false` rather than throwing when either child is missing, so
+ *  O1 can say WHICH one was absent instead of the section dying with a
+ *  TypeError that names nothing. */
+async function readOrbComposition(page) {
+  return page.evaluate(() => {
+    const orb = document.querySelector('[data-orb]');
+    const cv = orb && orb.querySelector('canvas');
+    const wrap = cv ? cv.parentElement : null;
+    let ov = orb
+      ? [...orb.querySelectorAll('span')].find((s) => (s.textContent || '').trim() === 'ILLUSTRATIVE') || null
+      : null;
+    while (ov && ov.parentElement !== orb) ov = ov.parentElement;
+    const cb = document.querySelector('[data-coldboot]');
+    const phase = cb ? cb.getAttribute('data-coldboot') : null;
+    if (!orb || !wrap || !ov) return { found: false, phase, wrapFound: !!wrap, ovFound: !!ov };
+    const oS = getComputedStyle(ov);
+    const r = ov.getBoundingClientRect();
+    return {
+      found: true, phase,
+      distinct: wrap !== ov, wrapChild: wrap.parentElement === orb, ovChild: ov.parentElement === orb,
+      orbOp: Number(getComputedStyle(orb).opacity),
+      wrapOp: Number(getComputedStyle(wrap).opacity),
+      ovOp: Number(oS.opacity),
+      ovDisp: oS.display, ovVis: oS.visibility,
+      ovChars: (ov.textContent || '').trim().length,
+      ovW: Math.round(r.width), ovH: Math.round(r.height),
+    };
+  });
+}
+
+/** The two elements receive the SAME JS number from the SAME binding in the
+ *  same render (Orb.tsx's `overlayAssembleStyle` reads `assembleStyle.opacity`),
+ *  and getComputedStyle serialises the specified value rather than a
+ *  compositor-quantised one — so the expected delta is EXACTLY 0. This is not
+ *  headroom for noise; there is none. It is deliberately too tight to absorb a
+ *  re-curve of one and not the other, because that should be taken
+ *  deliberately, with this assertion going red first. */
+const OPACITY_TOL = 0.005;
+
+/** Flat, and DERIVED FROM NOTHING — this is where a wait bound goes wrong.
+ *  `CB_HOLD_MS + EFFECTIVE_MS` (7055.6ms) looks like the answer and is a LOWER
+ *  BOUND on when the console can appear, never an estimate of when it does:
+ *  measured, the transition lands at (7083,7133] / (7108,7158] / (7106,7156]
+ *  over three runs, short of that sum every time. Three lags, all additive and
+ *  one-directional — the floor does not lift AT CB_HOLD_MS (1502/1621/1628
+ *  against a declared 1500), the decrypt clock starts one rAF later with dt=0
+ *  on that frame (ColdBoot.tsx), and t>=1 is tested at frame granularity. The
+ *  dt clamp means a throttled machine widens the gap rather than closing it.
+ *  15000 matches this file's own waits above, gives ~9.5s over a measured ~5.5s
+ *  need, and needs no recomputation when the hold changes. */
+const CONSOLE_WAIT_MS = 15000;
+
 /** Everything drawOrb paints unconditionally is a circle centred on the canvas
  *  whose radius is a fixed multiple of ORB_RADIUS_FRAC * min(w,h) (orb.ts's
  *  `R`). The outermost is the i2p shell at SHELL[2]. Both constants are parsed
@@ -950,42 +1011,182 @@ R.group('── 7 · sized and painting on the LIVE cold-boot console ───�
     if (onSlot) {
       assertOrbCanvas(name, await measureOrbCanvas(page), { census: 'none' });
 
-      /* ── Z1/Z2 · the one visibility claim in this file, tightly scoped ──
+      /* ── O1-O5 · THE BADGE/CAPTION BLOCK FADES WITH THE ORB ──────────────
+       *
+       * Orb.tsx renders two children under [data-orb]: a canvas wrap and a
+       * badge/caption overlay. v6.1.9 gave the `assemble` fade to the wrap
+       * ONLY, so the overlay painted at full strength over the decrypt field
+       * from the instant the anti-flash floor lifted — measured on 63dc1a8 at
+       * 1440x900, a 402.4x109px block of NETWORK/ILLUSTRATIVE/DANDELION++ text
+       * for 5514ms, 4708ms of it with its own canvas at 0.
+       *
+       * ── WHY HERE, AND NOT IN §1-§6 OR IN verify-coldboot-live ────────────
+       * §1-§6 build their context through openHome() (:219), which calls
+       * coldBootOff(ctx). With the splash bypassed `coldBootOrb.active` is
+       * false, Orb.tsx pins `assemble` to 1, and every opacity is 1 BY
+       * CONSTRUCTION — an equality check there compares 1 against 1 and prints
+       * green on a tree with the defect fully present. That is instance 13 of
+       * this repo's standing family, and it is how the defect shipped past 104
+       * green assertions in this file. §7 is the section v6.1.9 added for
+       * exactly that reason: it does NOT install the bypass, and its existing
+       * read point was measured standing inside the defect's window — phase
+       * "decrypt", wrap opacity 0, overlay opacity 1, at 1676/1729/2169ms from
+       * __xmriCbT0 over three runs, against `assemble` first moving at ~6250ms.
+       * 4.1-4.6s of headroom, so this needs no sampler and no derived window.
+       *
+       * The prompt for this change placed it in verify-coldboot-live.mjs. That
+       * gate runs FIRST and its own header calls fail-fast free there because
+       * it is "one navigation and one count"; a ~6.4s sampled assertion would
+       * have cost it that, and Orb is its own React.lazy chunk (App.tsx:73), so
+       * a late arrival would red a CORRECT tree in gate #1 and abort 28 others.
+       * Here `onSlot` above is already a hard R.ok proving that chunk resolved
+       * AND that the orb took the console's rect rather than Home's #hm-orb —
+       * a better precondition than that gate would have had to invent — and a
+       * regression costs verify-vitals alone. */
+      const mid = await readOrbComposition(page);
+
+      R.ok(mid.found,
+        `${name}: O1 precondition — [data-orb] holds a canvas wrap AND a caption block carrying the ` +
+        `ILLUSTRATIVE badge, located by the same literal §3 uses`,
+        mid.found ? '' :
+          `canvas wrap ${mid.wrapFound ? 'found' : 'ABSENT'}, caption block ${mid.ovFound ? 'found' : 'ABSENT'}. ` +
+          'Every opacity below would be undefined rather than wrong, so this names which child went missing.');
+
+      if (mid.found) {
+        R.ok(mid.distinct && mid.wrapChild && mid.ovChild,
+          `${name}: O1b precondition — they are two DISTINCT direct children of [data-orb] (which itself ` +
+          `computes opacity ${mid.orbOp})`,
+          `distinct=${mid.distinct} wrapChild=${mid.wrapChild} ovChild=${mid.ovChild}. If the two ever become ONE ` +
+          'node the equality below is a tautology; if either gains an intermediate ancestor with its own opacity, ' +
+          'equal computed values stop meaning equal rendered values.');
+
+        const inWindow = mid.phase === 'decrypt' && mid.wrapOp === 0;
+        R.ok(inWindow,
+          `${name}: O2 DISCRIMINATOR — this read stands INSIDE the defect's window: phase "${mid.phase}", ` +
+          `canvas wrap opacity ${mid.wrapOp}`,
+          inWindow ? '' :
+            `phase "${mid.phase}", wrap opacity ${mid.wrapOp}. O3 compares two opacities, and at the CONSOLE phase ` +
+            'both read 1 and that comparison is trivially true while its label claims the decrypt. Measured, this ' +
+            'read point lands at 1676-2169ms from __xmriCbT0 with the wrap at exactly 0.');
+
+        const dOp = Math.abs(mid.ovOp - mid.wrapOp);
+        R.ok(inWindow && dOp <= OPACITY_TOL,
+          `${name}: O3 MID-DECRYPT — the badge/caption block carries the SAME opacity as its own canvas ` +
+          `(caption ${mid.ovOp}, canvas ${mid.wrapOp}, |Δ| ${dOp.toFixed(4)}, tolerance ${OPACITY_TOL})`,
+          !inWindow
+            ? 'not inside the decrypt window — see O2. Red rather than absent, so this never vanishes from the tally.'
+            : `The caption block is at opacity ${mid.ovOp} while its own canvas is at ${mid.wrapOp}, in a ` +
+              `${mid.ovW}x${mid.ovH}px box over the decrypt field. Orb.tsx spends \`assemble\` on the canvas wrap ` +
+              'alone. Give the overlay the SAME value, OPACITY ONLY: assembleStyle also carries transform:scale(), ' +
+              "and [data-orb]'s own transform is what the #163 CLS fix depends on.");
+
+        const rendered = mid.ovDisp !== 'none' && mid.ovVis === 'visible' && mid.ovChars > 0 && mid.ovH > 0;
+        R.ok(inWindow && rendered,
+          `${name}: O4 MID-DECRYPT — …and it is FADED, not REMOVED: display "${mid.ovDisp}", visibility ` +
+          `"${mid.ovVis}", ${mid.ovChars} chars in a ${mid.ovW}x${mid.ovH}px box`,
+          !inWindow ? 'not inside the decrypt window — see O2.'
+            : "The fade must be OPACITY. These badges and captions are the orb's honesty claims and stay selectable " +
+              'and in the accessibility tree at every value of assemble. display:none, visibility:hidden and a ' +
+              'conditional render each remove them — and O3 goes GREEN on all three, because a node that is not ' +
+              'rendered still reports whatever opacity was specified.');
+      }
+
+      /* ── Z1 · the raise itself. Reads z-index, so the phase does not matter.
          ColdBoot's root is position:fixed, z-index COLDBOOT_Z, opaque #050505.
          [data-orb] is a fixed SIBLING of it, so at z-index:auto it painted
-         underneath — correct pixels, never seen. Z1 asserts the raise; Z2
-         confirms it against the compositor where the geometry allows. */
-      const z = await page.evaluate(() => {
-        const orb = document.querySelector('[data-orb]');
-        const cv = orb.querySelector('canvas');
-        const b = cv.getBoundingClientRect();
-        const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
-        const inView = cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight;
-        const hit = inView ? document.elementFromPoint(cx, cy) : null;
-        const rootZ = getComputedStyle(document.querySelector('[data-coldboot]')).zIndex;
-        return { orbZ: getComputedStyle(orb).zIndex, rootZ, inView,
-                 hitIsOrbCanvas: hit === cv, hitInColdboot: !!(hit && hit.closest('[data-coldboot]')) };
-      });
+         underneath — correct pixels, never seen. */
+      const z = await page.evaluate(() => ({
+        orbZ: getComputedStyle(document.querySelector('[data-orb]')).zIndex,
+        rootZ: getComputedStyle(document.querySelector('[data-coldboot]')).zIndex,
+      }));
       const raised = Number(z.orbZ) > Number(z.rootZ);
       R.ok(raised,
-        `${name}: the orb is stacked above the splash root — z-index ${z.orbZ} against the root's ${z.rootZ}`,
+        `${name}: Z1 — the orb is stacked above the splash root (z-index ${z.orbZ} against the root's ${z.rootZ})`,
         raised ? '' :
           `orb z-index ${z.orbZ}, splash root ${z.rootZ}. The root paints an OPAQUE #050505 over the whole ` +
           'viewport, so at a lower or auto z-index the orb is invisible for the entire console phase no ' +
           'matter how correctly it is sized or drawn.');
 
-      if (z.inView) {
-        R.ok(z.hitIsOrbCanvas && !z.hitInColdboot,
-          `${name}: …and the compositor agrees — elementFromPoint at the canvas centre returns the orb's own canvas`,
-          z.hitIsOrbCanvas ? '' :
-            'the topmost element at the orb canvas\'s own centre is inside [data-coldboot], which is the ' +
-            'opaque overlay. The orb is behind it.');
-      } else {
-        R.skip(`${name}: elementFromPoint confirmation of the stacking order`,
-          'the orb\'s centre is outside the viewport at this size, and elementFromPoint is viewport-relative. ' +
-          'The console is taller than the viewport at 390x844 (measured 2282.6px against 844) and is clipped ' +
-          'by its own overflow:hidden, so the orb sits below the fold. The z-index assertion above still ran; ' +
-          'only the compositor cross-check is unavailable. Recorded rather than folded into a pass.');
+      /* ── THE CONSOLE PHASE · O5 and Z2 ──────────────────────────────────── */
+      const reached = await page.waitForFunction(
+        () => document.querySelector('[data-coldboot]')?.getAttribute('data-coldboot') === 'console',
+        undefined, { timeout: CONSOLE_WAIT_MS },
+      ).then(() => true).catch(() => false);
+      R.ok(reached,
+        `${name}: O5a precondition — the run reached the console phase within ${CONSOLE_WAIT_MS}ms ` +
+        '(measured need from the read point above: ~4.9-5.5s)',
+        reached ? '' : 'the decrypt never resolved, so the positive control and Z2 below have no subject.');
+
+      if (reached) {
+        const con = await readOrbComposition(page);
+        const ended = con.found && con.ovOp >= 0.99 && con.wrapOp >= 0.99 &&
+          con.ovDisp !== 'none' && con.ovVis === 'visible' && con.ovChars > 0 && con.ovH > 0;
+        R.ok(ended,
+          `${name}: O5 POSITIVE CONTROL — at the console phase BOTH read 1 and the caption is really on screen ` +
+          `(caption ${con.ovOp}, canvas ${con.wrapOp}, ${con.ovChars} chars in a ${con.ovW}x${con.ovH}px box)`,
+          ended ? '' :
+            'This is what stops O3 being satisfied by DELETING the caption: an overlay pinned to opacity 0 makes the ' +
+            'mid-decrypt delta exactly 0 and O3 green, while the finished console silently loses its provenance ' +
+            'badges and both captions. The fade must END at 1. No inView guard here on purpose — computed opacity, ' +
+            'display, visibility and box size all read correctly below the fold; only elementFromPoint does not.');
+
+        /* ── Z2 · MOVED HERE, AND RELABELLED. Instance FOURTEEN of the standing
+           family, found while writing O1-O5 and pre-existing on 63dc1a8.
+           `elementFromPoint` ignores opacity at EVERY value, so it measures
+           hit-testing — z-order — and never visibility. It used to run at the
+           mid-decrypt read point above, where the canvas wrap is at opacity 0:
+           measured three for three `hitIsOrbCanvas: true` over a COMPLETELY
+           INVISIBLE orb, at BOTH viewports — not one viewport plus a skip, which
+           is how it was first recorded — under a label reading "the compositor
+           agrees". The Issue-1 fix makes the caption transparent there too, so
+           leaving it would have widened the overclaim rather than inherited it.
+           Two edits, and they are not alternatives: run it where the assemble
+           chain is independently 1 (here), AND say what the probe actually
+           measures (below). */
+        const z2 = await page.evaluate(() => {
+          const orb = document.querySelector('[data-orb]');
+          const cv = orb.querySelector('canvas');
+          const b = cv.getBoundingClientRect();
+          const cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+          const inView = cx >= 0 && cy >= 0 && cx <= window.innerWidth && cy <= window.innerHeight;
+          const hit = inView ? document.elementFromPoint(cx, cy) : null;
+          const cons = document.querySelector('[data-coldboot-console]');
+          return {
+            inView, hitIsOrbCanvas: hit === cv, hitInColdboot: !!(hit && hit.closest('[data-coldboot]')),
+            consoleH: cons ? Math.round(cons.getBoundingClientRect().height) : 0,
+            vh: window.innerHeight,
+          };
+        });
+        if (z2.inView) {
+          R.ok(z2.hitIsOrbCanvas && !z2.hitInColdboot,
+            `${name}: Z2 — the orb WINS HIT-TESTING at its own canvas centre, at the console phase where the ` +
+            'assemble chain is independently 1 (z-order; elementFromPoint ignores opacity at every value, so this ' +
+            'is not by itself a claim that anything is visible)',
+            z2.hitIsOrbCanvas ? '' :
+              "the topmost element at the orb canvas's own centre is inside [data-coldboot], which is the opaque " +
+              'overlay. The orb is behind it.');
+        } else {
+          /* UNREACHABLE AT BOTH OF THIS SECTION'S VIEWPORTS, AND KEPT ANYWAY.
+             Measured: the console is 796px in an 844px viewport at 390x844, so
+             the orb's centre is in view and the assertion above runs — at 390 as
+             well as at 1440. This branch has been dead since #163 brought the
+             phone console down from 2282.6px, which is BEFORE the work that
+             moved Z2; nothing here retired it.
+             It is kept because §7's viewport list is not a law, and a future
+             viewport where the console does not fit would otherwise let Z2
+             silently hit-test an element below the fold. Every number in the
+             message is interpolated rather than restated, so if it ever does
+             fire it reports the layout it actually found — the previous wording
+             hard-coded 2282.6px and a clipping mechanism (`overflow:hidden`)
+             that `gridStyle` replaced with `overflowY:"auto"` in the same
+             release, and stayed on the page describing neither. */
+          R.skip(`${name}: hit-test confirmation of the stacking order`,
+            `the orb's centre is outside the viewport at this size, and elementFromPoint is viewport-relative. The ` +
+            `console measures ${z2.consoleH}px against a ${z2.vh}px viewport. This guard is for a layout that does ` +
+            'not currently occur at either of §7\'s viewports — at 390x844 the console fits (796px in 844) and the ' +
+            'assertion runs there rather than skipping — so seeing this at all means the console grew or the ' +
+            'viewport list changed. Z1 above still ran; only the hit-test cross-check is unavailable.');
+        }
       }
     }
     await ctx.close();

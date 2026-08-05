@@ -134,10 +134,16 @@ const TOPBAR_STYLE: React.CSSProperties = {
  * 211.9px at 390x844 — both far above the 120 floor, which is the intent: the
  * floor is insurance, this number is the feature.
  *
- * It costs the console no height at all on desktop. The grid is
- * `alignItems:"start"` and its row is driven by the HUD pane, measured at 870.8
- * against this pane's 430 at 1440x900 — 440.8px of headroom, of which this
- * spends 240. Confirmed by re-measuring the console root after the change.
+ * It costs the console no height at all on desktop.
+ *
+ * The two sentences that used to follow — "The grid is `alignItems:"start"` and
+ * its row is driven by the HUD pane, measured at 870.8 against this pane's 430
+ * at 1440x900" — were true when written and are both false now. `gridStyle`
+ * ships `alignItems: stacked ? "start" : "stretch"`, so `start` describes the
+ * stacked branch only; and under `stretch` the row is VIEWPORT-driven rather
+ * than driven by any pane, measured 976 at 1920x1080 and 796.5 at 1440x900.
+ * The conclusion survives its own reasoning: the console root measures 852 at
+ * 1440x900 and this floor is nowhere near binding there.
  */
 const ORB_SLOT_MIN_PX = 400;
 
@@ -173,6 +179,101 @@ function gridStyle(stacked: boolean): React.CSSProperties {
     overflowY: stacked ? "auto" : "visible",
   };
 }
+
+/* ── THE OTHER TWO GROWERS ────────────────────────────────────────────────
+ * The mockup gives each of the three panes exactly ONE `flex:1` child, and
+ * production ported one of them — the orb stage. The LEFT output table and the
+ * CENTRE log were hard `maxHeight: 220` boxes, so nothing in those columns
+ * could absorb slack: the centre column ended where its content ended and
+ * ENTER, its last child, ended with it. Measured dead space below ENTER on
+ * 63dc1a8: 723.9px at 2560x1440, 363.9 at 1920, 200.4 at 1600, 195.7 at 1440,
+ * 105.7 at 1280.
+ *
+ * Each constant carries its mockup line, because a bare literal cannot hold its
+ * own citation — which is how `220` came to ship twice with nothing pointing at
+ * either. `verify-coldboot.mjs` §8 PARSES these by name rather than restating
+ * them, the same idiom verify-orb uses for ORB_RADIUS_FRAC.
+ */
+const MATRIX_MIN_PX = 80;            // mockup :227  .matrix{flex:1 1 auto;min-height:80px}
+const MATRIX_MAX_STACKED_PX = 150;   // mockup :361  .matrix{max-height:150px;flex:none}
+const LOG_MIN_STACKED_PX = 150;      // mockup :362  .log{min-height:150px}
+
+/** LEFT · the decoy-output table. Mockup `.matrix` — a grower in wide, a capped
+ *  non-grower stacked. Keeps `1 1 auto` because its stacked branch is
+ *  `flex:"none"`, so the inert-floor hazard documented on the log below cannot
+ *  arise here, and MATRIX_MIN_PX stays a real shrink floor in wide. */
+function matrixScrollerStyle(stacked: boolean): React.CSSProperties {
+  return stacked
+    ? { flex: "none", maxHeight: MATRIX_MAX_STACKED_PX, overflowY: "auto", overflowX: "hidden" }
+    : { flex: "1 1 auto", minHeight: MATRIX_MIN_PX, overflowY: "auto", overflowX: "hidden" };
+}
+
+/** CENTRE · the log. `flex:"1 1 0"`, mockup-exact, and the basis is load-bearing
+ *  rather than stylistic. Measured stacked, identical at 390x844 and 1100x900:
+ *
+ *    flex:1 1 0     min-height:0     -> logH   0    the collapse the floor prevents
+ *    flex:1 1 auto  min-height:0     -> logH 240    no collapse
+ *    flex:1 1 0     min-height:150   -> logH 150    the mockup's behaviour
+ *    flex:1 1 auto  min-height:150   -> logH 240    the floor is INERT
+ *
+ *  Wide (1440x900) all four read 415.7, so the two forms are interchangeable
+ *  wherever the pane has a definite height. They are not interchangeable in the
+ *  content-sized stacked column: basis-`auto` does not degrade safely to content
+ *  height, it makes LOG_MIN_STACKED_PX control NOTHING — the constant would
+ *  ship, cite its mockup line, be parsed by §8, and be dead. §8's stacked
+ *  assertion is two-sided (`|logH - LOG_MIN_STACKED_PX| <= 1`) for the same
+ *  reason: a one-sided `>= 149` passes at 240, which is exactly what an inert
+ *  floor reads.
+ *
+ *  `minHeight: 0` in the wide branch is the honest else-branch of the ternary
+ *  and nothing more. It is NOT preventing a min-content blowout — `overflow:
+ *  hidden` already zeroes the flex automatic minimum size, measured
+ *  byte-identical at 1920x1080 with `min-height` at `auto` and at `0` (logH
+ *  583.9, lastChildBottom 1029, scrollHeight 584 both ways). It is written out
+ *  so the stacked branch's floor has a visible counterpart.
+ *
+ *  `overflow: hidden` + `justify-content: flex-end` is the mockup's own
+ *  composition and is what makes the pane header's "live tail" label true: the
+ *  newest line sits on the pane floor and the TOP is what clips. Once boot lines
+ *  plus events exceed the pane the boot table scrolls off and is not
+ *  recoverable — correct terminal behaviour, and what the mockup's own
+ *  `.slice(-80)` does. */
+function logScrollerStyle(stacked: boolean): React.CSSProperties {
+  return {
+    fontFamily: "var(--f-mono)",
+    fontSize: "var(--fs-mono)",
+    lineHeight: 1.6,
+    flex: "1 1 0",
+    minHeight: stacked ? LOG_MIN_STACKED_PX : 0,
+    overflow: "hidden",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "flex-end",
+  };
+}
+
+/** The log's lines, as ONE child of that flex column.
+ *
+ *  THE WRAPPER ELEMENT IS THE MECHANISM; this style is insurance. Without a
+ *  wrapper each line div is itself a flex item, and those divs carry
+ *  `overflow:"hidden"` for their ellipsis — which zeroes their flex automatic
+ *  minimum size, so they COMPRESS instead of overflowing. Measured at 390 with
+ *  the 150px floor and no wrapper: rendered line heights 12.5px against a
+ *  computed `line-height` of 20px, a 37.5% crush, while `scrollHeight ===
+ *  clientHeight` (150/150) so nothing anywhere reports overflow — a box that
+ *  "fits" because its contents were crushed. With the wrapper: 20px.
+ *
+ *  `flex: "0 0 auto"` is deliberately NOT load-bearing, and that was measured
+ *  rather than assumed: a break test that stripped this style but kept the
+ *  wrapper div stayed GREEN at 20px, because a plain div sets no `overflow` and
+ *  so keeps `min-height: auto` == min-content and cannot shrink either way. It
+ *  is written out because the containing column's whole job is distributing
+ *  free space, and a child that must never participate should say so rather
+ *  than rely on not having opted in. `verify-coldboot.mjs` §8 finds the line
+ *  rows STRUCTURALLY (leaf divs bearing text) for the matching reason — a
+ *  positional lookup walks through this node, so removing it would report
+ *  "0 sampled" instead of measuring the crush that removing it causes. */
+const LOG_LINES_STYLE: React.CSSProperties = { flex: "0 0 auto" };
 
 const PANE_STYLE: React.CSSProperties = {
   display: "flex",
@@ -492,6 +593,21 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
   const data = useMoneroLive();
   const nodePop = useNodePopulation();
   const events = useFeedEvents(data);
+  /* `useFeedEvents` PREPENDS (`useFeedEvents.ts:85` —
+     `[...fresh.reverse(), ...old].slice(0, cap)`), so `events[0]` is the NEWEST.
+     The log below is bottom-anchored, and rendering that raw order would pin the
+     OLDEST event to the pane floor and push the newest up under the boot table —
+     making the header's "live tail" label LESS true, which is the opposite of
+     the reason the anchoring was adopted. The mockup is unambiguous: `paintLog`
+     (coldboot-splash.html:1285-1298) pushes boot rows in order, then live rows
+     in order, then `.slice(-80)` — chronological ascending, newest last.
+
+     Scoped to this file rather than fixed in the hook ON PURPOSE. `useFeedEvents`
+     has five consumers (here, `useOrbData`, and mempool's bridge/terminal/
+     constellation); reversing inside it would silently flip render order on four
+     surfaces that are not part of this change. The spread copies before
+     `reverse()` mutates, so the hook's own state array is untouched. */
+  const tail = React.useMemo(() => [...events].reverse(), [events]);
   const memStats = useMemStats(data);
   useReducedMotion(); // read for parity with the rest of the app; this component has no
   // motion to suppress (see the "doesn't stage its own reveal" header note) —
@@ -572,9 +688,13 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
         <NodeProvenance source="node" keys={["network", "mempool", "market"]} status={data.status} compact style={{ marginLeft: "auto" }} />
       </div>
 
-      <div style={gridStyle(stacked)}>
+      {/* `data-cb-grid` carries the branch matchMedia CHOSE, so a gate can check
+          it against what the browser RESOLVED. Without it a 390 run that
+          resolved `wide` passes every height assertion while the stacked branch
+          — the one that reads 0.0px without its floor — is never exercised. */}
+      <div data-cb-grid={stacked ? "stacked" : "wide"} style={gridStyle(stacked)}>
         {/* ── LEFT · HUD + verification + ring + probe + matrix ── */}
-        <div style={PANE_STYLE}>
+        <div data-cb-pane="hud" style={PANE_STYLE}>
           <div style={PANE_HD_STYLE}>
             <span style={PANE_HD_TITLE_STYLE}>HUD</span>
             <span style={PANE_HD_SUB_STYLE}>chain state</span>
@@ -677,7 +797,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
             </em>
           </div>
 
-          <div style={{ overflowY: "auto", overflowX: "hidden", maxHeight: 220 }}>
+          <div data-cb-matrix="" style={matrixScrollerStyle(stacked)}>
             <div style={MATRIX_HD_STYLE}>
               <span>#</span>
               <span>output</span>
@@ -708,32 +828,25 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
         </div>
 
         {/* ── CENTRE · log + decoys + CTA ── */}
-        <div style={PANE_STYLE}>
+        <div data-cb-pane="log" style={PANE_STYLE}>
           <div style={PANE_HD_STYLE}>
             <span style={PANE_HD_TITLE_STYLE}>Log</span>
             <span style={PANE_HD_SUB_STYLE}>{events.length > 0 ? "live tail" : "boot"}</span>
           </div>
 
-          <div
-            style={{
-              fontFamily: "var(--f-mono)",
-              fontSize: "var(--fs-mono)",
-              lineHeight: 1.6,
-              overflowY: "auto",
-              overflowX: "hidden",
-              maxHeight: 220,
-            }}
-          >
-            {logLines.map((line, i) => (
-              <div key={i} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: LOG_TONE_COLOR[line.tone] }}>
-                {line.text}
-              </div>
-            ))}
-            {events.map((e, i) => (
-              <div key={`ev-${i}`} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "var(--ink-60)" }}>
-                {feedEventLine(e)}
-              </div>
-            ))}
+          <div data-cb-log="" style={logScrollerStyle(stacked)}>
+            <div style={LOG_LINES_STYLE}>
+              {logLines.map((line, i) => (
+                <div key={i} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: LOG_TONE_COLOR[line.tone] }}>
+                  {line.text}
+                </div>
+              ))}
+              {tail.map((e, i) => (
+                <div key={`ev-${i}`} style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", color: "var(--ink-60)" }}>
+                  {feedEventLine(e)}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div style={SUB_NOCAPS_STYLE}>
@@ -789,7 +902,11 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
           </div>
 
           <div style={{ display: "flex", gap: 8 }}>
-            <button type="button" className="proto-btn" style={{ flex: 1, textAlign: "center" }} onClick={fireEnter}>
+            {/* `data-cb-enter` so a gate can find this without `button.proto-btn`,
+                which is a class shared app-wide and would survive a rename badly.
+                Gates scope every lookup to the console root as well — belt and
+                braces, since Main Home stays mounted underneath the splash. */}
+            <button type="button" data-cb-enter="" className="proto-btn" style={{ flex: 1, textAlign: "center" }} onClick={fireEnter}>
               Enter ▸
             </button>
           </div>
@@ -798,10 +915,22 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
         {/* ── RIGHT · the network orb ──
             The orb stage below is `flex:1 1 auto`, so with the grid row
             stretched this pane's leftover height lands THERE rather than being
-            spread across every pane. That is the "fit to screen" the brief
-            asks for: the stage grows, the HUD and Log keep their content
-            height and are not stretched into clipping. */}
-        <div style={PANE_STYLE}>
+            spread across every pane.
+
+            This comment used to end "the stage grows, the HUD and Log keep
+            their content height and are not stretched into clipping", and v6.1.10
+            deliberately reversed that half. It was right about THIS pane and
+            wrong about the centre one, for a reason that is structural rather
+            than a matter of taste: the orb stage is in the RIGHT column, so it
+            can only absorb the RIGHT pane's slack. The centre pane's leftover
+            landed nowhere at all — it fell out of the bottom of the column as
+            dead space below ENTER, measured 723.9px at 2560x1440 and 363.9 at
+            1920. Each pane now has the one grower the mockup gives it: this
+            stage here, `.matrix` in the HUD pane, `.log` in the centre. Nothing
+            is stretched into clipping — the two scrollers still bound
+            themselves, they simply bound themselves to the pane instead of to a
+            literal 220. */}
+        <div data-cb-pane="network" style={PANE_STYLE}>
           <div style={PANE_HD_STYLE}>
             <span style={PANE_HD_TITLE_STYLE}>Network</span>
             <span style={PANE_HD_SUB_STYLE}>public node population</span>

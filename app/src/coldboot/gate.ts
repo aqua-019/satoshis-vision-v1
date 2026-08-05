@@ -68,23 +68,47 @@ export const CB_FLOOR = "#050505";
  * added on top: measured under 6x CPU + Slow-4G, a cold `/` reaches LCP at
  * ~4048ms, where this contributes exactly 0.
  *
- * The cost lands only on fast loads, moving LCP from ~400ms to ~1500ms. That is
- * real and it is under the 2500ms budget for `/`.
+ * The cost lands only on fast loads, moving LCP from ~380ms to ~930ms. Both
+ * numbers re-measured at the value below, 1440x900 unthrottled, three runs each:
+ *
+ *   splash OFF                172 / 180 / 196 ms   <- what verify-vitals watches
+ *   splash ON, hold 0         444 / 380 / 352 ms   <- the baseline for this claim
+ *   splash ON, hold 750       924 / 936 / 944 ms   <- shipped
+ *   splash ON, hold 1500     1692 / 1692 / 1692 ms <- the previous value
+ *
+ * THE BASELINE IS THE NO-HOLD SPLASH-ON COLUMN, NOT THE BYPASSED ONE. This
+ * sentence justifies THIS CONSTANT, so the only honest thing it can claim is the
+ * constant's MARGINAL cost: ~550ms (930 - 380), which is the hold minus a ~200ms
+ * mount, since the floor lifts at `max(hold, mount)` rather than at `hold`.
+ * Measured against the bypassed column instead it would read ~750ms and would be
+ * charging this constant for the splash itself — something it neither causes nor
+ * can remove. A draft of this block made exactly that substitution.
+ *
+ * The previous wording said "~400ms to ~1500ms". The first number was right (it
+ * was this same no-hold column); the second understated its own value by ~190ms.
+ *
+ * These are one container's numbers. On slower hardware the no-hold LCP rises and
+ * this constant's marginal cost falls toward zero — which is what "the cost lands
+ * only on fast loads" says, and why that clause stays.
+ *
+ * NOTHING IN THE SUITE MEASURES ANY OF THIS. verify-vitals watches `/`'s LCP
+ * through `coldBootOffBrowser` — the 172-196ms column — so changing this constant
+ * cannot move the budget it guards by a single millisecond. Recorded, not closed.
  *
  * REDUCED MOTION STILL HOLDS. This is a static frame, not motion — nothing
  * moves, nothing animates, and a visitor who asked for less motion has not
  * asked for less deliberate pacing. The `skipDecrypt` path (revisit OR reduced
  * motion) waits the same beat and then shows the console directly.
  */
-export const CB_HOLD_MS = 1500;
+export const CB_HOLD_MS = 750;
 
 /** Set by index.html's pre-paint script at the instant the floor goes up, so
  *  the hold is measured from FIRST PAINT rather than from React mounting. */
 export const CB_T0_GLOBAL = "__xmriCbT0";
 
 /** Test override for the hold, mirroring `__xmriBootTimeoutMs`. One token in
- *  prod; it lets a gate drive the hold to 0 instead of sleeping 1.5s per
- *  scenario. */
+ *  prod; it lets a gate drive the hold to 0 instead of sleeping the full hold
+ *  in every scenario that touches the splash. */
 export const CB_HOLD_GLOBAL = "__xmriCbHoldMs";
 
 /**

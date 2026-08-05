@@ -411,20 +411,22 @@ const CANVAS_STYLE: React.CSSProperties = { position: "absolute", inset: 0, disp
  *  framing a 1200px box, while the decrypt phase immediately before it fills
  *  the whole viewport. The visual language promised full-bleed and withdrew it.
  *
- *  `clamp(1200px, 92vw, 1600px)` is never NARROWER than the old fixed value at
- *  any width — `min(1600px, 92vw)` would have given 1178px at 1280, a 22px
- *  regression on that class of laptop — and it grows to 1600 on wide screens.
- *  Measured: 1200 at 1280, 1324.8 at 1440, 1600 at 2560.
- *
  *  `max-width` cannot force an element wider than its own `width: 100%`, so the
- *  1200px lower bound is inert below 1200px of viewport and 390px is untouched.
+ *  cap is inert below its own lower term and 390px is untouched.
  *
- *  It buys WIDER COLUMNS, not more of them. The grid is
- *  `repeat(auto-fit, minmax(300px, 1fr))` over exactly three panes, and
- *  `auto-fit` collapses the empty tracks, so the count is pinned at three at
- *  every cap. Measured pane inner width: 380.7 at 1200, 422.3 at 1440, 514 at
- *  2560. (An earlier reading of this change predicted a fourth column; that was
- *  asserted rather than measured, and it is wrong.) */
+ *  It buys WIDER COLUMNS, not more of them: `ColdBootConsole` sets the track
+ *  list explicitly (`GRID_COLS_WIDE`, three weighted `minmax(0,…fr)` columns)
+ *  and collapses to one at its own `matchMedia` breakpoint, so the count is
+ *  three or one and never anything else, at any cap.
+ *
+ *  This block previously described the value as `clamp(1200px, 92vw, 1600px)`
+ *  over a `repeat(auto-fit, minmax(300px, 1fr))` grid, and carried six measured
+ *  numbers for both. The value below has been `min(2100px, 94vw)` since #163 and
+ *  the grid has been an explicit track list for just as long, so every one of
+ *  those numbers described a tree that no longer existed. They are deleted
+ *  rather than refreshed: the mechanism above is what the next reader needs, and
+ *  a measurement pinned in a comment is exactly what went stale. `verify-coldboot`
+ *  §8 measures the panes on a running build instead. */
 const CONSOLE_WRAP_BASE: React.CSSProperties = {
   position: "relative",
   width: "100%",
@@ -552,7 +554,8 @@ export function ColdBoot(): React.JSX.Element | null {
     /* THE SEQUENCE STARTS WHEN THE FLOOR LIFTS, NOT WHEN THIS MOUNTS.
      * The splash renders INSIDE #root, which the floor hides — so without this
      * guard the decrypt would run its 5.56s timeline underneath the black and
-     * be revealed already ~1.5s in, which is a sequence that starts in the
+     * be revealed already a hold's worth in (~750ms at gate.ts#CB_HOLD_MS's
+     * current value), which is a sequence that starts in the
      * middle rather than a black beat before it. Gating the whole effect also
      * covers the skipDecrypt branch (revisit or reduced motion): black for the
      * beat, then the console, in that order. */
