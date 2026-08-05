@@ -21,6 +21,12 @@
  *   §7  both of those again on the live cold-boot console, which is the one
  *       surface §1-§6 never render, and the one where the orb was broken
  *
+ * v6.1.11 added one more, because all of the above are about the orb at REST:
+ *
+ *   §8  it tracks #hm-orb through a SCROLL, at every width — no gate in this
+ *       suite had ever changed the scroll offset, which is how a total
+ *       decoupling above 768px survived every assertion in this file
+ *
  * ── THE SELF-CHECK PATTERN, AND WHY THE SHIPPED GATE NEVER GOES RED ON A
  *    CORRECT TREE ─────────────────────────────────────────────────────────
  * §1, §3 and §4 assert an ABSENCE ("no hostname", "no live badge", "no
@@ -936,6 +942,219 @@ R.group('── 5+6 SELF-CHECKS · the detectors are falsifiable ─────
       after.cssH >= ORB_MIN_CANVAS_PX ? 'the floor check did not fire on a genuinely collapsed canvas' : '');
   }
   await ctx.close();
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * §8 · the orb TRACKS #hm-orb THROUGH A SCROLL, at every width
+ * ══════════════════════════════════════════════════════════════════════
+ * `#hm-orb` is in-flow; `[data-orb]` is `position: fixed`. Fixed does not
+ * scroll, so the ONLY thing keeping them together is Orb.tsx re-measuring the
+ * box on scroll. Measured on 06e60fe, the drift equalled the scroll offset
+ * EXACTLY — 400.0px at 1440/1280/900/769, 0.0px at 768/390 — because the
+ * listener was on `window`, `scroll` does not bubble, and above 768px the
+ * scroller is `main.main` (styles.css:674) rather than the document. At <=768
+ * styles.css:2075-2077 gives `.main` `overflow:visible` and the document
+ * scrolls, where a window listener does fire.
+ *
+ * ── NO SELECTOR IS NAMED HERE, AND THAT IS THE POINT ──────────────────────
+ * Which element scrolls is a STYLESHEET decision that changes at a breakpoint.
+ * A gate that writes `main.main` re-encodes that decision and would go green on
+ * a tree where the breakpoint moved. So the scroller is RESOLVED by walking up
+ * from `#hm-orb` — the same walk verify-coldboot.mjs:511-522 uses on the console
+ * root — falling through to `document.scrollingElement`. What is asserted is the
+ * SHAPE of the answer (an element above the breakpoint, the document below it),
+ * and the resolved name is PRINTED so the next reader sees which.
+ *
+ * ── THE ANTI-VACUITY PRECONDITIONS ───────────────────────────────────────
+ * "the orb held its offset" is satisfied for free by a page that did not
+ * scroll. Every depth therefore asserts FIRST that the scroller's own
+ * `scrollTop` reached the value asked for, and SECOND that `#hm-orb`'s viewport
+ * top moved by that same amount. Without both, this section passes on any tree
+ * where the scroller stopped scrolling.
+ *
+ * <=768 IS A POSITIVE CONTROL. It passes on the unfixed tree, so it fails only
+ * if a fix breaks the one path that already worked.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+/** Resolution + one snapshot, defined once per page. Not a measurement itself,
+ *  so it does not violate the one-evaluate rule every measurement below keeps. */
+async function installScrollProbe(page) {
+  await page.evaluate(() => {
+    const resolve = () => {
+      let el = document.getElementById('hm-orb')?.parentElement ?? null;
+      while (el && el !== document.body) {
+        const oy = getComputedStyle(el).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) return el;
+        el = el.parentElement;
+      }
+      return document.scrollingElement;
+    };
+    const nm = (el) => (!el ? 'none'
+      : `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}` +
+        `${el.className ? '.' + String(el.className).trim().split(/\s+/)[0] : ''}`);
+    window.__orbProbe = {
+      resolve,
+      snap() {
+        const sc = resolve();
+        const box = document.getElementById('hm-orb');
+        const orb = document.querySelector('[data-orb]');
+        const cv = orb && orb.querySelector('canvas');
+        const b = box && box.getBoundingClientRect();
+        const o = orb && orb.getBoundingClientRect();
+        const c = cv && cv.getBoundingClientRect();
+        const px = c && c.width > 0
+          ? [Math.max(0, Math.min(innerWidth - 1, c.left + c.width / 2)),
+             Math.max(0, Math.min(innerHeight - 1, c.top + c.height / 2))]
+          : null;
+        const hit = px ? document.elementFromPoint(px[0], px[1]) : null;
+        return {
+          scroller: nm(sc), isDoc: sc === document.scrollingElement,
+          top: sc ? sc.scrollTop : null,
+          max: sc ? sc.scrollHeight - sc.clientHeight : 0,
+          boxTop: b ? +b.top.toFixed(2) : null,
+          orbTop: o ? +o.top.toFixed(2) : null,
+          orbH: o ? +o.height.toFixed(2) : null,
+          disp: orb ? getComputedStyle(orb).display : null,
+          clipPath: orb ? getComputedStyle(orb).clipPath : null,
+          hit: nm(hit), inView: !!px,
+        };
+      },
+    };
+  });
+}
+
+/** THE SETTLE, AND WHY IT IS FRAME-COUNTED RATHER THAN OUTCOME-DEPENDENT.
+ *
+ *  Orb.tsx's handler is rAF-coalesced, so after a scrollTop write the pipeline
+ *  is: the browser fires `scroll`, the capture handler schedules a rAF, that
+ *  rAF reads the rect and calls setState, React commits in a later task, and the
+ *  next frame paints it. Three frames plus a macrotask clears all of it with a
+ *  frame to spare — the same shape verify-nav.mjs:111-120's parkScroll uses
+ *  against useRouteChrome's own coalesced save.
+ *
+ *  It is deliberately NOT `waitForFunction(() => |orbTop - boxTop| <= 1)`. That
+ *  predicate IS the assertion: on a broken tree it would turn a red into a
+ *  timeout and then a red, and it would make the break-test transcript
+ *  incomparable to the green one. This wait costs the same either way. */
+const settleFrames = (page, n = 3) => page.evaluate((k) => new Promise((res) => {
+  let i = k;
+  const step = () => (--i <= 0 ? setTimeout(res, 0) : requestAnimationFrame(step));
+  requestAnimationFrame(step);
+}), n);
+
+R.group('── 8 · [data-orb] tracks #hm-orb through a scroll, at every width ──');
+{
+  const DEPTHS = [120, 400, 800];
+  const cases = [
+    ['home 1440x900', { width: 1440, height: 900 }, 'element'],
+    ['home 769x900', { width: 769, height: 900 }, 'element'],
+    ['home 768x900', { width: 768, height: 900 }, 'document'],
+    ['home 390x844', { width: PHONE.width, height: PHONE.height }, 'document'],
+  ];
+
+  for (const [name, vp, want] of cases) {
+    const { ctx, page } = await openHome(mockNodesLive, vp);
+    await page.waitForTimeout(1200);          // the same orb settle §5+§6 uses
+    await installScrollProbe(page);
+
+    const at0 = await page.evaluate(() => window.__orbProbe.snap());
+
+    R.ok(at0.boxTop !== null && at0.orbTop !== null && at0.disp !== 'none',
+      `${name}: precondition — #hm-orb and a VISIBLE [data-orb] both measured ` +
+      `(display "${at0.disp}", box top ${at0.boxTop}, orb top ${at0.orbTop})`,
+      'One of the two is absent or display:none, so every delta below would be null rather than wrong.');
+
+    R.info(`${name}: scroller resolved to ${at0.scroller} · document scroller: ${at0.isDoc} · ` +
+           `${at0.max.toFixed(0)}px of travel · clip-path ${at0.clipPath}`);
+
+    const shapeOk = want === 'element' ? !at0.isDoc : at0.isDoc;
+    R.ok(shapeOk,
+      `${name}: the resolved scroller is ${want === 'element' ? 'an ELEMENT inside the page' : 'the DOCUMENT'} — got ${at0.scroller}`,
+      shapeOk ? '' :
+        `Resolved ${at0.scroller} (isDoc=${at0.isDoc}). styles.css:674 makes .main the scroller and ` +
+        'styles.css:2075-2077 hands it back to the document at <=768px. A flip here means that breakpoint ' +
+        'moved — which is a real finding, but about the stylesheet rather than about the orb.');
+
+    R.ok(at0.max >= DEPTHS[1],
+      `${name}: precondition — the resolved scroller can travel ${at0.max.toFixed(0)}px (need >=${DEPTHS[1]})`,
+      'Home is not tall enough here to scroll the depth asked for, so the assertions below would compare ' +
+      'two identical positions and pass without measuring anything.');
+
+    const rest = at0.orbTop - at0.boxTop;
+    const restH = at0.orbH;
+
+    for (const d of DEPTHS.filter((x) => x <= at0.max)) {
+      await page.evaluate((y) => { window.__orbProbe.resolve().scrollTop = y; }, d);
+      await settleFrames(page, 3);
+      const s = await page.evaluate(() => window.__orbProbe.snap());
+
+      R.ok(Math.abs(s.top - d) <= 1,
+        `${name} @${d}px: precondition — the scroller actually moved (scrollTop ${s.top})`,
+        'the scroll never took, so nothing below measured a scrolled page');
+
+      const boxMoved = Math.abs((at0.boxTop - s.boxTop) - d);
+      R.ok(boxMoved <= 1,
+        `${name} @${d}px: precondition — #hm-orb ITSELF moved ${(at0.boxTop - s.boxTop).toFixed(1)}px ` +
+        `(asked ${d}, |Δ| ${boxMoved.toFixed(1)})`,
+        'The box did not move with the scroller, so "the orb held its offset" would be true of a page that ' +
+        'never scrolled — the exact vacuity this pair exists to close.');
+
+      const delta = s.orbTop - s.boxTop;
+      const drift = Math.abs(delta - rest);
+      const held = boxMoved <= 1 && drift <= 1 && Math.abs(s.orbH - restH) <= 1;
+      R.ok(held,
+        `${name} @${d}px: [data-orb] held its offset to #hm-orb — ${delta.toFixed(2)}px against ` +
+        `${rest.toFixed(2)}px at rest (|Δ| ${drift.toFixed(2)}px), height ${s.orbH.toFixed(1)} against ${restH.toFixed(1)}`,
+        held ? '' :
+          `The orb drifted ${drift.toFixed(1)}px against a ${d}px scroll of ${s.scroller}. [data-orb] is ` +
+          'position:fixed and #hm-orb is in-flow, so nothing keeps them together except Orb.tsx re-measuring ' +
+          'on scroll. `scroll` does NOT bubble: a window listener sees the DOCUMENT and nothing else, so ' +
+          'above the 768px breakpoint — where main.main is the scroller — it never fires and the drift ' +
+          'equals the scroll offset exactly. useRouteChrome.ts:63-75 documents the fix: one capture-phase ' +
+          'listener on document.');
+
+      R.info(`${name} @${d}px: elementFromPoint over the orb canvas centre → ${s.hit} (centre in view: ${s.inView})`);
+    }
+
+    /* ── SELF-CHECK · permanent companion, this file's established idiom ────
+       Reproduces the PRODUCTION MECHANISM rather than an arbitrary
+       displacement: park at 0, remember where the orb sits, scroll, and then
+       pin the orb to that remembered top — which is exactly what a window-only
+       listener leaves behind, because it never fires and the rect is never
+       re-read. Then assert the drift check FIRES.
+
+       A stylesheet rule with !important, never an inline style: Orb.tsx
+       rewrites [data-orb]'s inline style on its 24fps tick and would revert an
+       inline injection within ~42ms — the trap recorded at :901-908.
+
+       The claim "the detector catches this" is true on every tree forever, so
+       this runs green in CI while proving the detector is live. */
+    const scDepth = Math.min(400, at0.max);
+    await page.evaluate(() => { window.__orbProbe.resolve().scrollTop = 0; });
+    await settleFrames(page, 3);
+    const parked = await page.evaluate(() => window.__orbProbe.snap());
+    await page.evaluate((y) => { window.__orbProbe.resolve().scrollTop = y; }, scDepth);
+    await settleFrames(page, 3);
+    const sc = await page.evaluate(([pinTop, restDelta]) => {
+      const st = document.createElement('style');
+      st.textContent = `[data-orb]{ top:${pinTop.toFixed(2)}px !important; transform:none !important; }`;
+      document.head.appendChild(st);
+      const sr = document.getElementById('hm-orb').getBoundingClientRect();
+      const or = document.querySelector('[data-orb]').getBoundingClientRect();
+      st.remove();
+      return { drift: Math.abs((or.top - sr.top) - restDelta) };
+    }, [parked.orbTop, rest]);
+    const caught = sc.drift > 1;
+    R.ok(caught,
+      `${name}: SELF-CHECK — an orb pinned where a window-only listener would have left it after a ` +
+      `${scDepth}px scroll is caught (|Δ| ${sc.drift.toFixed(1)}px against a 1px tolerance); proves the ` +
+      'drift check is falsifiable',
+      caught ? '' :
+        'a deliberately pinned orb was NOT detected, so the assertions above cannot be trusted on the real one');
+
+    await page.evaluate(() => { window.__orbProbe.resolve().scrollTop = 0; });
+    await ctx.close();
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════

@@ -125,6 +125,7 @@ const HOME_ORB_FIND_RETRY_FRAMES = 120;
 
 const HOME_ORB_ID = "hm-orb";
 
+
 // ── styles — module-scope constants, built once ─────────────────────────
 
 const BASE_STYLE: React.CSSProperties = {
@@ -212,6 +213,42 @@ interface Rect {
   readonly h: number;
 }
 
+/** What `useHomeOrbRect` tracks: where the box is, and what clips it. */
+interface HomeBox {
+  readonly rect: Rect;
+  /** The nearest ancestor of `#hm-orb` that CLIPS OVERFLOW, or `null` when
+   *  nothing between it and `<body>` does — in which case the viewport is
+   *  already the only clip and this component emits no `clip-path` at all.
+   *
+   *  That null is how ≤768px stays untouched BY CONSTRUCTION rather than by
+   *  measurement: there `styles.css:2075-2077` gives `.main` `overflow:visible`
+   *  and the document scrolls, so the walk below finds nothing and the phone
+   *  path is byte-identical to what it was. */
+  readonly clip: Rect | null;
+}
+
+function sameRect(a: Rect | null, b: Rect | null): boolean {
+  if (a === null || b === null) return a === b;
+  return a.x === b.x && a.y === b.y && a.w === b.w && a.h === b.h;
+}
+
+/** The nearest ancestor that clips overflow.
+ *
+ *  The predicate is `overflow-y !== "visible"` — a pure CSS question, and that
+ *  is deliberate. The obvious alternative ("an ancestor that is actually
+ *  scrolling") is CONTENT-dependent and therefore TIME-dependent: resolved on a
+ *  cold load before the feed lands and the cards lay out, it can answer "none"
+ *  and then never be asked again. A clipping ancestor is a stylesheet fact, so
+ *  this answers the same at every instant after first layout. */
+function clipAncestor(el: Element): Element | null {
+  let n = el.parentElement;
+  while (n && n !== document.body) {
+    if (getComputedStyle(n).overflowY !== "visible") return n;
+    n = n.parentElement;
+  }
+  return null;
+}
+
 function rectFromElement(el: Element): Rect {
   const r = el.getBoundingClientRect();
   return { x: r.left, y: r.top, w: r.width, h: r.height };
@@ -219,25 +256,103 @@ function rectFromElement(el: Element): Rect {
 
 /** Self-measures `#hm-orb` while `enabled`. Retries via rAF for a bounded
  *  number of frames (Home paints it on first render, but this effect can
- *  run a frame early), then tracks it via ResizeObserver + resize/scroll —
- *  `#hm-orb` is `position: relative` and in-flow, so its viewport rect can
- *  move on scroll even though it never resizes on its own. */
-function useHomeOrbRect(enabled: boolean): Rect | null {
-  const [rect, setRect] = React.useState<Rect | null>(null);
+ *  run a frame early), then tracks it via ResizeObserver + resize + scroll.
+ *
+ *  ── THE SCROLL LISTENER GOES ON `document`, IN THE CAPTURE PHASE ─────────
+ *  `#hm-orb` is `position: relative` and in-flow while `[data-orb]` is
+ *  `position: fixed`, so the box's viewport rect moves on scroll and the orb's
+ *  does not. Re-measuring on scroll is the ONLY thing that keeps them
+ *  together — and WHICH OBJECT EMITS THAT SCROLL IS A STYLESHEET DECISION
+ *  THAT CHANGES AT A BREAKPOINT. Above 768px `styles.css:674` makes `.main`
+ *  the scroller (`min-height:0; overflow-y:auto`, inside a `.shell` that is
+ *  `flex:1; min-height:0`); at 768 and below `styles.css:2075-2077` gives it
+ *  `height:auto; overflow:visible` and the document scrolls instead.
+ *
+ *  `scroll` does not BUBBLE, so a `window` listener hears the document and
+ *  nothing else. This file shipped one, which meant the orb tracked perfectly
+ *  at 768 and not at all at 769: measured on 06e60fe, drift equal to the
+ *  scroll offset EXACTLY — 400.0px at 1440/1280/900/769, 0.0px at 768/390.
+ *  Correct code, wrong assumption about its environment, and the boundary
+ *  lives in a stylesheet this file never mentions.
+ *
+ *  `scroll` does CAPTURE, so one capture-phase listener on `document` covers
+ *  every scroller without naming one. `routes/useRouteChrome.ts:63-75` makes
+ *  and documents the same call for the same reason, and its wording is worth
+ *  borrowing: one listener "survives any future fourth scroller without being
+ *  edited". Naming `.main` here would re-encode a breakpoint this file cannot
+ *  see, and would go quietly wrong the next time it moves.
+ *
+ *  ── ONE SENTENCE OF THAT PRECEDENT DOES NOT TRANSFER ─────────────────────
+ *  `useRouteChrome`'s docblock says reading `scrollTop` during a scroll forces
+ *  no layout. True of `scrollTop`, and NOT true here: this reads
+ *  `getBoundingClientRect()`, which does force layout. So the rAF coalescing
+ *  below is doing strictly more than the coalescing it is modelled on, and it
+ *  is load-bearing rather than tidy. Measured on this tree at 769x900, where
+ *  Home has a second scroller (`.nav-main`, `styles.css:512`): scrolling that
+ *  strip alone delivers 20 events and 20 rect reads and produces ZERO renders
+ *  and ZERO redraws, because `commit` below returns the previous object. A
+ *  60-write burst inside one task collapses to a single read. Off Home there is
+ *  no listener at all (App.tsx mounts this component only on `/`), and during
+ *  the splash there is none either — the cold-boot rect owns the position
+ *  then, so this hook is not enabled.
+ *
+ *  ── WHAT THIS STILL DOES NOT COVER ───────────────────────────────────────
+ *  `#hm-orb` can also move with no scroll, no viewport resize, and no size
+ *  change of its own: when content ABOVE it reflows. Home's hero copy changes
+ *  when the feed lands (verify-cls.mjs measures that route's kicker in both
+ *  feed states), and a ResizeObserver on `#hm-orb` sees only its own box. That
+ *  case is open. It needs a different observer target, NOT a re-measure on the
+ *  24fps tick — that would be a poll, and verify-govern §5 exists to stop this
+ *  repo shipping polls. */
+function useHomeOrbRect(enabled: boolean): HomeBox | null {
+  const [box, setBox] = React.useState<HomeBox | null>(null);
 
   React.useEffect(() => {
     if (!enabled) {
-      setRect(null);
+      setBox(null);
       return;
     }
-    let raf = 0;
+    let findRaf = 0;
+    let pending = 0;
     let tries = 0;
     let ro: ResizeObserver | null = null;
     let warned = false;
+    /* Cached, because the walk reads getComputedStyle on each ancestor and this
+       runs once per scrolled frame. Invalidated on resize — the one event that
+       can change the answer, since the answer is a media query. */
+    let clipEl: Element | null = null;
+    let clipStale = true;
+
+    /* Identity-stable. Returning the PREVIOUS object from the updater makes
+       React bail out, so a scroll of a container the orb does not sit in costs
+       one getBoundingClientRect and nothing else — no render, no redraw. Every
+       call site used to allocate a fresh Rect unconditionally, which also
+       re-fired the draw effect below, since `effectiveRect` is in its deps. The
+       comparison lives in the updater rather than in a second `last` box so
+       there is exactly one source of truth for what was last committed. */
+    const commit = (el: Element): void => {
+      if (clipStale) { clipEl = clipAncestor(el); clipStale = false; }
+      const rect = rectFromElement(el);
+      const clip = clipEl && clipEl.isConnected ? rectFromElement(clipEl) : null;
+      setBox((prev) => (prev && sameRect(prev.rect, rect) && sameRect(prev.clip, clip)
+        ? prev : { rect, clip }));
+    };
+
+    /* One measurement per frame, however many scrollers fired into it. Not a
+       loop and never self-rescheduling: `pending` is cleared by the callback,
+       so a burst of events inside one task collapses to a single read. */
+    const measure = (): void => {
+      pending = 0;
+      const el = document.getElementById(HOME_ORB_ID);
+      if (el) commit(el);
+    };
+    const schedule = (): void => {
+      if (!pending) pending = requestAnimationFrame(measure);
+    };
 
     const track = (el: Element): void => {
-      setRect(rectFromElement(el));
-      ro = new ResizeObserver(() => setRect(rectFromElement(el)));
+      commit(el);
+      ro = new ResizeObserver(schedule);
       ro.observe(el);
     };
 
@@ -255,26 +370,31 @@ function useHomeOrbRect(enabled: boolean): Rect | null {
         }
         return;
       }
-      raf = requestAnimationFrame(find);
+      findRaf = requestAnimationFrame(find);
     };
     find();
 
-    const onWindowChange = (): void => {
-      const el = document.getElementById(HOME_ORB_ID);
-      if (el) setRect(rectFromElement(el));
-    };
-    window.addEventListener("resize", onWindowChange);
-    window.addEventListener("scroll", onWindowChange, { passive: true });
+    /* Resize is the one event that can move the breakpoint under the clip
+       answer, so it invalidates the cache as well as re-measuring. */
+    const onResize = (): void => { clipStale = true; schedule(); };
+
+    window.addEventListener("resize", onResize);
+    document.addEventListener("scroll", schedule, { capture: true, passive: true });
 
     return () => {
-      if (raf) cancelAnimationFrame(raf);
+      if (findRaf) cancelAnimationFrame(findRaf);
+      if (pending) cancelAnimationFrame(pending);
       ro?.disconnect();
-      window.removeEventListener("resize", onWindowChange);
-      window.removeEventListener("scroll", onWindowChange);
+      window.removeEventListener("resize", onResize);
+      /* The capture flag is REQUIRED here. A capture-registered listener is not
+         removed by a bubble-phase removal, and this effect re-runs on every
+         `enabled` flip — off the splash, and on every route change — so the
+         omission would stack a listener per flip rather than leak one. */
+      document.removeEventListener("scroll", schedule, true);
     };
   }, [enabled]);
 
-  return rect;
+  return box;
 }
 
 // ── event accumulator — the animation-clock-timed half of T2/T3 ────────────
@@ -365,7 +485,8 @@ export function Orb(): React.JSX.Element {
   const coldBootOrb: ColdBootOrbState = useColdBootOrbState();
   const useHome = coldBootOrb.rect === null || !coldBootOrb.active;
   const isHomeRoute = location.pathname === R.HOME;
-  const homeRect = useHomeOrbRect(useHome && isHomeRoute);
+  const homeBox = useHomeOrbRect(useHome && isHomeRoute);
+  const homeRect = homeBox?.rect ?? null;
   /* The fallback is the fix for a one-frame drop-out. ColdBoot's final handoff
      write sets `active:false` WITH a rect; `useHome` then flips true, and
      `useHomeOrbRect`'s effect sets its own state to null before it measures —
@@ -377,6 +498,7 @@ export function Orb(): React.JSX.Element {
   const effectiveRect: Rect | null = useHome
     ? (homeRect ?? coldBootOrb.rect)
     : coldBootOrb.rect;
+
 
   /* ASSEMBLE — computed every handoff frame by ColdBoot and, until now, never
      read by anything. The documented "orb assembles over the field's final 14%"
@@ -591,15 +713,51 @@ export function Orb(): React.JSX.Element {
      `base` re-anchors whenever the splash is not driving (active false), which
      is what stops Home inheriting a permanent transform after the handoff
      settles: at rest the base IS the current rect and the transform is
-     identity. The canvas backing store is sized from clientWidth/clientHeight,
-     which a transform does not change — so the orb scales as an image for the
-     1.2s of travel rather than re-sizing its buffer 70 times, and verify-orb's
-     "backing store tracks its CSS box" still holds at both ends. */
+     identity. The canvas
+     backing store is sized from clientWidth/clientHeight, which a transform
+     does not change — so the orb scales as an image for the 1.2s of travel
+     rather than re-sizing its buffer 70 times, and verify-orb's "backing store
+     tracks its CSS box" still holds at both ends. */
   const baseRef = React.useRef<Rect | null>(null);
   if (effectiveRect && (!coldBootOrb.active || baseRef.current === null)) {
     baseRef.current = effectiveRect;
   }
   const base = baseRef.current;
+
+  /* ── THE CLIP A `position: fixed` ELEMENT CANNOT INHERIT ─────────────────
+     `#hm-orb` is in-flow inside a scrolling column; this element is fixed, so
+     that column's `overflow-y: auto` does not clip it. Once the box scrolls
+     above the column's top edge the orb keeps painting into the band above it,
+     and `.topbar` there is `background: rgba(0,0,0,0)` with no backdrop filter
+     — fully transparent, not translucent — so the globe reads straight through
+     the nav. Measured at 1440x900: a 61px band, 13% of a 468px orb; at 769x900,
+     23.7% of a 257px orb. It is CAPPED at the bar's own height and does not
+     grow with scroll (61.0px at scroll 200 and 400; 16.5px at 600), because
+     everything above y=0 paints nowhere.
+
+     At <=768 this cannot happen: the document scrolls, the bar goes with it,
+     and the measured overlap is 0.0px at every depth. So the clip below is not
+     a new behaviour — it is what the phone layout already gets for free, given
+     to the desktop one.
+
+     TWO CONDITIONS, both load-bearing:
+       · `clip` is null unless an ancestor genuinely clips overflow, so <=768
+         emits no `clip-path` property at all.
+       · it applies ONLY when Home's own box is the source. While the splash
+         owns the orb it is a viewport-fixed traveller and `main.main` still
+         exists underneath — clipping to a column that is not scrolling it would
+         crop the console orb, regressing the surface v6.1.9/v6.1.10 fixed.
+
+     `inset()` resolves against this element's own border box, and on Home the
+     transform is identity by construction (`base` re-anchors every render off
+     the splash), so the four insets are a straight subtraction. */
+  const clipRect = useHome && homeBox && homeRect ? homeBox.clip : null;
+  const clipPath = clipRect && base
+    ? `inset(${Math.max(0, clipRect.y - base.y).toFixed(2)}px ` +
+      `${Math.max(0, (base.x + base.w) - (clipRect.x + clipRect.w)).toFixed(2)}px ` +
+      `${Math.max(0, (base.y + base.h) - (clipRect.y + clipRect.h)).toFixed(2)}px ` +
+      `${Math.max(0, clipRect.x - base.x).toFixed(2)}px)`
+    : undefined;
 
   const positionStyle: React.CSSProperties = effectiveRect && base
     ? {
@@ -608,6 +766,7 @@ export function Orb(): React.JSX.Element {
         top: base.y,
         width: base.w,
         height: base.h,
+        ...(clipPath ? { clipPath } : null),
         transform:
           `translate(${(effectiveRect.x - base.x).toFixed(2)}px, ${(effectiveRect.y - base.y).toFixed(2)}px)` +
           ` scale(${(effectiveRect.w / base.w).toFixed(4)}, ${(effectiveRect.h / base.h).toFixed(4)})`,
