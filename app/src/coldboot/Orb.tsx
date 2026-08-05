@@ -157,6 +157,10 @@ const CANVAS_STYLE: React.CSSProperties = {
   display: "block",
 };
 
+/* No `opacity` here. The fade is per-render and lives in `overlayAssembleStyle`,
+   which is spread AFTER this at the call site — see the note beside `assemble`.
+   An opacity added to this constant would be a second, silent owner of the same
+   value, which is the shape the fix below exists to remove. */
 const OVERLAY_STYLE: React.CSSProperties = {
   display: "flex",
   flexDirection: "column",
@@ -389,6 +393,48 @@ export function Orb(): React.JSX.Element {
     willChange: assemble > 0 && assemble < 1 ? "opacity, transform" : undefined,
   };
 
+  /* ── THE OVERLAY FADES TOO, AND IT MUST READ THE SAME VALUE ──────────────
+     v6.1.9 spent `assemble` on the canvas wrap alone. The badge/caption block
+     is [data-orb]'s OTHER child and kept full strength throughout, so the fix
+     for "a second fully-formed bright object competing with the decrypt" left
+     the wordiest part of that object exactly where it was.
+
+     Measured on 63dc1a8 at 1440x900, cold, production hold: the anti-flash
+     floor lifts at 1600ms and this block reads opacity 1 from that instant
+     until 7114ms — 5514ms of NETWORK/UNAVAILABLE/ILLUSTRATIVE/DANDELION++ text
+     over the decrypt field, 4708ms of it with its own canvas at 0. The block is
+     402x154px at 1440x900 and 288x180 at 390x844; its width comes from the
+     console's orb slot, so it is not small.
+
+     OPACITY ONLY, and each omission is load-bearing:
+
+       · NOT `...assembleStyle`. That object also carries `transform: scale()`,
+         and [data-orb]'s own positionStyle (below) already owns a transform —
+         the one the #163 CLS fix depends on. Spreading it here would also scale
+         the caption text, which is not what the mockup does: the canvas grows
+         into place, the words do not.
+       · NOT a conditional render, NOT `visibility`, NOT `display`. The node
+         stays rendered, selectable and in the accessibility tree at every value
+         of `assemble` — these badges and captions are the orb's honesty claims,
+         and this file's own reduced-motion note above already says losing them
+         loses information the canvas cannot carry. (verify-orb.mjs §3 also
+         finds this block by the exact text of its ILLUSTRATIVE span; that
+         section runs splash-bypassed, where `active` is false and `assemble` is
+         pinned to 1, so an opacity fade is invisible to it and a removal would
+         not be.)
+       · It reads `assembleStyle.opacity`, NOT a second expression over
+         `assemble`. One value, one owner: re-curve the canvas's fade and the
+         caption follows by construction rather than by somebody remembering two
+         edit sites. verify-orb.mjs §7's O3 asserts the two COMPUTED opacities
+         are equal mid-decrypt; this is what makes that a statement about the
+         DOM rather than about two literals agreeing.
+       · `willChange` is narrower than the canvas wrap's on purpose — this
+         element never transforms. */
+  const overlayAssembleStyle: React.CSSProperties = {
+    opacity: assembleStyle.opacity,
+    willChange: assemble > 0 && assemble < 1 ? "opacity" : undefined,
+  };
+
   const canvasRef = React.useRef<HTMLCanvasElement | null>(null);
   const drawRef = React.useRef<(() => void) | null>(null);
   const [drawable, setDrawable] = React.useState(false);
@@ -575,7 +621,7 @@ export function Orb(): React.JSX.Element {
       <div style={{ ...CANVAS_WRAP_STYLE, ...assembleStyle }}>
         <canvas ref={canvasRef} style={CANVAS_STYLE} aria-hidden="true" />
       </div>
-      <div style={OVERLAY_STYLE}>
+      <div style={{ ...OVERLAY_STYLE, ...overlayAssembleStyle }}>
         <div style={BADGE_ROW_STYLE}>
           <NodeProvenance source="network" phase={orbData.phase} detail="monero.fail" compact />
         </div>
