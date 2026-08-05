@@ -68,23 +68,37 @@ export const CB_FLOOR = "#050505";
  * added on top: measured under 6x CPU + Slow-4G, a cold `/` reaches LCP at
  * ~4048ms, where this contributes exactly 0.
  *
- * The cost lands only on fast loads, moving LCP from ~400ms to ~1500ms. That is
- * real and it is under the 2500ms budget for `/`.
+ * The cost lands only on fast loads. Re-measured on a real cold `/` with the
+ * splash ON, unthrottled, three runs at the value below: LCP 932/948/956ms
+ * against 164/216ms with the splash bypassed. Real, and under the 2500ms budget
+ * for `/`.
+ *
+ * Note what those numbers are NOT: the post-hold LCP is not this constant. The
+ * floor lifts at `max(hold, mount)` — measured 766/901/917ms against a declared
+ * 750, so the mount is sometimes the binding term — and LCP lands a little after
+ * the lift. Any gate asserting `stated LCP === CB_HOLD_MS` would be green only
+ * while this sentence was false, so there is deliberately no such gate; the
+ * runtime lower bound in verify-coldboot-live §1c is the assertion that matters.
+ *
+ * NOTHING IN THE SUITE MEASURES THE NUMBER ABOVE. verify-vitals watches `/`'s
+ * LCP through `coldBootOffBrowser`, i.e. the 164-216ms column, so halving this
+ * constant does not move the budget it guards by a single millisecond. That gap
+ * is recorded rather than closed here.
  *
  * REDUCED MOTION STILL HOLDS. This is a static frame, not motion — nothing
  * moves, nothing animates, and a visitor who asked for less motion has not
  * asked for less deliberate pacing. The `skipDecrypt` path (revisit OR reduced
  * motion) waits the same beat and then shows the console directly.
  */
-export const CB_HOLD_MS = 1500;
+export const CB_HOLD_MS = 750;
 
 /** Set by index.html's pre-paint script at the instant the floor goes up, so
  *  the hold is measured from FIRST PAINT rather than from React mounting. */
 export const CB_T0_GLOBAL = "__xmriCbT0";
 
 /** Test override for the hold, mirroring `__xmriBootTimeoutMs`. One token in
- *  prod; it lets a gate drive the hold to 0 instead of sleeping 1.5s per
- *  scenario. */
+ *  prod; it lets a gate drive the hold to 0 instead of sleeping the full hold
+ *  in every scenario that touches the splash. */
 export const CB_HOLD_GLOBAL = "__xmriCbHoldMs";
 
 /**

@@ -183,7 +183,7 @@ const cold = async (opts = {}) => {
 
 /** Every context in this file drives the frame-zero hold to 0.
  *
- * The hold (gate.ts#CB_HOLD_MS, 1500ms) keeps #root at `visibility:hidden` for
+ * The hold (gate.ts#CB_HOLD_MS) keeps #root at `visibility:hidden` for
  * a deliberate black beat before the sequence starts. This file's subject is
  * the SEQUENCE — the decrypt, the session gate, the handoff, reduce, 390px —
  * none of which is the beat. Sampling through it made §5 read `0 chars` and
@@ -193,7 +193,8 @@ const cold = async (opts = {}) => {
  * Zeroing it here is not hiding the hold: it is asserted where it belongs, in
  * verify-cbpending (statically, including that the arithmetic is a floor) and
  * verify-coldboot-live §1c (at runtime, both the default beat and the release).
- * The alternative — 1.5s of sleep in each of six sections — buys nothing. */
+ * The alternative — one hold's worth of sleep in each of this file's eight
+ * sections — buys nothing. */
 async function holdOff(ctx) {
   await ctx.addInitScript(() => { window.__xmriCbHoldMs = 0; });
   return ctx;

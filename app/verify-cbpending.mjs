@@ -262,7 +262,7 @@ R.ok(new RegExp(`${CB_T0_GLOBAL}\\s*=\\s*performance\\.now\\(\\)`).test(HTML ?? 
 
 /* The arithmetic is what makes it a minimum. Assert the SHAPE in ColdBoot,
  * because `hold - elapsed` without the clamp is the bug that turns this into
- * a fixed +1500ms on every load including the slowest. */
+ * a fixed addition on every load including the slowest, rather than a floor. */
 R.ok(/Math\.max\(0,\s*hold\s*-\s*\(performance\.now\(\)\s*-\s*t0\)\)/.test(COLDBOOT_TSX ?? ''),
   'ColdBoot waits max(0, hold - elapsed) — a floor, never an addition',
   'Measured: under 6x CPU + Slow-4G a cold / reaches LCP at ~4048ms, where this must contribute exactly 0. ' +
@@ -273,7 +273,7 @@ R.ok(/Math\.max\(0,\s*hold\s*-\s*\(performance\.now\(\)\s*-\s*t0\)\)/.test(COLDB
  * require that gate.ts is where the name is defined. */
 R.ok(/CB_HOLD_GLOBAL/.test(COLDBOOT_TSX ?? '') || new RegExp(CB_HOLD_GLOBAL).test(COLDBOOT_TSX ?? ''),
   `the hold is overridable for tests (${CB_HOLD_GLOBAL}, read via the shared constant)`,
-  'else every scenario touching the splash sleeps 1.5s');
+  `else every scenario touching the splash sleeps the full ${CB_HOLD_MS}ms`);
 
 /* The watchdog must NOT wait out the hold. A dead bundle recovering more slowly
  * than it does today would be a regression introduced by a cosmetic feature. */
@@ -281,7 +281,7 @@ const wdSlice = (HTML ?? '').slice((HTML ?? '').indexOf('setTimeout(function ()'
 R.ok(wdSlice.length > 0 && !new RegExp(CB_HOLD_GLOBAL).test(wdSlice.slice(0, 900)),
   'the boot watchdog removes the floor WITHOUT consulting the hold',
   'A dead bundle must not recover more slowly than it did before frame zero existed. Measured: the ' +
-  'watchdog path releases at 453ms with __xmriBootTimeoutMs=400, ignoring the 1500ms hold.');
+  `watchdog path releases at 453ms with __xmriBootTimeoutMs=400, ignoring the ${CB_HOLD_MS}ms hold.`);
 
 R.info(`flag global "${COLDBOOT_FLAG}", off value "${COLDBOOT_OFF}", class ".${CB_PENDING_CLASS}", floor ${CB_FLOOR}, hold ${CB_HOLD_MS}ms`);
 

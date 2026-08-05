@@ -554,7 +554,8 @@ export function ColdBoot(): React.JSX.Element | null {
     /* THE SEQUENCE STARTS WHEN THE FLOOR LIFTS, NOT WHEN THIS MOUNTS.
      * The splash renders INSIDE #root, which the floor hides — so without this
      * guard the decrypt would run its 5.56s timeline underneath the black and
-     * be revealed already ~1.5s in, which is a sequence that starts in the
+     * be revealed already a hold's worth in (~750ms at gate.ts#CB_HOLD_MS's
+     * current value), which is a sequence that starts in the
      * middle rather than a black beat before it. Gating the whole effect also
      * covers the skipDecrypt branch (revisit or reduced motion): black for the
      * beat, then the console, in that order. */
