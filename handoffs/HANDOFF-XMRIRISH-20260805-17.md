@@ -215,6 +215,52 @@ a claim my own change made more wrong.
   an 844 px viewport since #163, so the orb's centre is in view and Z2 runs at both
   viewports. Kept as insurance with text that says the guard is for a layout which
   does not currently occur.
+- **INSTANCE FIFTEEN — `[data-orb]`'s base rect is a race, and it draws the globe as an
+  ellipse.** Found by the independent verifier of this PR and **reproduced here before
+  recording**. Measured at 1920×1080 across cold loads, reading `[data-orb]`'s computed
+  transform at the console phase:
+
+  ```
+  this container   hold shipped  identity 9/10 · SCALED 1/10   (twice)
+  this container   hold 1500     identity 9/10 · SCALED 1/10
+  verifier's       hold 750      identity 7/10 · SCALED 3/10
+  verifier's       hold 1500     identity 5/10 · SCALED 5/10
+  ```
+
+  In the SCALED state: `transform: scale(0.835, 1.302)`, canvas backing store **and** CSS
+  box both 660×450, displayed at 551×586 inside a 551×731 slot. **Aspect distortion
+  1.302 / 0.835 = 1.56×** — the globe is ~56 % taller relative to its width than it should
+  be, and it is plainly visible.
+
+  Mechanism: `Orb.tsx:598-600` captures `baseRef` on the first render where `effectiveRect`
+  is non-null and `active` is still false, and `effectiveRect` is `homeRect ?? coldBootOrb.rect`
+  (`:377-378`) — Home's `#hm-orb` if it has measured by then, the console slot if it has
+  not. Nothing sequences the two.
+
+  **Pre-existing, not caused by this PR**: the diff touches `Orb.tsx` in exactly one line
+  near that code and it is a docblock sentence; `baseRef`, `effectiveRect` and `homeRect`
+  are byte-identical to `main`. It arrived with #163's CLS fix, which deliberately made the
+  travel a transform.
+
+  **Why no gate sees it, and it is the tracked family again.** `verify-orb`'s "backing store
+  tracks its CSS box" compares `canvas.width/height` to `clientWidth/clientHeight × dpr` —
+  both are the LAYOUT box, so 660×450 into 660×450 passes. §7's `onSlot` compares
+  `[data-orb]`'s POST-transform bounding rect to the slot — 551×731 against 551×731, which
+  also passes. The distortion lives entirely in the transform, which neither assertion
+  reads, so both are green in both states. Subject: the layout box. Claim: the orb is sized
+  correctly. **This is the first instance in the family visible to a visitor.**
+
+  **Deliberately not fixed here.** Both states are green, it is pre-existing, and the fix is
+  a decision about which rect should own the orb at the console phase rather than a
+  mechanical change.
+
+- **§4's travel distance is a SAMPLE, not a re-measured constant.** It reads through
+  whichever base rect that run captured, so it is a draw from the two-valued variable above.
+  Measured 144.5 px on five consecutive runs here — but this container flips the race only
+  ~10 % of the time, so five identical draws are what that rate predicts and are not evidence
+  of stability in general. A future 135 px is a different draw, not drift. The predicate
+  remains `moved > 1` and no number is hard-coded anywhere.
+
 - **`ORB_ASSEMBLE_FROM`'s `0.86` is encoded twice** — `schedule.ts:77`
   `settle: [0.86, 1]` and `ColdBoot.tsx:243`, plus four prose copies
   (`ColdBoot.tsx:134, :235, :241, :608`). Not unified here; both line numbers recorded.
@@ -270,6 +316,25 @@ exactly the node a positional lookup walks through. Red both ways; the claim
 falsified neither way. Fixed by finding the rows structurally. Only reading *which*
 assertion went red separates these two cases, which is the argument for recording
 break-test output rather than exit codes.
+
+**Instance fifteen — the first one a visitor can see.** `[data-orb]`'s base rect is
+captured in a race, so on some cold loads the orb draws a 660×450 buffer into a
+551×731 slot through `scale(0.835, 1.302)` — a 1.56× aspect distortion, an
+elliptical globe. Two gates cover that element and BOTH are green in both states:
+one compares the layout box to the backing store, the other compares the
+post-transform bounding rect to the slot. The distortion is in the transform,
+which neither reads. Found by this PR's independent verifier and reproduced here
+before being written down. Full numbers and mechanism in §7.
+
+**Reading a cached status and reasoning from it — the same shape, once more.**
+Mid-run I reported CI's hardening job as taking 27 then 36 minutes and concluded
+"slow runner". The check-runs endpoint was serving stale `in_progress`; the
+step-level view showed the job had finished in 16 m 05 s, matching the previous
+run on byte-identical code almost exactly. The measurement was never slow — the
+poll was stale. Fifth instance of the staleness family in this session, and the
+first where the stale value came from an API rather than from `dist/`. The rule
+generalises: **a status you did not just observe is a memory, whatever produced
+it.**
 
 **A stale comment repeated as a conclusion.** Both the verifier and I asserted that
 §7's `R.skip` still fires at 390 — taken from the skip's own text, in the same
