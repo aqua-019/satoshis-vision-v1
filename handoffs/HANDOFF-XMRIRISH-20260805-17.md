@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260805-17
 branch: claude/prompt164-cold-boot-console-gp6gfp
-status: in_progress          # open -> in_progress -> done | blocked
+status: done                 # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, no cowork handoff existed)
 owner: claude-code
 ---
@@ -96,7 +96,7 @@ npm run wait-preview
 ## 7 · REPORT
 
 status: done
-pr: <filled at exit>
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/164 (mergeable_state: clean)
 commits: 5 (orb fade + §7 assertions · console growers + §8 · a seam correction ·
   the hold + eight prose sites · records)
 deps added: none
@@ -171,6 +171,14 @@ branch produced. The final run also skipped `/learn/sim` for an 87.4 % spread
 across its own three samples (4428 / 4632 / 2472 ms), which is the machine moving
 under the measurement. **The budget is uncalibrated for this hardware** — that
 word, never "flaky": flaky invites a retry, uncalibrated invites a decision.
+
+**CI settles it.** Both jobs passed on GitHub's runner, and `hardening gates`
+runs `npm run verify:e2e` as a single `&&` chain ending in `verify-vitals` — so
+**all 29 e2e gates including that one are green there**. The budget is not wrong
+in general; it is wrong for this container. Steps were checked individually
+rather than trusting the job's own green: install 4 s, typecheck 7 s, build 13 s,
+each offline gate ~1 s, 21 of 21 succeeded. A 37-second job is fast enough to be
+worth confirming it ran at all.
 
 ### Deviations from spec
 
