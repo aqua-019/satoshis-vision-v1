@@ -21,6 +21,15 @@
  *   §7  both of those again on the live cold-boot console, which is the one
  *       surface §1-§6 never render, and the one where the orb was broken
  *
+ * v6.1.11 added two more, because both of the above are about the orb at REST
+ * and the orb had two ways of being in the wrong place while moving:
+ *
+ *   §8  it tracks #hm-orb through a SCROLL, at every width — no gate in this
+ *       suite had ever changed the scroll offset, which is how a total
+ *       decoupling above 768px survived every assertion in this file
+ *   §9  and on the live console it renders at its BACKING STORE's aspect, the
+ *       one relation §5 and §7 are each individually blind to
+ *
  * ── THE SELF-CHECK PATTERN, AND WHY THE SHIPPED GATE NEVER GOES RED ON A
  *    CORRECT TREE ─────────────────────────────────────────────────────────
  * §1, §3 and §4 assert an ABSENCE ("no hostname", "no live badge", "no
@@ -54,6 +63,9 @@ import {
   makeReporter, launchChromium, BASE, PHONE,
   coldBootOff, assertColdBootBypassed,
 } from './verify-lib.mjs';
+// The frame-zero hold's test override, from its ONE owner — §9 zeroes the beat
+// across ten cold loads and must not restate the token.
+import { CB_HOLD_GLOBAL } from './src/coldboot/gate.ts';
 
 const APP = dirname(fileURLToPath(import.meta.url));
 const R = makeReporter('verify-orb');
@@ -939,6 +951,219 @@ R.group('── 5+6 SELF-CHECKS · the detectors are falsifiable ─────
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+ * §8 · the orb TRACKS #hm-orb THROUGH A SCROLL, at every width
+ * ══════════════════════════════════════════════════════════════════════
+ * `#hm-orb` is in-flow; `[data-orb]` is `position: fixed`. Fixed does not
+ * scroll, so the ONLY thing keeping them together is Orb.tsx re-measuring the
+ * box on scroll. Measured on 06e60fe, the drift equalled the scroll offset
+ * EXACTLY — 400.0px at 1440/1280/900/769, 0.0px at 768/390 — because the
+ * listener was on `window`, `scroll` does not bubble, and above 768px the
+ * scroller is `main.main` (styles.css:674) rather than the document. At <=768
+ * styles.css:2075-2077 gives `.main` `overflow:visible` and the document
+ * scrolls, where a window listener does fire.
+ *
+ * ── NO SELECTOR IS NAMED HERE, AND THAT IS THE POINT ──────────────────────
+ * Which element scrolls is a STYLESHEET decision that changes at a breakpoint.
+ * A gate that writes `main.main` re-encodes that decision and would go green on
+ * a tree where the breakpoint moved. So the scroller is RESOLVED by walking up
+ * from `#hm-orb` — the same walk verify-coldboot.mjs:511-522 uses on the console
+ * root — falling through to `document.scrollingElement`. What is asserted is the
+ * SHAPE of the answer (an element above the breakpoint, the document below it),
+ * and the resolved name is PRINTED so the next reader sees which.
+ *
+ * ── THE ANTI-VACUITY PRECONDITIONS ───────────────────────────────────────
+ * "the orb held its offset" is satisfied for free by a page that did not
+ * scroll. Every depth therefore asserts FIRST that the scroller's own
+ * `scrollTop` reached the value asked for, and SECOND that `#hm-orb`'s viewport
+ * top moved by that same amount. Without both, this section passes on any tree
+ * where the scroller stopped scrolling.
+ *
+ * <=768 IS A POSITIVE CONTROL. It passes on the unfixed tree, so it fails only
+ * if a fix breaks the one path that already worked.
+ * ══════════════════════════════════════════════════════════════════════ */
+
+/** Resolution + one snapshot, defined once per page. Not a measurement itself,
+ *  so it does not violate the one-evaluate rule every measurement below keeps. */
+async function installScrollProbe(page) {
+  await page.evaluate(() => {
+    const resolve = () => {
+      let el = document.getElementById('hm-orb')?.parentElement ?? null;
+      while (el && el !== document.body) {
+        const oy = getComputedStyle(el).overflowY;
+        if ((oy === 'auto' || oy === 'scroll') && el.scrollHeight > el.clientHeight + 1) return el;
+        el = el.parentElement;
+      }
+      return document.scrollingElement;
+    };
+    const nm = (el) => (!el ? 'none'
+      : `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}` +
+        `${el.className ? '.' + String(el.className).trim().split(/\s+/)[0] : ''}`);
+    window.__orbProbe = {
+      resolve,
+      snap() {
+        const sc = resolve();
+        const box = document.getElementById('hm-orb');
+        const orb = document.querySelector('[data-orb]');
+        const cv = orb && orb.querySelector('canvas');
+        const b = box && box.getBoundingClientRect();
+        const o = orb && orb.getBoundingClientRect();
+        const c = cv && cv.getBoundingClientRect();
+        const px = c && c.width > 0
+          ? [Math.max(0, Math.min(innerWidth - 1, c.left + c.width / 2)),
+             Math.max(0, Math.min(innerHeight - 1, c.top + c.height / 2))]
+          : null;
+        const hit = px ? document.elementFromPoint(px[0], px[1]) : null;
+        return {
+          scroller: nm(sc), isDoc: sc === document.scrollingElement,
+          top: sc ? sc.scrollTop : null,
+          max: sc ? sc.scrollHeight - sc.clientHeight : 0,
+          boxTop: b ? +b.top.toFixed(2) : null,
+          orbTop: o ? +o.top.toFixed(2) : null,
+          orbH: o ? +o.height.toFixed(2) : null,
+          disp: orb ? getComputedStyle(orb).display : null,
+          clipPath: orb ? getComputedStyle(orb).clipPath : null,
+          hit: nm(hit), inView: !!px,
+        };
+      },
+    };
+  });
+}
+
+/** THE SETTLE, AND WHY IT IS FRAME-COUNTED RATHER THAN OUTCOME-DEPENDENT.
+ *
+ *  Orb.tsx's handler is rAF-coalesced, so after a scrollTop write the pipeline
+ *  is: the browser fires `scroll`, the capture handler schedules a rAF, that
+ *  rAF reads the rect and calls setState, React commits in a later task, and the
+ *  next frame paints it. Three frames plus a macrotask clears all of it with a
+ *  frame to spare — the same shape verify-nav.mjs:111-120's parkScroll uses
+ *  against useRouteChrome's own coalesced save.
+ *
+ *  It is deliberately NOT `waitForFunction(() => |orbTop - boxTop| <= 1)`. That
+ *  predicate IS the assertion: on a broken tree it would turn a red into a
+ *  timeout and then a red, and it would make the break-test transcript
+ *  incomparable to the green one. This wait costs the same either way. */
+const settleFrames = (page, n = 3) => page.evaluate((k) => new Promise((res) => {
+  let i = k;
+  const step = () => (--i <= 0 ? setTimeout(res, 0) : requestAnimationFrame(step));
+  requestAnimationFrame(step);
+}), n);
+
+R.group('── 8 · [data-orb] tracks #hm-orb through a scroll, at every width ──');
+{
+  const DEPTHS = [120, 400, 800];
+  const cases = [
+    ['home 1440x900', { width: 1440, height: 900 }, 'element'],
+    ['home 769x900', { width: 769, height: 900 }, 'element'],
+    ['home 768x900', { width: 768, height: 900 }, 'document'],
+    ['home 390x844', { width: PHONE.width, height: PHONE.height }, 'document'],
+  ];
+
+  for (const [name, vp, want] of cases) {
+    const { ctx, page } = await openHome(mockNodesLive, vp);
+    await page.waitForTimeout(1200);          // the same orb settle §5+§6 uses
+    await installScrollProbe(page);
+
+    const at0 = await page.evaluate(() => window.__orbProbe.snap());
+
+    R.ok(at0.boxTop !== null && at0.orbTop !== null && at0.disp !== 'none',
+      `${name}: precondition — #hm-orb and a VISIBLE [data-orb] both measured ` +
+      `(display "${at0.disp}", box top ${at0.boxTop}, orb top ${at0.orbTop})`,
+      'One of the two is absent or display:none, so every delta below would be null rather than wrong.');
+
+    R.info(`${name}: scroller resolved to ${at0.scroller} · document scroller: ${at0.isDoc} · ` +
+           `${at0.max.toFixed(0)}px of travel · clip-path ${at0.clipPath}`);
+
+    const shapeOk = want === 'element' ? !at0.isDoc : at0.isDoc;
+    R.ok(shapeOk,
+      `${name}: the resolved scroller is ${want === 'element' ? 'an ELEMENT inside the page' : 'the DOCUMENT'} — got ${at0.scroller}`,
+      shapeOk ? '' :
+        `Resolved ${at0.scroller} (isDoc=${at0.isDoc}). styles.css:674 makes .main the scroller and ` +
+        'styles.css:2075-2077 hands it back to the document at <=768px. A flip here means that breakpoint ' +
+        'moved — which is a real finding, but about the stylesheet rather than about the orb.');
+
+    R.ok(at0.max >= DEPTHS[1],
+      `${name}: precondition — the resolved scroller can travel ${at0.max.toFixed(0)}px (need >=${DEPTHS[1]})`,
+      'Home is not tall enough here to scroll the depth asked for, so the assertions below would compare ' +
+      'two identical positions and pass without measuring anything.');
+
+    const rest = at0.orbTop - at0.boxTop;
+    const restH = at0.orbH;
+
+    for (const d of DEPTHS.filter((x) => x <= at0.max)) {
+      await page.evaluate((y) => { window.__orbProbe.resolve().scrollTop = y; }, d);
+      await settleFrames(page, 3);
+      const s = await page.evaluate(() => window.__orbProbe.snap());
+
+      R.ok(Math.abs(s.top - d) <= 1,
+        `${name} @${d}px: precondition — the scroller actually moved (scrollTop ${s.top})`,
+        'the scroll never took, so nothing below measured a scrolled page');
+
+      const boxMoved = Math.abs((at0.boxTop - s.boxTop) - d);
+      R.ok(boxMoved <= 1,
+        `${name} @${d}px: precondition — #hm-orb ITSELF moved ${(at0.boxTop - s.boxTop).toFixed(1)}px ` +
+        `(asked ${d}, |Δ| ${boxMoved.toFixed(1)})`,
+        'The box did not move with the scroller, so "the orb held its offset" would be true of a page that ' +
+        'never scrolled — the exact vacuity this pair exists to close.');
+
+      const delta = s.orbTop - s.boxTop;
+      const drift = Math.abs(delta - rest);
+      const held = boxMoved <= 1 && drift <= 1 && Math.abs(s.orbH - restH) <= 1;
+      R.ok(held,
+        `${name} @${d}px: [data-orb] held its offset to #hm-orb — ${delta.toFixed(2)}px against ` +
+        `${rest.toFixed(2)}px at rest (|Δ| ${drift.toFixed(2)}px), height ${s.orbH.toFixed(1)} against ${restH.toFixed(1)}`,
+        held ? '' :
+          `The orb drifted ${drift.toFixed(1)}px against a ${d}px scroll of ${s.scroller}. [data-orb] is ` +
+          'position:fixed and #hm-orb is in-flow, so nothing keeps them together except Orb.tsx re-measuring ' +
+          'on scroll. `scroll` does NOT bubble: a window listener sees the DOCUMENT and nothing else, so ' +
+          'above the 768px breakpoint — where main.main is the scroller — it never fires and the drift ' +
+          'equals the scroll offset exactly. useRouteChrome.ts:63-75 documents the fix: one capture-phase ' +
+          'listener on document.');
+
+      R.info(`${name} @${d}px: elementFromPoint over the orb canvas centre → ${s.hit} (centre in view: ${s.inView})`);
+    }
+
+    /* ── SELF-CHECK · permanent companion, this file's established idiom ────
+       Reproduces the PRODUCTION MECHANISM rather than an arbitrary
+       displacement: park at 0, remember where the orb sits, scroll, and then
+       pin the orb to that remembered top — which is exactly what a window-only
+       listener leaves behind, because it never fires and the rect is never
+       re-read. Then assert the drift check FIRES.
+
+       A stylesheet rule with !important, never an inline style: Orb.tsx
+       rewrites [data-orb]'s inline style on its 24fps tick and would revert an
+       inline injection within ~42ms — the trap recorded at :901-908.
+
+       The claim "the detector catches this" is true on every tree forever, so
+       this runs green in CI while proving the detector is live. */
+    const scDepth = Math.min(400, at0.max);
+    await page.evaluate(() => { window.__orbProbe.resolve().scrollTop = 0; });
+    await settleFrames(page, 3);
+    const parked = await page.evaluate(() => window.__orbProbe.snap());
+    await page.evaluate((y) => { window.__orbProbe.resolve().scrollTop = y; }, scDepth);
+    await settleFrames(page, 3);
+    const sc = await page.evaluate(([pinTop, restDelta]) => {
+      const st = document.createElement('style');
+      st.textContent = `[data-orb]{ top:${pinTop.toFixed(2)}px !important; transform:none !important; }`;
+      document.head.appendChild(st);
+      const sr = document.getElementById('hm-orb').getBoundingClientRect();
+      const or = document.querySelector('[data-orb]').getBoundingClientRect();
+      st.remove();
+      return { drift: Math.abs((or.top - sr.top) - restDelta) };
+    }, [parked.orbTop, rest]);
+    const caught = sc.drift > 1;
+    R.ok(caught,
+      `${name}: SELF-CHECK — an orb pinned where a window-only listener would have left it after a ` +
+      `${scDepth}px scroll is caught (|Δ| ${sc.drift.toFixed(1)}px against a 1px tolerance); proves the ` +
+      'drift check is falsifiable',
+      caught ? '' :
+        'a deliberately pinned orb was NOT detected, so the assertions above cannot be trusted on the real one');
+
+    await page.evaluate(() => { window.__orbProbe.resolve().scrollTop = 0; });
+    await ctx.close();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
  * §7 · the same two claims, on the LIVE cold-boot console
  * ══════════════════════════════════════════════════════════════════════
  * Deliberately does NOT install the bypass — that is the entire point of the
@@ -1188,6 +1413,204 @@ R.group('── 7 · sized and painting on the LIVE cold-boot console ───�
             'viewport list changed. Z1 above still ran; only the hit-test cross-check is unavailable.');
         }
       }
+    }
+    await ctx.close();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * §9 · THE ORB IS A CIRCLE ON THE LIVE CONSOLE
+ * ══════════════════════════════════════════════════════════════════════
+ * Orb.tsx pins [data-orb]'s BOX to `base` and expresses every later rect as
+ * translate+scale off it (the #163 CLS fix), while the canvas backing store is
+ * sized from clientWidth/clientHeight, which a transform does not change. So a
+ * WRONG `base` renders a correct buffer into the wrong SHAPE — and both of this
+ * file's existing checks stay green through it:
+ *
+ *   §5 (:727-734) compares the store to the canvas's UNTRANSFORMED CSS box,
+ *      which IS `base`, and is internally consistent however wrong base is.
+ *   §7 (:990-991) compares [data-orb]'s POST-transform rect to the slot, and
+ *      the transform is computed precisely to land it there — green by
+ *      construction whichever rect base holds.
+ *
+ * Neither reads the two ENDS against each other. That is this section's whole
+ * subject. Measured on 06e60fe at 1920x1080, 1 cold load in 10 came up with a
+ * 660x450 buffer (Home's #hm-orb) displayed through
+ * `matrix(0.8352, 0, 0, 1.3017, …)` — ratio 0.6411, a visibly elliptical globe —
+ * while `onSlot` and the backing-store check were green on that very sample.
+ *
+ * ── WHY >=10 COLD LOADS AND THE WORST SAMPLE ─────────────────────────────
+ * The defect was a RACE (1/10 here, 3/10 and 5/10 on other containers), so one
+ * load proves nothing in either direction. Asserting on the worst and PRINTING
+ * the distribution makes a partial regression read as a distribution rather
+ * than as a coin flip somebody re-runs until it is green.
+ *
+ * ── NOT BYPASSED ─────────────────────────────────────────────────────────
+ * Same reason §7 states at :947. `coldBootOffBrowser` must never appear in this
+ * file: it monkey-patches browser.newContext for the rest of the process
+ * (verify-lib.mjs:311-330), so one call would silently bypass §7 and §9 both.
+ * ══════════════════════════════════════════════════════════════════════ */
+R.group('── 9 · the orb renders at its backing store\'s ASPECT on the live console ──');
+{
+  const VP = { width: 1920, height: 1080 };
+  const LOADS = 10;
+
+  /* ── THE TOLERANCE, DERIVED RATHER THAN PICKED ────────────────────────
+     At identity scale the only divergence is rounding: `canvas.width` is
+     `Math.round(cssW * dpr)` and `clientWidth` is itself the rounded integer of
+     a fractional box, so the aspect ratio carries at most 0.5/w + 0.5/h. This
+     section's canvas measures 551x620, giving 0.5/551 + 0.5/620 = 0.0017 —
+     and the measured identity ratio on this tree is 1.0006, inside that.
+     0.01 is ~6x the bound and ~36x below the 0.6411 the real defect produces,
+     so the two sit in an empty gap rather than on a boundary.
+     SCOPED TO THIS VIEWPORT: orb.ts#ORB_MIN_CANVAS_PX is 120, and at a 120px
+     dimension the bound rises to 0.0083 — inside this tolerance. A future
+     viewport near that floor re-derives the number rather than widening it. */
+  const ASPECT_TOL = 0.01;
+
+  const samples = [];
+  for (let i = 1; i <= LOADS; i++) {
+    const ctx = await browser.newContext({ viewport: VP });
+    /* Zero the frame-zero hold ONLY. gate.ts#CB_HOLD_MS is a deliberate black
+       beat before the sequence; this section's subject is the base rect, not the
+       beat, and 10 loads x 750ms is 7.5s of sleeping for nothing. The token is
+       imported from gate.ts rather than restated. */
+    await ctx.addInitScript((k) => { window[k] = 0; }, CB_HOLD_GLOBAL);
+    await mockNodesUnavailable(ctx);   // stated, not inherited from the network
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+
+    /* ── THE CHEAPEST CORRECT WAIT ────────────────────────────────────────
+       NOT data-coldboot="console" (T=1). That is ~5.5s per load and it is 5s
+       LATER than the commit under test: `base` is captured and the transform
+       written the instant `active` flips, which Orb.tsx marks in the SAME render
+       by raising z-index to COLDBOOT_Z + 1 (:615).
+
+       The second clause is not decoration: the backing store is sized by a
+       ResizeObserver that lands a frame after the box changes, and reading
+       before it would report a stale buffer — a false RED about a tree with no
+       defect in it. Both clauses are satisfiable on a BROKEN tree too, so this
+       is a mechanism precondition rather than the assertion in disguise. */
+    const armed = await page.waitForFunction(() => {
+      const orb = document.querySelector('[data-orb]');
+      const root = document.querySelector('[data-coldboot]');
+      const cv = orb && orb.querySelector('canvas');
+      if (!orb || !root || !cv) return false;
+      const oz = Number(getComputedStyle(orb).zIndex);
+      const rz = Number(getComputedStyle(root).zIndex);
+      if (!Number.isFinite(oz) || !Number.isFinite(rz) || oz !== rz + 1) return false;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      return cv.clientWidth > 0 && cv.clientHeight > 0 &&
+        Math.abs(cv.width - Math.round(cv.clientWidth * dpr)) <= 1 &&
+        Math.abs(cv.height - Math.round(cv.clientHeight * dpr)) <= 1;
+    }, undefined, { timeout: 20000 }).then(() => true).catch(() => false);
+
+    R.ok(armed,
+      `aspect ${i}/${LOADS}: precondition — the SPLASH owns the orb (z-index === splash root + 1) and the ` +
+      'backing store already tracks its own CSS box',
+      armed ? '' :
+        'Either the raise never happened — Orb.tsx:615 applies it only while coldBootOrb.active, so it is the ' +
+        'DOM saying the console rather than Home is placing the orb — or the ResizeObserver had not sized the ' +
+        'store yet. Measuring either state would compare a rendered box against a stale buffer.');
+    if (!armed) { await ctx.close(); continue; }
+
+    const m = await page.evaluate(() => {
+      const orb = document.querySelector('[data-orb]');
+      const cv = orb.querySelector('canvas');
+      const slot = document.querySelector('[data-orb-slot="coldboot-console"]');
+      const r = cv.getBoundingClientRect();     // POST-transform
+      const o = orb.getBoundingClientRect();
+      const s = slot && slot.getBoundingClientRect();
+      return {
+        W: cv.width, H: cv.height,
+        rw: +r.width.toFixed(2), rh: +r.height.toFixed(2),
+        transform: getComputedStyle(orb).transform,
+        clipPath: getComputedStyle(orb).clipPath,
+        onSlot: !!s && Math.abs(o.width - s.width) <= 1 && Math.abs(o.height - s.height) <= 1,
+      };
+    });
+
+    const store = m.W / m.H, rendered = m.rw / m.rh;
+    samples.push({ i, ...m, store, rendered, ratio: rendered / store });
+    await ctx.close();
+  }
+
+  R.ok(samples.length === LOADS,
+    `precondition — all ${LOADS} cold loads produced a sample (got ${samples.length})`,
+    'A short run means the worst-sample assertion below is drawn from a smaller set than its label claims.');
+
+  R.ok(samples.length > 0 && samples.every((s) => s.onSlot),
+    `precondition — the console owned the placement in every sample ` +
+    `(${samples.filter((s) => s.onSlot).length}/${samples.length} on the slot)`,
+    'A sample where the orb is NOT on the console slot is measuring Home, and its ratio is 1.0000 for a ' +
+    'reason unrelated to what this section claims.');
+
+  /* The clip added for the topbar bleed is Home-only by construction; if it
+     ever reached the splash it would crop the console orb, so it is asserted
+     here rather than left to the eye. */
+  R.ok(samples.length > 0 && samples.every((s) => s.clipPath === 'none'),
+    `precondition — no clip-path while the splash owns the orb ` +
+    `(${samples.filter((s) => s.clipPath === 'none').length}/${samples.length} unclipped)`,
+    'Orb.tsx clips to #hm-orb\'s scrolling column, which exists underneath the splash but is not what is ' +
+    'scrolling the console orb. Clipping here would crop the travelling orb to a column it does not live in.');
+
+  R.info(`aspect distribution over ${samples.length} cold loads at ${VP.width}x${VP.height} ` +
+         '(rendered ÷ backing store; 1.0000 === a circle):');
+  for (const s of samples) {
+    R.info(`    load ${String(s.i).padStart(2)} · store ${s.W}x${s.H} (${s.store.toFixed(4)}) · ` +
+           `rendered ${s.rw}x${s.rh} (${s.rendered.toFixed(4)}) · ratio ${s.ratio.toFixed(4)} · ${s.transform}`);
+  }
+
+  if (samples.length) {
+    const worst = samples.reduce((a, b) => (Math.abs(b.ratio - 1) > Math.abs(a.ratio - 1) ? b : a));
+    const round = Math.abs(worst.ratio - 1) <= ASPECT_TOL;   // NaN fails closed
+    R.ok(round,
+      `WORST of ${samples.length}: the orb canvas RENDERS at its backing store's aspect — ratio ` +
+      `${worst.ratio.toFixed(4)} on load ${worst.i} (rendered ${worst.rendered.toFixed(4)}, ` +
+      `store ${worst.store.toFixed(4)}), tolerance ${ASPECT_TOL}`,
+      round ? '' :
+        `Load ${worst.i} renders a ${worst.rw}x${worst.rh} box for a ${worst.W}x${worst.H} buffer — the orb is ` +
+        `an ELLIPSE, distorted ${(worst.ratio > 1 ? worst.ratio : 1 / worst.ratio).toFixed(2)}x. [data-orb]'s box ` +
+        'is pinned to `base` (Orb.tsx:598-601) and everything after is translate+scale, so a base captured from ' +
+        'the WRONG source reaches the right PLACE with the wrong SHAPE. Two sources can supply it: Home\'s ' +
+        '#hm-orb, if the orb measured Home before the console published (ColdBoot.tsx\'s `live` sequences that), ' +
+        'and a STALE console slot, if the slot resized while the base was frozen (`travelling` scopes that ' +
+        'freeze to the handoff). Read `transform` above — a non-uniform scale() names which. §5 and §7 are both ' +
+        'GREEN on this tree; they compare the store to the untransformed box, and the transformed box to the ' +
+        'slot, and never the two ends to each other.');
+  }
+
+  /* ── SELF-CHECK · permanent companion, sc1's idiom (:835-847) ───────────
+     Injection and measurement in ONE evaluate, and a STYLESHEET rule rather
+     than an inline style for the reason recorded at :901-908. The injected
+     value is the production symptom verbatim. */
+  {
+    const ctx = await browser.newContext({ viewport: VP });
+    await ctx.addInitScript((k) => { window[k] = 0; }, CB_HOLD_GLOBAL);
+    await mockNodesUnavailable(ctx);
+    const page = await ctx.newPage();
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const up = await page.waitForSelector('[data-orb] canvas', { timeout: 20000 })
+      .then(() => true).catch(() => false);
+    R.ok(up, 'SELF-CHECK precondition: an orb canvas to distort',
+      up ? '' : 'no canvas, so the injection below has no subject');
+    if (up) {
+      const sc = await page.evaluate(() => {
+        const st = document.createElement('style');
+        st.textContent = '[data-orb]{ transform: scale(0.8352, 1.3017) !important; }';
+        document.head.appendChild(st);
+        const cv = document.querySelector('[data-orb] canvas');
+        const r = cv.getBoundingClientRect();   // forces the style+layout flush
+        const out = { W: cv.width, H: cv.height, rw: r.width, rh: r.height };
+        st.remove();
+        return out;
+      });
+      const ratio = (sc.rw / sc.rh) / (sc.W / sc.H);
+      const caught = Math.abs(ratio - 1) > ASPECT_TOL;
+      R.ok(caught,
+        `SELF-CHECK: an injected scale(0.8352, 1.3017) — the production symptom verbatim — is caught by the ` +
+        `aspect check (ratio ${ratio.toFixed(4)} against tolerance ${ASPECT_TOL}); proves it is falsifiable`,
+        caught ? '' : 'the injected distortion was NOT detected, so §9 cannot be trusted on the real orb either');
     }
     await ctx.close();
   }

@@ -235,6 +235,31 @@ export interface ColdBootOrbState {
   /** [0,1] — see the file header's "THE ORB CONTRACT" section. `seg(T,.86,1)`
    *  during the decrypt; `1` whenever there is no decrypt in play. */
   assemble: number;
+  /** A splash is on screen, so HOME'S RECT IS NOT AUTHORITATIVE — even before
+   *  this file has a rect of its own to offer.
+   *
+   *  `active` cannot answer this. It only turns true once `ColdBootConsole`
+   *  publishes its slot rect, and in the window before that, `Orb.tsx` used to
+   *  measure Home's `#hm-orb` and freeze its layout box on it. Which of the two
+   *  won was a chunk-resolution race (measured 1/10, 3/10 and 5/10 across
+   *  containers), and when Home won, the console slot was reached by a
+   *  NON-UNIFORM `scale(0.835, 1.302)` — the globe drawn as an ellipse.
+   *
+   *  Seeded at MODULE SCOPE below, which is the only place that can beat the
+   *  race: `Orb.tsx` imports this module, so this file's module body is
+   *  guaranteed to have run before `Orb`'s first render, which no effect or
+   *  layout effect of this component can promise. */
+  live: boolean;
+  /** The ENTER handoff's X ramp is lerping RIGHT NOW — true only there.
+   *
+   *  `Orb.tsx` pins its layout box while this is set and expresses every later
+   *  rect as a transform off it; that is the #163 CLS fix and it must keep
+   *  covering the whole travel. It must NOT cover the console phase: a slot
+   *  resize there (the slot is `flex:1 1 auto` beside data-dependent siblings,
+   *  and its rect is republished by a ResizeObserver) is a genuine relayout,
+   *  and pinning through it produces the same non-uniform scale by a second
+   *  route. Freezing on `active` conflated the two. */
+  travelling: boolean;
 }
 
 /** Verbatim shape of the mockup's own assemble ramp (`drawOrb`'s `alpha`/
@@ -243,12 +268,48 @@ export interface ColdBootOrbState {
 const ORB_ASSEMBLE_FROM = 0.86;
 const ORB_ASSEMBLE_TO = 1;
 
-const ORB_INITIAL: ColdBootOrbState = { rect: null, active: false, assemble: 0 };
+/**
+ * Will THIS load open on the splash? One expression, two call sites — the
+ * store's seed below and `computeInitial` — so the two can never answer
+ * differently.
+ *
+ * THE SSR GUARD IS LOAD-BEARING AND MUST COME FIRST. This module is evaluated
+ * in a plain Node process during `scripts/prerender.mjs` (see the render
+ * branch's own note near the bottom of this file: the resolution loop lets this
+ * lazy boundary's real component run once the dynamic import settles). A bare
+ * `window` reference at module scope is therefore not a runtime edge case, it
+ * is a `ReferenceError` that fails `npm run build` before any gate runs.
+ */
+function willRenderNow(): boolean {
+  if (typeof window === "undefined") return false;
+  const flagWindow = window as unknown as Record<string, string | undefined>;
+  return coldBootWillRender(flagWindow[COLDBOOT_FLAG], window.location.pathname);
+}
+
+/** SSR's snapshot, and deliberately NOT the same object as `ORB_INITIAL`:
+ *  `live` is seeded from the browser below, and a prerender must never see it
+ *  true under any hydration path. */
+const ORB_SERVER: ColdBootOrbState = {
+  rect: null, active: false, assemble: 0, live: false, travelling: false,
+};
+/* Evaluated at MODULE EVALUATION — see `live`'s docblock for why that instant
+   and no later one is early enough. */
+const ORB_INITIAL: ColdBootOrbState = { ...ORB_SERVER, live: willRenderNow() };
 let orbState: ColdBootOrbState = ORB_INITIAL;
 const orbListeners = new Set<() => void>();
 
-function setOrbState(next: ColdBootOrbState): void {
-  orbState = next;
+/** Merges, so a call site that owns three fields cannot silently reset the two
+ *  it does not. Bails on a no-op patch — strictly fewer notifications than the
+ *  unconditional write this replaced, and it cannot suppress a real change:
+ *  the handoff tick allocates a fresh `rect` every frame, so the loop finds a
+ *  difference on its first key and returns immediately. */
+function patchOrbState(patch: Partial<ColdBootOrbState>): void {
+  let changed = false;
+  for (const k of Object.keys(patch) as (keyof ColdBootOrbState)[]) {
+    if (!Object.is(orbState[k], patch[k])) { changed = true; break; }
+  }
+  if (!changed) return;
+  orbState = { ...orbState, ...patch };
   for (const l of orbListeners) l();
 }
 function subscribeOrb(listener: () => void): () => void {
@@ -261,7 +322,7 @@ function getOrbSnapshot(): ColdBootOrbState {
   return orbState;
 }
 function getOrbServerSnapshot(): ColdBootOrbState {
-  return ORB_INITIAL;
+  return ORB_SERVER;
 }
 
 /** The whole interface `Orb.tsx` (brief C, a sibling this file never
@@ -304,15 +365,15 @@ interface Initial {
 }
 
 function computeInitial(reduced: boolean): Initial {
-  if (typeof window === "undefined") return { phase: "off", skipDecrypt: false };
   /* The two clauses that used to be inline here now live in `./gate.ts`,
      because `index.html`'s pre-paint script has to answer the same question
      before this bundle exists and cannot import to do it. One definition, two
-     call sites, and verify-cbpending.mjs proves they agree. */
-  const flagWindow = window as unknown as Record<string, string | undefined>;
-  if (!coldBootWillRender(flagWindow[COLDBOOT_FLAG], window.location.pathname)) {
-    return { phase: "off", skipDecrypt: false };
-  }
+     call sites, and verify-cbpending.mjs proves they agree.
+
+     Called through `willRenderNow()` — which carries the SSR guard this
+     function used to carry itself — so the store's module-scope seed and this
+     mount-time read are one expression rather than two copies of one rule. */
+  if (!willRenderNow()) return { phase: "off", skipDecrypt: false };
   const flagged = readSessionFlag();
   return { phase: "splash", skipDecrypt: flagged || reduced };
 }
@@ -542,10 +603,31 @@ export function ColdBoot(): React.JSX.Element | null {
     // this file never touches the store again — see the header contract.
     // `assembleRef` (not a literal) — a resize firing mid-decrypt must not
     // reset how visually formed the orb already is.
-    if (phaseRef.current === "splash") {
-      setOrbState({ rect: plain, active: plain !== null, assemble: assembleRef.current });
+    //
+    // `plain !== null` GUARDS THE STORE, not just `active`. ColdBootConsole's
+    // slot effect calls this with null on cleanup, and while `live` is set the
+    // orb has no Home rect to fall back on — so publishing that null would
+    // render it display:none for the rest of the splash with nothing on screen
+    // saying why. Not reachable today (the callback identity is stable, so the
+    // effect never re-runs mid-splash); one `key` away from being so, and the
+    // failure shape is the silent hidden orb this file keeps re-learning.
+    // A null cleanup means "I have nothing new to report", never "hide".
+    if (phaseRef.current === "splash" && plain !== null) {
+      patchOrbState({ rect: plain, active: true, assemble: assembleRef.current, travelling: false });
     }
   }, []);
+
+  /* `live` is SEEDED AT MODULE SCOPE (see ORB_INITIAL) because `Orb.tsx`
+     renders before any effect in this file runs, and must not measure Home in
+     the meantime. This effect is the CORRECTOR, not the source: it only has to
+     be right by the time `phase` CHANGES. Child effects run before parent
+     effects, so ColdBootConsole has already published the slot rect by the time
+     this first fires — harmless, because the only state that hurts is
+     {rect:null, active:false, live:false}, which the seed is what eliminates.
+     Collapsing the seed into this effect would put that state back. */
+  React.useEffect(() => {
+    patchOrbState({ live: phase === "splash" || phase === "handoff" });
+  }, [phase]);
 
   // ── decrypt: the T ramp + canvas, or the "already resolved" immediate
   //    reveal (revisit / reduced motion). Runs while phase === "splash". ──
@@ -617,7 +699,7 @@ export function ColdBoot(): React.JSX.Element | null {
       const assemble = Math.round(seg(t, ORB_ASSEMBLE_FROM, ORB_ASSEMBLE_TO) * 500) / 500;
       if (assemble !== assembleRef.current) {
         assembleRef.current = assemble;
-        setOrbState({ rect: consoleRectRef.current, active: consoleRectRef.current !== null, assemble });
+        patchOrbState({ rect: consoleRectRef.current, active: consoleRectRef.current !== null, assemble, travelling: false });
       }
 
       if (t >= 1) {
@@ -652,7 +734,7 @@ export function ColdBoot(): React.JSX.Element | null {
     if (reduced) {
       clearHandoffStyles(stageEl, mainEl);
       const homeRect = readHmOrbRect();
-      setOrbState({ rect: homeRect ?? startRect, active: false, assemble: 1 });
+      patchOrbState({ rect: homeRect ?? startRect, active: false, assemble: 1, travelling: false });
       setPhase("done");
       return;
     }
@@ -670,13 +752,16 @@ export function ColdBoot(): React.JSX.Element | null {
       if (stageEl) applyHandoffFrame(x, stageEl, mainEl);
 
       const homeRect = readHmOrbRect();
-      if (startRect && homeRect) setOrbState({ rect: lerpRect(startRect, homeRect, x), active: true, assemble: 1 });
-      else if (homeRect) setOrbState({ rect: homeRect, active: true, assemble: 1 });
-      else if (startRect) setOrbState({ rect: startRect, active: true, assemble: 1 });
+      /* `travelling: true` lives HERE and only here — this is the X ramp, the
+         one window whose per-frame rect must not become a per-frame relayout.
+         Orb.tsx pins its box against exactly this flag. */
+      if (startRect && homeRect) patchOrbState({ rect: lerpRect(startRect, homeRect, x), active: true, assemble: 1, travelling: true });
+      else if (homeRect) patchOrbState({ rect: homeRect, active: true, assemble: 1, travelling: true });
+      else if (startRect) patchOrbState({ rect: startRect, active: true, assemble: 1, travelling: true });
 
       if (x >= 1) {
         clearHandoffStyles(stageEl, mainEl);
-        setOrbState({ rect: homeRect ?? startRect, active: false, assemble: 1 });
+        patchOrbState({ rect: homeRect ?? startRect, active: false, assemble: 1, travelling: false });
         setPhase("done");
         return;
       }

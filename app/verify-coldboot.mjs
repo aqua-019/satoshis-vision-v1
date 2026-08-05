@@ -406,6 +406,22 @@ R.group('── 4 · Enter handoff completes; the orb travels, not collapses ─
   await page.goto(BASE + '/', { waitUntil: 'load' });
   await page.waitForSelector(COLDBOOT_SEL, { timeout: 15000 });
 
+  /* THE CONSOLE IS WHAT PUBLISHES THE ORB'S RECT, and until it does, Orb.tsx
+     renders `display:none` — for which `boundingBox()` returns null, not a box.
+     So `before` below is only a statement about the orb once the console has
+     mounted; taken at `[data-coldboot]` alone it is a statement about a race.
+     Measured on this tree at 1440x900, five cold runs: the splash root appears
+     at 27.5-59.6ms and the orb leaves display:none 0.9-23.2ms later. That window
+     is small, and it is exactly wide enough to turn an always-green assertion
+     into a usually-green one on a loaded runner.
+     §7 of verify-orb.mjs waits on this same selector and calls it, correctly,
+     "the console pane mounted (it is what publishes the orb rect)". */
+  const consoleUp = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25_000 })
+    .then(() => true).catch(() => false);
+  R.ok(consoleUp, 'precondition: the console pane mounted, so the orb has been handed a rect to sit on',
+    consoleUp ? '' : 'the console never reported ready; `before` below would be null because the orb is ' +
+                     'display:none until it does, and the travel measurement would have no start point');
+
   const orb = page.locator('[data-orb]').first();
   const before = (await orb.count()) ? await orb.boundingBox() : null;
   R.ok(before !== null, 'orb is present on the splash before handoff (prerequisite for measuring travel)');
