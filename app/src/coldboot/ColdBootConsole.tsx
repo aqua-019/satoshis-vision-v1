@@ -252,17 +252,27 @@ function logScrollerStyle(stacked: boolean): React.CSSProperties {
   };
 }
 
-/** The log's lines, as ONE unshrinkable child of that flex column.
+/** The log's lines, as ONE child of that flex column.
  *
- *  Without this wrapper each line div is itself a flex item, and those divs
- *  carry `overflow:"hidden"` for their ellipsis — which zeroes their automatic
+ *  THE WRAPPER ELEMENT IS THE MECHANISM; this style is insurance. Without a
+ *  wrapper each line div is itself a flex item, and those divs carry
+ *  `overflow:"hidden"` for their ellipsis — which zeroes their flex automatic
  *  minimum size, so they COMPRESS instead of overflowing. Measured at 390 with
- *  the 150px floor: rendered line heights [12.5, 12.5, 12.5, 12.5] against a
+ *  the 150px floor and no wrapper: rendered line heights 12.5px against a
  *  computed `line-height` of 20px, a 37.5% crush, while `scrollHeight ===
  *  clientHeight` (150/150) so nothing anywhere reports overflow — a box that
- *  "fits" because its contents were crushed. With the wrapper they are ordinary
- *  blocks inside one item, `overflow:hidden` clips instead of compressing, and
- *  the heights read 20. `verify-coldboot.mjs` §8 asserts exactly that. */
+ *  "fits" because its contents were crushed. With the wrapper: 20px.
+ *
+ *  `flex: "0 0 auto"` is deliberately NOT load-bearing, and that was measured
+ *  rather than assumed: a break test that stripped this style but kept the
+ *  wrapper div stayed GREEN at 20px, because a plain div sets no `overflow` and
+ *  so keeps `min-height: auto` == min-content and cannot shrink either way. It
+ *  is written out because the containing column's whole job is distributing
+ *  free space, and a child that must never participate should say so rather
+ *  than rely on not having opted in. `verify-coldboot.mjs` §8 finds the line
+ *  rows STRUCTURALLY (leaf divs bearing text) for the matching reason — a
+ *  positional lookup walks through this node, so removing it would report
+ *  "0 sampled" instead of measuring the crush that removing it causes. */
 const LOG_LINES_STYLE: React.CSSProperties = { flex: "0 0 auto" };
 
 const PANE_STYLE: React.CSSProperties = {

@@ -620,10 +620,20 @@ R.group('── 8 · the panes conform vertically (log fills, ENTER on the floor
     const hudPane = q('[data-cb-pane="hud"]'), logPane = q('[data-cb-pane="log"]');
     const log = q('[data-cb-log]'), matrix = q('[data-cb-matrix]'), enter = q('[data-cb-enter]');
     const slot = q('[data-orb-slot="coldboot-console"]');
-    const lineHost = log && log.firstElementChild;
-    const lines = lineHost ? [...lineHost.children].slice(0, 6).map((n) => +n.getBoundingClientRect().height.toFixed(1)) : [];
-    const lineHeightCss = lineHost && lineHost.firstElementChild
-      ? parseFloat(getComputedStyle(lineHost.firstElementChild).lineHeight) : NaN;
+    /* The line rows, found STRUCTURALLY — leaf divs carrying text — not as
+       "the children of the log's first child". The wrapper this assertion
+       exists to police is exactly the node a positional lookup would walk
+       through, so a positional lookup reports "0 sampled" when the wrapper is
+       removed instead of measuring the crush that removal causes. The vacuity
+       guard below would still red, but for the wrong reason and with the wrong
+       message: the seam would be redirecting the subject rather than falsifying
+       the claim. Measured — this form reports 12.5px against a 20px
+       line-height with the wrapper gone. */
+    const lineNodes = log
+      ? [...log.querySelectorAll('div')].filter((n) => n.children.length === 0 && (n.textContent || '').trim().length > 0)
+      : [];
+    const lines = lineNodes.slice(0, 6).map((n) => +n.getBoundingClientRect().height.toFixed(1));
+    const lineHeightCss = lineNodes.length ? parseFloat(getComputedStyle(lineNodes[0]).lineHeight) : NaN;
     return {
       found: !!(root && grid && hudPane && logPane && log && matrix && enter && slot),
       branch: grid ? grid.getAttribute('data-cb-grid') : null,
