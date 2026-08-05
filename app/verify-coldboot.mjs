@@ -535,6 +535,264 @@ R.group('── 7 · the console is reachable at every width (no silent clipping
   await b2.close();
 }
 
+/* ══ §8 · THE PANES CONFORM VERTICALLY — the mockup's three growers ══════
+ *
+ * The mockup gives each of the three console panes exactly ONE `flex:1` child;
+ * production ported one (the orb stage). The LEFT output table and the CENTRE
+ * log were hard `maxHeight: 220` boxes, so nothing in those columns could
+ * absorb slack — the centre column ended where its content ended and ENTER, its
+ * last child, ended with it. Measured on 63dc1a8: 723.9px of dead pane below
+ * ENTER at 2560x1440, 363.9 at 1920, 200.4 at 1600, 195.7 at 1440, 105.7 at 1280.
+ *
+ * ── WHY NOT FOLDED INTO §7 ───────────────────────────────────────────────
+ * §7's claim is REACHABILITY and it accepts both "fits" and "scrolls" by
+ * design. A console with 364.9px of dead pane passes every §7 assertion, and
+ * should — it is reachable. Different claim, different section.
+ *
+ * ── THE FLOORS ARE PARSED, NOT RESTATED ──────────────────────────────────
+ * `ColdBootConsole.tsx` is JSX and cannot be imported by bare node, so the two
+ * stacked constants are read out of its source — the idiom verify-orb uses for
+ * ORB_RADIUS_FRAC. A copied number is a second definition kept in step by
+ * nothing, and this section exists because two `220` literals shipped with
+ * nothing pointing at either.
+ *
+ * ── deadPx HAS TWO PLAUSIBLE DEFINITIONS, 1px APART ──────────────────────
+ * Subtracting padding alone and subtracting padding+border differ by exactly
+ * the 1px pane border, which is why the same layout was reported both as
+ * "dead space 1.0" and as "195.7 vs 196.7" during planning. This section uses
+ * padding+border — the pane's own CONTENT bottom — and prints the definition
+ * in the assertion, so a 1.0 that should read 0.0 is not mistaken for drift. */
+R.group('── 8 · the panes conform vertically (log fills, ENTER on the floor) ──');
+{
+  const SRC = readFileSync(new URL('./src/coldboot/ColdBootConsole.tsx', import.meta.url), 'utf8');
+  const num = (name) => Number((new RegExp(`\\b${name}\\s*=\\s*(\\d+)`).exec(SRC) || [])[1]);
+  const LOG_MIN_STACKED_PX = num('LOG_MIN_STACKED_PX');
+  const MATRIX_MAX_STACKED_PX = num('MATRIX_MAX_STACKED_PX');
+  const ORB_SLOT_MIN_PX = num('ORB_SLOT_MIN_PX');
+  const DEAD_TOL = 4;
+
+  /* ── A SOURCE ASSERTION, AND IT SAYS SO ──────────────────────────────────
+   * `useFeedEvents` PREPENDS (`useFeedEvents.ts:85`), so `events[0]` is the
+   * NEWEST. Rendering that raw order into a bottom-anchored column pins the
+   * OLDEST to the pane floor and pushes the newest up under the boot table —
+   * making the header's "live tail" label less true, which is the opposite of
+   * why the anchoring was adopted. `ColdBootConsole` reverses for render.
+   *
+   * This is checked in SOURCE rather than at runtime because it cannot be
+   * checked at runtime HERE: `serve-dist` answers /api/* with 501, so the feed
+   * never reaches the `ready && !stale` state the event differ requires and the
+   * log holds boot lines only — measured, 12 lines and a "boot" header in every
+   * run of this section. A mocked two-tick feed was attempted and did not reach
+   * that state either. What IS measured at runtime below: the column is
+   * bottom-anchored (last child's bottom == the log's bottom, 516.2 == 516.2 at
+   * 1440x900). So the anchoring is proven and the ORDER fed into it is not;
+   * this keeps the wiring from being deleted silently in the meantime. */
+  const reverses = /useMemo\(\s*\(\)\s*=>\s*\[\s*\.\.\.\s*events\s*\]\s*\.reverse\(\)/.test(SRC);
+  const mapsTail = /\{\s*tail\.map\(/.test(SRC);
+  const mapsRaw = /\{\s*events\.map\(/.test(SRC);
+  R.ok(reverses && mapsTail && !mapsRaw,
+    'SOURCE: the log renders feed events oldest-first — ColdBootConsole reverses the prepended array and maps ' +
+    `the reversed one (reverses ${reverses}, maps tail ${mapsTail}, maps raw events ${mapsRaw})`,
+    'useFeedEvents.ts:85 prepends, so events[0] is the NEWEST. Bottom-anchored, the raw order puts the OLDEST ' +
+    'on the pane floor. The mockup appends and slices(-80) — chronological ascending, newest last.');
+
+  R.ok([LOG_MIN_STACKED_PX, MATRIX_MAX_STACKED_PX, ORB_SLOT_MIN_PX].every(Number.isFinite),
+    `precondition: the layout constants parsed out of ColdBootConsole.tsx — LOG_MIN_STACKED_PX ` +
+    `${LOG_MIN_STACKED_PX}, MATRIX_MAX_STACKED_PX ${MATRIX_MAX_STACKED_PX}, ORB_SLOT_MIN_PX ${ORB_SLOT_MIN_PX}`,
+    'a failed parse yields NaN, and every comparison below is >= or <=, false for NaN — so the section fails ' +
+    'CLOSED, but would name the wrong cause without this.');
+
+  /* Measures the console once the layout has settled. `deadPx` is defined ONCE,
+     here, and reported with its definition. */
+  const measure = (page) => page.evaluate(() => {
+    const root = document.querySelector('[data-coldboot-console]');
+    /* SCOPED TO THE CONSOLE ROOT, never `document`. Main Home stays mounted
+       underneath the splash for the whole console phase, so a document-wide
+       lookup measures whichever node happens to come first in document order.
+       None of these hooks exists on Home today — `button.proto-btn` there is a
+       react-router <Link>, i.e. an <a> — but "no collision today" is not a
+       property this file should depend on. */
+    const q = (s) => (root ? root.querySelector(s) : null);
+    const grid = q('[data-cb-grid]');
+    const px = (el, prop) => parseFloat(getComputedStyle(el)[prop]) || 0;
+    const contentBottom = (pane) =>
+      pane.getBoundingClientRect().bottom - px(pane, 'borderBottomWidth') - px(pane, 'paddingBottom');
+    const hudPane = q('[data-cb-pane="hud"]'), logPane = q('[data-cb-pane="log"]');
+    const log = q('[data-cb-log]'), matrix = q('[data-cb-matrix]'), enter = q('[data-cb-enter]');
+    const slot = q('[data-orb-slot="coldboot-console"]');
+    const lineHost = log && log.firstElementChild;
+    const lines = lineHost ? [...lineHost.children].slice(0, 6).map((n) => +n.getBoundingClientRect().height.toFixed(1)) : [];
+    const lineHeightCss = lineHost && lineHost.firstElementChild
+      ? parseFloat(getComputedStyle(lineHost.firstElementChild).lineHeight) : NaN;
+    return {
+      found: !!(root && grid && hudPane && logPane && log && matrix && enter && slot),
+      branch: grid ? grid.getAttribute('data-cb-grid') : null,
+      tracks: grid ? getComputedStyle(grid).gridTemplateColumns.trim().split(/\s+/).length : 0,
+      rootH: root ? +root.getBoundingClientRect().height.toFixed(1) : 0,
+      logH: log ? +log.getBoundingClientRect().height.toFixed(1) : 0,
+      matrixH: matrix ? +matrix.getBoundingClientRect().height.toFixed(1) : 0,
+      slotH: slot ? +slot.getBoundingClientRect().height.toFixed(1) : 0,
+      logDead: logPane && enter ? +(contentBottom(logPane) - enter.getBoundingClientRect().bottom).toFixed(1) : NaN,
+      hudDead: hudPane && matrix ? +(contentBottom(hudPane) - matrix.getBoundingClientRect().bottom).toFixed(1) : NaN,
+      paneScrollOverflow: [hudPane, logPane].filter(Boolean).map((p) => p.scrollHeight - p.clientHeight),
+      lines, lineHeightCss,
+      paneInnerW: hudPane ? +(hudPane.getBoundingClientRect().width - 2 * px(hudPane, 'paddingLeft')).toFixed(1) : 0,
+    };
+  });
+
+  const VIEWPORTS = [
+    ['2560x1440', { width: 2560, height: 1440 }, 'wide'],
+    ['1920x1080', { width: 1920, height: 1080 }, 'wide'],
+    ['1440x900', { width: 1440, height: 900 }, 'wide'],
+    ['1280x800', { width: 1280, height: 800 }, 'wide'],
+    ['1100x900', { width: 1100, height: 900 }, 'stacked'],
+    ['390x844', { width: PHONE.width, height: PHONE.height }, 'stacked'],
+  ];
+
+  for (const [label, vp, expected] of VIEWPORTS) {
+    const { ctx, page } = await cold({ viewport: vp });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, `${label}: precondition — the console mounted`);
+    if (!ready) { await ctx.close(); continue; }
+    await page.waitForTimeout(1200);
+
+    const m = await measure(page);
+    R.ok(m.found, `${label}: precondition — every measured hook is present (grid, both panes, log, matrix, ENTER, orb slot)`,
+      m.found ? '' : 'a data-cb-* hook is missing, so the numbers below would be NaN rather than wrong');
+    if (!m.found) { await ctx.close(); continue; }
+
+    /* TWO-SIDED. The attribute is the branch matchMedia CHOSE; the track count
+       is what the browser RESOLVED. Asserting only one lets a 390 run that
+       silently resolved `wide` pass every height check below while the stacked
+       branch — the one that reads 0.0px without its floor — is never run. */
+    const branchOk = m.branch === expected && m.tracks === (expected === 'stacked' ? 1 : 3);
+    R.ok(branchOk,
+      `${label}: precondition — the layout branch agrees with the browser: data-cb-grid="${m.branch}", ` +
+      `${m.tracks} resolved column track(s), expected "${expected}"`,
+      `matchMedia chose "${m.branch}" and the browser resolved ${m.tracks} track(s). Every height assertion ` +
+      'below describes one branch or the other, and this is what pins which.');
+
+    R.ok(m.logH > 0 && m.matrixH > 0,
+      `${label}: precondition — both scrollers have boxes (log ${m.logH}px, matrix ${m.matrixH}px)`,
+      'a zero box makes every comparison below vacuously satisfiable');
+
+    R.ok(m.slotH >= ORB_SLOT_MIN_PX,
+      `${label}: the orb stage still clears its floor (${m.slotH}px against ORB_SLOT_MIN_PX ${ORB_SLOT_MIN_PX})`,
+      `${m.slotH}px. Growing the other two panes must not come out of the orb's slot — that floor is what ` +
+      'v6.1.9 derived to stop the canvas being starved to a 300x150 default.');
+
+    if (expected === 'wide') {
+      R.ok(m.logDead <= DEAD_TOL,
+        `${label}: ENTER sits on the log pane's floor — ${m.logDead}px below it ` +
+        `(deadPx = pane bottom − border-bottom − padding-bottom − ENTER's bottom; tolerance ${DEAD_TOL})`,
+        `${m.logDead}px of dead pane below ENTER. The centre column has no grower, so its leftover height falls ` +
+        'out of the bottom instead of being absorbed — measured 723.9px at 2560x1440 and 363.9 at 1920 before ' +
+        'the log became `flex:1 1 0`.');
+
+      R.ok(m.logH > 220,
+        `${label}: the log grew past the old hard cap (${m.logH}px against the former maxHeight:220)`,
+        `${m.logH}px. The 220 literal is what made the pane end where its content ended.`);
+
+      /* TWO-SIDED on purpose. A NEGATIVE reading is content escaping the pane —
+         PANE_STYLE sets no `overflow`, and the matrix's floor rose from an
+         effective 0 to MATRIX_MIN_PX, so escape became possible where it was
+         not. If this reds negative the fix is that floor or a pane overflow,
+         never a looser tolerance. */
+      R.ok(Math.abs(m.hudDead) <= DEAD_TOL,
+        `${label}: the output table fills its HUD pane — ${m.hudDead}px from the pane floor (same deadPx definition)`,
+        m.hudDead > DEAD_TOL
+          ? `${m.hudDead}px of dead pane below the table; it is not absorbing its column's slack.`
+          : `${m.hudDead}px — NEGATIVE, so the table is spilling PAST the pane border. PANE_STYLE declares no ` +
+            'overflow, so that content is drawn outside its own box rather than clipped or scrolled.');
+    } else {
+      /* THE ASSERTION THAT WOULD HAVE CAUGHT THE COLLAPSE, and it is two-sided
+         for a measured reason: a flex-basis-0 child of a content-height column
+         reads 0.0px without this floor — but with `flex:1 1 auto` instead of
+         `1 1 0` it reads 240 and a one-sided `>= floor-1` passes with the floor
+         REMOVED. Both failure modes are on the same axis; only a band catches
+         both. */
+      R.ok(Math.abs(m.logH - LOG_MIN_STACKED_PX) <= 1,
+        `${label}: stacked, the log holds its floor exactly — ${m.logH}px against LOG_MIN_STACKED_PX ` +
+        `${LOG_MIN_STACKED_PX}`,
+        m.logH < LOG_MIN_STACKED_PX - 1
+          ? `${m.logH}px. Stacked, gridStyle gives the panes content height, and a flex-basis-0 child of a ` +
+            'content-height column resolves to ZERO — measured 0.0px at both 1100x900 and 390x844 without the ' +
+            'floor. The log disappears on phones and nothing else reports it.'
+          : `${m.logH}px, ABOVE the floor. In a content-height column the floor should be exact; a larger ` +
+            'reading means the basis is `auto` rather than `0`, which makes LOG_MIN_STACKED_PX inert — it ' +
+            'would ship, cite its mockup line, be parsed here, and control nothing.');
+
+      R.ok(m.matrixH <= MATRIX_MAX_STACKED_PX + 1,
+        `${label}: stacked, the output table stays capped — ${m.matrixH}px against MATRIX_MAX_STACKED_PX ` +
+        `${MATRIX_MAX_STACKED_PX}`,
+        `${m.matrixH}px. Stacked the table is a non-grower by design; unbounded, it makes an already-tall ` +
+        'phone console taller.');
+
+      /* The crush. Line divs carry `overflow:hidden` for their ellipsis, which
+         zeroes their flex automatic minimum — as direct flex items they COMPRESS
+         instead of overflowing, and `scrollHeight === clientHeight` throughout,
+         so nothing reports it. Measured at 390 without the wrapper: 12.5px
+         rendered against a 20px computed line-height, a 37.5% crush. */
+      const crushed = m.lines.filter((h) => h > 0 && h < m.lineHeightCss - 0.5);
+      R.ok(m.lines.length > 0 && Number.isFinite(m.lineHeightCss) && crushed.length === 0,
+        `${label}: log lines render at their own line-height — ${m.lines.join('/')} against a computed ` +
+        `${m.lineHeightCss}px (${m.lines.length} sampled)`,
+        m.lines.length === 0 || !Number.isFinite(m.lineHeightCss)
+          ? 'no lines sampled, so this proved nothing — the log line host is missing or empty.'
+          : `${crushed.length} line(s) shorter than the computed line-height: ${crushed.join('/')}. The lines ` +
+            'are direct flex items of the log column and their own overflow:hidden zeroes their automatic ' +
+            'minimum, so they are being compressed rather than clipped. scrollHeight === clientHeight while ' +
+            'this happens, so no overflow check anywhere can see it. LOG_LINES_STYLE is the wrapper that ' +
+            'makes them ordinary blocks inside one unshrinkable item.');
+    }
+
+    R.info(`${label}: console root ${m.rootH}px · log ${m.logH} · matrix ${m.matrixH} · orb slot ${m.slotH} · ` +
+      `HUD pane inner width ${m.paneInnerW} · pane scroll overflow ${JSON.stringify(m.paneScrollOverflow)}`);
+    await ctx.close();
+  }
+
+  /* ── THE GROWER ACTUALLY GROWS ────────────────────────────────────────
+   * The strongest assertion here carries no layout number: a CAPPED box absorbs
+   * exactly 0 of a viewport increase at any value of the cap, so the ratio
+   * separates a grower from a cap without knowing what either measures.
+   * Measured with the fix in place: dLog 164.0 at all three wide viewports for
+   * a 180px increase, ratio 0.91. The 16px shortfall is structural — the centre
+   * pane's histogram is `clamp(70px, 10vh, 106px)`, so 10vh goes 90 -> 108 and
+   * clamps at 106, eating exactly 16. The clamp saturates at a 1060px viewport,
+   * so above that the ratio is 1.00 and between ~700 and 1060 it is 0.91.
+   * A `dMatrix === 0` guard was drafted alongside this and deleted: the matrix
+   * is a grower too now (it absorbs its OWN pane's slack, measured +108-111px),
+   * so asserting it absorbs nothing reds on a correct tree. That control belongs
+   * to the break-test, where the cap is restored. */
+  {
+    const { ctx, page } = await cold({ viewport: { width: 1440, height: 900 } });
+    await page.goto(BASE + '/', { waitUntil: 'load' });
+    const ready = await page.waitForSelector('[data-coldboot-console="ready"]', { timeout: 25000 })
+      .then(() => true).catch(() => false);
+    R.ok(ready, 'resize: precondition — the console mounted at 1440x900');
+    if (ready) {
+      await page.waitForTimeout(1200);
+      const before = await measure(page);
+      await page.setViewportSize({ width: 1440, height: 1080 });
+      await page.waitForTimeout(800);
+      const after = await measure(page);
+      const dLog = +(after.logH - before.logH).toFixed(1);
+      const dVp = 180;
+      const ratio = dLog / dVp;
+      R.ok(before.found && after.found && ratio >= 0.5,
+        `resize 900→1080: the log ABSORBS the new height — ${before.logH} → ${after.logH} (+${dLog}px of ` +
+        `${dVp}, ratio ${ratio.toFixed(2)}, floor 0.50)`,
+        `+${dLog}px of ${dVp}. A capped box absorbs exactly 0 at any value of the cap, which is what this ` +
+        'separates. Measured with the grower in place: +164.0px, ratio 0.91 — the 16px shortfall is the ' +
+        "histogram's clamp(70px, 10vh, 106px) saturating, not the log failing to grow.");
+      R.info(`resize 900→1080: matrix ${before.matrixH} → ${after.matrixH} · orb slot ${before.slotH} → ${after.slotH}`);
+    }
+    await ctx.close();
+  }
+}
+
 await browser.close();
 
 /* ── §Z · the wire STILL matches, at the end of the chain ─────────────────
