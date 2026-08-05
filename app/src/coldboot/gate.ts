@@ -68,22 +68,32 @@ export const CB_FLOOR = "#050505";
  * added on top: measured under 6x CPU + Slow-4G, a cold `/` reaches LCP at
  * ~4048ms, where this contributes exactly 0.
  *
- * The cost lands only on fast loads. Re-measured on a real cold `/` with the
- * splash ON, unthrottled, three runs at the value below: LCP 932/948/956ms
- * against 164/216ms with the splash bypassed. Real, and under the 2500ms budget
- * for `/`.
+ * The cost lands only on fast loads, moving LCP from ~380ms to ~930ms. Both
+ * numbers re-measured at the value below, 1440x900 unthrottled, three runs each:
  *
- * Note what those numbers are NOT: the post-hold LCP is not this constant. The
- * floor lifts at `max(hold, mount)` — measured 766/901/917ms against a declared
- * 750, so the mount is sometimes the binding term — and LCP lands a little after
- * the lift. Any gate asserting `stated LCP === CB_HOLD_MS` would be green only
- * while this sentence was false, so there is deliberately no such gate; the
- * runtime lower bound in verify-coldboot-live §1c is the assertion that matters.
+ *   splash OFF                172 / 180 / 196 ms   <- what verify-vitals watches
+ *   splash ON, hold 0         444 / 380 / 352 ms   <- the baseline for this claim
+ *   splash ON, hold 750       924 / 936 / 944 ms   <- shipped
+ *   splash ON, hold 1500     1692 / 1692 / 1692 ms <- the previous value
  *
- * NOTHING IN THE SUITE MEASURES THE NUMBER ABOVE. verify-vitals watches `/`'s
- * LCP through `coldBootOffBrowser`, i.e. the 164-216ms column, so halving this
- * constant does not move the budget it guards by a single millisecond. That gap
- * is recorded rather than closed here.
+ * THE BASELINE IS THE NO-HOLD SPLASH-ON COLUMN, NOT THE BYPASSED ONE. This
+ * sentence justifies THIS CONSTANT, so the only honest thing it can claim is the
+ * constant's MARGINAL cost: ~550ms (930 - 380), which is the hold minus a ~200ms
+ * mount, since the floor lifts at `max(hold, mount)` rather than at `hold`.
+ * Measured against the bypassed column instead it would read ~750ms and would be
+ * charging this constant for the splash itself — something it neither causes nor
+ * can remove. A draft of this block made exactly that substitution.
+ *
+ * The previous wording said "~400ms to ~1500ms". The first number was right (it
+ * was this same no-hold column); the second understated its own value by ~190ms.
+ *
+ * These are one container's numbers. On slower hardware the no-hold LCP rises and
+ * this constant's marginal cost falls toward zero — which is what "the cost lands
+ * only on fast loads" says, and why that clause stays.
+ *
+ * NOTHING IN THE SUITE MEASURES ANY OF THIS. verify-vitals watches `/`'s LCP
+ * through `coldBootOffBrowser` — the 172-196ms column — so changing this constant
+ * cannot move the budget it guards by a single millisecond. Recorded, not closed.
  *
  * REDUCED MOTION STILL HOLDS. This is a static frame, not motion — nothing
  * moves, nothing animates, and a visitor who asked for less motion has not

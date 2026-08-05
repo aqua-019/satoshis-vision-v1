@@ -1136,9 +1136,10 @@ R.group('── 7 · sized and painting on the LIVE cold-boot console ───�
            hit-testing — z-order — and never visibility. It used to run at the
            mid-decrypt read point above, where the canvas wrap is at opacity 0:
            measured three for three `hitIsOrbCanvas: true` over a COMPLETELY
-           INVISIBLE orb, under a label reading "the compositor agrees". The
-           Issue-1 fix makes the caption transparent there too, so leaving it
-           would have widened the overclaim rather than inherited it.
+           INVISIBLE orb, at BOTH viewports — not one viewport plus a skip, which
+           is how it was first recorded — under a label reading "the compositor
+           agrees". The Issue-1 fix makes the caption transparent there too, so
+           leaving it would have widened the overclaim rather than inherited it.
            Two edits, and they are not alternatives: run it where the assemble
            chain is independently 1 (here), AND say what the probe actually
            measures (below). */
@@ -1165,13 +1166,26 @@ R.group('── 7 · sized and painting on the LIVE cold-boot console ───�
               "the topmost element at the orb canvas's own centre is inside [data-coldboot], which is the opaque " +
               'overlay. The orb is behind it.');
         } else {
+          /* UNREACHABLE AT BOTH OF THIS SECTION'S VIEWPORTS, AND KEPT ANYWAY.
+             Measured: the console is 796px in an 844px viewport at 390x844, so
+             the orb's centre is in view and the assertion above runs — at 390 as
+             well as at 1440. This branch has been dead since #163 brought the
+             phone console down from 2282.6px, which is BEFORE the work that
+             moved Z2; nothing here retired it.
+             It is kept because §7's viewport list is not a law, and a future
+             viewport where the console does not fit would otherwise let Z2
+             silently hit-test an element below the fold. Every number in the
+             message is interpolated rather than restated, so if it ever does
+             fire it reports the layout it actually found — the previous wording
+             hard-coded 2282.6px and a clipping mechanism (`overflow:hidden`)
+             that `gridStyle` replaced with `overflowY:"auto"` in the same
+             release, and stayed on the page describing neither. */
           R.skip(`${name}: hit-test confirmation of the stacking order`,
             `the orb's centre is outside the viewport at this size, and elementFromPoint is viewport-relative. The ` +
-            `console measures ${z2.consoleH}px against a ${z2.vh}px viewport and lives in its own scroll container ` +
-            '(gridStyle gives the stacked grid overflowY:"auto"), so the orb sits below the fold rather than being ' +
-            'clipped. Z1 above still ran; only the hit-test cross-check is unavailable. The height and viewport are ' +
-            'interpolated rather than restated, because the previous wording of this skip carried a hard-coded ' +
-            '2282.6px that went stale at the first console resize. Recorded rather than folded into a pass.');
+            `console measures ${z2.consoleH}px against a ${z2.vh}px viewport. This guard is for a layout that does ` +
+            'not currently occur at either of §7\'s viewports — at 390x844 the console fits (796px in 844) and the ' +
+            'assertion runs there rather than skipping — so seeing this at all means the console grew or the ' +
+            'viewport list changed. Z1 above still ran; only the hit-test cross-check is unavailable.');
         }
       }
     }
