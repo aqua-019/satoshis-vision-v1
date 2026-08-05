@@ -22,10 +22,25 @@
  * `key` that can change it.
  *
  * ── POSITIONING: TWO SOURCES, NEVER BOTH AT ONCE ───────────────────────────
- * `useColdBootOrbState()` (`./ColdBoot`) gives `{ rect, active }` — the
- * already-lerped travelling rect during the console→Home handoff, recomputed
- * there every handoff frame. Whenever `rect` is `null` OR `active` is
- * `false` (before the splash has measured anything, or after the handoff has
+ * `useColdBootOrbState()` (`./ColdBoot`) gives `{ rect, active, live,
+ * travelling }`.
+ *
+ * `live` is what makes the "never both at once" in this heading TRUE rather
+ * than merely intended. It means "a splash is on screen", and it is seeded at
+ * ColdBoot's MODULE EVALUATION — which is guaranteed to precede this
+ * component's first render, because this file imports that one. `active`
+ * cannot do that job: it only turns true once the console has published a
+ * rect, and the window before that is where this component used to measure
+ * Home's `#hm-orb`, freeze its layout box on it, and then reach the console
+ * slot by a non-uniform `scale(0.835, 1.302)` — a visibly elliptical globe, on
+ * whichever loads lost the race (1/10 to 5/10, container-dependent).
+ *
+ * So while `live` is set there is exactly ONE source: the cold-boot rect. Before
+ * the console speaks that is `null` and this component renders `display:none`,
+ * which is precisely what the ~90% of loads that already won the race did.
+ *
+ * Whenever `live` is false and `rect` is `null` OR `active` is
+ * `false` (no splash at all, or after the handoff has
  * settled), this component measures Home's own `#hm-orb` box itself
  * (`pages/HomePage.tsx:208` — an empty, `aspect-ratio: 1/1` reserved box,
  * `position: relative`, so `getBoundingClientRect()` reads its true viewport
@@ -125,6 +140,11 @@ const HOME_ORB_FIND_RETRY_FRAMES = 120;
 
 const HOME_ORB_ID = "hm-orb";
 
+/** How long the splash may own the orb without publishing a rect before this
+ *  file says so. Comfortably past the console's own mount effect, which fires
+ *  in the same commit that renders it — so this only ever trips on a splash
+ *  that is broken rather than slow. */
+const STRANDED_WARN_MS = 8000;
 
 // ── styles — module-scope constants, built once ─────────────────────────
 
@@ -293,8 +313,7 @@ function rectFromElement(el: Element): Rect {
  *  and ZERO redraws, because `commit` below returns the previous object. A
  *  60-write burst inside one task collapses to a single read. Off Home there is
  *  no listener at all (App.tsx mounts this component only on `/`), and during
- *  the splash there is none either — the cold-boot rect owns the position
- *  then, so this hook is not enabled.
+ *  the splash there is none either (`useHomeOrbRect` is disabled while `live`).
  *
  *  ── WHAT THIS STILL DOES NOT COVER ───────────────────────────────────────
  *  `#hm-orb` can also move with no scroll, no viewport resize, and no size
@@ -483,7 +502,13 @@ export function Orb(): React.JSX.Element {
   const location = useLocation();
 
   const coldBootOrb: ColdBootOrbState = useColdBootOrbState();
-  const useHome = coldBootOrb.rect === null || !coldBootOrb.active;
+  /* `live` FIRST, and it is what sequences the two sources rather than racing
+     them. It is true from ColdBoot's module evaluation, so on a cold boot this
+     is false on the VERY FIRST RENDER — which is the load-bearing part: the
+     effect below then returns at its `!enabled` guard, `find()` never runs, and
+     `#hm-orb` is never measured while the splash owns the orb. Compute this in
+     an effect instead and the race comes straight back. */
+  const useHome = !coldBootOrb.live && (coldBootOrb.rect === null || !coldBootOrb.active);
   const isHomeRoute = location.pathname === R.HOME;
   const homeBox = useHomeOrbRect(useHome && isHomeRoute);
   const homeRect = homeBox?.rect ?? null;
@@ -499,6 +524,32 @@ export function Orb(): React.JSX.Element {
     ? (homeRect ?? coldBootOrb.rect)
     : coldBootOrb.rect;
 
+  /* The cost of sequencing, said out loud once. While `live` is set the orb has
+     no Home rect to fall back on, so a splash that never publishes a slot rect
+     leaves it `display:none` with nothing on screen explaining why. Every path
+     that reaches that state is a broken splash rather than a degraded one (the
+     console publishes from its own mount effect, and ColdBoot's phase machine
+     clears `live` at "done"), so this warns rather than repositions — guessing
+     a position here would put the ellipse back. Same one-shot discipline as
+     resize()'s zero-box notice below, and a bounded setTimeout rather than a
+     frame loop: this arms on `/` during load, which is the LCP route under
+     verify-vitals' 6x CPU throttle, and a rAF poll there is exactly what the
+     idle-start guard further down exists to avoid. */
+  const orbStranded = React.useRef(false);
+  React.useEffect(() => {
+    if (!coldBootOrb.live || coldBootOrb.rect !== null || orbStranded.current) return;
+    const id = window.setTimeout(() => {
+      if (orbStranded.current) return;
+      orbStranded.current = true;
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[Orb] the cold-boot splash has owned the orb for ${STRANDED_WARN_MS}ms without publishing a rect, ` +
+        `so the orb is display:none and nothing is drawn. ColdBootConsole's orb slot never reported its ` +
+        `box; see ColdBoot.tsx's ORB CONTRACT.`,
+      );
+    }, STRANDED_WARN_MS);
+    return () => window.clearTimeout(id);
+  }, [coldBootOrb.live, coldBootOrb.rect]);
 
   /* ASSEMBLE — computed every handoff frame by ColdBoot and, until now, never
      read by anything. The documented "orb assembles over the field's final 14%"
@@ -710,16 +761,31 @@ export function Orb(): React.JSX.Element {
      movement is composited and is excluded from layout-shift scoring by
      definition, so the hitch and the CLS go together.
 
-     `base` re-anchors whenever the splash is not driving (active false), which
-     is what stops Home inheriting a permanent transform after the handoff
-     settles: at rest the base IS the current rect and the transform is
-     identity. The canvas
+     `base` re-anchors whenever the travel is not running, which is what stops
+     Home inheriting a permanent transform after the handoff settles: at rest
+     the base IS the current rect and the transform is identity. The canvas
      backing store is sized from clientWidth/clientHeight, which a transform
      does not change — so the orb scales as an image for the 1.2s of travel
      rather than re-sizing its buffer 70 times, and verify-orb's "backing store
-     tracks its CSS box" still holds at both ends. */
+     tracks its CSS box" still holds at both ends.
+
+     ── THE FREEZE IS SCOPED TO `travelling`, NOT TO `active` ────────────────
+     It used to key on `active`, which is true for the WHOLE splash and not just
+     the travel — so the box was pinned to the first rect the console ever
+     published, and any later slot resize (the slot is `flex:1 1 auto` beside
+     data-dependent siblings, and ColdBootConsole republishes it from a
+     ResizeObserver) was expressed as `scale(newW/oldW, newH/oldH)`. Non-uniform
+     the moment the slot's aspect changed, which draws the globe as an ellipse —
+     the same defect as the base-rect race below, reached by a second route.
+     During the console phase a slot resize is a genuine relayout and pinning
+     through it buys nothing; during the travel it is the entire point. The two
+     needed separate names.
+
+     The one-per-frame relayout that argument is about is the TRAVEL's, and it
+     is measured: see the CLS numbers above, taken with the lerp written into
+     left/top/width/height. The console phase's own writes are one per resize. */
   const baseRef = React.useRef<Rect | null>(null);
-  if (effectiveRect && (!coldBootOrb.active || baseRef.current === null)) {
+  if (effectiveRect && (!coldBootOrb.travelling || baseRef.current === null)) {
     baseRef.current = effectiveRect;
   }
   const base = baseRef.current;
@@ -749,8 +815,8 @@ export function Orb(): React.JSX.Element {
          crop the console orb, regressing the surface v6.1.9/v6.1.10 fixed.
 
      `inset()` resolves against this element's own border box, and on Home the
-     transform is identity by construction (`base` re-anchors every render off
-     the splash), so the four insets are a straight subtraction. */
+     transform is identity by construction (`base` re-anchors every render while
+     `travelling` is false), so the four insets are a straight subtraction. */
   const clipRect = useHome && homeBox && homeRect ? homeBox.clip : null;
   const clipPath = clipRect && base
     ? `inset(${Math.max(0, clipRect.y - base.y).toFixed(2)}px ` +
