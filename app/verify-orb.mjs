@@ -1044,28 +1044,44 @@ async function installScrollProbe(page) {
       };
     };
 
-    /* ── THE BLEED IS A PAINT FACT, AND `elementFromPoint` ANSWERS A
-           DIFFERENT QUESTION ────────────────────────────────────────────────
+    /* ── A PAINT CLAIM IS ASSERTED IN PIXELS, AND `elementFromPoint` IS THE
+           SINGULAR FORM ─────────────────────────────────────────────────────
        The first draft of this section hit-tested nine points through the bar's
        band and asserted none of them landed on `[data-orb]`. It passed at every
-       live cell, and it was VACUOUS: `.topbar` is painted over the orb and
-       receives the hit itself, so `elementFromPoint` inside the band returns
-       `div.topbar` (or the full-viewport ambient `canvas`) whether the clip is
-       working, broken, or absent. The gate's own §8 `R.info` had been printing
-       the disproof for as long as it has existed — `elementFromPoint over the
-       orb canvas centre → div.topbar` at 1440x900 @400px.
+       live cell and it was VACUOUS. `document.elementFromPoint` returns ONLY
+       THE TOPMOST element, and inside this band that is `nav.nav-main` — the
+       full stack is `nav.nav-main > div.topbar > div.nav-shell > div.art-stage
+       > div.art` — so anything above the orb masks it and the answer is the
+       same whether the clip works, is broken, or is absent.
 
-       It was caught by the `off.hits === off.tested` leg, which is the one
-       added specifically to stop "clean" being satisfiable by absence: forcing
-       the clip OFF left the count at 0/9 rather than moving it to 9/9. A hit
-       test cannot see this bleed at any threshold or sample density, because
-       `.topbar` has `background: rgba(0,0,0,0)` — the orb is VISIBLE through
-       it while the bar remains the topmost element for hit-testing. Paint order
-       and hit order are different orders; the claim is about the first.
+       It was caught by the `off.hits === off.tested` leg, the one added
+       specifically to stop "clean" being satisfiable by absence: forcing the
+       clip OFF left the count at 0/9 rather than moving it to 9/9.
 
-       So the instrument is pixels. `bandGeom` supplies the geometry and the
-       screenshot rect; the comparison itself is driven from Node, because a
-       page cannot screenshot itself. */
+       **The defect was the singular/plural choice, not hit-testing.** Measured
+       at 1440x900 depth 400, the same nine points, both APIs side by side:
+
+           elementFromPoint   0/9 shipped · 0/9 clip off · 0/9 restored
+           elementsFromPoint  0/9 shipped · 9/9 clip off · 0/9 restored
+
+       `elementsFromPoint` returns the whole stack and tracks the clip exactly,
+       because `clip-path` removes an element from hit-testing outside the inset
+       as well as from painting. So a hit test CAN discriminate this bleed, and
+       an earlier version of this comment claiming otherwise was wrong.
+
+       Pixels are still the right instrument, for a better reason: NEITHER form
+       measures paint. Both answer "is this hit-testable here", which coincides
+       with painting under `clip-path` and diverges under `pointer-events: none`,
+       an opaque cover, or a layer promotion. Where the claim is "what does the
+       user see", the instrument is pixels — because hit-testing is a proxy, not
+       because it cannot see the orb.
+
+       (§8's existing `R.info` does print `div.topbar`, but it samples the ORB
+       CANVAS CENTRE — a different point from this grid. It is a neighbouring
+       measurement, not a disproof of this one.)
+
+       `bandGeom` supplies the geometry and the screenshot rect; the comparison
+       itself is driven from Node, because a page cannot screenshot itself. */
     const bandGeom = () => {
       const bar = document.querySelector('.topbar');
       const orb = document.querySelector('[data-orb]');

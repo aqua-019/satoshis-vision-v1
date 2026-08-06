@@ -112,15 +112,34 @@ deps added: none.
 vacuous, and that the guard added for exactly that reason is what caught it.**
 
 The first commit asserted the band was clean by hit-testing nine points through
-`.topbar` with `elementFromPoint`. It passed at every live cell and measured nothing.
-`.topbar` is painted OVER the orb and receives the hit itself, so the answer inside the
-band is `div.topbar` — or the full-viewport ambient `canvas` — whether the clip works,
-is broken, or is absent. The bleed is visible precisely because `.topbar` is
-`background: rgba(0,0,0,0)`; transparency is a PAINT property and hit-testing does not
-consult it. Paint order and hit order are different orders, and the claim was always
-about the first. This file's own §8 `R.info` had been printing the disproof for as long
-as it has existed: `elementFromPoint over the orb canvas centre → div.topbar` at
-1440x900 @400px.
+`.topbar` with `elementFromPoint`. It passed at every live cell and measured nothing:
+the SINGULAR form returns only the topmost element, and inside this band that is
+`nav.nav-main` (stack: `nav.nav-main > div.topbar > div.nav-shell > div.art-stage >
+div.art`), so anything above the orb masks it and the answer is the same whether the
+clip works, is broken, or is absent.
+
+**Corrected after review, and the correction matters more than the original claim.** An
+earlier version of this report said hit-testing cannot see the bleed at any threshold or
+sample density. That is false, and it was checked rather than accepted — measured here at
+1440x900 depth 400, the same nine points, both APIs side by side:
+
+| API | shipped | clip off | restored |
+|---|---|---|---|
+| `elementFromPoint` (singular) | 0/9 | 0/9 | 0/9 |
+| `elementsFromPoint` (plural) | 0/9 | **9/9** | 0/9 |
+
+`elementsFromPoint` returns the whole stack and tracks the clip exactly, because
+`clip-path` removes an element from hit-testing outside the inset as well as from
+painting. **The defect was the singular/plural choice, not hit-testing.**
+
+The pixel instrument still stands, for a better reason than the one first recorded:
+NEITHER form measures paint. Both answer "is this hit-testable here", which coincides
+with painting under `clip-path` and diverges under `pointer-events: none`, an opaque
+cover, or a layer promotion.
+
+One further over-claim, also corrected: this file's §8 `R.info` prints `div.topbar`, but
+it samples the ORB CANVAS CENTRE — a different point from the band grid. It is a
+neighbouring measurement, not a disproof that had been sitting in plain sight.
 
 Nothing found it by inspection. The `off.hits === off.tested` leg found it — the leg
 added so "clean" could not be satisfied by absence. Forcing the clip OFF left the count
@@ -163,16 +182,27 @@ deviations from spec:
   handoff's own prediction was the right one.
 - Under the break test the two A/B legs stay GREEN. That is correct and worth stating:
   they are the vacuity guards, not the subject. The subject is `onVsHidden === 0`.
+- **The prompt's `0/9 → 9/9` was reproducible, and the discrepancy was MINE.** An earlier
+  version of this report implied those numbers could not have been produced. They can be,
+  with `elementsFromPoint`; my implementation called the singular form. Recorded in this
+  direction deliberately: the difference between the next reader learning "hit-testing is
+  blind" and learning "check which API you called" is the whole value of the entry.
 
 notes for ARCHITECTURE.md patch:
 - No gate count change: this extends `verify-orb.mjs`, it does not add a file. Gates stay
   **71**, CI-reached **57**, `verify:e2e` 29.
 - `verify-orb` baseline moves **191 → 223 passed, with 1 counted skip** (was 0 skips).
   Any handoff quoting 191/0 is now stale.
-- Worth carrying forward as a rule: **`elementFromPoint` answers a hit-testing question
-  and must never be used to assert a paint fact.** A transparent element above the
-  subject takes the hit while the subject remains visible. Where the claim is "what does
-  the user see", the instrument is pixels.
+- Worth carrying forward as a rule, in the NARROW form that survived review:
+  **`document.elementFromPoint` returns only the topmost element, so any element above
+  the subject masks it — and `elementsFromPoint` is not a substitute, because both forms
+  answer "is this hit-testable here" rather than "is this painted here". A paint claim is
+  asserted in pixels.** Hit-testing tracks `clip-path` exactly (measured 9/9 clip-off
+  against 0/9 shipped, via the plural form), so it is a working proxy for THIS mechanism;
+  it diverges from paint under `pointer-events: none`, an opaque cover, or a layer
+  promotion. The general rule is about proxies, not about blindness — the earlier
+  "hit-testing cannot see this" formulation was over-general and would have forbidden a
+  valid instrument next time.
 
 open questions: none.
 
@@ -209,9 +239,12 @@ open questions: none.
   itself, so `elementFromPoint` in the band never returns the orb at any sample density or
   threshold. The five assertions above it had been passing on a measurement that could not
   see its own subject. Instrument replaced with a frozen five-capture pixel comparison; see
-  §7. **The general rule, and it is not specific to this gate: `elementFromPoint` answers a
-  HIT-TESTING question, and a paint fact must never be asserted through it.** A fully
-  transparent element above the subject takes the hit while the subject stays visible.
+  §7. **The rule, in the narrow form that survived review: `document.elementFromPoint`
+  returns only the TOPMOST element, so anything above the subject masks it — and a paint
+  claim is asserted in pixels, because hit-testing is a PROXY for paint rather than a
+  measurement of it.** The plural `elementsFromPoint` does discriminate this bleed (9/9
+  clip-off against 0/9 shipped), so "hit-testing is blind" — the first formulation — was
+  over-general and would have forbidden a valid instrument next time.
 - **The agreed 3/6/2 cell split became 4/6/1 when the instrument changed, and the number
   was not tuned back.** `769@400`'s 3.63px sliver falls between the hit-test's sample rows
   and so skipped; the pixel instrument reads 1820 of 15738 pixels bleeding there and
