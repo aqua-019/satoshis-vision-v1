@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260805-19
 branch: claude/caret-symbol-1x1q2j
-status: in_progress     # open -> in_progress -> done | blocked
+status: done            # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — prompt-driven, no cowork handoff)
 owner: claude-code
 ---
