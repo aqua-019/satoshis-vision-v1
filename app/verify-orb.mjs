@@ -998,8 +998,122 @@ async function installScrollProbe(page) {
     const nm = (el) => (!el ? 'none'
       : `${el.tagName.toLowerCase()}${el.id ? '#' + el.id : ''}` +
         `${el.className ? '.' + String(el.className).trim().split(/\s+/)[0] : ''}`);
+
+    /* ── THE CLIP ANCESTOR IS A DIFFERENT QUESTION FROM THE SCROLLER ────────
+       `resolve()` above walks for `(auto|scroll) && scrollHeight > clientHeight`
+       — "an ancestor that is ACTUALLY SCROLLING", which is content-dependent.
+       Orb.tsx:263-270 walks for `overflowY !== "visible"` — "an ancestor that
+       CLIPS OVERFLOW", which is a stylesheet fact, and its own docblock says
+       that difference is deliberate: the content-dependent answer is also
+       TIME-dependent and can read "none" on a cold load before the feed lands.
+
+       Both resolve to main#main.main on this tree, which is exactly why reusing
+       `resolve()` here would look correct. It would be a gate asserting
+       something it did not measure — the clip is computed off THIS walk, so
+       this walk is what the clip has to be checked against. */
+    const clipWalk = () => {
+      let n = document.getElementById('hm-orb')?.parentElement ?? null;
+      while (n && n !== document.body) {
+        if (getComputedStyle(n).overflowY !== 'visible') return n;
+        n = n.parentElement;
+      }
+      return null;
+    };
+
+    const r4 = (r) => ({ x: +r.left.toFixed(2), y: +r.top.toFixed(2), w: +r.width.toFixed(2), h: +r.height.toFixed(2) });
+
+    /* The four numbers Orb.tsx:821-826 actually consumes, read back off the
+       element rather than re-derived from a post-transform rect. `base` IS
+       `left/top/width/height`; the bounding rect is those PLUS the transform,
+       and conflating them is one of the four defects this section exists to
+       catch. Both are returned so the gate can assert they agree before
+       trusting either. */
+    const clipGeo = () => {
+      const orb = document.querySelector('[data-orb]');
+      if (!orb) return null;
+      const ce = clipWalk();
+      const cs = getComputedStyle(orb);
+      const num = (v) => { const n = parseFloat(v); return Number.isFinite(n) ? +n.toFixed(2) : null; };
+      return {
+        has: !!ce, name: nm(ce),
+        base: { x: num(cs.left), y: num(cs.top), w: num(cs.width), h: num(cs.height) },
+        rect: r4(orb.getBoundingClientRect()),
+        clip: ce ? r4(ce.getBoundingClientRect()) : null,
+        clipPath: cs.clipPath,
+        transform: cs.transform,
+      };
+    };
+
+    /* ── THE BLEED ITSELF, HIT-TESTED ───────────────────────────────────────
+       Three rows through `.topbar`'s own band x three columns across the orb's
+       width. A point outside the viewport or outside the orb's box is not
+       sampled at all rather than counted as a miss — a miss it did not test is
+       how a vacuous pass gets built.
+
+       `overlap` is computed from the UNCLIPPED bounding rect on purpose:
+       `clip-path` paints nothing outside the inset but does not change
+       `getBoundingClientRect()`, so this is the size of the bleed that WOULD
+       occur, which is what decides whether a hit test here measures anything.
+
+       A hit is `closest('[data-orb]')`, not identity — `elementFromPoint`
+       returns the orb's canvas child, and an identity check against
+       `[data-orb]` would report a clean band over a fully bleeding orb. */
+    const band = () => {
+      const bar = document.querySelector('.topbar');
+      const orb = document.querySelector('[data-orb]');
+      if (!bar || !orb) return { ok: false, tested: 0, hits: 0, overlap: 0, pts: [] };
+      const b = bar.getBoundingClientRect();
+      const o = orb.getBoundingClientRect();
+      const pts = [];
+      let tested = 0, hits = 0;
+      for (const ry of [0.2, 0.5, 0.85]) {
+        const y = b.top + b.height * ry;
+        for (const rx of [0.3, 0.5, 0.7]) {
+          const x = o.left + o.width * rx;
+          if (x < 0 || x >= innerWidth || y < 0 || y >= innerHeight) continue;
+          if (x < o.left || x > o.right || y < o.top || y > o.bottom) continue;
+          tested++;
+          const el = document.elementFromPoint(x, y);
+          const hit = !!(el && el.closest('[data-orb]'));
+          if (hit) hits++;
+          pts.push({ x: +x.toFixed(1), y: +y.toFixed(1), hit, on: nm(el) });
+        }
+      }
+      return {
+        ok: true, tested, hits,
+        overlap: +Math.max(0, Math.min(b.bottom, o.bottom) - Math.max(b.top, o.top)).toFixed(2),
+        bar: r4(b), orb: r4(o), pts,
+      };
+    };
+
+    /* ── THE WITHIN-FRAME A/B ───────────────────────────────────────────────
+       Same scroll position, same points, same orb: `clip-path` forced off and
+       back on inside ONE evaluate, so nothing else can have changed between
+       the three reads. `off.hits === off.tested` is what upgrades "the band is
+       clean" from an absence to a claim — the points did not merely fail to
+       hit the orb, they WOULD have hit it but for the clip. Without that leg a
+       cell where the orb is occluded by something else entirely, or absent,
+       reads as "the clip worked".
+
+       A stylesheet rule with !important, never inline: Orb.tsx rewrites
+       [data-orb]'s inline style on its 24fps `seconds` tick and reverts an
+       inline injection within ~42ms — the trap recorded at :913-920. Measured
+       on 088a6e8 at 1440x900 depth 400: 0/9 on → 9/9 off (still 9/9 after
+       300ms, i.e. seven ticks) → 0/9 back, no residue. */
+    const bandAB = () => {
+      const cp = () => getComputedStyle(document.querySelector('[data-orb]')).clipPath;
+      const on = band(); const onCp = cp();
+      const st = document.createElement('style');
+      st.textContent = '[data-orb]{ clip-path: none !important; }';
+      document.head.appendChild(st);
+      const off = band(); const offCp = cp();
+      st.remove();
+      const back = band(); const backCp = cp();
+      return { on, onCp, off, offCp, back, backCp };
+    };
+
     window.__orbProbe = {
-      resolve,
+      resolve, clipWalk, clipGeo, band, bandAB,
       snap() {
         const sc = resolve();
         const box = document.getElementById('hm-orb');
@@ -1023,6 +1137,7 @@ async function installScrollProbe(page) {
           disp: orb ? getComputedStyle(orb).display : null,
           clipPath: orb ? getComputedStyle(orb).clipPath : null,
           hit: nm(hit), inView: !!px,
+          geo: clipGeo(), band: band(),
         };
       },
     };
@@ -1047,6 +1162,56 @@ const settleFrames = (page, n = 3) => page.evaluate((k) => new Promise((res) => 
   const step = () => (--i <= 0 ? setTimeout(res, 0) : requestAnimationFrame(step));
   requestAnimationFrame(step);
 }), n);
+
+/** THE SHORTHAND HAS TO BE EXPANDED, AND THAT IS NOT A DETAIL.
+ *
+ *  Orb.tsx always emits four values. `getComputedStyle` does not return them:
+ *  Chromium collapses the repeating tail, so the same declaration reads back as
+ *  `inset(32.5px 0px 0px)` when the left matches the right and as `inset(0px)`
+ *  when all four match. A gate that splits on whitespace therefore reads the
+ *  at-rest no-op as {t:0} and three undefineds — which compares EQUAL to the
+ *  correct answer at rest and unequal at every scrolled depth. That is a parser
+ *  bug wearing the exact costume of the clip bug this section hunts, so the
+ *  1/2/3/4-value expansion is written out rather than assumed.
+ *
+ *  Returns null for `none`, for an unset property, and for any non-`inset()`
+ *  shape — all of which are reds at a cell that must carry a clip, never
+ *  silent zeroes. */
+function parseInset(v) {
+  const m = /^inset\(([^)]*)\)$/.exec(String(v ?? '').trim());
+  if (!m) return null;
+  const n = m[1].trim().split(/\s+/).filter(Boolean).map(Number.parseFloat);
+  if (n.length < 1 || n.length > 4 || n.some((x) => !Number.isFinite(x))) return null;
+  const [t, r = t, b = t, l = r] = n;
+  return { t, r, b, l };
+}
+
+/** Orb.tsx:821-826 restated as data, off `base` and the clip ancestor's rect.
+ *  Deliberately a re-implementation of the four subtractions rather than a
+ *  reference to them: what is being checked is that the SHIPPED string is the
+ *  right function of two independently measured boxes. */
+const expectInset = (base, clip) => ({
+  t: Math.max(0, clip.y - base.y),
+  r: Math.max(0, (base.x + base.w) - (clip.x + clip.w)),
+  b: Math.max(0, (base.y + base.h) - (clip.y + clip.h)),
+  l: Math.max(0, clip.x - base.x),
+});
+
+const SIDES = ['t', 'r', 'b', 'l'];
+const fmtInset = (o) => (o ? SIDES.map((k) => `${o[k].toFixed(1)}`).join('/') : 'null');
+
+/* ── THE SKIP CONDITION IS `tested === 0`, AND NOT AN OVERLAP FLOOR ────────
+   The first draft of this section skipped below 8px of geometric overlap. That
+   is a PROXY for the thing that matters and it is not a safe one. The three
+   sample rows sit at 0.2/0.5/0.85 of the bar — y = 12.2 / 30.5 / 51.85 at a
+   61px topbar — and once the orb's top is above the viewport the intersection
+   runs 0 → orb.bottom, so a row lands only if `orb.bottom >= 12.2`. An overlap
+   of 10px therefore tests ZERO points while clearing an 8px floor: the
+   assertion runs on nothing and reports green. That is precisely the vacuity
+   the floor was written to prevent, reintroduced by the guard.
+
+   `tested === 0` is the property itself. It needs no constant, and it cannot
+   drift when the bar height or the row fractions change. */
 
 R.group('── 8 · [data-orb] tracks #hm-orb through a scroll, at every width ──');
 {
@@ -1120,6 +1285,126 @@ R.group('── 8 · [data-orb] tracks #hm-orb through a scroll, at every width 
           'listener on document.');
 
       R.info(`${name} @${d}px: elementFromPoint over the orb canvas centre → ${s.hit} (centre in view: ${s.inView})`);
+
+      /* ── THE CLIP, AT THIS CELL ────────────────────────────────────────
+         Everything above this point is about the orb TRACKING its box. The
+         clip is what stops that tracking from painting the orb over the nav,
+         and until now it had one assertion in this file whose subject was the
+         clip being ABSENT.
+
+         The claims are chosen so that no two can be satisfied by the same
+         accident, and so that every cell says SOMETHING: the arithmetic
+         invariant runs wherever a clip is emitted and is never vacuous, the
+         hit-test runs only where points actually land in both boxes, and the
+         widths that emit no clip assert that positively rather than skipping.
+         Where the hit-test cannot run, the skip carries the geometry that
+         made it unavailable. */
+      const g = s.geo, bd = s.band;
+      const cell = `${name} @${d}px`;
+
+      if (g && g.has) {
+        /* A's precondition. `base` and the bounding rect are the same box only
+           while the transform is identity — true on Home by construction
+           (`baseRef` re-anchors every render while `travelling` is false), and
+           asserted rather than assumed because A reads `base` and B reads the
+           rect. If these ever diverge, the two halves of this section are
+           measuring different elements. */
+        const identity = Math.abs(g.base.x - g.rect.x) <= 0.5 && Math.abs(g.base.y - g.rect.y) <= 0.5 &&
+                         Math.abs(g.base.w - g.rect.w) <= 0.5 && Math.abs(g.base.h - g.rect.h) <= 0.5;
+        R.ok(identity,
+          `${cell}: clip precondition — the orb's transform is identity, so \`base\` (${g.base.x}, ${g.base.y}, ` +
+          `${g.base.w}x${g.base.h}) and its bounding rect (${g.rect.x}, ${g.rect.y}, ${g.rect.w}x${g.rect.h}) are ` +
+          'the same box',
+          identity ? '' :
+            `transform is "${g.transform}". A is computed off \`base\` (the literal input to Orb.tsx:821-826) and ` +
+            'B hit-tests the bounding rect; a non-identity transform on Home means those are different boxes and ' +
+            'the two assertions below no longer constrain each other.');
+
+        /* ── A · the arithmetic invariant ────────────────────────────────
+           Never vacuous, runs at every depth, and needs no hit test. It is
+           what a sign flip, a wrong ancestor and an `effectiveRect`/`base`
+           mix-up all fail — and unlike B it has something to say at the cells
+           where the orb has already travelled past the bar. */
+        const got = parseInset(g.clipPath);
+        const exp = expectInset(g.base, g.clip);
+        const near = !!got && SIDES.every((k) => Math.abs(got[k] - exp[k]) <= 0.5);
+        R.ok(near,
+          `${cell}: clip-path inset === (${g.name}'s rect − the orb's own box) on all four sides — ` +
+          `got ${fmtInset(got)}, expected ${fmtInset(exp)} (top ${g.clip.y} − ${g.base.y} = ${exp.t.toFixed(1)})`,
+          near ? '' :
+            `Shipped "${g.clipPath}" → ${fmtInset(got)}; the two measured boxes say ${fmtInset(exp)}. The clip ` +
+            `ancestor resolved to ${g.name} by Orb.tsx's own predicate (overflow-y !== "visible"). A null here ` +
+            'means the property is absent or not an inset() — i.e. the clip stopped being emitted at all. A ' +
+            'mismatch on top alone is a sign flip or a base/effectiveRect mix-up; a mismatch on left/right is a ' +
+            'wrong ancestor.');
+
+        /* ── B · the bleed itself, or a counted skip ──────────────────────
+           Three legs per live cell, and each is the others' vacuity guard:
+             tested > 0            the points are inside BOTH boxes
+             off.hits === tested   they would have hit the orb but for the clip
+             on.hits === 0         they do not hit it
+           Drop the middle leg and "clean" is also satisfied by an orb that is
+           absent, occluded by something else, or hit-tested outside its own
+           box. */
+        const ab = await page.evaluate(() => window.__orbProbe.bandAB());
+        if (ab.on.tested === 0) {
+          R.skip(`${cell}: topbar band hit-test`,
+            `the orb has travelled past the bar at this depth — ${ab.on.overlap}px of geometric overlap between ` +
+            `.topbar's band (y ${ab.on.bar.y.toFixed(1)}..${(ab.on.bar.y + ab.on.bar.h).toFixed(1)}) and the orb's ` +
+            `unclipped box (bottom ${(ab.on.orb.y + ab.on.orb.h).toFixed(1)}), so 0 of the 9 sample points land ` +
+            'inside both. There is nothing here for the clip to remove, and a hit test would compare ABSENCE with ' +
+            'ABSENCE — it would report clean on a broken clip. The arithmetic invariant above DID run at this cell ' +
+            'and constrains the clip here; only the end-to-end half is unavailable.');
+        } else {
+          const clean = ab.on.hits === 0;
+          R.ok(clean,
+            `${cell}: the topbar band is CLEAN — ${ab.on.hits}/${ab.on.tested} sample points inside .topbar ` +
+            `(y ${ab.on.bar.y.toFixed(1)}..${(ab.on.bar.y + ab.on.bar.h).toFixed(1)}) hit [data-orb], against ` +
+            `${ab.on.overlap}px of geometric overlap with the orb's unclipped box`,
+            clean ? '' :
+              `${ab.on.hits} of ${ab.on.tested} points inside the nav band landed on the orb: ` +
+              `${ab.on.pts.filter((p) => p.hit).map((p) => `(${p.x},${p.y})→${p.on}`).join(' ')}. .topbar is ` +
+              'background: rgba(0,0,0,0) with no backdrop filter, so this is the globe reading straight through ' +
+              'the nav. The clip in Orb.tsx:820-826 is the only thing that removes it.');
+
+          const bleeds = ab.off.hits === ab.off.tested && ab.off.tested === ab.on.tested && ab.offCp === 'none';
+          R.ok(bleeds,
+            `${cell}: and they WOULD have hit but for the clip — same points, same frame, clip-path forced off: ` +
+            `${ab.off.hits}/${ab.off.tested} against ${ab.on.hits}/${ab.on.tested} with it on`,
+            bleeds ? '' :
+              `clip off → ${ab.off.hits}/${ab.off.tested} (clip-path "${ab.offCp}"). If the property did not go ` +
+              'to none, the injected rule lost to Orb.tsx\'s inline style — it must be a STYLESHEET rule, see ' +
+              ':913-920. If it did and the band stayed clean, the orb is not over the nav here and the clean ' +
+              'band above is clean for a reason that has nothing to do with the clip.');
+
+          const restored = ab.back.hits === 0 && ab.back.tested === ab.on.tested && ab.backCp === ab.onCp;
+          R.ok(restored,
+            `${cell}: removing the rule restores it (${ab.back.hits}/${ab.back.tested}, clip-path "${ab.backCp}") ` +
+            '— the difference is caused by the CLIP, not by the scroll position or the sample set',
+            restored ? '' :
+              `after remove(): ${ab.back.hits}/${ab.back.tested}, clip-path "${ab.backCp}" against "${ab.onCp}" ` +
+              'before. Without this leg, "full with the rule and clean without it" is also satisfied by anything ' +
+              'else that changed between the two reads.');
+        }
+      } else if (g) {
+        /* ── C · the <=768 positive assertion ────────────────────────────
+           Not a skip. styles.css:2075-2077 gives .main `overflow: visible`, so
+           the walk finds nothing, `clip` is null and Orb.tsx emits no
+           clip-path property at all — the phone path is untouched BY
+           CONSTRUCTION rather than by luck. Asserting the construction is what
+           would red if that breakpoint moved; and the 0px overlap is the
+           reason the phone never needed the clip, which Orb.tsx:804-807 states
+           and nothing until now checked. */
+        const off = g.clipPath === 'none' && !g.has && bd.overlap <= 0.5;
+        R.ok(off,
+          `${cell}: no clipping ancestor (walk → ${g.name}), so NO clip-path is emitted ("${g.clipPath}") and ` +
+          `none is needed — ${bd.overlap}px of topbar overlap, because the document scrolls and the bar goes with it`,
+          off ? '' :
+            `Walk → ${g.name}, clip-path "${g.clipPath}", overlap ${bd.overlap}px. At <=768 styles.css:2075-2077 ` +
+            'gives .main `overflow: visible` and the document scrolls, so all three should hold together. A ' +
+            'clipping ancestor appearing here means that breakpoint moved; an overlap appearing here means the ' +
+            'phone layout now has the bleed the desktop one needed the clip for, and this width needs the clip too.');
+      }
     }
 
     /* ── SELF-CHECK · permanent companion, this file's established idiom ────
@@ -1131,7 +1416,7 @@ R.group('── 8 · [data-orb] tracks #hm-orb through a scroll, at every width 
 
        A stylesheet rule with !important, never an inline style: Orb.tsx
        rewrites [data-orb]'s inline style on its 24fps tick and would revert an
-       inline injection within ~42ms — the trap recorded at :901-908.
+       inline injection within ~42ms — the trap recorded at :913-920.
 
        The claim "the detector catches this" is true on every tree forever, so
        this runs green in CI while proving the detector is live. */
@@ -1582,7 +1867,7 @@ R.group('── 9 · the orb renders at its backing store\'s ASPECT on the live 
 
   /* ── SELF-CHECK · permanent companion, sc1's idiom (:835-847) ───────────
      Injection and measurement in ONE evaluate, and a STYLESHEET rule rather
-     than an inline style for the reason recorded at :901-908. The injected
+     than an inline style for the reason recorded at :913-920. The injected
      value is the production symptom verbatim. */
   {
     const ctx = await browser.newContext({ viewport: VP });
