@@ -223,7 +223,7 @@ resize once it is there.
 `npm ci` · `typecheck` 0 · `build` 0 · `verify:static` (21) 0 · `verify:bundle` 0 ·
 six `api/verify-*.mjs` 0 · **29/29 `verify:e2e` 0**, each run individually with its exit
 code read before any pipe. `verify-orb` 191 passed / 0 failed; `verify-cls` 20/0;
-`verify-vitals` 17/0; `verify-coldboot` 81/0.
+`verify-vitals` 17/0; `verify-coldboot` 82/0.
 
 `verify-coldboot-live` reddened once on the first final pass, with
 `STALE DIST: serving a build of b8560afb while HEAD is 04ee2083` — I had built before
