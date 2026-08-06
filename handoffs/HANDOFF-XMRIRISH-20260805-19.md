@@ -77,7 +77,7 @@ only where this PR makes an existing sentence false, and name the sentence). No 
       and `grep -rn "MUTATION\|BREAK TEST" src *.mjs` is empty, before the final chain
 - [x] `verify-orb.mjs:1134` and `:1585` cite `:913-920`
 - [x] `handoffs/HANDOFF-XMRIRISH-20260805-18.md` reports `verify-coldboot` 82/0
-- [ ] Branch pushed · draft PR opened via the GitHub MCP · `mergeable_state` reported
+- [x] Branch pushed · draft PR opened via the GitHub MCP · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 
@@ -100,7 +100,7 @@ Each run individually, with its exit code read **before any pipe**.
 
 status: done
 
-pr: (draft, opened via the GitHub MCP — link below)
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/166 (draft)
 
 commits:
 - `674b320` test(orb): the topbar clip had no assertion that it works
