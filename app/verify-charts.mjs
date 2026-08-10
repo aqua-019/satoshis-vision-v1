@@ -267,6 +267,182 @@ for (const path of ['/live/markets', '/live/network', '/']) {
   await p.close();
 }
 
+/* ── 5 · edge-peak marker label nudge ────────────────────────────── */
+{
+  const p = await newPage();
+
+  // Fixture with max difficulty at series index 0 (oldest block, leftmost).
+  // This reproduces the ROUND 3 case from charts.tsx:805-823.
+  const edgePeakFix = { ...FIX, blocks: Array.from({ length: 14 }, (_, i) => ({
+    ...FIX.blocks[i],
+    difficulty: i === 13 ? 7.83e11 : 7.4e11 + i * 1.0e9,
+  })) };
+
+  // Interior-peak control: max stays well inside, should render fine before fix.
+  const interiorPeakFix = { ...FIX, blocks: Array.from({ length: 14 }, (_, i) => ({
+    ...FIX.blocks[i],
+    difficulty: i === 6 ? 7.83e11 : 7.4e11 - i * 2.0e9,
+  })) };
+
+  // Mock edge-peak fixture
+  const edgePeakFulfil = (route) => {
+    const url = route.request().url();
+    const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+    if (url.includes('/api/xmr/network')) return json(edgePeakFix.network);
+    if (url.includes('/api/xmr/mempool')) return json(edgePeakFix.mempool);
+    if (url.includes('/api/xmr/blocks')) return json(edgePeakFix.blocks);
+    if (url.includes('/api/coingecko')) {
+      if (url.includes('simple%2Fprice') || url.includes('simple/price')) return json(edgePeakFix.price);
+      return route.abort();
+    }
+    return route.abort();
+  };
+
+  // Test edge-peak rendering
+  await p.route('**/api/**', edgePeakFulfil);
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
+  await assertColdBootBypassed(p, { ok }, '/live/network edge-peak');
+  await p.waitForTimeout(2000);
+
+  // Find the difficulty chart by examining SVG content.
+  // The difficulty chart is the AreaSeries with y-tick labels containing "G" suffix
+  // and containing the peak value "783.00G" from the edge-peak fixture.
+  const diffChart = await p.evaluate(() => {
+    const svgs = [...document.querySelectorAll('svg')];
+
+    // Find the difficulty chart: look for SVG with text "783.00G" (the peak in edge-peak fixture)
+    // and other "G" suffixed values (gigahash unit for difficulty).
+    const diffSvg = svgs.find(svg => {
+      const texts = [...svg.querySelectorAll('text')].map(t => t.textContent.trim());
+      return texts.some(t => t === '783.00G') || texts.some(t => /\d+\.\d+G$/.test(t));
+    });
+
+    if (!diffSvg) return { found: false };
+
+    // Extract all texts from this SVG
+    const allTexts = [...diffSvg.querySelectorAll('text')].map((t) => ({
+      text: t.textContent.trim(),
+      anchor: t.getAttribute('text-anchor'),
+      fill: t.getAttribute('fill'),
+      x: parseFloat(t.getAttribute('x')),
+      y: parseFloat(t.getAttribute('y')),
+    }));
+
+    // Find marker labels: text-anchor="middle" (markers), not the pill (fill=var(--surface-base))
+    // Marker labels are the peak/valley value labels placed on the chart
+    const markerLabels = allTexts.filter((t) =>
+      t.anchor === 'middle' && t.fill !== 'var(--surface-base)' && !isNaN(t.x) && !isNaN(t.y)
+    );
+
+    return {
+      found: markerLabels.length > 0,
+      markerLabels,
+      allTexts,
+    };
+  });
+
+  ok(diffChart && diffChart.found,
+    `edge-peak: difficulty marker labels render inside chart's SVG (${diffChart && diffChart.markerLabels ? diffChart.markerLabels.length : 0} found)`);
+
+  if (diffChart && diffChart.markerLabels && diffChart.markerLabels.length > 0) {
+    // Verify at least one marker contains the max value "783.00G"
+    const hasMax = diffChart.markerLabels.some((m) => m.text.includes('783'));
+    ok(hasMax, 'edge-peak: marker labels include the peak value (783.00G)');
+  }
+
+  await p.route('**/api/**', (r) => { r.abort(); }); // clear route
+
+  // Test interior-peak (control) still works
+  const interiorFulfil = (route) => {
+    const url = route.request().url();
+    const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+    if (url.includes('/api/xmr/network')) return json(interiorPeakFix.network);
+    if (url.includes('/api/xmr/mempool')) return json(interiorPeakFix.mempool);
+    if (url.includes('/api/xmr/blocks')) return json(interiorPeakFix.blocks);
+    if (url.includes('/api/coingecko')) {
+      if (url.includes('simple%2Fprice') || url.includes('simple/price')) return json(interiorPeakFix.price);
+      return route.abort();
+    }
+    return route.abort();
+  };
+
+  await p.route('**/api/**', interiorFulfil);
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
+  await p.waitForTimeout(2000);
+
+  const interiorChart = await p.evaluate(() => {
+    const svgs = [...document.querySelectorAll('svg')];
+
+    // Same selector as edge-peak: find SVG with "783.00G" or other "G" suffix values
+    const diffSvg = svgs.find(svg => {
+      const texts = [...svg.querySelectorAll('text')].map(t => t.textContent.trim());
+      return texts.some(t => t === '783.00G') || texts.some(t => /\d+\.\d+G$/.test(t));
+    });
+
+    if (!diffSvg) return { found: false };
+
+    const allTexts = [...diffSvg.querySelectorAll('text')].map((t) => ({
+      text: t.textContent.trim(),
+      anchor: t.getAttribute('text-anchor'),
+      fill: t.getAttribute('fill'),
+    }));
+
+    const markerLabels = allTexts.filter((t) =>
+      t.anchor === 'middle' && t.fill !== 'var(--surface-base)'
+    );
+
+    return {
+      found: markerLabels.length > 0,
+      markerLabels,
+    };
+  });
+
+  ok(interiorChart && interiorChart.found,
+    'interior-peak control: marker labels still render (byte-identical behavior)');
+
+  /* A nudge that renders the label straight back onto the furniture it was
+     supposed to avoid would satisfy every assertion above — "the max is on
+     the chart" is true of a label sitting on top of the change badge. So the
+     resolved position is checked geometrically too: the marker's box must not
+     intersect any y-tick label, the badge, or the last-value pill. Boxes come
+     from getBoundingClientRect(), so this measures what was PAINTED rather
+     than re-deriving the estimate the component itself used to decide. */
+  await p.route('**/api/**', edgePeakFulfil);
+  await p.goto(base + '/live/network', { waitUntil: 'load' });
+  await p.waitForTimeout(2000);
+
+  const overlap = await p.evaluate(() => {
+    const svgs = [...document.querySelectorAll('svg')];
+    const diffSvg = svgs.find((svg) =>
+      [...svg.querySelectorAll('text')].some((t) => /^\d+\.\d+G$/.test(t.textContent.trim())));
+    if (!diffSvg) return { found: false };
+    const boxed = [...diffSvg.querySelectorAll('text')].map((t) => ({
+      text: t.textContent.trim(),
+      anchor: t.getAttribute('text-anchor'),
+      fill: t.getAttribute('fill') || '',
+      r: t.getBoundingClientRect(),
+    })).filter((t) => t.r.width > 0 && t.r.height > 0);
+
+    const markers = boxed.filter((t) => t.anchor === 'middle' && !t.fill.includes('surface-base'));
+    const furniture = boxed.filter((t) => !markers.includes(t));
+    const hit = (a, b) => a.r.left < b.r.right && b.r.left < a.r.right
+      && a.r.top < b.r.bottom && b.r.top < a.r.bottom;
+
+    const clashes = [];
+    for (const m of markers) for (const f of furniture) {
+      if (hit(m, f)) clashes.push(`"${m.text}" ∥ "${f.text}"`);
+    }
+    return { found: true, markers: markers.length, clashes };
+  });
+
+  ok(overlap.found && overlap.markers > 0,
+    `edge-peak: a marker label is present to check for overlap (${overlap.markers || 0})`);
+  ok(overlap.found && overlap.clashes.length === 0,
+    `edge-peak: the NUDGED label overlaps no tick, badge or pill${overlap.clashes && overlap.clashes.length ? ' — ' + overlap.clashes.join(', ') : ''}`);
+
+  await p.close();
+}
+
 await b.close();
 console.log(fail ? '\nFAILED\n' : '\nAll chart checks passed\n');
 process.exit(fail ? 1 : 0);
