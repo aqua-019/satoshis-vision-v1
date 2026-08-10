@@ -48,7 +48,7 @@ export function ClassicBlock({ block, status, confLabel, tracked, tracking, data
       data-tracked-tx={trackedTxId}
       className={"mp-block" + (glideKey != null ? " glide-block" : "")}
       style={{
-        display: "flex", flexDirection: "column", gap: 6,
+        display: "flex", flexDirection: "column", gap: "var(--sp-1)",
         cursor: onClick ? "pointer" : "default", minWidth: 108,
       }}
     >
@@ -61,7 +61,7 @@ export function ClassicBlock({ block, status, confLabel, tracked, tracking, data
         </div>
       </div>
       <div style={{
-        minHeight: 132, padding: "12px 10px",
+        minHeight: 132, padding: "var(--sp-3) var(--sp-2)",
         borderRadius: 6,
         border: tracked ? "1.5px solid var(--y-50)" : isQueued ? "1px dashed var(--ink-20)" : "1px solid color-mix(in srgb, var(--accent-structural) 45%, transparent)",
         background: isQueued
@@ -79,7 +79,7 @@ export function ClassicBlock({ block, status, confLabel, tracked, tracking, data
           {!isQueued ? (
             <div style={{ fontSize: "var(--fs-label)", opacity: 0.7, marginTop: 2 }}>TXS</div>
           ) : (
-            <div style={{ fontSize: "var(--fs-label)", opacity: 0.6, marginTop: 4 }}>
+            <div style={{ fontSize: "var(--fs-label)", opacity: 0.6, marginTop: "var(--sp-1)" }}>
               {status === "next" ? "NEXT · " + (block.txs || 0) + " TXS" : "QUEUED"}
             </div>
           )}
@@ -138,11 +138,11 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
   const glideRef = useRibbonGlide(chainTip(data));
 
   return (
-    <div style={{ position: "relative", padding: "18px 20px 30px" }}>
-      <div className="mono" style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>
+    <div style={{ position: "relative", padding: "var(--sp-4) 20px var(--sp-6)" }}>
+      <div className="mono" style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", marginBottom: "var(--sp-2)", fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)" }}>
         Confirmations <NodeProvenance source="session" keys={["blocks"]} status={data.status} /> <span className="dim2">tip − block height</span>
       </div>
-      <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: 8, overflowX: "auto", paddingBottom: 12 }}>
+      <div ref={glideRef} style={{ display: "flex", alignItems: "flex-start", gap: "var(--sp-2)", overflowX: "auto", paddingBottom: "var(--sp-3)" }}>
         {ribbon.map((r, i) => {
           const confirmed = r.status !== "queued" && r.status !== "next";
           // Live next-block countdown on the QUEUED/NEXT cards, via the shared
@@ -163,7 +163,7 @@ export function ClassicRibbon({ data, tracking, onSelectBlock }: any) {
             <React.Fragment key={confirmed ? "b" + r.b.height : "q" + i}>
               {i === dividerIndex ? (
                 <div aria-hidden style={{ alignSelf: "stretch", flex: "0 0 auto", display: "flex",
-                     flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 6, padding: "0 4px" }}>
+                     flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "var(--sp-1)", padding: "0 var(--sp-1)" }}>
                   <div style={{ width: 2, flex: 1, borderRadius: 1,
                        background: "linear-gradient(180deg, color-mix(in srgb, var(--status-warn) 12%, transparent), color-mix(in srgb, var(--status-warn) 85%, transparent), color-mix(in srgb, var(--status-warn) 12%, transparent))",
                        boxShadow: "0 0 8px color-mix(in srgb, var(--status-warn) 50%, transparent)" }} />
@@ -195,7 +195,7 @@ export function DetailItem({ k, v, tone }: any) {
   return (
     <div>
       <div className="kicker">{k}</div>
-      <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 16, marginTop: 6 }}>{v}</div>
+      <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 16, marginTop: "var(--sp-1)" }}>{v}</div>
     </div>
   );
 }
@@ -226,7 +226,7 @@ export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
 
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <div style={{ padding: "14px 20px 0" }}>
+      <div style={{ padding: "var(--sp-3) 20px 0" }}>
         {/* MemViewShell (mempool-shared.tsx) supplies the search bar, heartbeat,
             tracked-chip and stat strip shared by all six mempool views. The
             ribbon stays mounted while tracking (keepBodyWhileTracking, default
@@ -254,17 +254,17 @@ export function ClassicView({ data, focusBlock, onClearFocus }: ViewProps) {
 
 export function ClassicBlockDetail({ block, onBack }: any) {
   return (
-    <div style={{ padding: "24px 28px 60px" }}>
+    <div style={{ padding: "var(--sp-5) 28px 60px" }}>
       <button type="button" onClick={onBack}
         style={{ appearance: "none", cursor: "pointer", background: "transparent",
           border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-          padding: "5px 12px", borderRadius: 4,
+          padding: "var(--sp-1) var(--sp-3)", borderRadius: 4,
           fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
-          marginBottom: 18,
+          marginBottom: "var(--sp-4)",
         }}>← Back</button>
       <h2 className="serif" style={{ margin: 0, fontSize: 26, fontWeight: 400, color: "var(--ink-100)" }}>Block #{block.height.toLocaleString()}</h2>
-      <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{block.hash}</div>
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 24, padding: "20px 0", borderTop: "1px solid var(--rule)", marginTop: 18 }}>
+      <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: "var(--sp-1)", wordBreak: "break-all" }}>{block.hash}</div>
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--sp-5)", padding: "20px 0", borderTop: "1px solid var(--rule)", marginTop: "var(--sp-4)" }}>
         <DetailItem k="Txs" v={block.txs} tone="acc" />
         <DetailItem k="Size" v={block.sizeKB.toFixed(1) + " KB"} />
         <DetailItem k="Reward" v={block.reward.toFixed(3) + " XMR"} />
@@ -335,7 +335,7 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
   );
 
   return (
-    <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+    <section style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--sp-2)" }}>
       {tierStats.map(({ tier, tx, med, sampleTx }) => {
         const costXmr = sampleTx.fee;
         const costUsd = costXmr * xmrUsd;
@@ -345,14 +345,14 @@ export function ClassicFeeHero({ buckets, xmrUsd }: any) {
             border: "1px solid var(--rule)",
             borderTop: "3px solid " + tier.color,
             borderRadius: 8,
-            padding: "16px 18px",
+            padding: "var(--sp-4) var(--sp-4)",
             // D0651: 0.18s (bare, no easing keyword) → var(--d-2) var(--e-standard)
             transition: reduceMotion ? "border-color var(--d-2) var(--e-standard)" : "transform var(--d-2) var(--e-standard), border-color var(--d-2) var(--e-standard)",
           }}
             onMouseEnter={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(-2px)"; }}
             onMouseLeave={(e) => { if (!reduceMotion) e.currentTarget.style.transform = "translateY(0)"; }}>
-            <div className="mono" style={{ fontSize: "var(--fs-mono)", fontWeight: 700, letterSpacing: "0.18em", color: tier.color, marginBottom: 8 }}>{tier.label}</div>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginBottom: 6 }}>
+            <div className="mono" style={{ fontSize: "var(--fs-mono)", fontWeight: 700, letterSpacing: "0.18em", color: tier.color, marginBottom: "var(--sp-2)" }}>{tier.label}</div>
+            <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-1)", marginBottom: "var(--sp-1)" }}>
               <span className="mono" style={{ fontSize: 22, fontWeight: 500, color: "var(--ink-100)" }}>{Math.round(med).toLocaleString()}</span>
               <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>pcn/B</span>
             </div>
@@ -373,7 +373,7 @@ function ClassicCaption() {
   return (
     <div className="mono" style={{
       fontSize: "var(--fs-body)", color: "var(--ink-60)", lineHeight: 1.55,
-      padding: "10px 14px", borderLeft: "2px solid color-mix(in srgb, var(--accent-structural) 50%, transparent)",
+      padding: "var(--sp-2) var(--sp-3)", borderLeft: "2px solid color-mix(in srgb, var(--accent-structural) 50%, transparent)",
       background: "color-mix(in srgb, var(--accent-structural) 4%, transparent)", borderRadius: "0 4px 4px 0",
     }}>
       <b style={{ color: "var(--ink-100)" }}>pcn/B</b> = piconero per byte. One piconero is 10⁻¹² XMR — the smallest unit. Monero fees scale with transaction size in bytes; a typical 2-input transaction is ≈ 1.8 KB.
@@ -398,9 +398,9 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
   return (
     <div style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
-      borderRadius: 8, padding: "14px 18px",
+      borderRadius: 8, padding: "var(--sp-3) var(--sp-4)",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)" }}>
         <span className="mono" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)" }}>Projected next block · #{(height + 1).toLocaleString()}</span>
         <span className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", letterSpacing: "0.06em" }}>ETA ~<BlockEta data={data} /></span>
       </div>
@@ -451,13 +451,13 @@ export function ClassicProjBlock({ buckets, mempool, height, data }: any) {
           });
         })()}
       </div>
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)", marginTop: 8 }}>
+      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)", marginTop: "var(--sp-2)" }}>
         <span>{fill != null ? Math.round(fill * 100) + "% of block capacity" : "— capacity"}</span>
         <span>{total} tx · {fmtBytes(totalBytes)}</span>
       </div>
-      <div className="mono" style={{ display: "flex", gap: 14, fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6, flexWrap: "wrap" }}>
+      <div className="mono" style={{ display: "flex", gap: "var(--sp-3)", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: "var(--sp-1)", flexWrap: "wrap" }}>
         {CLASSIC_TIERS.map((tier) => (
-          <span key={tier.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span key={tier.id} style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)" }}>
             <span style={{ width: 8, height: 8, background: tier.color, borderRadius: 2 }} />
             {tier.label} {buckets[tier.id].length}
           </span>
@@ -475,13 +475,13 @@ export function ClassicFeeDepth({ buckets }: any) {
   return (
     <div style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
-      borderRadius: 8, padding: "14px 18px",
+      borderRadius: 8, padding: "var(--sp-3) var(--sp-4)",
     }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-3)" }}>
         <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)" }}>Fee depth</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>by tier · % of mempool weight</span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
         {CLASSIC_TIERS.map((tier) => {
           const tx = buckets[tier.id];
           const bytes = tx.reduce((s: number, t: any) => s + t.size, 0);
@@ -492,7 +492,7 @@ export function ClassicFeeDepth({ buckets }: any) {
           // old 2% intent closely enough that the bars measure the same.
           const barScale = Math.max(0.02, pct);
           return (
-            <div key={tier.id} style={{ display: "grid", gridTemplateColumns: "84px 1fr 80px 60px", gap: 12, alignItems: "center" }}>
+            <div key={tier.id} style={{ display: "grid", gridTemplateColumns: "84px 1fr 80px 60px", gap: "var(--sp-3)", alignItems: "center" }}>
               <span className="mono" style={{ fontSize: "var(--fs-label)", color: tier.color, letterSpacing: "0.12em", fontWeight: 600 }}>{tier.label}</span>
               <div style={{ position: "relative", height: 18, background: "var(--line-d)", borderRadius: 3, overflow: "hidden" }}>
                 {/* D0673: scaleX rather than width. The element is laid out at full
@@ -579,11 +579,11 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
   return (
     <div style={{
       background: "var(--surface-raised)", border: "1px solid var(--rule)",
-      borderRadius: 8, padding: "12px 14px",
+      borderRadius: 8, padding: "var(--sp-3) var(--sp-3)",
     }}>
       <style>{CLASSIC_TX_ENTER_CSS}</style>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)", display: "flex", alignItems: "center", gap: 8 }}><NodeProvenance source="node" keys={["mempool"]} status={status} inline /> last {rows.length} tx in mempool</span>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "var(--sp-2)" }}>
+        <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-60)", display: "flex", alignItems: "center", gap: "var(--sp-2)" }}><NodeProvenance source="node" keys={["mempool"]} status={status} inline /> last {rows.length} tx in mempool</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase" }}>
           <span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> streaming
         </span>
@@ -591,7 +591,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
       <div className="table-scroll"><div className="mp-txbody">
       <div style={{
         fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase",
-        color: "var(--ink-40)", padding: "6px 8px", borderBottom: "1px solid var(--rule)",
+        color: "var(--ink-40)", padding: "var(--sp-1) var(--sp-2)", borderBottom: "1px solid var(--rule)",
       }} className="mono mp-txgrid">
         <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Pcn/B</span><span>Tier</span><span>Age</span>
       </div>
@@ -605,7 +605,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
               className={"mp-txgrid" + (entering ? " classic-tx-enter" : "")}
               onAnimationEnd={(e) => e.currentTarget.classList.remove("classic-tx-enter")}
               style={{
-                fontSize: "var(--fs-mono)", padding: "8px 8px",
+                fontSize: "var(--fs-mono)", padding: "var(--sp-2) var(--sp-2)",
                 borderBottom: "1px solid var(--line-d)",
                 cursor: "pointer", transition: "background var(--d-2) var(--e-standard)", // D0651: 0.12s → --d-2 (nearest)
                 fontFamily: "var(--f-mono)",
@@ -616,7 +616,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
               <span style={{ color: "var(--ink-80)" }}>{fmtBytes(t.size)}</span>
               <span style={{ color: "var(--tk-accent)" }}>{t.fee.toFixed(7)}</span>
               <span style={{ color: "var(--ink-80)" }}>{Math.round(t.perB).toLocaleString()}</span>
-              <span style={{ display: "flex", alignItems: "center", gap: 6, color: tier.color, fontSize: "var(--fs-label)", letterSpacing: "0.14em" }}>
+              <span style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)", color: tier.color, fontSize: "var(--fs-label)", letterSpacing: "0.14em" }}>
                 <span style={{ width: 7, height: 7, borderRadius: 4, background: tier.color, boxShadow: "0 0 4px " + tier.color }} />
                 {tier.label}
               </span>
@@ -633,7 +633,7 @@ export function ClassicTxFeed({ mempool, onPickTx, thr, trackedTxId, status }: a
 export function ClassicLanding({ data, onPickTx, trackedTxId }: any) {
   const buckets = React.useMemo(() => classicBucketByTier(data.mempool), [data.mempool]);
   return (
-    <div style={{ padding: "20px 24px 48px", display: "flex", flexDirection: "column", gap: 14 }}>
+    <div style={{ padding: "20px var(--sp-5) var(--sp-7)", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
       <ClassicFeeHero buckets={buckets} xmrUsd={data.price || 0} />
       <ClassicCaption />
       <ClassicProjBlock buckets={buckets} mempool={data.mempool} height={data.height} data={data} />
@@ -645,9 +645,9 @@ export function ClassicLanding({ data, onPickTx, trackedTxId }: any) {
 
 export function ClassicStat({ k, v, tone }: any) {
   return (
-    <div style={{ padding: "12px 14px", border: "1px solid var(--rule)", borderRadius: 6, background: "var(--surface-raised)" }}>
+    <div style={{ padding: "var(--sp-3) var(--sp-3)", border: "1px solid var(--rule)", borderRadius: 6, background: "var(--surface-raised)" }}>
       <div className="kicker">{k}</div>
-      <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 20, marginTop: 4, fontWeight: 500 }}>{v}</div>
+      <div className={"mono " + (tone === "acc" ? "acc" : "")} style={{ fontSize: 20, marginTop: "var(--sp-1)", fontWeight: 500 }}>{v}</div>
     </div>
   );
 }

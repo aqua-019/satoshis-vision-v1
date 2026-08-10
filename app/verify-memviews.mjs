@@ -427,6 +427,441 @@ function advanceBlocks(n) { head += n; }
   await p.close();
 }
 
+/* ── Scenario 6 · SVG <text> collisions, across EVERY <svg> under .mem-view ─
+   The subject is every <text> element in every <svg> inside a view, not just
+   axis labels — the predicate makes no distinction, and that is exactly how
+   it caught bridge's gauge caption stacked on its centre value (a non-axis
+   element that then needed an allowlist entry below). A subject narrower
+   than its own claim would have missed that; naming it "axis-label overlap
+   detection" while testing something wider is the standing defect this repo
+   tracks elsewhere (CLAUDE.md, "a subject narrower than its claim").
+
+   The overlap test is an axis-aligned bounding-box (separating-axis) check,
+   not a Euclidean one — there is no distance computed anywhere. Two rects
+   collide iff they intersect on BOTH the x-axis and the y-axis:
+     overlaps_x = a.left < b.right && b.left < a.right
+     overlaps_y = a.top < b.bottom && b.top < a.bottom
+   1-D (same-baseline) would miss it: SVG positioning is not line-based, and
+   elements can be offset vertically by arbitrary viewBox units.
+
+   ── TWO COVERAGE BOUNDARIES. Both were measured, not assumed. Read them
+      before concluding this section covers "label collisions" generally.
+
+   (1) THE SUBJECT IS SVG-<text>-VS-SVG-<text>. A DOM caption overlapping an
+       SVG value is OUT OF SUBJECT and this section cannot see it, because it
+       compares <text> bounding boxes and nothing else. That is not
+       hypothetical: `BrgGauge` (src/mempool/bridge.tsx) renders its value as
+       <text> at :285 and its caption as a <div> at :287, and it is rendered
+       FOUR times by BrgGaugeBank (:310-313). So four of the five gauges on
+       /live/mempool?v=bridge are in exactly the shape this section is blind
+       to. Do NOT widen the predicate to fix that — mixed DOM-over-SVG hit
+       testing is a different instrument and belongs in its own gate. This
+       note exists so the next reader does not infer coverage that is absent.
+       (It is also why the allowlist below needs only ONE entry: BrgGauge
+       structurally cannot produce a caption/value <text> pair, so
+       BrgBlockCadence's gauge is the only stack this section can see.)
+
+   (2) THIS SECTION DOES NOT EXERCISE BarSeries' FORCED-FINAL-LABEL PATH,
+       and that path is the defect the v2.0 charts fix was written for.
+       Mechanism, measured: `useChartMetrics` measures the PRE-TRANSFORM
+       layout width, and `.mp-view` is `width: max-content` on desktop, so
+       sediment's "Stratigraphy log" BarSeries measures ~1180px at EVERY
+       viewport — FitView then scales the rendered result down (to 185px at
+       390px wide). With this file's 14-block fixture, labelStep() therefore
+       returns a stride of 1 at all four widths, `n - 1` is trivially a
+       stride multiple, and `finalLabelCollides` never fires. The collision
+       needs stride >= 2, which at ~1180px needs >= 17 blocks.
+       CONSEQUENCE FOR BREAK TESTING: forcing labelStep() to return 1 is a
+       NO-OP here and cannot red this section — verified by execution (the
+       mutation reaches the bundle, chunk hash changes, and sediment's text
+       count stays at exactly 31 with zero overlaps). Anyone break-testing
+       this section must instead inject a real overlap; the cross-gauge
+       mutation described in the allowlist below does red it at all four
+       widths. Raising mkBlocks() past 17 would close the gap, but it
+       re-baselines EXPECT_SVG_TEXT and feeds scenario 4's depth walk, so it
+       is deliberately left as its own change.
+
+   Rects are compared ACROSS every <svg> inside one .mem-view, not only
+   within a single <svg>. That is correct today, because
+   getBoundingClientRect() returns VIEWPORT coordinates and two <text> nodes
+   in different <svg> elements that visually overlap on screen are a real
+   collision regardless of which <svg> owns them — but it means a future
+   side-by-side multi-chart layout inside one view could redden this section
+   for a reason unrelated to either chart's own labels.
+   ──────────────────────────────────────────────────────────────────────────── */
+{
+  console.log('\n— scenario 6: no overlapping <text> in any SVG under .mem-view —');
+
+  const WIDTHS = [390, 768, 1440, 2560];
+
+  // Known intentional overlaps: stacks inside small gauge components, &c.
+  // Each prints as ⚠️ reported rather than failed, so regressions stay
+  // visible instead of hiding.
+  //
+  // Two entry SHAPES exist:
+  //  - TEXT entries (`labels: [...]`) match on rendered content — a literal
+  //    string (exact, case-insensitive) or a RegExp (tested via `.test()`).
+  //    See matchAllowlist() below for the matcher. Reach for a RegExp only
+  //    when the value a stack renders is itself derived from something that
+  //    moves (the clock, a poll); a literal is preferred everywhere else
+  //    because it fails loudly the day the real content changes.
+  //  - STRUCTURAL entries (`structural: true`) match on DOM markers, never
+  //    text — see the bridge entry below for why, and matchAllowlist() for
+  //    the predicate. Prefer this shape whenever the stack's rendered text is
+  //    itself in motion (round 3 proved a regex still leaves the assertion's
+  //    SUBJECT as "the layout AND whatever the clock currently reads," which
+  //    is wider than its claim — see CLAUDE.md, "a subject narrower than its
+  //    claim").
+  //
+  // `selfDup: true` opts a TEXT entry in to waiving a pair where BOTH labels
+  // are the identical string — see matchAllowlist() below for why that is off
+  // by default. Not applicable to structural entries: a caption marker and a
+  // value marker are two different DOM nodes by construction (see the
+  // structural entry's own comment for why a true self-duplicate can't arise
+  // there, and why two DIFFERENT gauges' matching values still must not be
+  // waived).
+  const allowlist = [
+    {
+      view: 'bridge',
+      structural: true,
+      // Waives BrgBlockCadence's countdown-ring stack: the caption "ELAPSED"
+      // (bridge.tsx:~427, wrapped in `<g data-gauge="block-cadence-elapsed">`,
+      // the caption <text> carrying `data-gauge-caption`) sits directly over
+      // its own centre value (the sibling <text> carrying `data-gauge-value`,
+      // rendered m:ss). bridge.tsx:389 computes that value as
+      //   (data.blocks?.[0]?.age || 0)
+      //     + Math.max(0, Math.floor((now - freshAt(data.status.blocks)) / 1000))
+      // — the fixture pins the first term (block age) at a fixed 41s, but the
+      // second term is WALL-CLOCK DERIVED and increments once per second on
+      // top of it.
+      //
+      // History, for why this is structural rather than text-matched: a
+      // literal '0:41' entry (round 2) was green only when the DOM snapshot
+      // landed within ~1s of the blocks fetch resolving — measured across six
+      // full gate runs, 52 occurrences of "0:41" to 1 of "0:42", i.e. a real
+      // false-red build failure roughly 1 run in 6 (reproduced live: "❌
+      // [bridge] 768px: overlapping labels 'ELAPSED' ∥ '0:42'"). Round 3
+      // widened the second label to /^\d+:\d{2}$/ (any m:ss shape), which
+      // fixed the flake — but the assertion's SUBJECT was still "the layout
+      // AND whatever the clock currently reads," wider than its claim (the
+      // claim is pure layout). This entry reads NO text at all: a pair is
+      // waived only when one node carries `data-gauge-caption`, the other
+      // carries `data-gauge-value`, and BOTH resolve to the same nearest
+      // `data-gauge` ancestor (see matchAllowlist() below) — so the waiver
+      // holds identically whichever second it happens to sample.
+      //
+      // PRECONDITION NOTHING ENFORCES: `data-gauge` ids must be UNIQUE per
+      // rendered gauge. The waiver is scoped by `gaugeId` equality, so two
+      // gauges sharing an id would let a caption from one waive a collision
+      // with the other's value — silently widening the exemption from "one
+      // pair" to "any pair across every gauge with that id". There is exactly
+      // one marked gauge today (`block-cadence-elapsed`), so the hazard is
+      // latent, and it is recorded here rather than asserted because the
+      // assertion would have nothing to compare against with a single id.
+      // Anyone adding a second `data-gauge` must give it a distinct id AND
+      // should add the uniqueness check at that point.
+      //
+      // A page-clock freeze (Playwright's Clock API) was considered instead
+      // and deliberately NOT used: the fixture's other ages are fixed
+      // RELATIVE offsets resolved at request time (see the fixture header,
+      // ~line 60) and scenario 2's 0→10 confirmation walk also depends on the
+      // live clock advancing, so freezing it would have a blast radius well
+      // beyond this one stack. That belongs in its own change.
+      //
+      // Do NOT simplify this to `data-decorative` (the blanket per-node skip
+      // verify-chart-legibility.mjs:116-141 uses): that would exempt these
+      // two nodes from EVERY future comparison, so a real regression — the
+      // caption drifting into an axis label, say — would be silently waived
+      // too. The pair-scoped, same-gauge-id form keeps the exemption exactly
+      // as narrow as this one intentional stack.
+      //
+      // Self-duplicate note: a caption and a value are different DOM nodes by
+      // construction (one always reads "ELAPSED", the other always m:ss), so
+      // a true self-duplicate pair can never reach this entry — no `selfDup`
+      // flag is needed or read for structural entries. That is NOT the same
+      // claim as "any two same-marker nodes waive" — two DIFFERENT
+      // BrgBlockCadence-shaped gauges each showing the same value would both
+      // carry `data-gauge-value` but NEITHER would pair with a
+      // `data-gauge-caption` from the other's own gauge id, so the predicate
+      // (below) correctly leaves that pair unwaived.
+      reason: 'bridge.tsx:~427-438 — BrgBlockCadence caption/value stack, waived ' +
+              'structurally via same-gauge data-gauge-caption/data-gauge-value ' +
+              'markers, no text read',
+    },
+  ];
+
+  // Declared expectation for WHERE each view's SVG <text> exists, measured
+  // first and written down — not inferred from cross-width continuity (that
+  // heuristic produced both a false negative, when a view's ONLY text
+  // disappeared at every width and nothing asserted it should have been
+  // there, and a false positive, flagging terminal's correct <=768px
+  // rail-collapse as "discontinuous"). Every entry is a real, checked claim:
+  // a width IN the list must report >0 text nodes, a width NOT in the list
+  // must report exactly 0. An empty array is itself an asserted claim ("this
+  // view is DOM-rendered, never SVG text"), not an exemption from the check.
+  //
+  // Measured against a clean build (`npm run build && node
+  // verify-memviews.mjs`, 2026-08-10, pre-fix vacuity guard) at all four
+  // WIDTHS: reactor 1/1/1/1, bridge 14/14/14/14, sediment 32/32/32/32,
+  // constellation 6/6/6/6, terminal 0/0/4/4, classic 0/0/0/0.
+  const EXPECT_SVG_TEXT = {
+    // Ring caption "TX · 16 RING · 1 REAL" (reactor.tsx:265) — one plain
+    // <text>, no responsive hiding anywhere in the view — present always.
+    reactor: [390, 768, 1440, 2560],
+    // 12-pane mission control: axis ticks + gauge captions/values spread
+    // across several <svg> children (bridge.tsx:191-436). None of it sits
+    // behind a width-gated wrapper — present always.
+    bridge: [390, 768, 1440, 2560],
+    // Stratigraphy core-sample: axis labels ("weight →" / "fee/B →",
+    // sediment.tsx:251-252) plus per-layer readouts inside the tube. No
+    // responsive hiding — present always.
+    sediment: [390, 768, 1440, 2560],
+    // Luminous network sphere: node labels + centre tx-count readout
+    // (constellation.tsx:172-408). No responsive hiding — present always.
+    constellation: [390, 768, 1440, 2560],
+    // TermGauge's only <text> (terminal.tsx:268) lives in the "Network
+    // gauges" rail-block (terminal.tsx:440-447), inside <aside class="rail">
+    // (terminal.tsx:414). `.rail { display: none; }` fires at `max-width:
+    // 768px` (styles.css:2217, :2643) — the element stays in the DOM but
+    // collapses to a zero-size box, which this section's own
+    // `rect.width === 0` filter (below) already drops. Present only where
+    // the rail is visible.
+    terminal: [1440, 2560],
+    // Classic is pure DOM (MempoolViewMeta's `reflow: true`, index.tsx:79) —
+    // it renders no <svg> at all, so it carries zero SVG <text> at every
+    // width, by design rather than by omission.
+    classic: [],
+  };
+
+  const textCounts = {}; // {view: {width: count}}
+
+  for (const width of WIDTHS) {
+    console.log(`  width ${width}px:`);
+    const p = await b.newPage({ viewport: { width, height: 900 } });
+    watchErrors(p, `scenario 6 [${width}]`);
+    await p.route('**/api/**', fulfil);
+
+    for (const id of VIEWS) {
+      try {
+        await open(p, id);
+
+        const results = await p.evaluate(() => {
+          const view = document.querySelector('.mem-view');
+          const texts = [];
+
+          // Nearest ancestor carrying `data-gauge`, walked from a <text>'s
+          // parent up to (not past) .mem-view. Returns the gauge's id string,
+          // or null if the text sits outside any `data-gauge` wrapper — used
+          // below to scope the structural caption/value waiver to ONE gauge
+          // instance, so two different gauges never pair with each other.
+          const nearestGauge = (el) => {
+            let n = el.parentElement;
+            while (n && n !== view) {
+              if (n.hasAttribute('data-gauge')) return n.getAttribute('data-gauge');
+              n = n.parentElement;
+            }
+            return null;
+          };
+
+          // Collect all <text> elements inside SVG descendants of .mem-view
+          for (const svg of view.querySelectorAll('svg')) {
+            for (const el of svg.querySelectorAll('text')) {
+              const content = el.textContent.trim();
+              // Skip empty or zero-sized elements (whitespace, clipped, etc.)
+              if (!content) continue;
+              const rect = el.getBoundingClientRect();
+              if (rect.width === 0 || rect.height === 0) continue;
+
+              texts.push({
+                text: content,
+                left: rect.left,
+                right: rect.right,
+                top: rect.top,
+                bottom: rect.bottom,
+                // Structural markers for scenario 6's bridge allowlist entry
+                // (see matchAllowlist() below) — read no further than
+                // presence/absence and the owning gauge id, never content.
+                gaugeCaption: el.hasAttribute('data-gauge-caption'),
+                gaugeValue: el.hasAttribute('data-gauge-value'),
+                gaugeId: nearestGauge(el),
+              });
+            }
+          }
+          return texts;
+        });
+
+        // Track count for vacuity guard
+        if (!textCounts[id]) textCounts[id] = {};
+        textCounts[id][width] = results.length;
+
+        // Find overlaps: axis-aligned bounding-box (separating-axis) test.
+        // Two boxes overlap iff they intersect on BOTH axes.
+        const overlaps = [];
+        for (let i = 0; i < results.length; i++) {
+          for (let j = i + 1; j < results.length; j++) {
+            const a = results[i];
+            const b = results[j];
+            const overlaps_x = a.left < b.right && b.left < a.right;
+            const overlaps_y = a.top < b.bottom && b.top < a.bottom;
+            if (overlaps_x && overlaps_y) {
+              // Full node objects, not just text — the structural predicate
+              // below needs gaugeCaption/gaugeValue/gaugeId, which live only
+              // on the census node, never on its rendered text.
+              overlaps.push({ a, b });
+            }
+          }
+        }
+
+        // Returns the allowlist entry that waives this pair, or null.
+        //
+        // Two entry shapes, matched by two independent code paths:
+        //
+        // STRUCTURAL (`entry.structural`) reads DOM markers only, never text.
+        // A pair matches iff one node carries `gaugeCaption`, the other
+        // carries `gaugeValue`, and both resolve to the same non-null
+        // `gaugeId` (the nearest `data-gauge` ancestor — see the census
+        // above). Order-insensitive: either of a/b may be the caption.
+        // Two DIFFERENT gauges' value nodes never match each other here —
+        // both would carry `gaugeValue`, and the predicate requires one
+        // `gaugeCaption` + one `gaugeValue`, so a value/value pair is
+        // rejected regardless of gauge id. A caption/value pair from two
+        // DIFFERENT gauges is also rejected, by the `gaugeId` equality check
+        // — this is the cross-gauge guard the same-nearest-ancestor rule
+        // exists for. No `selfDup` concept applies: caption and value are
+        // categorically different nodes (see the bridge entry's own comment).
+        //
+        // TEXT (`entry.labels`) matches on rendered content — a literal
+        // string (case-insensitive exact match) or a RegExp (tested against
+        // the raw, un-lowercased text via `.test()` — case doesn't matter for
+        // the regex labels in use today, but lower-casing a RegExp source
+        // would corrupt an eventual case-sensitive pattern, so string and
+        // RegExp labels are deliberately matched by two different code paths
+        // rather than both funnelled through one lower-cased comparison).
+        //
+        // A pair is a SELF-duplicate when both OBSERVED labels are the
+        // identical string (case-insensitively) — this is about the two
+        // colliding DOM texts, never about the entry's labels, so it applies
+        // identically whether the entry that might waive them is all
+        // literals or carries a regex. A TEXT entry waives a self-duplicate
+        // only if it opts in with `selfDup: true` — by default it waives only
+        // a pair of two DIFFERENT observed labels. Without that restriction,
+        // an entry written for a genuine two-different-strings stack (a
+        // caption over its value) also silently waives a same-string
+        // collision on either of those two strings, which is precisely the
+        // shape of the one real bug this section has found (sediment:
+        // "15,000 p/B" ∥ "15,000 p/B"). This check runs BEFORE any label
+        // matching below, so it rejects a self-duplicate pair outright — a
+        // regex label that happens to match both sides of an identical-string
+        // pair never even reaches the pairing check. (Structural entries skip
+        // this gate entirely: it is a TEXT-entry concept, and the structural
+        // predicate's own gaugeCaption+gaugeValue+gaugeId requirement already
+        // makes a self-duplicate impossible to reach — see above.)
+        //
+        // Matching a pair against a TEXT entry REQUIRES a and b to land on
+        // two DIFFERENT slots of entry.labels (not merely "both observed
+        // labels are members of the label set", which was the pre-round-3
+        // Set-based check). A membership-only test would let two UNRELATED
+        // ticking values that both happen to look like m:ss waive each other
+        // even when neither is literally "ELAPSED" — over-waiving the exact
+        // class of collision this section exists to catch. Requiring one text
+        // to match one specific slot and the other text to match a DIFFERENT
+        // slot keeps a regex entry scoped to the precise stack it names.
+        const labelMatches = (label, text) =>
+          label instanceof RegExp ? label.test(text) : label.toLowerCase() === text.toLowerCase();
+        const matchAllowlist = (a, b) => {
+          return allowlist.find((entry) => {
+            if (entry.view !== id) return false;
+            if (entry.structural) {
+              const capValue = (x, y) => x.gaugeCaption && y.gaugeValue && x.gaugeId != null && x.gaugeId === y.gaugeId;
+              return capValue(a, b) || capValue(b, a);
+            }
+            const aL = a.text.toLowerCase();
+            const bL = b.text.toLowerCase();
+            const selfDup = aL === bL;
+            if (selfDup && !entry.selfDup) return false;
+            const { labels } = entry;
+            for (let i = 0; i < labels.length; i++) {
+              for (let j = 0; j < labels.length; j++) {
+                if (i === j) continue;
+                if (labelMatches(labels[i], a.text) && labelMatches(labels[j], b.text)) return true;
+              }
+            }
+            return false;
+          }) ?? null;
+        };
+
+        // Partition: allowlisted vs actual failures. Each overlap carries
+        // the SPECIFIC entry that matched it (not "the first entry for this
+        // view") so the printed reason is always the one that actually
+        // applies once the allowlist holds more than one entry per view.
+        const matched = overlaps.map((o) => ({ ...o, entry: matchAllowlist(o.a, o.b) }));
+        const allowed = matched.filter((o) => o.entry);
+        const failures = matched.filter((o) => !o.entry);
+
+        // Report allowlisted overlaps (informational, does not fail)
+        for (const { a, b, entry } of allowed) {
+          const aStr = a.text.length > 20 ? a.text.slice(0, 17) + '…' : a.text;
+          const bStr = b.text.length > 20 ? b.text.slice(0, 17) + '…' : b.text;
+          console.log(`    ⚠️  [${id}] ${width}px: "${aStr}" ∥ "${bStr}" — ${entry.reason}`);
+        }
+
+        // Fail on unexpected overlaps
+        if (failures.length > 0) {
+          for (const { a, b } of failures) {
+            const aStr = a.text.length > 20 ? a.text.slice(0, 17) + '…' : a.text;
+            const bStr = b.text.length > 20 ? b.text.slice(0, 17) + '…' : b.text;
+            ok(false, `[${id}] ${width}px: overlapping labels "${aStr}" ∥ "${bStr}"`);
+          }
+        } else {
+          ok(true, `[${id}] ${width}px: ${results.length} text node(s), no unlisted overlaps`);
+        }
+
+      } catch (e) {
+        ok(false, `[${id}] ${width}px: ${String(e).split('\n')[0]}`);
+      }
+    }
+
+    await p.close();
+  }
+
+  // Vacuity guard: assert measurement actually happened, against a DECLARED
+  // expectation rather than inferred cross-width continuity.
+  //
+  // The continuity heuristic this replaced ("text at some width, zero at
+  // another is suspicious") had a false negative AND a false positive, both
+  // confirmed by running it: it never asserted anything for a view with zero
+  // text at every width (so a view that LOSES all its SVG text is
+  // indistinguishable from one that never had any — every per-width line
+  // still prints ✅ "0 text node(s), no unlisted overlaps"), and it reddened
+  // terminal for correctly dropping its rail-block gauges at <=768px, which
+  // is deliberate layout behaviour (styles.css:2217, :2643), not a
+  // regression.
+  //
+  // EXPECT_SVG_TEXT (declared above, next to the allowlist) fixes both: it
+  // is checked in BOTH directions, per view per width — a width IN the list
+  // must report >0, a width NOT in the list must report exactly 0 — so
+  // "lost all its text" and "never had any" are no longer the same reading,
+  // and terminal's real <=768px drop is the expected shape rather than a
+  // discontinuity.
+  console.log('\n  declared SVG-text coverage (EXPECT_SVG_TEXT, both directions):');
+  for (const id of VIEWS) {
+    if (!Object.prototype.hasOwnProperty.call(EXPECT_SVG_TEXT, id)) {
+      ok(false, `[${id}]: no EXPECT_SVG_TEXT entry — every registered view must declare where its SVG text is expected (even an empty list)`);
+      continue;
+    }
+    const counts = textCounts[id] || {};
+    const expected = new Set(EXPECT_SVG_TEXT[id]);
+    for (const width of WIDTHS) {
+      const n = counts[width] ?? 0;
+      if (expected.has(width)) {
+        ok(n > 0, `[${id}] ${width}px: expected SVG text present per EXPECT_SVG_TEXT — got ${n}`);
+      } else {
+        ok(n === 0, `[${id}] ${width}px: expected NO SVG text per EXPECT_SVG_TEXT — got ${n}`);
+      }
+    }
+  }
+}
+
 await b.close();
 
 console.log('');

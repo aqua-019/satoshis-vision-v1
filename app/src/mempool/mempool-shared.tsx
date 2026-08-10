@@ -173,7 +173,7 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
     // cannot shrink at 390px: it overflows the view, and whichever sibling is
     // allowed to give (the SEARCH button) collapses to a vertical stack of
     // letters instead.
-    <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 0", minWidth: 0, maxWidth: compact ? 380 : 520 }}>
+    <form onSubmit={submit} style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", flex: "1 1 0", minWidth: 0, maxWidth: compact ? 380 : 520 }}>
       <input
         type="text" value={q} onChange={(e) => setQ(e.target.value)}
         placeholder={placeholder || "Search by 64-char txid or block height…"}
@@ -182,7 +182,7 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
           flex: "1 1 0", minWidth: 0, appearance: "none",
           background: "var(--surface-sunk)", color: "var(--ink-100)",
           border: "1px solid var(--ink-20)", borderRadius: 3,
-          padding: compact ? "7px 10px" : "9px 12px",
+          padding: compact ? "var(--sp-2) var(--sp-2)" : "var(--sp-2) var(--sp-3)",
           fontFamily: "var(--f-mono)", fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)",
           letterSpacing: "0.02em", outline: "none",
         }}
@@ -194,7 +194,7 @@ export function MempoolSearchBar({ onSearch, placeholder, compact }: {
           wrapping the label into a vertical column of letters. */}
       <button type="submit" className="proto-btn"
         style={{
-          padding: compact ? "6px 12px" : "8px 14px",
+          padding: compact ? "var(--sp-1) var(--sp-3)" : "var(--sp-2) var(--sp-3)",
           fontSize: compact ? "var(--fs-label)" : "var(--fs-mono)",
           flexShrink: 0, whiteSpace: "nowrap",
         }}>
@@ -365,10 +365,10 @@ export function MemViewShell({
   // replacement for the view.
   const showBody = !tracking || keepBodyWhileTracking;
   return (
-    <div className="mem-view" data-mem-view={id} style={{ display: "flex", flexDirection: "column", gap: 14, minHeight: 0 }}>
+    <div className="mem-view" data-mem-view={id} style={{ display: "flex", flexDirection: "column", gap: "var(--sp-3)", minHeight: 0 }}>
       <div className="mempool-search-bar">
         <MempoolSearchBar onSearch={onSearch} />
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginLeft: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", marginLeft: "auto" }}>
           <MempoolHeartbeat data={data} />
           {tracking ? <TrackChip tracking={tracking} data={data} onClear={onClearTracking} /> : null}
         </div>

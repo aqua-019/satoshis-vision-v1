@@ -108,7 +108,7 @@ function TermPalette({ data }: { data: MoneroLive }) {
   const shownTyped = reduced && cmds.length ? cmds[ci % cmds.length].q : typed;
   return (
     <div style={{ border: "1px solid var(--tk-accent)", background: "var(--surface-raised)", boxShadow: "0 0 24px color-mix(in srgb, var(--accent-structural) 22%, transparent), inset 0 0 30px color-mix(in srgb, var(--accent-structural) 5%, transparent)", borderRadius: 4 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", padding: "var(--sp-2) var(--sp-3)", borderBottom: "1px solid var(--rule)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
         <span style={{ color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>›</span>
         <span style={{ color: "var(--ink-100)" }}>{shownTyped}</span>
         {/* D0651: term-blink 1s steps(2) — a terminal cursor blink rate, same category as
@@ -120,16 +120,16 @@ function TermPalette({ data }: { data: MoneroLive }) {
         <span style={{ width: 8, height: 16, background: "var(--tk-accent)", boxShadow: "var(--glow-1)", animation: reduced ? undefined : "term-blink 1s steps(2) infinite", display: "inline-block" }} />
         <span style={{ marginLeft: "auto", color: "var(--ink-40)", fontSize: "var(--fs-mono)" }}>⌘K · ESC</span>
       </div>
-      <div style={{ padding: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", minHeight: 96 }}>
+      <div style={{ padding: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", minHeight: 96 }}>
         {(showResults ? cmds[ci % cmds.length].rows : []).map((r, i) => (
-          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: 10, padding: "6px 8px", background: i === 0 ? "color-mix(in srgb, var(--accent-structural) 12%, transparent)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein var(--d-3) var(--e-standard)" /* D0651: 0.25s → --d-3 */ }}>
+          <div key={i} style={{ display: "grid", gridTemplateColumns: "60px 1fr 1.1fr 18px", gap: "var(--sp-2)", padding: "var(--sp-1) var(--sp-2)", background: i === 0 ? "color-mix(in srgb, var(--accent-structural) 12%, transparent)" : "transparent", borderLeft: i === 0 ? "2px solid var(--tk-accent)" : "2px solid transparent", animation: "term-slidein var(--d-3) var(--e-standard)" /* D0651: 0.25s → --d-3 */ }}>
             <span className="dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.1em" }}>{r[0]}</span>
             <span className={i === 0 ? "acc" : ""}>{r[1]}</span>
             <span className="dim">{r[2]}</span>
             <span className="dim2" style={{ textAlign: "right" }}>{i === 0 ? "↵" : ""}</span>
           </div>
         ))}
-        {!showResults ? <div className="dim2" style={{ padding: "30px 8px", textAlign: "center", letterSpacing: "0.14em" }}>{!cmds.length || phase === "typing" ? "querying daemon…" : "—"}</div> : null}
+        {!showResults ? <div className="dim2" style={{ padding: "var(--sp-6) var(--sp-2)", textAlign: "center", letterSpacing: "0.14em" }}>{!cmds.length || phase === "typing" ? "querying daemon…" : "—"}</div> : null}
       </div>
       <style>{`@keyframes term-blink { 0%,50% { opacity: 1; } 50.01%,100% { opacity: 0; } } @keyframes term-slidein { from { opacity: 0; transform: translateX(-4px); } to { opacity: 1; transform: none; } }`}</style>
     </div>
@@ -161,20 +161,20 @@ export function TermAsciiBlocks({ data, trackedTxId, trackedHeight }: { data: Mo
       : "┌──┐\n" + "│  │\n".repeat(empty) + "██\n".repeat(filled) + "└──┘";
     return (
       <div data-tracked-tx={tracked ? trackedTxId : undefined} data-tracked-block={tracked ? height : undefined} style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-80)" }}>
-        <div style={{ textAlign: "center", marginBottom: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: q ? "none" : tracked ? "0 0 6px var(--y-50)" : "var(--glow-1)" }}>
+        <div style={{ textAlign: "center", marginBottom: "var(--sp-1)", color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: q ? "none" : tracked ? "0 0 6px var(--y-50)" : "var(--glow-1)" }}>
           {q ? "~+" + label : (tracked ? "▲" : "") + height.toString().slice(-3)}
         </div>
         {/* D0651: term-flash 1.4s — an ambient "this block is newest" signal, same 1.4s
             cadence as styles.css's global LED pulse; not an interaction. Literal. */}
         <pre style={{ margin: 0, lineHeight: 1, fontSize: "var(--fs-mono)", color: tracked ? "var(--y-50)" : "var(--tk-accent)", textShadow: newest ? "0 0 9px color-mix(in srgb, var(--accent-data) 70%, transparent)" : tracked ? "0 0 7px color-mix(in srgb, var(--status-warn) 50%, transparent)" : "0 0 6px color-mix(in srgb, var(--accent-data) 40%, transparent)", animation: newest && !reduced ? "term-flash 1.4s ease-in-out infinite" : "none" }}>{ascii}</pre>
-        <div style={{ textAlign: "center", marginTop: 4, color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
+        <div style={{ textAlign: "center", marginTop: "var(--sp-1)", color: q ? "var(--ink-40)" : tracked ? "var(--y-50)" : "var(--ink-60)" }}>{q ? "0 tx" : txs + "t"}</div>
         {!q ? <div style={{ textAlign: "center", color: tracked ? "var(--y-50)" : "var(--ink-40)", fontSize: "var(--fs-label)" }}>{sizeKB.toFixed(0)}K · {conf}c</div> : null}
         {tracked ? <div style={{ textAlign: "center", color: "var(--y-50)", fontSize: "var(--fs-label)" }}>{confOf(height, data)}/{CONF_UNLOCK}</div> : null}
       </div>
     );
   };
   return (
-    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length + 2}, 1fr)`, gap: 8, padding: "8px 0", overflowX: "auto" }}>
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols.length + 2}, 1fr)`, gap: "var(--sp-2)", padding: "var(--sp-2) 0", overflowX: "auto" }}>
       {cell("2", true)}{cell("N", true)}
       {cols.map((b, i) => <React.Fragment key={b.height}>{cell(null, false, b.txs, b.height, b.conf, b.sizeKB, i === 0)}</React.Fragment>)}
       <style>{`@keyframes term-flash { 0%,100% { opacity: 1; } 50% { opacity: 0.65; } }`}</style>
@@ -210,7 +210,7 @@ function TermLiveLog({ data, trackedTx }: {
     <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5 }}>
       {trackedTx && trackedMsg ? (
         <div data-tracked-tx={trackedTx.id} data-tracked-block={trackedTx.blockHeight ?? undefined}
-          style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: 8, padding: "1px 0", color: "var(--y-50)" }}>
+          style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: "var(--sp-2)", padding: "1px 0", color: "var(--y-50)" }}>
           <span style={{ fontWeight: 600 }}>I</span>
           <span style={{ opacity: 0.85 }}>{fmtTs(Date.now())}</span>
           <span>track</span>
@@ -218,11 +218,11 @@ function TermLiveLog({ data, trackedTx }: {
         </div>
       ) : null}
       {events.length === 0 ? (
-        <div className="dim2" style={{ padding: "8px 0", letterSpacing: "0.12em" }}>waiting for feed…</div>
+        <div className="dim2" style={{ padding: "var(--sp-2) 0", letterSpacing: "0.12em" }}>waiting for feed…</div>
       ) : events.map((e, i) => {
         const l = line(e);
         return (
-          <div key={`${e.ts}-${i}`} style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: 8, padding: "1px 0", animation: "term-logslide var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 */ }}>
+          <div key={`${e.ts}-${i}`} style={{ display: "grid", gridTemplateColumns: "16px 70px 56px 1fr", gap: "var(--sp-2)", padding: "1px 0", animation: "term-logslide var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 */ }}>
             <span style={{ color: colorFor(l.lvl), fontWeight: 600 }}>{l.lvl}</span>
             <span className="dim2">{fmtTs(e.ts)}</span>
             <span style={{ color: colorFor(l.lvl, l.cat) }}>{l.cat}</span>
@@ -252,7 +252,7 @@ export function TermFeeHisto({ data }: { data: MoneroLive }) {
   return (
     <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--tk-accent)", textShadow: "0 0 4px color-mix(in srgb, var(--accent-data) 40%, transparent)" }}>
       {bins.map((v, i) => `${String(i * 40).padStart(3, " ")} |${bar(v).padEnd(24, " ")} ${String(v).padStart(3, " ")}${i === medianBin ? "  ← median" : ""}`).join("\n")}
-      <div className="dim" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginTop: 6 }}>fee in piconero/byte · {data.mempool.length} tx sample</div>
+      <div className="dim" style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginTop: "var(--sp-1)" }}>fee in piconero/byte · {data.mempool.length} tx sample</div>
     </pre>
   );
 }
@@ -302,10 +302,10 @@ export function TerminalHubView({ data }: ViewProps) {
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <MemViewShell id="terminal" table={<MemTxTable data={data} tracking={tracking} viewId="terminal" columns={["txid", "perB", "tier", "size", "age"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking} stats={false}>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 14, padding: "16px 20px 40px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "var(--sp-3)", padding: "var(--sp-4) 20px 40px" }}>
         <div>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
               <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>} updatedAt={oldestFreshAt(data.status, ["network", "mempool"])}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, color: "var(--ink-100)", textShadow: "0 0 6px color-mix(in srgb, var(--accent-structural) 18%, transparent)" }}>
 {`╭─ monerod ${data.version || "—"} `.padEnd(52, "─") + "\n│ Status:    "}
@@ -335,15 +335,15 @@ export function TerminalHubView({ data }: ViewProps) {
 {"\n"}
 {"╰" + "─".repeat(51)}
                 </pre>
-                <div style={{ marginTop: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
-                  <div className="kicker" style={{ marginBottom: 6 }}>CHAIN TOTALS</div>
+                <div style={{ marginTop: "var(--sp-3)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+                  <div className="kicker" style={{ marginBottom: "var(--sp-1)" }}>CHAIN TOTALS</div>
                   {[
                     ["txs all-time", hasData(data.status.network) ? fmtN(data.txCountTotal) : "—"],
                     ["db size", dbGB(data)],
                     ["alt blocks", hasData(data.status.network) ? String(data.altBlocksCount) : "—"],
                     ["top block", hasData(data.status.network) ? shortHash(data.topBlockHash) : "—"],
                   ].map((r, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: 6, padding: "1px 0" }}>
+                    <div key={i} style={{ display: "grid", gridTemplateColumns: "120px 1fr", gap: "var(--sp-1)", padding: "1px 0" }}>
                       <span className="dim">{r[0]}</span><span className="acc">{r[1]}</span>
                     </div>
                   ))}
@@ -357,7 +357,7 @@ export function TerminalHubView({ data }: ViewProps) {
 
             <PanelFrame title="$ block-stream --ascii" right={<span>{Math.min(13, data.blocks.length)} LAST</span>} updatedAt={oldestFreshAt(data.status, ["blocks", "network"])}>
               <TermAsciiBlocks data={data} trackedTxId={trackedTxId} trackedHeight={trackedBlockHeight} />
-              <div style={{ marginTop: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: 8, display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 8 }}>
+              <div style={{ marginTop: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", borderTop: "1px dashed var(--ink-10)", paddingTop: "var(--sp-2)", display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "var(--sp-2)" }}>
                 <span><span className="acc">█</span> tx fill ratio</span><span><span className="dim">0c</span> just mined</span><span><span className="dim">+{CONF_UNLOCK}c</span> unlock</span><span className="dim2">ring=16</span><span className="dim2">target={fmtMMSS(data.blockTarget || 120)}</span><span className="dim2 acc">scroll ←→</span>
               </div>
             </PanelFrame>
@@ -367,7 +367,7 @@ export function TerminalHubView({ data }: ViewProps) {
               <TermLiveLog data={data} trackedTx={trackedTx} />
             </PanelFrame>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--sp-3)" }}>
               <PanelFrame title="$ awk · fee distribution" updatedAt={oldestFreshAt(data.status, ["mempool"])}>
                 <TermFeeHisto data={data} />
               </PanelFrame>
@@ -400,10 +400,10 @@ BP_VARIANT=BP+`}
             </div>
 
             <PanelFrame title="$ help" ticks={false}>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(8, 1fr)", gap: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                 {[["⌘K", "palette"], ["G H", "home"], ["G M", "mempool"], ["G E", "education"], ["G D", "dashboard"], ["G S", "simulate"], ["?", "help"], ["[", "prev block"], ["]", "next block"], ["/", "search"], ["F", "follow log"], ["S", "scanlines"], ["D", "density"], ["L", "lock"], ["⎋", "back"], ["⇧?", "keys"]].map(([k, v], i) => (
-                  <div key={i} style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    <span style={{ border: "1px solid var(--ink-20)", padding: "1px 6px", fontSize: "var(--fs-label)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{k}</span>
+                  <div key={i} style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}>
+                    <span style={{ border: "1px solid var(--ink-20)", padding: "1px var(--sp-1)", fontSize: "var(--fs-label)", color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>{k}</span>
                     <span className="dim">{v}</span>
                   </div>
                 ))}
@@ -439,7 +439,7 @@ BP_VARIANT=BP+`}
             </div>
             <div className="rail-block">
               <h6>Network gauges</h6>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 4 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-1)" }}>
                 <div title="node sync state"><TermGauge value={syncPct} label="SYNC" /></div>
                 <div title="mempool bytes vs one full block"><TermGauge value={poolPct} label="POOL" color="var(--c-50)" /></div>
                 <div title="median block weight vs dynamic limit"><TermGauge value={weightPct} label="WEIGHT" color="var(--p-50)" /></div>

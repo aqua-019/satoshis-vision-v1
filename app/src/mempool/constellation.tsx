@@ -36,13 +36,13 @@ const tierColor = (i: number): string => (i >= 0 && i < 4 ? TIER_COLORS[i] : "va
 /** Newest = smallest age (seconds since arrival). */
 const newestFirst = (txs: Tx[]): Tx[] => [...txs].sort((a, b) => a.age - b.age);
 
-export function ConCard({ title, right, children, pad = "14px 16px", style }: any) {
+export function ConCard({ title, right, children, pad = "var(--sp-3) var(--sp-4)", style }: any) {
   return (
     <div style={{ background: "var(--surface-raised)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)", gap: "var(--sp-3)" }}>
           <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: "var(--sp-1)" }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -197,7 +197,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
     <ConCard title="Newest tx · mempool" right={<NodeProvenance source="node" keys={["mempool"]} status={data.status} />}>
       {tx ? (
         <>
-          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginBottom: 10, letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginBottom: "var(--sp-2)", letterSpacing: "0.04em" }}>{shortHash(tx.id)}</div>
           <div className="kv"><span className="k">Fee</span><span className="v acc">{tx.fee.toFixed(6)} XMR</span></div>
           <div className="kv"><span className="k">Size</span><span className="v">{fmtBytes(tx.size)}</span></div>
           <div className="kv"><span className="k">Rate</span><span className="v">{Math.round(tx.perB)} pcn/B</span></div>
@@ -206,7 +206,7 @@ function ConNewestTx({ data }: { data: MoneroLive }) {
           <div className="kv"><span className="k">Tier</span><span className="v" style={{ color: tierColor(tierIdx) }}>{tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx] : "—"}</span></div>
         </>
       ) : (
-        <div className="mono dim" style={{ fontSize: "var(--fs-mono)", padding: "18px 0", textAlign: "center" }}>awaiting mempool…</div>
+        <div className="mono dim" style={{ fontSize: "var(--fs-mono)", padding: "var(--sp-4) 0", textAlign: "center" }}>awaiting mempool…</div>
       )}
     </ConCard>
   );
@@ -298,7 +298,7 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
       <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
         {pinned ? (
           <div data-tracked-tx={pinned.txid} data-tracked-block={pinned.height}
-            style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px solid var(--y-50)" }}>
+            style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: "var(--sp-2)", padding: "2px 0", borderBottom: "1px solid var(--y-50)" }}>
             <span className="dim2">pinned</span>
             <span style={{ color: "var(--y-50)" }}>TRACK</span>
             <span style={{ color: "var(--y-50)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pinned.msg}</span>
@@ -308,7 +308,7 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
         {events.length ? events.map((e) => {
           const row = logRow(e);
           return (
-            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: 8, padding: "2px 0", borderBottom: "1px dashed var(--line-d)", animation: "con-slidein var(--d-4) var(--e-standard)" /* D0651: 0.4s tie → --d-4 (round-half-up) */ }}>
+            <div key={row.key} style={{ display: "grid", gridTemplateColumns: "104px 120px 1fr 96px", gap: "var(--sp-2)", padding: "2px 0", borderBottom: "1px dashed var(--line-d)", animation: "con-slidein var(--d-4) var(--e-standard)" /* D0651: 0.4s tie → --d-4 (round-half-up) */ }}>
               <span className="dim2">{new Date(e.ts).toISOString().slice(11, 23)}</span>
               <span style={{ color: LOG_TONE[e.kind] }}>{row.ev}</span>
               <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.msg}</span>
@@ -316,7 +316,7 @@ function ConPropLog({ data, tracking }: { data: MoneroLive; tracking: Tracking }
             </div>
           );
         }) : (!pinned ? (
-          <div className="dim2" style={{ padding: "6px 0" }}>awaiting feed events…</div>
+          <div className="dim2" style={{ padding: "var(--sp-1) 0" }}>awaiting feed events…</div>
         ) : null)}
       </div>
       <style>{`@keyframes con-slidein { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }`}</style>
@@ -342,9 +342,9 @@ function ConFeeTierBars({ data }: { data: MoneroLive }) {
   const max = Math.max(1, ...counts);
   return (
     <ConCard title="Fee tiers · mempool distribution" right={<span className="acc">{ok ? `${data.mempool.length} tx` : "—"}</span>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)" }}>
         {FEE_TIER_LABELS.map((label, i) => (
-          <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+          <div key={label} style={{ display: "grid", gridTemplateColumns: "56px 1fr 90px 38px", gap: "var(--sp-2)", alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
             <span className="dim2">{label}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ok ? `${data.feeTiers[i].toLocaleString()} pcn/B` : "—"}</span>
             {/* D0673: scaleX, not width. Three things changed with it —
@@ -396,7 +396,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
   let acc = 0;
   return (
     <ConCard title="Mempool · bytes by fee tier" right={<span className="acc">{ok ? fmtBytes(totalBytes) : "—"}</span>}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-4)" }}>
         <svg viewBox="0 0 140 140" width="100%" style={{ display: "block", maxWidth: 124 }}>
           <circle cx={cx} cy={cy} r={r} fill="none" stroke="var(--line)" strokeWidth={sw} />
           {ok && totalBytes > 0 ? FEE_TIER_LABELS.map((label, i) => {
@@ -409,13 +409,13 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
         </svg>
         <div style={{ flex: 1 }}>
           {FEE_TIER_LABELS.map((label, i) => (
-            <div key={label} style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", padding: "3px 0" }}>
+            <div key={label} style={{ display: "flex", alignItems: "center", gap: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", padding: "3px 0" }}>
               <span style={{ width: 8, height: 8, borderRadius: 2, background: TIER_COLORS[i], boxShadow: `0 0 4px ${TIER_COLORS[i]}` }} />
               <span className="dim" style={{ flex: 1 }}>{label}</span>
               <span className="acc">{ok && totalBytes > 0 ? `${((bytes[i] / totalBytes) * 100).toFixed(1)}%` : "—"}</span>
             </div>
           ))}
-          <div className="kv" style={{ marginTop: 6 }}><span className="k">Median rate</span><span className="v">{ok ? `${Math.round(stats.medianPerB)} pcn/B` : "—"}</span></div>
+          <div className="kv" style={{ marginTop: "var(--sp-1)" }}><span className="k">Median rate</span><span className="v">{ok ? `${Math.round(stats.medianPerB)} pcn/B` : "—"}</span></div>
           <div className="kv"><span className="k">Pool bytes</span><span className="v">{ok ? fmtBytes(totalBytes) : "—"}</span></div>
         </div>
       </div>
@@ -427,7 +427,7 @@ function ConFeeBytesDonut({ data }: { data: MoneroLive }) {
 export function ConBlockStream({ data, tracking, trackedHeight }: { data: MoneroLive; tracking: Tracking; trackedHeight: number | null }) {
   return (
     <ConCard title="Block stream" right={<span className="acc">{hasData(data.status.network) ? `tip #${data.height.toLocaleString()}` : "—"}</span>}>
-      <div style={{ display: "flex", gap: 4, height: 96, alignItems: "flex-end" }}>
+      <div style={{ display: "flex", gap: "var(--sp-1)", height: 96, alignItems: "flex-end" }}>
         {data.blocks.slice(0, RIBBON_BLOCKS).map((b) => {
           const isTracked = trackedHeight != null && b.height === trackedHeight;
           return (
@@ -448,7 +448,7 @@ export function ConBlockStream({ data, tracking, trackedHeight }: { data: Monero
         })}
       </div>
       {trackedHeight != null && tracking ? (
-        <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+        <div style={{ marginTop: "var(--sp-2)", display: "flex", justifyContent: "flex-end" }}>
           <TrackChip tracking={tracking} data={data} />
         </div>
       ) : null}
@@ -464,12 +464,12 @@ export function ConOverview({ data, tracking }: { data: MoneroLive; tracking: Tr
   const trackedTxId = tracking?.kind === "tx" ? tracking.id : null;
   const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
   return (
-    <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, alignItems: "start" }}>
+    <div style={{ padding: "var(--sp-4) 20px 40px", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "var(--sp-3)", alignItems: "start" }}>
         <ConCard title="Mempool constellation" right={<NodeProvenance source="node" also="session" keys={["mempool", "fees", "network"]} status={data.status} detail="positions hash-derived" />} style={{ display: "flex", flexDirection: "column" }}>
           <ConSphere txs={data.mempool} tiers={data.feeTiers} ready={ready} trackedTxId={trackedTxId} size={460} />
         </ConCard>
-        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
           <ConNewestTx data={data} />
           <ConMempoolRadar data={data} trackedTxId={trackedTxId} />
         </div>
@@ -477,7 +477,7 @@ export function ConOverview({ data, tracking }: { data: MoneroLive; tracking: Tr
 
       <ConPropLog data={data} tracking={tracking} />
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "var(--sp-3)" }}>
         <ConFeeTierBars data={data} />
         <ConFeeBytesDonut data={data} />
         <ConBlockStream data={data} tracking={tracking} trackedHeight={trackedHeight} />
