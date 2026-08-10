@@ -101,11 +101,22 @@ export function MempoolPage() {
             once here, screen-reader-only. `.sr-only` is out of flow with a
             1px box — zero layout space, zero pixels changed. */}
         <h1 id="page-title" className="sr-only">Mempool · {meta.label} view</h1>
-        {/* breadcrumb — page chrome; heartbeat surfaces per-second feed liveness */}
-        <div style={{ padding: "10px 20px 0", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-          {/* breadcrumb + fit/100% zoom toggle on the LEFT (the fixed .mp-switcher
-              occupies the top-right, so the toggle must not live in the right group). */}
-          <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+        {/* header row — breadcrumb + fit/100% zoom toggle on the LEFT,
+            heartbeat + view switcher trigger on the RIGHT. Moved out of an
+            inline style into `.mp-chrome` (styles.css) for the same reason
+            PageShell.tsx's own header gives for never emitting geometry
+            inline: an inline declaration beats every class rule, and the
+            mobile band below needs to reshape this row's right group.
+
+            Until this change the zoom toggle lived on the LEFT specifically
+            to dodge `.mp-switcher`, which was `position: fixed` and pinned
+            top-right over the canvas — anything sharing its side risked
+            being covered. That reasoning is gone: `.mp-switcher`'s collapsed
+            trigger is now an ordinary flow child of `.mp-chrome__right`
+            below, so this is just a plain left/right split and nothing here
+            is dodging anything anymore. */}
+        <div className="mp-chrome">
+          <div className="mp-chrome__left">
             <Crumbs path={`${R.LIVE_MEMPOOL}?v=${active}`} />
             {meta.fit ? (
               <div className="mp-zoom" role="group" aria-label="Zoom">
@@ -123,72 +134,84 @@ export function MempoolPage() {
               </div>
             ) : null}
           </div>
-          <MempoolHeartbeat data={data} />
+          <div className="mp-chrome__right">
+            <MempoolHeartbeat data={data} />
+            {/* View switcher — the collapsed trigger (+ its kicker label) is
+                now an ordinary flow child at every width; it used to be
+                `position: fixed`, pinned top-right, covering
+                `.mempool-search-bar` inside the active view on 5 of the 6
+                views at 1440 (measured occupancy 206×74 at 1440, 220×92 at
+                2560). The OPEN LIST still overlays rather than joining flow
+                on desktop — styles.css's `.mp-switcher__list` comment has the
+                full reasoning (opening it in flow would resize
+                `.mp-canvas-scroll` and retrigger `useFitToView`'s
+                ResizeObserver mid-interaction). On <=768px the trigger AND
+                the open list both stay in flow, same as today — the mobile
+                CSS already treated this whole thing as an inline dropdown
+                before this change, and nothing about that behaviour changes
+                here, only where the trigger sits before it opens. */}
+            <div className="mp-switcher" ref={switcherRef}>
+              <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · {MEMPOOL_VIEWS.length} views</div>
+              <button
+                type="button"
+                className="mp-switcher__trigger"
+                aria-expanded={open}
+                aria-controls="mp-view-list"
+                onClick={() => setOpen((o) => !o)}
+              >
+                <span>View · {meta.label}</span>
+                <span aria-hidden="true">{open ? "▴" : "▾"}</span>
+              </button>
+              <div id="mp-view-list" className={"mp-switcher__list" + (open ? " is-open" : "")}>
+                {MEMPOOL_VIEWS.map((it, i) => {
+                  const on = it.id === active;
+                  return (
+                    <button
+                      key={it.id}
+                      type="button"
+                      className="mp-switcher__item"
+                      aria-current={on ? "true" : undefined}
+                      onClick={() => { setActive(it.id); setOpen(false); }}
+                      style={{
+                        /* D0661 — per-item index for the open cascade. The DELAY is
+                           computed in CSS (`calc(var(--stagger-i) * 30ms)`) so the
+                           whole effect can be switched off in one place: the
+                           animation lives inside a
+                           `@media (prefers-reduced-motion: no-preference)` block,
+                           and under `reduce` these items simply appear at once. No
+                           information is carried by the movement — the list is
+                           already fully present and readable — so nothing is lost.
+                           The index is data, not motion, which is why it is safe
+                           to emit unconditionally here. */
+                        ["--stagger-i" as any]: i,
+                        appearance: "none", cursor: "pointer",
+                        background: on ? "color-mix(in srgb, var(--accent-structural) 8%, transparent)" : "transparent",
+                        border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),
+                        color: on ? "var(--tk-accent)" : "var(--ink-80)",
+                        padding: "6px 10px",
+                        fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
+                        letterSpacing: "0.1em", textTransform: "uppercase",
+                        boxShadow: on ? "var(--glow-1)" : "none",
+                        display: "flex", flexDirection: "column", gap: 1, textAlign: "left",
+                      }}
+                    >
+                      <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                        {it.star ? <span style={{ color: "var(--tk-accent)" }}>★</span> : null}
+                        {it.label}
+                      </span>
+                      <span style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.04em", textTransform: "none" }}>{it.sub}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* source vocabulary legend — mempool mixes live node subjects with
             session-computed positions/confirmations. */}
         <div style={{ padding: "2px 20px 0" }}>
           <DataLegend sources={["node", "session"]} />
-        </div>
-
-        {/* View switcher — fixed top-right on desktop; inline dropdown on mobile.
-            Rendered before the view so position:fixed (desktop) is out of flow
-            and position:static (mobile) lands it inline under the breadcrumb. */}
-        <div className="mp-switcher" ref={switcherRef}>
-          <div className="kicker mp-switcher__kicker" style={{ marginBottom: 2 }}>Mempool view · {MEMPOOL_VIEWS.length} views</div>
-          <button
-            type="button"
-            className="mp-switcher__trigger"
-            aria-expanded={open}
-            aria-controls="mp-view-list"
-            onClick={() => setOpen((o) => !o)}
-          >
-            <span>View · {meta.label}</span>
-            <span aria-hidden="true">{open ? "▴" : "▾"}</span>
-          </button>
-          <div id="mp-view-list" className={"mp-switcher__list" + (open ? " is-open" : "")}>
-            {MEMPOOL_VIEWS.map((it, i) => {
-              const on = it.id === active;
-              return (
-                <button
-                  key={it.id}
-                  type="button"
-                  className="mp-switcher__item"
-                  aria-current={on ? "true" : undefined}
-                  onClick={() => { setActive(it.id); setOpen(false); }}
-                  style={{
-                    /* D0661 — per-item index for the open cascade. The DELAY is
-                       computed in CSS (`calc(var(--stagger-i) * 30ms)`) so the
-                       whole effect can be switched off in one place: the
-                       animation lives inside a
-                       `@media (prefers-reduced-motion: no-preference)` block,
-                       and under `reduce` these items simply appear at once. No
-                       information is carried by the movement — the list is
-                       already fully present and readable — so nothing is lost.
-                       The index is data, not motion, which is why it is safe
-                       to emit unconditionally here. */
-                    ["--stagger-i" as any]: i,
-                    appearance: "none", cursor: "pointer",
-                    background: on ? "color-mix(in srgb, var(--accent-structural) 8%, transparent)" : "transparent",
-                    border: "1px solid " + (on ? "var(--tk-accent)" : "var(--ink-10)"),
-                    color: on ? "var(--tk-accent)" : "var(--ink-80)",
-                    padding: "6px 10px",
-                    fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
-                    letterSpacing: "0.1em", textTransform: "uppercase",
-                    boxShadow: on ? "var(--glow-1)" : "none",
-                    display: "flex", flexDirection: "column", gap: 1, textAlign: "left",
-                  }}
-                >
-                  <span style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                    {it.star ? <span style={{ color: "var(--tk-accent)" }}>★</span> : null}
-                    {it.label}
-                  </span>
-                  <span style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", letterSpacing: "0.04em", textTransform: "none" }}>{it.sub}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* active view fills the remaining height and scrolls internally. Fit-enabled

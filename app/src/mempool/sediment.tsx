@@ -38,13 +38,13 @@ interface ViewProps {
 //
 // All helpers prefixed `Sed` to avoid the shared-scope collisions.
 
-export function SedCard({ title, right, children, pad = "14px 16px", style }: any) {
+export function SedCard({ title, right, children, pad = "var(--sp-3) var(--sp-4)", style }: any) {
   return (
     <div style={{ background: "var(--surface-raised)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)", gap: "var(--sp-3)" }}>
           <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: "var(--sp-1)" }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -114,7 +114,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
       </div>
 
       {/* suspended txs */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: memH, padding: 10 }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: memH, padding: "var(--sp-2)" }}>
         {txs.map((tx, i) => {
           const y = (1 - tx.perB / max) * (memH - 26);
           const x = 10 + ((i * 47) % (w - 40));
@@ -183,7 +183,7 @@ export function SedColumn({ data, tracking, w = 360, h = 624 }: { data: MoneroLi
             boxShadow: isTrackedStratum
               ? "0 0 18px var(--y-50), inset 0 1px 0 color-mix(in srgb, var(--accent-structural) 50%, transparent)"
               : (i === 0 ? "0 0 22px color-mix(in srgb, var(--accent-structural) 50%, transparent), inset 0 1px 0 color-mix(in srgb, var(--accent-structural) 50%, transparent)" : "inset 0 0 8px color-mix(in srgb, var(--bg-0) 40%, transparent)"),
-            display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 10px", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
+            display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)",
             color: i < 3 ? "var(--bg-0)" : "color-mix(in srgb, var(--bg-0) 80%, transparent)", fontWeight: 600, opacity: 1 - i * 0.06 }}>
             <span>#{b.height.toLocaleString()}</span>
             <span style={{ fontSize: "var(--fs-label)", opacity: 0.72 }}>{b.txs}tx · {b.conf}c</span>
@@ -311,12 +311,12 @@ export function SedStrataLog({ data, trackedHeight }: { data: MoneroLive; tracke
       />
 
       {/* bottom pane — scrollable per-stratum log over all blocks */}
-      <div style={{ maxHeight: 300, overflowY: "auto", marginTop: 12, display: "flex", flexDirection: "column", gap: 3 }}>
+      <div style={{ maxHeight: 300, overflowY: "auto", marginTop: "var(--sp-3)", display: "flex", flexDirection: "column", gap: 3 }}>
         {blocks.map((b, i) => {
           const isTracked = trackedHeight != null && b.height === trackedHeight;
           return (
             <div key={b.height} data-tracked-block={isTracked ? b.height : undefined}
-              style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: 8, alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", opacity: isTracked ? 1 : Math.max(0.25, 0.9 - i * 0.05) }}>
+              style={{ display: "grid", gridTemplateColumns: "30px 80px 1fr 54px", gap: "var(--sp-2)", alignItems: "center", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", opacity: isTracked ? 1 : Math.max(0.25, 0.9 - i * 0.05) }}>
               <span className="dim2" style={{ fontSize: "var(--fs-label)" }}>{i === 0 ? "TOP" : b.conf + "c"}</span>
               <span style={{ color: isTracked ? "var(--y-50)" : i === 0 ? "var(--tk-accent)" : "var(--ink-60)" }}>#{b.height.toLocaleString()}</span>
               <div style={{ height: 9, background: "var(--line-d)", borderRadius: 2, overflow: "hidden" }}>
@@ -341,7 +341,7 @@ export function SedFeeProfile({ data }: { data: MoneroLive }) {
           color="var(--tk-accent)" height={188}
           format={fmtPerB} />
       ) : (
-        <div className="mono dim" style={{ padding: 24, textAlign: "center", fontSize: "var(--fs-mono)" }}>mempool empty</div>
+        <div className="mono dim" style={{ padding: "var(--sp-5)", textAlign: "center", fontSize: "var(--fs-mono)" }}>mempool empty</div>
       )}
     </SedCard>
   );
@@ -368,13 +368,13 @@ export function SedClearance({ data }: { data: MoneroLive }) {
   const p90 = poolReady ? p90PerB(data.mempool) : null;
   return (
     <SedCard title="Clearance rate" right={<NodeProvenance source="node" keys={["mempool", "network"]} status={data.status} />}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 6 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-2)", marginBottom: "var(--sp-1)" }}>
         <span className="mono acc glow" style={{ fontSize: 24, fontWeight: 500 }}>{data.mempool.length}</span>
         <span className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>tx suspended</span>
       </div>
       <AreaSeries data={series} height={84} color="var(--tk-accent)" baseline="zero"
         xLabels={false} markers={false} format={fmtRound} />
-      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 6 }}>
+      <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: "var(--sp-1)" }}>
         <span>median {poolReady ? Math.round(stats.medianPerB).toLocaleString() + " p/B" : "—"}</span>
         <span>P90 {poolReady && p90 != null ? Math.round(p90).toLocaleString() + " p/B" : "—"}</span>
         <span>next {hasData(data.status.network) ? <BlockEta data={data} /> : "—"}</span>
@@ -389,13 +389,13 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
   const rows = data.mempool.slice(0, 12);
   return (
     <SedCard title={"Suspended transactions · " + rows.length + " of " + data.mempool.length} right={<><NodeProvenance source="node" keys={["mempool"]} status={data.status} /><span className="acc">sorted by depth</span></>}>
-      <div className="mono" style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: "var(--sp-2)", fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 var(--sp-2) var(--sp-1)", borderBottom: "1px solid var(--rule)" }}>
         <span>TXID</span><span>Size</span><span>Fee · XMR</span><span>Fee/B</span><span>Depth</span><span>Age</span>
       </div>
       {rows.map((t) => {
         const depth = 1 - t.perB / max;
         return (
-          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: 10, fontSize: "var(--fs-mono)", padding: "7px 8px", borderBottom: "1px solid var(--line-d)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
+          <div key={t.id} onClick={() => onPickTx(t.id)} style={{ display: "grid", gridTemplateColumns: "1.5fr 80px 110px 96px 1fr 60px", gap: "var(--sp-2)", fontSize: "var(--fs-mono)", padding: "var(--sp-2) var(--sp-2)", borderBottom: "1px solid var(--line-d)", cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center" }}
             onMouseEnter={(e) => e.currentTarget.style.background = "color-mix(in srgb, var(--accent-structural) 7%, transparent)"}
             onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
             <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
@@ -416,17 +416,17 @@ export function SedTxFeed({ data, onPickTx }: { data: MoneroLive; onPickTx: (id:
 export function SedOverview({ data, tracking, onPickTx }: { data: MoneroLive; tracking: Tracking; onPickTx: (id: string) => void }) {
   const trackedHeight = tracking?.kind === "tx" ? (tracking.blockHeight ?? null) : null;
   return (
-    <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <section style={{ display: "flex", flexWrap: "wrap", gap: 24, alignItems: "stretch" }}>
+    <div style={{ padding: "var(--sp-4) 20px 40px", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
+      <section style={{ display: "flex", flexWrap: "wrap", gap: "var(--sp-5)", alignItems: "stretch" }}>
         <SedColumn data={data} tracking={tracking} />
-        <div style={{ flex: "1 1 360px", minWidth: 0, display: "flex", flexDirection: "column", gap: 14, marginLeft: "clamp(0px, 4vw, 70px)" }}>
-          <SedCard title="How to read this core" pad="14px 16px">
-            <div style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.34, color: "var(--ink-100)", marginBottom: 8 }}>A cross-section of the mempool, drawn as a sample column.</div>
+        <div style={{ flex: "1 1 360px", minWidth: 0, display: "flex", flexDirection: "column", gap: "var(--sp-3)", marginLeft: "clamp(0px, 4vw, 70px)" }}>
+          <SedCard title="How to read this core" pad="var(--sp-3) var(--sp-4)">
+            <div style={{ fontFamily: "var(--f-serif)", fontSize: 17, lineHeight: 1.34, color: "var(--ink-100)", marginBottom: "var(--sp-2)" }}>A cross-section of the mempool, drawn as a sample column.</div>
             <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", lineHeight: 1.55 }}>
               Each <span className="acc">particle</span> is one pending transaction — its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>height</em> tracks fee-per-byte and its <em style={{ color: "var(--ink-100)", fontStyle: "normal" }}>size</em> tracks weight. The bright band is the <span className="acc">confirmation interface</span>; strata below are confirmed blocks, brightest at the surface, fading toward <span className="dim">{CONF_UNLOCK}-deep unlock</span>.
             </div>
           </SedCard>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
             <SedGrainScatter data={data} />
             <SedRingFan />
           </div>
@@ -434,7 +434,7 @@ export function SedOverview({ data, tracking, onPickTx }: { data: MoneroLive; tr
         </div>
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
         <SedStrataLog data={data} trackedHeight={trackedHeight} />
         <SedFeeProfile data={data} />
       </section>

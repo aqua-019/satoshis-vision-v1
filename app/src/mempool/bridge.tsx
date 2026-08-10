@@ -36,13 +36,13 @@ interface ViewProps {
 const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"];
 
 /* ── card chrome shared by all bridge instruments ───────────── */
-export function BrgCard({ title, right, children, pad = "14px 16px", style }: any) {
+export function BrgCard({ title, right, children, pad = "var(--sp-3) var(--sp-4)", style }: any) {
   return (
     <div style={{ background: "var(--surface-raised)", border: "1px solid var(--rule)", borderRadius: 8, padding: pad, position: "relative", ...style }}>
       {(title || right) ? (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, gap: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "var(--sp-2)", gap: "var(--sp-3)" }}>
           <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.16em", textTransform: "uppercase", color: "var(--ink-40)" }}>{title}</span>
-          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: 6 }}>{right}</span>
+          <span className="mono" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-40)", display: "flex", alignItems: "center", gap: "var(--sp-1)" }}>{right}</span>
         </div>
       ) : null}
       {children}
@@ -306,7 +306,7 @@ export function BrgGaugeBank({ data }: { data: MoneroLive }) {
     <BrgCard title="Instrument bank · node health" right={ready
       ? <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> live</>
       : <span className="dim">awaiting node</span>}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 6 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "var(--sp-1)" }}>
         <BrgGauge value={sync} label="SYNC" color="var(--g-50)" />
         <BrgGauge value={fork} label={`FORK v${data.majorVersion || "—"}`} color="var(--c-50)" />
         <BrgGauge value={weight} label="WEIGHT · MEDIAN/LIMIT" color="var(--tk-accent)" />
@@ -419,7 +419,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
       : overdue
         ? <span style={{ color: "var(--y-50)" }}>OVERDUE</span>
         : <><span className="led pulse" style={{ background: "var(--g-50)", boxShadow: "0 0 4px var(--g-50)" }} /> locked</>}>
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)" }}>
         <svg viewBox="0 0 90 90" width="100%" style={{ maxWidth: 90, display: "block" }}>
           <circle cx="45" cy="45" r="34" fill="none" stroke="var(--line)" strokeWidth="6" />
           <circle cx="45" cy="45" r="34" fill="none" stroke={tone} strokeWidth="6" strokeLinecap="round"
@@ -432,11 +432,29 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
               // (the colour swap on lock/overdue) is a genuine UI timing: 0.3s exact → --d-3.
               transition: reduced ? "none" : "stroke-dashoffset 0.95s linear, stroke var(--d-3) var(--e-standard)",
             }} />
-          <text x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
-          <text x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{hasData(data.status.network) ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
+          {/* TEST-VISIBILITY hooks, zero pixels changed: `data-gauge` names this
+              gauge, and the caption/value pair below carries `data-gauge-caption`
+              / `data-gauge-value` so verify-memviews.mjs (scenario 6) can waive
+              their by-design overlap ("ELAPSED" sits directly above the centre
+              value) by RELATIONSHIP — caption over its OWN gauge's value, same
+              nearest `data-gauge` ancestor — rather than by element. That keeps
+              the caption checked against every other label on the page; only
+              this one relationship is exempt.
+              The earlier form of this waiver matched the value's TEXT instead,
+              and that text is wall-clock derived (see `elapsed` above), so the
+              match string changed every second and the waiver silently expired
+              mid-run — a real false-red roughly 1 run in 6. These markers exist
+              to keep the clock out of a layout assertion.
+              `data-gauge` ids must be UNIQUE per gauge: two gauges sharing one
+              would let a single waiver span both, and nothing here enforces
+              that today. */}
+          <g data-gauge="block-cadence-elapsed">
+            <text data-gauge-caption x="45" y="42" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="9" fill="var(--ink-40)">ELAPSED</text>
+            <text data-gauge-value x="45" y="56" textAnchor="middle" fontFamily="var(--f-mono)" fontSize="14" fontWeight="500" fill={overdue ? "var(--y-50)" : "var(--ink-100)"}>{hasData(data.status.network) ? `${Math.floor(elapsed / 60)}:${String(elapsed % 60).padStart(2, "0")}` : "—:—"}</text>
+          </g>
         </svg>
         <div style={{ flex: 1 }}>
-          <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 6 }}>last {ivs.length || "—"} intervals</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: "var(--sp-1)" }}>last {ivs.length || "—"} intervals</div>
           <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 38 }}>
             {ivs.slice().reverse().map((item, i) => {
               const over = item.iv > TARGET;
@@ -455,7 +473,7 @@ export function BrgBlockCadence({ data, trackedTxId, trackedHeight }: { data: Mo
               );
             })}
           </div>
-          <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 5 }}>
+          <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: "var(--sp-1)" }}>
             <span>#{hasData(data.status.network) ? data.height.toLocaleString() : "—"}</span><span>μ {mu != null ? mu + "s" : "—"}</span><span>alt {hasData(data.status.network) ? data.altBlocksCount : "—"}</span>
           </div>
         </div>
@@ -470,8 +488,8 @@ export function BrgPoolDist({ data }: { data: MoneroLive }) {
   const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
   return (
     <BrgCard title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-body)", lineHeight: 1.5 }}>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-body)", lineHeight: 1.5 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-2)" }}>
           <span style={{ fontSize: 20, color: "var(--ink-100)" }}>{unattributed}/{recentBlocks.length}</span>
           <span className="dim">recent blocks · pool unknown</span>
         </div>
@@ -555,7 +573,7 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
   // independent of the real event log above.
   const pinned = trackedTxId && trackedHeight != null ? (
     <div data-tracked-tx={trackedTxId} data-tracked-block={trackedHeight}
-      style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px solid var(--y-50)" }}>
+      style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: "var(--sp-2)", padding: "3px 0", borderBottom: "1px solid var(--y-50)" }}>
       <span className="dim2">PINNED</span>
       <span style={{ color: "var(--y-50)" }}>TRACK</span>
       <span style={{ color: "var(--y-50)" }}>
@@ -571,7 +589,7 @@ export function BrgAlertTape({ data, trackedTxId, trackedHeight, trackedConf }: 
           <div className="dim" style={{ padding: "3px 0" }}>standing by · no feed events yet</div>
         ) : rows.map((r) => (
           // D0651: brg-slidein 0.4s (bare) — tie between --d-3/--d-4, round-half-up to --d-4 var(--e-standard)
-          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: 10, padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein var(--d-4) var(--e-standard)" }}>
+          <div key={r.t} style={{ display: "grid", gridTemplateColumns: "70px 90px 1fr", gap: "var(--sp-2)", padding: "3px 0", borderBottom: "1px dashed var(--line-d)", animation: "brg-slidein var(--d-4) var(--e-standard)" }}>
             <span className="dim2">{r.ts}</span>
             <span style={{ color: col[r.tone] }}>{r.lvl}</span>
             <span className="dim" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.msg}</span>
@@ -589,7 +607,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
   const trackedId = tracking?.kind === "tx" ? tracking.id : null;
   return (
     <BrgCard title={"Transaction console · " + rows.length + " of " + data.mempool.length} right={<span className="acc">FEE TIER · LIVE</span>}>
-      <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 8px 6px", borderBottom: "1px solid var(--rule)" }}>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: "var(--sp-2)", fontSize: "var(--fs-label)", letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-40)", padding: "0 var(--sp-2) var(--sp-1)", borderBottom: "1px solid var(--rule)" }}>
         <span>SEQ</span><span>TIER</span><span>TXID</span><span>SIZE</span><span>FEE/B</span><span>RING</span><span>AGE</span>
       </div>
       {rows.map((t, i) => {
@@ -601,8 +619,8 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
           <div key={t.id} data-tracked-tx={isTracked ? t.id : undefined}>
             <div onClick={() => onPickTx(t.id)}
               style={{
-                display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: 10, fontSize: "var(--fs-mono)",
-                padding: "7px 8px", borderBottom: "1px solid var(--line-d)",
+                display: "grid", gridTemplateColumns: "64px 78px 1.5fr 78px 96px 66px 64px", gap: "var(--sp-2)", fontSize: "var(--fs-mono)",
+                padding: "var(--sp-2) var(--sp-2)", borderBottom: "1px solid var(--line-d)",
                 borderLeft: isTracked ? "2px solid var(--y-50)" : "2px solid transparent",
                 background: isTracked ? "color-mix(in srgb, var(--status-warn) 7%, transparent)" : undefined,
                 cursor: "pointer", fontFamily: "var(--f-mono)", alignItems: "center",
@@ -610,7 +628,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
               onMouseEnter={(e) => e.currentTarget.style.background = isTracked ? "color-mix(in srgb, var(--status-warn) 12%, transparent)" : "color-mix(in srgb, var(--accent-structural) 7%, transparent)"}
               onMouseLeave={(e) => e.currentTarget.style.background = isTracked ? "color-mix(in srgb, var(--status-warn) 7%, transparent)" : "transparent"}>
               <span className="dim2">{String(data.mempool.length - i).padStart(4, "0")}</span>
-              <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px 5px", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
+              <span style={{ color: tc, border: "1px solid " + tc, borderRadius: 2, fontSize: "var(--fs-label)", padding: "2px var(--sp-1)", letterSpacing: "0.1em", justifySelf: "start" }}>{label}</span>
               <span style={{ color: "var(--c-50)" }}>{ShortHash(t.id)}</span>
               <span className="dim">{fmtBytes(t.size)}</span>
               <span className="acc">{Math.round(t.perB).toLocaleString()}</span>
@@ -618,7 +636,7 @@ export function BrgTxConsole({ data, tracking, onPickTx }: { data: MoneroLive; t
               <span className="dim2">{t.age}s</span>
             </div>
             {isTracked ? (
-              <div style={{ padding: "2px 8px 6px", borderLeft: "2px solid var(--y-50)" }}>
+              <div style={{ padding: "2px var(--sp-2) var(--sp-1)", borderLeft: "2px solid var(--y-50)" }}>
                 <TrackChip tracking={tracking} data={data} />
               </div>
             ) : null}
@@ -644,8 +662,8 @@ export function BrgOverview({ data, tracking, onPickTx }: { data: MoneroLive; tr
   const trackedConf = trackedHeight != null ? confOf(trackedHeight, data) : null;
 
   return (
-    <div style={{ padding: "16px 20px 40px", display: "flex", flexDirection: "column", gap: 14 }}>
-      <section style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 8 }}>
+    <div style={{ padding: "var(--sp-4) 20px 40px", display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "var(--sp-2)" }}>
         <Stat k="HEIGHT" v={ready ? data.height.toLocaleString() : "—"} sub="live" tone="acc" />
         <Stat k="HASHRATE" v={ready ? (data.hashrate / 1e9).toFixed(2) + " GH" : "—"} sub="2:00 tgt" />
         <Stat k="DIFFICULTY" v={ready ? (data.difficulty / 1e9).toFixed(2) + "G" : "—"} />
@@ -655,19 +673,19 @@ export function BrgOverview({ data, tracking, onPickTx }: { data: MoneroLive; tr
         <Stat k="FORK" v={`v${data.majorVersion || "—"}`} sub={ready ? data.nettype || undefined : undefined} tone="p" />
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: 14, alignItems: "stretch" }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1.05fr 1fr", gap: "var(--sp-3)", alignItems: "stretch" }}>
         <BrgCard title="Mempool radar · PPI scope" right={<span className="acc">SWEEP 4.2s</span>} style={{ display: "flex", flexDirection: "column" }}>
           <BrgRadar data={data} trackedId={trackedTxId} />
         </BrgCard>
         <BrgGaugeBank data={data} />
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: 14 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "var(--sp-3)" }}>
         <BrgFeeScope data={data} />
         <BrgBlockCadence data={data} trackedTxId={trackedTxId} trackedHeight={trackedHeight} />
       </section>
 
-      <section style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 14 }}>
+      <section style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: "var(--sp-3)" }}>
         <BrgPoolDist data={data} />
         <BrgAlertTape data={data} trackedTxId={trackedTxId} trackedHeight={trackedHeight} trackedConf={trackedConf} />
       </section>

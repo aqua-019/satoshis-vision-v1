@@ -30,7 +30,7 @@ function DKV({ k, v, mono = true, tone, copy, wrap }: any) {
   return (
     <div className={"dkv " + (tone || "")} style={{
       display: "grid", gridTemplateColumns: "180px 1fr",
-      gap: 12, padding: "8px 0",
+      gap: "var(--sp-3)", padding: "var(--sp-2) 0",
       borderBottom: "1px dashed var(--ink-10)",
       alignItems: "baseline",
       ...(wrap ? { gridTemplateColumns: "180px 1fr auto" } : {}),
@@ -45,7 +45,7 @@ function DKV({ k, v, mono = true, tone, copy, wrap }: any) {
       {copy ? (
         <button onClick={() => navigator.clipboard.writeText(copy)}
           style={{ appearance: "none", background: "transparent", border: "1px solid var(--ink-20)",
-            color: "var(--ink-60)", padding: "3px 8px", fontSize: "var(--fs-label)",
+            color: "var(--ink-60)", padding: "3px var(--sp-2)", fontSize: "var(--fs-label)",
             fontFamily: "var(--f-mono)", letterSpacing: "0.1em",
             cursor: "pointer", borderRadius: 3 }}
           title={"Copy " + k}>COPY</button>
@@ -57,9 +57,9 @@ function DKV({ k, v, mono = true, tone, copy, wrap }: any) {
 function Section({ title, right, children, kicker }: any) {
   return (
     <section style={{ marginTop: 20 }}>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 8, gap: 16, paddingBottom: 6, borderBottom: "1px solid var(--rule)" }}>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "var(--sp-2)", gap: "var(--sp-4)", paddingBottom: "var(--sp-1)", borderBottom: "1px solid var(--rule)" }}>
         <div>
-          {kicker ? <div className="kicker" style={{ marginBottom: 4 }}>{kicker}</div> : null}
+          {kicker ? <div className="kicker" style={{ marginBottom: "var(--sp-1)" }}>{kicker}</div> : null}
           <h3 className="serif" style={{ margin: 0, fontSize: 18, fontWeight: 400, color: "var(--ink-100)" }}>{title}</h3>
         </div>
         {right ? <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)" }}>{right}</div> : null}
@@ -72,7 +72,7 @@ function Section({ title, right, children, kicker }: any) {
 function PrivacyBadges() {
   return ["CLSAG", "BP+", "View Tags", "Stealth", "Dandelion++"].map((b) => (
     <span key={b} style={{
-      padding: "4px 10px", border: "1px solid var(--g-50)", color: "var(--g-50)",
+      padding: "var(--sp-1) var(--sp-2)", border: "1px solid var(--g-50)", color: "var(--g-50)",
       background: "color-mix(in srgb, var(--status-up) 6%, transparent)", borderRadius: 3,
       fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase",
     }}>{b}</span>
@@ -83,8 +83,8 @@ const BackBtn = ({ onBack }: { onBack?: () => void }) => onBack ? (
   <button type="button" onClick={onBack}
     style={{ appearance: "none", cursor: "pointer", background: "transparent",
       border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-      padding: "5px 12px", borderRadius: 3,
-      fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginBottom: 18 }}>← Back</button>
+      padding: "var(--sp-1) var(--sp-3)", borderRadius: 3,
+      fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", marginBottom: "var(--sp-4)" }}>← Back</button>
 ) : null;
 
 const fmtKB = (b: number | null) => b == null ? "—" : (b / 1024).toFixed(2);
@@ -110,9 +110,9 @@ export function LiveTxDetail({ txid, data, onBack }: {
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Transaction</div>
-        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
+        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: "var(--sp-1)", wordBreak: "break-all" }}>{txid}</div>
         {showPending ? (
-          <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="mono dim" style={{ marginTop: "var(--sp-3)", fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: "var(--sp-2)" }}>
             <span className="led pulse" /> resolving from the node…
             <span style={{ color: "var(--ink-40)" }}>pending · awaiting first block</span>
           </div>
@@ -125,9 +125,9 @@ export function LiveTxDetail({ txid, data, onBack }: {
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Transaction</div>
-        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all" }}>{txid}</div>
-        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
-          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
+        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: "var(--sp-1)", wordBreak: "break-all" }}>{txid}</div>
+        <div style={{ marginTop: "var(--sp-4)", padding: "var(--sp-4) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: "var(--sp-1)" }}>Not returned by the node</div>
           <div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
             The node did not return this transaction. It may be too recent to have propagated, pruned,
             or the RPC relay is unreachable from this browser. No data is shown rather than invented values.
@@ -154,9 +154,9 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Block</div>
-        <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
+        <h2 className="serif acc" style={{ margin: "var(--sp-1) 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
         {showPending ? (
-          <div className="mono dim" style={{ marginTop: 14, fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: 10 }}>
+          <div className="mono dim" style={{ marginTop: "var(--sp-3)", fontSize: "var(--fs-mono)", display: "flex", alignItems: "center", gap: "var(--sp-2)" }}>
             <span className="led pulse" /> resolving from the node…
           </div>
         ) : null}
@@ -168,9 +168,9 @@ export function LiveBlockDetail({ height, data, onBack, onPickTx }: {
       <div style={{ padding: "20px 28px 60px" }}>
         <BackBtn onBack={onBack} />
         <div className="kicker">Block</div>
-        <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
-        <div style={{ marginTop: 18, padding: "16px 18px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
-          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: 6 }}>Not returned by the node</div>
+        <h2 className="serif acc" style={{ margin: "var(--sp-1) 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)" }}>#{height.toLocaleString()}</h2>
+        <div style={{ marginTop: "var(--sp-4)", padding: "var(--sp-4) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--tk-accent)", marginBottom: "var(--sp-1)" }}>Not returned by the node</div>
           <div className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
             The node did not return this block. The RPC relay may be unreachable from this browser.
             No data is shown rather than invented values.
@@ -206,11 +206,11 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
       <BackBtn onBack={onBack} />
 
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "flex-start", paddingBottom: 18, borderBottom: "1px solid var(--rule)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "var(--sp-5)", alignItems: "flex-start", paddingBottom: "var(--sp-4)", borderBottom: "1px solid var(--rule)" }}>
         <div>
           <div className="kicker">Transaction</div>
-          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 6, wordBreak: "break-all", lineHeight: 1.4 }}>{tx.id}</div>
-          <div style={{ display: "flex", gap: 14, marginTop: 10, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", flexWrap: "wrap" }}>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: "var(--sp-1)", wordBreak: "break-all", lineHeight: 1.4 }}>{tx.id}</div>
+          <div style={{ display: "flex", gap: "var(--sp-3)", marginTop: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-60)", flexWrap: "wrap" }}>
             <span>v{tx.version}</span>
             <span>·</span>
             <span>rct_type: <b style={{ color: "var(--p-50)" }}>{tx.rctType}</b> ({tx.rctTypeLabel})</span>
@@ -219,7 +219,7 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
             {tx.inMempool && tx.firstSeen ? <><span>·</span><span>seen {Math.max(0, Math.floor(Date.now() / 1000) - tx.firstSeen)}s ago</span></> : null}
           </div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "var(--sp-1)" }}>
           {tx.inMempool ? (
             <span className="pill warn"><span className="led pulse" />MEMPOOL</span>
           ) : tx.confirmations >= 10 ? (
@@ -233,7 +233,7 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
 
       {/* KPI tiles (all real; size/fee null → "—") */}
       <Section title="Summary" kicker={<>Top-line <NodeProvenance source="node" bare phase={detailPhase(txStatus)} /></>}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "var(--sp-2)" }}>
           <Stat k="Fee" v={tx.fee != null ? tx.fee.toFixed(7) : "—"} sub="XMR" tone="acc" />
           <Stat k="Fee rate" v={tx.feePerB != null ? tx.feePerB.toFixed(2) : "—"} sub="piconero / B" />
           <Stat k="Size" v={fmtKB(tx.sizeBytes)} sub="KB" />
@@ -244,31 +244,31 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
       </Section>
 
       {/* Privacy strip — protocol facts, NO fabricated score */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", marginTop: 18, border: "1px solid var(--g-50)", background: "color-mix(in srgb, var(--status-up) 5%, transparent)", borderRadius: 4 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)", padding: "var(--sp-3) var(--sp-4)", marginTop: "var(--sp-4)", border: "1px solid var(--g-50)", background: "color-mix(in srgb, var(--status-up) 5%, transparent)", borderRadius: 4 }}>
         <span style={{ color: "var(--g-50)", fontSize: 22, lineHeight: 1 }}>✓</span>
         <div>
           <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-100)" }}>
             Monero protocol privacy
-            <span className="up" style={{ marginLeft: 8, fontSize: "var(--fs-label)", letterSpacing: "0.12em" }}>ALWAYS-ON</span>
+            <span className="up" style={{ marginLeft: "var(--sp-2)", fontSize: "var(--fs-label)", letterSpacing: "0.12em" }}>ALWAYS-ON</span>
           </div>
-          <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 4, letterSpacing: "0.04em" }}>
+          <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: "var(--sp-1)", letterSpacing: "0.04em" }}>
             sender hidden (ring signature) · recipient hidden (stealth address) · amount hidden (RingCT)
           </div>
         </div>
         <div style={{ flex: 1 }} />
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}><PrivacyBadges /></div>
+        <div style={{ display: "flex", gap: "var(--sp-1)", flexWrap: "wrap" }}><PrivacyBadges /></div>
       </div>
 
       {/* Confirmation panel */}
       <Section title="Confirmation status" kicker="10-conf unlock"
         right={<NodeProvenance source="session" keys={["blocks"]} status={data.status} />}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--sp-3)" }}>
           <Stat k="of 10 confirmations" v={tx.confirmations} tone="acc" big />
           <Stat k="Blocks remaining" v={remaining} big />
           <Stat k="Per-block target" v="~2:00" big />
           <Stat k="Until full unlock" v={"~" + remaining * 2 + ":00"} big />
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 18, marginBottom: 6 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "var(--sp-1)", marginTop: "var(--sp-4)", marginBottom: "var(--sp-1)" }}>
           {Array.from({ length: 11 }).map((_, i) => {
             const reached = i <= tx.confirmations;
             return (
@@ -282,7 +282,7 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
             );
           })}
         </div>
-        <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", marginTop: 6 }}>
+        <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", marginTop: "var(--sp-1)" }}>
           <span>{tx.inMempool ? "in mempool · pending · 0/10 · awaiting first block" : `${tx.confirmations} of 10 — ${remaining} more until unlock`}</span>
           <span>~2 min/block target · updated live</span>
         </div>
@@ -292,7 +292,7 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
       {tx.inMempool ? (
         <Section title="Mempool" kicker="Dandelion++ stem + fluff">
           <DKV k="First seen (this node)" v={tx.firstSeen ? new Date(tx.firstSeen * 1000).toISOString() : "—"} mono />
-          <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 8, lineHeight: 1.55 }}>
+          <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: "var(--sp-2)", lineHeight: 1.55 }}>
             Origin IP is obscured by Dandelion++ (stem then fluff). Per-peer relay counts and propagation
             latency are not exposed by the node RPC and are not shown.
           </div>
@@ -303,10 +303,10 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
       <Section title="tx_extra" kicker="On-chain metadata" right={<span>{tx.extraSize} bytes</span>}>
         {tx.extraHex ? (
           <DKV k="raw_extra_hex"
-            v={<code style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "block", padding: 10, background: "var(--surface-sunk)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
+            v={<code style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)", display: "block", padding: "var(--sp-2)", background: "var(--surface-sunk)", borderRadius: 3, wordBreak: "break-all", maxHeight: 80, overflow: "auto" }}>{tx.extraHex}</code>}
             copy={tx.extraHex} />
         ) : <DKV k="raw_extra_hex" v="(empty)" tone="dim" />}
-        <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 6 }}>
+        <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: "var(--sp-1)" }}>
           tx_pubkey / payment_id live inside this blob; they are not decoded client-side.
         </div>
       </Section>
@@ -316,11 +316,11 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
         right={<span>{tx.ringSize}-member ring · amount hidden</span>}>
 
         {tx.inputs.length > 1 ? (
-          <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "var(--sp-1)", marginBottom: "var(--sp-2)", flexWrap: "wrap" }}>
             {tx.inputs.map((_, i) => (
               <button key={i} onClick={() => setOpenIn(i)}
                 style={{
-                  appearance: "none", cursor: "pointer", padding: "5px 10px",
+                  appearance: "none", cursor: "pointer", padding: "var(--sp-1) var(--sp-2)",
                   background: openIn === i ? "color-mix(in srgb, var(--accent-structural) 10%, transparent)" : "transparent",
                   border: "1px solid " + (openIn === i ? "var(--tk-accent)" : "var(--ink-20)"),
                   color: openIn === i ? "var(--tk-accent)" : "var(--ink-60)",
@@ -335,20 +335,20 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
           if (!inp) return <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>No inputs returned.</div>;
           const decoyInput = decoys.inputs?.find((d) => d.inputIdx === openIn);
           return (
-            <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
+            <div style={{ padding: "var(--sp-3) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
               <DKV k="key_image" v={inp.keyImage} tone="cyan" copy={inp.keyImage} />
               <DKV k="amount" v="HIDDEN (Pedersen commitment)" tone="dim" />
               <DKV k="ring members" v={`${inp.ringMembers} · one is the real spender, ${Math.max(0, inp.ringMembers - 1)} are decoys`} />
               <DKV k="key_offsets (relative)" v={inp.keyOffsets.length ? inp.keyOffsets.join(", ") : "—"} mono />
 
               {/* Real ring decoy ages (lazy — extra RPC via /api/xmr/decoys) */}
-              <div style={{ marginTop: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8, gap: 12 }}>
+              <div style={{ marginTop: "var(--sp-3)" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "var(--sp-2)", gap: "var(--sp-3)" }}>
                   <div className="kicker">Ring decoys · real on-chain ages</div>
                   {!wantDecoys ? (
                     <button type="button" onClick={() => setWantDecoys(true)}
                       style={{ appearance: "none", cursor: "pointer", background: "transparent",
-                        border: "1px solid var(--ink-20)", color: "var(--ink-60)", padding: "4px 10px",
+                        border: "1px solid var(--ink-20)", color: "var(--ink-60)", padding: "var(--sp-1) var(--sp-2)",
                         borderRadius: 3, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                       ▶ Resolve ring ages (extra RPC)
                     </button>
@@ -360,7 +360,7 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
                 {decoys.status === "error" ? (
                   <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>decoy ages unavailable from the node</div>
                 ) : decoyInput && decoyInput.ring.length ? (
-                  <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px 70px", gap: 8, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "auto 1fr 90px 80px 70px", gap: "var(--sp-2)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                     <span className="kicker">#</span>
                     <span className="kicker">Block height</span>
                     <span className="kicker">Age (blocks)</span>
@@ -392,14 +392,14 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
       {/* Outputs */}
       <Section title={`Outputs · ${tx.outputs.length}`} kicker="Stealth addresses · one-time"
         right={<span>view tag · 1 byte · 256× scan</span>}>
-        <div style={{ display: "grid", gap: 10 }}>
+        <div style={{ display: "grid", gap: "var(--sp-2)" }}>
           {tx.outputs.map((o, i) => (
-            <div key={i} style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: 6 }}>
+            <div key={i} style={{ padding: "var(--sp-3) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4, background: "var(--surface-raised)" }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", marginBottom: "var(--sp-1)" }}>
                 <div className="kicker" style={{ color: "var(--p-50)" }}>Output #{i}</div>
               </div>
               <DKV k="stealth_address" v={o.stealthKey || "—"} tone="purple" copy={o.stealthKey || undefined} />
-              <DKV k="view_tag" v={o.viewTag ? <><b style={{ color: "var(--tk-accent)" }}>0x{o.viewTag}</b> <span className="dim" style={{ marginLeft: 8, fontSize: "var(--fs-mono)" }}>· 1 byte · scan acceleration</span></> : "—"} />
+              <DKV k="view_tag" v={o.viewTag ? <><b style={{ color: "var(--tk-accent)" }}>0x{o.viewTag}</b> <span className="dim" style={{ marginLeft: "var(--sp-2)", fontSize: "var(--fs-mono)" }}>· 1 byte · scan acceleration</span></> : "—"} />
               <DKV k="amount" v="HIDDEN (Pedersen commitment)" tone="dim" />
             </div>
           ))}
@@ -411,7 +411,7 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
           explaining the proof components (the node RPC does not break out
           per-proof byte sizes, so none are shown). */}
       <Section title="Proof system" kicker="On-chain components">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 24, marginBottom: 14 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: "var(--sp-5)", marginBottom: "var(--sp-3)" }}>
           <DKV k="rct_type" v={tx.rctTypeLabel} tone="purple" />
           <DKV k="ring_size" v={tx.ringSize} />
           <DKV k="tx_version" v={"v" + tx.version} />
@@ -420,16 +420,16 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
           <DKV k="fee_rate" v={tx.feePerB != null ? tx.feePerB.toFixed(2) + " pcn/B" : "—"} />
           <DKV k="view_tags" v={tx.outputs[0]?.viewTag ? "✓ present" : "—"} tone={tx.outputs[0]?.viewTag ? "acc" : "dim"} />
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
+          <div style={{ padding: "var(--sp-3) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">CLSAG · ring signature</div>
-            <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
+            <p className="mono dim" style={{ margin: "var(--sp-2) 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
               Each of {tx.inputs.length} input{tx.inputs.length === 1 ? "" : "s"} proves "this is one of the {tx.ringSize} keys" without revealing which — the spender is hidden in the ring.
             </p>
           </div>
-          <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
+          <div style={{ padding: "var(--sp-3) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <div className="kicker">Bulletproofs+ · range proof</div>
-            <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
+            <p className="mono dim" style={{ margin: "var(--sp-2) 0 0", fontSize: "var(--fs-body)", lineHeight: 1.55 }}>
               Proves all {tx.outputs.length} output amounts are in range without revealing the values. Logarithmic verification.
             </p>
           </div>
@@ -454,12 +454,12 @@ export function FullTxDetail({ tx, data, txStatus, onBack }: {
         <button type="button" onClick={() => setShowJson((s) => !s)}
           style={{ appearance: "none", cursor: "pointer", background: "transparent",
             border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-            padding: "5px 12px", borderRadius: 3,
+            padding: "var(--sp-1) var(--sp-3)", borderRadius: 3,
             fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
           {showJson ? "▼ Hide JSON" : "▶ Show JSON"}
         </button>
         {showJson ? (
-          <pre style={{ marginTop: 10, padding: 14, background: "var(--surface-sunk)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
+          <pre style={{ marginTop: "var(--sp-2)", padding: "var(--sp-3)", background: "var(--surface-sunk)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
 {JSON.stringify(tx, null, 2)}
           </pre>
         ) : null}
@@ -494,12 +494,12 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
       <BackBtn onBack={onBack} />
 
       {/* Header */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 24, alignItems: "flex-start", paddingBottom: 18, borderBottom: "1px solid var(--rule)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "var(--sp-5)", alignItems: "flex-start", paddingBottom: "var(--sp-4)", borderBottom: "1px solid var(--rule)" }}>
         <div>
           <div className="kicker">Block</div>
-          <h2 className="serif acc" style={{ margin: "6px 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>#{block.height.toLocaleString()}</h2>
-          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: 8, wordBreak: "break-all" }}>{block.hash}</div>
-          <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: 8 }}>
+          <h2 className="serif acc" style={{ margin: "var(--sp-1) 0 0", fontSize: 36, fontWeight: 400, lineHeight: 1, color: "var(--tk-accent)", textShadow: "var(--glow-1)" }}>#{block.height.toLocaleString()}</h2>
+          <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--c-50)", marginTop: "var(--sp-2)", wordBreak: "break-all" }}>{block.hash}</div>
+          <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginTop: "var(--sp-2)" }}>
             Mined by <b style={{ color: "var(--ink-100)" }}>{block.pool}</b> · {block.timestampIso} · {fmtAge(block.ageSeconds)} ago
           </div>
         </div>
@@ -508,7 +508,7 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
 
       {/* KPI tiles */}
       <Section title="Block summary" kicker={<>At a glance <NodeProvenance source="node" bare phase={detailPhase(blockStatus)} /></>}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 10 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "var(--sp-2)" }}>
           <Stat k="Transactions" v={block.txCount} tone="acc" />
           <Stat k="Weight" v={(block.weightBytes / 1024).toFixed(1)} sub="KB" />
           <Stat k="Fullness" v={block.fullnessPct != null ? block.fullnessPct + "%" : "—"} sub={"vs " + (block.weightLimit / 1024).toFixed(0) + "KB limit"} />
@@ -520,13 +520,13 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
 
       {/* Mining */}
       <Section title="Mining" kicker="RandomX · proof of work">
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-          <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
+          <div style={{ padding: "var(--sp-3) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <DKV k="pool" v={block.pool} tone="acc" />
             <DKV k="miner_tx_hash" v={block.minerTxHash} tone="cyan" copy={block.minerTxHash} />
             <DKV k="reward" v={block.reward != null ? block.reward.toFixed(7) + " XMR" : "—"} tone="acc" />
           </div>
-          <div style={{ padding: "12px 16px", border: "1px solid var(--rule)", borderRadius: 4 }}>
+          <div style={{ padding: "var(--sp-3) var(--sp-4)", border: "1px solid var(--rule)", borderRadius: 4 }}>
             <DKV k="difficulty" v={(block.difficulty / 1e9).toFixed(2) + "G"} />
             <DKV k="nonce" v={block.nonce.toLocaleString()} />
             <DKV k="hardfork" v={block.hardforkLabel} tone="acc" />
@@ -547,13 +547,13 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
       {/* TX list — REAL coinbase + tx_hashes */}
       <Section title={`Transactions · ${block.txCount}`} kicker="Included in this block"
         right={<span>showing {shown.length}{remaining ? " · " + remaining + " more" : ""}</span>}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-1)" }}>
           {shown.map((row, i) => (
             // Thread the REAL block height so the tx pins to THIS block (no hash hop).
             <button key={row.id + i} onClick={() => onPickTx?.(row.id, block.height)}
               style={{ appearance: "none", cursor: "pointer", textAlign: "left",
-                display: "grid", gridTemplateColumns: "64px 1fr auto", gap: 12, alignItems: "center",
-                padding: "8px 12px", background: "transparent",
+                display: "grid", gridTemplateColumns: "64px 1fr auto", gap: "var(--sp-3)", alignItems: "center",
+                padding: "var(--sp-2) var(--sp-3)", background: "transparent",
                 border: "1px solid " + (row.coinbase ? "var(--tk-accent)" : "var(--ink-10)"), borderRadius: 3,
                 color: "var(--ink-100)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
                 transition: "background var(--d-2) var(--e-standard)", // D0651: 0.12s → --d-2 (nearest)
@@ -566,7 +566,7 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
             </button>
           ))}
           {remaining ? (
-            <div className="mono dim" style={{ padding: "8px 12px", fontSize: "var(--fs-mono)", fontStyle: "italic" }}>
+            <div className="mono dim" style={{ padding: "var(--sp-2) var(--sp-3)", fontSize: "var(--fs-mono)", fontStyle: "italic" }}>
               + {remaining} more txs in this block (truncated for display)
             </div>
           ) : null}
@@ -578,12 +578,12 @@ export function FullBlockDetail({ block, blockStatus, onBack, onPickTx }: {
         <button type="button" onClick={() => setShowJson((s) => !s)}
           style={{ appearance: "none", cursor: "pointer", background: "transparent",
             border: "1px solid var(--ink-20)", color: "var(--ink-60)",
-            padding: "5px 12px", borderRadius: 3,
+            padding: "var(--sp-1) var(--sp-3)", borderRadius: 3,
             fontFamily: "var(--f-mono)", fontSize: "var(--fs-label)", letterSpacing: "0.1em", textTransform: "uppercase" }}>
           {showJson ? "▼ Hide JSON" : "▶ Show JSON"}
         </button>
         {showJson ? (
-          <pre style={{ marginTop: 10, padding: 14, background: "var(--surface-sunk)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
+          <pre style={{ marginTop: "var(--sp-2)", padding: "var(--sp-3)", background: "var(--surface-sunk)", border: "1px solid var(--rule)", borderRadius: 3, color: "var(--c-50)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.5, overflow: "auto", maxHeight: 440 }}>
 {JSON.stringify(block, null, 2)}
           </pre>
         ) : null}

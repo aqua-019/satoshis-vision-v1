@@ -329,7 +329,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
 
   return (
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 14, padding: "16px 20px 40px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-3)", padding: "var(--sp-4) 20px 40px" }}>
 
         {/* MemViewShell (mempool-shared.tsx) supplies the search bar, heartbeat,
             tracked-chip and the shared stat strip (Reactor had none before this
@@ -339,13 +339,13 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
         <MemViewShell id="reactor" table={<MemTxTable data={data} tracking={tracking} viewId="reactor" columns={["txid", "perB", "tier", "size", "age", "inout"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
 
           {/* hero: block stream + iso stack */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: 14, minHeight: 320 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 380px", gap: "var(--sp-3)", minHeight: 320 }}>
             <PanelFrame
               title={<><span>● Block stream</span><span className="dim2">queued ⟶ confirmed</span></>}
               right={<><span>FEE-SORTED</span><span className="acc">▣ AUTO-SCROLL</span></>}
               updatedAt={oldestFreshAt(data.status, ["blocks", "mempool", "network"])}
             >
-              <div ref={glideRef} style={{ display: "flex", gap: 8, alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "8px 4px" }}>
+              <div ref={glideRef} style={{ display: "flex", gap: "var(--sp-2)", alignItems: "flex-end", height: 260, overflow: "hidden", position: "relative", padding: "var(--sp-2) var(--sp-1)" }}>
                 {/* queued + next placeholders */}
                 <div className="mblock q" style={{ width: 70, minHeight: 200, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div>
@@ -381,7 +381,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                         <div className="sz">{b.sizeKB.toFixed(1)} KB</div>
                         <div className="sz">{b.age < 60 ? b.age + "s ago" : Math.floor(b.age / 60) + "m ago"}</div>
                         {isTracked ? (
-                          <div className="mono" style={{ marginTop: 4, textAlign: "center" }}>
+                          <div className="mono" style={{ marginTop: "var(--sp-1)", textAlign: "center" }}>
                             <div style={{ fontSize: "var(--fs-mono)", color: "var(--y-50)", lineHeight: 1 }}>▲</div>
                             <TrackChip tracking={tracking} data={data} />
                           </div>
@@ -404,7 +404,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                   animation: reduced ? undefined : "flow 6s linear infinite",
                 }} />
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 4px 0", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "var(--sp-1) var(--sp-1) 0", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
                 <span>← scroll back · #{(data.height - CONF_UNLOCK).toLocaleString()}</span>
                 <span className="acc">{CONF_UNLOCK} confs · UNLOCK ▸</span>
               </div>
@@ -421,20 +421,20 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
           {!tracking ? (
             <>
               {/* hex mempool grid + ring sig + pool distribution */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: 14, minHeight: 360 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 240px 320px", gap: "var(--sp-3)", minHeight: 360 }}>
                 <PanelFrame
                   title={<><span>● Mempool · hex lattice</span><span className="dim2">cells = tx · color = fee/B</span></>}
                   right={<><NodeProvenance source="node" keys={["mempool"]} status={data.status} /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
                   updatedAt={oldestFreshAt(data.status, ["mempool"])}
                 >
-                  <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ display: "flex", gap: "var(--sp-3)", alignItems: "flex-start" }}>
                     <MempoolHexGrid mempool={data.mempool} cols={22} rows={11} />
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-1)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                       <div className="kicker">Lattice key</div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)" }} /><span className="dim">priority</span></div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 60%, transparent)" }} /><span className="dim">standard</span></div>
-                      <div style={{ display: "flex", gap: 6, alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 18%, transparent)" }} /><span className="dim">low</span></div>
-                      <div style={{ marginTop: 8 }} className="kicker">Distribution</div>
+                      <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)" }} /><span className="dim">priority</span></div>
+                      <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 60%, transparent)" }} /><span className="dim">standard</span></div>
+                      <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 18%, transparent)" }} /><span className="dim">low</span></div>
+                      <div style={{ marginTop: "var(--sp-2)" }} className="kicker">Distribution</div>
                       <MiniBar data={histData} labels={histLabels} width={170} height={48} hover fmt={(v: number) => `${Math.round(v)} tx`} />
                       <div className="dim" style={{ fontSize: "var(--fs-label)" }}>fee/B histogram · {histCaption}</div>
                     </div>
@@ -442,19 +442,19 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 </PanelFrame>
                 <PanelFrame title="Ring · 16" right={<span className="acc">CLSAG</span>}>
                   <RingSigFan />
-                  <div className="kv" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
+                  <div className="kv" style={{ marginTop: "var(--sp-2)", fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
                   <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoy strategy</span><span className="v">gamma</span></div>
                   <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++ ETA</span><span className="v p">Q3 2026</span></div>
                 </PanelFrame>
                 <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>} updatedAt={oldestFreshAt(data.status, ["blocks", "network"])}>
                   <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-2)" }}>
                       <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
                         {data.blocks.slice(0, 14).filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.slice(0, 14).length}
                       </span>
                       <span className="dim">recent blocks · pool unknown</span>
                     </div>
-                    <p className="dim" style={{ marginTop: 8, fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+                    <p className="dim" style={{ marginTop: "var(--sp-2)", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
                       Monero coinbases don't tag pools — the node reports every block as
                       unattributed, so per-pool share can't be measured on-chain. Live network
                       hashrate: <span className="acc">{netGh} GH/s</span>.
@@ -472,7 +472,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 right={<><span>STREAM ACTIVE</span><span className="acc">FEE TIER · LIVE</span></>}
                 updatedAt={oldestFreshAt(data.status, ["mempool", "fees", "network"])}
               >
-                <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: 12, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+                <div style={{ display: "grid", gridTemplateColumns: "120px 1fr 90px 110px 110px 90px 60px", gap: "var(--sp-3)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
                   <div className="kicker">TIER</div>
                   <div className="kicker">TXID</div>
                   <div className="kicker">SIZE</div>
@@ -486,7 +486,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                     return (
                     <React.Fragment key={tx.id}>
                       <div onClick={() => onPickTx(tx.id)} style={{ cursor: "pointer" }}>
-                        <span className="pill" style={{ padding: "2px 6px", fontSize: "var(--fs-label)", color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
+                        <span className="pill" style={{ padding: "2px var(--sp-1)", fontSize: "var(--fs-label)", color: tierIdx >= 0 ? tierColors[tierIdx] : undefined }}>
                           {tierIdx >= 0 ? FEE_TIER_LABELS[tierIdx].toUpperCase() : "—"}
                         </span>
                       </div>

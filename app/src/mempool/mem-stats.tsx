@@ -160,7 +160,7 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
     return (
       <div
         className="mono dim"
-        style={{ display: "flex", alignItems: "center", gap: 14, fontSize: "var(--fs-label)", flexWrap: "wrap" }}
+        style={{ display: "flex", alignItems: "center", gap: "var(--sp-3)", fontSize: "var(--fs-label)", flexWrap: "wrap" }}
       >
         <span>
           <span className="acc" data-memstat="mempool" data-memstat-value={poolReady ? stats.txCount : ""}>{poolReady ? fmtN(stats.txCount) : dash}</span> mempool
@@ -176,7 +176,7 @@ export function MemStatStrip({ data, compact }: { data: MoneroLive; compact?: bo
   }
 
   return (
-    <section className="mem-stat-strip" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
+    <section className="mem-stat-strip" style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "var(--sp-2)" }}>
       {/* `display: contents` keeps the inner .stat as the grid item, so these
           hooks add no layout box.
           data-memstat names the figure; data-memstat-value carries the RAW

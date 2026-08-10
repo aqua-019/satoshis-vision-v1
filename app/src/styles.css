@@ -194,6 +194,45 @@
   --e-accel:cubic-bezier(.4,0,1,1);
   --e-expressive:cubic-bezier(.2,.9,.1,1);
 
+  /* ── spacing ramp · declared ONCE here, next to the duration scale ──
+     Seven rungs, chosen for round pixel values rather than a strict
+     geometric ratio: 4 · 8 · 12 · 16 · 24 · 32 · 48. This lands the same
+     way the duration/easing tokens above do — one scale, unscoped, because
+     spacing (like duration) is not a theme decision.
+
+     MIGRATION IS BY CONTACT, NOT A SWEEP. src/mempool/** and src/views/**
+     are migrating their literal px spacing to var(--sp-*) in the same
+     revolution this token lands in; the rest of the app keeps its existing
+     literals until it is next touched, same "touch it, migrate it" policy
+     the duration scale shipped under (D0651/D0652) rather than a
+     repo-wide find/replace that would touch files nobody asked to review.
+
+     TIE-BREAK RULE for migrating an existing literal that falls BETWEEN two
+     rungs: nearest rung wins outright when the literal is closer to one
+     side. On an exact tie — equidistant from both neighbours, e.g. 10px
+     between --sp-2 (8) and --sp-3 (12), or 6px between --sp-1 (4) and
+     --sp-2 (8) — round DOWN to the SMALLER rung. This is the opposite
+     of the duration scale's round-half-up (D0651/D0652 rounded a 400ms
+     literal UP to --d-4), and deliberately so: the two scales fail in
+     opposite directions. A duration landing 50ms long is imperceptible.
+     A spacing value landing a few px LARGE is not free — the overflow
+     gates in this file measure real pixel budgets down to single digits
+     of headroom (.mp-fit's 200px desktop scroll cap, verify-nav's 390px
+     assertions), so rounding UP a migrated literal can silently spend
+     margin a gate is already using to the last pixel. Rounding DOWN on a
+     tie never can; the failure mode of "the rung was 2px smaller than the
+     handwritten value" is a design table asked to review, not a red gate.
+
+     --pad-main (22px) and --pad-page (48px) below are NOT part of this
+     ramp and are not being renumbered into it. --pad-page equals --sp-7
+     by coincidence, not by reference — it is derived from the page-gutter
+     formula documented at its own declaration, and 22px is page chrome
+     with no rung near it at all. Leave both as their own named tokens;
+     they answer "how wide is the page gutter", not "how far apart are
+     two things inside a component". */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 24px; --sp-6: 32px; --sp-7: 48px;
+
   /* ── D0655 · --e-spring · the DEFAULT for FUNCTIONAL movement ──────
      A CRITICALLY DAMPED spring (zeta = 1), fitted to a cubic-bezier.
 
@@ -624,8 +663,13 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
      is what lets that banner anchor to the topbar's bottom edge without ever
      naming the topbar's height — which varies three ways (desktop grid,
      <=768px flex + env(safe-area-inset-top), and the narrow two-row wrap) and
-     is about to change again in prompt 07. Compare `.mp-switcher`'s hardcoded
-     `top: 60px` below, which is the same coupling done the brittle way. */
+     is about to change again in prompt 07. `.mp-switcher` used to carry
+     exactly this coupling done the brittle way — a hardcoded `top: 61px`
+     guess at the topbar's height, already caught drifting once (from 60px)
+     before this pass — until the switcher's positioning was deleted outright
+     and its trigger moved into normal flow instead. Nothing below is left to
+     compare against; this comment stays as the warning for the next thing
+     tempted to hardcode a `top:` against a height that isn't its own. */
   position: relative;
   flex: 1; min-height: 0;
   display: grid;
@@ -1133,12 +1177,36 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
    media queries can flatten the fixed-height flex layout into body scroll.
    These base rules reproduce the previous inline desktop values exactly. */
 .mp-shell { position: relative; height: 100%; display: flex; flex-direction: column; min-height: 0; }
+/* ── header row (breadcrumb + zoom | heartbeat + view switcher) ──────────
+   Was an unclassed `<div style={{...}}>` on MempoolPage — moved here for the
+   same reason `.mp-shell`/`.mp-view` above already were, and PageShell.tsx's
+   own header states it as a rule, not a preference: "PADDING AND MAX-WIDTH
+   ARE NOT EMITTED INLINE ... an inline declaration cannot be beaten by any
+   class rule." That mattered concretely here — `.mp-switcher` moving into
+   this row (below) needs the mobile band to reshape it, and an inline style
+   on the row itself would have been one more literal a media query has to
+   string-match instead of override.
+   `gap: var(--sp-3)` is an exact rung match for the row's original inline
+   `gap: 12` (D0651-style spacing ramp, declared at :root) — the horizontal
+   padding stays a plain literal because 10px/20px don't land on a rung and
+   this task is "move the geometry", not "re-quantize every value that
+   happens to be adjacent to a token declaration". */
+.mp-chrome {
+  padding: 10px 20px 0;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: var(--sp-3); flex-wrap: wrap;
+}
+.mp-chrome__left, .mp-chrome__right {
+  display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap;
+}
 .mp-view  { flex: 1; min-height: 0; display: flex; }
 /* Desktop: make .mp-canvas-scroll the scroll container (it fills the remaining
-   height in the .mp-shell flex column because the switcher is position:fixed /
-   out of flow), and let .mp-view shrink-wrap its content so wide/tall views
-   (reactor 1670px, sediment 2279×2495) expose their true size and scroll on
-   both axes. The @media (max-width:768px) block below owns phones. */
+   height in the .mp-shell flex column: `.mp-chrome` and the legend row above
+   it size to their own content, and this rule's `flex: 1 1 auto` claims
+   whatever height is left), and let .mp-view shrink-wrap its content so
+   wide/tall views (reactor 1670px, sediment 2279×2495) expose their true
+   size and scroll on both axes. The @media (max-width:768px) block below
+   owns phones. */
 @media (min-width: 769px) {
   .mp-canvas-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
   .mp-view { display: block; width: max-content; min-width: 100%; }
@@ -1178,13 +1246,45 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 }
 .mp-zoom__btn + .mp-zoom__btn { border-left: 1px solid var(--ink-10); }
 .mp-zoom__btn.is-on { background: rgba(255,122,26,0.08); color: var(--tk-accent); box-shadow: var(--glow-1); }
+/* ── mempool view switcher — now IN FLOW, not fixed ─────────────────────
+   Was `position: fixed; top: 61px; right: 16px`, pinned over the canvas at
+   every width. Measured occupancy: 206×74 at 1440, 220×92 at 2560 — and it
+   covered `.mempool-search-bar` inside the active view on 5 of the 6 views
+   at 1440. That `top: 61px` was also the exact brittle coupling `.shell`'s
+   own comment above warns about (a hand-measured guess at the topbar's
+   height, already caught drifting once — from 60px to 61px — across the P5
+   nav restructure): the fix for the overlap and the fix for the coupling
+   are the same fix, because both come from deleting the hardcoded offset
+   rather than re-measuring it again.
+
+   `.mp-switcher` now joins `.mp-chrome__right` as an ordinary flow child
+   (MempoolPage.tsx) — `position: relative` kept so it can anchor the OPEN
+   LIST below (see `.mp-switcher__list`'s own comment: the trigger goes in
+   flow, the list stays an overlay, and that split is the whole point).
+   `max-width: 220px` is unchanged from before; it bounded the fixed panel
+   and still reads fine as a flow item's width cap.
+
+   `z-index: 50` MOVED BACK onto the container, not just the list — measured,
+   not assumed. `.mp-switcher` itself has no z-index and so establishes no
+   stacking context of its own; without one, `.mp-switcher__list`'s
+   `z-index: 50` is compared against every OTHER thing competing for a stack
+   level inside the nearest ancestor that does establish a context (here,
+   `.art-stage`, `position: relative; z-index: 2`) — and Classic's block
+   ribbon cards (`.mp-block.glide-block`) carry `will-change: transform`,
+   which creates exactly such a competing context of their own. A live probe
+   with the list open on `?v=classic`: `document.elementFromPoint` at the
+   "Terminal" item's own centre returned a `.mp-block`'s `.mono` child, not
+   the list — `verify-nav.mjs` §4a caught it as a real 30s click timeout, not
+   a theoretical concern. Putting `z-index: 50` on `.mp-switcher` (the
+   POSITIONED ancestor, not just its absolutely-positioned child) makes the
+   whole trigger+list subtree its own stacking context, so it is compared as
+   one unit against `.mp-block`'s and wins outright — the same fix in spirit
+   as pulling the list out of flow in the first place: stop relying on paint
+   order accidentally working out, give the layer that must win an
+   unambiguous stacking identity instead. */
 .mp-switcher {
-  /* Re-measured for the P5 nav restructure (was 60px against an 88px-tall
-     11-item topbar — already stale before this change): the 6-item topbar
-     renders 61px at desktop widths. Still the brittle hardcoded coupling
-     `.shell`'s own comment above warns about, just no longer a further-drifted
-     one. */
-  position: fixed; top: 61px; right: 16px; z-index: 50;
+  position: relative;
+  z-index: 50;
   padding: 10px;
   background: rgba(5,5,5,0.86);
   -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
@@ -1249,6 +1349,39 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 }
 @starting-style {
   .mp-switcher__list.is-open { opacity: 0; transform: translateY(-4px); }
+}
+/* ── the open list stays an OVERLAY even though the trigger is now in flow ──
+   `.mp-switcher` itself lost `position: fixed` above — the TRIGGER (plus its
+   kicker label) is now an ordinary ~60-70px flow child of `.mp-chrome__right`
+   (MempoolPage.tsx). The LIST does not follow it into flow, and that split is
+   the crux of this whole change, not an afterthought: if the list were also
+   in-flow, opening it would push ~300px of view content down, resize
+   `.mp-canvas-scroll`, fire `useFitToView`'s ResizeObserver, and recompute the
+   fit scale in the middle of a click — a visible jump on every one of the
+   four fit-enabled views (reactor/bridge/sediment/constellation), mid-
+   interaction, for no reason the user asked for. Anchoring the list to its
+   now-relatively-positioned trigger with `position: absolute` keeps it
+   exactly as it behaved when the whole component was fixed — floating over
+   the canvas, touching nothing else's layout — while only the collapsed
+   trigger spends any of the header row's flow space.
+
+   Desktop-only: `.mp-switcher`'s own comment explains the mobile side is
+   the mirror case — the list already pushes content there today (it is
+   `position: static`), and that stays true, so the override below is scoped
+   to the same `min-width: 769px` floor every other desktop-only rule in this
+   file uses (see the `--bp-mobile` note at :root). No `left` is set —
+   `right: 0` alone lets the box shrink-to-fit its own content (six short
+   view names/subs, none wider than the trigger typically renders), which is
+   the same sizing the list got for free before when it was a normal-flow
+   child stretched by `.mp-switcher`'s own `max-width: 220px`. */
+@media (min-width: 769px) {
+  .mp-switcher__list {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    z-index: 50;
+    margin-top: 6px;
+  }
 }
 /* ── D0212 bottom tab bar — container-driven, not media-query-driven ──
    `.tabbar-anchor` is BOTH `position: fixed` (viewport-pinned) and the
@@ -2140,14 +2273,24 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
     touch-action: manipulation;
   }
 
-  /* ── Mempool switcher → inline collapsible dropdown in the header ─ */
+  /* ── Mempool switcher → inline collapsible dropdown in the header ─
+     `.mp-switcher` no longer needs `position: static; top: auto; right:
+     auto;` here — the base rule (styles.css, non-mobile) dropped `position:
+     fixed`/`top`/`right` outright, so there is nothing left for this layer
+     to undo. What phones still need, kept: `max-width: 100%` so the trigger
+     fills the row instead of shrink-wrapping to its label, and the vertical
+     `margin` that used to separate it from the breadcrumb row above it.
+     `flex: 1 1 100%` is new — `.mp-switcher` now lives inside
+     `.mp-chrome__right` alongside `<MempoolHeartbeat>` (MempoolPage.tsx),
+     and a flex-basis of 100% is what forces it onto its own full-width line
+     under the heartbeat pill instead of the two fighting for space
+     side-by-side in a ~350px row. */
   .mp-shell { height: auto; display: block; }
   .mp-view  { display: block; }
   .mp-switcher {
-    position: static;
     max-width: 100%;
     margin: 8px 0 4px;
-    top: auto; right: auto;
+    flex: 1 1 100%;
   }
   .mp-switcher__kicker { display: none; }
   .mp-switcher__trigger {
@@ -2168,7 +2311,12 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      specificity a later copy wins, so leaving it would have overridden the
      base rule's `transition` list and silently killed the entry/exit
      transition on phones only. Phones now get the same transition desktop
-     does; nothing else about this layer changes. */
+     does; nothing else about this layer changes.
+     Same non-duplication reasoning now also covers `position`: the list's
+     `position: absolute` (added above the D0212 tab-bar section) is scoped
+     to `@media (min-width: 769px)`, not restated or undone here, so phones
+     simply never receive it and the list stays in flow, pushing content on
+     open exactly as it does today. */
   .mp-switcher__list button { min-height: 44px; }
 
   /* ── v5.0.2 mobile hotfix: nav reachability, overflow, simulators ── */
@@ -2515,11 +2663,15 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      way to the phone layer's 14px/16px. */
   .main { padding: 16px 18px; }
 
-  /* ── mempool switcher ────────────────────────────────────────────
-     Desktop pins it top-right over the canvas. With the rail gone there is
-     less room to its left, so tighten its max-width rather than let it
-     overlap the view's own header. */
-  .mp-switcher { max-width: 240px; }
+  /* ── mempool switcher — DELETED, not re-tightened ──────────────────
+     This band used to clamp `.mp-switcher { max-width: 240px }` on the
+     stated reason "desktop pins it top-right over the canvas ... rather
+     than let it overlap the view's own header." The switcher is no longer
+     pinned over anything — it is an ordinary flow child of `.mp-chrome__right`
+     now — so there is no overlap left to guard against, and a leftover
+     240px clamp would just silently squeeze an in-flow header control
+     across the whole 769-1199px tablet band for a reason that no longer
+     applies. The unscoped `max-width: 220px` on the base rule is enough. */
 
   /* ── simulator artboard ──────────────────────────────────────────
      `.proto-body` is a two-column stage+panel split at desktop; below 1200

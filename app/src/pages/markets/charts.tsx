@@ -131,6 +131,32 @@ function smoothPath(pts: [number, number][]): string {
   return d;
 }
 
+/**
+ * Estimated axis-aligned bounding box for an SVG `<text>`, from the same
+ * inputs `estTextW`/`labelStep` already use (char count × fontPx, no DOM
+ * measurement). `anchorY` is the text BASELINE, as SVG places it; the ascent/
+ * descent split (0.8em above, 0.25em below) approximates JetBrains Mono's cap
+ * height plus the descenders these labels actually contain (commas, "%",
+ * "▲"/"▼"). Used by AreaSeriesImpl to decide whether a high/low marker label
+ * would land on top of a y-tick or the change badge — see that call site for
+ * the measured collisions this exists to catch.
+ */
+function textRect(
+  anchorX: number, anchorY: number, text: string, fontPx: number,
+  anchor: "start" | "middle" | "end",
+): { left: number; right: number; top: number; bottom: number } {
+  const w = estTextW(text.length, fontPx);
+  const left = anchor === "start" ? anchorX : anchor === "end" ? anchorX - w : anchorX - w / 2;
+  return { left, right: left + w, top: anchorY - fontPx * 0.8, bottom: anchorY + fontPx * 0.25 };
+}
+
+function rectsOverlap(
+  a: { left: number; right: number; top: number; bottom: number },
+  b: { left: number; right: number; top: number; bottom: number },
+): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    CandleChart — real OHLC + volume sub-bars + axes + annotations
    ════════════════════════════════════════════════════════════════════ */
@@ -713,15 +739,120 @@ function AreaSeriesImpl({
         <path d={line} fill="none" stroke={color} strokeWidth="1.6" style={{ filter: `drop-shadow(0 0 3px ${color})` }} />
       </g>
 
-      {/* high / low markers */}
-      {markers && n > 1 ? (
-        <g fontFamily="var(--f-mono)" fontSize={fs.label}>
-          <circle cx={xOf(hiIdx)} cy={py(data[hiIdx])} r="2" fill={color} />
-          <text x={Math.min(Math.max(xOf(hiIdx), padL + 22), padL + innerW - 22)} y={py(data[hiIdx]) - 6} textAnchor="middle" fill={AXIS}>{format(data[hiIdx])}</text>
-          <circle cx={xOf(loIdx)} cy={py(data[loIdx])} r="2" fill={color} opacity={0.65} />
-          <text x={Math.min(Math.max(xOf(loIdx), padL + 22), padL + innerW - 22)} y={py(data[loIdx]) + 13} textAnchor="middle" fill={AXIS}>{format(data[loIdx])}</text>
-        </g>
-      ) : null}
+      {/* high / low markers — the dot is unconditional (there IS a high/low
+          point there); the text label is a nicety that yields when it can't
+          be shown without colliding. Measured on sediment's "Fee depth-
+          profile" AreaSeries (fees sorted high→low, so hiIdx is always 0 —
+          the dot sits right at the y-axis, clamped to padL+22 same as every
+          width) at 390, 1440 AND 2560 — reproduces at every width because
+          it's driven by hiIdx/data shape, not viewport: intersecting pairs
+          against the fixed furniture, e.g. "1,000,000 p/B" (top y-tick) ∥
+          "908,857 p/B" (hi-marker label), and "908,857 p/B" (hi-marker
+          label) ∥ "▼ -98.3%" (the change badge, also anchored top-left).
+          None of the three things a marker label can collide with there
+          should move to make room: a tick's position IS the value it
+          names, the change badge is a fixed corner annotation, and the dot
+          is the only unambiguous "this is the high/low point" marker. So —
+          same resolution as the BarSeries final-label fix above — suppress
+          the TEXT (never the dot) when it would land on something else,
+          using estTextW/fontPx-derived boxes rather than a guessed pixel
+          constant. An exact text duplicate of a TICK is suppressed
+          outright: a marker repeating a tick verbatim is not new
+          information regardless of where it lands.
+
+          ROUND 2: the round-1 fix above still shipped a live
+          "15,000 p/B" ∥ "15,000 p/B" collision on the same chart, at all
+          four widths — a first pass assumed that pair was lo-vs-tick, same
+          shape as the hi-vs-tick case above, and reused this comment's own
+          reasoning instead of rendering it. It was wrong. Dumping every
+          <text> in this chart's own <svg> (viewBox "0 0 1155.375 188") at
+          1440 via a live probe: the six y-tick labels sit at x=91 (left
+          edge, text-anchor=end) — nowhere near x=1044, and none of them
+          reads "15,000". hi's label is correctly ABSENT (it collides with
+          the top tick and the badge, per the paragraph above — round 1 got
+          that part right). The only "15,000 p/B" pair rendered is: the LO
+          marker (x=1044.375, text-anchor=middle, fill=AXIS — this is
+          `loX`/`loY` below, clamped to padL+innerW-22 same as every width
+          since the fee series is sorted high→low and lo is always the
+          LAST point) and the LAST-VALUE PILL text (fill=var(--surface-base)
+          — the one drawn in the "last-value line + pill" block further
+          down, at local coords (padR-6)/2, 3.5 inside a
+          `translate(padL+innerW+3, py(last))` group). Because this
+          series is sorted descending, `last === data[loIdx]` structurally
+          — the pill always shows the SAME number as the lo marker, and
+          both sit in the same right-edge gutter. The pill was never in
+          `fixedRects`; only ticks and the badge were. Fixed by adding it. */}
+      {markers && n > 1 ? (() => {
+        const hiText = format(data[hiIdx]);
+        const hiX = Math.min(Math.max(xOf(hiIdx), padL + 22), padL + innerW - 22);
+        const hiY = py(data[hiIdx]) - 6;
+        const loText = format(data[loIdx]);
+        const loX = Math.min(Math.max(xOf(loIdx), padL + 22), padL + innerW - 22);
+        const loY = py(data[loIdx]) + 13;
+
+        // Everything a marker label must not collide with: every y-tick
+        // label, the change badge, and the last-value pill (all three are
+        // fixed furniture — their position IS the value/meaning they
+        // carry, so on a collision the MARKER label is what yields, never
+        // these). The pill's box is read straight off the same geometry
+        // its own JSX below uses (translate(padL+innerW+3, py(last)),
+        // width padR-6, height 16) rather than re-deriving a text rect for
+        // it — it's a solid rect with light text, so the collision that
+        // matters is the box, not just the glyphs inside it.
+        const fixedRects = yTicks.map((tk) => textRect(
+          yInside ? padL + 3 : padL - 8,
+          yInside ? py(tk) - 4 : py(tk) + 3,
+          format(tk), fs.tick, yInside ? "start" : "end",
+        ));
+        fixedRects.push(textRect(
+          padL + 4, padT + 4,
+          (changePct >= 0 ? "▲ +" : "▼ ") + changePct.toFixed(1) + "%",
+          Math.round(fs.label * 1.15), "start",
+        ));
+        fixedRects.push({
+          left: padL + innerW + 3,
+          right: padL + innerW + 3 + (padR - 6),
+          top: py(last) - 8,
+          bottom: py(last) + 8,
+        });
+
+        const collidesFixed = (text: string, x: number, y: number): boolean => {
+          if (yTicks.some((tk) => format(tk) === text)) return true; // verbatim duplicate
+          const r = textRect(x, y, text, fs.label, "middle");
+          return fixedRects.some((f) => rectsOverlap(r, f));
+        };
+        const showHi = !collidesFixed(hiText, hiX, hiY);
+
+        // hi and lo are also checked against EACH OTHER, not just against
+        // fixedRects — a flat/near-flat series can put hi and lo close
+        // enough (or, at the extreme, exactly equal) that their own labels
+        // overlap with nothing else involved. lo yields: its dot already
+        // renders at opacity 0.65 against hi's full-strength 1 (see the
+        // two <circle> below), so the file already treats lo as the
+        // secondary marker and suppressing its label on collision extends
+        // that ordering rather than inventing a new one. When
+        // hiText === loText the two labels are a verbatim duplicate of
+        // EACH OTHER (not just of a tick, which `collidesFixed` above
+        // already handles) — keeping hi's copy loses no information, it
+        // drops a repeat. Gated on showHi: if hi is already suppressed for
+        // colliding with fixed furniture, lo has nothing to yield to.
+        const hiLoCollides = showHi && (
+          hiText === loText || rectsOverlap(
+            textRect(hiX, hiY, hiText, fs.label, "middle"),
+            textRect(loX, loY, loText, fs.label, "middle"),
+          )
+        );
+        const showLo = !collidesFixed(loText, loX, loY) && !hiLoCollides;
+
+        return (
+          <g fontFamily="var(--f-mono)" fontSize={fs.label}>
+            <circle cx={xOf(hiIdx)} cy={py(data[hiIdx])} r="2" fill={color} />
+            {showHi ? <text x={hiX} y={hiY} textAnchor="middle" fill={AXIS}>{hiText}</text> : null}
+            <circle cx={xOf(loIdx)} cy={py(data[loIdx])} r="2" fill={color} opacity={0.65} />
+            {showLo ? <text x={loX} y={loY} textAnchor="middle" fill={AXIS}>{loText}</text> : null}
+          </g>
+        );
+      })() : null}
 
       {/* last-value line + pill */}
       <line x1={padL} y1={py(last)} x2={padL + innerW} y2={py(last)} stroke={color} strokeWidth="0.8" strokeDasharray="1 3" opacity={0.8} />
@@ -840,6 +971,47 @@ function BarSeriesImpl({
   const now = Date.now();
   const baseY = py(Math.max(0, yMin));
 
+  // The strided sequence (every xStep'th label) always leaves room for
+  // itself by construction — labelStep derives xStep from the same
+  // estTextW this uses. The FINAL label is the odd one out: it is worth
+  // showing (it's the newest bar) even when it doesn't land on the stride,
+  // but forcing it unconditionally — the old `|| i === n - 1` — collided
+  // with the last strided label whenever (n-1) wasn't itself a multiple of
+  // xStep. Measured on sediment's 20-block "Stratigraphy log" BarSeries at
+  // 390px: strided labels rendered #3700104 #3700106 … #3700120 #3700122,
+  // then the unconditional clause forced #3700123 right beside #3700122
+  // and the two bounding boxes intersected (at 1440/2560 the stride
+  // collapses to 1, so every index is "strided" and the clause is a no-op —
+  // this is a narrow-width defect only). Rather than eyeball a pixel gap,
+  // compare the two labels' estTextW widths against their actual
+  // center-to-center distance, with the same one-em breathing room
+  // labelStep already budgets between strided neighbours, and only add the
+  // final label when it clears the last strided one — otherwise the
+  // strided sequence is left to stand alone, same trade as the AreaSeries
+  // marker-label fix below: a nicety yields rather than colliding.
+  const lastStrideIdx = Math.floor((n - 1) / xStep) * xStep;
+  // `labels` is expected to have one entry per `data` point, but nothing
+  // enforces that at the type level (no current call site mismatches —
+  // NetworkPage.tsx:443,465 both pass a full-length array). A short
+  // `labels[]` used to just render `undefined` for the missing indices
+  // (React drops a nullish child silently — a cosmetic degradation, not a
+  // crash). Indexing straight into `.length` below turned that into a
+  // throw that unmounts the whole chart. Guard restores the old
+  // degradation: skip the collision math (so the final label renders
+  // unconditionally, same as before this existed) when either index it
+  // needs isn't actually in the array.
+  const finalLabelCollides = !!(
+    labels && lastStrideIdx !== n - 1 &&
+    labels[lastStrideIdx] != null && labels[n - 1] != null &&
+    (() => {
+      const wPrev = estTextW(labels[lastStrideIdx].length, fs.tick);
+      const wLast = estTextW(labels[n - 1].length, fs.tick);
+      const gapNeeded = (wPrev + wLast) / 2 + fs.tick; // one em of breathing room, per labelStep
+      const gapActual = (bx(n - 1) + bw / 2) - (bx(lastStrideIdx) + bw / 2);
+      return gapActual < gapNeeded;
+    })()
+  );
+
   // Slot-based, same shape as CandleChart (each datum owns a `slot`-wide
   // column, bar narrower than the slot) — see chart-kit's slotIndex doc.
   const cross = slotIndex(vx, { padL, slot, cw: bw, n });
@@ -872,7 +1044,7 @@ function BarSeriesImpl({
       ))}
 
       {/* x labels */}
-      {labels ? data.map((_, i) => (i % xStep === 0 || i === n - 1 ? (
+      {labels ? data.map((_, i) => (i % xStep === 0 || (i === n - 1 && !finalLabelCollides) ? (
         <text key={"x" + i} x={bx(i) + bw / 2} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{labels[i]}</text>
       ) : null)) : endLabels ? (
         <>
