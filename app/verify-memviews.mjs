@@ -26,7 +26,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 const base = 'http://localhost:4173';
 
-let BLOCKS_N = 14;  // Block fixture count; raised to 20 in scenario 6 to test BarSeries collision
+let BLOCKS_N = 14;  // Block fixture count; scenario 6 raises it (see the stride precondition there)
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
@@ -643,7 +643,27 @@ function advanceBlocks(n) { head += n; }
 
   // Raise the block fixture so sediment's stratigraphy BarSeries runs at a
   // stride >= 2 and the forced-final-label collision path is exercised at all.
-  BLOCKS_N = 20;
+  /* 32, MEASURED against the shipped layout rather than inherited. #167's
+     ">= 17" was derived from sediment's PRE-REBUILD ~1180px stratigraphy panel;
+     this release moves that panel into the 7-of-12 stack and the number moved
+     with it. The stride assertion below caught 20 rendering 20-of-20 — stride 1
+     at every width, i.e. the fixture rider 2 shipped covered nothing.
+
+     Swept on the built tree (chart box width in brackets):
+
+         N    1440 [571px]        2560 [1116px]
+         20   20/20  stride 1     20/20  stride 1
+         24   12/24  stride 2     24/24  stride 1
+         28   14/28  stride 2     14/28  stride 2   <- minimum at BOTH
+         32   16/32  stride 2     16/32  stride 2
+
+     Note which width binds: 2560, not 1440. The panel is NARROWER at 1440
+     (571px) than the pre-rebuild premise assumed, and a wider box fits more
+     labels, so the widest viewport is the one that needs the most blocks. The
+     old reasoning had it backwards, which is exactly why this is asserted and
+     not calculated. 32 is one step above the 28 minimum, so ordinary layout
+     drift does not red the gate while a real regression still does. */
+  BLOCKS_N = 32;
   // try/finally, not a trailing assignment: BLOCKS_N is module-level mutable
   // state and a throw anywhere below would leave it at 20 for whatever runs
   // next. Scenario 6 happens to run near the end today, so a positional
