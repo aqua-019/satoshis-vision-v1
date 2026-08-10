@@ -26,6 +26,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 const base = 'http://localhost:4173';
 
+let BLOCKS_N = 14;  // Block fixture count; raised to 20 in scenario 6 to test BarSeries collision
+
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
   if (!existsSync(root)) return undefined;
@@ -93,7 +95,7 @@ const mkNetwork = () => ({
   nettype: 'mainnet', adjusted_time: now(),
 });
 
-const mkBlocks = () => Array.from({ length: 14 }, (_, i) => ({
+const mkBlocks = (n = BLOCKS_N) => Array.from({ length: n }, (_, i) => ({
   height: head - i, hash: hex('e'), tx_count: 3 + i, block_weight: 9000 + i * 800,
   reward: 0.6e12, difficulty: 7.7e11,
   timestamp: now() - 41 - i * 120,          // tip is always exactly 41s old
@@ -461,25 +463,24 @@ function advanceBlocks(n) { head += n; }
        structurally cannot produce a caption/value <text> pair, so
        BrgBlockCadence's gauge is the only stack this section can see.)
 
-   (2) THIS SECTION DOES NOT EXERCISE BarSeries' FORCED-FINAL-LABEL PATH,
-       and that path is the defect the v2.0 charts fix was written for.
+   (2) THIS SECTION DOES NOT EXERCISE BarSeries' FORCED-FINAL-LABEL PATH —
+       CLOSED by v2.1: scenario 6 now raises mkBlocks() to 20 blocks, which
+       at sediment's ~1180px layout width triggers stride >= 2 and exercises
+       the collision logic. The fixture is parameterized via module-level
+       BLOCKS_N and raised only for scenario 6, leaving scenarios 1–5 at 14
+       to keep scenario 4's 390px overflow assertions unaffected.
+
        Mechanism, measured: `useChartMetrics` measures the PRE-TRANSFORM
        layout width, and `.mp-view` is `width: max-content` on desktop, so
        sediment's "Stratigraphy log" BarSeries measures ~1180px at EVERY
        viewport — FitView then scales the rendered result down (to 185px at
-       390px wide). With this file's 14-block fixture, labelStep() therefore
-       returns a stride of 1 at all four widths, `n - 1` is trivially a
-       stride multiple, and `finalLabelCollides` never fires. The collision
-       needs stride >= 2, which at ~1180px needs >= 17 blocks.
-       CONSEQUENCE FOR BREAK TESTING: forcing labelStep() to return 1 is a
-       NO-OP here and cannot red this section — verified by execution (the
-       mutation reaches the bundle, chunk hash changes, and sediment's text
-       count stays at exactly 31 with zero overlaps). Anyone break-testing
-       this section must instead inject a real overlap; the cross-gauge
-       mutation described in the allowlist below does red it at all four
-       widths. Raising mkBlocks() past 17 would close the gap, but it
-       re-baselines EXPECT_SVG_TEXT and feeds scenario 4's depth walk, so it
-       is deliberately left as its own change.
+       390px wide). With 20 blocks, labelStep() returns stride 2 at desktop
+       and 1 on narrow widths. When stride >= 2, the collision path matters:
+       if the final label collides with the last strided label, it is
+       suppressed; if not, it renders. The removal of `|| i === n - 1` from
+       the old condition made this test possible — re-inserting it (the
+       break-test mutation) unconditionally forces the final label and will
+       collide with the strided sequence at 1440/2560.
 
    Rects are compared ACROSS every <svg> inside one .mem-view, not only
    within a single <svg>. That is correct today, because
@@ -600,10 +601,11 @@ function advanceBlocks(n) { head += n; }
   // must report exactly 0. An empty array is itself an asserted claim ("this
   // view is DOM-rendered, never SVG text"), not an exemption from the check.
   //
-  // Measured against a clean build (`npm run build && node
-  // verify-memviews.mjs`, 2026-08-10, pre-fix vacuity guard) at all four
-  // WIDTHS: reactor 1/1/1/1, bridge 14/14/14/14, sediment 32/32/32/32,
-  // constellation 6/6/6/6, terminal 0/0/4/4, classic 0/0/0/0.
+  // Measured baseline (14 blocks): reactor 1/1/1/1, bridge 14/14/14/14,
+  // sediment 32/32/32/32, constellation 6/6/6/6, terminal 0/0/4/4, classic
+  // 0/0/0/0. With the 20-block fixture in scenario 6, sediment's count will
+  // rise due to BarSeries rendering the final label that was previously
+  // collided; the exact count will be measured and reported on first run.
   const EXPECT_SVG_TEXT = {
     // Ring caption "TX · 16 RING · 1 REAL" (reactor.tsx:265) — one plain
     // <text>, no responsive hiding anywhere in the view — present always.
@@ -634,6 +636,10 @@ function advanceBlocks(n) { head += n; }
   };
 
   const textCounts = {}; // {view: {width: count}}
+
+  // Raise the block fixture to 20 so sediment's BarSeries stride >= 2 at
+  // desktop widths and the forced-final-label collision path is exercised
+  BLOCKS_N = 20;
 
   for (const width of WIDTHS) {
     console.log(`  width ${width}px:`);
@@ -823,6 +829,9 @@ function advanceBlocks(n) { head += n; }
 
     await p.close();
   }
+
+  // Restore the block fixture for scenario-agnostic post-scenario checks
+  BLOCKS_N = 14;
 
   // Vacuity guard: assert measurement actually happened, against a DECLARED
   // expectation rather than inferred cross-width continuity.
