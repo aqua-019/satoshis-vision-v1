@@ -179,16 +179,30 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
      rider-2 worker reported a scenario-6 timeout as a "pre-existing environmental issue";
      re-run in an isolated worktree, the gate completed all seven scenarios.
      **Serialise builds with a lock, and give each worker its own port.**
-  3. **Bare `curl` to localhost answers through the agent proxy (v2·1)** — a `200` from a
-     port with NOTHING BOUND. Not a flaky check: a check whose subject is the proxy, read
-     as proving the server. **A localhost reachability check must bypass the proxy —
-     `curl --noproxy '*'`, or bind-and-probe in the same process.** Any "the server is up"
-     established with bare `curl` in this environment is void rather than wrong: it
-     establishes nothing either way, INCLUDING the ones that happened to be correct.
-  Consequence worth holding: "server died / port busy / timeout" now has at least two
-  candidate causes in this environment that are not the server. Before recording a symptom
-  as environmental, reproduce it somewhere the harness cannot confound it — `git worktree`
+  3. **A `200` proves SOMETHING is listening — not that it is your server, or your build
+     (v2·1).** A gate run measured a stale `vite preview` holding `:4173` and serving a
+     DIFFERENT tree's `dist/`, while the reachability check read as "my build is up".
+     **CORRECTION, and the reason this entry is worth reading twice:** this was first
+     diagnosed and written down here as "bare `curl` answers through the agent proxy and
+     returns 200 from an unbound port". **That diagnosis was wrong**, and it was wrong in
+     exactly the way this section is about — asserted from a plausible mechanism instead of
+     measured. Measured afterwards: bare `curl` to unbound `127.0.0.1:65123` and
+     `:65124` returns `000`, exit 7. The proxy fabricates nothing. The real cause was a
+     process the search missed: `ps`/`pkill` keyed on `serve-dist.mjs` never matches
+     `vite preview`, and `ss -ltnp | grep :4173` printed nothing while `lsof` showed the
+     listener plainly. So: **identify a port's holder with `lsof -iTCP:<port> -sTCP:LISTEN
+     -P -n` (or `/proc/net/tcp` inode → pid), never by grepping `ps` for the name you
+     expect.** An empty `ss` result is not proof a port is free, and killing "the server"
+     by script name does not free a port another tool is holding.
+  Consequence worth holding: "server died / port busy / timeout" has more than one
+  candidate cause here that is not the server. Before recording a symptom as
+  environmental, reproduce it somewhere the harness cannot confound it — `git worktree`
   with its own `dist/`, its own port, and nothing else building.
+  The shape all four share, including the mis-diagnosis: **the subject was the environment
+  rather than the thing under test** — the tree instead of the mutation, whatever was on
+  disk instead of the build, some listener instead of yours, a plausible mechanism instead
+  of a measurement. That is the same sentence as the code-defect family above, with a
+  different noun.
 
 ## Key Decisions Log
 
