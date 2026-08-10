@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260810-21
 branch: claude/sediment-v2-1-arpfjq
-status: in_progress
+status: done
 written_by: claude-code (manual mode — prompt-driven, PROMPT V2·1)
 owner: claude-code
 ---
@@ -141,12 +141,52 @@ node verify-bundle.mjs
 ```
 
 ## 7 · REPORT  — filled on exit
-status:
-pr:
-commits:
-deps added:
+status: done
+pr: (opened from this branch; tip de82948)
+commits: 17 on claude/sediment-v2-1-arpfjq
+deps added: none
+
 deviations from spec:
+- `claude/V2-VIEW-CONFORMANCE.md` did not exist in the repo. Committed at the
+  path the prompts name (97ffe37), at Rev 2 supplied mid-run by the operator.
+- §4's "verify-bundle will move — Sediment is its own lazy chunk" is right, but
+  not by the stated mechanism. Route budgets EXCLUDE dynamicImports, so the
+  sediment chunk cannot move `/live/mempool`. What moved is `totalJsRaw`, the
+  grand total. Measured in an isolated worktree: 6039d64 938,036 -> 9180206
+  938,435 (+399, charts) -> a67867e 944,271 (+5,836, sediment). main was already
+  at 99.79% of a 940,000 ceiling behind a comment reading 849,267, stale by
+  88,769 B. Raised to 960,000 against nine-view arithmetic, not a round number.
+- §4's "verify-memviews 125 assertions" is not a figure the gate emits — it is
+  the only gate not on `makeReporter`. Counted as `grep -c '^\(✅\|❌\) '`: 150.
+- Rider 2's fixture of 20 blocks produced stride 1 and covered nothing. The
+  stride assertion caught it; measured minimum 26-28, shipped 32.
+
 notes for ARCHITECTURE.md patch:
+- sediment is the FIRST canvas consumer of `useMemCanvas` in src/mempool/.
+- `MemViewShell` does NOT unmount the body under reduced motion (the table swap
+  is CSS-only, styles.css:1468-1469). Both the contract §6 and
+  useMemCanvas.ts:29-33 claim otherwise. A canvas view must gate itself.
+- The type floor is asserted in AUTHORED space while users read RENDERED space:
+  `.mp-fit` scales 0.3598 at 1440, 0.6501 at 2560, 0.1212 at 390. Nine views
+  affected. Recorded in CLAUDE.md, not fixed.
+
 open questions:
+- Whether `useChartMetrics`'s k/u/minWidth should be wired so the type floor is
+  achievable inside a fit-enabled view. Changes its contract with every chart.
+- Sediment's core at 390px (mobile port owns this, explicitly out of scope).
 
 ## 8 · LOOP FEEDBACK
+- PREFLIGHT caught a worker answering from the brief with ZERO tool calls, and
+  inventing a `beforeEach/afterEach` that does not exist in a plain ESM script.
+  Corrected rather than re-prompted at the same tier.
+- The sediment preflight returned 14 INFERRED items; two needed correcting
+  (depth bands keyed on draw index would reshuffle every 3s poll; the
+  Dandelion++ mouth label could not be dropped silently under contract §6).
+- design-reviewer returned CHANGES REQUESTED with four blockers; three were
+  PRE-EXISTING on origin/main and attributed to this change because it read the
+  file rather than the diff. Its Playwright never launched, so it never rendered
+  the view it was reviewing.
+- SPEC-WAS-AMBIGUOUS: "320 particles" vs the zero-fabrication rule; "5 of 12
+  columns" was a width instruction that a worker satisfied while halving the
+  height.
+- Gate rounds: 1 (stride red at 20 blocks) -> fixture measured -> green.
