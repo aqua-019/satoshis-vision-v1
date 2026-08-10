@@ -265,12 +265,32 @@ const BUDGETS = {
   // red" and "the budget was already spent" are different findings and only
   // the second one is true here.
   //
-  // 1,000,000 leaves 55,729 B (5.9%) and still catches the 200 kB regression
-  // this line exists for, with room to spare. NOT the ~10% the route table
-  // uses: a grand total that tracks every lazy chunk grows with the app by
-  // design, and a 10% band here would be 100 kB — half the drift it is
-  // supposed to detect.
-  totalJsRaw: 1_000_000,
+  // LEVEL: 960,000, chosen against the PLANNED WORK rather than against one
+  // 200 kB lump. Sediment cost +5,836 B; the roadmap still holds four v2
+  // rebuilds (constellation, terminal, reactor, ops bridge) and five new views
+  // (orbital, abyss, pulse, circuit, relay):
+  //
+  //     9 x 5,836                        = +52,524
+  //     944,271 + 52,524                 =  996,795
+  //
+  // So a 1,000,000 ceiling — the obvious round number, and this line's first
+  // draft — would clear the ENTIRE remaining roadmap by 3,205 B and never fire
+  // once. Worse, 5,836 is a floor for the five NEW views, not an average:
+  // sediment was a rewrite that replaced code, those are net additions. The
+  // realistic outcome is a crossing on the eighth or ninth view, which then
+  // gets blamed for eight views' growth — the worst possible moment for this
+  // gate to speak.
+  //
+  // 960,000 leaves 15,729 B, roughly 2.7 views, so it speaks about a third of
+  // the way through the roadmap while the answer is still "which view" rather
+  // than "all of them". Same standard #167 set one line below, where
+  // /live/network was raised 106,000 -> 108,000 (+1,965, a minimum) explicitly
+  // because a larger raise would "re-hide the growth". A +60,000 raise here
+  // would have been the move that PR declined.
+  //
+  // If you are raising this again: argue with the arithmetic above, not with
+  // the round number.
+  totalJsRaw: 960_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
