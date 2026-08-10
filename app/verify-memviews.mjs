@@ -72,8 +72,12 @@ const now = () => Math.floor(Date.now() / 1000);
 // derived, never Math.random — a gate that cannot reproduce its own failure is
 // not a gate). Ages and rates are fixed so the derived stats are constant.
 const MEMPOOL_N = 240;
+// Scenario 7 drives the pool down to 3 to exercise sediment's low-pool
+// composition. Same mechanism as BLOCKS_N: `fulfil` reads it at request time,
+// so a scenario sets it BEFORE registering its route and restores it after.
+let POOL_N = MEMPOOL_N;
 const mkMempool = () => ({
-  recent_txs: Array.from({ length: MEMPOOL_N }, (_, i) => ({
+  recent_txs: Array.from({ length: POOL_N }, (_, i) => ({
     txid: i === 0 ? TRACKED_TX : (i.toString(16).padStart(4, '0') + 'c3f9a1e7b5d2').repeat(6).slice(0, 64),
     blob_size: 1200 + (i * 37) % 2400,
     fee: 30_720_000 + i * 1000,
@@ -83,11 +87,11 @@ const mkMempool = () => ({
     input_count: 1 + (i % 3),
     output_count: 2,
   })),
-  fee_histogram: [{ tx_count: MEMPOOL_N, bytes: 400000 }],
+  fee_histogram: [{ tx_count: POOL_N, bytes: 400000 }],
 });
 
 const mkNetwork = () => ({
-  height: head + 1, difficulty: 7.7e11, hashrate_ghs: 6.42, tx_pool_size: MEMPOOL_N,
+  height: head + 1, difficulty: 7.7e11, hashrate_ghs: 6.42, tx_pool_size: POOL_N,
   tx_count_total: 61_236_904, block_weight_limit: 600000, block_weight_median: 300000,
   target_seconds: 120, top_block_hash: hex('b'), alt_blocks_count: 1,
   version: '0.18.3.4', major_version: 16, fee_tiers: [20000, 80000, 320000, 4000000],
@@ -637,9 +641,76 @@ function advanceBlocks(n) { head += n; }
 
   const textCounts = {}; // {view: {width: count}}
 
-  // Raise the block fixture to 20 so sediment's BarSeries stride >= 2 at
-  // desktop widths and the forced-final-label collision path is exercised
+  // Raise the block fixture so sediment's stratigraphy BarSeries runs at a
+  // stride >= 2 and the forced-final-label collision path is exercised at all.
   BLOCKS_N = 20;
+  // try/finally, not a trailing assignment: BLOCKS_N is module-level mutable
+  // state and a throw anywhere below would leave it at 20 for whatever runs
+  // next. Scenario 6 happens to run near the end today, so a positional
+  // restore is correct only because of where it sits — the same shape as the
+  // `git checkout --` hazard this repo already records. One line makes it
+  // structural.
+  try {
+
+  /* ── STRIDE PRECONDITION ────────────────────────────────────────────
+     The number here is NOT inherited. #167 measured ">= 17 blocks" against
+     sediment's THEN layout, and this release redesigns that layout — the core
+     column becomes the hero at roughly 5 of 12 columns, which moves the
+     Stratigraphy panel's geometry and therefore its measured innerPx. A block
+     count derived from the width of a chart you are about to resize is an
+     assertion whose subject is no longer its claim.
+
+     So the fixture size is not asserted; the STRIDE IT PRODUCES is. If
+     labelStep() still returns 1 at the shipped layout, this whole section is
+     VACUOUS for the forced-final-label defect — every overlap assertion below
+     would pass without ever entering the path they exist to cover, which is
+     exactly the state #167 left behind. A vacuous section must not print
+     green, so this fails rather than warns.
+
+     Measured by counting the block-height labels the BarSeries actually
+     renders (`#<height>`) against the number of bars: stride 1 renders every
+     label, stride 2 renders half. Same instrument as the EXPECT_SVG_TEXT
+     vacuity guard below, extended from presence to spacing. */
+  const DESKTOP_STRIDE_WIDTHS = [1440, 2560];
+  for (const width of WIDTHS) {
+    const sp = await b.newPage({ viewport: { width, height: 900 } });
+    watchErrors(sp, `scenario 6 [stride ${width}]`);
+    await sp.route('**/api/**', fulfil);
+    await open(sp, 'sediment');
+    const probe = await sp.evaluate(() => {
+      const view = document.querySelector('.mem-view');
+      if (!view) return { labels: 0 };
+      // The stratigraphy BarSeries is the only chart labelling its x axis with
+      // block heights, so `#<digits>` identifies its labels without depending
+      // on DOM order or a panel title string.
+      let best = 0;
+      for (const svg of view.querySelectorAll('svg')) {
+        const n = [...svg.querySelectorAll('text')]
+          .map((t) => t.textContent.trim())
+          .filter((s) => /^#\d[\d,]*$/.test(s)).length;
+        if (n > best) best = n;
+      }
+      return { labels: best };
+    });
+    await sp.close();
+
+    const rendered = probe.labels || 0;
+    console.log(`  · stride @${width}px: ${rendered} of ${BLOCKS_N} x-labels rendered`);
+
+    if (DESKTOP_STRIDE_WIDTHS.includes(width)) {
+      ok(rendered > 0, `scenario 6 [${width}]: sediment's stratigraphy renders block-height x-labels (${rendered})`);
+      ok(rendered > 0 && rendered < BLOCKS_N,
+        `scenario 6 [${width}]: ${rendered} of ${BLOCKS_N} x-labels rendered — stride >= 2, so the forced-final-label `
+        + `path is REACHABLE and this section is not vacuous (raise BLOCKS_N until this holds against the SHIPPED layout)`);
+    } else {
+      // 390/768 legitimately run at stride 1 — the chart is narrower and every
+      // label fits. That is a DECLARED vacuity for this defect, printed as its
+      // own number rather than folded into a pass, so nobody later reads these
+      // widths as coverage they are not.
+      console.log(`  · scenario 6 [${width}]: stride ${rendered === BLOCKS_N ? '1' : '>=2'} — `
+        + `${rendered === BLOCKS_N ? 'VACUOUS for the forced-final-label defect at this width, by design' : 'covered'}`);
+    }
+  }
 
   for (const width of WIDTHS) {
     console.log(`  width ${width}px:`);
@@ -830,8 +901,10 @@ function advanceBlocks(n) { head += n; }
     await p.close();
   }
 
-  // Restore the block fixture for scenario-agnostic post-scenario checks
-  BLOCKS_N = 14;
+  } finally {
+    // Restore the block fixture for scenario-agnostic post-scenario checks.
+    BLOCKS_N = 14;
+  }
 
   // Vacuity guard: assert measurement actually happened, against a DECLARED
   // expectation rather than inferred cross-width continuity.
@@ -899,8 +972,14 @@ function advanceBlocks(n) { head += n; }
       probe = canvas.getAttribute('data-sed-probe');
     }
 
-    // Profile on fee depth-profile panel
-    const profile = core.querySelector('[data-sed-profile]')?.getAttribute('data-sed-profile');
+    // Profile on the fee depth-profile PANEL, which is a sibling of the core
+    // column in the view's grid — NOT a descendant of it. Scoping this query
+    // to `core` made the assertion's subject narrower than its claim: it read
+    // "data-sed-profile in {area, ladder}" while looking somewhere the
+    // attribute is never emitted, so it failed against correct code. Query
+    // from the view root, same as every other cross-panel lookup here.
+    const view = document.querySelector('.mem-view') || document;
+    const profile = view.querySelector('[data-sed-profile]')?.getAttribute('data-sed-profile');
     const profileValid = ['area', 'ladder'].includes(profile);
 
     // Stratum headers (per block in field mode)
@@ -952,6 +1031,45 @@ function advanceBlocks(n) { head += n; }
   }
 
   await p.close();
+
+  /* ── LOW POOL ───────────────────────────────────────────────────────
+     "Composed at 3 tx as well as at 320" is half the brief, and a field-mode-
+     only check cannot see it. Below 8 transactions the particle field must
+     become a labelled single-file column and the fee depth-profile must
+     become a ladder — with NO empty plot anywhere, which is what the view did
+     before this release (a bare "mempool empty" string where a chart belongs).
+
+     The empty-placeholder check is the falsifiable half: mode/profile could
+     both be correct while a panel still renders a placeholder, and only
+     reading the view's own text catches that. */
+  POOL_N = 3;
+  const lp = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(lp, 'scenario 7 [low pool]');
+  await lp.route('**/api/**', fulfil);
+  await open(lp, 'sediment');
+  const low = await lp.evaluate(() => {
+    const view = document.querySelector('.mem-view');
+    const core = view && view.querySelector('[data-sed-core]');
+    return {
+      mode: core && core.getAttribute('data-sed-mode'),
+      canvases: view ? view.querySelectorAll('canvas.mem-canvas').length : -1,
+      drops: view ? view.querySelectorAll('[data-sed-drop]').length : -1,
+      profile: view && view.querySelector('[data-sed-profile]')
+        ? view.querySelector('[data-sed-profile]').getAttribute('data-sed-profile') : null,
+      // Any placeholder standing in for a chart. Matched on the view's own
+      // rendered text so a re-worded placeholder is still caught.
+      placeholder: view ? /mempool empty|no data|nothing to show/i.test(view.textContent || '') : false,
+    };
+  });
+  await lp.close();
+  POOL_N = MEMPOOL_N;
+
+  console.log(`  · low pool: mode=${low.mode} canvases=${low.canvases} drops=${low.drops} profile=${low.profile}`);
+  ok(low.mode === 'column', `scenario 7 [low pool]: 3 tx composes as a labelled column (data-sed-mode="${low.mode}")`);
+  ok(low.canvases === 0, `scenario 7 [low pool]: no canvas mounted below the field threshold (got ${low.canvases})`);
+  ok(low.drops === 3, `scenario 7 [low pool]: one labelled drop per transaction (got ${low.drops}, expected 3)`);
+  ok(low.profile === 'ladder', `scenario 7 [low pool]: fee depth-profile becomes a ladder (got "${low.profile}")`);
+  ok(!low.placeholder, 'scenario 7 [low pool]: no empty-plot placeholder anywhere in the view');
 }
 
 await b.close();
