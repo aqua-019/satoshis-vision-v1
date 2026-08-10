@@ -166,16 +166,43 @@ function rectsOverlap(
  * closer, then both together. `avoid` is fixed furniture PLUS, when called
  * for lo, hi's own final resolved box — nudging beats dropping, but a label
  * that still can't clear every candidate falls back to not rendering at all.
+ *
+ * `x` and `y` are the caller's pre-existing natural position (`x` already
+ * clamped to the same padL+22/padL+innerW-22 margin the file has always
+ * used) and are NEVER re-checked against `bounds` here — that keeps a
+ * currently-non-colliding label byte-identical to before this function
+ * existed. `xIn` and `altY` are the genuinely new territory this fix adds,
+ * so both are bounds-checked before ever being offered as a candidate:
+ *   - `xIn` clamps to half the label's OWN estimated width from each edge,
+ *     not the raw plot edge — textAnchor is "middle", so a candidate
+ *     centred ON the edge would render half its glyphs outside the chart.
+ *     Measured against sediment's "1,000,000 p/B" (13 chars, fs.label 12):
+ *     half-width ≈48px, wider than the flat step this once used, which
+ *     would have let exactly that label escape.
+ *   - `altY` has no pre-existing clamp to inherit at all, so a candidate
+ *     that would push it past the plot's own top/bottom is dropped from
+ *     the search rather than offered. Reachable with baseline="zero" and
+ *     tightly-clustered data, where hi and lo can both render close to one
+ *     edge instead of the usual near-top/near-bottom split.
  */
 function resolveMarkerLabel(
   text: string, x: number, y: number, altY: number,
-  bounds: { left: number; right: number }, fontPx: number,
+  bounds: { left: number; right: number; top: number; bottom: number }, fontPx: number,
   avoid: { left: number; right: number; top: number; bottom: number }[],
 ): { x: number; y: number } | null {
+  const half = estTextW(text.length, fontPx) / 2;
   const xIn = x - bounds.left <= bounds.right - x
-    ? Math.min(x + 16, bounds.right)
-    : Math.max(x - 16, bounds.left);
-  for (const [cx, cy] of [[x, y], [x, altY], [xIn, y], [xIn, altY]] as [number, number][]) {
+    ? Math.min(x + 16, bounds.right - half)
+    : Math.max(x - 16, bounds.left + half);
+  const xInOk = xIn - half >= bounds.left && xIn + half <= bounds.right;
+  const altYOk = altY - fontPx * 0.8 >= bounds.top && altY + fontPx * 0.25 <= bounds.bottom;
+
+  const candidates: [number, number][] = [[x, y]];
+  if (altYOk) candidates.push([x, altY]);
+  if (xInOk) candidates.push([xIn, y]);
+  if (xInOk && altYOk) candidates.push([xIn, altY]);
+
+  for (const [cx, cy] of candidates) {
     const r = textRect(cx, cy, text, fontPx, "middle");
     if (!avoid.some((f) => rectsOverlap(r, f))) return { x: cx, y: cy };
   }
@@ -869,10 +896,10 @@ function AreaSeriesImpl({
         // never a nudge candidate (see ROUND 3 above).
         const hiIsTickDup = yTicks.some((tk) => format(tk) === hiText);
         const loIsTickDup = yTicks.some((tk) => format(tk) === loText);
-        const plotX = { left: padL, right: padL + innerW };
+        const plotBox = { left: padL, right: padL + innerW, top: padT, bottom: padT + innerH };
 
         const hiPos = hiIsTickDup ? null
-          : resolveMarkerLabel(hiText, hiX, hiY, py(data[hiIdx]) + 13, plotX, fs.label, fixedRects);
+          : resolveMarkerLabel(hiText, hiX, hiY, py(data[hiIdx]) + 13, plotBox, fs.label, fixedRects);
         const showHi = hiPos != null;
 
         // lo yields to hi first — its dot already renders at opacity 0.65
@@ -889,7 +916,7 @@ function AreaSeriesImpl({
           ? [...fixedRects, textRect(hiPos!.x, hiPos!.y, hiText, fs.label, "middle")]
           : fixedRects;
         const loPos = loDup ? null
-          : resolveMarkerLabel(loText, loX, loY, py(data[loIdx]) - 6, plotX, fs.label, loAvoid);
+          : resolveMarkerLabel(loText, loX, loY, py(data[loIdx]) - 6, plotBox, fs.label, loAvoid);
         const showLo = loPos != null;
 
         return (
