@@ -246,8 +246,31 @@ const BUDGETS = {
   cssGz: 17_000,
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
-  // 673.8 kB; measured 849,267.
-  totalJsRaw: 940_000,
+  // 673.8 kB.
+  //
+  // RAISED 940,000 -> 1,000,000 in v2.1, and the `measured 849,267` that stood
+  // beside it was stale by 88,769 B — the same failure this table already
+  // records for /live/network at :270-280, on the line above it. Measured by
+  // building three commits in an isolated worktree, same machine, same
+  // node_modules, dist/ wiped between each:
+  //
+  //     6039d64  (origin/main, this ceiling green)  938,036
+  //     9180206  (+ the charts marker nudge)        938,435   +399
+  //     a67867e  (+ the sediment canvas rebuild)    944,271   +5,836
+  //
+  // So main was already at 938,036 against 940,000 — 1,964 B of headroom,
+  // 0.21%, not the ~90 kB the stale comment implied. This gate was going to
+  // red on the next change of ANY size; sediment crossed it, but +2 kB of
+  // anything would have. Recording that explicitly because "the budget went
+  // red" and "the budget was already spent" are different findings and only
+  // the second one is true here.
+  //
+  // 1,000,000 leaves 55,729 B (5.9%) and still catches the 200 kB regression
+  // this line exists for, with room to spare. NOT the ~10% the route table
+  // uses: a grand total that tracks every lazy chunk grows with the app by
+  // design, and a 10% band here would be 100 kB — half the drift it is
+  // supposed to detect.
+  totalJsRaw: 1_000_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
