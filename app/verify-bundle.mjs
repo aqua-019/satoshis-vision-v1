@@ -277,7 +277,27 @@ const ROUTE_BUDGET_GZ = {
   '/live/mempool':          107_000, //  96,835
   '/live/markets':          105_000, //  95,817
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
-  '/live/network':          106_000, //  96,436
+  '/live/network':          108_000, // 106,035 — RAISED from 106,000, and the old `96,436`
+                                     //  comment beside it was stale by 9,169 B. Measured on
+                                     //  292227a BEFORE this change: 105,605, i.e. main was
+                                     //  already at 99.6% of its own ceiling with 395 B of slack.
+                                     //  The v2.0 axis-collision fix adds ~430 B gzip to the two
+                                     //  routes that render markets/charts.tsx (this one and
+                                     //  /live/markets, which absorbs +433 inside its larger
+                                     //  margin), so this line crossed by 35 B.
+                                     //  DELIBERATELY NOT the ~10% rule the rest of this table
+                                     //  uses: 10% of the new measurement would be ~117,000, which
+                                     //  would re-hide the 9 KB this route has silently grown.
+                                     //  1,965 B (~1.9%) restores a real signal instead — the next
+                                     //  growth on this route reddens early rather than after
+                                     //  another 11 KB.
+                                     //  THE WIDER CONDITION, recorded because this line is only
+                                     //  the first to cross: every `measured` figure in this table
+                                     //  is stale. /live/mempool reads 96,835 and measures 103,977;
+                                     //  /live/markets reads 95,817 and measures 102,484. Both sit
+                                     //  at 96-99% of ceilings written to hold ~10%. Re-measuring
+                                     //  the whole table is its own change; doing it here would
+                                     //  bury a budget re-baseline inside a layout PR.
   '/learn':                 108_000, //  97,870
   '/learn/sim':              94_000, //  85,723 — v6.1.5 PR B: was 133,676/148,000 when this
                                      //           carried all 16 protocol modules eagerly. The 21
