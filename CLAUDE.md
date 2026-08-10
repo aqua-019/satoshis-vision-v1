@@ -203,6 +203,37 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   disk instead of the build, some listener instead of yours, a plausible mechanism instead
   of a measurement. That is the same sentence as the code-defect family above, with a
   different noun.
+- **AN EMPTY SEARCH RESULT IS EVIDENCE ONLY AFTER ITS SCOPE IS VERIFIED.** Three instances
+  in the v2 series, two of them load-bearing: "no view imports `labelStep`/`tickCount`"
+  (the grep was scoped to `src/mempool/` and `src/views/` and the result generalised to
+  "no view" — `pages/markets/charts.tsx:31` had imported them throughout); a
+  `git grep -ln … -- 'app/src/**'` that returned nothing because the PATHSPEC did not match,
+  one sentence away from reporting a component absent that exists; and a `ps`/`pkill`
+  pattern of `serve-dist.mjs` that could not see the `vite preview` actually holding the
+  port. Widen the scope and re-run before concluding an absence, and state the scope
+  alongside the result.
+- **WHICH SPACE IS THE ASSERTION IN? Non-overlap is scale-invariant; legibility is not.**
+  `.mp-fit` (`FitView`) wraps every fit-enabled mempool view in
+  `transform: scale(min(1, canvasW / naturalW))`, and `useChartMetrics` latches the
+  PRE-TRANSFORM layout width — a CSS transform does not fire ResizeObserver, which reports
+  border-box (layout) size. So a chart's geometry lives in layout space while the reader
+  sees it scaled. Measured on v2·1's sediment: **scale 0.3598 at 1440, 0.6501 at 2560,
+  0.1212 at 390**; an axis label authored at the sanctioned 11px floor renders with a
+  **5.04px** box at 1440 and **1.70px** at 390.
+  The general rule: **any assertion about an ABSOLUTE RENDERED QUANTITY must be measured
+  after every transform between the author and the reader; any assertion about a RELATION
+  between elements may be measured before them.** Collision, ordering, containment and
+  non-overlap survive a uniform scale — which is why `verify-memviews` scenario 6 is sound
+  in layout space. Font size, contrast area and hit-target minimums survive no scaling at
+  all.
+  **Consequence, recorded and NOT fixed in v2·1**: the type floor is asserted in authored
+  space while users read rendered space, across all nine fit-enabled views. The machinery
+  built for exactly this — `useChartMetrics`'s `k`/`u`/`minWidth`, `DEFAULT_MAX_K = 1.7`,
+  whose docblock is explicitly about inflating an artboard's type so it survives being
+  scaled down — is INERT, because no caller anywhere passes `vbWidth`, so `k = 1` and `u`
+  is the identity. And 1.7 was chosen to hold a floor against a scale near 0.59, which the
+  measured 0.36 already passes. Fixing it changes `useChartMetrics`'s contract with every
+  chart in the app and belongs in its own change.
 
 ## Key Decisions Log
 
