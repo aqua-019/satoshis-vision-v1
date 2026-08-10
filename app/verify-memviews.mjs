@@ -698,10 +698,18 @@ function advanceBlocks(n) { head += n; }
     console.log(`  · stride @${width}px: ${rendered} of ${BLOCKS_N} x-labels rendered`);
 
     if (DESKTOP_STRIDE_WIDTHS.includes(width)) {
-      ok(rendered > 0, `scenario 6 [${width}]: sediment's stratigraphy renders block-height x-labels (${rendered})`);
-      ok(rendered > 0 && rendered < BLOCKS_N,
+      // Two failures, two different remedies, so they are two assertions.
+      // rendered === 0 means the PROBE stopped matching (the label shape moved,
+      // or the panel is gone); rendered === BLOCKS_N means the FIXTURE is too
+      // small. A single message naming only "raise BLOCKS_N" would send the
+      // next reader to raise a fixture against a selector problem.
+      ok(rendered > 0,
+        `scenario 6 [${width}]: the stride probe found block-height x-labels (${rendered}) — `
+        + `0 means the '#<height>' label shape moved and the SELECTOR needs fixing, not the fixture`);
+      ok(rendered === 0 || rendered < BLOCKS_N,
         `scenario 6 [${width}]: ${rendered} of ${BLOCKS_N} x-labels rendered — stride >= 2, so the forced-final-label `
-        + `path is REACHABLE and this section is not vacuous (raise BLOCKS_N until this holds against the SHIPPED layout)`);
+        + `path is REACHABLE and this section is not vacuous (all ${BLOCKS_N} rendered means stride 1: raise BLOCKS_N `
+        + `until this holds against the SHIPPED layout)`);
     } else {
       // 390/768 legitimately run at stride 1 — the chart is narrower and every
       // label fits. That is a DECLARED vacuity for this defect, printed as its

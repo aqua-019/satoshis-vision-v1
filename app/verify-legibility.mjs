@@ -584,6 +584,43 @@ for (const [label, src, path] of [
   );
 }
 
+/* ── the fallback IS the floor, so scaling it down breaches it by construction ──
+   `useChartMetrics.ts:86` declares `FS_FALLBACK = { tick: 11, label: 12 }`, and 11
+   is the deliberate v6.0.10 floor itself. So `FS_FALLBACK.tick * 0.82` is not a
+   value that happens to be too small — it is a floor breach for EVERY factor below
+   1, with no fraction that makes it legal. v2.1 introduced three of them in
+   sediment.tsx (9.02px, 7.92px, 9.02px), each below both sides of the live 11-vs-12
+   dispute and therefore endorsed by neither reading.
+
+   Fixing those three fixes three instances of a PATTERN that regenerates the moment
+   somebody wants slightly smaller tick text. This asserts the rule instead.
+
+   Measured before adding: 0 sites on 6039d64, 0 sites after the v2.1 fix — so this
+   starts green and stays green, with no migration and no baseline to re-measure.
+   It says nothing about `--fs-label`'s sanctioned 11px, which is a different
+   question and stays open. */
+{
+  const scaled = [];
+  for (const f of [...walk(join(appDir, "src"), ".tsx"), ...walk(join(appDir, "src"), ".ts")]) {
+    const src = readFileSync(f, "utf8");
+    // `FS_FALLBACK.tick * 0.82`, `fs.tick*0.9`, `FS_FALLBACK.label * .75` — any
+    // multiplication of a fallback/measured font scale by a sub-1 literal.
+    const re = /\b(?:FS_FALLBACK|fs)\s*\.\s*(?:tick|label)\s*\*\s*(0?\.\d+)\b/g;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      if (Number(m[1]) < 1) {
+        const line = src.slice(0, m.index).split("\n").length;
+        scaled.push(`${relative(appDir, f)}:${line} (×${m[1]})`);
+      }
+    }
+  }
+  assert(
+    "no chart font scale is multiplied DOWN — the fallback is the floor, so any factor < 1 breaches it by construction",
+    scaled.length === 0,
+    scaled.length ? scaled.join(", ") : "0 sites",
+  );
+}
+
 // ── report ──────────────────────────────────────────────────────────────────
 console.log("verify-legibility — static assertions\n");
 for (const c of checks) {
