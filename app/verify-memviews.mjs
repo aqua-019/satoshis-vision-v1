@@ -871,6 +871,89 @@ function advanceBlocks(n) { head += n; }
   }
 }
 
+/* ── Scenario 7 · sediment observable contract ────────────────────────── */
+{
+  console.log('\n— scenario 7: sediment data-sed-* observable contract —');
+  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(p, 'scenario 7');
+  await p.route('**/api/**', fulfil);
+
+  // Test with normal 240-tx fixture
+  await open(p, 'sediment');
+  const results = await p.evaluate(() => {
+    const core = document.querySelector('[data-sed-core]');
+    if (!core) return { error: 'no [data-sed-core] found' };
+
+    const mode = core.getAttribute('data-sed-mode');
+    const modeValid = ['field', 'static', 'column'].includes(mode);
+
+    // For field/static modes, check canvas attributes
+    const canvas = core.querySelector('canvas.mem-canvas[data-sed-particles]');
+    let radiusMin = null, radiusMax = null, bands = null, bandCounts = null, particles = null, probe = null;
+    if (canvas) {
+      radiusMin = parseFloat(canvas.getAttribute('data-sed-radius-min'));
+      radiusMax = parseFloat(canvas.getAttribute('data-sed-radius-max'));
+      bands = canvas.getAttribute('data-sed-bands');
+      bandCounts = canvas.getAttribute('data-sed-band-counts');
+      particles = canvas.getAttribute('data-sed-particles');
+      probe = canvas.getAttribute('data-sed-probe');
+    }
+
+    // Profile on fee depth-profile panel
+    const profile = core.querySelector('[data-sed-profile]')?.getAttribute('data-sed-profile');
+    const profileValid = ['area', 'ladder'].includes(profile);
+
+    // Stratum headers (per block in field mode)
+    const stratumEls = core.querySelectorAll('[data-sed-stratum]');
+    const dropEls = core.querySelectorAll('[data-sed-drop]');
+
+    return {
+      core: !!core, mode, modeValid,
+      canvas: !!canvas,
+      radiusMin, radiusMax,
+      bands, bandCounts, particles,
+      probe,
+      profile, profileValid,
+      stratumCount: stratumEls.length,
+      dropCount: dropEls.length,
+    };
+  });
+
+  if (results.error) {
+    ok(false, `scenario 7: ${results.error}`);
+  } else {
+    ok(results.core, 'scenario 7: [data-sed-core] host present');
+    ok(results.modeValid, `scenario 7: data-sed-mode in {field, static, column} (got "${results.mode}")`);
+
+    // At 240-tx and 1440px with 20 blocks, expect field mode
+    if (results.mode === 'field') {
+      ok(results.canvas, 'scenario 7: canvas.mem-canvas present in field mode');
+      ok(results.radiusMin != null && results.radiusMin >= 0.9,
+        `scenario 7: data-sed-radius-min >= 0.9 (got ${results.radiusMin}) [lower bound]`);
+      ok(results.radiusMax != null && results.radiusMax <= 2.8,
+        `scenario 7: data-sed-radius-max <= 2.8 (got ${results.radiusMax}) [upper bound]`);
+      ok(results.bands === '4', `scenario 7: data-sed-bands === "4" (got "${results.bands}")`);
+
+      if (results.bandCounts) {
+        const counts = results.bandCounts.split(',').map(Number);
+        ok(counts.length === 4, `scenario 7: band counts has 4 entries (got ${counts.length})`);
+        const sum = counts.reduce((a, b) => a + b, 0);
+        const particlesNum = parseInt(results.particles);
+        ok(sum === particlesNum,
+          `scenario 7: band counts SUM to particles (${counts.join('+')}=${sum}, particles=${particlesNum})`);
+      }
+
+      ok(results.particles != null, `scenario 7: data-sed-particles present (got "${results.particles}")`);
+      ok(results.probe != null, `scenario 7: data-sed-probe coordinate present`);
+    }
+
+    ok(results.profileValid, `scenario 7: data-sed-profile in {area, ladder} (got "${results.profile}")`);
+    ok(results.stratumCount > 0, `scenario 7: [data-sed-stratum] blocks present (${results.stratumCount})`);
+  }
+
+  await p.close();
+}
+
 await b.close();
 
 console.log('');
