@@ -468,18 +468,25 @@ function advanceBlocks(n) { head += n; }
        BrgBlockCadence's gauge is the only stack this section can see.)
 
    (2) THIS SECTION DOES NOT EXERCISE BarSeries' FORCED-FINAL-LABEL PATH —
-       CLOSED by v2.1: scenario 6 now raises mkBlocks() to 20 blocks, which
-       at sediment's ~1180px layout width triggers stride >= 2 and exercises
-       the collision logic. The fixture is parameterized via module-level
+       CLOSED by v2.1: scenario 6 raises mkBlocks() to 32, MEASURED against the
+       shipped layout (the sweep and the arithmetic are in the stride
+       precondition below). 20 was tried first and produced stride 1 — the
+       assertion caught it. The fixture is parameterized via module-level
        BLOCKS_N and raised only for scenario 6, leaving scenarios 1–5 at 14
        to keep scenario 4's 390px overflow assertions unaffected.
 
        Mechanism, measured: `useChartMetrics` measures the PRE-TRANSFORM
        layout width, and `.mp-view` is `width: max-content` on desktop, so
-       sediment's "Stratigraphy log" BarSeries measures ~1180px at EVERY
-       viewport — FitView then scales the rendered result down (to 185px at
-       390px wide). With 20 blocks, labelStep() returns stride 2 at desktop
-       and 1 on narrow widths. When stride >= 2, the collision path matters:
+       the "Stratigraphy log" BarSeries lays out far wider than its rendered
+       box and FitView scales the painted result down.
+
+       CORRECTION: the previous revision of this paragraph said that BarSeries
+       "measures ~1180px at EVERY viewport". 1180 is `.mp-view`'s own
+       offsetWidth at 1440, and the chart box OVERFLOWS it — measured 1588 at
+       1440 and 1717 at 2560, against rendered widths of 571 and 1116. Three
+       different widths are in play and only the layout one drives the stride;
+       reasoning from either of the other two predicts the wrong answer, in the
+       wrong direction. When stride >= 2, the collision path matters:
        if the final label collides with the last strided label, it is
        suppressed; if not, it renders. The removal of `|| i === n - 1` from
        the old condition made this test possible — re-inserting it (the
@@ -649,20 +656,38 @@ function advanceBlocks(n) { head += n; }
      with it. The stride assertion below caught 20 rendering 20-of-20 — stride 1
      at every width, i.e. the fixture rider 2 shipped covered nothing.
 
-     Swept on the built tree (chart box width in brackets):
+     Swept on the built tree:
 
-         N    1440 [571px]        2560 [1116px]
-         20   20/20  stride 1     20/20  stride 1
-         24   12/24  stride 2     24/24  stride 1
-         28   14/28  stride 2     14/28  stride 2   <- minimum at BOTH
-         32   16/32  stride 2     16/32  stride 2
+         N    1440              2560
+         20   20/20  stride 1   20/20  stride 1
+         24   12/24  stride 2   24/24  stride 1
+         28   14/28  stride 2   14/28  stride 2   <- minimum at BOTH
+         32   16/32  stride 2   16/32  stride 2
 
-     Note which width binds: 2560, not 1440. The panel is NARROWER at 1440
-     (571px) than the pre-rebuild premise assumed, and a wider box fits more
-     labels, so the widest viewport is the one that needs the most blocks. The
-     old reasoning had it backwards, which is exactly why this is asserted and
-     not calculated. 32 is one step above the 28 minimum, so ordinary layout
-     drift does not red the gate while a real regression still does. */
+     THE TRAP, and the reason a calculation kept disagreeing with the sweep:
+     `labelStep` is fed the PRE-TRANSFORM LAYOUT width, not the rendered one.
+     `.mp-view` is `width: max-content`, so the chart lays out at its natural
+     width and FitView scales the PAINTED result down afterwards. Measured on
+     this tree:
+
+         viewport 1440   box offsetWidth 1588   getBoundingClientRect 571
+         viewport 2560   box offsetWidth 1717   getBoundingClientRect 1116
+         viewBox at 1440 = "0 0 1588.171875 150"   <- the layout width, not 571
+
+     Deriving innerW from the 571px rendered box gives fits = 7 and predicts
+     stride 3 at n=20 — three times the measured value, and in the wrong
+     direction. With the layout width: innerW = 1588 - 45 - 16 = 1527,
+     per = 8 chars x 11px x 0.62 + 11 = 65.56, fits = 23, stride = ceil(20/23)
+     = 1. That matches. At n=32, ceil(32/23) = 2, i.e. 16 labels — also matches.
+
+     Both figures are real and they differ by 2.8x, so ANY reasoning about
+     label fitting has to name which one it used. This is also why the previous
+     revision of this docblock said "~1180px at EVERY viewport": that is
+     `.mp-view`'s own offsetWidth at 1440, not the chart box's, and the chart
+     overflows it. Three different widths, one of which drives the stride.
+
+     32 is one step above the 28 minimum, so ordinary layout drift does not red
+     the gate while a real regression still does. */
   BLOCKS_N = 32;
   // try/finally, not a trailing assignment: BLOCKS_N is module-level mutable
   // state and a throw anywhere below would leave it at 20 for whatever runs
@@ -703,19 +728,35 @@ function advanceBlocks(n) { head += n; }
       // The stratigraphy BarSeries is the only chart labelling its x axis with
       // block heights, so `#<digits>` identifies its labels without depending
       // on DOM order or a panel title string.
-      let best = 0;
+      // Report EVERY emitting SVG, not just the max. A bare max-across-SVGs is
+      // a subject you cannot see: if two charts emitted `#<digits>`, which one
+      // won could change with the block count, and a selector fault of that
+      // shape is curable by adding blocks — so a passing sweep would not rule
+      // it out. Printing the breakdown makes "one axis, and it is the
+      // stratigraphy one" an observation rather than an assumption. Measured
+      // here: exactly one entry at every width and every N.
+      const per = [];
       for (const svg of view.querySelectorAll('svg')) {
-        const n = [...svg.querySelectorAll('text')]
+        const hits = [...svg.querySelectorAll('text')]
           .map((t) => t.textContent.trim())
-          .filter((s) => /^#\d[\d,]*$/.test(s)).length;
-        if (n > best) best = n;
+          .filter((s) => /^#\d[\d,]*$/.test(s));
+        if (!hits.length) continue;
+        const panel = svg.closest('.panel');
+        const h = panel && panel.querySelector('.panel-h .l');
+        per.push({ n: hits.length, panel: h ? h.textContent.trim().slice(0, 40) : '(no .panel ancestor)', sample: hits.slice(0, 3) });
       }
-      return { labels: best };
+      return { labels: per.reduce((m, x) => Math.max(m, x.n), 0), per };
     });
     await sp.close();
 
     const rendered = probe.labels || 0;
     console.log(`  · stride @${width}px: ${rendered} of ${BLOCKS_N} x-labels rendered`);
+    for (const e of (probe.per || [])) {
+      console.log(`      · ${String(e.n).padStart(3)} in "${e.panel}"  e.g. ${e.sample.join(' ')}`);
+    }
+    ok((probe.per || []).length <= 1,
+      `scenario 6 [${width}]: exactly one SVG emits '#<height>' text, so the stride probe's subject is `
+      + `unambiguous (found ${(probe.per || []).length})`);
 
     if (DESKTOP_STRIDE_WIDTHS.includes(width)) {
       // Two failures, two different remedies, so they are two assertions.
@@ -723,13 +764,21 @@ function advanceBlocks(n) { head += n; }
       // or the panel is gone); rendered === BLOCKS_N means the FIXTURE is too
       // small. A single message naming only "raise BLOCKS_N" would send the
       // next reader to raise a fixture against a selector problem.
+      // CONTROL FLOW, not a second predicate. When rendered === 0 the stride is
+      // UNKNOWN, and an `ok(rendered === 0 || …)` would print ✅ for a check
+      // that never ran — a green line whose subject is "not applicable", which
+      // is the same defect this section exists to refuse, in miniature. It also
+      // inflates the assertion count. One failure, one message, and the count
+      // honestly drops by one when the stride could not be evaluated.
       ok(rendered > 0,
         `scenario 6 [${width}]: the stride probe found block-height x-labels (${rendered}) — `
-        + `0 means the '#<height>' label shape moved and the SELECTOR needs fixing, not the fixture`);
-      ok(rendered === 0 || rendered < BLOCKS_N,
-        `scenario 6 [${width}]: ${rendered} of ${BLOCKS_N} x-labels rendered — stride >= 2, so the forced-final-label `
-        + `path is REACHABLE and this section is not vacuous (all ${BLOCKS_N} rendered means stride 1: raise BLOCKS_N `
-        + `until this holds against the SHIPPED layout)`);
+        + `0 means the '#<height>' label shape moved and the SELECTOR needs fixing; do NOT raise BLOCKS_N`);
+      if (rendered > 0) {
+        ok(rendered < BLOCKS_N,
+          `scenario 6 [${width}]: ${rendered} of ${BLOCKS_N} x-labels rendered — stride >= 2, so the forced-final-label `
+          + `path is REACHABLE and this section is not vacuous (all ${BLOCKS_N} rendered means stride 1: raise BLOCKS_N `
+          + `until this holds against the SHIPPED layout)`);
+      }
     } else {
       // 390/768 legitimately run at stride 1 — the chart is narrower and every
       // label fits. That is a DECLARED vacuity for this defect, printed as its
