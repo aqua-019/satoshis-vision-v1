@@ -67,6 +67,50 @@ export function useSvgCursor(viewW: number): [React.RefObject<SVGSVGElement>, nu
   return [ref, vx, handlers];
 }
 
+/**
+ * The CANVAS sibling of `useSvgCursor` — pointer position in a `<canvas>`'s own
+ * CSS-pixel space, both axes, for hit-testing something you painted.
+ *
+ * `useSvgCursor` cannot serve this: it is typed to `SVGSVGElement`, resolves
+ * into a viewBox, and returns x only. A canvas has no viewBox, needs y as well,
+ * and is an `HTMLCanvasElement`. So every canvas view that wants to hit-test
+ * had to re-derive the conversion — v6.1.10's sediment did exactly that, and
+ * `verify-chartkit.mjs`'s "cursor math lives only in chart-kit" caught it.
+ *
+ * The gate is right and its rule is kept singular by ADDING the missing
+ * primitive rather than by waiving it. That is arithmetic, not taste: the four
+ * remaining v2 rebuilds and all five new mempool views are canvas views and
+ * every one needs pointer hit-testing, so an allowlist would reach nine entries
+ * and the rule would mean nothing.
+ *
+ * PREFERS `offsetX`/`offsetY`, which are already relative to the target's
+ * padding edge AND already in the element's untransformed space. That matters
+ * because `.mp-fit` scales mempool views (measured 0.36 at 1440): a
+ * `clientX - rect.left` reading is in SCREEN pixels and must be divided back
+ * out by that scale, which is one more thing to get wrong in each of the eight
+ * views to come. The rect path below exists only for synthetic events that
+ * carry no offset, and it lives HERE — the one file this conversion is allowed
+ * in — rather than in a view.
+ */
+export function canvasCursor(
+  e: { nativeEvent: MouseEvent; currentTarget: HTMLCanvasElement },
+): { x: number; y: number } | null {
+  const el = e.currentTarget;
+  const w = el.clientWidth, h = el.clientHeight;
+  if (!w || !h) return null;
+  const ne = e.nativeEvent;
+  if (typeof ne.offsetX === "number" && typeof ne.offsetY === "number"
+      && !(ne.offsetX === 0 && ne.offsetY === 0 && ne.clientX === 0 && ne.clientY === 0)) {
+    return { x: ne.offsetX, y: ne.offsetY };
+  }
+  const rect = el.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  return {
+    x: (ne.clientX - rect.left) * (w / rect.width),
+    y: (ne.clientY - rect.top) * (h / rect.height),
+  };
+}
+
 /** Nearest sample index for evenly-spaced points spanning padL … padL+innerW. */
 export function nearestIndex(vx: number | null, o: { padL: number; innerW: number; n: number }): number | null {
   if (vx == null) return null;

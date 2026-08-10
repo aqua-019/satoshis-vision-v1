@@ -26,7 +26,7 @@
 import * as React from "react";
 import { useReducedMotion } from "@/design/useReducedMotion";
 import { NodeProvenance, PanelFrame } from "@/design/primitives";
-import { AXIS, GRID, ChartCrosshair, ChartTip, useSvgCursor } from "@/design/chart-kit";
+import { AXIS, GRID, ChartCrosshair, ChartTip, useSvgCursor, canvasCursor } from "@/design/chart-kit";
 import { FS_FALLBACK, tickCount } from "@/design/useChartMetrics";
 import { h3 } from "@/design/prng";
 import { fmtBytes, shortHash as ShortHash } from "@/data/types";
@@ -311,13 +311,18 @@ function SedParticleField({ drawn, maxPerB, maxSize, tiers, truncated, total, tr
 
   const { ref } = useMemCanvas(draw);
 
+  /* Pointer→canvas conversion comes from chart-kit's `canvasCursor`, never
+     re-derived here. `verify-chartkit.mjs` keeps that math singular ("cursor
+     math lives only in chart-kit") and it caught this file's first version
+     doing its own; the rule is right, and the fix was to add the missing
+     canvas primitive rather than waive it — every remaining v2 view is a canvas
+     view and will need the same thing. */
   const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = e.currentTarget;
-    const rect = canvas.getBoundingClientRect();
     const w = canvas.clientWidth, h = canvas.clientHeight;
-    if (!w || !h || !rect.width || !rect.height) return;
-    const cx = (e.clientX - rect.left) * (w / rect.width);
-    const cy = (e.clientY - rect.top) * (h / rect.height);
+    const at = canvasCursor(e);
+    if (!w || !h || !at) return;
+    const cx = at.x, cy = at.y;
     const list = sedLayout(drawn, w, h, maxPerB, maxSize, tiers, resolved.colors, resolved.fallback);
     let best: SedParticle | null = null, bestD = Infinity;
     for (const p of list) {

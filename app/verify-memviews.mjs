@@ -1107,6 +1107,66 @@ function advanceBlocks(n) { head += n; }
     ok(results.stratumCount > 0, `scenario 7: [data-sed-stratum] blocks present (${results.stratumCount})`);
   }
 
+  /* ── THE PARTICLE → TRANSACTION-INSPECTOR HOP ───────────────────────
+     "Every particle opens the shared transaction inspector" is the contract's
+     §7 requirement, and a canvas cannot be asserted with a selector. The view
+     publishes `data-sed-probe="x,y,txid"` — one deterministic particle's centre
+     in the canvas's OWN CSS px, plus the txid a click there must select.
+
+     The scale conversion is the point of this assertion, not incidental to it.
+     `.mp-fit` scales the whole view (measured 0.36 at 1440), so probe
+     coordinates in canvas space are NOT viewport coordinates: the click point
+     is rect.left + x * (rect.width / canvas.clientWidth). If the view's own
+     hit-test ever reads pointer position in the wrong space, this is what
+     catches it — and the space mismatch is invisible to every other assertion
+     here, because at scale 1 the two agree and the gate would still pass. */
+  if (results.probe) {
+    const [px, py, ptxid] = results.probe.split(',');
+    // SCROLL FIRST, then read the rect, then click. The core column is taller
+    // than the viewport (708px canvas in a 900px window with chrome above it),
+    // so the probe particle sits BELOW THE FOLD at rest: rect.top + y exceeded
+    // 900 and a raw viewport click landed nowhere — a failure with nothing to
+    // do with the hit-test under test. Centring the canvas brings the point
+    // inside the viewport. (locator.click({position}) does its own scrolling
+    // but then hit-tests the resulting point and reported the element
+    // intercepted, for the same underlying reason.)
+    const pt = await p.evaluate(() => {
+      const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
+      if (!cv) return null;
+      cv.scrollIntoView({ block: 'center', inline: 'center' });
+      const r = cv.getBoundingClientRect();
+      return {
+        left: r.left, top: r.top, h: cv.clientHeight,
+        scale: cv.clientWidth ? r.width / cv.clientWidth : 1,
+        vh: window.innerHeight, vw: window.innerWidth,
+      };
+    });
+    if (pt) {
+      const clickX = pt.left + Number(px) * pt.scale;
+      const clickY = pt.top + Number(py) * pt.scale;
+      const inView = clickX >= 0 && clickY >= 0 && clickX <= pt.vw && clickY <= pt.vh;
+      ok(inView,
+        `scenario 7: the probe point is inside the viewport after centring `
+        + `(${clickX.toFixed(0)},${clickY.toFixed(0)}) in ${pt.vw}x${pt.vh} — otherwise the click below proves nothing`);
+      await p.mouse.click(clickX, clickY);
+      await p.waitForTimeout(900);
+      const opened = await p.evaluate((id) => {
+        const v = document.querySelector('.mem-view');
+        return {
+          tracked: !!v.querySelector(`[data-tracked-tx="${id}"]`),
+          phase: v.querySelector('[data-mem-track-phase]')
+            ? v.querySelector('[data-mem-track-phase]').getAttribute('data-mem-track-phase') : null,
+        };
+      }, ptxid);
+      console.log(`  · probe click: canvas ${pt.h}px tall, scale ${pt.scale.toFixed(4)}, target (${px},${py}) -> phase=${opened.phase}`);
+      ok(opened.tracked,
+        `scenario 7: clicking data-sed-probe's exact coordinate opens the shared tx inspector for THAT txid `
+        + `(${String(ptxid).slice(0, 10)}…, canvas scale ${pt.scale.toFixed(4)})`);
+    } else {
+      ok(false, 'scenario 7: could not locate the canvas to click its probe coordinate');
+    }
+  }
+
   await p.close();
 
   /* ── LOW POOL ───────────────────────────────────────────────────────
