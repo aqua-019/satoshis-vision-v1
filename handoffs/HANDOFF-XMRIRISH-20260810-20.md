@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260810-20
 branch: claude/new-session-r2322c
-status: in_progress
+status: done
 written_by: claude-code (manual mode — prompt-driven)
 owner: claude-code
 ---
@@ -80,13 +80,45 @@ node verify-cbpending.mjs / verify-govern.mjs
 ```
 
 ## 7 · REPORT — filled on exit
-status:
-pr:
-commits:
-deps added:
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/167 — all 3 checks success on `adb4eea`
+commits: 2 (`304b492` layout system · `adb4eea` bundle ceiling)
+deps added: none
+
 deviations from spec:
+- **§2A/§2B scope had to be exceeded.** The headline axis defect is in
+  `src/pages/markets/charts.tsx`, which both sections exclude — the mempool views
+  render through it. Fixing it there was unavoidable; reported rather than hidden.
+- **§2B's "every axis" is 2 targets, not 27.** `src/views/` has no axes; most mempool
+  axes are hardcoded categorical/radial DOM where `labelStep` does not apply.
+- **§4's labels break test cannot red.** Structural, not a weak assertion — see §8.
+- **A budget was raised**: `/live/network` 106,000 → 108,000. An acceptance-criteria
+  change, flagged in a PR comment rather than left in a commit message.
+
 notes for ARCHITECTURE.md patch:
+- `--sp-1..--sp-7` declared once in `styles.css` `@layer base { :root }`. `src/mempool/`
+  and `src/views/` migrated; the rest of the app follows as each surface is touched.
+  `--pad-main` / `--pad-page` deliberately not renumbered.
+- `.mp-switcher` is no longer `position: fixed`; it lives in a new `.mp-chrome` header
+  row. The `top:` topbar coupling is deleted, along with the mobile and tablet overrides
+  that existed only to compensate for it. The open list still overlays on desktop.
+- Gate count unchanged at **71** — scenario 6 is a new section in an existing gate, not a
+  new file. `verify-memviews` 77 → 125 assertions.
+- The `verify-bundle` per-route table's `measured` comments are stale by 6–9 KB across at
+  least three routes; several sit at 96–100% of ceilings written to hold ~10%.
+
 open questions:
+1. **900×500 landscape loses up to 28.4% of stage height** (86px of 303px on bridge and
+   constellation, where `.mp-chrome` wraps). Real cost of moving the switcher into flow.
+   A phone-landscape composition would recover it.
+2. **Nobody has looked at the rendered result.** 300 spacing values moved; geometry was
+   measured, pixels were not reviewed.
+3. **`/live/network`'s difficulty chart now shows no high value.** Both markers suppressed
+   as genuine collisions, so nothing non-colliding was lost — but `783.00G` appears
+   nowhere. Nudging beats dropping.
+4. **Scenario 6 does not cover the BarSeries fix** (needs ≥17 blocks in the fixture).
+5. `verify-coldboot-live` emits **21 or 22 on an unchanged tree**. Conditional assertion
+   not identified; it makes that gate unusable as a four-number baseline.
 
 ## 8 · LOOP FEEDBACK
 
