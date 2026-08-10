@@ -165,6 +165,30 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   `git checkout -- <file>` → `git status --short` shows only intended changes →
   `grep -rn "MUTATION\|BREAK TEST" app/src app/*.mjs` is empty → *then* run the chain.
   Trusting the last green run instead of re-checking a clean tree is how this ships.
+- **THE HARNESS LIES TO ITSELF, and it has cost more near-misses here than the code has.**
+  A distinct family from the code defects the rest of this file records: the measurement
+  apparatus reports a true fact about the WRONG SUBJECT. Three instances, all found by
+  measurement rather than review:
+  1. **v2·0's injection count** — a break test whose mutation silently did not apply, read
+     as "the gate cannot catch this".
+  2. **The shared `dist/` race (v2·1)** — three workers on one tree, one `dist/`, one
+     server. A concurrent `npm run build` wipes `dist/index.html` mid-request, so a gate
+     reads a half-written tree. **A result produced inside the race window is VOID, not
+     suspect**: its subject is "whatever was on disk at that instant", which is not the
+     tree. Discard and re-run; do not reason about whether it looked plausible. v2·1's
+     rider-2 worker reported a scenario-6 timeout as a "pre-existing environmental issue";
+     re-run in an isolated worktree, the gate completed all seven scenarios.
+     **Serialise builds with a lock, and give each worker its own port.**
+  3. **Bare `curl` to localhost answers through the agent proxy (v2·1)** — a `200` from a
+     port with NOTHING BOUND. Not a flaky check: a check whose subject is the proxy, read
+     as proving the server. **A localhost reachability check must bypass the proxy —
+     `curl --noproxy '*'`, or bind-and-probe in the same process.** Any "the server is up"
+     established with bare `curl` in this environment is void rather than wrong: it
+     establishes nothing either way, INCLUDING the ones that happened to be correct.
+  Consequence worth holding: "server died / port busy / timeout" now has at least two
+  candidate causes in this environment that are not the server. Before recording a symptom
+  as environmental, reproduce it somewhere the harness cannot confound it — `git worktree`
+  with its own `dist/`, its own port, and nothing else building.
 
 ## Key Decisions Log
 
