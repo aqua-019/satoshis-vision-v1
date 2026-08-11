@@ -48,6 +48,14 @@ console.log('HEIGHT_FIT_TOLERANCE (parsed from source):', HEIGHT_FIT_TOLERANCE);
  * moves the band across one of these cells goes red here instead of silently
  * altering the rendered type size. Values are MEASURED, not predicted.
  */
+// EVERY ROW IS `false`, AND THAT IS NOT A COVERAGE HOLE — read this before
+// "fixing" it. The clause's FIRE branch is exercised by the DERIVED control
+// further down, which computes its own viewport from the shipped naturalH. Adding
+// a static `true` row here would put back the exact constant that went stale
+// twice in one PR (1000 against 851, then 1100 against 956). This map's job is
+// the other half: that the clause does NOT fire at the viewports a reader would
+// assume are safe, asserted per-viewport because "outside the hazard band" is a
+// claim no composition can make.
 const HEIGHT_CLAUSE_AT = {
   'desktop': false,            // 1440x900   canvasH 702 — far below the band
   'desktop-rail-band': false,  // 1280x900   wS 0.8644 pulls the band down out of reach
@@ -116,12 +124,15 @@ const VIEWS = ['reactor', 'bridge', 'sediment', 'constellation'];
  * is why this viewport was retuned rather than left at a round number.
  * `canvasH ~= viewportH - 198` (measured constant across six viewport heights),
  * and with wS = 1 the clause fires while 0.92 <= canvasH / naturalH < 1:
- *     naturalH 851 -> viewportH [ 981, 1049)      <- an earlier composition
- *     naturalH 956 -> viewportH [1078, 1154)      <- what ships
- * 1000 exercised the clause against 851 and does NOT against 956. Leaving it
- * would have kept a green cell that had silently stopped testing anything —
- * the vacuity this suite keeps finding. 1100 sits mid-band for the shipped
- * height. If reactor's height moves again, this number moves with it, and
+ *     naturalH  851 -> viewportH [ 981, 1049)     an earlier composition
+ *     naturalH  956 -> viewportH [1078, 1154)     a later one
+ *     naturalH 1031 -> viewportH [1147, 1229)     <- WHAT SHIPS
+ * 1000 exercised the clause against 851 and not against 956; 1100 was the retune
+ * for 956 and does not reach the band for 1031. THAT IS WHY NO STATIC VIEWPORT
+ * LIVES HERE ANY MORE — two staleness events in one PR, each leaving a green cell
+ * that had silently stopped testing anything. The fire branch is exercised by the
+ * DERIVED control below (`0.96 * naturalH + CHROME_H`), which recomputes the
+ * viewport from the shipped height on every run. If reactor's height moves again
  * HEIGHT_CLAUSE_AT below is what makes that failure loud rather than silent.
  *
  * Reactor is the load-bearing cell at this viewport: with naturalW 1180 == the
@@ -339,7 +350,8 @@ for (const vp of VPS) {
       // NOT phrased as "reactor is out of the hazard band": no composition is.
       // Measured, for three candidate heights considered during this rebuild,
       // the band in viewport-height terms is
-      //     naturalH 851 -> [ 981, 1049)     876 -> [1004, 1074)     956 -> [1078, 1154)
+      //     naturalH 851 -> [ 981, 1049)   876 -> [1004, 1074)   956 -> [1078, 1154)
+      //     naturalH 1031 -> [1147, 1229)  <- what ships; exercised by the DERIVED control
       // and every one contains a common desktop window height. The band moves
       // with the composition; it never goes away (contract §8). So the honest
       // claim is per-viewport, and its value is that a composition change which

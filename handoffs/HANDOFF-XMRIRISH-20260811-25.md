@@ -360,18 +360,30 @@ Two more for §9, distinct rather than restatements:
   summary-line rule, not the exit code.
 
 
-### THE ENDPOINTS IN BYTES, WITH BOTH INSTRUMENTS NAMED
-Two readings, two methods, and the difference is the point — quote the method with the number.
+### THE ENDPOINTS IN BYTES — AND ONE OF MY TWO READINGS IS WRONG
 ```
-                     verifier (verify-bundle table, /1024)      lead (dist/assets on disk)
-eagerJsRaw           261,396                                    263,456        delta 0 either way
-lazyJsRaw            705,260                                    703,200        both +2.2k-ish
+                     verify-bundle (the repo's definition)     lead's on-disk read
+eagerJsRaw           261,396                                   263,456
+lazyJsRaw            705,260                                   703,200
 ```
-The ~2,060 B gap is a SCOPE difference, not a discrepancy in the tree: the on-disk read classes
-`^(index|vendor)-` as eager and every other `.js` as lazy, which is not necessarily how the gate
-partitions. **Neither is wrong; they answer slightly different questions**, and after tonight that is
-exactly the thing to state rather than to reconcile by picking one. **They agree on what matters:
-eagerJsRaw moved ZERO.**
+**I first recorded these as "two instruments answering slightly different questions." THAT WAS
+WRONG and the file had already adjudicated it.** `verify-bundle.mjs:185` computes
+`EAGER = staticClosure(entry.fileName)` — the transitive STATIC import closure from the HTML entry,
+out of Rollup's own `bundle-graph.json`. My read keyed on the basename prefix `^(index|vendor)-`.
+`:102-107` exists specifically to warn against that: keying by bare basename "is not a hypothetical:
+the first draft of this file did it, every closure lookup silently missed, and eagerJsGz reported
+0 B while four green ticks sat under it."
+
+And the mechanism is named at `:419-425`: **there are TWO `index-*.js` chunks.** Confirmed on disk —
+`index-DgHnaSoK.js` at 98,477 B (the entry) and `index-ChujE2ez.js` at **2,064 B** (lazy). My prefix
+rule sweeps the 2,064 lazy chunk into eager, which is exactly the ~2,060 B gap. Same collision, same
+chunk, same magnitude, documented eight lines above my own figure.
+
+**So the gate's partition is THE number: eagerJsRaw 261,396 · lazyJsRaw 705,260.** The on-disk read is
+recorded as the reading that disagreed and why, not as a co-equal method. The `+2,210` delta is
+probably still sound — the mis-classed chunk sits in both endpoints and cancels unless it changed
+size — but the ABSOLUTE lazy figure from the prefix read is not usable, and "two valid instruments"
+was me applying the session's own lesson in the one place it did not apply.
 
 **A full view rebuild landed entirely in the LAZY population.** That is #170's eager/lazy split doing
 precisely what it was built for, and this is its first independent confirmation.
