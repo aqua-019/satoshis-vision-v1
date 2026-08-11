@@ -504,9 +504,28 @@ spanning `S` whose content demands `X` forces the whole grid to roughly `12·X/S
 amplifies 2.4×; span 7 amplifies 1.71×** — and here both land on the same fr size, so each is
 independently sufficient.
 
-**The consequence that matters for whoever fixes it: bounding ONE column achieves exactly
-nothing.** Both must be bounded together, and a correct fix applied to one would measure as no
-change and look wrong.
+### THE CO-EQUAL TRAP — the one failure shape here that produces a FALSE NEGATIVE
+
+**Every other instance in this document is a false positive**: an artifact wearing the clothes of
+a result, a green with no subject, a crashed run read as a measurement. **This one runs the other
+way, and that makes it more dangerous.**
+
+**When a measured quantity is a `max()` over several contributors, a single-contributor change is
+unfalsifiable.** It moves the number only if its contributor was strictly the largest *and*
+remains so afterwards. With co-equal contributors, **every individually-correct fix measures
+exactly zero** — and the natural reading of a zero delta is "my diagnosis was wrong", so correct
+work gets reverted.
+
+Grid tracks are the instance here, but **the shape is general: anything resolved by a maximum.**
+It also retroactively explains why the first sediment isolation looked like "neither child drives
+it" — both did, equally, and single-removal is structurally blind to that.
+
+**Remedy: change all contributors at once, or measure contributions directly rather than by
+difference** (the clone-outside-the-grid instrument above is the direct measurement).
+
+**So, for whoever picks sediment up: you must bound BOTH hero columns in one change. Bounding
+either alone will produce a zero delta, and the honest reading of a zero delta is that the fix was
+wrong.** The trap is baited specifically against someone doing it right.
 
 **Not this PR's view** — sediment is merged and shipping at 0.36 — but the attribution is now
 closed rather than open.
@@ -607,6 +626,25 @@ script and is already red with three failures):
 /mempool?v=constellation        ← legacy; behaviour differs between harness and production
 /live/mempool?v=constellation   ← canonical; identical in both
 ```
+
+### A MUTATION'S RESTORE MUST BE OWNED BY SOMETHING THAT SURVIVES THE MUTATOR'S DEATH
+
+Sibling of the completion rule, same root — the process did not reach its own end — but a
+different and **worse** consequence. The completion rule catches a run that died leaving a
+PARTIAL RESULT, which is at least visible in the log. This catches a run that died leaving a
+**DIRTY TREE**, which is silent until something else reads it.
+
+**A restore appended to the same command is not a restore — it is a hope that the command
+finishes.** Live instance: a break test run inline as `mutate && build && gate && restore` was
+killed by a 2-minute timeout after the build. The mutation stayed in the working tree, and
+nothing announced it; the next thing to read that file would have measured a subject that exists
+in no commit.
+
+Use a `trap`, a separate reverting process, or a snapshot taken before the mutation — and
+**verify the tree is clean afterwards rather than assuming the cleanup ran.** The trap-based
+harness in this repo does exactly this; the incident was stepping outside it for one command,
+which is the most common way a good harness gets bypassed. **The rule names the inline case
+explicitly for that reason.**
 
 > Corollary, learned the same afternoon: **a checker's predicate is itself a claim with a
 > subject.** A path-existence audit reported nine false positives because exact string matching
