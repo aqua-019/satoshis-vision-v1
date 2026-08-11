@@ -246,8 +246,51 @@ const BUDGETS = {
   cssGz: 17_000,
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
-  // 673.8 kB; measured 849,267.
-  totalJsRaw: 940_000,
+  // 673.8 kB.
+  //
+  // RAISED 940,000 -> 1,000,000 in v2.1, and the `measured 849,267` that stood
+  // beside it was stale by 88,769 B — the same failure this table already
+  // records for /live/network at :270-280, on the line above it. Measured by
+  // building three commits in an isolated worktree, same machine, same
+  // node_modules, dist/ wiped between each:
+  //
+  //     6039d64  (origin/main, this ceiling green)  938,036
+  //     9180206  (+ the charts marker nudge)        938,435   +399
+  //     a67867e  (+ the sediment canvas rebuild)    944,271   +5,836
+  //
+  // So main was already at 938,036 against 940,000 — 1,964 B of headroom,
+  // 0.21%, not the ~90 kB the stale comment implied. This gate was going to
+  // red on the next change of ANY size; sediment crossed it, but +2 kB of
+  // anything would have. Recording that explicitly because "the budget went
+  // red" and "the budget was already spent" are different findings and only
+  // the second one is true here.
+  //
+  // LEVEL: 960,000, chosen against the PLANNED WORK rather than against one
+  // 200 kB lump. Sediment cost +5,836 B; the roadmap still holds four v2
+  // rebuilds (constellation, terminal, reactor, ops bridge) and five new views
+  // (orbital, abyss, pulse, circuit, relay):
+  //
+  //     9 x 5,836                        = +52,524
+  //     944,271 + 52,524                 =  996,795
+  //
+  // So a 1,000,000 ceiling — the obvious round number, and this line's first
+  // draft — would clear the ENTIRE remaining roadmap by 3,205 B and never fire
+  // once. Worse, 5,836 is a floor for the five NEW views, not an average:
+  // sediment was a rewrite that replaced code, those are net additions. The
+  // realistic outcome is a crossing on the eighth or ninth view, which then
+  // gets blamed for eight views' growth — the worst possible moment for this
+  // gate to speak.
+  //
+  // 960,000 leaves 15,729 B, roughly 2.7 views, so it speaks about a third of
+  // the way through the roadmap while the answer is still "which view" rather
+  // than "all of them". Same standard #167 set one line below, where
+  // /live/network was raised 106,000 -> 108,000 (+1,965, a minimum) explicitly
+  // because a larger raise would "re-hide the growth". A +60,000 raise here
+  // would have been the move that PR declined.
+  //
+  // If you are raising this again: argue with the arithmetic above, not with
+  // the round number.
+  totalJsRaw: 960_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk

@@ -157,6 +157,58 @@ function rectsOverlap(
   return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 }
 
+/**
+ * Where AreaSeriesImpl's high/low marker label ends up, or null when nothing
+ * clears every collision. Tries the label's natural position first, then
+ * flips it to the opposite side of the dot (the same "-6 above / +13 below"
+ * offsets the file already uses for hi/lo respectively — reused rather than
+ * invented), then a modest horizontal step in from whichever plot edge is
+ * closer, then both together. `avoid` is fixed furniture PLUS, when called
+ * for lo, hi's own final resolved box — nudging beats dropping, but a label
+ * that still can't clear every candidate falls back to not rendering at all.
+ *
+ * `x` and `y` are the caller's pre-existing natural position (`x` already
+ * clamped to the same padL+22/padL+innerW-22 margin the file has always
+ * used) and are NEVER re-checked against `bounds` here — that keeps a
+ * currently-non-colliding label byte-identical to before this function
+ * existed. `xIn` and `altY` are the genuinely new territory this fix adds,
+ * so both are bounds-checked before ever being offered as a candidate:
+ *   - `xIn` clamps to half the label's OWN estimated width from each edge,
+ *     not the raw plot edge — textAnchor is "middle", so a candidate
+ *     centred ON the edge would render half its glyphs outside the chart.
+ *     Measured against sediment's "1,000,000 p/B" (13 chars, fs.label 12):
+ *     half-width ≈48px, wider than the flat step this once used, which
+ *     would have let exactly that label escape.
+ *   - `altY` has no pre-existing clamp to inherit at all, so a candidate
+ *     that would push it past the plot's own top/bottom is dropped from
+ *     the search rather than offered. Reachable with baseline="zero" and
+ *     tightly-clustered data, where hi and lo can both render close to one
+ *     edge instead of the usual near-top/near-bottom split.
+ */
+function resolveMarkerLabel(
+  text: string, x: number, y: number, altY: number,
+  bounds: { left: number; right: number; top: number; bottom: number }, fontPx: number,
+  avoid: { left: number; right: number; top: number; bottom: number }[],
+): { x: number; y: number } | null {
+  const half = estTextW(text.length, fontPx) / 2;
+  const xIn = x - bounds.left <= bounds.right - x
+    ? Math.min(x + 16, bounds.right - half)
+    : Math.max(x - 16, bounds.left + half);
+  const xInOk = xIn - half >= bounds.left && xIn + half <= bounds.right;
+  const altYOk = altY - fontPx * 0.8 >= bounds.top && altY + fontPx * 0.25 <= bounds.bottom;
+
+  const candidates: [number, number][] = [[x, y]];
+  if (altYOk) candidates.push([x, altY]);
+  if (xInOk) candidates.push([xIn, y]);
+  if (xInOk && altYOk) candidates.push([xIn, altY]);
+
+  for (const [cx, cy] of candidates) {
+    const r = textRect(cx, cy, text, fontPx, "middle");
+    if (!avoid.some((f) => rectsOverlap(r, f))) return { x: cx, y: cy };
+  }
+  return null;
+}
+
 /* ════════════════════════════════════════════════════════════════════
    CandleChart — real OHLC + volume sub-bars + axes + annotations
    ════════════════════════════════════════════════════════════════════ */
@@ -749,16 +801,39 @@ function AreaSeriesImpl({
           against the fixed furniture, e.g. "1,000,000 p/B" (top y-tick) ∥
           "908,857 p/B" (hi-marker label), and "908,857 p/B" (hi-marker
           label) ∥ "▼ -98.3%" (the change badge, also anchored top-left).
+
+          ROUND 3: dropping the label outright cost the max/min value
+          itself whenever the peak sits at a series index the edge-clamp
+          pins next to fixed furniture — measured on NetworkPage's
+          difficulty chart at 1440×900 with the peak at index 0 (oldest
+          block, leftmost): hiX clamps to padL+22, landing hi's label on
+          both the change badge (padL+4, padT+4) and, independently, lo's
+          label on the last-value pill — both markers vanished, including
+          the chart's own maximum. `resolveMarkerLabel` now tries the
+          natural position, then flips to the opposite side of the dot,
+          then steps in from whichever plot edge is closer, then both
+          together — the same four-way search for hi and lo through one
+          function, so the geometry exists once. lo is resolved against
+          hi's FINAL chosen box (post-nudge), not hi's original one — if hi
+          moved, lo's obstacle moved with it. Dropping remains the fallback
+          when no candidate clears every collision, and the two things that
+          were never geometric collisions — a label verbatim-matching a
+          tick, and hi/lo verbatim-matching each other — are still resolved
+          by dropping, never nudging: repeating the same text elsewhere in
+          the box is not new information regardless of position.
+
           None of the three things a marker label can collide with there
           should move to make room: a tick's position IS the value it
           names, the change badge is a fixed corner annotation, and the dot
-          is the only unambiguous "this is the high/low point" marker. So —
-          same resolution as the BarSeries final-label fix above — suppress
-          the TEXT (never the dot) when it would land on something else,
-          using estTextW/fontPx-derived boxes rather than a guessed pixel
-          constant. An exact text duplicate of a TICK is suppressed
-          outright: a marker repeating a tick verbatim is not new
-          information regardless of where it lands.
+          is the only unambiguous "this is the high/low point" marker. So
+          the LABEL is what yields — using estTextW/fontPx-derived boxes
+          rather than a guessed pixel constant — and (ROUND 3, below) it
+          yields by MOVING first: nudged to the opposite side of the dot,
+          then stepped horizontally inward, before ever being dropped. An
+          exact text duplicate of a TICK is suppressed outright, never
+          nudged: a marker repeating a tick verbatim is not new information
+          regardless of where it lands, so there is nowhere nudging could
+          put it that would help.
 
           ROUND 2: the round-1 fix above still shipped a live
           "15,000 p/B" ∥ "15,000 p/B" collision on the same chart, at all
@@ -816,40 +891,40 @@ function AreaSeriesImpl({
           bottom: py(last) + 8,
         });
 
-        const collidesFixed = (text: string, x: number, y: number): boolean => {
-          if (yTicks.some((tk) => format(tk) === text)) return true; // verbatim duplicate
-          const r = textRect(x, y, text, fs.label, "middle");
-          return fixedRects.some((f) => rectsOverlap(r, f));
-        };
-        const showHi = !collidesFixed(hiText, hiX, hiY);
+        // A verbatim match of a y-tick is not a geometric collision — it's
+        // the same number appearing twice — so it is dropped outright,
+        // never a nudge candidate (see ROUND 3 above).
+        const hiIsTickDup = yTicks.some((tk) => format(tk) === hiText);
+        const loIsTickDup = yTicks.some((tk) => format(tk) === loText);
+        const plotBox = { left: padL, right: padL + innerW, top: padT, bottom: padT + innerH };
 
-        // hi and lo are also checked against EACH OTHER, not just against
-        // fixedRects — a flat/near-flat series can put hi and lo close
-        // enough (or, at the extreme, exactly equal) that their own labels
-        // overlap with nothing else involved. lo yields: its dot already
-        // renders at opacity 0.65 against hi's full-strength 1 (see the
-        // two <circle> below), so the file already treats lo as the
-        // secondary marker and suppressing its label on collision extends
-        // that ordering rather than inventing a new one. When
-        // hiText === loText the two labels are a verbatim duplicate of
-        // EACH OTHER (not just of a tick, which `collidesFixed` above
-        // already handles) — keeping hi's copy loses no information, it
-        // drops a repeat. Gated on showHi: if hi is already suppressed for
-        // colliding with fixed furniture, lo has nothing to yield to.
-        const hiLoCollides = showHi && (
-          hiText === loText || rectsOverlap(
-            textRect(hiX, hiY, hiText, fs.label, "middle"),
-            textRect(loX, loY, loText, fs.label, "middle"),
-          )
-        );
-        const showLo = !collidesFixed(loText, loX, loY) && !hiLoCollides;
+        const hiPos = hiIsTickDup ? null
+          : resolveMarkerLabel(hiText, hiX, hiY, py(data[hiIdx]) + 13, plotBox, fs.label, fixedRects);
+        const showHi = hiPos != null;
+
+        // lo yields to hi first — its dot already renders at opacity 0.65
+        // against hi's full-strength 1 (see the two <circle> below), so the
+        // file already treats lo as the secondary marker. It is resolved
+        // against hi's FINAL chosen box, not hi's original one — if hi
+        // nudged, lo's obstacle nudged with it. hiText === loText is a
+        // duplicate of hi's own rendered label, not a collision (nudging
+        // can't fix "these are the same word"), so it drops lo outright —
+        // but only when hi is actually shown; an unshown hi leaves nothing
+        // for lo to repeat.
+        const loDup = loIsTickDup || (showHi && hiText === loText);
+        const loAvoid = showHi
+          ? [...fixedRects, textRect(hiPos!.x, hiPos!.y, hiText, fs.label, "middle")]
+          : fixedRects;
+        const loPos = loDup ? null
+          : resolveMarkerLabel(loText, loX, loY, py(data[loIdx]) - 6, plotBox, fs.label, loAvoid);
+        const showLo = loPos != null;
 
         return (
           <g fontFamily="var(--f-mono)" fontSize={fs.label}>
             <circle cx={xOf(hiIdx)} cy={py(data[hiIdx])} r="2" fill={color} />
-            {showHi ? <text x={hiX} y={hiY} textAnchor="middle" fill={AXIS}>{hiText}</text> : null}
+            {showHi ? <text x={hiPos!.x} y={hiPos!.y} textAnchor="middle" fill={AXIS}>{hiText}</text> : null}
             <circle cx={xOf(loIdx)} cy={py(data[loIdx])} r="2" fill={color} opacity={0.65} />
-            {showLo ? <text x={loX} y={loY} textAnchor="middle" fill={AXIS}>{loText}</text> : null}
+            {showLo ? <text x={loPos!.x} y={loPos!.y} textAnchor="middle" fill={AXIS}>{loText}</text> : null}
           </g>
         );
       })() : null}

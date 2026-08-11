@@ -165,6 +165,102 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   `git checkout -- <file>` → `git status --short` shows only intended changes →
   `grep -rn "MUTATION\|BREAK TEST" app/src app/*.mjs` is empty → *then* run the chain.
   Trusting the last green run instead of re-checking a clean tree is how this ships.
+- **THE HARNESS LIES TO ITSELF, and it has cost more near-misses here than the code has.**
+  A distinct family from the code defects the rest of this file records: the measurement
+  apparatus reports a true fact about the WRONG SUBJECT. Three instances, all found by
+  measurement rather than review:
+  1. **v2·0's injection count** — a break test whose mutation silently did not apply, read
+     as "the gate cannot catch this".
+  2. **The shared `dist/` race (v2·1)** — three workers on one tree, one `dist/`, one
+     server. A concurrent `npm run build` wipes `dist/index.html` mid-request, so a gate
+     reads a half-written tree. **A result produced inside the race window is VOID, not
+     suspect**: its subject is "whatever was on disk at that instant", which is not the
+     tree. Discard and re-run; do not reason about whether it looked plausible. v2·1's
+     rider-2 worker reported a scenario-6 timeout as a "pre-existing environmental issue";
+     re-run in an isolated worktree, the gate completed all seven scenarios.
+     **Serialise builds with a lock, and give each worker its own port.**
+  3. **A `200` proves SOMETHING is listening — not that it is your server, or your build
+     (v2·1).** A gate run measured a stale `vite preview` holding `:4173` and serving a
+     DIFFERENT tree's `dist/`, while the reachability check read as "my build is up".
+     **CORRECTION, and the reason this entry is worth reading twice:** this was first
+     diagnosed and written down here as "bare `curl` answers through the agent proxy and
+     returns 200 from an unbound port". **That diagnosis was wrong**, and it was wrong in
+     exactly the way this section is about — asserted from a plausible mechanism instead of
+     measured. Measured afterwards: bare `curl` to unbound `127.0.0.1:65123` and
+     `:65124` returns `000`, exit 7. The proxy fabricates nothing. The real cause was a
+     process the search missed: `ps`/`pkill` keyed on `serve-dist.mjs` never matches
+     `vite preview`, and `ss -ltnp | grep :4173` printed nothing while `lsof` showed the
+     listener plainly. So: **identify a port's holder with `lsof -iTCP:<port> -sTCP:LISTEN
+     -P -n` (or `/proc/net/tcp` inode → pid), never by grepping `ps` for the name you
+     expect.** An empty `ss` result is not proof a port is free, and killing "the server"
+     by script name does not free a port another tool is holding.
+  Consequence worth holding: "server died / port busy / timeout" has more than one
+  candidate cause here that is not the server. Before recording a symptom as
+  environmental, reproduce it somewhere the harness cannot confound it — `git worktree`
+  with its own `dist/`, its own port, and nothing else building.
+  The shape all four share, including the mis-diagnosis: **the subject was the environment
+  rather than the thing under test** — the tree instead of the mutation, whatever was on
+  disk instead of the build, some listener instead of yours, a plausible mechanism instead
+  of a measurement. That is the same sentence as the code-defect family above, with a
+  different noun.
+- **A TOLERANCE IS AN UPPER BOUND ON THE ERROR A TEST CAN DETECT, NOT A SAFETY
+  MARGIN.** Any assertion carrying a tolerance has a defect class it structurally cannot
+  see, and **the tolerance is the size of that class**. v2·1's live example: sediment's
+  canvas hit-test uses `hitR = max(p.r + 3, 6)`, chosen for thumbs, and that generosity
+  silently became the detection threshold for a coordinate-space bug — a passing hit-test
+  does not distinguish "the spaces agree" from "the spaces disagree and the tolerance
+  absorbed it". The DPR case is the sharp end: on a 1× CI runner `eff === 1` and a
+  backing-store-vs-CSS-px mismatch is EXACTLY zero, so it ships green and is wrong on every
+  retina phone. When an assertion has a tolerance, name the error it is blind to, and
+  verify that class by construction (trace the units) rather than by the assertion.
+- **A STEP OR SUITE NAME MUST NAME WHAT IT RUNS.** `ci.yml`'s e2e step was called
+  "Degraded-mode, Tor and single-origin gates" while running all 29 `verify:e2e` gates —
+  three named, twenty-six not, including every mempool-view gate. Same narrower-subject
+  family as the assertions above, sitting in the CI config; and it is the first instance
+  here where the defect caused a CORRECT claim to be withdrawn rather than a wrong one
+  asserted, which is strictly worse because the retraction reads as rigour. If a name
+  cannot list everything, give the count and the load-bearing members.
+- **AN EMPTY SEARCH RESULT IS EVIDENCE ONLY AFTER ITS SCOPE IS VERIFIED.** Three instances
+  in the v2 series, two of them load-bearing: "no view imports `labelStep`/`tickCount`"
+  (the grep was scoped to `src/mempool/` and `src/views/` and the result generalised to
+  "no view" — `pages/markets/charts.tsx:31` had imported them throughout); a
+  `git grep -ln … -- 'app/src/**'` that returned nothing because the PATHSPEC did not match,
+  one sentence away from reporting a component absent that exists; and a `ps`/`pkill`
+  pattern of `serve-dist.mjs` that could not see the `vite preview` actually holding the
+  port. Widen the scope and re-run before concluding an absence, and state the scope
+  alongside the result.
+- **WHICH SPACE IS THE ASSERTION IN? Non-overlap is scale-invariant; legibility is not.**
+  `.mp-fit` (`FitView`) wraps every fit-enabled mempool view in
+  `transform: scale(min(1, canvasW / naturalW))`, and `useChartMetrics` latches the
+  PRE-TRANSFORM layout width — a CSS transform does not fire ResizeObserver, which reports
+  border-box (layout) size. So a chart's geometry lives in layout space while the reader
+  sees it scaled. Measured on v2·1's sediment:
+
+  | viewport | `.mp-fit` scale | authored | rendered FONT | (em box) |
+  |---|---|---|---|---|
+  | 1440 | 0.359756 | 11px | **3.96px** | 5.04px |
+  | 2560 | 0.650085 | 12px | 7.80px | 10.4px |
+  | 390 | 0.121231 | 11px | **1.33px** | 1.70px |
+
+  **Read the FONT column, not the box.** `getBoundingClientRect().height` on a `<text>` is
+  the em/line box, ~1.27× the font size — quoting it overstates legibility by 27%. And the
+  three rows are TWO series, not one: 1440 and 390 sample the SVG tick, while 2560 samples
+  a DOM label (`--fs-label` reaching its 12px `clamp` ceiling), which is why its ratio is
+  1.333 against the other two's 1.274/1.275. Do not compute a trend across it.
+  The general rule: **any assertion about an ABSOLUTE RENDERED QUANTITY must be measured
+  after every transform between the author and the reader; any assertion about a RELATION
+  between elements may be measured before them.** Collision, ordering, containment and
+  non-overlap survive a uniform scale — which is why `verify-memviews` scenario 6 is sound
+  in layout space. Font size, contrast area and hit-target minimums survive no scaling at
+  all.
+  **Consequence, recorded and NOT fixed in v2·1**: the type floor is asserted in authored
+  space while users read rendered space, across all nine fit-enabled views. The machinery
+  built for exactly this — `useChartMetrics`'s `k`/`u`/`minWidth`, `DEFAULT_MAX_K = 1.7`,
+  whose docblock is explicitly about inflating an artboard's type so it survives being
+  scaled down — is INERT, because no caller anywhere passes `vbWidth`, so `k = 1` and `u`
+  is the identity. And 1.7 was chosen to hold a floor against a scale near 0.59, which the
+  measured 0.36 already passes. Fixing it changes `useChartMetrics`'s contract with every
+  chart in the app and belongs in its own change.
 
 ## Key Decisions Log
 
@@ -250,6 +346,26 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 ## Known Issues / TODOs
 
 <!-- Track open items here -->
+- **WHY MOBILE HAS NEVER LOOKED RIGHT — measured root cause, not a polish problem.**
+  `.mp-fit` scales a mempool view by `min(1, canvasW / naturalW)`. Sediment's natural size
+  is **2279×2495** (`styles.css:1207`), so at a 390px phone the wrapper squeezes a 2279px
+  artboard into roughly **276px — a scale of 0.1212**, and EVERY glyph in the view renders
+  at about **1.3px**. Measured on v2·1, and it applies to all nine fit-enabled views
+  (`FitView.tsx:11-12` excludes only Classic and Terminal).
+  This has been read as a composition/spacing problem for several rounds. It is not, and
+  **no work inside a view can affect it** — the wrapper scales whatever the view produces.
+  Re-read every previous mobile observation against that number.
+  The mobile port therefore has a DECISION to make before any layout work:
+  (a) **do phones get `FitView` at all?** `MempoolPage.tsx:24` applies it unconditionally,
+  while `styles.css:1210`'s `@media (min-width: 769px)` already carves desktop out of the
+  shrink-wrap rule — so a separate phone path is half-expressed in CSS but the wrapper is
+  not conditioned on it, and Classic/Terminal's exclusion is the precedent for the shape of
+  the answer. Or (b) **engage `minWidth`**: `useChartMetrics` computes
+  `minWidth = ceil(vbWidth / maxK)` and its docblock says that below it "the container
+  stops shrinking and the artboard pans instead" — pan-rather-than-shrink is exactly right
+  at 390. Unreachable today because no caller passes `vbWidth`, so `k = 1` and `minWidth`
+  is 0 app-wide. Note `maxK = 1.7` was chosen to hold a floor down to a scale of ~0.59;
+  the measured 0.36 (desktop) and 0.12 (phone) are both past what it was built to rescue.
 - **The cold-boot console is ~2.7× the viewport on a phone, and the orb is below
   the fold there.** Measured at 390×844: the console root is **2282.6px tall in
   an 844px viewport** (2042.6 before v6.1.9's orb-slot change added 240), the

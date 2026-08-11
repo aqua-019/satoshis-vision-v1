@@ -182,7 +182,18 @@ jobs:
       # Drives the built app with the stylesheet blocked, the JS bundle
       # blocked, the lazy chunk dropped, oklch unsupported, and every API
       # response held open for 4s. All routes are intercepted, so no egress.
-      - name: Degraded-mode, Tor and single-origin gates
+      #
+      # THE NAME LISTS WHAT THE STEP ACTUALLY RUNS. It read "Degraded-mode, Tor
+      # and single-origin gates" — three of the 29 gates in `verify:e2e`, at
+      # positions 9, 11 and 12 — while memviews, charts, orb, coldboot, govern,
+      # cls, vitals and twenty-two others ran underneath it, named by none of
+      # them. A label whose subject is narrower than what it covers, in the CI
+      # config rather than in an assertion, and it cost real time: someone
+      # checking whether the mempool e2e work had run looked for it, did not
+      # find it under this name, and WITHDREW A CORRECT CONCLUSION about the
+      # `&&` chain as a result. That is worse than the usual direction of this
+      # failure, because a retraction looks like rigour.
+      - name: 'E2E gates (29) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +19'
         run: npm run verify:e2e
 
       # verify-vitals and verify-cls both stamp their measurements, with the

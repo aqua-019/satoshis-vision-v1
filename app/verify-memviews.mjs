@@ -26,6 +26,8 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 const base = 'http://localhost:4173';
 
+let BLOCKS_N = 14;  // Block fixture count; scenario 6 raises it (see the stride precondition there)
+
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
   if (!existsSync(root)) return undefined;
@@ -70,8 +72,12 @@ const now = () => Math.floor(Date.now() / 1000);
 // derived, never Math.random — a gate that cannot reproduce its own failure is
 // not a gate). Ages and rates are fixed so the derived stats are constant.
 const MEMPOOL_N = 240;
+// Scenario 7 drives the pool down to 3 to exercise sediment's low-pool
+// composition. Same mechanism as BLOCKS_N: `fulfil` reads it at request time,
+// so a scenario sets it BEFORE registering its route and restores it after.
+let POOL_N = MEMPOOL_N;
 const mkMempool = () => ({
-  recent_txs: Array.from({ length: MEMPOOL_N }, (_, i) => ({
+  recent_txs: Array.from({ length: POOL_N }, (_, i) => ({
     txid: i === 0 ? TRACKED_TX : (i.toString(16).padStart(4, '0') + 'c3f9a1e7b5d2').repeat(6).slice(0, 64),
     blob_size: 1200 + (i * 37) % 2400,
     fee: 30_720_000 + i * 1000,
@@ -81,11 +87,11 @@ const mkMempool = () => ({
     input_count: 1 + (i % 3),
     output_count: 2,
   })),
-  fee_histogram: [{ tx_count: MEMPOOL_N, bytes: 400000 }],
+  fee_histogram: [{ tx_count: POOL_N, bytes: 400000 }],
 });
 
 const mkNetwork = () => ({
-  height: head + 1, difficulty: 7.7e11, hashrate_ghs: 6.42, tx_pool_size: MEMPOOL_N,
+  height: head + 1, difficulty: 7.7e11, hashrate_ghs: 6.42, tx_pool_size: POOL_N,
   tx_count_total: 61_236_904, block_weight_limit: 600000, block_weight_median: 300000,
   target_seconds: 120, top_block_hash: hex('b'), alt_blocks_count: 1,
   version: '0.18.3.4', major_version: 16, fee_tiers: [20000, 80000, 320000, 4000000],
@@ -93,7 +99,7 @@ const mkNetwork = () => ({
   nettype: 'mainnet', adjusted_time: now(),
 });
 
-const mkBlocks = () => Array.from({ length: 14 }, (_, i) => ({
+const mkBlocks = (n = BLOCKS_N) => Array.from({ length: n }, (_, i) => ({
   height: head - i, hash: hex('e'), tx_count: 3 + i, block_weight: 9000 + i * 800,
   reward: 0.6e12, difficulty: 7.7e11,
   timestamp: now() - 41 - i * 120,          // tip is always exactly 41s old
@@ -461,25 +467,31 @@ function advanceBlocks(n) { head += n; }
        structurally cannot produce a caption/value <text> pair, so
        BrgBlockCadence's gauge is the only stack this section can see.)
 
-   (2) THIS SECTION DOES NOT EXERCISE BarSeries' FORCED-FINAL-LABEL PATH,
-       and that path is the defect the v2.0 charts fix was written for.
+   (2) THIS SECTION DOES NOT EXERCISE BarSeries' FORCED-FINAL-LABEL PATH —
+       CLOSED by v2.1: scenario 6 raises mkBlocks() to 32, MEASURED against the
+       shipped layout (the sweep and the arithmetic are in the stride
+       precondition below). 20 was tried first and produced stride 1 — the
+       assertion caught it. The fixture is parameterized via module-level
+       BLOCKS_N and raised only for scenario 6, leaving scenarios 1–5 at 14
+       to keep scenario 4's 390px overflow assertions unaffected.
+
        Mechanism, measured: `useChartMetrics` measures the PRE-TRANSFORM
        layout width, and `.mp-view` is `width: max-content` on desktop, so
-       sediment's "Stratigraphy log" BarSeries measures ~1180px at EVERY
-       viewport — FitView then scales the rendered result down (to 185px at
-       390px wide). With this file's 14-block fixture, labelStep() therefore
-       returns a stride of 1 at all four widths, `n - 1` is trivially a
-       stride multiple, and `finalLabelCollides` never fires. The collision
-       needs stride >= 2, which at ~1180px needs >= 17 blocks.
-       CONSEQUENCE FOR BREAK TESTING: forcing labelStep() to return 1 is a
-       NO-OP here and cannot red this section — verified by execution (the
-       mutation reaches the bundle, chunk hash changes, and sediment's text
-       count stays at exactly 31 with zero overlaps). Anyone break-testing
-       this section must instead inject a real overlap; the cross-gauge
-       mutation described in the allowlist below does red it at all four
-       widths. Raising mkBlocks() past 17 would close the gap, but it
-       re-baselines EXPECT_SVG_TEXT and feeds scenario 4's depth walk, so it
-       is deliberately left as its own change.
+       the "Stratigraphy log" BarSeries lays out far wider than its rendered
+       box and FitView scales the painted result down.
+
+       CORRECTION: the previous revision of this paragraph said that BarSeries
+       "measures ~1180px at EVERY viewport". 1180 is `.mp-view`'s own
+       offsetWidth at 1440, and the chart box OVERFLOWS it — measured 1588 at
+       1440 and 1717 at 2560, against rendered widths of 571 and 1116. Three
+       different widths are in play and only the layout one drives the stride;
+       reasoning from either of the other two predicts the wrong answer, in the
+       wrong direction. When stride >= 2, the collision path matters:
+       if the final label collides with the last strided label, it is
+       suppressed; if not, it renders. The removal of `|| i === n - 1` from
+       the old condition made this test possible — re-inserting it (the
+       break-test mutation) unconditionally forces the final label and will
+       collide with the strided sequence at 1440/2560.
 
    Rects are compared ACROSS every <svg> inside one .mem-view, not only
    within a single <svg>. That is correct today, because
@@ -600,10 +612,11 @@ function advanceBlocks(n) { head += n; }
   // must report exactly 0. An empty array is itself an asserted claim ("this
   // view is DOM-rendered, never SVG text"), not an exemption from the check.
   //
-  // Measured against a clean build (`npm run build && node
-  // verify-memviews.mjs`, 2026-08-10, pre-fix vacuity guard) at all four
-  // WIDTHS: reactor 1/1/1/1, bridge 14/14/14/14, sediment 32/32/32/32,
-  // constellation 6/6/6/6, terminal 0/0/4/4, classic 0/0/0/0.
+  // Measured baseline (14 blocks): reactor 1/1/1/1, bridge 14/14/14/14,
+  // sediment 32/32/32/32, constellation 6/6/6/6, terminal 0/0/4/4, classic
+  // 0/0/0/0. With the 20-block fixture in scenario 6, sediment's count will
+  // rise due to BarSeries rendering the final label that was previously
+  // collided; the exact count will be measured and reported on first run.
   const EXPECT_SVG_TEXT = {
     // Ring caption "TX · 16 RING · 1 REAL" (reactor.tsx:265) — one plain
     // <text>, no responsive hiding anywhere in the view — present always.
@@ -634,6 +647,147 @@ function advanceBlocks(n) { head += n; }
   };
 
   const textCounts = {}; // {view: {width: count}}
+
+  // Raise the block fixture so sediment's stratigraphy BarSeries runs at a
+  // stride >= 2 and the forced-final-label collision path is exercised at all.
+  /* 32, MEASURED against the shipped layout rather than inherited. #167's
+     ">= 17" was derived from sediment's PRE-REBUILD ~1180px stratigraphy panel;
+     this release moves that panel into the 7-of-12 stack and the number moved
+     with it. The stride assertion below caught 20 rendering 20-of-20 — stride 1
+     at every width, i.e. the fixture rider 2 shipped covered nothing.
+
+     Swept on the built tree:
+
+         N    1440              2560
+         20   20/20  stride 1   20/20  stride 1
+         24   12/24  stride 2   24/24  stride 1
+         28   14/28  stride 2   14/28  stride 2   <- minimum at BOTH
+         32   16/32  stride 2   16/32  stride 2
+
+     THE TRAP, and the reason a calculation kept disagreeing with the sweep:
+     `labelStep` is fed the PRE-TRANSFORM LAYOUT width, not the rendered one.
+     `.mp-view` is `width: max-content`, so the chart lays out at its natural
+     width and FitView scales the PAINTED result down afterwards. Measured on
+     this tree:
+
+         viewport 1440   box offsetWidth 1588   getBoundingClientRect 571
+         viewport 2560   box offsetWidth 1717   getBoundingClientRect 1116
+         viewBox at 1440 = "0 0 1588.171875 150"   <- the layout width, not 571
+
+     Deriving innerW from the 571px rendered box gives fits = 7 and predicts
+     stride 3 at n=20 — three times the measured value, and in the wrong
+     direction. With the layout width: innerW = 1588 - 45 - 16 = 1527,
+     per = 8 chars x 11px x 0.62 + 11 = 65.56, fits = 23, stride = ceil(20/23)
+     = 1. That matches. At n=32, ceil(32/23) = 2, i.e. 16 labels — also matches.
+
+     Both figures are real and they differ by 2.8x, so ANY reasoning about
+     label fitting has to name which one it used. This is also why the previous
+     revision of this docblock said "~1180px at EVERY viewport": that is
+     `.mp-view`'s own offsetWidth at 1440, not the chart box's, and the chart
+     overflows it. Three different widths, one of which drives the stride.
+
+     32 is one step above the 28 minimum, so ordinary layout drift does not red
+     the gate while a real regression still does. */
+  BLOCKS_N = 32;
+  // try/finally, not a trailing assignment: BLOCKS_N is module-level mutable
+  // state and a throw anywhere below would leave it at 20 for whatever runs
+  // next. Scenario 6 happens to run near the end today, so a positional
+  // restore is correct only because of where it sits — the same shape as the
+  // `git checkout --` hazard this repo already records. One line makes it
+  // structural.
+  try {
+
+  /* ── STRIDE PRECONDITION ────────────────────────────────────────────
+     The number here is NOT inherited. #167 measured ">= 17 blocks" against
+     sediment's THEN layout, and this release redesigns that layout — the core
+     column becomes the hero at roughly 5 of 12 columns, which moves the
+     Stratigraphy panel's geometry and therefore its measured innerPx. A block
+     count derived from the width of a chart you are about to resize is an
+     assertion whose subject is no longer its claim.
+
+     So the fixture size is not asserted; the STRIDE IT PRODUCES is. If
+     labelStep() still returns 1 at the shipped layout, this whole section is
+     VACUOUS for the forced-final-label defect — every overlap assertion below
+     would pass without ever entering the path they exist to cover, which is
+     exactly the state #167 left behind. A vacuous section must not print
+     green, so this fails rather than warns.
+
+     Measured by counting the block-height labels the BarSeries actually
+     renders (`#<height>`) against the number of bars: stride 1 renders every
+     label, stride 2 renders half. Same instrument as the EXPECT_SVG_TEXT
+     vacuity guard below, extended from presence to spacing. */
+  const DESKTOP_STRIDE_WIDTHS = [1440, 2560];
+  for (const width of WIDTHS) {
+    const sp = await b.newPage({ viewport: { width, height: 900 } });
+    watchErrors(sp, `scenario 6 [stride ${width}]`);
+    await sp.route('**/api/**', fulfil);
+    await open(sp, 'sediment');
+    const probe = await sp.evaluate(() => {
+      const view = document.querySelector('.mem-view');
+      if (!view) return { labels: 0 };
+      // The stratigraphy BarSeries is the only chart labelling its x axis with
+      // block heights, so `#<digits>` identifies its labels without depending
+      // on DOM order or a panel title string.
+      // Report EVERY emitting SVG, not just the max. A bare max-across-SVGs is
+      // a subject you cannot see: if two charts emitted `#<digits>`, which one
+      // won could change with the block count, and a selector fault of that
+      // shape is curable by adding blocks — so a passing sweep would not rule
+      // it out. Printing the breakdown makes "one axis, and it is the
+      // stratigraphy one" an observation rather than an assumption. Measured
+      // here: exactly one entry at every width and every N.
+      const per = [];
+      for (const svg of view.querySelectorAll('svg')) {
+        const hits = [...svg.querySelectorAll('text')]
+          .map((t) => t.textContent.trim())
+          .filter((s) => /^#\d[\d,]*$/.test(s));
+        if (!hits.length) continue;
+        const panel = svg.closest('.panel');
+        const h = panel && panel.querySelector('.panel-h .l');
+        per.push({ n: hits.length, panel: h ? h.textContent.trim().slice(0, 40) : '(no .panel ancestor)', sample: hits.slice(0, 3) });
+      }
+      return { labels: per.reduce((m, x) => Math.max(m, x.n), 0), per };
+    });
+    await sp.close();
+
+    const rendered = probe.labels || 0;
+    console.log(`  · stride @${width}px: ${rendered} of ${BLOCKS_N} x-labels rendered`);
+    for (const e of (probe.per || [])) {
+      console.log(`      · ${String(e.n).padStart(3)} in "${e.panel}"  e.g. ${e.sample.join(' ')}`);
+    }
+    ok((probe.per || []).length <= 1,
+      `scenario 6 [${width}]: exactly one SVG emits '#<height>' text, so the stride probe's subject is `
+      + `unambiguous (found ${(probe.per || []).length})`);
+
+    if (DESKTOP_STRIDE_WIDTHS.includes(width)) {
+      // Two failures, two different remedies, so they are two assertions.
+      // rendered === 0 means the PROBE stopped matching (the label shape moved,
+      // or the panel is gone); rendered === BLOCKS_N means the FIXTURE is too
+      // small. A single message naming only "raise BLOCKS_N" would send the
+      // next reader to raise a fixture against a selector problem.
+      // CONTROL FLOW, not a second predicate. When rendered === 0 the stride is
+      // UNKNOWN, and an `ok(rendered === 0 || …)` would print ✅ for a check
+      // that never ran — a green line whose subject is "not applicable", which
+      // is the same defect this section exists to refuse, in miniature. It also
+      // inflates the assertion count. One failure, one message, and the count
+      // honestly drops by one when the stride could not be evaluated.
+      ok(rendered > 0,
+        `scenario 6 [${width}]: the stride probe found block-height x-labels (${rendered}) — `
+        + `0 means the '#<height>' label shape moved and the SELECTOR needs fixing; do NOT raise BLOCKS_N`);
+      if (rendered > 0) {
+        ok(rendered < BLOCKS_N,
+          `scenario 6 [${width}]: ${rendered} of ${BLOCKS_N} x-labels rendered — stride >= 2, so the forced-final-label `
+          + `path is REACHABLE and this section is not vacuous (all ${BLOCKS_N} rendered means stride 1: raise BLOCKS_N `
+          + `until this holds against the SHIPPED layout)`);
+      }
+    } else {
+      // 390/768 legitimately run at stride 1 — the chart is narrower and every
+      // label fits. That is a DECLARED vacuity for this defect, printed as its
+      // own number rather than folded into a pass, so nobody later reads these
+      // widths as coverage they are not.
+      console.log(`  · scenario 6 [${width}]: stride ${rendered === BLOCKS_N ? '1' : '>=2'} — `
+        + `${rendered === BLOCKS_N ? 'VACUOUS for the forced-final-label defect at this width, by design' : 'covered'}`);
+    }
+  }
 
   for (const width of WIDTHS) {
     console.log(`  width ${width}px:`);
@@ -824,6 +978,11 @@ function advanceBlocks(n) { head += n; }
     await p.close();
   }
 
+  } finally {
+    // Restore the block fixture for scenario-agnostic post-scenario checks.
+    BLOCKS_N = 14;
+  }
+
   // Vacuity guard: assert measurement actually happened, against a DECLARED
   // expectation rather than inferred cross-width continuity.
   //
@@ -860,6 +1019,194 @@ function advanceBlocks(n) { head += n; }
       }
     }
   }
+}
+
+/* ── Scenario 7 · sediment observable contract ────────────────────────── */
+{
+  console.log('\n— scenario 7: sediment data-sed-* observable contract —');
+  const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(p, 'scenario 7');
+  await p.route('**/api/**', fulfil);
+
+  // Test with normal 240-tx fixture
+  await open(p, 'sediment');
+  const results = await p.evaluate(() => {
+    const core = document.querySelector('[data-sed-core]');
+    if (!core) return { error: 'no [data-sed-core] found' };
+
+    const mode = core.getAttribute('data-sed-mode');
+    const modeValid = ['field', 'static', 'column'].includes(mode);
+
+    // For field/static modes, check canvas attributes
+    const canvas = core.querySelector('canvas.mem-canvas[data-sed-particles]');
+    let radiusMin = null, radiusMax = null, bands = null, bandCounts = null, particles = null, probe = null;
+    if (canvas) {
+      radiusMin = parseFloat(canvas.getAttribute('data-sed-radius-min'));
+      radiusMax = parseFloat(canvas.getAttribute('data-sed-radius-max'));
+      bands = canvas.getAttribute('data-sed-bands');
+      bandCounts = canvas.getAttribute('data-sed-band-counts');
+      particles = canvas.getAttribute('data-sed-particles');
+      probe = canvas.getAttribute('data-sed-probe');
+    }
+
+    // Profile on the fee depth-profile PANEL, which is a sibling of the core
+    // column in the view's grid — NOT a descendant of it. Scoping this query
+    // to `core` made the assertion's subject narrower than its claim: it read
+    // "data-sed-profile in {area, ladder}" while looking somewhere the
+    // attribute is never emitted, so it failed against correct code. Query
+    // from the view root, same as every other cross-panel lookup here.
+    const view = document.querySelector('.mem-view') || document;
+    const profile = view.querySelector('[data-sed-profile]')?.getAttribute('data-sed-profile');
+    const profileValid = ['area', 'ladder'].includes(profile);
+
+    // Stratum headers (per block in field mode)
+    const stratumEls = core.querySelectorAll('[data-sed-stratum]');
+    const dropEls = core.querySelectorAll('[data-sed-drop]');
+
+    return {
+      core: !!core, mode, modeValid,
+      canvas: !!canvas,
+      radiusMin, radiusMax,
+      bands, bandCounts, particles,
+      probe,
+      profile, profileValid,
+      stratumCount: stratumEls.length,
+      dropCount: dropEls.length,
+    };
+  });
+
+  if (results.error) {
+    ok(false, `scenario 7: ${results.error}`);
+  } else {
+    ok(results.core, 'scenario 7: [data-sed-core] host present');
+    ok(results.modeValid, `scenario 7: data-sed-mode in {field, static, column} (got "${results.mode}")`);
+
+    // At 240-tx and 1440px with 20 blocks, expect field mode
+    if (results.mode === 'field') {
+      ok(results.canvas, 'scenario 7: canvas.mem-canvas present in field mode');
+      ok(results.radiusMin != null && results.radiusMin >= 0.9,
+        `scenario 7: data-sed-radius-min >= 0.9 (got ${results.radiusMin}) [lower bound]`);
+      ok(results.radiusMax != null && results.radiusMax <= 2.8,
+        `scenario 7: data-sed-radius-max <= 2.8 (got ${results.radiusMax}) [upper bound]`);
+      ok(results.bands === '4', `scenario 7: data-sed-bands === "4" (got "${results.bands}")`);
+
+      if (results.bandCounts) {
+        const counts = results.bandCounts.split(',').map(Number);
+        ok(counts.length === 4, `scenario 7: band counts has 4 entries (got ${counts.length})`);
+        const sum = counts.reduce((a, b) => a + b, 0);
+        const particlesNum = parseInt(results.particles);
+        ok(sum === particlesNum,
+          `scenario 7: band counts SUM to particles (${counts.join('+')}=${sum}, particles=${particlesNum})`);
+      }
+
+      ok(results.particles != null, `scenario 7: data-sed-particles present (got "${results.particles}")`);
+      ok(results.probe != null, `scenario 7: data-sed-probe coordinate present`);
+    }
+
+    ok(results.profileValid, `scenario 7: data-sed-profile in {area, ladder} (got "${results.profile}")`);
+    ok(results.stratumCount > 0, `scenario 7: [data-sed-stratum] blocks present (${results.stratumCount})`);
+  }
+
+  /* ── THE PARTICLE → TRANSACTION-INSPECTOR HOP ───────────────────────
+     "Every particle opens the shared transaction inspector" is the contract's
+     §7 requirement, and a canvas cannot be asserted with a selector. The view
+     publishes `data-sed-probe="x,y,txid"` — one deterministic particle's centre
+     in the canvas's OWN CSS px, plus the txid a click there must select.
+
+     The scale conversion is the point of this assertion, not incidental to it.
+     `.mp-fit` scales the whole view (measured 0.36 at 1440), so probe
+     coordinates in canvas space are NOT viewport coordinates: the click point
+     is rect.left + x * (rect.width / canvas.clientWidth). If the view's own
+     hit-test ever reads pointer position in the wrong space, this is what
+     catches it — and the space mismatch is invisible to every other assertion
+     here, because at scale 1 the two agree and the gate would still pass. */
+  if (results.probe) {
+    const [px, py, ptxid] = results.probe.split(',');
+    // SCROLL FIRST, then read the rect, then click. The core column is taller
+    // than the viewport (708px canvas in a 900px window with chrome above it),
+    // so the probe particle sits BELOW THE FOLD at rest: rect.top + y exceeded
+    // 900 and a raw viewport click landed nowhere — a failure with nothing to
+    // do with the hit-test under test. Centring the canvas brings the point
+    // inside the viewport. (locator.click({position}) does its own scrolling
+    // but then hit-tests the resulting point and reported the element
+    // intercepted, for the same underlying reason.)
+    const pt = await p.evaluate(() => {
+      const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
+      if (!cv) return null;
+      cv.scrollIntoView({ block: 'center', inline: 'center' });
+      const r = cv.getBoundingClientRect();
+      return {
+        left: r.left, top: r.top, h: cv.clientHeight,
+        scale: cv.clientWidth ? r.width / cv.clientWidth : 1,
+        vh: window.innerHeight, vw: window.innerWidth,
+      };
+    });
+    if (pt) {
+      const clickX = pt.left + Number(px) * pt.scale;
+      const clickY = pt.top + Number(py) * pt.scale;
+      const inView = clickX >= 0 && clickY >= 0 && clickX <= pt.vw && clickY <= pt.vh;
+      ok(inView,
+        `scenario 7: the probe point is inside the viewport after centring `
+        + `(${clickX.toFixed(0)},${clickY.toFixed(0)}) in ${pt.vw}x${pt.vh} — otherwise the click below proves nothing`);
+      await p.mouse.click(clickX, clickY);
+      await p.waitForTimeout(900);
+      const opened = await p.evaluate((id) => {
+        const v = document.querySelector('.mem-view');
+        return {
+          tracked: !!v.querySelector(`[data-tracked-tx="${id}"]`),
+          phase: v.querySelector('[data-mem-track-phase]')
+            ? v.querySelector('[data-mem-track-phase]').getAttribute('data-mem-track-phase') : null,
+        };
+      }, ptxid);
+      console.log(`  · probe click: canvas ${pt.h}px tall, scale ${pt.scale.toFixed(4)}, target (${px},${py}) -> phase=${opened.phase}`);
+      ok(opened.tracked,
+        `scenario 7: clicking data-sed-probe's exact coordinate opens the shared tx inspector for THAT txid `
+        + `(${String(ptxid).slice(0, 10)}…, canvas scale ${pt.scale.toFixed(4)})`);
+    } else {
+      ok(false, 'scenario 7: could not locate the canvas to click its probe coordinate');
+    }
+  }
+
+  await p.close();
+
+  /* ── LOW POOL ───────────────────────────────────────────────────────
+     "Composed at 3 tx as well as at 320" is half the brief, and a field-mode-
+     only check cannot see it. Below 8 transactions the particle field must
+     become a labelled single-file column and the fee depth-profile must
+     become a ladder — with NO empty plot anywhere, which is what the view did
+     before this release (a bare "mempool empty" string where a chart belongs).
+
+     The empty-placeholder check is the falsifiable half: mode/profile could
+     both be correct while a panel still renders a placeholder, and only
+     reading the view's own text catches that. */
+  POOL_N = 3;
+  const lp = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(lp, 'scenario 7 [low pool]');
+  await lp.route('**/api/**', fulfil);
+  await open(lp, 'sediment');
+  const low = await lp.evaluate(() => {
+    const view = document.querySelector('.mem-view');
+    const core = view && view.querySelector('[data-sed-core]');
+    return {
+      mode: core && core.getAttribute('data-sed-mode'),
+      canvases: view ? view.querySelectorAll('canvas.mem-canvas').length : -1,
+      drops: view ? view.querySelectorAll('[data-sed-drop]').length : -1,
+      profile: view && view.querySelector('[data-sed-profile]')
+        ? view.querySelector('[data-sed-profile]').getAttribute('data-sed-profile') : null,
+      // Any placeholder standing in for a chart. Matched on the view's own
+      // rendered text so a re-worded placeholder is still caught.
+      placeholder: view ? /mempool empty|no data|nothing to show/i.test(view.textContent || '') : false,
+    };
+  });
+  await lp.close();
+  POOL_N = MEMPOOL_N;
+
+  console.log(`  · low pool: mode=${low.mode} canvases=${low.canvases} drops=${low.drops} profile=${low.profile}`);
+  ok(low.mode === 'column', `scenario 7 [low pool]: 3 tx composes as a labelled column (data-sed-mode="${low.mode}")`);
+  ok(low.canvases === 0, `scenario 7 [low pool]: no canvas mounted below the field threshold (got ${low.canvases})`);
+  ok(low.drops === 3, `scenario 7 [low pool]: one labelled drop per transaction (got ${low.drops}, expected 3)`);
+  ok(low.profile === 'ladder', `scenario 7 [low pool]: fee depth-profile becomes a ladder (got "${low.profile}")`);
+  ok(!low.placeholder, 'scenario 7 [low pool]: no empty-plot placeholder anywhere in the view');
 }
 
 await b.close();
