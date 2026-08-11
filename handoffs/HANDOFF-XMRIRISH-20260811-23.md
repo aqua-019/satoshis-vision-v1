@@ -254,6 +254,29 @@ which is the actual controlling mechanism. Same shape as v2·0's labels test.
 notes for ARCHITECTURE.md patch: gate count unchanged at 71 — scenario 9 is a section
 inside `verify-memviews`, not a new file. `verify:static` stays 21.
 
+**THE COST OF SHIPPING IT RED, MEASURED — and it is larger than "one gate is red".**
+`verify-bundle` runs as step 7 of the `build` job, and the `hardening gates` job
+`needs:` it. So the deliberate failure does not merely mark the crossing:
+
+```
+CI run 31513481630 @ aa6e131
+  Typecheck                success
+  Build                    success
+  Gate: bundle budgets     FAILURE     <- deliberate
+  steps 8-21 (12 api gates)  skipped
+  job "hardening gates"      SKIPPED   <- all 21 static + 29 e2e gates
+```
+
+**CI now proves nothing about the rest of this PR.** Every one of those gates was run
+locally on the same head and is green — verify:static 21 · memviews 179/0 ·
+memdetail 39/0 · reduce 31/0 · nav 128/0 · mobile 2/0 · pageshell 368/0 — but the
+independent reproduction is gone, and this is the release where CI caught something
+local runs could not on two previous rounds. This is a consequence of a deliberate
+decision, not a defect, and it is recorded so the decision can be re-taken knowing
+its real price. The cheapest fix if the coverage is wanted back is to move the
+bundle gate out of `hardening gates`' dependency path rather than to change the
+number.
+
 open questions:
 - Three gates were red on the untouched tree: `verify-perf` (3 failures), `verify-pageshell`
   (fixed here), `verify-memviews` (scenario 7 sediment, intermittent — passed on re-run).
