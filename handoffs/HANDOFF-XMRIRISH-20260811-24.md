@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260811-24
 branch: claude/orphan-gates-wiring-xmle82
-status: in_progress       # open -> in_progress -> done | blocked
+status: done               # open -> in_progress -> done | blocked
 written_by: claude-code    # manual mode — task arrived as a prompt (v2·3b The Orphan Gates)
 owner: claude-code
 ---
@@ -86,7 +86,7 @@ npm run verify:bundle
 
 ## 7 · REPORT — filled on exit
 status: done
-pr: see LOG.md entry
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/171
 commits: 5 (ColdBoot fix · verify-perf · the other three gates · records · wiring last)
 deps added: none
 
