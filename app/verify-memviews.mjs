@@ -265,6 +265,40 @@ const readStrip = (p) => p.evaluate(() =>
   head = H;
 }
 
+/* WHICH `data-memstat` KEYS EACH VIEW CLAIMS TO SURFACE.
+ *
+ * Every emitter in the tree, measured:
+ *   mem-stats.tsx   mempool · bytes · oldest · median · eta   (BOTH branches, identical)
+ *   terminal.tsx    mempool · bytes                           (:813, :815 — its own ASCII idiom)
+ *   no other view emits data-memstat at all
+ *
+ * Terminal is two BY DESIGN, not by omission: it passes `stats={false}` and
+ * hands the strip's job to its own telemetry. Item 5's comment above already
+ * records this — "demanding a reading a view never claimed to make would be a
+ * false failure" — and the first draft of the assertion below ignored it and
+ * asserted a uniform five. It went red on Terminal immediately. That red is the
+ * check working, and the fix is this map.
+ *
+ * KEYS, NOT A COUNT, and the difference is the whole point. The two
+ * `MemStatStrip` branches duplicate these five key strings as literals, so the
+ * realistic failure is a RENAME — `oldest` becoming `age` in one branch. A
+ * cardinality check passes straight through that; the key set does not. And a
+ * silent rename is worse than a drop, because item 5's `showing` filter would
+ * simply stop finding that figure in one view and go on comparing the rest,
+ * still green.
+ *
+ * Both directions: an undeclared view fails rather than passing unchecked, and
+ * a view that gains or loses a key fails until someone updates this map.
+ */
+const EXPECT_MEMSTAT = {
+  reactor:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  bridge:        ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  sediment:      ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  constellation: ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  classic:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  terminal:      ['mempool', 'bytes'],
+};
+
 function advanceBlocks(n) { head += n; }
 
 /* ── Scenario 3 · item 10: reduced motion → the table, no canvas ───────── */
@@ -282,6 +316,8 @@ function advanceBlocks(n) { head += n; }
         cols: (document.querySelector('.mem-table .mem-tbl')?.style.gridTemplateColumns || '').split(/\s+/).filter(Boolean).length,
         strip: document.querySelector('[data-memstat="mempool"]')?.getAttribute('data-memstat-value'),
         stripCount: document.querySelectorAll('[data-memstat]').length,
+        stripKeys: [...document.querySelectorAll('[data-memstat]')]
+          .map((e) => e.getAttribute('data-memstat')).sort(),
       }));
       // absent, not merely paused: MemViewShell never calls children() under
       // reduced motion, so the canvas component is never mounted at all
@@ -289,6 +325,36 @@ function advanceBlocks(n) { head += n; }
       ok(r.rows >= 5, `item 10 [${id}]: table fallback carries the data (${r.rows} rows)`);
       ok(r.cols >= 5, `item 10 [${id}]: table has ≥5 columns (${r.cols})`);
       ok(r.strip && r.strip !== '—', `item 10 [${id}]: the stat strip still reports (${r.strip})`);
+      // v2·4: stripCount was already COLLECTED three lines above and thrown
+      // away — a measurement taken, returned, and never asserted. It earns its
+      // place now because `MemStatStrip`'s `compact` branch (mem-stats.tsx:159)
+      // went live in this PR after existing unreachable since it was written:
+      // reactor passes `stats="compact"`, so a second rendering path now emits
+      // these attributes and nothing had ever observed its output. Both
+      // branches declare the same five keys with byte-identical raw-value
+      // expressions, so the compact path is 5/5 — which is the point.
+      //
+      // ASSERTED AGAINST A DECLARED KEY MAP, NOT A BLANKET 5, AND THE FIRST VERSION
+      // WAS THE BLANKET. It went red on TERMINAL at 2/5 — and item 5's comment
+      // a hundred lines above this one already said why that is not a defect:
+      // "Terminal opts out of MemStatStrip to keep its ASCII idiom and surfaces
+      // only the two it displays — and demanding a reading a view never claimed
+      // to make would be a false failure." A `=== 5` on every view is a subject
+      // wider than its claim, which is the failure family this whole suite
+      // exists to catch, committed inside the gate. The map is the honest form
+      // and it is asserted EXACTLY, both directions: a view that starts or
+      // stops surfacing a figure is loud either way.
+      //
+      // NOTE, since the source points elsewhere: `mem-stats.tsx:158` justifies
+      // the whole raw-value design by citing `verify-memstats.mjs`, and that
+      // file does not exist in this repo. Until it does, this line and item 5's
+      // cross-view comparison are the only things checking the strip at all.
+      const wantKeys = EXPECT_MEMSTAT[id];
+      const gotKeys = r.stripKeys.join(',');
+      ok(wantKeys !== undefined && gotKeys === [...wantKeys].sort().join(','),
+        wantKeys === undefined
+          ? `item 10 [${id}]: view is not declared in EXPECT_MEMSTAT — add it rather than letting it go unchecked (emits ${gotKeys || 'nothing'})`
+          : `item 10 [${id}]: emits the data-memstat keys it claims [${gotKeys}]`);
     } catch (e) {
       ok(false, `item 10 [${id}]: ${String(e).split('\n')[0]}`);
     }
