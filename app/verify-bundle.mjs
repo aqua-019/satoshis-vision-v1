@@ -313,6 +313,21 @@ const BUDGETS = {
   //     sediment                              + 5,836   <- still CITED above,
   //                                                        not re-measured here
   //
+  // #169'S PUBLISHED DELTA IS WRONG THE SAME WAY, and an independent reviewer
+  // caught it by measuring 948,435 at 91c1653 (whose tree is identical to
+  // 260c99f's) against the report's `944,271 + 3,051 = 947,322` — 1,113 B
+  // apart. It decomposes into BOTH available causes, not one:
+  //
+  //     baseline cited (944,271, a67867e) vs built (fdf4ecc 945,306)   1,035
+  //     delta reported (3,051) vs built-to-built (3,129)                  78
+  //     ------------------------------------------------------------------
+  //                                                                    1,113
+  //
+  // Two reports and this comment all took 944,271 from the same place, which
+  // is why the error propagated silently across three PRs: a figure quoted
+  // from a previous report is not a measurement, and nothing in a build log
+  // says which one you are holding. **Quote both endpoints or quote neither.**
+  //
   //     mean 8,192 · spread 3,129 -> 15,611, a 5x range
   //
   // Six views remain. At the measured mean that is ~1,013,000 — so 960,000 is
