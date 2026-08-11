@@ -229,6 +229,40 @@ The pre-rebuild view already exceeded the canvas and panned on desktop; a 780px 
 the main column removed it. (1180 is the `min-width: 100%` floor, so it reads as "content
 now fits", not "content is exactly 1180 wide".)
 
+**WHY 390/768 WENT GREEN — measured, because the two obvious mechanisms are both
+WRONG and the gate cannot tell them apart.** It is not that the gauge moved out of
+the rail, and not that `styles.css:2217` changed. Both are untouched:
+
+```
+styles.css:2217  .rail { display: none } @<=768   UNCHANGED by this PR
+terminal's <aside class="rail">                   0 lines changed in the diff
+TermGauge                                          still inside the "Network gauges" rail-block
+
+measured at 390:  aside.rail computed display = none
+                  4 SVG <text> inside the rail: in the DOM, 0 with a non-zero rect
+                  28 visible, ALL from the main column:
+                      $ blocktime --series  17
+                      $ pool --fee-curve    11
+                      $ hashrate --series    0
+measured at 1440: rail display = flex, the 4 gauge texts visible, 33 total
+```
+
+So the third mechanism: **new SVG text was added where text is always visible.**
+The rail's responsive behaviour is byte-for-byte what it was, which makes this the
+safest of the three possible fixes — no other view and no other width is affected.
+
+**AND THE WIDENING IS EARNED BY TWO CHARTS, NOT THREE.** `verify-memviews`' fixture
+supplies mempool/blocks/network but NOT `hashSeries`, and no other gate in the repo
+supplies it either (`grep -l hashSeries verify-*.mjs` -> `verify-tiers.mjs` only,
+which tests polling maths). `TermHashrateChart` renders
+`m.ready ? (n >= 2 ? <svg> : "awaiting series")`, so with `n = 0` it takes the empty
+branch and **its axis, stride, crosshair, tip and gradient are never rendered by any
+gate.** The empty branch is correct — `hashSeries` fills over time via `pushSeries`
+on the chain tier — but "renders an honest empty state" and "renders correctly with
+data" are different claims and only the first has evidence here. Recorded as a
+coverage gap, not fixed: closing it means adding `hashSeries` to a shared fixture,
+which moves every view's numbers.
+
 **EXPECT_SVG_TEXT: [1440, 2560] -> [390, 768, 1440, 2560].** A tightening — those two
 widths move from "must be exactly 0" to "must be > 0". Rail-only placement would have
 kept the entry unchanged and hidden every new chart below 1200px; DOM charts would also

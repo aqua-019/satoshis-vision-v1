@@ -726,6 +726,37 @@ where it should be. This is the third distinct mechanism by which this harness h
 that LOOKED like a result — after v2·0's false green (a mutation that never applied) and the
 stride vacuity (a precondition that could not fire) — and it belongs beside them.
 
+### A FIXTURE THAT OMITS A FIELD SILENTLY UNVERIFIES EVERYTHING DOWNSTREAM OF IT
+
+v2·3 shipped three chart-kit charts. **Two of them are exercised by the suite and the third is
+not**, and nothing anywhere says so — the gate that would report it is green.
+
+```
+verify-memviews' fixture supplies mempool + blocks + network.  It does NOT supply hashSeries.
+grep -l hashSeries verify-*.mjs   ->  verify-tiers.mjs only, and that gate tests polling maths.
+
+TermHashrateChart renders   m.ready ? (n >= 2 ? <svg…> : "awaiting series")
+with n = 0 it takes the empty branch, so its axis, stride, crosshair, tip and
+gradient are NEVER RENDERED by any gate in the repo.
+```
+
+Measured provenance of terminal's SVG `<text>` at 390 — the whole of it comes from two panels:
+
+```
+$ blocktime --series   17      $ pool --fee-curve   11      $ hashrate --series   0
+```
+
+**So `EXPECT_SVG_TEXT.terminal`'s widening is earned by two charts, not three**, and a PR body
+saying "three charts render text at four widths" would be true of the count and false of the
+subject. The empty branch is correct behaviour — `hashSeries` is filled by `pushSeries` on the chain
+tier over time, so it is legitimately empty on a cold load — but "renders an honest empty state" and
+"renders correctly with data" are different claims and only the first has evidence.
+
+**The rule: a fixture's OMISSIONS are part of its contract.** A gate that sweeps every view and every
+width still proves nothing about a branch its data cannot reach, and the absence is invisible
+precisely because everything is green. When a view reads a feed field, check the fixture supplies it
+before claiming the surface is covered.
+
 ### A GATE NOBODY RUNS DECAYS, AND FIXING IT DOES NOT CHANGE THAT
 
 Measured on `260c99f` while establishing v2·3's baselines: **three gates were red on the untouched
@@ -798,6 +829,24 @@ in no commit.
 
 Use a `trap`, a separate reverting process, or a snapshot taken before the mutation — and
 **verify the tree is clean afterwards rather than assuming the cleanup ran.**
+
+> **A COMPLETION MARKER MUST BE EMITTED BY THE THING THAT COMPLETED, NOT BY ITS CALLER.**
+> A caller may report *that it invoked* something. Only the callee may report *that it finished.*
+>
+> This generalises the completion rule above, which inspects THE GATE'S OWN OUTPUT and therefore
+> cannot catch the case where the gate produced no output at all and the **caller** wrote a summary
+> on its behalf. Live instance, v2·3: a break-test runner printed `ALL_BREAK_TESTS_DONE` after five
+> invocations that had every one failed with "Permission denied" — the script had been created with
+> an editor tool at mode 0644 and never `chmod +x`. **Zero work reported as complete**, which is the
+> limit case of this family: v2·0's false green and #168's stale `dist/` read were partial or stale
+> work misread as finished; here there was no work and no signal inside the marker at all. It was
+> caught only because the log directory was empty.
+>
+> Concrete form: the marker is written by the callee as its last act, never by the caller after the
+> call returns, so a script that cannot execute cannot claim it did — and the caller checks the
+> callee's **exit status AND the marker's existence**, because either alone is exactly what failed.
+> Same shape as "the gate predicts rather than remembers" and "parse `LIMB_K` out of source rather
+> than restating it": in all three, an assertion is made by something that does not hold the evidence.
 
 > **AND THE RESTORE MUST COVER DERIVED ARTIFACTS, NOT JUST SOURCE — v2·3, found by a 9-byte
 > discrepancy.** A break test that builds leaves `dist/` built from the MUTATED source. Restoring
