@@ -315,9 +315,27 @@ for (const vp of VPS) {
  * there. That is pre-existing and was untested — the old assertion ran at 1440
  * only — and it is a control question, not a fit-maths one.
  */
-for (const vp of [{ w: 1440, h: 900, name: 'desktop' }, { w: 1280, h: 900, name: 'desktop-1280' }]) {
+/* Three cells, because the control needs BOTH a subject and durability.
+ *   reactor @1440  — identity, and NOTHING to pan: the fix's own outcome, stated
+ *                    positively rather than skipped.
+ *   reactor @1280  — the live pan control ON THE ACTUAL SUBJECT. canvasW 1020 vs
+ *                    the 1180 artboard, so 100% pans 160px.
+ *   sediment @1440 — the DURABLE control. reactor's pan cell depends on reactor
+ *                    staying wider than a 1020 canvas; sediment is 3281 against
+ *                    1180 and nothing on the roadmap proposes shrinking it, so
+ *                    the toggle keeps a test even if reactor narrows again.
+ * Two hosts, not one, for the same reason the map above is asserted both ways:
+ * a control whose only subject can be fixed away is a control with an expiry date.
+ */
+const TOGGLE_CELLS = [
+  { view: 'reactor', w: 1440, h: 900, name: 'reactor@1440' },
+  { view: 'reactor', w: 1280, h: 900, name: 'reactor@1280' },
+  { view: 'sediment', w: 1440, h: 900, name: 'sediment@1440' },
+];
+
+for (const vp of TOGGLE_CELLS) {
   const p = await b.newPage({ viewport: { width: vp.w, height: vp.h } });
-  await p.goto(`${base}/live/mempool?v=reactor`, { waitUntil: 'networkidle' });
+  await p.goto(`${base}/live/mempool?v=${vp.view}`, { waitUntil: 'networkidle' });
   await landed(p, '/live/mempool');
   await p.waitForSelector('.mp-zoom__btn');
   await p.waitForTimeout(150);
@@ -334,11 +352,11 @@ for (const vp of [{ w: 1440, h: 900, name: 'desktop' }, { w: 1280, h: 900, name:
     };
   });
   const identity = r.transform === 'none' || r.transform === 'matrix(1, 0, 0, 1, 0, 0)';
-  ok(identity, `${vp.name} toggle 100%: reactor at true size (transform ${r.transform}; natural ${r.natW})`);
+  ok(identity, `${vp.name} toggle 100%: at true size (transform ${r.transform}; natural ${r.natW})`);
   const canPan = r.natW > r.cw + 50;
   ok(canPan ? (r.sw - r.cw > 50 && r.left > 50) : (r.sw - r.cw <= 2 && r.left === 0),
     canPan
-      ? `${vp.name} toggle 100%: reactor pans horizontally (scrollW ${r.sw} > clientW ${r.cw}, left ${r.left})`
+      ? `${vp.name} toggle 100%: pans horizontally (scrollW ${r.sw} > clientW ${r.cw}, left ${r.left})`
       : `${vp.name} toggle 100%: nothing to pan — true size ${r.natW} fits canvas ${r.cw}, so scrollW ${r.sw} − clientW ${r.cw} = ${r.sw - r.cw} and scrollLeft stays ${r.left}`);
   await p.close();
 }
