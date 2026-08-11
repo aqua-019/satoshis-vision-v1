@@ -629,8 +629,13 @@ function advanceBlocks(n) { head += n; }
     // sediment.tsx:251-252) plus per-layer readouts inside the tube. No
     // responsive hiding — present always.
     sediment: [390, 768, 1440, 2560],
-    // Luminous network sphere: node labels + centre tx-count readout
-    // (constellation.tsx:172-408). No responsive hiding — present always.
+    // Luminous network sphere: the sphere header readout plus the fee-tier
+    // donut's centre pool-count and caption. Rebuilt in v2·2; the previous
+    // citation here (constellation.tsx:172-408) pointed into the pre-rebuild
+    // file and no longer locates anything, so it is dropped rather than
+    // renumbered — a line range in a file being actively rebuilt goes stale
+    // faster than it earns its keep. Scenario 8 asserts this view's real
+    // structure off data-con-* instead. No responsive hiding — present always.
     constellation: [390, 768, 1440, 2560],
     // TermGauge's only <text> (terminal.tsx:268) lives in the "Network
     // gauges" rail-block (terminal.tsx:440-447), inside <aside class="rail">
@@ -1207,6 +1212,314 @@ function advanceBlocks(n) { head += n; }
   ok(low.drops === 3, `scenario 7 [low pool]: one labelled drop per transaction (got ${low.drops}, expected 3)`);
   ok(low.profile === 'ladder', `scenario 7 [low pool]: fee depth-profile becomes a ladder (got "${low.profile}")`);
   ok(!low.placeholder, 'scenario 7 [low pool]: no empty-plot placeholder anywhere in the view');
+}
+
+/* ── Scenario 8 · constellation data-con-* observable contract ───────────
+   The v2·2 hero. Four claims, each the machine-checkable half of a §5 break
+   test, and each written so a specific mutation reds it:
+
+     8a  limb darkening   flatten the rim falloff -> reds
+     8b  low pool (3 tx)  compose, never an empty sphere
+     8c  reduced motion   CONTENT survives; animation does not
+     8d  inspector depth  a node click opens the SHARED tx inspector
+
+   PREDICTS RATHER THAN REMEMBERS. LIMB_K, LIMB_MIN_ALPHA and
+   MAX_SPHERE_NODES are PARSED out of constellation.tsx, never restated here
+   (the verify-orb idiom). Restating them would make this section agree with
+   a number instead of with the code, and it would go green on a build where
+   the two had drifted apart.
+
+   ASSERTION SPACE (contract §9). Everything here is a RELATION — monotonic
+   ordering of alpha and of areal density across radial bins, set equality of
+   node ids, which txid an inspector opened. Relations are scale-invariant,
+   so measuring them in layout space is sound even though `.mp-fit` sits
+   between the author and the reader. No absolute rendered quantity is
+   asserted in this scenario, deliberately: that claim would need a
+   post-transform measurement and belongs with the type-floor work.
+
+   NO TOLERANCE ON THE HIT TEST, BY CONSTRUCTION. 8d clicks the node element
+   itself and Playwright resolves the target through the browser's own
+   hit-testing, so there is no coordinate conversion anywhere in the path and
+   therefore no hit-radius generosity that could absorb a coordinate-space
+   bug — the defect class §9 names, and the one sediment's canvas hit-test
+   carries structurally. The units are verified by there being none. */
+{
+  console.log('\n— scenario 8: constellation data-con-* observable contract —');
+
+  // ── constants parsed from the shipped source, not restated ──
+  const CON_SRC = readFileSync(new URL('./src/mempool/constellation.tsx', import.meta.url), 'utf8');
+  const num = (re, label) => {
+    const m = CON_SRC.match(re);
+    if (!m) { ok(false, `scenario 8: could not PARSE ${label} out of constellation.tsx — this section cannot predict without it`); return null; }
+    return Number(m[1]);
+  };
+  const LIMB_K = num(/export const LIMB_K\s*=\s*([\d.]+)/, 'LIMB_K');
+  const LIMB_MIN_ALPHA = num(/const LIMB_MIN_ALPHA\s*=\s*([\d.]+)/, 'LIMB_MIN_ALPHA');
+  const MAX_NODES = num(/const MAX_SPHERE_NODES\s*=\s*(\d+)/, 'MAX_SPHERE_NODES');
+  console.log(`  · parsed from source: LIMB_K=${LIMB_K} LIMB_MIN_ALPHA=${LIMB_MIN_ALPHA} MAX_SPHERE_NODES=${MAX_NODES}`);
+
+  // A flat or inverted curve is not limb darkening. Guards the case where a
+  // mutation zeroes the exponent: the per-node formula check below would
+  // still agree with itself, so this is what separates "curve" from "no
+  // curve" and it is the reason 8a is not vacuous under that mutation.
+  ok(LIMB_K != null && LIMB_K > 1,
+    `scenario 8a: LIMB_K is a real falloff curve, not linear or flat (parsed ${LIMB_K}, need > 1)`);
+
+  const readNodes = (pg) => pg.evaluate(() => {
+    const view = document.querySelector('.mem-view[data-mem-view="constellation"]');
+    if (!view) return { error: 'no constellation view' };
+    const els = [...view.querySelectorAll('[data-con-node]')];
+    return {
+      nodes: els.map((e) => ({
+        id: e.getAttribute('data-con-node'),
+        rnorm: parseFloat(e.getAttribute('data-con-rnorm')),
+        alpha: parseFloat(e.getAttribute('data-con-alpha')),
+      })),
+      placeholder: /mempool empty|no data|nothing to show/i.test(view.textContent || ''),
+      svgs: view.querySelectorAll('svg').length,
+    };
+  });
+
+  /* ── 8a · limb darkening, at full pool, ANIMATED ──────────────────────
+     Scoped to the animated state ON PURPOSE. Under reduced motion the view
+     deliberately drops density thinning (a culled or thinned node would be
+     permanently lost from a frame that never advances — see 8c), so the
+     density channel is uniform BY DESIGN there. Asserting the profile under
+     reduce would fail correct code; asserting it here is the only place the
+     claim is true. */
+  const ap = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(ap, 'scenario 8a');
+  await ap.route('**/api/**', fulfil);
+  await open(ap, 'constellation');
+  await ap.waitForTimeout(900);
+  const dense = await readNodes(ap);
+
+  if (dense.error) {
+    ok(false, `scenario 8a: ${dense.error}`);
+  } else {
+    ok(dense.nodes.length > 0, `scenario 8a: sphere emits [data-con-node] nodes (got ${dense.nodes.length})`);
+    ok(dense.nodes.length <= MAX_NODES,
+      `scenario 8a: drawn set respects the parsed MAX_SPHERE_NODES ceiling (${dense.nodes.length} <= ${MAX_NODES})`);
+
+    // (i) Every node's alpha matches the curve recomputed from the PARSED
+    //     constants. A flattened falloff makes actual constant while
+    //     predicted still varies -> mismatch -> red.
+    const predict = (r) => LIMB_MIN_ALPHA + (1 - LIMB_MIN_ALPHA) * Math.pow(Math.max(0, Math.min(1, 1 - r)), LIMB_K);
+    const offenders = dense.nodes.filter((n) => Math.abs(n.alpha - predict(n.rnorm)) > 0.002);
+    ok(offenders.length === 0,
+      `scenario 8a: every node's alpha reproduces LIMB_MIN_ALPHA + (1-LIMB_MIN_ALPHA)·(1-rnorm)^LIMB_K from the PARSED constants` +
+      (offenders.length ? ` — ${offenders.length}/${dense.nodes.length} disagree, worst ${offenders[0].rnorm.toFixed(3)}: got ${offenders[0].alpha} want ${predict(offenders[0].rnorm).toFixed(3)}` : ` (${dense.nodes.length} nodes)`));
+
+    // (ii) Mean alpha falls monotonically toward the rim.
+    const BINS = [[0, 0.5], [0.5, 0.8], [0.8, 1.0001]];
+    const binned = BINS.map(([lo, hi]) => dense.nodes.filter((n) => n.rnorm >= lo && n.rnorm < hi));
+    const meanA = binned.map((b2) => (b2.length ? b2.reduce((s, n) => s + n.alpha, 0) / b2.length : NaN));
+    const populated = binned.every((b2) => b2.length >= 3);
+    ok(populated, `scenario 8a: all three radial bins are populated, so the profile below is not read off an empty bin (counts ${binned.map((b2) => b2.length).join('/')})`);
+    if (populated) {
+      ok(meanA[0] > meanA[1] && meanA[1] > meanA[2],
+        `scenario 8a: mean alpha falls monotonically toward the rim (core ${meanA[0].toFixed(3)} > mid ${meanA[1].toFixed(3)} > rim ${meanA[2].toFixed(3)})`);
+
+      // (iii) AREAL density falls toward the rim. This is the claim that
+      //       makes the sphere read as a VOLUME rather than a disc, and it
+      //       is non-trivial: points on a spherical SHELL project with areal
+      //       density proportional to 1/cos(theta), which DIVERGES at the
+      //       rim. A view that merely dimmed the rim would still pile points
+      //       up there. Falling density is only achievable by filling a ball
+      //       and thinning, which is what the composition does.
+      const area = BINS.map(([lo, hi]) => (Math.min(hi, 1) ** 2) - (lo ** 2));
+      const dens = binned.map((b2, i) => b2.length / area[i]);
+      ok(dens[0] > dens[1] && dens[1] > dens[2],
+        `scenario 8a: areal density falls toward the rim — the sphere reads as a volume, not a disc ` +
+        `(core ${dens[0].toFixed(1)} > mid ${dens[1].toFixed(1)} > rim ${dens[2].toFixed(1)} nodes per unit area)`);
+    }
+    ok(!dense.placeholder, 'scenario 8a: no empty-plot placeholder at full pool');
+  }
+  const animatedIds = dense.nodes ? new Set(dense.nodes.map((n) => n.id)) : new Set();
+  await ap.close();
+
+  /* ── 8c · reduced motion: CONTENT survives, animation does not ────────
+     Contract §6 as corrected in Rev 3. MemViewShell does NOT swap the body
+     for the table — `showBody` consults `tracking` and never reduced motion
+     — so removing the animated surface is the VIEW's job, and "removing" it
+     must not remove the DATA with it. The specific hazard this catches: the
+     sphere backface-culls (z < -0.1) and density-thins while animating, and
+     both are MOTION effects. Frozen, a culled node never rotates into view,
+     so leaving either enabled would PERMANENTLY drop transactions and their
+     click targets from the reduced-motion surface. */
+  const rp = await b.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  watchErrors(rp, 'scenario 8c');
+  await rp.route('**/api/**', fulfil);
+  await open(rp, 'constellation');
+  await rp.waitForTimeout(600);
+  const red = await readNodes(rp);
+  const smil = await rp.evaluate(() => document.querySelectorAll('.mem-view animate, .mem-view animateTransform, .mem-view animateMotion').length);
+  // "Still a click target" measured off what the DOM actually exposes: the
+  // node group carries a pointer cursor AND contains a hit circle with a
+  // PAINTED fill. `fill="transparent"` is hit-testable under the default
+  // `pointer-events: visiblePainted` (a transparent paint is still a paint);
+  // `fill="none"` would not be, and is the mutation this would catch.
+  const clickableUnderReduce = await rp.evaluate(() => {
+    const els = [...document.querySelectorAll('.mem-view [data-con-node]')];
+    return els.filter((e) => {
+      if (getComputedStyle(e).cursor !== 'pointer') return false;
+      return [...e.querySelectorAll('circle')].some((c) => {
+        const f = (c.getAttribute('fill') || '').trim().toLowerCase();
+        return f !== '' && f !== 'none';
+      });
+    }).length;
+  });
+
+  if (red.error) {
+    ok(false, `scenario 8c: ${red.error}`);
+  } else {
+    /* THE COUNT IS THE LOAD-BEARING HALF, and it is an equality against the
+       PARSED ceiling rather than `>= animated`. The reason is a measured
+       discrepancy worth recording, because it is a general trap.
+
+       Break test: re-enable backface culling under reduce. Its mechanism
+       predicts ~half the field disappears. Measured effect on each quantity:
+
+         reduce node count      190 -> 110   (80 culled, 42% — "roughly half" ✓)
+         `missing` below          3          (of 62 animated-visible)
+
+       A 27x gap, and NEITHER number is wrong: they measure different things.
+       `missing` is |animated_visible \ reduce_visible|, and the animated
+       sample is taken a small rotation from t=0, so the two front hemispheres
+       almost coincide — only nodes near the terminator differ. The mutation's
+       REACH is 80; the set-difference's VIEW of that reach is 3.
+
+       So the set-membership check reds for the right reason but with a margin
+       that is an accident of which frame t=0 lands on, and `>= animated`
+       (110 >= 62) stays GREEN under the very mutation it exists to catch.
+       Pinning the count to MAX_SPHERE_NODES makes the margin structural: the
+       break test now reds by 80 nodes instead of 3.
+
+       General form: when a break test's observed effect is far smaller than
+       its mechanism predicts, the assertion is probably measuring a SUBSET of
+       the mutation's reach. Assert on the reach. */
+    ok(red.nodes.length === MAX_NODES,
+      `scenario 8c: reduced motion renders the WHOLE drawn set — culling and thinning are both dropped, not merely reduced (${red.nodes.length}, expected the parsed MAX_SPHERE_NODES ${MAX_NODES})`);
+    ok(red.nodes.length >= animatedIds.size,
+      `scenario 8c: reduced motion carries at least as many nodes as the animated field (reduce ${red.nodes.length} >= animated ${animatedIds.size})`);
+    const missing = [...animatedIds].filter((id) => !red.nodes.some((n) => n.id === id));
+    ok(missing.length === 0,
+      `scenario 8c: every transaction visible while animating is STILL present under reduce — no data lost to a frozen frame` +
+      (missing.length ? ` — ${missing.length} missing, e.g. ${missing[0].slice(0, 12)}…` : ''));
+    ok(clickableUnderReduce === red.nodes.length,
+      `scenario 8c: every node under reduce is still a click target — the static equivalent carries the same CLICK TARGETS, not just the same data (${clickableUnderReduce}/${red.nodes.length})`);
+    ok(smil === 0, `scenario 8c: zero SMIL elements under reduce — animation is NOT RENDERED, never merely paused (got ${smil})`);
+    ok(!red.placeholder, 'scenario 8c: no empty-plot placeholder under reduced motion');
+  }
+  await rp.close();
+
+  /* ── 8d · inspector depth: a node click opens the SHARED tx inspector ──
+     RUN UNDER REDUCED MOTION, DELIBERATELY, and the reason is a measurement
+     rather than a convenience. The sphere rotates at 20fps, so a node is a
+     MOVING TARGET: Playwright resolves the element's box, then dispatches a
+     mouse event at that point, and by then the node has moved. The first
+     version of this clicked the animated field and marked 0 elements — a red
+     that was about the frame rate, not about the wiring.
+
+     Frozen is also the STRONGER subject, not a weaker one. Under reduce the
+     view drops culling and thinning (8c), so all 190 nodes are present rather
+     than the ~43 the animated field shows — a click here exercises a node the
+     animated state may not even render, and it tests the §6 claim that the
+     static equivalent carries the same CLICK TARGETS, which is the thing most
+     likely to be quietly untrue.
+
+     Hit-testing is still REAL: Playwright dispatches an actual mouse event and
+     the browser resolves it against painted geometry. No coordinate conversion
+     appears anywhere in this path, which is how §9's "verify the units by
+     construction" is satisfied — there are no units to get wrong. */
+  const dp = await b.newPage({ viewport: { width: 1440, height: 900 }, reducedMotion: 'reduce' });
+  watchErrors(dp, 'scenario 8d');
+  await dp.route('**/api/**', fulfil);
+  await open(dp, 'constellation');
+  await dp.waitForTimeout(900);
+  /* Pick a node that is PROVABLY the topmost thing at its own centre.
+     Choosing by radius alone picked a core node that other nodes painted
+     over: Playwright's actionability check ("visible, enabled and stable,
+     receives pointer events") never cleared and the gate died on a 30s
+     timeout — a crash, not a failure, and one that reported `0 ❌` on its
+     way out. Screening with elementFromPoint makes occlusion a SELECTION
+     criterion instead of a flake, so the click below can be a real one
+     (no `force`) and still be deterministic. */
+  const target = await dp.evaluate(() => {
+    const els = [...document.querySelectorAll('.mem-view [data-con-node]')];
+    for (const e of els.sort((a, c) => parseFloat(a.getAttribute('data-con-rnorm')) - parseFloat(c.getAttribute('data-con-rnorm')))) {
+      const r = e.getBoundingClientRect();
+      if (!r.width || !r.height) continue;
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      if (hit && hit.closest('[data-con-node]') === e) return e.getAttribute('data-con-node');
+    }
+    return null;
+  });
+  ok(!!target, `scenario 8d: found a node to click (${target ? target.slice(0, 12) + '…' : 'none'})`);
+  if (target) {
+    /* BOTH POLARITIES, because a one-sided read here is vacuous.
+       The first version asserted only that the depth vocabulary "/10" was
+       PRESENT after the click. That went GREEN while the two assertions
+       either side of it went red — i.e. it was green with no tracking having
+       happened at all, satisfied by the block ribbon rather than by any
+       inspector. Reading the same probe BEFORE the click turns each polarity
+       into the other's vacuity guard: `before` must be empty, `after` must be
+       populated, and a marker present in both proves nothing about the click.
+       These deep labels are tx-detail.tsx's own vocabulary, so they cannot be
+       satisfied by a view-local summary panel. */
+    const probe = (want) => dp.evaluate((w) => {
+      const body = document.body.textContent || '';
+      // The UI renders txids through data/types.ts's `shortHash`, which is
+      // `first8 + "…" + last6` — so a raw 16-char prefix NEVER appears in the
+      // text and asserting on one fails against correct code. (It did: the
+      // first version read `w.slice(0, 16)` and went red while data-tracked-tx
+      // and the deep labels both proved the inspector had opened correctly.)
+      // Match the shape the app actually renders, or the full id if some
+      // surface prints it unabbreviated.
+      const short = `${w.slice(0, 8)}…${w.slice(-6)}`;
+      return {
+        marked: document.querySelectorAll(`[data-tracked-tx="${w}"]`).length,
+        mentionsTx: body.includes(short) || body.includes(w),
+        deepLabels: ['Ring size', 'View Tags', 'Stealth addresses'].filter((s) => body.includes(s)).length,
+      };
+    }, want);
+
+    const before = await probe(target);
+    await dp.click(`.mem-view [data-con-node="${target}"]`);
+    await dp.waitForTimeout(800);
+    const after = await probe(target);
+
+    ok(before.marked === 0 && after.marked > 0,
+      `scenario 8d: the CLICK is what marks that txid — before ${before.marked}, after ${after.marked} element(s) with data-tracked-tx="${target.slice(0, 12)}…"`);
+    ok(!before.mentionsTx && after.mentionsTx,
+      `scenario 8d: the opened inspector shows the CLICKED transaction, not merely some transaction (before ${before.mentionsTx}, after ${after.mentionsTx})`);
+    ok(before.deepLabels === 0 && after.deepLabels >= 2,
+      `scenario 8d: the SHARED inspector opened — tx-detail.tsx's own deep vocabulary (Ring size / View Tags / Stealth addresses) appears ONLY after the click, so no shallower panel was reimplemented (before ${before.deepLabels}/3, after ${after.deepLabels}/3)`);
+  }
+  await dp.close();
+
+  /* ── 8b · low pool: 3 tx composes, never an empty sphere ──────────────
+     POOL_N is read by `fulfil` at request time, so it is set BEFORE the
+     route is registered and restored immediately after — same mechanism
+     scenario 7 uses. */
+  POOL_N = 3;
+  const cp = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(cp, 'scenario 8b');
+  await cp.route('**/api/**', fulfil);
+  await open(cp, 'constellation');
+  await cp.waitForTimeout(700);
+  const lowc = await readNodes(cp);
+  await cp.close();
+  POOL_N = MEMPOOL_N;
+
+  if (lowc.error) {
+    ok(false, `scenario 8b: ${lowc.error}`);
+  } else {
+    ok(lowc.nodes.length === 3,
+      `scenario 8b: 3 tx composes as 3 real nodes — no empty sphere, no padding to a decorative count (got ${lowc.nodes.length})`);
+    ok(lowc.svgs > 0, `scenario 8b: the view still renders its SVG surface at low pool (got ${lowc.svgs})`);
+    ok(!lowc.placeholder, 'scenario 8b: no empty-plot placeholder at 3 tx');
+  }
 }
 
 await b.close();
