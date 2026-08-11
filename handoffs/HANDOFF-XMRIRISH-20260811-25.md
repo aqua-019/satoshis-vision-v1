@@ -359,6 +359,55 @@ Two more for §9, distinct rather than restatements:
 - **cwd drift produced three false failures**, incl. one `exit=1` with ZERO assertions — caught by the
   summary-line rule, not the exit code.
 
+
+### THE ENDPOINTS IN BYTES, WITH BOTH INSTRUMENTS NAMED
+Two readings, two methods, and the difference is the point — quote the method with the number.
+```
+                     verifier (verify-bundle table, /1024)      lead (dist/assets on disk)
+eagerJsRaw           261,396                                    263,456        delta 0 either way
+lazyJsRaw            705,260                                    703,200        both +2.2k-ish
+```
+The ~2,060 B gap is a SCOPE difference, not a discrepancy in the tree: the on-disk read classes
+`^(index|vendor)-` as eager and every other `.js` as lazy, which is not necessarily how the gate
+partitions. **Neither is wrong; they answer slightly different questions**, and after tonight that is
+exactly the thing to state rather than to reconcile by picking one. **They agree on what matters:
+eagerJsRaw moved ZERO.**
+
+**A full view rebuild landed entirely in the LAZY population.** That is #170's eager/lazy split doing
+precisely what it was built for, and this is its first independent confirmation.
+
+**QUOTE BYTES, NEVER THE PERCENTAGE.** `verify-bundle` printed **98%** before and after while lazy
+moved +2,606 B against #170's head. The integer percentage absorbed the entire change — a display
+whose resolution is coarser than the quantity it reports, which is the same family as everything else
+in this session. Note also that +2,606 spans #171 AND #172, so it is an UPPER BOUND on Reactor v2's
+cost, not its cost. Either way far under the measured per-view mean of 8,670: Reactor v2 was cheap.
+
+### OPS BRIDGE IS ON THE LINE, NOT OVER IT — a correction to what this file implied
+```
+lazy headroom 14,740  /  mean 8,670  =  1.70 views
+  at sediment's cost   +7,270  -> 712,530   passes, 7,470 left
+  at the mean          +8,670  -> 713,930   passes, 6,070 left
+  at terminal's cost  +15,611  -> 720,871   FAILS by 871 B
+```
+Terminal is the right comparator if Ops Bridge is information-dense, so brief it with the budget as a
+KNOWN CONSTRAINT rather than letting it be discovered at push time. And the roadmap still does not fit
+— six views (five if Relay stays parked) x 8,670 projects ~37,280 B over — which is the gate working
+as designed. **The Ops Bridge PR must not raise the budget quietly to get itself green.**
+
+### THE DENSITY RESULT IS THE STRONGEST SINGLE NUMBER HERE
+```
+DENSITY_FLOOR.reactor  114        ("130 on 260c99f")
+measured               147         147 elements + 0 <pre> lines
+```
+147 against 130 is **+13% information**, so the redesign did NOT trade information for composition —
+which is the entire purpose of §10's pair. Report it against BOTH endpoints, not just against the pass.
+
+### ZERO-MARGIN FACT FOR WHOEVER EDITS REACTOR NEXT
+`naturalW 1180` against `canvasW 1180`, and `mustScale` is `natW > cw + 1`. It passes **with 1px of
+margin**. Anything that widens the artboard by 2px tips reactor back into the scaling path and the
+11px type floor is live again. Not a defect and not a blocker — a property with no slack, recorded so
+it is found by reading rather than by a red.
+
 ### Deviations from spec
 - **The mockup `reactor-v2.html` does not exist** in the repo or the upload. The composition
   was reconstructed from the brief's span list, which tiles exactly once: `12 | 8+4 | 4+4+4`.
