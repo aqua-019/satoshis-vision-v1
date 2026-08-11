@@ -266,15 +266,173 @@ met.** `useChartMetrics`' `k` / `u` / `minWidth` inflation exists for exactly th
 both past what it was built to rescue. Nine views affected. **Not a view PR's job.** Full
 write-up: [`FINDING-fit-scale-type.md`](./FINDING-fit-scale-type.md).
 
-**The constellation exception, and the constraint it creates.** Constellation is the ONE
-fit-enabled view whose desktop scale is **identity** — its natural width (1028) is under the
-canvas width (1180), so `verify-fit.mjs:73-75` asserts `identity` for it rather than `scaled`.
-At 1440, authored size *is* rendered size for this view and the §8 problem does not bite.
-**That holds only while natural width stays ≤ canvas width.** A v2 rebuild that grows the
-artboard past ~1180 silently introduces a scale transform and shrinks every glyph in the view —
-converting a compliant surface into a non-compliant one with no gate going red, because the gate's
-predicate is conditional on which side of that line the view falls. Treat natural width as a
-budget, not an outcome.
+**The scale has TWO terms, and both are properties of a COMPOSITION rather than of a view.**
+`useFitToView.ts:47-67`:
+
+```
+naturalW = fit.offsetWidth        naturalH = fit.offsetHeight
+canvasW  = scroll.clientWidth     scale    = min(1, canvasW / naturalW)
+
+// then, only on a bounded vertical canvas (desktop; mobile is overflow-y:hidden):
+heightScale = scroll.clientHeight / naturalH
+if (heightScale < scale && heightScale >= scale * 0.92) scale = heightScale
+```
+
+So `naturalW <= canvasW` does **not** imply scale 1. The height clause takes over whenever a view
+is *slightly* too tall — anywhere in the band `0.92 <= heightScale < 1`. The asymmetry is the part
+worth holding: a view **much** too tall has `heightScale < 0.92`, the clause is skipped, scale
+stays 1 and the view scrolls; a view **just** too tall is scaled down to fit. **Height therefore
+only bites inside an 8% window — and that window is exactly where a hero rebuild lands a
+composition.** At the floor of the band, authored 11px renders at **10.12px**, below the 11px
+floor this section would otherwise be claiming the view meets.
+
+`useFitToView.ts:38-40` names the current members by hand: *"genuinely tall views
+(bridge/sediment/constellation) fall far outside it and keep width-fit + vertical scroll."* That
+is why constellation measured identity scale on `fdf4ecc` — **not because it fits, but because it
+is too tall for the height clause to engage.** A more compact rebuild can move a view INTO the
+band and scale it DOWN, which is the opposite of the intuition that tidying a layout improves
+legibility.
+
+**State the band as a target, because it is where a designer aims. The threshold is relative to
+the WIDTH scale, not to 1** — `scale` in that `if` is `min(1, canvasW/naturalW)`:
+
+```
+clause fires when   0.92 · wS  <=  heightScale  <  wS          where wS = min(1, canvasW/naturalW)
+in canvasH:         0.92 · wS · naturalH  <=  canvasH  <  wS · naturalH
+```
+
+> **An earlier revision of this section wrote the band as `0.92 <= heightScale < 1`.** That is
+> only the special case `wS = 1`. It was derived from constellation — the one view where `wS` IS
+> 1 — and then stated generally: a claim wider than the subject it was measured on, in the
+> section warning about exactly that. The general form is above.
+
+The view is scaled precisely when it is **between 0% and 8.7% taller than the canvas allows at its
+width scale**.
+
+- `heightScale >= wS` → `heightScale < scale` is FALSE → does not fire → **scale = wS**
+- `heightScale < 0.92 · wS` → skipped → **scale = wS**, vertical scroll
+- **in between → scale drops to `heightScale`**, and authored 11px renders as low as 10.12px
+  (relative to whatever `wS` already cost)
+
+**The scale is 1 for two DIFFERENT reasons at opposite ends, and a rebuild moves you between
+them.** That window is exactly what someone trying to make a hero composition "fit on screen
+without scrolling" is aiming at. Land it, or leave it comfortably tall — **the failure is in
+between, and it is silent, because a 0.94 scale looks like a design choice rather than a
+fallback.**
+
+**The constraint is a HOLE, not a floor — and it cannot be designed away.** Stating it as
+"keep `naturalH` above the band" forecloses the *better* outcome, which is a composition that
+genuinely fits the canvas with no vertical scroll at all. **Written out for a view at `wS = 1`
+— constellation today, where `canvasH` = 702:**
+
+```
+naturalH <= 702         heightScale >= 1 → `heightScale < scale` FALSE → skipped
+                        scale 1, and the view fits with NO vertical scroll     ← best outcome
+702 < naturalH <= 763   clause fires → scale 0.92–1.0, type under the floor    ← the ONLY hazard
+naturalH > 763          heightScale < 0.92 → skipped → scale 1, vertical scroll ← today (1107)
+```
+
+Both sides are safe; only the middle is not. **Avoid `(canvasH, 1.087 × canvasH]` — and for a
+view whose `wS < 1`, avoid `(wS·… )` per the general form above, which sits far below its own
+content height rather than just under it.**
+
+**And `canvasH` is not a constant.** `.mp-canvas-scroll` is `flex: 1 1 auto` in the shell column
+(`styles.css:1211`), so `scroll.clientHeight` tracks the browser window. 702 is one sample of one
+user's window. **Measured chrome is 198px, constant across six viewport heights** (900/1000/1020/
+1040/1080/800 all give `viewport − canvasH = 198`), so `canvasH ≈ viewportH − 198`.
+
+Inverting the relation shows the hazard is not a design target at all — **every fit-enabled view
+has a band of window heights that scales it, ~8% wide, positioned relative to its OWN width
+scale. No choice of composition height escapes: moving the height moves the band with it.**
+
+**Measured, and predicted-before-measured on the last two rows** (bands computed from `wS` and
+`naturalH`, then confirmed by probe — `predicted == actual` in every case):
+
+| view | wS | naturalH | band in canvasH | ≈ viewport | confirmed firing | scale when it fires |
+|---|---|---|---|---|---|---|
+| constellation | 1.000 | 1107 | 1018 – 1107 | 1216 – 1305 | not probed | — |
+| reactor | 0.835103 | 991 | 761 – 828 | 959 – 1026 | **1440×1000** ✅ | **0.809284** |
+| bridge | 0.468812 | 1856 | 800 – 870 | 998 – 1068 | **1440×1020** ✅ | **0.442888** |
+| sediment | 0.359646 | 1761 | 583 – 633 | 781 – 831 | **1440×800** ✅ | **0.341851** |
+
+**Sediment's row is the one that matters.** A 1440×800 laptop sits squarely inside its band, so
+sediment — merged in #168 — is height-scaled *on top of* its width scale for a common window size:
+0.359646 → **0.341851**, taking authored 11px from 3.96px to **3.76px**. Both are unreadable, so
+this changes nothing about severity — **it completes the mechanism, and it proves the band is not
+a theoretical corner.**
+
+**So the honest form of the claim is:**
+
+> At the measured desktop viewport, `naturalW` 1028 ≤ `canvasW` 1180 and `heightScale` 0.634 <
+> 0.92, so `.mp-fit` scale is 1 and authored 11px renders at 11px. **That is a property of this
+> composition at this window size, not of the view.** The height clause
+> (`useFitToView.ts:58-65`) scales any view whose content height sits within ~8% above the canvas
+> height, and since the canvas tracks the window, every composition has such a band. Keep
+> `naturalH` outside `(canvasH, 1.087 × canvasH]` at the reference viewport; **accept that some
+> window heights will still land in it.**
+
+This is a **second, independent mechanism** by which the type floor goes unmet inside the fit
+wrapper. The first is width-driven and compositional (sediment at 0.36). This one is
+height-driven, narrow, and **unavoidable rather than compositional**. The remedy is the same for
+both — engage `minWidth`/`k`, or exempt the view from the wrapper — which is why both are recorded
+as one finding with two mechanisms in `FINDING-fit-scale-type.md`.
+
+**Measured on `fdf4ecc` at 1440×900 (`canvasW` 1180, `clientHeight` 702), all four fit-enabled
+views — predicted scale equals actual in every row, so the model above is validated, not
+asserted:**
+
+| view | naturalW | naturalH | widthScale | heightScale | clause fires | scale |
+|---|---|---|---|---|---|---|
+| reactor | 1413 | 991 | 0.835103 | 0.708375 | no | 0.835103 |
+| bridge | 2517 | 1856 | 0.468812 | 0.378233 | no | 0.468812 |
+| sediment | 3281 | 1761 | 0.359646 | 0.398637 | no (width-bound) | 0.359756 |
+| constellation | 1028 | 1107 | **1** | 0.634146 | no | **1** |
+
+> Sediment is the instructive row: its `heightScale` is *greater* than its `widthScale`, so the
+> clause's `heightScale < scale` test fails and height never enters. Height only competes on
+> views that are proportionally taller than they are wide relative to the canvas.
+
+**THE ACTIONABLE FINDING — a live code path with ZERO coverage, recorded not fixed.**
+`HEIGHT_FIT_TOLERANCE` changes the rendered scale of every fit-enabled view, and **nothing in the
+suite exercises it.** `verify-fit.mjs:44` runs exactly two viewports, `1440×900` and `390×844`,
+and the clause fires at neither, for any view. It is emphatically not dead code — it fires for
+three of the four views at ordinary laptop heights, measured above. **That is why neither scale
+mechanism was noticed until this week.**
+
+Per §9, every "the scale is N" claim taken at 1440×900 is **silent about this branch** rather than
+evidence against it.
+
+**The remedy is one viewport, not a redesign:** `verify-fit` (or `verify-memviews`) gains a height
+at which the clause fires for at least one view, and asserts the resulting scale. That converts
+"the comment says Reactor" into a standing check. **Not this PR.** The three numbers that make it
+reproducible without rebuilding the probe: `wS`, `heightScale`, and the viewport — e.g. reactor
+`wS 0.835103`, `hS 0.809284`, at `1440×1000`.
+
+> Related, and also recorded not fixed: `verify-fit.mjs:9`'s header comment says reactor *"fits
+> both axes at 1440"*. The gate's own output five lines later measures `scrollH 828 − clientH 702
+> = 126` of vertical scroll for reactor at that viewport. The comment is stale; the measurement is
+> right.
+
+**Carry into the Reactor v2 prompt:** `useFitToView.ts:36` names Reactor as the only view the
+clause was written for — *"by a couple of percent."* Reactor is therefore the one view already
+inside the band by design at some viewport heights, so its scale is **already load-bearing** and
+its type floor is **already below authored size** there. Any composition change to Reactor moves a
+live scale, from the first line of that work rather than as a hazard to discover.
+
+**Do not write "view X is at identity scale" as a property of the view.** Write the measurement
+with its terms, and re-derive it on the shipped layout:
+
+> Measured on the shipped composition at 1440: `naturalW` = \_\_\_, `canvasW` = \_\_\_,
+> `naturalH` = \_\_\_, `scroll.clientHeight` = \_\_\_, resulting `.mp-fit` scale = \_\_\_.
+> Authored 11px renders at \_\_\_px. The scale is 1 only while `naturalW <= canvasW` **and**
+> `heightScale` falls outside `[0.92, 1)` (`useFitToView.ts:58-65`).
+
+**A pre-rebuild `naturalW` is not evidence about a post-rebuild view.** The figure measured on
+`fdf4ecc` (constellation `naturalW` 1028 against `canvasW` 1180) describes the 503-line
+composition being replaced. This is the same error shape as v2·0's `20 blocks → stride >= 2`,
+which was derived from sediment's pre-rebuild width and was false by the time that PR shipped.
+Treat natural width and natural height as **budgets**, measure both on what actually ships, and
+quote the measurement rather than the conclusion.
 
 ## 9 · Assertion space — where a measurement is taken decides what it can mean
 

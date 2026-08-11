@@ -87,6 +87,66 @@ That is why scenario 6's collision work is sound at any scale while the type flo
 it is the sentence the next view PR should read first. It is carried into the contract as Rev 3
 **§9 · assertion space**.
 
+---
+
+## MECHANISM 2 — height-driven, and unavoidable rather than compositional
+
+**Added v2·2 (constellation), 2026-08-11.** Everything above is the WIDTH mechanism. There is a
+second, independent one in the same wrapper, and it is not a corner case.
+
+```
+useFitToView.ts:47-67
+wS          = min(1, canvasW / naturalW)            ← mechanism 1
+heightScale = scroll.clientHeight / naturalH
+if (heightScale < wS && heightScale >= wS * 0.92) scale = heightScale     ← mechanism 2
+```
+
+The clause fires in a band **positioned relative to the width scale**, not to 1:
+
+```
+0.92 · wS  <=  heightScale  <  wS
+```
+
+**Measured at 1440-wide, `canvasH = viewportH − 198` (chrome measured constant across six
+viewport heights). Bands were COMPUTED from `wS` and `naturalH`, then confirmed by probe —
+`predicted == actual` in every row:**
+
+| view | wS | naturalH | band in canvasH | ≈ viewport | fires at | scale |
+|---|---|---|---|---|---|---|
+| constellation | 1.000 | 1107 | 1018 – 1107 | 1216 – 1305 | not probed | — |
+| reactor | 0.835103 | 991 | 761 – 828 | 959 – 1026 | 1440×1000 | **0.809284** |
+| bridge | 0.468812 | 1856 | 800 – 870 | 998 – 1068 | 1440×1020 | **0.442888** |
+| sediment | 0.359646 | 1761 | 583 – 633 | 781 – 831 | 1440×800 | **0.341851** |
+
+**Sediment is height-scaled on a 1440×800 laptop**, on top of its width scale: 0.359646 →
+0.341851, taking authored 11px from 3.96px to **3.76px**. Both are unreadable, so severity is
+unchanged — but the band is demonstrably not theoretical.
+
+**Why it cannot be designed out.** `.mp-canvas-scroll` is `flex: 1 1 auto` (`styles.css:1211`),
+so `canvasH` tracks the browser window. Every composition therefore has a band of window heights
+that scales it; moving the composition's height moves the band with it. A view can be placed
+outside the band **at a reference viewport**, but no view can be outside it at every viewport.
+
+**The two mechanisms contrasted:**
+
+| | mechanism 1 — width | mechanism 2 — height |
+|---|---|---|
+| driver | `canvasW / naturalW` | `canvasH / naturalH`, gated on `wS` |
+| worst measured | sediment 0.36 (desktop), 0.12 (phone) | sediment 0.342, reactor 0.809 |
+| band | none — monotone in width | ~8% wide, just under `wS` |
+| avoidable? | **yes**, by staying narrow | **no**, `canvasH` tracks the window |
+| gate coverage | `verify-fit` at 1440 / 390 | **none — see below** |
+
+**Zero coverage.** `verify-fit.mjs:44` runs only `1440×900` and `390×844`. The height clause fires
+at neither, for any view. A mechanism that changes the rendered scale of every fit-enabled view is
+exercised by nothing in the suite — which is why neither mechanism was noticed until this week.
+The remedy is one added viewport asserting the resulting scale, not a redesign.
+
+**The remedy for the type floor is the same for both** — engage `minWidth`/`k`, or exempt the view
+from the wrapper — which is why they are recorded here as one finding.
+
+---
+
 ## Status
 
 - **v2·1 (sediment):** raising the axis from `11 × 0.82` to `11` authored is correct and lands
