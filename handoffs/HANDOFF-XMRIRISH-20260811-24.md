@@ -163,6 +163,30 @@ open questions:
 - `verify-memviews` scenario 7 red once during this run (the known sediment intermittent,
   1-in-6, recorded in v2·2). Not touched by this PR.
 
+### Post-wiring: two CI failures, both in EXISTING gates, neither in the four new steps
+
+**1 · `verify-coldboot-live` — the audit working as designed.** It has an explicit
+"orphaned — recorded, not failed" branch, so wiring four gates moved `verify-mobile` and
+`verify-perf` out of it into the failing branch. `verify-mobile` takes the bypass outright.
+`verify-perf` takes it everywhere EXCEPT §3's `/`, because **ColdBoot mounts on `/` and
+nowhere else** (`coldboot/gate.ts:124`) — which is the real reason §3 read 181 rAF on `/`
+and 0 elsewhere: the other two routes never had the loop. Bypassing there would report 0
+frames for a page with no loop in it AND would fake this PR's own break test (0 → 0 reads
+as "fix confirmed"). §3's `/` now asserts `[data-coldboot]` is PRESENT before counting, and
+the exemption in `verify-coldboot-live` is guarded by that control rather than trusted —
+break-tested, removing the control reds the audit.
+
+**2 · `verify-pageshell` — a PRE-EXISTING defect, and the gate is HELD BACK from CI.**
+`/future@1600: .main no h-scroll (scrollW 1604 vs clientW 1600, over 4)`. Measured, not
+assumed: reverting this PR's only two src files to `5537976` and rebuilding reproduces it
+exactly — 2px locally (right on the gate's `TOL = 2`), 4px on the runner. Mechanism:
+`/future`'s `.v6-proto-grid` lays 4 tracks of 354.5px at 1600, while a `.v6-stagger` child
+grid sizes its column to a panel's **426.375px min-content** and will not shrink, so
+`.panel` lands at 1601.9 against main's 1600. Fixing it means re-choosing column counts
+across `/future`'s whole breakpoint ladder — a layout decision on a page this PR does not
+touch. Per the brief's own rule ("do not wire a red gate"), `verify:pageshell` ships as an
+npm script only; wiring the CI step is a one-line follow-up once `/future` is fixed.
+
 ## 8 · LOOP FEEDBACK
 - **The brief's §0 enumerated four gates and read as the orphan set; the census is 14
   files / 11 gates and was already written down at `CLAUDE.md:442`.** Re-derivation is not
@@ -176,6 +200,14 @@ open questions:
 - **A break test must prove the mutation had an EFFECT, not just that the file changed.**
   BT4's first two attempts applied cleanly and the gate stayed green because the page is
   horizontally clipped by design. Verified-applied is necessary and not sufficient.
+- **A gate's exemption list must be guarded by an assertion inside the exempted gate.**
+  `verify-coldboot-live`'s own docblock warns that hand-maintained lists rot; a one-entry
+  exemption whose validity is re-checked against the exempted file's source cannot outlive
+  its reason.
+- **`styles.css` shipped a withdrawn number and I had to take it back.** "sediment moved by
+  1,001px" differenced scenario 9's characterised 3280 against an old comment's 2279, which
+  carries no instrument, viewport or feed state. Quote both endpoints or quote neither —
+  the rule was in the brief and I broke it two paste-cycles later.
 - `SPEC-WAS-AMBIGUOUS` on §1: "the three entries stay" was incompatible with "convert the
   predicate to a gating test" — following both would have exempted two files from the new
   test by membership.
