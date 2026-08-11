@@ -427,6 +427,97 @@ with its terms, and re-derive it on the shipped layout:
 > Authored 11px renders at \_\_\_px. The scale is 1 only while `naturalW <= canvasW` **and**
 > `heightScale` falls outside `[0.92, 1)` (`useFitToView.ts:58-65`).
 
+### §6 AND §8 CONFLICT BY DEFAULT — every disclosure caption must carry a width bound
+
+**This is the rule the seven remaining v2 views need most, and it is proven, not predicted.**
+
+§6 requires that any inferred element is labelled inferred, so **every v2 view will carry at least
+one disclosure caption.** §8 bounds the artboard. And `.mp-view` is `width: max-content` on
+desktop (`styles.css:1212`), which means **a text node contributes its FULL UNWRAPPED LINE to the
+view's width.**
+
+Therefore **an unbounded disclosure caption sets the artboard width**, and the two requirements
+are in conflict unless every prose node carries an explicit `maxWidth` tied to the element it
+annotates.
+
+**Constellation is the proof.** Its v2 rebuild added one §6 caption — 140 characters, no width
+bound — under the sphere. Measured:
+
+```
+with the caption unbounded   naturalW 1413  >  canvasW 1180   wS 0.835   authored 11px → 9.19px
+capped to the sphere's width naturalW 1132  <= canvasW 1180   wS 1.000   authored 11px → 11.0px
+```
+
+Isolating by hiding each row moved `.mp-fit` by **281px** on the hero row alone; the caption
+demanded **981px** by itself. **A §6 disclosure that silently violates §8 is still a defect.**
+
+**Why this feels free and is not.** Adding a caption is a one-line, purely-additive-looking change.
+Nothing about it suggests it can rescale the entire view. The symptom is not a broken layout — it
+is a view that quietly stops being at identity scale, and whose type drops below the floor, with
+**no gate going red**, because `verify-fit`'s predicate is conditional on which side of `canvasW`
+the view falls and is satisfied either way.
+
+**The pattern: cap every caption to the width of the thing it describes.**
+
+### SEDIMENT'S 3281px IS NOT EXPLAINED — three hypotheses tested and killed
+
+Constellation's caption rule above is proven. **Sediment's width is a separate, still-open
+question**, and it is recorded here as open rather than closed because three plausible mechanisms
+were each tested and each moved `naturalW` by exactly **0**:
+
+| hypothesis | test | result |
+|---|---|---|
+| unbounded prose sets the width | cap both prose blocks (182 + 57 chars) at 460px | **0** — 3281 → 3281 |
+| `1fr`'s min-content floor | rewrite tracks as `repeat(12, minmax(0, 1fr))` | **0** |
+| the `minWidth: 0` asymmetry at `:935` vs `:938` | set `minWidth: 0` on both hero children | **0** |
+
+The asymmetry is real and worth knowing — `sediment.tsx:935`'s `span 5` column computes
+`min-width: auto` while `:938`'s `span 7` carries `min-width: 0px` — but correcting it changes
+nothing, because **`1fr` under `max-content` resolves from max-content CONTRIBUTIONS, and
+`minWidth: 0` bounds the automatic MINIMUM, which is a different quantity.**
+
+> **A circular derivation, recorded so nobody repeats it.** It is tempting to read a grid item's
+> `scrollWidth` as its max-content demand and back out the track size. That is **circular**:
+> `scrollWidth` on a grid item reflects the box the grid ALREADY allocated it, so both spans
+> "derive" the same track by construction. Measure the demand on a **clone outside the grid**
+> instead — `position:absolute; width:max-content; maxWidth:none` — which is an allocation-free
+> reading.
+
+**RESOLVED — and the answer is TWO CO-EQUAL DRIVERS.** Single-element removal could not see it:
+hiding either hero child moved `naturalW` by 0–1px, which is consistent with two different worlds
+— *(i)* neither child drives it, or *(ii)* both demand the same, so removing one leaves the other
+setting an identical track. **A single-removal probe cannot detect a driver that has a co-equal
+twin**, the same blind spot as a tolerance absorbing a defect. Hiding BOTH separates them:
+
+```
+hide either child alone     3281 → 3280/3281      (0–1px)
+hide BOTH children          3281 → 1200           (−2081)   ← world (ii)
+
+true max-content demand, measured on clones OUTSIDE the grid (non-circular):
+  span 5   demand 1341   ⇒ fr size = (1341 − 4×16) / 5 = 255.40
+  span 7   demand 1884   ⇒ fr size = (1884 − 6×16) / 7 = 255.43
+  12 × 255.4 + 11 gaps × 16 + 40 padding = 3281            ← naturalW, exactly
+```
+
+**So the `repeat(12, 1fr)` amplification IS the mechanism**, now on allocation-free inputs: a cell
+spanning `S` whose content demands `X` forces the whole grid to roughly `12·X/S`. **span 5
+amplifies 2.4×; span 7 amplifies 1.71×** — and here both land on the same fr size, so each is
+independently sufficient.
+
+**The consequence that matters for whoever fixes it: bounding ONE column achieves exactly
+nothing.** Both must be bounded together, and a correct fix applied to one would measure as no
+change and look wrong.
+
+**Not this PR's view** — sediment is merged and shipping at 0.36 — but the attribution is now
+closed rather than open.
+
+**Constellation is clean of this**, checked: its hero is `1fr 380px` — a single `fr` track at span
+1, so no equalisation applies — computed tracks `700.281px 380px`, `scrollW 699 <= w 700`, and
+`minWidth: 0` on both children changes nothing. Its 1132 carries no amplified floor.
+
+**When a v2 composition measures wider than expected, isolate by hiding rows before assuming any
+mechanism.**
+
 **A pre-rebuild `naturalW` is not evidence about a post-rebuild view.** The figure measured on
 `fdf4ecc` (constellation `naturalW` 1028 against `canvasW` 1180) describes the 503-line
 composition being replaced. This is the same error shape as v2·0's `20 blocks → stride >= 2`,
@@ -481,6 +572,41 @@ Before quoting any gate result, confirm the terminal summary is present and no s
 where it should be. This is the third distinct mechanism by which this harness has produced output
 that LOOKED like a result — after v2·0's false green (a mutation that never applied) and the
 stride vacuity (a precondition that could not fire) — and it belongs beside them.
+
+### AND: WHEN THE HARNESS AND PRODUCTION RUN DIFFERENT CODE PATHS, NAME THE ENVIRONMENT
+
+Two instances found in one week, by different mechanisms, and neither surfaces itself:
+
+**1 · A gate viewport that makes a branch unreachable.** `HEIGHT_FIT_TOLERANCE` scales every
+fit-enabled view, and fires at neither of `verify-fit`'s two viewports — while firing for three of
+four views at ordinary laptop heights in production. See §8.
+
+**2 · A gate URL whose behaviour depends on which server answers.** `verify-perf` navigates to
+`/mempool?v=constellation` — a **legacy** path since the v6.1.6 rename.
+
+- **Under `scripts/serve-dist.mjs`:** it does not implement `vercel.json`'s 301s, so the request
+  falls through to the SPA shell, the client mirror `RedirectTo` runs, and it preserves the query
+  (`RedirectTo.tsx:42-58`; `verify-ia.mjs:220` gates that every redirect uses `RedirectTo` rather
+  than a bare `<Navigate to="literal">`). **Subject is constellation. The measurement is real.**
+- **In production:** Vercel's 301 fires *first*, the SPA never sees the original URL, and whether
+  the query survives is a **declared unknown** — `verify-redirects.mjs:174-175` records it as an
+  explicit `R.fixture`: *"query-string forwarding through a 301 — undocumented for vercel.json
+  redirects… the client mirror cannot compensate because the 301 fires before the SPA loads."*
+
+**The assertion measures constellation locally precisely BECAUSE the local server lacks the
+redirect the URL depends on.** It is right for a reason production does not share.
+
+**The useful answer to "does the query survive?" was not "yes" — it was "yes, under this server,
+for a reason that is a declared unknown under Vercel."** A gate whose subject depends on which
+server answers is a subject you cannot state without naming the environment.
+
+**One-line hardening for whoever owns that gate** (not a view PR — `verify-perf` is in no npm
+script and is already red with three failures):
+
+```
+/mempool?v=constellation        ← legacy; behaviour differs between harness and production
+/live/mempool?v=constellation   ← canonical; identical in both
+```
 
 > Corollary, learned the same afternoon: **a checker's predicate is itself a claim with a
 > subject.** A path-existence audit reported nine false positives because exact string matching
