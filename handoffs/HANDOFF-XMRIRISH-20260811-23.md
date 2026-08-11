@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260811-23
 branch: claude/prompt-in-file-j9auvc
-status: in_progress       # open -> in_progress -> done | blocked
+status: done              # open -> in_progress -> done | blocked
 written_by: claude-code    # manual mode — task arrived as a prompt (v2·3 Terminal v2)
 owner: claude-code
 ---
@@ -82,23 +82,23 @@ this handoff · `handoffs/LOG.md`.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run build` exits 0 (includes `tsc --noEmit`)
-- [ ] `npm run verify:static` — all 21 gates green
-- [ ] `verify-memviews` completes (summary line present) and is green
-- [ ] `verify-memdetail` completes and is green
-- [ ] `verify-reduce` completes and is green
-- [ ] `verify-nav` completes and is green
-- [ ] `verify-mobile` completes and is green (Terminal still pans at 390)
-- [ ] `verify-pageshell` completes and is green — **including** the Terminal nested-rail
+- [x] `npm run build` exits 0 (includes `tsc --noEmit`)
+- [x] `npm run verify:static` — all 21 gates green
+- [x] `verify-memviews` completes (summary line present) and is green
+- [x] `verify-memdetail` completes and is green
+- [x] `verify-reduce` completes and is green
+- [x] `verify-nav` completes and is green
+- [x] `verify-mobile` completes and is green (Terminal still pans at 390)
+- [x] `verify-pageshell` completes and is green — **including** the Terminal nested-rail
       assertion that is red on `260c99f`
-- [ ] `verify-chartkit` green with no new `clientX - rect.left` hit outside `chart-kit.tsx`
-- [ ] `verify-bundle` green, or the `totalJsRaw` arithmetic explicitly argued with in §7
-- [ ] `terminal.tsx` line count inside `verify-memshell`'s `200..1084` band
-- [ ] Information-density countable measured by ONE instrument on BOTH endpoints, before and
+- [x] `verify-chartkit` green with no new `clientX - rect.left` hit outside `chart-kit.tsx`
+- [x] `verify-bundle` green, or the `totalJsRaw` arithmetic explicitly argued with in §7
+- [x] `terminal.tsx` line count inside `verify-memshell`'s `200..1084` band
+- [x] Information-density countable measured by ONE instrument on BOTH endpoints, before and
       after stated, and asserted with a floor so a regression reds
-- [ ] Five break tests run, each asserting its mutation APPLIED and reporting its effect size,
+- [x] Five break tests run, each asserting its mutation APPLIED and reporting its effect size,
       each restored by an owner that survives the mutator's death, tree verified clean after
-- [ ] Branch pushed · PR opened **ready for review, not draft** · `mergeable` /
+- [x] Branch pushed · PR opened **ready for review, not draft** · `mergeable` /
       `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
@@ -119,12 +119,135 @@ node verify-bundle.mjs
 
 ## 7 · REPORT — filled on exit, completely
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
+status: **done**
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/170
+head measured: `43ecc8b` (every figure below taken on this SHA unless it says `260c99f`)
+commits: 6 — contract Rev 4 (§6) · styles rail dedupe · scenario 9 · handoff ·
+  contract Rev 4 (§2 + §10 + gate message) · the view rebuild · bundle re-derivation
+
+deps added: none
+
+**GATES — before on `260c99f`, after on `43ecc8b`. Counting method stated per gate
+because §4's single method does not hold across all three output formats.**
+
+| gate | before | after | note |
+|---|---|---|---|
+| `verify:static` (21) | exit 0 | exit 0 | |
+| `verify-memviews` | 172 ✅ / 1 ❌ (173 asserts) | **179 ✅ / 0** | +6 = scenario 9, one per view |
+| `verify-memdetail` | 39 / 0 | 39 / 0 | |
+| `verify-reduce` | 31 / 0 | 31 / 0 | reporter |
+| `verify-nav` | 128 / 0 | 128 / 0 | reporter |
+| `verify-mobile` | 2 / 0 | 2 / 0 | no summary line at all |
+| `verify-pageshell` | **367 ✅ / 1 ❌** | **368 / 0** | was red on main |
+| `verify-bundle` | 25 / 0 @ 948,435 | 25 / 0 @ 964,046 | ceiling re-derived |
+| `verify-chartkit` | 52/52 | 52/52 | |
+| `verify-memshell` | all owned passed | all owned passed | 973 lines, band 200–1084 |
+
+**DENSITY — the pair, per contract §10.**
+
+```
+N  readouts under [data-mem-body]   97 -> 351   3.62x   (brief: 3-5x)
+M1 distinct data.<field>            20 ->  23   +adjustedTime, hashSeries, protocol
+M2 distinct feed leaf fields        29 ->  40   +11
+```
+
+M2 is the anti-padding guard and it is what makes the N claim honest: the view now
+renders EVERY field of `Block` (9/9 — gained age, difficulty, pool, reward) and every
+meaningful field of `Tx` (8/8 — gained age, inputs, outputs, ringSize). A tripled N
+against a flat M would have been repetition; it is not.
+
+**BUNDLE — both endpoints BUILT, neither cited.** `260c99f` built in an isolated
+worktree with its own `dist/`; `43ecc8b` built in the main tree.
+
+```
+build(260c99f)  totalJsRaw 948,435       terminal chunk 20,361
+build(43ecc8b)  totalJsRaw 964,046       terminal chunk 35,969
+delta                     +15,611                      +15,608
+index (eager)                     +3       everything else 0
+/live/mempool first load  104,183 gz <= 107,000  (97%)  PASSES
+```
+
+**PREDICTION ON RECORD BEFORE THE BUILD: +5,000..+9,000 B. ACTUAL +15,611. I was
+wrong by 1.7-3.1x**, and the error was assuming terminal would cost what the two
+prior v2 rebuilds cost. It is the only one that added charts on top of text.
+
+Ceiling 960,000 -> 981,000, argued against the arithmetic in the gate's own comment
+rather than the round number. The gate WORKED — it was sized to speak a third of the
+way through a nine-view roadmap and it fired on view three, naming one view. What was
+wrong is the per-view premise: 9 x 5,836 came from one observation; three are now
+measured (5,836 / 4,164 / 15,611, mean 8,537). 981,000 = 964,046 + 2 x 8,537. The
+minimum that clears (966,000) leaves 1,954 B — the exact condition the comment records
+as the previous ceiling's failure. It does not make the roadmap fit: 7 x 8,537 projects
+to ~1,023,805, still 42,805 B over.
+
+**§8 FIT-SCALE APPARATUS IS INAPPLICABLE — a stated non-measurement, not a silent one.**
+`FitView.tsx:11`: *"Classic/Terminal are rendered directly by MempoolPage without this
+wrapper."* Terminal is registered `fit: false` (`src/views/index.tsx`), so there is no
+`.mp-fit` transform, no `naturalW <= canvasW` budget, no `HEIGHT_FIT_TOLERANCE` band,
+and authored 11px renders at 11px at every viewport. The width rule still applies in its
+pan-mode form and was measured: **naturalW 1491 -> 1180 against canvasW 1180 at 1440**.
+The pre-rebuild view already exceeded the canvas and panned on desktop; a 780px cap on
+the main column removed it. (1180 is the `min-width: 100%` floor, so it reads as "content
+now fits", not "content is exactly 1180 wide".)
+
+**EXPECT_SVG_TEXT: [1440, 2560] -> [390, 768, 1440, 2560].** A tightening — those two
+widths move from "must be exactly 0" to "must be > 0". Rail-only placement would have
+kept the entry unchanged and hidden every new chart below 1200px; DOM charts would also
+have kept it but are foreclosed by contract §2, whose chart-kit primitives are SVG-native.
+
+**BREAK TESTS — five, each proving its mutation applied, reporting effect size, restored
+by a trap plus an independent watchdog, tree verified clean after.**
+
+| test | gate | green -> under mutation | effect size |
+|---|---|---|---|
+| cursor math re-derived | `verify-chartkit` | 52/0 -> 51/1 | failure names `terminal.tsx` |
+| density (blocks table -> 0 rows) | `verify-memviews` | 179/0 -> 177/1 | N **351 -> 263**, floor 300 |
+| rail over-reach restored | `verify-pageshell` | 368/0 -> 367/1 | rail hidden at 1024 |
+| 900px pin removed | `verify-mobile` | 2/0 -> 1/1 | "canvas does NOT pan" |
+| reduce gate removed | `verify-reduce` | 31/0 -> 29/2 | css 1, smil 0 |
+
+deviations from spec: **§5's pan break test as written is structurally impossible.**
+It says "narrow the composition until scrollW < 850". `styles.css:2438` pins non-fit
+views to `width: 900px; min-width: 900px !important` at <=768, so Terminal's scrollW is
+900 by CSS fiat and no composition change can move it. The test targets the pin instead,
+which is the actual controlling mechanism. Same shape as v2·0's labels test.
+
+notes for ARCHITECTURE.md patch: gate count unchanged at 71 — scenario 9 is a section
+inside `verify-memviews`, not a new file. `verify:static` stays 21.
+
 open questions:
+- Three gates were red on the untouched tree: `verify-perf` (3 failures), `verify-pageshell`
+  (fixed here), `verify-memviews` (scenario 7 sediment, intermittent — passed on re-run).
+  Two of the three are in no npm script and no CI.
+- `MarketsThesisTab.tsx:198` ships a fixed 1000-unit viewBox on a live route with authored
+  SVG text at 8.5-10px. No gate sees it, for two independent reasons. Recorded in §2.
+- `useChartMetrics`' `k`/`u`/`minWidth` inflation is still inert app-wide.
+- No human has seen the rendered result.
 
 ## 8 · LOOP FEEDBACK
+
+- **PREFLIGHT paid for itself.** `ui-builder`'s reply corrected the brief three times
+  before a line was written: `majorVersion` was already rendered (my brief listed it as
+  missing), the main column needed an explicit `maxWidth` rather than trusting
+  shrink-to-fit, and median tx age is not in `useMemStats`. `INFERRED` was the payload,
+  exactly as the architecture predicts.
+- **I gave the worker a wrong fact and had to correct it mid-flight**: I said Terminal's
+  nested rail is hidden 769-1199 by `:2149`'s block. It is not — that rule is child-scoped
+  and has never matched it. Corrected before it could reach a comment. The worker had
+  already left the rail untouched, so no damage.
+- **A spec-author review would have caught the stride clause; there was no second hop to
+  run one.** The builder reused `i % xStep === 0 || i === n - 1`, the exact clause #167
+  removed and contract §3 documents. Flat mode means the lead is the only reviewer, and it
+  was caught by reading the diff rather than by a process step.
+- **My own break-test harness reported success having run NOTHING.** `breaktest.sh` was
+  created with Write and never `chmod +x`, so every invocation failed "Permission denied";
+  the runner had no `set -e` and printed its completion marker unconditionally. Caught only
+  because the log directory was empty. Then debugging it by piping through `head` SIGPIPE'd
+  past the EXIT trap and stranded a mutation in the working tree — the exact hazard the
+  harness exists to prevent, committed by the harness's own author while fixing it. Both
+  fixed: exec bit set, per-test exit codes classified (a harness failure is now visibly
+  distinct from a red gate), never pipe a mutating run through `head`.
+- **A gate's completion line is gate-specific.** Three formats: reporter gates indent
+  their marks (so `grep -c '^\(✅\|❌\) '` returns 1 for 128 assertions), `verify-memviews`
+  matches the documented `raw = assertions + 1`, and `verify-pageshell`/`memdetail`/`mobile`
+  have unmarked summaries. `verify-mobile` has no summary line at all.
