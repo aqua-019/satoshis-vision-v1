@@ -5,15 +5,18 @@ import { byTier, getDeviceTier } from "@/design/deviceTier";
 import { usePageActive } from "@/design/usePageActive";
 import { PanelFrame, NodeProvenance } from "@/design/primitives";
 import { fmtBytes, fmtN, shortHash } from "@/data/types";
-import { FEE_TIER_LABELS } from "@/data/map";
+import { FEE_TIER_LABELS, feeTierIndex } from "@/data/map";
 import { useFeedEvents } from "@/data/useFeedEvents";
 import type { FeedEvent } from "@/data/useFeedEvents";
-import { useMempoolTracking, MemViewShell, MemTxTable} from "@/mempool/mempool-shared";
+import { useMempoolTracking, MemViewShell, MemTxTable } from "@/mempool/mempool-shared";
 import { confOf, CONF_UNLOCK } from "@/mempool/conf";
 import { useMemStats, BlockEta, fmtMMSS } from "@/mempool/mem-stats";
+import type { MemStats } from "@/mempool/mem-stats";
 import { useReducedMotion } from "@/design/useReducedMotion";
-import type { MoneroLive, Block } from "@/data/types";
+import type { MoneroLive, Block, Tx } from "@/data/types";
 import { hasData, oldestFreshAt } from "@/data/feed-status";
+import { AXIS, GRID, ChartCrosshair, ChartTip, useSvgCursor, useGradientId, VB_W } from "@/design/chart-kit";
+import { useChartMetrics, labelStep, tickCount } from "@/design/useChartMetrics";
 
 interface ViewProps {
   data: MoneroLive;
@@ -30,13 +33,44 @@ const TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"]
 const dbGB = (data: MoneroLive) =>
   hasData(data.status.network) && data.databaseSize ? (data.databaseSize / 1e9).toFixed(1) + " GB" : "—";
 
-// terminal.jsx — TERMINAL HUB · hi-fi CLI
+// terminal.tsx — TERMINAL HUB · hi-fi CLI · v2 density rebuild
 //
 // The "I run my own node" power-user surface. A self-typing command palette
-// fed by live RPC data, an auto-tailing log derived from real feed diffs,
-// a reactive ASCII block stream, a live ASCII fee histogram, compact radial
-// gauges and a node/fee/chain rail. Scanlines on. Every number rendered here
-// comes from the daemon feed; unknowns render "—" until hasData(data.status.network).
+// fed by live RPC data, an auto-tailing log derived from real feed diffs, a
+// reactive ASCII block stream, a live ASCII fee histogram, compact radial
+// gauges, and a node/fee/chain rail — all kept from the pre-rebuild file.
+//
+// This rebuild ADDS three chart-kit charts (block-interval bars against
+// target, a fee/B "supply curve" against the block-weight limit, a hashrate
+// area series) plus dense text panels (recent blocks, fee/age percentiles,
+// tx composition, a per-tier pool breakdown, top payers) to carry the
+// verify-memviews.mjs scenario-9 density floor from a measured 97 readouts
+// to >= 300. Every added figure is real, derived from `data` — nothing here
+// is decorative padding.
+//
+// Charts use `useChartMetrics` in FLUID mode (no `vbWidth`): the viewBox
+// width tracks the measured CSS width, so `fontSize={fs.tick}` renders at
+// its true pixel size rather than being silently shrunk by a transform (see
+// claude/V2-VIEW-CONFORMANCE.md §8). Terminal carries no `.mp-fit` wrapper at
+// all (FitView.tsx: "Classic/Terminal are rendered directly by MempoolPage
+// without this wrapper"), so the main column below is capped at 780px
+// (`maxWidth`) instead — the same §8 caption hazard in its pan-mode form:
+// an uncapped node here would silently widen `.mp-view`'s max-content box
+// past the ~1180px canvas budget at 1440 and force an UNWANTED desktop pan
+// (measured budget: 1180 − 320 rail − 12 gap − 40 padding = 808; 780 leaves
+// ~28px slack). The forced-900px mobile rule (styles.css `.mp-canvas-scroll
+// > *:not(.mp-view--fit)`) is what makes the REQUIRED 390px pan happen
+// regardless of this cap — the two constraints are independent and both
+// satisfied.
+//
+// Every chart mounts the SAME `<div ref={…}>` wrapper on every branch
+// (loading / empty / low-pool / populated) and only swaps what's INSIDE it —
+// `useChartMetrics` measures via a `useLayoutEffect` keyed on the ref
+// OBJECT, which only fires once, so a component that ever returns a
+// different root loses its ResizeObserver forever (this shipped as a real
+// bug in v6.0.12; see CLAUDE.md). No chart, axis, tip or series is gated on
+// `!reduced` — reduced motion removes loops, never data, and none of these
+// three charts loop.
 //
 // All helpers prefixed `Term` to avoid shared-scope collisions.
 
@@ -272,6 +306,448 @@ export function TermGauge({ value, label, color = "var(--tk-accent)", size = 84 
   );
 }
 
+/* ═══════════════════ v2 density additions ═══════════════════ */
+
+/* ── pure derivations — no fabrication, everything from `data` ── */
+
+const sortedNums = (a: number[]): number[] => [...a].sort((x, y) => x - y);
+
+function percentileOf(sorted: number[], p: number): number | null {
+  if (!sorted.length) return null;
+  const i = Math.min(sorted.length - 1, Math.max(0, Math.ceil(sorted.length * p) - 1));
+  return sorted[i];
+}
+
+function medianOf(arr: number[]): number | null {
+  if (!arr.length) return null;
+  const s = sortedNums(arr);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function fieldStats(arr: number[]): { n: number; mean: number; min: number; max: number } | null {
+  return arr.length ? { n: arr.length, mean: arr.reduce((a, b) => a + b, 0) / arr.length, min: Math.min(...arr), max: Math.max(...arr) } : null;
+}
+
+interface TermInterval { height: number; interval: number; txs: number; sizeKB: number }
+
+/** The interval that produced `blocks[i]` is `blocks[i+1].age − blocks[i].age`
+ *  (blocks is NEWEST-FIRST, age grows with distance from the tip, so this is
+ *  always >= 0). Returned oldest → newest, matching how the chart draws. */
+function blockIntervals(blocks: Block[], cap = 13): TermInterval[] {
+  const w = blocks.slice(0, cap);
+  const out: TermInterval[] = [];
+  for (let i = 0; i < w.length - 1; i++) {
+    out.push({ height: w[i].height, interval: w[i + 1].age - w[i].age, txs: w[i].txs, sizeKB: w[i].sizeKB });
+  }
+  return out.reverse();
+}
+
+interface TermFeePoint { perB: number; cum: number; n: number }
+
+/** Highest fee/B first, cumulative bytes as we go — the marginal fee to clear
+ *  the next block is where `cum` crosses the block-weight limit. */
+function feeCurvePoints(mempool: Tx[]): TermFeePoint[] {
+  const sorted = [...mempool].sort((a, b) => b.perB - a.perB);
+  let cum = 0;
+  return sorted.map((t, i) => { cum += t.size; return { perB: t.perB, cum, n: i + 1 }; });
+}
+
+/** Linear interpolation between the two points flanking the limit — an honest
+ *  reading of where a REAL sample crosses a real threshold, not a synthesis. */
+function feeCrossing(points: TermFeePoint[], limit: number): { perB: number; n: number } | null {
+  if (!limit || !points.length || points[points.length - 1].cum < limit) return null;
+  for (let i = 0; i < points.length; i++) {
+    if (points[i].cum >= limit) {
+      const prev = points[i - 1];
+      if (!prev) return { perB: points[i].perB, n: points[i].n };
+      const frac = (limit - prev.cum) / (points[i].cum - prev.cum);
+      return { perB: prev.perB + (points[i].perB - prev.perB) * frac, n: points[i].n };
+    }
+  }
+  return null;
+}
+
+/** Shared chart plumbing: a wrapper ref measured by `useChartMetrics` (fluid —
+ *  no `vbWidth`, so `k===1` and one user unit is one CSS px) plus the
+ *  `useSvgCursor` hover primitive at that same measured width. ONE hook, not
+ *  three copies — bundle headroom on this repo is 11.5KB. */
+function useTermChartBase() {
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const m = useChartMetrics(wrapRef);
+  const vw = m.w || VB_W;
+  const [svgRef, vx, handlers] = useSvgCursor(vw);
+  return { wrapRef, m, vw, svgRef, vx, handlers };
+}
+
+/** Generic dense text table — every new density panel below is one of these.
+ *  Reused rather than five bespoke renderers, for the same bundle-budget
+ *  reason `useTermChartBase` is one hook: `head`/`rows`/`cols` is the whole
+ *  contract. */
+function TermTable({ head, rows, cols }: { head: string[]; rows: React.ReactNode[][]; cols: string }) {
+  return (
+    <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)" }}>
+      <div style={{ display: "grid", gridTemplateColumns: cols, gap: "var(--sp-2)", paddingBottom: "var(--sp-1)", borderBottom: "1px solid var(--rule)", color: "var(--ink-40)", fontSize: "var(--fs-label)", letterSpacing: "0.08em", textTransform: "uppercase" }}>
+        {head.map((h, i) => <span key={i}>{h}</span>)}
+      </div>
+      {rows.length ? rows.map((r, i) => (
+        <div key={i} style={{ display: "grid", gridTemplateColumns: cols, gap: "var(--sp-2)", padding: "2px 0", borderBottom: i < rows.length - 1 ? "1px solid var(--line-d)" : "none" }}>
+          {r.map((c, j) => <span key={j} className={j === 0 ? "dim2" : "dim"}>{c}</span>)}
+        </div>
+      )) : (
+        <div className="dim2" style={{ padding: "var(--sp-2) 0" }}>—</div>
+      )}
+    </div>
+  );
+}
+
+/* ── $ blocktime --series — inter-block intervals against the target ──── */
+function TermBlockTimeChart({ data }: { data: MoneroLive }) {
+  const { wrapRef, m, vw, svgRef, vx, handlers } = useTermChartBase();
+  const target = data.blockTarget || 120;
+  const ivs = React.useMemo(() => blockIntervals(data.blocks), [data.blocks]);
+  const n = ivs.length;
+  const H = 178, padL = 40, padR = 10, padT = 14, padB = 24;
+  const innerW = Math.max(1, vw - padL - padR), innerH = H - padT - padB;
+  const maxV = Math.max(target, ...ivs.map((i) => i.interval), 1) * 1.12;
+  const slot = n ? innerW / n : innerW;
+  const bw = slot * 0.68;
+  const xOf = (i: number) => padL + i * slot + slot * 0.16;
+  const yOf = (v: number) => padT + innerH - (v / maxV) * innerH;
+  const idx = n && vx != null ? Math.max(0, Math.min(n - 1, Math.floor((vx - padL) / slot))) : null;
+  const hov = idx != null ? ivs[idx] : null;
+  const yN = tickCount(innerH, m.fs.tick);
+  const yTicks = Array.from({ length: yN }, (_, i) => (maxV * i) / Math.max(1, yN - 1));
+  const xStep = n ? labelStep(n, innerW, m.fs.tick, 4) : 1;
+  const stats = React.useMemo(() => {
+    if (!n) return null;
+    const vals = sortedNums(ivs.map((i) => i.interval));
+    const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+    const median = medianOf(vals)!;
+    const max = vals[vals.length - 1];
+    const over = ivs.filter((i) => i.interval > target).length;
+    return { mean, median, max, over };
+  }, [ivs, target, n]);
+
+  return (
+    <PanelFrame title="$ blocktime --series" right={<NodeProvenance source="node" keys={["blocks"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["blocks"])}>
+      <div ref={wrapRef} style={{ position: "relative" }}>
+        {m.ready && n > 0 ? (
+          <svg ref={svgRef} width="100%" viewBox={`0 0 ${vw} ${H}`} style={{ display: "block", touchAction: "pan-y" }} {...handlers}>
+            {yTicks.map((v, i) => (
+              <g key={"y" + i}>
+                <line x1={padL} x2={padL + innerW} y1={yOf(v)} y2={yOf(v)} stroke={GRID} strokeDasharray="2 3" />
+                <text x={padL - 4} y={yOf(v) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize={m.fs.tick} fill={AXIS}>{fmtMMSS(v)}</text>
+              </g>
+            ))}
+            <line x1={padL} x2={padL + innerW} y1={yOf(target)} y2={yOf(target)} stroke="var(--p-50)" strokeDasharray="4 3" strokeWidth={1} />
+            <text x={padL + innerW} y={Math.max(padT + 8, yOf(target) - 4)} textAnchor="end" fontFamily="var(--f-mono)" fontSize={m.fs.label} fill="var(--p-50)">target {fmtMMSS(target)}</text>
+            {/* STRIDE ONLY — no `|| i === n - 1`. Forcing the final label
+                unconditionally is the defect #167 removed from charts.tsx and
+                contract §3 records: the strided sequence leaves room for itself
+                by construction (labelStep derives the stride from the same
+                estTextW), but a forced final label collides with the last
+                strided one whenever (n-1) is not a multiple of the stride.
+                charts.tsx:1049-1066 keeps the final label behind a clearance
+                check; the two simpler series (:334, :781) just drop it, which
+                is what these charts do — the newest interval is already the
+                rightmost bar and readable from the tip. */}
+            {ivs.map((iv, i) => (i % xStep === 0) ? (
+              <text key={"xl" + i} x={xOf(i) + bw / 2} y={H - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={m.fs.tick} fill={AXIS}>{String(iv.height).slice(-4)}</text>
+            ) : null)}
+            {ivs.map((iv, i) => (
+              <rect key={i} x={xOf(i)} y={yOf(iv.interval)} width={bw} height={Math.max(0, padT + innerH - yOf(iv.interval))} fill={iv.interval > target ? "var(--y-50)" : "var(--tk-accent)"} opacity={idx === i ? 1 : 0.82} />
+            ))}
+            {hov ? <ChartCrosshair x={xOf(idx!) + bw / 2} y1={padT} y2={padT + innerH} /> : null}
+            {hov ? (
+              <ChartTip x={xOf(idx!) + bw / 2} bounds={{ left: padL, right: padL + innerW }} rows={[
+                { label: "height", value: hov.height.toLocaleString() },
+                { label: "interval", value: fmtMMSS(hov.interval) },
+                { label: "txs", value: String(hov.txs) },
+                { label: "size", value: hov.sizeKB.toFixed(0) + "K" },
+              ]} />
+            ) : null}
+          </svg>
+        ) : (
+          <div className="dim2 mono" style={{ padding: "var(--sp-5)", textAlign: "center", fontSize: "var(--fs-mono)" }}>{m.ready ? "insufficient block history" : ""}</div>
+        )}
+      </div>
+      {stats ? (
+        <div className="mono" style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "var(--sp-2)", marginTop: "var(--sp-2)", fontSize: "var(--fs-mono)" }}>
+          <span className="dim">mean <span className="acc">{fmtMMSS(stats.mean)}</span></span>
+          <span className="dim">median <span className="acc">{fmtMMSS(stats.median)}</span></span>
+          <span className="dim">max <span className="acc">{fmtMMSS(stats.max)}</span></span>
+          <span className="dim">over target <span className="acc">{stats.over}/{n}</span></span>
+        </div>
+      ) : null}
+      {n ? (
+        <div style={{ marginTop: "var(--sp-3)" }}>
+          <TermTable head={["H", "INTERVAL", "Δ TARGET"]} cols="72px 76px 96px" rows={ivs.map((iv) => [
+            iv.height.toLocaleString(),
+            fmtMMSS(iv.interval),
+            (iv.interval - target >= 0 ? "+" : "−") + fmtMMSS(Math.abs(iv.interval - target)),
+          ])} />
+        </div>
+      ) : null}
+    </PanelFrame>
+  );
+}
+
+/* ── $ pool --fee-curve — the marginal fee to clear the next block ─────── */
+function TermFeeCurveChart({ data }: { data: MoneroLive }) {
+  const { wrapRef, m, vw, svgRef, vx, handlers } = useTermChartBase();
+  const points = React.useMemo(() => feeCurvePoints(data.mempool), [data.mempool]);
+  const limit = data.blockWeightLimit || 0;
+  const totalBytes = points.length ? points[points.length - 1].cum : 0;
+  const maxFee = points.length ? points[0].perB : 1;
+  const H = 224, padL = 54, padR = 14, padT = 16, padB = 26;
+  const innerW = Math.max(1, vw - padL - padR), innerH = H - padT - padB;
+  const yMax = Math.max(totalBytes, limit, 1) * 1.06;
+  const xOf = (perB: number) => padL + innerW * (1 - (maxFee > 0 ? perB / maxFee : 0));
+  const yOf = (cum: number) => padT + innerH - (cum / yMax) * innerH;
+  const crossing = feeCrossing(points, limit);
+  const gradId = useGradientId("term-fee");
+
+  let hover: TermFeePoint | null = null;
+  if (vx != null && points.length) {
+    let bestD = Infinity;
+    for (const p of points) { const d = Math.abs(xOf(p.perB) - vx); if (d < bestD) { bestD = d; hover = p; } }
+  }
+
+  const path = points.length ? "M " + points.map((p) => `${xOf(p.perB)},${yOf(p.cum)}`).join(" L ") : "";
+  const area = path ? `${path} L ${xOf(0)},${padT + innerH} L ${xOf(maxFee)},${padT + innerH} Z` : "";
+  const yN = tickCount(innerH, m.fs.tick);
+  const yTicks = Array.from({ length: yN }, (_, i) => (yMax * i) / Math.max(1, yN - 1));
+  const xN = Math.min(5, tickCount(innerW, m.fs.tick * 2.2));
+  const xTicks = Array.from({ length: xN }, (_, i) => maxFee - (maxFee * i) / Math.max(1, xN - 1));
+  const crossLabelX = crossing ? Math.max(padL + 46, Math.min(padL + innerW - 10, xOf(crossing.perB))) : 0;
+
+  return (
+    <PanelFrame title="$ pool --fee-curve" right={<NodeProvenance source="node" also="session" keys={["mempool", "network"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["mempool", "network"])}>
+      <div ref={wrapRef} style={{ position: "relative" }}>
+        {m.ready ? (
+          points.length ? (
+            <svg ref={svgRef} width="100%" viewBox={`0 0 ${vw} ${H}`} style={{ display: "block", touchAction: "pan-y" }} {...handlers}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--tk-accent)" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="var(--tk-accent)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {yTicks.map((v, i) => (
+                <g key={"y" + i}>
+                  <line x1={padL} x2={padL + innerW} y1={yOf(v)} y2={yOf(v)} stroke={GRID} strokeDasharray="2 3" />
+                  <text x={padL - 4} y={yOf(v) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize={m.fs.tick} fill={AXIS}>{fmtBytes(v)}</text>
+                </g>
+              ))}
+              {xTicks.map((v, i) => (
+                <text key={"x" + i} x={xOf(v)} y={H - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={m.fs.tick} fill={AXIS}>{Math.round(v)}</text>
+              ))}
+              {limit ? <line x1={padL} x2={padL + innerW} y1={yOf(limit)} y2={yOf(limit)} stroke="var(--p-50)" strokeDasharray="4 3" /> : null}
+              {limit ? <text x={padL + 2} y={Math.max(padT + 10, yOf(limit) - 4)} fontFamily="var(--f-mono)" fontSize={m.fs.label} fill="var(--p-50)">block limit {fmtBytes(limit)}</text> : null}
+              <path d={area} fill={`url(#${gradId})`} />
+              <path d={path} fill="none" stroke="var(--tk-accent)" strokeWidth="1.4" />
+              {crossing ? (
+                <>
+                  <line x1={xOf(crossing.perB)} x2={xOf(crossing.perB)} y1={padT} y2={padT + innerH} stroke="var(--y-50)" strokeDasharray="3 3" />
+                  <text x={crossLabelX} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={m.fs.label} fill="var(--y-50)">marginal {Math.round(crossing.perB).toLocaleString()} p/B</text>
+                </>
+              ) : null}
+              {hover ? (
+                <>
+                  <ChartCrosshair x={xOf(hover.perB)} y1={padT} y2={padT + innerH} />
+                  <ChartTip x={xOf(hover.perB)} bounds={{ left: padL, right: padL + innerW }} rows={[
+                    { label: "fee/B", value: Math.round(hover.perB).toLocaleString() },
+                    { label: "cum", value: fmtBytes(hover.cum) },
+                    { label: "n", value: String(hover.n) },
+                  ]} />
+                </>
+              ) : null}
+            </svg>
+          ) : (
+            <div className="dim2 mono" style={{ padding: "var(--sp-5)", textAlign: "center", fontSize: "var(--fs-mono)" }}>mempool empty</div>
+          )
+        ) : null}
+      </div>
+      <div className="mono" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "var(--sp-2)", marginTop: "var(--sp-2)", fontSize: "var(--fs-mono)" }}>
+        <span className="dim">pool <span className="acc">{fmtBytes(totalBytes)}</span></span>
+        <span className="dim">limit <span className="acc">{limit ? fmtBytes(limit) : "—"}</span></span>
+        <span className="dim">{crossing ? <>clears at <span className="acc">{Math.round(crossing.perB).toLocaleString()} p/B</span></> : <span className="acc">pool below one block — any tier clears</span>}</span>
+      </div>
+    </PanelFrame>
+  );
+}
+
+/* ── $ hashrate --series ─────────────────────────────────────────────── */
+function TermHashrateChart({ data }: { data: MoneroLive }) {
+  const { wrapRef, m, vw, svgRef, vx, handlers } = useTermChartBase();
+  const series = data.hashSeries || [];
+  const n = series.length;
+  const H = 152, padL = 54, padR = 12, padT = 12, padB = 22;
+  const innerW = Math.max(1, vw - padL - padR), innerH = H - padT - padB;
+  const min = n ? Math.min(...series) : 0, max = n ? Math.max(...series) : 1;
+  const rng = max - min || 1;
+  const xOf = (i: number) => padL + (n > 1 ? (i / (n - 1)) * innerW : innerW / 2);
+  const yOf = (v: number) => padT + innerH - ((v - min) / rng) * innerH;
+  const gradId = useGradientId("term-hash");
+  const path = n ? "M " + series.map((v, i) => `${xOf(i)},${yOf(v)}`).join(" L ") : "";
+  const area = path ? `${path} L ${xOf(n - 1)},${padT + innerH} L ${xOf(0)},${padT + innerH} Z` : "";
+  const idx = n >= 2 && vx != null ? Math.max(0, Math.min(n - 1, Math.round(((vx - padL) / innerW) * (n - 1)))) : null;
+  const yN = tickCount(innerH, m.fs.tick);
+  const yTicks = Array.from({ length: yN }, (_, i) => min + (rng * i) / Math.max(1, yN - 1));
+  const xN = n ? Math.min(6, tickCount(innerW, m.fs.tick * 1.6)) : 0;
+  const xStepI = xN > 1 ? Math.max(1, Math.round((n - 1) / (xN - 1))) : 1;
+
+  return (
+    <PanelFrame title="$ hashrate --series" right={<NodeProvenance source="node" keys={["network"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["network"])}>
+      <div className="mono" style={{ display: "flex", gap: "var(--sp-4)", marginBottom: "var(--sp-2)", fontSize: "var(--fs-mono)" }}>
+        <span className="dim">rate <span className="acc">{hasData(data.status.network) ? (data.hashrate / 1e9).toFixed(2) + " GH/s" : "—"}</span></span>
+        <span className="dim">diff <span className="acc">{hasData(data.status.network) ? data.difficulty.toLocaleString() : "—"}</span></span>
+      </div>
+      <div ref={wrapRef} style={{ position: "relative" }}>
+        {m.ready ? (
+          n >= 2 ? (
+            <svg ref={svgRef} width="100%" viewBox={`0 0 ${vw} ${H}`} style={{ display: "block", touchAction: "pan-y" }} {...handlers}>
+              <defs>
+                <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="var(--c-50)" stopOpacity="0.4" />
+                  <stop offset="100%" stopColor="var(--c-50)" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {yTicks.map((v, i) => (
+                <g key={i}>
+                  <line x1={padL} x2={padL + innerW} y1={yOf(v)} y2={yOf(v)} stroke={GRID} strokeDasharray="2 3" />
+                  <text x={padL - 4} y={yOf(v) + 3} textAnchor="end" fontFamily="var(--f-mono)" fontSize={m.fs.tick} fill={AXIS}>{(v / 1e9).toFixed(2)}</text>
+                </g>
+              ))}
+              {/* stride only — see the note in TermBlockTimeChart */}
+              {series.map((_, i) => (i % xStepI === 0) ? (
+                <text key={i} x={xOf(i)} y={H - 4} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={m.fs.tick} fill={AXIS}>{i}</text>
+              ) : null)}
+              <path d={area} fill={`url(#${gradId})`} />
+              <path d={path} fill="none" stroke="var(--c-50)" strokeWidth="1.4" />
+              {idx != null ? (
+                <>
+                  <ChartCrosshair x={xOf(idx)} y1={padT} y2={padT + innerH} />
+                  <ChartTip x={xOf(idx)} bounds={{ left: padL, right: padL + innerW }} rows={[
+                    { label: "sample", value: String(idx) },
+                    { label: "GH/s", value: (series[idx] / 1e9).toFixed(2) },
+                  ]} />
+                </>
+              ) : null}
+            </svg>
+          ) : (
+            <div className="dim2 mono" style={{ padding: "var(--sp-5)", textAlign: "center", fontSize: "var(--fs-mono)" }}>awaiting series</div>
+          )
+        ) : null}
+      </div>
+    </PanelFrame>
+  );
+}
+
+/* ── $ pool --by-tier — per fee-tier breakdown + top payers ────────────── */
+function TermPoolByTier({ data }: { data: MoneroLive }) {
+  const ok = hasData(data.status.network) && data.feeTiers.length === 4;
+  const rows = FEE_TIER_LABELS.map((label, i) => {
+    if (!ok) return [label, "—", "—", "—", "—"];
+    const inTier = data.mempool.filter((t) => feeTierIndex(t.perB, data.feeTiers) === i);
+    const bytes = inTier.reduce((a, t) => a + t.size, 0);
+    const pct = data.mempool.length ? (inTier.length / data.mempool.length) * 100 : 0;
+    const med = medianOf(inTier.map((t) => t.perB));
+    return [label, String(inTier.length), fmtBytes(bytes), pct.toFixed(1) + "%", med != null ? Math.round(med).toLocaleString() : "—"];
+  });
+  const top = [...data.mempool].sort((a, b) => b.perB - a.perB).slice(0, 8);
+  return (
+    <PanelFrame title="$ pool --by-tier" right={<NodeProvenance source="node" keys={["mempool", "fees"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["mempool", "fees"])}>
+      <TermTable head={["TIER", "COUNT", "BYTES", "% POOL", "MED P/B"]} cols="66px 56px 62px 56px 82px" rows={rows} />
+      <div className="kicker" style={{ margin: "var(--sp-3) 0 var(--sp-1)" }}>TOP PAYERS</div>
+      <TermTable head={["#", "TXID", "FEE/B", "SIZE"]} cols="22px 1fr 72px 62px" rows={top.map((t, i) => [
+        String(i + 1), shortHash(t.id), Math.round(t.perB).toLocaleString(), fmtBytes(t.size),
+      ])} />
+    </PanelFrame>
+  );
+}
+
+/* ── $ blocks --recent ───────────────────────────────────────────────── */
+function TermBlocksRecent({ data }: { data: MoneroLive }) {
+  const blocks = data.blocks.slice(0, 12);
+  const rows = blocks.map((b) => [
+    b.height.toLocaleString(),
+    b.age < 90 ? b.age + "s" : Math.round(b.age / 60) + "m",
+    String(b.txs),
+    b.sizeKB.toFixed(0) + "K",
+    b.reward.toFixed(3),
+    fmtN(b.difficulty),
+    b.pool,
+  ]);
+  const n = blocks.length || 1;
+  const sum = blocks.reduce((a, b) => ({ reward: a.reward + b.reward, txs: a.txs + b.txs, size: a.size + b.sizeKB, diff: a.diff + b.difficulty }), { reward: 0, txs: 0, size: 0, diff: 0 });
+  return (
+    <PanelFrame title={"$ blocks --recent · " + blocks.length} right={<NodeProvenance source="node" keys={["blocks"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["blocks"])}>
+      {blocks.length ? (
+        <>
+          <TermTable head={["H", "AGE", "TXS", "SIZE", "REWARD", "DIFF", "POOL"]} cols="80px 52px 40px 60px 68px 74px 1fr" rows={rows} />
+          <div className="mono dim" style={{ marginTop: "var(--sp-2)", fontSize: "var(--fs-label)" }}>
+            {blocks.length} blocks · Σreward <span className="acc">{sum.reward.toFixed(3)} XMR</span> · avg txs <span className="acc">{Math.round(sum.txs / n)}</span> · avg size <span className="acc">{(sum.size / n).toFixed(0)}K</span> · avg diff <span className="acc">{fmtN(sum.diff / n)}</span>
+          </div>
+        </>
+      ) : <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>awaiting block history…</div>}
+    </PanelFrame>
+  );
+}
+
+/* ── $ pool --percentiles ────────────────────────────────────────────── */
+function TermPercentiles({ data, stats }: { data: MoneroLive; stats: MemStats }) {
+  const fees = sortedNums(data.mempool.map((t) => t.perB));
+  const ages = sortedNums(data.mempool.map((t) => t.age));
+  const poolReady = hasData(data.status.network) && stats.txCount > 0;
+  const row = (label: string, v: number | null, suffix = "") => (
+    <div key={label} className="kv"><span className="k">{label}</span><span className="v acc">{v != null ? Math.round(v).toLocaleString() + suffix : "—"}</span></div>
+  );
+  return (
+    <PanelFrame title="$ pool --percentiles" right={<NodeProvenance source="node" keys={["mempool", "network"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["mempool", "network"])}>
+      <div className="kicker" style={{ marginBottom: "var(--sp-1)" }}>FEE/B</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 var(--sp-3)" }}>
+        {row("p10", percentileOf(fees, 0.10))}
+        {row("p25", percentileOf(fees, 0.25))}
+        {row("p50", percentileOf(fees, 0.50))}
+        {row("p75", percentileOf(fees, 0.75))}
+        {row("p90", percentileOf(fees, 0.90))}
+        {row("min", fees.length ? fees[0] : null)}
+        {row("max", fees.length ? fees[fees.length - 1] : null)}
+      </div>
+      <div className="kicker" style={{ margin: "var(--sp-2) 0 var(--sp-1)" }}>AGE</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0 var(--sp-3)" }}>
+        {row("p10", percentileOf(ages, 0.10), "s")}
+        {row("p50", percentileOf(ages, 0.50), "s")}
+        {row("p90", percentileOf(ages, 0.90), "s")}
+        {row("median", medianOf(ages), "s")}
+        {row("oldest", poolReady ? stats.oldestAgeSec : null, "s")}
+      </div>
+    </PanelFrame>
+  );
+}
+
+/* ── $ pool --composition ────────────────────────────────────────────── */
+function TermComposition({ data }: { data: MoneroLive }) {
+  const mp = data.mempool;
+  const fields: [string, number[]][] = [
+    ["inputs", mp.map((t) => t.inputs)],
+    ["outputs", mp.map((t) => t.outputs)],
+    ["ring", mp.map((t) => t.ringSize)],
+    ["size", mp.map((t) => t.size)],
+  ];
+  const rows = fields.map(([label, arr]) => {
+    const s = fieldStats(arr);
+    return [label, s ? String(s.n) : "—", s ? s.mean.toFixed(1) : "—", s ? String(s.min) : "—", s ? String(s.max) : "—"];
+  });
+  return (
+    <PanelFrame title="$ pool --composition" right={<NodeProvenance source="node" keys={["mempool"]} status={data.status} />} updatedAt={oldestFreshAt(data.status, ["mempool"])}>
+      <TermTable head={["FIELD", "N", "MEAN", "MIN", "MAX"]} cols="72px 56px 66px 56px 60px" rows={rows} />
+    </PanelFrame>
+  );
+}
+
 export function TerminalHubView({ data }: ViewProps) {
   // Shared tracking — same hook + detail (confOf) as every other view.
   const { tracking, onSearch, clearTracking } = useMempoolTracking(data);
@@ -303,7 +779,12 @@ export function TerminalHubView({ data }: ViewProps) {
     <div className="main" style={{ overflow: "auto", padding: 0 }}>
       <MemViewShell id="terminal" table={<MemTxTable data={data} tracking={tracking} viewId="terminal" columns={["txid", "perB", "tier", "size", "age"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clearTracking} stats={false}>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "var(--sp-3)", padding: "var(--sp-4) 20px 40px" }}>
-        <div>
+        {/* maxWidth is LOAD-BEARING, not cosmetic — see the file header. Terminal
+            carries no .mp-fit wrapper, so this is what keeps .mp-view's
+            shrink-to-fit contribution under the ~1180px canvas budget at 1440
+            (320 rail + 12 gap + 40 padding = 372; 1180 − 372 = 808; 780 leaves
+            ~28px slack) — the §8 caption hazard in its pan-mode form. */}
+        <div style={{ maxWidth: 780, minWidth: 0 }}>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
               <PanelFrame title={<span>$ monerod --status</span>} right={<span className="acc">tail −f</span>} updatedAt={oldestFreshAt(data.status, ["network", "mempool"])}>
@@ -385,6 +866,10 @@ export function TerminalHubView({ data }: ViewProps) {
                   ))}
                 </pre>
               </PanelFrame>
+              {/* v2: +PROTOCOL/BLOCK_TARGET/ADJUSTED — three real fields the pre-rebuild
+                  file never rendered. ADJUSTED is the daemon's network-adjusted clock,
+                  labelled as such (never presented as local time) and gated on
+                  hasData(network) — an unsynced clock is not a reading, it's a guess. */}
               <PanelFrame title="$ env · runtime" updatedAt={oldestFreshAt(data.status, ["network"])}>
                 <pre style={{ margin: 0, fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55, color: "var(--ink-80)" }}>
 {`MONEROD_VERSION=${data.version || "—"}
@@ -394,9 +879,27 @@ DB_SIZE=${dbGB(data)}
 FORK=v${data.majorVersion || "—"}
 TOP_BLOCK=${hasData(data.status.network) ? shortHash(data.topBlockHash) : "—"}
 RING_SIZE=16
-BP_VARIANT=BP+`}
+BP_VARIANT=BP+
+PROTOCOL=${data.protocol || "—"}
+BLOCK_TARGET=${data.blockTarget ? fmtMMSS(data.blockTarget) : "—"}
+ADJUSTED=${hasData(data.status.network) && data.adjustedTime ? new Date(data.adjustedTime * 1000).toISOString().slice(11, 19) + " UTC · network-adjusted" : "—"}`}
                 </pre>
               </PanelFrame>
+            </div>
+
+            <TermBlockTimeChart data={data} />
+            <TermFeeCurveChart data={data} />
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
+              <TermHashrateChart data={data} />
+              <TermPoolByTier data={data} />
+            </div>
+
+            <TermBlocksRecent data={data} />
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "var(--sp-3)" }}>
+              <TermPercentiles data={data} stats={stats} />
+              <TermComposition data={data} />
             </div>
 
             <PanelFrame title="$ help" ticks={false}>

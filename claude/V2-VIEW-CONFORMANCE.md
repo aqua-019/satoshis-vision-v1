@@ -1,12 +1,33 @@
 # v2 MEMPOOL VIEWS — design-framework conformance
 
-**REV 3 — measured against `main` = `fdf4ecc` (v2·1 / PR #168 merged), 2026-08-11.**
-Rev 3 adds §8 and §9, adds addenda to §1 and §2, and **withdraws a false claim in §6**.
+**REV 4 — measured against `main` = `260c99f` (v2·2 / PR #169 merged), 2026-08-11.**
+*Rev 4 landed across TWO commits in PR #170 — `b7317ac` (§6) and `351869a` (§2, §10, and the
+`verify-pageshell` message). One revision, two commits, because §2's falsity was found later while
+checking a correction. If you are bisecting, `351869a` is the complete Rev 4; `b7317ac` is partial.*
+Rev 4 **withdraws false claims in §2 AND §6** and adds §10. Rev 3 was measured against
+`fdf4ecc`; it added §8 and §9, addenda to §1 and §2, and withdrew the first false §6 claim.
 Rev 2 was measured against `6039d64`; Rev 1 against `292227a` and was wrong in §3 and §5.
-If you are holding a copy without this line it is stale — check §6 first, because the
-sentence that changed there was load-bearing and read as reassuring.
+If you are holding a copy without this line it is stale — check §6 first, because **both**
+sentences that have changed there were load-bearing and both read as reassuring.
 
-**What Rev 3 changes, in one place:**
+**What Rev 4 changes, in one place:**
+
+| § | delta |
+|---|---|
+| §2 | **CORRECTION** — `VB_W` is a pre-measurement fallback, not a shared canonical viewBox width |
+| §6 | **CORRECTION** — "390px usable, no horizontal scroll" is FALSE for pan-mode views |
+| §8 | addendum — the fit-scale apparatus does not apply to Classic or Terminal at all |
+| §10 | NEW — information density is a number, and it takes TWO numbers to state honestly |
+
+**Two false claims withdrawn in one revision, and both were in sections telling you to trust
+them.** §2's `VB_W` sentence and §6's no-horizontal-scroll sentence were each read off a
+declaration or a general rule and stated as fact about the tree, while a file a few lines away
+(`charts.tsx:5-7`) or a green gate (`verify-mobile:36-44`) said otherwise. That is now §2, §3,
+§5, and §6 twice. **The contract is the single most error-prone artifact in this series**, because
+nothing runs it — the code has gates and this document has readers. Treat every unsourced
+sentence here as a hypothesis and check it against the tree before building on it.
+
+**What Rev 3 changed:**
 
 | § | delta |
 |---|---|
@@ -65,7 +86,7 @@ removing it is contained to the one file.
 `app/src/design/chart-kit.tsx`, measured:
 
 ```
-VB_W = 1000            the canonical viewBox width — all charts share it
+VB_W = 1000            PRE-MEASUREMENT FALLBACK ONLY — see the Rev 4 correction below
 AXIS = var(--ink-40)   axis stroke
 GRID = var(--line-d)   gridline stroke
 useSvgCursor(viewW)    → [ref, vx, handlers]   pointer tracking in viewBox space
@@ -76,7 +97,60 @@ useGradientId(prefix)                           collision-free gradient ids
 ```
 
 **Higher chart fidelity means these, used properly** — a cursor, a crosshair, a tooltip with real rows,
-gradient fills with unique ids, shared `VB_W` so every chart in a view aligns. Not more hand-drawn paths.
+gradient fills with unique ids. Not more hand-drawn paths.
+
+> **REV 4 CORRECTION — the sentence that used to end that line was false.** It read: *"shared
+> `VB_W` so every chart in a view aligns."* `VB_W` is **not** a canonical shared viewBox width and
+> charts do not share it. It is a **pre-measurement fallback**:
+>
+> ```
+> charts.tsx:5-7    "Every chart MEASURES its container (design/useChartMetrics.ts) and sets its
+>                    viewBox width to that measured CSS width, so ONE USER UNIT IS ONE CSS PIXEL.
+>                    VB_W survives only as the pre-measurement fallback."
+> charts.tsx:265,472,701,1016    const vbW = measured || VB_W;
+> ```
+>
+> **Why it matters, and it is §9 again:** a `viewBox` IS a transform. Under a fixed
+> `viewBox="0 0 1000 H"` rendered into 358 CSS px, an authored `fontSize` of 9.5 paints at
+> **3.4 CSS px** — `charts.tsx:9-12` records exactly that measurement as the reason the fixed
+> viewBox was abandoned. So "use `VB_W` as your viewBox" is not a neutral styling choice; it is
+> the type-floor defect, pre-installed.
+>
+> **The rule for a v2 view: use `useChartMetrics(ref)` in FLUID mode** (no `vbWidth` option),
+> take `w` as the viewBox width, and size text from `fs.tick` / `fs.label`. Then one user unit is
+> one CSS pixel and authored px really is rendered px. `VB_W` is the `||` fallback for the frame
+> before the first measure, nothing more.
+>
+> **Two corrections to how this correction was first reported to me, both worth keeping**, since
+> this section is about claims outrunning their subject:
+>
+> 1. The fallback sentence is at **`charts.tsx:7`**, not `chart-kit.tsx:7`. `chart-kit.tsx:7` is
+>    mid-sentence in a paragraph about the tooltip.
+> 2. *"No shipped chart uses 1000 after measurement"* is **false**. `MarketsThesisTab.tsx:198`
+>    ships `viewBox={\`0 0 ${VB_W} ${H}\`}` on the live `/live/markets/thesis` route, imports no
+>    `useChartMetrics`, and never measures — see the subsection immediately below.
+
+### The one shipped counter-example, recorded not fixed
+
+`src/pages/monero/MarketsThesisTab.tsx` is the chart that was never migrated when `charts.tsx`
+moved to measured viewBoxes. Measured on `260c99f`:
+
+```
+:198   viewBox={`0 0 ${VB_W} ${H}`}   width="100%"   — fixed 1000 units, no measurement
+:157   innerW = VB_W - padL - padR    :178  useSvgCursor(VB_W)
+authored SVG font sizes: 8.5 · 9 · 9.5 · 10        — every one already under the 11px floor
+                                                      in AUTHORED space, before any scaling
+```
+
+So at a ~358px phone render the 9.5 axis label paints at ~3.4px — **the identical number
+`charts.tsx:10` cites as the bug it fixed**, still shipping one route away.
+
+**No gate sees it, for two independent reasons**, which is the part worth carrying:
+`verify-legibility.mjs` excludes SVG presentation attributes *by design*, and
+`verify-memviews` scenario 6's sub-12px SVG check is scoped to `.mem-view`, i.e. mempool views
+only. A defect can sit inside two gates' nominal subject area and outside both of their actual
+predicates. **Not a view PR's job** — recorded here so the next person to touch chart type finds
+it already located.
 
 **REV 3 ADDENDUM — cursor math is SINGULAR, and it is gated repo-wide.**
 
@@ -208,7 +282,40 @@ touches that region.
 - **`id` must be passed to `MemViewShell`** — it becomes `data-mem-view`, which is how gates and deep
   links tell the surfaces apart.
 - **Opaque stage background.** Data never renders over ambient decoration.
-- **390px usable**, no horizontal scroll.
+- **390px usable** — and the second half of this rule, "no horizontal scroll", **holds for
+  REFLOW-LAYER VIEWS ONLY. CORRECTED IN REV 4.** As written it was false for Terminal, and a
+  gate asserts the opposite:
+
+  ```
+  verify-mobile.mjs:36-44
+    goto('/mempool?v=terminal')
+    assert clientW <= 420 && scrollW >= 850 && left > 50   ← Terminal MUST pan
+  ```
+
+  There are two layouts on a phone, not one, and `MempoolViewMeta` names them
+  (`src/views/index.tsx`): a view with `reflow: true` opts into the reflow layer and reflows to
+  the viewport (Classic only — it is the DEFAULT view, so it is what a phone actually lands
+  on); every other view keeps its authored proportions and **pans**. Terminal is the deliberate
+  pan-mode case — `index.tsx` calls it "a desktop-proportion instrument (320px daemon aside,
+  8-column readouts)" — and `verify-pageshell.mjs` asserts BOTH halves of that split at 390 in
+  the same section: Classic does not pan (`scrollW − clientW = 0`), Terminal does
+  (`scrollW 900 >= 850`).
+
+  So the rule is:
+
+  | layer | phone behaviour | members | citation |
+  |---|---|---|---|
+  | reflow (`reflow: true`) | reflows; **no** horizontal scroll | classic | `verify-pageshell` |
+  | pan (default) | keeps proportions; **pans** | terminal, and any future pan-mode view | `verify-mobile:36-44` |
+
+  A pan-mode view still owes the other half of "390px usable" in full: legible type, reachable
+  targets, no content that can only be found by guessing that the surface scrolls.
+
+  > **This was the contract's error, not a view's.** It is the same shape §8 and §9 keep
+  > recording — a claim stated more widely than the subject it was measured on. It was measured
+  > on the reflow layer and written as though it governed every view, and the gate that
+  > contradicts it has been green in the repo the whole time. Anyone adding a pan-mode view
+  > should add it to the table rather than reopening the rule.
 - **Zero `Math.random()`** outside `src/protocols/`. Currently zero in `src/mempool/` — keep it there.
 - **Any inferred element is labelled inferred.** The Dandelion++ stem path is the live example: a node
   cannot observe another transaction's stem, so Relay-style propagation is illustration, and says so.
@@ -231,6 +338,33 @@ glyph opens that block inspector.** Views differ in how they show the population
 object is identical across all eleven. No view reimplements a shallower detail panel.
 
 ## 8 · The type floor is a claim about RENDERED size, and `.mp-fit` sits between you and it
+
+> **REV 4 ADDENDUM — READ THIS BEFORE APPLYING ANY OF §8. It applies to FOUR of the six
+> views, not to all of them.** `FitView` wraps only views registered `fit: true`
+> (`src/views/index.tsx`): reactor, bridge, sediment, constellation. **Classic and Terminal
+> are rendered directly by `MempoolPage` with no wrapper** —
+>
+> ```
+> FitView.tsx:11   "Classic/Terminal are rendered directly by MempoolPage without this wrapper"
+> ```
+>
+> — so for those two there is no `.mp-fit` transform, no `naturalW <= canvasW` budget, no
+> `HEIGHT_FIT_TOLERANCE` band, and no gap between authored and rendered type. **Authored 11px
+> renders at 11px, unconditionally, at every viewport.** Do not carry a width or height budget
+> from a fit-enabled view onto one of these; those budgets are properties of the WRAPPER.
+>
+> The trap runs the other way too, and it is the one worth holding: `.mp-view` is still
+> `width: max-content` on desktop (`styles.css:1212`) for a non-fit view as well. So §8's
+> caption rule — *cap every prose node to the width of the thing it describes* — **still
+> applies in full**. What changes is only the SYMPTOM. Inside the wrapper an unbounded caption
+> silently rescales the view and drops its type below the floor; outside it, the same caption
+> silently widens the artboard and forces the reader to pan for content they cannot see. Both
+> are quiet, neither reds a gate on its own, and the second is easier to miss because nothing
+> about the type looks wrong.
+>
+> A v2 PR on Classic or Terminal should **state that §8 is inapplicable and why**, rather than
+> quietly not measuring it — a silent non-measurement and a measurement of zero are the same
+> line in a report, which is the §9 problem in miniature.
 
 `FitView` wraps every fit-enabled view in `transform: scale(min(1, canvasW / naturalW))`
 (`FitView.tsx`, `.mp-fit` at `styles.css:1235`). **A CSS transform does not fire ResizeObserver**,
@@ -592,6 +726,59 @@ where it should be. This is the third distinct mechanism by which this harness h
 that LOOKED like a result — after v2·0's false green (a mutation that never applied) and the
 stride vacuity (a precondition that could not fire) — and it belongs beside them.
 
+### A FIXTURE THAT OMITS A FIELD SILENTLY UNVERIFIES EVERYTHING DOWNSTREAM OF IT
+
+v2·3 shipped three chart-kit charts. **Two of them are exercised by the suite and the third is
+not**, and nothing anywhere says so — the gate that would report it is green.
+
+```
+verify-memviews' fixture supplies mempool + blocks + network.  It does NOT supply hashSeries.
+grep -l hashSeries verify-*.mjs   ->  verify-tiers.mjs only, and that gate tests polling maths.
+
+TermHashrateChart renders   m.ready ? (n >= 2 ? <svg…> : "awaiting series")
+with n = 0 it takes the empty branch, so its axis, stride, crosshair, tip and
+gradient are NEVER RENDERED by any gate in the repo.
+```
+
+Measured provenance of terminal's SVG `<text>` at 390 — the whole of it comes from two panels:
+
+```
+$ blocktime --series   17      $ pool --fee-curve   11      $ hashrate --series   0
+```
+
+**So `EXPECT_SVG_TEXT.terminal`'s widening is earned by two charts, not three**, and a PR body
+saying "three charts render text at four widths" would be true of the count and false of the
+subject. The empty branch is correct behaviour — `hashSeries` is filled by `pushSeries` on the chain
+tier over time, so it is legitimately empty on a cold load — but "renders an honest empty state" and
+"renders correctly with data" are different claims and only the first has evidence.
+
+**The rule: a fixture's OMISSIONS are part of its contract.** A gate that sweeps every view and every
+width still proves nothing about a branch its data cannot reach, and the absence is invisible
+precisely because everything is green. When a view reads a feed field, check the fixture supplies it
+before claiming the surface is covered.
+
+### A GATE NOBODY RUNS DECAYS, AND FIXING IT DOES NOT CHANGE THAT
+
+Measured on `260c99f` while establishing v2·3's baselines: **three gates were red on the untouched
+tree**, and two of them are in **no npm script and no CI** —
+
+```
+verify-perf        3 failures    orphan
+verify-pageshell   1 failure     orphan      ← fixed in #170
+verify-memviews    1 failure     in CI       ← scenario 7's known sediment intermittent
+```
+
+The orphan set is not merely uncovered, it is **measurably rotting**: nothing runs these, so nothing
+announced that they had gone red. Four orphans have now been found this series (`verify-mobile`,
+`verify-pageshell`, `verify-fit`, `verify-perf`), each by building a baseline table from SUBJECT
+("which gates name this view?") rather than from habit ("which gates do we usually run?").
+
+**The uncomfortable half:** #170 turned `verify-pageshell` from `367/1` to `368/0`, and **that green is
+also unwatched.** A gate outside npm and CI cannot defend the fix that made it pass — the next change to
+`.rail` will break it just as silently as the last one did, and the corrected failure message will be
+read by nobody, because nothing will run it. Fixing an orphan buys a one-time measurement, not a
+standing check. **Wiring them is its own task and it is worth more than any single fix inside them.**
+
 ### AND: WHEN THE HARNESS AND PRODUCTION RUN DIFFERENT CODE PATHS, NAME THE ENVIRONMENT
 
 Two instances found in one week, by different mechanisms, and neither surfaces itself:
@@ -641,7 +828,39 @@ nothing announced it; the next thing to read that file would have measured a sub
 in no commit.
 
 Use a `trap`, a separate reverting process, or a snapshot taken before the mutation — and
-**verify the tree is clean afterwards rather than assuming the cleanup ran.** The trap-based
+**verify the tree is clean afterwards rather than assuming the cleanup ran.**
+
+> **A COMPLETION MARKER MUST BE EMITTED BY THE THING THAT COMPLETED, NOT BY ITS CALLER.**
+> A caller may report *that it invoked* something. Only the callee may report *that it finished.*
+>
+> This generalises the completion rule above, which inspects THE GATE'S OWN OUTPUT and therefore
+> cannot catch the case where the gate produced no output at all and the **caller** wrote a summary
+> on its behalf. Live instance, v2·3: a break-test runner printed `ALL_BREAK_TESTS_DONE` after five
+> invocations that had every one failed with "Permission denied" — the script had been created with
+> an editor tool at mode 0644 and never `chmod +x`. **Zero work reported as complete**, which is the
+> limit case of this family: v2·0's false green and #168's stale `dist/` read were partial or stale
+> work misread as finished; here there was no work and no signal inside the marker at all. It was
+> caught only because the log directory was empty.
+>
+> Concrete form: the marker is written by the callee as its last act, never by the caller after the
+> call returns, so a script that cannot execute cannot claim it did — and the caller checks the
+> callee's **exit status AND the marker's existence**, because either alone is exactly what failed.
+> Same shape as "the gate predicts rather than remembers" and "parse `LIMB_K` out of source rather
+> than restating it": in all three, an assertion is made by something that does not hold the evidence.
+
+> **AND THE RESTORE MUST COVER DERIVED ARTIFACTS, NOT JUST SOURCE — v2·3, found by a 9-byte
+> discrepancy.** A break test that builds leaves `dist/` built from the MUTATED source. Restoring
+> `terminal.tsx` puts the tree back and `git status` reports clean, so every check this document
+> prescribes passes — while the next gate run reads a `dist/` that exists in no commit. Measured:
+> after the last break test the main tree's chunk was `terminal-wKEshAnH.js` at 35,960 B where
+> HEAD builds `terminal-71T4Ifcu.js` at 35,969 B, and `verify-bundle` duly reported 964,037
+> instead of 964,046. **A clean `git status` is not a clean SUBJECT.** The tell was nine bytes in a
+> number I had already measured once; had the mutation been in a file whose size I had not
+> memorised, the stale build would have been indistinguishable from a real reading.
+>
+> So the restore has two halves — revert the source, **then rebuild or delete `dist/`** — and any
+> gate result taken between them is void in exactly the sense §9 already gives for the shared-`dist`
+> race. Both are the same failure: *the artifact under test was not the artifact you named.* The trap-based
 harness in this repo does exactly this; the incident was stepping outside it for one command,
 which is the most common way a good harness gets bypassed. **The rule names the inline case
 explicitly for that reason.**
@@ -656,6 +875,54 @@ explicitly for that reason.**
 
 ---
 
+## 10 · "3–5× more information" is TWO numbers, and neither one alone is the claim
+
+Every v2 brief asks for 3–5× more information. Until v2·3 nothing counted it, so it was an
+adjective: no PR could show it had been delivered and no later PR could show it had been lost.
+Making it a number takes two numbers, because each one alone is defeatable in a different
+direction.
+
+```
+N — READOUTS RENDERED          verify-memviews scenario 9, measured on both endpoints
+    a rendered element carrying a digit, plus each digit-bearing LINE inside a <pre>,
+    scoped to [data-mem-body], non-zero rendered box only, leaves only
+
+M — DISTINCT FEED FIELDS       count of unique `data.<field>` reads, from source, at both SHAs
+```
+
+**Why N alone is not enough.** N is DOM-observable and achievable, and it is gameable in exactly
+one way: render the same twenty fields fifteen times each and N triples with no new information
+whatsoever. N measures how much is on screen, not how much is known.
+
+**Why M alone is not enough.** M cannot be gamed that way — but it also cannot be hit. `MoneroLive`
+has ~33 top-level fields and Terminal already read 20 of them on `260c99f`, so "3× the distinct
+fields" would be 60 and the feed does not contain 60. **A target no data can satisfy is not a
+strict target, it is an unfalsifiable one.**
+
+**So report them as a pair — target and constraint:**
+
+> **N** 97 → *(aim 3–5×, i.e. 291–485)*, by the gate, on both endpoints.
+> **M** 20 → *(whatever it becomes)*, from source, at both SHAs.
+> **A large N with M ≈ unchanged is repetition, not information.**
+
+The pair needs no judgement call at review time: it is either consistent or it is not. A modest
+rise in M against a tripled N is still a real result and should be stated plainly — *more surfaces
+onto the same feed, plus n new fields.* What the pair prevents is 300 readouts of twenty facts
+being reported as 3× the information.
+
+**What N is blind to, named per §9 rather than left to be discovered:** it cannot distinguish a
+live figure from a digit inside a decorative string, so `RING_SIZE=16` and a hard-coded `"16"`
+score identically. N is a DENSITY measure and not an honesty measure; it is only meaningful while
+`verify-prng` and `verify-stale` are green. It is also fixture-relative — the floors move if the
+fixture's `MEMPOOL_N` / `BLOCKS_N` move.
+
+**The scoping decisions are load-bearing and each one changes the number**: `[data-mem-body]`
+rather than `.mem-view`, so the shared shell chrome every view renders identically is not credited
+to any of them; non-zero rendered boxes only, so the `display:none` `.mem-table` does not score
+sixty hidden rows as visible information; leaves only, so nesting depth is not rewarded.
+
+---
+
 ## Conformance checklist for a v2 PR
 
 ```
@@ -665,6 +932,10 @@ explicitly for that reason.**
 [ ] cursor math imported, never re-derived — useSvgCursor / canvasCursor (§2, gated repo-wide)
 [ ] axes come from charts.tsx's series components; a hand-rolled axis needs a stated reason
 [ ] no two axis labels overlap — asserted, at 390 / 768 / 1440 / 2560
+[ ] viewBox width is the MEASURED width (useChartMetrics fluid mode), never a fixed
+    VB_W — a fixed viewBox is a transform and silently shrinks every label (§2)
+[ ] density reported as the PAIR: readouts N (gate, both endpoints) AND distinct
+    data.<field> M (source, both SHAs). A big N with a flat M is repetition (§10)
 [ ] spacing from the --sp-1..7 ramp (already shipped in #167), never ad-hoc px
 [ ] MemViewShell wrapped, id passed, real table supplied
 [ ] reduced motion suppresses ANIMATION, not CONTENT — body stays, static equivalent

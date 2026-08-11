@@ -637,14 +637,41 @@ function advanceBlocks(n) { head += n; }
     // faster than it earns its keep. Scenario 8 asserts this view's real
     // structure off data-con-* instead. No responsive hiding — present always.
     constellation: [390, 768, 1440, 2560],
-    // TermGauge's only <text> (terminal.tsx:268) lives in the "Network
-    // gauges" rail-block (terminal.tsx:440-447), inside <aside class="rail">
-    // (terminal.tsx:414). `.rail { display: none; }` fires at `max-width:
-    // 768px` (styles.css:2217, :2643) — the element stays in the DOM but
-    // collapses to a zero-size box, which this section's own
-    // `rect.width === 0` filter (below) already drops. Present only where
-    // the rail is visible.
-    terminal: [1440, 2560],
+    // WIDENED FROM [1440, 2560] IN v2·3, and the widening is a TIGHTENING —
+    // read that before assuming an expectation map was relaxed to make a
+    // build pass.
+    //
+    // It used to be rail-only. TermGauge's <text> lives in the "Network
+    // gauges" rail-block inside <aside class="rail">, and `.rail` is
+    // `display: none` at `max-width: 768px` (styles.css:2217), so the element
+    // stayed in the DOM but collapsed to a zero-size box that this section's
+    // own `rect.width === 0` filter dropped. Zero at 390/768 was therefore the
+    // honest expectation, and it was ASSERTED as zero — this map is checked in
+    // both directions.
+    //
+    // v2·3 puts three chart-kit charts in Terminal's MAIN column, which is
+    // visible at every width (Terminal is a pan-mode view — it keeps its
+    // proportions on a phone and pans, per verify-mobile.mjs:36-44). So the
+    // four entries below are what the view now actually renders.
+    //
+    // WHY THIS IS NOT A WEAKENING. 390 and 768 move from "must be exactly 0"
+    // to "must be > 0". Nothing stops being asserted; two widths start being
+    // asserted in the harder direction. The vacuity guard this map exists for
+    // is intact — "the view lost all its SVG text" still reds at all four
+    // widths — and the map now additionally proves the new charts survive the
+    // mobile pan rather than being quietly hidden below some breakpoint,
+    // which is the one way "3-5x more information" could be delivered on
+    // desktop and nowhere else.
+    //
+    // WHY NOT THE ALTERNATIVES. Keeping the charts in the rail would have held
+    // this entry at [1440, 2560] unchanged — and hidden every new chart below
+    // 1200px, because the rail is display:none from 0 to 1199 (styles.css:2217
+    // and :2149's block). Rendering them as DOM instead of SVG would also have
+    // held it, but contract §2 requires charts to be built on chart-kit, whose
+    // ChartTip / ChartCrosshair / axis primitives are SVG-native — so a
+    // conforming chart necessarily emits SVG <text>, and the DOM route is
+    // foreclosed by the contract rather than declined by preference.
+    terminal: [390, 768, 1440, 2560],
     // Classic is pure DOM (MempoolViewMeta's `reflow: true`, index.tsx:79) —
     // it renders no <svg> at all, so it carries zero SVG <text> at every
     // width, by design rather than by omission.
@@ -1520,6 +1547,143 @@ function advanceBlocks(n) { head += n; }
     ok(lowc.svgs > 0, `scenario 8b: the view still renders its SVG surface at low pool (got ${lowc.svgs})`);
     ok(!lowc.placeholder, 'scenario 8b: no empty-plot placeholder at 3 tx');
   }
+}
+
+/* ── Scenario 9 · information density, per view, as a countable floor ────────
+   v2·3. The v2 brief asks each rebuilt view for "3-5x more information", and
+   until now that was an adjective: nothing counted it, so nothing could tell a
+   density REGRESSION from a redesign. This scenario makes it a number.
+
+   WHAT IS COUNTED — a "readout" is a rendered element carrying at least one
+   digit, plus each digit-bearing LINE inside a <pre> (a <pre> is one DOM leaf
+   but renders many rows, and Terminal's whole idiom is <pre> blocks, so
+   counting the element would undercount it by an order of magnitude).
+
+   THREE SCOPING DECISIONS, each of which changes the number:
+
+   1 · Scope is `[data-mem-body]`, NOT `.mem-view`. That is exactly the view's
+       OWN composition — MemViewShell's search bar, heartbeat, TrackChip, the
+       `.mem-table` fallback and the tracking detail panel are shared chrome
+       every view renders identically, so including them would dilute the
+       ratio with a constant and credit each view for the shell's work.
+
+   2 · Only elements with a NON-ZERO rendered box count. Same discipline as
+       scenario 6's `rect.width === 0` filter, and load-bearing for the same
+       reason: `.mem-table` is in the DOM at every width and merely
+       `display: none` on desktop, so counting DOM presence rather than
+       rendered presence would score sixty hidden table rows as information
+       the reader can see.
+
+   3 · Leaf elements only. An ancestor's textContent contains every
+       descendant's, so counting non-leaves would multiply one figure by its
+       nesting depth — and reward deeper markup rather than more data.
+
+   WHAT THIS INSTRUMENT IS BLIND TO, named per contract §9 rather than left
+   for someone to discover: it cannot tell a live figure from a digit in a
+   decorative string, so `RING_SIZE=16` and a hard-coded `"16"` score
+   identically. It is a DENSITY measure, not an honesty measure — the
+   all-real-data invariant is `verify-prng` and `verify-stale`'s job, and this
+   number is only meaningful while those stay green. It is also
+   fixture-relative: the counts below are taken against this file's own
+   fixture at MEMPOOL_N/BLOCKS_N, so a fixture change moves every floor.
+
+   FLOORS are set from measurement with margin, not from the ceiling of what
+   was measured — a floor equal to the reading reds on any incidental jitter
+   (one block column, one log line). Each is the measured value less ~12%,
+   rounded down. The point is to catch a view losing a PANEL, not to pin a
+   digit. ─────────────────────────────────────────────────────────────────── */
+{
+  console.log('\n— scenario 9: information density per view (readouts under [data-mem-body]) —');
+
+  // Measured on 260c99f at 1440x900 against this file's fixture, then reduced
+  // by ~12% and rounded down. The reading is quoted beside each floor so a
+  // future change can tell "this view lost a panel" from "this floor was
+  // always slack".
+  //
+  //   reactor 130 · bridge 100 · sediment 181 · constellation 53 · classic 159
+  //
+  // `terminal` is this PR's subject. Its floor is set from the REBUILT view and
+  // its pre-rebuild reading is kept beside it, because the 3-5x brief is only
+  // checkable against the number it started from.
+  const DENSITY_FLOOR = {
+    reactor: 114,        // 130 on 260c99f
+    bridge: 88,          // 100
+    sediment: 159,       // 181
+    constellation: 46,   //  53
+    terminal: 300,       //  97 on 260c99f (75 elements + 22 <pre> lines) -> see §7
+    classic: 139,        // 159
+  };
+
+  const dp = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  watchErrors(dp, 'scenario 9');
+  await dp.route('**/api/**', fulfil);
+
+  const readouts = () => dp.evaluate(() => {
+    const body = document.querySelector('[data-mem-body]');
+    if (!body) return { error: 'no [data-mem-body] — the view rendered no body' };
+    const seen = (el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0;
+    };
+    let elements = 0;
+    for (const el of body.querySelectorAll('*')) {
+      if (el.children.length !== 0) continue;              // leaves only
+      if (el.tagName.toLowerCase() === 'pre') continue;    // counted by line below
+      const t = (el.textContent || '').trim();
+      if (!t || !/\d/.test(t)) continue;
+      if (!seen(el)) continue;
+      elements++;
+    }
+    let preLines = 0;
+    for (const el of body.querySelectorAll('pre')) {
+      if (!seen(el)) continue;
+      preLines += (el.textContent || '').split('\n').filter((l) => /\d/.test(l)).length;
+    }
+    const mv = document.querySelector('.mp-view');
+    const sc = document.querySelector('.mp-canvas-scroll');
+    return {
+      elements, preLines, total: elements + preLines,
+      // Natural width, reported for every view because the contract's checklist
+      // asks for it and only the four `fit: true` views have verify-fit to
+      // produce it. For a PAN-MODE view (Classic, Terminal) there is no
+      // .mp-fit transform to rescale anything, so `naturalW > canvasW` does not
+      // cost type size — it costs the reader a horizontal pan on a desktop that
+      // should not need one. Reported, not asserted: Terminal is REQUIRED to
+      // exceed the canvas at 390 (verify-mobile), so there is no single
+      // threshold that is right at every width.
+      naturalW: mv ? Math.round(mv.scrollWidth) : null,
+      canvasW: sc ? Math.round(sc.clientWidth) : null,
+    };
+  });
+
+  for (const id of VIEWS) {
+    try {
+      await open(dp, id);
+      // `open()`'s data-ready wait keys on [data-memstat-value="txCount"],
+      // which Terminal does not render (stats={false}) — `undefined !== '—'`
+      // is true, so that wait is a NO-OP on this view and the count could be
+      // taken against an un-hydrated "—" render. Wait on a marker every view
+      // actually emits instead.
+      await dp.waitForFunction(() => {
+        const v = document.querySelector('[data-memstat][data-memstat-value]');
+        return v && Number(v.getAttribute('data-memstat-value')) > 0;
+      }, { timeout: 9000 }).catch(() => {});
+      await dp.waitForTimeout(600);
+      const r = await readouts();
+      if (r.error) { ok(false, `scenario 9 [${id}]: ${r.error}`); continue; }
+      const floor = DENSITY_FLOOR[id];
+      console.log(`   ${id.padEnd(14)} elements ${String(r.elements).padStart(4)} · pre-lines ${String(r.preLines).padStart(4)} · total ${String(r.total).padStart(4)} · naturalW ${String(r.naturalW).padStart(5)} vs canvasW ${r.canvasW}`);
+      if (floor == null) {
+        ok(false, `scenario 9 [${id}]: no DENSITY_FLOOR entry — every registered view must declare one`);
+        continue;
+      }
+      ok(r.total >= floor,
+        `scenario 9 [${id}]: renders >= ${floor} readouts under [data-mem-body] (got ${r.total} = ${r.elements} elements + ${r.preLines} <pre> lines)`);
+    } catch (e) {
+      ok(false, `scenario 9 [${id}]: threw — ${String(e).slice(0, 120)}`);
+    }
+  }
+  await dp.close();
 }
 
 await b.close();

@@ -46,6 +46,15 @@ jobs:
       # byte-identical assets for a given tree, and gzip is pinned to level 9
       # inside the gate — so unlike the vitals budgets these ceilings need no
       # per-runner calibration.
+      # `continue-on-error` is NOT used, and that is the point: this step still
+      # FAILS THE JOB. What changed (v2·3) is that it no longer VETOES the
+      # twelve correctness gates below it, which all carry `if: always()`.
+      #
+      # Measured on #170: a red bundle budget skipped 12 offline gates in this
+      # job AND the entire `hardening gates` job — 21 static + 29 e2e — so a
+      # 4 KB byte overage silenced 62 gate invocations. A byte budget answers
+      # "is this too big"; those gates answer "is this correct". The second
+      # question must not become unanswerable because the first said no.
       - name: "Gate: bundle budgets"
         run: npm run verify:bundle
 
@@ -77,6 +86,7 @@ jobs:
       # (verify-tiers-dom, verify-glide, verify-allreal-dom, …) need a built
       # preview server and are still run by hand; see app/README.md.
       - name: "Gate: tiered polling contract"
+        if: always()
         run: node verify-tiers.mjs
 
       # Offline, and it belongs here rather than only in verify:static so it can
@@ -86,15 +96,19 @@ jobs:
       # src/coldboot/gate.ts. This evaluates both over a truth table rather than
       # diffing them as text.
       - name: "Gate: cold-boot pre-paint floor + predicate parity"
+        if: always()
         run: node verify-cbpending.mjs
 
       - name: "Gate: node cascade health"
+        if: always()
         run: node ../api/verify-nodehealth.mjs
 
       - name: "Gate: proxy tx parsing"
+        if: always()
         run: node ../api/verify-tx-parse.mjs
 
       - name: "Gate: feeds proxy"
+        if: always()
         run: node ../api/verify-feeds.mjs
 
       # Exercises selectMembers/parseDays/cacheSeconds/classifyQuality against
@@ -103,6 +117,7 @@ jobs:
       # exclusions (stablecoins never reach a series slot) and the chart-budget
       # cutoff are all asserted here, offline.
       - name: "Gate: markets aggregator"
+        if: always()
         run: node ../api/verify-markets.mjs
 
       # Offline: the handler makes zero network calls by design, and the gate
@@ -111,6 +126,7 @@ jobs:
       # lack egress to a Monero node, and fixture() exists so that cannot be
       # read as coverage.
       - name: "Gate: status endpoint"
+        if: always()
         run: node ../api/verify-status.mjs
 
       # Offline, fixture-backed gate for the monero.fail health aggregator.
@@ -119,18 +135,23 @@ jobs:
       # distinct. The live node-count assertion is SKIPPED (no egress), not
       # passed — check it on a deploy preview.
       - name: "Gate: monero.fail node population"
+        if: always()
         run: node ../api/verify-nodes.mjs
 
       - name: "Gate: market stale-cache"
+        if: always()
         run: node verify-stale.mjs
 
       - name: "Gate: confirmations"
+        if: always()
         run: node verify-confirmations.mjs
 
       - name: "Gate: tx detail mappers"
+        if: always()
         run: node verify-txdetail.mjs
 
       - name: "Gate: future feed cache"
+        if: always()
         run: node verify-feedcache.mjs
 
   verify:
@@ -142,6 +163,19 @@ jobs:
     name: hardening gates
     runs-on: ubuntu-latest
     needs: build
+    # `needs: build` is SEQUENCING ONLY — this job runs its own `npm ci`,
+    # `verify:static`, Playwright install and `npm run build`, and consumes no
+    # artifact from `build`. So a failure over there is not a reason this job
+    # cannot answer its own question, and until v2·3 it silently was one: a
+    # 4 KB bundle overage on #170 skipped this entire job, all 21 static and 29
+    # e2e gates, and CI reported nothing at all about correctness.
+    #
+    # `!cancelled()` rather than `always()`, and the difference is deliberate:
+    # `always()` would spin a fresh runner up for a workflow the operator has
+    # just cancelled, and a job cannot be cancelled twice. The steps inside
+    # `build` use `always()` because re-running a two-second offline gate after
+    # a cancel costs nothing; standing up a browser does.
+    if: ${{ !cancelled() }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
