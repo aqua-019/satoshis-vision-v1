@@ -336,10 +336,23 @@ export interface MemViewShellProps {
   /**
    * Static equivalent of the view — a table of the same data.
    *
-   * Rendered under `prefers-reduced-motion` INSTEAD of `children`, so an
-   * animated field is never merely paused but genuinely not mounted, and the
-   * data stays readable. Also rendered below the body on small screens, where
-   * a wide canvas has to be panned to read.
+   * ALWAYS mounted when supplied, and CSS-gated to the states that need it:
+   * `.mem-table` is `display: none` by default and `display: block` under
+   * `@media (prefers-reduced-motion: reduce)` and at ≤768px
+   * (`styles.css:1468-1469`, `:2471`). It is an ADDITION to the body, never a
+   * replacement for it — see the reasoning at the top of MemViewShell below.
+   *
+   * CORRECTED (v2·2): this docstring previously read "Rendered under
+   * `prefers-reduced-motion` INSTEAD of `children`, so an animated field is
+   * never merely paused but genuinely not mounted." That described a revision
+   * which was REVERTED — it removed Classic's and Reactor's block ribbons —
+   * and it contradicted the implementation comment twenty lines below it. The
+   * binding line is `showBody` further down, which consults `tracking` and
+   * never reduced motion. Suppressing the animated surface under reduce is the
+   * VIEW's job (sediment renders a static field instead of its canvas), not
+   * the shell's. The stale text had already propagated into
+   * `claude/V2-VIEW-CONFORMANCE.md` §6 and was one step from a break test
+   * asserting the opposite of the intended behaviour.
    */
   table?: React.ReactNode;
   children: React.ReactNode;
@@ -375,10 +388,17 @@ export function MemViewShell({
       </div>
       {/* `stats={false}` lets a view carry its own dense telemetry instead of
           the strip (Terminal does). But that telemetry lives INSIDE the body,
-          and under reduced motion the body is not rendered — which would leave
-          the view with no numbers at all. So the strip comes back whenever the
-          body is suppressed: opting out of it is a layout choice, not a reason
-          to lose the readings. */}
+          so whenever the body is suppressed the view would be left with no
+          numbers at all. The strip therefore comes back on `!showBody`:
+          opting out of it is a layout choice, not a reason to lose the
+          readings.
+
+          CORRECTED (v2·2): this comment previously justified the `!showBody`
+          term with "under reduced motion the body is not rendered". That is
+          false — `showBody` consults `tracking` only. The condition is right;
+          the reason given for it was not, and it named the one state that
+          cannot trigger it. The state that DOES trigger it is
+          `tracking && !keepBodyWhileTracking`. */}
       {stats !== false || !showBody ? <MemStatStrip data={data} /> : null}
       {showBody ? <div className="mem-body" data-mem-body>{children}</div> : null}
       {/* Always in the DOM, CSS-gated to the states that need it (reduced
