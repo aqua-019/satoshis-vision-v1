@@ -119,11 +119,19 @@ Both print their measured numbers on every run, pass or fail. A `--measure`
 flag on each prints without asserting, which is how baselines are re-taken.
 
 Three more are npm-wired but deliberately not in CI — `verify:shots`,
-`verify:perf`, `verify:mem:perf`. `verify-shots.mjs`'s `--baseline` diff needs a
-shot tree built from another commit, which CI has no way to produce; the two
-perf gates measure framerate, which a shared runner cannot measure honestly.
+`verify:perf-classic`, `verify:mem:perf`. `verify-shots.mjs`'s `--baseline` diff
+needs a shot tree built from another commit, which CI has no way to produce; the
+two framerate gates measure fps, which a shared runner cannot measure honestly.
 
-The remaining 11 are wired to neither npm nor CI. Several expect live upstreams
+`verify:perf` was RENAMED to `verify:perf-classic` in v2·3b. It ran
+`verify-perf-classic.mjs`, while the similarly-named `verify-perf.mjs` was
+orphaned — and `grep verify-perf package.json` matches `verify:perf`, so the
+orphan looked wired to anyone checking by substring. That trap cost real time
+and is recorded at CLAUDE.md:431; the rename removes it. `verify-perf.mjs` is
+now `verify:perf-runtime`, and unlike the classic gate it asserts no framerate,
+so it runs in CI.
+
+The remaining 7 are wired to neither npm nor CI. Several expect live upstreams
 the sandbox cannot reach; auditing and wiring them is its own task. (v6.1.4
 wired in `verify-allreal-dom.mjs` and `verify-tiers-dom.mjs`, which between them
 already asserted the CONNECTING / LIVE / STALE vocabulary, last-good retention

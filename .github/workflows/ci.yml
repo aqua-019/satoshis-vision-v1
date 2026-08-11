@@ -230,6 +230,44 @@ jobs:
       - name: 'E2E gates (29) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +19'
         run: npm run verify:e2e
 
+      # ── v2·3b: four gates that existed, asserted real things, and ran in
+      # NOTHING. No npm script, no CI step, so nobody had run them in months —
+      # and one of them (verify-perf) was RED on main for three reasons, two of
+      # which were defects in the gate rather than in the code. That is what an
+      # unrun gate decays into.
+      #
+      # They belong in this job, not `build`: all four need a built dist/ and a
+      # live serve-dist, so they sit after "Wait for preview" alongside
+      # verify:e2e.
+      #
+      # ONE STEP PER GATE, never an `&&` chain — a chain lets the first failure
+      # hide the other three, which is the veto shape #170 removed one level up.
+      # `if: always()` for the same reason: these four answer independent
+      # questions and a red one must not make the others unanswerable.
+      #
+      # Counts are stated so a silent drop is visible: a gate that stops
+      # reporting its total has stopped being evidence. verify-perf and
+      # verify-mobile also emit reasoned SKIPs — the horizontal-overflow metric
+      # is provably inert below 769px (html,body overflow-x:clip), so those
+      # widths report as not-measured instead of as vacuous passes.
+      - name: 'Gate: page shell (369 assertions)'
+        if: always()
+        run: npm run verify:pageshell
+
+      - name: 'Gate: fit-to-view — reactor · bridge · sediment · constellation (22)'
+        if: always()
+        run: npm run verify:fit
+
+      - name: 'Gate: mobile 390px — pan, reflow, landing (3 + 1 skip)'
+        if: always()
+        run: npm run verify:mobile
+
+      # NOT `verify:perf` — that name now belongs to verify-perf-classic.mjs, a
+      # different gate that measures framerate and is deliberately out of CI.
+      - name: 'Gate: tier stamp, layer census, background quiescence, timers (22 + 3 skips)'
+        if: always()
+        run: npm run verify:perf-runtime
+
       # verify-vitals and verify-cls both stamp their measurements, with the
       # harness that produced them, into app/.perf/. Keeping those makes drift
       # readable across runs instead of scrolling away with the log — and it is
