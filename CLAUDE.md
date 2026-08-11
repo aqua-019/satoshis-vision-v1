@@ -217,9 +217,19 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   `transform: scale(min(1, canvasW / naturalW))`, and `useChartMetrics` latches the
   PRE-TRANSFORM layout width — a CSS transform does not fire ResizeObserver, which reports
   border-box (layout) size. So a chart's geometry lives in layout space while the reader
-  sees it scaled. Measured on v2·1's sediment: **scale 0.3598 at 1440, 0.6501 at 2560,
-  0.1212 at 390**; an axis label authored at the sanctioned 11px floor renders with a
-  **5.04px** box at 1440 and **1.70px** at 390.
+  sees it scaled. Measured on v2·1's sediment:
+
+  | viewport | `.mp-fit` scale | authored | rendered FONT | (em box) |
+  |---|---|---|---|---|
+  | 1440 | 0.359756 | 11px | **3.96px** | 5.04px |
+  | 2560 | 0.650085 | 12px | 7.80px | 10.4px |
+  | 390 | 0.121231 | 11px | **1.33px** | 1.70px |
+
+  **Read the FONT column, not the box.** `getBoundingClientRect().height` on a `<text>` is
+  the em/line box, ~1.27× the font size — quoting it overstates legibility by 27%. And the
+  three rows are TWO series, not one: 1440 and 390 sample the SVG tick, while 2560 samples
+  a DOM label (`--fs-label` reaching its 12px `clamp` ceiling), which is why its ratio is
+  1.333 against the other two's 1.274/1.275. Do not compute a trend across it.
   The general rule: **any assertion about an ABSOLUTE RENDERED QUANTITY must be measured
   after every transform between the author and the reader; any assertion about a RELATION
   between elements may be measured before them.** Collision, ordering, containment and
@@ -319,6 +329,26 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 ## Known Issues / TODOs
 
 <!-- Track open items here -->
+- **WHY MOBILE HAS NEVER LOOKED RIGHT — measured root cause, not a polish problem.**
+  `.mp-fit` scales a mempool view by `min(1, canvasW / naturalW)`. Sediment's natural size
+  is **2279×2495** (`styles.css:1207`), so at a 390px phone the wrapper squeezes a 2279px
+  artboard into roughly **276px — a scale of 0.1212**, and EVERY glyph in the view renders
+  at about **1.3px**. Measured on v2·1, and it applies to all nine fit-enabled views
+  (`FitView.tsx:11-12` excludes only Classic and Terminal).
+  This has been read as a composition/spacing problem for several rounds. It is not, and
+  **no work inside a view can affect it** — the wrapper scales whatever the view produces.
+  Re-read every previous mobile observation against that number.
+  The mobile port therefore has a DECISION to make before any layout work:
+  (a) **do phones get `FitView` at all?** `MempoolPage.tsx:24` applies it unconditionally,
+  while `styles.css:1210`'s `@media (min-width: 769px)` already carves desktop out of the
+  shrink-wrap rule — so a separate phone path is half-expressed in CSS but the wrapper is
+  not conditioned on it, and Classic/Terminal's exclusion is the precedent for the shape of
+  the answer. Or (b) **engage `minWidth`**: `useChartMetrics` computes
+  `minWidth = ceil(vbWidth / maxK)` and its docblock says that below it "the container
+  stops shrinking and the artboard pans instead" — pan-rather-than-shrink is exactly right
+  at 390. Unreachable today because no caller passes `vbWidth`, so `k = 1` and `minWidth`
+  is 0 app-wide. Note `maxK = 1.7` was chosen to hold a floor down to a scale of ~0.59;
+  the measured 0.36 (desktop) and 0.12 (phone) are both past what it was built to rescue.
 - **The cold-boot console is ~2.7× the viewport on a phone, and the orb is below
   the fold there.** Measured at 390×844: the console root is **2282.6px tall in
   an 844px viewport** (2042.6 before v6.1.9's orb-slot change added 240), the
