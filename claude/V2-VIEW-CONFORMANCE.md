@@ -1,12 +1,21 @@
 # v2 MEMPOOL VIEWS — design-framework conformance
 
-**REV 3 — measured against `main` = `fdf4ecc` (v2·1 / PR #168 merged), 2026-08-11.**
-Rev 3 adds §8 and §9, adds addenda to §1 and §2, and **withdraws a false claim in §6**.
+**REV 4 — measured against `main` = `260c99f` (v2·2 / PR #169 merged), 2026-08-11.**
+Rev 4 **withdraws a second false claim in §6** and adds §10. Rev 3 was measured against
+`fdf4ecc`; it added §8 and §9, addenda to §1 and §2, and withdrew the first false §6 claim.
 Rev 2 was measured against `6039d64`; Rev 1 against `292227a` and was wrong in §3 and §5.
-If you are holding a copy without this line it is stale — check §6 first, because the
-sentence that changed there was load-bearing and read as reassuring.
+If you are holding a copy without this line it is stale — check §6 first, because **both**
+sentences that have changed there were load-bearing and both read as reassuring.
 
-**What Rev 3 changes, in one place:**
+**What Rev 4 changes, in one place:**
+
+| § | delta |
+|---|---|
+| §6 | **CORRECTION** — "390px usable, no horizontal scroll" is FALSE for pan-mode views |
+| §8 | addendum — the fit-scale apparatus does not apply to Classic or Terminal at all |
+| §10 | NEW — information density is a number, and which instrument produces it |
+
+**What Rev 3 changed:**
 
 | § | delta |
 |---|---|
@@ -208,7 +217,40 @@ touches that region.
 - **`id` must be passed to `MemViewShell`** — it becomes `data-mem-view`, which is how gates and deep
   links tell the surfaces apart.
 - **Opaque stage background.** Data never renders over ambient decoration.
-- **390px usable**, no horizontal scroll.
+- **390px usable** — and the second half of this rule, "no horizontal scroll", **holds for
+  REFLOW-LAYER VIEWS ONLY. CORRECTED IN REV 4.** As written it was false for Terminal, and a
+  gate asserts the opposite:
+
+  ```
+  verify-mobile.mjs:36-44
+    goto('/mempool?v=terminal')
+    assert clientW <= 420 && scrollW >= 850 && left > 50   ← Terminal MUST pan
+  ```
+
+  There are two layouts on a phone, not one, and `MempoolViewMeta` names them
+  (`src/views/index.tsx`): a view with `reflow: true` opts into the reflow layer and reflows to
+  the viewport (Classic only — it is the DEFAULT view, so it is what a phone actually lands
+  on); every other view keeps its authored proportions and **pans**. Terminal is the deliberate
+  pan-mode case — `index.tsx` calls it "a desktop-proportion instrument (320px daemon aside,
+  8-column readouts)" — and `verify-pageshell.mjs` asserts BOTH halves of that split at 390 in
+  the same section: Classic does not pan (`scrollW − clientW = 0`), Terminal does
+  (`scrollW 900 >= 850`).
+
+  So the rule is:
+
+  | layer | phone behaviour | members | citation |
+  |---|---|---|---|
+  | reflow (`reflow: true`) | reflows; **no** horizontal scroll | classic | `verify-pageshell` |
+  | pan (default) | keeps proportions; **pans** | terminal, and any future pan-mode view | `verify-mobile:36-44` |
+
+  A pan-mode view still owes the other half of "390px usable" in full: legible type, reachable
+  targets, no content that can only be found by guessing that the surface scrolls.
+
+  > **This was the contract's error, not a view's.** It is the same shape §8 and §9 keep
+  > recording — a claim stated more widely than the subject it was measured on. It was measured
+  > on the reflow layer and written as though it governed every view, and the gate that
+  > contradicts it has been green in the repo the whole time. Anyone adding a pan-mode view
+  > should add it to the table rather than reopening the rule.
 - **Zero `Math.random()`** outside `src/protocols/`. Currently zero in `src/mempool/` — keep it there.
 - **Any inferred element is labelled inferred.** The Dandelion++ stem path is the live example: a node
   cannot observe another transaction's stem, so Relay-style propagation is illustration, and says so.
@@ -231,6 +273,33 @@ glyph opens that block inspector.** Views differ in how they show the population
 object is identical across all eleven. No view reimplements a shallower detail panel.
 
 ## 8 · The type floor is a claim about RENDERED size, and `.mp-fit` sits between you and it
+
+> **REV 4 ADDENDUM — READ THIS BEFORE APPLYING ANY OF §8. It applies to FOUR of the six
+> views, not to all of them.** `FitView` wraps only views registered `fit: true`
+> (`src/views/index.tsx`): reactor, bridge, sediment, constellation. **Classic and Terminal
+> are rendered directly by `MempoolPage` with no wrapper** —
+>
+> ```
+> FitView.tsx:11   "Classic/Terminal are rendered directly by MempoolPage without this wrapper"
+> ```
+>
+> — so for those two there is no `.mp-fit` transform, no `naturalW <= canvasW` budget, no
+> `HEIGHT_FIT_TOLERANCE` band, and no gap between authored and rendered type. **Authored 11px
+> renders at 11px, unconditionally, at every viewport.** Do not carry a width or height budget
+> from a fit-enabled view onto one of these; those budgets are properties of the WRAPPER.
+>
+> The trap runs the other way too, and it is the one worth holding: `.mp-view` is still
+> `width: max-content` on desktop (`styles.css:1212`) for a non-fit view as well. So §8's
+> caption rule — *cap every prose node to the width of the thing it describes* — **still
+> applies in full**. What changes is only the SYMPTOM. Inside the wrapper an unbounded caption
+> silently rescales the view and drops its type below the floor; outside it, the same caption
+> silently widens the artboard and forces the reader to pan for content they cannot see. Both
+> are quiet, neither reds a gate on its own, and the second is easier to miss because nothing
+> about the type looks wrong.
+>
+> A v2 PR on Classic or Terminal should **state that §8 is inapplicable and why**, rather than
+> quietly not measuring it — a silent non-measurement and a measurement of zero are the same
+> line in a report, which is the §9 problem in miniature.
 
 `FitView` wraps every fit-enabled view in `transform: scale(min(1, canvasW / naturalW))`
 (`FitView.tsx`, `.mp-fit` at `styles.css:1235`). **A CSS transform does not fire ResizeObserver**,
