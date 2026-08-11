@@ -230,6 +230,58 @@ jobs:
       - name: 'E2E gates (29) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +19'
         run: npm run verify:e2e
 
+      # ── v2·3b: four gates that existed, asserted real things, and ran in
+      # NOTHING. No npm script, no CI step, so nobody had run them in months —
+      # and one of them (verify-perf) was RED on main for three reasons, two of
+      # which were defects in the gate rather than in the code. That is what an
+      # unrun gate decays into.
+      #
+      # They belong in this job, not `build`: all four need a built dist/ and a
+      # live serve-dist, so they sit after "Wait for preview" alongside
+      # verify:e2e.
+      #
+      # ONE STEP PER GATE, never an `&&` chain — a chain lets the first failure
+      # hide the other three, which is the veto shape #170 removed one level up.
+      # `if: always()` for the same reason: these four answer independent
+      # questions and a red one must not make the others unanswerable.
+      #
+      # THREE, NOT FOUR. `verify:pageshell` is npm-wired but deliberately NOT
+      # here, and this is the brief's own rule applied to its own PR: never wire
+      # a red gate. It is green locally (369/0) and RED on this runner —
+      # `/future@1600: .main no h-scroll (scrollW 1604 vs clientW 1600, over 4)`.
+      #
+      # That defect is PRE-EXISTING and measured as such, not assumed: reverting
+      # this PR's only two src files to 5537976 and rebuilding reproduces it
+      # exactly (2px locally, 4px on the runner — it straddles the gate's own
+      # TOL of 2). Mechanism: /future's `.v6-proto-grid` lays 4 tracks of
+      # 354.5px at 1600, while a `.v6-stagger` child grid sizes its column to
+      # the panel's 426.375px min-content and will not shrink, so `.panel`
+      # lands at 1601.9 against main's 1600.
+      #
+      # Fixing it means re-choosing column counts across /future's whole
+      # breakpoint ladder — a layout decision on a page this PR does not
+      # otherwise touch. Wiring this step is a one-line follow-up once that
+      # lands, and `npm run verify:pageshell` proves the fix in the meantime.
+      #
+      # Counts are stated so a silent drop is visible: a gate that stops
+      # reporting its total has stopped being evidence. verify-perf and
+      # verify-mobile also emit reasoned SKIPs — the horizontal-overflow metric
+      # is provably inert below 769px (html,body overflow-x:clip), so those
+      # widths report as not-measured instead of as vacuous passes.
+      - name: 'Gate: fit-to-view — reactor · bridge · sediment · constellation (22)'
+        if: always()
+        run: npm run verify:fit
+
+      - name: 'Gate: mobile 390px — pan, reflow, landing (3 + 1 skip)'
+        if: always()
+        run: npm run verify:mobile
+
+      # NOT `verify:perf` — that name now belongs to verify-perf-classic.mjs, a
+      # different gate that measures framerate and is deliberately out of CI.
+      - name: 'Gate: tier stamp, layer census, background quiescence, timers (22 + 3 skips)'
+        if: always()
+        run: npm run verify:perf-runtime
+
       # verify-vitals and verify-cls both stamp their measurements, with the
       # harness that produced them, into app/.perf/. Keeping those makes drift
       # readable across runs instead of scrolling away with the log — and it is

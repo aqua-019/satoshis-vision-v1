@@ -70,19 +70,19 @@ const PAGE_W = { wide: 1680, standard: 1440, reading: 1180 };
 
 const ROUTES = [
   { path: '/',                   label: '/',                    tier: 'wide' },
-  { path: '/mempool',            label: '/mempool',             tier: 'fluid',    rail: true },
-  { path: `/mempool/tx/${TXID}`, label: '/mempool/tx/<64-hex>', tier: 'standard' },
-  { path: '/markets',            label: '/markets',             tier: 'standard', rail: true },
-  { path: '/network',            label: '/network',             tier: 'standard', rail: true },
-  { path: '/education',          label: '/education',           tier: 'reading' },
-  { path: '/education/timeline', label: '/education/timeline',  tier: 'reading' },
+  { path: '/live/mempool',       label: '/live/mempool',             tier: 'fluid',    rail: true },
+  { path: `/live/mempool/tx/${TXID}`, label: '/live/mempool/tx/<64-hex>', tier: 'standard' },
+  { path: '/live/markets',       label: '/live/markets',             tier: 'standard', rail: true },
+  { path: '/live/network',       label: '/live/network',             tier: 'standard', rail: true },
+  { path: '/learn',              label: '/learn',           tier: 'reading' },
+  { path: '/learn/timeline',     label: '/learn/timeline',  tier: 'reading' },
   { path: '/monero',             label: '/monero',              tier: 'standard' },
   { path: '/monero/bottomline',  label: '/monero/bottomline',   tier: 'reading' },
   { path: '/future',             label: '/future',              tier: 'wide' },
-  { path: '/peers',              label: '/peers',               tier: 'standard' },
-  { path: '/simulate',           label: '/simulate',            tier: 'fluid' },
-  { path: '/node',               label: '/node',                tier: 'standard' },
-  { path: '/sources',            label: '/sources',             tier: 'standard' },
+  { path: '/about/peers',        label: '/about/peers',               tier: 'standard' },
+  { path: '/learn/sim',          label: '/learn/sim',            tier: 'fluid' },
+  { path: '/operate/node',       label: '/operate/node',                tier: 'standard' },
+  { path: '/about/sources',      label: '/about/sources',             tier: 'standard' },
   { path: '/__nope__',           label: '/__nope__',            tier: 'standard' },
 ];
 const WIDTHS = [1920, 1600, 1280, 1024, 768, 390];
@@ -92,11 +92,31 @@ const RAIL_TRACK = 260; // px — .shell's first grid track when the rail is up
 const p = await b.newPage({ viewport: { width: 1920, height: 1000 } });
 p.setDefaultTimeout(25000);
 
+/* Every route above is the canonical post-v6.1.6 path. They were the legacy
+ * names (`/mempool`, `/markets`, `/network`, `/education`, `/simulate`,
+ * `/peers`, `/node`, `/sources`), which are redirect SOURCES — carried
+ * client-side by RedirectTo under serve-dist, so this gate's 368/0 was real
+ * rather than vacuous. Three things were wrong with relying on that: the
+ * dependency on verify-redirects' contract was unstated and a dropped redirect
+ * would have relocated the subject rather than gone red; production resolves
+ * these through a Vercel 301 that the SPA never sees, so harness and
+ * production ran different paths; and the client redirect lands AFTER
+ * `domcontentloaded`, so the 300ms settle below was outrunning a race nobody
+ * had written down. The labels carried the legacy names too, which meant a
+ * failure message would have named a URL that no longer exists.
+ *
+ * `strays` is the standing check: one aggregate assertion at the end, rather
+ * than 90 near-identical lines across 15 routes × 6 widths. */
+const strays = new Set();
+
 /** Boot a route to its (skeleton) layout state. Never networkidle — see header. */
 async function visit(route) {
   await p.goto(base + route, { waitUntil: 'domcontentloaded' });
   await p.waitForSelector('.art-stage', { state: 'attached' });
   await p.waitForTimeout(300); // settle: fonts + first paint of the skeleton
+  const want = route.split('?')[0];
+  const at = await p.evaluate(() => location.pathname);
+  if (at !== want) strays.add(`${route} → ${at}`);
 }
 
 /** One DOM read per route×width — everything assertions 1-4 need. */
@@ -205,9 +225,9 @@ for (const w of WIDTHS) {
 //    class="rail"> inside the pan canvas. The 769-1279 collapse uses the CHILD
 //    combinator (`.shell > .rail`) precisely so this one is not swept up.
 // ════════════════════════════════════════════════════════════════════════
-console.log('\n──────── nested rail · /mempool?v=terminal@1024 ────────');
+console.log('\n──────── nested rail · /live/mempool?v=terminal@1024 ────────');
 await p.setViewportSize({ width: 1024, height: 1000 });
-await visit('/mempool?v=terminal');
+await visit('/live/mempool?v=terminal');
 await p.waitForSelector('.mp-canvas-scroll');
 const rails = await p.evaluate(() =>
   Array.from(document.querySelectorAll('.rail')).map((el) => ({
@@ -235,9 +255,9 @@ console.log('   rails:', JSON.stringify(rails));
 //
 // The message now names the property rather than a suspect rule.
 ok(rails.some((r) => !r.shellChild && r.display !== 'none' && r.w > 0),
-  "/mempool?v=terminal@1024: Terminal's nested .rail is still VISIBLE — no `.rail` rule in a band covering 1024 may hide it unscoped (styles.css:2157 is child-scoped ON PURPOSE; check for a second, unscoped rule before suspecting that one)");
+  "/live/mempool?v=terminal@1024: Terminal's nested .rail is still VISIBLE — no `.rail` rule in a band covering 1024 may hide it unscoped (styles.css:2157 is child-scoped ON PURPOSE; check for a second, unscoped rule before suspecting that one)");
 ok(rails.every((r) => !r.shellChild || r.display === 'none'),
-  '/mempool?v=terminal@1024: the shell-level NetRail is still collapsed at 1024');
+  '/live/mempool?v=terminal@1024: the shell-level NetRail is still collapsed at 1024');
 
 // ════════════════════════════════════════════════════════════════════════
 // 6. TAB STRIPS — wrap on wide desktop, scroll (nowrap) below 1280.
@@ -245,7 +265,7 @@ ok(rails.every((r) => !r.shellChild || r.display === 'none'),
 console.log('\n──────── tab strips ────────');
 for (const [w, want] of [[1024, 'nowrap'], [1920, 'wrap']]) {
   await p.setViewportSize({ width: w, height: 1000 });
-  for (const r of ['/monero', '/education']) {
+  for (const r of ['/monero', '/learn']) {
     await visit(r);
     const strip = await p.$('.tabstrip');
     if (!strip) { ok(false, `${r}@${w}: .tabstrip not found`); continue; }
@@ -261,7 +281,7 @@ for (const [w, want] of [[1024, 'nowrap'], [1920, 'wrap']]) {
 console.log('\n──────── classic reflow @390 ────────');
 await p.setViewportSize({ width: 390, height: 844 });
 
-await visit('/mempool');
+await visit('/live/mempool');
 await p.waitForSelector('.mp-canvas-scroll');
 const classic = await p.evaluate(() => {
   const el = document.querySelector('.mp-canvas-scroll');
@@ -272,12 +292,12 @@ const classic = await p.evaluate(() => {
   };
 });
 console.log('   classic:', JSON.stringify(classic));
-ok(classic.reflow, '/mempool@390: .mp-canvas-scroll--reflow exists (Classic opted in)');
-ok(classic.view, '/mempool@390: .mp-view--reflow exists');
+ok(classic.reflow, '/live/mempool@390: .mp-canvas-scroll--reflow exists (Classic opted in)');
+ok(classic.view, '/live/mempool@390: .mp-view--reflow exists');
 ok(classic.scrollW - classic.clientW <= TOL,
-  `/mempool@390: Classic does NOT pan (scrollW ${classic.scrollW} - clientW ${classic.clientW} = ${classic.scrollW - classic.clientW})`);
+  `/live/mempool@390: Classic does NOT pan (scrollW ${classic.scrollW} - clientW ${classic.clientW} = ${classic.scrollW - classic.clientW})`);
 
-await visit('/mempool?v=terminal');
+await visit('/live/mempool?v=terminal');
 await p.waitForSelector('.mp-canvas-scroll');
 const term = await p.evaluate(() => {
   const el = document.querySelector('.mp-canvas-scroll');
@@ -285,8 +305,8 @@ const term = await p.evaluate(() => {
   return { reflow: !!document.querySelector('.mp-canvas-scroll--reflow'), scrollW: el.scrollWidth, clientW: el.clientWidth, left: el.scrollLeft };
 });
 console.log('   terminal:', JSON.stringify(term));
-ok(!term.reflow, '/mempool?v=terminal@390: Terminal did NOT opt into reflow');
-ok(term.scrollW >= 850, `/mempool?v=terminal@390: Terminal still pans (scrollW ${term.scrollW} >= 850)`);
+ok(!term.reflow, '/live/mempool?v=terminal@390: Terminal did NOT opt into reflow');
+ok(term.scrollW >= 850, `/live/mempool?v=terminal@390: Terminal still pans (scrollW ${term.scrollW} >= 850)`);
 
 // ════════════════════════════════════════════════════════════════════════
 // 8. COPY SPOT-CHECK — the migration is chrome-only; the Bottom Line page's
@@ -299,6 +319,17 @@ const body = await p.evaluate(() => document.body.innerText);
 for (const needle of ['$625,000', '$22,000,000']) {
   ok(body.includes(needle), `/monero/bottomline: body text still contains "${needle}"`);
 }
+
+// ════════════════════════════════════════════════════════════════════════
+// 9. EVERY NAVIGATION LANDED WHERE IT WAS SENT — see visit()'s note. One
+//    aggregate over every visit() this run made, so a redirect or route
+//    change fails here loudly instead of silently relocating the subject of
+//    all 368 assertions above.
+// ════════════════════════════════════════════════════════════════════════
+console.log('\n──────── landing ────────');
+ok(strays.size === 0, strays.size === 0
+  ? 'every route visited landed on the path requested (no redirect hops)'
+  : 'routes did not land where requested: ' + [...strays].join(', '));
 
 await b.close();
 console.log(fail ? '\nPAGESHELL CHECKS FAILED' : '\nALL PAGESHELL CHECKS PASSED');

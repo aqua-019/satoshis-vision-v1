@@ -1,5 +1,6 @@
 import { webkit, chromium } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
+import { coldBootOffBrowser } from './verify-lib.mjs';
 const base = 'http://localhost:4173';
 // Prefer WebKit (mobile-Safari engine). Some sandboxes can't download the WebKit
 // build (CDN not in the network allowlist) — fall back to Chromium so the layout
@@ -23,8 +24,46 @@ try {
   b = await chromium.launch(executablePath ? { executablePath } : {});
 }
 console.log('engine:', engine);
+/* Cold-boot bypass. OVERFLOW_ROUTES[0] is '/', where ColdBoot mounts
+ * (coldboot/gate.ts:124 — it renders on Home and nowhere else), and the splash
+ * is `position:fixed; inset:0` over an opaque floor. Every measurement this
+ * gate takes is about the ROUTE, so without the bypass the '/' row would
+ * describe the splash instead. verify-coldboot-live audits this contract across
+ * every wired /-reaching gate; wiring this file in v2·3b moved it from that
+ * audit's "orphaned — recorded, not failed" branch into its failing one, which
+ * is the audit working exactly as designed. */
+await coldBootOffBrowser(b);
 const p = await b.newPage({ viewport: { width: 390, height: 844 } });
+
+/* THIS GATE COULD NOT REPORT THAT IT HAD COMPLETED, and that is why it is
+ * being changed at the same time it is wired.
+ *
+ * It ended at `process.exit(fail ? 1 : 0)` with no terminal summary, and its
+ * per-route overflow loop printed a measurement line but never a ✅ — so a
+ * passing run showed exactly two pass marks for three checks, and a silent
+ * pass is indistinguishable from a check that never ran. The repo's standing
+ * rule is that a gate's result is usable only if the run COMPLETED, read off
+ * the terminal summary rather than the exit code; this file could satisfy
+ * neither half. Every other gate in this PR ends with a summary line.
+ *
+ * `ok()`/`bad()` now count, the overflow loop reports each route it clears,
+ * and the run ends with its own tally. Three checks became eight assertions
+ * because six routes stopped being silent — a thin gate honestly labelled. */
+let pass = 0, failed = 0, skips = 0;
+const ok = (m) => { console.log('✅ ' + m); pass++; };
+const bad = (m) => { console.log('❌ ' + m); failed++; };
 let fail = false;
+
+/* Canonical routes + landing assertion — same reasoning as verify-perf.mjs's
+ * `landedOn` note: these were `/mempool`, `/markets`, `/network`, `/education`
+ * and `/simulate`, pre-v6.1.6 names carried by client redirects. They were
+ * measuring the right pages; nothing stated that they depended on a redirect
+ * to do so. */
+const landed = async (want) => {
+  const at = await p.evaluate(() => location.pathname);
+  if (at !== want) { bad(`navigation landed on ${at}, not ${want}`); fail = true; return false; }
+  return true;
+};
 
 // 1) MEMPOOL canvas must be a working horizontal scroller.
 //    v6.0.4: this used to point at /mempool with no query, which resolves to the
@@ -33,36 +72,77 @@ let fail = false;
 //    default view the least readable one). The pan behaviour still belongs to the
 //    fixed-size views, so this assertion moves to Terminal, which deliberately
 //    keeps the 900px pin. See styles.css `.mp-canvas-scroll--reflow`.
-await p.goto(base + '/mempool?v=terminal', { waitUntil: 'networkidle' });
+await p.goto(base + '/live/mempool?v=terminal', { waitUntil: 'networkidle' });
+await landed('/live/mempool');
 await p.waitForSelector('.mp-canvas-scroll');
 const m = await p.$eval('.mp-canvas-scroll', el => { el.scrollLeft = 400; return { clientW: el.clientWidth, scrollW: el.scrollWidth, left: el.scrollLeft }; });
 console.log('mempool canvas (terminal)', m);
-if (!(m.clientW <= 420 && m.scrollW >= 850 && m.left > 50)) { console.log('❌ mempool canvas does NOT pan'); fail = true; } else console.log('✅ mempool canvas pans');
+if (!(m.clientW <= 420 && m.scrollW >= 850 && m.left > 50)) { bad('mempool canvas does NOT pan'); fail = true; } else ok('mempool canvas pans');
 
 // 1b) …and the converse: Classic must NOT pan. It opts into the reflow layer, so
 //     it reads as a normal single-column page at 390px with no horizontal scroll.
-await p.goto(base + '/mempool', { waitUntil: 'networkidle' });
+await p.goto(base + '/live/mempool', { waitUntil: 'networkidle' });
+await landed('/live/mempool');
 await p.waitForSelector('.mp-canvas-scroll');
 const c = await p.$eval('.mp-canvas-scroll', el => ({
   reflow: el.classList.contains('mp-canvas-scroll--reflow'),
   clientW: el.clientWidth, scrollW: el.scrollWidth,
 }));
 console.log('mempool classic (default view)', c);
-if (!c.reflow) { console.log('❌ Classic did not opt into the reflow layer'); fail = true; }
-else if (c.scrollW - c.clientW > 2) { console.log('❌ Classic still pans (' + (c.scrollW - c.clientW) + 'px)'); fail = true; }
-else console.log('✅ Classic reflows instead of panning');
+if (!c.reflow) { bad('Classic did not opt into the reflow layer'); fail = true; }
+else if (c.scrollW - c.clientW > 2) { bad('Classic still pans (' + (c.scrollW - c.clientW) + 'px)'); fail = true; }
+else ok('Classic reflows instead of panning');
 
 // 2) No page-level horizontal overflow on key routes (incl. the Monero/Bottom-Line
 //    page that v5.0.5 left rendering its <main> 998px wide and clipped).
-for (const r of ['/', '/network', '/markets', '/mempool', '/simulate', '/monero', '/monero/bottomline', '/education']) {
+const OVERFLOW_ROUTES = ['/', '/live/network', '/live/markets', '/live/mempool', '/learn/sim', '/monero', '/monero/bottomline', '/learn'];
+const overflowBad = [];
+let metricLive = false;
+for (const r of OVERFLOW_ROUTES) {
   await p.goto(base + r, { waitUntil: 'networkidle' });
+  if (!metricLive) {
+    // POSITIVE CONTROL — see verify-perf.mjs's overflowMetricLive note. This
+    // gate runs ONLY at 390px, where styles.css:2202-2206 clips the page
+    // horizontally on purpose (iOS touch scrolling), so this loop could not
+    // fail no matter what any route rendered. Measured: a 3000px element
+    // appended to <body> leaves documentElement.scrollWidth at 390.
+    metricLive = await p.evaluate(() => {
+      const probe = document.createElement('div');
+      probe.style.cssText = 'width:3000px;height:2px;flex:none';
+      document.body.appendChild(probe);
+      const moved = document.documentElement.scrollWidth - window.innerWidth > 2;
+      probe.remove();
+      return moved;
+    });
+  }
+  const at = await p.evaluate(() => location.pathname);
   const o = await p.evaluate(() => {
     const main = document.querySelector('main.main');
     return { doc: document.documentElement.scrollWidth, win: window.innerWidth, main: main ? main.getBoundingClientRect().width : null };
   });
   const over = o.doc - o.win;
-  console.log(r, 'docW', o.doc, 'winW', o.win, 'mainW', o.main, 'overflow', over);
-  if (over > 2) { console.log('❌ horizontal overflow on ' + r); fail = true; }
+  console.log(r, 'landed', at, 'docW', o.doc, 'winW', o.win, 'mainW', o.main, 'overflow', over);
+  if (at !== r) overflowBad.push(`${r} landed on ${at}`);
+  if (over > 2) overflowBad.push(`${r} +${over}px`);
 }
+// Reported as one line either way — a pass that prints nothing is why this
+// gate showed 2 marks for 3 checks. Landing is asserted unconditionally; the
+// OVERFLOW half is only claimed where the metric was proven able to move.
+const landingBad = overflowBad.filter((m) => m.includes('landed on'));
+const overBad = overflowBad.filter((m) => !m.includes('landed on'));
+if (landingBad.length === 0) ok(`all ${OVERFLOW_ROUTES.length} routes land on the path requested`);
+else { bad('landing: ' + landingBad.join(', ')); fail = true; }
+
+if (!metricLive) {
+  skips++;
+  console.log('⏭  SKIP — 390px horizontal overflow: documentElement.scrollWidth cannot exceed the ' +
+    'viewport here (html,body overflow-x:clip below 769px), so a pass would be vacuous. Not measured.');
+} else if (overBad.length === 0) {
+  ok(`no horizontal overflow at 390px (${OVERFLOW_ROUTES.length} routes, metric proven live)`);
+} else { bad('390px overflow: ' + overBad.join(', ')); fail = true; }
+
 await b.close();
-process.exit(fail ? 1 : 0);
+// The completion marker is emitted by the thing that completed.
+console.log(`\nverify-mobile: ${pass} ✅ · ${failed} ❌ · ${skips} reasoned skip(s)`);
+console.log(fail || failed ? '❌ MOBILE CHECKS FAILED' : '✅ All mobile checks passed.');
+process.exit(fail || failed ? 1 : 0);

@@ -40,13 +40,29 @@ console.log('engine:', engine);
 let fail = false;
 const ok = (c, m) => { console.log((c ? '✅ ' : '❌ ') + m); if (!c) fail = true; };
 
+/* Canonical routes + a landing assertion. This file navigated to `/mempool?v=`
+ * — a pre-v6.1.6 name and a redirect source since. It was not producing wrong
+ * answers (serve-dist has no 301s, so RedirectTo runs client-side and preserves
+ * the query), but the gate's correctness rested on verify-redirects' contract
+ * with nothing stating the dependency, and a dropped redirect would have made
+ * it measure a different page rather than go red. `landed` is what makes that
+ * failure loud. */
+const strays = new Set();
+let navs = 0;
+const landed = async (p, want) => {
+  navs++;
+  const at = await p.evaluate(() => location.pathname);
+  if (at !== want) strays.add(`${at} (wanted ${want})`);
+};
+
 const VIEWS = ['reactor', 'bridge', 'sediment', 'constellation'];
 const VPS = [{ w: 1440, h: 900, name: 'desktop' }, { w: 390, h: 844, name: 'mobile' }];
 
 for (const vp of VPS) {
   const p = await b.newPage({ viewport: { width: vp.w, height: vp.h } });
   for (const v of VIEWS) {
-    await p.goto(`${base}/mempool?v=${v}`, { waitUntil: 'networkidle' });
+    await p.goto(`${base}/live/mempool?v=${v}`, { waitUntil: 'networkidle' });
+    await landed(p, '/live/mempool');
     await p.waitForSelector('.mp-view--fit .mp-fit');
     // let ResizeObserver + rAF settle the first measure
     await p.waitForTimeout(150);
@@ -109,7 +125,8 @@ for (const vp of VPS) {
 // Fit/100% toggle: at desktop, switching reactor to 100% restores true size + h-pan.
 {
   const p = await b.newPage({ viewport: { width: 1440, height: 900 } });
-  await p.goto(`${base}/mempool?v=reactor`, { waitUntil: 'networkidle' });
+  await p.goto(`${base}/live/mempool?v=reactor`, { waitUntil: 'networkidle' });
+  await landed(p, '/live/mempool');
   await p.waitForSelector('.mp-zoom__btn');
   await p.waitForTimeout(150);
   const btns = await p.$$('.mp-zoom__btn');
@@ -126,6 +143,12 @@ for (const vp of VPS) {
   ok(r.sw - r.cw > 50 && r.left > 50, `toggle 100%: reactor pans horizontally (scrollW ${r.sw} > clientW ${r.cw}, left ${r.left})`);
   await p.close();
 }
+
+// Reported positively rather than only on failure: a guard that prints nothing
+// when it passes cannot be told apart from a guard that never ran.
+ok(strays.size === 0, strays.size === 0
+  ? `all ${navs} navigations landed on /live/mempool (no redirect hop)`
+  : `navigations did not land as requested: ${[...strays].join(', ')}`);
 
 await b.close();
 console.log(fail ? '\nFIT CHECKS FAILED' : '\nALL FIT CHECKS PASSED');

@@ -1204,9 +1204,26 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
    height in the .mp-shell flex column: `.mp-chrome` and the legend row above
    it size to their own content, and this rule's `flex: 1 1 auto` claims
    whatever height is left), and let .mp-view shrink-wrap its content so
-   wide/tall views (reactor 1670px, sediment 2279×2495) expose their true
-   size and scroll on both axes. The @media (max-width:768px) block below
-   owns phones. */
+   wide/tall views expose their true size and scroll on both axes. The
+   @media (max-width:768px) block below owns phones.
+
+   NO NUMBERS HERE ON PURPOSE. This comment used to read "(reactor 1670px,
+   sediment 2279×2495)", and the replacement is a GATE CITATION rather than
+   fresher figures, because a width here means nothing without an INSTRUMENT
+   and a FEED STATE attached to it.
+
+   verify-memviews scenario 9 prints reactor 1668 and sediment 3280, measuring
+   `.mp-view.scrollWidth` at 1440×900 under its populated-mempool fixture (where
+   reactor renders 130 readouts). The SAME measurement against an empty feed
+   gives reactor 1413 — scripts/serve-dist.mjs:78 returns 501 for every /api/*
+   by design, so any probe run against that harness reads the empty-feed layout.
+   Same selector, same property, same viewport, 255px apart.
+
+   No drift against the old figures is computed here, deliberately. They carry
+   no recorded instrument, viewport or feed state, so differencing them against
+   a characterised number would produce a quantity nobody can defend — quote
+   both endpoints or quote neither. Read the live table off scenario 9, which
+   prints it every run. */
 @media (min-width: 769px) {
   .mp-canvas-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; }
   .mp-view { display: block; width: max-content; min-width: 100%; }

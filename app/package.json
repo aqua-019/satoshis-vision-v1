@@ -19,12 +19,16 @@
     "verify:all": "node scripts/verify-all.mjs",
     "verify:shots": "node verify-shots.mjs",
     "verify": "npm run verify:static",
-    "verify:perf": "node verify-perf-classic.mjs",
     "verify:mem": "node verify-memshell.mjs",
     "verify:mem:dom": "node verify-memviews.mjs",
     "verify:mem:perf": "node verify-memperf.mjs",
     "build:ssr": "vite build --config vite.ssr.config.ts --logLevel error",
-    "verify:coldboot": "node verify-coldboot-live.mjs && node verify-coldboot.mjs"
+    "verify:coldboot": "node verify-coldboot-live.mjs && node verify-coldboot.mjs",
+    "verify:perf-classic": "node verify-perf-classic.mjs",
+    "verify:perf-runtime": "node verify-perf.mjs",
+    "verify:pageshell": "node verify-pageshell.mjs",
+    "verify:fit": "node verify-fit.mjs",
+    "verify:mobile": "node verify-mobile.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",

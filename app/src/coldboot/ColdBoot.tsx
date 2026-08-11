@@ -678,9 +678,10 @@ export function ColdBoot(): React.JSX.Element | null {
       if (last === null) last = now;
       const dt = Math.min(64, now - last);
       last = now;
-      // Frozen while hidden/offscreen — field.ts's documented discipline,
-      // same as mempool/useMemCanvas.ts.
-      if (document.visibilityState === "visible") elapsed += dt;
+      // The loop only runs while the tab is visible (see start/stop below), so
+      // there is no per-frame visibility test here and `elapsed` advances every
+      // frame it is called.
+      elapsed += dt;
 
       const t = T(elapsed);
       drawField(ctx, dims.w, dims.h, t, 1);
@@ -712,10 +713,46 @@ export function ColdBoot(): React.JSX.Element | null {
       }
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+
+    /* STOP THE LOOP, NOT THE CLOCK — mempool/useMemCanvas.ts's start/stop/sync
+     * shape, which this comment used to CLAIM parity with while doing something
+     * strictly weaker.
+     *
+     * The previous form kept `raf = requestAnimationFrame(tick)` running and
+     * gated only the accumulator (`if (visibilityState === "visible") elapsed
+     * += dt`). Freezing the clock while still scheduling means `t` never
+     * reaches 1, so the `t >= 1` early return — the loop's only exit — becomes
+     * unreachable and the same frame repaints forever. Measured by
+     * verify-perf.mjs §3 on a faked-hidden `/`: 181 rAF callbacks in 3s
+     * against 0 on every other route.
+     *
+     * A genuinely backgrounded tab is rescued by the browser, which stops
+     * servicing rAF — so the cost to a real visitor is ~0 and this is NOT a
+     * battery fix. What it removes is the app depending on that rescue: `/`
+     * was the only route whose quiescence it did not own itself.
+     *
+     * `last = null` on restart is what preserves the freeze the old guard was
+     * reaching for — the first frame after a gap contributes dt 0, so `elapsed`
+     * never jumps by the width of the hidden interval. Same line, same reason,
+     * as useMemCanvas.ts's `lastTs = null`. */
+    const start = () => {
+      if (raf || document.visibilityState === "hidden") return;
+      last = null;
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+      last = null;
+    };
+    const onVisibility = () => (document.visibilityState === "hidden" ? stop() : start());
+    document.addEventListener("visibilitychange", onVisibility);
+    start();
 
     return () => {
-      cancelAnimationFrame(raf);
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
       window.removeEventListener("resize", onResize);
     };
   }, [phase, skipDecrypt, floorLifted]);
@@ -746,7 +783,8 @@ export function ColdBoot(): React.JSX.Element | null {
       if (last === null) last = now;
       const dt = Math.min(64, now - last);
       last = now;
-      if (document.visibilityState === "visible") elapsed += dt;
+      // Visible-only, same as the decrypt loop above — see its start/stop note.
+      elapsed += dt;
 
       const x = X(elapsed);
       if (stageEl) applyHandoffFrame(x, stageEl, mainEl);
@@ -767,8 +805,32 @@ export function ColdBoot(): React.JSX.Element | null {
       }
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+
+    /* Same start/stop/`last = null` discipline as the decrypt loop — the X ramp
+     * had the identical shape (freeze the clock, keep scheduling) and therefore
+     * the identical never-terminating case: `x` frozen below 1 means the
+     * `x >= 1` exit is unreachable. Not reachable from verify-perf §3, which
+     * never presses ENTER, so it is fixed here on the source read rather than
+     * on a measurement. */
+    const start = () => {
+      if (raf || document.visibilityState === "hidden") return;
+      last = null;
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      if (!raf) return;
+      cancelAnimationFrame(raf);
+      raf = 0;
+      last = null;
+    };
+    const onVisibility = () => (document.visibilityState === "hidden" ? stop() : start());
+    document.addEventListener("visibilitychange", onVisibility);
+    start();
+
+    return () => {
+      stop();
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [phase, reduced]);
 
   if (phase === "off" || phase === "done") {

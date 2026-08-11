@@ -39,9 +39,20 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **57 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **60 distinct files** on
   PRs to `main`, in two jobs: **12** individually-named offline gates, then `verify:static`
-  (**21** gates, no browser) and `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`).
+  (**21** gates, no browser), `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`) and
+  **three individually-named browser gates** v2·3b wired in — `verify:fit`,
+  `verify:mobile`, `verify:perf-runtime`, one step each with `if: always()`, never an `&&`
+  chain, so a red one cannot make the others unanswerable. (Recounted, not incremented:
+  57 → 60.) **`verify:pageshell` is the fourth and is npm-wired ONLY**, held back under
+  v2·3b's own "never wire a red gate" rule: it is 369/0 locally and red on a CI runner with
+  `/future@1600: .main no h-scroll … over 4`, a PRE-EXISTING defect measured by reverting
+  to 5537976 and rebuilding (2px local, 4px runner, against the gate's TOL of 2).
+  `/future`'s `.v6-proto-grid` lays 4 tracks of 354.5px at 1600 while a `.v6-stagger` child
+  grid sizes its column to a panel's 426.375px min-content and will not shrink. Fixing that
+  is a layout decision across /future's breakpoint ladder; wiring the step is a one-line
+  follow-up after it.
   v6.1.8 added three, and the two cold-boot gates sit at OPPOSITE ends of `verify:e2e` on
   DIFFERENT axes — state both, because they look contradictory: `verify-coldboot-live` runs
   **FIRST**, and `verify-hero` (static) runs first in its own chain. **`verify-coldboot` no
@@ -90,10 +101,12 @@ chain and market data.
   the build in the other job, so it cannot live there) and `verify-vitals` (e2e).
   `npm run verify:all` runs the whole CI-reached set locally in one command with one
   tally; it is an orchestrator, not a gate, and is deliberately not in CI.
-  Three more are npm-wired but deliberately not in CI (`verify:shots`, `verify:perf`,
+  **Four** more are npm-wired but not in CI (`verify:shots`, `verify:perf-classic`,
   `verify:mem:perf` — a baseline shot tree and a framerate measurement are both things a
-  shared runner cannot produce honestly). The remaining 11 are wired to neither npm nor
-  CI — several expect live upstreams.
+  shared runner cannot produce honestly; `verify:perf` was renamed to `verify:perf-classic`
+  in v2·3b, see the stale-literals entry for why — plus `verify:pageshell`, held back for a
+  pre-existing `/future` layout red, see the verification block above). The remaining **7**
+  are wired to neither npm nor CI — several expect live upstreams.
 
 ## Site Routes
 
@@ -422,15 +435,29 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   predicting the v6.1.3 sweep. `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=`
   explicitly, so the views are not unverified — but no human ever sees them in a shot tree,
   and a `--route /live/mempool` sweep silently means "classic only".
-- **68 stale route literals sit in orphaned gates, knowingly.** v6.1.6 renamed every
-  top-level route and swept the CI-reached and npm-wired gates. The gates wired to NEITHER
-  npm nor CI were deliberately left: nothing runs them, so a fix there cannot be proven
-  correct, and 68 literals of unverifiable churn on an already-large PR is a bad trade.
-  Per file: `verify-pageshell` 28 · `verify-chart-legibility` 12 · `verify-perf` 11 ·
-  `verify-mobile` 7 · `verify-desktop` 6 · `verify-gradients` 3 · `verify-responsive` 1.
-  Note `verify:perf` runs `verify-perf-classic.mjs`, NOT `verify-perf.mjs` — the latter is
-  orphaned despite the similar name. Recorded here so they are knowingly stale rather than
-  silently wrong; wiring or deleting them is its own task.
+- **Stale route literals in orphaned gates — 46 of 68 CLEARED in v2·3b, and the deferral's
+  own reasoning is why.** v6.1.6 renamed every top-level route and swept the CI-reached and
+  npm-wired gates. The gates wired to NEITHER npm nor CI were deliberately left, on this
+  stated ground: "nothing runs them, so a fix there cannot be proven correct, and 68
+  literals of unverifiable churn on an already-large PR is a bad trade." That was right,
+  and **wiring the gate is exactly what dissolves it** — v2·3b wired four, so their
+  literals became provable and were fixed in the same PR: `verify-pageshell` 28 ·
+  `verify-perf` 11 · `verify-mobile` 7 = 46. Still stale, still orphaned, still correctly
+  deferred: `verify-chart-legibility` 12 · `verify-desktop` 6 · `verify-gradients` 3 ·
+  `verify-responsive` 1 = 22.
+  **THIS PER-FILE LIST WAS INCOMPLETE, AND THE OMISSION HAS A MECHANISM.** It listed only
+  files with QUOTE-ANCHORED paths (`'/mempool'`). Three orphans reference routes solely
+  through template interpolation (`` `${base}/mempool?v=${v}` ``), where the `/` follows a
+  `}`, and a quote-anchored matcher is structurally blind to them: `verify-fit` (2),
+  `verify-sims` (12), `verify-v508` (4). Confirmed rather than assumed — a quote-anchored
+  count reproduces this list's figures EXACTLY for all four files v2·3b did not touch
+  (12/6/3/1), and every orphan it omits is template-only. `verify-fit`'s 2 were fixed in
+  v2·3b; `verify-sims` and `verify-v508` remain.
+  `verify:perf` **was renamed to `verify:perf-classic` in v2·3b.** It ran
+  `verify-perf-classic.mjs` while `verify-perf.mjs` was orphaned, so
+  `grep verify-perf package.json` matched and the orphan read as wired — a substring trap
+  that cost real time twice, including to the brief that set out to catalogue it.
+  `verify-perf.mjs` is now `verify:perf-runtime`.
 - **19 sub-12px `font-size` declarations in `styles-legibility.css`** (L63-66, 71, 73-75,
   77-78, 81, 84, 93-95, 98-100, 102). This is a STANDARDS CONFLICT, not a defect:
   `verify-legibility.mjs:124` records "v6.0.10: floor raised 10.5 -> 11. Nothing below 11
@@ -439,13 +466,25 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   rendered floor on any CSS selector; it checks inline TSX `fontSize` (sub-14) and SVG
   `fontSize` attributes (sub-11) only. Deciding the floor, and writing a gate that reads
   computed font-size on a named selector set, belong together in their own change.
-- **Orphaned gates**: 11 `verify-*.mjs` are wired to neither npm nor CI (this said 13 until
-  v6.1.5 measured it; `:184` in this same file already said 11, and 11 is right) (v6.1.2 wired in
-  `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots` npm script,
-  `verify-shots.mjs`) — `verify-shots.mjs` is npm-wired only, deliberately not CI: a
-  `--baseline` diff needs a shot tree built from another commit, which CI has no way to
-  produce, so it stays a by-hand comparison tool. Several of the rest expect live
-  upstreams; auditing and wiring them is its own task.
+- **Orphaned gates**: **7** `verify-*.mjs` are wired to neither npm nor CI — v2·3b wired
+  four (`verify-pageshell` to npm only; `verify-fit`, `verify-mobile`, `verify-perf` to npm
+  AND CI), taking 11 → 7 — an orphan is a gate wired to NEITHER, so npm alone clears it.
+  (This said 13 until v6.1.5 measured it, and `:184` in this same file already said 11;
+  v6.1.2 wired in `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots`
+  npm script, `verify-shots.mjs`.) `verify-shots.mjs` is npm-wired only, deliberately not
+  CI: a `--baseline` diff needs a shot tree built from another commit, which CI has no way
+  to produce, so it stays a by-hand comparison tool. The remaining 7 are
+  `verify-chart-legibility` · `verify-desktop` · `verify-gradients` · `verify-legality` ·
+  `verify-responsive` · `verify-sims` · `verify-v508`. Several expect live upstreams and
+  one (`verify-v508`) declares itself HISTORICAL in its own header; auditing and wiring
+  them is its own task.
+  **COUNT THE RIGHT SUBJECT.** A token sweep of `verify-*.mjs` against `package.json` and
+  `ci.yml` returns **14** unreferenced files, not 7 — because `verify-lib.mjs`,
+  `verify-reporter.mjs` and `verify-fixtures.mjs` are SHARED MODULES, imported by 29, 8
+  and 1 gates respectively. They are unreferenced by design and are the most-executed code
+  in the suite. A v2·3b census reported 14 as "orphaned gates" and described ~2,000 lines
+  that never run; ~600 of those lines run on every CI job. 14 files − 3 libraries = 11
+  gates before that PR, 7 after.
 - **MoneroSpace's lineage is an open question** with `brainchainz`. Its own repo
   (`brainchainz/Monero-Superbrain`) points at a different origin than the one this site's
   earlier copy asserted, and the maintainer has not answered. Neither account is

@@ -336,7 +336,28 @@ R.group('── 0 · derived sweep audit: every /-reaching gate installs the byp
     /import\s*\{[^}]*\bROUTES\b[^}]*\}\s*from\s*['"]\.\/verify-lib\.mjs['"]/,
   ];
 
-  const reaching = [], bypassing = [], orphanReaching = [], missing = [];
+  /* The ONE gate whose subject at `/` is the splash itself.
+   *
+   * verify-perf §3 counts rAF callbacks on a hidden tab. ColdBoot mounts on `/`
+   * and nowhere else (gate.ts:124), so `/` is the only route that has a loop to
+   * stop — which is why it measured 181 frames while /live/mempool and
+   * /live/markets measured 0. Installing the bypass there would set
+   * `__XMR_COLDBOOT__ = 'off'`, ColdBoot would never mount, and the assertion
+   * would report 0 frames for a page with no loop in it: a vacuous pass that
+   * also fakes its own break test (revert the fix under the bypass and you get
+   * 0 → 0, reading as "confirmed").
+   *
+   * A hand-maintained exemption list is exactly the rot this file warns about,
+   * so this one is GUARDED RATHER THAN TRUSTED: the exempted gate must carry
+   * its own positive control asserting the splash is PRESENT before it counts.
+   * Delete that control and this assertion goes red, so the exemption cannot
+   * outlive the reason for it. verify-perf bypasses in every other section;
+   * only its §3 `/` context opts out. */
+  const SPLASH_IS_THE_SUBJECT = new Map([
+    ['verify-perf.mjs', /\[data-coldboot\]/],
+  ]);
+
+  const reaching = [], bypassing = [], orphanReaching = [], missing = [], exempt = [];
 
   for (const f of files) {
     if (f === 'verify-coldboot.mjs' || f === 'verify-lib.mjs') continue;
@@ -352,6 +373,12 @@ R.group('── 0 · derived sweep audit: every /-reaching gate installs the byp
     const hasBypass = /coldBootOffBrowser\s*\(|coldBootOff\s*\(/.test(src);
     if (hasBypass) bypassing.push(f);
     if (!wired) { orphanReaching.push(f); continue; }
+    if (SPLASH_IS_THE_SUBJECT.has(f)) {
+      // Exempt ONLY while its own positive control is still in place.
+      if (SPLASH_IS_THE_SUBJECT.get(f).test(src)) { exempt.push(f); continue; }
+      missing.push(`${f} (exempt, but its splash-present control is GONE)`);
+      continue;
+    }
     if (!hasBypass) missing.push(f);
   }
 
@@ -360,9 +387,12 @@ R.group('── 0 · derived sweep audit: every /-reaching gate installs the byp
   R.info(`ORPHANED (wired to neither npm nor CI) — recorded, not failed: ` +
          `${orphanReaching.length}${orphanReaching.length ? ' → ' + orphanReaching.join(', ') : ''}`);
 
+  R.info(`EXEMPT (splash is the subject; each guarded by its own positive control): ` +
+         `${exempt.length}${exempt.length ? ' → ' + exempt.join(', ') : ''}`);
+
   R.ok(missing.length === 0,
     `every WIRED /-reaching gate installs the cold-boot bypass ` +
-    `(${reaching.length - orphanReaching.length} wired, ${missing.length} missing)`,
+    `(${reaching.length - orphanReaching.length} wired, ${exempt.length} exempt, ${missing.length} missing)`,
     missing.length
       ? `NOT bypassing: ${missing.join(', ')} — each will measure the splash and report a ` +
         `confident number about the wrong page state.`
