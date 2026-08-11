@@ -339,6 +339,15 @@ function SedParticleField({ drawn, maxPerB, maxSize, tiers, truncated, total, tr
   // is actually in the drawn set — a marker for a tx the 320-cap dropped
   // would point at a particle that isn't there.
   const trackedTx = trackedTxId ? drawn.find((t) => t.id === trackedTxId) ?? null : null;
+  // ONE WIDTH, TWO SOURCES — known, cosmetic, deliberately not "fixed" here.
+  // The hit-test above lays out against `canvas.clientWidth` (MEASURED, integer-
+  // rounded); this marker lays out against `hostWidth - AXIS_GUTTER` (COMPUTED,
+  // fractional). They are the same quantity — the canvas is styled
+  // `width: calc(100% - AXIS_GUTTER px)` — derived two ways, so they can differ
+  // by up to a pixel and put the "you are here" ring up to a pixel off the
+  // particle it marks. Written down rather than left as a surprise: it is the
+  // two-sources-for-one-number shape, and the durable fix is to measure the
+  // canvas once and pass that width to both.
   const markerW = Math.max(1, hostWidth - AXIS_GUTTER);
   const markerLayout = trackedTx ? sedLayout([trackedTx], markerW, hostHeight, maxPerB, maxSize, tiers, resolved.colors, resolved.fallback)[0] : null;
 

@@ -83,14 +83,30 @@ export function useSvgCursor(viewW: number): [React.RefObject<SVGSVGElement>, nu
  * every one needs pointer hit-testing, so an allowlist would reach nine entries
  * and the rule would mean nothing.
  *
- * PREFERS `offsetX`/`offsetY`, which are already relative to the target's
- * padding edge AND already in the element's untransformed space. That matters
- * because `.mp-fit` scales mempool views (measured 0.36 at 1440): a
- * `clientX - rect.left` reading is in SCREEN pixels and must be divided back
- * out by that scale, which is one more thing to get wrong in each of the eight
- * views to come. The rect path below exists only for synthetic events that
- * carry no offset, and it lives HERE — the one file this conversion is allowed
- * in — rather than in a view.
+ * PREFERS `offsetX`/`offsetY`: per CSSOM View they resolve into the target's
+ * OWN untransformed space, so an ancestor `transform: scale()` — `.mp-fit`
+ * scales mempool views, measured 0.36 at 1440 — is already accounted for, and
+ * there is no arithmetic to get wrong.
+ *
+ * **BOTH PATHS ARE CORRECT. The rect form is NOT the unsafe one.**
+ * `(clientX - rect.left) * (clientWidth / rect.width)` is transform-correct by
+ * construction, because `rect.width` is POST-transform and the ratio divides
+ * the scale back out in the same step. `offsetX` is preferred for being cheaper
+ * and division-free, not for being safer — and the distinction matters for the
+ * eight views inheriting this: **a view that puts its handler on a WRAPPER
+ * rather than on the canvas itself cannot use `offsetX`** (it would resolve
+ * against whichever child is under the pointer), and the rect form is then the
+ * only correct option. Do not read this comment as steering away from it.
+ *
+ * PRECONDITION where the two paths agree: `offsetX` measures from the PADDING
+ * edge, `rect.left` from the BORDER-BOX edge, so they coincide only at zero
+ * border and zero padding. `.mem-canvas` has neither today. Give an
+ * interactive canvas a focus ring — plausible on a surface that opens an
+ * inspector — and the two diverge by the border width, silently, on the branch
+ * nothing exercises. If you add a border, subtract it here.
+ *
+ * The rect path exists for synthetic events that carry no offset, and it lives
+ * HERE — the one file this conversion is allowed in — rather than in a view.
  */
 export function canvasCursor(
   e: { nativeEvent: MouseEvent; currentTarget: HTMLCanvasElement },
