@@ -307,11 +307,23 @@ const BUDGETS = {
   // `a67867e` figure from the comment above, which is a BRANCH commit of the
   // sediment PR rather than the merged base. The merged base is `fdf4ecc`:
   //
-  //     fdf4ecc   945,306     (260c99f's first parent)
-  //     260c99f   948,435     constellation   + 3,129
-  //     #170 head 964,046     terminal        +15,611
-  //     sediment                              + 5,836   <- still CITED above,
-  //                                                        not re-measured here
+  //     6039d64   938,036     (fdf4ecc's first parent)
+  //     fdf4ecc   945,306     sediment        + 7,270   BUILT
+  //     260c99f   948,435     constellation   + 3,129   BUILT
+  //     #170 head 964,046     terminal        +15,611   BUILT
+  //
+  // ALL THREE ARE NOW BUILT-TO-BUILT, and all three were wrong when cited:
+  // 1,434 (sediment) · 1,113 (constellation, as two compounding errors) · and
+  // terminal's, which was only right because it was the one nobody had quoted
+  // from a report yet. No cited delta in this series has survived rebuilding.
+  //
+  // The last of those was found by a reviewer, and where it was found is the
+  // point: an earlier revision of THIS paragraph ended "quote both endpoints or
+  // quote neither" while its own headline mean rested on sediment's +5,836,
+  // sitting four lines under a marker this file had already written reading
+  // `<- still CITED above, not re-measured here`. The rule found one more
+  // instance of itself inside the paragraph written to state it, and the file
+  // had labelled the instance before anyone measured it.
   //
   // #169'S PUBLISHED DELTA IS WRONG THE SAME WAY, and an independent reviewer
   // caught it by measuring 948,435 at 91c1653 (whose tree is identical to
@@ -328,11 +340,19 @@ const BUDGETS = {
   // from a previous report is not a measurement, and nothing in a build log
   // says which one you are holding. **Quote both endpoints or quote neither.**
   //
-  //     mean 8,192 · spread 3,129 -> 15,611, a 5x range
+  //     mean 8,670 · spread 3,129 -> 15,611, a 5x range
   //
-  // Six views remain. At the measured mean that is ~1,013,000 — so 960,000 is
-  // too low AND the 1,000,000 this comment argued down from would also have
-  // been crossed. The level was never the problem; the sample was.
+  // Six views remain. At the measured mean that is ~1,016,066 on the old
+  // aggregate — so 960,000 was too low AND the 1,000,000 this comment argued
+  // down from would also have been crossed. The level was never the problem;
+  // the sample was.
+  //
+  // AND THE ARGUMENT BELOW ALREADY HAPPENED ONCE, which converts it from
+  // reasoning into a measurement: 6039d64 built 938,036 against the then-
+  // ceiling of 940,000 — 1,964 B of headroom — and the very next merge
+  // (sediment, +7,270) crossed it. So "a minimum raise leaves ~1,950 B and
+  // reds on the next change of any size" is not a prediction about what might
+  // happen; it is a description of what did, one ceiling ago.
   //
   // AND THE DETECTOR'S SUBJECT DOES NOT MATCH THIS GROWTH. Line :247 states
   // what totalJsRaw is for: "the drift detector for 'we shipped 200 kB of lazy
@@ -341,7 +361,7 @@ const BUDGETS = {
   // Measured on the same build, the thing this detector actually protects did
   // not move:
   //
-  //     eager index chunk          +3 B
+  //     eager closure               0 B   (byte-identical; see the split below)
   //     /live/mempool first load   104,183 gz <= 107,000   PASSES at 97%
   //
   // So `totalJsRaw` cannot distinguish "we shipped weight nobody opens" from
@@ -367,10 +387,59 @@ const BUDGETS = {
   // THE RESOLUTION IS A SPLIT, IN ITS OWN PR WITH ITS OWN BASELINES: an
   // `eagerJsRaw` ceiling over first-paint weight (what every visitor pays
   // unconditionally) and a per-chunk `lazyJsRaw` drift check. The two
-  // populations moved +3 B and +15,611 B in the same commit; one ceiling over
-  // both is why this crossing is ambiguous to argue about. Until that lands,
-  // this number stays where it is and this gate stays red.
-  totalJsRaw: 960_000,
+  // populations moved 0 B and +15,611 B in the same commit; one ceiling over
+  // both is why this crossing is ambiguous to argue about.
+  //
+  // RESOLVED IN THIS PR by splitting the populations above rather than by moving
+  // this number a third time. What remains here is a CATASTROPHE BACKSTOP, not a
+  // calibration check — the same status maxChunkRaw has — set to the sum of the
+  // two real budgets so it can only fire when something has gone wrong that
+  // neither of them already named. Do not tune it; argue with eagerJsRaw and
+  // lazyJsRaw, which are sized from measurement.
+  totalJsRaw: 1_000_000,
+  // ── THE SPLIT (v2·3), and it applies THIS FILE'S OWN STATED PRINCIPLE ──
+  //
+  // Line :26 already rejects the shape `totalJsRaw` has: "a single grand total
+  // is rejected too: it would hide a 40 kB entry regression behind a 40 kB
+  // lazy-chunk win. The five classes below each answer a different question."
+  // `totalJsRaw` is exactly that grand total. The file stated the rule and then
+  // carried one instance of what it forbids, and #170 is where that cost
+  // something: a lazy view chunk growing on purpose was indistinguishable from
+  // drift, and the red skipped 62 gate invocations to say so.
+  //
+  // The two populations are disjoint, sum to totalJsRaw, and behave nothing
+  // alike. Measured across #170's 3.6x information rebuild of one view — both
+  // endpoints BUILT, in an isolated worktree with its own dist/:
+  //
+  //                     260c99f      #170 head       delta
+  //     eagerJsRaw      261,392        261,392           0   byte-identical
+  //     lazyJsRaw       687,043        702,654     +15,611
+  //     totalJsRaw      948,435        964,046     +15,611
+  //
+  // EAGER MOVED BY EXACTLY ZERO — index 98,477 and vendor 162,915, unchanged.
+  // (An earlier note in this PR said "+3 B eager". That was wrong and the error
+  // is instructive: the measuring script grouped chunks by basename with the
+  // hash stripped, and there are TWO `index-*.js` chunks — the 98,477 entry and
+  // a 2,064 lazy one. It summed them, so a +3 B change in the LAZY chunk was
+  // reported against the EAGER population. A true number about the wrong
+  // subject, from an aggregation key that collided.)
+  //
+  // eagerJsRaw — what every visitor pays before anything renders. 261,392
+  // measured, budget 280,000 (93%). Deliberately tight: this population did not
+  // move at all across a rebuild that tripled one view's information, so it has
+  // no reason to drift, and eagerJsGz already guards the same set in gzip.
+  eagerJsRaw: 280_000,
+  // lazyJsRaw — the population totalJsRaw's docstring was really describing:
+  // "we shipped 200 kB of lazy code nobody has opened yet". 702,654 measured,
+  // budget 720,000 (98%). Sized by the same standard the old ceiling used, on
+  // the right population and with a MEASURED per-view figure instead of an
+  // assumed one: mean 8,670 across three built-to-built v2 rebuilds
+  // (sediment 7,270 · constellation 3,129 · terminal 15,611), six views
+  // remaining, so 2 views of headroom = 17,346 and this speaks about a third of
+  // the way through the rest of the roadmap while the answer is still "which
+  // view". It does not make the roadmap fit: 6 x 8,670 projects to ~754,674,
+  // still 34,674 B over. It will fire again, and it should.
+  lazyJsRaw: 720_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
@@ -483,10 +552,21 @@ const eagerGz = sum(eagerJs, 'gz') + INFLATE;
 const cssGz = sum(cssFiles, 'gz');
 const cssRaw = sum(cssFiles, 'raw');
 const eagerBr = sum(eagerJs, 'br');
+/* THE SPLIT (v2·3). totalJsRaw counts one population and its docstring
+ * describes another. These two are disjoint and sum to it, so each can be
+ * budgeted against what it actually costs a reader. */
+const eagerRaw = sum(eagerJs, 'raw') + INFLATE;
+const lazyRaw = sum(jsFiles.filter((f) => !EAGER.has(f)), 'raw') + INFLATE;
+/* `+ INFLATE` on all three readings, deliberately. Each is an independent
+ * measurement, so the hook must be able to redden each one on its own — a new
+ * budget the break-test hook cannot reach is a budget nobody can prove goes
+ * red, which is the vacuity this file's §7 self-test exists to prevent. */
 
 R.info(`eagerJsGz      ${kb(eagerGz)}    ${kb(BUDGETS.eagerJsGz)}   ${pct(eagerGz, BUDGETS.eagerJsGz)}   ${kb(eagerBr)}`);
 R.info(`cssGz          ${kb(cssGz)}    ${kb(BUDGETS.cssGz)}   ${pct(cssGz, BUDGETS.cssGz)}   ${kb(sum(cssFiles, 'br'))}`);
 R.info(`totalJsRaw     ${kb(totalJsRaw)}    ${kb(BUDGETS.totalJsRaw)}   ${pct(totalJsRaw, BUDGETS.totalJsRaw)}`);
+R.info(`eagerJsRaw     ${kb(eagerRaw)}    ${kb(BUDGETS.eagerJsRaw)}   ${pct(eagerRaw, BUDGETS.eagerJsRaw)}`);
+R.info(`lazyJsRaw      ${kb(lazyRaw)}    ${kb(BUDGETS.lazyJsRaw)}   ${pct(lazyRaw, BUDGETS.lazyJsRaw)}`);
 R.info(`  eager chunks: ${eagerJs.join(', ')}`);
 R.info(`  css raw ${cssRaw} → gzip ${cssGz} (source across 5 sheets: 203,896)`);
 
@@ -530,8 +610,14 @@ R.ok(eagerGz <= BUDGETS.eagerJsGz,
 R.ok(cssGz <= BUDGETS.cssGz,
   `CSS ${cssGz} B gzip ≤ ${BUDGETS.cssGz}`,
   'one render-blocking stylesheet; growth here delays first paint on every route');
+R.ok(eagerRaw <= BUDGETS.eagerJsRaw,
+  `eager JS ${eagerRaw} B raw ≤ ${BUDGETS.eagerJsRaw}`,
+  'the first-paint population — every visitor pays this unconditionally, whether or not they open the surface that grew');
+R.ok(lazyRaw <= BUDGETS.lazyJsRaw,
+  `lazy JS ${lazyRaw} B raw ≤ ${BUDGETS.lazyJsRaw}`,
+  'code behind a dynamic import; growth here is paid only by visitors who open the route that owns it, so ask WHICH chunk before asking whether to raise this');
 R.ok(totalJsRaw <= BUDGETS.totalJsRaw,
-  `total JS ${totalJsRaw} B raw ≤ ${BUDGETS.totalJsRaw}`,
+  `total JS ${totalJsRaw} B raw ≤ ${BUDGETS.totalJsRaw} (backstop, not a calibration check)`,
   'lazy code still ships; this is the drift detector for code nobody has opened yet');
 
 const biggest = jsFiles.map((f) => [f, size.get(f).raw]).sort((a, b) => b[1] - a[1])[0];
