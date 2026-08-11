@@ -202,6 +202,70 @@ On-disk read of `dist/assets`; `verify-bundle`'s own table agrees (255.27 -> 255
 Restore owned by a `trap`, from a pre-mutation snapshot, and it rebuilds `dist/` — a `dist/`
 built from a mutation survives a clean `git status`.
 
+
+### Conformance audit — three gaps closed after the first push
+Two were named in the v2·4 brief and my compressed spec to the builder dropped them; that is
+my miss, not the builder's.
+
+- **Two literal font sizes -> tokens.** `22 -> var(--fs-h2)` (24.48px @1440 — nearer the
+  mockup's authored 24 than the 22px literal it replaces) and `16 -> var(--fs-body)`
+  (14.40px @1440, a deliberate step DOWN, stated in the source rather than left silent:
+  the mockup wanted 18, `--fs-body` tops at 16.5 and `--fs-h2` starts at 21, and extending
+  a six-step scale that `verify-legibility:118` pins verbatim is not a view PR's call).
+  `reactor.tsx` now has **0** inline numeric `fontSize`.
+- **`dataKey` adopted** on all five panels that read a feed, each mirroring its own
+  `oldestFreshAt` key list exactly. Reactor was the fourth v2 view to skip it; three gates
+  read `data-panel-key` (`verify-provenance`, `verify-failure`, `verify-resilience-dom`),
+  all green after. The sixth panel (Ring · CLSAG) reads no endpoint, so it correctly
+  carries none — 5 of 6, by construction rather than by omission.
+- **`Stat`/`Pill` considered and REJECTED, stated rather than silent.** Reactor's panels are
+  dense telemetry rows and a fee-sorted list, not the big-number tiles `Stat` renders;
+  forcing them in would cost density and legibility. `MiniBar` and `PanelFrame` are used.
+
+### The find nobody's gate could have caught
+`MempoolHexGrid`'s cell box shipped at **22x26 while its own comment three lines above said
+it had been shrunk to 18x16** to match the tightened pitch (x 24->20, y 21->12). At a 12px
+pitch a 26px cell covers the whole of the row below it, and the backgrounds are
+`color-mix(..., transparent)`, so they COMPOSITE — the lattice would have rendered as a dark
+band rather than as discrete cells, in the flagship view, on a brief whose subject is that
+the spacing looks wrong.
+
+Every gate stayed green because **no gate reads cell geometry**, and it moved no measured
+quantity: the cells are `position: absolute`, the container is pitch-driven, and naturalW
+1180 / naturalH 851 / N 147 are byte-identical before and after the correction (verified).
+That invisibility is exactly why it survived.
+
+First instance in this series of the "claim outruns its subject" family living in SHIPPED
+SOURCE rather than in a gate or a harness — a comment asserting a code change that was never
+made. A gate can be fixed by widening its subject; source prose has no subject to widen. It
+was caught by a person reading the diff and nothing else would have caught it.
+
+Fixed at all three sites by collapsing them into one `HEX_CELL` constant (plus `PITCH_X` /
+`PITCH_Y`), so the legend swatch now renders the ACTUAL cell rather than a fourth size.
+
+### Open items added by the audit
+- **Nothing asserts "inline `fontSize` must be a token."** `verify-legibility` asserts a
+  FLOOR (sub-14 inline, sub-11 SVG) and that the six scale tokens exist verbatim, so any
+  literal above 14 passes both — which is how these two shipped green. Measured for whoever
+  picks it up: **80** inline numeric `fontSize` sites across `app/src/**/*.tsx` (reactor is
+  now 0 of them). Writing that assertion is a repo-wide survey plus a triage of legitimate
+  exceptions (SVG geometry, canvas text), not a passenger on a view rebuild.
+- **`verify-memviews` item 4's timeout is below the schedule it waits on.** `:252` waits for
+  `conf0 + 2` with `timeout: 25000` on the 15s CHAIN tier — two confirmations, one poll each,
+  so the worst case is ~30s and 25s guards it. Its own comment does the arithmetic for ONE
+  poll and stops there. The correction is `35000` WITH the arithmetic recorded, and the
+  distinction matters: this is a bound below its dependency, not a tolerance widened to
+  silence a red. Sediment appears to own it only because it runs late in the view loop and
+  inherits the poll phase — **testable by reversing the view order**, which exonerates or
+  convicts sediment cleanly.
+- **Scenario 7 is SEPARATE and still unexplained**, and now has two sightings (#171, #172) on
+  trees where sediment was untouched both times. Two independent reds on unmodified source
+  points harness-side, which is the opposite of where the current `canvas scale` candidate
+  points. Confirmed intermittent here: the failing tree passed twice on immediate re-run
+  (185 ✅ / 0 ❌ both).
+- `verify-memviews`' assertion COUNT varies run to run (186 once, 185 twice, same tree, all
+  green). Minor, unexplained, recorded.
+
 ### Deviations from spec
 - **The mockup `reactor-v2.html` does not exist** in the repo or the upload. The composition
   was reconstructed from the brief's span list, which tiles exactly once: `12 | 8+4 | 4+4+4`.

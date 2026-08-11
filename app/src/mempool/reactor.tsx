@@ -78,6 +78,30 @@ const GRID12: React.CSSProperties = {
   gap: "var(--sp-3)",
 };
 
+/* THE HEX CELL BOX — one constant, three render sites.
+ *
+ * Declared here because it shipped as three separate literals and one of them
+ * silently disagreed with its own comment: the v2 height pass tightened the
+ * lattice PITCH (x 24->20, y 21->12) and documented the cell box shrinking
+ * 22x26 -> 18x16 to match, but neither cell site was actually changed. At a
+ * 12px pitch a 26px cell covers the whole of the row below it, and the
+ * backgrounds are `color-mix(..., transparent)`, so they composite: the
+ * lattice would have rendered as a dark band rather than as discrete cells.
+ * No gate reads cell geometry, so every one of them stayed green.
+ *
+ * The cells are `position: absolute`, so this size is in NO layout formula —
+ * the container is pitch-driven (`cols * PITCH_X + 10`, `rows * PITCH_Y + 10`)
+ * and naturalW/naturalH are unmoved by it. Verified: 1180 x 851 before and
+ * after. That is also why the drift was invisible.
+ *
+ * The legend swatches use the SAME box, so the key renders the actual cell
+ * rather than an approximation of it — which is the point of a key, and which
+ * is what stops a fourth size appearing here later.
+ */
+const HEX_CELL = { width: 18, height: 16 } as const;
+const PITCH_X = 20;
+const PITCH_Y = 12;
+
 /** Fee-tier colour ramp, index-aligned with FEE_TIER_LABELS (slow…fastest). */
 const FEE_TIER_COLORS = ["var(--c-50)", "var(--g-50)", "var(--y-50)", "var(--r-50)"] as const;
 
@@ -106,12 +130,12 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
     // y 21→12 — cell box shrunk to match (22×26→18×16) so cells still tile
     // without gaps at the new pitch. cols/rows (density) are UNCHANGED; only
     // the per-cell footprint shrank, which is what buys row 2 its height.
-    const x = c * 20 + (r % 2 ? 10 : 0);
-    const y = r * 12;
+    const x = c * PITCH_X + (r % 2 ? PITCH_X / 2 : 0);
+    const y = r * PITCH_Y;
     cells.push({ x, y, intensity, tx, i });
   }
   return (
-    <div style={{ position: "relative", width: cols * 20 + 10, height: rows * 12 + 10 }}>
+    <div style={{ position: "relative", width: cols * PITCH_X + PITCH_X / 2, height: rows * PITCH_Y + PITCH_Y / 2 + 4 }}>
       {cells.map(({ x, y, intensity, tx, i }) =>
         tx ? (
           <div
@@ -119,7 +143,7 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
             className="hex"
             style={{
               left: x, top: y,
-              width: 22, height: 26,
+              ...HEX_CELL,
               background:
                 intensity > 0.85
                   ? "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)"
@@ -148,7 +172,7 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
             key={i}
             className="hex"
             style={{
-              left: x, top: y, width: 22, height: 26,
+              left: x, top: y, ...HEX_CELL,
               background: "transparent",
               border: "0.5px solid var(--line-d)",
             }}
@@ -428,6 +452,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             <PanelFrame
               title={<><span>● Block stream</span><span className="dim2">queued ⟶ confirmed</span></>}
               right={<><span>FEE-SORTED</span><span className="acc">▣ AUTO-SCROLL</span></>}
+              dataKey="blocks mempool network"
               updatedAt={oldestFreshAt(data.status, ["blocks", "mempool", "network"])}
               style={{ gridColumn: "span 12", minWidth: 0 }}
             >
@@ -450,7 +475,16 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                 <div className="mblock q" style={{ width: 70, minHeight: 120, flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                   <div>
                     <div className="hh">~#{(data.height + 2).toLocaleString()}</div>
-                    <div className="nm" style={{ fontSize: 16 }}>QUEUED</div>
+                    {/* TYPE-SCALE DECISION, stated rather than left as a literal.
+                        The mockup wanted --t-lg 18px here and v6 has no step
+                        there: --fs-body tops out at 16.5 and the next rung up,
+                        --fs-h2, starts at 21. This MAPS DOWN to --fs-body
+                        (14.4px at 1440) rather than extending the scale — the
+                        card is 70px wide and 18px "QUEUED" crowds it, and a
+                        seventh rung would be a change to a six-step scale that
+                        verify-legibility pins verbatim, which is not a view
+                        PR's call. Flattening deliberately, not quietly. */}
+                    <div className="nm" style={{ fontSize: "var(--fs-body)" }}>QUEUED</div>
                   </div>
                   {/* real: the block after next, from the node's own target */}
                   <div className="sz">{data.mempool.length} tx<br />in <BlockEta data={data} offsetSec={data.blockTarget || 120} /></div>
@@ -516,6 +550,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
               <PanelFrame
                 title={<><span>● Mempool · hex lattice</span><span className="dim2">cells = tx · color = fee/B</span></>}
                 right={<><NodeProvenance source="node" keys={["mempool"]} status={data.status} /><span>{data.mempool.length} ACTIVE</span><span className="acc">FEE ↑</span></>}
+                dataKey="mempool"
                 updatedAt={oldestFreshAt(data.status, ["mempool"])}
                 style={{ gridColumn: "span 8", minWidth: 0 }}
               >
@@ -530,9 +565,9 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                       the swatch above) and MiniBar height 48 → 36. */}
                   <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-1)", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", width: 200, minWidth: 0 }}>
                     <div className="kicker">Lattice key</div>
-                    <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)" }} /><span className="dim">priority</span></div>
-                    <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 60%, transparent)" }} /><span className="dim">standard</span></div>
-                    <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", width: 14, height: 16, background: "color-mix(in srgb, var(--accent-data) 18%, transparent)" }} /><span className="dim">low</span></div>
+                    <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", ...HEX_CELL, background: "color-mix(in srgb, var(--accent-data-hi) 95%, transparent)" }} /><span className="dim">priority</span></div>
+                    <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", ...HEX_CELL, background: "color-mix(in srgb, var(--accent-data) 60%, transparent)" }} /><span className="dim">standard</span></div>
+                    <div style={{ display: "flex", gap: "var(--sp-1)", alignItems: "center" }}><span className="hex" style={{ position: "static", ...HEX_CELL, background: "color-mix(in srgb, var(--accent-data) 18%, transparent)" }} /><span className="dim">low</span></div>
                     <div className="kicker">Distribution</div>
                     <MiniBar data={histData} labels={histLabels} width={180} height={36} hover fmt={(v: number) => `${Math.round(v)} tx`} />
                     <div className="dim" style={{ fontSize: "var(--fs-label)" }}>fee/B histogram · {histCaption}</div>
@@ -542,7 +577,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             ) : null}
 
             {/* row 2 · c4 · Iso stack — hero-like, stays mounted while tracking */}
-            <PanelFrame title={`Iso stack · last ${CONF_UNLOCK}`} right={<><NodeProvenance source="node" keys={["blocks"]} status={data.status} /><span>BLOCK GEOMETRY</span></>} updatedAt={oldestFreshAt(data.status, ["blocks"])} style={{ gridColumn: "span 4", minWidth: 0 }}>
+            <PanelFrame title={`Iso stack · last ${CONF_UNLOCK}`} right={<><NodeProvenance source="node" keys={["blocks"]} status={data.status} /><span>BLOCK GEOMETRY</span></>} dataKey="blocks" updatedAt={oldestFreshAt(data.status, ["blocks"])} style={{ gridColumn: "span 4", minWidth: 0 }}>
               <IsoBlockStack blocks={data.blocks} w={330} h={165} onSelectBlock={onSelectBlock} />
             </PanelFrame>
 
@@ -565,10 +600,14 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                   </div>
                 </PanelFrame>
 
-                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>} updatedAt={oldestFreshAt(data.status, ["blocks", "network"])} style={{ gridColumn: "span 4", minWidth: 0 }}>
+                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>} dataKey="blocks network" updatedAt={oldestFreshAt(data.status, ["blocks", "network"])} style={{ gridColumn: "span 4", minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-2)" }}>
-                      <span style={{ fontSize: 22, color: "var(--ink-100)" }}>
+                      {/* The mockup's --t-xl 24px. --fs-h2 resolves to 24.48px
+                          at 1440 (clamp(21, 1.7vw, 30)), so the token is a
+                          CLOSER match to the mockup than the 22px literal it
+                          replaces — no new rung needed and nothing flattened. */}
+                      <span style={{ fontSize: "var(--fs-h2)", color: "var(--ink-100)" }}>
                         {data.blocks.slice(0, 14).filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length}/{data.blocks.slice(0, 14).length}
                       </span>
                       <span className="dim">recent blocks · pool unknown</span>
@@ -608,6 +647,7 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                   // caption below already, so nothing is dropped, just moved.
                   title="● Next block"
                   right={<><NodeProvenance source="model" keys={["mempool", "network"]} status={data.status} /><span>PROJECTED</span></>}
+                  dataKey="mempool fees network"
                   updatedAt={oldestFreshAt(data.status, ["mempool", "fees", "network"])}
                   scrollable={160}
                   style={{ gridColumn: "span 4", minWidth: 0 }}
