@@ -203,6 +203,23 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   disk instead of the build, some listener instead of yours, a plausible mechanism instead
   of a measurement. That is the same sentence as the code-defect family above, with a
   different noun.
+- **A TOLERANCE IS AN UPPER BOUND ON THE ERROR A TEST CAN DETECT, NOT A SAFETY
+  MARGIN.** Any assertion carrying a tolerance has a defect class it structurally cannot
+  see, and **the tolerance is the size of that class**. v2·1's live example: sediment's
+  canvas hit-test uses `hitR = max(p.r + 3, 6)`, chosen for thumbs, and that generosity
+  silently became the detection threshold for a coordinate-space bug — a passing hit-test
+  does not distinguish "the spaces agree" from "the spaces disagree and the tolerance
+  absorbed it". The DPR case is the sharp end: on a 1× CI runner `eff === 1` and a
+  backing-store-vs-CSS-px mismatch is EXACTLY zero, so it ships green and is wrong on every
+  retina phone. When an assertion has a tolerance, name the error it is blind to, and
+  verify that class by construction (trace the units) rather than by the assertion.
+- **A STEP OR SUITE NAME MUST NAME WHAT IT RUNS.** `ci.yml`'s e2e step was called
+  "Degraded-mode, Tor and single-origin gates" while running all 29 `verify:e2e` gates —
+  three named, twenty-six not, including every mempool-view gate. Same narrower-subject
+  family as the assertions above, sitting in the CI config; and it is the first instance
+  here where the defect caused a CORRECT claim to be withdrawn rather than a wrong one
+  asserted, which is strictly worse because the retraction reads as rigour. If a name
+  cannot list everything, give the count and the load-bearing members.
 - **AN EMPTY SEARCH RESULT IS EVIDENCE ONLY AFTER ITS SCOPE IS VERIFIED.** Three instances
   in the v2 series, two of them load-bearing: "no view imports `labelStep`/`tickCount`"
   (the grep was scoped to `src/mempool/` and `src/views/` and the result generalised to
