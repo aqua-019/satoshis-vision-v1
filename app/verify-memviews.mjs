@@ -637,14 +637,41 @@ function advanceBlocks(n) { head += n; }
     // faster than it earns its keep. Scenario 8 asserts this view's real
     // structure off data-con-* instead. No responsive hiding — present always.
     constellation: [390, 768, 1440, 2560],
-    // TermGauge's only <text> (terminal.tsx:268) lives in the "Network
-    // gauges" rail-block (terminal.tsx:440-447), inside <aside class="rail">
-    // (terminal.tsx:414). `.rail { display: none; }` fires at `max-width:
-    // 768px` (styles.css:2217, :2643) — the element stays in the DOM but
-    // collapses to a zero-size box, which this section's own
-    // `rect.width === 0` filter (below) already drops. Present only where
-    // the rail is visible.
-    terminal: [1440, 2560],
+    // WIDENED FROM [1440, 2560] IN v2·3, and the widening is a TIGHTENING —
+    // read that before assuming an expectation map was relaxed to make a
+    // build pass.
+    //
+    // It used to be rail-only. TermGauge's <text> lives in the "Network
+    // gauges" rail-block inside <aside class="rail">, and `.rail` is
+    // `display: none` at `max-width: 768px` (styles.css:2217), so the element
+    // stayed in the DOM but collapsed to a zero-size box that this section's
+    // own `rect.width === 0` filter dropped. Zero at 390/768 was therefore the
+    // honest expectation, and it was ASSERTED as zero — this map is checked in
+    // both directions.
+    //
+    // v2·3 puts three chart-kit charts in Terminal's MAIN column, which is
+    // visible at every width (Terminal is a pan-mode view — it keeps its
+    // proportions on a phone and pans, per verify-mobile.mjs:36-44). So the
+    // four entries below are what the view now actually renders.
+    //
+    // WHY THIS IS NOT A WEAKENING. 390 and 768 move from "must be exactly 0"
+    // to "must be > 0". Nothing stops being asserted; two widths start being
+    // asserted in the harder direction. The vacuity guard this map exists for
+    // is intact — "the view lost all its SVG text" still reds at all four
+    // widths — and the map now additionally proves the new charts survive the
+    // mobile pan rather than being quietly hidden below some breakpoint,
+    // which is the one way "3-5x more information" could be delivered on
+    // desktop and nowhere else.
+    //
+    // WHY NOT THE ALTERNATIVES. Keeping the charts in the rail would have held
+    // this entry at [1440, 2560] unchanged — and hidden every new chart below
+    // 1200px, because the rail is display:none from 0 to 1199 (styles.css:2217
+    // and :2149's block). Rendering them as DOM instead of SVG would also have
+    // held it, but contract §2 requires charts to be built on chart-kit, whose
+    // ChartTip / ChartCrosshair / axis primitives are SVG-native — so a
+    // conforming chart necessarily emits SVG <text>, and the DOM route is
+    // foreclosed by the contract rather than declined by preference.
+    terminal: [390, 768, 1440, 2560],
     // Classic is pure DOM (MempoolViewMeta's `reflow: true`, index.tsx:79) —
     // it renders no <svg> at all, so it carries zero SVG <text> at every
     // width, by design rather than by omission.
@@ -1612,7 +1639,21 @@ function advanceBlocks(n) { head += n; }
       if (!seen(el)) continue;
       preLines += (el.textContent || '').split('\n').filter((l) => /\d/.test(l)).length;
     }
-    return { elements, preLines, total: elements + preLines };
+    const mv = document.querySelector('.mp-view');
+    const sc = document.querySelector('.mp-canvas-scroll');
+    return {
+      elements, preLines, total: elements + preLines,
+      // Natural width, reported for every view because the contract's checklist
+      // asks for it and only the four `fit: true` views have verify-fit to
+      // produce it. For a PAN-MODE view (Classic, Terminal) there is no
+      // .mp-fit transform to rescale anything, so `naturalW > canvasW` does not
+      // cost type size — it costs the reader a horizontal pan on a desktop that
+      // should not need one. Reported, not asserted: Terminal is REQUIRED to
+      // exceed the canvas at 390 (verify-mobile), so there is no single
+      // threshold that is right at every width.
+      naturalW: mv ? Math.round(mv.scrollWidth) : null,
+      canvasW: sc ? Math.round(sc.clientWidth) : null,
+    };
   });
 
   for (const id of VIEWS) {
@@ -1631,7 +1672,7 @@ function advanceBlocks(n) { head += n; }
       const r = await readouts();
       if (r.error) { ok(false, `scenario 9 [${id}]: ${r.error}`); continue; }
       const floor = DENSITY_FLOOR[id];
-      console.log(`   ${id.padEnd(14)} elements ${String(r.elements).padStart(4)} · pre-lines ${String(r.preLines).padStart(4)} · total ${String(r.total).padStart(4)}`);
+      console.log(`   ${id.padEnd(14)} elements ${String(r.elements).padStart(4)} · pre-lines ${String(r.preLines).padStart(4)} · total ${String(r.total).padStart(4)} · naturalW ${String(r.naturalW).padStart(5)} vs canvasW ${r.canvasW}`);
       if (floor == null) {
         ok(false, `scenario 9 [${id}]: no DENSITY_FLOOR entry — every registered view must declare one`);
         continue;
