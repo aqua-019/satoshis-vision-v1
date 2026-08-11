@@ -1,8 +1,20 @@
 # v2 MEMPOOL VIEWS — design-framework conformance
 
-**REV 2 — measured against `main` = `6039d64` (v2·0 / PR #167 merged).** Rev 1 was written against
-`292227a` and carried two claims that are now false; both are corrected below and marked. If you are
-holding a copy without this line, it is Rev 1 and it is wrong in §3 and §5.
+**REV 3 — measured against `main` = `fdf4ecc` (v2·1 / PR #168 merged), 2026-08-11.**
+Rev 3 adds §8 and §9, adds addenda to §1 and §2, and **withdraws a false claim in §6**.
+Rev 2 was measured against `6039d64`; Rev 1 against `292227a` and was wrong in §3 and §5.
+If you are holding a copy without this line it is stale — check §6 first, because the
+sentence that changed there was load-bearing and read as reassuring.
+
+**What Rev 3 changes, in one place:**
+
+| § | delta |
+|---|---|
+| §1 | addendum — `ConCard` is the same violation `SedCard` was |
+| §2 | addendum — cursor math is singular and gated repo-wide |
+| §6 | **CORRECTION** — "`MemViewShell` already does this" for reduced motion is FALSE |
+| §8 | NEW — the type floor is a claim about RENDERED size, and `.mp-fit` sits in the way |
+| §9 | NEW — assertion space, and what a tolerance actually buys |
 
 Originally measured against `292227a`. **Every v2 prompt references this file.** The mockups exist to agree
 the composition; this document is what makes the code slip into v6 rather than sit on top of it.
@@ -30,6 +42,24 @@ Crumbs      (:518)   takes path=, never items=
 A v2 view that defines its own panel chrome is the "eleven widgets with skins" failure the spec warns
 about — and it is also how the current spacing drifted per view.
 
+**REV 3 ADDENDUM — the hand-rolled panel chrome is `ConCard` this time.**
+`constellation.tsx:39` exports `ConCard({ title, right, children, pad, style }: any)` and calls it
+**15 times**. It is the same violation `SedCard` was, with the same shape: a `<div>` with its own
+background, border, radius, padding and a header row that re-implements `PanelFrame`'s title/right
+slot. Replace it with `PanelFrame` from `design/primitives` (sediment now calls `PanelFrame` 17
+times and defines no card of its own — `sediment.tsx:12` records "SedCard is gone").
+
+Two things make `ConCard` strictly worse than a cosmetic duplicate, both measured:
+
+- It is typed `: any`, so none of `PanelFrame`'s props are checked at the call site.
+- **It cannot carry freshness.** `PanelFrame` takes `dataKey`, `stale`, `updatedAt` and
+  `refreshing`; `ConCard` takes none of them, so every panel in the view is structurally
+  incapable of reporting its own endpoint's last-success time. That is a provenance gap, not a
+  styling one.
+
+`ConCard` has **no consumers outside `constellation.tsx`** (verified by grep across `src/`), so
+removing it is contained to the one file.
+
 ## 2 · Every chart is built on `chart-kit`, not raw SVG
 
 `app/src/design/chart-kit.tsx`, measured:
@@ -47,6 +77,28 @@ useGradientId(prefix)                           collision-free gradient ids
 
 **Higher chart fidelity means these, used properly** — a cursor, a crosshair, a tooltip with real rows,
 gradient fills with unique ids, shared `VB_W` so every chart in a view aligns. Not more hand-drawn paths.
+
+**REV 3 ADDENDUM — cursor math is SINGULAR, and it is gated repo-wide.**
+
+```
+useSvgCursor(viewW)   chart-kit.tsx:46    SVG    → [ref, vx, handlers], vx in viewBox units
+canvasCursor(e)       chart-kit.tsx:111   canvas → {x, y} in the canvas's own CSS-px space
+```
+
+**Never re-derive either.** `verify-chartkit.mjs` greps `/clientX\s*-\s*rect\.left/` across the whole
+tree and fails on any hit outside `src/design/chart-kit.tsx`. There is no allowlist. This gate failed
+CI on v2·1 and is the reason PR #168 needed a second head.
+
+`canvasCursor` was added in #168 (`1c333d6`). **The argument recorded for adding it rather than
+waiving the rule was that "the four remaining v2 rebuilds and all five new views are canvas views."
+That was a claim about PLANNED work stated as a fact about the codebase, and it was load-bearing —
+it is why the primitive was generalised instead of the rule being waived.** Measured on `fdf4ecc`,
+`canvasCursor` has exactly ONE consumer (`sediment.tsx:323`), and sediment is the only view in the
+mempool directory that mounts a `<canvas>` at all. The primitive is still the right call; the
+justification overstated its reach and is corrected here.
+
+> Citation note: an earlier draft of this addendum cited `canvasCursor` at `chart-kit.tsx:95`.
+> Line 95 is prose inside its docblock; the export is at **:111**.
 
 ## 3 · The label-fitting helpers — CORRECTED IN REV 2
 
@@ -133,8 +185,26 @@ touches that region.
 - **Canvas via `useMemCanvas`** — elapsed-time, DPR-capped. **Never `useTick`** on a canvas path.
 - **D0692 frame-budget governor** and **D0699 paused-until-visible** are consumed, not reimplemented.
   `verify-govern` §5 walks every rAF call site.
-- **Reduced motion** renders the `table` prop **instead of** `children` — the canvas is not mounted, not
-  merely paused. `MemViewShell` already does this; pass a real table.
+- **Reduced motion — CORRECTED IN REV 3.** `MemViewShell` renders the body **and** the table;
+  `.mem-table` is `display: none` by default and `display: block` under
+  `@media (prefers-reduced-motion: reduce)` (`styles.css:1468-9`). The table is an **addition,
+  never a replacement** — an earlier revision swapped them and removed the Classic and Reactor
+  block ribbons, which is why `verify-glide` scenario 4 exists. **Suppress animation, not
+  content.** A view may render a static equivalent in place of an animated surface, provided the
+  equivalent carries the same data and the same click targets. Pass a real table regardless.
+
+  > **Rev 2 said the table renders "instead of `children`" and that the canvas is "not mounted."
+  > That was false**, copied from a stale docstring at `mempool-shared.tsx:339-342` which still
+  > contradicts the behaviour and the comment at `:359-365` twenty lines below it. The binding
+  > constraint is `mempool-shared.tsx:366` — `const showBody = !tracking || keepBodyWhileTracking`
+  > — which consults `tracking` and **never** reduced motion.
+  >
+  > This is the defect family this document exists to prevent, committed by this document: the
+  > claim was READ off a docstring rather than MEASURED against the code. Sediment is compliant,
+  > but for a reason the v2·1 prompt stated wrongly. Two comments in `mempool-shared.tsx`
+  > (`:339-342` and `:378`) are corrected in the same PR as this revision — they are in the shell
+  > every v2 view is built on, and one had already propagated into this contract and nearly into
+  > a break test.
 - **`id` must be passed to `MemViewShell`** — it becomes `data-mem-view`, which is how gates and deep
   links tell the surfaces apart.
 - **Opaque stage background.** Data never renders over ambient decoration.
@@ -160,19 +230,94 @@ touches that region.
 glyph opens that block inspector.** Views differ in how they show the population; depth on any single
 object is identical across all eleven. No view reimplements a shallower detail panel.
 
+## 8 · The type floor is a claim about RENDERED size, and `.mp-fit` sits between you and it
+
+`FitView` wraps every fit-enabled view in `transform: scale(min(1, canvasW / naturalW))`
+(`FitView.tsx`, `.mp-fit` at `styles.css:1235`). **A CSS transform does not fire ResizeObserver**,
+so a view's geometry lives in layout space while the reader sees it scaled. Measured on `fdf4ecc`
+by `verify-fit.mjs`:
+
+| view | 1440 (canvas 1180) | 390 |
+|---|---|---|
+| sediment | `0.359756` — natural 3281 | `0.121231` — natural 3217 |
+| bridge | `0.468812` — natural 2517 | `0.159054` — natural 2452 |
+| reactor | `0.835103` — natural 1413 | `0.270645` — natural 1441 |
+| **constellation** | **`1.0` — identity, natural 1028 ≤ 1180** | `0.379377` — natural 1028 |
+
+And the type consequence, measured on sediment:
+
+```
+viewport   .mp-fit scale   authored   rendered box   rendered FONT
+1440       0.359756        11px       5.04px         3.96px
+2560       0.650085        12px       10.4px         7.80px
+390        0.121231        11px       1.70px         1.33px
+```
+
+**Read the FONT column, not the box.** `getBoundingClientRect().height` on a `<text>` is the
+em/line box, ~1.27× the font size; quoting it overstates legibility by 27%. And **the three rows
+are TWO series, not one** — 1440 and 390 sample the SVG tick (ratios 1.274 / 1.275), while 2560
+samples a DOM label at `--fs-label`'s 12px ceiling (ratio 1.333). **Do not compute a trend across
+it.**
+
+**Author to the sanctioned 11px floor, state the measured scale, and do not claim the floor is
+met.** `useChartMetrics`' `k` / `u` / `minWidth` inflation exists for exactly this and is
+**unreachable** — no caller anywhere passes `vbWidth`, so `k = 1` and `u` is the identity. Its
+`maxK = 1.7` was chosen to hold a floor down to a scale of ~0.59; the measured 0.36 and 0.12 are
+both past what it was built to rescue. Nine views affected. **Not a view PR's job.** Full
+write-up: [`FINDING-fit-scale-type.md`](./FINDING-fit-scale-type.md).
+
+**The constellation exception, and the constraint it creates.** Constellation is the ONE
+fit-enabled view whose desktop scale is **identity** — its natural width (1028) is under the
+canvas width (1180), so `verify-fit.mjs:73-75` asserts `identity` for it rather than `scaled`.
+At 1440, authored size *is* rendered size for this view and the §8 problem does not bite.
+**That holds only while natural width stays ≤ canvas width.** A v2 rebuild that grows the
+artboard past ~1180 silently introduces a scale transform and shrinks every glyph in the view —
+converting a compliant surface into a non-compliant one with no gate going red, because the gate's
+predicate is conditional on which side of that line the view falls. Treat natural width as a
+budget, not an outcome.
+
+## 9 · Assertion space — where a measurement is taken decides what it can mean
+
+- An assertion about an **ABSOLUTE RENDERED QUANTITY** — type size, contrast area, hit-target
+  minimum — **must be measured after every transform between the author and the reader.**
+- An assertion about a **RELATION** between elements — collision, ordering, containment,
+  non-overlap — **may** be measured before them, because a uniform scale preserves it.
+
+That is why `verify-memviews` scenario 6's collision sweep is sound in layout space at any scale,
+while a type-floor assertion taken in the same space is not.
+
+**And a tolerance is an UPPER BOUND ON THE ERROR A TEST CAN DETECT, not a safety margin.**
+Any assertion carrying a tolerance has a defect class it structurally cannot see, and **the
+tolerance is the size of that class**. The live example: sediment's canvas hit-test uses
+`hitR = max(p.r + 3, 6)`, chosen for thumbs, and that generosity silently became the detection
+threshold for a coordinate-space bug — a passing hit-test does not distinguish "the spaces agree"
+from "the spaces disagree and the tolerance absorbed it". The DPR case is the sharp end: on a 1×
+CI runner `eff === 1` and a backing-store-vs-CSS-px mismatch is EXACTLY zero, so it ships green
+and is wrong on every retina phone.
+
+**When an assertion has a tolerance, name the error it is blind to, and verify that class by
+construction — trace the units — rather than by the assertion.**
+
 ---
 
 ## Conformance checklist for a v2 PR
 
 ```
 [ ] no literal hex, hsl or rgb in the view — tokens only
-[ ] PanelFrame/Stat/Pill/Card used; no hand-rolled panel chrome
+[ ] PanelFrame/Stat/Pill/Card used; no hand-rolled panel chrome (§1 — ConCard, SedCard)
 [ ] every chart uses VB_W, AXIS, GRID, useSvgCursor, ChartCrosshair, ChartTip, useGradientId
+[ ] cursor math imported, never re-derived — useSvgCursor / canvasCursor (§2, gated repo-wide)
 [ ] axes come from charts.tsx's series components; a hand-rolled axis needs a stated reason
 [ ] no two axis labels overlap — asserted, at 390 / 768 / 1440 / 2560
 [ ] spacing from the --sp-1..7 ramp (already shipped in #167), never ad-hoc px
 [ ] MemViewShell wrapped, id passed, real table supplied
+[ ] reduced motion suppresses ANIMATION, not CONTENT — body stays, static equivalent
+    carries the same data AND the same click targets (§6, corrected)
 [ ] useMemCanvas, never useTick; governor and D0699 consumed
 [ ] particles open the shared tx inspector; blocks open the shared block inspector
 [ ] composed at 3 tx as well as 300 — no empty plots, low-pool state designed
+[ ] natural width measured and stated; if it crosses the canvas width the view has
+    silently acquired a scale transform (§8)
+[ ] every absolute-rendered-quantity assertion taken post-transform; every tolerance
+    names the defect class it cannot see (§9)
 ```
