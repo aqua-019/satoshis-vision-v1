@@ -251,13 +251,22 @@ Fixed at all three sites by collapsing them into one `HEX_CELL` constant (plus `
   now 0 of them). Writing that assertion is a repo-wide survey plus a triage of legitimate
   exceptions (SVG geometry, canvas text), not a passenger on a view rebuild.
 - **`verify-memviews` item 4's timeout is below the schedule it waits on.** `:252` waits for
-  `conf0 + 2` with `timeout: 25000` on the 15s CHAIN tier — two confirmations, one poll each,
-  so the worst case is ~30s and 25s guards it. Its own comment does the arithmetic for ONE
-  poll and stops there. The correction is `35000` WITH the arithmetic recorded, and the
-  distinction matters: this is a bound below its dependency, not a tolerance widened to
-  silence a red. Sediment appears to own it only because it runs late in the view loop and
-  inherits the poll phase — **testable by reversing the view order**, which exonerates or
-  convicts sediment cleanly.
+  `conf0 + 2` with `timeout: 25000` on the 15s CHAIN tier — two confirmations can require two
+  polls, i.e. up to ~30s, so the bound sits under the worst case of the schedule its own
+  comment describes; that comment does the arithmetic for ONE poll and stops. The tier is
+  CLIENT-side scheduling in `xmrirish-feed.ts`, so the stubbed routes and the pure-fixture
+  `advanceBlocks` (`:302`, `head += n`) remove server latency but not the 15s cadence.
+  Candidate fix: `25000 -> 35000` with that arithmetic stated, so it reads as a bound
+  corrected rather than a tolerance widened.
+  **Whether sediment is disproportionately affected is UNMEASURED.** A first account —
+  sediment running late in the view loop and inheriting an accumulated poll phase — was
+  checked and is FALSE on both halves: `VIEWS` is registry order so sediment is THIRD of six,
+  and `:218-219` resets `head` and opens a FRESH PAGE per view, so no phase carries across
+  iterations. The test that would settle it is elapsed time from page load to
+  `advanceBlocks(2)` PER VIEW, not view order: if sediment (the heaviest view, 320 canvas
+  particles) is an outlier it enters the window with less headroom; if all six are within a
+  second, the intermittent is a uniform phase lottery with no view-specific component, which
+  would be the better outcome.
 - **Scenario 7 is SEPARATE and still unexplained**, and now has two sightings (#171, #172) on
   trees where sediment was untouched both times. Two independent reds on unmodified source
   points harness-side, which is the opposite of where the current `canvas scale` candidate
