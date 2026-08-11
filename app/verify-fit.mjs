@@ -40,6 +40,20 @@ console.log('HEIGHT_FIT_TOLERANCE (parsed from source):', HEIGHT_FIT_TOLERANCE);
  * `false` = recorded debt: still over budget today. If you FIX one of these,
  *           this map is what tells you to come and say so.
  */
+/* Does reactor's height clause fire at each tested viewport? Declared, and
+ * checked BOTH WAYS, because "reactor is outside the hazard band" is a claim no
+ * composition can make: the band is ~8% wide, relative to the width scale, and
+ * positioned by naturalH, so every layout has window heights that scale it.
+ * What IS assertable is the per-viewport fact, and a composition change that
+ * moves the band across one of these cells goes red here instead of silently
+ * altering the rendered type size. Values are MEASURED, not predicted.
+ */
+const HEIGHT_CLAUSE_AT = {
+  'desktop': false,            // 1440x900   canvasH 702 — far below the band
+  'desktop-rail-band': false,  // 1280x900   wS 0.8644 pulls the band down out of reach
+  'mobile': false,             // canvas is overflow-y:hidden, so boundedV is false and it cannot fire
+};
+
 const FITS_AT_1440 = {
   reactor: true,        // v2·4: artboard made definite at ARTBOARD_W 1180. Was 1668 fixtured / 1413 empty.
   constellation: true,  // v2·2: 1132 after its caption was capped. Was 1413 unbounded.
@@ -70,6 +84,7 @@ try {
 console.log('engine:', engine);
 
 let fail = false;
+let skipped = 0;
 const ok = (c, m) => { console.log((c ? '✅ ' : '❌ ') + m); if (!c) fail = true; };
 
 /* Canonical routes + a landing assertion. This file navigated to `/mempool?v=`
@@ -97,30 +112,28 @@ const VIEWS = ['reactor', 'bridge', 'sediment', 'constellation'];
  * view. A predicate that handles a branch no viewport reaches is coverage on
  * paper: `clauseFires` would compute false on every run forever.
  *
- * The band is derived, not guessed. `canvasH ~= viewportH - 198` (measured
- * constant across six viewport heights), and with wS = 1 the clause fires while
- * 0.92 <= canvasH / naturalH < 1. For reactor's naturalH 851 that is
- * canvasH in [782.9, 851) -> viewportH in [980.9, 1049). 1000 sits mid-band.
+ * The band is derived, not guessed, and it MOVES WITH THE COMPOSITION — which
+ * is why this viewport was retuned rather than left at a round number.
+ * `canvasH ~= viewportH - 198` (measured constant across six viewport heights),
+ * and with wS = 1 the clause fires while 0.92 <= canvasH / naturalH < 1:
+ *     naturalH 851 -> viewportH [ 981, 1049)      <- an earlier composition
+ *     naturalH 956 -> viewportH [1078, 1154)      <- what ships
+ * 1000 exercised the clause against 851 and does NOT against 956. Leaving it
+ * would have kept a green cell that had silently stopped testing anything —
+ * the vacuity this suite keeps finding. 1100 sits mid-band for the shipped
+ * height. If reactor's height moves again, this number moves with it, and
+ * HEIGHT_CLAUSE_AT below is what makes that failure loud rather than silent.
  *
- * Measured at 1440x1000, all four views, so this row is documented rather than
- * discovered later:
- *   reactor        wS 1.000000  hS 0.942421  FIRES  -> transform 0.942421
- *   bridge         wS 0.468812  hS 0.432112  FIRES  -> transform 0.432112
- *   sediment       wS 0.359646  hS 0.455423  no (hS > wS, height never competes)
- *   constellation  wS 1.000000  hS 0.626563  no (far below the band)
+ * Reactor is the load-bearing cell at this viewport: with naturalW 1180 == the
+ * 1180 canvas, wS is 1, so ONLY the height clause can produce a transform. That
+ * is exactly the disagreement the old width-only predicate could not represent —
+ * width alone predicts no transform while one exists.
  *
- * So this one viewport exercises the clause on TWO views by two different
- * routes — reactor at wS 1 (only the height clause can produce its transform)
- * and bridge at wS < 1 (the clause CHANGES an already-scaled view). Reactor is
- * the load-bearing cell: it is the only case where width alone predicts NO
- * transform and a transform exists, which is exactly the disagreement the old
- * width-only predicate could not represent.
- *
- * Consequence worth stating plainly rather than burying: reactor renders at
- * 0.9424 for window heights in [981, 1049), so its authored 11px paints at
- * 10.37px there. That is a real range of laptop windows. It is unavoidable —
- * every composition has such a band and moving the height moves the band with
- * it (contract §8) — and it is now OBSERVED rather than silent.
+ * Consequence worth stating plainly rather than burying: reactor renders scaled
+ * for window heights inside its band, so its authored 11px paints near 10.4px
+ * there. That is a real range of laptop windows. It is unavoidable — every
+ * composition has such a band and moving the height moves the band with it
+ * (contract §8) — and it is now OBSERVED rather than silent.
  */
 /* 1280x900 IS THE WIDTH ANALOGUE, AND IT PINS A BAND NOTHING ASSERTED.
  *
@@ -156,7 +169,6 @@ const VIEWS = ['reactor', 'bridge', 'sediment', 'constellation'];
  */
 const VPS = [
   { w: 1440, h: 900, name: 'desktop' },
-  { w: 1440, h: 1000, name: 'desktop-tall' },
   { w: 1280, h: 900, name: 'desktop-rail-band' },
   { w: 390, h: 844, name: 'mobile' },
 ];
@@ -167,8 +179,19 @@ for (const vp of VPS) {
     await p.goto(`${base}/live/mempool?v=${v}`, { waitUntil: 'networkidle' });
     await landed(p, '/live/mempool');
     await p.waitForSelector('.mp-view--fit .mp-fit');
-    // let ResizeObserver + rAF settle the first measure
-    await p.waitForTimeout(150);
+    // Settle to a STABLE transform rather than sleeping a fixed 150ms. A
+    // transient `matrix(1,0,0,1,0,0)` was observed once in three runs at 1280 on
+    // a view whose settled transform is 0.864407 (confirmed stable from 0ms by a
+    // standalone probe), i.e. the flat wait was marginal under load. Two
+    // consecutive agreeing reads is deterministic where a bigger sleep is only
+    // less-often-wrong.
+    await p.waitForTimeout(120);
+    for (let i = 0, prev = null; i < 12; i++) {
+      const cur = await p.evaluate(() => getComputedStyle(document.querySelector('.mp-fit')).transform);
+      if (cur === prev) break;
+      prev = cur;
+      await p.waitForTimeout(60);
+    }
     const r = await p.evaluate(() => {
       const sc = document.querySelector('.mp-canvas-scroll');
       const box = document.querySelector('.mp-view--fit');
@@ -252,25 +275,81 @@ for (const vp of VPS) {
             ? (fits ? 'under budget, as declared' : `OVER BUDGET. This view is declared fits:true; it has regressed and is now scaled by ${(r.cw / r.natW).toFixed(6)}, so its authored 11px renders at ${(11 * r.cw / r.natW).toFixed(2)}px`)
             : (fits ? 'now UNDER budget — this is a fix, and FITS_AT_1440 still records it as debt. Update the map and say so in the PR body.' : 'still over budget, as recorded')}`);
     }
-    if (v === 'reactor' && vp.name === 'desktop') {
-      // CONTRACT CHANGED IN v6.0.2 — deliberately, and this is the load-bearing
-      // comment for why this assertion was relaxed rather than the code "fixed".
+    if (v === 'reactor') {
+      /* WHAT THIS REPLACED, AND WHY — v2·4, and this is the third assertion in
+       * this file whose SUBJECT stopped matching its CLAIM. All three are one
+       * pass with one reason, not three ad-hoc edits:
+       *   · the 100%-toggle pan asserted a symptom the width fix removes
+       *   · `mustScale` predicted a transform from WIDTH while useFitToView
+       *     derives it from width AND height
+       *   · this one proxied for a failure `FITS_AT_1440` now detects directly
+       *
+       * It used to read `scrollH - clientH <= 200`, and its own comment gave the
+       * subject: "a sliver, not a symptom of THE FIT MATH FAILING ALTOGETHER."
+       * That was the right check while reactor was width-bound and scaled — a
+       * big vertical scroll then meant the fit had given up. Reactor is now
+       * deliberately unscaled at naturalW 1180 == canvasW, so vertical scroll is
+       * ordinary: bridge, sediment and constellation all scroll and always have.
+       * The 200 was calibrated at 84px measured on a SCALED reactor; applying it
+       * to an unscaled one is the same category of error the comment four lines
+       * further down was written to reject.
+       *
+       * SELF-REFERENTIAL JUSTIFICATION, STATED RATHER THAN HIDDEN: the assertion
+       * being leaned on here — `FITS_AT_1440` — is ONE PR OLD and was added by
+       * the same change that retires this one. That is not disqualifying (the
+       * new check is strictly more direct: it reads naturalW against canvasW
+       * instead of inferring it from a scroll delta) but a reader who spots it
+       * before the file admits it is right to discount the argument, so the file
+       * admits it.
+       */
+
+      // 1 · THE RUNAWAY CAP — derived, not chosen to clear the current value.
+      // A view may legitimately be taller than its canvas; that is what a scroll
+      // container is for. What is never legitimate is a composition so tall the
+      // canvas shows less than half of it, because then the "view" is a scroll
+      // position rather than a view. 2x canvasH is that line, and it is stated
+      // as a RATIO precisely so it cannot be tuned to a measurement: canvasH
+      // tracks the window (~viewportH - 198), so a fixed pixel cap would mean
+      // something different on every screen.
       //
-      // Reactor used to fit both axes: its height/width scale ratio sat just
-      // inside useFitToView's HEIGHT_FIT_TOLERANCE (0.92). The legibility pass
-      // raised its type, which grew natural height and pushed the ratio to
-      // 0.8962 — just outside. Recapturing it by lowering the tolerance would
-      // drop reactor's applied scale from 0.8508 to 0.7625, shrinking ALL its
-      // text by a further ~10% (--fs-mono would render near 9.9px effective).
-      // That trades away the legibility fix on the flagship view to satisfy a
-      // heuristic tuned before that fix existed.
-      //
-      // So: reactor may now scroll vertically. What still must hold is that the
-      // scroll is BOUNDED — a sliver, not a symptom of the fit math failing
-      // altogether. 84px measured at 1440x900; 200 leaves headroom for content
-      // growth without silently tolerating an unscaled view.
-      ok(r.sh - r.ch <= 200,
-        `desktop reactor: vertical scroll is bounded (scrollH ${r.sh} − clientH ${r.ch} = ${r.sh - r.ch} ≤ 200)`);
+      // GATED ON `boundedV`, and the first version was NOT — it failed at 390
+      // against a view behaving correctly, which is this suite's own favourite
+      // defect committed inside a new assertion. On the phone the canvas is
+      // `overflow-y: hidden; height: auto` and the PAGE scrolls, so `clientHeight`
+      // there tracks CONTENT rather than a window onto it: `2 x canvasH` is not a
+      // bound, it is a restatement of the content height. Measured, mobile reads
+      // natural 1384 against canvas 458 and would fail forever. Same predicate
+      // `useFitToView.ts:57-59` uses to exclude mobile from the height clause,
+      // for the same reason. Reported as a reasoned skip rather than silently
+      // not asserted — a silent non-measurement and a measurement of zero are the
+      // same line in a report.
+      if (boundedV) {
+        ok(r.natH <= 2 * r.ch,
+          `${vp.name} reactor: height is bounded (natural ${r.natH} <= 2 x canvas ${r.ch} = ${2 * r.ch}; showing ${(100 * r.ch / r.natH).toFixed(1)}% per screen)`);
+      } else {
+        skipped++;
+        console.log(`⏭  SKIP — ${vp.name} reactor height cap: the canvas is not vertically bounded here `
+          + `(overflow-y ${r.overflowY}, the page scrolls), so clientHeight ${r.ch} tracks content and 2x it would not be a bound. `
+          + `Natural height ${r.natH}, not asserted.`);
+      }
+
+      // 2 · THE HEIGHT-CLAUSE BAND, ASSERTED PER VIEWPORT — never as a universal.
+      // `HEIGHT_CLAUSE_AT` declares, for each tested viewport, whether the clause
+      // is expected to fire, and it is checked BOTH WAYS. This is deliberately
+      // NOT phrased as "reactor is out of the hazard band": no composition is.
+      // Measured, for three candidate heights considered during this rebuild,
+      // the band in viewport-height terms is
+      //     naturalH 851 -> [ 981, 1049)     876 -> [1004, 1074)     956 -> [1078, 1154)
+      // and every one contains a common desktop window height. The band moves
+      // with the composition; it never goes away (contract §8). So the honest
+      // claim is per-viewport, and its value is that a composition change which
+      // silently moves the band across one of these viewports goes red here.
+      const expected = HEIGHT_CLAUSE_AT[vp.name];
+      ok(expected !== undefined && clauseFires === expected,
+        expected === undefined
+          ? `${vp.name} reactor: viewport not declared in HEIGHT_CLAUSE_AT — add it rather than leaving the band unchecked`
+          : `${vp.name} reactor: height clause ${clauseFires ? 'FIRES' : 'does not fire'} as declared `
+            + `(hS ${hS === null ? 'n/a — canvas not vertically bounded' : hS.toFixed(6)}, band [${(wS * HEIGHT_FIT_TOLERANCE).toFixed(6)}, ${wS.toFixed(6)}))`);
     }
     if (v === 'sediment') {
       const vy = await p.evaluate(() => {
@@ -315,6 +394,58 @@ for (const vp of VPS) {
  * there. That is pre-existing and was untested — the old assertion ran at 1440
  * only — and it is a control question, not a fit-maths one.
  */
+/* THE HEIGHT-CLAUSE CONTROL — the viewport is DERIVED, not chosen.
+ *
+ * This started as a hand-picked `1440x1000`, which exercised the clause against
+ * a naturalH of 851. The composition grew to 956 and the cell silently stopped
+ * testing anything; retuned to 1100, the iso-stack fix took naturalH to 1031 and
+ * it went stale AGAIN — caught only because HEIGHT_CLAUSE_AT asserts the
+ * expectation in both directions. Two staleness events in one PR is the signal
+ * that the number was the wrong thing to write down.
+ *
+ * So: measure reactor's naturalH first, then compute a viewport that lands
+ * mid-band for THAT height, then assert the clause fires there. The control
+ * follows the composition instead of being recalibrated after it.
+ *
+ *   clause fires while   0.92 <= canvasH / naturalH < 1     (at wS = 1)
+ *   canvasH ~= viewportH - CHROME_H                          (measured constant)
+ *   pick canvasH = 0.96 * naturalH  ->  mid-band by construction
+ *
+ * If this ever fails, the interesting quantity is CHROME_H, not the viewport.
+ */
+const CHROME_H = 198;
+{
+  const p0 = await b.newPage({ viewport: { width: 1440, height: 900 } });
+  await p0.goto(`${base}/live/mempool?v=reactor`, { waitUntil: 'networkidle' });
+  await p0.waitForSelector('.mp-view--fit .mp-fit');
+  await p0.waitForTimeout(300);
+  const natH = await p0.evaluate(() => document.querySelector('.mp-fit').offsetHeight);
+  await p0.close();
+
+  const wantCanvasH = Math.round(0.96 * natH);
+  const vh = wantCanvasH + CHROME_H;
+  const p1 = await b.newPage({ viewport: { width: 1440, height: vh } });
+  await p1.goto(`${base}/live/mempool?v=reactor`, { waitUntil: 'networkidle' });
+  await landed(p1, '/live/mempool');
+  await p1.waitForSelector('.mp-view--fit .mp-fit');
+  await p1.waitForTimeout(300);
+  const r = await p1.evaluate(() => {
+    const sc = document.querySelector('.mp-canvas-scroll');
+    const fit = document.querySelector('.mp-fit');
+    return { cw: sc.clientWidth, ch: sc.clientHeight, natW: fit.offsetWidth, natH: fit.offsetHeight,
+             transform: getComputedStyle(fit).transform };
+  });
+  const wS = Math.min(1, r.cw / r.natW);
+  const hS = r.ch / r.natH;
+  const fires = hS < wS && hS >= wS * HEIGHT_FIT_TOLERANCE;
+  const identity = r.transform === 'none' || r.transform === 'matrix(1, 0, 0, 1, 0, 0)';
+  ok(fires && !identity,
+    `height-clause control @1440x${vh} (DERIVED from naturalH ${natH}): the clause fires and a transform IS applied `
+    + `(hS ${hS.toFixed(6)} in [${(wS * HEIGHT_FIT_TOLERANCE).toFixed(6)}, ${wS.toFixed(6)}), transform ${r.transform}) — `
+    + `this is the one cell where width alone predicts NO transform and one exists`);
+  await p1.close();
+}
+
 /* Three cells, because the control needs BOTH a subject and durability.
  *   reactor @1440  — identity, and NOTHING to pan: the fix's own outcome, stated
  *                    positively rather than skipped.
@@ -368,5 +499,6 @@ ok(strays.size === 0, strays.size === 0
   : `navigations did not land as requested: ${[...strays].join(', ')}`);
 
 await b.close();
-console.log(fail ? '\nFIT CHECKS FAILED' : '\nALL FIT CHECKS PASSED');
+console.log(`\nverify-fit: ${skipped} reasoned skip(s) — a skip is neither a pass nor a failure.`);
+console.log(fail ? 'FIT CHECKS FAILED' : 'ALL FIT CHECKS PASSED');
 process.exit(fail ? 1 : 0);

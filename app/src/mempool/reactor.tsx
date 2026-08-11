@@ -183,6 +183,18 @@ function MempoolHexGrid({ mempool, cols = 26, rows = 14 }: { mempool: Tx[]; cols
   );
 }
 
+// The height the absolute block coordinates below (left/top: 80 + i*6,
+// width/height: 100) were AUTHORED against. The lowest of the 10 blocks
+// (i=9) reaches 80 + 9*6 + 100 = 234 logical px — close enough to 300 that it
+// read as "fitting" there, but the box is `overflow: hidden` with no margin
+// for error. Found broken in production: the height passes took `h` from
+// 300 down to 165 without ever touching this transform, so at 165 the stage
+// clipped almost the entire stack down to one glyph in the corner and no
+// gate caught it (nothing reads this panel's geometry). The scale below is
+// now DERIVED from `h`, so this cannot recur at any height this component is
+// ever called with.
+const ISO_STAGE_H = 300;
+
 /* ── 3D isometric block stack — newest at front, oldest receding into depth ── */
 function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
   blocks: MoneroLive["blocks"];
@@ -191,12 +203,52 @@ function IsoBlockStack({ blocks, w = 360, h = 380, onSelectBlock }: {
   onSelectBlock?: (height: number) => void;
 }) {
   const showing = blocks.slice(0, RIBBON_BLOCKS);
+  // Scales the whole stage (and therefore the lowest block's 234px reach)
+  // proportionally to the box it actually has, about the same 0.62 factor
+  // ISO_STAGE_H was authored at. See the ISO_STAGE_H comment above for why
+  // this exists — a reader changing `h` again lands here by construction,
+  // not by a green gate that never looked.
+  const stageScale = (0.62 * h) / ISO_STAGE_H;
   return (
     // overflow:hidden makes the box authoritative — the 3D stack can never bleed
     // out of w×h onto the neighbouring Pool-attribution panel (P3). The inner
     // stage is scaled/centred so the full "last 10" stays inside those bounds.
     <div style={{ position: "relative", width: "100%", maxWidth: w, height: h, margin: "0 auto", overflow: "hidden", perspective: "1200px", perspectiveOrigin: "50% 42%" }}>
-      <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", transform: "translate(-6%, 4%) scale(0.62) rotateX(54deg) rotateZ(-38deg) translateZ(-80px)", transformOrigin: "50% 50%" }}>
+      {/* The two percentages are MEASURED, not eyeballed: the projected
+          cluster's centre against the box centre at h=240 (dx -13px, dy
+          +93px before this correction; dx -1px, dy +6px after).
+
+          THEY LOOK DATA-DEPENDENT AND ARE NOT. Each block's extruded faces
+          are sized by `heightOfBlock = min(120, 26 + txs/140*100)` — a LIVE
+          value off `blocks[].txs` with a 94px swing — so the cluster's
+          LOGICAL extent genuinely moves with the chain. Its PROJECTED extent
+          does not.
+
+          Measured, with the input proven live rather than assumed: varying
+          `blocks[].tx_count` 0 -> 400 swings the extruded faces 26x100 ->
+          120x100 (read back out of the DOM, not inferred), and the ribbon
+          rendered 0 and 400.
+              txs      0 /  70 / 140 / 400      heightOfBlock  26 / 76 / 120 / 120
+              dy / h   2.50% at every one       cluster height 134px at every one
+
+          WHY the extrusion does not move the projected centroid is NOT
+          ESTABLISHED. The extrusions appear to fall inside the hull the
+          stepped top faces already set, but that has not been measured and
+          three previous accounts of this component's coordinate spaces were
+          wrong. The stability is the finding; the explanation is a guess and
+          is marked as one.
+
+          Note the swing is not merely theoretical-because-saturated: it
+          holds at 26 as well as at 120, so the cap at 140 tx/block is not
+          what is doing the work.
+
+          CALIBRATED FOR: RIBBON_BLOCKS = 10 and `perspective: 1200px` — n
+          sets the z-spread (i * -28) and the perspective sets the divide
+          that compresses it, so changing either invalidates these numbers.
+          `h` does NOT: the offsets are percentages and the stage scale
+          derives from h, so they track together. If either changes,
+          RE-MEASURE rather than re-deriving. */}
+      <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", transform: `translate(-2%, -35%) scale(${stageScale.toFixed(4)}) rotateX(54deg) rotateZ(-38deg) translateZ(-80px)`, transformOrigin: "50% 50%" }}>
         {showing.map((b, i) => {
           const z = i * -28;
           const size = 100;
@@ -435,17 +487,33 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
             ~66px to ~26px. That ~40px is spent below, not banked. */}
         <MemViewShell id="reactor" stats="compact" table={<MemTxTable data={data} tracking={tracking} viewId="reactor" columns={["txid", "perB", "tier", "size", "age", "inout"]} onPickTx={(id) => onSearch({ kind: "tx", id })} />} data={data} tracking={tracking} onSearch={onSearch} onClearTracking={clear}>
 
-          {/* Six panels on one 12-column grid: c12 | c8 c4 | c4 c4 c4. Panels
-              are placed in DOM order and CSS grid auto-flow tiles them into
-              exactly three rows because the spans in each conceptual row sum
-              to 12 (12 · 8+4 · 4+4+4) — no wrapper divs needed per row.
+          {/* Seven panels on one 12-column grid: c12 | c8 c4 | c3 c3 c3 c3.
+              Panels are placed in DOM order and CSS grid auto-flow tiles them
+              into exactly three rows because the spans in each conceptual row
+              sum to 12 (12 · 8+4 · 3+3+3+3) — no wrapper divs needed per row.
               Block stream (hero, span 12) and Iso stack (span 4) render
               unconditionally, matching today's hero semantics ("stays mounted
-              while tracking"); Hex lattice, Ring, Pool attribution and
-              Next-block cut are the "lower panels" and keep today's exact
-              !tracking gate. When tracking hides Hex lattice, Iso stack
-              simply auto-flows alone into the start of row 2 — still on the
-              same fixed-width grid, so the artboard's width never moves. */}
+              while tracking"); Hex lattice, Ring, Pool attribution,
+              Next-block cut and Live tx feed are the "lower panels" and keep
+              today's exact !tracking gate. When tracking hides Hex lattice,
+              Iso stack simply auto-flows alone into the start of row 2 —
+              still on the same fixed-width grid, so the artboard's width
+              never moves.
+              MOCKUP RECONCILIATION (the mockup only existed in chat until
+              this round; the composition above was reconstructed from a span
+              list and diverged from it in two places once the real thing was
+              rendered): the mockup nests a Ring panel INSIDE row 2's iso-stack
+              column (stacked, gap --s5) — NOT ported, because measured
+              iso~224 + gap24 + ring~156 puts row2 at ~404px and naturalH at
+              ~1029 against the hard 902 ceiling (verify-fit:109); the mockup
+              is a standalone unbounded page, this view sits inside FitView.
+              Ring stays a row-3 cell. The mockup's "Next-block cut" and "Live
+              tx feed" are two separate panels; they were merged here because
+              the reconstruction read as six panels total — UNMERGED below at
+              zero height cost using `.c3` (in the mockup's own span
+              vocabulary: c3 c4 c5 c6 c7 c8 c9 c12), which tiles row 3 exactly:
+              4 × (3×84.667 + 2×12) + 3×12 = 4×278 + 36 = 1148. Content width
+              per c3 panel: 278 − 26(chrome) = 252. */}
           <div style={GRID12}>
 
             {/* row 1 · c12 · Block stream */}
@@ -578,29 +646,66 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
 
             {/* row 2 · c4 · Iso stack — hero-like, stays mounted while tracking */}
             <PanelFrame title={`Iso stack · last ${CONF_UNLOCK}`} right={<><NodeProvenance source="node" keys={["blocks"]} status={data.status} /><span>BLOCK GEOMETRY</span></>} dataKey="blocks" updatedAt={oldestFreshAt(data.status, ["blocks"])} style={{ gridColumn: "span 4", minWidth: 0 }}>
-              <IsoBlockStack blocks={data.blocks} w={330} h={165} onSelectBlock={onSelectBlock} />
+              {/* h 165 -> 240 (see ISO_STAGE_H above for why 165 broke this
+                  panel outright). The mockup draws this panel at viewBox
+                  320x290; 240 restores most of its designed presence and is
+                  affordable now that the fixed 200px vertical ribbon bound is
+                  gone, replaced by a derived naturalH <= 2×canvasH cap. */}
+              <IsoBlockStack blocks={data.blocks} w={330} h={240} onSelectBlock={onSelectBlock} />
             </PanelFrame>
 
-            {/* row 3 · c4 c4 c4 · Ring / Pool attribution / Next-block cut —
-                all hide while tracking, exactly as today's "lower panels". */}
+            {/* row 3 · c3 c3 c3 c3 · Ring / Pool attribution / Next-block cut /
+                Live tx feed — all hide while tracking, exactly as today's
+                "lower panels" (see the mockup-reconciliation comment above
+                for why this is four c3 cells and not the three c4 cells the
+                span-list reconstruction shipped). */}
             {!tracking ? (
               <>
-                <PanelFrame title="Ring · 16" right={<span className="acc">CLSAG</span>} style={{ gridColumn: "span 4", minWidth: 0 }}>
+                <PanelFrame title="Ring · 16" right={<span className="acc">CLSAG</span>} style={{ gridColumn: "span 3", minWidth: 0 }}>
+                  {/* RingSigFan UNCHANGED (maxWidth 150 < the new 252px c3
+                      content width, so instruction #4's "shrink to fit" does
+                      not trigger) — its <text> stays unconditional;
+                      EXPECT_SVG_TEXT.reactor requires it at every width, and
+                      the mockup's own RING panel has no fan SVG at all, but
+                      "all three existing visuals are kept" overrides that. */}
                   <RingSigFan />
-                  {/* Horizontal, ONE LINE — THIRD HEIGHT PASS: `flexWrap:
-                      "wrap"` let this wrap to 2 lines inside the ~348px c4
-                      track (measured 62px, not the ~24 a single line costs).
-                      `nowrap` + a tighter gap + shorter labels force it onto
-                      one line — same three readouts, same three values,
-                      nothing dropped. */}
-                  <div style={{ display: "flex", flexWrap: "nowrap", gap: "var(--sp-2)", marginTop: "var(--sp-2)" }}>
-                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Anon set</span><span className="v acc">152.8M</span></div>
+                  {/* HEIGHT FLAG, not a silent trim: the mockup's Ring panel
+                      carries SIX kv rows, not three. None of the six pairs
+                      fit alongside each other in one nowrap line at 252px the
+                      way three did at 348px, so this reverts to STACKED (one
+                      pair per line — `.kv`'s own `1fr auto` grid already gives
+                      each pair "one line if it fits, wraps if it doesn't" with
+                      no truncation added, satisfying that half of instruction
+                      #3 for free). Predicted: hdr 28 + pad 20 + svg 150 + kv
+                      (6 rows × ~21 + marginTop 8 ≈ 134) + border 2 ≈ 334 —
+                      about 99px over the ~235 row-3 budget. Flagged in the
+                      return with this number, not trimmed here, per "tell me
+                      with the number instead of trimming a readout". */}
+                  <div style={{ marginTop: "var(--sp-2)" }}>
+                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Anonymity set</span><span className="v acc">152.8M</span></div>
                     <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Decoys</span><span className="v">gamma</span></div>
                     <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">FCMP++</span><span className="v p">Q3 2026</span></div>
+                    {/* Three rows the mockup's Ring panel ships that this one
+                        didn't — protocol constants, not live figures, so
+                        nothing here is fabricated (no Math.random, no
+                        invented number; each is a fixed fact about the
+                        CLSAG/RingCT construction, not a per-block reading). */}
+                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Proof</span><span className="v">CLSAG + BP+</span></div>
+                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">View tags</span><span className="v">present</span></div>
+                    <div className="kv" style={{ fontSize: "var(--fs-mono)" }}><span className="k">Amounts</span><span className="v">RingCT · hidden</span></div>
                   </div>
                 </PanelFrame>
 
-                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>} dataKey="blocks network" updatedAt={oldestFreshAt(data.status, ["blocks", "network"])} style={{ gridColumn: "span 4", minWidth: 0 }}>
+                {/* HEIGHT FLAG: narrowed span 4 (348px content) → span 3
+                    (252px content, ~72%); the paragraph below wasn't authored
+                    for this width and instruction #1 didn't ask its text to
+                    change. Extrapolating from the measured span-4 body (175):
+                    more line wraps likely push the span-3 body to roughly
+                    210-215 and the panel total to roughly 240-245 — a modest,
+                    less-certain overshoot on top of Ring's large one, flagged
+                    in the return rather than trimmed (this prose wasn't named
+                    as mine to edit). */}
+                <PanelFrame title="Pool attribution" right={<span className="dim">UNATTRIBUTED</span>} dataKey="blocks network" updatedAt={oldestFreshAt(data.status, ["blocks", "network"])} style={{ gridColumn: "span 3", minWidth: 0 }}>
                   <div style={{ fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)", lineHeight: 1.55 }}>
                     <div style={{ display: "flex", alignItems: "baseline", gap: "var(--sp-2)" }}>
                       {/* The mockup's --t-xl 24px. --fs-h2 resolves to 24.48px
@@ -632,43 +737,53 @@ export function ReactorView({ data, focusBlock, onClearFocus }: ViewProps) {
                   </div>
                 </PanelFrame>
 
-                {/* Next-block cut · live tx feed — REBUILT compact (was a
-                    7-column table, 652px of fixed track alone, impossible to
-                    fit a 348px c4). scrollable={160} (second pass; was 240)
-                    bounds this panel's own height — rows scrolled out of view
-                    stay laid out (non-zero rendered box), so density is
-                    unaffected by the cap; only the panel's contribution to
-                    naturalH is. */}
+                {/* Next-block cut — SPLIT from the merged panel (mockup
+                    reconciliation, see the comment above `<div style={GRID12}>`).
+                    Carries the cut arithmetic and its readouts only; the tx
+                    list moved to Live tx feed below. */}
                 <PanelFrame
-                  // THIRD HEIGHT PASS: "● Next-block cut" (pass two's fix)
-                  // STILL wrapped to two lines at c4 — measured header 37,
-                  // not the ~28 a one-line title costs. Shortened further to
-                  // "● Next block"; "cut" and "live tx feed" both live in the
-                  // caption below already, so nothing is dropped, just moved.
                   title="● Next block"
                   right={<><NodeProvenance source="model" keys={["mempool", "network"]} status={data.status} /><span>PROJECTED</span></>}
                   dataKey="mempool fees network"
                   updatedAt={oldestFreshAt(data.status, ["mempool", "fees", "network"])}
-                  scrollable={160}
-                  style={{ gridColumn: "span 4", minWidth: 0 }}
+                  style={{ gridColumn: "span 3", minWidth: 0 }}
                 >
                   {/* §6: this whole panel is an inferred PROJECTION — a
                       miner's real block template is unobservable — so it is
                       labelled in words, not just via the MODEL tag above.
-                      "Live tx feed" lives here now (moved off the header, see
-                      the title comment above). maxWidth per §8's caption rule. */}
+                      "Live tx feed" no longer needs to live in this caption —
+                      it is the neighbouring panel's own title now. maxWidth
+                      per §8's caption rule. */}
                   <p className="dim" style={{ fontSize: "var(--fs-label)", color: "var(--ink-40)", marginTop: 0, marginBottom: "var(--sp-2)", maxWidth: "100%" }}>
-                    Live tx feed, inferred cut — ranked by fee/B against the node's own
-                    weight ceiling; a miner's real template is unobservable.
+                    Inferred — ranked by fee/B against the node's own weight ceiling; a
+                    miner's real template is unobservable.
                   </p>
                   {nextBlockCut.limit ? (
-                    <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)", marginBottom: "var(--sp-2)" }}>
+                    <div className="mono" style={{ display: "flex", justifyContent: "space-between", fontSize: "var(--fs-mono)", color: "var(--ink-60)" }}>
                       <span>{nextBlockCut.cutIndex} of {nextBlockCut.sorted.length} tx</span>
                       <span>{fmtBytes(nextBlockCut.cumAtCut)} / {fmtBytes(nextBlockCut.limit)}</span>
                     </div>
                   ) : (
-                    <div className="mono dim" style={{ fontSize: "var(--fs-mono)", marginBottom: "var(--sp-2)" }}>—</div>
+                    <div className="mono dim" style={{ fontSize: "var(--fs-mono)" }}>—</div>
                   )}
+                </PanelFrame>
+
+                {/* Live tx feed — the other half of the split. Same 14-row
+                    compact list as before, INCLUDING the "▾ next block cut"
+                    divider — the divider is what ties this panel back to
+                    Next-block cut's readout and it is the one thing that must
+                    not move, per instruction #2. scrollable={160} bounds this
+                    panel's own height; rows scrolled out of view stay laid
+                    out (non-zero rendered box), so density is unaffected by
+                    the cap. */}
+                <PanelFrame
+                  title="● Live tx feed"
+                  right={<span className="dim2">newest first</span>}
+                  dataKey="mempool fees network"
+                  updatedAt={oldestFreshAt(data.status, ["mempool", "fees", "network"])}
+                  scrollable={160}
+                  style={{ gridColumn: "span 3", minWidth: 0 }}
+                >
                   {/* §5: on the ramp. Both this gap and the row padding below
                       were 2px, which is off-ramp and has no rung — --sp-1 is the
                       floor at 4px. Widening them is FREE here in the one way

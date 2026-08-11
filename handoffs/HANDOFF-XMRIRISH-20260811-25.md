@@ -178,7 +178,7 @@ A modest N rise against a real M rise: more surfaces onto the same feed, plus tw
 ### Bundle — both endpoints BUILT, never cited
 ```
 eagerJsRaw   263,456 -> 263,456   ZERO   (the brief's "if it moves, that is a finding")
-lazyJsRaw    700,990 -> 702,407   +1,417 B
+lazyJsRaw    700,990 -> 703,200   +2,210 B   (7-panel layout + derived iso stage)
 ```
 On-disk read of `dist/assets`; `verify-bundle`'s own table agrees (255.27 -> 255.27 KiB,
 686.58 -> 687.96 KiB, i.e. +1,413 B by that table's rounding). Far under the series mean of
@@ -274,6 +274,90 @@ Fixed at all three sites by collapsing them into one `HEX_CELL` constant (plus `
   (185 ✅ / 0 ❌ both).
 - `verify-memviews`' assertion COUNT varies run to run (186 once, 185 twice, same tree, all
   green). Minor, unexplained, recorded.
+
+
+### THE MOCKUP ARRIVED, AND WITH IT THREE DEFECTS NO GATE COULD SEE
+`reactor-v2.html` was supplied late. Rendered rather than grepped, it is SEVEN panels in SIX cells:
+`c12 | c8 + c4(.stack -> [iso, ring]) | c4 + c4 + c4`. The reconstruction had merged NEXT-BLOCK CUT
+with LIVE TX FEED. The stacked cell is unportable — iso 224 + gap + ring 156 lands naturalH ~1172 —
+but `.c3`, which the mockup's own span vocabulary defines, tiles row 3 as FOUR panels
+(`4 x (3x84.667 + 2x12) + 3x12 = 1148`), so all seven ship distinct in three rows.
+
+**THE HEADLINE OF THE WHOLE RUN: the composition was green on every gate at THREE separate points
+while carrying three defects, and rendering the page found all three.**
+1. `MempoolHexGrid` shipped a 22x26 cell box against a 12px pitch while its own comment three lines
+   above said 18x16 — `color-mix(..., transparent)` backgrounds COMPOSITE, so the lattice would have
+   rendered as a dark band rather than discrete cells.
+2. `IsoBlockStack` drew a stage whose children reach 234px logical into a 165px box with
+   `overflow: hidden` — one block glyph jammed bottom-right of an empty panel. **I caused this**, by
+   handing the builder h 300 -> 240 -> 150 -> 165 to hit a ceiling.
+3. The same projection was decentred by 93px (38.8% of h) once un-clipped.
+All three are geometry INSIDE a component. This suite asserts layout — widths, heights, overflow,
+counts — and never what a panel draws. Fixes are structural, not numeric: `HEX_CELL` +
+`PITCH_X/PITCH_Y` (one constant, five uses), and a stage transform DERIVED from `h`
+(`stageScale = 0.62 * h / ISO_STAGE_H`) so no future height pass can break it silently.
+
+### THE THIRD GATE CHANGE, TAKEN DELIBERATELY
+`verify-fit:109`'s flat `scrollH - clientH <= 200` is replaced. Its stated subject was "a symptom of
+the fit math failing altogether"; `FITS_AT_1440` now asserts that directly, and a true-size view
+scrolling vertically is normal for every other fit view. **Stated rather than hidden: `FITS_AT_1440`
+is one PR old and was added by this same change** — self-referential justification, named so a reader
+who spots it does not discount the argument. Replaced by (a) a DERIVED cap `naturalH <= 2 x canvasH`
+— a ratio, so it cannot be tuned to a measurement and means the same on every screen — and (b)
+`HEIGHT_CLAUSE_AT`, per-viewport and both-directions, because "outside the hazard band" is a claim NO
+composition can make.
+**Withdrawn: the iso defect is NOT an argument for this change.** The panel needed its transform
+derived, not its height back. Take-1 stands on mockup conformance and not spending the spacing win.
+
+### THE HEIGHT-CLAUSE CONTROL DERIVES ITS OWN VIEWPORT
+A hand-picked `1440x1000` exercised the clause at naturalH 851, went vacuous at 956, was retuned to
+1100, and went vacuous AGAIN at 1031 when the iso fix landed — caught only because the map asserts
+both ways. Two staleness events in one PR means the number was the wrong thing to write down. It now
+measures naturalH first, then opens at `0.96 x naturalH + CHROME_H` (measured 1188 from 1031). Fourth
+instance of derive-don't-constant in this PR, and the only one applied to a gate's own fixture.
+
+### BREAK TESTS — and the one that taught most is the one that tested nothing
+```
+cap        MUTATED  naturalH 1031 -> 1691   42 ✅ 2 ❌     RESTORED 1031   44 ✅ 0 ❌
+control    MUTATED  target 0.96 -> 0.50     43 ✅ 1 ❌     RESTORED        44 ✅ 0 ❌
+```
+**BT-A's FIRST attempt applied at three sites, built clean, and left the gate at 44/0.** `scrollable`
+sets `maxHeight` on a panel whose content is ~160px, so raising the ceiling grew nothing. I had proved
+the mutation APPLIED and treated that as proof it was EFFECTIVE. **The repo's rule — prove the
+mutation applied before reading the red — is necessary and NOT SUFFICIENT.** The second half is
+proving it moved the MEASURED QUANTITY, which is why the rerun prints naturalH on both sides.
+
+### THE ISO TRANSLATE IS MEASURED, AND ITS DATA-DEPENDENCE WAS TESTED AND REFUTED
+`heightOfBlock = min(120, 26 + txs/140*100)` is live off `blocks[].txs` with a 94px swing, so the
+constant looked like a screenshot. Measured with the input PROVEN LIVE (faces read 26x100 at txs=0 and
+120x100 at txs=400; ribbon rendered 0 and 400): `dy/h` is **2.50% at txs 0 / 70 / 140 / 400**.
+**WHY is not established** and the source says so — three previous accounts of this component's
+coordinate spaces were wrong. Stability holds at 26 as well as 120, so the 140 cap is not what does
+the work. Calibrated for `RIBBON_BLOCKS = 10` at `perspective: 1200px`.
+**The first probe of this was itself void**: it varied the mempool, and `heightOfBlock` reads
+`blocks[].txs`. Accurately measured, wrong subject.
+
+### §9 — the lesson, in the form that does not teach the wrong thing
+> Every wrong claim in this session, on both sides, had a subject narrower or wider than the claim it
+> supported — whether the instrument was a grep, a wait, or a MEASUREMENT. Measuring did not protect
+> the two probes whose subject was wrong; it only made them look protected. **Before reading an
+> instrument, state what its subject is and check it against the claim's.**
+
+Twenty such claims. **Nineteen were caught by something other than the party that made them** —
+a gate, a render, the builder's `INFERRED` block, or the other side reading the claim.
+
+Two more for §9, distinct rather than restatements:
+- **A completion marker and a pendency sentinel are the same fault with opposite signs.**
+  `npm run build | tail -4 && echo BUILD_OK` printed green on a FAILED build; an `until git diff |
+  grep -q 'NOT ESTABLISHED'` wait never matched because the phrase was line-wrapped, so it spun for
+  ~25 minutes reporting "still running" while nothing ran. One claimed a completion that had not
+  happened; the other claimed a pendency that would never resolve. **Wait on what the callee
+  controls, never on prose you did not write.**
+- **`getBoundingClientRect()` on a parent EXCLUDES 3D-transformed descendants** — which is why the
+  second iso probe had to walk all descendants, and why anyone measuring a transformed cluster will
+  hit it.
+- **cwd drift produced three false failures**, incl. one `exit=1` with ZERO assertions — caught by the
+  summary-line rule, not the exit code.
 
 ### Deviations from spec
 - **The mockup `reactor-v2.html` does not exist** in the repo or the upload. The composition
