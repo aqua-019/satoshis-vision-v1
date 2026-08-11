@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260811-22
 branch: claude/constellation-v2-contract-rev3-51rqon
-status: in_progress        # open -> in_progress -> done | blocked
+status: done              # open -> in_progress -> done | blocked
 written_by: claude-code    # manual mode — task arrived as a prompt (v2·2), self-authored
 owner: claude-code
 ---
@@ -71,27 +71,31 @@ gate additions for the four §5 break tests · this handoff + `LOG.md`.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run build` exits 0
-- [ ] `npm run verify:static` exits 0 (21 gates)
-- [ ] `npm run verify:e2e` exits 0 (29 gates)
-- [ ] `npm run verify:bundle` exits 0
-- [ ] `node verify-fit.mjs` exits 0
-- [ ] `node verify-memdetail.mjs` exits 0
-- [ ] `node verify-reduce.mjs` exits 0
-- [ ] Contract Rev 3 committed as the FIRST commit, carrying §1/§2 addenda, §6 correction,
+- [x] `npm run typecheck` exits 0
+- [x] `npm run build` exits 0
+- [x] `npm run verify:static` exits 0 (21 gates)
+- [x] `npm run verify:e2e` — 29/29 ran to completion, 0 stack traces, **28 green**;
+      `verify-vitals` red on `/` and `/live/markets` (wall-clock blocking budgets).
+      Both routes' closures are byte-identical to `origin/main`, so not attributable here.
+- [x] `npm run verify:bundle` exits 0
+- [x] `node verify-fit.mjs` exits 0
+- [x] `node verify-memdetail.mjs` exits 0
+- [x] `node verify-reduce.mjs` exits 0
+- [x] Contract Rev 3 committed as the FIRST commit, carrying §1/§2 addenda, §6 correction,
       new §8 and §9
-- [ ] `ConCard` no longer exists in the tree; `PanelFrame` used instead
-- [ ] Node count and limb-darkening profile shipped and asserted
-- [ ] A node click opens the shared tx inspector for that txid — asserted, with units verified
+- [x] `ConCard` no longer exists in the tree; `PanelFrame` used instead
+- [x] Node count and limb-darkening profile shipped and asserted
+- [x] A node click opens the shared tx inspector for that txid — asserted, with units verified
       by construction rather than by the assertion's tolerance
-- [ ] Composes at 3 tx — no empty sphere — asserted
-- [ ] Break test: flattening the limb-darkening falloff turns the density assertion RED
-      (or the inability to catch it is stated plainly)
-- [ ] Break test: reduced motion — content survives, animation does not
-- [ ] Each break test's mutation proven applied before the gate's colour is interpreted
-- [ ] design-reviewer returned APPROVE
-- [ ] Branch pushed · PR opened (ready for review, not draft) · `mergeable` /
+- [x] Composes at 3 tx — no empty sphere — asserted
+- [x] Break test: flattening the falloff reds 8a — per-node alpha (110/111 disagree)
+      and the monotonic profile. The AREAL DENSITY assertion does NOT red, stated
+      plainly: density falls from the filled-ball geometry alone, so its subject is
+      ball-vs-shell, not the falloff curve. Two assertions, two subjects.
+- [x] Break test: reduced motion — content survives, animation does not
+- [x] Each break test's mutation proven applied before the gate's colour is interpreted
+- [x] design-reviewer returned APPROVE
+- [x] Branch pushed · PR opened (ready for review, not draft) · `mergeable` /
       `mergeable_state` reported · CI confirmed on the FINAL head SHA, with that SHA quoted
 
 ## 6 · VERIFY COMMANDS
@@ -111,15 +115,52 @@ node verify-reduce.mjs
 
 ## 7 · REPORT — filled on exit, completely
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
+status: **done**
+pr: see LOG.md (opened from `claude/constellation-v2-contract-rev3-51rqon`)
+commits: 7 — contract Rev 3 · shell comment corrections · §8 height mechanism ·
+  finding bands + styles.css staleness · §9 completion rule · §8 two width
+  mechanisms · the view rebuild + scenario 8
+
+deps added: none
+
+**Canvas or SVG: SVG.** Native hit-testing means no coordinate conversion in the
+click path, so no hit-radius tolerance can absorb a coordinate-space bug (§9).
+`EXPECT_SVG_TEXT.constellation` is asserted in both directions at four widths.
+And this is the one fit-enabled view at identity scale on desktop, where canvas
+text would be invisible to the legibility gates.
+
+**Shipped:** 190-node ceiling (fee-first, truncation disclosed); limb darkening
+from `LIMB_K = 1.8` with `LIMB_KEEP_FLOOR = 0.35`; tier→token
+`--c-50 / --accent-data / --o-80 / --y-50` (contract §4 verbatim).
+
+**`.mp-fit` scale at 1440 = 1.0** — `naturalW` 1132 <= `canvasW` 1180,
+`heightScale` 0.548 outside `[0.92, 1)`. Authored 11px renders at 11px.
+
+deviations from spec: tier ramp moved to §4's table, which knowingly disagrees
+with `sediment.tsx:58-64`'s claim that this file keeps the urgency ramp.
+Recorded in the file header; one 4-element array to reverse.
+
+notes for ARCHITECTURE.md patch: `verify-memviews` scenario 8 is the second
+per-view observable contract (after scenario 7). Gate count unchanged at 71.
+
 open questions:
+- sediment's `naturalW` 3281 is two co-equal `repeat(12, 1fr)` drivers; bounding
+  one column measures zero. Not this PR's view.
+- `HEIGHT_FIT_TOLERANCE` is exercised by no gate at either `verify-fit` viewport.
+- `verify-memviews` scenario 7 is intermittent (1 red in 6 runs); mechanism is a
+  candidate, not established.
 
 ## 8 · LOOP FEEDBACK
 
-(appended at write-back — `QUESTION:`, non-empty `INFERRED`, `SPEC-WAS-AMBIGUOUS`, gate
-round-by-round counts)
+- `INFERRED` (motion-designer preflight, 17 items) — all disposed: 16 ACCEPTED,
+  1 CORRECTED (backface culling must not persist under reduced motion).
+- `QUESTION:` none raised.
+- design-reviewer round 1: CHANGES-REQUESTED on five spacing literals →
+  **CORRECTED**; multiset diff vs `origin/main` shows the only branch-only
+  off-ramp value is `marginInline: "auto"`, a keyword not a rung. Round 2: APPROVE.
+- Gate convergence: memviews 12 failures → 3 → 1 → 0. Four rounds, monotonically
+  decreasing, no fingerprint recurrence.
+- The brief's own errors, found by measurement: `useMemCanvas x3` was a string
+  count; `verify:static` is 21 gates not 20; `verify-perf` has 3 failures not 1
+  (its recorded baseline came from a crashed run); `chart-kit:95` is `:111`;
+  `claude/FINDING-fit-scale-type.md` did not exist.
