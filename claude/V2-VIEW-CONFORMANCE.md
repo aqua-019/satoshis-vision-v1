@@ -456,6 +456,40 @@ and is wrong on every retina phone.
 **When an assertion has a tolerance, name the error it is blind to, and verify that class by
 construction — trace the units — rather than by the assertion.**
 
+### A GATE'S RESULT IS USABLE ONLY IF THE RUN COMPLETED — check the summary line, not the exit code
+
+**A crashed run and a failing run are indistinguishable by exit code and nearly indistinguishable
+by output shape.** Both exit 1. Both print at least one `❌`. Counting `❌` lines yields a
+plausible small number either way. **Nothing in "1 failure" announces that the gate died before it
+could look for a second.**
+
+Live instance: `verify-perf`'s recorded baseline was "one failure — un-gated `setInterval`". That
+run had no server on `:4173`; the gate completed its three STATIC assertions, hit the runtime
+section, and died at `page.goto` with `ERR_CONNECTION_REFUSED`. It never evaluated the rest. Run
+to completion against a live server, the same tree has **three** distinct failures:
+
+```
+❌ un-gated setInterval in: src/data/useNodePopulation.ts, src/design/useFreshClock.ts
+❌ pre-paint stamp wrong: tier=low hydrated=true
+❌ / still animating while hidden — 179 rAF callbacks in 3s
+```
+
+The first reading was not a smaller measurement — **it was not a measurement.**
+
+**An exit code is a claim about the PROCESS; the summary line is a claim about the ASSERTIONS.**
+Before quoting any gate result, confirm the terminal summary is present and no stack trace stands
+where it should be. This is the third distinct mechanism by which this harness has produced output
+that LOOKED like a result — after v2·0's false green (a mutation that never applied) and the
+stride vacuity (a precondition that could not fire) — and it belongs beside them.
+
+> Corollary, learned the same afternoon: **a checker's predicate is itself a claim with a
+> subject.** A path-existence audit reported nine false positives because exact string matching
+> made a trailing slash read as a missing directory; a link checker reported a MISS on a tracked
+> file because `tr -d '](.)'` stripped the dot out of `.md`. Two instruments built to catch this
+> family, both committing it, within an hour. The only defence that has actually worked is to
+> **separate extraction from adjudication and make the adjudication deterministic and
+> re-runnable** — e.g. adjudicate paths against `git ls-files`, never against a guess.
+
 ---
 
 ## Conformance checklist for a v2 PR
