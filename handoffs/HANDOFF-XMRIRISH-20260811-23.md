@@ -139,7 +139,9 @@ because §4's single method does not hold across all three output formats.**
 | `verify-nav` | 128 / 0 | 128 / 0 | reporter |
 | `verify-mobile` | 2 / 0 | 2 / 0 | no summary line at all |
 | `verify-pageshell` | **367 ✅ / 1 ❌** | **368 / 0** | was red on main |
-| `verify-bundle` | 25 / 0 @ 948,435 | **24 / 1 @ 964,046** | crossed, left RED deliberately |
+| `verify-bundle` | 25 / 0 @ 948,435 | **27 / 0** | grand total split into eager + lazy |
+| `verify-fit` | 21 / 0 | 21 / 0 | orphan, run by hand |
+| `verify-perf` | 18 / 3 | 18 / 3 | orphan, pre-existing, not ours |
 | `verify-chartkit` | 52/52 | 52/52 | |
 | `verify-memshell` | all owned passed | all owned passed | 973 lines, band 200–1084 |
 
@@ -288,7 +290,41 @@ which is the actual controlling mechanism. Same shape as v2·0's labels test.
 notes for ARCHITECTURE.md patch: gate count unchanged at 71 — scenario 9 is a section
 inside `verify-memviews`, not a new file. `verify:static` stays 21.
 
-**THE COST OF SHIPPING IT RED, MEASURED — and it is larger than "one gate is red".**
+**SUPERSEDED — the red was withdrawn and the budget split instead.** An
+independent review withdrew its own "ship it red" recommendation once the cost
+below was measured, on the grounds that a red `main` is a worse instrument than
+a badly-sized ceiling. Both were fixed rather than traded off:
+
+```
+ci.yml     the 12 offline gates after the bundle step get `if: always()`;
+           `hardening gates` gets `if: !cancelled()`. `needs: build` there was
+           SEQUENCING ONLY — it runs its own npm ci / verify:static / build.
+verify-bundle   eagerJsRaw 280,000 (261,392 measured, byte-identical across the
+           rebuild) · lazyJsRaw 720,000 (702,654) · totalJsRaw retired to a
+           1,000,000 CATASTROPHE BACKSTOP. 27 passed · 0 failed.
+```
+
+**And all three per-view deltas were cited, not built. Three for three.** A
+reviewer built sediment's base — `6039d64` = 938,036, confirmed here to the byte
+— making sediment **+7,270**, not the +5,836 every report and the gate comment
+carried. Corrected series, all built-to-built:
+
+```
+6039d64  938,036
+fdf4ecc  945,306   sediment      + 7,270   (was cited 5,836, off by 1,434)
+260c99f  948,435   constellation + 3,129   (was cited 3,051 on a cited base, off by 1,113)
+head     964,046   terminal      +15,611
+mean 8,670 · spread 5x · 6 remain -> ~1,016,066 on the old aggregate
+```
+
+**"+3 B eager" was also wrong, and the error is the session's cleanest instance
+of the standing family.** The eager closure is byte-identical — 0 B. My chunk-
+diff script grouped by basename with the hash stripped, and there are TWO
+`index-*.js` chunks (98,477 entry, 2,064 lazy); it summed them, so a +3 B change
+in the LAZY chunk was reported against the EAGER population. A true number about
+the wrong subject, from an aggregation key that collided.
+
+**THE COST THAT DROVE THE WITHDRAWAL, MEASURED.**
 `verify-bundle` runs as step 7 of the `build` job, and the `hardening gates` job
 `needs:` it. So the deliberate failure does not merely mark the crossing:
 
