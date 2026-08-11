@@ -53,22 +53,22 @@ any new component, the remaining 7 orphaned gates.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run build` exits 0
-- [ ] `node verify-perf.mjs` exits 0 with 0 ❌
-- [ ] `node verify-fit.mjs` exits 0
-- [ ] `node verify-mobile.mjs` exits 0 AND prints a terminal summary line
+- [x] `npm run typecheck` exits 0
+- [x] `npm run build` exits 0
+- [x] `node verify-perf.mjs` exits 0 with 0 ❌
+- [x] `node verify-fit.mjs` exits 0
+- [x] `node verify-mobile.mjs` exits 0 AND prints a terminal summary line
       naming its own assertion count
-- [ ] `node verify-pageshell.mjs` exits 0
-- [ ] `npm run verify:static` exits 0 (no regression)
-- [ ] `npm run verify:bundle` exits 0 (ColdBoot.tsx is touched)
-- [ ] Each of the four gates has its own npm script, found by exact-token
+- [x] `node verify-pageshell.mjs` exits 0
+- [x] `npm run verify:static` exits 0 (no regression)
+- [x] `npm run verify:bundle` exits 0 (ColdBoot.tsx is touched)
+- [x] Each of the four gates has its own npm script, found by exact-token
       search of `app/package.json`
-- [ ] Each of the four gates has its own named step in `.github/workflows/ci.yml`
+- [x] Each of the four gates has its own named step in `.github/workflows/ci.yml`
       in the `verify` job, one step per gate, no `&&` chaining
-- [ ] Two-polarity break test recorded for every changed assertion, with the
+- [x] Two-polarity break test recorded for every changed assertion, with the
       actual counts for both polarities
-- [ ] Branch pushed · draft PR opened · `mergeable_state` reported
+- [x] Branch pushed · draft PR opened · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 ```
@@ -107,8 +107,11 @@ deps added: none
    assertion could only pass if prerendering were REMOVED: a dead assertion that fails.
    Replaced with `documentElement.dataset.boot === "ok"` (`main.tsx:77`, whose own comment
    already says "Proof that the MODULE bundle executed"), asserted at BOTH polarities —
-   false at `commit`, true after `load`. Two-polarity: stamp `data-boot` pre-paint in
-   index.html → **RED**, "booted=true at commit". Restore byte-identical.
+   false pre-bundle, true after `load`. **My first version of this fix was itself racy** —
+   `waitUntil:'commit'` then `evaluate()` is a round trip, green five runs then
+   `booted=true` on the sixth. Sampling an INSTANT cannot establish an ORDER, so the entry
+   chunk is held 1.5s and the window is a fact of the harness. Two-polarity: stamp
+   `data-boot` pre-paint in index.html → **RED**. Restore byte-identical.
 3. *"/ still animating while hidden — 181 rAF in 3s"* — real. `ColdBoot.tsx` froze the
    CLOCK while hidden but kept SCHEDULING, so `t` never reached 1, the `t >= 1` exit
    became unreachable, and the same frame repainted forever. Fixed with
@@ -117,7 +120,7 @@ deps added: none
    background tab is rescued by the browser; what was wrong is that `/` depended on that
    rescue.
 
-**Final counts.** verify-perf 18✅/3❌ → **21✅ · 0❌ · 3 skips**;
+**Final counts.** verify-perf 18✅/3❌ → **22✅ · 0❌ · 3 skips** (stable over four consecutive runs);
 verify-pageshell 368 → **369**; verify-fit 21 → **22**; verify-mobile 2 (silent) →
 **3 ✅ · 0 ❌ · 1 skip, with a terminal summary it never had**.
 CI-reached files **57 → 61**; orphan gates **11 → 7**.
