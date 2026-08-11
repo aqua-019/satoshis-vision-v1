@@ -31,6 +31,7 @@
  */
 import { webkit, chromium } from 'playwright';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { coldBootOff } from './verify-lib.mjs';
 
 const base = 'http://localhost:4173';
 let fail = false;
@@ -225,8 +226,37 @@ const PROBE = `
   window.clearInterval = function (id) { if (id) window.__g.intervals--; return _ci.call(window, id); };
 `;
 
+/* ── THE COLD-BOOT BYPASS, AND THE ONE PLACE IT MUST NOT BE INSTALLED ─────
+ *
+ * ColdBoot mounts on `/` AND NOWHERE ELSE (coldboot/gate.ts:124 —
+ * `return pathname === R.HOME`). That single fact is the entire reason §3 read
+ * 181 rAF on `/` and 0 on the other two routes: the other two never had the
+ * loop. It is NOT that the app has a discipline the Home route missed.
+ *
+ * Every other section here has a ROUTE as its subject, so the splash sitting
+ * `position:fixed; inset:0` over it would make those measurements describe the
+ * splash — exactly what verify-coldboot-live's audit exists to prevent. Those
+ * get `bypass: true`.
+ *
+ * §3's `/` case is the one genuine exception in this repo: its subject IS the
+ * splash. Installing the bypass there sets `__XMR_COLDBOOT__ = 'off'`,
+ * `coldBootWillRender()` returns false, ColdBoot never mounts, and its two rAF
+ * loops never start — so the assertion would report 0 frames whether or not the
+ * fix works. **It would also fake this PR's own break test**: reverting
+ * ColdBoot.tsx under the bypass gives 0 → 0, which reads as "fix confirmed".
+ * The measured 179 → 0 is only meaningful without it.
+ *
+ * A count of 0 has the same three readings verify-coldboot-live's docblock
+ * names for an absence — the bypass worked, the selector died, or the splash
+ * never rendered — and cannot tell them apart from the inside. So §3's `/` case
+ * carries the symmetric POSITIVE CONTROL: it asserts `[data-coldboot]` is
+ * PRESENT before counting frames. That turns "no bypass here" from an omission
+ * into an assertion, and if ColdBoot ever stops mounting on `/` this goes red
+ * instead of quietly reporting a vacuous zero. */
 async function open(path, opts = {}) {
-  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, ...opts });
+  const { bypass = true, ...ctxOpts } = opts;
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, ...ctxOpts });
+  if (bypass) await coldBootOff(ctx);
   await ctx.addInitScript(PROBE);
   const page = await ctx.newPage();
   return { ctx, page };
@@ -371,11 +401,25 @@ for (const [tier, want] of Object.entries(EXPECT)) {
 
 /* ── 3. background-tab quiescence ────────────────────────────────────── */
 for (const route of ['/', '/live/mempool', '/live/markets']) {
-  const { ctx, page } = await open(route);
+  // NO BYPASS — see the note above `open()`. The splash is the subject at `/`,
+  // and bypassing it here would make this section report 0 frames for a page
+  // with no loop in it.
+  const { ctx, page } = await open(route, { bypass: false });
   await page.goto(base + route, { waitUntil: 'load' });
   await page.waitForTimeout(1500);
   const at = await landedOn(page);
   if (at !== path0(route)) bad(`${route}: landed on ${at} — quiescence below measures the wrong page`);
+
+  // POSITIVE CONTROL, `/` only. A rAF count of 0 cannot distinguish "the loop
+  // stopped itself" from "there was no loop": ColdBoot mounts only on Home, so
+  // this is the one route where something must be running to begin with.
+  if (route === '/') {
+    const splash = await page.evaluate(() => !!document.querySelector('[data-coldboot]'));
+    if (splash) ok('/ renders the cold-boot splash — the rAF count below has a subject');
+    else bad('/ did not render the cold-boot splash: ColdBoot mounts only on Home ' +
+             '(coldboot/gate.ts:124), so a 0-frame result below would be vacuous. ' +
+             'Did something install the cold-boot bypass on this context?');
+  }
   await page.evaluate(() => {
     Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'hidden' });
     Object.defineProperty(document, 'hidden', { configurable: true, get: () => true });

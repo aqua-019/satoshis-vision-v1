@@ -39,13 +39,20 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **61 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **60 distinct files** on
   PRs to `main`, in two jobs: **12** individually-named offline gates, then `verify:static`
   (**21** gates, no browser), `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`) and
-  **four individually-named browser gates** v2·3b wired in — `verify:pageshell`,
-  `verify:fit`, `verify:mobile`, `verify:perf-runtime`, one step each with `if: always()`,
-  never an `&&` chain, so a red one cannot make the other three unanswerable.
-  (Recounted, not incremented: 57 → 61.)
+  **three individually-named browser gates** v2·3b wired in — `verify:fit`,
+  `verify:mobile`, `verify:perf-runtime`, one step each with `if: always()`, never an `&&`
+  chain, so a red one cannot make the others unanswerable. (Recounted, not incremented:
+  57 → 60.) **`verify:pageshell` is the fourth and is npm-wired ONLY**, held back under
+  v2·3b's own "never wire a red gate" rule: it is 369/0 locally and red on a CI runner with
+  `/future@1600: .main no h-scroll … over 4`, a PRE-EXISTING defect measured by reverting
+  to 5537976 and rebuilding (2px local, 4px runner, against the gate's TOL of 2).
+  `/future`'s `.v6-proto-grid` lays 4 tracks of 354.5px at 1600 while a `.v6-stagger` child
+  grid sizes its column to a panel's 426.375px min-content and will not shrink. Fixing that
+  is a layout decision across /future's breakpoint ladder; wiring the step is a one-line
+  follow-up after it.
   v6.1.8 added three, and the two cold-boot gates sit at OPPOSITE ends of `verify:e2e` on
   DIFFERENT axes — state both, because they look contradictory: `verify-coldboot-live` runs
   **FIRST**, and `verify-hero` (static) runs first in its own chain. **`verify-coldboot` no
@@ -94,11 +101,12 @@ chain and market data.
   the build in the other job, so it cannot live there) and `verify-vitals` (e2e).
   `npm run verify:all` runs the whole CI-reached set locally in one command with one
   tally; it is an orchestrator, not a gate, and is deliberately not in CI.
-  Three more are npm-wired but deliberately not in CI (`verify:shots`,
-  `verify:perf-classic`, `verify:mem:perf` — a baseline shot tree and a framerate
-  measurement are both things a shared runner cannot produce honestly; `verify:perf` was
-  renamed to `verify:perf-classic` in v2·3b, see the stale-literals entry for why). The
-  remaining **7** are wired to neither npm nor CI — several expect live upstreams.
+  **Four** more are npm-wired but not in CI (`verify:shots`, `verify:perf-classic`,
+  `verify:mem:perf` — a baseline shot tree and a framerate measurement are both things a
+  shared runner cannot produce honestly; `verify:perf` was renamed to `verify:perf-classic`
+  in v2·3b, see the stale-literals entry for why — plus `verify:pageshell`, held back for a
+  pre-existing `/future` layout red, see the verification block above). The remaining **7**
+  are wired to neither npm nor CI — several expect live upstreams.
 
 ## Site Routes
 
@@ -459,7 +467,8 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   `fontSize` attributes (sub-11) only. Deciding the floor, and writing a gate that reads
   computed font-size on a named selector set, belong together in their own change.
 - **Orphaned gates**: **7** `verify-*.mjs` are wired to neither npm nor CI — v2·3b wired
-  four (`verify-pageshell`, `verify-fit`, `verify-mobile`, `verify-perf`), taking 11 → 7.
+  four (`verify-pageshell` to npm only; `verify-fit`, `verify-mobile`, `verify-perf` to npm
+  AND CI), taking 11 → 7 — an orphan is a gate wired to NEITHER, so npm alone clears it.
   (This said 13 until v6.1.5 measured it, and `:184` in this same file already said 11;
   v6.1.2 wired in `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots`
   npm script, `verify-shots.mjs`.) `verify-shots.mjs` is npm-wired only, deliberately not

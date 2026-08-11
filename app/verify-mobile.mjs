@@ -1,5 +1,6 @@
 import { webkit, chromium } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
+import { coldBootOffBrowser } from './verify-lib.mjs';
 const base = 'http://localhost:4173';
 // Prefer WebKit (mobile-Safari engine). Some sandboxes can't download the WebKit
 // build (CDN not in the network allowlist) — fall back to Chromium so the layout
@@ -23,6 +24,15 @@ try {
   b = await chromium.launch(executablePath ? { executablePath } : {});
 }
 console.log('engine:', engine);
+/* Cold-boot bypass. OVERFLOW_ROUTES[0] is '/', where ColdBoot mounts
+ * (coldboot/gate.ts:124 — it renders on Home and nowhere else), and the splash
+ * is `position:fixed; inset:0` over an opaque floor. Every measurement this
+ * gate takes is about the ROUTE, so without the bypass the '/' row would
+ * describe the splash instead. verify-coldboot-live audits this contract across
+ * every wired /-reaching gate; wiring this file in v2·3b moved it from that
+ * audit's "orphaned — recorded, not failed" branch into its failing one, which
+ * is the audit working exactly as designed. */
+await coldBootOffBrowser(b);
 const p = await b.newPage({ viewport: { width: 390, height: 844 } });
 
 /* THIS GATE COULD NOT REPORT THAT IT HAD COMPLETED, and that is why it is

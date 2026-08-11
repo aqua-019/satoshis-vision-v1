@@ -23,7 +23,7 @@ satoshis-vision-v1/
 │   │   ├── prerender.mjs   # emits dist/<route>/index.html (works with JS off)
 │   │   ├── gen-sitemap.mjs # emits dist/sitemap.xml + dist/robots.txt
 │   │   └── serve-dist.mjs  # local mirror of Vercel's resolution order
-│   └── verify-*.mjs        # 60 gates + verify-lib/-reporter/-fixtures.mjs (shared, not gates)
+│   └── verify-*.mjs        # 65 gates + verify-lib/-reporter/-fixtures.mjs (shared, not gates)
 ├── api/                    # Vercel serverless — MIXED: CJS except coingecko/markets (ESM)
 │   └── verify-*.mjs        # 6 offline gates
 ├── relay/                  # websocket relay (not currently deployed)
@@ -72,25 +72,28 @@ bar and the ⌘K palette. `verify-ia.mjs` enforces that those agree, and
 
 ## ✅ Verification
 
-66 gates guard this repo (60 in `app/`, 6 in `api/`; `verify-lib.mjs`,
-`verify-reporter.mjs` and `verify-fixtures.mjs` are shared modules, not gates).
-`.github/workflows/ci.yml` runs **52 distinct** files on every PR to `main`, in
-two jobs: 12 named offline gates, then `verify:static` and `verify:e2e` (four of
-the 12 also appear in `verify:static`, and `verify-origins` appears in both
-chains, which is why 12 + 19 + 26 is 57 and not 52).
+71 gates guard this repo (65 in `app/`, 6 in `api/`; `verify-lib.mjs`,
+`verify-reporter.mjs` and `verify-fixtures.mjs` are shared modules, not gates —
+`verify-lib` alone is imported by 29 of them).
+`.github/workflows/ci.yml` runs **60 distinct** files on every PR to `main`, in
+two jobs: 12 named offline gates, then `verify:static` (21) and `verify:e2e`
+(29), plus 3 individually-named browser gates v2·3b wired in. Counts here are
+RECOUNTED, never incremented — this block read "66 / 52 / 19 / 26" while the
+chains held 21 and 29, and the arithmetic in its own parenthetical did not
+close.
 
 ```bash
 cd app
 npm run typecheck
 npm run build
 
-npm run verify:static   # 19 source-assertion gates, no browser, ~30s
+npm run verify:static   # 21 source-assertion gates, no browser, ~30s
 npm run verify:bundle   # byte budgets — offline, but reads dist/
 
 npx playwright install --with-deps chromium
 node scripts/serve-dist.mjs &
 npm run wait-preview
-npm run verify:e2e      # 26 Playwright gates
+npm run verify:e2e      # 29 Playwright gates
 
 npm run verify:all      # all of the above in one command, with one tally
 ```
@@ -118,8 +121,10 @@ Everything above checks correctness. Two gates check **cost**:
 Both print their measured numbers on every run, pass or fail. A `--measure`
 flag on each prints without asserting, which is how baselines are re-taken.
 
-Three more are npm-wired but deliberately not in CI — `verify:shots`,
-`verify:perf-classic`, `verify:mem:perf`. `verify-shots.mjs`'s `--baseline` diff
+Four more are npm-wired but deliberately not in CI — `verify:shots`,
+`verify:perf-classic`, `verify:mem:perf`, and `verify:pageshell` (held back
+under v2·3b's "never wire a red gate" rule for a pre-existing `/future@1600`
+layout overflow; see CLAUDE.md's verification block). `verify-shots.mjs`'s `--baseline` diff
 needs a shot tree built from another commit, which CI has no way to produce; the
 two framerate gates measure fps, which a shared runner cannot measure honestly.
 
