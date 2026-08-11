@@ -1,6 +1,9 @@
 # v2 MEMPOOL VIEWS — design-framework conformance
 
 **REV 4 — measured against `main` = `260c99f` (v2·2 / PR #169 merged), 2026-08-11.**
+*Rev 4 landed across TWO commits in PR #170 — `b7317ac` (§6) and `351869a` (§2, §10, and the
+`verify-pageshell` message). One revision, two commits, because §2's falsity was found later while
+checking a correction. If you are bisecting, `351869a` is the complete Rev 4; `b7317ac` is partial.*
 Rev 4 **withdraws false claims in §2 AND §6** and adds §10. Rev 3 was measured against
 `fdf4ecc`; it added §8 and §9, addenda to §1 and §2, and withdrew the first false §6 claim.
 Rev 2 was measured against `6039d64`; Rev 1 against `292227a` and was wrong in §3 and §5.
@@ -723,6 +726,28 @@ where it should be. This is the third distinct mechanism by which this harness h
 that LOOKED like a result — after v2·0's false green (a mutation that never applied) and the
 stride vacuity (a precondition that could not fire) — and it belongs beside them.
 
+### A GATE NOBODY RUNS DECAYS, AND FIXING IT DOES NOT CHANGE THAT
+
+Measured on `260c99f` while establishing v2·3's baselines: **three gates were red on the untouched
+tree**, and two of them are in **no npm script and no CI** —
+
+```
+verify-perf        3 failures    orphan
+verify-pageshell   1 failure     orphan      ← fixed in #170
+verify-memviews    1 failure     in CI       ← scenario 7's known sediment intermittent
+```
+
+The orphan set is not merely uncovered, it is **measurably rotting**: nothing runs these, so nothing
+announced that they had gone red. Four orphans have now been found this series (`verify-mobile`,
+`verify-pageshell`, `verify-fit`, `verify-perf`), each by building a baseline table from SUBJECT
+("which gates name this view?") rather than from habit ("which gates do we usually run?").
+
+**The uncomfortable half:** #170 turned `verify-pageshell` from `367/1` to `368/0`, and **that green is
+also unwatched.** A gate outside npm and CI cannot defend the fix that made it pass — the next change to
+`.rail` will break it just as silently as the last one did, and the corrected failure message will be
+read by nobody, because nothing will run it. Fixing an orphan buys a one-time measurement, not a
+standing check. **Wiring them is its own task and it is worth more than any single fix inside them.**
+
 ### AND: WHEN THE HARNESS AND PRODUCTION RUN DIFFERENT CODE PATHS, NAME THE ENVIRONMENT
 
 Two instances found in one week, by different mechanisms, and neither surfaces itself:
@@ -772,7 +797,21 @@ nothing announced it; the next thing to read that file would have measured a sub
 in no commit.
 
 Use a `trap`, a separate reverting process, or a snapshot taken before the mutation — and
-**verify the tree is clean afterwards rather than assuming the cleanup ran.** The trap-based
+**verify the tree is clean afterwards rather than assuming the cleanup ran.**
+
+> **AND THE RESTORE MUST COVER DERIVED ARTIFACTS, NOT JUST SOURCE — v2·3, found by a 9-byte
+> discrepancy.** A break test that builds leaves `dist/` built from the MUTATED source. Restoring
+> `terminal.tsx` puts the tree back and `git status` reports clean, so every check this document
+> prescribes passes — while the next gate run reads a `dist/` that exists in no commit. Measured:
+> after the last break test the main tree's chunk was `terminal-wKEshAnH.js` at 35,960 B where
+> HEAD builds `terminal-71T4Ifcu.js` at 35,969 B, and `verify-bundle` duly reported 964,037
+> instead of 964,046. **A clean `git status` is not a clean SUBJECT.** The tell was nine bytes in a
+> number I had already measured once; had the mutation been in a file whose size I had not
+> memorised, the stale build would have been indistinguishable from a real reading.
+>
+> So the restore has two halves — revert the source, **then rebuild or delete `dist/`** — and any
+> gate result taken between them is void in exactly the sense §9 already gives for the shared-`dist`
+> race. Both are the same failure: *the artifact under test was not the artifact you named.* The trap-based
 harness in this repo does exactly this; the incident was stepping outside it for one command,
 which is the most common way a good harness gets bypassed. **The rule names the inline case
 explicitly for that reason.**

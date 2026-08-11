@@ -139,7 +139,7 @@ because §4's single method does not hold across all three output formats.**
 | `verify-nav` | 128 / 0 | 128 / 0 | reporter |
 | `verify-mobile` | 2 / 0 | 2 / 0 | no summary line at all |
 | `verify-pageshell` | **367 ✅ / 1 ❌** | **368 / 0** | was red on main |
-| `verify-bundle` | 25 / 0 @ 948,435 | 25 / 0 @ 964,046 | ceiling re-derived |
+| `verify-bundle` | 25 / 0 @ 948,435 | **24 / 1 @ 964,046** | crossed, left RED deliberately |
 | `verify-chartkit` | 52/52 | 52/52 | |
 | `verify-memshell` | all owned passed | all owned passed | 973 lines, band 200–1084 |
 
@@ -170,6 +170,45 @@ index (eager)                     +3       everything else 0
 **PREDICTION ON RECORD BEFORE THE BUILD: +5,000..+9,000 B. ACTUAL +15,611. I was
 wrong by 1.7-3.1x**, and the error was assuming terminal would cost what the two
 prior v2 rebuilds cost. It is the only one that added charts on top of text.
+
+**CORRECTED AFTER REVIEW — my constellation delta was wrong, and the ceiling raise
+is WITHDRAWN.** I derived constellation as `948,435 - 944,271 = 4,164`, taking the
+left endpoint from `verify-bundle`'s own comment (`a67867e`, a BRANCH commit of the
+sediment PR) rather than building it. The merged base is `fdf4ecc` — built and
+measured at **945,306**, so constellation is **+3,129**. A cited endpoint where
+this prompt asks for two built ones; off by 1,035 B, and it moved the mean.
+
+```
+fdf4ecc   945,306   (260c99f's first parent)      BUILT
+260c99f   948,435   constellation +3,129          BUILT
+head      964,046   terminal     +15,611          BUILT
+sediment            +5,836  <- still CITED, not re-measured
+mean 8,192 · spread 3,129 -> 15,611, a 5x range · 6 views remain -> ~1,013,000
+```
+
+So 960,000 was too low AND the 1,000,000 it was argued down from would also have
+been crossed. The level was never the problem; the sample was. **`totalJsRaw` is
+left at 960,000 and this PR ships it RED**, because twice now the answer to a
+crossing has been a bigger number derived from too little, and the detector's own
+docstring (`:247`) says it exists for "lazy code nobody has opened yet" — Terminal's
+chunk IS opened, while the thing it actually protects did not move (eager +3 B,
+route budget green at 97%). Subject-narrower-than-claim, in a budget's comment.
+
+**WHERE THE +15,611 WENT**, measured by rebuilding with each group's render sites
+removed so the components tree-shake, in an isolated worktree:
+
+```
+terminal chunk 20,361 -> 35,969                          +15,608
+  minus the 3 charts          25,939     charts   10,030   (64%)
+  minus the 4 readout panels  31,724     readouts  4,245   (27%)
+  residual (status/env, imports)                   1,333    (9%)
+```
+
+A trim exists and it is the charts — removing them lands totalJsRaw at 954,013,
+under the ceiling. Not taken: "higher fidelity charts" is the brief, and trimming a
+LAZY chunk to satisfy a detector aimed at UNOPENED code costs the user information
+to satisfy a metric that was not measuring them. The resolution is an
+`eagerJsRaw`/`lazyJsRaw` split in its own PR with its own baselines.
 
 Ceiling 960,000 -> 981,000, argued against the arithmetic in the gate's own comment
 rather than the round number. The gate WORKED — it was sized to speak a third of the

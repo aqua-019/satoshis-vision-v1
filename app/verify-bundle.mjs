@@ -291,65 +291,71 @@ const BUDGETS = {
   // If you are raising this again: argue with the arithmetic above, not with
   // the round number.
   //
-  // ── RAISED 960,000 -> 981,000 in v2·3, and the arithmetic above is what
-  //    changed, not the appetite. ────────────────────────────────────────
+  // ── CROSSED AND UNRESOLVED as of v2·3 (#170). NOT RAISED. ─────────────
   //
-  // THE GATE WORKED. It was sized to leave ~2.7 views of headroom so it would
-  // "speak about a third of the way through the roadmap while the answer is
-  // still 'which view' rather than 'all of them'". It fired on the THIRD v2
-  // rebuild of nine — a third of the way through, with the answer being one
-  // named view. That is the designed behaviour, so this raise is not a claim
-  // that the ceiling was wrong.
+  //     measured on #170's head:  964,046  vs  960,000     over by 4,046 B
   //
-  // WHAT WAS WRONG IS THE PER-VIEW PREMISE. The 9 x 5,836 projection took its
-  // per-view figure from a single observation (sediment). Three are now
-  // measured, each built in an isolated worktree against the same
-  // node_modules:
+  // This gate is RED on that PR ON PURPOSE. Twice now the answer to a crossing
+  // has been a bigger number, and both times the number came from too small a
+  // sample. A third raise on a three-point sample would repeat the mistake at
+  // larger scale, so the crossing is being recorded rather than absorbed.
   //
-  //     sediment      (v2·1)  +5,836
-  //     constellation (v2·2)  +4,164     944,271 -> 948,435
-  //     terminal      (v2·3) +15,611     948,435 -> 964,046
-  //     ----------------------------------------------------
-  //     mean 8,537 · median 5,836 · max 2.7x the assumed figure
+  // THE PER-VIEW ARITHMETIC ABOVE USED A SAMPLE OF ONE. `9 x 5,836` multiplied
+  // sediment's delta by nine and called it the roadmap. Three v2 rebuilds are
+  // now measured, and the endpoints below are BUILT, not cited — an earlier
+  // draft of this note derived constellation as +4,164 by subtracting the
+  // `a67867e` figure from the comment above, which is a BRANCH commit of the
+  // sediment PR rather than the merged base. The merged base is `fdf4ecc`:
   //
-  // Terminal is the outlier and the reason is legible rather than mysterious:
-  // it is the only rebuild that added CHARTS (three, on chart-kit) on top of
-  // its text surfaces, and its brief asked for 3-5x the information density.
-  // Measured 97 -> 351 readouts and 29 -> 40 distinct feed leaf fields, so the
-  // bytes bought information rather than repetition — but they were still
-  // bytes, and one datapoint does not become three by being averaged.
+  //     fdf4ecc   945,306     (260c99f's first parent)
+  //     260c99f   948,435     constellation   + 3,129
+  //     #170 head 964,046     terminal        +15,611
+  //     sediment                              + 5,836   <- still CITED above,
+  //                                                        not re-measured here
   //
-  // THE GROWTH IS ENTIRELY LAZY, which is why this is a drift finding and not
-  // a paint regression. Measured chunk-by-chunk between the two builds:
+  //     mean 8,192 · spread 3,129 -> 15,611, a 5x range
   //
-  //     terminal chunk   20,361 -> 35,969   (+15,608)
-  //     index (eager)   100,538 -> 100,541  (+3)
-  //     everything else                      0
-  //     /live/mempool first load 104,183 gz <= 107,000   PASSES at 97%
+  // Six views remain. At the measured mean that is ~1,013,000 — so 960,000 is
+  // too low AND the 1,000,000 this comment argued down from would also have
+  // been crossed. The level was never the problem; the sample was.
   //
-  // No visitor downloads a byte of it unless they open ?v=terminal.
+  // AND THE DETECTOR'S SUBJECT DOES NOT MATCH THIS GROWTH. Line :247 states
+  // what totalJsRaw is for: "the drift detector for 'we shipped 200 kB of lazy
+  // code nobody has opened yet'". Terminal's chunk IS opened — by anyone who
+  // visits Terminal, deliberately, to see the information they came for.
+  // Measured on the same build, the thing this detector actually protects did
+  // not move:
   //
-  // LEVEL: 981,000 = 964,046 + 2 x 8,537, rounded. Chosen by the SAME standard
-  // #167 set and this comment already argues for — the smallest raise that
-  // still lets the gate speak while the answer is "which view":
+  //     eager index chunk          +3 B
+  //     /live/mempool first load   104,183 gz <= 107,000   PASSES at 97%
   //
-  //   * 966,000 (the minimum that clears today) leaves 1,954 B. That is the
-  //     exact condition this comment records as the previous ceiling's
-  //     failure — "going to red on the next change of ANY size" — so the
-  //     minimum raise reproduces the defect rather than avoiding it.
-  //   * 1,024,000 clears all seven remaining views at the measured mean and
-  //     would never fire again. This comment already rejects that move.
-  //   * 981,000 leaves 16,954 B, ~2.0 views at the measured mean, so the next
-  //     firing lands around view 5 of 9 and is still attributable to one view.
+  // So `totalJsRaw` cannot distinguish "we shipped weight nobody opens" from
+  // "a view someone opens got denser". It counts both and its docstring claims
+  // only the first. **That is the subject-narrower-than-its-claim shape living
+  // in a budget's own comment** — the same defect family the conformance doc
+  // catalogues for assertions, one level up.
   //
-  // WHAT THIS DOES NOT DO: it does not make the roadmap fit. Seven views
-  // remain and 7 x 8,537 = 59,759 projects to ~1,023,805, which is 42,805 B
-  // ABOVE this new ceiling. The gate will fire at least twice more before the
-  // roadmap lands, and it should. If the remaining views cost what terminal
-  // cost rather than what sediment cost, the answer is not a fourth raise —
-  // it is that eleven mempool views is a payload decision nobody has costed
-  // end to end, and the arithmetic here is the place that argument starts.
-  totalJsRaw: 981_000,
+  // WHERE THE 15,611 WENT, measured by rebuilding with each group's render
+  // sites removed so the components tree-shake (isolated worktree, own dist):
+  //
+  //     terminal chunk  20,361 -> 35,969                        +15,608
+  //       minus the 3 chart-kit charts        25,939   charts   10,030  (64%)
+  //       minus the 4 new readout panels      31,724   readouts  4,245  (27%)
+  //       residual (enriched status/env, imports)                1,333   (9%)
+  //
+  // So a trim exists and it is the charts — removing them alone lands
+  // totalJsRaw at 954,013, under this ceiling. It is not taken: "higher
+  // fidelity charts" is the brief, and trimming a LAZY chunk to satisfy a
+  // detector aimed at UNOPENED code costs the user information to satisfy a
+  // metric that was not measuring them.
+  //
+  // THE RESOLUTION IS A SPLIT, IN ITS OWN PR WITH ITS OWN BASELINES: an
+  // `eagerJsRaw` ceiling over first-paint weight (what every visitor pays
+  // unconditionally) and a per-chunk `lazyJsRaw` drift check. The two
+  // populations moved +3 B and +15,611 B in the same commit; one ceiling over
+  // both is why this crossing is ambiguous to argue about. Until that lands,
+  // this number stays where it is and this gate stays red.
+  totalJsRaw: 960_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
