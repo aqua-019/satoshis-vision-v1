@@ -216,8 +216,26 @@ const rails = await p.evaluate(() =>
     w: Math.round(el.getBoundingClientRect().width),
   })));
 console.log('   rails:', JSON.stringify(rails));
+// MESSAGE CORRECTED IN v2·3, because this assertion went red and its own
+// wording sent the reader to the one rule that was correct.
+//
+// It used to read "(.shell > .rail did not over-reach)". When it failed on
+// 260c99f, `.shell > .rail` was behaving exactly as designed — the child
+// combinator at styles.css:2157 has never matched Terminal's nested rail, and
+// its comment says in as many words that this is why it is scoped. The actual
+// over-reach was a SECOND, unscoped `.rail { display: none }` in an
+// overlapping 769-1199 band, which the message did not mention.
+//
+// So the gate was right to red and wrong about why: the predicate names one
+// rule and the defect was in another. That is the assertion-names-the-wrong-
+// subject shape living in a FAILURE MESSAGE rather than in a predicate, and it
+// is worse there — a wrong predicate is caught by the next person who reads
+// it, while a wrong message is only read by someone already debugging, at the
+// moment they are most likely to trust it.
+//
+// The message now names the property rather than a suspect rule.
 ok(rails.some((r) => !r.shellChild && r.display !== 'none' && r.w > 0),
-  "/mempool?v=terminal@1024: Terminal's nested .rail is still VISIBLE (.shell > .rail did not over-reach)");
+  "/mempool?v=terminal@1024: Terminal's nested .rail is still VISIBLE — no `.rail` rule in a band covering 1024 may hide it unscoped (styles.css:2157 is child-scoped ON PURPOSE; check for a second, unscoped rule before suspecting that one)");
 ok(rails.every((r) => !r.shellChild || r.display === 'none'),
   '/mempool?v=terminal@1024: the shell-level NetRail is still collapsed at 1024');
 

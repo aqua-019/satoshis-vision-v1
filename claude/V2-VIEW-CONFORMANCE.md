@@ -1,7 +1,7 @@
 # v2 MEMPOOL VIEWS — design-framework conformance
 
 **REV 4 — measured against `main` = `260c99f` (v2·2 / PR #169 merged), 2026-08-11.**
-Rev 4 **withdraws a second false claim in §6** and adds §10. Rev 3 was measured against
+Rev 4 **withdraws false claims in §2 AND §6** and adds §10. Rev 3 was measured against
 `fdf4ecc`; it added §8 and §9, addenda to §1 and §2, and withdrew the first false §6 claim.
 Rev 2 was measured against `6039d64`; Rev 1 against `292227a` and was wrong in §3 and §5.
 If you are holding a copy without this line it is stale — check §6 first, because **both**
@@ -11,9 +11,18 @@ sentences that have changed there were load-bearing and both read as reassuring.
 
 | § | delta |
 |---|---|
+| §2 | **CORRECTION** — `VB_W` is a pre-measurement fallback, not a shared canonical viewBox width |
 | §6 | **CORRECTION** — "390px usable, no horizontal scroll" is FALSE for pan-mode views |
 | §8 | addendum — the fit-scale apparatus does not apply to Classic or Terminal at all |
-| §10 | NEW — information density is a number, and which instrument produces it |
+| §10 | NEW — information density is a number, and it takes TWO numbers to state honestly |
+
+**Two false claims withdrawn in one revision, and both were in sections telling you to trust
+them.** §2's `VB_W` sentence and §6's no-horizontal-scroll sentence were each read off a
+declaration or a general rule and stated as fact about the tree, while a file a few lines away
+(`charts.tsx:5-7`) or a green gate (`verify-mobile:36-44`) said otherwise. That is now §2, §3,
+§5, and §6 twice. **The contract is the single most error-prone artifact in this series**, because
+nothing runs it — the code has gates and this document has readers. Treat every unsourced
+sentence here as a hypothesis and check it against the tree before building on it.
 
 **What Rev 3 changed:**
 
@@ -74,7 +83,7 @@ removing it is contained to the one file.
 `app/src/design/chart-kit.tsx`, measured:
 
 ```
-VB_W = 1000            the canonical viewBox width — all charts share it
+VB_W = 1000            PRE-MEASUREMENT FALLBACK ONLY — see the Rev 4 correction below
 AXIS = var(--ink-40)   axis stroke
 GRID = var(--line-d)   gridline stroke
 useSvgCursor(viewW)    → [ref, vx, handlers]   pointer tracking in viewBox space
@@ -85,7 +94,60 @@ useGradientId(prefix)                           collision-free gradient ids
 ```
 
 **Higher chart fidelity means these, used properly** — a cursor, a crosshair, a tooltip with real rows,
-gradient fills with unique ids, shared `VB_W` so every chart in a view aligns. Not more hand-drawn paths.
+gradient fills with unique ids. Not more hand-drawn paths.
+
+> **REV 4 CORRECTION — the sentence that used to end that line was false.** It read: *"shared
+> `VB_W` so every chart in a view aligns."* `VB_W` is **not** a canonical shared viewBox width and
+> charts do not share it. It is a **pre-measurement fallback**:
+>
+> ```
+> charts.tsx:5-7    "Every chart MEASURES its container (design/useChartMetrics.ts) and sets its
+>                    viewBox width to that measured CSS width, so ONE USER UNIT IS ONE CSS PIXEL.
+>                    VB_W survives only as the pre-measurement fallback."
+> charts.tsx:265,472,701,1016    const vbW = measured || VB_W;
+> ```
+>
+> **Why it matters, and it is §9 again:** a `viewBox` IS a transform. Under a fixed
+> `viewBox="0 0 1000 H"` rendered into 358 CSS px, an authored `fontSize` of 9.5 paints at
+> **3.4 CSS px** — `charts.tsx:9-12` records exactly that measurement as the reason the fixed
+> viewBox was abandoned. So "use `VB_W` as your viewBox" is not a neutral styling choice; it is
+> the type-floor defect, pre-installed.
+>
+> **The rule for a v2 view: use `useChartMetrics(ref)` in FLUID mode** (no `vbWidth` option),
+> take `w` as the viewBox width, and size text from `fs.tick` / `fs.label`. Then one user unit is
+> one CSS pixel and authored px really is rendered px. `VB_W` is the `||` fallback for the frame
+> before the first measure, nothing more.
+>
+> **Two corrections to how this correction was first reported to me, both worth keeping**, since
+> this section is about claims outrunning their subject:
+>
+> 1. The fallback sentence is at **`charts.tsx:7`**, not `chart-kit.tsx:7`. `chart-kit.tsx:7` is
+>    mid-sentence in a paragraph about the tooltip.
+> 2. *"No shipped chart uses 1000 after measurement"* is **false**. `MarketsThesisTab.tsx:198`
+>    ships `viewBox={\`0 0 ${VB_W} ${H}\`}` on the live `/live/markets/thesis` route, imports no
+>    `useChartMetrics`, and never measures — see the subsection immediately below.
+
+### The one shipped counter-example, recorded not fixed
+
+`src/pages/monero/MarketsThesisTab.tsx` is the chart that was never migrated when `charts.tsx`
+moved to measured viewBoxes. Measured on `260c99f`:
+
+```
+:198   viewBox={`0 0 ${VB_W} ${H}`}   width="100%"   — fixed 1000 units, no measurement
+:157   innerW = VB_W - padL - padR    :178  useSvgCursor(VB_W)
+authored SVG font sizes: 8.5 · 9 · 9.5 · 10        — every one already under the 11px floor
+                                                      in AUTHORED space, before any scaling
+```
+
+So at a ~358px phone render the 9.5 axis label paints at ~3.4px — **the identical number
+`charts.tsx:10` cites as the bug it fixed**, still shipping one route away.
+
+**No gate sees it, for two independent reasons**, which is the part worth carrying:
+`verify-legibility.mjs` excludes SVG presentation attributes *by design*, and
+`verify-memviews` scenario 6's sub-12px SVG check is scoped to `.mem-view`, i.e. mempool views
+only. A defect can sit inside two gates' nominal subject area and outside both of their actual
+predicates. **Not a view PR's job** — recorded here so the next person to touch chart type finds
+it already located.
 
 **REV 3 ADDENDUM — cursor math is SINGULAR, and it is gated repo-wide.**
 
@@ -725,6 +787,54 @@ explicitly for that reason.**
 
 ---
 
+## 10 · "3–5× more information" is TWO numbers, and neither one alone is the claim
+
+Every v2 brief asks for 3–5× more information. Until v2·3 nothing counted it, so it was an
+adjective: no PR could show it had been delivered and no later PR could show it had been lost.
+Making it a number takes two numbers, because each one alone is defeatable in a different
+direction.
+
+```
+N — READOUTS RENDERED          verify-memviews scenario 9, measured on both endpoints
+    a rendered element carrying a digit, plus each digit-bearing LINE inside a <pre>,
+    scoped to [data-mem-body], non-zero rendered box only, leaves only
+
+M — DISTINCT FEED FIELDS       count of unique `data.<field>` reads, from source, at both SHAs
+```
+
+**Why N alone is not enough.** N is DOM-observable and achievable, and it is gameable in exactly
+one way: render the same twenty fields fifteen times each and N triples with no new information
+whatsoever. N measures how much is on screen, not how much is known.
+
+**Why M alone is not enough.** M cannot be gamed that way — but it also cannot be hit. `MoneroLive`
+has ~33 top-level fields and Terminal already read 20 of them on `260c99f`, so "3× the distinct
+fields" would be 60 and the feed does not contain 60. **A target no data can satisfy is not a
+strict target, it is an unfalsifiable one.**
+
+**So report them as a pair — target and constraint:**
+
+> **N** 97 → *(aim 3–5×, i.e. 291–485)*, by the gate, on both endpoints.
+> **M** 20 → *(whatever it becomes)*, from source, at both SHAs.
+> **A large N with M ≈ unchanged is repetition, not information.**
+
+The pair needs no judgement call at review time: it is either consistent or it is not. A modest
+rise in M against a tripled N is still a real result and should be stated plainly — *more surfaces
+onto the same feed, plus n new fields.* What the pair prevents is 300 readouts of twenty facts
+being reported as 3× the information.
+
+**What N is blind to, named per §9 rather than left to be discovered:** it cannot distinguish a
+live figure from a digit inside a decorative string, so `RING_SIZE=16` and a hard-coded `"16"`
+score identically. N is a DENSITY measure and not an honesty measure; it is only meaningful while
+`verify-prng` and `verify-stale` are green. It is also fixture-relative — the floors move if the
+fixture's `MEMPOOL_N` / `BLOCKS_N` move.
+
+**The scoping decisions are load-bearing and each one changes the number**: `[data-mem-body]`
+rather than `.mem-view`, so the shared shell chrome every view renders identically is not credited
+to any of them; non-zero rendered boxes only, so the `display:none` `.mem-table` does not score
+sixty hidden rows as visible information; leaves only, so nesting depth is not rewarded.
+
+---
+
 ## Conformance checklist for a v2 PR
 
 ```
@@ -734,6 +844,10 @@ explicitly for that reason.**
 [ ] cursor math imported, never re-derived — useSvgCursor / canvasCursor (§2, gated repo-wide)
 [ ] axes come from charts.tsx's series components; a hand-rolled axis needs a stated reason
 [ ] no two axis labels overlap — asserted, at 390 / 768 / 1440 / 2560
+[ ] viewBox width is the MEASURED width (useChartMetrics fluid mode), never a fixed
+    VB_W — a fixed viewBox is a transform and silently shrinks every label (§2)
+[ ] density reported as the PAIR: readouts N (gate, both endpoints) AND distinct
+    data.<field> M (source, both SHAs). A big N with a flat M is repetition (§10)
 [ ] spacing from the --sp-1..7 ramp (already shipped in #167), never ad-hoc px
 [ ] MemViewShell wrapped, id passed, real table supplied
 [ ] reduced motion suppresses ANIMATION, not CONTENT — body stays, static equivalent
