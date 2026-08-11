@@ -116,7 +116,7 @@ node verify-reduce.mjs
 ## 7 · REPORT — filled on exit, completely
 
 status: **done**
-pr: see LOG.md (opened from `claude/constellation-v2-contract-rev3-51rqon`)
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/169
 commits: 7 — contract Rev 3 · shell comment corrections · §8 height mechanism ·
   finding bands + styles.css staleness · §9 completion rule · §8 two width
   mechanisms · the view rebuild + scenario 8
