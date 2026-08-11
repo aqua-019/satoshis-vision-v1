@@ -79,8 +79,10 @@ unreachable `minWidth`/`k` inflation; sediment's 3281; `/future`'s two
 - [x] every claimed fix carries a two-polarity break test — a mutation that reds
       the gate and a restore that greens it, with both counts reported, and the
       mutation proven to have APPLIED before the red is interpreted
-- [~] design-reviewer: round 1 FAIL (3 findings) -> 2 ACCEPTED+fixed, 1 CORRECTED
-      (pre-existing, 0 occurrences in the diff). Round 2 in flight at time of push.
+- [x] design-reviewer returned APPROVE — bounded convergence, 2 rounds:
+      round 1 FAIL (3 findings) -> 2 ACCEPTED+fixed, 1 CORRECTED (pre-existing;
+      0 occurrences in the diff, disposition independently re-verified in round 2);
+      round 2 APPROVE, covering the gate changes that round 1 predated.
 - [x] Branch pushed · draft PR opened, `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
