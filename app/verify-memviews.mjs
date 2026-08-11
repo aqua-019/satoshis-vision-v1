@@ -1256,7 +1256,28 @@ function advanceBlocks(n) { head += n; }
             ? v.querySelector('[data-mem-track-phase]').getAttribute('data-mem-track-phase') : null,
         };
       }, ptxid);
-      console.log(`  · probe click: canvas ${pt.h}px tall, scale ${pt.scale.toFixed(4)}, target (${px},${py}) -> phase=${opened.phase}`);
+      /* DIAGNOSTIC, NOT AN ASSERTION — added because a fourth sighting of this
+       * red carrying the same three numbers as the first three would answer
+       * nothing. The message on the `ok()` below prints `canvas scale`, and that
+       * number has been read as this intermittent's candidate mechanism for
+       * three sightings. It is decoration: the assertion is `opened.tracked`.
+       *
+       * The quantity most likely to be responsible is the TARGET SIZE. This gate
+       * asserts at :1185 that the probe particle may be as small as r=0.9px, and
+       * then clicks it at a FRACTIONAL coordinate carried through a non-unit
+       * scale. A sub-pixel target hit with a rounded coordinate has no margin,
+       * and unlike a scheduler flake it explains why nothing about sediment
+       * changes between runs while the outcome does — `data-sed-probe` nominates
+       * a different particle, with a different radius.
+       *
+       * `data-sed-probe` publishes "x,y,txid" and NOT the probe's own radius, so
+       * the band bounds are the closest available proxy; publishing the probe
+       * radius belongs with sediment.tsx and is not this PR's file. The
+       * fractional parts are printed because they are what rounding acts on. */
+      console.log(`  · probe click: canvas ${pt.h}px tall, scale ${pt.scale.toFixed(4)}, target (${px},${py}) -> phase=${opened.phase}`
+        + `  | radius band ${results.radiusMin}..${results.radiusMax}px`
+        + `  | click (${clickX.toFixed(3)},${clickY.toFixed(3)}) frac (${(clickX % 1).toFixed(3)},${(clickY % 1).toFixed(3)})`
+        + `  | tracked=${opened.tracked}`);
       ok(opened.tracked,
         `scenario 7: clicking data-sed-probe's exact coordinate opens the shared tx inspector for THAT txid `
         + `(${String(ptxid).slice(0, 10)}…, canvas scale ${pt.scale.toFixed(4)})`);
