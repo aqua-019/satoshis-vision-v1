@@ -290,7 +290,66 @@ const BUDGETS = {
   //
   // If you are raising this again: argue with the arithmetic above, not with
   // the round number.
-  totalJsRaw: 960_000,
+  //
+  // ── RAISED 960,000 -> 981,000 in v2·3, and the arithmetic above is what
+  //    changed, not the appetite. ────────────────────────────────────────
+  //
+  // THE GATE WORKED. It was sized to leave ~2.7 views of headroom so it would
+  // "speak about a third of the way through the roadmap while the answer is
+  // still 'which view' rather than 'all of them'". It fired on the THIRD v2
+  // rebuild of nine — a third of the way through, with the answer being one
+  // named view. That is the designed behaviour, so this raise is not a claim
+  // that the ceiling was wrong.
+  //
+  // WHAT WAS WRONG IS THE PER-VIEW PREMISE. The 9 x 5,836 projection took its
+  // per-view figure from a single observation (sediment). Three are now
+  // measured, each built in an isolated worktree against the same
+  // node_modules:
+  //
+  //     sediment      (v2·1)  +5,836
+  //     constellation (v2·2)  +4,164     944,271 -> 948,435
+  //     terminal      (v2·3) +15,611     948,435 -> 964,046
+  //     ----------------------------------------------------
+  //     mean 8,537 · median 5,836 · max 2.7x the assumed figure
+  //
+  // Terminal is the outlier and the reason is legible rather than mysterious:
+  // it is the only rebuild that added CHARTS (three, on chart-kit) on top of
+  // its text surfaces, and its brief asked for 3-5x the information density.
+  // Measured 97 -> 351 readouts and 29 -> 40 distinct feed leaf fields, so the
+  // bytes bought information rather than repetition — but they were still
+  // bytes, and one datapoint does not become three by being averaged.
+  //
+  // THE GROWTH IS ENTIRELY LAZY, which is why this is a drift finding and not
+  // a paint regression. Measured chunk-by-chunk between the two builds:
+  //
+  //     terminal chunk   20,361 -> 35,969   (+15,608)
+  //     index (eager)   100,538 -> 100,541  (+3)
+  //     everything else                      0
+  //     /live/mempool first load 104,183 gz <= 107,000   PASSES at 97%
+  //
+  // No visitor downloads a byte of it unless they open ?v=terminal.
+  //
+  // LEVEL: 981,000 = 964,046 + 2 x 8,537, rounded. Chosen by the SAME standard
+  // #167 set and this comment already argues for — the smallest raise that
+  // still lets the gate speak while the answer is "which view":
+  //
+  //   * 966,000 (the minimum that clears today) leaves 1,954 B. That is the
+  //     exact condition this comment records as the previous ceiling's
+  //     failure — "going to red on the next change of ANY size" — so the
+  //     minimum raise reproduces the defect rather than avoiding it.
+  //   * 1,024,000 clears all seven remaining views at the measured mean and
+  //     would never fire again. This comment already rejects that move.
+  //   * 981,000 leaves 16,954 B, ~2.0 views at the measured mean, so the next
+  //     firing lands around view 5 of 9 and is still attributable to one view.
+  //
+  // WHAT THIS DOES NOT DO: it does not make the roadmap fit. Seven views
+  // remain and 7 x 8,537 = 59,759 projects to ~1,023,805, which is 42,805 B
+  // ABOVE this new ceiling. The gate will fire at least twice more before the
+  // roadmap lands, and it should. If the remaining views cost what terminal
+  // cost rather than what sediment cost, the answer is not a fourth raise —
+  // it is that eleven mempool views is a payload decision nobody has costed
+  // end to end, and the arithmetic here is the place that argument starts.
+  totalJsRaw: 981_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
