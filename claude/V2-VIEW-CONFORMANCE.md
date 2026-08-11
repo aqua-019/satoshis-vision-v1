@@ -779,6 +779,32 @@ also unwatched.** A gate outside npm and CI cannot defend the fix that made it p
 read by nobody, because nothing will run it. Fixing an orphan buys a one-time measurement, not a
 standing check. **Wiring them is its own task and it is worth more than any single fix inside them.**
 
+**CLOSED in v2·3b — and what the wiring exposed is worth more than the wiring.** All four are now npm
+scripts and individually-named CI steps, taking the orphan count 11 → 7. `verify-perf`'s three reds were
+one real defect and two gate defects, exactly as predicted, and fixing them surfaced two further classes
+that only became visible once someone actually read a passing gate:
+
+1. **An assertion that cannot fail is not a pass.** `documentElement.scrollWidth - window.innerWidth`
+   is the horizontal-overflow metric in both `verify-perf` §4 and `verify-mobile`. Below 769px
+   `styles.css:2202` sets `html, body { overflow-x: clip }` — deliberate, for iOS touch scrolling inside
+   the mempool canvas — so the metric **cannot exceed 0 at any width the phone gates care about**.
+   Measured: a 3000px element appended to `<body>` leaves `scrollWidth` at 390 on a 390px viewport while
+   `main.scrollWidth` reports 3012. Three of `verify-perf` §4's eight widths and the whole of
+   `verify-mobile`'s route sweep were vacuous. Both now run a POSITIVE CONTROL — inject a known
+   overflow, require the metric to move — and report a reasoned `skip` where it does not. The tempting
+   fix, measuring `main.main`'s scroll box instead, was NOT taken: `.main` is `overflow-y:auto`, so
+   `scrollWidth - clientWidth` reads exactly 17px on `/future@1440` with no visible defect. That trades
+   a blind spot you can name for a tolerance nobody has characterised (§9's own rule).
+2. **A comment describing deleted code counted as code.** `verify-perf`'s setInterval census grepped raw
+   file text, so `xmrirish-feed.ts`'s past-tense docblock — "This used to be ONE `setInterval` at 2.5s"
+   — read as a live timer, and an allowlist entry existed to suppress a false positive the predicate
+   itself manufactured. Three layers deep: a membership test standing in for a gating test, a waiver
+   standing in for a comment-stripping step, and prose counted as code. With `stripComments` (borrowed
+   from `verify-memshell`) and a mechanism test, the allowlist ships EMPTY and self-polices.
+   **The break test measured the blind spot rather than asserting it**: deleting
+   `useNodePopulation.ts:316`'s visibility guard left the gate GREEN at 24/0, rescued by the word
+   `document.visibilityState` in a comment at `:28`. With stripping, the same mutation reds at 23/1.
+
 ### AND: WHEN THE HARNESS AND PRODUCTION RUN DIFFERENT CODE PATHS, NAME THE ENVIRONMENT
 
 Two instances found in one week, by different mechanisms, and neither surfaces itself:
