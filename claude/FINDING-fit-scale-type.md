@@ -122,6 +122,52 @@ viewport heights). Bands were COMPUTED from `wS` and `naturalH`, then confirmed 
 0.341851, taking authored 11px from 3.96px to **3.76px**. Both are unreadable, so severity is
 unchanged — but the band is demonstrably not theoretical.
 
+### The version to put in front of a human
+
+Chrome is measured at 198px, so each band converts to a real browser window height at 1440 wide.
+**Four views, four disjoint bands, spanning most of the range a laptop or half-height desktop
+window actually occupies:**
+
+| view | window height that silently shrinks it | authored 11px renders at |
+|---|---|---|
+| **sediment** | **781 – 831 px** ← a 1440×800 laptop | **3.76px** |
+| reactor | 959 – 1025 px | 8.90px |
+| bridge | 999 – 1068 px | 4.87px |
+| constellation | 1216 – 1305 px | ~10.1px |
+
+**Sediment's is the one that matters**, because it shipped in #168 and 800 is a very common window
+height. The finding worth stating is not "the fit wrapper has a height clause" — it is: **if your
+window is 781–831px tall, sediment is silently shrunk and its labels render under 4px.** That is
+checkable on a real screen in ten seconds, which no formula substitutes for.
+
+### `styles.css:1207` records sediment's natural size and is wrong in both dimensions
+
+The comment justifying the desktop shrink-wrap rule reads *"wide/tall views (reactor 1670px,
+sediment 2279×2495) expose their true size"*. **Measured directly at 1440×900 — not derived, so
+this holds for the `wS = 1` case too:**
+
+| view | measured naturalW × naturalH | comment says | delta |
+|---|---|---|---|
+| reactor | 1413 × 991 | 1670 | **−257 px wide** |
+| sediment | 3281 × 1761 | 2279 × 2495 | **+1002 wide, −734 tall** |
+| bridge | 2517 × 1856 | not recorded | — |
+| constellation | 1028 × 1107 | not recorded | — |
+
+Sediment is ~1000px wider and ~734px shorter than recorded — wrong by ~40% in both directions,
+and **in opposite directions**. PR #168 is what made it wrong: the view went 462 → 981 lines with
+a new composition, and this comment records exactly the quantity that changed. The standing rule
+(*correct the documents this change makes false, in the same PR*) was not applied to it.
+
+It is load-bearing twice: it is the stated justification for the desktop shrink-wrap rule, **and**
+it is the source of the "genuinely tall views" characterisation that the measurements above
+disprove for sediment — which is **width-bound** (`hS 0.399 > wS 0.360`), not tall.
+
+Reactor's 1670 was also suspected stale-by-derivation; it is confirmed stale **by direct
+measurement** (1413), so no derivation caveat applies.
+
+**Not fixed here** — it names reactor and sediment, neither of which a constellation PR touches.
+Fix it in whichever PR next touches that block.
+
 **Why it cannot be designed out.** `.mp-canvas-scroll` is `flex: 1 1 auto` (`styles.css:1211`),
 so `canvasH` tracks the browser window. Every composition therefore has a band of window heights
 that scales it; moving the composition's height moves the band with it. A view can be placed
