@@ -265,6 +265,40 @@ const readStrip = (p) => p.evaluate(() =>
   head = H;
 }
 
+/* WHICH `data-memstat` KEYS EACH VIEW CLAIMS TO SURFACE.
+ *
+ * Every emitter in the tree, measured:
+ *   mem-stats.tsx   mempool · bytes · oldest · median · eta   (BOTH branches, identical)
+ *   terminal.tsx    mempool · bytes                           (:813, :815 — its own ASCII idiom)
+ *   no other view emits data-memstat at all
+ *
+ * Terminal is two BY DESIGN, not by omission: it passes `stats={false}` and
+ * hands the strip's job to its own telemetry. Item 5's comment above already
+ * records this — "demanding a reading a view never claimed to make would be a
+ * false failure" — and the first draft of the assertion below ignored it and
+ * asserted a uniform five. It went red on Terminal immediately. That red is the
+ * check working, and the fix is this map.
+ *
+ * KEYS, NOT A COUNT, and the difference is the whole point. The two
+ * `MemStatStrip` branches duplicate these five key strings as literals, so the
+ * realistic failure is a RENAME — `oldest` becoming `age` in one branch. A
+ * cardinality check passes straight through that; the key set does not. And a
+ * silent rename is worse than a drop, because item 5's `showing` filter would
+ * simply stop finding that figure in one view and go on comparing the rest,
+ * still green.
+ *
+ * Both directions: an undeclared view fails rather than passing unchecked, and
+ * a view that gains or loses a key fails until someone updates this map.
+ */
+const EXPECT_MEMSTAT = {
+  reactor:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  bridge:        ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  sediment:      ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  constellation: ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  classic:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  terminal:      ['mempool', 'bytes'],
+};
+
 function advanceBlocks(n) { head += n; }
 
 /* ── Scenario 3 · item 10: reduced motion → the table, no canvas ───────── */
@@ -282,6 +316,8 @@ function advanceBlocks(n) { head += n; }
         cols: (document.querySelector('.mem-table .mem-tbl')?.style.gridTemplateColumns || '').split(/\s+/).filter(Boolean).length,
         strip: document.querySelector('[data-memstat="mempool"]')?.getAttribute('data-memstat-value'),
         stripCount: document.querySelectorAll('[data-memstat]').length,
+        stripKeys: [...document.querySelectorAll('[data-memstat]')]
+          .map((e) => e.getAttribute('data-memstat')).sort(),
       }));
       // absent, not merely paused: MemViewShell never calls children() under
       // reduced motion, so the canvas component is never mounted at all
@@ -289,6 +325,36 @@ function advanceBlocks(n) { head += n; }
       ok(r.rows >= 5, `item 10 [${id}]: table fallback carries the data (${r.rows} rows)`);
       ok(r.cols >= 5, `item 10 [${id}]: table has ≥5 columns (${r.cols})`);
       ok(r.strip && r.strip !== '—', `item 10 [${id}]: the stat strip still reports (${r.strip})`);
+      // v2·4: stripCount was already COLLECTED three lines above and thrown
+      // away — a measurement taken, returned, and never asserted. It earns its
+      // place now because `MemStatStrip`'s `compact` branch (mem-stats.tsx:159)
+      // went live in this PR after existing unreachable since it was written:
+      // reactor passes `stats="compact"`, so a second rendering path now emits
+      // these attributes and nothing had ever observed its output. Both
+      // branches declare the same five keys with byte-identical raw-value
+      // expressions, so the compact path is 5/5 — which is the point.
+      //
+      // ASSERTED AGAINST A DECLARED KEY MAP, NOT A BLANKET 5, AND THE FIRST VERSION
+      // WAS THE BLANKET. It went red on TERMINAL at 2/5 — and item 5's comment
+      // a hundred lines above this one already said why that is not a defect:
+      // "Terminal opts out of MemStatStrip to keep its ASCII idiom and surfaces
+      // only the two it displays — and demanding a reading a view never claimed
+      // to make would be a false failure." A `=== 5` on every view is a subject
+      // wider than its claim, which is the failure family this whole suite
+      // exists to catch, committed inside the gate. The map is the honest form
+      // and it is asserted EXACTLY, both directions: a view that starts or
+      // stops surfacing a figure is loud either way.
+      //
+      // NOTE, since the source points elsewhere: `mem-stats.tsx:158` justifies
+      // the whole raw-value design by citing `verify-memstats.mjs`, and that
+      // file does not exist in this repo. Until it does, this line and item 5's
+      // cross-view comparison are the only things checking the strip at all.
+      const wantKeys = EXPECT_MEMSTAT[id];
+      const gotKeys = r.stripKeys.join(',');
+      ok(wantKeys !== undefined && gotKeys === [...wantKeys].sort().join(','),
+        wantKeys === undefined
+          ? `item 10 [${id}]: view is not declared in EXPECT_MEMSTAT — add it rather than letting it go unchecked (emits ${gotKeys || 'nothing'})`
+          : `item 10 [${id}]: emits the data-memstat keys it claims [${gotKeys}]`);
     } catch (e) {
       ok(false, `item 10 [${id}]: ${String(e).split('\n')[0]}`);
     }
@@ -1162,10 +1228,41 @@ function advanceBlocks(n) { head += n; }
     // inside the viewport. (locator.click({position}) does its own scrolling
     // but then hit-tests the resulting point and reported the element
     // intercepted, for the same underlying reason.)
+    /* SETTLE THE TRANSFORM BEFORE READING THE RECT. `.mp-fit` carries
+     * `transition: transform var(--d-3) var(--e-spring)` — a 300ms SPRING — and
+     * `scrollIntoView` below can retrigger a fit measurement. Reading
+     * `getBoundingClientRect()` while that is in flight yields `left`/`scale`
+     * for a MOVING element, and the click that follows lands on a different
+     * canvas pixel than the one the mapping was computed for.
+     *
+     * Measured over six runs before this wait existed: every PASS sat at scale
+     * 0.8326 / 0.9768 / 0.9999 and every FAIL at 0.9135 / 0.9137 / 0.9139 — a
+     * 0.0004-wide cluster, which is a settling animation sampled mid-flight, not
+     * a coincidence. The failures opened a `block` rather than nothing, i.e. the
+     * click hit a real object at the wrong place; and the probe attribute was
+     * byte-identical at click time, so the coordinate had not expired.
+     *
+     * Poll to two consecutive agreeing reads rather than sleeping longer — the
+     * same pattern verify-fit uses, and deterministic where a bigger sleep is
+     * only less-often-wrong. */
+    await p.evaluate(() => {
+      document.querySelector('[data-sed-core] canvas.mem-canvas')
+        ?.scrollIntoView({ block: 'center', inline: 'center' });
+    });
+    for (let i = 0, prev = null; i < 20; i++) {
+      const cur = await p.evaluate(() => {
+        const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
+        if (!cv) return 'none';
+        const r = cv.getBoundingClientRect();
+        return `${r.left.toFixed(3)},${r.top.toFixed(3)},${r.width.toFixed(3)}`;
+      });
+      if (cur === prev) break;
+      prev = cur;
+      await p.waitForTimeout(60);
+    }
     const pt = await p.evaluate(() => {
       const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
       if (!cv) return null;
-      cv.scrollIntoView({ block: 'center', inline: 'center' });
       const r = cv.getBoundingClientRect();
       return {
         left: r.left, top: r.top, h: cv.clientHeight,
@@ -1180,6 +1277,17 @@ function advanceBlocks(n) { head += n; }
       ok(inView,
         `scenario 7: the probe point is inside the viewport after centring `
         + `(${clickX.toFixed(0)},${clickY.toFixed(0)}) in ${pt.vw}x${pt.vh} — otherwise the click below proves nothing`);
+      /* DRIFT CHECK — the coordinate is read at :1147 and used HERE, ~100 lines
+       * and a scrollIntoView later. If the field is still simulating, the
+       * particle `data-sed-probe` named has moved on and something else is under
+       * that pixel. Re-read the attribute immediately before the click: same
+       * string means the scene is static and the cause is in the hit-test;
+       * different string means the gate is clicking a coordinate that expired. */
+      const freshProbe = await p.evaluate(() =>
+        document.querySelector('[data-sed-core] canvas.mem-canvas')?.getAttribute('data-sed-probe'));
+      const drifted = freshProbe !== results.probe;
+      console.log(`  · probe drift: published "${results.probe}" -> at click time "${freshProbe}"`
+        + `  | ${drifted ? 'DRIFTED' : 'identical'}`);
       await p.mouse.click(clickX, clickY);
       await p.waitForTimeout(900);
       const opened = await p.evaluate((id) => {
@@ -1190,7 +1298,28 @@ function advanceBlocks(n) { head += n; }
             ? v.querySelector('[data-mem-track-phase]').getAttribute('data-mem-track-phase') : null,
         };
       }, ptxid);
-      console.log(`  · probe click: canvas ${pt.h}px tall, scale ${pt.scale.toFixed(4)}, target (${px},${py}) -> phase=${opened.phase}`);
+      /* DIAGNOSTIC, NOT AN ASSERTION — added because a fourth sighting of this
+       * red carrying the same three numbers as the first three would answer
+       * nothing. The message on the `ok()` below prints `canvas scale`, and that
+       * number has been read as this intermittent's candidate mechanism for
+       * three sightings. It is decoration: the assertion is `opened.tracked`.
+       *
+       * The quantity most likely to be responsible is the TARGET SIZE. This gate
+       * asserts at :1185 that the probe particle may be as small as r=0.9px, and
+       * then clicks it at a FRACTIONAL coordinate carried through a non-unit
+       * scale. A sub-pixel target hit with a rounded coordinate has no margin,
+       * and unlike a scheduler flake it explains why nothing about sediment
+       * changes between runs while the outcome does — `data-sed-probe` nominates
+       * a different particle, with a different radius.
+       *
+       * `data-sed-probe` publishes "x,y,txid" and NOT the probe's own radius, so
+       * the band bounds are the closest available proxy; publishing the probe
+       * radius belongs with sediment.tsx and is not this PR's file. The
+       * fractional parts are printed because they are what rounding acts on. */
+      console.log(`  · probe click: canvas ${pt.h}px tall, scale ${pt.scale.toFixed(4)}, target (${px},${py}) -> phase=${opened.phase}`
+        + `  | radius band ${results.radiusMin}..${results.radiusMax}px`
+        + `  | click (${clickX.toFixed(3)},${clickY.toFixed(3)}) frac (${(clickX % 1).toFixed(3)},${(clickY % 1).toFixed(3)})`
+        + `  | tracked=${opened.tracked}`);
       ok(opened.tracked,
         `scenario 7: clicking data-sed-probe's exact coordinate opens the shared tx inspector for THAT txid `
         + `(${String(ptxid).slice(0, 10)}…, canvas scale ${pt.scale.toFixed(4)})`);

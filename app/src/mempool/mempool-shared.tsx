@@ -326,8 +326,19 @@ export interface MemViewShellProps {
   /** Keep the view body mounted while a tx is tracked (default true) so the
    *  view's own highlight stays visible; detail renders below it. */
   keepBodyWhileTracking?: boolean;
-  /** Hide the stats strip for views that render their own dense telemetry. */
-  stats?: boolean;
+  /** Hide the stats strip for views that render their own dense telemetry.
+   *
+   *  `"compact"` collapses it to `MemStatStrip`'s single inline row instead of
+   *  hiding it — the same five `data-memstat` / `data-memstat-value` pairs, at
+   *  roughly 40px less height. That mode has existed in `mem-stats.tsx:159`
+   *  since it was written, and its own docblock names the two views it was for
+   *  ("views with little chrome budget (Reactor, Terminal)") — but nothing
+   *  could reach it, because this prop was boolean and no other passthrough
+   *  existed. Widening the prop rather than adding one keeps the per-view
+   *  control singular: every existing caller passes `true`, `false` or nothing
+   *  and is unaffected, and the type makes any unhandled site a compile error.
+   *  Reactor spends the 40px on its composition — see ARTBOARD_W in reactor.tsx. */
+  stats?: boolean | "compact";
   /** The view's MEMPOOL_VIEWS id, surfaced as `data-mem-view`. Deep-link and
    *  per-view DOM assertions key off it — without it a gate cannot tell which
    *  of the eleven surfaces it is actually looking at, and an unknown `?v=`
@@ -399,7 +410,7 @@ export function MemViewShell({
           the reason given for it was not, and it named the one state that
           cannot trigger it. The state that DOES trigger it is
           `tracking && !keepBodyWhileTracking`. */}
-      {stats !== false || !showBody ? <MemStatStrip data={data} /> : null}
+      {stats !== false || !showBody ? <MemStatStrip data={data} compact={stats === "compact"} /> : null}
       {showBody ? <div className="mem-body" data-mem-body>{children}</div> : null}
       {/* Always in the DOM, CSS-gated to the states that need it (reduced
           motion and ≤768px) so it costs desktop no height — Reactor has only
