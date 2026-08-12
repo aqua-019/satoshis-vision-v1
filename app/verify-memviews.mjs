@@ -1228,10 +1228,41 @@ function advanceBlocks(n) { head += n; }
     // inside the viewport. (locator.click({position}) does its own scrolling
     // but then hit-tests the resulting point and reported the element
     // intercepted, for the same underlying reason.)
+    /* SETTLE THE TRANSFORM BEFORE READING THE RECT. `.mp-fit` carries
+     * `transition: transform var(--d-3) var(--e-spring)` — a 300ms SPRING — and
+     * `scrollIntoView` below can retrigger a fit measurement. Reading
+     * `getBoundingClientRect()` while that is in flight yields `left`/`scale`
+     * for a MOVING element, and the click that follows lands on a different
+     * canvas pixel than the one the mapping was computed for.
+     *
+     * Measured over six runs before this wait existed: every PASS sat at scale
+     * 0.8326 / 0.9768 / 0.9999 and every FAIL at 0.9135 / 0.9137 / 0.9139 — a
+     * 0.0004-wide cluster, which is a settling animation sampled mid-flight, not
+     * a coincidence. The failures opened a `block` rather than nothing, i.e. the
+     * click hit a real object at the wrong place; and the probe attribute was
+     * byte-identical at click time, so the coordinate had not expired.
+     *
+     * Poll to two consecutive agreeing reads rather than sleeping longer — the
+     * same pattern verify-fit uses, and deterministic where a bigger sleep is
+     * only less-often-wrong. */
+    await p.evaluate(() => {
+      document.querySelector('[data-sed-core] canvas.mem-canvas')
+        ?.scrollIntoView({ block: 'center', inline: 'center' });
+    });
+    for (let i = 0, prev = null; i < 20; i++) {
+      const cur = await p.evaluate(() => {
+        const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
+        if (!cv) return 'none';
+        const r = cv.getBoundingClientRect();
+        return `${r.left.toFixed(3)},${r.top.toFixed(3)},${r.width.toFixed(3)}`;
+      });
+      if (cur === prev) break;
+      prev = cur;
+      await p.waitForTimeout(60);
+    }
     const pt = await p.evaluate(() => {
       const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
       if (!cv) return null;
-      cv.scrollIntoView({ block: 'center', inline: 'center' });
       const r = cv.getBoundingClientRect();
       return {
         left: r.left, top: r.top, h: cv.clientHeight,
@@ -1246,6 +1277,17 @@ function advanceBlocks(n) { head += n; }
       ok(inView,
         `scenario 7: the probe point is inside the viewport after centring `
         + `(${clickX.toFixed(0)},${clickY.toFixed(0)}) in ${pt.vw}x${pt.vh} — otherwise the click below proves nothing`);
+      /* DRIFT CHECK — the coordinate is read at :1147 and used HERE, ~100 lines
+       * and a scrollIntoView later. If the field is still simulating, the
+       * particle `data-sed-probe` named has moved on and something else is under
+       * that pixel. Re-read the attribute immediately before the click: same
+       * string means the scene is static and the cause is in the hit-test;
+       * different string means the gate is clicking a coordinate that expired. */
+      const freshProbe = await p.evaluate(() =>
+        document.querySelector('[data-sed-core] canvas.mem-canvas')?.getAttribute('data-sed-probe'));
+      const drifted = freshProbe !== results.probe;
+      console.log(`  · probe drift: published "${results.probe}" -> at click time "${freshProbe}"`
+        + `  | ${drifted ? 'DRIFTED' : 'identical'}`);
       await p.mouse.click(clickX, clickY);
       await p.waitForTimeout(900);
       const opened = await p.evaluate((id) => {
