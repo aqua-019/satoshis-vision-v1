@@ -38,10 +38,26 @@
  * `/\{\s*id:\s*"([a-z]+)"/g` against a source file. That instrument used to
  * point at views/index.tsx; it points HERE now, because that is where the id
  * literals live. Keep each entry's `id:` as a plain double-quoted literal on
- * the object's opening line — a computed or single-quoted id would be
- * invisible to all six, and four of them SWEEP the list, so they would go
- * vacuously green with zero coverage rather than red. verify-ia §7b's first
- * assertion is the non-vacuity floor that makes that failure loud.
+ * the object's opening line — a computed or single-quoted id is invisible to
+ * all six, and four of them SWEEP the list, so an unparseable file is not
+ * automatically a red.
+ *
+ * MEASURED, not assumed — registry emptied AND the floors removed, which is
+ * the state this repo would have been in had p2·7b re-pointed without them:
+ *   - verify-memperf  EXIT 0, printing an EMPTY table under the line
+ *                     "✅ every canvas view holds ≥30fps at the 5th
+ *                     percentile". A green claim about zero views.
+ *   - verify-tracking EXIT 0, "0 passed · 0 fixtured · 0 skipped · 0 failed".
+ *   - verify-memstats EXIT 1 — it has an INDEPENDENT guard: its declared-key
+ *                     both-directions check reds when no view renders a key.
+ *   - verify-memviews EXIT 1 by CRASHING, not asserting — an out-of-loop
+ *                     `VIEWS[0]` becomes `data-mem-view="undefined"` and
+ *                     waitForSelector times out. Zero assertion lines, no
+ *                     tally, a stack trace.
+ * So the floors are load-bearing for two and defence-in-depth for two — and
+ * for verify-memviews they turn a stack trace into a named red. An earlier
+ * draft of this comment said all four went vacuously green; that was read off
+ * the code rather than run, and it was wrong about half its subject.
  */
 
 /** Metadata for one mempool view — everything about it EXCEPT its component.

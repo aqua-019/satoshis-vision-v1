@@ -59,10 +59,19 @@ const REG = readFileSync(new URL('./src/views/mempool-meta.ts', import.meta.url)
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
 console.log(`views under test (${VIEWS.length}):`, VIEWS.join(', '), '\n');
 // NON-VACUITY FLOOR. Every assertion below this line sits inside `for (const id
-// of VIEWS)`. If the parse ever returns nothing — the file moves again, the id
-// literals stop being plain double-quoted strings — this gate does not go RED,
-// it goes GREEN having tested nothing, which is indistinguishable from a clean
-// run in CI. Assert the subject exists before sweeping it.
+// of VIEWS)`, so an empty parse — the file moves again, the id literals stop
+// being plain double-quoted strings — runs none of them.
+//
+// MEASURED counterfactual (registry emptied, this floor removed): this gate
+// exits 1, but by CRASHING rather than asserting. A later section indexes
+// `VIEWS[0]` outside the loop, so it navigates to `data-mem-view="undefined"`
+// and waitForSelector times out — zero assertion lines, no tally, a stack
+// trace. Not a silent pass, but not an answer either. The floor converts that
+// into one named red that says what is actually wrong.
+//
+// (verify-memperf and verify-tracking, same shape, DO exit 0 on that
+// counterfactual. Four gates sweep this list; two of them go green. The
+// difference is measured, not reasoned — see mempool-meta.ts's header.)
 ok(VIEWS.length > 0, `registry parse is non-vacuous (${VIEWS.length} views from src/views/mempool-meta.ts)`);
 
 /* ── fixtures ────────────────────────────────────────────────────────────

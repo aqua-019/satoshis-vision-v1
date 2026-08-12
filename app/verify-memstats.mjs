@@ -185,10 +185,19 @@ console.log(`engine: ${engine}`);
 console.log(`views under test (${VIEWS.length}): ${VIEWS.join(', ')}`);
 console.log(`declared data-memstat keys, parsed from ${EMITTERS.length} emitters: ${[...DECLARED].sort().join(', ')}\n`);
 
-/* NON-VACUITY FLOOR — see verify-tracking.mjs for the full reasoning. Both of
-   this gate's sections iterate VIEWS, and the cross-view parity check is worse
-   than vacuous on an empty list: "identical across 0 views" is trivially TRUE.
-   Assert the subject exists before comparing it to itself. */
+/* NON-VACUITY FLOOR — and this gate is the one that least needs it, which is
+   worth saying rather than implying. On the measured counterfactual (registry
+   emptied, floor removed) verify-memstats exits 1 ANYWAY, because §2 already
+   asserts both directions of the declared-key universe: with no view swept,
+   every declared key is "rendered by NOBODY" and reds. That is a real
+   independent guard, unlike verify-tracking's and verify-memperf's, which both
+   exit 0.
+
+   The floor still earns its line: §2's reds describe the WRONG CAUSE. They say
+   "a dead key is a rename nobody noticed" when the actual fault is that the
+   gate never opened a page. One assertion naming the real reason is worth more
+   than three that misdescribe it — the same subject-vs-claim problem this
+   suite keeps cataloguing, in the failure text rather than the assertion. */
 R.group('0 · the registry parse is non-vacuous');
 R.ok(VIEWS.length > 0, `${VIEWS.length} views parsed from src/views/mempool-meta.ts`);
 

@@ -5,8 +5,10 @@
 //    mempool → block transition, and depth counts 0→10."
 //
 // It did not exist. This is that gate, and it is VIEW-GENERIC by construction:
-// the view list is read out of `src/views/index.tsx`, so every future view is
-// swept the day it registers rather than the day someone remembers to add it.
+// the view list is read out of `src/views/mempool-meta.ts`, so every future
+// view is swept the day it registers rather than the day someone remembers to
+// add it. (p2·7b moved that list out of `src/views/index.tsx`, which cannot be
+// read by `nav/ia.ts` under bare Node — see mempool-meta.ts's header.)
 //
 // ── WHY THIS IS NOT A COPY OF verify-memviews SCENARIO 2 ───────────────────
 //
