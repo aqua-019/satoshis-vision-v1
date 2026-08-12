@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260812-28
 branch: claude/orbital-nav-visibility-uh011f
-status: in_progress
+status: done
 written_by: claude-code (manual mode — task arrived as a prompt p2·7b, no mockup)
 owner: claude-code
 ---
@@ -88,7 +88,7 @@ restructured here (reported, not fixed).
       `verify:tracking` · `verify:memstats` exit 0
 - [x] Rendered proof: mega-menu and ⌘K palette each showing seven views
       including Orbital, header reading 7, LOOKED AT
-- [ ] Branch pushed · draft PR opened · `mergeable_state` reported
+- [x] Branch pushed · draft PR opened · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 
@@ -105,12 +105,61 @@ npm run verify:tracking && npm run verify:memstats
 
 ## 7 · REPORT
 
-status:
-pr:
-commits:
-deps added:
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/175 (draft)
+commits: f3ec828 (extraction + §7b + six gates) · 3c96afa (census recount +
+  architecture row + styles.css reflow comment) · b9fd98b (home/sections prose)
+  · e857ad1 (vacuity claim corrected to what was measured)
+deps added: none
 deviations from spec:
+  - The brief's break test ("remove one view from the metadata -> verify-ia
+    reds item and count") does not apply to a DERIVED design. Removing a view
+    from the metadata keeps ia and the registry in sync, so those two stay
+    green and the COMPONENT-BINDING leg reds instead (M2). The mutation that
+    reds item + count is re-hardcoding ia's list (M1) — the actual #174 defect.
+    Both measured; the full six-mutation matrix is in the PR body.
+  - The brief said `home/sections.ts` "imports the registry so it should be
+    derived already". It derives from IA, not the registry, so it was
+    transitively wrong (rendering 6) and self-corrects with no code edit.
+  - Scope grew by six gate files, unavoidably: all six parse the view list out
+    of `views/index.tsx` with one shared regex, so extraction forces a
+    re-point. Four sweep the list and needed non-vacuity floors.
 notes for ARCHITECTURE.md patch:
+  - CLAUDE.md Architecture Notes gained a "Mempool views (canonical list)" row:
+    `app/src/views/mempool-meta.ts`, pure data, imports nothing; index.tsx binds
+    components via `Record<MempoolViewId, ViewComponent>`; ia.ts derives list
+    AND count through `nav/registries.mjs`; SIX gates parse its source text.
+  - Census recounted: 75/71 -> 77/73 files/gates; CI-reached 62 of 73; 4
+    npm-only; 7 true orphans.
 open questions:
+  - `ia.ts`'s `FUTURE_PROTOCOL_META` (5) and `ECOSYSTEM_META` (4) are the same
+    defect class, undrifted. Curing them means giving `pages/future/data.ts` the
+    same pure-data split — its own change, named in the PR body.
+  - 11 stale PROSE view-counts remain across 8 files (listed in the PR body),
+    deliberately unfixed to keep this single-subject.
+  - `verify-memviews` indexes `VIEWS[0]` outside its sweep loop; on an empty
+    list that crashes with `data-mem-view="undefined"` instead of asserting.
+    The floor now names the real cause, but the out-of-loop index is still there.
 
 ## 8 · LOOP FEEDBACK
+
+- 2026-08-12 · QUESTION the brief could not answer from its own text: which
+  file is "the registry side" for the parity assertion, once the registry is
+  split? Resolved by measurement — six gates already parse `views/index.tsx`,
+  so the answer had to be the file that keeps the id literals.
+- 2026-08-12 · INFERRED (not stated by the brief): that extraction is a
+  SIX-GATE change; that four of those gates sweep the list and so fail OPEN
+  rather than closed; that `home/sections.ts` derives from IA rather than the
+  registry; that the LIVE section badge is a fourth silently-wrong consumer.
+- 2026-08-12 · SPEC-WAS-AMBIGUOUS: the brief's prescribed break test presumed a
+  non-derived design. Reported rather than silently substituted.
+- 2026-08-12 · MY OWN OVERSTATEMENT, caught by running it: I claimed all four
+  sweeping gates would go vacuously green. Measured: two do (memperf, tracking),
+  memstats has an independent guard, memviews crashes. Corrected in e857ad1.
+  The lesson is the PR's own subject — a claim whose subject was wider than
+  what was measured — and it was written into a commit message before it was
+  checked.
+- 2026-08-12 · MY OWN SWEEP'S BLIND SPOT: the first count-literal regex required
+  the numeral adjacent to "views" and missed "5 switchable views". Widened.
+- 2026-08-12 · Gate rounds: 0. No GATE: FAIL round was needed; every gate was
+  green on first full run after the change.
