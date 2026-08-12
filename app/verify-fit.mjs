@@ -65,7 +65,7 @@ const HEIGHT_CLAUSE_AT = {
 const FITS_AT_1440 = {
   reactor: true,        // v2·4: artboard made definite at ARTBOARD_W 1180. Was 1668 fixtured / 1413 empty.
   constellation: true,  // v2·2: 1132 after its caption was capped. Was 1413 unbounded.
-  bridge: false,        // 2517 — Ops Bridge is the next v2 rebuild.
+  bridge: true,         // v2·5: artboard made definite at ARTBOARD_W 1180. Was 2517 in BOTH feed states.
   sediment: false,      // 3281 — repeat(12, 1fr) amplification, two co-equal drivers. Contract §8.
 };
 
