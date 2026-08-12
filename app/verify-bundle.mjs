@@ -430,16 +430,57 @@ const BUDGETS = {
   // no reason to drift, and eagerJsGz already guards the same set in gzip.
   eagerJsRaw: 280_000,
   // lazyJsRaw — the population totalJsRaw's docstring was really describing:
-  // "we shipped 200 kB of lazy code nobody has opened yet". 702,654 measured,
-  // budget 720,000 (98%). Sized by the same standard the old ceiling used, on
-  // the right population and with a MEASURED per-view figure instead of an
-  // assumed one: mean 8,670 across three built-to-built v2 rebuilds
-  // (sediment 7,270 · constellation 3,129 · terminal 15,611), six views
-  // remaining, so 2 views of headroom = 17,346 and this speaks about a third of
-  // the way through the rest of the roadmap while the answer is still "which
-  // view". It does not make the roadmap fit: 6 x 8,670 projects to ~754,674,
-  // still 34,674 B over. It will fire again, and it should.
-  lazyJsRaw: 720_000,
+  // "we shipped 200 kB of lazy code nobody has opened yet".
+  //
+  // RAISED 720,000 -> 736,000 in p2·7, and the raise is LOUD BY DESIGN: this
+  // ceiling is meant to fire once per new view and be re-set deliberately, not
+  // sized once to cover a roadmap nobody has built yet.
+  //
+  // MEASURED, both endpoints, built-to-built (1887edc -> this tree):
+  //
+  //     lazyJsRaw   711,561  ->  733,772    +22,211
+  //
+  // and every byte of that delta is attributed, because one of the four terms
+  // is a chunk NOBODY WROTE:
+  //
+  //     orbital        (new view chunk)     +21,729
+  //     useMemCanvas   (new SHARED chunk)    +2,763
+  //     sediment                             -2,546
+  //     index/mapDeps  (one more lazy entry)   +265
+  //     -------------------------------------------
+  //                                         +22,211
+  //
+  // THE SHARED-CHUNK SPLIT IS THE PART WORTH READING. `useMemCanvas.ts` had
+  // exactly ONE consumer (sediment) and therefore rode inside sediment's chunk.
+  // Orbital is the second consumer, so Rollup hoisted it out into a chunk of
+  // its own: sediment got 2,546 B lighter and 2,763 B appeared somewhere new.
+  // Net cost of the hoist is +217 B, but a reader diffing per-chunk sizes sees
+  // a view they did not touch move by 2.5 kB — which is exactly the shape that
+  // gets misread as "the build is non-deterministic" or, worse, as a stale
+  // dist/. It is neither, and it was confirmed by rebuilding 1887edc's own tree
+  // in place (60 chunks, 711,561) rather than by quoting a previous report. The
+  // FIRST view to share a module with an existing view will always look like
+  // this; the next three will not, because the hoist has already happened.
+  //
+  // Budget 736,000, so the margin is 2,228 B — deliberately under one view and
+  // over one shared-chunk re-split, which is the only churn that has ever moved
+  // this number without a view being added.
+  //
+  // IT WILL FIRE AGAIN, FOUR MORE TIMES, AND IT SHOULD. Mean view chunk across
+  // the seven now shipped is 24,343 (classic 19,163 · reactor 19,204 ·
+  // constellation 21,187 · orbital 21,729 · sediment 24,831 · bridge 28,318 ·
+  // terminal 35,969). Relay, Abyss, Circuit and Pulse remain: 4 x 24,343
+  // projects to ~831,144, which is 95,144 B over this ceiling. Raising it to
+  // cover them now would buy silence for the whole roadmap and cost the one
+  // signal this line exists to give.
+  //
+  // NAMED, NOT FIXED, AND OUT OF THIS PR'S SCOPE: `totalJsRaw` is 995,164
+  // against 1,000,000 on this build — 4,836 B of headroom, less than a fifth of
+  // one view. The next view crosses it. That is a separate budget with a
+  // separate subject (see its own note above, including why its docstring
+  // already overstates what it detects), and it is recorded here so its firing
+  // is expected rather than surprising.
+  lazyJsRaw: 736_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk

@@ -282,6 +282,35 @@ jobs:
         if: always()
         run: npm run verify:perf-runtime
 
+      # ── p2·7: the two gates docs/v6-mempool-views-spec.md:148-150 has
+      # required since v6.0.3 and which did not exist. Both are registry-driven,
+      # so they widen by themselves as the remaining four views land.
+      #
+      # INDIVIDUAL STEPS, NOT APPENDED TO `verify:e2e`, and the choice is stated
+      # rather than assumed because both placements are defensible. The e2e
+      # chain is `&&`, so a failure in either of these would make the other
+      # unanswerable — and they answer genuinely independent questions ("does
+      # the tracked tx survive being mined" vs "do the seven views agree on one
+      # feed"). That is the same veto shape the block above removed, so the same
+      # remedy applies: one step each, `if: always()`.
+      #
+      # The cost of the choice, stated: two more browser launches rather than
+      # two more navigations inside an existing one. verify-tracking drives a
+      # real mempool→block transition per view on the SHIPPED 15s chain tier
+      # (its bound is derived, not guessed — see its header), so it is the
+      # slower of the two by a wide margin. That is the price of testing the
+      # cadence the app actually runs rather than a compressed one.
+      #
+      # Counts are stated so a silent drop is visible: a gate that stops
+      # reporting its total has stopped being evidence.
+      - name: 'Gate: tracked tx — mempool→block transition, per-view idiom, depth 0→10, all views (61)'
+        if: always()
+        run: npm run verify:tracking
+
+      - name: 'Gate: MemStatStrip parity — one feed, one set of numbers, all views (36)'
+        if: always()
+        run: npm run verify:memstats
+
       # verify-vitals and verify-cls both stamp their measurements, with the
       # harness that produced them, into app/.perf/. Keeping those makes drift
       # readable across runs instead of scrolling away with the log — and it is

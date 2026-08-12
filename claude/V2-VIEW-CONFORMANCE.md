@@ -305,8 +305,30 @@ touches that region.
 
   | layer | phone behaviour | members | citation |
   |---|---|---|---|
-  | reflow (`reflow: true`) | reflows; **no** horizontal scroll | classic | `verify-pageshell` |
+  | reflow (`reflow: true`) | reflows; **no** horizontal scroll | classic, **orbital** | `verify-pageshell` |
   | pan (default) | keeps proportions; **pans** | terminal, and any future pan-mode view | `verify-mobile:36-44` |
+
+  > **p2·7 — orbital added to the reflow row, per this section's own
+  > instruction** ("anyone adding a pan-mode view should add it to the table
+  > rather than reopening the rule"; the same applies to a reflow-mode one).
+  >
+  > **AND THE ROW'S OWN PREMISE NEEDED CORRECTING.** `MempoolViewMeta.reflow`
+  > described the layer as being for a "pure-DOM view with no fixed-size
+  > canvas… Classic only". Orbital is canvas-backed and reflows correctly,
+  > because what the 900px pin protects is a view with AUTHORED PROPORTIONS —
+  > Terminal's `1fr 320px` shell and 8-column readouts — not the presence of a
+  > canvas. Orbital's canvas is `position: absolute` inside a host whose height
+  > is derived from its measured width, so it has no authored width to preserve.
+  > The docstring is corrected in `views/index.tsx`.
+  >
+  > **Joining this layer is not free, and two of its costs were only found by
+  > measuring.** The reflow rules collapse EVERY inline `grid-template-columns`
+  > under the view to one column, which is right for panels and wrong for a
+  > table; and `grid-column: span N` survives that collapse and rebuilds the
+  > desktop grid in implicit tracks. Measured on orbital at 390 before both were
+  > handled: naturalH **20,651**, panels laid out ~122px wide inside a 366px
+  > view, no horizontal overflow and no gate red. A reflow-mode view must own
+  > its tabular grids as CSS classes and collapse tracks AND spans together.
 
   A pan-mode view still owes the other half of "390px usable" in full: legible type, reachable
   targets, no content that can only be found by guessing that the surface scrolls.

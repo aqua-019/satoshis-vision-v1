@@ -36,9 +36,16 @@ export interface MempoolViewMeta {
    *  (reactor/bridge/sediment/constellation) opt in; Classic's intentional block
    *  ribbon and Terminal are excluded. */
   fit?: boolean;
-  /** Pure-DOM view with no fixed-size canvas: reflows to the viewport on phones instead
-   *  of panning inside the 900px-pinned box. Classic only — Terminal is a
-   *  desktop-proportion instrument (320px daemon aside, 8-column readouts). */
+  /** Reflows to the viewport on phones instead of panning inside the 900px-pinned
+   *  box (styles.css:2502-2516). Classic and Orbital.
+   *
+   *  It is NOT "pure-DOM only", which is what this said while Classic was the sole
+   *  member: the pin exists for views whose proportions are FIXED, and Orbital's
+   *  canvas is fluid — `.mem-canvas` is `position: absolute; inset: 0` inside a
+   *  host whose height is derived from its measured width, so it has no authored
+   *  width to preserve and reflowing costs it nothing. Terminal deliberately KEEPS
+   *  the pin: its shell is `1fr 320px` with 8-column readouts, so unpinned it
+   *  squeezes to an unreadable sliver instead of panning at desktop proportions. */
   reflow?: boolean;
   Component: ViewComponent;
 }
@@ -77,6 +84,13 @@ export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
     Component: lazyView(() => import("@/mempool/sediment"), "SedimentView") },
   { id: "constellation", label: "Constellation", sub: "luminous network sphere",           star: false, fit: true,
     Component: lazyView(() => import("@/mempool/constellation"), "ConstellationView") },
+  // p2·7: the first NET-NEW view of the eleven, and the first hero surface that
+  // is neither scaled nor panned — `fit: false` + `reflow: true`, so naturalW
+  // settles at canvasW at every viewport and authored 11px renders at 11px,
+  // including at 390. See orbital.tsx's header for why that is available to
+  // this composition and not to reactor/bridge.
+  { id: "orbital",       label: "Orbital",       sub: "fee rings · age bearing",           star: false, reflow: true,
+    Component: lazyView(() => import("@/mempool/orbital"), "OrbitalView") },
   { id: "terminal",      label: "Terminal",      sub: "cli-first · monerod tail",          star: false,
     Component: lazyView(() => import("@/mempool/terminal"), "TerminalHubView") },
   { id: "classic",       label: "Classic",       sub: "explorer · tx + block inspectors", star: true, reflow: true,

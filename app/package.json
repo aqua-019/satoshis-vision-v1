@@ -22,6 +22,8 @@
     "verify:mem": "node verify-memshell.mjs",
     "verify:mem:dom": "node verify-memviews.mjs",
     "verify:mem:perf": "node verify-memperf.mjs",
+    "verify:tracking": "node verify-tracking.mjs",
+    "verify:memstats": "node verify-memstats.mjs",
     "build:ssr": "vite build --config vite.ssr.config.ts --logLevel error",
     "verify:coldboot": "node verify-coldboot-live.mjs && node verify-coldboot.mjs",
     "verify:perf-classic": "node verify-perf-classic.mjs",
