@@ -267,14 +267,35 @@ Fixed at all three sites by collapsing them into one `HEX_CELL` constant (plus `
   particles) is an outlier it enters the window with less headroom; if all six are within a
   second, the intermittent is a uniform phase lottery with no view-specific component, which
   would be the better outcome.
-- **Scenario 7 is SEPARATE and still unexplained**, and now has two sightings (#171, #172) on
-  trees where sediment was untouched both times. Two independent reds on unmodified source
-  points harness-side, which is the opposite of where the current `canvas scale` candidate
-  points. Confirmed intermittent here: the failing tree passed twice on immediate re-run
-  (185 ✅ / 0 ❌ both).
-- `verify-memviews`' assertion COUNT varies run to run (186 once, 185 twice, same tree, all
-  green). Minor, unexplained, recorded.
-
+- **Scenario 7 is CLOSED — it was a rect read mid-transition, and it is fixed.**
+  Four sightings across two PRs, carried the whole time as "the `canvas scale 0.9998` candidate".
+  That number is interpolated into the FAILURE MESSAGE; the assertion is `opened.tracked`. A symptom
+  printed beside a claim, adopted as the claim's subject — the same family as everything else here.
+  Eliminated in order, each by measurement:
+  ```
+  sub-pixel radius (gate permits r >= 0.9)  REFUTED  failures print phase=block; a miss opens nothing
+  an expired coordinate                     REFUTED  data-sed-probe byte-identical at click time
+  scale as the cause                        REFUTED  (clickX-left)/scale = px identically, so the
+                                                     same canvas pixel is targeted at ANY scale —
+                                                     PROVIDED left/scale are valid when the click lands
+  a STALE RECT                              CONFIRMED
+  ```
+  `.mp-fit` carries `transition: transform var(--d-3) var(--e-spring)` — a 300ms SPRING — and the
+  gate called `scrollIntoView` then read `getBoundingClientRect()` immediately, mapping the click
+  with values for a MOVING element. Six runs before the fix: every PASS at scale 0.8326 / 0.9768 /
+  0.9999, every FAIL at **0.9135 / 0.9137 / 0.9139** — a 0.0004-wide failure cluster is a settling
+  animation sampled mid-flight, not a coincidence.
+  **The settled value is the proof.** With a settle-to-stable poll before the rect read, scale reads
+  **0.3597 in all four runs** and the click lands at an identical coordinate every time — and 0.3597
+  is exactly what an independent probe measured as sediment's settled canvas scale. The gate had been
+  reading geometry that was never real.
+  **A self-criticism withdrawn on that evidence:** the sediment-naturalW probe was filed here as a
+  wrong-subject instrument because its fixture differed from the gate's. It was not — it measured the
+  SETTLED state the gate never waited for, and the 0.3597 match is what shows it. The error was
+  reading a disagreement as my instrument's fault rather than as a finding about the gate's.
+  **Second sighting of settle-to-stable as the remedy** (`verify-fit`'s transform read is the other),
+  both replacing a fixed sleep that was only less-often-wrong. That is a candidate rule, not a
+  coincidence.
 
 ### THE MOCKUP ARRIVED, AND WITH IT THREE DEFECTS NO GATE COULD SEE
 `reactor-v2.html` was supplied late. Rendered rather than grepped, it is SEVEN panels in SIX cells:
