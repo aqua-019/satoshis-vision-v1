@@ -48,6 +48,8 @@
 
 import { BASE, launch, makeReporter, ROUTES, coldBootOffBrowser, assertColdBootBypassed } from './verify-lib.mjs';
 import { R as Routes } from './scripts/routes.mjs';
+// §6 derives the mempool view count from the registry rather than hardcoding it.
+import { readFileSync } from 'node:fs';
 
 const R = makeReporter('verify-nav');
 const SETTLE = 500;
@@ -550,6 +552,32 @@ R.group('── §5 · skip link ───────────────�
 // silently stops matching the selector.
 R.group('── §6 · D0661 · mempool switcher stagger ─────────────────────');
 {
+  /* THE COUNT IS DERIVED FROM THE REGISTRY, NOT A LITERAL — p2·7.
+   *
+   * This section hardcoded SIX in five assertions and spelled the cascade out
+   * as '0s,0.03s,…,0.15s'. Registering a seventh view turned all of it red at
+   * once, on measurements that were every one of them CORRECT: 7 tiles,
+   * `--stagger-i` 0..6, seven distinct delays continuing the same 30ms step.
+   * The view was right and the gate was stale.
+   *
+   * `verify-memshell` already asserts this exact property OF THE APP —
+   * "MempoolPage derives the view count instead of hardcoding it", because the
+   * string "Mempool view · 6 views" would silently lie at eleven. The gate was
+   * doing the thing it exists to forbid. Five more views are coming, so a
+   * literal here is five more false failures.
+   *
+   * Nothing is weakened: the index sequence, the 30ms step, the distinctness of
+   * every delay, and the reduced-motion content check are all still asserted
+   * exactly — they are now asserted against N instead of against 6. A view that
+   * failed to register would move N and the sequence together, so the pair
+   * still cannot both be satisfied by an empty list (and every `every` below
+   * keeps its paired length check for the same reason). */
+  const N_VIEWS = [...readFileSync(new URL('./src/views/index.tsx', import.meta.url), 'utf8')
+    .matchAll(/\{\s*id:\s*"([a-z]+)"/g)].length;
+  const seq = Array.from({ length: N_VIEWS }, (_, i) => String(i)).join(',');
+  const cascade = Array.from({ length: N_VIEWS }, (_, i) => (i === 0 ? '0s' : `${(i * 0.03).toFixed(2)}s`)).join(',');
+  R.info(`switcher tiles expected: ${N_VIEWS} (from src/views/index.tsx)`);
+
   const readTiles = (page) =>
     page.evaluate(() => {
       const list = document.querySelector('.mp-switcher__list');
@@ -586,19 +614,20 @@ R.group('── §6 · D0661 · mempool switcher stagger ───────�
 
     const m = await readTiles(page);
     R.ok(m.open === true, 'the switcher list opens on its trigger');
-    R.ok(m.count === 6, `all six view tiles carry .mp-switcher__item (got ${m.count})`);
+    R.ok(m.count === N_VIEWS, `all ${N_VIEWS} view tiles carry .mp-switcher__item (got ${m.count})`);
     const idx = m.tiles.map((t) => t.idx);
-    R.ok(idx.join(',') === '0,1,2,3,4,5', `--stagger-i is the tile index, 0..5 (got ${idx.join(',')})`);
+    R.ok(idx.join(',') === seq, `--stagger-i is the tile index, 0..${N_VIEWS - 1} (got ${idx.join(',')})`);
     // `[].every(...)` is TRUE — a vacuous pass. Proved by the break-test: with
     // the class renamed, three of this section's assertions went green on an
     // empty node list while the count assertion went red. Every `every` below
     // is therefore paired with a length check.
-    R.ok(m.tiles.length === 6 && m.tiles.every((t) => t.name === 'stagger-rise'),
+    R.ok(m.tiles.length === N_VIEWS && m.tiles.every((t) => t.name === 'stagger-rise'),
       `every tile animates stagger-rise (got ${[...new Set(m.tiles.map((t) => t.name))].join('/')})`);
     const delays = m.tiles.map((t) => t.delay);
-    R.ok(delays.join(',') === '0s,0.03s,0.06s,0.09s,0.12s,0.15s',
-      `delays resolve to a 30ms cascade (got ${delays.join(',')})`);
-    R.ok(new Set(delays).size === 6, `all six delays are DISTINCT — a cascade, not a single flash (${new Set(delays).size}/6)`);
+    R.ok(delays.join(',') === cascade,
+      `delays resolve to a 30ms cascade of ${N_VIEWS} (got ${delays.join(',')})`);
+    R.ok(new Set(delays).size === N_VIEWS,
+      `all ${N_VIEWS} delays are DISTINCT — a cascade, not a single flash (${new Set(delays).size}/${N_VIEWS})`);
     await page.context().close();
   }
 
@@ -614,10 +643,10 @@ R.group('── §6 · D0661 · mempool switcher stagger ───────�
 
     const r = await readTiles(page);
     R.ok(r.open === true, 'the list still opens under prefers-reduced-motion: reduce');
-    R.ok(r.count === 6, `all six tiles still RENDER under reduce (got ${r.count}) — content is not suppressed`);
-    R.ok(r.tiles.length === 6 && r.tiles.every((t) => t.name === 'none'),
+    R.ok(r.count === N_VIEWS, `all ${N_VIEWS} tiles still RENDER under reduce (got ${r.count}) — content is not suppressed`);
+    R.ok(r.tiles.length === N_VIEWS && r.tiles.every((t) => t.name === 'none'),
       `zero animation applied under reduce (got ${[...new Set(r.tiles.map((t) => t.name))].join('/')})`);
-    R.ok(r.tiles.length === 6 && r.tiles.every((t) => t.w > 0 && t.h > 0 && t.text > 0),
+    R.ok(r.tiles.length === N_VIEWS && r.tiles.every((t) => t.w > 0 && t.h > 0 && t.text > 0),
       'every tile still has a real box and real text under reduce (nothing is conveyed by the movement alone)');
     await ctx.close();
   }

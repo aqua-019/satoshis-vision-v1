@@ -297,6 +297,11 @@ const EXPECT_MEMSTAT = {
   constellation: ['mempool', 'bytes', 'oldest', 'median', 'eta'],
   classic:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
   terminal:      ['mempool', 'bytes'],
+  // p2·7 — Orbital takes the full strip (stats default, not `false` or
+  // `"compact"`), so it declares all five. It computes no rival version of any
+  // of them: `useOrbitalField` derives radius/bearing/cut and reads the strip's
+  // figures nowhere.
+  orbital:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
 };
 
 function advanceBlocks(n) { head += n; }
@@ -742,6 +747,24 @@ function advanceBlocks(n) { head += n; }
     // it renders no <svg> at all, so it carries zero SVG <text> at every
     // width, by design rather than by omission.
     classic: [],
+    // p2·7 — EMPTY, AND THE EMPTY LIST IS THE CLAIM, not an omission.
+    //
+    // Orbital's hero is a <canvas> and its ring labels are DOM, so it emits no
+    // SVG <text> at any width in the motion state this section measures. That
+    // is a deliberate choice with a cost worth naming, per §9: canvas glyphs
+    // are invisible to this map, to scenario 6's collision sweep and to
+    // verify-legibility — three gates whose nominal subject includes this view.
+    // Authoring the labels as DOM keeps them inside all three rather than
+    // moving text into the blind spot; what is left uncovered is the canvas
+    // GEOMETRY, which no gate in this repo reads and which scenario 9's density
+    // count also cannot see.
+    //
+    // The view DOES render SVG under prefers-reduced-motion (OrbStatic, the
+    // frozen twin). That is not a contradiction: this section runs a
+    // normal-motion page, and scenario 3 is the only reduced-motion pass. A
+    // future edit that gives the motion state an SVG chart must widen this
+    // entry, and a `> 0` at any width reds it until someone does.
+    orbital: [],
   };
 
   const textCounts = {}; // {view: {width: count}}
@@ -1741,6 +1764,11 @@ function advanceBlocks(n) { head += n; }
     constellation: 46,   //  53
     terminal: 300,       //  97 on 260c99f (75 elements + 22 <pre> lines) -> see §7
     classic: 139,        // 159
+    // p2·7 — a NET-NEW view, so there is no "before" reading to sit beside this
+    // one. The floor is set the way every other row here was: measured, then
+    // cut ~12% (150 measured -> 132), which is the slack the existing rows
+    // carry. Stated beside the reading rather than derived silently.
+    orbital: 132,        // 150 measured at 1440x900 on this fixture
   };
 
   const dp = await b.newPage({ viewport: { width: 1440, height: 900 } });

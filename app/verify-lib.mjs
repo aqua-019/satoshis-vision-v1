@@ -131,6 +131,18 @@ export async function throttle(ctx, page) {
 export const ROUTES = [
   '/',
   '/live/mempool',
+  /* p2·7 — the FIRST `?v=` permutation in this list, and it is added knowing it
+     is asymmetric: six other views exist and only this one is walked.
+     `/live/mempool` alone means `?v=classic`, which is why CLAUDE.md carries
+     "the shot matrix cannot see five of the six mempool views" as a standing
+     item. This does not close that; it adds the view this PR introduces, so the
+     new surface is walked by every ROUTES-consuming gate (verify-ia, verify-nav,
+     verify-ground, verify-cls, verify-mobile, verify-nojs, verify-pageshell,
+     verify-vitals, verify-shots …) instead of being visible only to the three
+     gates that drive `?v=` explicitly. Total 43 -> 44.
+     Adding the other five is a coverage decision with its own cost — 5 more
+     entries across ~14 gates — and belongs with the standing item, not here. */
+  '/live/mempool?v=orbital',
   '/live/markets',
   '/live/markets/thesis',
   '/live/network',

@@ -1492,6 +1492,44 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 }
 .mem-tbl__r.is-tracked .mem-tbl__c { background: rgba(255,122,26,0.1); color: var(--tk-accent); }
 
+/* ── Orbital's tabular grids (p2·7) ──────────────────────────────
+   These are CLASSES rather than inline `gridTemplateColumns` for one measured
+   reason: `.mp-view--reflow [style*="grid-template-columns"]` (:2516) collapses
+   EVERY inline grid under a reflow-layer view to a single column. That rule is
+   right for panel layout — it is what stacks Classic's cards on a phone — and
+   wrong for a table, where it turns one 8-column row into 8 stacked rows.
+   Measured on orbital before this split: naturalH 20,651 at 390×844, because
+   14 console rows x 8 cells, 4 census rows x 5 cells and a 12-bar sector strip
+   all unstacked vertically.
+
+   An inline style cannot be excluded from that selector, so the columns move
+   here and the tables swipe inside their own box instead — Classic's own
+   `.mp-txgrid` + `.table-scroll` pattern (:1257, :2518), reused rather than
+   re-invented. `.table-scroll > * { min-width: max-content }` (:2361) then
+   keeps the columns intact for the swipe. */
+/* The 12-column composition. A CLASS, not an inline style, for the same reason
+   the tables are: the reflow layer collapses inline grids to `1fr`, and an item
+   still carrying `grid-column: span 8` then creates EIGHT IMPLICIT tracks and
+   re-expands the grid behind the collapse. Measured at 390 before this moved
+   out of an inline style: the panels laid out ~122px wide inside a 366px view
+   and each c4 cell ran 2,523px tall — no horizontal overflow, so nothing was
+   red; it was simply unreadable. The phone rule below is therefore explicit
+   about BOTH halves, the tracks and the spans. */
+.orb-grid12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-3); }
+/* THE FLEXIBLE TRACK CARRIES A REAL FLOOR, not `minmax(0, …)`, and that is the
+   opposite of the rule the composition grid follows — for a measured reason.
+   `minmax(0, 1.3fr)` let the txid column resolve to 2px inside a 366px phone
+   box, wrapping every console row to 264px tall (14 rows = 3,922px). The floor
+   normally arrives via `.table-scroll > * { min-width: max-content }` (:2361),
+   but `.mp-canvas-scroll * { min-width: revert !important }` on the very next
+   line un-does it for anything inside the mempool canvas — so a table in this
+   subtree has to carry its own. A track floor is not subject to that revert.
+   Safe against §8 amplification because the root is `contain: inline-size`, so
+   the grid divides a DEFINITE width and no track resolves from content. */
+.orb-console { display: grid; grid-template-columns: 52px minmax(110px,1.3fr) 74px 62px 60px 56px 52px 50px; gap: var(--sp-2); align-items: center; }
+.orb-census  { display: grid; grid-template-columns: 72px minmax(70px,1fr) 62px 58px 54px; gap: var(--sp-2); align-items: center; }
+.orb-sectors { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 2px; align-items: end; height: 58px; }
+
 /* mempool block (shared) — flattened to solid amber tiles, no inner
    cream wash. The earlier `inset 0 0 24px rgba(255,255,255,0.18)` produced
    a cream wash when 10-14 of these tile horizontally on the home page. */
@@ -2381,6 +2419,26 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      floor for no visible reason. Mirrors the .mp-canvas-scroll exemption. */
   .proto-stage svg { max-width: none; }
   .mp-canvas-scroll svg, .mp-canvas-scroll canvas { max-width: none; }   /* but let the canvas overflow & pan */
+  /* ── p2·7: re-assert the mempool canvas's height, which :2414 takes away ──
+     `.main svg, .main canvas, .main img { height: auto }` above is right for
+     images and for SVGs with an intrinsic ratio. On a `<canvas>` it is a
+     LATCHING FEEDBACK LOOP, because a canvas's intrinsic ratio is its BACKING
+     STORE, and `useMemCanvas` sizes the backing store from `clientHeight`:
+
+       initial store 300x150 (the HTML default, 2:1)
+         -> height:auto renders 280 x 140
+         -> useMemCanvas writes the store as 280x140, still 2:1
+         -> height:auto renders 280 x 140 ... forever
+
+     So the canvas is pinned to the HTML default's aspect ratio at every phone
+     width, whatever its host is. Measured on orbital at 390x844: host 300px
+     tall, canvas 140px — the instrument rendered at 47% of the box reserved for
+     it, with no overflow and nothing red anywhere.
+
+     Two classes, one class + one type = higher specificity, so this needs no
+     `!important`. It is scoped to `.mem-canvas` rather than to all canvases,
+     because :2414's rule is correct for every other canvas on the page. */
+  .mp-canvas-scroll .mem-canvas { height: 100%; }
   /* ── v6.0.4 — one class rule replaces two inline-string hacks ───────
      Two rules used to live here, each matching a page container's inline
      padding LITERAL: `.main [style*="padding: 32px 48px"]` served Home/Node/
@@ -2513,10 +2571,62 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      which is five short figures rather than content that wants a full row each.
      Collapsed it ran 352px tall, which is most of a phone screen to show five
      numbers. */
-  .mp-view--reflow [style*="grid-template-columns"]:not(.mem-stat-strip) { grid-template-columns: 1fr !important; }
+  /* `:not(.mem-tbl)` added in p2·7 — see the note below the .table-scroll rule. */
+  .mp-view--reflow [style*="grid-template-columns"]:not(.mem-stat-strip):not(.mem-tbl) { grid-template-columns: 1fr !important; }
   /* …except the tx feed, which stays a table and swipes inside its own box */
   .mp-view--reflow .table-scroll { overflow-x: auto !important; }
+  /* ── p2·7: and except MemTxTable, which is a TABLE, not a panel layout ──
+     PRE-EXISTING, found by measuring Orbital and confirmed on Classic. The
+     collapse above matches ANY inline `grid-template-columns` under a
+     reflow-layer view, and `MemTxTable` sets its columns inline
+     (`mempool-shared.tsx:499`). So a 61-row x 6-column table became 366 stacked
+     cells on the DEFAULT mempool view.
+
+     The tell is that the two rules directly above at :2488-2489 —
+     `.mem-table { overflow-x: auto }` and `.mem-table > * { min-width:
+     max-content }` — exist for exactly one purpose, letting this table keep its
+     columns and swipe, and could never do it: a grid collapsed to `1fr` has no
+     columns left to preserve. They have been dead as written.
+
+     THE FIX IS A `:not(.mem-tbl)` ON THE COLLAPSE SELECTOR ITSELF, one token,
+     and the two obvious alternatives were both tried and rejected by
+     measurement rather than by taste:
+       • `grid-template-columns: revert !important` on `.mem-tbl` — REVERTS TO
+         THE UA ORIGIN, which for a grid is `none`, i.e. one implicit column.
+         It reverts the cascade ORIGIN, never "back to the inline style". It
+         measured a byte-for-byte unchanged 20,368 / cols 1.
+       • moving MemTxTable's columns to a custom property so the
+         `[style*="grid-template-columns"]` selector stops matching — correct
+         CSS, but `verify-memviews` scenario 3 item 10 counts columns off
+         `.mem-tbl.style.gridTemplateColumns`, which a custom property empties.
+         That would have turned a layout fix into a gate change for all seven
+         views.
+     Excluding the element from the selector leaves the inline declaration to
+     apply normally and touches no component and no gate.
+
+     MEASURED at 390x844 on the verify-memviews fixture (61 rows), before -> after:
+         classic  .mem-table 10,876 -> 1,965px · cols 1 -> 6 · document 13,529 -> 4,618
+         orbital  .mem-table 12,689 -> 1,875px · cols 1 -> 7 · document 20,368 -> 9,555
+     Classic is the DEFAULT mempool view, so this is 2.9x less scroll on the
+     surface a phone actually lands on. No gate asserts document height, which
+     is why a table 5.5x taller than its content had been shipping unnoticed. */
   .mp-view--reflow .mp-txbody { min-width: 560px !important; }
+  /* p2·7 — Orbital's composition grid: collapse the TRACKS and the SPANS
+     together. Dropping the tracks alone leaves `grid-column: span 8` to build
+     implicit tracks and silently rebuild the desktop grid inside a 366px box. */
+  /* `minmax(0, 1fr)`, NOT `1fr` — and this is the same distinction as the note
+     in orbital.tsx, pointing the other way. There, `minmax(0, 1fr)` was NOT
+     enough, because the amplified quantity was a max-content CONTRIBUTION.
+     Here it is exactly the right tool, because the quantity IS the track's
+     automatic MINIMUM: a bare `1fr` takes its floor from the item's min-content,
+     the console's min-content is 590px, and the column therefore widened the
+     whole grid to 590 inside a 366px view — clipped rather than scrollable,
+     since `html, body { overflow-x: clip }` below 769px. The Cell's own inline
+     `min-width: 0` cannot help: `.mp-canvas-scroll * { min-width: revert
+     !important }` (:2362) strips it. Bounding the TRACK is not subject to that.
+     Measured 590 -> 366, and `.table-scroll` then swipes as intended. */
+  .mp-view--reflow .orb-grid12 { grid-template-columns: minmax(0, 1fr) !important; }
+  .mp-view--reflow .orb-grid12 > * { grid-column: auto !important; }
   /* the block ribbon already scrolls itself (classic.tsx ClassicRibbon overflowX:auto);
      re-assert the card width that :991's `revert` was preserving. */
   .mp-view--reflow .mp-block { min-width: 108px !important; flex: 0 0 auto; }
