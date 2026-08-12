@@ -22,22 +22,42 @@
  *
  * ── REAL INVENTORY ONLY ──────────────────────────────────────────────────
  * Every leaf here corresponds to something that actually exists in this
- * repo. Two registries are IMPORTED (via ./registries.mjs, a small re-export
+ * repo. Most registries are IMPORTED (via ./registries.mjs, a small re-export
  * shim — see its header for why a direct import doesn't work under bare
- * Node) rather than retyped: MONERO_TABS and EDU_TABS, plus the three
- * protocol-meta arrays (21 simulators). Two more are HAND-COPIED, each with
- * a comment explaining the specific technical wall that makes importing
- * them unsafe under bare Node:
- *   - the 6 mempool view ids/labels (views/index.tsx is a .tsx file; Node's
- *     native TS type-stripping does not support the .tsx extension AT ALL,
- *     independent of whether the file contains JSX — confirmed empirically)
+ * Node) rather than retyped: MONERO_TABS, EDU_TABS, the three protocol-meta
+ * arrays (21 simulators), and MEMPOOL_VIEW_META (the mempool views).
+ *
+ * ── THE MEMPOOL VIEW LIST USED TO BE HAND-COPIED, AND IT DRIFTED ─────────
+ * The wall was real: views/index.tsx is a .tsx file, and Node's native TS
+ * type-stripping does not support the .tsx extension AT ALL, independent of
+ * whether the file contains JSX (confirmed empirically). So this file could
+ * not import the registry, and carried a copy of the ids/labels plus a
+ * SECOND literal — the "· N views" column header — with a comment saying the
+ * copy could drift.
+ *
+ * It drifted on the very first view added after that comment was written.
+ * `orbital` shipped in #174 and appeared in NO nav surface — not the LIVE
+ * mega-menu, not ⌘K, not the tab bar, not prefetch, not breadcrumbs — because
+ * all of them read this file. It was reachable only from the on-page switcher
+ * (which derives from the registry) and from a typed `?v=orbital` URL.
+ *
+ * The fix was to remove the wall rather than to add a seventh entry: p2·7b
+ * split the component-free half of the registry into views/mempool-meta.ts,
+ * which imports nothing and so loads fine under bare Node. Both the list and
+ * the count below are derived from it. verify-ia.mjs §7b asserts the two
+ * agree in BOTH directions, so a rename cannot hide as an add plus a drop.
+ *
+ * ── ONE HAND-COPY REMAINS, DELIBERATELY ─────────────────────────────────
  *   - the 5 future-protocol + 4 ecosystem ids/labels (pages/future/data.ts
  *     itself imports `@/views/protocol-meta` — a `@/` alias INSIDE that
  *     file — so importing it, even transitively, drags an unresolvable
  *     specifier into bare Node regardless of what this file does)
- * Both hand-copied lists are checked against their source file's current
- * contents as of this writing; they are not derived automatically and can
- * drift if the source changes without this file being updated too.
+ * That list is checked against its source file's current contents as of this
+ * writing; it is not derived automatically and can drift if the source
+ * changes without this file being updated too. It has NOT drifted — but it is
+ * the same defect class the mempool list just demonstrated, and curing it
+ * means giving pages/future/data.ts the same pure-data split. That is its own
+ * change, not this one's.
  *
  * ── SECTION MATCHING (for a future nav consumer) ─────────────────────────
  * `sectionForPath` below uses LONGEST PREFIX WITH A SEGMENT BOUNDARY
@@ -57,6 +77,7 @@ import { R } from "../../scripts/routes.mjs";
 import {
   MONERO_TABS,
   EDU_TABS,
+  MEMPOOL_VIEW_META,
   PROTOCOL_PRIMITIVES_META,
   PROTOCOL_FUTURE_META,
   PROTOCOL_METAPHORS_META,
@@ -78,20 +99,6 @@ export interface IaSection {
   blurb: string;
   cols: IaCol[];
 }
-
-/**
- * Mempool view ids/labels, hand-copied from views/index.tsx's
- * MEMPOOL_VIEWS (6 entries, same order) — see this file's header for why
- * that registry can't be imported directly.
- */
-const MEMPOOL_VIEW_META: readonly { id: string; label: string }[] = [
-  { id: "reactor", label: "Reactor" },
-  { id: "bridge", label: "Ops Bridge" },
-  { id: "sediment", label: "Sediment" },
-  { id: "constellation", label: "Constellation" },
-  { id: "terminal", label: "Terminal" },
-  { id: "classic", label: "Classic" },
-];
 
 /** Market history range keys, from data/useMarketHistory.ts's RANGE_DAYS. */
 const MARKET_RANGE_META: readonly { id: string; label: string }[] = [
@@ -124,7 +131,10 @@ const ECOSYSTEM_META: readonly { id: string; label: string }[] = [
 
 // ── Live ───────────────────────────────────────────────────────────────
 const liveMempoolCol: IaCol = {
-  h: "Mempool · 6 views",
+  // The count is DERIVED, never typed. It was the second of the two literals
+  // that hid `orbital`: even with the list fixed by hand, a stale "6" here
+  // would have contradicted the six entries beside it. See the header.
+  h: `Mempool · ${MEMPOOL_VIEW_META.length} views`,
   items: [
     // "/live/mempool?v=classic" does not satisfy the bare "/live/mempool"
     // route ("?" is not "/") — this bare item is what makes that route

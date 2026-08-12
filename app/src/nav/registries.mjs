@@ -33,3 +33,10 @@ export {
   PROTOCOL_FUTURE_META,
   PROTOCOL_METAPHORS_META,
 } from "../views/protocol-meta.ts";
+// p2·7b: the mempool view list. It used to be HAND-COPIED into ia.ts, because
+// the registry lived in views/index.tsx and bare Node cannot load a .tsx at
+// all. It drifted on the first view added after that copy was written
+// (`orbital`, #174), which made the seventh view unreachable from every nav
+// surface. views/mempool-meta.ts is the pure-data half split out for exactly
+// this seam — it imports nothing, so it is safe here.
+export { MEMPOOL_VIEW_META } from "../views/mempool-meta.ts";

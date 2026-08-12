@@ -91,12 +91,15 @@ const BAND_LO = 200;
 const BAND_HI = 1084;
 
 const SHELL_SRC = read("src/mempool/mempool-shared.tsx");
-const REG_SRC = read("src/views/index.tsx");
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+// (index.tsx now binds components and derives MEMPOOL_VIEWS from that list).
+// Same instrument, new subject — see mempool-meta.ts's header.
+const REG_SRC = read("src/views/mempool-meta.ts");
 
 // ── item 12 / 1: registry ↔ files ───────────────────────────────────────────
 const registered = REG_SRC ? [...REG_SRC.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]) : [];
 assert(
-  "views/index.tsx registers a parseable MEMPOOL_VIEWS list",
+  "views/mempool-meta.ts registers a parseable MEMPOOL_VIEW_META list",
   registered.length > 0,
   registered.length ? `ids: ${registered.join(", ")}` : "could not parse any { id: \"…\" }",
 );

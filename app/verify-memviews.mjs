@@ -52,9 +52,18 @@ let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
 // Views come from the registry, so this gate widens by itself as PR2/PR3 land.
-const REG = readFileSync(new URL('./src/views/index.tsx', import.meta.url), 'utf8');
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+// (views/index.tsx now binds components to ids and derives MEMPOOL_VIEWS from
+// this list). Same instrument, new subject.
+const REG = readFileSync(new URL('./src/views/mempool-meta.ts', import.meta.url), 'utf8');
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
 console.log(`views under test (${VIEWS.length}):`, VIEWS.join(', '), '\n');
+// NON-VACUITY FLOOR. Every assertion below this line sits inside `for (const id
+// of VIEWS)`. If the parse ever returns nothing — the file moves again, the id
+// literals stop being plain double-quoted strings — this gate does not go RED,
+// it goes GREEN having tested nothing, which is indistinguishable from a clean
+// run in CI. Assert the subject exists before sweeping it.
+ok(VIEWS.length > 0, `registry parse is non-vacuous (${VIEWS.length} views from src/views/mempool-meta.ts)`);
 
 /* ── fixtures ────────────────────────────────────────────────────────────
    Ages are FIXED RELATIVE offsets resolved at request time, never absolute

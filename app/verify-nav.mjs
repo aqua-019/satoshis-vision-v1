@@ -572,11 +572,19 @@ R.group('── §6 · D0661 · mempool switcher stagger ───────�
    * failed to register would move N and the sequence together, so the pair
    * still cannot both be satisfied by an empty list (and every `every` below
    * keeps its paired length check for the same reason). */
-  const N_VIEWS = [...readFileSync(new URL('./src/views/index.tsx', import.meta.url), 'utf8')
+  // p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+  // (index.tsx now binds components and derives MEMPOOL_VIEWS from that list).
+  // Same instrument, new subject — see mempool-meta.ts's header.
+  const N_VIEWS = [...readFileSync(new URL('./src/views/mempool-meta.ts', import.meta.url), 'utf8')
     .matchAll(/\{\s*id:\s*"([a-z]+)"/g)].length;
   const seq = Array.from({ length: N_VIEWS }, (_, i) => String(i)).join(',');
   const cascade = Array.from({ length: N_VIEWS }, (_, i) => (i === 0 ? '0s' : `${(i * 0.03).toFixed(2)}s`)).join(',');
-  R.info(`switcher tiles expected: ${N_VIEWS} (from src/views/index.tsx)`);
+  R.info(`switcher tiles expected: ${N_VIEWS} (from src/views/mempool-meta.ts)`);
+  // NON-VACUITY FLOOR: §6's tile assertions compare against N_VIEWS. At 0 the
+  // expected sequence and cascade both become the empty string, which a view
+  // list rendering nothing would MATCH — the gate would confirm the switcher
+  // is correct by confirming it is absent.
+  R.ok(N_VIEWS > 0, `the registry parse is non-vacuous (${N_VIEWS} views)`);
 
   const readTiles = (page) =>
     page.evaluate(() => {

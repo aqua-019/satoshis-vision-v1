@@ -75,7 +75,10 @@ function findChrome() {
 }
 
 // Views come from the registry, so this gate widens by itself as views land.
-const REG = readFileSync(new URL('./src/views/index.tsx', import.meta.url), 'utf8');
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+// (index.tsx now binds components and derives MEMPOOL_VIEWS from that list).
+// Same instrument, new subject — see mempool-meta.ts's header.
+const REG = readFileSync(new URL('./src/views/mempool-meta.ts', import.meta.url), 'utf8');
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
 
 /* ── fixture ──────────────────────────────────────────────────────────────
@@ -180,6 +183,14 @@ console.log('verify-tracking — the tracked tx, on every registered view');
 console.log(`engine: ${engine}`);
 console.log(`views under test (${VIEWS.length}): ${VIEWS.join(', ')}`);
 console.log(`confirmation-wait bound: ${CONF_WAIT_MS} ms (derived — see header)\n`);
+
+/* NON-VACUITY FLOOR. Every assertion in this gate lives inside `for (const id
+   of VIEWS)`. An empty parse therefore does not turn this gate RED — it turns
+   it GREEN with zero coverage, which reads in CI exactly like a clean sweep.
+   The registry is a file this gate does not own and cannot stop from moving,
+   so assert the subject exists before sweeping it. */
+R.group('0 · the registry parse is non-vacuous');
+R.ok(VIEWS.length > 0, `${VIEWS.length} views parsed from src/views/mempool-meta.ts`);
 
 const chipPhase = (p) => p.$eval('[data-mem-track-phase]', (e) => e.getAttribute('data-mem-track-phase'));
 const chipConf = (p) => p.$eval('[data-mem-track-phase]', (e) => +e.getAttribute('data-mem-track-conf'));

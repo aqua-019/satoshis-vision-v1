@@ -59,7 +59,10 @@ function findChrome() {
 
 const src = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
-const REG = src('./src/views/index.tsx');
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+// (index.tsx now binds components and derives MEMPOOL_VIEWS from that list).
+// Same instrument, new subject — see mempool-meta.ts's header.
+const REG = src('./src/views/mempool-meta.ts');
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
 
 /* The declared key universe, parsed out of every emitter in src/mempool/.
@@ -181,6 +184,13 @@ console.log('verify-memstats — one feed, one set of numbers, every view');
 console.log(`engine: ${engine}`);
 console.log(`views under test (${VIEWS.length}): ${VIEWS.join(', ')}`);
 console.log(`declared data-memstat keys, parsed from ${EMITTERS.length} emitters: ${[...DECLARED].sort().join(', ')}\n`);
+
+/* NON-VACUITY FLOOR — see verify-tracking.mjs for the full reasoning. Both of
+   this gate's sections iterate VIEWS, and the cross-view parity check is worse
+   than vacuous on an empty list: "identical across 0 views" is trivially TRUE.
+   Assert the subject exists before comparing it to itself. */
+R.group('0 · the registry parse is non-vacuous');
+R.ok(VIEWS.length > 0, `${VIEWS.length} views parsed from src/views/mempool-meta.ts`);
 
 /** Read every data-memstat key/raw-value pair a view renders. */
 async function readView(p, id) {
