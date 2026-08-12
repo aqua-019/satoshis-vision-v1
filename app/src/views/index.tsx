@@ -68,7 +68,10 @@ export const lazyView = (load: () => Promise<{ [k: string]: unknown }>, name: st
 export const MEMPOOL_VIEWS: MempoolViewMeta[] = [
   { id: "reactor",       label: "Reactor",       sub: "3D iso · hex lattice · ring fan",  star: false, fit: true,
     Component: lazyView(() => import("@/mempool/reactor"), "ReactorView") },
-  { id: "bridge",        label: "Ops Bridge",    sub: "12-pane mission control",            star: false, fit: true,
+  // v2·5: "12-pane" was already wrong before the rebuild — the shipped view had
+  // seven panels and a stat row. Recounted, not adjusted: radar · instrument
+  // bank · alert tape · oscilloscope · cadence · console · pool attribution.
+  { id: "bridge",        label: "Ops Bridge",    sub: "7-panel mission control",           star: false, fit: true,
     Component: lazyView(() => import("@/mempool/bridge"), "BridgeView") },
   { id: "sediment",      label: "Sediment",      sub: "vertical core-sample tube",         star: false, fit: true,
     Component: lazyView(() => import("@/mempool/sediment"), "SedimentView") },
