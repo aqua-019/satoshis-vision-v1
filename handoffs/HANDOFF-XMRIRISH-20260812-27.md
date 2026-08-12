@@ -98,9 +98,9 @@ npm run verify:mem:perf
 
 status: done — every §5 box checked.
 
-pr: see LOG.md line for XMRIRISH-20260812-27.
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/174 (draft)
 
-commits: one feature commit on `claude/orbital-mempool-view-mwbkpu`.
+commits: c28e1f1 on `claude/orbital-mempool-view-mwbkpu`.
 
 deps added: none.
 
