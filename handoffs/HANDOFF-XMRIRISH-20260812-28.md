@@ -109,7 +109,8 @@ status: done
 pr: https://github.com/aqua-019/satoshis-vision-v1/pull/175 (draft)
 commits: f3ec828 (extraction + §7b + six gates) · 3c96afa (census recount +
   architecture row + styles.css reflow comment) · b9fd98b (home/sections prose)
-  · e857ad1 (vacuity claim corrected to what was measured)
+  · e857ad1 (vacuity claim corrected to what was measured) · 90ce2c7 (§7/§8/LOG)
+  · 91404b3 (RIDER: scenario 7 settles on a derived scale)
 deps added: none
 deviations from spec:
   - The brief's break test ("remove one view from the metadata -> verify-ia
@@ -124,6 +125,13 @@ deviations from spec:
   - Scope grew by six gate files, unavoidably: all six parse the view list out
     of `views/index.tsx` with one shared regex, so extraction forces a
     re-point. Four sweep the list and needed non-vacuity floors.
+  - RIDER TAKEN (operator-approved, out of the original brief's scope):
+    verify-memviews scenario 7's settle poll. PR-172 filed a sentinel to ride
+    the next verify-memviews change; this was that change, and the flake
+    recurred on the verifier's clone as `canvas scale 0.9999`. Poll now takes
+    verify-fit:199's 120ms pre-wait, PR-172 §5's give-up sentinel, and
+    converges on a DERIVED expectation, min(1, canvasW/naturalW), instead of
+    on two agreeing reads. Gate-only; no src/ file touched, so no byte moves.
 notes for ARCHITECTURE.md patch:
   - CLAUDE.md Architecture Notes gained a "Mempool views (canonical list)" row:
     `app/src/views/mempool-meta.ts`, pure data, imports nothing; index.tsx binds
@@ -140,6 +148,13 @@ open questions:
   - `verify-memviews` indexes `VIEWS[0]` outside its sweep loop; on an empty
     list that crashes with `data-mem-view="undefined"` instead of asserting.
     The floor now names the real cause, but the out-of-loop index is still there.
+  - The scenario-7 comment's historical numbers are all UNSETTLED values —
+    passes at 0.8326/0.9768/0.9999 and fails at 0.9135-0.9139 against a settled
+    0.359756. The old poll never distinguished settled from unsettled; it
+    distinguished "unsettled where the click still landed" from "unsettled
+    where it did not". Recorded in the gate; no further action taken.
+  - verify-memviews' assertion count still varies run to run (211/211/210 on
+    three runs of one tree tonight), the variance CLAUDE.md already notes.
 
 ## 8 · LOOP FEEDBACK
 
@@ -163,3 +178,18 @@ open questions:
   the numeral adjacent to "views" and missed "5 switchable views". Widened.
 - 2026-08-12 · Gate rounds: 0. No GATE: FAIL round was needed; every gate was
   green on first full run after the change.
+- 2026-08-12 · MY OWN BREAK-TEST METHOD FAILED ONCE, and the repo's own rule is
+  what it violated: I ran the rider's two-polarity script with a trap-owned
+  `git checkout --` restore while the rider itself was still UNCOMMITTED, so
+  the restore wiped the work and the "+ polarity" run measured the PRE-rider
+  gate. Caught because the settled-line grep came back empty on a run that
+  should have printed it. Re-applied, COMMITTED FIRST, then re-tested. The rule
+  is in CLAUDE.md already ("restoring is not done until the tree proves it");
+  the corollary it did not spell out is that a trap-owned restore is only safe
+  once the thing under test is in a commit.
+- 2026-08-12 · A FIRST CUT OF THE RIDER WAS WRONG AND MEASUREMENT CAUGHT IT: it
+  compared the canvas rect/clientWidth ratio, which LAGS the transform and is
+  not exact, so it needed eps 0.005 — and the run then settled 0.0002 inside
+  that bound. A tolerance a correct run barely clears is a red waiting for a
+  slower machine, and a loose eps on a lagging quantity is an early exit by
+  another name. Switched to `.mp-fit`'s DOMMatrix.a, which measures EXACT.
