@@ -439,12 +439,16 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   19 call sites. See the v6.0.12 note.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
-- **The shot matrix cannot see five of the six mempool views.** `verify-lib.mjs`'s `ROUTES`
-  carries `/live/mempool` once, at its default `?v=classic`; `reactor`, `bridge`, `sediment`,
-  `constellation` and `terminal` are never screenshotted at any width or theme. Found while
-  predicting the v6.1.3 sweep. `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=`
-  explicitly, so the views are not unverified — but no human ever sees them in a shot tree,
-  and a `--route /live/mempool` sweep silently means "classic only".
+- **The shot matrix cannot see SIX OF THE EIGHT mempool views.** `verify-lib.mjs`'s `ROUTES`
+  carries `/live/mempool` at its default `?v=classic`, plus `?v=orbital` (p2·7) and
+  `?v=abyss` (p2·8) — the two NET-NEW views, each added by the PR that introduced it.
+  `reactor`, `bridge`, `sediment`, `constellation`, `terminal` and the implicit `classic`
+  remain unscreenshotted at any width or theme. Found while predicting the v6.1.3 sweep.
+  `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=` explicitly, so the views are not
+  unverified — but no human ever sees them in a shot tree, and a `--route /live/mempool`
+  sweep silently means "classic only". (This read "five of the six" until p2·8; the count had
+  been stale since #174 added the first `?v=` entry. The convention now established is that a
+  net-new view adds its own ROUTES entry, so the gap only ever covers the ORIGINAL six.)
 - **Stale route literals in orphaned gates — 46 of 68 CLEARED in v2·3b, and the deferral's
   own reasoning is why.** v6.1.6 renamed every top-level route and swept the CI-reached and
   npm-wired gates. The gates wired to NEITHER npm nor CI were deliberately left, on this
@@ -520,6 +524,86 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-13**: p2·8 "ABYSS" (app/ only) — the **eighth** mempool view and the second
+  net-new one of the eleven. Fee is LUMINOSITY, age is DEPTH, and the tracked idiom is
+  **SUBTRACTIVE**: the only view in the app that keeps one transaction lit and DIMS the rest.
+  **The identity had to be designed against TWO adjacencies, not one** — sediment encodes fee
+  as a vertical STRATUM, orbital as a RADIUS, so a third positional fee axis would have been
+  one of those rotated. Fee left geometry entirely for the brightness channel, which makes
+  the next-block cut a BRIGHTNESS THRESHOLD rather than a ring you can point at. The
+  horizontal axis carries NOTHING and says so (`hashToUnit`, bridge's own idiom).
+  **Per-frame cost is a constant, not a function of pool depth**: alpha and colour are both
+  pure functions of an 8-step luminosity bucket, so the whole pool is ≤8 `fill()` calls —
+  240 txs is eight, 2,400 would also be eight. `verify:mem:perf` p5 **18 fps** against a 30
+  bar — FAIL, reported not hidden, and the BEST of the three canvas views (sediment 6,
+  orbital 15). Bar untouched; it is an open decision.
+  **Fluid worked first try**, orbital's mechanism verbatim: all six `naturalW == canvasW`
+  cells YES — 1440 → 1180/1180, 1280 → 1020/1020, 390 → 366/366, in BOTH feed states, no
+  `.mp-fit` anywhere, authored 11px rendering at 11px including at 390.
+  **THREE DEFECTS FOUND BY LOOKING, NONE OF WHICH ANY GATE SEES**, which is the entry worth
+  keeping: (1) the LOW-POOL state read as an EMPTY PLOT — at 3 txs the age ladder degenerated
+  to `[now, 30s]` plus a floor tick 1s below it, and 1.4px dots were specks in a 735×574 box;
+  fixed with four fine rungs (5/10/15/45s), a floor-tick suppression rule, and a dot-radius
+  LEGIBILITY FLOOR (1.4 → 2.0, uniform so every size ordering is preserved). (2) The tracked
+  marker sat exactly on top of the "5s" axis label AND drifted ~19px from its own dot between
+  polls, because the particle sinks continuously while React re-renders every 3s — fixed by
+  giving the draw loop the marker's DOM node (`Orb.tsx`'s pattern; contract §5's "mutate refs
+  or DOM attributes" half). (3) A c4 panel header wrapped to three lines and ran the
+  provenance badge off the panel edge — **checked against orbital before fixing, and orbital
+  does exactly the same thing**, so the wrap is pre-existing shared `PanelFrame` behaviour and
+  only the title length was mine.
+  **The first floor-tick threshold was wrong in a way only the render showed.** 0.07 dropped
+  the redundant "31s" at maxAge 31 — and also dropped "29m" at maxAge 1747, leaving the
+  deepest 5% of the column unlabelled on the MAIN case. A rule tuned on the edge case broke
+  the common one; 0.03 keeps both.
+  **TWO BUDGET RAISES, both pre-authorised, both red-then-green on the FINAL tree**:
+  `lazyJsRaw` 736,000 → **759,000** (built 756,809, margin 2,191) and `totalJsRaw`
+  1,000,000 → **1,021,000** (built 1,018,671, margin 2,329). Every byte attributed by a
+  file-by-file dist diff PAIRED BY MULTIPLICITY: abyss chunk +23,443 lazy · index/mapDeps
+  +133 lazy · eager entry +80. A clean two-term lazy delta, unlike p2·7's four terms —
+  `useMemCanvas`'s shared-chunk hoist already happened, and all seven pre-existing view
+  chunks are byte-identical across the two builds.
+  **THE NEAR-MISS WORTH READING: the first delta was measured, the ceilings were written from
+  it, and then three more rounds of render-driven fixes landed.** The abyss chunk moved
+  23,115 → 23,443 and both comments would have shipped describing a tree that no longer
+  existed — a true measurement of the wrong subject, the standing family, caught only by
+  re-measuring after the LAST src edit. The reds were then re-demonstrated on the final tree
+  rather than quoted from the first.
+  **`eagerJsRaw` MOVED, +80 B, and the brief said it must not** — but the move is STRUCTURAL,
+  not drift: p2·7b deliberately put the view metadata in an eagerly-bundled module so
+  `nav/ia.ts` could read it under bare Node, so every future view costs the eager bundle one
+  row. The CEILING is untouched at 280,000.
+  **`totalJsRaw`'s own stated construction is now broken, and was already broken before this
+  PR.** Its comment says it is "set to the sum of the two real budgets"; that was exactly true
+  at 280,000 + 720,000 = 1,000,000, and lapsed silently at #174 when lazy went to 736,000.
+  1,021,000 does not restore it either (280,000 + 759,000 = 1,039,000), so a build can now sit
+  inside BOTH real budgets and still red on the backstop. Raised to built+margin anyway per
+  the operator's standing policy; the reconciliation is recorded in the file as its own
+  decision.
+  **`verify-vitals` is red and it is PRE-EXISTING — measured against `origin/main`, not
+  assumed.** Both trees exceed the 400ms blocking ceiling on `/` and `/live/markets`; which
+  route reports ❌ versus the gate's own `SKIPPED: UNVERIFIABLE` spread guard depends on the
+  runner, not the tree. Per-route median blocking, branch vs base: `/` 414/413 · mempool
+  **261/294** · markets **463/488** · sim **311/318** — the branch is no worse anywhere and
+  better on three of four, and `/live/mempool`, the only route Abyss can touch, is green on
+  both. In the full e2e chain markets LCP read 4460ms; standalone and idle it read 2240ms.
+  Gates: **77 files / 73 gates, RECOUNTED and unchanged** — this PR adds no gate, it fills
+  three existing per-view maps (`EXPECT_MEMSTAT` · `EXPECT_SVG_TEXT` · `DENSITY_FLOOR`, all
+  three measured then written: five keys · `[]` at all four widths · 198 → floor 174) and one
+  `ROUTES` entry (44 → 45). Three-way break test in ONE run, each red localised and none
+  masking another; restored with the trap-owned sequence and re-run green at 233. Registration
+  was otherwise free — `verify-tracking` **62 → 71** and `verify-memstats` **37 → 38** swept
+  abyss with zero hand edits, which is what #175 bought. **`verify-nav` stayed at 129 and
+  should have**: it derives `N_VIEWS` from the registry, so a new view changes its SUBJECT
+  (8 tiles asserted, not 7) without changing its assertion COUNT — a rising count there would
+  have meant a hardcoded list. Four-layer sweep clean: `verify-fit`'s `FITS_AT_1440` is a
+  FOURTH per-view map the brief did not list, but it is keyed on a hand-kept fit-only list and
+  Abyss is `fit: false`, so it correctly needs no entry. `verify-memshell` band: abyss.tsx
+  **578** lines (+ abyss-instruments.tsx 839, split at the established seam). All 28 other
+  e2e gates, verify:static, fit, mobile, perf-runtime, pageshell and bundle green.
+  **No human has seen the rendered result in a browser** — the renders were read from
+  screenshots.
 
 - **2026-08-04**: v6.1.9 "COLD BOOT: THREE POST-MERGE DEFECTS" (app/ only). The
   headline is not the fix, it is the shape: **the cold-boot orb had never

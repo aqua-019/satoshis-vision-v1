@@ -107,6 +107,15 @@ export const MEMPOOL_VIEW_META = [
   // including at 390. See orbital.tsx's header for why that is available to
   // this composition and not to reactor/bridge.
   { id: "orbital", label: "Orbital", sub: "fee rings · age bearing", star: false, reflow: true },
+  // p2·8: the second net-new view, and the second fluid one — same `fit: false`
+  // + `reflow: true` pair as Orbital, whose mechanism it reuses verbatim
+  // (`contain: inline-size` on the root, tabular grids as `.aby-*` CLASSES).
+  // Placed next to Orbital because they are the two views that are neither
+  // scaled nor panned at any viewport, which is the property a reader of this
+  // list most needs to see grouped. See abyss.tsx's header for the identity —
+  // it borders sediment and orbital, and the separation is an axis inversion
+  // against each.
+  { id: "abyss", label: "Abyss", sub: "dark water · fee luminosity", star: false, reflow: true },
   { id: "terminal", label: "Terminal", sub: "cli-first · monerod tail", star: false },
   { id: "classic", label: "Classic", sub: "explorer · tx + block inspectors", star: true, reflow: true },
 ] as const;

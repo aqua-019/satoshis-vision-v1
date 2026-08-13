@@ -143,6 +143,18 @@ export const ROUTES = [
      Adding the other five is a coverage decision with its own cost — 5 more
      entries across ~14 gates — and belongs with the standing item, not here. */
   '/live/mempool?v=orbital',
+  /* p2·8 — the SECOND `?v=` permutation, added on the same reasoning and with
+     the same asymmetry: six of the eight views are still walked only as
+     `?v=classic`, which is what CLAUDE.md's "the shot matrix cannot see five of
+     the six mempool views" records. This does not close that item either; it
+     keeps the invariant that a NET-NEW view enters the ROUTES-consuming gates
+     (verify-ia, verify-nav, verify-ground, verify-cls, verify-mobile,
+     verify-nojs, verify-pageshell, verify-vitals, verify-shots …) on the PR
+     that introduces it, rather than being visible only to the gates that drive
+     `?v=` explicitly. Total 44 -> 45.
+     The standing item is now "six of eight", and adding the remaining six is
+     still a coverage decision with its own cost (~14 gates × 6 entries). */
+  '/live/mempool?v=abyss',
   '/live/markets',
   '/live/markets/thesis',
   '/live/network',
