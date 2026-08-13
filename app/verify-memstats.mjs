@@ -59,7 +59,10 @@ function findChrome() {
 
 const src = (rel) => readFileSync(new URL(rel, import.meta.url), 'utf8');
 
-const REG = src('./src/views/index.tsx');
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+// (index.tsx now binds components and derives MEMPOOL_VIEWS from that list).
+// Same instrument, new subject — see mempool-meta.ts's header.
+const REG = src('./src/views/mempool-meta.ts');
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
 
 /* The declared key universe, parsed out of every emitter in src/mempool/.
@@ -181,6 +184,22 @@ console.log('verify-memstats — one feed, one set of numbers, every view');
 console.log(`engine: ${engine}`);
 console.log(`views under test (${VIEWS.length}): ${VIEWS.join(', ')}`);
 console.log(`declared data-memstat keys, parsed from ${EMITTERS.length} emitters: ${[...DECLARED].sort().join(', ')}\n`);
+
+/* NON-VACUITY FLOOR — and this gate is the one that least needs it, which is
+   worth saying rather than implying. On the measured counterfactual (registry
+   emptied, floor removed) verify-memstats exits 1 ANYWAY, because §2 already
+   asserts both directions of the declared-key universe: with no view swept,
+   every declared key is "rendered by NOBODY" and reds. That is a real
+   independent guard, unlike verify-tracking's and verify-memperf's, which both
+   exit 0.
+
+   The floor still earns its line: §2's reds describe the WRONG CAUSE. They say
+   "a dead key is a rename nobody noticed" when the actual fault is that the
+   gate never opened a page. One assertion naming the real reason is worth more
+   than three that misdescribe it — the same subject-vs-claim problem this
+   suite keeps cataloguing, in the failure text rather than the assertion. */
+R.group('0 · the registry parse is non-vacuous');
+R.ok(VIEWS.length > 0, `${VIEWS.length} views parsed from src/views/mempool-meta.ts`);
 
 /** Read every data-memstat key/raw-value pair a view renders. */
 async function readView(p, id) {

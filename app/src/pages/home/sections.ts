@@ -4,8 +4,14 @@
  *
  * Every count below is DERIVED from `IA`'s exported shape at module scope,
  * never a literal — the mockup's own numbers are wrong (it says 11 mempool
- * views where the repo ships 6, and 12 simulators where it ships 21) and a
+ * views where the repo ships 7, and 12 simulators where it ships 21) and a
  * hardcoded correction would only be right until the next simulator lands.
+ *
+ * That prose said "ships 6" until p2·7b, and the reason it was wrong is the
+ * point of this file: the DERIVATION was right the whole time and rendered 6
+ * because `IA` itself was wrong — `ia.ts` hand-copied six of the seven views.
+ * This card is a consumer, not an authority, and it corrected itself the
+ * moment ia.ts started deriving. Only the comment needed a human.
  *
  * `IA`'s public shape does not expose a protocols-vs-ecosystem split for the
  * Future section (`FUTURE_PROTOCOL_META` and `ECOSYSTEM_META` are internal to

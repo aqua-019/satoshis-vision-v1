@@ -31,3 +31,12 @@ export interface IaProtocolMetaBase {
 export const PROTOCOL_PRIMITIVES_META: readonly IaProtocolMetaBase[];
 export const PROTOCOL_FUTURE_META: readonly IaProtocolMetaBase[];
 export const PROTOCOL_METAPHORS_META: readonly IaProtocolMetaBase[];
+
+/** One mempool view, as views/mempool-meta.ts declares it minus its component.
+ *  Only `id`/`label` are declared here — ia.ts reads nothing else, and a
+ *  narrower declaration is one fewer thing to keep in sync by hand. */
+export interface IaMempoolViewMeta {
+  id: string;
+  label: string;
+}
+export const MEMPOOL_VIEW_META: readonly IaMempoolViewMeta[];

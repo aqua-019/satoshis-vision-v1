@@ -422,6 +422,136 @@ try {
 }
 
 // ============================================================================
+// §7b · ia.ts's mempool view list agrees with the view registry
+// ============================================================================
+/* WHY THIS SECTION EXISTS, AND WHY §7 COULD NOT HAVE CAUGHT THE BUG.
+ *
+ * §7 compares IA leaves to ROUTES after stripping query and hash. Every
+ * mempool view leaf is `/live/mempool?v=<id>`, so ALL of them strip to the
+ * single route `/live/mempool`. Six views and seven views are the same
+ * assertion to §7, and so are seven CORRECT ids and seven wrong ones. It is
+ * structurally blind to view membership — not weakly, but exactly.
+ *
+ * That blindness shipped: ia.ts hand-copied six view ids and a literal
+ * "Mempool · 6 views" header, `orbital` landed as the seventh in #174, and
+ * the view was invisible in the mega-menu, ⌘K, the tab bar, prefetch and
+ * breadcrumbs while every gate stayed green. verify-ia checked ia against
+ * routes; verify-nav §6 checked the on-page switcher, which derives from the
+ * registry and was therefore right. Nothing compared ia to the registry.
+ *
+ * ── WHAT IS COMPARED AGAINST WHAT ────────────────────────────────────────
+ * ia.ts is read as a RUNTIME MODULE (its actual exported IA), while the
+ * registry is read as SOURCE TEXT. That asymmetry is deliberate. ia.ts now
+ * DERIVES its list from the same module the registry uses, so comparing two
+ * runtime values would be comparing a thing to itself — green by
+ * construction, and green forever after someone re-hardcodes the list. The
+ * text side is an independent witness: it keeps biting if the derivation is
+ * ever bypassed.
+ *
+ * The instrument (`/\{\s*id:\s*"([a-z]+)"/g` over the registry source) is the
+ * one already used by verify-memviews, verify-tracking, verify-memstats,
+ * verify-memperf, verify-memshell and verify-nav. Comments are stripped
+ * first, which those six do not all do — this file's own prose names view ids
+ * in exactly the shape the regex matches.
+ */
+R.group('§7b · ia.ts mempool views ↔ views/mempool-meta.ts (both directions)');
+
+try {
+  const metaSrc = stripComments(
+    readFileSync(join(__dirname, 'src', 'views', 'mempool-meta.ts'), 'utf8'),
+  );
+  const registryIds = [...metaSrc.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
+
+  /* NON-VACUITY FLOOR, first and load-bearing. Every assertion below compares
+   * against `registryIds`. At length 0 the two set-difference checks are
+   * VACUOUSLY TRUE (no id is missing from a list nobody named) and the count
+   * check would demand ia declare "0 views" — so a parse failure would either
+   * pass silently or fail for a reason that misdescribes itself. */
+  R.ok(registryIds.length > 0,
+    registryIds.length > 0
+      ? `registry parses ${registryIds.length} view ids: ${registryIds.join(', ')}`
+      : 'parsed NO ids from src/views/mempool-meta.ts — the instrument is pointed at the wrong file or the literals changed shape');
+
+  const iaModule = await import(join(__dirname, 'src', 'nav', 'ia.ts'));
+  const IA = Array.isArray(iaModule.IA) ? iaModule.IA : [];
+
+  /* Find the column that carries the view links rather than assuming it is
+   * cols[0] — a reordering of the Live section must not silently retarget
+   * this section at a column with no `?v=` items, which would make every
+   * assertion below vacuous in the other direction. */
+  const viewCols = IA.flatMap((s) => s.cols || [])
+    .filter((c) => (c.items || []).some((i) => i.p && i.p.includes('?v=')));
+
+  R.ok(viewCols.length === 1,
+    viewCols.length === 1
+      ? `exactly one IA column carries ?v= links (header: "${viewCols[0].h}")`
+      : `expected exactly 1 IA column with ?v= links, found ${viewCols.length}`);
+
+  if (viewCols.length === 1 && registryIds.length > 0) {
+    const col = viewCols[0];
+    const iaIds = (col.items || [])
+      .map((i) => (i.p.match(/\?v=([a-z]+)/) || [])[1])
+      .filter(Boolean);
+
+    // → direction: every registered view is reachable from the nav.
+    const missing = registryIds.filter((id) => !iaIds.includes(id));
+    R.ok(missing.length === 0,
+      missing.length === 0
+        ? `all ${registryIds.length} registered views appear in the IA column`
+        : `${missing.length} registered view(s) MISSING from the nav: ${missing.join(', ')} — this is the #174 defect`);
+
+    // ← direction: the nav invents nothing. Both directions are asserted
+    // because a RENAME is an add plus a drop, and either half alone would
+    // stay green through one: a renamed view would look "present" to the
+    // forward check under its old id if the count happened to match.
+    const unknown = iaIds.filter((id) => !registryIds.includes(id));
+    R.ok(unknown.length === 0,
+      unknown.length === 0
+        ? `all ${iaIds.length} IA view links name a registered view`
+        : `${unknown.length} IA link(s) name no registered view: ${unknown.join(', ')}`);
+
+    // Exactly once each — a duplicated leaf would satisfy both set checks.
+    const dupes = registryIds.filter((id) => iaIds.filter((x) => x === id).length !== 1);
+    R.ok(dupes.length === 0,
+      dupes.length === 0
+        ? 'each registered view appears exactly once (no duplicate leaves)'
+        : `not-exactly-once: ${dupes.join(', ')}`);
+
+    /* The header count, asserted against the REGISTRY's number and not against
+     * ia's own derived length. `h` is a template literal reading
+     * MEMPOOL_VIEW_META.length today, so checking it against that same length
+     * would be a tautology; checking it against the parsed source text is what
+     * still fails the day someone types the number back in. */
+    const declared = (col.h.match(/(\d+)\s*views?/) || [])[1];
+    R.ok(declared !== undefined && Number(declared) === registryIds.length,
+      declared === undefined
+        ? `column header "${col.h}" states no view count`
+        : `column header states ${declared} views, registry has ${registryIds.length}`);
+  }
+
+  /* The third leg: the component binding. mempool-meta.ts declares WHICH views
+   * exist; views/index.tsx binds a lazy component to each. TypeScript already
+   * pins these together via `Record<MempoolViewId, ViewComponent>`, but that is
+   * a compile-time check that only runs when tsc does — and a `Record<string,
+   * …>` would silently switch it off. A view with metadata and no component
+   * renders as a crash, not as a 404, so it is worth a runtime witness too. */
+  const regSrc = stripComments(
+    readFileSync(join(__dirname, 'src', 'views', 'index.tsx'), 'utf8'),
+  );
+  const boundIds = [...regSrc.matchAll(/([a-z]+):\s*lazyView\(/g)].map((m) => m[1]);
+  const sorted = (a) => [...a].sort().join(',');
+  R.ok(boundIds.length > 0 && sorted(boundIds) === sorted(registryIds),
+    boundIds.length === 0
+      ? 'parsed NO lazyView bindings from views/index.tsx'
+      : sorted(boundIds) === sorted(registryIds)
+        ? `views/index.tsx binds a component to each of the ${boundIds.length} registered ids`
+        : `binding mismatch — registry: ${sorted(registryIds)} | bound: ${sorted(boundIds)}`);
+} catch (e) {
+  /* A FAIL, never a skip — same reasoning as §7's catch, three sections up. */
+  R.ok(false, `§7b could not run — ${e.message}`);
+}
+
+// ============================================================================
 // §8 · Hash-based client navigation in MoneroPage.tsx
 // ============================================================================
 R.group('§8 · the 2 fragment redirects are real, and derived from HASH_REDIRECTS');

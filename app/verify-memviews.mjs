@@ -52,9 +52,27 @@ let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
 // Views come from the registry, so this gate widens by itself as PR2/PR3 land.
-const REG = readFileSync(new URL('./src/views/index.tsx', import.meta.url), 'utf8');
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts
+// (views/index.tsx now binds components to ids and derives MEMPOOL_VIEWS from
+// this list). Same instrument, new subject.
+const REG = readFileSync(new URL('./src/views/mempool-meta.ts', import.meta.url), 'utf8');
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
 console.log(`views under test (${VIEWS.length}):`, VIEWS.join(', '), '\n');
+// NON-VACUITY FLOOR. Every assertion below this line sits inside `for (const id
+// of VIEWS)`, so an empty parse — the file moves again, the id literals stop
+// being plain double-quoted strings — runs none of them.
+//
+// MEASURED counterfactual (registry emptied, this floor removed): this gate
+// exits 1, but by CRASHING rather than asserting. A later section indexes
+// `VIEWS[0]` outside the loop, so it navigates to `data-mem-view="undefined"`
+// and waitForSelector times out — zero assertion lines, no tally, a stack
+// trace. Not a silent pass, but not an answer either. The floor converts that
+// into one named red that says what is actually wrong.
+//
+// (verify-memperf and verify-tracking, same shape, DO exit 0 on that
+// counterfactual. Four gates sweep this list; two of them go green. The
+// difference is measured, not reasoned — see mempool-meta.ts's header.)
+ok(VIEWS.length > 0, `registry parse is non-vacuous (${VIEWS.length} views from src/views/mempool-meta.ts)`);
 
 /* ── fixtures ────────────────────────────────────────────────────────────
    Ages are FIXED RELATIVE offsets resolved at request time, never absolute
@@ -1268,21 +1286,105 @@ function advanceBlocks(n) { head += n; }
      * Poll to two consecutive agreeing reads rather than sleeping longer — the
      * same pattern verify-fit uses, and deterministic where a bigger sleep is
      * only less-often-wrong. */
+    /* p2·7b — THE POLL NOW CONVERGES ON A DERIVED VALUE, NOT ON AGREEMENT.
+     *
+     * The version above waited for "two consecutive agreeing reads" with NO
+     * pre-wait, so the first read happened at t~=0. That closed the MID-flight
+     * window (the 0.913x cluster) and left a PRE-flight one open: if the
+     * `.mp-fit` transition has not STARTED within the ~60ms between reads,
+     * two identical PRE-TRANSFORM reads agree, the loop breaks, and the click
+     * is mapped at scale ~= 1.0 against a view rendering at 0.36. Observed on
+     * an independent clone as `canvas scale 0.9999` — one red in three runs
+     * across two machines. `verify-fit:199`'s sibling poll carries a 120ms
+     * pre-wait for exactly this; this one did not.
+     *
+     * AGREEMENT WAS THE WRONG PREDICATE. Two reads can agree on the wrong
+     * value — true at BOTH ends of the transition, which is why closing one
+     * window left the other open. So this asserts the settled scale against
+     * what it must BE: min(1, canvasW / naturalW), from styles.css `.mp-fit`.
+     *
+     * WHICH QUANTITY IS COMPARED, and why not the obvious one — THE CANVAS
+     * RATIO LAGS THE TRANSFORM, so converging on it exits early. The subject
+     * is `.mp-fit`'s own transform (`DOMMatrix.a` of its computed transform),
+     * NOT the canvas rect-to-clientWidth ratio the click mapping uses.
+     * Measured at scenario 7's own 1440x900:
+     *
+     *   canvasW 1180 · naturalW 3280 · derived min(1, 1180/3280) = 0.359756
+     *   `.mp-fit` DOMMatrix.a, settled ................. 0.359756   EXACT
+     *   canvas rect / clientWidth, settled ............. 0.359703   -5.3e-5
+     *
+     * A FIRST CUT OF THIS FIX COMPARED THE RATIO, and it is instructive that
+     * it did not work: the ratio is not exact, so it needed eps 0.005, and a
+     * loose eps on a LAGGING quantity is an early exit by another name — that
+     * run stopped at ratio 0.364549, still mid-settle, and reported it as
+     * settled. Same defect as the poll it replaced, wearing a derived
+     * expectation. The transform is exact AND leads, so converging on it
+     * makes the loop wait until the motion is genuinely over; the ratio has
+     * reached 0.359703 by then, which is what the two runs of the shipped
+     * version print. The ratio is still REPORTED for continuity with the
+     * historical numbers, and asserted on by nothing.
+     *
+     * TOLERANCE, and what it is blind to: SCALE_EPS is 0.002 against a value
+     * that measures exact, so it cannot see a scale error below 0.2% — sub-
+     * pixel here, and ~300x below the 0.64 gap to the pre-flight 1.0 this
+     * exists to catch, ~275x below the gap to the mid-flight 0.913 cluster.
+     * Nothing between 0.362 and 0.913 is a state this element occupies.
+     *
+     * A NOTE ON THE NUMBERS IN THE COMMENT ABOVE: it records passes at
+     * 0.8326 / 0.9768 / 0.9999 and fails at 0.9135-0.9139. Against a settled
+     * 0.359756, EVERY ONE of those is unsettled — the passes as much as the
+     * fails. The old poll was not distinguishing settled from unsettled at
+     * all; it was distinguishing "unsettled somewhere the click happened to
+     * still land" from "unsettled somewhere it did not". That is why a
+     * derived expectation REPLACES the agreement test rather than joining it.
+     */
+    const SCALE_EPS = 0.002;
     await p.evaluate(() => {
       document.querySelector('[data-sed-core] canvas.mem-canvas')
         ?.scrollIntoView({ block: 'center', inline: 'center' });
     });
-    for (let i = 0, prev = null; i < 20; i++) {
-      const cur = await p.evaluate(() => {
+    await p.waitForTimeout(120);
+    let settled = false;
+    let haveScale = null;   // .mp-fit's live transform — the subject
+    let wantScale = null;   // min(1, canvasW/naturalW) — the derivation
+    let ratioScale = null;  // the canvas ratio the click mapping uses — reported
+    for (let i = 0; i < 20; i++) {
+      const m = await p.evaluate(() => {
         const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
-        if (!cv) return 'none';
+        if (!cv) return null;
+        const fit = document.querySelector('.mp-fit');
+        const sc = document.querySelector('.mp-canvas-scroll');
         const r = cv.getBoundingClientRect();
-        return `${r.left.toFixed(3)},${r.top.toFixed(3)},${r.width.toFixed(3)}`;
+        // `transform: none` yields the identity matrix, so a pre-flight read
+        // is a = 1 — exactly the state this loop must refuse to accept.
+        const have = fit ? new DOMMatrixReadOnly(getComputedStyle(fit).transform).a : 1;
+        return {
+          have,
+          // No `.mp-fit` wrapper means nothing scales this view, so the only
+          // correct settled scale is 1 — a real expectation, not a fallback.
+          want: fit && sc && fit.offsetWidth
+            ? Math.min(1, sc.clientWidth / fit.offsetWidth)
+            : 1,
+          ratio: cv.clientWidth ? r.width / cv.clientWidth : 1,
+        };
       });
-      if (cur === prev) break;
-      prev = cur;
+      if (!m) break;
+      haveScale = m.have;
+      wantScale = m.want;
+      ratioScale = m.ratio;
+      if (Math.abs(m.have - m.want) <= SCALE_EPS) { settled = true; break; }
       await p.waitForTimeout(60);
     }
+    /* THE SENTINEL PR-172 §5 FILED, AND WHY IT IS NOT OPTIONAL: a poll that
+     * gave up used to do so SILENTLY, and everything downstream then measured
+     * a moving element while reporting on a hit-test. A give-up is now a named
+     * red carrying the two numbers that indict it. */
+    const f6 = (v) => (v == null ? 'n/a' : v.toFixed(6));
+    ok(settled,
+      `scenario 7: the fit transform settled before the rect read — .mp-fit `
+      + `${f6(haveScale)} vs derived min(1, canvasW/naturalW) ${f6(wantScale)} `
+      + `(eps ${SCALE_EPS}; canvas ratio ${f6(ratioScale)}; a pre-flight give-up `
+      + `reads ~1.0, a mid-flight one ~0.913)`);
     const pt = await p.evaluate(() => {
       const cv = document.querySelector('[data-sed-core] canvas.mem-canvas');
       if (!cv) return null;

@@ -62,8 +62,13 @@ if (engine !== 'chromium') {
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 
-const REG = readFileSync(new URL('./src/views/index.tsx', import.meta.url), 'utf8');
+// p2·7b: the id literals moved from views/index.tsx to views/mempool-meta.ts.
+// Same instrument, new subject — see that file's header.
+const REG = readFileSync(new URL('./src/views/mempool-meta.ts', import.meta.url), 'utf8');
 const VIEWS = [...REG.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
+// NON-VACUITY FLOOR — every measurement below runs inside `for (const id of
+// VIEWS)`, so an empty parse would report a clean run having measured nothing.
+ok(VIEWS.length > 0, `registry parse is non-vacuous (${VIEWS.length} views from src/views/mempool-meta.ts)`);
 
 /* ── fixture: 240 deterministic mempool txs, counter-derived ─────────── */
 const H = 3_700_123;

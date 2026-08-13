@@ -28,24 +28,31 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **75** `verify-*.mjs` files (`app/` ×68, `app/scripts/` ×1, `api/` ×6) — **71 gates**
+- Verification: **77** `verify-*.mjs` files (`app/` ×70, `app/scripts/` ×1, `api/` ×6) — **73 gates**
   plus `verify-lib.mjs`, `verify-reporter.mjs` and `verify-fixtures.mjs`, three shared modules,
   and `scripts/verify-all.mjs`, an orchestrator. (This entry read "66 (app/ ×61, api/ ×5)" until
   v6.1.7 counted at full depth: an `app/verify-*.mjs` glob cannot see `app/scripts/verify-all.mjs`,
   so the old figure was one short and a shallow recount reports 69 where the answer is 70.
   It then read 73/69 until v6.1.9 recounted — v6.1.8's own additions were never folded in, so
-  the figure was two low before that release added `verify-cbpending.mjs`. Recount, do not
+  the figure was two low before that release added `verify-cbpending.mjs`. It then read 75/71
+  until p2·7b recounted: #174 added `verify-tracking.mjs` and `verify-memstats.mjs` and never
+  folded them in, so the same drift recurred one release later. Recount, do not
   increment: `find . -name 'verify-*.mjs' -not -path '*/node_modules/*'`.)
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **60 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **62 distinct files** on
   PRs to `main`, in two jobs: **12** individually-named offline gates, then `verify:static`
   (**21** gates, no browser), `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`) and
-  **three individually-named browser gates** v2·3b wired in — `verify:fit`,
-  `verify:mobile`, `verify:perf-runtime`, one step each with `if: always()`, never an `&&`
+  **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
+  `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
+  step each with `if: always()`, never an `&&`
   chain, so a red one cannot make the others unanswerable. (Recounted, not incremented:
-  57 → 60.) **`verify:pageshell` is the fourth and is npm-wired ONLY**, held back under
+  57 → 60 → 62. **Count from `run:` LINES ONLY, with YAML comments stripped, and allow the
+  `node ../api/verify-*.mjs` prefix** — p2·7b's first two attempts read 64 and 56: one
+  matched gate names inside CI comments, the other missed all six `api/` gates because its
+  regex assumed `node verify-`. Neither was trustworthy and their disagreement is what
+  caught them.) **`verify:pageshell` is the fourth and is npm-wired ONLY**, held back under
   v2·3b's own "never wire a red gate" rule: it is 369/0 locally and red on a CI runner with
   `/future@1600: .main no h-scroll … over 4`, a PRE-EXISTING defect measured by reverting
   to 5537976 and rebuilding (2px local, 4px runner, against the gate's TOL of 2).
@@ -353,8 +360,11 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs 57 of the 71 gates on every PR to `main`; 3 more are npm-wired by hand and 11
-  are wired to nothing.
+- CI runs **62 of the 73** gates on every PR to `main`; **4** more are npm-wired by hand
+  (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
+  are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
+  three numbers had drifted independently, and the 11 contradicted the Orphaned-gates entry
+  below, which said 7 and listed exactly the 7 a measurement finds.
 
 ## Known Issues / TODOs
 
@@ -498,6 +508,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 | Concern | Where it lives |
 |---|---|
 | Routes (canonical list) | `app/scripts/routes.mjs` → `prerender.mjs` + `gen-sitemap.mjs` |
+| Mempool views (canonical list) | `app/src/views/mempool-meta.ts` — pure data, imports NOTHING. `views/index.tsx` binds components via `Record<MempoolViewId, ViewComponent>` and derives `MEMPOOL_VIEWS`; `nav/ia.ts` derives its list AND its "· N views" count through `nav/registries.mjs`. **SIX gates parse this file's source text** with `/\{\s*id:\s*"([a-z]+)"/g` (memviews · tracking · memstats · memperf · memshell · nav) — keep each `id:` a plain double-quoted literal, and see the file header before moving it |
 | Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
 | Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
 | Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |

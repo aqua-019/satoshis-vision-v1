@@ -2551,8 +2551,11 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      Classic is pure DOM (no fixed-size canvas), and it is the DEFAULT mempool
      view, so "the list/table representation" is what a phone actually lands on.
      It was still pinned to 900px by :992/:1047 and panned horizontally, which
-     made the default view the least readable one. Views opt in via `reflow` on
-     MempoolViewMeta — Classic only. Terminal deliberately KEEPS the pin: its
+     made the default view the least readable one. Views opt in via `reflow` in
+     views/mempool-meta.ts — Classic and Orbital. (This read "Classic only" and
+     named MempoolViewMeta, on both counts stale: #174 registered Orbital as a
+     second member, and p2·7b moved the flag's declaration to the pure-data
+     module.) Terminal deliberately KEEPS the pin: its
      shell is `1fr 320px` with 8-column readouts, so unpinned it squeezes to an
      unreadable sliver instead of panning at desktop proportions.
      ORDER MATTERS: :991 and :1047 are equal-specificity !important rules, so
