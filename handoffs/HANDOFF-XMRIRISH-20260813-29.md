@@ -119,7 +119,7 @@ npm run verify:fit && npm run verify:mobile
 ## 7 · REPORT — filled on exit
 
 status: **done**
-pr: (opened as draft — link in LOG.md)
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/176 (draft)
 commits: 1 — `feat(mempool): Abyss, a dark-water particle field where fee is luminosity`
 deps added: none
 
