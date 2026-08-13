@@ -458,7 +458,48 @@ const BUDGETS = {
   // again, or retiring this line in favour of the two budgets that replaced its
   // job — is a decision about what the backstop is for, and belongs in its own
   // change. Recorded here so the next raise is not made without seeing it.
-  totalJsRaw: 1_021_000,
+  //
+  // ── RAISED 1,021,000 -> 1,052,000 in p2·9 (Pulse). Third consecutive raise,
+  //    and the reconciliation above is STILL OPEN — see the end of this note ──
+  //
+  // Measured, both endpoints BUILT from the same tree (fe4b999 -> this one,
+  // `git stash -u` between the two builds), and re-measured after the LAST src
+  // edit per the rule the paragraph above sets:
+  //
+  //     totalJsRaw   1,018,671  ->  1,049,839    +31,168
+  //
+  // Every byte attributed by diffing dist/assets/*.js file-by-file at both
+  // endpoints, PAIRED BY MULTIPLICITY. The collision this file records at :420
+  // is live in this delta rather than hypothetical: the stem `index` really
+  // does hold two chunks here, they moved by DIFFERENT amounts, and one is
+  // eager while the other is lazy — so a basename-keyed diff does not merely
+  // lose a row, it attributes a lazy delta to the eager budget or vice versa.
+  //
+  //     pulse          (new view chunk)      +30,952   lazy
+  //     index/mapDeps  (one more lazy entry)    +133   lazy
+  //     index          (the eager entry)         +83   eager
+  //     ---------------------------------------------
+  //                                          +31,168
+  //
+  // Budget 1,052,000, so the margin is 2,161 B.
+  //
+  // THE EAGER TERM IS STRUCTURAL, NOT DRIFT, and it is the same +80-ish p2·8
+  // recorded: p2·7b deliberately moved the view metadata into an eagerly-bundled
+  // module so `nav/ia.ts` could read it under bare Node, so every future view
+  // costs the eager bundle one row. 83 B rather than 80 because this view's
+  // `label`/`sub` strings are a few characters longer. `eagerJsRaw`'s own
+  // ceiling is UNTOUCHED at 280,000 (built 261,945, margin 18,055).
+  //
+  // THE RECONCILIATION IS STILL NOT DONE, AND THE GAP WIDENED. eagerJsRaw
+  // 280,000 + lazyJsRaw 790,000 = 1,070,000 against this line's 1,052,000, so
+  // the window in which a build is legal by both real budgets and illegal by
+  // this backstop has grown from 18,000 B to 18,000 B — unchanged in size, but
+  // now sitting 31,000 B further up the scale. Raised to built + margin anyway,
+  // per the same standing operator policy, and the decision recorded above
+  // remains exactly as open as it was. It is not this PR's to make: this PR
+  // adds a view, and re-founding a budget's identity while shipping a feature
+  // is how a backstop gets quietly redefined by whoever happened to cross it.
+  totalJsRaw: 1_052_000,
   // ── THE SPLIT (v2·3), and it applies THIS FILE'S OWN STATED PRINCIPLE ──
   //
   // Line :26 already rejects the shape `totalJsRaw` has: "a single grand total
@@ -580,7 +621,68 @@ const BUDGETS = {
   // bridge 28,318 · terminal 35,969 — recounted, not carried forward from the
   // seven-view figure of 24,343). Relay, Circuit and Pulse remain: 3 x 24,230
   // projects to ~829,499, which is 70,499 B over this ceiling.
-  lazyJsRaw: 759_000,
+  //
+  // ── RAISED 759,000 -> 790,000 in p2·9 (Pulse). THIRD of the four firings the
+  //    p2·7 note predicted, and the second consecutive clean two-term delta ──
+  //
+  // MEASURED, both endpoints, built-to-built (fe4b999 -> this tree, same
+  // checkout, `git stash -u` between the two builds so nothing else could
+  // differ), and RE-MEASURED after the last src edit rather than carried from
+  // the first build — see the near-miss note at the end of this block:
+  //
+  //     lazyJsRaw   756,809  ->  787,894    +31,085
+  //
+  // and every byte of that delta is attributed, PAIRED BY MULTIPLICITY rather
+  // than by stripped basename, because TWO chunks reduce to the stem `index`
+  // (see the note at :420) and a basename-keyed diff silently pairs the wrong
+  // two:
+  //
+  //     pulse          (new view chunk)      +30,952
+  //     index/mapDeps  (one more lazy entry)    +133
+  //     -------------------------------------------
+  //                                          +31,085
+  //
+  // The `index` stem's two chunks pair 1,926 -> 2,059 (+133, LAZY, the mapDeps
+  // table) and 98,947 -> 99,030 (+83, EAGER, the mempool-meta row). The eager
+  // term is the +83 that shows up in `eagerJsRaw` below and is NOT part of this
+  // delta; splitting them is exactly what the multiplicity pairing buys.
+  //
+  // Confirmed rather than assumed: all EIGHT pre-existing view chunks are
+  // BYTE-IDENTICAL across the two builds (classic 19,163 · reactor 19,204 ·
+  // constellation 21,187 · orbital 21,729 · abyss 23,443 · sediment 24,831 ·
+  // bridge 28,318 · terminal 35,969), as are mem-stats, mempool-shared and
+  // useMemCanvas. Pulse is a FOURTH consumer of the already-hoisted
+  // useMemCanvas chunk, so it costs nothing beyond its own — the p2·7 note
+  // predicted "the next three will not" and this is the second of the three.
+  //
+  // Budget 790,000, so the margin is 2,106 B — same sizing rule as the last
+  // two, deliberately under one view and over one shared-chunk re-split.
+  //
+  // IT WILL FIRE AGAIN, TWICE MORE, AND IT SHOULD. Mean view chunk across the
+  // NINE now shipped is 24,977 (classic 19,163 · reactor 19,204 ·
+  // constellation 21,187 · orbital 21,729 · abyss 23,443 · sediment 24,831 ·
+  // bridge 28,318 · pulse 30,952 · terminal 35,969 — RECOUNTED, not carried
+  // forward from the eight-view figure of 24,230; the mean rose because Pulse
+  // is the second-largest chunk in the set). Relay and Circuit remain: 2 x
+  // 24,977 projects to ~837,848, which is 47,848 B over this ceiling.
+  //
+  // WHAT REMAINS HONESTLY UNCERTAIN: Circuit is specified (spec:142-143) and
+  // will land. Relay is PARKED — its own brief records that the public
+  // restricted-RPC cascade exposes no peer topology, so it either ships as
+  // protocol illustration or stays behind a "Soon" treatment, and neither
+  // shape's chunk size is predictable from this mean. The projection above is
+  // therefore a floor for Circuit and a guess for Relay.
+  //
+  // THE NEAR-MISS THIS RAISE INHERITED, recorded because it is now a rule: p2·8
+  // measured its delta, wrote its ceilings from it, and then landed three more
+  // rounds of render-driven fixes — so both comments would have shipped
+  // describing a tree that no longer existed. This raise was re-measured after
+  // the LAST src edit (the roll-out guards in pulse-instruments.tsx), and the
+  // reds below were re-demonstrated on that same final tree rather than quoted
+  // from the first build. The first build here read 787,256; the final one
+  // reads 787,894, a 638 B drift that would have sat inside the margin and
+  // never shown itself.
+  lazyJsRaw: 790_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk

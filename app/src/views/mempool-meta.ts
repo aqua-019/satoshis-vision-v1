@@ -116,6 +116,18 @@ export const MEMPOOL_VIEW_META = [
   // it borders sediment and orbital, and the separation is an axis inversion
   // against each.
   { id: "abyss", label: "Abyss", sub: "dark water · fee luminosity", star: false, reflow: true },
+  // p2·9: the third net-new view, the third fluid one — same `fit: false` +
+  // `reflow: true` pair as Orbital and Abyss — and the first in the suite whose
+  // horizontal axis is WALL-CLOCK TIME. It is the only view that draws the FLOW
+  // (arrivals over time) rather than the STOCK (the pool's current contents),
+  // and the only one with a FUTURE: the segment right of `now`, ending at the
+  // instant the next block is due. Placed next to Orbital and Abyss because
+  // those three are the views that are neither scaled nor panned at any
+  // viewport, which is the property a reader of this list most needs to see
+  // grouped. See pulse.tsx's header for the identity — it borders orbital and
+  // abyss on the age axis and sediment on the fee axis, and the separation
+  // against each is recorded there.
+  { id: "pulse", label: "Pulse", sub: "time domain · arrival waveform", star: false, reflow: true },
   { id: "terminal", label: "Terminal", sub: "cli-first · monerod tail", star: false },
   { id: "classic", label: "Classic", sub: "explorer · tx + block inspectors", star: true, reflow: true },
 ] as const;

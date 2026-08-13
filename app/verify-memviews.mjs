@@ -331,6 +331,12 @@ const EXPECT_MEMSTAT = {
   // two cannot disagree — which is the only form of §3 compliance this key can
   // have in a view whose main axis is anchored on it.
   abyss:         ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  // p2·9 — Pulse takes MemViewShell's default strip (no `stats` prop), so all
+  // five. Two of them are not merely displayed above this view, they are its
+  // AXES: `oldest` chooses the window rung and `eta` is the future edge, both
+  // passed into usePulseField as parameters. A view that dropped either from
+  // the strip would be showing an axis whose number it had stopped publishing.
+  pulse:         ['mempool', 'bytes', 'oldest', 'median', 'eta'],
 };
 
 function advanceBlocks(n) { head += n; }
@@ -810,6 +816,26 @@ function advanceBlocks(n) { head += n; }
     // are identical to every text-reading gate. Scenario 3 is the only
     // reduced-motion pass and this section is not it.
     abyss: [],
+    // p2·9 — EMPTY, MEASURED, and the empty list is the claim. Orbital's and
+    // abyss's reasoning applied to a view with THREE axes instead of two.
+    //
+    // Pulse's hero is a <canvas>; its rate ladder, its fee ladder AND its time
+    // ladder are all DOM `<span class="pls-axis">`, as are the block-due marker
+    // and the tracked cursor's label. The cost those two entries name is larger
+    // here precisely because there is more text: canvas glyphs are invisible to
+    // this map, to this scenario's collision sweep and to verify-legibility, so
+    // authoring three ladders into the canvas would have moved roughly twenty
+    // labels into the blind spot of three gates whose nominal subject includes
+    // this view. What stays uncovered is the canvas GEOMETRY, which no gate in
+    // this repo reads and which scenario 9's density count also cannot see.
+    //
+    // Same reduced-motion caveat as both: PlsStatic renders a full SVG twin
+    // (one <rect> per arrival above the axis, one <circle> per arrival below
+    // it) but carries no <text> at all — its labels are the same DOM spans the
+    // canvas stage uses, so the two stages are identical to every text-reading
+    // gate. Scenario 3 is the only reduced-motion pass and this section is not
+    // it.
+    pulse: [],
   };
 
   const textCounts = {}; // {view: {width: count}}
@@ -1917,6 +1943,20 @@ function advanceBlocks(n) { head += n; }
     // it is 21% of slack rather than 12%, which is exactly the margin in which
     // a view can lose a whole panel and stay green.
     abyss: 174,          // 198 measured at 1440x900 on this fixture
+    // p2·9 — a NET-NEW view, so there is no "before" reading to sit beside this
+    // one either. Set the way every other row here was: measured, then cut ~12%
+    // (154 measured -> 135), which is the slack the existing rows carry.
+    //
+    // 154 sits between orbital (150) and abyss (198), and the ordering is
+    // explicable rather than coincidental: all three run six panels plus a
+    // 14-row console, and the spread is in how many derived rows each census
+    // carries. Abyss's depth census emits one row per gridline on its stage —
+    // as many as nine — where this view's cadence census is a FIXED six bands.
+    // Six is a composition decision, not an accident of the axis: a bin here is
+    // px-sized and there can be a hundred of them, so a row-per-bin census
+    // would be unreadable, and the bands are equal slices of the window
+    // instead.
+    pulse: 135,          // 154 measured at 1440x900 on this fixture
   };
 
   const dp = await b.newPage({ viewport: { width: 1440, height: 900 } });
