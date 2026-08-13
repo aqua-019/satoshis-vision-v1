@@ -396,7 +396,69 @@ const BUDGETS = {
   // two real budgets so it can only fire when something has gone wrong that
   // neither of them already named. Do not tune it; argue with eagerJsRaw and
   // lazyJsRaw, which are sized from measurement.
-  totalJsRaw: 1_000_000,
+  //
+  // ── RAISED 1,000,000 -> 1,021,000 in p2·8 (Abyss), and it FIRED EXACTLY AS
+  //    THE lazyJsRaw NOTE BELOW PREDICTED IT WOULD ──
+  //
+  // That note ends: "`totalJsRaw` is 995,164 against 1,000,000 on this build —
+  // 4,836 B of headroom, less than a fifth of one view. The next view crosses
+  // it." Abyss is the next view and it crossed it. Measured, both endpoints
+  // BUILT from the same tree (b8b6be6 -> this one):
+  //
+  //     totalJsRaw   995,015  ->  1,018,671    +23,656
+  //
+  // Every byte attributed, by diffing dist/assets/*.js file-by-file at both
+  // endpoints — and PAIRED BY MULTIPLICITY, not grouped by hash-stripped
+  // basename, because there are TWO `index-*.js` chunks and a map keyed on the
+  // stripped name silently keeps one of them. That is the exact aggregation-key
+  // collision this file already records at :420-425, and the first cut of this
+  // measurement walked into it again: it reported +23,195 and lost the +133
+  // row. The numbers below reconcile to the gate's own totals exactly.
+  //
+  //     abyss          (new view chunk)      +23,443   lazy
+  //     index/mapDeps  (one more lazy entry)    +133   lazy
+  //     index          (the eager entry)         +80   eager
+  //     ---------------------------------------------
+  //                                          +23,656
+  //
+  // Budget 1,021,000, so the margin is 2,329 B.
+  //
+  // THESE NUMBERS ARE THE SHIPPED BUILD'S, RE-MEASURED, and the first set was
+  // not. The delta was measured once, the two ceilings were written from it,
+  // and then three more rounds of render-driven fixes landed in the view
+  // (a legibility floor on the dot radius, four extra rungs on the age ladder,
+  // a per-frame marker write). Those moved the abyss chunk 23,115 -> 23,443 and
+  // the comment would have shipped describing a tree that no longer existed —
+  // a true measurement of the wrong subject, which is the failure family this
+  // repo keeps catching. Re-measure after the LAST src edit, not after the
+  // first.
+  //
+  // AND THE RAISE BREAKS THIS BUDGET'S OWN STATED CONSTRUCTION, which is worth
+  // reading before treating the number as settled. The paragraph above says
+  // this ceiling is "set to the sum of the two real budgets so it can only fire
+  // when something has gone wrong that neither of them already named". That was
+  // literally true when written — eagerJsRaw 280,000 + lazyJsRaw 720,000 =
+  // 1,000,000 exactly. p2·7 raised lazyJsRaw to 736,000 and left this line at
+  // 1,000,000, so the identity lapsed there, one release before it cost
+  // anything; the sum has been 1,016,000 since #174 while this line said
+  // 1,000,000.
+  //
+  // 1,021,000 does not restore it either: eagerJsRaw 280,000 + lazyJsRaw
+  // 759,000 = 1,039,000. So a build can now sit inside BOTH real budgets and
+  // still red here — eager 279,000 + lazy 758,000 = 1,037,000 is legal by every
+  // budget that is "sized from measurement" and illegal by this one. A backstop
+  // below the sum of the things it backs stops being a backstop and becomes the
+  // binding constraint, which is the grand-total failure line :26 rejects.
+  //
+  // RAISED TO built + margin ANYWAY, deliberately, because that is the
+  // operator's standing policy for this PR (decided for lazy at #174, extended
+  // to total on 2026-08-13) and a margin of 20,657 B would buy silence for
+  // most of the remaining roadmap. Reconciling the two — either restoring
+  // `totalJsRaw = eagerJsRaw + lazyJsRaw` as a DERIVED value that cannot lapse
+  // again, or retiring this line in favour of the two budgets that replaced its
+  // job — is a decision about what the backstop is for, and belongs in its own
+  // change. Recorded here so the next raise is not made without seeing it.
+  totalJsRaw: 1_021_000,
   // ── THE SPLIT (v2·3), and it applies THIS FILE'S OWN STATED PRINCIPLE ──
   //
   // Line :26 already rejects the shape `totalJsRaw` has: "a single grand total
@@ -480,7 +542,45 @@ const BUDGETS = {
   // separate subject (see its own note above, including why its docstring
   // already overstates what it detects), and it is recorded here so its firing
   // is expected rather than surprising.
-  lazyJsRaw: 736_000,
+  //
+  // ── RAISED 736,000 -> 759,000 in p2·8 (Abyss). SECOND of the four firings
+  //    the paragraph above said were coming, and the prediction one paragraph
+  //    further down came true in the same build: `totalJsRaw` crossed too ──
+  //
+  // MEASURED, both endpoints, built-to-built (b8b6be6 -> this tree, same
+  // checkout, `git stash` between the two builds so nothing else could differ):
+  //
+  //     lazyJsRaw   733,233  ->  756,809    +23,576
+  //
+  // and every byte of that delta is attributed:
+  //
+  //     abyss          (new view chunk)      +23,443
+  //     index/mapDeps  (one more lazy entry)    +133
+  //     -------------------------------------------
+  //                                          +23,576
+  //
+  // A CLEAN TWO-TERM DELTA, and the absence of a third term is the interesting
+  // part. p2·7's raise had FOUR terms because `useMemCanvas.ts` gained its
+  // second consumer and Rollup hoisted it into a shared chunk, moving sediment
+  // by −2,546 B in a PR that never touched sediment. That hoist has already
+  // happened, so Abyss — a third consumer of an ALREADY-SHARED module — costs
+  // nothing beyond its own chunk. Confirmed rather than assumed: all seven
+  // pre-existing view chunks are BYTE-IDENTICAL across the two builds
+  // (reactor 19,204 · classic 19,163 · constellation 21,187 · orbital 21,729 ·
+  // sediment 24,831 · bridge 28,318 · terminal 35,969), as are mem-stats,
+  // mempool-shared and useMemCanvas. The note above predicted exactly this
+  // ("the next three will not"), and this is the first of the three.
+  //
+  // Budget 759,000, so the margin is 2,191 B — same sizing rule as last time,
+  // deliberately under one view and over one shared-chunk re-split.
+  //
+  // IT WILL FIRE AGAIN, THREE MORE TIMES, AND IT SHOULD. Mean view chunk across
+  // the EIGHT now shipped is 24,230 (classic 19,163 · reactor 19,204 ·
+  // constellation 21,187 · orbital 21,729 · abyss 23,443 · sediment 24,831 ·
+  // bridge 28,318 · terminal 35,969 — recounted, not carried forward from the
+  // seven-view figure of 24,343). Relay, Circuit and Pulse remain: 3 x 24,230
+  // projects to ~829,499, which is 70,499 B over this ceiling.
+  lazyJsRaw: 759_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk

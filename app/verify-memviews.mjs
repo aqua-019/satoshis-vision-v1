@@ -320,6 +320,17 @@ const EXPECT_MEMSTAT = {
   // of them: `useOrbitalField` derives radius/bearing/cut and reads the strip's
   // figures nowhere.
   orbital:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  // p2·8 — Abyss takes the full strip (stats default, not `false` or
+  // `"compact"`), so it declares all five. MEASURED, not assumed: the run that
+  // added this row reported `emits bytes,eta,median,mempool,oldest`.
+  //
+  // It computes no rival version of any of them, and for `oldest` that is
+  // STRUCTURAL rather than a promise: the depth axis needs the pool's oldest
+  // age, and `useAbyssField(data, stats.oldestAgeSec)` takes it as a PARAMETER
+  // from the same `useMemStats` the strip renders. There is one number, so the
+  // two cannot disagree — which is the only form of §3 compliance this key can
+  // have in a view whose main axis is anchored on it.
+  abyss:         ['mempool', 'bytes', 'oldest', 'median', 'eta'],
 };
 
 function advanceBlocks(n) { head += n; }
@@ -783,6 +794,22 @@ function advanceBlocks(n) { head += n; }
     // future edit that gives the motion state an SVG chart must widen this
     // entry, and a `> 0` at any width reds it until someone does.
     orbital: [],
+    // p2·8 — EMPTY, MEASURED, and the empty list is the claim. Abyss's hero is
+    // a <canvas> and its depth-axis labels are DOM, for the reason orbital's
+    // entry above states: canvas glyphs are invisible to this map, to this
+    // scenario's collision sweep and to verify-legibility.
+    //
+    // Measured on the run that added this row: 0 text nodes at 390, 768, 1440
+    // and 2560 — so the four assertions this entry generates are four `=== 0`
+    // checks, not an exemption from four checks.
+    //
+    // Same reduced-motion caveat as orbital, and it bites harder here: AbyStatic
+    // renders a full SVG field (one <circle> per transaction) under
+    // prefers-reduced-motion, but it carries no <text> at all — its labels are
+    // the same DOM spans the canvas stage uses, deliberately, so the two stages
+    // are identical to every text-reading gate. Scenario 3 is the only
+    // reduced-motion pass and this section is not it.
+    abyss: [],
   };
 
   const textCounts = {}; // {view: {width: count}}
@@ -1871,6 +1898,25 @@ function advanceBlocks(n) { head += n; }
     // cut ~12% (150 measured -> 132), which is the slack the existing rows
     // carry. Stated beside the reading rather than derived silently.
     orbital: 132,        // 150 measured at 1440x900 on this fixture
+    // p2·8 — a NET-NEW view, so there is no "before" reading to sit beside this
+    // one either. Set the way every other row here was: measured, then cut ~12%
+    // (198 measured -> 174), which is the slack the existing rows carry.
+    //
+    // 198 is the SECOND densest of the eight, behind terminal (351) and now
+    // ahead of sediment (181) — six panels plus a 14-row console, against
+    // orbital's six panels and 14-row console at 150. The difference is where
+    // the extra readouts are: the depth census is a derived band table with one
+    // row per gridline on the stage, and the luminosity census carries a
+    // mean-bucket column.
+    //
+    // RE-MEASURED, NOT CARRIED: the first reading on this branch was 179 and
+    // this row was written as 157. Then the age ladder gained its fine rungs
+    // (5/10/15/45s, added because the low-pool state's axis had degenerated to
+    // two gridlines) and the depth census gained a row per rung plus its
+    // COUNTED parity line, taking the reading to 198. 157 would have passed —
+    // it is 21% of slack rather than 12%, which is exactly the margin in which
+    // a view can lose a whole panel and stay green.
+    abyss: 174,          // 198 measured at 1440x900 on this fixture
   };
 
   const dp = await b.newPage({ viewport: { width: 1440, height: 900 } });

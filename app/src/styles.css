@@ -1530,6 +1530,42 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 .orb-census  { display: grid; grid-template-columns: 72px minmax(70px,1fr) 62px 58px 54px; gap: var(--sp-2); align-items: center; }
 .orb-sectors { display: grid; grid-template-columns: repeat(12, minmax(0,1fr)); gap: 2px; align-items: end; height: 58px; }
 
+/* ── p2·8 — Abyss ────────────────────────────────────────────────────────
+   Same class-not-inline-style rule as the .orb-* set above, for the same
+   measured reason: the ≤768 reflow layer collapses every INLINE
+   `grid-template-columns` to `1fr`, which is right for a panel layout and
+   wrong for a table, and an item still carrying `grid-column: span 8` then
+   rebuilds the desktop grid out of implicit tracks. Owning the classes lets
+   the phone rule collapse the tracks AND the spans together. */
+.aby-grid12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-3); }
+/* The flexible tracks carry REAL floors, not `minmax(0, …)` — the opposite of
+   the composition grid, and the same distinction .orb-console records: the
+   floor normally arrives via `.table-scroll > * { min-width: max-content }`
+   (:2361), but `.mp-canvas-scroll * { min-width: revert !important }` on the
+   next line un-does it for anything in the mempool canvas subtree, so a table
+   here has to carry its own. A track floor is not subject to that revert, and
+   it is safe against §8 amplification because the view root is
+   `contain: inline-size` — the grid divides a DEFINITE width. */
+.aby-console { display: grid; grid-template-columns: 52px minmax(110px,1.3fr) 74px 58px 58px 60px 66px 46px; gap: var(--sp-2); align-items: center; }
+.aby-census  { display: grid; grid-template-columns: minmax(84px,1.1fr) minmax(48px,1fr) 54px 62px 46px; gap: var(--sp-2); align-items: center; }
+/* The luminosity ramp legend. `grid-auto-flow: column` rather than
+   `repeat(N, …)` deliberately: N is ABY_LUM_BUCKETS in
+   abyss-instruments.tsx, and a literal here would be a second declaration of
+   the bucket count with nothing to keep the two in step. The track count
+   follows the children instead. */
+.aby-ramp { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 2px; height: 12px; }
+/* Depth-axis labels and the tracked-particle marker. Both are absolutely
+   positioned over the canvas by the stage, so they contribute nothing to
+   `.mp-view`'s max-content; `translateY(-50%)` centres each on the gridline
+   whose depth it names. The marker takes an opaque background because it sits
+   on top of the water gradient and has to stay readable over it. */
+.aby-axis, .aby-track {
+  transform: translateY(-50%); pointer-events: none;
+  font-size: var(--fs-label); letter-spacing: 0.06em; white-space: nowrap;
+}
+.aby-axis  { color: var(--ink-40); }
+.aby-track { color: var(--y-50); background: var(--bg-0); padding: 0 var(--sp-1); }
+
 /* mempool block (shared) — flattened to solid amber tiles, no inner
    cream wash. The earlier `inset 0 0 24px rgba(255,255,255,0.18)` produced
    a cream wash when 10-14 of these tile horizontally on the home page. */
@@ -2630,6 +2666,15 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      Measured 590 -> 366, and `.table-scroll` then swipes as intended. */
   .mp-view--reflow .orb-grid12 { grid-template-columns: minmax(0, 1fr) !important; }
   .mp-view--reflow .orb-grid12 > * { grid-column: auto !important; }
+  /* p2·8 — Abyss's composition grid, both halves, same reasoning as orbital's
+     directly above: `minmax(0, 1fr)` and not a bare `1fr`, because a bare `1fr`
+     takes its floor from the item's min-content and the console's min-content
+     is wider than a 366px view — which clips rather than scrolls below 769px
+     (`html, body { overflow-x: clip }`). Bounding the TRACK is not subject to
+     `.mp-canvas-scroll * { min-width: revert }`; the Cell's own inline
+     `min-width: 0` is. `.table-scroll` then swipes the tables as intended. */
+  .mp-view--reflow .aby-grid12 { grid-template-columns: minmax(0, 1fr) !important; }
+  .mp-view--reflow .aby-grid12 > * { grid-column: auto !important; }
   /* the block ribbon already scrolls itself (classic.tsx ClassicRibbon overflowX:auto);
      re-assert the card width that :991's `revert` was preserving. */
   .mp-view--reflow .mp-block { min-width: 108px !important; flex: 0 0 auto; }
