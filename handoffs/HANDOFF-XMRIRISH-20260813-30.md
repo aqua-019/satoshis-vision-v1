@@ -90,8 +90,53 @@ npm run verify:mem:perf     # reported, bar untouched
 ```
 
 ## 7 · REPORT  — filled on exit
-status:
-pr:
-commits:
+status: done
+pr: (filled after creation)
+commits: 1121575 feat(mempool): Pulse — the mempool in the time domain
+
+**What shipped.** `pulse`, the ninth mempool view and the first whose horizontal axis is
+wall-clock time. Two traces hinged on one time axis: arrival RATE above (one equal
+segment per arrival, stacked per bin, so a column's height is exactly the count and
+bursts read as spikes), per-arrival fee AMPLITUDE below (log fee/byte, where the inferred
+next-block cut becomes a horizontal threshold the marks visibly cross). The window is a
+block-target ladder rung chosen from the strip's `oldest`; the future segment is one
+block target wide and the strip's `eta` marks the due instant inside it.
+
+**History source (the honesty decision).** The pool's own age distribution — NODE
+provenance, complete at t=0, SURVIVOR-BIASED. The caption says so: arrivals *still
+pending*, older end under-counts, fall-off is the mining process. The session-log
+alternative was rejected for being empty at load and for `useFeedEvents`'s per-tick cap.
+
+**Measurements.** Six fluid cells all equal (1440→1180/1180, 1280→1020/1020,
+390→366/366, both feed states). Density 154 → floor 135. `verify-tracking` 71→80,
+`verify-memstats` 38→39, ROUTES 45→46. Budgets: lazy 759,000→790,000 (built 787,894),
+total 1,021,000→1,052,000 (built 1,049,839), eager ceiling untouched (+83 structural).
+`verify:mem:perf` p5 24 fps — FAIL vs the 30 bar, reported, bar untouched.
+
+**Five defects found by LOOKING, none gate-visible**: the ETA-as-`tMax` bug that pinned
+the due marker and rescaled the domain every frame; the ¼-block bottom rung that left a
+3-tx pool 80% empty future; fee marks at u=0/u=1 hidden under gridlines; a rate ceiling
+of 1 and quartered tick ladders; and the two floating labels colliding. Plus one found by
+reasoning: `plsX` clamping painted rolled-out arrivals on the border at a false time.
 
 ## 8 · LOOP FEEDBACK
+
+- **The brief mis-stated `useFeedEvents`'s cap** (`:25 → 40 per tick`). Measured: `:26` is
+  `TX_EVENTS_PER_TICK = 8`; the `40` below it is the ring buffer's size. The number was
+  load-bearing — it was the argument against the session-log option.
+- **"one axis inversion against ALL EIGHT" was not achievable** and asserting it would
+  have been this repo's own narrower-subject failure. Pulse shares fee-on-vertical with
+  sediment; recorded as a named narrower separation instead.
+- **A subagent reported `DENSITY_FLOOR` did not exist** in `verify-memviews.mjs`. It does
+  (`:1889`), and a missing entry is a hard red (`:1982`), not a skip. Verified directly
+  before acting; the delegated inventory was right about seven maps and wrong about the
+  one that would have blocked the build.
+- **`| head -N` SIGPIPEs a probe that writes files.** A render probe was killed after its
+  first printed table and before any screenshot, so a set of fixes was judged against PNGs
+  five minutes stale and read as "the fix did not take". The numbers printed *before* the
+  kill were fresh, which is what made it convincing. New standing rule.
+- **DEFERRED — `totalJsRaw`'s lapsed backstop identity.** Raised per standing policy; the
+  reconciliation (derive it, or retire it) remains an open decision recorded in the file.
+- **DEFERRED — sub-12px HTML at 390.** Pulse reports 127 nodes; every view reports
+  59–189 from the same shared chrome (`span.pill live`, `div.lbl`, `div.sub`). Standing
+  CLAUDE.md item, not this view's.
