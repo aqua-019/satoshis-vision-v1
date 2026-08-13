@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260813-30
 branch: claude/pulse-mempool-time-view-3ydcwo
-status: in_progress       # open -> in_progress -> done | blocked
+status: done              # open -> in_progress -> done | blocked
 written_by: claude-code   # manual mode — prompt-driven, self-authored per CLAUDE.md
 owner: claude-code
 ---
@@ -62,19 +62,19 @@ OUT (non-goals):
 
 ## 5 · DONE-CRITERIA  — the gate reads ONLY this section
 
-- [ ] `npm run build` exits 0 (includes `tsc --noEmit`)
-- [ ] `npm run verify:static` exits 0 (21 gates)
-- [ ] `npm run verify:e2e` exits 0 (29 gates)
-- [ ] `node verify-tracking.mjs` exits 0 and prints `VERIFY_TRACKING_COMPLETE`
-- [ ] `node verify-memstats.mjs` exits 0
-- [ ] `npm run verify:fit` · `verify:mobile` · `verify:perf-runtime` exit 0
-- [ ] `node verify-bundle.mjs` exits 0 against the raised ceilings
-- [ ] `verify-memviews` scenario 9 prints a `pulse` row with `naturalW == canvasW`
-- [ ] both budget raises demonstrated RED at the old ceiling and GREEN at the new
+- [x] `npm run build` exits 0 (includes `tsc --noEmit`)
+- [x] `npm run verify:static` exits 0 (21 gates)
+- [x] `npm run verify:e2e` exits 0 (29 gates)
+- [x] `node verify-tracking.mjs` exits 0 and prints `VERIFY_TRACKING_COMPLETE`
+- [x] `node verify-memstats.mjs` exits 0
+- [x] `npm run verify:fit` · `verify:mobile` · `verify:perf-runtime` exit 0
+- [x] `node verify-bundle.mjs` exits 0 against the raised ceilings
+- [x] `verify-memviews` scenario 9 prints a `pulse` row with `naturalW == canvasW`
+- [x] both budget raises demonstrated RED at the old ceiling and GREEN at the new
       one, on the FINAL tree (after the last `src/` edit)
-- [ ] renders taken at 1440/1280/390 in both feed states, plus BURST, QUIET and
+- [x] renders taken at 1440/1280/390 in both feed states, plus BURST, QUIET and
       TRACKED, and inspected
-- [ ] Branch pushed · draft PR opened · `mergeable_state` reported
+- [x] Branch pushed · draft PR opened · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 ```
@@ -91,8 +91,9 @@ npm run verify:mem:perf     # reported, bar untouched
 
 ## 7 · REPORT  — filled on exit
 status: done
-pr: (filled after creation)
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/177
 commits: 1121575 feat(mempool): Pulse — the mempool in the time domain
+         a1bc708 docs(handoffs): §7 REPORT and §8 loop ledger
 
 **What shipped.** `pulse`, the ninth mempool view and the first whose horizontal axis is
 wall-clock time. Two traces hinged on one time axis: arrival RATE above (one equal
