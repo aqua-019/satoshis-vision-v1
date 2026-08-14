@@ -314,6 +314,7 @@ export function blitGlow(
  * It went to design/chart-kit.tsx FIRST, which was the obvious home and cost
  * 757 EAGER bytes on every route: primitives.tsx imports chart-kit and is in
  * the entry chunk. canvasColor.ts has only lazy importers. Re-exported here so
- * the ten views keep importing it from where they always have.
+ * the FIVE views that call it keep importing it from where they always have
+ * (abyss, circuit, orbital, pulse and sediment — the other five never did).
  */
 export { cssColor } from "@/design/canvasColor";

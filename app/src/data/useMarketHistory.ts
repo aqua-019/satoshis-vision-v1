@@ -435,18 +435,59 @@ async function fetchSamples(coin: string, vs: string, days: number): Promise<Pri
 }
 
 /**
- * Sum sample volumes into each candle's [t, nextT) bucket so volume bar i sits
- * exactly under candle i. Unchanged in intent from v6.0.5's `attachVolume`; it
- * takes `PriceSamples` now because the samples are a first-class base rather
- * than a by-product of the candle fetch.
+ * Sum sample volumes into each candle's own bucket, so volume bar i sits exactly
+ * under candle i and carries only what belongs to it.
+ *
+ * THE BUCKET'S END IS ITS OWN WIDTH, and getting that wrong shipped a wrong
+ * dollar figure. This closed the last bucket at `Infinity` and every other one
+ * at `candles[i + 1].t`, which is correct in precisely the case the code was
+ * written for — an unbrushed window, whose last candle really does run to the
+ * end of the data — and wrong in both directions otherwise:
+ *
+ *   · With a BRUSH, the drawn window's right edge sits left of the fetched
+ *     span's, so the final candle swept every sample between the two. Measured
+ *     on the shipped build at a zoomed 4h window: one bucket read **$9.7B**
+ *     where every true 4h bucket read $480M, and its VOL sub-bar went full
+ *     height and flattened the rest of the chart through `maxV`.
+ *   · Across a GAP, `candles[i + 1].t` is the next PRESENT bucket, which may be
+ *     several widths away, so the bucket before a hole absorbed the hole.
+ *
+ * `c.t` is always bucket-aligned (both `aggregateCandles` and
+ * `samplesToCandles` key on `floor(t / bucketMs) * bucketMs`), so `c.t +
+ * bucketMs` IS the bucket's end by construction — no neighbour lookup, no
+ * special case for the last element, and correct across gaps.
+ *
+ * NO WINDOW CLIP, AND THAT IS THE SECOND FIX. The first version of this also
+ * took the drawn window and dropped samples outside it, reasoning that the
+ * candles were clipped so the volume should be too. That is wrong on the path
+ * it governs, and wrong by up to 4x. `aggregateCandles` clips at CANDLE
+ * granularity — it keeps or drops a whole source candle on `c.t <= to` — and on
+ * the fine base the bucket IS one source candle (the 4h rung is the only one a
+ * <=30d window ever reaches), so the last drawn candle's OHLC describes a FULL
+ * four hours. Clipping its volume at a `to` that falls one hour into that
+ * bucket left the two halves of one bar describing different spans: a whole
+ * bucket's high/low above, a quarter of its volume below. A bucket reports its
+ * bucket.
+ *
+ * THE SOURCE MUST BE FINER THAN THE BUCKET, or there is no volume to report.
+ * `mid ?? deep` at the call site can hand DAILY samples to 4h buckets — reach
+ * it by visiting 1Y (which fetches the deep base) while the 90-day request is
+ * failing, which the hook's independent per-base catch blocks allow. Every
+ * sixth bucket would then show a whole DAY's volume and the other five zero:
+ * six wrong numbers to render one right one. A day cannot be apportioned across
+ * six four-hour buckets without inventing the split, so nothing is attached and
+ * the volume reads as an em-dash — real or absent, never synthesised.
  */
-export function attachVolume(candles: Candle[], s: PriceSamples | null): Candle[] {
-  if (!s || !s.v.length || !candles.length) return candles;
-  return candles.map((c, i) => {
-    const lo = c.t;
-    const hi = i + 1 < candles.length ? candles[i + 1].t : Infinity;
+export function attachVolume(candles: Candle[], s: PriceSamples | null, bucketMs: number): Candle[] {
+  if (!s || !s.v.length || !candles.length || !(bucketMs > 0)) return candles;
+  if (s.stepMs > bucketMs) return candles;
+  return candles.map((c) => {
+    const hi = c.t + bucketMs;
     let v = 0;
-    for (let k = 0; k < s.t.length; k++) if (s.t[k] >= lo && s.t[k] < hi) v += s.v[k] ?? 0;
+    for (let k = 0; k < s.t.length; k++) {
+      const t = s.t[k];
+      if (t >= c.t && t < hi) v += s.v[k] ?? 0;
+    }
     return { ...c, v };
   });
 }
@@ -683,7 +724,12 @@ const RETRY_MS = 45_000;
  *
  * That split is the whole request-budget story. Measured on the built app with
  * the upstream mocked at CoinGecko's own granularity, walking all four presets:
- * 21 history requests before, 12 after; four `/ohlc` calls before, one after.
+ * 21 history requests before, 10 after; four `/ohlc` calls before, one after.
+ * (This read "12 after" until p3·12b. 12 was the DESIGN-stage arithmetic, written
+ * before the dead `btcLine` fetch was found and deleted, and never re-measured
+ * against the gate that counts them — verify-markets-dom asserts <= 10 and
+ * reports 10. A number carried from a plan into a comment about a build is the
+ * same family as every other stale self-count in this repo's history.)
  */
 export function useMarketHistory(days: number, wantDeep = false): MarketHistory {
   const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days));

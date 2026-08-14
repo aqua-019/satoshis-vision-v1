@@ -293,9 +293,19 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
  * `stepMs` is the gap between neighbouring ticks. Under a day, tell the hour;
  * under ~25 days, name the day; under ~330, the month; beyond that, the year.
  */
-export function fmtAxisDate(t: number, stepMs: number): string {
+export function fmtAxisDate(t: number, stepMs: number, spanMs = 0): string {
   const d = new Date(t);
-  if (stepMs < DAY_MS) return String(d.getUTCHours()).padStart(2, "0") + ":00";
+  if (stepMs < DAY_MS) {
+    const hh = `${String(d.getUTCHours()).padStart(2, "0")}:00`;
+    /* A BARE HOUR IS ONLY UNAMBIGUOUS INSIDE ONE DAY, and the 7D preset is
+       outside it: eight ticks across seven days is a step of ~21 hours, under a
+       day, so the step rule alone emitted "05:00 · 02:00 · 23:00 …" — every
+       label true, every one on a different date, and the sequence apparently
+       running BACKWARDS because the hours wrap. Distinguishing adjacent ticks
+       is necessary and not sufficient; a tick also has to be locatable. So the
+       hour carries its day whenever the window spans more than one. */
+    return spanMs < DAY_MS ? hh : `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${hh}`;
+  }
   if (stepMs < 25 * DAY_MS) return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
   if (stepMs < 330 * DAY_MS) return `${MONTHS[d.getUTCMonth()]} '${String(d.getUTCFullYear()).slice(2)}`;
   return String(d.getUTCFullYear());
@@ -303,8 +313,8 @@ export function fmtAxisDate(t: number, stepMs: number): string {
 
 /** Widest label a given tick spacing can produce, in characters. Drives the
  *  tick count, so the step is sized from the text rather than guessed. */
-function axisLabelChars(stepMs: number): number {
-  if (stepMs < DAY_MS) return 5;          // "00:00"
+function axisLabelChars(stepMs: number, spanMs: number): number {
+  if (stepMs < DAY_MS) return spanMs < DAY_MS ? 5 : 12;  // "00:00" | "12 Mar 00:00"
   if (stepMs < 25 * DAY_MS) return 6;     // "12 Mar"
   if (stepMs < 330 * DAY_MS) return 7;    // "Mar '25"
   return 4;                                // "2025"
@@ -327,7 +337,7 @@ export function axisTicks(t0: number, t1: number, innerPx: number, fontPx: numbe
   // ever costs a tick, never a collision.
   let n = 6;
   for (let pass = 0; pass < 2; pass++) {
-    const need = estTextW(axisLabelChars(span / n), fontPx) + fontPx;
+    const need = estTextW(axisLabelChars(span / n, span), fontPx) + fontPx;
     n = Math.min(8, Math.max(2, Math.floor(innerPx / Math.max(1, need))));
   }
   return Array.from({ length: n + 1 }, (_, i) => t0 + (span * i) / n);

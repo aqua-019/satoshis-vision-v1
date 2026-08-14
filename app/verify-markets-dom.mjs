@@ -296,6 +296,44 @@ const strip = await page.evaluate(() => {
 });
 is(!strip || strip.right <= 390.5, `privacy header symbol strip stays inside the viewport${strip ? ` ("${strip.title}")` : ''}`);
 
+/* The axis at 390 is a DIFFERENT label form from 1440's and needs its own
+   check, because the tick count is derived from the width: fewer ticks fit, so
+   the STEP grows, so the ladder falls back from "24 Jul 05:00" to "24 Jul".
+   That fallback is correct — a day-apart tick does not need its hour — but it
+   means the desktop assertion covers a form this viewport never renders. The
+   invariant that holds at BOTH widths is the one worth asserting here: every
+   tick label distinguishes itself from its neighbours. It is what the 90D
+   "May '26 May '26 May '26" defect violated, and a narrow viewport is where a
+   coarser label form is most likely to collapse two ticks into one string. */
+const ax390 = await page.evaluate(() => [...document.querySelectorAll('.cc-xtick')].map((e) => e.textContent || ''));
+is(ax390.length >= 3, `390 axis draws at least 3 date ticks (${ax390.length})`);
+is(ax390.length > 0 && new Set(ax390).size === ax390.length,
+  `390 axis labels are all distinct (${ax390.length} ticks, ${new Set(ax390).size} distinct: ${JSON.stringify(ax390.slice(0, 4))})`);
+
+/* SELF-CHECK — this pair is the one place in the file with no natural failing
+   state to point at. Both the pre-fix and post-fix trees render distinct labels
+   HERE (the 390 fallback to day-form was already distinct); the defect the
+   predicate exists for lives at other widths and windows. An assertion whose
+   red has never been seen is indistinguishable from one that cannot go red, so
+   the red is manufactured: duplicate one tick's text into its neighbour and
+   prove the SAME predicate rejects it. Mutation is applied and reverted in the
+   DOM only — nothing is rebuilt, and React will overwrite it on the next
+   render regardless. */
+const dupCheck = await page.evaluate(() => {
+  const ticks = [...document.querySelectorAll('.cc-xtick')];
+  if (ticks.length < 2) return null;
+  const saved = ticks[1].textContent;
+  ticks[1].textContent = ticks[0].textContent;
+  const mutated = ticks.map((e) => e.textContent || '');
+  ticks[1].textContent = saved;
+  const restored = [...document.querySelectorAll('.cc-xtick')].map((e) => e.textContent || '');
+  return { mutated, restored };
+});
+is(dupCheck != null && new Set(dupCheck.mutated).size !== dupCheck.mutated.length,
+  'SELF-CHECK: a duplicated tick label IS caught by the distinctness predicate — it is falsifiable');
+is(dupCheck != null && new Set(dupCheck.restored).size === dupCheck.restored.length,
+  'SELF-CHECK: the mutation was reverted — the DOM is back to distinct labels');
+
 /* ── desktop: the v6.0.5 chart swap ──────────────────────────────────── */
 console.log('\nverify-markets-dom — 1440px layout');
 {
@@ -478,8 +516,35 @@ console.log('\nverify-markets-dom — canvas hero');
       rows: table?.querySelectorAll('tbody tr').length ?? -1,
       caption: table?.querySelector('caption')?.textContent ?? '',
       xticks: [...document.querySelectorAll('.cc-xtick')].map((e) => e.textContent || ''),
+      /* The Volume column, as RENDERED. Read as text and parsed back by the
+         gate rather than lifted off a data attribute, because the defect this
+         exists to catch reached the reader through exactly these cells. */
+      vols: [...document.querySelectorAll('[data-candle-table] tbody tr')]
+        .map((tr) => (tr.lastElementChild?.textContent || '').trim()),
+      lastBucket: (() => {
+        const tr = [...document.querySelectorAll('[data-candle-table] tbody tr')].pop();
+        return tr ? (tr.firstElementChild?.textContent || '').trim() : '';
+      })(),
     };
   });
+
+  /* The fixture emits a CONSTANT hourly volume, which is what makes a volume
+     assertion possible at all: every bucket of the same width must carry the
+     same number, so any cell that does not is carrying volume that belongs to
+     some other bucket. Declared here, beside the assertion, rather than left
+     implicit in `cgChart` fifty lines up. */
+  const FIXTURE_HOURLY_VOL = 1.2e8;
+  const parseUsd = (t) => {
+    const m = /^\$([\d.]+)([BMk]?)$/.exec(t);
+    if (!m) return null;
+    return Number(m[1]) * ({ B: 1e9, M: 1e6, k: 1e3 }[m[2]] ?? 1);
+  };
+  /** Hours in the bucket the chart says it drew ("6h · hourly samples" -> 6). */
+  const granHours = (gran) => {
+    const m = /^(\d+)([hdw])/.exec(gran);
+    if (!m) return null;
+    return Number(m[1]) * ({ h: 1, d: 24, w: 168 }[m[2]]);
+  };
   const DENSITY_FLOOR = { '7D': 40, '30D': 170, '90D': 300, '1Y': 110 };
   for (const r of ['7D', '30D', '90D', '1Y']) {
     await h.getByRole('button', { name: r, exact: true }).click();
@@ -518,6 +583,17 @@ console.log('\nverify-markets-dom — canvas hero');
   const t1y = await axisAt('1Y');
   is(t1y.length > 2 && t1y.every((t) => /^[A-Z][a-z]{2} '\d{2}$/.test(t)),
     `1Y axis reads "Mar '25" (${JSON.stringify(t1y.slice(0, 3))})`);
+  /* 7D is the boundary case and it is the one the step rule got wrong on its
+     own: eight ticks across seven days is a ~21h step, UNDER a day, so a bare
+     hour label was emitted for ticks that sit on seven different dates —
+     "05:00 · 02:00 · 23:00 …", apparently counting backwards. A sub-daily label
+     carries its day whenever the window spans more than one, so every tick here
+     must be locatable, not merely distinct. */
+  const t7d = await axisAt('7D');
+  is(t7d.length > 2 && t7d.every((t) => /^\d{1,2} [A-Z][a-z]{2} \d{2}:00$/.test(t)),
+    `7D axis carries the day with the hour (${JSON.stringify(t7d.slice(0, 3))})`);
+  is(new Set(t7d).size === t7d.length,
+    `7D axis labels are all distinct (${t7d.length} ticks, ${new Set(t7d).size} distinct)`);
 
   /* Brush: zoom in with the keyboard until the window is under six days, and
      the axis must switch to hours. Also proves the window element takes focus
@@ -537,6 +613,10 @@ console.log('\nverify-markets-dom — canvas hero');
                      'a brush zoom under six days switches the axis to hours',
                      'the table follows the brush, not the preset',
                      'zooming the brush issues no history request',
+                     'volume precondition: a bucket width and parsed volume cells',
+                     'no volume cell exceeds its own bucket',
+                     "the LAST drawn bucket does not absorb the span's tail",
+                     'on the fine base EVERY drawn bucket carries exactly one bucket of volume',
                      'Home resets the brush to the full fetched span']) {
       bad(`${m} — NO [data-brush-window] in the DOM`);
     }
@@ -553,6 +633,80 @@ console.log('\nverify-markets-dom — canvas hero');
     `the table follows the brush, not the preset (${zoomed.count} bars, ${zoomed.rows} rows)`);
   const cgAfter = await h.evaluate(() => performance.getEntriesByType('resource').filter((e) => e.name.includes('/api/coingecko')).length);
   is(cgAfter === cgBefore, `zooming the brush issues no history request (${cgBefore} → ${cgAfter})`);
+
+  /* ── VOLUME IS BOUNDED BY THE BUCKET IT SITS IN (p3·12b) ──────────
+     THE DEFECT THIS CATCHES, and why no existing assertion could.
+     `attachVolume` closed its LAST bucket at `Infinity`. That is harmless while
+     the drawn window ends where the fetched span ends — every unbrushed view —
+     and wrong the moment a brush pulls the right edge inward, because the final
+     candle then sweeps every sample between it and the end of the span. Measured
+     on the pre-fix build in exactly the state below: one cell read **$40.1B**
+     against $480.0M for every true 4h bucket, ~334 hourly samples' worth, and
+     its VOL sub-bar went full height and flattened every other bar through
+     `maxV`.
+     Nothing reddened. Twenty-odd assertions on this page count bars, rows,
+     labels, requests and pixels; not one of them reads a NUMBER the chart
+     prints. A wrong dollar figure on a live surface is the first rule in this
+     repo, so the gate learns to read one.
+     The check is a bound, not an equality: an edge bucket clipped by the window
+     legitimately holds LESS than a full bucket's volume. Only more is a lie. */
+  await h.keyboard.press('ArrowLeft');
+  await h.waitForTimeout(900);
+  const panned = await readRange();
+  const hrs = granHours(panned.gran);
+  const cells = panned.vols.map(parseUsd).filter((v) => v != null);
+  const ceiling = hrs != null ? hrs * FIXTURE_HOURLY_VOL * 1.05 : null;
+  const worst = cells.length ? Math.max(...cells) : null;
+  is(hrs != null && cells.length > 0,
+    `volume precondition: a bucket width and ${cells.length} parsed volume cells (gran "${panned.gran}")`);
+  is(ceiling != null && worst != null && worst <= ceiling,
+    `no volume cell exceeds its own bucket: worst $${((worst ?? 0) / 1e6).toFixed(1)}M ≤ ` +
+    `$${((ceiling ?? 0) / 1e6).toFixed(1)}M for a ${panned.gran} bucket ` +
+    `(last row ${panned.lastBucket || '—'})`);
+  /* The last row is where the unbounded bucket lived, so it is named
+     separately — a max over the column would also pass if the column were
+     empty, and it would not say WHICH cell lied. */
+  const lastCell = cells.length ? cells[cells.length - 1] : null;
+  is(lastCell != null && ceiling != null && lastCell <= ceiling,
+    `the LAST drawn bucket does not absorb the span's tail: $${((lastCell ?? 0) / 1e6).toFixed(1)}M ` +
+    `≤ $${((ceiling ?? 0) / 1e6).toFixed(1)}M`);
+
+  /* AND A BOUND FROM BELOW, because the first fix for the above was wrong in
+     the other direction. Clipping volume to the drawn window looked symmetric
+     and is not: `aggregateCandles` clips at CANDLE granularity (it keeps or
+     drops a whole source candle), so on the fine base — where the 4h rung is
+     the only one a <=30d window ever reaches — the last drawn candle's OHLC
+     covers a FULL four hours while its clipped volume covered whatever fraction
+     of them fell left of `win.to`. Up to 4x under-reported, on the same cell,
+     and the upper bound above is blind to it by construction.
+
+     EVERY cell, not the max and not the median. The fixture's volumes are
+     constant, so on the fine base every drawn bucket must carry exactly one
+     bucket's worth — the window here is interior (zoomed then panned), so not
+     even the series-final partial bucket is in view. A max catches only the
+     runaway; a median survives one wrong cell; equality on all of them catches
+     both directions in one predicate.
+
+     MEASURED LIMIT OF THE BREAK TEST, stated because it is the honest part:
+     reintroducing the clip reds this only when `win.to` falls in the first
+     three quarters of its bucket. The gate drives a CONTINUOUS control to an
+     arbitrary position, so one phase in four is a no-op for that mutation —
+     and the first break-test run landed on it and showed green. The window is
+     stepped once more below for that reason, and the phase-dependence is a
+     property of the mutation, not of the assertion: the assertion is universal
+     over buckets. */
+  await h.keyboard.press('ArrowLeft');
+  await h.waitForTimeout(700);
+  const panned2 = await readRange();
+  const cells2 = panned2.vols.map(parseUsd).filter((v) => v != null);
+  const hrs2 = granHours(panned2.gran);
+  const full = hrs2 != null ? hrs2 * FIXTURE_HOURLY_VOL : null;
+  const offenders = full == null ? [] : cells2.filter((v) => Math.abs(v - full) > full * 0.01);
+  is(full != null && cells2.length > 0 && offenders.length === 0,
+    `on the fine base EVERY drawn bucket carries exactly one bucket of volume ` +
+    `($${((full ?? 0) / 1e6).toFixed(0)}M x ${cells2.length}); ${offenders.length} offender(s)` +
+    (offenders.length ? `: ${JSON.stringify(offenders.map((v) => (v / 1e6).toFixed(1) + 'M'))}` : '') +
+    ` — cells ${JSON.stringify(cells2.map((v) => (v / 1e6).toFixed(0) + 'M'))}`);
 
   /* Home resets to the whole fetched span — the keyboard twin of double-click. */
   await h.keyboard.press('Home');

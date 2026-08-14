@@ -4,7 +4,7 @@
  *
  * WHY CANVAS. The SVG CandleChart this replaces emitted three nodes per candle
  * (wick line, body rect, volume rect). At the counts the granularity ladder now
- * reaches — 360 bars at 90D, and any brush window in between — that is over a
+ * reaches — 361 bars at 90D, and any brush window in between — that is over a
  * thousand nodes rebuilt on every window change, and the brush changes the
  * window on every pointermove. Canvas costs a fixed number of draw calls
  * instead, so dragging is O(1) in DOM work.
@@ -476,8 +476,15 @@ export function CandleCanvasImpl({
   const withVol = React.useMemo(() => {
     if (!series) return null;
     if (!series.derived) {
+      // Prefer the FINER source. `mid ?? deep` alone would hand daily samples
+      // to 4h buckets whenever the 90-day fetch is the one that failed;
+      // attachVolume refuses that outright, so preferring mid here is about
+      // getting volume AT ALL in the common case, not about correctness.
       const src = mid ?? deep;
-      return { ...series, candles: attachVolume(series.candles, src) };
+      // No window is passed: the candles are clipped at CANDLE granularity, so
+      // clipping the volume at SAMPLE granularity made one bar's two halves
+      // describe different spans. See attachVolume's header.
+      return { ...series, candles: attachVolume(series.candles, src, series.bucketMs) };
     }
     return series;
   }, [series, mid, deep]);
@@ -590,7 +597,7 @@ export function CandleCanvasImpl({
                     top: geom.volTop + geom.volH + 4,
                     transform: i === 0 ? "none" : i === dateTicks.length - 1 ? "translateX(-100%)" : "translateX(-50%)",
                   }}
-                >{fmtAxisDate(t, dateStep)}</span>
+                >{fmtAxisDate(t, dateStep, win.to - win.from)}</span>
               ))}
               <span className="cc-vol-label" style={{ top: geom.volTop, left: yInside ? geom.padL + 3 : 0, width: yInside ? undefined : geom.padL - 8, textAlign: yInside ? "left" : "right" }}>VOL</span>
               {last ? (

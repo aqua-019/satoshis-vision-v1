@@ -116,7 +116,7 @@ notes for ARCHITECTURE.md patch:
 
 open questions:
 - The canvasColor leaf's "only lazy modules import me" invariant has NO gate.
-  `eagerJsRaw` has 17,470 B of headroom, which would absorb a violation
+  `eagerJsRaw` has 17,148 B of headroom, which would absorb a violation
   silently. The strong form is a verify-bundle assertion that the leaf's bytes
   land in no eager chunk; not built.
 - Volume sub-bars at 1Y come from DAILY samples bucketed to 3d, so they are
@@ -127,6 +127,14 @@ open questions:
   decision taken.
 
 ## 8 · LOOP FEEDBACK
+- 2026-08-14 · p3·12b · the one defect class no assertion on this page covered: not
+  one of ~20 assertions read a NUMBER the chart prints. Counting bars, rows, labels,
+  requests and pixels is not the same as reading a figure a user would act on.
+- 2026-08-14 · p3·12b · a break test that goes GREEN is a finding about the
+  ASSERTION, not a pass for the code. Driving a continuous control (a brush) leaves
+  phases where a given mutation is invisible.
+- 2026-08-14 · p3·12b · "gzip -9" is three different compressors. Any byte figure
+  must be taken with the instrument that will judge it.
 - 2026-08-14 · p3·12 · INFERRED, unprompted by the brief: which range is
   actually sparse (90D, not 30D); that CoinGecko cannot serve 4h candles beyond
   30 days at any tier below Enterprise; that `btcLine` was dead; that the

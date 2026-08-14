@@ -10,7 +10,7 @@ import * as mh from './src/data/useMarketHistory.ts';
 
 const {
   cacheKey, readCache, writeCache, groupStatus, LS_PREFIX, LS_MAX_AGE_MS,
-  seriesColor, PEER_PALETTE, MAJOR_PALETTE, XMR_COLOR, pruneLegacyCache,
+  seriesColor, PEER_PALETTE, MAJOR_PALETTE, XMR_COLOR, pruneLegacyCache, attachVolume,
 } = mh;
 
 let fail = false;
@@ -99,6 +99,53 @@ if (typeof pruneLegacyCache === 'function') {
   ok(pruneLegacyCache(null).length === 0, 'prune on a null store (private mode) is a no-op');
   const again = pruneLegacyCache(shimStore, 30);
   ok(again.length === 0, `prune is idempotent — a second pass removes nothing (${again.length})`);
+}
+
+/* 5c) p3·12b · attachVolume, the three properties that shipped a wrong dollar
+   figure between them. Pure, so it is exercised here rather than only through a
+   browser: the DOM gate proves the number on screen, this proves the function.
+
+   Samples: hourly, constant 100 per sample, spanning 24 h. */
+if (typeof attachVolume === 'function') {
+  const H = 3_600_000, D = 86_400_000;
+  const hourly = { t: [], p: [], v: [], stepMs: H };
+  for (let i = 0; i < 24; i++) { hourly.t.push(i * H); hourly.p.push(1); hourly.v.push(100); }
+  const cand = (ts) => ts.map((t) => ({ t, o: 1, h: 1, l: 1, c: 1, v: 0 }));
+
+  /* THE ORIGINAL DEFECT. Three 4h buckets covering 0-12h, against 24h of
+     samples: the old code closed the last bucket at Infinity, so it took the
+     other twelve hours with it. 400, not 1,300. */
+  const three = attachVolume(cand([0, 4 * H, 8 * H]), hourly, 4 * H);
+  ok(JSON.stringify(three.map((c) => c.v)) === JSON.stringify([400, 400, 400]),
+    `the last bucket takes 4 samples, not the rest of the series (${JSON.stringify(three.map((c) => c.v))})`);
+
+  /* A GAP is not absorbed. Buckets at 0 and 8h with 4h missing: the 4-7h
+     samples belong to a bucket nobody drew, so they belong to nobody. The old
+     `candles[i+1].t` bound gave the first bucket 800. */
+  const gapped = attachVolume(cand([0, 8 * H]), hourly, 4 * H);
+  ok(JSON.stringify(gapped.map((c) => c.v)) === JSON.stringify([400, 400]),
+    `a bucket before a gap does not absorb the gap (${JSON.stringify(gapped.map((c) => c.v))})`);
+
+  /* A SOURCE COARSER THAN THE BUCKET IS REFUSED. Daily samples cannot be
+     apportioned across 4h buckets without inventing the split, so no volume is
+     attached at all and the UI renders an em-dash. Reachable whenever the
+     90-day fetch fails and the 365-day one succeeds. */
+  const daily = { t: [0, D], p: [1, 1], v: [2400, 2400], stepMs: D };
+  const refused = attachVolume(cand([0, 4 * H, 8 * H]), daily, 4 * H);
+  ok(refused.every((c) => c.v === 0),
+    `daily samples are refused for 4h buckets — em-dash, never a day in a 4h bar (${JSON.stringify(refused.map((c) => c.v))})`);
+  /* ...and the same samples ARE accepted once the bucket is wide enough. This
+     is the pair's vacuity guard: without it, a function that always refused
+     would pass the check above. */
+  const accepted = attachVolume(cand([0, D]), daily, D);
+  ok(JSON.stringify(accepted.map((c) => c.v)) === JSON.stringify([2400, 2400]),
+    `the same daily samples ARE attached at a 1d bucket (${JSON.stringify(accepted.map((c) => c.v))})`);
+
+  /* No source, no bucket, empty series — all no-ops rather than throws. */
+  ok(attachVolume(cand([0]), null, 4 * H)[0].v === 0, 'a null sample base attaches nothing');
+  ok(attachVolume(cand([0]), hourly, 0)[0].v === 0, 'a zero bucket width attaches nothing');
+} else {
+  ok(false, 'useMarketHistory exports attachVolume (absent = the volume rule is unverifiable here)');
 }
 
 // 6) groupStatus: live wins, then stale, then loading.

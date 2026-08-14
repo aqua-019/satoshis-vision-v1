@@ -522,7 +522,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 | Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
 | Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
 | Markets hero (canvas) | `app/src/pages/markets/CandleCanvas.tsx` (canvas geometry + a DOM label layer + the brush + the D0847 table) over `markets/candle-data.ts` (the three bases, the bucket ladder, the date-axis format). Canvas draws NO text — every glyph is DOM, because canvas glyphs are invisible to `verify-legibility`, to collision sweeps, to find-in-page and to a screen reader |
-| CSS custom property → canvas colour | `app/src/design/canvasColor.ts` — a leaf whose importers must ALL be lazy. It was homed in `chart-kit.tsx` first and cost **757 eager bytes**: `design/primitives.tsx` imports chart-kit and the entry chunk imports primitives. `useMemCanvas.ts` re-exports it so the ten mempool views keep their import path. The invariant has no gate; `eagerJsRaw`'s 17 kB of headroom would swallow a violation silently |
+| CSS custom property → canvas colour | `app/src/design/canvasColor.ts` — a leaf whose importers must ALL be lazy. It was homed in `chart-kit.tsx` first and cost **757 eager bytes**: `design/primitives.tsx` imports chart-kit and the entry chunk imports primitives. `useMemCanvas.ts` re-exports it so the FIVE views that call it (abyss · circuit · orbital · pulse · sediment) keep their import path — the other five mempool views never imported it. Seven lazy chunks import the leaf, which is what makes Rollup mint it a chunk. The invariant has no gate; `eagerJsRaw`'s 17,148 B of headroom would swallow a violation silently |
 | Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
@@ -532,6 +532,93 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-14**: p3·12b "ONE CORRECTION COMMIT" (app/) — a wrong dollar figure, an
+  axis that could not say which day, and eleven stale self-counts.
+  **THE DEFECT: A BRUSHED WINDOW'S LAST CANDLE ABSORBED THE VOLUME OF EVERYTHING TO
+  ITS RIGHT.** `attachVolume` closed its final bucket at `Infinity` — correct for
+  the only case it was written for, an unbrushed view whose last candle really does
+  run to the end of the data, and wrong the moment a brush pulls the right edge
+  inward. Measured on the shipped build at a zoomed 4h window: **$9.7B in one
+  bucket** where every true 4h bucket read $480M, in the table, in the hover tip,
+  and as a full-height VOL bar that flattened every other bar through `maxV`.
+  **No gate could have caught it: twenty-odd assertions on that page count bars,
+  rows, labels, requests and pixels, and not one of them read a NUMBER the chart
+  prints.** A live surface printing a fabricated-looking figure is the first rule
+  in this repo, so the gate learned to read one.
+  **THE FIRST FIX WAS WRONG IN THE OTHER DIRECTION, and an adversarial pass caught
+  it before it shipped.** Bounding the bucket by its own width is right; ALSO
+  clipping the samples to the drawn window looked symmetric and is not.
+  `aggregateCandles` clips at CANDLE granularity — it keeps or drops a whole source
+  candle on `c.t <= to` — and on the fine base the 4h rung is the only one a ≤30d
+  window ever reaches, so the last drawn candle's OHLC describes a FULL four hours.
+  Clipping its volume at a `to` one hour into that bucket left one bar's two halves
+  describing different spans: whole-bucket high/low above, a quarter of its volume
+  below. **Up to 4× under-reported, on the same cell the upper bound was watching.**
+  **A THIRD DEFECT FROM THE SAME PASS, never rendered but reachable**: `mid ?? deep`
+  can hand DAILY samples to 4h buckets — visit 1Y so the deep base is fetched, have
+  the 90-day request fail (the hook's per-base catch blocks are independent), and
+  every sixth bucket shows a whole DAY's volume while five show zero. A day cannot
+  be split across six four-hour buckets without inventing the split, so
+  `attachVolume` now refuses a source coarser than its bucket and the volume reads
+  as an em-dash. Real or absent, never synthesised.
+  **THE BREAK TEST FAILED TO GO RED FIRST TIME, AND THAT WAS THE FINDING.**
+  Reintroducing the window clip left the gate GREEN: `win.to` had landed in the last
+  quarter of its bucket, the one phase in four where the clip is a no-op. The
+  assertion — a max, then a median — was not wrong so much as unproven, and a
+  max-plus-median cannot see a single under-reported cell anyway. Replaced with
+  **equality on EVERY cell** (the fixture's volumes are constant, so on the fine
+  base every drawn bucket must carry exactly one bucket's worth), which reds under
+  the mutation at `["480M","480M","480M","480M","120M"]`. **A gate driving a
+  CONTINUOUS control has phases where a given mutation is invisible; the assertion
+  must be universal over buckets even when the state that exercises it is not.**
+  Restored per the standing protocol — revert, `grep -rn MUTATION` empty, `git
+  status` clean, rebuild, re-run — and the marker was chosen so the grep could not
+  match the prose describing the break test.
+  **THE AXIS COULD NOT SAY WHICH DAY.** At 7D the tick step is ~21h, under a day, so
+  the step rule emitted `05:00 · 02:00 · 23:00 …` — every label true, every tick on
+  a different date, the sequence apparently running backwards, and two adjacent
+  labels actually IDENTICAL (9 ticks, 8 distinct). p3·12 fixed "distinguish your
+  neighbour" and this is its other half: **a tick must also be locatable.** A
+  sub-daily label carries its day whenever the window spans more than one. At 390
+  the two-pass tick solver converges to fewer, wider-spaced ticks and falls back to
+  bare days, which is correct and is why that width needed its own assertion.
+  **ELEVEN STALE SELF-COUNTS, and the instrument was wrong as often as the number.**
+  Six were p3·12's own (eager +504/262,530/17,470 → **+826/262,852/17,148**; a lazy
+  margin that was both stale AND misarithmetic — "1,688" where 831,000 − 828,312 is
+  2,688; "six view chunks ±38 ea" where FIVE moved by 38, being exactly the five
+  `cssColor` importers, and four others moved by amounts the row never mentioned;
+  MarketsPage +15,813 → +15,926; the route row; `useMarketHistory`'s "21 → 12" where
+  the gate measures 10). Five were PRE-EXISTING and two of those are **printed on
+  every run**: the CSS source size (203,896 → **254,399**), `/mempool`'s "six view
+  engines" (→ **ten**, stale since p2·7), and a `maxChunkRaw` comment naming
+  SimulatePage at 180,572 as the largest chunk when it is 6,513 and the vendor chunk
+  is 162,915.
+  **"gzip -9" NAMES THREE DIFFERENT COMPRESSORS AND THEY DISAGREE.** On the entry
+  chunk: `node:zlib` gzipSync({level:9}) **35,016** · the gzip(1) CLI **34,969** ·
+  python3 `gzip.compress(…, 9)` **34,924**. `verify-bundle` judges with node:zlib, so
+  every gzip figure p3·12 took from the CLI was a true measurement of a quantity the
+  gate never computes — it put a ~100 B error inside a 432 B margin, and produced a
+  phantom "≤50 B unattributed, which is vendor/index[0] rounding" on the route
+  attribution. Measured with the right compressor over the closure the gate actually
+  sums (read out of `.perf/bundle-graph.json`, 10 chunks, JS only), the route
+  attributes to **residual ZERO**: MarketsPage +5,880 · charts −1,312 · canvasColor
+  +278 · entry +376 · PanelBoundary +1 · Skeleton −1 = **+5,222** against a measured
+  103,696 → 108,918. **Measure gzip with the thing that will judge it.**
+  **AND THE COMMENT CORRECTING THE DIGITS HAD THREE WRONG DIGITS**: the first draft
+  of that very table read "+5,220 against 103,698" and signed PanelBoundary
+  backwards. Paste a measured table; do not retype one.
+  **THREE MEASUREMENTS OF THE EAGER DELTA, ALL CORRECT, ALL DIFFERENT** — a
+  reviewer's +826 at `d3aa03e`, this session's +849 mid-flight, and +826 again on the
+  final tree — because the tree moved between them. Only the final tree's figures may
+  ship, which is the whole content of the re-measure rule and is now the fourth
+  release it has caught.
+  Gates: **77 files / 73 gates, unchanged.** `verify-markets-dom` gained a volume
+  section (upper bound, last-cell, and every-cell equality) plus 7D and 390 axis
+  assertions with a falsifiability SELF-CHECK for the one predicate that has no
+  natural red; `verify-stale` gained six `attachVolume` unit assertions, red on the
+  pre-fix module at `[400,400,1600]` · `[800,1600]` · `[2400,0,2400]`. Budgets
+  unchanged from p3·12's raises — every built figure moved, every ceiling held.
 
 - **2026-08-14**: p3·12 "MARKETS: CANVAS CANDLES + BRUSH" (app/ + api/) — Phase 3
   opens. The hero is canvas, the range presets stop refetching, and the
@@ -593,11 +680,11 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   primitives. Verified in the built artifact: the branch's entry chunk carried
   the `var(…)` regex and the `#ffffff` fallback; the baseline's did not. Re-homed
   in `design/canvasColor.ts`, whose importers are all lazy. **That invariant has
-  NO GATE and `eagerJsRaw` has 17,470 B of headroom, so a future eager import
+  NO GATE and `eagerJsRaw` has 17,148 B of headroom, so a future eager import
   would cost hundreds of bytes and never be noticed** — named in the leaf's
   header and in `verify-bundle`, not enforced.
   **A GREP THAT COUNTS MENTIONS IS NOT A GREP THAT COUNTS IMPORTS.** `grep -l
-  cssColor src/` returns 12 files; **five** import it, all in `src/mempool/`,
+  cssColor src/` returned 12 files AT THE BASELINE; **five** imported it, all in `src/mempool/`,
   all lazy. The other six NAME it in docblocks that exist to say they carry a
   SIBLING implementation — `coldboot/field.ts:59` says "not an import of it" in
   as many words. Both a reviewer and this session read 12 as consumers before
