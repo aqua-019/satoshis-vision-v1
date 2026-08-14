@@ -155,6 +155,18 @@ export const ROUTES = [
      The standing item is now "six of eight", and adding the remaining six is
      still a coverage decision with its own cost (~14 gates × 6 entries). */
   '/live/mempool?v=abyss',
+  /* p2·9 — the THIRD `?v=` permutation, on the same reasoning and with the same
+     asymmetry: six of the NINE views are still walked only as `?v=classic`. The
+     invariant this keeps is that a NET-NEW view enters the ROUTES-consuming
+     gates (verify-ia, verify-nav, verify-ground, verify-cls, verify-mobile,
+     verify-nojs, verify-pageshell, verify-vitals, verify-shots …) on the PR that
+     introduces it, rather than being visible only to the gates that drive `?v=`
+     explicitly. Total 45 -> 46.
+     The standing item stays "six of nine" — the ORIGINAL six, unchanged in
+     membership since #174, because every net-new view has added its own entry.
+     Closing it is still a coverage decision with its own cost (~14 gates × 6
+     entries) and still belongs with the standing item, not here. */
+  '/live/mempool?v=pulse',
   '/live/markets',
   '/live/markets/thesis',
   '/live/network',

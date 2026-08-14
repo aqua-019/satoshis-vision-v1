@@ -439,9 +439,12 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   19 call sites. See the v6.0.12 note.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
-- **The shot matrix cannot see SIX OF THE EIGHT mempool views.** `verify-lib.mjs`'s `ROUTES`
-  carries `/live/mempool` at its default `?v=classic`, plus `?v=orbital` (p2·7) and
-  `?v=abyss` (p2·8) — the two NET-NEW views, each added by the PR that introduced it.
+- **The shot matrix cannot see SIX OF THE NINE mempool views.** `verify-lib.mjs`'s `ROUTES`
+  carries `/live/mempool` at its default `?v=classic`, plus `?v=orbital` (p2·7),
+  `?v=abyss` (p2·8) and `?v=pulse` (p2·9) — the three NET-NEW views, each added by the PR
+  that introduced it, which is now an established convention rather than a run of three.
+  **The uncovered SET has not changed since #174** — it is the ORIGINAL six — so the
+  count moves with the denominator only.
   `reactor`, `bridge`, `sediment`, `constellation`, `terminal` and the implicit `classic`
   remain unscreenshotted at any width or theme. Found while predicting the v6.1.3 sweep.
   `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=` explicitly, so the views are not
@@ -524,6 +527,113 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-13**: p2·9 "PULSE" (app/ only) — the **ninth** mempool view, the third
+  net-new one of the eleven, and the first that draws the **FLOW** rather than the
+  **STOCK**. Every other view arranges the pool's current contents by some pair of axes;
+  this one plots how fast transactions are arriving, over real time. The stock is the
+  integral of what it draws, which is how it can border all eight and duplicate none.
+  **TIME IS THE HORIZONTAL AXIS — the first real one in the suite.** Against ORBITAL,
+  the near miss, the separation is that its age is a BEARING (cyclic, no origin, no
+  direction) where this is LINEAR and DIRECTED, and so has a **FUTURE**: the segment
+  right of `now`, ending where the next block is due. Nothing else in the app has one.
+  Against ABYSS the inversion is exact — abyss puts age on the VERTICAL axis and takes
+  fee out of geometry into brightness; pulse puts time on the HORIZONTAL and puts fee
+  BACK into geometry. **It shares fee-on-vertical with SEDIMENT and that is stated
+  rather than dressed as a clean nine-way inversion**: the separations are that
+  sediment's x is weight, and that its fee is a STRATUM (a position) where this is an
+  AMPLITUDE (a magnitude hanging off a timeline).
+  **THE HISTORY-SOURCE DECISION, taken and put on the face.** A rolling waveform needs
+  a history and there are two places to get one. TAKEN: the pool's own age
+  distribution — every pending tx's `age` IS its arrival time, so one snapshot yields
+  the whole series instantly, **NODE**-provenanced. Its caveat is SURVIVOR BIAS and the
+  stage caption says so in as many words: these are arrivals **still pending**, so the
+  older end under-counts, and the fall-off is the mining process rather than a gap.
+  NOT TAKEN: a session log (`useFeedEvents.ts`) — empty at load, and its own cap would
+  flatten the signal. **The brief mis-stated that cap**: `:26` is
+  `TX_EVENTS_PER_TICK = 8`, and the 40 one line below is the ring buffer's total size.
+  Different quantities; the brief conflated them.
+  **BOTH NAMED DEPENDENCIES ARE STRUCTURAL, not decorative** — `usePulseField(data,
+  oldestAgeSec, etaSec, innerW)`, abyss's parameter discipline: `oldest` picks the
+  window rung off a **block-target ladder** (rungs are multiples of the node's own
+  `target_seconds`, so a literal 600 is never written), `eta` is the due marker.
+  **COMPOSITION: two traces hinged on one time axis.** ABOVE — one equal segment per
+  arrival, stacked per bin, so a column's height is exactly the arrival count and the
+  ticks are honest integers; this is the half that makes "bursts read as spikes" true,
+  and its colour composition is the burst's fee mix. BELOW — one mark per arrival at
+  its own log fee/byte, where the inferred cut becomes a horizontal threshold the marks
+  visibly cross (orbital's cut is a ring, abyss's a brightness, this one a floor).
+  **Two compositions were discarded and one of them by measurement**: per-tx strokes
+  alone make a cheap burst a dense band of SHORT strokes — a smudge, not a spike; and
+  weighting height by fee fails the other way, since on the gate fixture one dear tx
+  carries ~180× a cheap one, so a single whale out-spikes a thirty-tx burst.
+  Per-frame cost is a constant — ≤4 fills for the whole rate stack and ≤4 for the whole
+  fee scatter, batched by tier — so 240 txs is eight fills and 2,400 would also be eight.
+  **Fluid worked first try**, orbital's and abyss's mechanism verbatim: all six
+  `naturalW == canvasW` cells YES — 1440 → 1180/1180, 1280 → 1020/1020, 390 → 366/366,
+  in BOTH feed states, no `.mp-fit` anywhere, authored 11px rendering at 11px at 390.
+  **FIVE DEFECTS FOUND BY LOOKING, NONE OF WHICH ANY GATE SEES**, and this is the entry
+  worth keeping — every one rendered, carried correct numbers, overflowed nothing:
+  (1) **`tMax` was the live ETA, so the due marker sat at the axis maximum BY
+  CONSTRUCTION** — it could never move, the "sweep" the view was designed around did not
+  exist, and the whole domain rescaled every frame so every transaction drifted for a
+  reason unrelated to it. Fixed at ONE BLOCK TARGET, which is exact rather than chosen:
+  `eta = target − sinceTip` with `sinceTip ≥ 0`, so the marker is never off-axis.
+  (2) **The window ladder's bottom rung was ¼ block target**, so a 3-tx pool got a 30s
+  window against a 120s future — 80% empty future, two marks in the left fifth, and the
+  ladder printing "+2m" three times running. Floored at one full block target: the
+  sparse state now reads "one block of arrivals behind, one block of waiting ahead".
+  (3) **`u` is 0 at the pool's cheapest and 1 at its dearest by construction**, so
+  without an inset the cheapest mark was drawn ON the time axis and the dearest ON the
+  floor rule, hidden under 1px lines. Not an edge case — every pool has both, so two
+  marks were ALWAYS invisible, and at 3 tx it was two of the three.
+  (4) **A rate ceiling of 1 made a single arrival a full-height bar**, and quartering a
+  round ceiling is not round: 50 → "13 · 25 · 38 · 50". Floor of 4, and ticks now pick
+  a 1/2/5 STEP and walk up.
+  (5) **Both floating labels shared the top row and collided** the moment a recent tx
+  was tracked — the common case, since the newest arrival and the due marker are both
+  near the present — and the due label clipped off the right edge at 390, reading
+  "block du". The due label moved into the FUTURE BAND, the one region where nothing is
+  ever drawn, so it can occlude no data at any pool size.
+  **One further fix came from reasoning, not looking, and is the same family**: `plsX`
+  clamps to the box, so an arrival that rolled past the left edge between polls was
+  PAINTED ON THE BORDER at a time it did not arrive. Guarded in the draw loop AND in the
+  hit test, because a click must not resolve to a mark the stage has stopped painting.
+  **TWO BUDGET RAISES, both red-then-green on the FINAL tree**: `lazyJsRaw`
+  759,000 → **790,000** (built 787,894, margin 2,106) and `totalJsRaw` 1,021,000 →
+  **1,052,000** (built 1,049,839, margin 2,161). `eagerJsRaw` moved +83 — STRUCTURAL,
+  the meta row p2·7b put in an eagerly-bundled module — ceiling untouched at 280,000.
+  **The multiplicity trap was LIVE in this delta rather than hypothetical**: the stem
+  `index` really does hold two chunks, they moved by DIFFERENT amounts (+133 and +83),
+  and **one is lazy while the other is eager** — so a basename-keyed diff does not
+  merely lose a row, it attributes a lazy delta to the eager budget. Clean two-term lazy
+  delta (pulse 30,952 + mapDeps 133); all eight pre-existing view chunks byte-identical.
+  9-view mean **24,977**, recounted (span 19,163–35,969); Circuit is certain, Relay is
+  parked and its shape unpredictable, so the projection is a floor for one and a guess
+  for the other.
+  **THE HARNESS LIED TO ITSELF AGAIN, and the mechanism is new: `| head -14` SIGPIPEs
+  the producer.** The render probe was killed after printing its first table and before
+  writing any screenshot, so a set of fixes was judged against PNGs from five minutes
+  earlier and read as "the fix did not take". Caught by timestamping the artifacts
+  against the build. The six-cell numbers in that same run WERE fresh — they print
+  first — which is exactly what made it convincing. **Never pipe a probe that writes
+  files into `head`.**
+  Gates: **77 files / 73 gates, RECOUNTED and unchanged** — this PR adds no gate. It
+  fills three existing per-view maps (`DENSITY_FLOOR` 154 measured → floor 135 ·
+  `EXPECT_SVG_TEXT` `[]` verified at all four widths · `EXPECT_MEMSTAT` five keys) and
+  one `ROUTES` entry (45 → 46). **`FITS_AT_1440` correctly needs NO entry** — it is a
+  fit-only map and Pulse is `fit: false`; the absence is reasoned, not overlooked.
+  Registration was otherwise free: `verify-tracking` **71 → 80** and `verify-memstats`
+  **38 → 39** swept pulse with zero hand edits. `verify:mem:perf` p5 **24 fps** — FAIL
+  against the 30 bar, reported not hidden, joint-best of the four canvas views
+  (sediment 10, orbital 24, abyss 23); bar untouched, and the between-canvas ranking is
+  runner noise. **Rider taken**: `verify-memshell`'s `NEW` had kept SHIPPED orbital and
+  abyss since #174/#176, so their line-count bands ran as warnings — pruned, and both
+  are now owned assertions (561 and 579 in the 200–1084 band). `pulse` stays in `NEW`
+  until it ships, because promoting a view in its own PR would make its band owned by a
+  number nobody has reviewed.
+  **No human has seen the rendered result in a browser** — the renders were read from
+  screenshots.
 
 - **2026-08-13**: p2·8 "ABYSS" (app/ only) — the **eighth** mempool view and the second
   net-new one of the eleven. Fee is LUMINOSITY, age is DEPTH, and the tracked idiom is

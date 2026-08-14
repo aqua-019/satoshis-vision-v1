@@ -80,8 +80,19 @@ function stripComments(src) {
 }
 
 // ── the eleven ───────────────────────────────────────────────────────────────
-const SHIPPED = ["reactor", "bridge", "sediment", "constellation", "terminal", "classic"];
-const NEW = ["relay", "orbital", "abyss", "circuit", "pulse"];
+// p2·9 — orbital and abyss MOVED from NEW to SHIPPED. They landed in #174 and
+// #176 and had been sitting in NEW ever since, which meant every check below
+// that consults `owned` ran on them as a WARNING rather than as an assertion:
+// their line-count bands, in particular, could have drifted past the ceiling
+// without reddening anything. NEW means "not yet in the tree"; leaving a
+// shipped view there is a green earned outside the claim, which is the exact
+// reason this file's own header gives for taking the abyss split.
+//
+// `pulse` STAYS in NEW for this PR and moves on the next one, for the same
+// reason: promoting a view in the PR that introduces it would make its own band
+// check owned by a number nobody has reviewed yet.
+const SHIPPED = ["reactor", "bridge", "sediment", "constellation", "orbital", "abyss", "terminal", "classic"];
+const NEW = ["relay", "circuit", "pulse"];
 const ALL = [...SHIPPED, ...NEW];
 
 // The band comes from the six that shipped, measured — NOT from the prompt's
