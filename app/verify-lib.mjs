@@ -167,6 +167,21 @@ export const ROUTES = [
      Closing it is still a coverage decision with its own cost (~14 gates × 6
      entries) and still belongs with the standing item, not here. */
   '/live/mempool?v=pulse',
+  /* p2·10 — the FOURTH `?v=` permutation, on the same reasoning and with the
+     same asymmetry: six of the TEN views are still walked only as
+     `?v=classic`. The invariant this keeps is that a NET-NEW view enters the
+     ROUTES-consuming gates (verify-ia, verify-nav, verify-ground, verify-cls,
+     verify-mobile, verify-nojs, verify-pageshell, verify-vitals,
+     verify-shots …) on the PR that introduces it, rather than being visible
+     only to the gates that drive `?v=` explicitly. Total 46 -> 47.
+     The standing item stays "six of ten" — the ORIGINAL six, unchanged in
+     membership since #174, because every net-new view has added its own entry.
+     The DENOMINATOR moves and the uncovered SET does not, which is the only
+     way that item can read from here on: after this PR the eleventh view is
+     Relay, and it is parked. Closing the item is still a coverage decision
+     with its own cost (~14 gates × 6 entries) and still belongs with the
+     standing item, not here. */
+  '/live/mempool?v=circuit',
   '/live/markets',
   '/live/markets/thesis',
   '/live/network',

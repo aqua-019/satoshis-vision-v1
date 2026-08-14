@@ -337,6 +337,17 @@ const EXPECT_MEMSTAT = {
   // passed into usePulseField as parameters. A view that dropped either from
   // the strip would be showing an axis whose number it had stopped publishing.
   pulse:         ['mempool', 'bytes', 'oldest', 'median', 'eta'],
+  // p2·10 — Circuit takes MemViewShell's default strip (no `stats` prop), so
+  // all five. MEASURED, not assumed: the run that added this row reported
+  // `emits bytes,eta,median,mempool,oldest`.
+  //
+  // One of them is its AXIS. `bytes` — the pool's total weight — chooses the
+  // depth ladder's rung, and `useCircuitField(data, stats.poolBytes)` takes it
+  // as a PARAMETER from the same `useMemStats` the strip renders, so the board
+  // holding the pool is true by construction rather than by two
+  // implementations agreeing. It is the first of the ten to anchor on `bytes`;
+  // Abyss anchors on `oldest`, Pulse on `oldest` and `eta`, Orbital on none.
+  circuit:       ['mempool', 'bytes', 'oldest', 'median', 'eta'],
 };
 
 function advanceBlocks(n) { head += n; }
@@ -836,6 +847,26 @@ function advanceBlocks(n) { head += n; }
     // gate. Scenario 3 is the only reduced-motion pass and this section is not
     // it.
     pulse: [],
+    // p2·10 — EMPTY, MEASURED, and the empty list is the claim. Same shape as
+    // orbital's, abyss's and pulse's entries: Circuit's hero is a <canvas> and
+    // every glyph on it is a DOM span — the four lane labels
+    // (`<span class="cir-lane">`), the depth ladder (`cir-axis`), the die's
+    // caption (`cir-die`) and the tracked marker (`cir-track`).
+    //
+    // Measured on the run that added this row: 0 text nodes at 390, 768, 1440
+    // and 2560 — so the four assertions this entry generates are four `=== 0`
+    // checks, not an exemption from four checks.
+    //
+    // Same reduced-motion caveat as the other three, and it is WEAKEST here:
+    // CirStatic renders a full SVG twin (one <rect> per transaction) and it too
+    // carries no <text>, its labels being the same DOM spans the canvas stage
+    // uses. That is a stronger property for this view than for the others,
+    // because Circuit's static twin is not an approximation of its animated
+    // stage — every coordinate on the canvas is a pure function of the
+    // snapshot, and the only thing the canvas adds is a decorative dash
+    // offset. Scenario 3 is still the only reduced-motion pass and this
+    // section is not it.
+    circuit: [],
   };
 
   const textCounts = {}; // {view: {width: count}}
@@ -1957,6 +1988,27 @@ function advanceBlocks(n) { head += n; }
     // would be unreadable, and the bands are equal slices of the window
     // instead.
     pulse: 135,          // 154 measured at 1440x900 on this fixture
+    // p2·10 — a NET-NEW view, so there is no "before" reading to sit beside
+    // this one either. Set the way every other row here was: measured, then cut
+    // ~12% (135 measured -> 118), which is the slack the existing rows carry.
+    //
+    // 135 is the LOWEST of the four net-new views (orbital 150, pulse 156,
+    // abyss 198) and that is explicable rather than a shortfall. All four run
+    // six panels plus a 14-row console; the spread is in how many derived rows
+    // each census carries, and this view's is the shortest possible — the lane
+    // census is exactly CIR_LANES rows, because a lane IS a node fee tier and
+    // the node publishes four. Abyss's depth census emits one row per gridline
+    // (as many as nine) and pulse's cadence census a fixed six. A row per lane
+    // is not a composition choice here; padding it would mean inventing a
+    // category the node does not publish.
+    //
+    // What claws it back is the fill schedule in the Queue depth panel — the
+    // depth axis quantised by the node's ceiling, one row per block of backlog,
+    // capped at SCHEDULE_BLOCKS with the remainder REPORTED rather than
+    // truncated. It is fixture-relative in a way the other floors are not:
+    // MEMPOOL_N 240 against block_weight_median 300000 gives 1.86 blocks of
+    // demand, so two rows. A fixture with a deeper pool moves this reading up.
+    circuit: 118,        // 135 measured at 1440x900 on this fixture
   };
 
   const dp = await b.newPage({ viewport: { width: 1440, height: 900 } });
