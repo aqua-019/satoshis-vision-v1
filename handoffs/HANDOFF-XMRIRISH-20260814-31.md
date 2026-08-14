@@ -80,11 +80,15 @@ rather than managed.
 **Width**: all six `naturalW == canvasW` cells EQUAL (1440 → 1180/1180, 1280 → 1020/1020,
 390 → 366/366, both feed states), no `.mp-fit`, authored 11px at 11px everywhere.
 **Height**: `clamp(w × 0.48, 250, 420)` → 353 / 302 / 250; c8 cell 596 vs `canvasH` 702.
-**Files**: `circuit.tsx` 651 (in band), `circuit-instruments.tsx` 1,245.
+**Files**: `circuit.tsx` 651 by the gate's instrument (`split("\n").length`) / 650 by
+`wc -l` — the trailing newline; the band asserts the first. `circuit-instruments.tsx`
+**1,265**, corrected from the 1,245 first recorded: that was measured before `18ba221`
+added 20 comment lines to the file, so it described a tree that no longer existed.
 
 **Gates**: `verify:static` 21/21; `verify:e2e` 28/29 (`verify-vitals` red and PRE-EXISTING —
 `/` blocking 435 branch / 424 base, both over 400; `/live/mempool` green on both and better
-on the branch); `verify-memviews` 255 → 289; `verify-tracking` 80 → 89; `verify-memstats`
+on the branch); `verify-memviews` 276 ✅ · 11 ⚠️ · 0 ❌ (the gate prints NO tally, so any total is an
+extraction — see §8); `verify-tracking` 80 → 89; `verify-memstats`
 39 → 40; `verify-nav` 129 unchanged (it derives `N_VIEWS`); `verify-bundle` 27;
 `verify:fit`, `verify:mobile`, `verify:perf-runtime` green. `verify:mem:perf` p5 **17 fps**
 against the 30 bar — FAIL, reported, bar untouched.
@@ -114,6 +118,26 @@ attributed, baseline built in an isolated worktree.
   break-test extraction greps narrower than their claim with `head -N` truncating the
   evidence; and a trap whose relative restore path landed in the wrong directory after the
   script `cd`'d.
+- **TWO SELF-COUNTS IN THIS RECORD WERE WRONG, both found by the verifier, and they are
+  the SIXTH and SEVENTH harness-lies instances of the run — this time in the REPORT rather
+  than in the harness.** (a) `circuit-instruments.tsx` was recorded at **1,245**; the head
+  reads **1,265**, because `18ba221` added exactly 20 comment lines to that file AFTER the
+  measurement. A true measurement of a tree that no longer existed — the same shape the
+  re-measurement rule catches for budgets, and it did not catch this one because a line
+  count is not re-read by anything. **The rule generalises: any number written down after
+  the last edit to its subject must be taken after that edit, not just budget numbers.**
+  (b) `verify-memviews` was reported as **289**. The gate prints NO numeric tally at all —
+  it ends at `all assertions passed` with `process.exit(fail ? 1 : 0)` — so every total
+  ever quoted for it is an extraction, and mine used `awk '/^— scenario 1/,0'`, where `,0`
+  means to END OF FILE: against a combined suite log it swept the 29 gates that follow.
+  Properly bounded: **276 ✅ · 11 ⚠️ · 0 ❌**. Subject wider than the claim, committed in a
+  reported number, which a second machine then had to reconcile against its own 276–277 ✅ ·
+  12 ⚠️. **For this gate quote the FAILURE count, never a total** — the warning population
+  is run-variant and only the zero is stable.
+- **A THIRD instrument ambiguity, benign but worth naming**: `circuit.tsx` is 651 by
+  `verify-memshell`'s own instrument (`src.split("\n").length`) and 650 by `wc -l`. Both
+  true; the difference is the trailing newline. The band asserts the first, a reviewer
+  checks with the second, so the instrument belongs beside the number.
 - **DEFERRED**: instruments files are unbanded by `verify-memshell` (only `<id>.tsx` is), so
-  `circuit-instruments.tsx` at 1,245 lines is unchecked. `totalJsRaw`'s stated identity
+  `circuit-instruments.tsx` at 1,265 lines is unchecked. `totalJsRaw`'s stated identity
   remains lapsed at an 18,000 B gap for the third consecutive raise.

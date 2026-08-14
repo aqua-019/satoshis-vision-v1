@@ -683,7 +683,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `verify-roles.mjs:204` has a `classic:` key that is the THEME id, not the view id — same
   token, two namespaces.
   Registration was otherwise free: `verify-tracking` **80 → 89** and `verify-memstats`
-  **39 → 40** swept circuit with zero hand edits; `verify-memviews` **255 → 289**.
+  **39 → 40** swept circuit with zero hand edits. **`verify-memviews` PRINTS NO NUMERIC
+  TALLY** — it ends at `✅ verify-memviews: all assertions passed` with
+  `process.exit(fail ? 1 : 0)` — so every "N" ever quoted for it is an EXTRACTION and the
+  extraction's range is the load-bearing part. The 289 first recorded here came from an
+  `awk '/^— scenario 1/,0'` range, and `,0` means to END OF FILE: on a combined suite log
+  it swept the 29 gates that follow. Properly bounded to the gate's own output, this run
+  reads **276 ✅ · 11 ⚠️ · 0 ❌**; the verifier's two runs read 276–277 ✅ · 12 ⚠️ · 0 ❌,
+  so the warning population is run-variant and only the 0 failures is stable. Quote the
+  failure count for this gate, never a total.
   **`verify-nav` stayed at 129 and should have** — it derives `N_VIEWS`, so a tenth view
   changes its SUBJECT (10 tiles) and not its assertion COUNT.
   **`verify-vitals` is red and it is PRE-EXISTING — measured against the baseline BUILD, not
@@ -696,9 +704,20 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   LCP 3712/3724. Gates **77 files / 73 gates, RECOUNTED and unchanged** — this PR adds none.
   N/M pair: **N 135** (floor 118), **M 10** distinct `data.<field>` reads, the highest of the
   four net-new views (orbital 9, abyss 8, pulse 8).
-  Files: `circuit.tsx` **651** (in the 200–1084 band) and `circuit-instruments.tsx` **1,245**
-  — under `pulse-instruments.tsx`'s 1,296, which is a soft ceiling rather than a licence;
-  instruments files are unbanded and that blind spot stays open.
+  Files, CORRECTED at the verifier's head and worth the correction twice over:
+  `circuit.tsx` **651** by the gate's own instrument (`src.split("\n").length`,
+  verify-memshell item 3) and **650** by `wc -l` — both true, and the difference is the
+  trailing newline. Quote the instrument, because the band is asserted against the first
+  and a reviewer checks with the second.
+  `circuit-instruments.tsx` is **1,265** (`wc -l`), NOT the 1,245 first recorded here.
+  1,245 was measured before `18ba221`, the docs commit that added exactly 20 comment
+  lines to that file — so the figure was a true measurement of a tree that no longer
+  existed by the time it was written down. Same family as the budget near-miss two
+  paragraphs up, which the re-measurement rule caught; this one it did not, because a
+  line count is not a budget and nothing re-reads it. It stays under
+  `pulse-instruments.tsx`'s 1,296 — second-largest in `src/mempool/`, not largest — and
+  that is a soft ceiling rather than a licence; instruments files are unbanded and that
+  blind spot stays open.
   **No human has seen the rendered result in a browser** — the renders were read from
   screenshots.
 
