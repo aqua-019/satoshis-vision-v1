@@ -126,9 +126,30 @@ const envelope = (days) => ({
   series: { peers: seriesFor(PRIVACY, PEER_CHART_N), majors: seriesFor(MAJORS, MAJOR_CHART_N) },
 });
 
-const cgChart = (n, p0) => {
-  const { t, p } = pts(n, p0, 0.08);
-  return { prices: t.map((x, i) => [x, p[i]]), total_volumes: t.map((x) => [x, 1.2e8]) };
+/* p3·12: the hero fixture has to mirror CoinGecko's OWN granularity table,
+   because the assertions below are about DENSITY and a fixture that hands every
+   range the same 180 points cannot tell a 22-bar chart from a 360-bar one. The
+   ragged-history fixture above is unchanged — it feeds /api/markets, which is a
+   membership question, not a density one.
+
+     /coins/{id}/ohlc          1-2d -> 30m · 3-30d -> 4h  · 31d+ -> 4d
+     /coins/{id}/market_chart  <=1d -> 5m  · 2-90d -> 1h  · >90d -> 1d */
+const HOURMS = 3_600_000;
+const ohlcStep = (days) => (days <= 2 ? 30 * 60_000 : days <= 30 ? 4 * HOURMS : 4 * DAY);
+const chartStep = (days) => (days <= 1 ? 300_000 : days <= 90 ? HOURMS : DAY);
+const walk = (days, step, p0) => {
+  const n = Math.max(1, Math.floor((days * DAY) / step));
+  const out = [];
+  let p = p0;
+  for (let i = 0; i < n; i++) {
+    p *= 1 + Math.sin(i / 7.3) * 0.004 + Math.cos(i / 31.1) * 0.002;
+    out.push([T1 - (n - 1 - i) * step, p]);
+  }
+  return out;
+};
+const cgChart = (days, p0) => {
+  const rows = walk(days, chartStep(days), p0);
+  return { prices: rows, total_volumes: rows.map(([x]) => [x, 1.2e8]) };
 };
 
 function fulfil(route) {
@@ -138,11 +159,12 @@ function fulfil(route) {
   if (m) return json(envelope(Number(m[1])));
   if (url.includes('/api/coingecko')) {
     if (url.includes('simple')) return json({ monero: { usd: 372.1, usd_24h_change: 1.2 }, bitcoin: { usd: 97000, usd_24h_change: -0.3 } });
+    const dm = /[?&]days=(\d+)/.exec(url);
+    const days = dm ? Number(dm[1]) : 30;
     if (url.includes('ohlc')) {
-      const { t, p } = pts(180, 372, 0.1);
-      return json(t.map((x, i) => [x, p[i], p[i] * 1.02, p[i] * 0.98, p[i] * 1.005]));
+      return json(walk(days, ohlcStep(days), 372).map(([x, p]) => [x, p, p * 1.02, p * 0.98, p * 1.005]));
     }
-    if (url.includes('market_chart')) return json(cgChart(180, url.includes('vs_currency=btc') ? 0.0038 : 372));
+    if (url.includes('market_chart')) return json(cgChart(days, url.includes('vs_currency=btc') ? 0.0038 : 372));
     if (url.includes('tickers')) return json({ tickers: [] });
   }
   return route.abort();
@@ -327,12 +349,17 @@ console.log(`   30D cold load: ${upstream} client→origin requests`);
 for (const u of seen) console.log('     ' + u);
 const cold30 = upstream;
 const perRange = { '30D': cold30 };
+const rangeMarks = {};
+const cgCount = () => seen.filter((u) => u.startsWith('/api/coingecko') && !u.includes('simple/price')).length;
 for (const r of ['7D', '90D', '1Y']) {
   const before = upstream;
+  const cgBefore = cgCount();
   await page.getByRole('button', { name: r, exact: true }).click();
   await page.waitForTimeout(2000);
   perRange[r] = upstream - before;
+  rangeMarks[r] = { cg: cgCount() - cgBefore };
 }
+console.log('   CoinGecko history requests per preset:', JSON.stringify(rangeMarks));
 console.log('   per-range deltas:', JSON.stringify(perRange));
 console.log(`   all four ranges: ${upstream} client→origin requests`);
 
@@ -347,8 +374,16 @@ is(marketsCalls === 4, `exactly one /api/markets call per range, 4 total (got ${
 const isHist = (u) => (u.startsWith('/api/markets') || u.startsWith('/api/coingecko')) && !u.includes('simple/price');
 const hist = seen.filter(isHist);
 const hist30 = seen.slice(0, cold30).filter(isHist).length;
-is(hist30 <= 6, `30D cold load: ≤6 history requests (${hist30}) — 1 aggregator + XMR ohlc + XMR/usd + XMR/btc + BTC/usd + tickers`);
-is(hist.length <= 21, `all four ranges: ≤21 history requests (${hist.length}) — +5 per extra range, flat in group size`);
+/* p3·12 tightened all three literals to the measured post-change counts, and
+   the tightening is the assertion — 6/21/3 stayed GREEN against the new code
+   while it did strictly less work, so leaving them would have made the whole
+   §1d block blind to the change it exists to police.
+   Baseline (84e2b77) vs branch, measured on this gate:
+       30D cold          6 -> 5   (the BTC/USD line was fetched and never drawn)
+       all four ranges  21 -> 10
+       market_chart/range 3 -> 1 */
+is(hist30 <= 5, `30D cold load: ≤5 history requests (${hist30}) — 1 aggregator + XMR ohlc + XMR/usd + XMR/btc + tickers`);
+is(hist.length <= 10, `all four ranges: ≤10 history requests (${hist.length}) — the pair bases are fetched at most twice each, whatever the presets do`);
 /* The client may only fetch history for the three series it owns directly —
    XMR/USD, XMR/BTC, BTC/USD. Every GROUP coin's history must arrive inside the
    /api/markets envelope. A stray coins/<peer>/market_chart here means someone
@@ -357,10 +392,177 @@ is(hist.length <= 21, `all four ranges: ≤21 history requests (${hist.length}) 
 const chartIds = [...new Set(seen
   .map((u) => /path=coins\/([^/]+)\/market_chart/.exec(u))
   .filter(Boolean).map((m) => m[1]))].sort();
-is(JSON.stringify(chartIds) === JSON.stringify(['bitcoin', 'monero']),
-  `client fetches history for monero+bitcoin only (got ${JSON.stringify(chartIds)})`);
+/* 'bitcoin' is GONE from this list, and its absence is a fix rather than a
+   regression: `btcLine` (coins/bitcoin/market_chart) was fetched on every range
+   change and read by nothing — no consumer anywhere in src/, confirmed
+   repo-wide. Four wasted round trips per visit against a 10,000-call month. */
+is(JSON.stringify(chartIds) === JSON.stringify(['monero']),
+  `client fetches history for monero only — no unread series (got ${JSON.stringify(chartIds)})`);
 const perRangeCharts = seen.filter((u) => /market_chart/.test(u)).length / 4;
-is(perRangeCharts <= 3, `≤3 market_chart calls per range regardless of group size (${perRangeCharts})`);
+is(perRangeCharts <= 1, `≤1 market_chart call per range regardless of group size (${perRangeCharts})`);
+/* The FINE base is a base, not a range: one /ohlc call covers every window
+   ≤30 days, so four presets cost one call and not four. */
+const ohlcCalls = seen.filter((u) => /\/ohlc/.test(u)).length;
+is(ohlcCalls === 1, `exactly one /ohlc call for all four ranges (got ${ohlcCalls})`);
+/* The headline behaviour, stated as a delta rather than a total: a preset whose
+   window is already covered by a fetched base must cost NOTHING but the
+   aggregator. 1Y is the one exception and it is bounded — it buys the deep
+   base once, for the life of the page. */
+is(rangeMarks['7D'].cg === 0, `7D preset issues 0 CoinGecko history requests (got ${rangeMarks['7D'].cg})`);
+is(rangeMarks['90D'].cg === 0, `90D preset issues 0 CoinGecko history requests (got ${rangeMarks['90D'].cg})`);
+is(rangeMarks['1Y'].cg <= 2, `1Y preset buys the deep base once: ≤2 requests (got ${rangeMarks['1Y'].cg})`);
+
+/* ── the canvas hero: density, parity, DOM labels, the brush ──────────
+   D0843/D0847. Everything here is about the thing a canvas cannot do for
+   itself: be read. The count is asserted from TWO independent expressions —
+   the root's data-candle-count and the accessible table's own row count — so
+   a chart that silently drew nothing cannot pass by also listing nothing. */
+console.log('\nverify-markets-dom — canvas hero');
+{
+  const h = await b.newPage({ viewport: { width: 1440, height: 1000 } });
+  await h.route('**/api/**', fulfil);
+  await h.goto(base + '/live/markets', { waitUntil: 'load' });
+  await h.waitForTimeout(2500);
+
+  const shape = await h.evaluate(() => ({
+    canvases: document.querySelectorAll('.cc-canvas').length,
+    brush: document.querySelectorAll('[data-candle-brush] canvas').length,
+    win: !!document.querySelector('[data-brush-window]'),
+    table: !!document.querySelector('[data-candle-table]'),
+    tableHidden: (() => {
+      const t = document.querySelector('[data-candle-table]');
+      if (!t) return 'absent';
+      const cs = getComputedStyle(t);
+      return cs.display === 'none' || cs.visibility === 'hidden' ? 'hidden' : 'shown';
+    })(),
+    svgCandles: document.querySelectorAll('svg[viewBox$=" 320"]').length,
+  }));
+  is(shape.canvases === 1, `hero draws on exactly one <canvas> (got ${shape.canvases})`);
+  is(shape.brush === 1, `the brush strip renders its own canvas (got ${shape.brush})`);
+  is(shape.win, 'the brush window is a real element, not a painted rectangle');
+  is(shape.table, 'D0847: the accessible table is in the DOM');
+  is(shape.tableHidden === 'shown',
+    `D0847: the table is CLIPPED, never display:none — a screen reader has no other way in (${shape.tableHidden})`);
+  is(shape.svgCandles === 0, `the old SVG candle chart is gone (${shape.svgCandles} left)`);
+
+  /* NO TEXT ON THE CANVAS. There is no way to ask a canvas what glyphs it
+     painted, so this asserts the positive form instead: the labels exist as DOM
+     nodes, they carry real text, and they sit at or above the repo's 11px
+     floor. A canvas-text regression takes this to zero. */
+  const labels = await h.evaluate(() => {
+    const out = [];
+    for (const el of document.querySelectorAll('.cc-labels > span, .cc-table th, .cc-table td, .cc-table caption')) {
+      const txt = (el.textContent || '').trim();
+      if (!txt) continue;
+      out.push({ txt, fs: parseFloat(getComputedStyle(el).fontSize) });
+    }
+    return out;
+  });
+  const tiny = labels.filter((l) => l.fs < 11);
+  is(labels.length >= 8, `hero labels are DOM nodes, not canvas glyphs (${labels.length} found)`);
+  is(tiny.length === 0, `every hero label is ≥11px, the repo's declared floor (${tiny.length} under)`);
+  if (tiny.length) console.log('   under floor:', JSON.stringify(tiny.slice(0, 6)));
+
+  /* Density + parity per range. The counts are the point of §2: at 90D the
+     upstream's own /ohlc buckets are FOUR DAYS wide, which is 22 bars for a
+     quarter of a year — measured on 84e2b77. The ladder now picks the finest
+     bucket the fetched base honestly supports. */
+  const readRange = () => h.evaluate(() => {
+    const root = document.querySelector('[data-candle-count]');
+    const table = document.querySelector('[data-candle-table]');
+    return {
+      count: Number(root?.getAttribute('data-candle-count') ?? -1),
+      gran: root?.getAttribute('data-candle-gran') ?? '',
+      base: root?.getAttribute('data-candle-base') ?? '',
+      stride: Number(table?.getAttribute('data-table-stride') ?? 0),
+      rows: table?.querySelectorAll('tbody tr').length ?? -1,
+      caption: table?.querySelector('caption')?.textContent ?? '',
+      xticks: [...document.querySelectorAll('.cc-xtick')].map((e) => e.textContent || ''),
+    };
+  });
+  const DENSITY_FLOOR = { '7D': 40, '30D': 170, '90D': 300, '1Y': 110 };
+  for (const r of ['7D', '30D', '90D', '1Y']) {
+    await h.getByRole('button', { name: r, exact: true }).click();
+    await h.waitForTimeout(1200);
+    const m = await readRange();
+    console.log(`   ${r}: ${m.count} bars · ${m.gran} · base=${m.base} · table ${m.rows} rows (stride ${m.stride})`);
+    is(m.count >= DENSITY_FLOOR[r] && m.count <= 420,
+      `${r} draws ${m.count} candles — ≥${DENSITY_FLOOR[r]} and inside the 420 ceiling`);
+    /* PARITY. Two expressions of one number: if they can disagree, neither is
+       evidence about the other. */
+    /* `m.count > 0` is this assertion's VACUITY GUARD, not decoration: with no
+       chart at all the probe reads -1/-1/0 and `ceil(-1/1) === -1` is TRUE, so
+       the parity check passes hardest exactly when there is nothing to be in
+       parity about. Measured on the baseline build, where it did. */
+    is(m.count > 0 && m.rows === Math.ceil(m.count / Math.max(1, m.stride)),
+      `${r} table lists 1 row per ${m.stride} of ${m.count} candles = ${m.rows} rows`);
+    is(m.stride >= 1 && (m.stride === 1 || /every \d+/.test(m.caption)),
+      `${r} caption states the stride when it strides (${m.stride})`);
+    is(/^\d+[hdw] · (CG OHLC|hourly samples|daily samples)$/.test(m.gran),
+      `${r} granularity names its bucket AND its source: "${m.gran}"`);
+  }
+
+  /* THE DATE AXIS ADAPTS TO THE SPAN, NOT THE PRESET (§4). No preset is under
+     six days, so the hours format is reachable ONLY through the brush — which
+     makes this one assertion cover the axis ladder and a real brush drag at
+     once. Home resets the window; the keyboard path is the same code the
+     pointer drag uses. */
+  const axisAt = async (r) => {
+    await h.getByRole('button', { name: r, exact: true }).click();
+    await h.waitForTimeout(900);
+    return (await readRange()).xticks;
+  };
+  const t30 = await axisAt('30D');
+  is(t30.length > 2 && t30.every((t) => /^\d{1,2} [A-Z][a-z]{2}$/.test(t)),
+    `30D axis reads "12 Mar" (${JSON.stringify(t30.slice(0, 3))})`);
+  const t1y = await axisAt('1Y');
+  is(t1y.length > 2 && t1y.every((t) => /^[A-Z][a-z]{2} '\d{2}$/.test(t)),
+    `1Y axis reads "Mar '25" (${JSON.stringify(t1y.slice(0, 3))})`);
+
+  /* Brush: zoom in with the keyboard until the window is under six days, and
+     the axis must switch to hours. Also proves the window element takes focus
+     and that a zoom costs no request. */
+  const cgBefore = await h.evaluate(() => performance.getEntriesByType('resource').filter((e) => e.name.includes('/api/coingecko')).length);
+  await h.getByRole('button', { name: '7D', exact: true }).click();
+  await h.waitForTimeout(700);
+  /* An ABSENT brush must reach `is()` as a red assertion, never as a thrown
+     locator timeout. Measured against the 84e2b77 build while establishing the
+     red polarity for this section: `page.focus` threw at 30 s and killed the
+     run, so the four assertions after it never reported at all and the summary
+     line never printed. A gate whose failure mode is an exception cannot tell
+     you WHICH of its claims broke. */
+  const hasBrush = (await h.$('[data-brush-window]')) !== null;
+  if (!hasBrush) {
+    for (const m of ['the brush window is keyboard-focusable',
+                     'a brush zoom under six days switches the axis to hours',
+                     'the table follows the brush, not the preset',
+                     'zooming the brush issues no history request',
+                     'Home resets the brush to the full fetched span']) {
+      bad(`${m} — NO [data-brush-window] in the DOM`);
+    }
+  } else {
+  await h.focus('[data-brush-window]');
+  const focused = await h.evaluate(() => document.activeElement?.hasAttribute('data-brush-window') ?? false);
+  is(focused, 'the brush window is keyboard-focusable (a pointer-only control is half a control)');
+  for (let i = 0; i < 6; i++) { await h.keyboard.press('+'); await h.waitForTimeout(120); }
+  await h.waitForTimeout(700);
+  const zoomed = await readRange();
+  is(zoomed.xticks.length > 2 && zoomed.xticks.every((t) => /^\d{2}:00$/.test(t)),
+    `a brush zoom under six days switches the axis to hours (${JSON.stringify(zoomed.xticks.slice(0, 3))})`);
+  is(zoomed.count > 0 && zoomed.rows === Math.ceil(zoomed.count / Math.max(1, zoomed.stride)),
+    `the table follows the brush, not the preset (${zoomed.count} bars, ${zoomed.rows} rows)`);
+  const cgAfter = await h.evaluate(() => performance.getEntriesByType('resource').filter((e) => e.name.includes('/api/coingecko')).length);
+  is(cgAfter === cgBefore, `zooming the brush issues no history request (${cgBefore} → ${cgAfter})`);
+
+  /* Home resets to the whole fetched span — the keyboard twin of double-click. */
+  await h.keyboard.press('Home');
+  await h.waitForTimeout(900);
+  const reset = await readRange();
+  is(reset.count > zoomed.count, `Home resets the brush to the full fetched span (${zoomed.count} → ${reset.count} bars)`);
+  }
+
+  await h.close();
+}
 
 /* ── total outage ────────────────────────────────────────────────────── */
 console.log('\nverify-markets-dom — outage');

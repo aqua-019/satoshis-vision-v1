@@ -44,8 +44,13 @@ const LEDGER = {
     'warns about, but there is no data-router here (react-router is used through ' +
     'the JSX <Routes> API, so loaders are unavailable at any version) and no query ' +
     'library in the dependency set.'],
-  'src/data/useMarketHistory.ts': [2,
-    'the range fetch, and the 45s retry timer. Same caveat as useCachedFeed.'],
+  'src/data/useMarketHistory.ts': [3,
+    'the BASE fetch, the aggregator fetch, and the 45s retry timer. Same caveat ' +
+    'as useCachedFeed. Was 2 until p3·12 split the single fetch effect in two, ' +
+    'and the split is the point rather than a side effect of it: the bases are ' +
+    'keyed [wantDeep, retryNonce] and the aggregator [days, retryNonce], so a ' +
+    'range click can no longer refire the pair history. Merging them back would ' +
+    'restore exactly the 21-requests-per-four-ranges behaviour that split them.'],
   'src/data/useTickers.ts': [1,
     'its own 5min/45s poll loop — one of the three hand-rolled loops predating ' +
     'usePolling, left alone deliberately (see usePolling.ts header).'],

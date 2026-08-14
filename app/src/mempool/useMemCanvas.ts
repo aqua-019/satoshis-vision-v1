@@ -34,6 +34,7 @@
 
 import * as React from "react";
 import { useReducedMotion } from "@/design/useReducedMotion";
+import { cssColor } from "@/design/canvasColor";
 
 export type MemDrawFn = (
   ctx: CanvasRenderingContext2D,
@@ -303,25 +304,16 @@ export function blitGlow(
 }
 
 /**
- * Resolve a CSS custom property (--tk-accent, --g-50, …) to a concrete color.
- * Canvas cannot consume var(), and the palette is theme-scoped (L2 rebinds
- * chrome colors per :root[data-theme]), so draw loops need this once per theme
- * change — never per frame.
+ * Resolve a CSS custom property to a concrete color.
+ *
+ * MOVED to @/design/canvasColor in p3·12 — the markets hero is a canvas surface
+ * outside src/mempool/ and needed it, and importing this module (a rAF hook
+ * with visibility/intersection wiring and a sprite cache) for one pure function
+ * would have dragged all of that into the markets chunk.
+ *
+ * It went to design/chart-kit.tsx FIRST, which was the obvious home and cost
+ * 757 EAGER bytes on every route: primitives.tsx imports chart-kit and is in
+ * the entry chunk. canvasColor.ts has only lazy importers. Re-exported here so
+ * the ten views keep importing it from where they always have.
  */
-export function cssColor(nameOrValue: string, el?: Element | null): string {
-  const s = nameOrValue.trim();
-  // Accepts BOTH `--tk-accent` and `var(--tk-accent)` / `var(--x, #fff)`.
-  // The palette constants in the codebase are written the second way
-  // (FEE_TIER_COLORS is ["var(--c-50)", …]), and a bare startsWith("--") test
-  // silently passes those straight through — canvas then throws
-  // "could not be parsed as a color" from inside addColorStop, which unmounts
-  // the whole view. Cheap to get wrong, loud but late to discover.
-  const wrapped = s.match(/^var\(\s*(--[\w-]+)\s*(?:,([^)]*))?\)$/);
-  const name = wrapped ? wrapped[1] : s.startsWith("--") ? s : null;
-  if (!name) return s;
-  const host = el ?? document.documentElement;
-  const v = getComputedStyle(host).getPropertyValue(name).trim();
-  if (v) return v;
-  const fallback = wrapped?.[2]?.trim();
-  return fallback ? cssColor(fallback, el) : "#ffffff";
-}
+export { cssColor } from "@/design/canvasColor";

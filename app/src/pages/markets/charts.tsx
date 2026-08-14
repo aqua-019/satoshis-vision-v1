@@ -100,12 +100,6 @@ function fmtPrice(v: number): string {
   return "$" + v.toPrecision(2);
 }
 
-function fmtVol(v: number): string {
-  if (v >= 1e9) return "$" + (v / 1e9).toFixed(1) + "B";
-  if (v >= 1e6) return "$" + (v / 1e6).toFixed(1) + "M";
-  if (v >= 1e3) return "$" + (v / 1e3).toFixed(0) + "k";
-  return "$" + v.toFixed(0);
-}
 
 function fmtDate(ts: number, days: number): string {
   const d = new Date(ts);
@@ -210,15 +204,15 @@ function resolveMarkerLabel(
 }
 
 /* ════════════════════════════════════════════════════════════════════
-   CandleChart — real OHLC + volume sub-bars + axes + annotations
+   CandleChart LIVED HERE and is gone (p3·12). The Markets hero is
+   pages/markets/CandleCanvas.tsx now — canvas geometry plus a DOM label layer,
+   a brush, and the accessible table a canvas cannot do without. It was deleted
+   rather than left exported: the only call site was MarketsPage, and a second
+   candle implementation that nothing renders is the thing that drifts out of
+   agreement with the one that does.
+   `EmptyBox` stayed — MultiLine, AreaSeries and BarSeries all mount through it,
+   and its reasoning (the v6.0.12 ref-identity bug) governs CandleCanvas too.
    ════════════════════════════════════════════════════════════════════ */
-
-export interface CandleChartProps {
-  candles: Candle[];
-  days: number;
-  height?: number;
-  status?: SeriesStatus;
-}
 
 /**
  * The empty/loading state of a measured chart — and the reason it exists is
@@ -253,164 +247,6 @@ function EmptyBox({
   return (
     <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
       {children}
-    </div>
-  );
-}
-
-function CandleChartImpl({ candles, days, height = 300, status = "live" }: CandleChartProps) {
-  const reduced = useReducedMotion();
-  const fade = useMountFade(reduced);
-  const boxRef = React.useRef<HTMLDivElement>(null);
-  const { w: measured, ready, fs } = useChartMetrics(boxRef);
-  const vbW = measured || VB_W;
-  const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
-
-  // Empty state still mounts the MEASURED box — see EmptyBox.
-  if (!candles?.length) return <EmptyBox boxRef={boxRef} height={height} />;
-  const stale = status === "stale";
-  const W = vbW;
-  const padT = 14;
-  const volH = Math.max(28, Math.round(height * 0.16));
-  const dateH = 22;
-  const priceH = height - padT - volH - dateH - 10;
-  const n = candles.length;
-
-  const lo = Math.min(...candles.map((c) => c.l));
-  const hi = Math.max(...candles.map((c) => c.h));
-  const pad = (hi - lo || 1) * 0.06;
-  const yMin = lo - pad, yMax = hi + pad, yRng = yMax - yMin || 1;
-  const py = (v: number) => padT + priceH - ((v - yMin) / yRng) * priceH;
-
-  // Gutters exist to make room for TEXT, so they are derived from it. Below
-  // 420px the y labels ride above their own gridline INSIDE the plot, which
-  // reclaims ~55px of a 358px canvas.
-  const yTicks = niceTicks(yMin, yMax, tickCount(priceH, fs.tick));
-  const yInside = W < 420;
-  const padL = yInside ? 8 : Math.ceil(estTextW(Math.max(...yTicks.map((t) => fmtPrice(t).length)), fs.tick)) + 10;
-  const padR = Math.ceil(estTextW(fmtPrice(candles[n - 1].c).length, fs.label)) + 14;
-  const innerW = Math.max(10, W - padL - padR);
-
-  const maxV = Math.max(1, ...candles.map((c) => c.v));
-  const volTop = padT + priceH + 8;
-  const vy = (v: number) => volTop + volH - (v / maxV) * volH;
-
-  const slot = innerW / n;
-  const cw = Math.max(0.6, Math.min(14, slot - slot * 0.28));
-  const cx = (i: number) => padL + i * slot + (slot - cw) / 2;
-  const mid = (i: number) => cx(i) + cw / 2;
-
-  // annotations (d10): high / low / average / period change
-  const hiIdx = candles.reduce((m, c, i) => (c.h > candles[m].h ? i : m), 0);
-  const loIdx = candles.reduce((m, c, i) => (c.l < candles[m].l ? i : m), 0);
-  const avg = candles.reduce((a, c) => a + c.c, 0) / n;
-  const first = candles[0].o, last = candles[n - 1].c;
-  const changePct = ((last - first) / (first || 1)) * 100;
-  const lastUp = last >= first;
-
-  const xStep = labelStep(n, innerW, fs.tick, 6);
-
-  const cross = slotIndex(vx, { padL, slot, cw, n });
-  const cc = cross != null ? candles[cross] : null;
-
-  return (
-    <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
-    {ready ? (
-    <svg
-      ref={svgRef}
-      viewBox={`0 0 ${W} ${height}`}
-      width="100%"
-      style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
-      {...cursorHandlers}
-    >
-      {/* y gridlines + price labels */}
-      {yTicks.map((t) => (
-        <g key={"y" + t}>
-          <line x1={padL} y1={py(t)} x2={padL + innerW} y2={py(t)} stroke={GRID} strokeDasharray="2 4" />
-          <text x={yInside ? padL + 3 : padL - 8} y={yInside ? py(t) - 4 : py(t) + 3} textAnchor={yInside ? "start" : "end"} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtPrice(t)}</text>
-        </g>
-      ))}
-
-      {/* x date ticks */}
-      {candles.map((c, i) => (i % xStep === 0 ? (
-        <g key={"x" + i}>
-          <line x1={mid(i)} y1={padT + priceH} x2={mid(i)} y2={padT + priceH + 4} stroke={AXIS} />
-          <text x={mid(i)} y={height - 6} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(c.t, days)}</text>
-        </g>
-      ) : null))}
-
-      {/* average line */}
-      <line x1={padL} y1={py(avg)} x2={padL + innerW} y2={py(avg)} stroke="var(--ink-40)" strokeWidth="0.8" strokeDasharray="5 4" opacity={0.7} />
-      <text x={padL + 4} y={py(avg) - 4} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>avg {fmtPrice(avg)}</text>
-
-      {/* candles */}
-      <g opacity={stale ? 0.5 : 1}>
-        {candles.map((c, i) => {
-          const up = c.c >= c.o;
-          const x = cx(i);
-          const bodyTop = py(Math.max(c.o, c.c));
-          const bodyH = Math.max(0.8, Math.abs(py(c.o) - py(c.c)));
-          return (
-            <g key={i}>
-              <line x1={x + cw / 2} y1={py(c.h)} x2={x + cw / 2} y2={py(c.l)} stroke={up ? UP_STROKE : DN_STROKE} strokeWidth={Math.max(0.5, cw * 0.14)} />
-              <rect x={x} y={bodyTop} width={cw} height={bodyH} fill={up ? UP_FILL : DN_FILL} stroke={up ? UP_STROKE : DN_STROKE} strokeWidth="0.5" />
-            </g>
-          );
-        })}
-      </g>
-
-      {/* volume sub-bars (aligned 1:1 under candles) */}
-      <line x1={padL} y1={volTop + volH} x2={padL + innerW} y2={volTop + volH} stroke={GRID} />
-      <text x={yInside ? padL + 3 : padL - 8} y={volTop + 9} textAnchor={yInside ? "start" : "end"} fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>VOL</text>
-      <g opacity={stale ? 0.35 : 0.55}>
-        {candles.map((c, i) => {
-          if (!c.v) return null;
-          const up = c.c >= c.o;
-          const y = vy(c.v);
-          return <rect key={"v" + i} x={cx(i)} y={y} width={cw} height={volTop + volH - y} fill={up ? UP_STROKE : DN_STROKE} />;
-        })}
-      </g>
-
-      {/* high / low markers */}
-      <g fontFamily="var(--f-mono)" fontSize={fs.label}>
-        <circle cx={mid(hiIdx)} cy={py(candles[hiIdx].h)} r="2" fill={UP_STROKE} />
-        <text x={Math.min(mid(hiIdx), padL + innerW - 50)} y={py(candles[hiIdx].h) - 6} textAnchor="middle" fill={UP_STROKE}>H {fmtPrice(candles[hiIdx].h)}</text>
-        <circle cx={mid(loIdx)} cy={py(candles[loIdx].l)} r="2" fill={DN_STROKE} />
-        <text x={Math.min(mid(loIdx), padL + innerW - 50)} y={py(candles[loIdx].l) + 13} textAnchor="middle" fill={DN_STROKE}>L {fmtPrice(candles[loIdx].l)}</text>
-      </g>
-
-      {/* last-price line + pill */}
-      <line x1={padL} y1={py(last)} x2={padL + innerW} y2={py(last)} stroke={lastUp ? UP_STROKE : DN_STROKE} strokeWidth="0.8" strokeDasharray="1 3" opacity={0.8} />
-      <g transform={`translate(${padL + innerW + 3}, ${py(last)})`}>
-        <rect x="0" y="-8" width={padR - 6} height="16" rx="2" fill={lastUp ? UP_STROKE : DN_STROKE} />
-        <text x={(padR - 6) / 2} y="3.5" textAnchor="middle" fontFamily="var(--f-mono)" fontSize={fs.label} fill="var(--surface-base)" fontWeight={600}>{fmtPrice(last)}</text>
-      </g>
-
-      {/* period-change badge */}
-      <g transform={`translate(${padL + 4}, ${padT + 4})`}>
-        <text fontFamily="var(--f-mono)" fontSize={Math.round(fs.label * 1.15)} fill={changePct >= 0 ? UP_STROKE : DN_STROKE} fontWeight={600}>
-          {changePct >= 0 ? "▲ +" : "▼ "}{changePct.toFixed(1)}%
-        </text>
-      </g>
-
-      {stale ? (
-        <text data-decorative x={W / 2} y={padT + priceH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={Math.max(fs.label * 2, Math.min(34, W * 0.09))} fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
-      ) : null}
-
-      {/* crosshair + readout */}
-      {cc ? (
-        <g pointerEvents="none">
-          <line x1={mid(cross!)} y1={padT} x2={mid(cross!)} y2={padT + priceH} stroke="var(--ink-40)" strokeDasharray="2 3" />
-          <line x1={padL} y1={py(cc.c)} x2={padL + innerW} y2={py(cc.c)} stroke="var(--ink-40)" strokeDasharray="2 3" />
-          <ChartTip x={mid(cross!)} y={padT + 6} bounds={{ left: padL, right: padL + innerW }} width={148} height={58}>
-            <text x="8" y="14" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>{fmtDate(cc.t, days)}</text>
-            <text x="8" y="28" fontFamily="var(--f-mono)" fontSize={fs.tick} fill="var(--ink-80)">O {fmtPrice(cc.o)}  H {fmtPrice(cc.h)}</text>
-            <text x="8" y="40" fontFamily="var(--f-mono)" fontSize={fs.tick} fill="var(--ink-80)">L {fmtPrice(cc.l)}  C {fmtPrice(cc.c)}</text>
-            <text x="8" y="52" fontFamily="var(--f-mono)" fontSize={fs.tick} fill={AXIS}>V {fmtVol(cc.v)}</text>
-          </ChartTip>
-        </g>
-      ) : null}
-    </svg>
-    ) : null}
     </div>
   );
 }
@@ -1190,17 +1026,16 @@ function BarSeriesImpl({
 /* ── memo boundaries (v6.0.8) ───────────────────────────────────────
    MarketsPage subscribes to the live feed, so every tick re-renders it — and
    with no memo boundary anywhere, re-invoked every chart body above. That is
-   two full `candles.map()` passes rebuilding SVG trees (CandleChart), and a
-   per-point normalise + domain scan over up to 7 series × 365 points
-   (MultiLine/AreaSeries/BarSeries), to produce byte-identical output.
+   a per-point normalise + domain scan over up to 7 series × 365 points
+   (MultiLine/AreaSeries/BarSeries), producing byte-identical output.
 
    No dep-array surgery was needed: every data prop is a direct read of
-   `hist.<series>.data`, and useMarketHistory's effect is keyed [days,
-   retryNonce] — independent of the feed — so those arrays keep a stable
-   identity between range changes. The one prop that was NOT stable was the
-   `format` callback, passed as an inline arrow at several call sites; those
-   are hoisted to module scope so this boundary actually holds. */
-export const CandleChart = React.memo(CandleChartImpl);
+   `hist.<series>.data`, and useMarketHistory's base effect is keyed
+   [wantDeep, retryNonce] — independent of the feed AND, since p3·12, of the
+   range — so those arrays keep a stable identity across a preset click. The
+   one prop that was NOT stable was the `format` callback, passed as an inline
+   arrow at several call sites; those are hoisted to module scope so this
+   boundary actually holds. */
 export const MultiLine = React.memo(MultiLineImpl);
 export const AreaSeries = React.memo(AreaSeriesImpl);
 export const BarSeries = React.memo(BarSeriesImpl);

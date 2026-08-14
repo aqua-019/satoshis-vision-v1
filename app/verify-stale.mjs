@@ -10,7 +10,7 @@ import * as mh from './src/data/useMarketHistory.ts';
 
 const {
   cacheKey, readCache, writeCache, groupStatus, LS_PREFIX, LS_MAX_AGE_MS,
-  seriesColor, PEER_PALETTE, MAJOR_PALETTE, XMR_COLOR,
+  seriesColor, PEER_PALETTE, MAJOR_PALETTE, XMR_COLOR, pruneLegacyCache,
 } = mh;
 
 let fail = false;
@@ -51,6 +51,55 @@ const throwing = { setItem: () => { throw new Error('QuotaExceededError'); } };
 let threw = false;
 try { writeCache(throwing, key, series, t0); } catch { threw = true; }
 ok(!threw, 'writeCache swallows quota errors');
+
+/* 5b) p3·12 · the base rewrite retires three key KINDS without bumping the
+   `mh:v1:` prefix, because no surviving key changed shape. That is only safe if
+   the retirement is exhaustive AND surgical — a prune that took one live key
+   with it would silently cost every returning visitor their offline fallback,
+   which is the whole reason the prefix was NOT bumped. So both directions are
+   asserted: everything doomed goes, everything else stays, byte for byte. */
+ok(typeof pruneLegacyCache === 'function',
+  'useMarketHistory exports pruneLegacyCache (absent = the retirement never runs)');
+if (typeof pruneLegacyCache === 'function') {
+  const store = new Map([
+    // doomed — nothing reads these after p3·12
+    [`${LS_PREFIX}ratio|monero|btc|30`, '{"at":1,"data":[1]}'],
+    [`${LS_PREFIX}ratio|monero|btc|365`, '{"at":1,"data":[1]}'],
+    [`${LS_PREFIX}line|bitcoin|usd|7`, '{"at":1,"data":[1]}'],
+    [`${LS_PREFIX}ohlc|monero|usd|90`, '{"at":1,"data":[1]}'],
+    [`${LS_PREFIX}ohlc|monero|usd|365`, '{"at":1,"data":[1]}'],
+    // survivors — the fine base, the group series, the manifests, the meta
+    [`${LS_PREFIX}ohlc|monero|usd|30`, '{"at":1,"data":[1]}'],
+    [`${LS_PREFIX}samples|monero|usd|90`, '{"at":1,"data":{}}'],
+    [`${LS_PREFIX}samples|monero|btc|365`, '{"at":1,"data":{}}'],
+    [`${LS_PREFIX}chart|zcash|usd|30`, '{"at":1,"data":{}}'],
+    [`${LS_PREFIX}members|peers|usd|0`, '{"at":1,"data":[]}'],
+    [`${LS_PREFIX}meta|monero|usd|0`, '{"at":1,"data":{}}'],
+    // a foreign key: this prefix is not ours to sweep
+    ['unrelated:thing', 'x'],
+  ]);
+  const shimStore = {
+    get length() { return store.size; },
+    key: (i) => [...store.keys()][i] ?? null,
+    removeItem: (k) => { store.delete(k); },
+  };
+  const removed = pruneLegacyCache(shimStore, 30).sort();
+  const expected = [
+    `${LS_PREFIX}line|bitcoin|usd|7`,
+    `${LS_PREFIX}ohlc|monero|usd|365`,
+    `${LS_PREFIX}ohlc|monero|usd|90`,
+    `${LS_PREFIX}ratio|monero|btc|30`,
+    `${LS_PREFIX}ratio|monero|btc|365`,
+  ].sort();
+  ok(JSON.stringify(removed) === JSON.stringify(expected),
+    `prune removes exactly the five retired keys (got ${removed.length}: ${JSON.stringify(removed)})`);
+  ok(store.size === 7, `prune leaves the six live keys + the foreign one (${store.size})`);
+  ok(store.has(`${LS_PREFIX}ohlc|monero|usd|30`), 'prune KEEPS the fine base — the offline fallback survives');
+  ok(store.has('unrelated:thing'), 'prune touches nothing outside the mh: prefix');
+  ok(pruneLegacyCache(null).length === 0, 'prune on a null store (private mode) is a no-op');
+  const again = pruneLegacyCache(shimStore, 30);
+  ok(again.length === 0, `prune is idempotent — a second pass removes nothing (${again.length})`);
+}
 
 // 6) groupStatus: live wins, then stale, then loading.
 const s = (status) => ({ status });

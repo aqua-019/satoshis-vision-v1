@@ -4,3 +4,8 @@ dist-ssr/
 *.tsbuildinfo
 .shots
 .perf
+
+# p3·12 measurement artifacts — probe-shots.mjs writes here. These are
+# evidence for a review, not source; the repo already ignores .shots for the
+# same reason.
+shots/
