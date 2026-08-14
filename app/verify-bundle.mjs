@@ -940,6 +940,15 @@ const ROUTE_BUDGET_GZ = {
                                      //    index (entry)  +376   see eagerJsRaw
                                      //    PanelBoundary    +1
                                      //    Skeleton         -1
+                                     //  Those last two are RAW-IDENTICAL and gzip by one byte
+                                     //  differently, which is why a raw-delta table can never
+                                     //  fully attribute a gzip route number: both chunks embed
+                                     //  the eager entry's 8-char content hash as an import
+                                     //  specifier, that hash changed, and the substitution is
+                                     //  length-preserving — so raw moves 0 and only the
+                                     //  compressor notices. They are invisible by construction
+                                     //  in any raw-based attribution, and they are exactly the
+                                     //  2 B an earlier approximate pass left over.
                                      //    vendor, useChartMetrics, usePendingDelay,
                                      //    useUrlState       0    byte-identical
                                      //                ────────
@@ -973,11 +982,21 @@ const ROUTE_BUDGET_GZ = {
                                      //  another 11 KB.
                                      //  THE WIDER CONDITION, recorded because this line is only
                                      //  the first to cross: every `measured` figure in this table
-                                     //  is stale. /live/mempool reads 96,835 and measures 103,977;
-                                     //  /live/markets reads 95,817 and measures 102,484. Both sit
-                                     //  at 96-99% of ceilings written to hold ~10%. Re-measuring
-                                     //  the whole table is its own change; doing it here would
-                                     //  bury a budget re-baseline inside a layout PR.
+                                     //  is stale, and this paragraph's own citations went stale
+                                     //  after it too. p3·12b re-measured them: /live/mempool reads
+                                     //  96,835 and measures 104,793 (this said 103,977);
+                                     //  /live/markets no longer "reads 95,817" at all — p3·12
+                                     //  rewrote that row to 108,918 against a 112,000 ceiling, so
+                                     //  the one route this note cited as evidence is now the one
+                                     //  route that has been re-baselined. The other eleven have
+                                     //  not, and several still sit at 96-99% of ceilings written
+                                     //  to hold ~10%: /about/sources 94,358 of 95,000 (99.3%),
+                                     //  /future/outlook 91,081 of 92,000 (99.0%), /operate/node
+                                     //  90,738 of 92,000 (98.6%). Re-measuring the whole table is
+                                     //  still its own change; doing it here would bury a budget
+                                     //  re-baseline inside a defect fix. But a comment that
+                                     //  reports staleness has to not BE stale, which is why the
+                                     //  numbers above were re-run rather than left standing.
   '/learn':                 108_000, //  97,870
   '/learn/sim':              94_000, //  85,723 — v6.1.5 PR B: was 133,676/148,000 when this
                                      //           carried all 16 protocol modules eagerly. The 21

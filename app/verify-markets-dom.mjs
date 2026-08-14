@@ -640,10 +640,15 @@ console.log('\nverify-markets-dom — canvas hero');
      the drawn window ends where the fetched span ends — every unbrushed view —
      and wrong the moment a brush pulls the right edge inward, because the final
      candle then sweeps every sample between it and the end of the span. Measured
-     on the pre-fix build in exactly the state below: one cell read **$40.1B**
-     against $480.0M for every true 4h bucket, ~334 hourly samples' worth, and
-     its VOL sub-bar went full height and flattened every other bar through
-     `maxV`.
+     on the pre-fix build IN THE STATE BELOW: one cell read **$9,700.0M**
+     against $480.0M for every true 4h bucket, and its VOL sub-bar went full
+     height and flattened every other bar through `maxV`.
+     The figure is state-dependent and this comment is careful to say whose:
+     the defect was reported to us as $40.1B, measured from a different window
+     (30D, zoomed, one ArrowLeft), and $40.1B is what THAT state produces. The
+     magnitude is just "however many hourly samples lie right of the window
+     edge", so quoting a number from someone else's window beside this gate's
+     own steps would describe a run that never happened here.
      Nothing reddened. Twenty-odd assertions on this page count bars, rows,
      labels, requests and pixels; not one of them reads a NUMBER the chart
      prints. A wrong dollar figure on a live surface is the first rule in this
