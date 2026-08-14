@@ -35,9 +35,13 @@ import {
   type SeriesStatus,
   type LineSeries,
   type GroupResult,
+  type PairBases,
+  type PriceSamples,
 } from "@/data/useMarketHistory";
 import { useTickers } from "@/data/useTickers";
-import { CandleChart, MultiLine, AreaSeries } from "./markets/charts";
+import { MultiLine, AreaSeries } from "./markets/charts";
+import { CandleCanvas, type TimeWindow } from "./markets/CandleCanvas";
+import { DAY_MS, baseSpanMs, type DrawnSeries } from "./markets/candle-data";
 import { assertNever, hasData } from "@/data/feed-status";
 import { useUrlState } from "@/routes/useUrlState";
 import { Swap, SkeletonBox, SkeletonRows } from "@/design/Skeleton";
@@ -251,6 +255,43 @@ const SWAP_DIRECTORY = [
   { name: "LocalMonero", pair: "—", type: "p2p · shut down 2024" },
 ];
 
+/**
+ * A ratio/line series windowed out of a sample base, strided to something an
+ * SVG path can carry. 2,160 hourly samples is one `<path d>` of ~2,100 cubic
+ * segments — a ~100 kB attribute string rebuilt on every brush move — and the
+ * chart is 320 px wide at its narrowest, so nothing past a few hundred points
+ * is resolvable anyway. The stride is uniform and drops points; it never
+ * averages them, because an averaged point is a value the market never printed.
+ */
+const LINE_MAX_POINTS = 420;
+
+function windowSamples(src: PriceSamples | null, win: TimeWindow): { data: number[]; t: number[] } {
+  if (!src) return { data: [], t: [] };
+  const t: number[] = [], data: number[] = [];
+  for (let i = 0; i < src.t.length; i++) {
+    if (src.t[i] < win.from || src.t[i] > win.to) continue;
+    t.push(src.t[i]); data.push(src.p[i]);
+  }
+  const stride = Math.max(1, Math.ceil(data.length / LINE_MAX_POINTS));
+  if (stride === 1) return { data, t };
+  const dt: number[] = [], dd: number[] = [];
+  for (let i = 0; i < data.length; i += stride) { dt.push(t[i]); dd.push(data[i]); }
+  // Always keep the newest point: a stride that lands short of the end would
+  // silently move "last price" backwards by up to `stride` samples.
+  if (dt[dt.length - 1] !== t[t.length - 1] && t.length) { dt.push(t[t.length - 1]); dd.push(data[data.length - 1]); }
+  return { data: dd, t: dt };
+}
+
+/** Which of a pair's two bases covers a window. Mirrors candle-data's pickBase;
+ *  a LINE has no bucket ladder, so it only needs the coverage half. */
+function pickPair(p: PairBases, win: TimeWindow): { samples: PriceSamples | null; status: SeriesStatus; at: number } {
+  const deepNeeded = win.to - win.from > baseSpanMs("mid");
+  const chosen = deepNeeded ? p.deep : p.mid;
+  if (chosen.data) return { samples: chosen.data, status: chosen.status, at: chosen.at };
+  const other = deepNeeded ? p.mid : p.deep;
+  return { samples: other.data, status: other.data ? other.status : chosen.status, at: other.data ? other.at : chosen.at };
+}
+
 export function MarketsPage() {
   const data = useMoneroLive();
   // `?range=` is a SECONDARY, high-frequency control of the SAME content, so
@@ -269,14 +310,106 @@ export function MarketsPage() {
   });
   const days = RANGE_DAYS[range];
 
+  /* THE WINDOW, and why it is state rather than a function of `range`.
+     A preset now MOVES the brush: it writes a window, and the brush writes one
+     back. If the window were derived from `range` the brush could not exist —
+     every drag would be reverted on the next render. `range` survives as the
+     preset that seeded it (and as the aggregator's `days`), so the URL, the
+     panel titles and the group memberships all keep working unchanged. */
+  const [win, setWin] = React.useState<TimeWindow>(() => {
+    const to = Date.now();
+    return { from: to - RANGE_DAYS[range] * DAY_MS, to };
+  });
+  /* A window deeper than the MID base is the ONLY thing that fetches the deep
+     base. Held as state, never reset: once a reader has been to a year, walking
+     back to 7D must not throw the year's data away and re-buy it. */
+  const [wantDeep, setWantDeep] = React.useState(() => RANGE_DAYS[range] * DAY_MS > baseSpanMs("mid"));
+  React.useEffect(() => {
+    if (win.to - win.from > baseSpanMs("mid")) setWantDeep(true);
+  }, [win.from, win.to]);
+
+  /* THE WINDOW'S RIGHT EDGE IS THE DATA'S, NOT THE CLOCK'S.
+     `Date.now()` is the obvious anchor and it is wrong: CoinGecko's history
+     lags real time (its own edge cache, plus this proxy's hour), so a window
+     ending at "now" reserves the right-hand slice of the plot for candles that
+     do not exist yet. At 7D that slice was the WHOLE WINDOW in testing — a
+     legitimately-populated chart rendering zero bars, which reads as an outage.
+     So the anchor is the newest fetched sample once anything has arrived, and
+     the clock only until then. */
+  const spanRef = React.useRef<TimeWindow | null>(null);
+  const anchorNow = React.useCallback(() => spanRef.current?.to ?? Date.now(), []);
+
+  const setRangeAndWindow = React.useCallback((r: RangeKey) => {
+    setRange(r);
+    const to = anchorNow();
+    setWin({ from: to - RANGE_DAYS[r] * DAY_MS, to });
+  }, [setRange, anchorNow]);
+
   // REAL market history (CoinGecko via /api/coingecko + /api/markets); failures
   // degrade to the last-good cache per series, labelled STALE.
-  const hist = useMarketHistory(days);
+  const hist = useMarketHistory(days, wantDeep);
   const tickers = useTickers();
-  const xmrCandles = hist.xmrCandles.data;
-  const xmrBtcSeries = hist.xmrBtc.data;
   const peerSeries = hist.peers.data;
   const topSeries = hist.top.data;
+
+  /* What the hero reports back about the series it actually drew — the bucket
+     it chose and the base it came from. The panel header states it verbatim, so
+     "180 bars · 4h · CG OHLC" is the chart describing itself rather than the
+     page guessing from `days`. */
+  const [drawnSeries, setDrawnSeries] = React.useState<DrawnSeries | null>(null);
+
+  /* The brush shows everything FETCHED, not everything drawn. Deep when it has
+     arrived, else mid, else the fine base — whichever reaches furthest back. */
+  const fullSpan: TimeWindow | null = React.useMemo(() => {
+    const cands = [hist.usd.deep.data, hist.usd.mid.data]
+      .filter((x): x is PriceSamples => !!x && x.t.length > 1)
+      .map((x) => ({ from: x.t[0], to: x.t[x.t.length - 1] }));
+    if (hist.fine.data.length > 1) {
+      const f = hist.fine.data;
+      cands.push({ from: f[0].t, to: f[f.length - 1].t });
+    }
+    if (!cands.length) return null;
+    return {
+      from: Math.min(...cands.map((c) => c.from)),
+      to: Math.max(...cands.map((c) => c.to)),
+    };
+  }, [hist.usd.deep.data, hist.usd.mid.data, hist.fine.data]);
+
+  spanRef.current = fullSpan;
+  /* One-way clamp on the RIGHT EDGE ONLY, and the asymmetry is the whole point.
+     Pulling `to` back onto the newest fetched sample fixes the empty-chart case
+     above. Pulling `from` forward would ALSO look reasonable and is a bug: the
+     1Y preset writes a 365-day window while only the 90-day base has landed, so
+     a both-edges clamp shortens it to 90 days — and since the clamp only ever
+     shrinks, the deep base then arrives to find nothing left asking for it.
+     Measured before the fix: 1Y reported "361 bars · 6h · hourly samples",
+     which is a correct rendering of a window the reader did not select.
+     A window reaching back past the fetched data just draws a gap on the left
+     until the deeper base fills it, which is what a gap is for. */
+  React.useEffect(() => {
+    if (!fullSpan) return;
+    setWin((w) => (w.to <= fullSpan.to ? w : { from: w.from - (w.to - fullSpan.to), to: fullSpan.to }));
+  }, [fullSpan]);
+
+  const ratioPick = pickPair(hist.btc, win);
+  const ratioWin = React.useMemo(() => windowSamples(ratioPick.samples, win), [ratioPick.samples, win.from, win.to]);
+  const xmrBtcSeries = ratioWin.data;
+  const candleStatus: SeriesStatus = hist.fine.status === "live" || hist.usd.mid.status === "live" ? "live"
+    : hist.fine.data.length || hist.usd.mid.data ? "stale" : hist.fine.status;
+
+  /* THE TITLE MUST NAME WHAT IS DRAWN. Once a brush exists, "30D candles" is a
+     claim the chart stops keeping the moment anyone drags — so the preset name
+     is used only while the window still IS that preset (within a day, which is
+     the granularity a reader can perceive in a title), and otherwise the title
+     states the span it is actually showing. The GROUP panels below keep saying
+     `range` and are right to: they are fetched at that range and the brush does
+     not reach them. */
+  const winDays = (win.to - win.from) / DAY_MS;
+  const windowLabel = Math.abs(winDays - days) < 1
+    ? range
+    : winDays < 2 ? `${Math.round(winDays * 24)}h window`
+    : winDays < 400 ? `${Math.round(winDays)}d window`
+    : `${(winDays / 365).toFixed(1)}y window`;
 
   // D0858: a fetch round for useMarketHistory's endpoints is on the wire right
   // now. usePendingDelay keeps a fast (cached-TTL) round from flickering the
@@ -333,7 +466,7 @@ export function MarketsPage() {
         right={
           <div style={{ display: "flex", gap: 4 }}>
             {RANGE_KEYS.map((r) => (
-              <button key={r} type="button" aria-pressed={range === r} onClick={() => setRange(r)} className="proto-btn"
+              <button key={r} type="button" aria-pressed={range === r} onClick={() => setRangeAndWindow(r)} className="proto-btn"
                 style={{
                   padding: "5px 10px", fontSize: "var(--fs-label)",
                   borderColor: range === r ? "var(--tk-accent)" : "var(--ink-20)",
@@ -367,29 +500,43 @@ export function MarketsPage() {
         />
       </section>
 
-      {/* Candle chart */}
+      {/* Candle chart — canvas hero + brush + accessible table (D0843/D0835/D0847) */}
       <PanelFrame
-        title={`XMR / USD · ${range} candles`}
-        right={<SourceBadge status={hist.xmrCandles.status} prefix={`${xmrCandles.length} bars · ${hist.xmrCandles.granularityLabel}`} />}
-        updatedAt={hist.xmrCandles.at}
+        title={`XMR / USD · ${windowLabel} candles`}
+        right={<SourceBadge status={candleStatus} prefix={`${drawnSeries?.candles.length ?? 0} bars · ${drawnSeries?.granularityShort ?? "—"}`} />}
+        updatedAt={hist.fine.at || hist.usd.mid.at}
         refreshing={historyPending}
       >
-        <PanelBoundary keys={["market"]} also="/api/markets" reserve={CANDLE_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.xmrCandles.at]}>
-          <Swap ready={hist.xmrCandles.status !== "loading"} reserve={CANDLE_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={CANDLE_CHART_HEIGHT} radius={3} />}>
-            <CandleChart candles={xmrCandles} days={days} status={hist.xmrCandles.status} height={CANDLE_CHART_HEIGHT} />
+        <PanelBoundary keys={["market"]} also="/api/markets" reserve={CANDLE_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.fine.at]}>
+          <Swap ready={candleStatus !== "loading"} reserve={CANDLE_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={CANDLE_CHART_HEIGHT} radius={3} />}>
+            <CandleCanvas
+              fine={hist.fine.data.length ? hist.fine.data : null}
+              mid={hist.usd.mid.data}
+              deep={hist.usd.deep.data}
+              window={win}
+              onWindow={setWin}
+              fullSpan={fullSpan}
+              height={CANDLE_CHART_HEIGHT}
+              status={candleStatus}
+              onSeries={setDrawnSeries}
+            />
           </Swap>
         </PanelBoundary>
+        <p className="mono dim cc-help" style={{ marginTop: 8, fontSize: "var(--fs-label)" }}>
+          Drag the strip to pan · drag an edge to resize · double-click to reset.
+          Range buttons move the window; they do not refetch.
+        </p>
       </PanelFrame>
 
       {/* XMR/BTC ratio + XMR vs Top majors */}
       <section className="col-2" style={{ gap: 12 }}>
-        <PanelFrame title={`XMR / BTC · ratio · ${range}`} right={<SourceBadge status={hist.xmrBtc.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />} updatedAt={hist.xmrBtc.at} refreshing={historyPending}>
-          <PanelBoundary keys={["market"]} also="/api/markets" reserve={RATIO_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[hist.xmrBtc.at]}>
-            <Swap ready={hist.xmrBtc.status !== "loading"} reserve={RATIO_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={RATIO_CHART_HEIGHT} radius={3} />}>
-              <AreaSeries data={xmrBtcSeries} days={days} height={RATIO_CHART_HEIGHT}
+        <PanelFrame title={`XMR / BTC · ratio · ${windowLabel}`} right={<SourceBadge status={ratioPick.status} prefix={xmrBtcSeries.length ? `${(lastRatio * 1e5).toFixed(2)} sat` : undefined} />} updatedAt={ratioPick.at} refreshing={historyPending}>
+          <PanelBoundary keys={["market"]} also="/api/markets" reserve={RATIO_CHART_HEIGHT} onRetry={hist.retry} resetKeys={[ratioPick.at]}>
+            <Swap ready={ratioPick.status !== "loading"} reserve={RATIO_CHART_HEIGHT} skeleton={<SkeletonBox w="100%" h={RATIO_CHART_HEIGHT} radius={3} />}>
+              <AreaSeries data={xmrBtcSeries} t={ratioWin.t} days={winDays} height={RATIO_CHART_HEIGHT}
                 color="var(--tk-accent)" baseline="auto"
                 format={fmtSat}
-                stale={hist.xmrBtc.status === "stale"} />
+                stale={ratioPick.status === "stale"} />
             </Swap>
           </PanelBoundary>
           <p className="mono dim" style={{ marginTop: 8, fontSize: "var(--fs-mono)" }}>

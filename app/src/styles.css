@@ -1173,6 +1173,120 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 }
 
 @layer components {
+/* ══ markets hero — canvas candles + brush + accessible table (p3·12) ══
+   Every glyph on this chart is a DOM node in `.cc-labels`, positioned over the
+   canvas in the SAME geometry the painter uses. That is not a styling
+   preference: canvas text is invisible to verify-legibility, to every collision
+   sweep, to find-in-page and to a screen reader. The canvas holds geometry, the
+   overlay holds language, and the type floor applies to the overlay because
+   that is where the type is. */
+.cc-root { position: relative; }
+.cc-stage { position: relative; width: 100%; }
+.cc-canvas { display: block; touch-action: pan-y; cursor: crosshair; }
+.cc-labels {
+  position: absolute; inset: 0; pointer-events: none;
+  font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+  color: var(--ink-40);
+}
+.cc-labels > span { position: absolute; white-space: nowrap; font-size: var(--fs-label); line-height: 1; }
+.cc-ytick { transform: translateY(-50%); }
+.cc-xtick { color: var(--ink-40); }
+.cc-vol-label { transform: translateY(-2px); letter-spacing: 0.08em; }
+.cc-pill {
+  transform: translate(-100%, -50%);
+  padding: 2px 5px; border-radius: 2px;
+  color: var(--surface-base); font-weight: 600;
+}
+.cc-change { font-weight: 600; }
+.cc-stale {
+  left: 50%; top: 38%; transform: translate(-50%, -50%);
+  color: var(--ink-20); opacity: 0.25; letter-spacing: 0.3em;
+  font-size: clamp(20px, 6vw, 34px);
+}
+.cc-tip {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px 8px; border: 1px solid var(--rule); border-radius: 2px;
+  /* Deliberately NOT the chart-kit tooltip literal: verify-chartkit.mjs:88-93
+     asserts `rgba(8,7,5,0.94)` appears in exactly ONE file across the tree, and
+     a second copy here would take that count to 2 and fail a green gate. This
+     is a token mix, which is what the rest of the app uses anyway. */
+  background: color-mix(in srgb, var(--surface-sunk) 94%, transparent);
+  color: var(--ink-80);
+}
+.cc-tip b { color: var(--ink-100); font-weight: 500; }
+
+/* ── the brush (D0835) ────────────────────────────────────────── */
+.cc-brush {
+  position: relative; width: 100%; margin-top: 6px;
+  border-top: 1px solid var(--line-d);
+  cursor: crosshair; touch-action: pan-y; user-select: none;
+}
+.cc-brush-canvas { display: block; width: 100%; height: 100%; }
+.cc-brush-mask {
+  position: absolute; top: 0; bottom: 0;
+  background: color-mix(in srgb, var(--surface-base) 62%, transparent);
+  pointer-events: none;
+}
+.cc-brush-win {
+  position: absolute; top: 0; bottom: 0;
+  border-left: 1px solid var(--tk-accent); border-right: 1px solid var(--tk-accent);
+  background: color-mix(in srgb, var(--tk-accent) 8%, transparent);
+  cursor: grab;
+}
+.cc-brush-win:focus-visible { outline: 2px solid var(--ui-accent, var(--tk-accent)); outline-offset: 1px; }
+.cc-brush-grip {
+  position: absolute; top: 0; bottom: 0; width: 10px; left: -5px;
+  cursor: ew-resize;
+}
+.cc-brush-grip::after {
+  content: ""; position: absolute; top: 50%; left: 3px;
+  width: 4px; height: 18px; margin-top: -9px; border-radius: 1px;
+  background: var(--tk-accent);
+}
+.cc-brush-grip-r { left: auto; right: -5px; }
+
+/* ── the accessible table (D0847) ─────────────────────────────────
+   NEVER display:none. It is the only accessibility tree this chart has, so it
+   is CLIPPED (a scroll box with a height cap) rather than removed. On a phone
+   and under reduced motion it is the primary reading of the chart, not a
+   fallback, and it is scrolled to the top so the newest bucket is one swipe
+   away rather than four hundred rows down. */
+.cc-table {
+  display: block; width: 100%; margin-top: 10px;
+  max-height: 210px; overflow: auto; overscroll-behavior: contain;
+  border-top: 1px solid var(--line-d);
+  font-family: var(--f-mono); font-size: var(--fs-label);
+  font-variant-numeric: tabular-nums;
+  border-collapse: collapse;
+}
+.cc-table caption {
+  position: sticky; left: 0;
+  padding: 6px 0 4px; text-align: left;
+  color: var(--ink-40); font-size: var(--fs-label);
+}
+.cc-table thead th {
+  position: sticky; top: 0; z-index: 1;
+  background: var(--surface-base);
+  padding: 4px 8px 4px 0; text-align: right;
+  color: var(--ink-60); font-weight: 500;
+  border-bottom: 1px solid var(--line-d);
+  /* At 390 the six columns squeezed the headers until the browser broke them
+     INSIDE the words — "Ope n", "Hig h", "Clo se". A header that hyphenates
+     itself into nonsense is worse than one you have to swipe to, so the row
+     stays on one line and the table scrolls sideways inside its own box, which
+     is the treatment `.table-scroll` already gives every wide table here. */
+  white-space: nowrap;
+}
+.cc-table thead th:first-child, .cc-table tbody th { text-align: left; }
+.cc-table tbody th, .cc-table tbody td {
+  padding: 3px 8px 3px 0; text-align: right; color: var(--ink-80); font-weight: 400;
+}
+.cc-table tbody th { color: var(--ink-60); white-space: nowrap; }
+.cc-table tbody td { white-space: nowrap; }
+.cc-table tbody tr:hover td, .cc-table tbody tr:hover th { color: var(--ink-100); }
+}
+
+@layer components {
 /* ── mempool page chrome — was inline on MempoolPage; classed so mobile
    media queries can flatten the fixed-height flex layout into body scroll.
    These base rules reproduce the previous inline desktop values exactly. */

@@ -96,6 +96,23 @@ export interface Candle {
 }
 
 /**
+ * A price series exactly as `market_chart` delivers it, plus the interval the
+ * upstream used. `stepMs` is carried rather than inferred: p3·12's bucket
+ * ladder needs to know whether it is holding hourly or daily samples BEFORE it
+ * decides how many of them make an honest candle, and inferring that from the
+ * spacing of two timestamps gets it wrong on the one series where it matters —
+ * a ragged one.
+ */
+export interface PriceSamples {
+  t: number[];
+  p: number[];
+  /** quote-currency volume per sample; may be shorter than `t`, or empty when
+   *  the upstream returned no total_volumes. NEVER padded. */
+  v: number[];
+  stepMs: number;
+}
+
+/**
  * The market hook's status vocabulary IS the feed's (v6.1.4). It used to be its
  * own three-member union with no way to say "we asked and there is nothing" —
  * that state was carried beside it, in the `attempted` boolean on GroupResult,
@@ -154,15 +171,40 @@ export interface XmrMeta {
   atlDate: string;
 }
 
+/**
+ * The two SAMPLE bases a pair is fetched at. Both are `market_chart`; the split
+ * is the upstream's own granularity switch (2-90d hourly, >90d daily), not a
+ * choice — see pages/markets/candle-data.ts for the whole ladder.
+ *
+ * `deep` is LAZY. Nothing fetches it until a window longer than 90 days is
+ * asked for, which is why the four range presets cost one aggregator call each
+ * and the pair history is fetched at most twice for the life of the page.
+ */
+export interface PairBases {
+  /** hourly samples, 90-day span */
+  mid: SeriesResult<PriceSamples | null>;
+  /** daily samples, 365-day span */
+  deep: SeriesResult<PriceSamples | null>;
+}
+
 export interface MarketHistory {
   loading: boolean;
   days: number;
-  /** XMR/USD real OHLC + volume aligned from market_chart(usd) */
-  xmrCandles: SeriesResult<Candle[]>;
-  /** XMR/BTC ratio history (market_chart vs btc) */
-  xmrBtc: SeriesResult<number[]>;
-  /** BTC/USD line (market_chart vs usd) */
-  btcLine: SeriesResult<number[]>;
+  /**
+   * The hero's FINE base: CoinGecko's own four-hour OHLC over 30 days. True
+   * OHLC, so aggregating it stays exact — the only source on this page whose
+   * wicks are the market's rather than a sample's.
+   *
+   * Fetched ONCE, at days=30, and never refetched on a range change: it is a
+   * base, not a range. (It was `xmrCandles`, refetched per range, which is what
+   * made the four presets cost four `/ohlc` calls for data that overlapped.)
+   */
+  fine: SeriesResult<Candle[]>;
+  /** XMR/USD samples — the volume carrier for `fine`, and the candle source
+   *  for every window `fine` cannot cover. */
+  usd: PairBases;
+  /** XMR/BTC ratio samples. */
+  btc: PairBases;
   /** XMR + live-ranked privacy peers, normalised inputs */
   peers: GroupResult;
   /** XMR + live-ranked top majors, normalised inputs */
@@ -283,6 +325,50 @@ function recallAt<T>(key: string): { at: number; data: T } | null {
   return hit ? { at: hit.at, data: hit.data } : null;
 }
 
+/* ── p3·12 · the persisted schema, and why it is still v1 ─────────────
+   NOTHING PERSISTED CHANGED SHAPE, so `mh:v1:` stands. The base rewrite adds a
+   new KIND (`samples|…`, holding PriceSamples) and stops writing two others; it
+   does not redefine any key that already exists. Bumping to `mh:v2:` would have
+   been the cautious-looking move and is the wrong one: it orphans the caches
+   that are STILL VALID — `ohlc|monero|usd|30`, every group `chart|…`, the two
+   `members|…` manifests and `meta|…` — and those are exactly what a returning
+   visitor on a throttled or blocked upstream is falling back to. A version bump
+   that costs every reader their offline copy in order to retire three keys is a
+   bad trade.
+
+   The keys ARE retired, though, rather than left to rot. On a site used over
+   Tor, localStorage that nothing will ever read again is a hygiene question, not
+   a housekeeping detail — so this runs once per load and deletes them:
+
+     ratio|monero|btc|*     XMR/BTC is a `samples|` base now
+     line|bitcoin|usd|*     BTC/USD was fetched and rendered by NOTHING
+     ohlc|monero|usd|N      for N != 30 — the fine base is fetched at one depth
+
+   Pure and store-injected so verify-stale.mjs can exercise it in bare Node. */
+export const LEGACY_KINDS = ["ratio", "line"];
+
+export function pruneLegacyCache(
+  store: Pick<Storage, "length" | "key" | "removeItem"> | null,
+  keepOhlcDays: number = FINE_DAYS,
+): string[] {
+  if (!store) return [];
+  const doomed: string[] = [];
+  try {
+    for (let i = 0; i < store.length; i++) {
+      const k = store.key(i);
+      if (!k || !k.startsWith(LS_PREFIX)) continue;
+      const parts = k.slice(LS_PREFIX.length).split("|");
+      const kind = parts[0], days = parts[3];
+      if (LEGACY_KINDS.indexOf(kind) >= 0) doomed.push(k);
+      else if (kind === "ohlc" && Number(days) !== keepOhlcDays) doomed.push(k);
+    }
+    for (const k of doomed) store.removeItem(k);
+  } catch {
+    /* private mode / disabled storage — same best-effort contract as writeCache */
+  }
+  return doomed;
+}
+
 /* ── in-memory promise cache (module scope; survives strict-mode remount) ── */
 
 interface CacheEntry { promise: Promise<unknown>; at: number }
@@ -307,6 +393,15 @@ async function getJson(qs: string): Promise<unknown> {
   return r.json();
 }
 
+/* The bases, as `days` values. Not a range set — see candle-data.ts: these are
+   exactly the three points at which CoinGecko's own granularity changes. */
+export const FINE_DAYS = 30;   // /ohlc  -> 4h true OHLC
+export const MID_DAYS = 90;    // /market_chart -> hourly samples
+export const DEEP_DAYS = 365;  // /market_chart -> daily samples
+
+const HOUR = 3_600_000;
+const DAYMS = 86_400_000;
+
 async function fetchOhlc(coin: string, vs: string, days: number): Promise<Candle[]> {
   const raw = (await cached(`ohlc|${coin}|${vs}|${days}`, () =>
     getJson(`path=coins/${coin}/ohlc&vs_currency=${vs}&days=${days}`))) as number[][];
@@ -314,9 +409,12 @@ async function fetchOhlc(coin: string, vs: string, days: number): Promise<Candle
   return raw.map((row) => ({ t: row[0], o: row[1], h: row[2], l: row[3], c: row[4], v: 0 }));
 }
 
-interface ChartData { prices: [number, number][]; volumes: [number, number][] }
+/** CoinGecko's own market_chart sample interval for a `days` value. Documented
+ *  upstream behaviour, restated here because the client has to know which
+ *  bucket ladder applies before it has seen a single timestamp. */
+const sampleStepMs = (days: number): number => (days <= 1 ? 300_000 : days <= 90 ? HOUR : DAYMS);
 
-async function fetchChart(coin: string, vs: string, days: number): Promise<ChartData> {
+async function fetchSamples(coin: string, vs: string, days: number): Promise<PriceSamples> {
   const d = (await cached(`chart|${coin}|${vs}|${days}`, () =>
     getJson(`path=coins/${coin}/market_chart&vs_currency=${vs}&days=${days}`))) as {
     prices?: [number, number][];
@@ -325,18 +423,71 @@ async function fetchChart(coin: string, vs: string, days: number): Promise<Chart
   const prices = Array.isArray(d?.prices) ? d.prices : [];
   const volumes = Array.isArray(d?.total_volumes) ? d.total_volumes : [];
   if (prices.length === 0) throw new Error("empty chart");
-  return { prices, volumes };
+  const t: number[] = [], p: number[] = [];
+  for (const row of prices) { t.push(row[0]); p.push(row[1]); }
+  // Volumes are aligned by INDEX only when the upstream returned the same
+  // count, which it does for every sampled series it serves. A mismatch means
+  // the two arrays are on different clocks, and pairing them anyway would
+  // attach one bucket's volume to another's price — so it degrades to no
+  // volume rather than to a wrong one.
+  const v = volumes.length === prices.length ? volumes.map((row) => row[1]) : [];
+  return { t, p, v, stepMs: sampleStepMs(days) };
 }
 
-/** Sum market_chart volumes into each candle's [t, nextT) bucket so volume bar
- *  i aligns exactly under candle i (no separate volume time axis needed). */
-function attachVolume(candles: Candle[], volumes: [number, number][]): Candle[] {
-  if (!volumes.length || !candles.length) return candles;
-  return candles.map((c, i) => {
-    const lo = c.t;
-    const hi = i + 1 < candles.length ? candles[i + 1].t : Infinity;
+/**
+ * Sum sample volumes into each candle's own bucket, so volume bar i sits exactly
+ * under candle i and carries only what belongs to it.
+ *
+ * THE BUCKET'S END IS ITS OWN WIDTH, and getting that wrong shipped a wrong
+ * dollar figure. This closed the last bucket at `Infinity` and every other one
+ * at `candles[i + 1].t`, which is correct in precisely the case the code was
+ * written for — an unbrushed window, whose last candle really does run to the
+ * end of the data — and wrong in both directions otherwise:
+ *
+ *   · With a BRUSH, the drawn window's right edge sits left of the fetched
+ *     span's, so the final candle swept every sample between the two. Measured
+ *     on the shipped build at a zoomed 4h window: one bucket read **$9.7B**
+ *     where every true 4h bucket read $480M, and its VOL sub-bar went full
+ *     height and flattened the rest of the chart through `maxV`.
+ *   · Across a GAP, `candles[i + 1].t` is the next PRESENT bucket, which may be
+ *     several widths away, so the bucket before a hole absorbed the hole.
+ *
+ * `c.t` is always bucket-aligned (both `aggregateCandles` and
+ * `samplesToCandles` key on `floor(t / bucketMs) * bucketMs`), so `c.t +
+ * bucketMs` IS the bucket's end by construction — no neighbour lookup, no
+ * special case for the last element, and correct across gaps.
+ *
+ * NO WINDOW CLIP, AND THAT IS THE SECOND FIX. The first version of this also
+ * took the drawn window and dropped samples outside it, reasoning that the
+ * candles were clipped so the volume should be too. That is wrong on the path
+ * it governs, and wrong by up to 4x. `aggregateCandles` clips at CANDLE
+ * granularity — it keeps or drops a whole source candle on `c.t <= to` — and on
+ * the fine base the bucket IS one source candle (the 4h rung is the only one a
+ * <=30d window ever reaches), so the last drawn candle's OHLC describes a FULL
+ * four hours. Clipping its volume at a `to` that falls one hour into that
+ * bucket left the two halves of one bar describing different spans: a whole
+ * bucket's high/low above, a quarter of its volume below. A bucket reports its
+ * bucket.
+ *
+ * THE SOURCE MUST BE FINER THAN THE BUCKET, or there is no volume to report.
+ * `mid ?? deep` at the call site can hand DAILY samples to 4h buckets — reach
+ * it by visiting 1Y (which fetches the deep base) while the 90-day request is
+ * failing, which the hook's independent per-base catch blocks allow. Every
+ * sixth bucket would then show a whole DAY's volume and the other five zero:
+ * six wrong numbers to render one right one. A day cannot be apportioned across
+ * six four-hour buckets without inventing the split, so nothing is attached and
+ * the volume reads as an em-dash — real or absent, never synthesised.
+ */
+export function attachVolume(candles: Candle[], s: PriceSamples | null, bucketMs: number): Candle[] {
+  if (!s || !s.v.length || !candles.length || !(bucketMs > 0)) return candles;
+  if (s.stepMs > bucketMs) return candles;
+  return candles.map((c) => {
+    const hi = c.t + bucketMs;
     let v = 0;
-    for (const [t, val] of volumes) if (t >= lo && t < hi) v += val;
+    for (let k = 0; k < s.t.length; k++) {
+      const t = s.t[k];
+      if (t >= c.t && t < hi) v += s.v[k] ?? 0;
+    }
     return { ...c, v };
   });
 }
@@ -531,6 +682,17 @@ function buildMeta(env: MarketsEnvelope, gl: string): SeriesResult<XmrMeta | nul
   return metaFromCache(gl);
 }
 
+const emptySamples = (): SeriesResult<PriceSamples | null> =>
+  ({ data: null, status: "loading", granularityLabel: "", at: 0 });
+
+/** Hydrate one sample base from last-good, if there is any. */
+function hydrateSamples(coin: string, vs: string, days: number): SeriesResult<PriceSamples | null> {
+  const hit = recallAt<PriceSamples>(cacheKey("samples", coin, vs, days));
+  return hit
+    ? { data: hit.data, status: "stale", granularityLabel: "", at: hit.at }
+    : emptySamples();
+}
+
 function initialHistory(days: number): MarketHistory {
   const gl = granLabel(days);
   return {
@@ -539,9 +701,9 @@ function initialHistory(days: number): MarketHistory {
     nextRetryAt: 0,
     retry: () => {},
     days,
-    xmrCandles: hydrate<Candle[]>(cacheKey("ohlc", "monero", "usd", days), [], gl),
-    xmrBtc: hydrate<number[]>(cacheKey("ratio", "monero", "btc", days), [], gl),
-    btcLine: hydrate<number[]>(cacheKey("line", "bitcoin", "usd", days), [], gl),
+    fine: hydrate<Candle[]>(cacheKey("ohlc", "monero", "usd", FINE_DAYS), [], gl),
+    usd: { mid: hydrateSamples("monero", "usd", MID_DAYS), deep: hydrateSamples("monero", "usd", DEEP_DAYS) },
+    btc: { mid: hydrateSamples("monero", "btc", MID_DAYS), deep: hydrateSamples("monero", "btc", DEEP_DAYS) },
     peers: initGroup("peers", days, gl),
     top: initGroup("majors", days, gl),
     meta: metaFromCache(gl),
@@ -553,9 +715,31 @@ function initialHistory(days: number): MarketHistory {
 /** How long after a non-fully-live settle before refetching. */
 const RETRY_MS = 45_000;
 
-export function useMarketHistory(days: number): MarketHistory {
+/**
+ * `days` still drives the /api/markets aggregator, which owns group MEMBERSHIP
+ * and is genuinely per-range. `wantDeep` is the second, independent axis added
+ * in p3·12: the pair history is fetched as BASES, so it does not move with the
+ * range at all — it only ever grows, once, when a window longer than 90 days is
+ * asked for.
+ *
+ * That split is the whole request-budget story. Measured on the built app with
+ * the upstream mocked at CoinGecko's own granularity, walking all four presets:
+ * 21 history requests before, 10 after; four `/ohlc` calls before, one after.
+ * (This read "12 after" until p3·12b. 12 was the DESIGN-stage arithmetic, written
+ * before the dead `btcLine` fetch was found and deleted, and never re-measured
+ * against the gate that counts them — verify-markets-dom asserts <= 10 and
+ * reports 10. A number carried from a plan into a comment about a build is the
+ * same family as every other stale self-count in this repo's history.)
+ */
+export function useMarketHistory(days: number, wantDeep = false): MarketHistory {
   const [state, setState] = React.useState<MarketHistory>(() => initialHistory(days));
   const [retryNonce, setRetryNonce] = React.useState(0);
+  /* `state` read through a ref so the sample loaders below can merge into a
+     PairBases without listing `state` in their effect's deps — which would
+     re-fire the whole base fetch on every arrival. Assigned during render, so
+     it is current by the time any effect body runs. */
+  const stateRef = React.useRef(state);
+  stateRef.current = state;
   const lastDaysRef = React.useRef(days);
   /* D0858 · held outside `state` on purpose — see the MarketHistory docblock.
      The retry effect below keys on [state]; folding these in would re-arm its
@@ -564,84 +748,99 @@ export function useMarketHistory(days: number): MarketHistory {
   const [nextRetryAt, setNextRetryAt] = React.useState(0);
   const retry = React.useCallback(() => setRetryNonce((n) => n + 1), []);
 
+  /* ── bases: keyed on [wantDeep, retryNonce], NOT on days ────────────
+     This effect is the one that used to reset and refire on every range
+     click. It no longer sees `days`, so a preset cannot cost it a request —
+     which is what makes "presets move the brush" true rather than aspirational.
+     A deep window adds ONE round of fetches, once, for the life of the page. */
   React.useEffect(() => {
     let alive = true;
     setRefreshing(true);
-    const gl = granLabel(days);
-    // Reset to the (cache-hydrated) skeleton only when the RANGE changes;
-    // retry runs keep whatever is on screen and upgrade series in place.
-    if (lastDaysRef.current !== days) {
-      lastDaysRef.current = days;
-      setState(initialHistory(days));
-    }
+    // Retire the keys this rewrite stopped reading. Cheap, idempotent, and it
+    // runs BEFORE the fetches so a quota-bound store has room for the new base.
+    pruneLegacyCache(safeStore());
     const set = (patch: Partial<MarketHistory>) => {
       if (alive) setState((s) => ({ ...s, ...patch }));
     };
 
-    // XMR/USD candles + aligned volume
-    const kCandles = cacheKey("ohlc", "monero", "usd", days);
-    const pCandles = (async () => {
-      try {
-        const [candles, chart] = await Promise.all([
-          fetchOhlc("monero", "usd", days),
-          fetchChart("monero", "usd", days).catch(
-            (): ChartData => ({ prices: [], volumes: [] }),
-          ),
-        ]);
+    // FINE — CoinGecko's own 4h OHLC. Deliberately NOT awaited alongside the
+    // sample fetch: candles are the hero's LCP content and the samples only
+    // carry its volume sub-bars, so making the candles wait on a 2,160-point
+    // payload would trade first paint for a decoration.
+    const kFine = cacheKey("ohlc", "monero", "usd", FINE_DAYS);
+    const pFine = fetchOhlc("monero", "usd", FINE_DAYS)
+      .then((candles) => {
         const now = Date.now();
-        set({ xmrCandles: { data: keep(kCandles, attachVolume(candles, chart.volumes), now), status: "live", granularityLabel: gl, at: now } });
-      } catch {
-        const hit = recallAt<Candle[]>(kCandles);
-        if (hit) set({ xmrCandles: { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at } });
-        // no cache → leave the current (loading) entry; the retry timer re-runs us
-      }
-    })();
-
-    // XMR/BTC ratio
-    const kRatio = cacheKey("ratio", "monero", "btc", days);
-    const pBtc = fetchChart("monero", "btc", days)
-      .then((r) => {
-        const now = Date.now();
-        set({ xmrBtc: { data: keep(kRatio, r.prices.map((p) => p[1]), now), status: "live", granularityLabel: gl, at: now } });
+        set({ fine: { data: keep(kFine, candles, now), status: "live", granularityLabel: "4h", at: now } });
       })
       .catch(() => {
-        const hit = recallAt<number[]>(kRatio);
-        if (hit) set({ xmrBtc: { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at } });
+        const hit = recallAt<Candle[]>(kFine);
+        if (hit) set({ fine: { data: hit.data, status: "stale", granularityLabel: "4h", at: hit.at } });
       });
 
-    // BTC/USD line
-    const kBtcLine = cacheKey("line", "bitcoin", "usd", days);
-    const pBtcLine = fetchChart("bitcoin", "usd", days)
-      .then((r) => {
-        const now = Date.now();
-        set({ btcLine: { data: keep(kBtcLine, r.prices.map((p) => p[1]), now), status: "live", granularityLabel: gl, at: now } });
-      })
-      .catch(() => {
-        const hit = recallAt<number[]>(kBtcLine);
-        if (hit) set({ btcLine: { data: hit.data, status: "stale", granularityLabel: gl, at: hit.at } });
-      });
+    const loadSamples = (
+      coin: string, vs: string, bdays: number,
+      apply: (r: SeriesResult<PriceSamples | null>) => Partial<MarketHistory>,
+    ) => {
+      const key = cacheKey("samples", coin, vs, bdays);
+      return fetchSamples(coin, vs, bdays)
+        .then((r) => {
+          const now = Date.now();
+          set(apply({ data: keep(key, r, now), status: "live", granularityLabel: "", at: now }));
+        })
+        .catch(() => {
+          const hit = recallAt<PriceSamples>(key);
+          if (hit) set(apply({ data: hit.data, status: "stale", granularityLabel: "", at: hit.at }));
+        });
+    };
 
-    // peers + majors ranking/series + XMR meta — one aggregator round trip,
-    // shared via the module-scope `cached()` promise map so StrictMode's
-    // double-mount and the two group consumers below share one request.
-    const pMarkets = fetchMarkets(days)
+    const jobs = [
+      pFine,
+      loadSamples("monero", "usd", MID_DAYS, (mid) => ({ usd: { ...stateRef.current.usd, mid } })),
+      loadSamples("monero", "btc", MID_DAYS, (mid) => ({ btc: { ...stateRef.current.btc, mid } })),
+    ];
+    if (wantDeep) {
+      jobs.push(
+        loadSamples("monero", "usd", DEEP_DAYS, (deep) => ({ usd: { ...stateRef.current.usd, deep } })),
+        loadSamples("monero", "btc", DEEP_DAYS, (deep) => ({ btc: { ...stateRef.current.btc, deep } })),
+      );
+    }
+
+    Promise.allSettled(jobs).then(() => {
+      if (!alive) return;
+      setRefreshing(false);
+    });
+
+    return () => { alive = false; };
+  }, [wantDeep, retryNonce]);
+
+  /* ── groups: still genuinely per-range ──────────────────────────────
+     /api/markets owns MEMBERSHIP as well as history, and its own cache key
+     space is the four allowed `days` values (api/markets.js:24). Windowing a
+     single deep fetch client-side would hand the 7D peer chart seven DAILY
+     points where it has 168 hourly ones today — a resolution regression traded
+     for one saved request, which is the wrong way round. */
+  React.useEffect(() => {
+    let alive = true;
+    const gl = granLabel(days);
+    if (lastDaysRef.current !== days) lastDaysRef.current = days;
+    const set = (patch: Partial<MarketHistory>) => {
+      if (alive) setState((s) => ({ ...s, ...patch }));
+    };
+    fetchMarkets(days)
       .then((env) => set({
         peers: buildGroup(env, "peers", days, gl),
         top: buildGroup(env, "majors", days, gl),
         meta: buildMeta(env, gl),
+        days,
       }))
       .catch(() => set({
         peers: fallbackGroup("peers", days, gl),
         top: fallbackGroup("majors", days, gl),
         meta: metaFromCache(gl),
-      }));
-
-    Promise.allSettled([pCandles, pBtc, pBtcLine, pMarkets]).then(() => {
-      if (!alive) return;
-      setState((s) => ({ ...s, loading: false }));
-      setRefreshing(false);
-    });
-
+        days,
+      }))
+      .then(() => { if (alive) setState((s) => ({ ...s, loading: false })); });
     return () => { alive = false; };
   }, [days, retryNonce]);
 
@@ -658,9 +857,13 @@ export function useMarketHistory(days: number): MarketHistory {
   // by asking again at once.
   React.useEffect(() => {
     if (state.loading) return;
+    // The DEEP bases are only in the health set once something has asked for
+    // them. Counting an unfetched base as not-live would leave the retry timer
+    // running forever on a page nobody ever scrolled past 90 days on.
     const statuses = [
-      state.xmrCandles.status, state.xmrBtc.status, state.btcLine.status,
+      state.fine.status, state.usd.mid.status, state.btc.mid.status,
       state.peers.status, state.top.status, state.meta.status,
+      ...(wantDeep ? [state.usd.deep.status, state.btc.deep.status] : []),
     ];
     if (statuses.every((s) => s === "live")) return;
 
@@ -690,7 +893,7 @@ export function useMarketHistory(days: number): MarketHistory {
     });
 
     return () => { offVisibility(); stop(); };
-  }, [state, retryNonce]);
+  }, [state, retryNonce, wantDeep]);
 
   return React.useMemo(
     () => ({ ...state, refreshing, nextRetryAt, retry }),
