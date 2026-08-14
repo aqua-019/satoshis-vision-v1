@@ -197,6 +197,26 @@ export const CIR_PKT_MIN_W = 1.5;
  * true extent minus this, so the ink under-states each transaction by up to
  * 0.75 px rather than over-stating it, which is the right direction for a
  * quantity that tiles.
+ *
+ * THE GAP IS VISUAL, NEVER POSITIONAL, and that distinction is the whole reason
+ * the census still sums to the axis. `cirPacketRect` subtracts it from the
+ * drawn WIDTH and anchors the rect's RIGHT edge at `cirX(ahead)` — the
+ * transaction's true leading edge. Nothing is displaced: `ahead` is a running
+ * sum of `size` over the fee-sorted order, computed once in the field and never
+ * touched by any drawing code, so the tiling is exact in DATA space whatever
+ * the ink does. A positional gap — nudging each packet along by 0.75 px —
+ * would accumulate over 240 transactions into 180 px of lie and the axis would
+ * stop meaning bytes.
+ *
+ * MEASURED, not argued, at 1440 on the gate fixture (strip `bytes` = 557,160,
+ * domain 786,432, board 655.328 px):
+ *
+ *     drawn rightmost edge   721.328125   ==  g.right, EXACTLY the pin row
+ *     drawn leftmost edge    256.551      vs  cirX(poolBytes) = 257.0
+ *
+ * The right edge is exact to the pixel. The left is 0.45 px outside, which is
+ * the floor's own documented bound (0.476 px, see CIR_PKT_MIN_W) and nothing
+ * else — so the traffic spans precisely the stretch of axis the pool occupies.
  */
 export const CIR_PKT_GAP = 0.75;
 
