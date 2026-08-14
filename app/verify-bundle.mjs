@@ -243,7 +243,20 @@ const BUDGETS = {
   // main.tsx:26-30 (203,896 bytes of SOURCE) and Vite minifies them to one
   // file: measured 73,031 raw / 14,863 gzip. Budgeted because it blocks the
   // first paint and nothing has ever measured it.
-  cssGz: 17_000,
+  //
+  // p3·12: 17,000 -> 17,600. Built 17,168, margin 432. The whole delta is one
+  // new block — the markets hero's `.cc-*` rules (canvas stage, DOM label
+  // layer, brush strip, accessible table): 82,333 -> 85,218 raw, 16,468 ->
+  // 17,056 gzip measured file-to-file, +2,885 raw / +588 gzip. Nothing else in
+  // the five sheets moved.
+  //
+  // The margin is deliberately TIGHT rather than the ~10% this file uses for
+  // the JS ceilings, and the reason is that the two quantities behave
+  // differently: JS arrives in chunks and one careless import moves it by
+  // kilobytes, while CSS here is one hand-written file that grows by the block.
+  // A 10% headroom would be 1,700 B — roughly three more components' worth of
+  // rules absorbed silently, on the ONE stylesheet that blocks first paint.
+  cssGz: 17_600,
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
   // 673.8 kB.
@@ -550,7 +563,16 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_082_000,
+  totalJsRaw: 1_094_000,  // p3·12: built 1,091,164, margin 2,836. Crosses with
+                          // lazyJsRaw, as it has every release since #174. The
+                          // stated construction ("the sum of the two real
+                          // budgets") has been lapsed since then and is not
+                          // restored here either: 280,000 + 831,000 = 1,111,000
+                          // against this line's 1,094,000, so a build can still
+                          // sit inside both real budgets and red on the
+                          // backstop. Raised to built+margin per the standing
+                          // policy; reconciling the three is still its own
+                          // decision and still nobody has taken it.
   // ── THE SPLIT (v2·3), and it applies THIS FILE'S OWN STATED PRINCIPLE ──
   //
   // Line :26 already rejects the shape `totalJsRaw` has: "a single grand total
@@ -582,6 +604,28 @@ const BUDGETS = {
   // measured, budget 280,000 (93%). Deliberately tight: this population did not
   // move at all across a rebuild that tripled one view's information, so it has
   // no reason to drift, and eagerJsGz already guards the same set in gzip.
+  // p3·12: CEILING UNTOUCHED at 280,000 (built 262,530, margin 17,470) — but
+  // the entry chunk MOVED, +504 B, and this is a non-view PR where the brief's
+  // own rule says any move is a finding owed an attribution. It is:
+  //
+  //   NOT new eager code. A string-level diff of the two entry chunks finds
+  //   exactly ONE addition that is not minifier churn — `assets/canvasColor-
+  //   *.js` joining the module-preload map, ~33 B. The rest is identifier
+  //   renaming: adding a module to the graph shifts the mangler's name
+  //   assignment, so short names get pushed to longer ones across the file.
+  //
+  //   The FIRST attempt did add eager code, and measuring it is why the shape
+  //   changed. `cssColor` was homed in design/chart-kit.tsx — the obvious place,
+  //   next to `canvasCursor` — and chart-kit is reachable from the entry through
+  //   design/primitives.tsx, so the entry grew 757 B and carried the `var(…)`
+  //   regex and the `#ffffff` fallback verbatim. Moving it to design/
+  //   canvasColor.ts, which only lazy modules import, took that back.
+  //
+  //   THE INVARIANT NOW HAS NO GATE, and the margin is what makes that matter:
+  //   17,470 B of headroom will absorb a future `import { cssColor }` from any
+  //   eager module without a murmur. Named here and in the leaf's own header;
+  //   an assertion that the leaf's bytes land in no eager chunk is the strong
+  //   form and is not built.
   eagerJsRaw: 280_000,
   // lazyJsRaw — the population totalJsRaw's docstring was really describing:
   // "we shipped 200 kB of lazy code nobody has opened yet".
@@ -792,7 +836,27 @@ const BUDGETS = {
   // sentence: this ceiling will fire once more if Relay ever ships, by an
   // amount nobody can estimate today, and until then it should not move.
   //
-  lazyJsRaw: 820_000,
+  // p3·12: 820,000 -> 831,000. Built 828,312, margin 1,688.
+  //
+  // Attributed by a file-by-file dist diff PAIRED BY MULTIPLICITY (the `index`
+  // stem holds two chunks and they moved by different amounts again — fourth
+  // consecutive release):
+  //
+  //     MarketsPage   +15,813   the canvas hero, brush, table, granularity ladder
+  //     charts         -5,136   CandleChart deleted; nothing rendered it after this
+  //     canvasColor      +343   NEW chunk — cssColor, split out of useMemCanvas
+  //     useMemCanvas     -239   the same function leaving
+  //     index[1]         +504   EAGER; see the note on eagerJsRaw
+  //     index[0]          +48   the preload map gains one entry
+  //     six view chunks ±38 ea  module-graph re-resolution, not source change
+  //
+  // The ±38-per-view-chunk row is worth reading twice, because the last three
+  // raises could all say "every view chunk byte-identical" and this one cannot.
+  // Those chunks' SOURCE is untouched; they moved because the shared module
+  // graph they resolve through gained a member, which shifts minified
+  // identifiers. A delta with no source behind it is still a delta and is
+  // listed rather than rounded away.
+  lazyJsRaw: 831_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
@@ -820,7 +884,20 @@ const ROUTE_BUDGET_GZ = {
                                      //  closure (2 chunks: entry + vendor), so it tracks that
                                      //  ceiling +1,000 rather than moving independently.
   '/live/mempool':          107_000, //  96,835
-  '/live/markets':          105_000, //  95,817
+  '/live/markets':          112_000, // 108,874 — p3·12: 105,000 -> 112,000, and the
+                                     //  `95,817` that stood here was stale by 7,879 B
+                                     //  before this PR touched anything (main measured
+                                     //  103,696, i.e. 98.8% of its own ceiling with
+                                     //  1,304 B of slack — one more component either way
+                                     //  and it fires on somebody who did not cause it).
+                                     //  Delta attributed gzip, chunk by chunk:
+                                     //    MarketsPage  +5,762   canvas hero + brush + table
+                                     //    charts       -1,299   CandleChart deleted
+                                     //    canvasColor    +301   new shared leaf
+                                     //    entry chunk    +363   see eagerJsRaw
+                                     //    PanelBoundary    +1
+                                     //  = +5,128 of a measured +5,178; ≤50 B unattributed,
+                                     //  which is vendor/index[0] rounding.
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
   '/live/network':          108_000, // 106,035 — RAISED from 106,000, and the old `96,436`
                                      //  comment beside it was stale by 9,169 B. Measured on
@@ -911,7 +988,17 @@ const ROUTE_BUDGET_GZ = {
 // detector doing its job — it should be re-centred to 62 in that PR, not
 // widened — and it is now the second consecutive release in which the ceiling
 // this check hands the next view PR is exactly one build away.
-const CHUNK_COUNT = 61;
+// p3·12: 61 -> 62, RE-CENTRED not widened, exactly as the paragraph above
+// instructed the next PR to do. The 66th chunk is `canvasColor` — `cssColor`
+// split out of `useMemCanvas` so the markets hero could use it without
+// importing a mempool rAF hook, and shared by six lazy chunks (five mempool
+// view chunks + MarketsPage), which is what makes Rollup mint it rather than
+// inline it. New range [58, 66]; sensitivity is IDENTICAL at ±4.
+//
+// The note above predicted this would be Relay's to spend. It was not — a
+// shared LEAF costs a chunk just as a lazy VIEW does, and nothing in this
+// detector distinguishes them. Relay, if it ships, now reds at 67.
+const CHUNK_COUNT = 62;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);
