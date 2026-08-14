@@ -1611,6 +1611,55 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 .pls-due   { transform: translateX(-50%); color: var(--p-50); background: var(--bg-0); padding: 0 var(--sp-1); }
 .pls-track { transform: translateX(-50%); color: var(--y-50); background: var(--bg-0); padding: 0 var(--sp-1); }
 
+/* ── p2·10 — Circuit ─────────────────────────────────────────────────────
+   Same class-not-inline-style rule as the .orb-*, .aby-* and .pls-* sets
+   above, for the same measured reason: the ≤768 reflow layer collapses every
+   INLINE `grid-template-columns` to `1fr`, which is right for a panel layout
+   and wrong for a table, and an item still carrying `grid-column: span 8`
+   then rebuilds the desktop grid out of implicit tracks. Owning the classes
+   lets the phone rule collapse the tracks AND the spans together. */
+.cir-grid12 { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: var(--sp-3); }
+/* The flexible tracks carry REAL floors, not `minmax(0, …)` — the opposite of
+   the composition grid, and the same distinction .orb-console, .aby-console
+   and .pls-console record: the floor normally arrives via `.table-scroll > *
+   { min-width: max-content }` (:2361), but `.mp-canvas-scroll * { min-width:
+   revert !important }` on the next line un-does it for anything in the
+   mempool canvas subtree, so a table here has to carry its own. A track floor
+   is not subject to that revert, and it is safe against §8 amplification
+   because the view root is `contain: inline-size` — the grid divides a
+   DEFINITE width. */
+.cir-console { display: grid; grid-template-columns: 48px minmax(110px,1.3fr) 74px 62px 68px 62px 44px; gap: var(--sp-2); align-items: center; }
+.cir-census  { display: grid; grid-template-columns: minmax(84px,1fr) 74px 54px minmax(96px,1.1fr) 52px; gap: var(--sp-2); align-items: center; }
+/* The stage key. Four NAMED swatches rather than a continuous ramp, because
+   the lane is a CATEGORY — see circuit.tsx's header. `grid-auto-flow: column`
+   with auto columns rather than `repeat(4, …)` for the reason .aby-ramp and
+   .pls-ramp record: the step count is CIR_LANES in circuit-instruments.tsx,
+   itself FEE_TIER_LABELS.length, and a literal here would be a third
+   declaration of a number the node publishes. It wraps on a phone, which is
+   why the flow is `row` below 769px (see the reflow block). */
+.cir-ramp {
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  gap: var(--sp-2); font-size: var(--fs-label); align-items: center;
+}
+/* Lane labels, depth labels, the die caption and the tracked marker. All are
+   absolutely positioned over the canvas by the stage, so they contribute
+   nothing to `.mp-view`'s max-content.
+   TWO DIFFERENT CENTRINGS, for the reason .pls-axis records: the LANE labels
+   sit in the left gutter and centre on their own trace with
+   `translateY(-50%)`, while the DEPTH labels hang under the board and centre
+   on their gridline horizontally. Reusing one rule for both would hang every
+   depth label half its width to the right of the line it names. */
+.cir-axis, .cir-lane, .cir-die, .cir-track {
+  pointer-events: none; font-size: var(--fs-label);
+  letter-spacing: 0.06em; white-space: nowrap;
+}
+.cir-lane  { transform: translateY(-50%); color: var(--ink-40); }
+.cir-axis  { transform: translateX(-50%); color: var(--ink-40); }
+/* The die caption and the tracked marker ride the board and take an opaque
+   background so they stay readable over the package substrate under them. */
+.cir-die   { color: var(--ink-60); background: var(--bg-0); padding: 0 var(--sp-1); }
+.cir-track { color: var(--y-50); background: var(--bg-0); padding: 0 var(--sp-1); }
+
 /* mempool block (shared) — flattened to solid amber tiles, no inner
    cream wash. The earlier `inset 0 0 24px rgba(255,255,255,0.18)` produced
    a cream wash when 10-14 of these tile horizontally on the home page. */
@@ -2729,6 +2778,24 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      inline `min-width: 0` is. `.table-scroll` then swipes the tables. */
   .mp-view--reflow .pls-grid12 { grid-template-columns: minmax(0, 1fr) !important; }
   .mp-view--reflow .pls-grid12 > * { grid-column: auto !important; }
+  /* p2·10 — Circuit's composition grid, both halves, same reasoning as
+     orbital's, abyss's and pulse's directly above: `minmax(0, 1fr)` and not a
+     bare `1fr`, because a bare `1fr` takes its floor from the item's
+     min-content and the console's min-content is wider than a 366px view —
+     which clips rather than scrolls below 769px (`html, body { overflow-x:
+     clip }`). Bounding the TRACK is not subject to `.mp-canvas-scroll * {
+     min-width: revert }`; the Cell's own inline `min-width: 0` is.
+     `.table-scroll` then swipes the tables. */
+  .mp-view--reflow .cir-grid12 { grid-template-columns: minmax(0, 1fr) !important; }
+  .mp-view--reflow .cir-grid12 > * { grid-column: auto !important; }
+  /* The stage key's four swatches do not fit on one phone row — four named
+     tier labels with counts is ~44 characters against a ~300px body. Wrapping
+     them is the whole fix; the ramp is a legend, not a table, so it has no
+     column meaning to preserve. */
+  .mp-view--reflow .cir-ramp {
+    grid-auto-flow: row !important; grid-auto-columns: auto !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
   /* the block ribbon already scrolls itself (classic.tsx ClassicRibbon overflowX:auto);
      re-assert the card width that :991's `revert` was preserving. */
   .mp-view--reflow .mp-block { min-width: 108px !important; flex: 0 0 auto; }

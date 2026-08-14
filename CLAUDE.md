@@ -439,12 +439,15 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   19 call sites. See the v6.0.12 note.
 - **SVG `<text>` below 12px on mobile** inside mempool views (sediment worst, ~30 nodes at
   ~4px). Reported by `verify-memviews.mjs` rather than failed. HTML text is clean.
-- **The shot matrix cannot see SIX OF THE NINE mempool views.** `verify-lib.mjs`'s `ROUTES`
+- **The shot matrix cannot see SIX OF THE TEN mempool views.** `verify-lib.mjs`'s `ROUTES`
   carries `/live/mempool` at its default `?v=classic`, plus `?v=orbital` (p2·7),
-  `?v=abyss` (p2·8) and `?v=pulse` (p2·9) — the three NET-NEW views, each added by the PR
-  that introduced it, which is now an established convention rather than a run of three.
+  `?v=abyss` (p2·8), `?v=pulse` (p2·9) and `?v=circuit` (p2·10) — the four NET-NEW views,
+  each added by the PR that introduced it, which is now an established convention rather
+  than a run of three.
   **The uncovered SET has not changed since #174** — it is the ORIGINAL six — so the
-  count moves with the denominator only.
+  count moves with the denominator only, and after p2·10 it can move only once more:
+  Relay is the eleventh and it is parked, so this item's final form is "six of eleven"
+  unless someone closes it deliberately.
   `reactor`, `bridge`, `sediment`, `constellation`, `terminal` and the implicit `classic`
   remain unscreenshotted at any width or theme. Found while predicting the v6.1.3 sweep.
   `verify-reduce.mjs` and `verify-memviews.mjs` drive `?v=` explicitly, so the views are not
@@ -527,6 +530,196 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-14**: p2·10 "CIRCUIT" (app/ only) — the **tenth** mempool view, the fourth
+  net-new one of the eleven, and the last buildable one: after this only Relay remains and
+  it is parked. **Its coordinate is a SUM OVER OTHER TRANSACTIONS, and it is the only one in
+  the suite that is.**
+  **THE LANE IS A CATEGORY, NOT A COORDINATE**, which is the whole separation from the two
+  views that already own a fee axis. Sediment encodes fee as a CONTINUOUS vertical stratum
+  and orbital as a CONTINUOUS radius; a bus lane is neither — it is one of the node's own
+  four `get_fee_estimate` tiers, and within a lane position encodes NOTHING about fee. The
+  moment it did, this would be sediment with gaps. `CIR_LANES` is `FEE_TIER_LABELS.length`,
+  so no literal 4 is written anywhere in the view.
+  **THE ALONG-TRACE AXIS IS QUEUE DEPTH** — the cumulative weight AHEAD of a transaction in
+  the fee-sorted fill, in bytes, right-to-left from 0 at the chip's pins, so moving toward
+  the chip is moving toward inclusion and the die's left edge is the inferred cut.
+  **A PACKET'S EXTENT ON THE AXIS IS ITS WEIGHT**, so the pool TILES the axis edge to edge
+  and occlusion between packets is STRUCTURALLY IMPOSSIBLE rather than managed — the answer
+  this view gives to the density problem every other canvas view solves by bucketing.
+  **THE IDENTITY CLAIM NEEDED STATING PRECISELY, BECAUSE THE LOOSE VERSION IS FALSE.**
+  Orbital, Abyss and Pulse all normalise a fee against the pool's own observed [lo, hi], so
+  the rest of the pool does affect where a mark lands — but only as a SCALE, and under any
+  renormalisation two transactions paying the same rate coincide. Here they cannot: their
+  positions differ by the weight of everything between them. Cumulative, not rescaled.
+  **THE STAIRCASE IS REAL AND IS STATED RATHER THAN DRESSED UP AS A DENSE SCATTER.**
+  `feeTierIndex` is monotone in `perB` (data/map.ts:51-54) and the fill is fee-sorted, so a
+  lane's traffic occupies exactly ONE contiguous stretch and three of the four lanes are
+  bare copper at any given depth. Not a defect: those boundaries ARE the node's published
+  tier floors expressed as a queue depth, drawn as vias, and no other view offers that
+  reading.
+  **MOTION IS HONEST, AND A PCB INVITES THE DISHONEST KIND.** A packet gliding between polls
+  would assert positions the feed never reported, so every packet is STILL between polls and
+  steps when the feed steps; the only moving thing is a dash-offset direction current that
+  carries no reading and says so on the face of the view. **The clock is `useMemCanvas`'s
+  elapsed `t`, NOT `Date.now()` — the one place this view deliberately inverts orbital's,
+  abyss's and pulse's choice**, and the inversion is principled: those three derive a
+  COORDINATE from wall-clock, so a frozen animation clock would resume drawing a stale
+  reading as a live one. Nothing here is derived from time at all. **The reduced-motion twin
+  therefore loses NOTHING** — not a number, not a position, not a click target — which is
+  true of no other canvas view in the suite.
+  Fluid FOURTH time, worked first try: all six `naturalW == canvasW` cells YES — 1440 →
+  1180/1180, 1280 → 1020/1020, 390 → 366/366, in BOTH feed states — no `.mp-fit` anywhere,
+  authored 11px rendering at 11px including at 390. Height derived from the measured width
+  (`clamp(w × 0.48, 250, 420)` → 353 / 302 / 250-floor); c8 hero cell 596 against `canvasH`
+  702, so the desktop composition needs no vertical scroll. **The EMPTY-feed face is an
+  intact board** — lanes, copper rails, arrival pads and the depth ladder all drawn, no die
+  (the node published no weight ceiling, so there is no next-block boundary to draw) and
+  em-dashes in every panel.
+  **NINE DEFECTS FOUND BY LOOKING, NONE OF WHICH ANY GATE SEES** — every one rendered,
+  carried correct numbers and overflowed nothing:
+  (1) **146 transactions in the dense lane rendered as ONE SOLID BAR** — the tiling is
+  exact, so adjacent packets share an edge. Fixed with a 0.75px hairline, and **the gap is
+  VISUAL, NEVER POSITIONAL**: it is subtracted from the drawn WIDTH with the rect anchored
+  at `cirX(ahead)`, so nothing is displaced and the tiling stays exact in DATA space. A
+  positional gap would accumulate to 180px of lie over 240 transactions and the axis would
+  stop meaning bytes. Measured after the fix: drawn rightmost edge **721.328125 == g.right
+  exactly**, leftmost 256.551 against `cirX(poolBytes)` 257.0 — 0.45px out, which is the
+  floor's own documented bound and nothing else.
+  (2) **The die was invisible** — a flat `--bg-2` wash was indistinguishable from the board,
+  so the chip read as one dashed line. Now a lit slab with a package outline, a pin-1 notch
+  and pins on both edges.
+  (3) **The cut did not read IN THE TRAFFIC.** A lane's run crossed the die's edge
+  unchanged. Packets now carry two alphas keyed on `fits`; the per-frame fill bound doubles
+  from `CIR_LANES` to `2 × CIR_LANES` and is still a constant.
+  (4) **`CIR_ASPECT` and `CIR_H_MAX` were INERT** — `useChartMetrics`'s dead `k` in
+  miniature. At 0.40/300/430 the measured desktop stage (735px at 1440, 629 at 1280) gave
+  294 and 252, both under the floor, so the height was 300 at every width the site is used
+  at and the ceiling was unreachable. Re-set to 0.48/250/420.
+  (5) **In the `dieFull` state every depth label sat on the package's warm substrate** — the
+  die over-hung the lane stack by 8px at each end. Seen on the 3-tx render, where the die
+  spans the whole board, so it was every label on the axis.
+  (6) **"chip" was clipped by the panel edge** — the ladder walks outward from 0, so its
+  first tick is ALWAYS at the exact right edge. Structural, not occasional.
+  (7) **THE AXIS AT 390 WAS TWO LABELS.** `fmtBytes` renders "500.0 KB", ~53px at the 11px
+  floor, so a 210px board forced a 500 KB step. An axis with two labels cannot be
+  interpolated against, which is the only thing an axis is for. A compact `fmtDepth`
+  ("500K") plus `TICK_MIN_PX` 66 → 44 gives four rungs.
+  (8) **The tracked marker's opaque background covered the lane ABOVE at 390**, 6.5px into a
+  band carrying packets. Every alternative inside the stack fails the same way, so the region
+  above the lanes became TWO reserved rows — pulse's future-band argument applied to a row.
+  (9) **Two c4 panel headers wrapped to three lines** beside the widest provenance badge —
+  p2·8's and p2·9's lesson, third time; only the title length was mine.
+  **ONE MORE FROM REASONING AND ONE FROM MEASUREMENT, same family.** `cirVias` walked
+  ADJACENT tiers, so a pool with `fastest` and `normal` traffic but no `fast` would draw a
+  route jumping two lanes with no connector — legal, since nothing requires all four tiers
+  occupied, and invisible on the fixture because ITS empty lane is at the END of the order,
+  where an adjacent walk gets the right answer for the wrong reason. It walks consecutive
+  POPULATED lanes now. And **`CIR_PKT_MIN_W`'s docblock claimed the floor "does not bind at
+  all"**, derived from a 1,010px board — that was the c8 CELL's width, not the board's
+  (655.3px). Measured off the reduced-motion twin's DOM, which renders one `<rect>` per
+  packet through the SAME `cirPacketRect`: **164 of 240 packets sit at the floor**, 60 of
+  them drawn wider than their true extent, worst overlap **0.476px**. A plausible
+  computation standing in for a measurement, in the docblock of the one constant whose job
+  is to bound an error.
+  **THREE BUDGET RAISES, NOT TWO, and the third is the brief's blind spot rather than
+  mine.** `verify-bundle`'s CHUNK COUNT is a CENTRED ±4 drift detector; it stood at **64** on
+  `d388754` — the top of its range — and **every net-new view adds EXACTLY one lazy chunk**,
+  because `views/index.tsx` binds each engine through its own `React.lazy(import(...))`. So
+  a chunk count is a VIEW-COUNT DERIVATIVE and this literal had been one view from firing
+  since #177. Red at 65 against [56, 64], re-centred 60 → **61** per the file's own rule
+  (widening loses sensitivity, moving keeps it), green against [57, 65] — and the upward
+  half is spent again, said in the file rather than left to be rediscovered. **The
+  four-layer sweep's second layer must now include counts DERIVED from the view count, one
+  hop away**: it looks for view-id literals and count literals, and this one counts chunks.
+  `lazyJsRaw` 790,000 → **820,000** (built 817,281, margin 2,719) and `totalJsRaw`
+  1,052,000 → **1,082,000** (built 1,079,307, margin 2,693), both red-then-green on the
+  FINAL tree. **The re-measurement rule earned its keep again**: the first reading was
+  +29,460 and the final tree reads +29,468, 8 B of drift from three later source edits that
+  would have sat inside the margin unseen. Delta paired BY MULTIPLICITY — the `index` stem's
+  two chunks moved by DIFFERENT amounts for the SECOND consecutive release, one lazy and one
+  eager, so the trap has stopped being hypothetical: circuit +29,241 lazy · index/mapDeps
+  +146 lazy · index entry +81 eager. 3 chunks moved of 65; the other 62, including all nine
+  pre-existing view chunks, byte-identical; each budget reconciles exactly.
+  **THE BASELINE WAS BUILT IN AN ISOLATED `git worktree`** with its own `dist/` and its own
+  `node_modules` rather than by stashing in place. `git stash -u` is correct and the three
+  previous raises used it; it is also one command away from the shared-`dist` race, because
+  a clean `git status` is not a clean SUBJECT while `dist/` still holds the other tree's
+  output. A worktree makes that class impossible instead of avoided.
+  **AND THE PROJECTION COLLAPSES HERE.** Ten-view mean recounted to **25,404** (span
+  19,163–35,969). Every previous raise note projected "N views remain × the mean"; only
+  Relay remains and no mean projects it — its own brief leaves it either protocol
+  illustration or a "Soon" treatment, two shapes differing by more than the span of the
+  whole set — and it is parked.
+  **THREE HARNESS-LIES-TO-ITSELF INSTANCES IN ONE RUN, all closed STRUCTURALLY, and two are
+  new mechanisms.** (a) **A FILENAME LIED**: a screenshot written to `-tracked.png` was
+  captured without `TRACK=1`, so an artifact whose NAME claimed a state its content never
+  carried read as "the tracked idiom does not render at 390" — a convincing false defect.
+  The probe now `waitForSelector`s `[data-track-idiom="circuit"]` before the shutter, so an
+  untracked render cannot produce a file called tracked. (b) **A SILENT NO-OP
+  `str.replace`** — applied ≠ effective, tooling edition. A patch adding a DEGRADED branch
+  to a probe did not match, python replaced nothing, and the script printed `ok` regardless,
+  so an "empty feed" render was a fully live board. Same family as v2·0's mutation that
+  never applied; the patch asserts its match count now and the probe asserts the feed is
+  dead before it shoots. (c) **A cwd reset made a gate crash, and the grep over its output
+  came back EMPTY — which reads exactly like "no failures"**. Caught only by checking the
+  summary line rather than the exit code, which is §9's rule doing its job.
+  **AND A FOURTH, INSIDE THE BREAK HARNESS ITSELF**: M2's and M3's extraction greps were
+  narrower than their claim and `head -N` truncated before the evidence, so two mutations
+  ran and their reds were never displayed. Re-run with exact assertion text, no truncation,
+  and the summary line always printed. A break test whose output you cannot read is not a
+  break test. **A fifth, cheapest of all:** an e2e chain was killed mid-run once its `dist/`
+  was known to predate three later source edits — its output is VOID, not suspect, and was
+  discarded rather than partially quoted.
+  Registration fills the three existing per-view maps (`DENSITY_FLOOR` 135 measured → **118**
+  at the documented ~12% · `EXPECT_SVG_TEXT` `[]` VERIFIED 0 at all four widths ·
+  `EXPECT_MEMSTAT` five keys, one of which — `bytes` — is this view's AXIS, taken as a
+  PARAMETER by `useCircuitField(data, stats.poolBytes)`; it is the first of the ten to anchor
+  on that figure, where abyss anchors on `oldest`, pulse on `oldest`+`eta` and orbital on
+  none) and one `ROUTES` entry (46 → **47**). **`FITS_AT_1440` correctly needs NO entry**,
+  and for a stronger reason than "fluid": `verify-fit`'s `VIEWS` is a hardcoded fit-only list
+  at `:113`, so circuit is never iterated there — confirmed at source rather than carried
+  from p2·8's note. **The four-layer sweep is FOUR and a naive one finds five**:
+  `verify-roles.mjs:204` has a `classic:` key that is the THEME id, not the view id — same
+  token, two namespaces.
+  Registration was otherwise free: `verify-tracking` **80 → 89** and `verify-memstats`
+  **39 → 40** swept circuit with zero hand edits. **`verify-memviews` PRINTS NO NUMERIC
+  TALLY** — it ends at `✅ verify-memviews: all assertions passed` with
+  `process.exit(fail ? 1 : 0)` — so every "N" ever quoted for it is an EXTRACTION and the
+  extraction's range is the load-bearing part. The 289 first recorded here came from an
+  `awk '/^— scenario 1/,0'` range, and `,0` means to END OF FILE: on a combined suite log
+  it swept the 29 gates that follow. Properly bounded to the gate's own output, this run
+  reads **276 ✅ · 11 ⚠️ · 0 ❌**; the verifier's two runs read 276–277 ✅ · 12 ⚠️ · 0 ❌,
+  so the warning population is run-variant and only the 0 failures is stable. Quote the
+  failure count for this gate, never a total.
+  **`verify-nav` stayed at 129 and should have** — it derives `N_VIEWS`, so a tenth view
+  changes its SUBJECT (10 tiles) and not its assertion COUNT.
+  **`verify-vitals` is red and it is PRE-EXISTING — measured against the baseline BUILD, not
+  assumed from a precedent.** `d388754` was built in the isolated worktree, served on its own
+  port with the holder confirmed by `lsof`, and the same gate run against it: `/` median
+  blocking **435 branch / 424 base**, both over the 400ms ceiling, same route and same
+  assertion; `/live/markets` and `/learn/sim` SKIPPED as UNVERIFIABLE on both (spreads
+  77.2/87.3% and 76.2/79.8%) by the gate's own contention guard. **`/live/mempool`, the only
+  route Circuit can touch, is GREEN on both and better on the branch** — blocking 253/272,
+  LCP 3712/3724. Gates **77 files / 73 gates, RECOUNTED and unchanged** — this PR adds none.
+  N/M pair: **N 135** (floor 118), **M 10** distinct `data.<field>` reads, the highest of the
+  four net-new views (orbital 9, abyss 8, pulse 8).
+  Files, CORRECTED at the verifier's head and worth the correction twice over:
+  `circuit.tsx` **651** by the gate's own instrument (`src.split("\n").length`,
+  verify-memshell item 3) and **650** by `wc -l` — both true, and the difference is the
+  trailing newline. Quote the instrument, because the band is asserted against the first
+  and a reviewer checks with the second.
+  `circuit-instruments.tsx` is **1,265** (`wc -l`), NOT the 1,245 first recorded here.
+  1,245 was measured before `18ba221`, the docs commit that added exactly 20 comment
+  lines to that file — so the figure was a true measurement of a tree that no longer
+  existed by the time it was written down. Same family as the budget near-miss two
+  paragraphs up, which the re-measurement rule caught; this one it did not, because a
+  line count is not a budget and nothing re-reads it. It stays under
+  `pulse-instruments.tsx`'s 1,296 — second-largest in `src/mempool/`, not largest — and
+  that is a soft ceiling rather than a licence; instruments files are unbanded and that
+  blind spot stays open.
+  **No human has seen the rendered result in a browser** — the renders were read from
+  screenshots.
 
 - **2026-08-13**: p2·9 "PULSE" (app/ only) — the **ninth** mempool view, the third
   net-new one of the eleven, and the first that draws the **FLOW** rather than the

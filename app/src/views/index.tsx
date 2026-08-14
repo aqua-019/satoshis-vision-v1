@@ -90,6 +90,7 @@ const VIEW_COMPONENTS: Record<MempoolViewId, ViewComponent> = {
   orbital: lazyView(() => import("@/mempool/orbital"), "OrbitalView"),
   abyss: lazyView(() => import("@/mempool/abyss"), "AbyssView"),
   pulse: lazyView(() => import("@/mempool/pulse"), "PulseView"),
+  circuit: lazyView(() => import("@/mempool/circuit"), "CircuitView"),
   terminal: lazyView(() => import("@/mempool/terminal"), "TerminalHubView"),
   classic: lazyView(() => import("@/mempool/classic"), "ClassicView"),
 };

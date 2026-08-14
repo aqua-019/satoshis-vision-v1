@@ -128,6 +128,20 @@ export const MEMPOOL_VIEW_META = [
   // abyss on the age axis and sediment on the fee axis, and the separation
   // against each is recorded there.
   { id: "pulse", label: "Pulse", sub: "time domain · arrival waveform", star: false, reflow: true },
+  // p2·10: the fourth net-new view, and the fourth fluid one — same
+  // `fit: false` + `reflow: true` pair as Orbital, Abyss and Pulse. Placed with
+  // them because those four are the views that are neither scaled nor panned at
+  // any viewport, which is the property a reader of this list most needs to see
+  // grouped; the ordering inside the group is the order they shipped.
+  //
+  // It is the only view whose primary coordinate is a property of a
+  // transaction's RELATIONSHIP to the rest of the pool — the cumulative weight
+  // ahead of it in the fee-sorted fill — rather than of the transaction itself,
+  // and the only one whose fee axis is DISCRETE: a lane is one of the node's
+  // four `get_fee_estimate` tiers, not a fee position. See circuit.tsx's header
+  // for the separation from sediment and orbital, which is exactly that
+  // category-versus-coordinate distinction.
+  { id: "circuit", label: "Circuit", sub: "pcb · fee-tier bus lanes", star: false, reflow: true },
   { id: "terminal", label: "Terminal", sub: "cli-first · monerod tail", star: false },
   { id: "classic", label: "Classic", sub: "explorer · tx + block inspectors", star: true, reflow: true },
 ] as const;

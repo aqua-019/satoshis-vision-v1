@@ -91,8 +91,14 @@ function stripComments(src) {
 // `pulse` STAYS in NEW for this PR and moves on the next one, for the same
 // reason: promoting a view in the PR that introduces it would make its own band
 // check owned by a number nobody has reviewed yet.
-const SHIPPED = ["reactor", "bridge", "sediment", "constellation", "orbital", "abyss", "terminal", "classic"];
-const NEW = ["relay", "circuit", "pulse"];
+//
+// p2·10 — `pulse` MOVED, exactly as that paragraph says it should, and the
+// convention it started is now standing: a view is promoted by the PR AFTER the
+// one that introduces it, so its band is owned by a figure that has been
+// through review. `circuit` takes pulse's place in NEW and moves next.
+// `relay` stays until it thaws.
+const SHIPPED = ["reactor", "bridge", "sediment", "constellation", "orbital", "abyss", "pulse", "terminal", "classic"];
+const NEW = ["relay", "circuit"];
 const ALL = [...SHIPPED, ...NEW];
 
 // The band comes from the six that shipped, measured — NOT from the prompt's
