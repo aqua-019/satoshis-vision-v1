@@ -521,6 +521,8 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 | Mempool views (canonical list) | `app/src/views/mempool-meta.ts` — pure data, imports NOTHING. `views/index.tsx` binds components via `Record<MempoolViewId, ViewComponent>` and derives `MEMPOOL_VIEWS`; `nav/ia.ts` derives its list AND its "· N views" count through `nav/registries.mjs`. **SIX gates parse this file's source text** with `/\{\s*id:\s*"([a-z]+)"/g` (memviews · tracking · memstats · memperf · memshell · nav) — keep each `id:` a plain double-quoted literal, and see the file header before moving it |
 | Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
 | Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
+| Markets hero (canvas) | `app/src/pages/markets/CandleCanvas.tsx` (canvas geometry + a DOM label layer + the brush + the D0847 table) over `markets/candle-data.ts` (the three bases, the bucket ladder, the date-axis format). Canvas draws NO text — every glyph is DOM, because canvas glyphs are invisible to `verify-legibility`, to collision sweeps, to find-in-page and to a screen reader |
+| CSS custom property → canvas colour | `app/src/design/canvasColor.ts` — a leaf whose importers must ALL be lazy. It was homed in `chart-kit.tsx` first and cost **757 eager bytes**: `design/primitives.tsx` imports chart-kit and the entry chunk imports primitives. `useMemCanvas.ts` re-exports it so the ten mempool views keep their import path. The invariant has no gate; `eagerJsRaw`'s 17 kB of headroom would swallow a violation silently |
 | Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
@@ -530,6 +532,119 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-14**: p3·12 "MARKETS: CANVAS CANDLES + BRUSH" (app/ + api/) — Phase 3
+  opens. The hero is canvas, the range presets stop refetching, and the
+  accessible table ships in the same PR because a canvas has no accessibility
+  tree at all.
+  **THE DISEASE WAS NOT WHERE THE BRIEF SAID, AND MEASURING IT FIRST CHANGED THE
+  WHOLE DESIGN.** The brief opens "a daily series at 30D is 30 bars across
+  ~1,600px". Counted on a build of `84e2b77` with the upstream mocked at
+  CoinGecko's OWN documented granularity: **7D 42 · 30D 180 · 90D 22 · 1Y 91**.
+  30D was already 180 four-hour bars. The sparse range is **90D**, where `/ohlc`
+  switches to FOUR-DAY buckets and 22 bars carry a quarter of a year. A fix
+  aimed at 30D would have improved nothing and reported success.
+  **THE UPSTREAM IS THE CONSTRAINT AND IT BOUNDS THE WIN.** Two endpoints, two
+  granularity tables, neither negotiable below Enterprise: `/ohlc` gives 30m/4h/4d
+  by depth, `market_chart` gives 5m/hourly/daily. **There is no request that
+  returns four-hour candles for a year** — which is what the mockup's synthetic
+  base (13,200 4h candles over 2,200 days) assumes, and why this ships THREE
+  bases rather than its one. After: **7D 43 · 30D 180 · 90D 361 · 1Y 122**. 90D
+  is 16×; 7D and 30D are UNCHANGED because they already sat at the upstream's
+  finest TRUE granularity and moving them would have traded real wicks for
+  sampled ones.
+  **TRUE vs DERIVED IS ON THE FACE OF THE CHART**: a FINE bar is CoinGecko's own
+  OHLC and aggregating k of them is exact; a MID/DEEP bar is built here from a
+  price series, so its high and low are the extremes of the SAMPLES. The badge
+  says "4h OHLC" or "6h sampled" and the full label ("6h · hourly samples") is
+  on `data-candle-gran` and in the table caption.
+  **MIN_SAMPLES = 3 IS WHY A DERIVED LADDER DOES NOT START AT ITS SAMPLE
+  INTERVAL.** One sample per bucket gives o=h=l=c — a doji, at every bar,
+  forever. 365 daily dojis at 1Y would have been *denser* than the 91 bars it
+  replaced and strictly less informative.
+  **THE REQUEST BUDGET IS THE BRUSH'S PROOF.** History is fetched as three
+  BASES, not per range, so the pair effect no longer sees `days` at all.
+  Measured on `verify-markets-dom`: 30D cold **6 → 5**, all four ranges
+  **21 → 10**, `/ohlc` calls **4 → 1**, and 7D and 90D issue **ZERO** CoinGecko
+  requests. **`btcLine` was fetched on every range change and rendered by
+  NOTHING** — four wasted round trips a visit against a 10,000-call month;
+  confirmed repo-wide before deleting, and its absence is now the assertion
+  (`chartIds === ['monero']`).
+  **FIVE DEFECTS FOUND BY LOOKING, none of which any gate saw**, all after the
+  gate chain was green: (1) at 90D the date axis read **"May '26 May '26 May '26
+  Jun '26…"** — nine ticks, three distinct strings, an axis you cannot
+  interpolate against. The format was keyed on the total SPAN; only the tick
+  STEP knows whether "month" can separate neighbours, so it is keyed on the step
+  now. (2) A **"$500" price tick escaped the panel** and rendered against the
+  page background: `niceTicks` rounds outward past yMax, and in SVG the viewBox
+  clipped it — a canvas label layer has no viewport to hide behind. (3) At 390
+  the table headers broke **inside the words** ("Ope n", "Hig h", "Clo se").
+  (4) The full granularity label wrapped `PanelFrame`'s header to three lines at
+  390 — pre-existing shared behaviour, recorded three times before; only the
+  string length was mine, so a compact form was added. (5) Gridlines and their
+  labels computed their tick sets **independently** (painter: hardcoded 11px and
+  5 ticks; labels: `fs.tick` and `tickCount`) — two derivations of "where the
+  line goes" that agree only until someone touches either. One array now.
+  **THE cssColor MOVE COST 757 EAGER BYTES AND THE MEASUREMENT IS THE LESSON.**
+  The markets hero is the first canvas surface outside `src/mempool/`, so
+  `cssColor` needed a shared home. `design/chart-kit.tsx` is the obvious one —
+  it already hosts `canvasCursor` and imports only React — and it is EAGER, one
+  hop: `design/primitives.tsx:19` imports chart-kit, and the entry imports
+  primitives. Verified in the built artifact: the branch's entry chunk carried
+  the `var(…)` regex and the `#ffffff` fallback; the baseline's did not. Re-homed
+  in `design/canvasColor.ts`, whose importers are all lazy. **That invariant has
+  NO GATE and `eagerJsRaw` has 17,470 B of headroom, so a future eager import
+  would cost hundreds of bytes and never be noticed** — named in the leaf's
+  header and in `verify-bundle`, not enforced.
+  **A GREP THAT COUNTS MENTIONS IS NOT A GREP THAT COUNTS IMPORTS.** `grep -l
+  cssColor src/` returns 12 files; **five** import it, all in `src/mempool/`,
+  all lazy. The other six NAME it in docblocks that exist to say they carry a
+  SIBLING implementation — `coldboot/field.ts:59` says "not an import of it" in
+  as many words. Both a reviewer and this session read 12 as consumers before
+  measuring; the predicted consequence (eager may move) came true through a
+  mechanism that was impossible by the repo's own design. `verify-orb` **223
+  passed · 1 skipped · 0 failed** as the negative control.
+  **THE PERSISTED SCHEMA STAYS `mh:v1:`, DELIBERATELY.** No surviving key
+  changed shape; the rewrite adds a KIND (`samples|…`) and retires two. Bumping
+  to v2 orphans the caches that are still VALID — the fine base, every group
+  series, both manifests, the meta — which is exactly what a returning visitor
+  on a blocked upstream falls back to. The three dead kinds are pruned instead
+  (`pruneLegacyCache`, gated both directions in `verify-stale`: everything doomed
+  goes, everything else stays).
+  **FIVE CEILINGS RAISED, all red-then-green on the FINAL tree**: `cssGz`
+  17,000 → 17,600 · `lazyJsRaw` 820,000 → 831,000 · `totalJsRaw` 1,082,000 →
+  1,094,000 · `/live/markets` 105,000 → 112,000 gzip · `CHUNK_COUNT` 61 → **62**
+  (66 chunks; re-centred, not widened, exactly as that comment instructed the
+  next PR). **The `/live/markets` row's `95,817` comment was stale by 7,879 B
+  BEFORE this PR** — main measured 103,696 against 105,000, 1,304 B of slack.
+  **The 66th chunk is a shared LEAF, not a view**, which that comment did not
+  anticipate: it predicted Relay would spend the last rung. Nothing in the
+  detector distinguishes the two.
+  **THE SHARED-`dist` RACE BIT, and the fix was to discard rather than reason.**
+  A full `verify:e2e` run was killed mid-chain by a `npm run build` started in
+  another shell; it returned 40+ `ERR_CONNECTION_REFUSED`. Void, not suspect —
+  discarded and re-run. `verify-coldboot-live`'s §0a build-SHA check then caught
+  the same class from the other side: a dist built before the commit, serving
+  `84e2b773` while HEAD was `31604c1b`.
+  **DESCOPED, out loud**: §5's seven-line privacy-group rework. Hero + brush +
+  table + the granularity ladder + five gate sections is a full PR, and the
+  group panels keep their per-range aggregator fetch for a stated reason —
+  `/api/markets?days=365` returns DAILY series, so windowing one deep fetch
+  would hand the 7D peer chart seven points where it has 168 today. Also not
+  built: D0836 wheel/pinch inertia (it must `preventDefault` a wheel over a tall
+  scrolling page, and momentum would put a rAF loop on the one hero in this app
+  that is otherwise completely motion-free) and any extension of `RANGE_DAYS`
+  past four (the aggregator's cache-key space is those four values by design,
+  and the brush now reaches every window between them).
+  Gates: **77 files / 73 gates, RECOUNTED and unchanged** — no new gate file;
+  `verify-markets-dom` grew a canvas-hero section and tightened three §1d
+  literals, `verify-stale` gained the prune block, `verify-effects`' ledger for
+  `useMarketHistory` went 2 → 3 effects (the split IS the feature: bases keyed
+  `[wantDeep, retryNonce]`, aggregator `[days, retryNonce]`). Two-polarity for
+  the whole set: **38 assertions red** against a `84e2b77` build in an isolated
+  worktree, 0 red on the branch.
+  **No human has seen the rendered result in a browser** — the renders were read
+  from screenshots.
 
 - **2026-08-14**: p2·10 "CIRCUIT" (app/ only) — the **tenth** mempool view, the fourth
   net-new one of the eleven, and the last buildable one: after this only Relay remains and
