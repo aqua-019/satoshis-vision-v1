@@ -499,7 +499,58 @@ const BUDGETS = {
   // remains exactly as open as it was. It is not this PR's to make: this PR
   // adds a view, and re-founding a budget's identity while shipping a feature
   // is how a backstop gets quietly redefined by whoever happened to cross it.
-  totalJsRaw: 1_052_000,
+  //
+  // ── RAISED 1,052,000 -> 1,082,000 in p2·10 (Circuit). Fourth consecutive
+  //    raise, and the reconciliation above is STILL OPEN, unchanged ──
+  //
+  // Measured, both endpoints BUILT from the same tree — d388754 in an ISOLATED
+  // `git worktree` with its own dist/ and its own node_modules, rather than by
+  // stashing in place, so neither build could read the other's artifacts (the
+  // shared-dist race this repo records). Re-measured after the LAST src edit
+  // per the rule the paragraph above sets, and the rule earned its keep again:
+  // the first reading of this delta was +29,460 and the final tree reads
+  // +29,468, an 8 B drift from three later source edits that would have sat
+  // inside the margin unseen.
+  //
+  //     totalJsRaw   1,049,839  ->  1,079,307    +29,468
+  //
+  // Every byte attributed by diffing dist/assets/*.js file-by-file at both
+  // endpoints, PAIRED BY MULTIPLICITY. The collision this file records at :420
+  // is live in this delta for the SECOND consecutive release: the stem `index`
+  // holds two chunks, they moved by DIFFERENT amounts, and one is eager while
+  // the other is lazy — so a basename-keyed diff does not merely lose a row, it
+  // attributes a lazy delta to the eager budget.
+  //
+  //     circuit        (new view chunk)      +29,241   lazy
+  //     index/mapDeps  (one more lazy entry)    +146   lazy
+  //     index          (the eager entry)         +81   eager
+  //     ---------------------------------------------
+  //                                          +29,468
+  //
+  // 3 chunks moved of 65; the other 62 — including all nine pre-existing view
+  // chunks — are byte-identical across the two builds. Each budget reconciles
+  // exactly: 787,894 + 29,241 + 146 = 817,281 lazy, 261,945 + 81 = 262,026
+  // eager, 1,049,839 + 29,468 = 1,079,307 total.
+  //
+  // Budget 1,082,000, so the margin is 2,693 B.
+  //
+  // THE EAGER TERM IS STRUCTURAL, NOT DRIFT — the same one p2·8 and p2·9 each
+  // recorded, for the third time: p2·7b deliberately moved the view metadata
+  // into an eagerly-bundled module so `nav/ia.ts` could read it under bare
+  // Node, so every view costs the eager bundle one row. 81 B this time.
+  // `eagerJsRaw`'s own ceiling is UNTOUCHED at 280,000 (built 262,026, margin
+  // 17,974).
+  //
+  // THE RECONCILIATION IS STILL NOT DONE. eagerJsRaw 280,000 + lazyJsRaw
+  // 820,000 = 1,100,000 against this line's 1,082,000, so the window in which a
+  // build is legal by both real budgets and illegal by this backstop is 18,000
+  // B — the same width for the third consecutive raise, and now sitting 82,000
+  // B above where it was when the identity held. That the width is INVARIANT
+  // across three raises is itself the argument that this is a mechanical
+  // consequence rather than an accumulating error: both literals are being set
+  // from measurement with similar margins, so the gap tracks the fixed
+  // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
+  totalJsRaw: 1_082_000,
   // ── THE SPLIT (v2·3), and it applies THIS FILE'S OWN STATED PRINCIPLE ──
   //
   // Line :26 already rejects the shape `totalJsRaw` has: "a single grand total
@@ -682,7 +733,66 @@ const BUDGETS = {
   // from the first build. The first build here read 787,256; the final one
   // reads 787,894, a 638 B drift that would have sat inside the margin and
   // never shown itself.
-  lazyJsRaw: 790_000,
+  // ── RAISED 790,000 -> 820,000 in p2·10 (Circuit). FOURTH of the four firings
+  //    the p2·7 note predicted, and the third consecutive clean two-term delta.
+  //    The prediction is now SPENT: this is the last one it named ──
+  //
+  // MEASURED, both endpoints, built-to-built — and by a DIFFERENT method from
+  // the last three, deliberately. The baseline (d388754) was built in an
+  // ISOLATED `git worktree` with its own dist/ and its own node_modules rather
+  // than by stashing in place, so the two builds could not read each other's
+  // artifacts. `git stash -u` is correct and was used three times; it is also
+  // one command away from the shared-dist race this file's siblings record,
+  // because a clean `git status` is not a clean SUBJECT while dist/ still holds
+  // the other tree's output. A worktree makes that class impossible instead of
+  // avoided.
+  //
+  //     lazyJsRaw   787,894  ->  817,281    +29,387
+  //
+  // and every byte of that delta is attributed, PAIRED BY MULTIPLICITY rather
+  // than by stripped basename, because TWO chunks reduce to the stem `index`
+  // (see the note at :420) and a basename-keyed diff silently pairs the wrong
+  // two:
+  //
+  //     circuit        (new view chunk)      +29,241
+  //     index/mapDeps  (one more lazy entry)    +146
+  //     -------------------------------------------
+  //                                          +29,387
+  //
+  // The `index` stem's two chunks pair 2,059 -> 2,205 (+146, LAZY, the mapDeps
+  // table) and 99,030 -> 99,111 (+81, EAGER, the mempool-meta row). The eager
+  // term is NOT part of this delta; splitting them is exactly what the
+  // multiplicity pairing buys, and this is the SECOND consecutive release in
+  // which the two chunks moved by different amounts — it has stopped being a
+  // hypothetical hazard and become the ordinary case.
+  //
+  // Confirmed rather than assumed: all NINE pre-existing view chunks are
+  // BYTE-IDENTICAL across the two builds (classic 19,163 · reactor 19,204 ·
+  // constellation 21,187 · orbital 21,729 · abyss 23,443 · sediment 24,831 ·
+  // bridge 28,318 · pulse 30,952 · terminal 35,969), as are mem-stats,
+  // mempool-shared and useMemCanvas — 3 chunks moved of 65. Circuit is a FIFTH
+  // consumer of the already-hoisted useMemCanvas chunk, so it costs nothing
+  // beyond its own.
+  //
+  // Budget 820,000, so the margin is 2,719 B — same sizing rule as the last
+  // three, deliberately under one view and over one shared-chunk re-split.
+  //
+  // AND THE PROJECTION COLLAPSES HERE, WHICH IS WORTH MORE THAN THE NUMBER.
+  // Mean view chunk across the TEN now shipped is 25,404 (classic 19,163 ·
+  // reactor 19,204 · constellation 21,187 · orbital 21,729 · abyss 23,443 ·
+  // sediment 24,831 · bridge 28,318 · circuit 29,241 · pulse 30,952 · terminal
+  // 35,969 — RECOUNTED, not carried forward from the nine-view figure of
+  // 24,977; span 19,163–35,969). Every previous note here projected "N views
+  // remain × the mean". ONLY RELAY REMAINS, AND NO MEAN PROJECTS IT: its own
+  // brief records that the public restricted-RPC cascade exposes no peer
+  // topology, so it either ships as protocol illustration or stays behind the
+  // "Soon" treatment NetworkPage's peer panel uses, and those two shapes differ
+  // by more than the span of this whole set. It is also PARKED, so there is no
+  // date to project to. The honest successor to the projection line is one
+  // sentence: this ceiling will fire once more if Relay ever ships, by an
+  // amount nobody can estimate today, and until then it should not move.
+  //
+  lazyJsRaw: 820_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
@@ -776,7 +886,32 @@ const ROUTE_BUDGET_GZ = {
 // Left at 55 with reality at 60, it had already spent its entire band on a
 // known deliberate delta and had nothing left for the accident it exists to
 // catch. New range [56, 64], same ±4 of headroom in both directions.
-const CHUNK_COUNT = 60;
+//
+// ── p2·10 RE-CENTRED 60 -> 61, and this is the THIRD verify-bundle assertion
+//    a net-new view crosses. The two budgets are the ones every view PR since
+//    #174 has expected; this one is not, and it went unmentioned in four
+//    consecutive briefs because it only fires at the top of the band ──
+//
+// Measured: 64 at d388754, 65 on this tree. Every net-new view adds EXACTLY
+// one chunk — `views/index.tsx` binds each engine through its own
+// `React.lazy(() => import("@/mempool/<id>"))`, and that file's own docblock
+// records why the map is written out rather than derived (a template literal
+// would collapse the engines into one glob chunk and undo v6.0.8's
+// splitting). So a per-view chunk is the strategy working, which is precisely
+// the "feature, not a manualChunks accident" case this check's comment
+// distinguishes — and it is the same call the v6.1.8 note above made.
+//
+//   widening ±4 -> ±5   would LOSE sensitivity. Not done, for the reason the
+//                       paragraph above already gives.
+//   moving 60 -> 61     keeps ±4 exactly. Sensitivity is IDENTICAL.
+//
+// New range [57, 65]. The upward half is spent again at 65, which is worth
+// saying plainly rather than leaving to be rediscovered: Relay, if it ever
+// ships, takes this to 66 and reds this check on its first build. That is the
+// detector doing its job — it should be re-centred to 62 in that PR, not
+// widened — and it is now the second consecutive release in which the ceiling
+// this check hands the next view PR is exactly one build away.
+const CHUNK_COUNT = 61;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);
