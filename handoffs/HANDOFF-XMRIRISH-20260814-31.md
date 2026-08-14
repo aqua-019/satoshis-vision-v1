@@ -57,7 +57,7 @@ OUT: Relay (parked). No gate is added. No other view is touched. `verify-fit`'s
 - [x] `npm run verify:fit`, `verify:mobile`, `verify:perf-runtime` exit 0
 - [x] six `naturalW == canvasW` cells measured at 1440/1280/390 × both feed states — all EQUAL
 - [x] renders looked at: dense lane, quiet (3 tx), empty feed, reduced motion, tracked at 1440 and 390 — nine defects found and fixed
-- [ ] draft PR opened, `mergeable_state` reported
+- [x] draft PR opened, `mergeable_state` reported — https://github.com/aqua-019/satoshis-vision-v1/pull/178
 
 ## 6 · VERIFY COMMANDS
 ```
