@@ -613,6 +613,23 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   final tree — because the tree moved between them. Only the final tree's figures may
   ship, which is the whole content of the re-measure rule and is now the fourth
   release it has caught.
+  **`verify-vitals` IS RED AND IT IS THE RUNNER — paired, not assumed.** The final
+  tree and the PRE-p3·12b head were measured on the same machine minutes apart,
+  serving from two ports with the holders confirmed: `/live/markets` LCP **4,216
+  branch / 4,180 base**, blocking **433 / 406**, `/` blocking **404 / 441**, and
+  the SAME THREE assertions red on both. A 36 ms difference (0.9%) on a
+  measurement whose own run-to-run spread this file has recorded at 80-86%.
+  **The same runner reported markets LCP at 2,280-2,296 ms two hours earlier**,
+  which is the whole finding: the machine moved, the tree did not. p2·8 already
+  recorded the shape — "in the full e2e chain markets LCP read 4460ms;
+  standalone and idle it read 2240ms".
+  **AND THE SPREAD GUARD DID NOT FIRE, which is its blind spot stated plainly.**
+  It skips a route when the three runs DISAGREE by more than 10%; here they
+  agreed closely with each other at a uniformly elevated level. The guard catches
+  JITTER and cannot see a PLATEAU, so a sustained-load runner produces confident,
+  reproducible, wrong numbers — and the only instrument that separates those from
+  a real regression is a paired run against another tree on the same machine.
+  Report-and-stop: no vitals budget moved, and none should be.
   Gates: **77 files / 73 gates, unchanged.** `verify-markets-dom` gained a volume
   section (upper bound, last-cell, and every-cell equality) plus 7D and 390 axis
   assertions with a falsifiability SELF-CHECK for the one predicate that has no

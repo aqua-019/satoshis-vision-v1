@@ -135,6 +135,12 @@ open questions:
   phases where a given mutation is invisible.
 - 2026-08-14 · p3·12b · "gzip -9" is three different compressors. Any byte figure
   must be taken with the instrument that will judge it.
+- 2026-08-14 · p3·12b · verify-vitals' contention guard skips on run-to-run SPREAD,
+  so it sees jitter and is blind to a sustained-load PLATEAU — three runs that agree
+  with each other at a uniformly wrong level pass its check and fail the budget. The
+  only instrument that separates that from a real regression is a paired run against
+  another tree on the same machine, which is what was done here (4,216 vs 4,180 ms,
+  same three assertions red on both).
 - 2026-08-14 · p3·12 · INFERRED, unprompted by the brief: which range is
   actually sparse (90D, not 30D); that CoinGecko cannot serve 4h candles beyond
   30 days at any tier below Enterprise; that `btcLine` was dead; that the
