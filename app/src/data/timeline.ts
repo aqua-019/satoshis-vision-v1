@@ -13,9 +13,12 @@
  * This module imports NOTHING. Its importers must ALL be lazy, and today both
  * are (`EducationPage` and `MarketsPage` are React.lazy in App.tsx), so Rollup
  * mints it a chunk of its own and it costs first paint zero bytes. Import it
- * from an eagerly-reachable module and 13 KB of prose lands in the entry chunk
- * on every route — including routes that never show a timeline. There is no
- * gate on that; the rule lives here and in verify-bundle's header.
+ * from an eagerly-reachable module and 12,941 B of prose lands in the entry
+ * chunk on every route — including the twelve that never show a timeline.
+ * MEASURED, not assumed: doing exactly that leaves `eagerJsRaw`, `eagerJsGz`,
+ * `lazyJsRaw`, `totalJsRaw` and the chunk-count detector ALL GREEN, and reds
+ * ten of the thirteen per-route ceilings instead — `/` not among them. The
+ * full table is in verify-bundle.mjs beside the lazyJsRaw budget.
  *
  * ── THE DATE FIELDS, AND THE ONE RULE THAT MAKES THEM HONEST ──────────
  *

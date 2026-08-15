@@ -12,9 +12,11 @@
  * `/monero`, `/operate/node` — every route, including the twelve that have no
  * chart at all. So this lives in its own module whose importers are ALL lazy.
  * Import it from an eagerly-reachable module and the whole thing moves to first
- * paint silently: `eagerJsRaw` has ~17 KB of headroom and would swallow it
- * without a red. There is no gate on that. The rule is written here, in
- * canvasColor's header, and in verify-bundle's.
+ * paint. The rule is written here, in canvasColor's header, and in
+ * verify-bundle's — and verify-bundle's copy carries a MEASUREMENT of what does
+ * and does not catch a violation, because the first draft of this very
+ * paragraph guessed ("eagerJsRaw would swallow it, there is no gate") and the
+ * guess was half wrong in both directions.
  *
  * ── WHY TIMESTAMPS, NOT PIXELS ────────────────────────────────────────
  *

@@ -932,6 +932,36 @@ const BUDGETS = {
   // vendor, so 13 KB of timeline prose is provably NOT in first paint. That is
   // the canvasColor rule holding: a shared leaf is free only if every importer
   // is lazy, and both of this PR's importers (EducationPage, MarketsPage) are.
+  //
+  // ── AND HERE IS WHAT CATCHES A VIOLATION. IT IS NOT THE EAGER BUDGET. ─────
+  // p3·13's own comments first said "there is no gate on that; eagerJsRaw's
+  // headroom would swallow it" — asserted from a plausible mechanism, which is
+  // the failure family this repo has paid for more than any other. Measured
+  // instead, by importing `@/data/timeline` from the eager App.tsx with an
+  // unshakeable reference and rebuilding:
+  //
+  //     entry chunk    99,973 -> 112,914 B raw   +12,941
+  //     eagerJsRaw    262,888 -> 275,829   <= 280,000    PASSES
+  //     eagerJsGz      88,196 ->  93,663   <=  96,000    PASSES
+  //     lazyJsRaw     841,974 -> 828,932   <= 845,000    PASSES (went DOWN)
+  //     totalJsRaw  1,104,862 -> 1,104,761 <= 1,108,000  PASSES
+  //     chunk count        67 -> 66        within 64±4   PASSES (the leaf's
+  //                                                      own chunk was ABSORBED)
+  //     per-route first load                             10 of 13 RED
+  //
+  // Every budget named for eager weight passes, and the two detectors most
+  // likely to notice both moved the REASSURING way. What reds is the per-route
+  // table, as a side effect — eleven routes that never show a timeline paying
+  // for one. The three that stay green are the hole worth knowing: `/`,
+  // `/live/markets` and `/learn`. `/` is the LCP route this rule exists to
+  // protect, and it does not notice.
+  //
+  // It is also a SIZE threshold rather than a rule. The tightest per-route
+  // margin on the clean tree is /about/sources at 642 B gzip, so an eager leak
+  // under ~650 B gzip (~2 KB raw) clears every ceiling in this file. 13 KB was
+  // loud; a helper function would be silent. Writing the real assertion — "no
+  // eager chunk contains a string only this leaf declares" — is a small,
+  // separate change and is deliberately NOT taken here.
   lazyJsRaw: 845_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
