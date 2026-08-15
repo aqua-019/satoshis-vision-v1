@@ -124,10 +124,23 @@ export function CadenceStrip({
   const tickW = Math.max(1, Math.min(9, barW * 0.62));
 
   return (
-    <div className="chart-box" style={{ width: "100%", minHeight: H }}>
+    <div className="chart-box" style={{ position: "relative", width: "100%", height: H }}>
       <svg
         viewBox={`0 0 ${W} ${H}`}
         width="100%"
+        height={H}
+        /* BOTH of these are load-bearing and the gate that caught their absence
+           is worth naming: verify-resilience-dom §A measures every `.sk-swap`
+           at t=0 and t=2500 and requires the box to move <=2px.
+           `width="100%"` with a viewBox and NO height makes an SVG lay out at
+           the viewBox's ASPECT RATIO — at a ~1400px-wide panel that is
+           1400 x (118/1000) = 165px, not 118 — and `minHeight` only floors it,
+           so the strip was 52px taller than its own reservation. Measured, not
+           reasoned: 170 -> 118 across the swap, reproduced with the gate's own
+           fixture. An explicit height pins the box; `preserveAspectRatio="none"`
+           is what lets the x-axis still stretch to the panel width instead of
+           letterboxing at 1000 units. */
+        preserveAspectRatio="none"
         style={{ display: "block", opacity: stale ? 0.45 : 1 }}
         role="img"
         aria-label={
@@ -164,33 +177,57 @@ export function CadenceStrip({
           );
         })}
 
-        {/* axis end-labels, in SVG only because they must sit inside the
-            plot's own coordinate space; both are ≥12px at every rendered
-            width because this strip is never inside a .mp-fit wrapper */}
-        <text x={4} y={H - 5} fontFamily="var(--f-mono)" fontSize="12" fill="var(--ink-40)">older</text>
-        <text x={W - 4} y={H - 5} textAnchor="end" fontFamily="var(--f-mono)" fontSize="12" fill="var(--ink-40)">newer</text>
-        <text x={W - 4} y={padT + 11} textAnchor="end" fontFamily="var(--f-mono)" fontSize="12" fill="var(--ink-40)">
-          slow ↑ · target {targetS}s · ↓ fast
-        </text>
+        {/* NO <text> lives in this SVG — see `preserveAspectRatio` above. The
+            non-uniform scale that lets the ticks stretch to the panel width
+            would stretch every glyph with them (~1.4x horizontally at 1440),
+            so the labels are DOM and the watermark is its own unstretched
+            overlay, both below. Geometry scales; type does not. */}
+      </svg>
 
-        {/* The STALE watermark, and it is not decoration despite the attribute
-            name. `verify-failure` treats ANY <svg> inside a panel body as a
-            chart and then requires that chart's own watermark to agree with the
-            panel's `data-stale` — a second expression of the same fact, checked
-            rather than trusted. This strip is the seventh charted panel on the
-            page; without this it dimmed on a dead endpoint while claiming
-            nothing, and the gate caught exactly that. Same `data-decorative`
-            marker and same letter-spacing as AreaSeries/BarSeries so the three
-            read as one vocabulary. */}
-        {stale ? (
+      {/* Axis labels as DOM. 12px mono, which is the floor this repo runs on
+          HTML text, and unaffected by the SVG's non-uniform scale. */}
+      {(() => {
+        const lab: React.CSSProperties = {
+          position: "absolute", fontFamily: "var(--f-mono)", fontSize: 12,
+          color: "var(--ink-40)", pointerEvents: "none", lineHeight: 1,
+          opacity: stale ? 0.45 : 1,
+        };
+        return (
+          <>
+            <span style={{ ...lab, left: 4, bottom: 4 }}>older</span>
+            <span style={{ ...lab, right: 4, bottom: 4 }}>newer</span>
+            <span style={{ ...lab, right: 4, top: padT }}>slow ↑ · target {targetS}s · ↓ fast</span>
+          </>
+        );
+      })()}
+
+      {/* The STALE watermark, and it is not decoration despite the attribute
+          name. `verify-failure` counts any `.panel-b svg` as a chart and then
+          requires a `text[data-decorative]` in that panel to agree with the
+          panel's own `data-stale` — a second expression of the same fact,
+          checked rather than trusted. This strip is the seventh charted panel
+          on the page; without this it dimmed on a dead endpoint while claiming
+          nothing, and the gate caught exactly that.
+
+          It is its OWN svg rather than a node in the strip's, because the
+          strip's `preserveAspectRatio="none"` would stretch the word. This one
+          takes the default aspect handling, so the glyphs are undistorted; the
+          gate's selector is panel-scoped, so a second svg satisfies it. Same
+          marker and letter-spacing as AreaSeries/BarSeries. */}
+      {stale ? (
+        <svg
+          width="100%" height={H} viewBox={`0 0 ${W} ${H}`}
+          style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+          aria-hidden="true"
+        >
           <text
             data-decorative
             x={W / 2} y={mid + 5} textAnchor="middle"
             fontFamily="var(--f-mono)" fontSize="26" fill="var(--ink-20)"
             opacity={0.25} letterSpacing="0.3em"
           >STALE</text>
-        ) : null}
-      </svg>
+        </svg>
+      ) : null}
     </div>
   );
 }
