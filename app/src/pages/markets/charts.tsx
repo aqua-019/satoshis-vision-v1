@@ -683,6 +683,27 @@ export interface AreaSeriesProps {
   sync?: boolean;
   /** Series name in the synced readout. Only read when `sync` is true. */
   syncLabel?: string;
+  /**
+   * Optional threshold band drawn BEHIND the series (D0832, /live/network).
+   *
+   * OPT-IN and undefined by default, so every existing caller — all of markets
+   * and the three network panels that do not band — is untouched by
+   * construction rather than by a default that happens to be falsy.
+   *
+   * The band PARTICIPATES IN THE Y-DOMAIN. A band computed from a threshold can
+   * legitimately sit wholly outside the observed data (a chain running exactly
+   * on target has every sample inside a band, but a degraded one may have none),
+   * and a band clipped out of view is worse than no band: the reader sees a
+   * series with no context and no indication that context existed. So `lo`/`hi`
+   * join the min/max the scale is built from.
+   *
+   * The zones are drawn, never inferred from colour alone — `classify()` in
+   * pages/network/bands.ts is the single authority on which zone a value is in,
+   * and the panel prints the band's own `source` sentence underneath. This prop
+   * carries geometry only; it deliberately cannot express a label, so a band
+   * can never be rendered here without its receipts being rendered there.
+   */
+  band?: { lo: number; hi: number; warnLo?: number | null; warnHi?: number | null };
 }
 
 function AreaSeriesImpl({
@@ -698,6 +719,7 @@ function AreaSeriesImpl({
   xLabels = true,
   sync: synced = false,
   syncLabel = "value",
+  band,
 }: AreaSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
@@ -776,8 +798,15 @@ function AreaSeriesImpl({
   const dateH = xLabels ? 22 : 8;
   const innerH = height - padT - dateH - 10;
 
-  const lo = Math.min(...data);
-  const hi = Math.max(...data);
+  /* The band joins the extent BEFORE the scale is built — see the `band` prop's
+     docblock. `warnLo`/`warnHi` are deliberately NOT included: the warn edges
+     are open-ended by design (a null side never escalates), and letting them
+     drive the domain would zoom a healthy chart out until its own series was a
+     flat line across the middle. Healthy edges bound the domain; warn edges are
+     clipped to it, which is the honest way round — the reader can always see
+     where healthy ends. */
+  const lo = Math.min(...data, ...(band ? [band.lo, band.hi] : []));
+  const hi = Math.max(...data, ...(band ? [band.lo, band.hi] : []));
   let yMin: number, yMax: number;
   if (baseline === "zero") {
     yMin = Math.min(0, lo);
@@ -837,6 +866,35 @@ function AreaSeriesImpl({
           <stop offset="100%" stopColor={color} stopOpacity="0" />
         </linearGradient>
       </defs>
+
+      {/* Threshold band (D0832), FIRST so every later mark draws over it — a
+          band that occludes its own series would be decoration winning over
+          data. Rects are clamped to the plot box: the warn edges are
+          open-ended by design, so an unclamped rect would paint outside the
+          axes. `aria-hidden` because the band is restated as text in the
+          panel's source note, and a screen reader should hear that sentence
+          once rather than a pair of undescribed rectangles. */}
+      {band ? (() => {
+        const top = padT, bot = padT + innerH;
+        const clampY = (y: number) => Math.max(top, Math.min(bot, y));
+        const rect = (yA: number, yB: number, fill: string, op: number, k: string) => {
+          const a = clampY(Math.min(yA, yB)), b = clampY(Math.max(yA, yB));
+          return b - a > 0.5
+            ? <rect key={k} x={padL} y={a} width={innerW} height={b - a} fill={fill} opacity={op} />
+            : null;
+        };
+        return (
+          <g aria-hidden="true" data-band="1">
+            {band.warnHi != null ? rect(py(band.hi), py(band.warnHi), "var(--y-50)", 0.07, "wh") : null}
+            {band.warnLo != null ? rect(py(band.warnLo), py(band.lo), "var(--y-50)", 0.07, "wl") : null}
+            {rect(py(band.lo), py(band.hi), "var(--g-50)", 0.09, "ok")}
+            <line x1={padL} y1={clampY(py(band.lo))} x2={padL + innerW} y2={clampY(py(band.lo))}
+              stroke="var(--g-50)" strokeOpacity="0.34" strokeDasharray="3 3" />
+            <line x1={padL} y1={clampY(py(band.hi))} x2={padL + innerW} y2={clampY(py(band.hi))}
+              stroke="var(--g-50)" strokeOpacity="0.34" strokeDasharray="3 3" />
+          </g>
+        );
+      })() : null}
 
       {/* y gridlines + labels */}
       {yTicks.map((tk) => (

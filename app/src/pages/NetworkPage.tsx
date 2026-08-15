@@ -33,6 +33,8 @@ import { PanelBoundary } from "@/design/PanelBoundary";
 import { useFeedActivity } from "@/data/feed-activity";
 import { usePendingDelay } from "@/design/usePendingDelay";
 import { NodePopulationPanel } from "./network/NodePopulationPanel";
+import { BLOCK_TARGET_S, backlogBand, bandWindowLabel, cadenceBand, meanOf, sigmaBand, worstZone } from "./network/bands";
+import { BandNote, CADENCE_H, CadenceStrip, HealthChip, SimLink, zoneOf } from "./network/BandPanels";
 import { R } from "../../scripts/routes.mjs";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
@@ -292,6 +294,45 @@ export function NetworkPage() {
     if (Number.isFinite(iv) && iv >= 5 && iv <= 1800) intervals.push(iv);
   }
   const ivHist = intervalHistogram(intervals);
+
+  /* ── D0832 bands ───────────────────────────────────────────────────
+     Three bands, each computed from a source the panel then prints. The
+     WINDOW is part of every claim: what this page holds is `BLOCKS_CAP`
+     block headers (100), which at the target is about 3.3 hours — NOT the
+     30 days the mockup's hashrate caption asks for, and not a window any
+     endpoint this client fetches would supply. See bands.ts's header.
+
+     `intervals` is newest-first out of the loop above (it walks
+     data.blocks, which is newest-first); the strip reads left-to-right as
+     oldest→newest, so it takes a reversed copy. The MEAN is orientation-
+     independent, so only the strip needs it. */
+  const cadenceIntervals = intervals.slice().reverse();
+  const meanInterval = meanOf(intervals);
+  const cadence = cadenceBand(intervals.length);
+  const cadenceZone = zoneOf(meanInterval, cadence);
+
+  /* Difficulty's ±1σ envelope over the window actually held. `diffSeries` is
+     the 14-block mini-window; the band is measured over the FULL block sample
+     so the envelope is not derived from the same 14 points it is drawn over —
+     a ±1σ band over its own 14 samples would sit tight around them by
+     construction and could never be exceeded. */
+  const diffAll = data.blocks.map((b) => b.difficulty).filter(Number.isFinite);
+  const diffBand = sigmaBand(diffAll, bandWindowLabel(diffAll.length));
+
+  /* Mempool backlog in blocks, against the node's own dynamic weight limit. */
+  const poolBytes = data.mempool.reduce((a, x) => a + x.size, 0);
+  const backlog = backlogBand(data.blockWeightLimit);
+  const backlogDepth = data.blockWeightLimit > 0 ? poolBytes / data.blockWeightLimit : null;
+  const backlogZone = zoneOf(backlogDepth, backlog);
+
+  /* The page-header summary is the WORST of the zones actually measurable.
+     A band whose inputs have not landed contributes nothing rather than a
+     reassuring "healthy" — an unmeasured series is not a passing one. */
+  const measuredZones = [
+    meanInterval != null ? cadenceZone : null,
+    backlogDepth != null ? backlogZone : null,
+  ].filter((z) => z !== null);
+  const healthZone = worstZone(measuredZones);
   // Pool attribution (P2): Monero coinbase outputs are stealth addresses, so every
   // block's pool reads "Unknown" from the node alone — this is the honest signal.
   const unattributed = recentBlocks.filter((b) => !b.pool || b.pool === "Unknown" || b.pool === "—").length;
@@ -338,6 +379,11 @@ export function NetworkPage() {
         title='Network — <em style="color:var(--tk-accent);text-shadow:var(--glow-1);font-style:normal">the numbers</em>.'
         sub="Pools, blocks, hashrate, difficulty, fees, fork readiness. The raw telemetry for the chain you trust."
         right={<>
+          {/* Band health, beside the feed pill and distinct from it: the pill
+              says whether the DATA is arriving, this says whether the CHAIN is
+              inside its bands. Rendered only once something is measurable —
+              an unmeasured series must not read as a passing one. */}
+          {measuredZones.length ? <HealthChip zone={healthZone} /> : null}
           {(() => {
             // Exhaustive over ChromeState. `error` and `offline` are separate
             // facts from `loading` and now say so — see design/useOnline.ts.
@@ -381,6 +427,22 @@ export function NetworkPage() {
               downTail="no hashrate to chart"
             />
           </PanelBoundary>
+          {/* NO BAND HERE, and the reason is the panel's most useful sentence.
+              The mockup asks for "the trailing 30-day ±1σ envelope"; this
+              series cannot carry one twice over. It is a SESSION buffer that
+              starts empty at mount, so it has no history at all on a cold
+              load — and network hashrate is not an independent measurement
+              anywhere in this stack: the node reports difficulty, and both
+              api/xmr.js and data/map.ts derive hashrate as difficulty ÷ the
+              block target. Banding it would band difficulty a second time,
+              and plotting the two "against each other" would draw a feedback
+              loop with zero lag by construction. Said plainly instead. */}
+          <p className="mono dim" style={{ fontSize: "var(--fs-mono)", margin: "6px 0 0", lineHeight: 1.5, color: "var(--ink-40)" }}>
+            Network hashrate is not measured — no node can observe it. It is <b>derived</b> as
+            difficulty ÷ {BLOCK_TARGET_S} s, so this curve is difficulty in other units, and this
+            session's samples only (it starts empty on a cold load, so there is no envelope to band
+            it against).
+          </p>
         </DataPanel>
         <DataPanel keys={KEYS_BLOCKS} status={data.status} title={`Difficulty · last ${diffSeries.length} blocks`} right={<span>{ready ? `Δ ${(data.difficulty / 1e9).toFixed(2)}G` : "—"}</span>}>
           <PanelBoundary keys={KEYS_BLOCKS} reserve={180} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
@@ -390,12 +452,19 @@ export function NetworkPage() {
               chart={
                 <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
                   baseline="auto" xLabels={false} stale={isStale(data.status.blocks)}
-                  format={fmtGigaSuffix} />
+                  format={fmtGigaSuffix} band={diffBand ?? undefined} />
               }
               emptyNote="Node answered with zero blocks in range — no difficulty to plot"
               downTail="no difficulty series"
             />
           </PanelBoundary>
+          {diffBand ? (
+            <BandNote band={diffBand}>
+              Difficulty is the retarget controller's output; the cadence strip below is the process
+              it controls. Its feedback loop is the{" "}
+              <SimLink to={`${R.LEARN_SIM}?p=thermostat`}>Thermostat simulator</SimLink>.
+            </BandNote>
+          ) : null}
         </DataPanel>
       </section>
 
@@ -414,6 +483,12 @@ export function NetworkPage() {
               downTail="no mempool-size series"
             />
           </PanelBoundary>
+          {backlog && backlogDepth != null ? (
+            <BandNote band={backlog}>
+              Right now: <b className="acc">{backlogDepth.toFixed(2)}</b> blocks deep
+              ({fmtBytes(poolBytes)}) — <HealthChip zone={backlogZone} />.
+            </BandNote>
+          ) : null}
         </DataPanel>
         <DataPanel keys={KEYS_BLOCKS} status={data.status} title={`Block fullness · last ${fullness.length} blocks`} right={<span>{recentBlocks.length ? `cap ≈ ${fullCap.toFixed(0)} KB` : "—"}</span>}>
           <PanelBoundary keys={KEYS_BLOCKS} reserve={180} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
@@ -431,6 +506,33 @@ export function NetworkPage() {
           </PanelBoundary>
         </DataPanel>
       </section>
+
+      {/* Block cadence strip (D0828/D0832) — the chain's heartbeat, and the
+          one panel whose reading is a RUN rather than a number. Full width:
+          the run is only legible with enough horizontal room for ~100 ticks. */}
+      <DataPanel
+        keys={KEYS_BLOCKS} status={data.status} title={`Block cadence · last ${cadenceIntervals.length} intervals`}
+        right={meanInterval != null
+          ? <HealthChip zone={cadenceZone} label={`mean ${Math.round(meanInterval)}s · ${cadenceZone === "healthy" ? "in band" : cadenceZone === "warn" ? "outside ±2σ" : "outside ±3σ"}`} />
+          : <span className="dim">—</span>}
+      >
+        <PanelBoundary keys={KEYS_BLOCKS} reserve={CADENCE_H} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
+          <ChartBody
+            status={data.status} keys={KEYS_BLOCKS} height={CADENCE_H}
+            hasContent={cadenceIntervals.length > 0}
+            chart={<CadenceStrip intervals={cadenceIntervals} stale={isStale(data.status.blocks)} targetS={BLOCK_TARGET_S} />}
+            emptyNote="Node answered with zero blocks in range — no cadence to draw"
+            downTail="cadence strip unavailable"
+          />
+        </PanelBoundary>
+        {cadenceIntervals.length ? (
+          <BandNote band={cadence}>
+            The strip itself carries no health band on purpose — a single interval cannot be judged
+            against a target. Why blocks wobble around {BLOCK_TARGET_S} s is the{" "}
+            <SimLink to={`${R.LEARN_SIM}?p=metronome`}>Metronome simulator</SimLink>.
+          </BandNote>
+        ) : null}
+      </DataPanel>
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
       <section className="col-2" style={{ gap: 12, alignItems: "start" }}>

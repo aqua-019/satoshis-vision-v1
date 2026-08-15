@@ -588,7 +588,11 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_108_000,  // p3·13: built 1,104,862, margin 3,138. Delta +13,585 =
+  totalJsRaw: 1_115_000,  // p3·14: built 1,111,757, margin 3,243. Crosses with
+                          // lazyJsRaw, as it has every release since #174; the
+                          // +6,872 reconciles to the byte against lazyJsRaw's
+                          // per-chunk table above.
+                          // p3·13: built 1,104,862, margin 3,138. Delta +13,585 =
                           // lazy +13,549 + eager +36, which reconciles to the byte
                           // against the per-chunk table in lazyJsRaw's note below.
                           // p3·12b: built 1,091,277, margin 2,723. Crosses with
@@ -970,7 +974,16 @@ const BUDGETS = {
   // loud; a helper function would be silent. Writing the real assertion — "no
   // eager chunk contains a string only this leaf declares" — is a small,
   // separate change and is deliberately NOT taken here.
-  lazyJsRaw: 845_000,
+  lazyJsRaw: 852_000,   // p3·14: built 848,882, margin 3,118. Delta +6,872, and the
+                        // whole of it is two lazy chunks — NetworkPage +6,120
+                        // (the band module, the strip, and the page's own
+                        // wiring) and charts +752 (AreaSeries' opt-in `band`
+                        // prop). 64 of 67 stems byte-identical, 67 chunks both
+                        // sides so nothing was minted, and the EAGER entry is
+                        // byte-identical: this PR does not move eagerJsRaw at
+                        // all. Paired by multiplicity within each stem, so the
+                        // two chunks sharing the `index` stem cannot file a
+                        // lazy delta under the eager budget.
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
@@ -1049,7 +1062,13 @@ const ROUTE_BUDGET_GZ = {
                                      //  digits, which is the argument for pasting a measured
                                      //  table rather than retyping one.
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
-  '/live/network':          108_000, // 106,035 — RAISED from 106,000, and the old `96,436`
+  '/live/network':          113_000, // p3·14: built 109,732, margin 3,268. The D0832 bands,
+                                     //  the cadence strip and their source notes land here.
+                                     //  NOTE the previous comment on this row was STALE by
+                                     //  1,344 B: it read 106,035 while the clean tree measured
+                                     //  107,379 against a 108,000 ceiling — 621 B of slack, not
+                                     //  the ~2,000 the row implied. Re-measured, not carried.
+                                     // 106,035 — RAISED from 106,000, and the old `96,436`
                                      //  comment beside it was stale by 9,169 B. Measured on
                                      //  292227a BEFORE this change: 105,605, i.e. main was
                                      //  already at 99.6% of its own ceiling with 395 B of slack.
