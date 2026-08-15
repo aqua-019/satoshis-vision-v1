@@ -92,27 +92,27 @@ OUT (non-goals):
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run build` exits 0
-- [ ] `npm run verify:static` exits 0 (21 gates)
-- [ ] `npm run verify:e2e` exits 0 (29 gates) — `verify-vitals` report-and-stop per repo policy
-- [ ] `node verify-bundle.mjs` exits 0 on the FINAL tree, with every raised ceiling shown
+- [x] `npm run typecheck` exits 0
+- [x] `npm run build` exits 0
+- [x] `npm run verify:static` exits 0 (21 gates)
+- [x] `npm run verify:e2e` exits 0 (29 gates) — `verify-vitals` report-and-stop per repo policy
+- [x] `node verify-bundle.mjs` exits 0 on the FINAL tree, with every raised ceiling shown
       red before the raise and green after (built + stated margin ≤ 4,000)
-- [ ] `eagerJsRaw` byte-parity: the eager figure is unchanged from `04006ff`'s 262,852, or
+- [x] `eagerJsRaw` byte-parity: the eager figure is unchanged from `04006ff`'s 262,852, or
       every moved byte is attributed in the report
-- [ ] Synced cursor: hovering chart A yields a crosshair at the SAME timestamp on B, C, D —
+- [x] Synced cursor: hovering chart A yields a crosshair at the SAME timestamp on B, C, D —
       asserted in `verify-markets-dom`
-- [ ] Domain mismatch: with the hero brush-zoomed to a window excluding `t`, hovering a
+- [x] Domain mismatch: with the hero brush-zoomed to a window excluding `t`, hovering a
       group chart at `t` draws NO hero crosshair — asserted, not clamped
-- [ ] Pin persists across pointer-leave and is releasable without a pointer — asserted
-- [ ] Annotation flags render from the extracted timeline data, cluster to a count badge,
+- [x] Pin persists across pointer-leave and is releasable without a pointer — asserted
+- [x] Annotation flags render from the extracted timeline data, cluster to a count badge,
       carry layer toggles for all four `TL_CAT` categories, deep-link to a slug, and appear
       on the brush strip — asserted
-- [ ] Education page DOM before == after (extraction parity) — asserted
-- [ ] Two-polarity execution transcript for EVERY new or modified assertion (a state that
+- [x] Education page DOM before == after (extraction parity) — asserted
+- [x] Two-polarity execution transcript for EVERY new or modified assertion (a state that
       passes it and a state that fails it, actuals for both)
-- [ ] Census recounted (not incremented) and CLAUDE.md corrected where falsified
-- [ ] Branch pushed · draft PR opened via GitHub MCP · `mergeable_state` reported
+- [x] Census recounted (not incremented) and CLAUDE.md corrected where falsified
+- [x] Branch pushed · draft PR opened via GitHub MCP · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 
@@ -131,12 +131,16 @@ node verify-cls.mjs
 ## 7 · REPORT — filled on exit
 
 status: done
-pr: <filled after push>
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/181 (draft)
 commits:
   - `446c9df` feat(markets): synced time cursor + the annotation layer
   - `7de58a2` test(markets): gate the synced cursor, the annotation layer and the extraction
   - `5aa637b` docs(bundle): measure what actually catches an eager import of a lazy leaf
   - `680aaa8` fix(govern): mark the two new one-shot rAFs, and put the marker where the gate looks
+  - `c6f608c` fix(markets): three things the render pass found and no gate could
+  - `ea0c2c5` docs(p3-13): record the session, the leaves, and the claim that was wrong
+  - `5fe302e` docs(bundle): re-measure the byte table on the final tree
+  - `15fc198` docs: quote the instrument for verify-markets-dom's assertion count
 deps added: none
 deviations from spec:
   - **`DEEP_DAYS` NOT extended** (§0.5's explicit option). Annotations are scoped to the
