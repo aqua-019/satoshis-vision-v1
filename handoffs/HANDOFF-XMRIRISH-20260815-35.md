@@ -183,6 +183,13 @@ deviations from spec:
 
 notes for ARCHITECTURE.md patch: CLAUDE.md session note added (p3·14).
 
+correction made in-flight (recorded because the loop ledger is the point):
+- I reported a label collision on the banded difficulty chart from a screenshot
+  crop and "fixed" it by disabling markers. Measured afterwards: a 4.8px GAP, no
+  overlap. verify-charts caught it in CI with three reds -- and its overlap
+  assertion stayed GREEN throughout, because zero labels overlap nothing. The
+  three companion assertions exist to stop that vacuity. Reverted in e0d0852.
+
 open questions:
 - api/xmr.js's range labels are wrong by 10× ('30d' returns 3 days). Recorded, not fixed;
   nothing consumes those endpoints today. Relabel to {'1d':720,'3d':2160,'7d':5040}.

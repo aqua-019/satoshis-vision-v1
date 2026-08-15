@@ -581,14 +581,26 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   within each stem: **NetworkPage +6,120 · charts +752**, 64 of 67 stems byte-identical, **67
   chunks both sides so nothing was minted**, and the **eager entry is byte-identical** —
   `eagerJsRaw` did not move at all.
-  **THREE DEFECTS FOUND BY LOOKING, one of which a gate caught first.** (1) The cadence strip is
-  the SEVENTH charted panel and drew no STALE watermark — `verify-failure` went red at "7 charted"
-  because it treats any `<svg>` in a panel body as a chart and requires the watermark to agree with
-  `data-stale`. It dimmed on a dead endpoint while claiming nothing. (2) The band **widens the
-  y-domain by design** (a band computed from a threshold can sit wholly outside the data, and a
-  clipped band is worse than none), which compressed the series and pushed the high-marker label
-  onto a y-tick: `420.00G` and `420.93G` overlapped, both unreadable. Markers are off whenever a
-  band is drawn — they were the redundant half. (3) **PanelFrame's header is uppercased, and CSS
+  **TWO DEFECTS FOUND BY LOOKING, ONE OF THEM IMAGINARY, and a gate caught both.** (1) The cadence
+  strip is the SEVENTH charted panel and drew no STALE watermark — `verify-failure` went red at
+  "7 charted" because it treats any `<svg>` in a panel body as a chart and requires the watermark
+  to agree with `data-stale`. It dimmed on a dead endpoint while claiming nothing.
+  (2) **A DEFECT I REPORTED THAT DOES NOT EXIST — the standing family, committed by the author of
+  this entry, in the same release that quotes the rule.** I read a low-contrast screenshot crop of
+  the banded difficulty chart, saw the y-tick `420.00G` beside the marker `420.93G`, recorded that
+  they "overlapped, both unreadable", and turned markers off to fix it. Measured afterwards
+  (`getBoundingClientRect` over every `<text>` in that SVG, all pairs compared): a **4.8 px
+  horizontal GAP and no overlap anywhere in the chart.** Asserted from a picture instead of a
+  measurement. **`verify-charts` caught it in CI, and HOW it caught it is the reusable part**: its
+  edge-peak section drives that very chart and asserts (a) marker labels RENDER, (b) the
+  interior-peak control still renders, (c) a label is PRESENT to check for overlap. All three went
+  red — while **the overlap assertion itself stayed GREEN, because zero labels overlap nothing.**
+  Those three companions exist to stop exactly that vacuity, and without them the run would have
+  reported the collision check passing on a chart that had no labels left. An edge-nudge mechanism
+  already existed with that gate protecting it, and it handles the band-widened domain correctly.
+  Reverted. 4.8 px is genuinely tight and both labels begin "420.", so they are confusable at a
+  glance — that is a CLEARANCE observation about the existing nudge, not an overlap, and not a
+  thing to fix by disabling a gated feature. (3) **PanelFrame's header is uppercased, and CSS
   `text-transform` maps σ → Σ** — not a styling wobble but a different operator, summation rather
   than standard deviation. The chip says "outside 3 SD"; the source note is body copy and keeps σ.
   **`fullPage` IS A NO-OP ON THIS LAYOUT above 768px** — `.art` is `height:100vh; overflow:hidden`
