@@ -526,7 +526,9 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 | Chain + market data | `api/xmr.js`, `api/markets.js`, `api/feeds.js` (CommonJS, node cascade in `api/_nodes.js`) |
 | Client polling tiers | `app/src/data/usePolling.ts`, `xmrirish-feed.ts` |
 | Markets hero (canvas) | `app/src/pages/markets/CandleCanvas.tsx` (canvas geometry + a DOM label layer + the brush + the D0847 table) over `markets/candle-data.ts` (the three bases, the bucket ladder, the date-axis format). Canvas draws NO text — every glyph is DOM, because canvas glyphs are invisible to `verify-legibility`, to collision sweeps, to find-in-page and to a screen reader |
-| CSS custom property → canvas colour | `app/src/design/canvasColor.ts` — a leaf whose importers must ALL be lazy. It was homed in `chart-kit.tsx` first and cost **757 eager bytes**: `design/primitives.tsx` imports chart-kit and the entry chunk imports primitives. `useMemCanvas.ts` re-exports it so the FIVE views that call it (abyss · circuit · orbital · pulse · sediment) keep their import path — the other five mempool views never imported it. Seven lazy chunks import the leaf, which is what makes Rollup mint it a chunk. The invariant has no gate; `eagerJsRaw`'s 17,148 B of headroom would swallow a violation silently |
+| CSS custom property → canvas colour | `app/src/design/canvasColor.ts` — a leaf whose importers must ALL be lazy. It was homed in `chart-kit.tsx` first and cost **757 eager bytes**: `design/primitives.tsx` imports chart-kit and the entry chunk imports primitives. `useMemCanvas.ts` re-exports it so the FIVE views that call it (abyss · circuit · orbital · pulse · sediment) keep their import path — the other five mempool views never imported it. Seven lazy chunks import the leaf, which is what makes Rollup mint it a chunk. **CORRECTED in p3·13 — "the invariant has no gate; `eagerJsRaw`'s headroom would swallow a violation silently" is half wrong, and was asserted rather than measured.** Measured by importing a leaf from the eager `App.tsx`: `eagerJsRaw`, `eagerJsGz`, `lazyJsRaw`, `totalJsRaw` and the chunk-count detector ALL stay green (+12,941 B raw), and the last two move the *reassuring* way — lazy goes DOWN, and the leaf's own chunk is ABSORBED so the count falls back into band. What reds is the PER-ROUTE first-load table, as a side effect: eleven routes paying for something they never render. The three that do not notice are `/`, `/live/markets` and `/learn` — and `/` is the LCP route the rule exists to protect. It is a SIZE threshold, not a rule: the tightest route margin is 642 B gzip, so an eager leak under ~650 B gzip (~2 KB raw) clears every ceiling in the file. Full table beside `lazyJsRaw` in `verify-bundle.mjs` |
+| Shared time cursor (D0834) | `app/src/design/timeCursor.ts` — a LAZY LEAF, and NOT `chart-kit.tsx`, which is eager-reachable (measured: chart-kit's `data-charttip` and its `rgba(8,7,5,0.94)` fill are both present in the entry chunk `dist/index.html` names in its own `<script src>`). Traffics in **TIMESTAMPS, never pixels** — each of the four `/live/markets` time-axis charts projects `t` through its OWN geometry, so `verify-chartkit`'s "cursor math lives only in chart-kit" stays satisfied by construction rather than by exemption. `containsT(t, from, to)` is the ONE domain predicate: a chart whose window excludes `t` draws NOTHING and must never clamp. Subscribers are called from one rAF and mutate canvas/DOM through refs, so a pointermove re-renders no chart it did not already re-render at `04006ff`. Rollup INLINED it into `charts-*.js` (both importers land in one chunk group) — so "a shared leaf costs a chunk" is really "a leaf shared ACROSS GROUPS costs a chunk", and only a build tells you which you wrote |
+| Timeline events (canonical) | `app/src/data/timeline.ts` — 49 events, ONE source for `/learn/timeline` and the `/live/markets` annotation layer (D0833). A lazy leaf importing NOTHING; both importers (`EducationPage`, `MarketsPage`) are `React.lazy`, so Rollup mints it its own 12,973 B chunk. **`d` is the display string and the ONLY thing any surface may print as a date**; `iso`/`iso2`/`tent` are POSITION ONLY, `iso` is the interval's START never a midpoint, and `verify-markets-dom` re-derives all 49 from `d` so a hand-edited one fails the build. `slug` is a URL (`/learn/timeline?e=<slug>`) — change a title freely, a slug only deliberately. Parsed from SOURCE by the gate, `mempool-meta.ts`'s idiom: keep each event a one-line, plainly-double-quoted literal |
 | Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
@@ -536,6 +538,186 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-15**: p3·13 "MARKETS: SYNCED TIME CURSOR + THE ANNOTATION LAYER" (app/) —
+  the four time-axis charts on `/live/markets` become one instrument, and the timeline
+  the site already owned becomes something the price chart can point at.
+  **TWO NEW LAZY LEAVES, AND THEIR CHUNK FATES DIFFER FOR A REASON NOTHING IN THE
+  SOURCE PREDICTS.** `design/timeCursor.ts` (the shared cursor) and `data/timeline.ts`
+  (the 49 events, lifted out of `pages/_education/Timeline.tsx`) are both leaves, both
+  imported by two lazy modules. `timeline` got its own **12,973 B chunk**; `timeCursor`
+  was **INLINED into `charts-*.js`**. The difference is chunk GROUPS, not importer count:
+  `MarketsPage` and `charts` resolve into one group, `MarketsPage` and `EducationPage` do
+  not. So the standing rule is not "a shared leaf costs a chunk" but **"a leaf shared
+  ACROSS GROUPS costs a chunk"**, and only a build tells you which you wrote.
+  **THE CURSOR TRAFFICS IN TIMESTAMPS AND THE LEAF CONTAINS NO PIXEL ARITHMETIC.** Four
+  charts, four geometries, and — the part that matters — **four DOMAINS**: the hero shows
+  the brushed window, the ratio chart follows it, the two `MultiLine` groups show the
+  RANGE. A pixel or a fraction would look portable and silently mean a different moment in
+  every chart. `containsT(t, from, to)` is the one predicate and **a chart whose domain
+  excludes `t` draws NOTHING — never a clamp**, which is the honest-motion doctrine applied
+  to a cursor. Because the write side still goes through chart-kit's `useSvgCursor` /
+  `canvasCursor`, `verify-chartkit`'s "cursor math lives only in chart-kit" stays satisfied
+  BY CONSTRUCTION rather than by an exemption.
+  **THE RE-RENDER LEDGER, STATED PRECISELY BECAUSE THE NAIVE VERSION IS FOUR TIMES WORSE.**
+  Subscribers are called from ONE rAF and mutate canvas/DOM through refs. The chart under
+  the pointer re-renders exactly as often as it did at `04006ff` (`useSvgCursor` holds `vx`
+  in React state); the other three re-render **zero** times. The hero is strictly better
+  than before — its `cursorT` was `useState` and is now a ref, so a pointermove over the
+  hero no longer rebuilds its label layer, its brush and the D0847 table's memo chain.
+  Net renders added by the feature: **none**.
+  **`eagerJsRaw` MOVED BY 23 BYTES AND EVERY ONE IS ACCOUNTED FOR.** A non-view PR under an
+  explicit "eager must not move" instruction, so they were chased: **+30 B is one new string
+  in Vite's `__vite__mapDeps` preload table** (`"assets/timeline-CWoXTI3v.js"`) and **−7 B**
+  is the rest of the entry getting marginally shorter as the indices into that table shift.
+  Measured, not inferred — the mapDeps array went 37 → 38 entries, that one addition, no
+  removals, its block grew exactly 30 B and the entry grew 23. (An earlier draft of this
+  note said +36/+6, true of a tree three commits old; the re-measure rule caught it for the
+  THIRD time this session.) The **negative control** is the half that
+  matters: `grep 'Bitcoin Whitepaper Published'` and `grep 'CryptoNote v1'` both return 0 in
+  the entry chunk AND in vendor, so 13 KB of prose is provably not in first paint.
+  **AND THE LAZY-LEAF RULE'S OWN CLAIM WAS WRONG — MINE, AND CLAUDE.md's.** Both said the
+  invariant "has no gate" and that `eagerJsRaw`'s headroom "would swallow a violation
+  silently". Asserted from a plausible mechanism, which is the family this file says has
+  cost more near-misses than the code. Measured by importing `@/data/timeline` from the
+  eager `App.tsx` with an unshakeable reference:
+
+  | budget | clean | eager import | verdict |
+  |---|---|---|---|
+  | entry chunk | 99,973 | **112,914** | +12,941 |
+  | `eagerJsRaw` | 262,888 | 275,829 ≤ 280,000 | ✅ PASSES |
+  | `eagerJsGz` | 88,196 | 93,663 ≤ 96,000 | ✅ PASSES |
+  | `lazyJsRaw` | 841,974 | 828,932 ≤ 845,000 | ✅ went DOWN |
+  | `totalJsRaw` | 1,104,862 | 1,104,761 | ✅ PASSES |
+  | chunk count | 67 | 66 within 64±4 | ✅ leaf's chunk ABSORBED |
+  | per-route first load | — | — | ❌ **10 of 13 RED** |
+
+  Every budget NAMED for eager weight passes, and the two detectors most likely to notice
+  both move the *reassuring* way. What reds is the per-route table, as a side effect —
+  eleven routes paying for something they never render. **The three that do not notice are
+  `/`, `/live/markets` and `/learn`, and `/` is the LCP route the rule exists to protect.**
+  It is also a SIZE threshold rather than a rule: the tightest route margin is
+  **642 B gzip** (`/about/sources`), so an eager leak under ~650 B gzip (~2 KB raw) clears
+  every ceiling in the file. 13 KB was loud; a helper function would be silent. The real
+  assertion — "no eager chunk contains a string only this leaf declares" — is a small
+  separate change and is **not** taken here.
+  **THE TIMELINE'S DATES ARE POSITION-ONLY, AND THAT IS THE WHOLE HONESTY DESIGN.** The 49
+  events are editorial and deliberately imprecise where the history is: "2013 – 2014",
+  "Mid-2026 (tentative)", a bare "2026". `d` remains the ONLY string any surface may print
+  as a date; `iso`/`iso2`/`tent` exist to place a flag and never become text. A day-precise
+  event draws a point; anything wider draws a **BAND over the interval it denotes**, with
+  the dot at the interval's START rather than a midpoint nobody wrote down. An interval
+  wider than 60% of the window carries no position at all and is counted separately
+  ("undated at this zoom") instead of smeared across the plot.
+  **THE DEFAULT VIEW IS EMPTY AND THAT IS THE TRUE ANSWER, NOT A GAP.** `DEEP_DAYS` is 365
+  and the timeline starts in 2008, so at the 30D preset there is genuinely nothing to mark:
+  the note reads "4 undated at this zoom · 45 outside this window", and the BRUSH STRIP —
+  which spans the whole fetched span rather than the window — still carries one flag. That
+  is the entire argument for putting flags on the strip. At 1Y: 4 in view, 3 groups, one of
+  them a cluster of 2. **Extending `DEEP_DAYS` to reach deeper history was NOT taken** — it
+  is a request-budget and cache decision that the §1d request gate and the coingecko cache
+  comment would own, and it is not this PR's to take silently.
+  **FOUR THINGS THE GATE CAUGHT IN ITS OWN FIRST DRAFT, and three are the standing family.**
+  (1) **A VACUOUS DOMAIN-MISMATCH PROOF.** The first version hovered a group chart at 2% of
+  its width, watched the hero draw nothing, and passed. 2% is inside the y-axis GUTTER,
+  where `MultiLine`'s own `cursorT` is null — nothing was ever published and the hero had
+  nothing to refuse. Every mismatch assertion is now PAIRED with "the group chart is showing
+  its own readout at this instant", which is proof a timestamp reached the store. Under M3
+  (publishing disabled) that guard goes red at 0/12 rather than certifying silently.
+  (2) **A PROBE THAT HOVERED NOTHING.** At 1440×900 the group panels sit at y≈1358, below
+  the fold; `mouse.move` to an off-viewport point hits nothing, and the probe reported "the
+  group charts do not sync" — a convincing false defect. Caught by `elementFromPoint`
+  returning `none`, which is now an assertion in the gate ("every probe point landed on a
+  real element"), not a comment.
+  (3) **`\b17\b` DOES NOT MATCH `Jul 17XMR`.** The readout runs the date straight into the
+  first series name, so a word-boundary check went red against four charts that agreed
+  perfectly. Compared as a prefix now.
+  (4) **AN ASSERTION THAT WAS THE WRONG STATEMENT.** "Only imprecise dates draw a band" went
+  red against correct code: a day-precise event denotes a whole DAY, ~3px at a one-year
+  zoom, so it bands too and honestly should. The band is driven by rendered EXTENT, not by a
+  precision category. Replaced with the assertion that actually has content — a month reads
+  **81.9px against a day's 2.6px at the same zoom** — which is what breaks if an interval is
+  ever collapsed to a point.
+  **`verify-hero` WENT RED ON THE EXTRACTION AND WAS RIGHT.** `pages/home/passages.ts`'s
+  `monero-launch` record cites the file its quotation lives in; the quotation moved to
+  `data/timeline.ts` and both halves of the record (text AND attribution) failed. A citation
+  is a claim about WHERE a sentence is, and that claim had become false. Repointed; the text
+  is byte-identical either side of the move.
+  Budgets, all red-then-green on the FINAL tree, every byte paired by MULTIPLICITY (the
+  `index` stem holds two chunks and the pairing asks `dist/index.html` which is the entry —
+  a basename diff would file a LAZY delta under the EAGER budget): `cssGz` 17,600 →
+  **18,200** (built 17,762) · `lazyJsRaw` 831,000 → **845,000** (built 842,010) ·
+  `totalJsRaw` 1,094,000 → **1,108,000** (built 1,104,885) · `/live/markets` 112,000 →
+  **121,000** (built 117,827) · `CHUNK_COUNT` 62 → **64** (67 chunks; ±4 unchanged, and 64
+  rather than 63 so the band is [60, 68] and reality is not sitting on the ceiling — one
+  rung of upward headroom, said here rather than left to be rediscovered).
+  **FIVE chunks moved of 67; the other 62 are byte-identical**: timeline +12,973 ·
+  EducationPage −9,218 · MarketsPage +5,899 · charts +3,931 · entry +23. Lazy +13,585 and
+  total +13,608 reconcile to the byte. `eagerJsRaw` ceiling untouched.
+  Built on the FINAL tree: cssGz 17,762 (margin 438) · lazyJsRaw 842,010 (2,990) ·
+  totalJsRaw 1,104,885 (3,115) · /live/markets 117,827 (3,173) · eagerJsRaw 262,875.
+  Gates: **77 files / 73 gates, RECOUNTED and unchanged** — no gate file added; 77 = 73
+  gates + 3 shared modules + `scripts/verify-all.mjs`, the orchestrator. CI unchanged at
+  **30 `run:` lines / 21 gate-invoking / 62 distinct files** (68 invocations − 6 duplicates).
+  `verify-markets-dom` **74 → 118 assertions** in three new sections; `verify-hero` repointed.
+  (That gate prints no numeric tally, so quote the instrument: `grep -c '✅'` bounded to the
+  gate's own range reads 75 → 119 and one line of each is the summary. Bound it with an
+  explicit end pattern — `awk '…,0'` runs to end-of-file and sweeps the 28 gates after it.)
+  **`verify-effects`' ledger did NOT move and should not have** — its completeness sweep is
+  scoped to `src/data/` only, so this PR's three new effects (two in `charts.tsx`, one in
+  `CandleCanvas.tsx`) are outside it by design. Worth knowing before assuming that gate
+  covers a hook you just wrote.
+  **THREE DEFECTS FOUND BY LOOKING AT THE RENDER, none of which any gate could see, and
+  the first is a defect the SYNC CREATED out of two correct pieces.**
+  (1) **"Feb 26" IS FEBRUARY 2026.** `charts.tsx`'s `fmtDate` switches to
+  `{month:"short", year:"2-digit"}` above 90 days, which is fine on an axis where
+  neighbouring ticks disambiguate it. The synced cursor put it next to the hero's
+  `2026-02-12`, so two charts reporting ONE moment printed two strings a reader compares
+  and reads as two dates. Neither piece was wrong; the adjacency was new. The readout emits
+  an ISO day now and the AXIS is untouched — changing `fmtDate` moves every tick on every
+  chart in the app and is its own change.
+  (2) **The layer toggles were BELOW THE FOLD**, because the page mounted them after
+  `</CandleCanvas>` and the D0847 table lives INSIDE it: a control for marks at the top of
+  the plot, reachable only by scrolling past a 210px table it does not govern. A `controls`
+  slot puts them between the brush and the table.
+  (3) **A 9px flag was the whole touch target.** The 26px cluster rule turns out to be
+  load-bearing twice — WCAG 2.2 AA 2.5.8 has a SPACING exception that 26px already
+  satisfies, so the layer conformed; a `::after` grows the hit area to 23px, which still
+  fits inside that spacing so two flags cannot land under one thumb.
+  **AND THE GATE'S OWN "one moment" ASSERTION WAS PHASE-DEPENDENT — p3·12b's lesson
+  arriving from the other side.** It asserted the hero's date string EQUALS the synced one.
+  That is true only when the cursor lands on a bucket boundary: at 390 the hero read
+  `2026-02-18` (the 3-day candle it hovered) and the readouts `2026-02-20` (the moment),
+  both correct. Replaced with two claims — the three synced readouts are byte-identical to
+  each other, and the hero's BUCKET CONTAINS that moment, checked against the bucket width
+  the page itself reports.
+  **THE RENDER PROBE'S `shot()` WAS WRONG THREE TIMES, EACH THE SAME SPECIES**: the file
+  was written, the name was confident, the content was of something else.
+  `elementHandle.screenshot()` scrolls, and a scroll under a stationary pointer fires
+  pointerleave — a `-flag-tip` with no tip. `page.screenshot({clip})` rejects a clip outside
+  the viewport, so the 390 run stopped after one file. `{fullPage:true, clip}` accepts it
+  and MIS-PLACES it, because `boundingBox()` is viewport-relative while a fullPage clip is
+  in page coordinates — it cropped the header. Hover states are plain viewport captures now,
+  and the shutter refuses to fire unless the thing the filename claims is measurably on
+  screen.
+  Pre-existing and NOT fixed, proven structurally rather than by a paired render: the
+  hero's date axis **collides at 390 on the 1Y preset** ("Jul '2Oct '25"). `candle-data.ts`
+  and `useChartMetrics.ts` are byte-identical to `04006ff`, so `axisTicks`, `fmtAxisDate`,
+  `axisStepMs` and `fs.tick` are unchanged and the axis is a pure function of untouched
+  inputs.
+  **`git add -A` SWEPT A SCRATCH PROBE INTO A COMMIT.** `app/.render-p313.mjs` rode into the
+  `verify-govern` commit and was removed in the next one. The bracketed
+  "stray files" sweep is what found it, and only because it ran against `git ls-tree` rather
+  than the working tree — a working-tree check says nothing about what is already committed.
+  Six break tests, each restore proven by `git status`, by `diff` against the **committed
+  blob**, and by a bracketed marker sweep: **M1** domain guard removed → the mismatch
+  assertion reds while the vacuity guard stays green at 10/12 · **M2** tooltip prints `iso`
+  → `"2025-10-03" === "Oct 3, 2025"` reds, education parity stays green · **M3** MultiLine
+  stops publishing → sync 0/10 AND the vacuity guard 0/12 · **M4** one `iso` moved 10 days
+  → `[["Oct 3, 2025","2025-10-13",null]]`, one assertion, everything else green · **M5**
+  clustering off → no badge, min gap 13px · **M6** a truncated body → 0/49 render verbatim.
+  **No human has seen the rendered result in a browser** — the renders were read from
+  screenshots.
 
 - **2026-08-15**: p3·12d "VITALS CALIBRATION" (app/ + .github/) — the instrument repair
   #179's red demanded. No `src/**` file is touched and the build is byte-identical; every

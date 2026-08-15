@@ -54,6 +54,10 @@ import { useChartMetrics, estTextW, tickCount } from "@/design/useChartMetrics";
 import { canvasCursor } from "@/design/chart-kit";
 import { cssColor } from "@/design/canvasColor";
 import {
+  clearTimeCursor, containsT, setTimeCursor, toggleTimeCursorPin, useTimeCursorSync,
+} from "@/design/timeCursor";
+import { TimeAnnotations, placeFlags, type LayerState } from "./annotations";
+import {
   BODY_FILL,
   DAY_MS,
   axisStepMs,
@@ -81,6 +85,20 @@ export interface CandleCanvasProps {
   status?: SeriesStatus;
   /** Reported upward so the panel header can name the granularity. */
   onSeries?: (s: DrawnSeries | null) => void;
+  /** D0833 layer toggles. Omit to draw no annotations at all. */
+  annLayers?: LayerState | null;
+  /** Placement counts reported upward so the panel can print the honest note
+   *  about what this window does NOT show. */
+  onFlags?: (p: { inView: number; outside: number; unplaceable: number }) => void;
+  /**
+   * Rendered between the brush and the D0847 table — which is a placement, not
+   * a slot for convenience. The layer toggles were first mounted by the PAGE,
+   * after `</CandleCanvas>`, and that put them BELOW a 210px scrolling table:
+   * a control for marks at the top of the plot, parked under the fold, reached
+   * only by scrolling past the thing it does not govern. Seen in the 1440
+   * render, not by any gate. A control belongs next to what it controls.
+   */
+  controls?: React.ReactNode;
 }
 
 const PAD = { t: 14, r: 12, b: 24, l: 56 };
@@ -300,8 +318,19 @@ function paint(
   ctx.globalAlpha = 1;
   ctx.setLineDash([]);
 
-  // 7 · crosshair
-  if (cursorT != null) {
+  // 7 · crosshair.
+  //
+  // THE DOMAIN GUARD IS THE WHOLE POINT OF THE SYNC (D0834). `cursorT` no
+  // longer comes from this canvas — any of the four time-axis charts can write
+  // it, and the group charts show the RANGE while this one shows the brushed
+  // WINDOW, so a moment that exists over there routinely does not exist here.
+  // Drawing it anyway would put the rule at `x` outside [padL, padL+innerW],
+  // over the y-axis gutter or past the right edge; CLAMPING it to the edge
+  // would be worse, because a rule pinned to the boundary reads as "the cursor
+  // is here" when the honest answer is "this chart does not cover that
+  // moment". Nothing is the honest answer, and `containsT` is the one
+  // predicate every consumer asks.
+  if (containsT(cursorT, win.from, win.to)) {
     const x = Math.round(g.x(cursorT)) + 0.5;
     ctx.setLineDash([3, 3]);
     ctx.beginPath();
@@ -329,13 +358,14 @@ function paint(
  * The three pointer gestures plus the keyboard cover the same ground.
  */
 function BrushStrip({
-  samples, window: win, onWindow, fullSpan, width,
+  samples, window: win, onWindow, fullSpan, width, annLayers,
 }: {
   samples: { t: number[]; p: number[] } | null;
   window: TimeWindow;
   onWindow: (w: TimeWindow) => void;
   fullSpan: TimeWindow;
   width: number;
+  annLayers: LayerState | null;
 }) {
   const cvRef = React.useRef<HTMLCanvasElement>(null);
   const hostRef = React.useRef<HTMLDivElement>(null);
@@ -425,6 +455,21 @@ function BrushStrip({
   const l = frac(win.from) * 100;
   const r = frac(win.to) * 100;
 
+  /* THE WHOLE REASON THE STRIP CARRIES FLAGS. The plot shows only the brushed
+     window, so an event three months outside it is invisible and the reader
+     has no way to know it is there. The strip spans the ENTIRE fetched span,
+     so a flag out here is a visible reason to travel — and clicking it takes
+     you there. Its projection is `frac(t) * width`: full-bleed, no gutter,
+     nothing like the plot's, which is why `placeFlags` takes `xOf` rather than
+     deriving one. */
+  const brushFlags = React.useMemo(
+    () => (annLayers && width
+      ? placeFlags(fullSpan.from, fullSpan.to, annLayers, (t) => frac(t) * width)
+      : { groups: [], outside: 0, unplaceable: 0 }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `frac` closes over fullSpan/total, both listed
+    [annLayers, width, fullSpan.from, fullSpan.to],
+  );
+
   return (
     <div
       ref={hostRef}
@@ -452,20 +497,48 @@ function BrushStrip({
         <span className="cc-brush-grip" data-brush-handle="l" aria-hidden="true" />
         <span className="cc-brush-grip cc-brush-grip-r" data-brush-handle="r" aria-hidden="true" />
       </div>
+      <TimeAnnotations
+        placement={brushFlags}
+        compact
+        onZoom={(from, to) => onWindow(clampWin(from - (to - from) * 0.5, to + (to - from) * 0.5))}
+      />
     </div>
   );
 }
 
 /* ══ the hero ════════════════════════════════════════════════════════ */
 
+/**
+ * A cluster's own interval is often far narrower than `MIN_WINDOW_MS`, and
+ * zooming to it exactly would put its flags hard against both edges. Pad to
+ * 25% either side, floor at the brush's own minimum, and never leave the
+ * fetched span — the same clamp `BrushStrip` applies to a drag.
+ */
+function padWindow(from: number, to: number): TimeWindow {
+  const pad = Math.max((to - from) * 0.25, MIN_WINDOW_MS / 4);
+  const f = from - pad;
+  return { from: f, to: Math.max(to + pad, f + MIN_WINDOW_MS) };
+}
+
 export function CandleCanvasImpl({
   fine, mid, deep, window: win, onWindow, fullSpan, height = 320, status = "live", onSeries,
+  annLayers = null, onFlags, controls,
 }: CandleCanvasProps) {
   const reduced = useReducedMotion();
   const boxRef = React.useRef<HTMLDivElement>(null);
   const cvRef = React.useRef<HTMLCanvasElement>(null);
   const { w: measured, ready, fs } = useChartMetrics(boxRef);
-  const [cursorT, setCursorT] = React.useState<number | null>(null);
+
+  /* THE CURSOR IS A REF, NOT STATE — and this is a byte-for-byte removal of a
+     re-render, not an addition of one. It was `useState<number | null>`, so
+     every pointermove over this canvas re-rendered the hero and everything the
+     hero renders (the label layer, the brush, the D0847 table's memo chain).
+     Now a move mutates a ref, the shared store coalesces the frame, and the
+     subscriber repaints the canvas and mutates four text nodes. See
+     design/timeCursor.ts for why the store is not React state either. */
+  const cursorRef = React.useRef<number | null>(null);
+  const tipRef = React.useRef<HTMLSpanElement>(null);
+  const tipRows = React.useRef<(HTMLElement | null)[]>([]);
 
   const series = React.useMemo(
     () => resolveSeries(win.from, win.to, { fine, mid, deep }),
@@ -512,28 +585,85 @@ export function CandleCanvasImpl({
   );
   const dateStep = axisStepMs(dateTicks);
 
-  React.useLayoutEffect(() => {
+  /* D0833 placement, in the PLOT's own pixel space — `geom.x` is the same
+     projection the crosshair and the candles use, so a flag and the bar it
+     annotates cannot drift apart. Recomputed with the window because that is
+     exactly when it changes; it is O(49) over a frozen array. */
+  const plotFlags = React.useMemo(
+    () => (geom && annLayers
+      ? placeFlags(win.from, win.to, annLayers, geom.x)
+      : { groups: [], outside: 0, unplaceable: 0 }),
+    [geom, annLayers, win.from, win.to],
+  );
+  const inView = plotFlags.groups.reduce((a, g) => a + g.members.length, 0);
+  React.useEffect(
+    () => onFlags?.({ inView, outside: plotFlags.outside, unplaceable: plotFlags.unplaceable }),
+    [inView, plotFlags.outside, plotFlags.unplaceable, onFlags],
+  );
+
+  /* ONE APPLY, held in a ref so both the render path and the cursor
+     subscription drive the identical code. Reassigned during render rather
+     than memoised on purpose: it closes over `geom`, `win`, `withVol` and the
+     two tick arrays, and a stale closure here would paint the previous
+     window's candles under the current cursor. */
+  const applyRef = React.useRef<() => void>(() => {});
+  applyRef.current = () => {
     const cv = cvRef.current;
     if (!cv || !withVol || !geom) return;
-    paint(cv, withVol, geom, win, cursorT, status === "stale", priceTicks, dateTicks);
-  }, [withVol, geom, win, cursorT, status, priceTicks, dateTicks]);
+    const t = cursorRef.current;
+    paint(cv, withVol, geom, win, t, status === "stale", priceTicks, dateTicks);
 
-  const onPointer = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!geom) return;
-    const pos = canvasCursor(e as unknown as { nativeEvent: MouseEvent; currentTarget: HTMLCanvasElement });
-    if (!pos) return;
-    const f = (pos.x - geom.padL) / Math.max(1, geom.innerW);
-    if (f < -0.02 || f > 1.02) { setCursorT(null); return; }
-    setCursorT(win.from + Math.min(1, Math.max(0, f)) * (win.to - win.from));
+    // The hovered candle: the one whose bucket CONTAINS the cursor's time.
+    // Absent when the cursor is outside this chart's window, which is the
+    // shared-cursor case — the reading and the crosshair appear and disappear
+    // together, because they are the same claim.
+    const tip = tipRef.current;
+    if (!tip) return;
+    let hit: Candle | null = null;
+    if (containsT(t, win.from, win.to)) {
+      for (const c of withVol.candles) if (t >= c.t && t < c.t + withVol.bucketMs) { hit = c; break; }
+    }
+    if (!hit) {
+      tip.hidden = true;
+      // Emptied, not merely hidden: verify-markets-dom scans `.cc-labels > span`
+      // for a sub-11px glyph and skips empty nodes, so a persistently-mounted
+      // tip must carry text only while it is making a claim.
+      for (const r of tipRows.current) if (r) r.textContent = "";
+      return;
+    }
+    tip.hidden = false;
+    tip.style.left = `${Math.min(geom.padL + geom.innerW - 150, Math.max(geom.padL, geom.x(hit.t) + 8))}px`;
+    const [d0, d1, d2, d3] = tipRows.current;
+    if (d0) d0.textContent = isoStamp(hit.t, withVol.bucketMs);
+    if (d1) d1.textContent = `O ${fmtPrice(hit.o)}  H ${fmtPrice(hit.h)}`;
+    if (d2) d2.textContent = `L ${fmtPrice(hit.l)}  C ${fmtPrice(hit.c)}`;
+    if (d3) d3.textContent = `V ${hit.v ? fmtVol(hit.v) : "—"}`;
   };
 
-  // The hovered candle: the one whose bucket contains the cursor's time.
-  const hovered = React.useMemo(() => {
-    if (cursorT == null || !withVol) return null;
-    const { candles, bucketMs } = withVol;
-    for (const c of candles) if (cursorT >= c.t && cursorT < c.t + bucketMs) return c;
-    return null;
-  }, [cursorT, withVol]);
+  React.useLayoutEffect(() => { applyRef.current(); });
+  useTimeCursorSync((s) => { cursorRef.current = s.t; applyRef.current(); });
+
+  /** Pointer x → a moment in THIS chart's window, or null past its edges. */
+  const tOf = (e: React.PointerEvent<HTMLCanvasElement>): number | null => {
+    if (!geom) return null;
+    const pos = canvasCursor(e as unknown as { nativeEvent: MouseEvent; currentTarget: HTMLCanvasElement });
+    if (!pos) return null;
+    const f = (pos.x - geom.padL) / Math.max(1, geom.innerW);
+    if (f < -0.02 || f > 1.02) return null;
+    return win.from + Math.min(1, Math.max(0, f)) * (win.to - win.from);
+  };
+
+  const onPointer = (e: React.PointerEvent<HTMLCanvasElement>) => setTimeCursor(tOf(e));
+
+  /* Tap to pin, tap again to release. A pin is real state: it survives
+     pointerleave and it is what makes the sync usable on a touch device at
+     all, where "hover" ends the moment the finger lifts. The tolerance is one
+     BUCKET — "the same moment" is a different number on a 4h candle than on a
+     daily sample, so each chart passes its own. */
+  const onPin = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const t = tOf(e);
+    if (t != null) toggleTimeCursorPin(t, (withVol?.bucketMs ?? 0) / 2);
+  };
 
   const drawn = withVol?.candles.length ?? 0;
   const stride = tableStride(drawn);
@@ -571,7 +701,8 @@ export function CandleCanvasImpl({
               aria-label={`XMR/USD candles, ${drawn} bars at ${withVol.granularity}. The table below carries the same data.`}
               onPointerMove={onPointer}
               onPointerDown={onPointer}
-              onPointerLeave={() => setCursorT(null)}
+              onClick={onPin}
+              onPointerLeave={clearTimeCursor}
             />
             {/* ── the language layer. Nothing below is painted. ── */}
             <div className="cc-labels" aria-hidden="true">
@@ -615,21 +746,35 @@ export function CandleCanvasImpl({
                 style={{ left: geom.padL + 4, top: PAD.t + 2, color: changePct >= 0 ? "var(--status-up)" : "var(--status-down)" }}
               >{(changePct >= 0 ? "▲ +" : "▼ ") + changePct.toFixed(1)}%</span>
               {status === "stale" ? <span className="cc-stale" data-decorative>STALE</span> : null}
-              {hovered ? (
-                <span
-                  className="cc-tip"
-                  style={{
-                    left: Math.min(geom.padL + geom.innerW - 150, Math.max(geom.padL, geom.x(hovered.t) + 8)),
-                    top: PAD.t + 6,
-                  }}
-                >
-                  <b>{isoStamp(hovered.t, withVol.bucketMs)}</b>
-                  <span>O {fmtPrice(hovered.o)}  H {fmtPrice(hovered.h)}</span>
-                  <span>L {fmtPrice(hovered.l)}  C {fmtPrice(hovered.c)}</span>
-                  <span>V {hovered.v ? fmtVol(hovered.v) : "—"}</span>
-                </span>
-              ) : null}
+              {/* Mounted unconditionally and filled imperatively — the whole
+                  point of the ref cursor is that a hover changes no React
+                  tree. `hidden` and empty text move together; see applyRef. */}
+              <span
+                ref={tipRef}
+                className="cc-tip"
+                data-candle-tip=""
+                hidden
+                style={{ top: PAD.t + 6 }}
+              >
+                <b ref={(el) => { tipRows.current[0] = el; }} />
+                <span ref={(el) => { tipRows.current[1] = el; }} />
+                <span ref={(el) => { tipRows.current[2] = el; }} />
+                <span ref={(el) => { tipRows.current[3] = el; }} />
+              </span>
             </div>
+
+            {/* D0833 — the annotation layer sits ABOVE the label layer and is
+                the only thing in the stage that takes pointer events besides
+                the canvas. It is not inside `.cc-labels`, which is
+                aria-hidden: a flag is a link and has to reach the a11y tree. */}
+            {annLayers ? (
+              <TimeAnnotations
+                placement={plotFlags}
+                top={PAD.t}
+                bottom={height - (PAD.t + geom.priceH)}
+                onZoom={(from, to) => onWindow(padWindow(from, to))}
+              />
+            ) : null}
           </div>
 
           {fullSpan ? (
@@ -639,8 +784,10 @@ export function CandleCanvasImpl({
               onWindow={onWindow}
               fullSpan={fullSpan}
               width={measured}
+              annLayers={annLayers}
             />
           ) : null}
+          {controls}
         </>
       ) : null}
 

@@ -152,9 +152,17 @@ export const PASSAGES: Passage[] = [
     // the source clause is "...from day one — privacy mandatory and
     // default.", in that word order. An earlier draft reordered it to
     // "Privacy mandatory, and default, from day one." — which reads well but
-    // is not what Timeline.tsx:54 says; copied here character-for-character,
+    // is not what the timeline says; copied here character-for-character,
     // including the U+2014 em dash (not a retyped hyphen).
-    source: { file: "pages/_education/Timeline.tsx", mode: "substring" },
+    //
+    // REPOINTED in p3·13. The clause lived in pages/_education/Timeline.tsx
+    // until the 49 events were extracted to data/timeline.ts so the markets
+    // annotation layer could read the same source. `verify-hero` went red on
+    // BOTH halves of this record the moment the text left — which is the gate
+    // working: a citation is a claim about where a sentence IS, and this one
+    // had become false. The text itself is byte-identical either side of the
+    // move; only its address changed.
+    source: { file: "data/timeline.ts", mode: "substring" },
   },
   {
     id: "fcmp-outlook",
