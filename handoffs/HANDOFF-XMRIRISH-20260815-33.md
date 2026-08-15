@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260815-33
 branch: claude/prompt-attached-k50xej
-status: in_progress       # open -> in_progress -> done | blocked
+status: done
 written_by: claude-code (manual mode — prompt-driven, no open handoff)
 owner: claude-code
 ---
@@ -90,7 +90,28 @@ find .. -name 'verify-*.mjs' -not -path '*/node_modules/*' | wc -l  # == 77
 
 ## 7 · REPORT
 
-See the PR body for the full report. Summary is appended to `handoffs/LOG.md`.
+**Status: done.** One commit, three files (`app/verify-vitals.mjs`,
+`.github/workflows/ci.yml`, `CLAUDE.md`) plus this handoff and `LOG.md`. No `src/**` file
+touched; `git diff fc5cfc1 -- app/src app/index.html app/package.json app/scripts …` is
+empty, so the build is byte-identical and `verify-bundle` is **27 passed · 0 failed** with
+every literal where it was.
+
+- **§1** `/live/mempool` LCP 4000 → **4350**, derived in-file as high-water 4,132 × 1.05
+  (half of `LCP_SPREAD_UNSTABLE`'s 10% band) = 4,338.6, rounded up. No other ceiling moved.
+- **§2** Both decline paths route through one `decline()`; it prints median · ceiling ·
+  would-have verdict · spread, warns `VITALS_DECLINED_OVER_CEILING` when a declined median
+  exceeds its ceiling, and emits one skip per unmade assertion. Decision taken out loud:
+  **WARN, never fail**. Warning made countable by an offline falsifiability pair over CI
+  #161's real numbers, plus a banner re-printed below the tally.
+- **§3** `push: branches: [main]` **taken**, with the duplicate-signal cost stated and
+  every step verified event-agnostic.
+- **Runs** (this runner, final tree): verify-vitals **17 passed · 0 fixtured · 2 skipped ·
+  0 failed**, exit 0. Four break tests M1–M4, each restore proven by tree state and marker
+  grep. Full transcripts in the PR body.
+
+Two assertions were also found wider than what they could not judge and narrowed: the
+structural interaction check no longer dies with a decline, and the global interaction
+budget no longer asserts over declined routes.
 
 ## 8 · LOOP FEEDBACK
 
@@ -104,3 +125,16 @@ See the PR body for the full report. Summary is appended to `handoffs/LOG.md`.
   measurable evidence covers **two** consecutive CI runs (#159, #160) in which
   `/live/mempool` was declined at 4080 and 4108 against a 4000 ceiling. Two is what is
   proven; four is not.
+- **The restore protocol needs a stronger rule than the one in `CLAUDE.md`.** It says
+  "`git checkout -- <file>` → `git status --short` → grep". That assumes the restore target
+  is the committed state, which is false while the session's own work is uncommitted — and
+  it cost two failures here, the second of which committed a mutation via `--amend`.
+  New rules, now recorded in the session note: **commit before EVERY break-test round**;
+  verify the **committed blob** (`git show HEAD:<file> | grep`), not the working tree; and
+  **bracket every proves-an-absence grep** so an empty result is distinguishable from a
+  crashed one. The first failure printed an empty "restore verified" grep under a
+  wrapper exit 0 while the mutation was still in place.
+- **A pattern used to prove an absence must be checked against the whole namespace it
+  claims.** The ci.yml gate-filename sweep first ran `verify-[a-z-]+\.mjs`, which cannot
+  match `verify-v508.mjs`. The answer was the same either way, but the first run was not
+  evidence for it.
