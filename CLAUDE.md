@@ -42,7 +42,10 @@ chain and market data.
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
   are offline source assertions. `.github/workflows/ci.yml` runs **62 distinct files** on
-  PRs to `main`, in two jobs: **12** individually-named offline gates, then `verify:static`
+  PRs to `main` **and, since p3·12d, on every push to `main`** — the workflow had never
+  judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
+  had no same-runner baseline to difference against; read the `on:` block for the cost
+  accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
   (**21** gates, no browser), `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`) and
   **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
   `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
@@ -360,7 +363,8 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **62 of the 73** gates on every PR to `main`; **4** more are npm-wired by hand
+- CI runs **62 of the 73** gates on every PR to `main` and on every push to `main`
+  (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
   are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
   three numbers had drifted independently, and the 11 contradicted the Orphaned-gates entry
@@ -629,6 +633,14 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   JITTER and cannot see a PLATEAU, so a sustained-load runner produces confident,
   reproducible, wrong numbers — and the only instrument that separates those from
   a real regression is a paired run against another tree on the same machine.
+  **CORRECTION, p3·12d: the paired run is no longer the ONLY instrument, and this
+  entry named the wrong one of the two guards for #179's own red.** `main` now
+  carries its own same-runner baseline (`push: branches: [main]`), so the pairing
+  a human had to construct by hand is produced on every merge. And measured
+  across CI runs #159/#160/#161, `/live/mempool`'s nine LCP samples span **1.4%**
+  — the spread guard has never fired on that route at all; both abstentions came
+  from the **CPU-probe** guard. The blind spot recorded above is real and the
+  plateau reading is right; the guard credited with it was not.
   Report-and-stop: no vitals budget moved, and none should be.
   Gates: **77 files / 73 gates, unchanged.** `verify-markets-dom` gained a volume
   section (upper bound, last-cell, and every-cell equality) plus 7D and 390 axis

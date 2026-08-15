@@ -69,7 +69,7 @@ const HARNESS = `serve-dist(uncompressed, 501 /api) · mocked feed @${MOCK_LATEN
  * this tree with headroom for a contended shared runner — which, unlike
  * verify-bundle's byte budgets, is real here: these are wall-clock timings.
  *
- * CALIBRATION STATUS: these are sandbox-measured (median of 8 runs/route,
+ * CALIBRATION STATUS: these began sandbox-measured (median of 8 runs/route,
  * Node 22.22.2, headless Chromium 1194, no GPU). Unlike verify-bundle's byte
  * budgets — which are deterministic and hold on any machine — these are
  * wall-clock and the enforcing environment is a shared GitHub runner. They are
@@ -77,14 +77,77 @@ const HARNESS = `serve-dist(uncompressed, 501 /api) · mocked feed @${MOCK_LATEN
  * here prints its measurement on every run precisely so that is possible
  * without guessing. A ceiling calibrated on the wrong machine is either
  * flaky-red or uselessly loose, and you cannot tell which from the outside.
+ *
+ * p3·12d PERFORMED THAT RE-SET, FOR ONE ROW ONLY. /live/mempool is calibrated
+ * to CI; the other three are still sandbox figures and are deliberately left
+ * alone, because CI has now shown all three of them comfortably satisfiable on
+ * the judging runner (run #161, the first with a healthy CPU probe: `/` 1928
+ * against 2500, /live/markets 2052 against 2600, /learn/sim 2316 against 6000)
+ * — those three ceilings sit 30%, 27% and 159% ABOVE their own CI-measured
+ * median. A ceiling with that much room does not need moving. The one that did
+ * is the one whose measured value sat above IT.
+ *
+ * Headroom is quoted the same way everywhere in this file: as a percentage OF
+ * THE MEASURED VALUE, never of the ceiling. The two conventions differ by
+ * enough to matter (4000 over 3010 is +33% of the measurement and +25% of the
+ * ceiling) and mixing them silently is how a budget note stops reconciling.
  */
 const BUDGETS = {
-  //            budget      measured (median of 8, sandbox)
-  [RT.HOME]:         { lcpMs: 2500, blockingMs: 400 }, // LCP 1824 (1788-1852) · block 166.5
-  [RT.LIVE_MEMPOOL]: { lcpMs: 4000, blockingMs: 300 }, // LCP 3010 (2976-3044) · block  54.5
-  [RT.LIVE_MARKETS]: { lcpMs: 2600, blockingMs: 400 }, // LCP 1896 (1868-1924) · block 170.0
-  [RT.LEARN_SIM]:    { lcpMs: 6000, blockingMs: 500 }, // LCP 2292 median · block 253.5 — but see BIMODAL below
+  //            budget      measured
+  [RT.HOME]:         { lcpMs: 2500, blockingMs: 400 }, // sandbox: LCP 1824 (1788-1852) · block 166.5 · CI #161: 1928 / 166
+  [RT.LIVE_MEMPOOL]: { lcpMs: 4350, blockingMs: 300 }, // CI-CALIBRATED — see THE MEMPOOL CEILING below. sandbox: LCP 3010 · block 54.5
+  [RT.LIVE_MARKETS]: { lcpMs: 2600, blockingMs: 400 }, // sandbox: LCP 1896 (1868-1924) · block 170.0 · CI #161: 2052 / 141
+  [RT.LEARN_SIM]:    { lcpMs: 6000, blockingMs: 500 }, // sandbox: LCP 2292 median · block 253.5 — but see BIMODAL below
 };
+
+/* ── THE MEMPOOL CEILING: 4000 → 4350, AND WHY IT IS A CALIBRATION ─────────
+ *
+ * The old 4000 was a sandbox number — 33% above that sandbox's own measured
+ * 3010 — and it has never been satisfiable on CI's runner class, which is a
+ * different claim and needs different evidence. Nine LCP samples, three runs, three
+ * different runners, TWO DIFFERENT TREES:
+ *
+ *   run  head       runs (ms)             median   cpu probe      outcome
+ *   #159 f0fc8179   4092, 4080, 4076      4080     512 (1.97x)    declined (CPU probe)
+ *   #160 d3aa03ee   4132, 4108, 4108      4108     503 (1.94x)    declined (CPU probe)
+ *   #161 690ead63   4104, 4084, 4108      4104     270 (1.04x)    ❌ 4104 > 4000
+ *
+ * Read the two trees: f0fc8179 is the circuit branch, d3aa03e/690ead6 the
+ * markets branch. Read the two runner states: two contended, one healthy. The
+ * nine samples span 4076-4132 — a spread of 1.4% — so this plateau is a
+ * property of the RUNNER CLASS and of neither the tree nor the contention. It
+ * is not a regression: local paired measurement at p3·12b read main 3,732 and
+ * branch 3,720 on the same machine minutes apart, and the verifier's runs read
+ * 3,600-3,652. Same tree, different machine, 400ms apart.
+ *
+ * THE DERIVATION, shown rather than asserted:
+ *
+ *   high-water single sample observed on CI ............ 4,132 ms  (#160 run 1)
+ *   headroom: half of LCP_SPREAD_UNSTABLE's 10% band .... x 1.05
+ *   derived ............................................ 4,338.6 ms
+ *   rounded up to the next 50 for a legible literal ..... 4,350 ms  (+11.4, +0.3%)
+ *
+ * The headroom is taken from this gate's OWN constant, not from taste. The
+ * spread guard declares that above a 10% disagreement it no longer believes its
+ * own wall-clock numbers. Half that band is the statement: a reading up to 5%
+ * above the worst plateau sample is still plausibly this machine class and
+ * passes; a reading more than halfway to the point where the gate would stop
+ * believing itself is called a regression. The full 10% (4,545) was the other
+ * candidate and is rejected as too loose — the plateau's own width is 1.4%, so
+ * a 10% ceiling would need a 7x-the-noise regression before it spoke.
+ *
+ * Resulting margins: 242 ms (5.9%) over the highest observed median, 246 ms
+ * (6.0%) over the one median a healthy runner actually judged.
+ *
+ * THIS IS A CALIBRATION TO THE JUDGING RUNNER, NOT A PERFORMANCE CONCESSION.
+ * Nothing about the tree got slower and nothing here says a 4,350 ms LCP is
+ * acceptable. Local runners still measure 3.6-3.7s on this route, and every run
+ * of this gate PRINTS all three samples plus the median — so a future local
+ * regression past the old 4,000 figure is visible in the printed numbers on the
+ * run that causes it, whether or not it trips a ceiling calibrated for a
+ * slower machine. The ceiling answers "is CI allowed to fail this"; the printed
+ * series answers "did this tree get slower", and they are different questions
+ * measured on different hardware. */
 
 /* /simulate is NEW in v6.1.5 PR B, and its budget is deliberately loose in a
  * file that argues against loose budgets. The reason is measured, not assumed.
@@ -203,6 +266,47 @@ const R = makeReporter('verify-vitals');
     `every INTERACTIONS key names a measured route (${Object.keys(INTERACTIONS).length} of ${ROUTES.length} routes script an interaction)`,
     orphans.length ? `orphaned, so never exercised and never reported: ${orphans.join(', ')}` : '');
   R.info(`routes with no scripted interaction (by design): ${ROUTES.filter((r) => !INTERACTIONS[r]).join(', ') || 'none'}`);
+}
+
+/* ── WHERE THE ⚠️ LIVES IN THE FOUR COUNTERS, AND ITS FALSIFIABILITY PAIR ──
+ *
+ * Stated because it is the one thing about the warning with blast radius. The
+ * four-counter contract — passed · fixtured · skipped · failed — belongs to
+ * verify-reporter.mjs and is shared by 8 gates; growing a fifth counter for one
+ * gate would rewrite every other gate's summary line, so it is not on the table.
+ *
+ * So the decline stays a SKIP in the counters (two of them, one per unmade
+ * assertion) and the ⚠️ is a PRINT. That leaves the warning countable by
+ * nothing on the summary line, which is the same invisibility this whole PR is
+ * about, one level up. Two things close it:
+ *
+ *   1. The banner is re-printed AFTER R.finish()'s tally, so it is the LAST
+ *      thing on screen rather than something scrolled past above it.
+ *   2. The two assertions below, which put the warning PREDICATE into the
+ *      passed counter even on a run where no route declines.
+ *
+ * They are a falsifiability PAIR over one real measurement — CI run #161's
+ * /live/mempool, the run that went red — and they are not a tautology: the
+ * second reads the SHIPPED ceiling, so lowering it back under 4104 turns this
+ * red without a browser, and raising it to hide a regression has to get past a
+ * named historical number. The first is pinned to the retired 4000 and shows
+ * the predicate can fire at all. Same shape verify-markets-dom uses for the one
+ * predicate in that gate with no natural red. */
+{
+  const CI161_LCP = 4104;      // measured: runs 4104, 4084, 4108 — median 4104
+  const CI161_BLOCK = 66;      // measured: runs 71, 65, 66 — median 66
+  const RETIRED = { lcpMs: 4000, blockingMs: 300 };
+  const shipped = BUDGETS[RT.LIVE_MEMPOOL];
+
+  const fires = overCeiling(CI161_LCP, CI161_BLOCK, RETIRED);
+  R.ok(fires.length === 1 && fires[0][0] === 'LCP',
+    `warning predicate FIRES: CI #161's measured /live/mempool LCP ${CI161_LCP}ms is over the retired ${RETIRED.lcpMs}ms ceiling`,
+    `expected exactly [LCP], got ${JSON.stringify(fires)} — the ⚠️ path is unreachable, so a declined-but-failing reading would print nothing`);
+
+  const silent = overCeiling(CI161_LCP, CI161_BLOCK, shipped);
+  R.ok(silent.length === 0,
+    `warning predicate STAYS SILENT: the same measurement is inside the calibrated ${shipped.lcpMs}ms / ${shipped.blockingMs}ms ceilings`,
+    `got ${JSON.stringify(silent)} — the shipped ceiling does not clear the very measurement it was derived from, so it is miscalibrated`);
 }
 
 /* ── the mocked feed ──────────────────────────────────────────────────────
@@ -411,6 +515,114 @@ R.info('route        LCP(ms)  block(ms)  worstInt(ms)  longTasks  LCP element');
 
 const results = {};
 let inconclusive = 0;
+/** Of the declined routes, those whose declined median was over its own
+ *  ceiling. Its own counter because it is its own fact — see decline(). */
+let declinedOverCeiling = 0;
+
+/* ── p3·12d · AN ABSTENTION MUST SAY WHAT IT DECLINED TO JUDGE ────────────
+ *
+ * This gate has two decline paths — the spread guard and the CPU probe — and
+ * until now both printed the runs and then threw the CONCLUSION away. A reader
+ * saw "SKIPPED: INCONCLUSIVE" and three run figures, and had to hold the
+ * ceiling in their head to know whether the gate had just declined to judge a
+ * PASSING number or a FAILING one. Nobody does that, so in practice a decline
+ * read as a pass. It is worse than that: the gate EXITS 0 on a run where every
+ * route declined, so `✅ verify-vitals: 6 passed · 4 skipped · 0 failed` is
+ * what CI shows for a run that judged nothing at all.
+ *
+ * MEASURED, not supposed. /live/mempool, the two CI runs immediately before
+ * the one that went red:
+ *
+ *   #159  declined at median 4080 ms  against a 4000 ms ceiling   (green run)
+ *   #160  declined at median 4108 ms  against a 4000 ms ceiling   (green run)
+ *   #161  judged   at median 4104 ms  against a 4000 ms ceiling   ❌
+ *
+ * The information that the ceiling was unsatisfiable was IN BOTH EARLIER RUNS
+ * and was not printed. Two green runs carried a failing number they declined to
+ * look at. That is the defect this function exists to make impossible.
+ *
+ * THE DECISION, TAKEN OUT LOUD: a declined-but-exceeding reading WARNS. It does
+ * NOT fail.
+ *
+ * Failing would be incoherent — the gate would be asserting on evidence it has
+ * just declared invalid, and this file's own header says why that is fatal:
+ * "Copying [a silent exit] into a CI-enforcing gate would be verify-v510 with
+ * the polarity flipped: instead of teaching people to ignore red, teaching them
+ * to ignore yellow." Failing on a number the gate itself calls UNVERIFIABLE
+ * teaches the first lesson instead — a red that a re-run clears is a red people
+ * learn to click through, and this gate's whole value is that its reds mean
+ * something. The contended-runner case is real and frequent: two of the three
+ * CI runs above were contended.
+ *
+ * What the warning buys instead is that the number STOPS BEING INVISIBLE. The
+ * existing THRESHOLD rule at the top of this file — three consecutive
+ * INCONCLUSIVE CI runs and the budget is measuring nothing — is the escalation
+ * path, and it is a human one on purpose, because "the ceiling is wrong" and
+ * "the tree regressed" are not distinguishable from inside a contended run.
+ * The warning is what makes that rule actionable rather than aspirational: it
+ * takes a human reading one log to see it now, instead of a human diffing three
+ * logs against a constant. */
+/** Which of a route's two medians are over their own ceiling. Pure, and split
+ *  out of decline() ON PURPOSE: it is the predicate behind the ⚠️ banner, and a
+ *  predicate that only ever runs inside a browser-driven loop cannot be shown
+ *  to have two polarities. The self-check below exercises it with real numbers.
+ *  A ceiling of 0 means "not set" (the TODO(calibrate) case) and is never over. */
+function overCeiling(medLcp, medBlock, b) {
+  const over = [];
+  if (b.lcpMs > 0 && medLcp !== null && medLcp > b.lcpMs) over.push(['LCP', medLcp, b.lcpMs]);
+  if (b.blockingMs > 0 && medBlock !== null && medBlock > b.blockingMs) over.push(['blocking', medBlock, b.blockingMs]);
+  return over;
+}
+
+function decline(route, kind, note, m) {
+  const b = BUDGETS[route];
+  inconclusive++;
+
+  const verdict = (val, ceil) => {
+    if (!ceil || ceil <= 0) return `${val === null ? 'n/a' : val.toFixed(0)}ms — no ceiling set`;
+    if (val === null) return `n/a (no sample) vs ceiling ${ceil}ms`;
+    return `${val.toFixed(0)}ms vs ceiling ${ceil}ms — ${val <= ceil ? 'would have PASSED' : 'WOULD HAVE FAILED'}`;
+  };
+  const spreadTxt = m.lcps.length >= 2
+    ? `${((m.spread - 1) * 100).toFixed(1)}%`
+    : 'n/a (fewer than 2 LCP samples)';
+
+  /* THE REASON IS PRINTED ONCE. The first cut of this function put the whole
+   * explanation on BOTH skip lines, which made each of them ~500 characters and
+   * buried the two numbers a reader is actually here for — the median and the
+   * ceiling — in the middle of a paragraph they had already read. A warning
+   * nobody finishes reading is the same defect as a warning nobody prints. */
+  R.info('');
+  R.info(`DECLINED TO JUDGE · ${route} · ${kind}`);
+  R.info(`   ${note}`);
+  R.info(`   LCP spread ${spreadTxt} (runs: ${m.lcps.map((n) => n.toFixed(0)).join(', ')}ms) · `
+    + `blocking runs ${m.blocks.map((n) => n.toFixed(0)).join(', ')}ms · `
+    + `cpu probe ${m.medCpu.toFixed(0)}ms vs ${CPU_REF_MS}ms reference (${(m.medCpu / CPU_REF_MS).toFixed(2)}x)`);
+
+  /* ONE SKIP PER UNMADE ASSERTION, not one per route. A single skip standing in
+   * for two budget assertions is the same understatement in miniature as an
+   * abstention reading as a pass, and it made the tally uninterpretable: a run
+   * declining all four routes reported "4 skipped" for EIGHT assertions never
+   * made. MEANING CHANGE, stated rather than slipped in: this gate's skip count
+   * is not comparable to a pre-p3·12d one. */
+  R.skip(`${route} · median LCP ${verdict(m.medLcp, b.lcpMs)}`, `NOT JUDGED — ${kind}`);
+  R.skip(`${route} · median blocking ${verdict(m.medBlock, b.blockingMs)}`, `NOT JUDGED — ${kind}`);
+
+  const over = overCeiling(m.medLcp, m.medBlock, b);
+  if (!over.length) return;
+
+  declinedOverCeiling++;
+  R.info('');
+  R.info(`⚠️  ═══ VITALS_DECLINED_OVER_CEILING · ${route} ═══`);
+  for (const [name, val, ceil] of over) {
+    R.info(`⚠️   median ${name} ${val.toFixed(0)}ms is ${(val - ceil).toFixed(0)}ms (${(((val / ceil) - 1) * 100).toFixed(1)}%) OVER its ${ceil}ms ceiling`);
+  }
+  R.info('⚠️   and this run DECLINED TO JUDGE IT. That is not a pass, and it is not nothing:');
+  R.info('⚠️   it is an unjudged FAILING reading. If it recurs, the ceiling is wrong or the');
+  R.info('⚠️   tree regressed, and a contended runner cannot tell you which — see the');
+  R.info('⚠️   THRESHOLD rule in this file\'s header. Do not clear this by re-running.');
+  R.info('');
+}
 
 for (const route of ROUTES) {
   const runs = [];
@@ -429,6 +641,11 @@ for (const route of ROUTES) {
     lcpMs: medLcp, lcpAll: lcps, blockingMs: medBlock, blockingAll: blocks,
     worstInteractionMs: worstInt, interactionSamples: worsts.length,
     lcpElement: runs[0].lcpEl, cpuProbeMs: medCpu, runs: RUNS,
+    /* Explicitly false rather than absent, because .perf/vitals.json is the
+     * artifact CI uploads and a later reader diffing two runs must be able to
+     * tell "judged and passed" from "never judged" without inferring it from a
+     * missing key. That inference is exactly what nobody made for three runs. */
+    declined: false,
   };
 
   R.info(`${route.padEnd(11)} ${f1(medLcp)}  ${f1(medBlock)}   ${f1(worstInt)}     ${String(runs[0].longTasks).padStart(5)}      ${runs[0].lcpEl}`);
@@ -437,6 +654,27 @@ for (const route of ROUTES) {
   // is the metric with the worse variance under contention, so its spread is the
   // one most worth seeing — and it was the one you could not see.
   R.info(`  ${' '.repeat(9)} blocking: ${blocks.map((n) => n.toFixed(0)).join(', ')} ms`);
+
+  /* ORDER CHANGED IN p3·12d, and it is a fix rather than a tidy-up. This block
+   * used to sit BELOW the two decline paths, so a `continue` there discarded it
+   * — a declined route reported nothing at all about whether its scripted click
+   * had landed. But "did the click hit a live element" is a STRUCTURAL claim,
+   * not a wall-clock one, and a contended runner is perfectly capable of
+   * answering it. Declining it alongside the timings threw away a judgeable
+   * assertion because an unjudgeable one shared the route. Same family as the
+   * abstention itself: the abstention was wider than the thing it could not
+   * judge. Measured cost of the old order: in runs #159 and #160 all four
+   * routes declined, so THREE interaction assertions were silently never made. */
+  const missing = runs.find((r) => r.missing);
+  if (missing) {
+    R.skip(`${route} · interaction`, `selector not found or not clickable: ${missing.missing}`);
+  } else if (INTERACTIONS[route]) {
+    // A 0 ms worst-interaction derived from zero samples is exactly the vacuous
+    // green makeReporter exists to prevent.
+    R.ok(worsts.length > 0,
+      `${route} · the scripted interaction produced at least one measurable interaction`,
+      'zero event-timing groups: the click landed on nothing, so any latency number would be fabricated');
+  }
 
   /* ── D1910 · RUN SPREAD IS THE CONTENTION SIGNAL; THE CPU PROBE IS NOT ─────
    *
@@ -469,35 +707,26 @@ for (const route of ROUTES) {
    * there is as wrong as a green. UNVERIFIABLE is the honest third answer and
    * this gate already has the vocabulary for it. */
   const lcpSpread = lcps.length >= 2 ? Math.max(...lcps) / Math.min(...lcps) : 1;
+  const m = { medLcp, medBlock, medCpu, lcps, blocks, spread: lcpSpread };
+
   if (lcpSpread > LCP_SPREAD_UNSTABLE) {
-    inconclusive++;
-    R.skip(`${route} · LCP / blocking`,
-      `UNVERIFIABLE — run spread ${((lcpSpread - 1) * 100).toFixed(1)}% exceeds ` +
-      `${((LCP_SPREAD_UNSTABLE - 1) * 100).toFixed(0)}% (runs: ${lcps.map((n) => n.toFixed(0)).join(', ')}ms). ` +
-      `The machine moved between runs, so a wall-clock number from it describes the runner, not the tree. ` +
-      `NOTE the cpu probe read ${medCpu.toFixed(0)}ms and did NOT flag this — it measures average ` +
-      `throughput, blocking measures tail latency, and under contention the two move independently.`);
+    results[route].declined = true;
+    decline(route,
+      `UNVERIFIABLE (run spread ${((lcpSpread - 1) * 100).toFixed(1)}% exceeds ${((LCP_SPREAD_UNSTABLE - 1) * 100).toFixed(0)}%)`,
+      'The machine moved between runs, so a wall-clock number from it describes the runner, not the tree. '
+      + 'NOTE the cpu probe did NOT flag this — it measures average throughput, blocking measures tail '
+      + 'latency, and under contention the two move independently.', m);
     continue;
   }
 
   // Kept, DEMOTED: still a skip when it fires, but it is no longer the only
   // validity claim and it never was evidence on its own.
   if (CPU_REF_MS && medCpu > CPU_REF_MS * CPU_INCONCLUSIVE_RATIO) {
-    inconclusive++;
-    R.skip(`${route} · LCP / blocking`,
-      `INCONCLUSIVE — CPU probe ${medCpu.toFixed(0)}ms vs ${CPU_REF_MS}ms reference (${(medCpu / CPU_REF_MS).toFixed(2)}x). This runner is contended; a wall-clock number measured on it says nothing about the tree.`);
+    results[route].declined = true;
+    decline(route,
+      `INCONCLUSIVE (CPU probe ${medCpu.toFixed(0)}ms vs ${CPU_REF_MS}ms reference, ${(medCpu / CPU_REF_MS).toFixed(2)}x)`,
+      'This runner is contended; a wall-clock number measured on it says nothing about the tree.', m);
     continue;
-  }
-
-  const missing = runs.find((r) => r.missing);
-  if (missing) {
-    R.skip(`${route} · interaction`, `selector not found or not clickable: ${missing.missing}`);
-  } else if (INTERACTIONS[route]) {
-    // A 0 ms worst-interaction derived from zero samples is exactly the vacuous
-    // green makeReporter exists to prevent.
-    R.ok(worsts.length > 0,
-      `${route} · the scripted interaction produced at least one measurable interaction`,
-      'zero event-timing groups: the click landed on nothing, so any latency number would be fabricated');
   }
 
   if (!MEASURE_ONLY && ASSERT) {
@@ -515,20 +744,51 @@ for (const route of ROUTES) {
   }
 }
 
+/* p3·12d: THE ABSTENTION HAS TO ABSTAIN FROM THIS ONE TOO.
+ *
+ * Interaction latency is a wall-clock quantity measured on the same contended
+ * box as everything else, and this assertion was reading routes the gate had
+ * just declined to judge. Runs #159 and #160 declined all four routes for
+ * contention and then asserted `worst scripted interaction 112ms ≤ 400ms` ✅
+ * over exactly those routes' numbers — a green whose evidence the same run had
+ * declared invalid two lines earlier, and the only ✅ either run produced
+ * besides three cold-boot preconditions.
+ *
+ * Declined routes are excluded. If that leaves nothing, this is a SKIP naming
+ * the routes it lost, never a silent absence — an `if (allWorst.length)` with
+ * no else is the vacuous-zero-coverage shape the KEY-LEVEL GUARDS block above
+ * was written for, one screen away. */
 if (!MEASURE_ONLY && ASSERT && INTERACTION_BUDGET_MS > 0) {
-  const allWorst = Object.values(results).map((r) => r.worstInteractionMs).filter((n) => n !== null);
+  const judged = Object.entries(results).filter(([, v]) => !v.declined);
+  const declinedNames = Object.entries(results).filter(([, v]) => v.declined).map(([k]) => k);
+  const allWorst = judged.map(([, v]) => v.worstInteractionMs).filter((n) => n !== null);
   if (allWorst.length) {
     const w = Math.max(...allWorst);
     R.ok(w <= INTERACTION_BUDGET_MS,
-      `worst scripted interaction ${w.toFixed(0)}ms ≤ ${INTERACTION_BUDGET_MS}ms (lab, not field INP)`,
-      `per route: ${Object.entries(results).map(([k, v]) => `${k} ${v.worstInteractionMs?.toFixed(0) ?? 'n/a'}`).join(' · ')}`);
+      `worst scripted interaction ${w.toFixed(0)}ms ≤ ${INTERACTION_BUDGET_MS}ms (lab, not field INP)`
+        + (declinedNames.length ? ` — over ${judged.length} judged route(s); ${declinedNames.length} declined` : ''),
+      `per judged route: ${judged.map(([k, v]) => `${k} ${v.worstInteractionMs?.toFixed(0) ?? 'n/a'}`).join(' · ')}`);
+  } else {
+    R.skip('worst scripted interaction ≤ ' + INTERACTION_BUDGET_MS + 'ms',
+      declinedNames.length
+        ? `every route with an interaction was declined (${declinedNames.join(', ')}), so every latency sample was measured on a runner this gate has already called unverifiable`
+        : 'no route produced a measurable interaction sample');
   }
 }
 
 if (inconclusive) {
   R.info('');
-  R.info(`${inconclusive} route(s) INCONCLUSIVE. That is a SKIP in the tally above, not a pass.`);
+  R.info(`${inconclusive} of ${ROUTES.length} route(s) INCONCLUSIVE — ${inconclusive * 2} budget assertion(s) NOT MADE.`);
+  R.info('That is a SKIP in the tally above, not a pass. This gate exits 0 on a run that');
+  R.info('judged nothing, so read the skip count, never the ✅ on the summary line alone.');
   R.info('If this happens on 3 consecutive CI runs the budget is measuring nothing — fix or delete it.');
+  if (declinedOverCeiling) {
+    R.info('');
+    R.info(`⚠️  ${declinedOverCeiling} of those ${inconclusive} declined route(s) had a median OVER its own ceiling.`);
+    R.info('⚠️  Search this log for VITALS_DECLINED_OVER_CEILING. A run that declines a failing');
+    R.info('⚠️  number is the state that hid an unsatisfiable /live/mempool ceiling for the two');
+    R.info('⚠️  CI runs before it finally drew a healthy runner and went red (#159, #160, #161).');
+  }
 }
 
 // The baseline artifact, stamped with the harness that produced it. Written on
@@ -541,4 +801,16 @@ writeFileSync(join(APP, '.perf', 'vitals.json'),
 
 await browser.close();
 if (!ASSERT) R.info('(PERF_ASSERT=0 — reporting only)');
-process.exit(MEASURE_ONLY || !ASSERT ? 0 : R.finish());
+
+/* The tally is printed FIRST and the warning AFTER it, deliberately. A reader
+ * scanning a 3,000-line CI log stops at the summary line; anything above it
+ * competes with 29 other gates' output for attention and loses. The warning is
+ * in no counter (see the note beside the self-check above), so being the last
+ * line on screen is the only prominence available to it. */
+const code = MEASURE_ONLY || !ASSERT ? 0 : R.finish();
+if (declinedOverCeiling) {
+  console.log(`\n⚠️  AND: ${declinedOverCeiling} route(s) were DECLINED while over a ceiling — grep VITALS_DECLINED_OVER_CEILING.`);
+  console.log('⚠️  Those are in the SKIPPED count, not the failed count. That is deliberate (a gate must not');
+  console.log('⚠️  assert on evidence it has called unverifiable) and it is exactly why this line is here.');
+}
+process.exit(code);
