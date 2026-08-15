@@ -659,6 +659,48 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   scoped to `src/data/` only, so this PR's three new effects (two in `charts.tsx`, one in
   `CandleCanvas.tsx`) are outside it by design. Worth knowing before assuming that gate
   covers a hook you just wrote.
+  **THREE DEFECTS FOUND BY LOOKING AT THE RENDER, none of which any gate could see, and
+  the first is a defect the SYNC CREATED out of two correct pieces.**
+  (1) **"Feb 26" IS FEBRUARY 2026.** `charts.tsx`'s `fmtDate` switches to
+  `{month:"short", year:"2-digit"}` above 90 days, which is fine on an axis where
+  neighbouring ticks disambiguate it. The synced cursor put it next to the hero's
+  `2026-02-12`, so two charts reporting ONE moment printed two strings a reader compares
+  and reads as two dates. Neither piece was wrong; the adjacency was new. The readout emits
+  an ISO day now and the AXIS is untouched — changing `fmtDate` moves every tick on every
+  chart in the app and is its own change.
+  (2) **The layer toggles were BELOW THE FOLD**, because the page mounted them after
+  `</CandleCanvas>` and the D0847 table lives INSIDE it: a control for marks at the top of
+  the plot, reachable only by scrolling past a 210px table it does not govern. A `controls`
+  slot puts them between the brush and the table.
+  (3) **A 9px flag was the whole touch target.** The 26px cluster rule turns out to be
+  load-bearing twice — WCAG 2.2 AA 2.5.8 has a SPACING exception that 26px already
+  satisfies, so the layer conformed; a `::after` grows the hit area to 23px, which still
+  fits inside that spacing so two flags cannot land under one thumb.
+  **AND THE GATE'S OWN "one moment" ASSERTION WAS PHASE-DEPENDENT — p3·12b's lesson
+  arriving from the other side.** It asserted the hero's date string EQUALS the synced one.
+  That is true only when the cursor lands on a bucket boundary: at 390 the hero read
+  `2026-02-18` (the 3-day candle it hovered) and the readouts `2026-02-20` (the moment),
+  both correct. Replaced with two claims — the three synced readouts are byte-identical to
+  each other, and the hero's BUCKET CONTAINS that moment, checked against the bucket width
+  the page itself reports.
+  **THE RENDER PROBE'S `shot()` WAS WRONG THREE TIMES, EACH THE SAME SPECIES**: the file
+  was written, the name was confident, the content was of something else.
+  `elementHandle.screenshot()` scrolls, and a scroll under a stationary pointer fires
+  pointerleave — a `-flag-tip` with no tip. `page.screenshot({clip})` rejects a clip outside
+  the viewport, so the 390 run stopped after one file. `{fullPage:true, clip}` accepts it
+  and MIS-PLACES it, because `boundingBox()` is viewport-relative while a fullPage clip is
+  in page coordinates — it cropped the header. Hover states are plain viewport captures now,
+  and the shutter refuses to fire unless the thing the filename claims is measurably on
+  screen.
+  Pre-existing and NOT fixed, proven structurally rather than by a paired render: the
+  hero's date axis **collides at 390 on the 1Y preset** ("Jul '2Oct '25"). `candle-data.ts`
+  and `useChartMetrics.ts` are byte-identical to `04006ff`, so `axisTicks`, `fmtAxisDate`,
+  `axisStepMs` and `fs.tick` are unchanged and the axis is a pure function of untouched
+  inputs.
+  **`git add -A` SWEPT A SCRATCH PROBE INTO A COMMIT.** `app/.render-p313.mjs` rode into the
+  `verify-govern` commit and was removed in the next one. The bracketed
+  "stray files" sweep is what found it, and only because it ran against `git ls-tree` rather
+  than the working tree — a working-tree check says nothing about what is already committed.
   Six break tests, each restore proven by `git status`, by `diff` against the **committed
   blob**, and by a bracketed marker sweep: **M1** domain guard removed → the mismatch
   assertion reds while the vacuity guard stays green at 10/12 · **M2** tooltip prints `iso`
