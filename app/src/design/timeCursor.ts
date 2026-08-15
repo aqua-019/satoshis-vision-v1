@@ -80,7 +80,26 @@ const listeners = new Set<(s: TimeCursorState) => void>();
    and a write that lands after the flush schedules the next one. Coalescing can
    therefore never drop the LAST value, which is the only one that matters. */
 let frame = false;
+/* The marker goes HERE, on the real call site, and finding that out was worth
+   the round trip: the coalescing call in `notify()` below reads `raf(...)`,
+   which `verify-govern` cannot see — it sweeps for `requestAnimationFrame`,
+   and this indirection is the only place the word appears. A marker parked
+   next to `raf(...)` is an ORPHAN, which the gate reports separately and
+   correctly, because a marker that has drifted off its rAF silently exempts
+   whatever lands there next.
+
+   Not a driver: this frame is scheduled only BY A WRITE, and writes come only
+   from pointer, click and key handlers. A hidden tab produces none, so nothing
+   is pending and nothing resumes on wake — a stronger property than pausing,
+   because there is no loop to pause.
+
+   IT WOULD BECOME ONE IF A SUBSCRIBER WROTE BACK: `l(state)` calling
+   `setTimeCursor` would re-enter `notify`, schedule the next frame from inside
+   this one, and spin forever on a page nobody is touching. None does — every
+   subscriber paints a canvas or mutates DOM through refs and returns. A
+   subscriber is a READER; keep it that way. */
 const raf: (cb: () => void) => void =
+  // D0699-EXEMPT: one coalescing frame per write burst, never self-rescheduling
   typeof requestAnimationFrame === "function"
     ? (cb) => { requestAnimationFrame(cb); }
     // Prerender (`scripts/prerender.mjs` runs this app under Node) and any
@@ -91,6 +110,8 @@ const raf: (cb: () => void) => void =
 function notify(): void {
   if (frame) return;
   frame = true;
+  // See `raf`'s declaration for why this is not a driver, and for why the
+  // D0699 marker lives up there rather than on this line.
   raf(() => { frame = false; for (const l of listeners) l(state); });
 }
 

@@ -67,6 +67,7 @@ export function EduTimeline({ data }: { data: MoneroLive }) {
   React.useEffect(() => {
     if (!focus) return;
     let raf = 0;
+    // D0699-EXEMPT: one deferred scroll after the chrome's own reset, not a loop
     raf = requestAnimationFrame(() => {
       document.getElementById(focus)?.scrollIntoView({ block: "center" });
     });
