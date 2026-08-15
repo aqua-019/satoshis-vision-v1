@@ -42,7 +42,10 @@ chain and market data.
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
   are offline source assertions. `.github/workflows/ci.yml` runs **62 distinct files** on
-  PRs to `main`, in two jobs: **12** individually-named offline gates, then `verify:static`
+  PRs to `main` **and, since p3·12d, on every push to `main`** — the workflow had never
+  judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
+  had no same-runner baseline to difference against; read the `on:` block for the cost
+  accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
   (**21** gates, no browser), `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`) and
   **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
   `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
@@ -360,7 +363,8 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **62 of the 73** gates on every PR to `main`; **4** more are npm-wired by hand
+- CI runs **62 of the 73** gates on every PR to `main` and on every push to `main`
+  (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
   are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
   three numbers had drifted independently, and the 11 contradicted the Orphaned-gates entry
@@ -533,6 +537,118 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-15**: p3·12d "VITALS CALIBRATION" (app/ + .github/) — the instrument repair
+  #179's red demanded. No `src/**` file is touched and the build is byte-identical; every
+  defect here is in the measuring apparatus, which is the family this file says has cost
+  more near-misses than the code has.
+  **A CEILING THAT WAS NEVER SATISFIABLE, AND TWO GREEN RUNS THAT CARRIED THE PROOF.**
+  `/live/mempool`'s 4,000 ms LCP ceiling has never been met on CI's runner class. Nine
+  samples, three runs, **three different runners and TWO DIFFERENT TREES** — #159
+  `f0fc8179` (circuit branch) 4092/4080/4076 · #160 `d3aa03e` 4132/4108/4108 · #161
+  `690ead6` 4104/4084/4108 — spanning **4076–4132, a plateau 1.4% wide**. A plateau that
+  tight across two trees and two runner states is a property of the RUNNER CLASS and of
+  neither. Locally the same route reads 3,684–3,732.
+  **THE BRIEF NAMED THE WRONG GUARD AND SO DID p3·12b's ENTRY.** Both attributed the
+  abstentions to the spread guard. The spread guard has **never fired on that route** —
+  1.4% against a 10% threshold. #159 and #160 were declined by the **CPU-probe** guard
+  (503 ms and 512 ms against a 260 ms reference). The recorded blind spot is real; the
+  guard credited with it was not, and a 1.4% number disproves it in one line.
+  **DERIVED, NOT ADOPTED**: high-water single sample **4,132** × **1.05** — half of
+  `LCP_SPREAD_UNSTABLE`'s own 10% band, so the headroom comes from the gate's own
+  constant rather than from taste — = 4,338.6, rounded up to **4,350**. The full 10%
+  (4,545) was the other candidate and is rejected in-file: the plateau's own width is
+  1.4%, so a 10% ceiling would need a 7×-the-noise regression before it spoke. Margins
+  242 ms (5.9%) over the highest observed median and 246 ms (6.0%) over the one a healthy
+  runner judged. **A CALIBRATION TO THE JUDGING RUNNER, NOT A CONCESSION** — nothing got
+  slower, and the printed per-run series still shows a local regression on the run that
+  causes it. **Headroom is now quoted one way everywhere in that file** (as a percentage
+  OF THE MEASURED VALUE), because the first draft mixed the two conventions inside one
+  comment block: 4000 over 3010 is +33% of the measurement and +25% of the ceiling.
+  **AN ABSTENTION THAT READ AS A PASS, AND THE INFORMATION WAS ALREADY ON SCREEN.**
+  A decline printed its runs and threw the CONCLUSION away, so a reader had to hold the
+  ceiling in their head. #159 declined `/live/mempool` at **4080** and #160 at **4108**,
+  both against a 4,000 ceiling, both runs REPORTING GREEN — the gate exits 0 when every
+  route declines, so `✅ verify-vitals: 6 passed · 4 skipped · 0 failed` is what CI showed
+  for a run that judged nothing. Both decline paths now route through one `decline()` that
+  prints the median, its ceiling, a would-have verdict and the spread, and shouts
+  `VITALS_DECLINED_OVER_CEILING` when a declined median exceeds its ceiling.
+  **THE DECISION IS WARN, NEVER FAIL, and it is taken out loud in the file**: failing on a
+  number the gate has just called UNVERIFIABLE is this file's own header inverted — a red
+  a re-run clears is a red people learn to click through, and two of three CI runs here
+  were contended. **THREE THINGS MAKE THE WARNING COUNTABLE ANYWAY**, because a ⚠️ in no
+  counter is the same invisibility one level up: one skip per UNMADE ASSERTION rather than
+  one per route (a run declining four routes said "4 skipped" for EIGHT assertions never
+  made — the skip count is not comparable to a pre-p3·12d one), the banner re-printed
+  BELOW `R.finish()`'s tally where a reader's eye actually stops, and an offline
+  falsifiability PAIR over CI #161's real numbers: 4104 fires against the retired 4,000
+  and stays silent against the shipped 4,350. The second reads the SHIPPED literal, so it
+  is not a tautology — it reds if anyone lowers the ceiling under 4104. The four-counter
+  contract in `verify-reporter.mjs` (8 importers) was deliberately NOT grown.
+  **TWO ASSERTIONS WERE WIDER THAN THE THING THEY COULD NOT JUDGE**, same family, found
+  while writing the above: the `continue` on decline also discarded the structural "did
+  the scripted click land" check (a contended runner answers that fine — measured cost:
+  three assertions silently never made in #159 and #160), and the global interaction
+  budget asserted `worst scripted interaction 112ms ≤ 400ms` ✅ over exactly the routes the
+  same run had declared unverifiable. First moved above the declines; second excludes
+  declined routes and skips loudly if none remain.
+  **`main` HAD NEVER BEEN JUDGED — not once.** `ci.yml` fired on `pull_request` only, so
+  every "main" figure was a PR-head proxy (#159's `f0fc8179` stood in for `84e2b77` only
+  because the trees were identical, which took a separate manual check to establish).
+  `push: branches: [main]` added, out loud, with the cost stated: the deterministic half
+  IS duplicate signal on merge, ~25 runner-minutes, accepted because the wall-clock half
+  cannot be — its subject is partly the machine — and because `pull_request` CI never
+  judged a MERGED tree either, so two PRs green in isolation and red together had no gate.
+  A schedule was the rejected alternative (it decouples the measurement from the commit).
+  Verified event-agnostic rather than assumed: no step reads `github.event`, and "Wait for
+  preview" polls `http://localhost:4173/` from the serve-dist started one step earlier —
+  not a Vercel preview. And the new comment block was swept for `verify-*.mjs` FILENAMES,
+  because `verify-coldboot-live`'s §0 decides wiredness by `wiredText.includes(f)` over
+  package.json + **raw ci.yml with YAML comments unstripped** — naming an orphan in a
+  comment would silently move it into wired-must-install-bypass. It names none. **The
+  first sweep used `verify-[a-z-]+\.mjs` and would have missed `verify-v508.mjs`**; the
+  digit-tolerant re-run is the one that counts.
+  **THE RESTORE PROTOCOL FAILED TWICE, IN TWO DIFFERENT WAYS, AND BOTH GENERALISE.**
+  (1) A break-test shell's `cd` did not survive, so `npm`, `grep` and
+  `git checkout -- verify-vitals.mjs` all failed from the repo root — and the trailing
+  "restore verified" grep printed EMPTY, which reads exactly like a clean restore, while
+  the wrapper reported exit 0 because the last `echo` succeeded. (2) Worse: the mutation
+  left by (1) was still in the working tree when the next edit landed on top of it, and
+  `git commit --amend` **committed the mutation**. The `git status --short` I checked said
+  `M verify-vitals.mjs`, which was true and answered a narrower question than the one I
+  drew from it — I grepped for the new function and never re-grepped the markers.
+  Caught by the mutator's own `assert n == 1` on the NEXT round, which found 0 matches for
+  a string it had just replaced. **The rules: commit before EVERY break-test round, not
+  once per session, so `git checkout` has a real target; verify the COMMITTED BLOB with
+  `git show HEAD:<file> | grep`, never the working tree; and bracket every
+  proves-an-absence grep with `<<<`/`>>>` so empty is distinguishable from crashed.**
+  Gates: **77 files / 73 gates, RECOUNTED and unchanged** — editing a gate adds no file and
+  a `push:` trigger adds no `run:` line. CI unchanged at **30 `run:` lines / 21
+  gate-invoking / 62 distinct files** (12 named + 21 static + 29 e2e + 5 + bundle = 68
+  invocations − 6 duplicates). **Found and NOT fixed, out of scope**: the entry above at
+  `:73` says FOUR gates appear in both the named list and `verify:static`; it is FIVE —
+  v6.1.9 added `verify-cbpending` to both and the sentence was never updated. The 62
+  reconciles only with five.
+  Runs on this runner, final tree: **verify-vitals 17 passed · 0 fixtured · 2 skipped ·
+  0 failed** (`/live/mempool` 3684 ≤ 4350; `/learn/sim` declined at an 80.2% spread — the
+  documented `/simulate` BIMODAL second mode, 2528/4520/2508 — printing both medians as
+  "would have PASSED" with no warning, which is the no-warning polarity arriving without a
+  mutation). Four break tests, each restore proven by tree state AND marker grep:
+  **M1** forced decline + ceiling 1000 → all four declined, mempool `WOULD HAVE FAILED`
+  with the banner, three others `would have PASSED` without it, interaction ✅ still made,
+  global interaction budget skipped naming all four; **M2** ceiling 1000, guards normal →
+  `❌ median LCP 3692ms ≤ 1000ms`; **M3** `CPU_REF_MS=1`, `VITALS_RUNS=1` → the OTHER
+  decline path plus the `n/a (fewer than 2 LCP samples)` branch; **M4** the retired 4,000
+  put back → the offline self-check reds **before a browser launches** while the local
+  judged assertion `3676ms ≤ 4000ms` PASSES. M4 is the sharpest artifact in the set: on
+  this machine the retired ceiling passes, and the gate still reds, because CI's own
+  measured number does not clear it.
+  **`verify-bundle` 27 passed · 0 failed with every literal untouched**, and the build
+  inputs are provably unchanged (`git diff fc5cfc1 -- app/src app/index.html app/scripts …`
+  is empty), so no byte moved. `-100%` appears in M1's transcript wherever the shipped code
+  prints `10%` — that is `LCP_SPREAD_UNSTABLE = 0` showing through the mutation, not a
+  defect. M2's third red (`/live/markets median blocking 402ms ≤ 400ms`, 2 ms over, on an
+  untouched route) is this runner, not the mutation, and is stated rather than counted.
+
 - **2026-08-14**: p3·12b "ONE CORRECTION COMMIT" (app/) — a wrong dollar figure, an
   axis that could not say which day, and eleven stale self-counts.
   **THE DEFECT: A BRUSHED WINDOW'S LAST CANDLE ABSORBED THE VOLUME OF EVERYTHING TO
@@ -629,6 +745,14 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   JITTER and cannot see a PLATEAU, so a sustained-load runner produces confident,
   reproducible, wrong numbers — and the only instrument that separates those from
   a real regression is a paired run against another tree on the same machine.
+  **CORRECTION, p3·12d: the paired run is no longer the ONLY instrument, and this
+  entry named the wrong one of the two guards for #179's own red.** `main` now
+  carries its own same-runner baseline (`push: branches: [main]`), so the pairing
+  a human had to construct by hand is produced on every merge. And measured
+  across CI runs #159/#160/#161, `/live/mempool`'s nine LCP samples span **1.4%**
+  — the spread guard has never fired on that route at all; both abstentions came
+  from the **CPU-probe** guard. The blind spot recorded above is real and the
+  plateau reading is right; the guard credited with it was not.
   Report-and-stop: no vitals budget moved, and none should be.
   Gates: **77 files / 73 gates, unchanged.** `verify-markets-dom` gained a volume
   section (upper bound, last-cell, and every-cell equality) plus 7D and 390 axis

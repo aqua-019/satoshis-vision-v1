@@ -1,10 +1,53 @@
 name: v5 CI
 
+# ── p3·12d · WHY THIS ALSO FIRES ON PUSH TO main ──────────────────────────
+#
+# Until now this workflow fired on `pull_request` ONLY, which means it had
+# never judged `main` — not once. Every "main" figure anyone has quoted was a
+# PR-HEAD PROXY: #159's f0fc8179 stood in for 84e2b77 only because the two
+# trees happened to be identical, and proving that took a separate manual
+# check. For the deterministic gates that substitution is harmless. For the
+# wall-clock ones it is the whole problem — verify-vitals' /live/mempool
+# ceiling sat unsatisfiable on this runner class for at least three runs, and
+# the only reason nobody could tell was that no measurement of main on this
+# runner class existed to compare against.
+#
+# TAKEN: `push: branches: [main]`. A merge now produces main's own numbers on
+# the same runner class that judges every PR, so the vitals series has a base
+# to difference against instead of a proxy.
+#
+# THE COST, STATED. On merge, the deterministic half of this workflow —
+# typecheck, build, bundle budgets, the twelve offline gates, the static gates
+# — re-judges a tree that the PR run already judged, and that IS duplicate
+# signal. Roughly 25 runner-minutes per merge, at a handful of merges a week.
+# Accepted for two reasons:
+#
+#   1. The wall-clock half is NOT duplicate. It cannot be, because its subject
+#      is partly the machine, and the machine is a different one every run.
+#      That is the entire point of adding this.
+#   2. `pull_request` CI has never judged a MERGED tree either. It judges the
+#      PR's merge-ref, which is only the same as post-merge main while the base
+#      has not moved underneath it. Two PRs green in isolation and red together
+#      is a state this repo has had no gate against. Now it does, and that is
+#      worth the minutes on its own.
+#
+# NOT TAKEN: a schedule. A cron run would measure main on an arbitrary tree at
+# an arbitrary time, which answers "how noisy is the runner" — worth knowing,
+# but a different question, and it decouples the measurement from the change
+# that caused it. Merge-triggered keeps every baseline attributable to a commit.
+#
+# Everything structural carries over unchanged: the vitals-last ordering inside
+# verify:e2e, `if: always()` on the independent steps, and one step per gate
+# rather than an `&&` chain. Nothing below is conditioned on the event, and
+# nothing in this file reads `github.event.pull_request`.
 on:
   pull_request:
     branches:
       - main
       - v5-migration
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
