@@ -184,11 +184,17 @@ export function CadenceStrip({
             overlay, both below. Geometry scales; type does not. */}
       </svg>
 
-      {/* Axis labels as DOM. 12px mono, which is the floor this repo runs on
-          HTML text, and unaffected by the SVG's non-uniform scale. */}
+      {/* Axis labels as DOM, unaffected by the SVG's non-uniform scale.
+          `var(--fs-mono)` rather than a literal, and that is not stylistic:
+          verify-legibility bans any sub-14 inline style-object `fontSize`
+          across the TSX tree while deliberately EXEMPTING SVG presentation
+          attributes — so the `fontSize="12"` these three carried while they
+          were SVG text nodes was legal, and the same 12 became a violation the
+          moment they became DOM. The token is what the rest of this page
+          already uses, and it carries the repo's own floor. */}
       {(() => {
         const lab: React.CSSProperties = {
-          position: "absolute", fontFamily: "var(--f-mono)", fontSize: 12,
+          position: "absolute", fontFamily: "var(--f-mono)", fontSize: "var(--fs-mono)",
           color: "var(--ink-40)", pointerEvents: "none", lineHeight: 1,
           opacity: stale ? 0.45 : 1,
         };
