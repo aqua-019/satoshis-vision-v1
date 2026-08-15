@@ -1245,6 +1245,114 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 }
 .cc-brush-grip-r { left: auto; right: -5px; }
 
+/* ══ the synced time cursor + the annotation layer (p3·13) ═══════════
+   D0834 · D1534 · D0385 · D0833. Two families, one block, because they share
+   the same host boxes and the same type floor.
+
+   NOTHING HERE PARTICIPATES IN LAYOUT. Every positioned element is absolute
+   inside an already-sized box, and both readouts and every flag exist in the
+   DOM from first render (hidden, empty) rather than being inserted on hover —
+   `verify-cls` measures this page and an element that appears mid-interaction
+   is the classic way to spend a layout-shift budget on a decoration.
+
+   Type is `--fs-label` throughout, the repo's own clamp(11px, .74vw, 12px). */
+
+/* the hero's readout is mounted always and emptied when it has nothing to say */
+.cc-tip[hidden] { display: none; }
+
+/* ── the synced readout on the three SVG charts ──────────────────── */
+.mk-syncbox { position: relative; }
+.mk-tip {
+  position: absolute; z-index: 2; pointer-events: none;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px 8px; border: 1px solid var(--rule); border-radius: 2px;
+  /* NOT chart-kit's `rgba(8,7,5,0.94)`: verify-chartkit asserts that literal
+     appears in exactly ONE file across the tree, and a second copy would fail
+     a green gate. `.cc-tip` made the same choice for the same reason. */
+  background: color-mix(in srgb, var(--surface-sunk) 94%, transparent);
+  font-family: var(--f-mono); font-size: var(--fs-label); line-height: 1.35;
+  font-variant-numeric: tabular-nums; color: var(--ink-80);
+}
+.mk-tip[hidden] { display: none; }
+.mk-tip > b { color: var(--ink-100); font-weight: 500; }
+.mk-tip-row { display: flex; align-items: center; gap: 6px; }
+.mk-tip-row > i { flex: 0 0 auto; width: 6px; height: 6px; border-radius: 50%; }
+.mk-tip-k { flex: 1 1 auto; color: var(--ink-60); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mk-tip-v { flex: 0 0 auto; color: var(--ink-100); }
+
+/* ── the annotation flags (D0833) ────────────────────────────────── */
+.mk-anns { position: absolute; left: 0; right: 0; pointer-events: none; z-index: 3; }
+.mk-ann { position: absolute; top: 0; bottom: 0; width: 0; }
+.mk-ann-rule { position: absolute; top: 8px; bottom: 0; left: 0; width: 1px; opacity: 0.34; }
+/* The interval an imprecise date actually denotes — drawn, so the reader sees
+   the uncertainty instead of a confident dot at a midpoint nobody wrote. */
+.mk-ann-band {
+  position: absolute; top: 8px; bottom: 0;
+  opacity: 0.07; border-inline: 1px solid; border-block: 0;
+}
+.mk-ann-tent .mk-ann-band { border-inline-style: dashed; }
+.mk-ann-dot {
+  position: absolute; top: 0; left: 0; transform: translateX(-50%);
+  width: 9px; height: 9px; box-sizing: border-box;
+  border-radius: 50%; border: 1px solid var(--bg-0);
+  pointer-events: auto; cursor: pointer; text-decoration: none;
+  transition: transform var(--d-2) var(--e-standard);
+}
+/* A tentative date is a HOLLOW ring — the one flag whose fill is missing on
+   purpose, matching the em-dash rule for a figure the site does not have. */
+.mk-ann-tent .mk-ann-dot { border-width: 1.5px; }
+.mk-ann-dot:hover, .mk-ann-dot:focus-visible { transform: translateX(-50%) scale(1.35); }
+.mk-ann-dot:focus-visible { outline: 2px solid var(--ui-accent, var(--tk-accent)); outline-offset: 2px; }
+.mk-ann-badge {
+  width: auto; height: auto; min-width: 9px; border-radius: 8px;
+  padding: 1px 5px; font-family: var(--f-mono); font-size: var(--fs-label);
+  line-height: 1.25; color: var(--bg-0); font-weight: 500;
+  appearance: none;
+}
+/* The brush strip is 62px tall and its flags answer one question — "is there
+   an event out there" — so they carry the dot and nothing else. */
+.mk-anns-compact .mk-ann-rule { top: 2px; opacity: 0.5; }
+.mk-anns-compact .mk-ann-dot { width: 7px; height: 7px; top: -3px; }
+.mk-anns-compact .mk-ann-badge { width: auto; height: auto; top: -4px; }
+
+.mk-ann-tip {
+  position: absolute; top: 16px; z-index: 4; pointer-events: none;
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 8px 10px; border: 1px solid var(--rule); border-radius: 3px;
+  background: color-mix(in srgb, var(--surface-sunk) 96%, transparent);
+  box-shadow: 0 12px 34px rgba(0,0,0,0.55);
+  font-family: var(--f-mono); font-size: var(--fs-label); line-height: 1.5;
+  color: var(--ink-60); text-align: left; white-space: normal;
+}
+.mk-ann-tip > b { color: var(--ink-100); font-weight: 500; }
+.mk-ann-tip em { font-style: normal; color: var(--ink-40); }
+.mk-ann-tip-row { display: flex; align-items: baseline; gap: 5px; }
+.mk-ann-tip-row > i { flex: 0 0 auto; width: 5px; height: 5px; border-radius: 50%; }
+.mk-ann-tip-body { color: var(--ink-60); }
+.mk-ann-tent-mark { color: var(--y-50); margin-inline-start: 5px; }
+
+/* ── the layer toggles ───────────────────────────────────────────── */
+.mk-ann-layers {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  font-family: var(--f-mono); font-size: var(--fs-label);
+}
+.mk-ann-legend { color: var(--ink-40); letter-spacing: 0.14em; text-transform: uppercase; }
+.mk-ann-toggle {
+  display: inline-flex; align-items: center; gap: 5px;
+  appearance: none; cursor: pointer; background: transparent;
+  border: 1px solid var(--ink-20); border-radius: 999px; padding: 3px 9px;
+  font-family: inherit; font-size: inherit; letter-spacing: 0.08em;
+  transition: border-color var(--d-2) var(--e-standard), color var(--d-2) var(--e-standard);
+}
+.mk-ann-toggle > i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid; }
+.mk-ann-note { margin-inline-start: auto; color: var(--ink-40); }
+
+/* ── the deep-link target on /learn/timeline ─────────────────────── */
+.tl-node { scroll-margin-block: 96px; }
+.tl-node-focus {
+  outline: 1px solid var(--tk-accent); outline-offset: 8px; border-radius: 2px;
+}
+
 /* ── the accessible table (D0847) ─────────────────────────────────
    NEVER display:none. It is the only accessibility tree this chart has, so it
    is CLIPPED (a scroll box with a height cap) rather than removed. On a phone

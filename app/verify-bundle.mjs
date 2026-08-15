@@ -271,7 +271,17 @@ const BUDGETS = {
   // kilobytes, while CSS here is one hand-written file that grows by the block.
   // A 10% headroom would be 1,700 B — roughly three more components' worth of
   // rules absorbed silently, on the ONE stylesheet that blocks first paint.
-  cssGz: 17_600,
+  // RAISED 17,600 -> 18,200 in p3·13. Built 17,753, margin 447 — the same
+  // ~2.5% this budget has always carried, not the ~10% the JS ceilings use,
+  // for the reason stated directly above. The +585 B is one block: the synced
+  // cursor's readout (`.mk-tip*`), the annotation flags, their tooltip and the
+  // four layer toggles, plus the `.tl-node` deep-link target on
+  // /learn/timeline. Measured with node:zlib at level 9, which is the
+  // compressor THIS FILE judges with — the gzip(1) CLI and python3's gzip
+  // disagree with it by ~100 B on a chunk this size, and p3·12 put a phantom
+  // 50 B of "unattributed" bytes in its own report by measuring with one and
+  // being judged by another.
+  cssGz: 18_200,
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
   // 673.8 kB.
@@ -578,7 +588,10 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_094_000,  // p3·12b: built 1,091,277, margin 2,723. Crosses with
+  totalJsRaw: 1_108_000,  // p3·13: built 1,104,862, margin 3,138. Delta +13,585 =
+                          // lazy +13,549 + eager +36, which reconciles to the byte
+                          // against the per-chunk table in lazyJsRaw's note below.
+                          // p3·12b: built 1,091,277, margin 2,723. Crosses with
                           // lazyJsRaw, as it has every release since #174. The
                           // stated construction ("the sum of the two real
                           // budgets") has been lapsed since then and is not
@@ -891,7 +904,35 @@ const BUDGETS = {
   // the number is 38 and not noise), and four others moved by amounts the row
   // did not mention at all. A summary that rounds four rows into "±38 ea" stops
   // being an attribution and becomes an impression.
-  lazyJsRaw: 831_000,
+  //
+  // ── p3·13 · 831,000 -> 845,000. Built 841,974, margin 3,026. ──────────────
+  // FIVE chunks moved of 67; the other 62 are byte-identical, which is what
+  // makes this an attribution rather than a story. Paired by MULTIPLICITY, not
+  // basename — the `index` stem holds two chunks and the pairing asks
+  // dist/index.html which one is the entry, because a basename-keyed diff does
+  // not merely lose a row here, it files a LAZY delta under the EAGER budget:
+  //
+  //     timeline          0  ->  12,973   +12,973   lazy   (new shared leaf)
+  //     EducationPage  45,721 ->  36,503    -9,218   lazy   (the data left it)
+  //     MarketsPage    31,906 ->  37,831    +5,925   lazy
+  //     charts         15,231 ->  19,100    +3,869   lazy   (timeCursor inlined here)
+  //     index[ENTRY]   99,937 ->  99,973       +36   EAGER
+  //                                        ────────
+  //                                 lazy   +13,549
+  //
+  // THE +36 EAGER BYTES ARE STRUCTURAL AND THEY ARE NOT A LEAK — this was a
+  // non-view PR under an explicit "eager must not move" instruction, so they
+  // were chased to the byte. 30 of them are ONE new string in Vite's
+  // `__vite__mapDeps` preload table ("assets/timeline-CWoXTI3v.js"), which
+  // grows by a row whenever a lazy chunk is minted; the other 6 are the index
+  // references into it. Measured, not inferred: the entry's mapDeps array went
+  // 37 -> 38 entries with exactly that one addition and no removals. The
+  // NEGATIVE CONTROL is the half that matters — `grep 'Bitcoin Whitepaper
+  // Published'` and `grep 'CryptoNote v1'` both return 0 in index[ENTRY] AND in
+  // vendor, so 13 KB of timeline prose is provably NOT in first paint. That is
+  // the canvasColor rule holding: a shared leaf is free only if every importer
+  // is lazy, and both of this PR's importers (EducationPage, MarketsPage) are.
+  lazyJsRaw: 845_000,
   // NOT calibrated — this is Vite's own chunkSizeWarningLimit default, which
   // PERF-BASELINE.md:76 tracks as "silent". vite.config.ts deliberately leaves
   // that option unset so the warning and this assertion agree. Largest chunk
@@ -922,7 +963,11 @@ const ROUTE_BUDGET_GZ = {
                                      //  closure (2 chunks: entry + vendor), so it tracks that
                                      //  ceiling +1,000 rather than moving independently.
   '/live/mempool':          107_000, //  96,835
-  '/live/markets':          112_000, // 108,918 — p3·12: 105,000 -> 112,000, and the
+  '/live/markets':          121_000, // 117,803 — p3·13: 112,000 -> 121,000 (margin 3,197).
+                                     // The route gained a chunk: `timeline` (12,973 B raw), the
+                                     // annotation data, now shared with /learn rather than living
+                                     // inside EducationPage. /learn paid 9,218 B back for it.
+                                     // p3·12: 105,000 -> 112,000, and the
                                      //  `95,817` that stood here was stale by 7,879 B
                                      //  before this PR touched anything (main measured
                                      //  103,696, i.e. 98.8% of its own ceiling with
@@ -1077,7 +1122,27 @@ const ROUTE_BUDGET_GZ = {
 // The note above predicted this would be Relay's to spend. It was not — a
 // shared LEAF costs a chunk just as a lazy VIEW does, and nothing in this
 // detector distinguishes them. Relay, if it ships, now reds at 67.
-const CHUNK_COUNT = 62;
+//
+// ── p3·13 · 62 -> 64. IT REDDED AT 67, AND THE LINE ABOVE CALLED IT. ───────
+// Not Relay again: `data/timeline.ts`, the 49-event timeline extracted out of
+// EducationPage so /live/markets' annotation layer and /learn/timeline read one
+// source. Two lazy importers in two chunk groups, so Rollup mints it — the
+// third consecutive release where the sixty-seventh chunk was a SHARED LEAF and
+// not a view, which is now the pattern rather than the exception.
+//
+// Its sibling did NOT mint one, and the asymmetry is worth recording because
+// nothing about the source predicts it: `design/timeCursor.ts` is also a new
+// leaf, also imported by the hero and by charts.tsx, and Rollup INLINED it into
+// `charts-*.js` because both importers resolve inside one chunk group. So "a
+// shared leaf costs a chunk" is really "a leaf shared ACROSS GROUPS costs a
+// chunk", and only a build can tell you which you wrote.
+//
+// 64, not 63: ±4 is unchanged (widening loses the detection power; only the
+// centre moves), and 63 would put the new range at [59, 67] with reality
+// sitting exactly on the ceiling — the state p2·10 recorded as "the upward half
+// is spent again". [60, 68] leaves ONE rung, which is stated here rather than
+// left to be rediscovered: the next shared leaf reds this line.
+const CHUNK_COUNT = 64;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

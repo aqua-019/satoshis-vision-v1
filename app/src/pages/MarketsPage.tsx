@@ -41,6 +41,7 @@ import {
 import { useTickers } from "@/data/useTickers";
 import { MultiLine, AreaSeries } from "./markets/charts";
 import { CandleCanvas, type TimeWindow } from "./markets/CandleCanvas";
+import { ALL_LAYERS, AnnotationLayers, type LayerState } from "./markets/annotations";
 import { DAY_MS, baseSpanMs, type DrawnSeries } from "./markets/candle-data";
 import { assertNever, hasData } from "@/data/feed-status";
 import { useUrlState } from "@/routes/useUrlState";
@@ -358,6 +359,33 @@ export function MarketsPage() {
      page guessing from `days`. */
   const [drawnSeries, setDrawnSeries] = React.useState<DrawnSeries | null>(null);
 
+  /* D0833 — the annotation layer's controls.
+     SESSION STATE, deliberately not `useUrlState`. `?range=` earns its place in
+     the URL because it changes what the page IS; four booleans that hide dots
+     do not, and putting them there would make every shared markets link carry
+     four query params nobody meant to publish. */
+  const [layers, setLayers] = React.useState<LayerState>(ALL_LAYERS);
+  const [flags, setFlagCount] = React.useState({ inView: 0, outside: 0, unplaceable: 0 });
+
+  /* THE HONEST NOTE, and it is doing real work rather than decorating.
+     The deepest base this page fetches is DEEP_DAYS = 365 (useMarketHistory),
+     and the timeline runs from 2008 — so the overwhelming majority of it is
+     unreachable from any window this chart can show, and at the 30D preset the
+     reachable count is routinely ZERO. An empty axis with no explanation reads
+     as "there is nothing to say"; the count says "there is plenty, it is just
+     not in this window", which is the true statement and the one that makes
+     the brush strip's own flags worth looking for. `unplaceable` is the
+     separate case: events inside the window whose date is an interval too wide
+     to carry a position (a bare "2026"), reported rather than smeared across
+     the plot. */
+  const flagNote = React.useMemo(() => {
+    const bits: string[] = [];
+    if (flags.inView) bits.push(`${flags.inView} in view`);
+    if (flags.unplaceable) bits.push(`${flags.unplaceable} undated at this zoom`);
+    if (flags.outside) bits.push(`${flags.outside} outside this window`);
+    return bits.length ? bits.join(" · ") : "no timeline events in range";
+  }, [flags]);
+
   /* The brush shows everything FETCHED, not everything drawn. Deep when it has
      arrived, else mid, else the fine base — whichever reaches furthest back. */
   const fullSpan: TimeWindow | null = React.useMemo(() => {
@@ -519,12 +547,16 @@ export function MarketsPage() {
               height={CANDLE_CHART_HEIGHT}
               status={candleStatus}
               onSeries={setDrawnSeries}
+              annLayers={layers}
+              onFlags={setFlagCount}
             />
           </Swap>
         </PanelBoundary>
+        <AnnotationLayers layers={layers} onChange={setLayers} note={flagNote} />
         <p className="mono dim cc-help" style={{ marginTop: 8, fontSize: "var(--fs-label)" }}>
           Drag the strip to pan · drag an edge to resize · double-click to reset.
           Range buttons move the window; they do not refetch.
+          Hover any chart to read the same moment on all four; click to pin it.
         </p>
       </PanelFrame>
 
@@ -536,6 +568,7 @@ export function MarketsPage() {
               <AreaSeries data={xmrBtcSeries} t={ratioWin.t} days={winDays} height={RATIO_CHART_HEIGHT}
                 color="var(--tk-accent)" baseline="auto"
                 format={fmtSat}
+                sync syncLabel="XMR/BTC"
                 stale={ratioPick.status === "stale"} />
             </Swap>
           </PanelBoundary>

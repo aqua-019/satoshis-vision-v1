@@ -42,6 +42,9 @@ import {
   useGradientId,
 } from "@/design/chart-kit";
 import {
+  clearTimeCursor, containsT, setTimeCursor, toggleTimeCursorPin, useProjectedCursor, useTimeCursorSync,
+} from "@/design/timeCursor";
+import {
   normalizeSeries,
   timeDomain,
   xOf as geomXOf,
@@ -252,6 +255,103 @@ function EmptyBox({
 }
 
 /* ════════════════════════════════════════════════════════════════════
+   THE SYNCED CURSOR (D0834 · D1534 · D0385) — the receiving half
+   ════════════════════════════════════════════════════════════════════
+
+   A time-axis chart on /live/markets has TWO cursors and they are not the same
+   thing. The one it WRITES comes from `useSvgCursor` and is React state — that
+   is unchanged, and it is why the chart under the pointer still re-renders
+   exactly as often as it did before this feature existed. The one it READS is
+   the shared timestamp, and it renders through the refs below WITHOUT a
+   re-render, which is what keeps a pointermove over the hero from rebuilding
+   several hundred SVG nodes in three other charts.
+
+   Node counts are fixed for a given render: one rule, one focus dot per series,
+   one readout row per series plus a date row. So React builds the skeleton once
+   and `applySync` only ever writes attributes and text into it. If the SERIES
+   change, that is a real re-render and the skeleton is rebuilt — which is also
+   why `useProjectedCursor` re-applies after every render (see its docblock).
+
+   THE READOUT IS HTML, not `ChartTip`. Three reasons, in order of weight: SVG
+   `<text>` is the one glyph family `verify-legibility` cannot police (it is
+   excluded by design, and "SVG <text> below 12px on mobile" is a standing
+   known issue in this repo); the hero's `.cc-tip` already established the HTML
+   idiom for exactly this readout, so this matches its sibling rather than
+   inventing a third convention; and `ChartTip` derives its own box size from
+   its rows, which is precisely the thing that cannot work when the text is
+   written imperatively. `ChartTip` is still what BarSeries and the mempool
+   detail views use, and chart-kit still exports it. */
+
+interface SyncNodes {
+  line: React.RefObject<SVGLineElement>;
+  dots: React.MutableRefObject<(SVGCircleElement | null)[]>;
+  tip: React.RefObject<HTMLDivElement>;
+  rows: React.MutableRefObject<(HTMLElement | null)[]>;
+}
+
+function useSyncNodes(): SyncNodes {
+  return {
+    line: React.useRef<SVGLineElement>(null),
+    dots: React.useRef<(SVGCircleElement | null)[]>([]),
+    tip: React.useRef<HTMLDivElement>(null),
+    rows: React.useRef<(HTMLElement | null)[]>([]),
+  };
+}
+
+export interface SyncRow { value: string; x?: number; y?: number }
+
+/**
+ * Write one cursor state into a chart's skeleton. `x == null` means this chart
+ * does not cover the cursor's moment — every node goes away together, because
+ * a focus dot without its rule, or a readout without either, would each be a
+ * separate claim about a moment the chart cannot see.
+ *
+ * `TIP_W` is fixed rather than derived. A tooltip that resizes as its text is
+ * mutated would jitter under the pointer, and the whole readout is monospace
+ * and tabular, so a fixed box is the honest shape anyway.
+ */
+const TIP_W = 178;
+
+/** Clearing reads no bounds — see `applySync`'s early branch. Named so a call
+ *  site cannot be misread as clamping to the left edge. */
+const NO_BOUNDS = { left: 0, right: 0 };
+
+function applySync(
+  n: SyncNodes, x: number | null, dateText: string, rows: SyncRow[],
+  bounds: { left: number; right: number },
+): void {
+  const line = n.line.current;
+  const tip = n.tip.current;
+  if (x == null) {
+    if (line) line.style.display = "none";
+    for (const d of n.dots.current) if (d) d.style.display = "none";
+    if (tip) { tip.hidden = true; for (const r of n.rows.current) if (r) r.textContent = ""; }
+    return;
+  }
+  if (line) {
+    line.style.display = "";
+    line.setAttribute("x1", String(x));
+    line.setAttribute("x2", String(x));
+  }
+  rows.forEach((r, i) => {
+    const d = n.dots.current[i];
+    if (!d) return;
+    if (r.x == null || r.y == null) { d.style.display = "none"; return; }
+    d.style.display = "";
+    d.setAttribute("cx", String(r.x));
+    d.setAttribute("cy", String(r.y));
+  });
+  if (tip) {
+    tip.hidden = false;
+    // Clamped inside the plot, ChartTip's own rule — see chart-kit:184.
+    tip.style.left = `${Math.max(bounds.left, Math.min(x + 8, bounds.right - TIP_W))}px`;
+    const cells = n.rows.current;
+    if (cells[0]) cells[0].textContent = dateText;
+    rows.forEach((r, i) => { const c = cells[i + 1]; if (c) c.textContent = r.value; });
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════════
    MultiLine — normalized %-gain lines + axes + area + smoothing
    ════════════════════════════════════════════════════════════════════ */
 
@@ -308,6 +408,7 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote, e
   const vbW = measured || VB_W;
   const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
   const gid = useGradientId("ml");
+  const sync = useSyncNodes();
 
   const W = vbW;
   const padT = 16, padB = 26;
@@ -329,6 +430,48 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote, e
     [series, days],
   );
   const domain = timeDomain(norm);
+
+  /* ── the synced cursor (D0834) ─────────────────────────────────────
+     BOTH HOOKS SIT ABOVE THE `!domain` EARLY RETURN, and they have to: the
+     empty branch below returns before `X`, `y`, `span` and `cursorT` exist, so
+     calling them after it would make this component's hook order depend on
+     whether a fetch had landed — a rules-of-hooks violation React only reports
+     once the branch actually flips, which on this page means once an upstream
+     fails. Both callbacks close over consts declared BELOW; a closure captures
+     the binding rather than the value and neither body runs during render, so
+     there is no temporal-dead-zone hazard — but each guards the null-domain
+     render, which is the one where those bindings are never initialised at all.
+     `domain?.t0 ?? 0` collapses the read side to an empty interval, and
+     `containsT` is false on an empty interval for every t, so the receiving
+     path clears itself instead of drawing into a chart with no axis. */
+
+  /* THE WRITE HALF. `cursorT` is already a timestamp — this chart has resolved
+     hover in the time domain since v6.0.5 — so publishing it is a hand-off, not
+     a conversion, and `design/timeCursor.ts` never sees a pixel. Guarded on
+     `vx` so a chart that is not under the pointer never writes. */
+  React.useEffect(() => {
+    if (!domain || vx == null) return;
+    setTimeCursor(cursorT);
+  });
+
+  /* THE READ HALF. Every series answers with ITS OWN nearest sample at the
+     shared moment — a peer listed three weeks ago still reports "—" at day 1
+     of a 90-day window, and a daily group point beside the hero's 4h candle is
+     two honest readings of one moment rather than a disagreement. */
+  useProjectedCursor(domain?.t0 ?? 0, domain?.t1 ?? 0, (t) => X(t), (x, t) => {
+    if (x == null || t == null) { applySync(sync, null, "", [], NO_BOUNDS); return; }
+    const rows: SyncRow[] = norm.map((s) => {
+      const pts = s.segments.flat();
+      const p = pointAtTime(pts, t, hoverTolerance(pts, span * 0.02));
+      return p == null
+        ? { value: "—" }
+        : {
+            value: (p.v >= 0 ? "+" : "") + p.v.toFixed(1) + "%" + (s.status === "stale" ? " ·stale" : ""),
+            x: X(p.t), y: y(p.v),
+          };
+    });
+    applySync(sync, x, fmtDate(t, days), rows, { left: padL, right: padL + innerW });
+  });
 
   if (!domain) {
     return (
@@ -369,25 +512,18 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote, e
       ? null
       : domain.t0 + ((Math.min(padL + innerW, Math.max(padL, vx)) - padL) / innerW) * span;
 
-  // Per-series nearest point at the cursor's time (null = doesn't cover it),
-  // computed once and reused by the focus dots and the tooltip rows.
-  const hovered: (NormPoint | null)[] =
-    cursorT == null
-      ? []
-      : norm.map((s) => {
-          const pts = s.segments.flat();
-          return pointAtTime(pts, cursorT, hoverTolerance(pts, span * 0.02));
-        });
-
   return (
-    <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
+    <div ref={boxRef} className="chart-box mk-syncbox" style={{ width: "100%", minHeight: height }}>
     {ready ? (
+    <>
     <svg
       ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
       {...cursorHandlers}
+      onPointerLeave={() => { cursorHandlers.onPointerLeave(); clearTimeCursor(); }}
+      onClick={() => { if (cursorT != null) toggleTimeCursorPin(cursorT, span * 0.01); }}
     >
       <defs>
         {norm.map((s, i) => (
@@ -451,41 +587,40 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote, e
         );
       })}
 
-      {/* crosshair + per-series focus dots + tooltip.
-          The rule sits at the cursor's own time rather than snapping to a
-          sample: with mixed cadences there is no single sample to snap to.
-          Each series' dot shows where ITS nearest sample actually falls, so a
-          sparse series visibly answers from a point beside the rule. The tip
-          carries the series names, which is the only labelling this chart has
-          when `labels={false}` drops the right-hand gutter. */}
-      {cursorT != null ? (
-        <g pointerEvents="none">
-          <ChartCrosshair x={X(cursorT)} y1={padT} y2={padT + innerH} />
-          {norm.map((s, si) => {
-            const p = hovered[si];
-            return p ? <circle key={si} cx={X(p.t)} cy={y(p.v)} r="2.5" fill={s.color} /> : null;
-          })}
-          <ChartTip
-            x={X(cursorT)}
-            y={padT + 6}
-            bounds={{ left: padL, right: padL + innerW }}
-            rows={[
-              { value: fmtDate(cursorT, days), color: AXIS },
-              ...norm.map((s, si) => {
-                const p = hovered[si];
-                return {
-                  label: s.label,
-                  value: p == null
-                    ? "—"
-                    : (p.v >= 0 ? "+" : "") + p.v.toFixed(1) + "%" + (s.status === "stale" ? " ·stale" : ""),
-                  color: s.color,
-                };
-              }),
-            ]}
+      {/* crosshair + per-series focus dots — the SKELETON. The rule sits at the
+          cursor's own time rather than snapping to a sample: with mixed
+          cadences there is no single sample to snap to. Each series' dot shows
+          where ITS nearest sample actually falls, so a sparse series visibly
+          answers from a point beside the rule. Every node here is written by
+          `applySync`; nothing about it is derived during render. */}
+      <g pointerEvents="none" data-sync-cursor="">
+        <line
+          ref={sync.line} y1={padT} y2={padT + innerH}
+          stroke="var(--line)" strokeWidth={0.8} strokeDasharray="3 3"
+          style={{ display: "none" }}
+        />
+        {norm.map((s, si) => (
+          <circle
+            key={si} r="2.5" fill={s.color}
+            ref={(el) => { sync.dots.current[si] = el; }}
+            style={{ display: "none" }}
           />
-        </g>
-      ) : null}
+        ))}
+      </g>
     </svg>
+    {/* The readout. Carries the series names, which is the only labelling this
+        chart has when `labels={false}` drops the right-hand gutter. */}
+    <div ref={sync.tip} className="mk-tip" data-sync-tip="" hidden style={{ top: padT + 6, width: TIP_W }}>
+      <b ref={(el) => { sync.rows.current[0] = el; }} />
+      {norm.map((s, si) => (
+        <span key={si} className="mk-tip-row">
+          <i aria-hidden="true" style={{ background: s.color }} />
+          <span className="mk-tip-k">{s.label}</span>
+          <span className="mk-tip-v" ref={(el) => { sync.rows.current[si + 1] = el; }} />
+        </span>
+      ))}
+    </div>
+    </>
     ) : null}
     </div>
   );
@@ -516,6 +651,18 @@ export interface AreaSeriesProps {
   markers?: boolean;
   /** x-axis date labels. */
   xLabels?: boolean;
+  /**
+   * Join the /live/markets shared time cursor (D0834). OPT-IN, and the default
+   * has to be false: this component also draws sediment's fee depth-profile and
+   * three panels on /live/network, none of which share a time axis with the
+   * markets hero — an always-on sync would have a mempool chart reacting to a
+   * price cursor from a page it has never been on. When true the local
+   * index-based readout is replaced by the synced one; when false nothing about
+   * this component changes at all.
+   */
+  sync?: boolean;
+  /** Series name in the synced readout. Only read when `sync` is true. */
+  syncLabel?: string;
 }
 
 function AreaSeriesImpl({
@@ -529,6 +676,8 @@ function AreaSeriesImpl({
   stale = false,
   markers = true,
   xLabels = true,
+  sync: synced = false,
+  syncLabel = "value",
 }: AreaSeriesProps) {
   const reduced = useReducedMotion();
   const fade = useMountFade(reduced);
@@ -537,6 +686,67 @@ function AreaSeriesImpl({
   const vbW = measured || VB_W;
   const [svgRef, vx, cursorHandlers] = useSvgCursor(vbW);
   const gradId = "area-grad-" + React.useId().replace(/:/g, "");
+  const sync = useSyncNodes();
+
+  /* ── the synced cursor (D0834) ─────────────────────────────────────
+     ABOVE THE EMPTY-DATA EARLY RETURN, for the reason MultiLine's copy states
+     at length: a hook after a conditional return makes hook ORDER depend on
+     whether data has landed. Both callbacks close over consts declared below
+     and both bail before touching one on the render where they do not exist.
+
+     THE X AXIS HERE IS INDEX-LINEAR, NOT TIME-LINEAR, and that is the whole
+     reason this projection is not a one-liner. `xOf(i)` spaces samples evenly
+     regardless of when they were taken, so t -> x has to find the bracketing
+     pair and interpolate between them; a naive `(t - t0)/(t1 - t0)` would place
+     the crosshair correctly only while the samples happen to be evenly spaced
+     in time, which is exactly the assumption `windowSamples`' stride breaks. */
+  const xAtTime = (tt: number): number => {
+    if (n <= 1) return xOf(0);
+    if (tt <= tAt(0)) return xOf(0);
+    if (tt >= tAt(n - 1)) return xOf(n - 1);
+    let lo2 = 0, hi2 = n - 1;
+    while (hi2 - lo2 > 1) { const m = (lo2 + hi2) >> 1; if (tAt(m) <= tt) lo2 = m; else hi2 = m; }
+    const a = tAt(lo2), b = tAt(hi2);
+    return xOf(lo2) + (b > a ? (tt - a) / (b - a) : 0) * (xOf(hi2) - xOf(lo2));
+  };
+  /** The inverse, so the WRITE side publishes a moment rather than snapping to
+   *  a sample — a coarse-strided ratio series would otherwise drag the hero's
+   *  crosshair in visible jumps. */
+  const tAtX = (px: number): number => {
+    const f = Math.min(1, Math.max(0, (px - padL) / Math.max(1, innerW)));
+    const fi = f * (n - 1);
+    const i0 = Math.floor(fi), i1 = Math.min(n - 1, i0 + 1);
+    return tAt(i0) + (fi - i0) * (tAt(i1) - tAt(i0));
+  };
+
+  React.useEffect(() => {
+    if (!synced || !data?.length || vx == null) return;
+    setTimeCursor(tAtX(vx));
+  });
+
+  /* `useTimeCursorSync` rather than `useProjectedCursor`, and the difference is
+     forced rather than stylistic: this chart's domain is `tAt(0) .. tAt(n-1)`,
+     and `tAt` is declared BELOW the early return. Passing those as arguments
+     would evaluate them during render, in the temporal dead zone — TS catches
+     it, and the fix is not to hoist a dozen consts but to do the guard where it
+     is already safe, inside the post-render callback. `containsT` is still the
+     single predicate and there is still no clamp anywhere near it. */
+  useTimeCursorSync((s) => {
+    if (!synced || !data?.length || !containsT(s.t, tAt(0), tAt(n - 1))) {
+      applySync(sync, null, "", [], NO_BOUNDS);
+      return;
+    }
+    const tt = s.t;
+    // Nearest sample IN TIME, which on an index-linear axis is not the nearest
+    // sample in x whenever the stride is uneven.
+    let bi = 0, bd = Infinity;
+    for (let i = 0; i < n; i++) { const d = Math.abs(tAt(i) - tt); if (d < bd) { bd = d; bi = i; } }
+    applySync(
+      sync, xAtTime(tt), fmtDate(tt, days),
+      [{ value: format(data[bi]), x: xOf(bi), y: py(data[bi]) }],
+      { left: padL, right: padL + innerW },
+    );
+  });
 
   // Empty state still mounts the MEASURED box — see EmptyBox.
   if (!data?.length) return <EmptyBox boxRef={boxRef} height={height} />;
@@ -589,14 +799,17 @@ function AreaSeriesImpl({
   const cv = cross != null ? data[cross] : null;
 
   return (
-    <div ref={boxRef} className="chart-box" style={{ width: "100%", minHeight: height }}>
+    <div ref={boxRef} className={synced ? "chart-box mk-syncbox" : "chart-box"} style={{ width: "100%", minHeight: height }}>
     {ready ? (
+    <>
     <svg
       ref={svgRef}
       viewBox={`0 0 ${W} ${height}`}
       width="100%"
       style={{ display: "block", touchAction: "pan-y", opacity: fade, transition: reduced ? "none" : "opacity var(--d-3) var(--e-standard)" /* D0651: 0.35s → --d-3 (closer to 300ms than 500ms) */ }}
       {...cursorHandlers}
+      onPointerLeave={() => { cursorHandlers.onPointerLeave(); if (synced) clearTimeCursor(); }}
+      onClick={() => { if (synced && vx != null) toggleTimeCursorPin(tAtX(vx), 0); }}
     >
       <defs>
         <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
@@ -785,8 +998,11 @@ function AreaSeriesImpl({
         <text data-decorative x={W / 2} y={padT + innerH / 2} textAnchor="middle" fontFamily="var(--f-mono)" fontSize={Math.max(fs.label * 2, Math.min(34, W * 0.09))} fill="var(--ink-20)" opacity={0.25} letterSpacing="0.3em">STALE</text>
       ) : null}
 
-      {/* crosshair + readout */}
-      {cv != null ? (
+      {/* crosshair + readout. UNSYNCED callers (sediment's fee depth-profile,
+          /live/network's three panels) keep this exactly as it was — index
+          hover, ChartTip, no shared cursor. A synced caller renders the
+          skeleton below instead, so the two never draw at once. */}
+      {!synced && cv != null ? (
         <g pointerEvents="none">
           <line x1={xOf(cross!)} y1={padT} x2={xOf(cross!)} y2={padT + innerH} stroke="var(--ink-40)" strokeDasharray="2 3" />
           <line x1={padL} y1={py(cv)} x2={padL + innerW} y2={py(cv)} stroke="var(--ink-40)" strokeDasharray="2 3" />
@@ -803,7 +1019,33 @@ function AreaSeriesImpl({
           />
         </g>
       ) : null}
+
+      {synced ? (
+        <g pointerEvents="none" data-sync-cursor="">
+          <line
+            ref={sync.line} y1={padT} y2={padT + innerH}
+            stroke="var(--line)" strokeWidth={0.8} strokeDasharray="3 3"
+            style={{ display: "none" }}
+          />
+          <circle
+            r="2.5" fill={color}
+            ref={(el) => { sync.dots.current[0] = el; }}
+            style={{ display: "none" }}
+          />
+        </g>
+      ) : null}
     </svg>
+    {synced ? (
+      <div ref={sync.tip} className="mk-tip" data-sync-tip="" hidden style={{ top: padT + 6, width: TIP_W }}>
+        <b ref={(el) => { sync.rows.current[0] = el; }} />
+        <span className="mk-tip-row">
+          <i aria-hidden="true" style={{ background: color }} />
+          <span className="mk-tip-k">{syncLabel}</span>
+          <span className="mk-tip-v" ref={(el) => { sync.rows.current[1] = el; }} />
+        </span>
+      </div>
+    ) : null}
+    </>
     ) : null}
     </div>
   );
