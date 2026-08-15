@@ -172,6 +172,24 @@ export function CadenceStrip({
         <text x={W - 4} y={padT + 11} textAnchor="end" fontFamily="var(--f-mono)" fontSize="12" fill="var(--ink-40)">
           slow ↑ · target {targetS}s · ↓ fast
         </text>
+
+        {/* The STALE watermark, and it is not decoration despite the attribute
+            name. `verify-failure` treats ANY <svg> inside a panel body as a
+            chart and then requires that chart's own watermark to agree with the
+            panel's `data-stale` — a second expression of the same fact, checked
+            rather than trusted. This strip is the seventh charted panel on the
+            page; without this it dimmed on a dead endpoint while claiming
+            nothing, and the gate caught exactly that. Same `data-decorative`
+            marker and same letter-spacing as AreaSeries/BarSeries so the three
+            read as one vocabulary. */}
+        {stale ? (
+          <text
+            data-decorative
+            x={W / 2} y={mid + 5} textAnchor="middle"
+            fontFamily="var(--f-mono)" fontSize="26" fill="var(--ink-20)"
+            opacity={0.25} letterSpacing="0.3em"
+          >STALE</text>
+        ) : null}
       </svg>
     </div>
   );

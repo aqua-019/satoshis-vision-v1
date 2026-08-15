@@ -452,7 +452,17 @@ export function NetworkPage() {
               chart={
                 <AreaSeries data={diffSeries} height={180} color="var(--p-50)"
                   baseline="auto" xLabels={false} stale={isStale(data.status.blocks)}
-                  format={fmtGigaSuffix} band={diffBand ?? undefined} />
+                  format={fmtGigaSuffix} band={diffBand ?? undefined}
+                  /* markers OFF whenever a band is drawn, and this was found by
+                     looking rather than by a gate. The band widens the y-domain
+                     (it must — see AreaSeries' `band` docblock), which compresses
+                     the series into a narrower vertical slice and pushes the
+                     high-marker label onto a y-axis tick: measured at 1440, the
+                     tick "420.00G" and the marker "420.93G" overlapped by
+                     several px and neither was readable. The markers were also
+                     the redundant half — a band states the reference the hi/lo
+                     dots were standing in for. */
+                  markers={diffBand == null} />
               }
               emptyNote="Node answered with zero blocks in range — no difficulty to plot"
               downTail="no difficulty series"
@@ -513,7 +523,12 @@ export function NetworkPage() {
       <DataPanel
         keys={KEYS_BLOCKS} status={data.status} title={`Block cadence · last ${cadenceIntervals.length} intervals`}
         right={meanInterval != null
-          ? <HealthChip zone={cadenceZone} label={`mean ${Math.round(meanInterval)}s · ${cadenceZone === "healthy" ? "in band" : cadenceZone === "warn" ? "outside ±2σ" : "outside ±3σ"}`} />
+          /* "SD" rather than "σ", and this was found in a render. PanelFrame's
+             header is uppercased by the design system, and CSS `text-transform`
+             maps σ → Σ — which is not a styling wobble but a different
+             operator: Σ is summation, σ is a standard deviation. The band's
+             own source note below is body copy and keeps the real symbol. */
+          ? <HealthChip zone={cadenceZone} label={`mean ${Math.round(meanInterval)}s · ${cadenceZone === "healthy" ? "in band" : cadenceZone === "warn" ? "outside 2 SD" : "outside 3 SD"}`} />
           : <span className="dim">—</span>}
       >
         <PanelBoundary keys={KEYS_BLOCKS} reserve={CADENCE_H} resetKeys={[oldestFreshAt(data.status, KEYS_BLOCKS)]}>
