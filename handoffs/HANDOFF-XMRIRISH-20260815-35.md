@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260815-35
 branch: claude/prompt-attached-v51pxr
-status: in_progress
+status: done
 written_by: claude-code (manual mode — prompt-driven, no open handoff)
 owner: claude-code
 ---
@@ -159,14 +159,34 @@ cd app && npm run verify:e2e
 cd app && node verify-bundle.mjs
 ```
 
-## 7 · REPORT — filled on exit
+## 7 · REPORT
 
-status:
-pr:
-commits:
-deps added:
+status: done (partial scope, stated below — bands/cadence/links shipped; streaming,
+        small multiples, node-sync shell and cursor adoption NOT taken)
+pr: see branch claude/prompt-attached-v51pxr
+commits: 2ae9ecc bands.ts + verify-bands · 3d96f58 page wiring + AreaSeries band prop ·
+        16cce92 three render-driven fixes · ec54677 gate wiring · this commit (records)
+deps added: none
+
 deviations from spec:
-notes for ARCHITECTURE.md patch:
+- The mockup's "trailing 30-day ±1σ envelope" is unbuildable — no 30-day series is
+  fetched by anything in app/. Bands name the window actually held (100 headers ≈ 3.3 h).
+- The mockup's per-block cadence band (96–150 s) is statistically wrong for a single
+  interval under Poisson arrivals. The strip carries no per-tick band; the band moved to
+  the aggregate mean where 120 ± 2σ, σ = 120/√n, is exact.
+- §5's difficulty↔hashrate dual-axis is structurally unbuildable: hashrate IS difficulty
+  ÷ 120 in both api/xmr.js and map.ts, so the plot would show zero lag by construction.
+  Replaced with a stated derivation and the Thermostat link on difficulty.
+- NOT BUILT: §1 streaming line, §3 small multiples, §6 node-sync shell, §0.6 cursor
+  adoption. The last is reasoned (Block carries `age`, not a timestamp; three unrelated
+  domains), the other three are simply not reached — scope call, not a blocker.
+
+notes for ARCHITECTURE.md patch: CLAUDE.md session note added (p3·14).
+
 open questions:
+- api/xmr.js's range labels are wrong by 10× ('30d' returns 3 days). Recorded, not fixed;
+  nothing consumes those endpoints today. Relabel to {'1d':720,'3d':2160,'7d':5040}.
+- Should /live/network fetch a real chain-history series? That decides whether a wider
+  band is ever possible, and it touches tier cadence (verify-tiers-dom's subject).
 
 ## 8 · LOOP FEEDBACK
