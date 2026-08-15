@@ -914,19 +914,27 @@ const BUDGETS = {
   //
   //     timeline          0  ->  12,973   +12,973   lazy   (new shared leaf)
   //     EducationPage  45,721 ->  36,503    -9,218   lazy   (the data left it)
-  //     MarketsPage    31,906 ->  37,831    +5,925   lazy
-  //     charts         15,231 ->  19,100    +3,869   lazy   (timeCursor inlined here)
-  //     index[ENTRY]   99,937 ->  99,973       +36   EAGER
+  //     MarketsPage    31,906 ->  37,805    +5,899   lazy
+  //     charts         15,231 ->  19,162    +3,931   lazy   (timeCursor inlined here)
+  //     index[ENTRY]   99,937 ->  99,960       +23   EAGER
   //                                        ────────
-  //                                 lazy   +13,549
+  //                                 lazy   +13,585
   //
-  // THE +36 EAGER BYTES ARE STRUCTURAL AND THEY ARE NOT A LEAK — this was a
+  // lazy +13,585 and total +13,608 reconcile to the byte against this table.
+  // (An earlier draft of this block read +36/+5,925/+3,869 — true of a tree
+  // three commits old. Only the FINAL tree's figures may ship, which is the
+  // whole content of the re-measure rule and the third time this session it
+  // caught something.)
+  //
+  // THE +23 EAGER BYTES ARE STRUCTURAL AND THEY ARE NOT A LEAK — this was a
   // non-view PR under an explicit "eager must not move" instruction, so they
-  // were chased to the byte. 30 of them are ONE new string in Vite's
+  // were chased to the byte. +30 of them are ONE new string in Vite's
   // `__vite__mapDeps` preload table ("assets/timeline-CWoXTI3v.js"), which
-  // grows by a row whenever a lazy chunk is minted; the other 6 are the index
-  // references into it. Measured, not inferred: the entry's mapDeps array went
-  // 37 -> 38 entries with exactly that one addition and no removals. The
+  // grows by a row whenever a lazy chunk is minted; the remaining -7 is the
+  // rest of the entry getting marginally shorter as the indices into that
+  // table shift. Measured, not inferred: the mapDeps array went 37 -> 38
+  // entries with exactly that one addition and no removals, its block grew
+  // exactly 30 B, and the entry grew 23. The
   // NEGATIVE CONTROL is the half that matters — `grep 'Bitcoin Whitepaper
   // Published'` and `grep 'CryptoNote v1'` both return 0 in index[ENTRY] AND in
   // vendor, so 13 KB of timeline prose is provably NOT in first paint. That is

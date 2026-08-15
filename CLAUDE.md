@@ -566,11 +566,14 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   than before — its `cursorT` was `useState` and is now a ref, so a pointermove over the
   hero no longer rebuilds its label layer, its brush and the D0847 table's memo chain.
   Net renders added by the feature: **none**.
-  **`eagerJsRaw` MOVED BY 36 BYTES AND EVERY ONE IS ACCOUNTED FOR.** A non-view PR under an
-  explicit "eager must not move" instruction, so they were chased: **30 B is one new string
-  in Vite's `__vite__mapDeps` preload table** (`"assets/timeline-CWoXTI3v.js"`) and 6 B are
-  the index references into it. Measured, not inferred — the entry's mapDeps array went
-  37 → 38 entries, that one addition, no removals. The **negative control** is the half that
+  **`eagerJsRaw` MOVED BY 23 BYTES AND EVERY ONE IS ACCOUNTED FOR.** A non-view PR under an
+  explicit "eager must not move" instruction, so they were chased: **+30 B is one new string
+  in Vite's `__vite__mapDeps` preload table** (`"assets/timeline-CWoXTI3v.js"`) and **−7 B**
+  is the rest of the entry getting marginally shorter as the indices into that table shift.
+  Measured, not inferred — the mapDeps array went 37 → 38 entries, that one addition, no
+  removals, its block grew exactly 30 B and the entry grew 23. (An earlier draft of this
+  note said +36/+6, true of a tree three commits old; the re-measure rule caught it for the
+  THIRD time this session.) The **negative control** is the half that
   matters: `grep 'Bitcoin Whitepaper Published'` and `grep 'CryptoNote v1'` both return 0 in
   the entry chunk AND in vendor, so 13 KB of prose is provably not in first paint.
   **AND THE LAZY-LEAF RULE'S OWN CLAIM WAS WRONG — MINE, AND CLAUDE.md's.** Both said the
@@ -643,14 +646,16 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   Budgets, all red-then-green on the FINAL tree, every byte paired by MULTIPLICITY (the
   `index` stem holds two chunks and the pairing asks `dist/index.html` which is the entry —
   a basename diff would file a LAZY delta under the EAGER budget): `cssGz` 17,600 →
-  **18,200** (built 17,753) · `lazyJsRaw` 831,000 → **845,000** (built 841,974) ·
-  `totalJsRaw` 1,094,000 → **1,108,000** (built 1,104,862) · `/live/markets` 112,000 →
-  **121,000** (built 117,803) · `CHUNK_COUNT` 62 → **64** (67 chunks; ±4 unchanged, and 64
+  **18,200** (built 17,762) · `lazyJsRaw` 831,000 → **845,000** (built 842,010) ·
+  `totalJsRaw` 1,094,000 → **1,108,000** (built 1,104,885) · `/live/markets` 112,000 →
+  **121,000** (built 117,827) · `CHUNK_COUNT` 62 → **64** (67 chunks; ±4 unchanged, and 64
   rather than 63 so the band is [60, 68] and reality is not sitting on the ceiling — one
   rung of upward headroom, said here rather than left to be rediscovered).
   **FIVE chunks moved of 67; the other 62 are byte-identical**: timeline +12,973 ·
-  EducationPage −9,218 · MarketsPage +5,925 · charts +3,869 · entry +36. Lazy +13,549 and
-  total +13,585 reconcile to the byte. `eagerJsRaw` ceiling untouched.
+  EducationPage −9,218 · MarketsPage +5,899 · charts +3,931 · entry +23. Lazy +13,585 and
+  total +13,608 reconcile to the byte. `eagerJsRaw` ceiling untouched.
+  Built on the FINAL tree: cssGz 17,762 (margin 438) · lazyJsRaw 842,010 (2,990) ·
+  totalJsRaw 1,104,885 (3,115) · /live/markets 117,827 (3,173) · eagerJsRaw 262,875.
   Gates: **77 files / 73 gates, RECOUNTED and unchanged** — no gate file added; 77 = 73
   gates + 3 shared modules + `scripts/verify-all.mjs`, the orchestrator. CI unchanged at
   **30 `run:` lines / 21 gate-invoking / 62 distinct files** (68 invocations − 6 duplicates).
