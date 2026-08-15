@@ -24,7 +24,7 @@
  *      node verify-markets-dom.mjs
  */
 import { chromium } from 'playwright';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 
 /* Same executable resolution verify-perf.mjs uses: CI images and this sandbox
    ship a full chromium under PLAYWRIGHT_BROWSERS_PATH but not always the
@@ -721,6 +721,434 @@ console.log('\nverify-markets-dom — canvas hero');
   }
 
   await h.close();
+}
+
+/* ── the synced time cursor · D0834 · D1534 · D0385 (p3·13) ────────────
+
+   THE INSTRUMENT, AND WHY IT IS A HASH. The hero's crosshair is PAINTED, so
+   there is no node to query and no attribute to read. A screenshot would
+   answer a different question (compositing, theme, DPR); this reads the
+   BACKING STORE with getImageData and folds it to one number — verify-orb's
+   rule, for the same reason. Then it compares the canvas to ITSELF: with a
+   cursor the hero covers, the bytes must change; with one it does not cover,
+   they must be IDENTICAL to the idle frame. One probe, both polarities, and
+   the negative case is exact rather than tolerant — "identical" cannot be
+   satisfied by a crosshair drawn slightly off, which a pixel-count check
+   could.
+
+   THE VACUITY GUARD IS THE POINT OF §c. The first draft of this section
+   "proved" the domain rule by hovering a group chart at 2% of its width and
+   watching the hero draw nothing. It drew nothing because 2% is inside the
+   y-axis GUTTER, where MultiLine's own cursorT is null — so nothing was ever
+   published and the hero had nothing to refuse. A passing assertion, proving
+   the opposite of what it claimed. Every mismatch assertion below is
+   therefore paired with "the group chart IS showing its own readout at this
+   very moment", which is the proof that a timestamp was published at all. */
+console.log('\nverify-markets-dom — synced cursor');
+{
+  const c = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  await c.route('**/api/**', fulfil);
+  await c.addInitScript(() => { try { sessionStorage.setItem('xmrirish.coldboot', '1'); } catch {} });
+  await c.goto(base + '/live/markets', { waitUntil: 'load' });
+  await c.waitForSelector('[data-candle-count]', { timeout: 20000 });
+  await c.waitForTimeout(1200);
+
+  const shape = await c.evaluate(() => ({
+    skeletons: document.querySelectorAll('[data-sync-cursor]').length,
+    tips: document.querySelectorAll('[data-sync-tip]').length,
+    heroTip: document.querySelectorAll('[data-candle-tip]').length,
+  }));
+  is(shape.skeletons === 3 && shape.tips === 3,
+    `three SVG charts carry a synced-cursor skeleton and a readout (${shape.skeletons}/${shape.tips})`);
+  is(shape.heroTip === 1, `the hero's readout is mounted unconditionally, not created on hover (${shape.heroTip})`);
+
+  const heroHash = () => c.evaluate(() => {
+    const cv = document.querySelector('.cc-canvas');
+    if (!cv) return 'no-canvas';
+    const d = cv.getContext('2d').getImageData(0, 0, cv.width, cv.height).data;
+    let h = 2166136261;
+    for (let i = 0; i < d.length; i += 4) { h ^= d[i] + d[i + 1] * 3 + d[i + 3] * 7; h = Math.imul(h, 16777619); }
+    return (h >>> 0).toString(16);
+  });
+  const readout = () => c.evaluate(() => {
+    const clean = (e) => (e && !e.hidden ? (e.textContent || '').replace(/\s+/g, ' ').trim() : null);
+    return {
+      hero: clean(document.querySelector('[data-candle-tip]')),
+      svg: [...document.querySelectorAll('[data-sync-tip]')].map(clean),
+    };
+  });
+  const winLabel = () => c.evaluate(() =>
+    (document.querySelector('[data-candle-table] caption')?.textContent || '').match(/\d{4}-\d\d-\d\d to \d{4}-\d\d-\d\d/)?.[0] ?? '?');
+
+  /* The peers group is the LAST synced box. Scrolled into view FIRST and the
+     landing CHECKED: at 1440x900 these panels sit at y~1358, well below the
+     fold, and a mouse.move to an off-viewport point silently hits nothing —
+     which is how the first version of this section measured an empty page and
+     reported a pass. `elementFromPoint` is the guard. */
+  const boxes = await c.$$('.mk-syncbox');
+  const peers = boxes[boxes.length - 1];
+  const psvg = await peers.$('svg');
+  await psvg.scrollIntoViewIfNeeded();
+  await c.waitForTimeout(200);
+  let box = await psvg.boundingBox();
+  const hoverPeersAt = async (frac) => {
+    const x = box.x + box.width * frac, y = box.y + box.height * 0.5;
+    await c.mouse.move(x, y);
+    await c.waitForTimeout(90);
+    const landed = await c.evaluate(([px, py]) => !!document.elementFromPoint(px, py), [x, y]);
+    return landed;
+  };
+  const away = async () => { await c.mouse.move(box.x - 40, box.y - 40); await c.waitForTimeout(150); };
+
+  /* ── a · sync ── */
+  await away();
+  const idle = await heroHash();
+  const idleR = await readout();
+  is(idleR.hero === null && idleR.svg.every((t) => t === null),
+    'idle: no chart claims a reading when nothing is hovered');
+
+  let landedAll = true;
+  const sweep = [];
+  for (const f of [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 0.97]) {
+    if (!(await hoverPeersAt(f))) { landedAll = false; continue; }
+    sweep.push({ f, hash: await heroHash(), ...(await readout()) });
+  }
+  is(landedAll && sweep.length === 10,
+    `every probe point landed on a real element (${sweep.length}/10) — an off-viewport hover would make this whole section vacuous`);
+
+  const synced = sweep.filter((r) => r.hero && r.svg.every((t) => t));
+  is(synced.length > 0,
+    `one hover on the peers group lights all FOUR charts (${synced.length}/${sweep.length} probe points)`);
+  if (synced.length) {
+    const r = synced[Math.floor(synced.length / 2)];
+    is(r.hash !== idle, 'the hero PAINTS a crosshair for a moment it covers (canvas bytes moved)');
+    /* Each chart reads the same moment AT ITS OWN BUCKETING — the whole D0385
+       claim. The hero is on 4h candles and says "2026-07-20 12:00Z"; the daily
+       group series says "Jul 20". Same day, two honest granularities, and the
+       assertion is that they agree on the DAY rather than on the string. */
+    const day = (r.hero.match(/(\d{4})-(\d\d)-(\d\d)/) || []).slice(1).join('-');
+    // "Jul 17", the exact string `fmtDate` emits at this span. Compared as a
+    // PREFIX, not with a \b word boundary: the readout runs the date straight
+    // into the first series name ("Jul 17XMR+2.6%"), so \b17\b never matches
+    // and the first draft of this assertion went red against agreeing charts.
+    const stamp = day
+      ? new Date(day + 'T00:00:00Z').toUTCString().slice(8, 11) + ' ' + Number(day.slice(8))
+      : '';
+    const agree = !!day && r.svg.every((t) => t.startsWith(stamp));
+    is(agree,
+      `all four readouts name one moment at their own granularity — hero "${r.hero.slice(0, 22)}" vs "${r.svg[0].slice(0, 18)}" (day ${stamp})`);
+    console.log(`   hero: ${r.hero.slice(0, 46)}`);
+    for (const t of r.svg) console.log(`   svg : ${t.slice(0, 70)}`);
+  }
+
+  /* ── b · the pin ── */
+  await away();
+  const cv = await c.$('.cc-canvas');
+  await cv.scrollIntoViewIfNeeded();
+  await c.waitForTimeout(200);
+  const cr = await cv.boundingBox();
+  await c.mouse.move(cr.x + cr.width * 0.5, cr.y + cr.height * 0.4);
+  await c.waitForTimeout(100);
+  await c.mouse.down(); await c.mouse.up();
+  await c.waitForTimeout(150);
+  const pinned = (await readout()).hero;
+  await c.mouse.move(cr.x - 60, cr.y - 60);
+  await c.waitForTimeout(250);
+  const held = (await readout()).hero;
+  is(!!pinned && held === pinned,
+    `a pinned cursor survives pointerleave — the touch path (${held ? 'held' : 'LOST'})`);
+  await c.mouse.move(cr.x + cr.width * 0.5, cr.y + cr.height * 0.4);
+  await c.waitForTimeout(100);
+  await c.mouse.down(); await c.mouse.up();
+  await c.waitForTimeout(150);
+  await c.mouse.move(cr.x - 60, cr.y - 60);
+  await c.waitForTimeout(250);
+  is((await readout()).hero === null, 'clicking the same moment again releases the pin');
+
+  /* ── c · THE DOMAIN-MISMATCH RULE · never clamp ── */
+  const bwin = await c.$('[data-brush-window]');
+  await bwin.scrollIntoViewIfNeeded();
+  await c.waitForTimeout(150);
+  await c.focus('[data-brush-window]');
+  /* NO `Home` FIRST, and that is the whole difficulty of this section. Home
+     resets to the full FETCHED span (~90 days on the mid base), whose centre is
+     mid-June; zooming from there lands the hero on a window that does not
+     OVERLAP the group charts' 30-day domain at all, and the sweep below then
+     produces twelve refusals and zero acceptances. That is not a domain-rule
+     proof, it is two charts looking at different months — the assertion demands
+     BOTH cases from one sweep precisely so that arrangement cannot pass.
+     Zooming from the default window keeps the hero inside the group's domain
+     and puts the boundary in the middle of the sweep, where it belongs. */
+  for (let i = 0; i < 6; i++) await c.keyboard.press('+');
+  await c.waitForTimeout(300);
+  const zoomed = await winLabel();
+  await psvg.scrollIntoViewIfNeeded();
+  await c.waitForTimeout(200);
+  box = await psvg.boundingBox();
+  await away();
+  const idle2 = await heroHash();
+
+  const sweep2 = [];
+  for (const f of [0.10, 0.18, 0.26, 0.34, 0.42, 0.50, 0.58, 0.66, 0.74, 0.82, 0.90, 0.97]) {
+    if (!(await hoverPeersAt(f))) continue;
+    sweep2.push({ f, hash: await heroHash(), ...(await readout()) });
+  }
+  // PUBLISHED means the peers chart is showing its own readout, so a timestamp
+  // definitely reached the shared store. Without this the next two assertions
+  // would pass on a page where nothing was hovered at all.
+  const published = sweep2.filter((r) => r.svg[2]);
+  const refused = published.filter((r) => r.hero === null);
+  const accepted = published.filter((r) => r.hero !== null);
+  is(published.length >= 2,
+    `the group chart published a cursor at ${published.length} of ${sweep2.length} probe points (the vacuity guard)`);
+  is(refused.length > 0 && accepted.length > 0,
+    `with the hero zoomed to ${zoomed}, the SAME sweep produces both cases — ${accepted.length} inside its window, ${refused.length} outside`);
+  const clean = refused.every((r) => r.hash === idle2);
+  is(refused.length > 0 && clean,
+    `a moment the hero does not cover draws NOTHING — canvas byte-identical to idle on all ${refused.length} refusals, so it is not clamped to an edge`);
+  if (refused.length) console.log(`   refused at f=${refused.map((r) => r.f).join(', ')} · peers still reading "${refused[0].svg[2].slice(0, 30)}"`);
+  if (accepted.length) is(accepted.every((r) => r.hash !== idle2),
+    `and every moment it DOES cover is painted (${accepted.length}/${accepted.length})`);
+
+  await c.close();
+}
+
+/* ── the annotation layer · D0833 (p3·13) ──────────────────────────────
+
+   THE DATA IS PARSED FROM SOURCE, not imported. `src/data/timeline.ts` is
+   TypeScript and this gate runs under bare Node; the repo already parses
+   `mempool-meta.ts` this way in six gates, so the idiom is established rather
+   than invented here. Keep the event literals one-per-line and plainly
+   double-quoted, or this regex stops seeing them — and note that it FAILS
+   LOUD if the count moves, which is the difference between a parser that has
+   gone blind and one that is reporting an empty set. */
+console.log('\nverify-markets-dom — annotations');
+{
+  const TL_SRC = readFileSync(new URL('./src/data/timeline.ts', import.meta.url), 'utf8');
+  const EV_RE = /\{ d: "((?:[^"\\]|\\.)*)", t: "((?:[^"\\]|\\.)*)", c: "(\w+)", b: "((?:[^"\\]|\\.)*)", iso: "([\d-]+)",(?: iso2: "([\d-]+)",)?( tent: true,)? slug: "([a-z0-9-]+)" \}/g;
+  const EVENTS = [...TL_SRC.matchAll(EV_RE)].map((m) => ({
+    d: m[1], t: m[2], c: m[3], b: m[4], iso: m[5], iso2: m[6], tent: !!m[7], slug: m[8],
+  }));
+  is(EVENTS.length === 49,
+    `parsed ${EVENTS.length} timeline events from src/data/timeline.ts (expected 49) — a 0 here means the regex went blind, not that the timeline emptied`);
+  is(new Set(EVENTS.map((e) => e.slug)).size === EVENTS.length,
+    `every slug is unique (${new Set(EVENTS.map((e) => e.slug)).size}/${EVENTS.length}) — a slug is a URL, so a collision is a broken deep link`);
+
+  /* EVERY `iso` IS RE-DERIVED FROM ITS OWN `d`. The leaf's header promises this
+     and a promise in a comment is not a check: the ISO fields exist ONLY to
+     position a flag, so a hand-edited one that contradicts its display string
+     would move a marker to a date the site never claims — silently, because
+     nothing else in the app reads them. Same shape as the volume upper-bound
+     block above: derive the answer independently and compare, rather than
+     asserting the stored value against itself. */
+  const MON = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
+    january: 1, february: 2, march: 3, april: 4, june: 6, july: 7, august: 8, september: 9, sept: 9, october: 10, november: 11, december: 12 };
+  const pad2 = (n) => String(n).padStart(2, '0');
+  const eom = (y, mo) => new Date(Date.UTC(y, mo, 0)).getUTCDate();
+  const D = (y, mo, dd) => `${y}-${pad2(mo)}-${pad2(dd)}`;
+  function derive(raw) {
+    const str = raw.replace(/[–—]/g, '-').trim();
+    const tent = /tentative/i.test(str);
+    const core = str.replace(/\s*\(tentative\)\s*/i, '').trim();
+    let m;
+    if ((m = core.match(/^mid-?\s*(\d{4})$/i))) return { iso: D(+m[1], 5, 1), iso2: D(+m[1], 9, 30), tent };
+    if ((m = core.match(/^(\w+)\s+(\d{1,2})\s*-\s*(\d{1,2}),\s*(\d{4})$/)))
+      return { iso: D(+m[4], MON[m[1].toLowerCase()], +m[2]), iso2: D(+m[4], MON[m[1].toLowerCase()], +m[3]), tent };
+    if ((m = core.match(/^(\w+)\s+(\d{1,2}),\s*(\d{4})$/)))
+      return { iso: D(+m[3], MON[m[1].toLowerCase()], +m[2]), iso2: undefined, tent };
+    if ((m = core.match(/^(\w+)\s*-\s*(\w+)\s+(\d{4})$/)) && MON[m[1].toLowerCase()] && MON[m[2].toLowerCase()])
+      return { iso: D(+m[3], MON[m[1].toLowerCase()], 1), iso2: D(+m[3], MON[m[2].toLowerCase()], eom(+m[3], MON[m[2].toLowerCase()])), tent };
+    if ((m = core.match(/^(\w+)\s+(\d{4})$/)) && MON[m[1].toLowerCase()])
+      return { iso: D(+m[2], MON[m[1].toLowerCase()], 1), iso2: D(+m[2], MON[m[1].toLowerCase()], eom(+m[2], MON[m[1].toLowerCase()])), tent };
+    if ((m = core.match(/^(\d{4})\s*-\s*(\d{4})$/))) return { iso: D(+m[1], 1, 1), iso2: D(+m[2], 12, 31), tent };
+    if ((m = core.match(/^(\d{4})\+?$/))) return { iso: D(+m[1], 1, 1), iso2: D(+m[1], 12, 31), tent };
+    return null;
+  }
+  const wrong = EVENTS.filter((e) => {
+    const g = derive(e.d);
+    return !g || g.iso !== e.iso || (g.iso2 ?? undefined) !== (e.iso2 ?? undefined) || g.tent !== e.tent;
+  });
+  is(wrong.length === 0,
+    `every iso/iso2/tent re-derives from its own display string (${EVENTS.length - wrong.length}/${EVENTS.length})`);
+  if (wrong.length) console.log('   drifted:', JSON.stringify(wrong.slice(0, 4).map((e) => [e.d, e.iso, e.iso2])));
+
+  const a = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
+  await a.route('**/api/**', fulfil);
+  await a.addInitScript(() => { try { sessionStorage.setItem('xmrirish.coldboot', '1'); } catch {} });
+  await a.goto(base + '/live/markets', { waitUntil: 'load' });
+  await a.waitForSelector('[data-candle-count]', { timeout: 20000 });
+  await a.waitForTimeout(1200);
+
+  const layers = () => a.evaluate(() => [...document.querySelectorAll('[data-annotations]')].map((el) => ({
+    compact: el.className.includes('compact'),
+    groups: Number(el.getAttribute('data-ann-count')),
+    outside: Number(el.getAttribute('data-ann-outside')),
+    unplaceable: Number(el.getAttribute('data-ann-unplaceable')),
+    flags: [...el.querySelectorAll('.mk-ann')].map((f) => ({
+      slug: f.getAttribute('data-ann-slug'), cat: f.getAttribute('data-ann-cat'),
+      members: Number(f.getAttribute('data-ann-members')), left: parseFloat(f.style.left),
+      href: f.querySelector('a')?.getAttribute('href') ?? null,
+      band: !!f.querySelector('[data-ann-band]'),
+      bandW: parseFloat(f.querySelector('[data-ann-band]')?.style.width || '0'),
+    })),
+  })));
+  const note = () => a.evaluate(() => document.querySelector('[data-ann-note]')?.textContent ?? '');
+
+  /* ── a · the DEFAULT view is empty, and that is the honest answer ──
+     The deepest base this page fetches is 365 days and the timeline runs from
+     2008, so at the 30-day preset there is genuinely nothing to mark. The
+     assertion is not "flags exist" — it is that the page SAYS so and that the
+     brush strip, which spans the whole fetched span rather than the window,
+     still shows where the nearest event is. That is the entire argument for
+     putting flags on the strip at all. */
+  {
+    const L = await layers();
+    const plot = L.find((x) => !x.compact), strip = L.find((x) => x.compact);
+    is(!!plot && !!strip, `both surfaces mount a layer (plot ${!!plot}, brush strip ${!!strip})`);
+    is(plot.groups === 0 && /no timeline events in range|undated|outside/.test(await note()),
+      `30D: the plot is honestly empty and the note explains it — "${(await note()).slice(0, 60)}"`);
+    is(strip.flags.length > 0,
+      `30D: the brush strip still carries ${strip.flags.length} flag(s) — an event outside the window is a visible reason to travel there`);
+    is(plot.outside + plot.unplaceable + plot.groups === 49 - 0 || plot.outside + plot.unplaceable === 49,
+      `the accounting closes: ${plot.groups} in view + ${plot.unplaceable} undated + ${plot.outside} outside = 49`);
+  }
+
+  /* ── b · 1Y, where the reachable events actually are ── */
+  await a.click('button[aria-pressed]:has-text("1Y")');
+  await a.waitForTimeout(1400);
+  const L1 = await layers();
+  const plot1 = L1.find((x) => !x.compact);
+  is(plot1.groups >= 3, `1Y: the plot carries ${plot1.groups} flag groups`);
+  const clustered = plot1.flags.filter((f) => f.members > 1);
+  is(clustered.length >= 1,
+    `1Y: at least one group is a CLUSTER with a count badge (${clustered.map((f) => f.members).join(',') || 'none'}) — the ~26px rule`);
+  const singles = plot1.flags.filter((f) => f.members === 1);
+  is(singles.every((f) => f.href === `/learn/timeline?e=${f.slug}`),
+    `every single flag deep-links to its own timeline entry (${singles.length} checked, e.g. ${singles[0]?.href})`);
+  is(singles.every((f) => EVENTS.some((e) => e.slug === f.slug)),
+    'every rendered slug names a real event in the source data');
+  const gaps = plot1.flags.slice(1).map((f, i) => f.left - plot1.flags[i].left);
+  is(gaps.every((g) => g >= 26),
+    `no two groups sit closer than the 26px cluster threshold (min gap ${Math.round(Math.min(...gaps, Infinity))}px)`);
+  is(plot1.groups + plot1.unplaceable + plot1.outside === 49 - (plot1.flags.reduce((s, f) => s + f.members, 0) - plot1.groups),
+    `1Y accounting: ${plot1.flags.reduce((s, f) => s + f.members, 0)} in view + ${plot1.unplaceable} undated + ${plot1.outside} outside = 49`);
+  console.log(`   note: "${(await note()).trim()}"`);
+
+  /* ── c · THE DATE ON SCREEN IS THE DISPLAY STRING, VERBATIM ──
+     The one assertion the whole `iso`/`iso2` design exists to make safe. Those
+     fields position a flag and are never text; if a tooltip ever printed a
+     formatted ISO it would invent precision the timeline does not have —
+     "2026-05-01" where the source says "Mid-2026 (tentative)". */
+  const firstSingle = singles[0];
+  await a.hover(`[data-ann-slug="${firstSingle.slug}"] .mk-ann-dot`);
+  await a.waitForTimeout(200);
+  const tip = await a.evaluate(() => {
+    const t = document.querySelector('[data-ann-tip]');
+    return t ? { date: t.querySelector('[data-ann-date]')?.textContent ?? '', text: (t.textContent || '').replace(/\s+/g, ' ').trim() } : null;
+  });
+  const src = EVENTS.find((e) => e.slug === firstSingle.slug);
+  is(!!tip, 'hovering a flag opens its tooltip');
+  is(!!tip && tip.date === src.d,
+    `the tooltip prints the DISPLAY string verbatim — "${tip?.date}" === "${src.d}", never a formatted iso`);
+  is(!!tip && !/\d{4}-\d\d-\d\d/.test(tip.text),
+    `and no ISO date leaks into the tooltip at all ("${(tip?.text || '').slice(0, 54)}")`);
+
+  /* AN IMPRECISE DATE MUST LOOK IMPRECISE, and the check that matters is not
+     "which flags have a band" but "does the band's WIDTH mean anything".
+     A first draft asserted that only `iso2` events band, and went red against
+     correct code: a day-precise event denotes a whole DAY, which at a one-year
+     zoom is ~3px, so it bands too and honestly should. The band is driven by
+     the interval's rendered extent, not by a precision category — so the real
+     invariant is that a month-wide date draws a visibly wider band than a
+     day-wide one, at the same zoom, in the same chart. That is what would
+     break if `tlSpan` or the placement ever collapsed an interval to a point. */
+  const spanSlugs = new Set(EVENTS.filter((e) => e.iso2).map((e) => e.slug));
+  const singleBands = plot1.flags.filter((f) => f.members === 1 && f.band);
+  const impreciseB = singleBands.filter((f) => spanSlugs.has(f.slug));
+  const preciseB = singleBands.filter((f) => !spanSlugs.has(f.slug));
+  is(plot1.flags.filter((f) => f.members > 1).every((f) => !f.band),
+    'a CLUSTER never draws a band — it covers several intervals and would claim one');
+  is(impreciseB.length > 0 && preciseB.length > 0,
+    `both kinds are on screen to compare (${impreciseB.length} imprecise, ${preciseB.length} day-precise)`);
+  const wIm = Math.min(...impreciseB.map((f) => f.bandW));
+  const wPr = Math.max(...preciseB.map((f) => f.bandW), 0);
+  is(impreciseB.length > 0 && preciseB.length > 0 && wIm > wPr * 5,
+    `the band's width IS the interval: a month reads ${wIm.toFixed(1)}px against a day's ${wPr.toFixed(1)}px at the same zoom`);
+
+  /* ── d · layer toggles ── */
+  const before = plot1.flags.reduce((s, f) => s + f.members, 0);
+  await a.click('[data-ann-toggle="monero"]');
+  await a.waitForTimeout(400);
+  const L2 = await layers();
+  const plot2 = L2.find((x) => !x.compact);
+  const after = plot2.flags.reduce((s, f) => s + f.members, 0);
+  const pressed = await a.getAttribute('[data-ann-toggle="monero"]', 'aria-pressed');
+  is(pressed === 'false', 'the toggle reports its own state to assistive tech (aria-pressed)');
+  is(after < before, `turning MONERO off removes its flags (${before} → ${after} events in view)`);
+  is(plot2.flags.every((f) => f.cat !== 'monero'), 'no monero flag survives the toggle');
+  await a.click('[data-ann-toggle="monero"]');
+  await a.waitForTimeout(400);
+  is((await layers()).find((x) => !x.compact).flags.reduce((s, f) => s + f.members, 0) === before,
+    'and turning it back on restores exactly what it removed');
+
+  /* ── e · THE EDUCATION PAGE RENDERS WHAT IT ALWAYS DID ──
+     The extraction moved 49 event literals out of Timeline.tsx into a shared
+     leaf. This is the claim that the move was behaviour-preserving, checked
+     against the SOURCE rather than against a snapshot of itself: every event
+     still renders, in order, with its date, title and body byte-identical to
+     the data — plus the one thing that IS new, a stable id to deep-link to. */
+  await a.goto(base + '/learn/timeline', { waitUntil: 'load' });
+  await a.waitForSelector('[data-tl-slug]', { timeout: 20000 });
+  await a.waitForTimeout(600);
+  const nodes = await a.evaluate(() => [...document.querySelectorAll('[data-tl-slug]')].map((n) => ({
+    slug: n.getAttribute('data-tl-slug'),
+    id: n.id,
+    text: (n.textContent || '').replace(/\s+/g, ' ').trim(),
+  })));
+  is(nodes.length === 49, `/learn/timeline renders all ${nodes.length} events (expected 49)`);
+  is(nodes.every((n, i) => n.slug === EVENTS[i].slug),
+    'in the source data’s own order, unchanged by the extraction');
+  is(nodes.every((n) => n.id === n.slug), 'each event carries a stable id, so #slug works natively too');
+  const mismatched = nodes.filter((n, i) => {
+    const e = EVENTS[i];
+    const want = (e.d + ' ' + e.t + ' ' + e.b).replace(/\s+/g, ' ').trim();
+    return !n.text.includes(e.d) || !n.text.includes(e.t) || !n.text.includes(e.b.slice(0, 60)) || want.length === 0;
+  });
+  is(mismatched.length === 0,
+    `every event's date, title and body render verbatim from the shared leaf (${nodes.length - mismatched.length}/${nodes.length})`);
+  if (mismatched.length) console.log('   first mismatch:', JSON.stringify(mismatched[0]).slice(0, 200));
+
+  await a.goto(base + `/learn/timeline?e=${firstSingle.slug}`, { waitUntil: 'load' });
+  await a.waitForSelector('[data-tl-slug]', { timeout: 20000 });
+  await a.waitForTimeout(700);
+  const focused = await a.evaluate(() => [...document.querySelectorAll('[data-tl-focus]')].map((n) => n.getAttribute('data-tl-slug')));
+  is(focused.length === 1 && focused[0] === firstSingle.slug,
+    `?e=<slug> marks exactly the linked entry (${JSON.stringify(focused)})`);
+
+  /* ── f · the new DOM is legible and does not shift the page ──
+     verify-legibility excludes SVG presentation attributes by design, which is
+     precisely why every flag, badge and readout here is HTML. */
+  await a.goto(base + '/live/markets', { waitUntil: 'load' });
+  await a.waitForSelector('[data-candle-count]', { timeout: 20000 });
+  await a.click('button[aria-pressed]:has-text("1Y")');
+  await a.waitForTimeout(1200);
+  await a.hover(`[data-ann-slug="${firstSingle.slug}"] .mk-ann-dot`).catch(() => {});
+  await a.waitForTimeout(250);
+  const tiny = await a.evaluate(() => {
+    const out = [];
+    for (const el of document.querySelectorAll('.mk-ann-tip, .mk-ann-tip *, .mk-ann-badge, .mk-ann-toggle, .mk-ann-note, .mk-ann-legend, .mk-tip, .mk-tip *')) {
+      const txt = (el.textContent || '').trim();
+      if (!txt || el.children.length) continue;
+      out.push({ txt: txt.slice(0, 24), fs: parseFloat(getComputedStyle(el).fontSize) });
+    }
+    return out;
+  });
+  is(tiny.length > 0, `the annotation DOM carries real text nodes to measure (${tiny.length})`);
+  is(tiny.every((t) => t.fs >= 11),
+    `every annotation glyph is >=11px, the repo's declared floor (${tiny.filter((t) => t.fs < 11).length} under)`);
+  if (tiny.some((t) => t.fs < 11)) console.log('   under floor:', JSON.stringify(tiny.filter((t) => t.fs < 11).slice(0, 5)));
+
+  await a.close();
 }
 
 /* ── total outage ────────────────────────────────────────────────────── */
