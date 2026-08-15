@@ -552,7 +552,12 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   '1y':26280}` capped at 5000, which at the 120 s target is **16.8 h / 3.0 days / 6.9 days**.
   Every label implies a **20-minute** block (168/504 = 720/2160 = 8760/26280 = 0.333 h). So the
   parameter named `30d` returns three days, and adopting the API's own range name as a band
-  label would ship the mislabel the band rule exists to prevent. **NOT FIXED HERE** — relabelling
+  label would ship the mislabel the band rule exists to prevent. **AND THE TWO HANDLERS' TABLES
+  DIFFER BY ONE KEY, silently**: `handleHashrate` (:470) carries `'all': 5000`, `handleDifficulty`
+  (:490) does NOT — so `?range=all` misses the lookup there, falls through to `|| 504`, and
+  returns **16.8 hours of difficulty against 6.9 days of hashrate**, a 9.92× split on one
+  parameter name. Two endpoints that read as a matched pair are not one, and a first pass over
+  this (mine, in the handoff) published a single four-row table as if they were. **NOT FIXED HERE** — relabelling
   to `{'1d':720,'3d':2160,'7d':5040}` is truthful at 120 s and adds no RPC load, but nothing
   consumes it, so it is a separate change and is recorded rather than smuggled in.
   **THE MOCKUP'S CADENCE BAND IS A CORRECT BAND FOR THE WRONG QUANTITY**, and this is the

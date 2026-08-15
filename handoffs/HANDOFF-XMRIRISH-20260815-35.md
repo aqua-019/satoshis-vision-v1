@@ -53,7 +53,12 @@ Recorded here because two of them change what the PR can honestly ship.
   | `7d`  | 504    | 504    | **16.8 hours** |
   | `30d` | 2160   | 2160   | **3.0 days** |
   | `1y`  | 26280  | 5000   | **6.9 days** |
-  | `all` | 5000   | 5000   | **6.9 days** |
+  | `all` | 5000   | 5000   | **6.9 days** — HASHRATE ONLY |
+
+  **The two handlers' tables differ by one key and nothing says so.** `handleHashrate` (:470) has
+  `'all': 5000`; `handleDifficulty` (:490) does **not**, so `?range=all` on difficulty misses the
+  lookup, falls through to `|| 504`, and returns **16.8 hours** — 9.92× less than the same
+  parameter on its sibling. Two endpoints that read as a matched pair are not one.
 
   Every label implies a **20-minute** block time (168 h / 504 = 0.333 h; 720 h / 2160 = 0.333 h;
   8760 h / 26280 = 0.333 h). Monero's is 2 minutes. So the parameter named `30d` returns 3 days
