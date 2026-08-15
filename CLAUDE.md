@@ -659,7 +659,10 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   Gates: **77 files / 73 gates, RECOUNTED and unchanged** — no gate file added; 77 = 73
   gates + 3 shared modules + `scripts/verify-all.mjs`, the orchestrator. CI unchanged at
   **30 `run:` lines / 21 gate-invoking / 62 distinct files** (68 invocations − 6 duplicates).
-  `verify-markets-dom` **75 → 118 assertions** in three new sections; `verify-hero` repointed.
+  `verify-markets-dom` **74 → 118 assertions** in three new sections; `verify-hero` repointed.
+  (That gate prints no numeric tally, so quote the instrument: `grep -c '✅'` bounded to the
+  gate's own range reads 75 → 119 and one line of each is the summary. Bound it with an
+  explicit end pattern — `awk '…,0'` runs to end-of-file and sweeps the 28 gates after it.)
   **`verify-effects`' ledger did NOT move and should not have** — its completeness sweep is
   scoped to `src/data/` only, so this PR's three new effects (two in `charts.tsx`, one in
   `CandleCanvas.tsx`) are outside it by design. Worth knowing before assuming that gate
