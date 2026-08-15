@@ -826,17 +826,40 @@ console.log('\nverify-markets-dom — synced cursor');
        claim. The hero is on 4h candles and says "2026-07-20 12:00Z"; the daily
        group series says "Jul 20". Same day, two honest granularities, and the
        assertion is that they agree on the DAY rather than on the string. */
-    const day = (r.hero.match(/(\d{4})-(\d\d)-(\d\d)/) || []).slice(1).join('-');
-    // "Jul 17", the exact string `fmtDate` emits at this span. Compared as a
-    // PREFIX, not with a \b word boundary: the readout runs the date straight
-    // into the first series name ("Jul 17XMR+2.6%"), so \b17\b never matches
-    // and the first draft of this assertion went red against agreeing charts.
-    const stamp = day
-      ? new Date(day + 'T00:00:00Z').toUTCString().slice(8, 11) + ' ' + Number(day.slice(8))
-      : '';
-    const agree = !!day && r.svg.every((t) => t.startsWith(stamp));
-    is(agree,
-      `all four readouts name one moment at their own granularity — hero "${r.hero.slice(0, 22)}" vs "${r.svg[0].slice(0, 18)}" (day ${stamp})`);
+    /* ALL FOUR PRINT THE SAME UNAMBIGUOUS DAY, and this assertion is stricter
+       than it was for a reason found by looking at a render rather than by any
+       check here. It first compared against `fmtDate`'s output, which above 90
+       days is `{month:"short", year:"2-digit"}` — so a February 2026 cursor
+       printed "Feb 26" beside the hero's "2026-02-12", two strings for one
+       moment that a reader compares and reads as two dates. The readout now
+       emits an ISO day (`isoDay` in charts.tsx; the AXIS still uses fmtDate),
+       so the comparison is a plain prefix on the hero's own stamp.
+       Compared as a PREFIX rather than with a \b word boundary: the readout
+       runs the date straight into the first series name, so `\b17\b` never
+       matches — the shape of the earlier draft's false red. */
+    const heroDay = (r.hero.match(/\d{4}-\d\d-\d\d/) || [''])[0];
+    const syncDays = r.svg.map((t) => (t.match(/^\d{4}-\d\d-\d\d/) || [''])[0]);
+    /* TWO CLAIMS, and they are different claims — which the first draft missed
+       by asserting the hero's string EQUALS the synced one. That passed here
+       and would fail at 390 for a correct page: the hero names the BUCKET IT
+       HOVERED (a 3-day candle's start) while the three synced readouts name the
+       MOMENT. They coincide only when the cursor happens to land on a bucket
+       boundary, so the assertion was phase-dependent on a continuous control —
+       p3·12b's lesson, arriving from the other direction. Measured at 390:
+       hero 2026-02-18, synced 2026-02-20, both correct.
+         (a) the three synced readouts are byte-identical to each other: same
+             cursor, same formatter, so anything else is a real disagreement;
+         (b) the hero's bucket CONTAINS that moment — checked against the
+             bucket width the page itself reports, not a literal. */
+    is(syncDays.every((d) => d && d === syncDays[0]),
+      `the three synced readouts name one identical moment (${JSON.stringify(syncDays)})`);
+    const cap = await c.evaluate(() => document.querySelector('[data-candle-table] caption')?.textContent || '');
+    const [wFrom, wTo] = (cap.match(/\d{4}-\d\d-\d\d/g) || []).map((x) => Date.parse(x + 'T00:00:00Z'));
+    const nBars = await c.evaluate(() => Number(document.querySelector('[data-candle-count]')?.getAttribute('data-candle-count') || 0));
+    const bucketMs = wFrom && wTo && nBars ? (wTo - wFrom) / nBars : 0;
+    const gap = heroDay && syncDays[0] ? Date.parse(syncDays[0] + 'T00:00:00Z') - Date.parse(heroDay + 'T00:00:00Z') : NaN;
+    is(!!heroDay && !!syncDays[0] && gap >= 0 && gap <= bucketMs + 86400000,
+      `the hero's bucket CONTAINS that moment — hero "${heroDay}" + one ${Math.round(bucketMs / 86400000)}d bucket covers "${syncDays[0]}" (gap ${Math.round(gap / 86400000)}d)`);
     console.log(`   hero: ${r.hero.slice(0, 46)}`);
     for (const t of r.svg) console.log(`   svg : ${t.slice(0, 70)}`);
   }

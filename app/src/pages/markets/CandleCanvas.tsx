@@ -90,6 +90,15 @@ export interface CandleCanvasProps {
   /** Placement counts reported upward so the panel can print the honest note
    *  about what this window does NOT show. */
   onFlags?: (p: { inView: number; outside: number; unplaceable: number }) => void;
+  /**
+   * Rendered between the brush and the D0847 table — which is a placement, not
+   * a slot for convenience. The layer toggles were first mounted by the PAGE,
+   * after `</CandleCanvas>`, and that put them BELOW a 210px scrolling table:
+   * a control for marks at the top of the plot, parked under the fold, reached
+   * only by scrolling past the thing it does not govern. Seen in the 1440
+   * render, not by any gate. A control belongs next to what it controls.
+   */
+  controls?: React.ReactNode;
 }
 
 const PAD = { t: 14, r: 12, b: 24, l: 56 };
@@ -513,7 +522,7 @@ function padWindow(from: number, to: number): TimeWindow {
 
 export function CandleCanvasImpl({
   fine, mid, deep, window: win, onWindow, fullSpan, height = 320, status = "live", onSeries,
-  annLayers = null, onFlags,
+  annLayers = null, onFlags, controls,
 }: CandleCanvasProps) {
   const reduced = useReducedMotion();
   const boxRef = React.useRef<HTMLDivElement>(null);
@@ -778,6 +787,7 @@ export function CandleCanvasImpl({
               annLayers={annLayers}
             />
           ) : null}
+          {controls}
         </>
       ) : null}
 

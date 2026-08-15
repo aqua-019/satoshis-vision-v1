@@ -156,10 +156,14 @@ export function AnnotationLayers({
   note?: React.ReactNode;
 }) {
   return (
-    <div className="mk-ann-layers" data-ann-layers="">
+    /* `role="group"` sits on the element that already exists rather than on a
+       `display: contents` wrapper: an element with `display: contents` has a
+       history of dropping out of the accessibility tree, which would take its
+       role and its label with it — a wrapper added FOR accessibility that
+       removes it. */
+    <div className="mk-ann-layers" data-ann-layers="" role="group" aria-labelledby="ann-layers-label">
       <span className="mk-ann-legend" id="ann-layers-label">Events</span>
-      <span role="group" aria-labelledby="ann-layers-label" style={{ display: "contents" }}>
-        {TL_CATS.map((k) => {
+      {TL_CATS.map((k) => {
           const on = layers[k];
           return (
             <button
@@ -178,8 +182,7 @@ export function AnnotationLayers({
               {TL_CAT[k].label}
             </button>
           );
-        })}
-      </span>
+      })}
       {note ? <span className="mk-ann-note" data-ann-note="">{note}</span> : null}
     </div>
   );

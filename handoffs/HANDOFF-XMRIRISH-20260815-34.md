@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260815-34
 branch: claude/markets-cursor-annotations-k9jh26
-status: in_progress
+status: done
 written_by: claude-code (manual mode — prompt-driven, no open handoff)
 owner: claude-code
 ---
@@ -130,12 +130,52 @@ node verify-cls.mjs
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
+status: done
+pr: <filled after push>
 commits:
-deps added:
+  - `446c9df` feat(markets): synced time cursor + the annotation layer
+  - `7de58a2` test(markets): gate the synced cursor, the annotation layer and the extraction
+  - `5aa637b` docs(bundle): measure what actually catches an eager import of a lazy leaf
+  - `680aaa8` fix(govern): mark the two new one-shot rAFs, and put the marker where the gate looks
+deps added: none
 deviations from spec:
+  - **`DEEP_DAYS` NOT extended** (§0.5's explicit option). Annotations are scoped to the
+    fetched span; the note says how many events sit outside it. Reaching deeper history is
+    a request-budget and cache decision that the §1d request gate and the coingecko cache
+    comment would own, and the brief said it is not this PR's to take silently.
+  - **Annotation flags on the hero plot and the brush strip only**, not on all four charts.
+    §2's own text is "flags on the time axis … and flags ALSO on the brush strip". The two
+    `MultiLine` groups and the ratio chart carry the synced CURSOR but not flags: their
+    x-domain is the range, not the window, so the same event would land at three different
+    places on one screen, and the layer toggle belongs to one panel.
+  - **Native CSS anchor positioning not implemented at all**, not even as an enhancement.
+    §0.6 permits it behind feature detection; the in-repo clamp is the main path and adding
+    a second positioning mechanism for a Firefox-ESR audience that will not receive it is
+    cost without a reader. Recorded rather than silently dropped.
 notes for ARCHITECTURE.md patch:
+  - CLAUDE.md gained two Architecture rows (`design/timeCursor.ts`, `data/timeline.ts`) and
+    a **correction** to the `canvasColor` row: the lazy-leaf invariant's claim that it "has
+    no gate" and that `eagerJsRaw` "would swallow a violation silently" is half wrong, and
+    was asserted rather than measured. The measurement is in the session note and beside
+    `lazyJsRaw` in `verify-bundle.mjs`.
 open questions:
+  - **The real assertion for the lazy-leaf rule is still unwritten.** "No eager chunk
+    contains a string only this leaf declares" is a small, separate change. Today an eager
+    leak under ~650 B gzip clears every ceiling in `verify-bundle.mjs`.
+  - **`verify-effects`' ledger is scoped to `src/data/` only.** This PR added three effects
+    outside it (two in `charts.tsx`, one in `CandleCanvas.tsx`) and the gate correctly did
+    not move. Whether that scope is right is its own question.
+  - **No human has seen the rendered result in a browser.** Renders were read from
+    screenshots.
 
 ## 8 · LOOP FEEDBACK
+
+- `INFERRED` (would have been a PREFLIGHT reply): the brief did not say where annotation
+  flags go when the window contains none — the empty state turned out to be the DEFAULT
+  view at 30D, so it is the state a reader meets first, not an edge case.
+- `SPEC-WAS-AMBIGUOUS`: "flags on the time axis" — one chart or four? Resolved to the hero
+  plus the brush strip, from §2's own wording; recorded because the mockup places them on
+  a companion chart too.
+- Gate rounds: 1 (verify-hero, repointed) · 1 (verify-govern, two rAF markers) · 2 rounds
+  inside `verify-markets-dom`'s own new sections, both of which were defects in the new
+  assertions rather than in the code.

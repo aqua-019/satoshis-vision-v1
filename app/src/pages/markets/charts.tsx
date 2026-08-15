@@ -312,6 +312,26 @@ export interface SyncRow { value: string; x?: number; y?: number }
  */
 const TIP_W = 178;
 
+/**
+ * The synced readout's date, and it is DELIBERATELY NOT `fmtDate`.
+ *
+ * `fmtDate` switches to `{month:"short", year:"2-digit"}` above 90 days, so a
+ * cursor in February 2026 renders as **"Feb 26"** — which reads as the
+ * twenty-sixth of February. That was harmless while it appeared only on an
+ * axis, where neighbouring ticks disambiguate it. The synced cursor breaks
+ * that: at a one-year window the hero's readout says "2026-02-12" and this one
+ * said "Feb 26", so two charts reporting THE SAME MOMENT printed two strings
+ * that a reader compares and reads as two different dates. Caught by looking
+ * at the render, not by any gate.
+ *
+ * So the readout prints an unambiguous ISO day and all four surfaces agree on
+ * screen. The AXIS is untouched — changing `fmtDate` would move every tick on
+ * every chart in the app, which is its own change.
+ */
+function isoDay(ts: number): string {
+  return new Date(ts).toISOString().slice(0, 10);
+}
+
 /** Clearing reads no bounds — see `applySync`'s early branch. Named so a call
  *  site cannot be misread as clamping to the left edge. */
 const NO_BOUNDS = { left: 0, right: 0 };
@@ -470,7 +490,7 @@ function MultiLineImpl({ series, days, height = 280, labels = true, emptyNote, e
             x: X(p.t), y: y(p.v),
           };
     });
-    applySync(sync, x, fmtDate(t, days), rows, { left: padL, right: padL + innerW });
+    applySync(sync, x, isoDay(t), rows, { left: padL, right: padL + innerW });
   });
 
   if (!domain) {
@@ -742,7 +762,7 @@ function AreaSeriesImpl({
     let bi = 0, bd = Infinity;
     for (let i = 0; i < n; i++) { const d = Math.abs(tAt(i) - tt); if (d < bd) { bd = d; bi = i; } }
     applySync(
-      sync, xAtTime(tt), fmtDate(tt, days),
+      sync, xAtTime(tt), isoDay(tt),
       [{ value: format(data[bi]), x: xOf(bi), y: py(data[bi]) }],
       { left: padL, right: padL + innerW },
     );

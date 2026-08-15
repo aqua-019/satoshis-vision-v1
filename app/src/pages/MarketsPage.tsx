@@ -549,10 +549,10 @@ export function MarketsPage() {
               onSeries={setDrawnSeries}
               annLayers={layers}
               onFlags={setFlagCount}
+              controls={<AnnotationLayers layers={layers} onChange={setLayers} note={flagNote} />}
             />
           </Swap>
         </PanelBoundary>
-        <AnnotationLayers layers={layers} onChange={setLayers} note={flagNote} />
         <p className="mono dim cc-help" style={{ marginTop: 8, fontSize: "var(--fs-label)" }}>
           Drag the strip to pan · drag an edge to resize · double-click to reset.
           Range buttons move the window; they do not refetch.
