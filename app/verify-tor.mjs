@@ -171,7 +171,7 @@ console.log('engine:', engine);
   await p.waitForTimeout(20000);
 
   ok(peak <= CONCURRENCY_CEILING,
-     `1: concurrency stays bounded (peak ${peak} ≤ ${CONCURRENCY_CEILING} = ${FEED_CONCURRENT} feed + ${PAGE_ONESHOTS} page one-shot)`
+     `1: concurrency stays bounded (peak ${peak} ≤ ${CONCURRENCY_CEILING} = ${FEED_CONCURRENT} feed + ${ONE_SHOT_PATHS.length} page one-shot)`
      + `\n     at peak: ${peakSet.map((u) => u.replace(base, '')).join(', ')}`);
   /* The allowance above is only honest while the one-shots stay one-shots. */
   for (const [path, n] of oneShotHits) {
