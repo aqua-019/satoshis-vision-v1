@@ -446,7 +446,12 @@ export function NetworkPage() {
       title: "Hashrate · session",
       unit: "GH/s (derived)",
       xs: idx(hashSeries.length), ys: hashSeries,
-      band: sigmaBand(hashSeries, `${hashSeries.length} session samples`),
+      /* NO BAND, and not for want of samples. This is a SESSION buffer, and
+         the hashrate panel above already states there is no envelope to band
+         it against; sigmaBand's sentence would also claim these came from
+         block headers, which they did not. */
+      band: null,
+      noBandReason: "a session buffer with no history on a cold load, and hashrate is difficulty in other units — banding it would band difficulty twice.",
       color: "var(--tk-accent)", stale: isStale(data.status.network),
       format: fmtGigaSuffix,
     },
@@ -455,7 +460,8 @@ export function NetworkPage() {
       title: "Mempool · session",
       unit: "transactions",
       xs: idx(mempoolSeries.length), ys: mempoolSeries,
-      band: sigmaBand(mempoolSeries, `${mempoolSeries.length} session samples`),
+      band: null,
+      noBandReason: "a session buffer accumulated in this tab, not block headers — the backlog band on the mempool panel above is the node-sourced threshold.",
       color: "var(--c-50)", stale: isStale(data.status.mempool),
       format: (v) => `${Math.round(v)} tx`,
     },

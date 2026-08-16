@@ -65,6 +65,19 @@ export interface TileSpec {
   band: Band | null;
   color: string;
   stale: boolean;
+  /**
+   * Why this tile carries no band, when it deliberately carries none.
+   *
+   * `sigmaBand`'s source sentence ends "measured from the node's own block
+   * headers", which is TRUE of the header-derived series and FALSE of a
+   * session buffer accumulated in this tab. Banding a session series would put
+   * that sentence in the tile's accessibility label as a provenance claim the
+   * data cannot keep — and on this very page, 400 lines away, the hashrate
+   * panel already says in as many words that it "starts empty on a cold load,
+   * so there is no envelope to band it against". A tile contradicting its own
+   * page is worse than a tile with no band.
+   */
+  noBandReason?: string;
   /** Formats the latest reading for the tile's own readout. */
   format: (v: number) => string;
 }
@@ -115,7 +128,9 @@ export function SmallMultiples({
             <div key={s.id} data-tile={s.id} style={{ minHeight: TILE_H + TILE_CHROME_H }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
                 <span className="kicker" style={{ whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.title}</span>
-                {zone ? <HealthChip zone={zone} /> : <span className="mono dim" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>no band</span>}
+                {zone
+                  ? <HealthChip zone={zone} />
+                  : <span className="mono dim" title={s.noBandReason} style={{ fontSize: "var(--fs-mono)", color: "var(--ink-40)", cursor: s.noBandReason ? "help" : undefined }}>no band</span>}
               </div>
               <SeriesTile
                 xs={s.xs} ys={s.ys}
@@ -127,7 +142,7 @@ export function SmallMultiples({
                 toneByBand
                 label={
                   `${s.title}: ${s.ys.length} samples in ${s.unit}. ` +
-                  (s.band ? `Band is ${s.band.source}` : "No band — too few samples.")
+                  (s.band ? `Band is ${s.band.source}` : `No band — ${s.noBandReason ?? "too few samples."}`)
                 }
               />
               <div className="mono dim" style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 3, fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>

@@ -46,6 +46,7 @@ import { sigmaBand, MIN_SIGMA_SAMPLES, type Band } from "./bands";
 import { BandNote, SimLink } from "./BandPanels";
 import { SeriesTile, MAX_NODES } from "./SeriesTile";
 import { decimate, values, windowOf } from "./diffBuffer";
+import { HISTORY_PATH } from "./useDifficultyStream";
 import type { DiffStream } from "./useDifficultyStream";
 
 /** Reserved height. Quoted at the call site's `reserve` too, so the skeleton
@@ -55,29 +56,28 @@ export const STREAM_H = 190;
 /** Appends come from the chain tier's block headers; the seed does not. */
 const KEYS_BLOCKS = ["blocks"] as const satisfies readonly FeedKey[];
 
-/**
- * The seed's own path, declared so `PanelBoundary` can name it in a failure.
- *
- * THIS LITERAL IS GATED, and the route by which it became gated is worth
- * recording. `verify-resilience.mjs` §8 used to match `also=` with
- * `/\balso=\{?"(\/api\/[a-z0-9-]+)"/` — a character class excluding `/`, with
- * the closing quote required immediately after. A SUB-PATH therefore never
- * matched at all: not counted, not resolved, not checked, under a message
- * reading "every literal also=… has a real handler behind it". Writing
- * `/api/xmr` here would have been matched and would have passed, and would
- * also have been a less true statement about where this panel's data comes
- * from — so the true path was written and the gap reported rather than the
- * claim trimmed to fit the instrument.
- *
- * §8 was widened in this same release by the gate owner and now captures
- * broadly (`[^"]*`) and judges explicitly, including the production-reachability
- * half a handler check alone would miss: Vercel serves `api/<seg>.js` at
- * `/api/<seg>` and nothing beneath it, so a sub-path is only real where
- * `vercel.json` rewrites `/api/<seg>/:path*`. Exactly one segment is rewritten
- * today — `xmr`, whose `?_p=` `api/xmr.js` parses — which is what makes this
- * three-segment path resolvable rather than a 404 that resolves on paper.
- */
-const SEED_PATH = "/api/xmr/network/difficulty";
+/* WHY THE PATH IS IMPORTED RATHER THAN RE-DECLARED, and why it is imported
+   WITHOUT RENAMING — two separate lessons, both learned from a red gate.
+
+   ONE COPY: a badge and a fetch holding independent copies of one path is how
+   a badge comes to name an endpoint the fetch no longer calls — the same root
+   cause as §1's two drifted range tables. So `HISTORY_PATH` lives with the
+   hook that fetches it.
+
+   NO ALIAS: this was first written `import { HISTORY_PATH as SEED_PATH }`, and
+   `verify-resilience` §8 went red with "UNRESOLVABLE — an also= this gate
+   cannot read is an also= it is not checking". That is the correct verdict and
+   not a gate limitation to work around: a rename is a second name for one
+   path, which is a smaller version of the very duplication the import removes.
+   The gate refused to guess, said so, and named the fix. Imported plainly, it
+   resolves — the run reports it as "1 via identifier … 1 sub-path".
+
+   THIS LITERAL IS GATED AT ALL only because §8 was widened in this same
+   release. It used to match `/\balso=\{?"(\/api\/[a-z0-9-]+)"/`, a class
+   excluding `/`, so a SUB-PATH never matched: not counted, not resolved, not
+   checked, under a message reading "every literal also=… has a real handler
+   behind it". Writing `/api/xmr` here would have matched and passed, and would
+   have been a less true statement about where this panel's data comes from. */
 
 /** Human window label, from the server's own `window_seconds`. Never a literal
  *  window — the entire reason §1 returns an envelope. */
@@ -194,7 +194,7 @@ export function StreamPanel({ stream, view, status }: {
       <div data-stream-renders={renders.current} data-stream-points={ys.length}>
         <PanelBoundary
           keys={KEYS_BLOCKS}
-          also={SEED_PATH}
+          also={HISTORY_PATH}
           reserve={STREAM_H}
           resetKeys={[seededAt, ys.length]}
         >
@@ -221,7 +221,7 @@ export function StreamPanel({ stream, view, status }: {
                 style={{ minHeight: STREAM_H, display: "flex", alignItems: "center", fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}
               >
                 {phase === "error"
-                  ? `${SEED_PATH} not answering — no difficulty history to stream`
+                  ? `${HISTORY_PATH} not answering — no difficulty history to stream`
                   : "Waiting for the first block-header history response"}
               </div>
             )}
@@ -241,7 +241,7 @@ export function StreamPanel({ stream, view, status }: {
             ? `No band yet — a ±1σ envelope needs ${MIN_SIGMA_SAMPLES} samples and this window holds ${ys.length}.`
             : phase === "live"
               ? "No band — the endpoint answered without a window envelope, and a band labelled from a client-side constant would be a claim this page cannot keep."
-              : `No band — ${SEED_PATH} has not returned history, so this line is the chain tier's own block headers only: a SHORTER window, not a stale one. The line above is current.`}
+              : `No band — ${HISTORY_PATH} has not returned history, so this line is the chain tier's own block headers only: a SHORTER window, not a stale one. The line above is current.`}
         </p>
       )}
 

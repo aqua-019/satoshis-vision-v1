@@ -81,7 +81,19 @@ export interface DiffStream {
  *  so in `range`; we display what it served, never what we asked. */
 const WANT_RANGE = "1d";
 
-const ENDPOINT = `/api/xmr/network/difficulty?range=${WANT_RANGE}`;
+/**
+ * The seed endpoint's PATH, with no query — exported because `StreamPanel`
+ * needs the same string for `PanelBoundary`'s `also=` badge, and two copies of
+ * one path is how a badge ends up naming an endpoint the fetch no longer calls.
+ * That is the identical root cause as the defect §1 fixed on the server: the
+ * two history handlers drifted because they were two copy-pasted tables.
+ *
+ * `verify-resilience` §8 resolves an imported identifier back to this literal,
+ * so the badge is checked against a real handler rather than skipped.
+ */
+export const HISTORY_PATH = "/api/xmr/network/difficulty";
+
+const ENDPOINT = `${HISTORY_PATH}?range=${WANT_RANGE}`;
 
 function finitePos(x: unknown): number | null {
   const n = Number(x);

@@ -25,11 +25,28 @@
  * envelope over 100 blocks and one over 30 days are different claims and only
  * one of them is available here. What this site actually has client-side is
  * `/api/xmr/blocks?limit=100` (`data/xmrirish-feed.ts`, `BLOCKS_CAP = 100`) —
- * 100 block headers, which at the 120 s target is about 3.3 hours. Nothing in
- * `app/` fetches `/api/xmr/network/difficulty` or `/network/hashrate`; they are
- * unconsumed server surface. So a "trailing 30-day envelope" is not a band this
- * page can draw, and `bandWindowLabel` exists to make the true window
- * impossible to omit from the label.
+ * 100 block headers, which at the 120 s target is about 3.3 hours.
+ *
+ * UPDATED IN p3·14b — the sentence that stood here said "Nothing in `app/`
+ * fetches `/api/xmr/network/difficulty` or `/network/hashrate`; they are
+ * unconsumed server surface." That was measured and true when it was written,
+ * and this PR made half of it false: `StreamPanel` now seeds from
+ * `/api/xmr/network/difficulty`. A docblock asserting an absence is a claim
+ * with a shelf life, and this one was load-bearing — it is the justification
+ * for `bandWindowLabel` existing at all.
+ *
+ * What is true now: the difficulty history endpoint IS consumed, one seed
+ * request per mount, and `/network/hashrate` remains unconsumed (it reports
+ * difficulty ÷ the target, so consuming both would be fetching one measurement
+ * twice). The deepest window that endpoint can serve is 720 blocks — ONE DAY —
+ * because monerod rejects a `get_block_headers_range` spanning more than
+ * `RESTRICTED_BLOCK_HEADER_RANGE` (1000) on a restricted node, and every node
+ * in this site's cascade is restricted.
+ *
+ * So a "trailing 30-day envelope" is STILL not a band this page can draw — the
+ * ceiling moved from 3.3 hours to 24, not to 30 days — and `bandWindowLabel`
+ * exists to make the true window impossible to omit from the label. The window
+ * now comes from the server's own `window_seconds`, never from a literal.
  */
 
 /** Monero's consensus block target, in seconds. Not a tuning constant — this
