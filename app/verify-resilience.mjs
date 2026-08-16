@@ -296,11 +296,121 @@ R.group('7 · the swap overlays, it does not replace');
   }
 }
 
-/* ── 8 · `also=` cannot invent an endpoint ─────────────────────────────────── */
+/* ── 8 · `also=` cannot invent an endpoint ───────────────────────────────────
+   WIDENED in p3·14b, because the matcher could not see the thing it claimed
+   to cover. It was:
+
+       /\balso=\{?"(\/api\/[a-z0-9-]+)"/g
+
+   `[a-z0-9-]` excludes `/`, and the closing quote is required immediately
+   after — so a SUB-PATH never matched AT ALL. Not counted, not resolved, not
+   checked, under a message reading "every literal also=… has a real handler
+   behind it (4 found)". A true statement about a subject narrower than its
+   claim: this repo's standing family, sitting inside a gate.
+
+   Measured before the widening, injecting one file into src/:
+     also="/api/nonexistent"        → ❌ red,   5 found   (correct)
+     also="/api/nonexistent/thing"  → ✅ GREEN, 4 found   (invisible)
+     also="/api/xmr/network/…"      → ✅ green, 4 found   (never counted)
+   The count staying at 4 with a fifth literal physically present is the tell.
+
+   Two changes, and the second is the one with teeth.
+
+   (a) CAPTURE BROADLY, JUDGE EXPLICITLY. The path group is `[^"]*`, so ANY
+       literal beginning `/api/` is captured and then judged on its shape. An
+       unmatched literal is invisible; a captured-but-malformed one is a
+       reportable failure. Re-narrowing the character class would only move
+       the blind spot (to a query string, to an uppercase segment) rather
+       than remove it. The `also="session"` ProvSource form shares the prop
+       name and must still NOT be captured — fixtured below, both ways.
+
+   (b) A SUB-PATH NEEDS A REWRITE, NOT JUST A HANDLER. Vercel serves
+       `api/<seg>.js` at `/api/<seg>` and nothing beneath it, and there is no
+       catch-all in api/ (verified: no `[...slug]` file exists, and
+       vercel.json's SPA catch-all explicitly excludes `/api/`). So
+       `also="/api/markets/history"` resolves to a real api/markets.js under a
+       first-segment rule and still 404s in production. It is reachable only
+       where vercel.json rewrites `/api/<seg>/:path*` — today exactly one
+       segment, `xmr`, whose `?_p=` api/xmr.js:704-709 parses. Checking the
+       handler alone would be the same narrower-subject defect one level down.
+
+   The fixture table below is the falsifiability pair, and it runs on every CI
+   run rather than living in a transcript. It uses REAL segment names against
+   the REAL api/ and vercel.json — no fakes — so it cannot drift from the tree
+   it is describing. Its own non-vacuity is asserted: the table must exercise
+   both polarities and `judge` must actually return both. */
 R.group('8 · PanelBoundary\'s `also` escape hatch stays honest');
 {
   const SRC = new URL('./src/', import.meta.url).pathname;
   const API = new URL('../api/', import.meta.url).pathname;
+  const VERCEL = new URL('../vercel.json', import.meta.url).pathname;
+
+  /** First segments vercel.json rewrites into a function with `:path*`. */
+  const rewritten = new Set(
+    (JSON.parse(readFileSync(VERCEL, 'utf8')).rewrites || [])
+      .map((r) => /^\/api\/([a-z0-9-]+)\/:path\*$/.exec(String(r.source || '')))
+      .filter(Boolean)
+      .map((m) => m[1]),
+  );
+  R.info(`vercel.json rewrites these /api/<seg>/:path* segments: ${[...rewritten].join(', ') || '(none)'}`);
+
+  const ALSO_SRC = '\\balso=\\{?"(\\/api\\/[^"]*)"';
+  const captures = (text) => [...text.matchAll(new RegExp(ALSO_SRC, 'g'))].map((m) => m[1]);
+
+  /** null when the literal is honest, else the reason it is not. */
+  const judge = (raw) => {
+    const path = raw.split(/[?#]/)[0];
+    const segs = path.slice('/api/'.length).split('/').filter(Boolean);
+    if (segs.length === 0) return 'no segment after /api/';
+    const seg = segs[0];
+    if (!/^[a-z0-9-]+$/.test(seg)) return `first segment "${seg}" is not a plain lowercase segment`;
+    if (!existsSync(join(API, `${seg}.js`))) return `no api/${seg}.js`;
+    if (segs.length > 1 && !rewritten.has(seg)) {
+      return `sub-path, but vercel.json has no "/api/${seg}/:path*" rewrite — this 404s in production`;
+    }
+    return null;
+  };
+
+  /* -- 8a · the matcher sees sub-paths and still ignores `also="session"` -- */
+  const CAP = [
+    ['also="/api/markets"', ['/api/markets'], 'single segment, the pre-existing shape'],
+    ['also="/api/xmr/network/difficulty"', ['/api/xmr/network/difficulty'], 'THE HISTORICAL BLIND SPOT'],
+    ['also={"/api/xmr/tip"}', ['/api/xmr/tip'], 'brace form'],
+    ['also="/api/xmr?range=7d"', ['/api/xmr?range=7d'], 'query string is captured, not skipped'],
+    ['also="session"', [], 'the ProvSource form must NOT be captured'],
+  ];
+  const capBad = CAP
+    .map(([text, want, why]) => {
+      const got = captures(text);
+      return JSON.stringify(got) === JSON.stringify(want) ? null : `${why}: ${text} → ${JSON.stringify(got)}, want ${JSON.stringify(want)}`;
+    })
+    .filter(Boolean);
+  R.ok(capBad.length === 0, `8a matcher fixtures: ${CAP.length} capture cases, sub-paths included, "session" excluded`, capBad.join(' | '));
+  R.ok(CAP.some(([, w]) => w.length > 0) && CAP.some(([, w]) => w.length === 0),
+    '8a exercises both polarities — a capture table of only-matches would pass a matcher that matches everything');
+
+  /* -- 8b · the resolver, against the real api/ and the real vercel.json -- */
+  const JUDGE = [
+    ['/api/markets', true, 'single segment with a real handler'],
+    ['/api/xmr/network/difficulty', true, 'sub-path under the one rewritten segment'],
+    ['/api/xmr?range=7d', true, 'query is stripped before resolution'],
+    ['/api/nonexistent', false, 'no handler — the case the old matcher DID catch'],
+    ['/api/nonexistent/thing', false, 'no handler, sub-path — the case it did NOT'],
+    ['/api/markets/history', false, 'real handler, but no rewrite: 404 in production'],
+    ['/api/', false, 'no segment at all'],
+    ['/api/XMR/tip', false, 'not a plain lowercase segment'],
+  ];
+  const judgeBad = JUDGE
+    .map(([p, wantOk, why]) => {
+      const r = judge(p);
+      return (r === null) === wantOk ? null : `${why}: ${p} → ${r === null ? 'accepted' : `rejected (${r})`}, want ${wantOk ? 'accepted' : 'rejected'}`;
+    })
+    .filter(Boolean);
+  R.ok(judgeBad.length === 0, `8b resolver fixtures: ${JUDGE.length} cases over the real api/ + vercel.json`, judgeBad.join(' | '));
+  R.ok(JUDGE.some(([p]) => judge(p) === null) && JUDGE.some(([p]) => judge(p) !== null),
+    '8b exercises both polarities — judge() returns an accept AND a reject on this table');
+
+  /* -- 8c · the real tree -- */
   const files = [];
   (function walk(d) {
     for (const n of readdirSync(d)) {
@@ -312,14 +422,18 @@ R.group('8 · PanelBoundary\'s `also` escape hatch stays honest');
 
   const bad = [];
   let found = 0;
+  let subPaths = 0;
   for (const f of files) {
-    for (const m of strip(readFileSync(f, 'utf8')).matchAll(/\balso=\{?"(\/api\/[a-z0-9-]+)"/g)) {
+    for (const p of captures(strip(readFileSync(f, 'utf8')))) {
       found++;
-      const file = m[1].replace('/api/', '') + '.js';
-      if (!existsSync(join(API, file))) bad.push(`${m[1]} (no api/${file})`);
+      if (p.split(/[?#]/)[0].slice('/api/'.length).split('/').filter(Boolean).length > 1) subPaths++;
+      const why = judge(p);
+      if (why) bad.push(`${p} in ${f.slice(SRC.length)} (${why})`);
     }
   }
-  R.ok(bad.length === 0, `every literal also="/api/…" has a real handler behind it (${found} found)`, bad.join(', '));
+  R.ok(bad.length === 0,
+    `every literal also="/api/…" resolves to a reachable handler (${found} found, of which ${subPaths} sub-path${subPaths === 1 ? '' : 's'})`,
+    bad.join(' | '));
 }
 
 process.exit(R.finish());
