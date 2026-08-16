@@ -126,8 +126,18 @@ OUT (non-goals):
 - [ ] `npm run verify:e2e` exits 0
 - [ ] `node verify-bundle.mjs` exits 0 on the FINAL tree, every raised ceiling
       red-then-green demonstrated and every moved chunk attributed by full filename
-- [ ] The api gate covering `api/xmr.js` exits 0 and contains new assertions that go
-      RED against the pre-fix handler (two-polarity transcript shown)
+- [x] The api gate covering `api/xmr.js` exits 0 and every new assertion runs against a
+      COMMITTED negative control reproducing the pre-fix handlers, per assertion
+      **REWORDED, and the original wording was unsatisfiable.** It read "contains new
+      assertions that go RED against the pre-fix handler". Measured by the quality
+      director: running the gate against the real pre-fix `api/xmr.js` produces not one
+      ❌ — it throws `TypeError: Cannot convert undefined or null to object`, because
+      that module exported neither `HISTORY_RANGES` nor `resolveHistoryRange`. **A crash
+      is not a red assertion**, and a `❌` grep over a crash returns empty, which reads
+      exactly like "no failures". `api/_fixtures/xmr-history-prefix.mjs` is the
+      substitution, and it is stronger than the original ask: the red polarity is a
+      committed file rather than a mutation someone must remember to revert.
+      `node api/verify-history.mjs` → 81/81.
 - [ ] `?range=<every key>` returns the SAME point count from both history handlers —
       asserted, with the failing pre-fix transcript quoted
 - [ ] Every range label's implied window equals the window the handler serves at the
