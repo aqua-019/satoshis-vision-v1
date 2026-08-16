@@ -435,12 +435,26 @@ try {
     'monerospace asserts NO "Why it matters" argument',
     'every other app has one — see the control above; this is the restraint the embargo requires, and it is the assertion that fails the day somebody fills in the gap');
 
-  /* The tree-wide sweep belongs to verify-future §15 and is not duplicated
-     here — but this page is new copy inside that sweep, so the narrow claim
-     is worth making where a reader of THIS gate will see it. */
-  const LINEAGE = /fork of (this site|xmr\.irish)|pipes its txpool|first fcmp\+\+ chain/i;
-  R.ok(!LINEAGE.test(body) && !LINEAGE.test(pageSrc),
-    'no lineage claim in this page\'s rendered text or its source (verify-future §15 owns the tree-wide sweep)');
+  /* ── THE LINEAGE PATTERNS ARE DELIBERATELY NOT SPELLED IN THIS FILE ──────
+     A first draft of this section carried its own copy of verify-future
+     §15's regex, so the narrow claim would be visible to a reader of THIS
+     gate. That copy TRIPPED §15, which is the point: its corpus is the whole
+     repo walked from the root over .ts/.tsx/.js/.mjs/.css/.json/.md/.html,
+     and it exempts exactly one file — verify-future.mjs itself, "this file
+     defines the patterns". Any OTHER file that spells them, including a gate
+     written to check them and including a handoff written to prohibit them,
+     is a hit. p3·15 recorded this after its own handoff turned §15 red at
+     `found 1`; this is the same trap, one release later, in a new file type.
+     So the embargo is asserted ONCE, in the file allowed to name it, and
+     what is checked here instead is the POSITIVE shape the embargo produces:
+     MoneroSpace has a caveat and no argument, and the control above proves
+     the other four do have one. Those two assertions fail on exactly the
+     edit §15 exists to catch, and they do it without restating a banned
+     string in a second place. */
+  R.ok(/MoneroSpace/.test(body),
+    'the project is NAMED where it is described (naming and linking is the honest maximum)');
+  R.ok(/github\.com\/brainchainz\/Monero-Superbrain/.test(html),
+    'its repo is LINKED, not merely named');
 
   /* ══ §6 · the betanet slot names its own absence ═════════════════════ */
   R.group('§6 · the betanet slot is a reserved box that says what is missing');

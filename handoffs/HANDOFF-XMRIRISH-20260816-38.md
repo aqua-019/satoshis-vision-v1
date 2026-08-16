@@ -107,12 +107,50 @@ npm run verify:e2e
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+**status:** done
+**pr:** (filled at exit)
+**commits:** `a5e3326` route + page + primitive · `5945003` gate + budgets + prose re-home ·
+`0710a0b` gate masking fix · `3cafdc5` two vacuous assertions fixed · plus the docs commit.
+**deps added:** none.
+
+**deviations from spec, each with its reason:**
+1. **`design/Disclosure.tsx` renders its panel ALWAYS and toggles `hidden`**, where the named
+   model (`JurisdictionRow`) mounts it conditionally. Measured: under the conditional shape ZERO
+   panels appear in the prerendered document, so a JS-off reader gets five buttons that cannot
+   open. Rendered always plus a `.nojs-reveal` rule in `index.html`'s existing `<noscript>` block,
+   a `javaScriptEnabled:false` context measures 5 panels visible carrying 3,316 chars. It also
+   makes `aria-controls` resolve in both states rather than one.
+2. **The hub's per-app prose is NOT in `data.ts`.** §0.7 requires the SHARED line to be
+   single-sourced, and it is (`SUPERBRAIN_APPS`, which the partner block derives from). The
+   essays are hub-only and were moved out after `/future` measured 599 B of margin carrying prose
+   it never renders. Exhaustiveness is preserved by `Record<SuperbrainAppId, …>`.
+3. **`CHUNK_COUNT` re-centred to 66, not 65.** §0.3 said "re-centre 64 → 65"; at the measured 69,
+   [61, 69] puts reality on the ceiling, which p3·13 explicitly declined. 66 gives [62, 70] and
+   one rung, with ±4 unchanged.
+4. **`verify-superstress` does not restate the lineage regex.** Doing so tripped
+   `verify-future` §15, whose corpus is the whole repo and whose only exemption is itself.
+
+**notes for CLAUDE.md patch:** applied — census 82/78, CI 67, e2e 32, routes 14, a Disclosure
+row in Architecture Notes, and the session note. Also corrected two pre-existing internal
+disagreements: CLAUDE.md's own CI figure read 65 at `:54` while its Status section read 66, and
+`verify-lib.mjs`'s docblock said "Total route count stays 43" against a measured 47.
+
+**open questions (both carried, neither answered):**
+- Q1 · the visual-mempool project's provenance. Unchanged; described by function only.
+- Q2 · the beta chain's own parameters. The page states plainly that they are not documented.
+- The telemetry endpoint the betanet slot is reserved for. Whether one exists is the question.
 
 ## 8 · LOOP FEEDBACK
+
+- **The brief's enumerated registration sweep was incomplete by four**, and the four are all
+  hand-copied lists no gate derives. The reusable instruction is not a longer checklist but a
+  command: `grep -rn '/operate/node' --include=*.{mjs,ts,tsx,js,json,html}` — the sibling route's
+  literal appears in exactly the places a new route must.
+- **A fifth was found by the compiler** (`scripts/routes.d.mts`), which is the cheapest gate in
+  the set and is not in anyone's list.
+- **`INFERRED` from the brief's §0.3:** it named `repoPulse.tsx`/`useCachedFeed.ts` as the likely
+  second chunk. Both were wrong — `useCachedFeed` already had a chunk, and a control build proved
+  the pulse import costs none. A brief that predicts a mechanism should say how to falsify it.
+- **Two assertions in the first draft of the new gate could not fail.** Both were caught by break
+  tests, neither by review. The pattern that caught them is the paired positive control; the
+  pattern that produced them is asserting an ABSENCE with no evidence the detector works.

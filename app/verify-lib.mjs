@@ -125,9 +125,19 @@ export async function throttle(ctx, page) {
  *  `/future/outlook`, both of which used to be `/monero/:tab` members
  *  (`markets`, `outlook`) and are gone from that tab set as a result — it
  *  drops from 9 to 7. The 21 simulators move from `/simulate?p=<id>` to
- *  `/learn/sim?p=<id>`. Total route count stays 43: 10 top-level (8 renamed +
- *  2 new) + 4 education tabs (renamed to /learn/<tab>) + 7 monero tabs
- *  (markets/outlook removed) + 21 simulators + 1 404. */
+ *  `/learn/sim?p=<id>`. Total route count was 43 at that restructure: 10
+ *  top-level (8 renamed + 2 new) + 4 education tabs (renamed to
+ *  /learn/<tab>) + 7 monero tabs (markets/outlook removed) + 21 simulators
+ *  + 1 404.
+ *
+ *  IT IS 48 NOW, and this paragraph said "stays 43" for four releases while
+ *  the per-entry comments below correctly counted 43 → 44 → 45 → 46 → 47.
+ *  Two figures in one file disagreeing, which is the defect CLAUDE.md
+ *  records against ITSELF twice — each `?v=` PR updated its own comment and
+ *  not the summary. p3·16 adds `/operate/superstress` (47 → 48) and recounts
+ *  the summary rather than incrementing it:
+ *    node -e "import('./verify-lib.mjs').then(m=>console.log(m.ROUTES.length))"
+ *  MEASURE it; do not read it off this sentence. */
 export const ROUTES = [
   '/',
   '/live/mempool',

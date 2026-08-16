@@ -28,9 +28,13 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **81** `verify-*.mjs` files (`app/` ×73, `app/scripts/` ×1, `api/` ×7) — **77 gates**
-  (p3·15 added `verify-peers.mjs`; recounted, not incremented, and the CI figures below were
-  recounted with it — `verify:static` and `verify:e2e` had BOTH drifted since p3·14b wrote them.)
+- Verification: **82** `verify-*.mjs` files (`app/` ×74, `app/scripts/` ×1, `api/` ×7) — **78 gates**
+  (p3·16 added `verify-superstress.mjs`; recounted, never incremented. The CI figures below were
+  recounted with it AND the counting script was CONTROLLED against `e5eae16` first, where it
+  reproduces that commit's recorded 66 / 22 / 31 exactly — an uncontrolled recount is how p2·7b
+  got 64 and 56 from two attempts that were both wrong.)
+  (p3·15 added `verify-peers.mjs`; recounted then too, and `verify:static` and `verify:e2e` had
+  BOTH drifted since p3·14b wrote them.)
   (p3·14b: recounted twice independently. This line read 77/73 and was stale by ONE before that
   release even began — p3·14 added `verify-bands.mjs` and updated its own session note to 78/74
   without folding it in here, so the two figures in this file disagreed with each other. p3·14b
@@ -47,16 +51,24 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **65 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **67 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
-  into `verify:e2e` (**30** members). Measured as 30 step `run:` lines (31 matches − the
+  into `verify:e2e`, then p3·15's `verify-peers` and p3·16's `verify-superstress`
+  (**32** members).
+  **THIS NUMBER READ 65 WHILE THE STATUS SECTION BELOW READ 66, AND BOTH PREDATE p3·16** —
+  the same two-figures-disagreeing defect this file records against itself twice already,
+  recurring because a recount updated one place and not the other. Measured 66 at `e5eae16`
+  and 67 here, by a script CONTROLLED against the base commit before being trusted: it
+  strips YAML comments, expands every `npm run <script>` TRANSITIVELY against package.json,
+  and allows the `node ../api/verify-*.mjs` prefix. Recount BOTH places, and control the
+  instrument first. Measured as 30 step `run:` lines (31 matches − the
   `defaults: run:` mapping key), 71 invocations − 6 duplicates. — the workflow had never
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
   accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
-  (**22** gates, no browser), `verify:e2e` (**31** gates, against `scripts/serve-dist.mjs`) and
+  (**22** gates, no browser), `verify:e2e` (**32** gates, against `scripts/serve-dist.mjs`) and
   **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
   `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
   step each with `if: always()`, never an `&&`
@@ -130,14 +142,14 @@ chain and market data.
 
 ## Site Routes
 
-The 13 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
+The 14 static routes live in **`app/scripts/routes.mjs`** — the single source consumed by
 both `scripts/prerender.mjs` (emits `dist/<route>/index.html` so the site works with JS
 off) and `scripts/gen-sitemap.mjs` (emits `dist/sitemap.xml` + `dist/robots.txt`).
 Add or remove a route there and both follow.
 
 `/` · `/live/mempool` · `/live/markets` · `/live/markets/thesis` · `/live/network` ·
 `/learn` · `/learn/sim` · `/monero` · `/future` · `/future/outlook` ·
-`/operate/node` · `/about/peers` · `/about/sources`
+`/operate/node` · `/operate/superstress` · `/about/peers` · `/about/sources`
 
 Not in that list, by design: `/live/mempool/tx/:txid` (unbounded param, falls through to
 the SPA shell), the `:tab` paths (`/monero/:tab`, `/learn/:tab`), the `?v=` / `?p=` /
@@ -369,11 +381,20 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 
 <!-- Update this section as work progresses -->
 - The React SPA in `app/` is the only front-end. The v4 static site was deleted in v6.1.0.
-- 13 static routes, all prerendered to real HTML so the site works with JavaScript off.
+- 14 static routes, all prerendered to real HTML so the site works with JavaScript off.
+  p3·16 minted the first new one since the v6.1.6 restructure (`/operate/superstress`) and the
+  registration sweep is the durable finding: **TEN surfaces**, four more than the brief
+  enumerated, and TypeScript caught the tenth (`scripts/routes.d.mts`) as a compile error.
+  The four the brief missed are all HAND-COPIED lists that no gate derives —
+  `index.html`'s `#boot-fallback` nav, `verify-nojs.mjs`'s 13-path literal, `verify-ia.mjs` §1's
+  COUNT-AND-ORDER pair (which reds before §7's routes↔ia check is ever reached), and
+  `verify-pageshell.mjs`'s tier table. Sweep with
+  `grep -rn '/operate/node' --include=*.{mjs,ts,tsx,js,json,html}` before assuming a list is
+  derived: the sibling route's literal is the reliable way to find every copy.
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **66 of the 77** gates on every PR to `main` and on every push to `main`
+- CI runs **67 of the 78** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
   are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -541,6 +562,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 | Timeline events (canonical) | `app/src/data/timeline.ts` — 49 events, ONE source for `/learn/timeline` and the `/live/markets` annotation layer (D0833). A lazy leaf importing NOTHING; both importers (`EducationPage`, `MarketsPage`) are `React.lazy`, so Rollup mints it its own 12,973 B chunk. **`d` is the display string and the ONLY thing any surface may print as a date**; `iso`/`iso2`/`tent` are POSITION ONLY, `iso` is the interval's START never a midpoint, and `verify-markets-dom` re-derives all 49 from `d` so a hand-edited one fails the build. `slug` is a URL (`/learn/timeline?e=<slug>`) — change a title freely, a slug only deliberately. Parsed from SOURCE by the gate, `mempool-meta.ts`'s idiom: keep each event a one-line, plainly-double-quoted literal |
 | Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
+| Expand/collapse rows | `app/src/design/Disclosure.tsx` — a LEAF, never re-exported through `design/primitives.tsx` (which is EAGER, so anything added there is paid for on first paint by all 14 routes). Shape is `pages/monero/legality/JurisdictionRow.tsx`: controlled `open`/`onToggle`, two `useId()`s, `[aria-expanded]` as the style hook. **One deliberate deviation** — the panel is rendered ALWAYS and toggled with `hidden`, where the model mounts it conditionally. Measured, not preferred: with the conditional shape ZERO panels appear in the prerendered document, so a JS-off reader gets buttons that cannot open; rendered always, `index.html`'s `<noscript>` block reveals them (same mechanism as `.nav-noscript`) and 3,316 chars of detail are readable with scripting off. `aria-controls` also resolves in BOTH states rather than half of them. No height animation at any motion preference, so the reduced-motion path and the default path are one path |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
 
 **If a feature needs a third party**, it goes through a function in `api/`, never the browser:
@@ -548,6 +570,143 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-16**: p3·16 "THE SUPERSTRESS HUB" (app/ + .github/) — `/operate/superstress`, the
+  **FOURTEENTH** route and the first minted since the v6.1.6 restructure. The page is a hub for
+  the Umbrel community app store; the durable half is everything the ROUTE cost.
+  **THE REGISTRATION SWEEP IS TEN SURFACES AND THE BRIEF ENUMERATED SIX.** The four it missed
+  are all HAND-COPIED lists nothing derives, and the way to find them is not a checklist — it is
+  `grep -rn '/operate/node'` over the tree, because the SIBLING ROUTE'S LITERAL appears in exactly
+  the places a new route must also appear. Missed: `index.html`'s `#boot-fallback` nav list;
+  `verify-nojs.mjs`'s 13-path literal (and note its asymmetry — it asserts each NAMED path is a
+  real anchor, so a route left OUT of it is simply never asked about and the gate stays green
+  while the new page goes unswept); **`verify-ia.mjs` §1, which pins the ROUTE COUNT *and* THE
+  ORDER as literals and therefore reds TWO assertions before §7's routes↔ia check is ever
+  reached** — the brief named §7 as verify-ia's stake and §7 is not what a new route hits first;
+  and `verify-pageshell.mjs`'s tier table. **The TENTH was found by the compiler**:
+  `scripts/routes.d.mts` is a hand-kept `RouteMap` interface, and `tsc` failed with
+  `Property 'OPERATE_SUPERSTRESS' does not exist` in four files at once. A type declaration is a
+  route list too.
+  **THE CHUNK-COUNT PREDICTION WAS WRONG, AND A CONTROL IS WHAT ESTABLISHED IT.** The brief
+  predicted 68, or 69 if `repoPulse.tsx`/`useCachedFeed.ts` split on gaining a third importer
+  group. Measured: **69**, and neither module is why. `useCachedFeed` ALREADY had its own chunk at
+  `e5eae16` — nothing can mint what exists. The module that crossed a third group is
+  `pages/future/data.ts`, which the hub must import because #184's single-source rule says it may
+  not retype the install steps or the fork version. The chunk it lands in is NAMED `repoPulse`;
+  **that is a label Vite takes from one member module, not a contents list** — EcoPopup shrinking
+  by 16,529 B in the same build is where the bytes actually came from. And the obvious story —
+  "the hub's `RepoPulseReadout` import costs the chunk" — is FALSE: a build with that one import
+  removed still measures 69. The pulse costs **266 B raw and no chunk**, so it stays; it is the
+  page's only live element and the rule here is that a number is real or it is an em-dash.
+  `CHUNK_COUNT` **64 → 66**, band unchanged at ±4 (widening loses sensitivity; only the centre
+  moves). 66 rather than 65 because [61, 69] would put reality exactly on the ceiling — the state
+  p2·10 named "the upward half is spent again" and p3·13 deliberately declined. [62, 70] leaves
+  ONE rung, and the next route or shared leaf reds it.
+  **A 599 B MARGIN ON A ROUTE THIS PR BARELY TOUCHED, AND THE FIX WAS TO MOVE A FILE.** The hub's
+  per-app essays were first written into `data.ts` beside the five apps' shared one-liners. That
+  module is imported by FuturePage, TrustedPeersPage and the hub, so all three download every
+  byte: `/future` measured **106,401 against a 107,000 ceiling** for prose it never renders.
+  Re-homing the essays into `SuperstressPage.tsx` — as an exhaustive `Record<SuperbrainAppId, …>`,
+  so a sixth app is a COMPILE ERROR rather than a silently missing row — bought back **1,167 B
+  gzip on /future AND 1,167 B on /about/peers for +79 B of total JS**. Rollup chunks per MODULE,
+  not per export; `canvasColor.ts` and `repoPulse.tsx` already record it and this is the third
+  release where the fix was a file move rather than a ceiling raise. **Only the SHARED fields stay
+  in `data.ts`** — the partner block's five lines are `SUPERBRAIN_APPS.map(a => \`${a.name} — ${a.fn}\`)`,
+  so the two surfaces cannot drift.
+  **THE DISCLOSURE PRIMITIVE DEVIATES FROM THE HOUSE MODEL ON PURPOSE, AND THE DEVIATION IS
+  MEASURED.** `JurisdictionRow` mounts its panel conditionally; `design/Disclosure.tsx` renders it
+  ALWAYS and toggles `hidden`. Under the conditional shape **ZERO panels appear in the prerendered
+  document**, so a JS-off reader — Tor at Safest, the audience prerendering exists for — gets five
+  buttons that cannot open and nothing behind them. Rendered always, `index.html`'s `<noscript>`
+  block reveals them (`.nojs-reveal`, the same mechanism that reveals `.nav-noscript`), and a
+  `javaScriptEnabled:false` context measures **5 panels visible carrying 3,316 chars**. It also
+  makes `aria-controls` resolve in BOTH states rather than half of them. It is a LEAF and must
+  never be re-exported through `design/primitives.tsx`, which is eager.
+  **FOUR GATE DEFECTS, ALL MINE, ALL FOUND BY BREAK TESTS RATHER THAN REVIEW — and two of them
+  were assertions that COULD NOT FAIL.**
+  (1) **A case-SENSITIVE regex against `text-transform: uppercase`.** §5 asserted MoneroSpace's
+  panel carries no "Why it matters" argument. `innerText` returns the RENDERED text, `.kicker`
+  uppercases, so `/Why it matters/` matched nothing **on any of the five apps** — the absence held
+  for a reason unrelated to MoneroSpace. A break test that gave it the forbidden argument produced
+  **zero reds**. Same family as p3·14's σ→Σ. Fixed case-insensitively AND given a **paired positive
+  control**: another app's panel must DO carry it, because without that "MoneroSpace has none"
+  cannot be told apart from "the selector is broken and nobody has one".
+  (2) **An assertion comparing the source to itself through the DOM.** §3 claimed to prove the
+  single-source rule by comparing the hub's rendered summaries to `data.ts`'s SOURCE — but both
+  derive from one array, so editing an `fn` moves them together and it stays green. It proves the
+  hub hardcodes no summary, which is worth proving, and it is NOT the single-source claim, which
+  is about TWO SURFACES. Now opens the Superbrain brief on `/about/peers` and compares the two
+  RENDERED lists. Its break test is the exact drift the derivation prevents — revert the partner
+  block to literals, then edit one `fn` — and it reds naming the diverged sentence.
+  (3) **`stripComments` copied from verify-ia blanked the `//` inside a string literal.** The
+  install step `"Add → paste: https://github.com/…"` lost its URL, so the SOURCE side parsed three
+  mangled steps while the page rendered four correctly and the gate reported an order mismatch
+  **against a page that was right**. verify-ia never hits this because it only parses bare `id:`
+  fields; the moment a parse touches prose it does. Now string-aware.
+  (4) **A missing element hung the gate for 30 s and then crashed it, masking four later
+  sections.** `page.locator('ol[data-install-steps]')` conflates "is there a list?" with "is it
+  ordered?"; under a mutation that swapped the `<ol>` for a `<ul>` it matched nothing, the next
+  `.evaluate()` timed out, and §5–§8's mutations in the same round were never reported. That is
+  this file's masking-cost argument about gate ORDER, arriving inside ONE FILE.
+  **(5) THE EMBARGO'S CORPUS INCLUDES THE GATE YOU WRITE TO CHECK THE EMBARGO — p3·15's trap,
+  one release later, in a new file type, and committed by the author of the sentence quoting it.**
+  This gate's first draft carried its own copy of `verify-future` §15's `LINEAGE_RX`, so a reader
+  of THIS gate could see the narrow claim being made. That copy is itself a hit: §15 walks the
+  whole repo from the ROOT over `.ts/.tsx/.js/.mjs/.css/.json/.md/.html` and exempts **exactly one
+  file — `verify-future.mjs`, "this file defines the patterns"**. p3·15 found it when its own
+  HANDOFF spelled a banned string in order to prohibit it; the file type this time is a GATE, and
+  the lesson generalises past both: **anything that quotes the embargo is inside it.** The regex is
+  now asserted once, in the only file allowed to name it, and this gate checks the POSITIVE shape
+  the embargo produces instead — the caveat is present, the argument is absent, and the control
+  proves the other four apps DO carry one. Those fail on exactly the edit §15 exists to catch,
+  without restating a banned string in a second place.
+  **AND THREE ASSERTIONS WERE WIDER THAN THEIR CLAIM**, all in the first run, all the same family:
+  the link sweep and the 390 px font sweep both read `#root` and reported NavTop and the footer as
+  findings against this page; and a blanket "no fragment links" rule flagged
+  `/about/sources#release-notes`, a real anchor on a real page, when the recorded #184 defect is
+  specifically that the four `/future#<id>` anchors are hollow. **The 390 px floor asserted 12 px
+  and the repo runs 11** — measured across four routes, a 12 px floor reds ALL of them
+  (`/about/sources` 40 nodes, this page 35, `/about/peers` 15, `/operate/node` 15), because
+  `verify-legibility:124` records "floor raised 10.5 → 11. Nothing below 11 ships". The four counts
+  are new evidence on this file's standing 11-vs-12 STANDARDS CONFLICT and they say the hub is
+  ordinary rather than an outlier.
+  **THE STALE-`dist` TRAP BIT TWICE, from a door this file had not recorded**: the break-test
+  harness restores SOURCE and leaves the MUTATED BUILD on disk, so the very next verification run
+  measures a tree that no longer exists. Once it reported 7 phantom failures on a clean tree, once
+  2. Both results were VOID rather than suspect and were discarded. **Rebuild between restore and
+  re-measure, always** — `git status --short` being empty says nothing about `dist/`.
+  Budgets, red-then-green on the FINAL tree, every byte paired by stem MULTIPLICITY:
+  `lazyJsRaw` 871,000 → **886,000** (built 882,873, margin 3,127) · `totalJsRaw` 1,134,000 →
+  **1,150,000** (built 1,146,258, margin 3,742) · NEW `/operate/superstress` row **105,000**
+  (built 101,893, margin 3,107). **6 chunk slots moved of 68 stems; the other 63 are
+  byte-identical**, and the delta RECONCILES TO THE BYTE: repoPulse +17,300 · EcoPopup −16,529 ·
+  SuperstressPage +14,553 · index[1] +404 · FuturePage +275 · TrustedPeersPage +37 = **+16,040**,
+  minus the 404 eager = 15,636 lazy, and 867,237 + 15,636 = 882,873. Residual **ZERO**.
+  `eagerJsRaw` ceiling UNTOUCHED; the **+404 B** it moved was chased to five named literals plus
+  the mapDeps table's two new rows (**+180 attributed**), with the remaining ~224 B attributed to
+  a SHAPE — the minified `React.lazy` + `<Route>` + ia item — and **not claimed as
+  residual-zero**. The negative control is the half that matters and it is clean: `P2Pool`,
+  `disc-panel` and `SUPERBRAIN` grep to **ZERO** in the eager entry.
+  **`cssGz` was NOT raised and its margin is now 300 B** (17,900 of 18,200; the Disclosure rules
+  cost 138 B gzip). Not crossed, so not raised — but 300 B is where the next stylesheet touch
+  reds, and that is said here rather than left to be rediscovered.
+  Census RECOUNTED, never incremented, **with the counting script CONTROLLED against `e5eae16`
+  first** — it reproduces that commit's recorded 66 / 22 / 31 exactly, which is what makes 67 / 22
+  / 32 here trustworthy; p2·7b's two uncontrolled attempts read 64 and 56 and were both wrong.
+  **82 files / 78 gates** (3 shared modules + 1 orchestrator), `verify-lib`'s ROUTES 47 → **48**.
+  **FOUND: this file's own CI figure read 65 at `:54` while its Status section read 66** — the
+  two-figures-disagreeing defect it records against itself twice already, recurring because a
+  recount updated one place and not the other. Both corrected.
+  `verify-superstress.mjs` is **60 assertions in ten sections**, wired **MID-CHAIN at `verify:e2e`
+  position 15, beside `verify-peers`** — never at the tail, because the tail already carries the
+  inverted vitals-last invariant (#184 F4) and appending there deepens a known defect. It installs
+  NO cold-boot bypass, and that was VERIFIED by running `verify-coldboot-live` §0's own five
+  `REACHES_HOME` patterns against it rather than by reasoning about them.
+  **NOT FIXED, and named**: the vitals-last inversion (#184 F4) is untouched — reordering an `&&`
+  chain changes what masks what for every member. The ten `/future#<id>` palette anchors are still
+  hollow; this page adds no eleventh and its gate asserts it adds none. `scripts/routes.mjs`'s
+  ROUTES docblock still says "6 views" where there are ten — pre-existing, out of scope, recorded.
+  **No human has seen the rendered result in a browser** — read from screenshots.
 
 - **2026-08-16**: p3·15 "SUPERBRAIN AS 4TH TRUSTED PEER" (app/ + .github/) — one `EcoEntry`,
   one palette row, and the gate that stops the next omission. A small, data-shaped PR whose
