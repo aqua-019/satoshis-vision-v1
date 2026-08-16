@@ -11,9 +11,10 @@
  * modal-on-click.
  *
  * Any EcoEntry that carries a `repo` (currently only Superbrain) also gets a
- * live GitHub pulse readout on its card, via future/cards.tsx's
- * RepoPulseReadout — the same markup DevLabPulseCard renders on /future,
- * extracted so both surfaces share one implementation rather than two.
+ * live GitHub pulse readout on its card, via future/repoPulse.tsx's
+ * RepoPulseReadout — the same markup DevLabPulseCard renders on /future, in
+ * its own leaf module rather than in future/cards.tsx (see that file's
+ * header for why a shared component that big cannot live in the fat module).
  */
 
 import * as React from "react";
@@ -23,7 +24,13 @@ import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
 import { ECOSYSTEM } from "./future/data";
 import { EcoPopup } from "./future/EcoPopup";
-import { RepoPulseReadout } from "./future/cards";
+// Imported from the LEAF, not from "./future/cards" — cards.tsx also
+// re-exports this name (so ProtoPopup's existing import keeps working), but
+// importing it from here means TrustedPeersPage's chunk never pulls in
+// ProtocolCard/MoneroNewsCard. See repoPulse.tsx's header: routing this
+// import through cards.tsx once already put /about/peers at 101,152 B gzip
+// against a 100,000 B ceiling.
+import { RepoPulseReadout } from "./future/repoPulse";
 import { R } from "../../scripts/routes.mjs";
 
 export function TrustedPeersPage() {
