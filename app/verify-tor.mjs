@@ -22,8 +22,43 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const base = 'http://localhost:4173';
 
-/** One snapshot() round issues exactly these five requests. */
+/** Scaling factor for the RATE assertions below (§1 total, §3, §4). */
 const ROUND_SIZE = 5;
+
+/**
+ * §1's OWN ceiling, and it is not `ROUND_SIZE` — the old code used that and its
+ * docblock said "one snapshot() round issues exactly these five requests",
+ * which was already false of this route before p3·14b touched it.
+ *
+ * MEASURED, at the peak, on `/live/network`:
+ *
+ *   /api/xmr/mempool                          feed · fast tier
+ *   /api/xmr/fees                             feed · fast tier
+ *   /api/xmr/tip                              feed · chain tier
+ *   /api/coingecko?path=simple/price…         feed · market tier
+ *   /api/nodes                                PAGE-LOCAL one-shot (node population)
+ *   /api/xmr/network/difficulty?range=1d      PAGE-LOCAL one-shot (D0828 seed)
+ *
+ * So the five it counted were never the five it named: `/api/nodes` is a
+ * page-local one-shot rather than part of a snapshot round, and `network` +
+ * `blocks` never appear at all because the chain tier gates them behind an
+ * unchanged tip. The constant matched reality by coincidence, and p3·14b's
+ * seed broke the coincidence rather than the invariant.
+ *
+ * Split so the bound says what it bounds. The INTENT is unchanged and is the
+ * only thing that ever mattered: concurrency must not climb without limit.
+ */
+const FEED_CONCURRENT = 4;
+const PAGE_ONESHOTS = 2;
+const CONCURRENCY_CEILING = FEED_CONCURRENT + PAGE_ONESHOTS;
+
+/**
+ * The one-shots are the whole reason the ceiling may exceed the feed's own
+ * concurrency, so they are ASSERTED to be one-shots. Without this, the +2
+ * allowance would happily absorb a request that had started repeating every
+ * tick — an allowance that hides the thing it was granted for.
+ */
+const ONE_SHOT_PATHS = ['/api/nodes', '/api/xmr/network/difficulty'];
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
@@ -104,12 +139,17 @@ console.log('engine:', engine);
   let inFlight = 0;
   let peak = 0;
   let total = 0;
+  const oneShotHits = new Map(ONE_SHOT_PATHS.map((k) => [k, 0]));
+  let peakSet = [];
+  const live = new Set();
   p.on('request', (r) => {
     if (!r.url().includes('/api/')) return;
     inFlight++; total++;
-    if (inFlight > peak) peak = inFlight;
+    live.add(r.url());
+    if (inFlight > peak) { peak = inFlight; peakSet = [...live]; }
+    for (const k of ONE_SHOT_PATHS) if (r.url().includes(k)) oneShotHits.set(k, oneShotHits.get(k) + 1);
   });
-  const settle = (r) => { if (r.url().includes('/api/')) inFlight--; };
+  const settle = (r) => { if (r.url().includes('/api/')) { inFlight--; live.delete(r.url()); } };
   p.on('response', settle);
   p.on('requestfailed', settle);
 
@@ -122,8 +162,13 @@ console.log('engine:', engine);
   await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(20000);
 
-  ok(peak <= ROUND_SIZE,
-     `1: concurrency never exceeds one round (peak ${peak}, one round = ${ROUND_SIZE})`);
+  ok(peak <= CONCURRENCY_CEILING,
+     `1: concurrency stays bounded (peak ${peak} ≤ ${CONCURRENCY_CEILING} = ${FEED_CONCURRENT} feed + ${PAGE_ONESHOTS} page one-shot)`
+     + `\n     at peak: ${peakSet.map((u) => u.replace(base, '')).join(', ')}`);
+  /* The allowance above is only honest while the one-shots stay one-shots. */
+  for (const [path, n] of oneShotHits) {
+    ok(n === 1, `1: ${path} fired ONCE in 20s (${n}) — a page one-shot that began repeating would hide inside the ceiling it was granted`);
+  }
   // 20s at a 4s floor is at most ~5 rounds. The old code fired every 2.5s
   // regardless, so it would be well past this.
   ok(total <= ROUND_SIZE * 7,
