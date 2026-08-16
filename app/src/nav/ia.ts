@@ -48,7 +48,7 @@
  * agree in BOTH directions, so a rename cannot hide as an add plus a drop.
  *
  * ── ONE HAND-COPY REMAINS, DELIBERATELY ─────────────────────────────────
- *   - the 5 future-protocol + 4 ecosystem ids/labels (pages/future/data.ts
+ *   - the 5 future-protocol + 5 ecosystem ids/labels (pages/future/data.ts
  *     itself imports `@/views/protocol-meta` — a `@/` alias INSIDE that
  *     file — so importing it, even transitively, drags an unresolvable
  *     specifier into bare Node regardless of what this file does)
@@ -127,6 +127,7 @@ const ECOSYSTEM_META: readonly { id: string; label: string }[] = [
   { id: "xmrhub", label: "XMRHUB" },
   { id: "kycrip", label: "kyc.rip" },
   { id: "xmrclub", label: "xmr.club" },
+  { id: "superbrain", label: "Monero Superbrain" },
 ];
 
 // ── Live ───────────────────────────────────────────────────────────────

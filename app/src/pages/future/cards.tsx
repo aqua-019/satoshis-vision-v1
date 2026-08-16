@@ -9,6 +9,11 @@
  *                     age and issue age are SEPARATE readouts: a repo nobody
  *                     pushes to can still have live issue discussion, and
  *                     one combined badge reported that as a dead repo.
+ * RepoPulseReadout  — the live readout markup itself, extracted out of
+ *                     DevLabPulseCard so TrustedPeersPage can render the same
+ *                     signal for any EcoEntry that carries a `repo` (today:
+ *                     the Superbrain partner card) without duplicating the
+ *                     star/issue/push/issue-age markup a second time.
  * MoneroNewsCard    — getmonero.org announcements + MRL research-lab issue
  *                     traffic, both 24h-cached and stamped with their age.
  *
@@ -124,14 +129,6 @@ export interface DevLabPulseCardProps {
 
 export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
   const { pulse, state } = useRepoPulse(repo);
-  // Two INDEPENDENT staleness reads. Before v6.1.1 one badge derived from
-  // pushed_at spoke for the whole repo, so monero-project/research-lab —
-  // which nobody pushes to, but whose issues carry the actual MRL
-  // discussion — rendered as "repo quiet · 485d ago". That told visitors
-  // Monero research had stopped, which is false. Push age and issue age are
-  // different facts and now read as different lines.
-  const pushStale = pulse ? isStale(pulse.pushed) : false;
-  const issueStale = pulse ? isStale(pulse.issueAt) : false;
 
   return (
     <div
@@ -151,28 +148,57 @@ export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
           <a className="mono dim2" href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: "var(--fs-mono)" }}>{repo} ↗</a>
         )}
       </div>
-      {pulse ? (
-        // flexWrap so four readouts still fit at 390px, where .col-2 is 1-up.
-        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
-          <span>★ {pulse.stars.toLocaleString()}</span>
-          {/* GitHub's open_issues_count counts open PRs as issues. Saying
-              "issues N" without that caveat overstates the number. */}
-          <span>open issues {pulse.issues} <span className="dim2">(incl. PRs)</span></span>
-          {/* data-readout makes each signal individually addressable by the
-              DOM gate, instead of a whitespace-fragile innerText regex. */}
-          <span data-readout="push" style={{ color: pushStale ? "var(--y-50)" : "var(--g-50)" }}>
-            last push · {agoStr(pulse.pushed)}{pushStale ? " · quiet" : ""}
-          </span>
-          {/* A repo with no issue activity reports "—" in dim, never green:
-              absence of data is not a healthy reading. */}
-          <span data-readout="issue" style={{ color: pulse.issueAt ? (issueStale ? "var(--y-50)" : "var(--g-50)") : "var(--ink-40)" }}>
-            last issue activity · {agoStr(pulse.issueAt)}{pulse.issueAt && issueStale ? " · quiet" : ""}
-          </span>
-        </div>
-      ) : (
-        <FeedEmpty state={state} endpoint={repoPulseEndpoint(repo)} what="this repo's GitHub pulse" />
-      )}
+      <RepoPulseReadout repo={repo} />
     </div>
+  );
+}
+
+/**
+ * The live star/issue/push/issue-age readout — extracted out of
+ * DevLabPulseCard's body so a second surface (TrustedPeersPage's Superbrain
+ * card) can render the identical markup for a different repo, rather than
+ * forking a copy of it. `DevLabPulseCard` still calls `useRepoPulse` itself,
+ * for its own `data-pulse`/`data-pulse-state` attributes above — a second
+ * call for the same repo here costs no extra request, because
+ * `useCachedFeed`'s `fetchOnce` dedupes in-flight/cached requests by cache id
+ * at module scope (data/useCachedFeed.ts), not by call site.
+ *
+ * HARD REQUIREMENT (verify-future.mjs): this must emit exactly the DOM the
+ * inline ternary used to — same elements, same data-readout attributes, same
+ * text — so DevLabPulseCard's rendered output is byte-identical to before
+ * the extraction.
+ */
+export function RepoPulseReadout({ repo }: { repo: string }) {
+  const { pulse, state } = useRepoPulse(repo);
+  // Two INDEPENDENT staleness reads. Before v6.1.1 one badge derived from
+  // pushed_at spoke for the whole repo, so monero-project/research-lab —
+  // which nobody pushes to, but whose issues carry the actual MRL
+  // discussion — rendered as "repo quiet · 485d ago". That told visitors
+  // Monero research had stopped, which is false. Push age and issue age are
+  // different facts and now read as different lines.
+  const pushStale = pulse ? isStale(pulse.pushed) : false;
+  const issueStale = pulse ? isStale(pulse.issueAt) : false;
+
+  return pulse ? (
+    // flexWrap so four readouts still fit at 390px, where .col-2 is 1-up.
+    <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
+      <span>★ {pulse.stars.toLocaleString()}</span>
+      {/* GitHub's open_issues_count counts open PRs as issues. Saying
+          "issues N" without that caveat overstates the number. */}
+      <span>open issues {pulse.issues} <span className="dim2">(incl. PRs)</span></span>
+      {/* data-readout makes each signal individually addressable by the
+          DOM gate, instead of a whitespace-fragile innerText regex. */}
+      <span data-readout="push" style={{ color: pushStale ? "var(--y-50)" : "var(--g-50)" }}>
+        last push · {agoStr(pulse.pushed)}{pushStale ? " · quiet" : ""}
+      </span>
+      {/* A repo with no issue activity reports "—" in dim, never green:
+          absence of data is not a healthy reading. */}
+      <span data-readout="issue" style={{ color: pulse.issueAt ? (issueStale ? "var(--y-50)" : "var(--g-50)") : "var(--ink-40)" }}>
+        last issue activity · {agoStr(pulse.issueAt)}{pulse.issueAt && issueStale ? " · quiet" : ""}
+      </span>
+    </div>
+  ) : (
+    <FeedEmpty state={state} endpoint={repoPulseEndpoint(repo)} what="this repo's GitHub pulse" />
   );
 }
 
