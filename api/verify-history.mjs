@@ -82,7 +82,15 @@ for (const [key, blocks] of Object.entries(xmr.HISTORY_RANGES)) {
 }
 
 ok(xmr.RESTRICTED_HEADER_SPAN === 1000,
-  "RESTRICTED_HEADER_SPAN === 1000 (monerod's RESTRICTED_BLOCK_HEADER_RANGE, src/rpc/core_rpc_server_commands_defs.h)");
+  /* CITATION CORRECTED: the constant and its enforcement both live in
+     src/rpc/core_rpc_server.cpp, NOT in core_rpc_server_commands_defs.h as an
+     earlier draft of this line claimed. Verified against upstream master:
+       #define RESTRICTED_BLOCK_HEADER_RANGE 1000
+       if (restricted && req.end_height - req.start_height > RESTRICTED_BLOCK_HEADER_RANGE)
+       { ... error_resp.message = "Too many block headers requested."; return false; }
+     Note the check is on the SPAN, not the count, which is why the runtime
+     clamp is SPAN + 1 = 1001 headers rather than 1000. */
+  "RESTRICTED_HEADER_SPAN === 1000 (monerod's RESTRICTED_BLOCK_HEADER_RANGE, src/rpc/core_rpc_server.cpp)");
 
 // two-polarity negative control: the OLD tables, flattened to 7 entries
 // (4 hashrate + 3 difficulty), against the SAME span rule.
@@ -362,18 +370,19 @@ console.log('\n-- D7: hashrate_ghs is full precision and uses the NODE\'S OWN ta
    ═══════════════════════════════════════════════════════════════════════ */
 console.log('\n-- R1: the negative control still contains the defects it exists to reproduce --');
 {
-  ok(prefix.OLD_HASHRATE_COUNTS && prefix.OLD_DIFFICULTY_COUNTS,
-    'fixture exports both pre-fix range tables by name, so their asymmetry is inspectable');
-  ok('all' in prefix.OLD_HASHRATE_COUNTS && !('all' in prefix.OLD_DIFFICULTY_COUNTS),
+  const OLD_HR = prefix.OLD_COUNTS_TABLES?.hashrate;
+  const OLD_DF = prefix.OLD_COUNTS_TABLES?.difficulty;
+  ok(!!OLD_HR && !!OLD_DF,
+    'fixture exports both pre-fix range tables (OLD_COUNTS_TABLES), so their asymmetry is inspectable');
+  ok('all' in OLD_HR && !('all' in OLD_DF),
     "fixture retains THE asymmetry: 'all' exists on the hashrate table and not on the difficulty one");
   for (const [k, v] of Object.entries({ '7d': 504, '30d': 2160, '1y': 26280 })) {
-    ok(prefix.OLD_HASHRATE_COUNTS[k] === v,
-      `fixture retains the pre-fix count OLD_HASHRATE_COUNTS['${k}'] === ${v}`);
+    ok(OLD_HR[k] === v, `fixture retains the pre-fix count hashrate['${k}'] === ${v}`);
   }
   /* The three keys that error on a real restricted node must STILL exceed the
      span here, or the control stops reproducing the shipped defect. */
   for (const k of ['30d', '1y', 'all']) {
-    const clamped = Math.min(prefix.OLD_HASHRATE_COUNTS[k], 5000);
+    const clamped = Math.min(OLD_HR[k], 5000);
     ok(clamped - 1 > xmr.RESTRICTED_HEADER_SPAN,
       `fixture retains the defect for '${k}': clamped to ${clamped}, span ${clamped - 1} still EXCEEDS ${xmr.RESTRICTED_HEADER_SPAN} — a real restricted node answers "Too many block headers requested."`);
   }
@@ -399,8 +408,7 @@ console.log('\n-- R3: no production call site passes rpcImpl --');
      a test overrides. */
   for (const fn of ['handleHashrate', 'handleDifficulty']) {
     const calls = [...src.matchAll(new RegExp(`await\\s+${fn}\\(([^)]*)\\)`, 'g'))]
-      .map(m => m[1].trim())
-      .filter(a => !a.startsWith('range, rpcImpl') === true || true);
+      .map(m => m[1].trim());
     const dispatchCalls = calls.filter(a => !a.includes('rpcImpl'));
     ok(calls.length > 0, `${fn} is called somewhere in api/xmr.js (${calls.length} call site(s)) — this check is not vacuous`);
     ok(dispatchCalls.length === calls.length,
