@@ -251,6 +251,16 @@
            a scripted visitor never pays a layout shift for it; this is the
            only path that shows it without waiting for the boot watchdog. -->
       <style>.nav-noscript { display: flex !important; }</style>
+      <!-- p3·16 · Scripting off: open every collapsed disclosure panel.
+           design/Disclosure.tsx renders its panel ALWAYS and hides it with
+           the `hidden` attribute, so the text is in the prerendered document
+           either way — but with no JS there is nothing to click, and a
+           permanently-shut panel would make the hub's per-app detail
+           unreachable for exactly the Tor-at-Safest reader prerendering
+           exists to serve. Same mechanism, same block, same reasoning as the
+           route list above; the class is applied by the component, so this
+           rule needs no per-page maintenance. -->
+      <style>.nojs-reveal[hidden] { display: block !important; }</style>
       <style>
         /* Literal hex, no var(): this renders before any bundled CSS, and on a
            JS-off load the bundle's palette may be all that is missing. */
@@ -315,7 +325,7 @@
           blocker, a strict privacy setting, or a dropped connection stopped it — the site itself is
           read-only and non-custodial, so nothing was at risk. Reloading often resolves it; allowing
           scripts for this one origin will too. Every page below is a plain link and still works.</div>
-        <!-- Plain HTML cannot import — kept hand-in-sync with the 13 real
+        <!-- Plain HTML cannot import — kept hand-in-sync with the 14 real
              route paths declared once in scripts/routes.mjs's `R`. Order
              matches nav/ia.ts's IA sections: Live → Monero → Learn → Future
              → Operate → About. -->
@@ -331,6 +341,7 @@
           <li><a class="shell__a" href="/future">Future</a></li>
           <li><a class="shell__a" href="/future/outlook">Outlook</a></li>
           <li><a class="shell__a" href="/operate/node">Run a node</a></li>
+          <li><a class="shell__a" href="/operate/superstress">Superstress hub</a></li>
           <li><a class="shell__a" href="/about/peers">Peers</a></li>
           <li><a class="shell__a" href="/about/sources">Sources</a></li>
         </ul>

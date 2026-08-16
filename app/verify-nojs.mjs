@@ -136,12 +136,21 @@ const routes = await p.evaluate(() =>
   [...document.querySelectorAll('#root a')]
     .map((a) => { try { return new URL(a.href).pathname; } catch { return ''; } })
     .filter(Boolean));
-// The 13-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
+// The 14-route IA (scripts/routes.mjs's `R`), hand-copied here — plain Node,
 // no import (see verify-lib.mjs's ROUTES for the same constraint reasoned
 // out in full).
+//
+// p3·16 · 13 -> 14. Note what this list does and does NOT catch. It asserts
+// each named path IS a real anchor in the prerendered nav, so a route that
+// exists but never reaches NavTop's JS-off list reds here. It cannot catch the
+// inverse — a route missing from THIS list is simply never asked about, and
+// the gate stays green while the new page goes unswept. So adding the entry is
+// the registration step, not a formality: without it `/operate/superstress`
+// would have been the one route whose no-JS anchor nobody measured, which is
+// the same shape as the `/` gap v6.1.8 recorded a few lines above.
 for (const r of ['/', '/live/mempool', '/live/markets', '/live/markets/thesis', '/live/network',
                   '/monero', '/learn', '/learn/sim', '/future', '/future/outlook',
-                  '/operate/node', '/about/peers', '/about/sources']) {
+                  '/operate/node', '/operate/superstress', '/about/peers', '/about/sources']) {
   ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }
 

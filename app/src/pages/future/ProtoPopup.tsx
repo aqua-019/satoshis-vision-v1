@@ -15,7 +15,7 @@
  */
 
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useRepoPulse, agoStr, isStale, repoPulseEndpoint } from "@/data/useCachedFeed";
 import { V6Modal } from "./V6Modal";
@@ -126,11 +126,24 @@ export function ProtoPopup({ p, open, onClose, morphed }: ProtoPopupProps) {
           <div>
             <div className="kicker" style={{ marginBottom: 10 }}>Community resources · canonical sources</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {/* p3·16 — same leading-"/" split as EcoPopup's link row, and
+                  the same reason: a resource on THIS site is a route, not an
+                  external tab. The "↗" is part of the claim, so the in-app
+                  branch drops it rather than promising an outbound hop the
+                  link does not make. Closing the dialog is part of the
+                  navigation — see EcoPopup for the full note. */}
               {p.resources.map(([label, href, kind]) => (
-                <a key={href} className="v6-res" href={href} target="_blank" rel="noopener noreferrer">
-                  <span className="led" style={{ background: p.c, boxShadow: `0 0 6px ${p.c}` }} />
-                  {label} <span style={{ color: "var(--ink-40)" }}>· {kind} ↗</span>
-                </a>
+                href.startsWith("/") ? (
+                  <Link key={href} className="v6-res" to={href} onClick={onClose}>
+                    <span className="led" style={{ background: p.c, boxShadow: `0 0 6px ${p.c}` }} />
+                    {label} <span style={{ color: "var(--ink-40)" }}>· {kind} →</span>
+                  </Link>
+                ) : (
+                  <a key={href} className="v6-res" href={href} target="_blank" rel="noopener noreferrer">
+                    <span className="led" style={{ background: p.c, boxShadow: `0 0 6px ${p.c}` }} />
+                    {label} <span style={{ color: "var(--ink-40)" }}>· {kind} ↗</span>
+                  </a>
+                )
               ))}
             </div>
           </div>

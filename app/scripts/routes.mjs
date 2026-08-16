@@ -40,12 +40,22 @@ export const R = {
   FUTURE: "/future",
   FUTURE_OUTLOOK: "/future/outlook",
   OPERATE_NODE: "/operate/node",
+  // p3·16 — the FIRST route minted since the v6.1.6 restructure, and the
+  // Operate section's second item. `/operate` itself is a section GROUPING
+  // and has never been a route (see nav/ia.ts's header), so this is a new
+  // leaf under an existing grouping rather than a new section.
+  //
+  // NO REDIRECT SOURCE, deliberately: REDIRECTS below protects URLs that
+  // once served content and moved. This URL has never existed, so there is
+  // no shared link to keep working and nothing to 301 from — inventing one
+  // would advertise a path that never had a page.
+  OPERATE_SUPERSTRESS: "/operate/superstress",
   ABOUT_PEERS: "/about/peers",
   ABOUT_SOURCES: "/about/sources",
 };
 
 /**
- * The 13 routes App.tsx serves that have a fixed path, in R's declared
+ * The 14 routes App.tsx serves that have a fixed path, in R's declared
  * order. Consumed by prerender.mjs (emits dist/<route>/index.html, so the
  * site works with JS off) and gen-sitemap.mjs (emits sitemap.xml).
  *

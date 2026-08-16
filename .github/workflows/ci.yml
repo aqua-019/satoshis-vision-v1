@@ -283,11 +283,12 @@ jobs:
       # find it under this name, and WITHDREW A CORRECT CONCLUSION about the
       # `&&` chain as a result. That is worse than the usual direction of this
       # failure, because a retraction looks like rigour.
-      # RECOUNTED, never incremented — and it was already stale before this
-      # change: the title read "(29) … +19" while the chain held 30 members,
-      # because p3·14b appended verify-stream without folding it in. p3·15
-      # appends verify-peers, so the honest figures are 31 and +21. Measured,
-      # not derived from the previous title:
+      # RECOUNTED, never incremented — and it was already stale before p3·15:
+      # the title read "(29) … +19" while the chain held 30 members, because
+      # p3·14b appended verify-stream without folding it in. p3·15 appended
+      # verify-peers (31 / +21); p3·16 inserts verify-superstress, so the
+      # honest figures are 32 and +22. Measured, not derived from the previous
+      # title:
       #   node -e "console.log(require('./app/package.json')
       #     .scripts['verify:e2e'].split('&&').length)"
       #
@@ -301,7 +302,16 @@ jobs:
       # Restoring the invariant is a one-line move, but reordering an && chain
       # changes what masks what for every member, so it belongs in its own
       # change rather than riding along in a partner-card PR.
-      - name: 'E2E gates (31) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +21'
+      #
+      # p3·16 places verify-superstress at position 15, immediately after
+      # verify-peers — MID-CHAIN, deliberately, and not at the tail. The tail
+      # is already carrying an inverted invariant (see the paragraph above);
+      # appending there would deepen a known defect, and a gate whose subject
+      # is one route has no claim on the position reserved for the gate with
+      # zero dependents. Beside verify-peers is also where it belongs by
+      # subject: the two share a data source and assert complementary halves
+      # of it.
+      - name: 'E2E gates (32) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +22'
         run: npm run verify:e2e
 
       # ── v2·3b: four gates that existed, asserted real things, and ran in

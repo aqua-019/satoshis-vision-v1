@@ -149,11 +149,16 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
     ],
     metrics: [["Anonymity set", "150M+"], ["Today", "ring-16"], ["Multiplier", "≈10M×"], ["Proof size", "~3-4 KB"], ["Verify", "~35 ms"], ["Addresses", "unchanged"]],
     repo: "kayabaNerve/fcmp-plus-plus",
+    // p3·16 adds the hub. This card's `status` already reads "BETA · stressnet
+    // live", which is a claim about a chain the reader has no way to reach from
+    // here — the hub is the page that says what that chain is and how to join
+    // it, so it belongs in the resources list rather than only in the nav.
     resources: [
       ["Reference implementation", "https://github.com/kayabaNerve/fcmp-plus-plus", "github"],
       ["MRL tracking issue", "https://github.com/monero-project/research-lab/issues/100", "research-lab"],
       ["getmonero.org · FCMP dev update", "https://www.getmonero.org/2024/04/27/fcmps.html", "blog"],
       ["monero-project/monero", "https://github.com/monero-project/monero", "github"],
+      ["The stressnet, and how to run a node on it", R.OPERATE_SUPERSTRESS, "site"],
     ],
   },
   {
@@ -288,6 +293,102 @@ export function roadmapStatus(stop: RoadmapStop): string {
 }
 
 /* ── ecosystem panels (xmrhub / kyc.rip / xmr.club / stressnet) ─── */
+/**
+ * The five apps the Umbrel community app store publishes — the SHARED SPINE.
+ *
+ * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
+ * Two surfaces describe these apps: the Superbrain partner brief on
+ * /about/peers (rendered by EcoPopup from the `blocks[]` below) and the
+ * Superstress hub on /operate/superstress, which gives each app a row of its
+ * own. The one-line function is the line BOTH carry, so it is written here
+ * exactly once and the partner entry's "The five apps" block is DERIVED from
+ * it (`SUPERBRAIN_APPS.map(...)`, below). Retyping five app descriptions in a
+ * second file is how the two would drift, and the drift would be invisible —
+ * both would read plausibly, and only a reader who happened to open both
+ * would ever see the disagreement.
+ *
+ * ── AND WHY THE HUB'S PROSE IS **NOT** HERE ──────────────────────────────
+ * This carries the SHARED fields only. The hub's per-app essay — what the app
+ * is, why running it yourself changes anything, its screenshot slot — lives
+ * in SuperstressPage.tsx, keyed by these ids through an exhaustive
+ * `Record<SuperbrainAppId, …>` so a new app is a COMPILE ERROR there rather
+ * than a silently missing row.
+ *
+ * That split is MEASURED, not tidiness. This module is imported by
+ * FuturePage, TrustedPeersPage and now the hub — three chunk groups, so
+ * Rollup mints it its own chunk and every one of those routes downloads all
+ * of it. With the essays in here, `/future` measured 106,401 B gzip against a
+ * 107,000 ceiling: 599 B of margin on a route this PR barely touches, for
+ * prose it never renders. It is the same call `repoPulse.tsx` and
+ * `canvasColor.ts` already record — Rollup chunks per MODULE, not per export,
+ * so the only way to stop a route paying for something is to put it in a
+ * different file. Keep this array to fields BOTH surfaces use.
+ *
+ * `prereqs` is the app's OWN extra requirements and is shared: the partner
+ * entry's `body` names them in prose and the hub renders them as data. Every
+ * app in the store also needs the official Monero app — that is the
+ * store-wide prerequisite below, stated once rather than on five rows.
+ */
+export interface SuperbrainApp {
+  id: string;
+  name: string;
+  /** The one-line function. THE single source — the EcoEntry block below
+   *  derives its lines from this, and the hub renders it as a row summary. */
+  fn: string;
+  /** Extra Umbrel apps this one needs, BEYOND the store-wide Monero app. */
+  prereqs: readonly string[];
+}
+
+/* `as const satisfies` rather than a plain annotation: `satisfies` keeps the
+   shape checked while `as const` preserves the id LITERALS, which is what
+   makes SuperbrainAppId a five-member union instead of `string`. Without it
+   the hub's detail map degrades to Record<string, …> and a missing app stops
+   being a compile error — the same mechanism, and the same reasoning, as the
+   two Record<ProvSource, …> maps in design/provenance.tsx. */
+export const SUPERBRAIN_APPS = [
+  {
+    id: "superbrain",
+    name: "Superbrain",
+    fn: "P2Pool + XMRig decentralised mining, accepting external miners over LAN or Tailscale.",
+    prereqs: [],
+  },
+  {
+    id: "superpay",
+    name: "SuperPay",
+    fn: "self-hosted point-of-sale on a view-only wallet; spend keys never leave the device.",
+    prereqs: [],
+  },
+  {
+    id: "monerospace",
+    name: "MoneroSpace",
+    // FUNCTION ONLY, here and on the hub. The provenance question is open with
+    // its maintainer; verify-future.mjs §15 sweeps the whole tree for a lineage
+    // claim and fails the build on one. Do not enrich this line.
+    fn: "self-hosted block explorer and mempool visualiser; reads public chain data from your node.",
+    prereqs: ["Bitcoin", "Electrs"],
+  },
+  {
+    id: "superstress",
+    name: "Superstress",
+    fn: "a full FCMP++ stressnet node routed through Tor, with a wallet lab.",
+    prereqs: [],
+  },
+  {
+    id: "superatomic",
+    name: "SuperAtomic",
+    fn: "XMR/BTC atomic-swap backend to the Eigen network.",
+    prereqs: ["Bitcoin", "Electrs"],
+  },
+] as const satisfies readonly SuperbrainApp[];
+
+/** The five ids as a union — see the `as const satisfies` note above. */
+export type SuperbrainAppId = (typeof SUPERBRAIN_APPS)[number]["id"];
+
+
+/** The prerequisite EVERY app in the store shares — stated once, here, and
+ *  rendered once on the hub rather than repeated on five rows. */
+export const SUPERBRAIN_SHARED_PREREQ = "Monero";
+
 export const ECOSYSTEM: readonly EcoEntry[] = [
   {
     id: "stressnet", name: "Umbrel Superstress Net", head: "the FCMP++ beta chain, live.",
@@ -313,7 +414,12 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       { label: "screenshot · MoneroSpace on the beta chain", h: 130 },
       { label: "telemetry endpoint · to be wired", h: 64 },
     ],
-    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["Umbrel node writeup", null], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
+    // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
+    // that IS the Umbrel node writeup — the placeholder was a promise of a
+    // page, and the page now exists on this site. "Beta-chain explorer" stays
+    // null because nothing has been supplied for it; an honest placeholder is
+    // only dishonest once the thing it stands for arrives.
+    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
   },
   {
     id: "xmrhub", name: "XMRHUB", head: "the ecosystem, in one directory.",
@@ -373,13 +479,13 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     blocks: [
       {
         label: "The five apps",
-        lines: [
-          "Superbrain — P2Pool + XMRig decentralised mining, accepting external miners over LAN or Tailscale.",
-          "SuperPay — self-hosted point-of-sale on a view-only wallet; spend keys never leave the device.",
-          "MoneroSpace — self-hosted block explorer and mempool visualiser; reads public chain data from your node.",
-          "Superstress — a full FCMP++ stressnet node routed through Tor, with a wallet lab.",
-          "SuperAtomic — XMR/BTC atomic-swap backend to the Eigen network.",
-        ],
+        // DERIVED from SUPERBRAIN_APPS above, not retyped. These five lines
+        // and the Superstress hub's five row summaries are the same sentences,
+        // and they used to be the same sentences in two files — which is a
+        // drift that reads plausibly on both surfaces and is visible only to
+        // someone who happens to open both. verify-peers §4 still asserts all
+        // five NAMES render here, so the derivation cannot silently empty.
+        lines: SUPERBRAIN_APPS.map((a) => `${a.name} — ${a.fn}`),
       },
       {
         label: "Install · Umbrel community app store",
@@ -404,10 +510,16 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // (TrustedPeersPage.tsx derives `primary` from links[0]) — kept short
     // like its siblings' domain-style labels (xmrhub.org, kyc.rip, xmr.club)
     // rather than the full repo path, so the footer row doesn't wrap.
+    // p3·16 appends the hub LAST, deliberately. TrustedPeersPage derives the
+    // card footer's "visit X ↗" text from the first link that HAS an href
+    // (`links.find(([, href]) => href)`), so anything inserted ahead of
+    // "Superbrain" would silently rewrite that footer and, being longer, wrap
+    // it — the exact failure the note above this array exists to prevent.
     links: [
       ["Superbrain", "https://github.com/brainchainz/Monero-Superbrain"],
       ["eigenwallet-core source (GPLv3)", "https://github.com/brainchainz/eigenwallet-core"],
       ["Umbrel app store listing", null],
+      ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS],
     ],
   },
 ];

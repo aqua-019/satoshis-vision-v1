@@ -210,7 +210,21 @@ const futureCol: IaCol = {
 // ── Operate ────────────────────────────────────────────────────────────
 const operateCol: IaCol = {
   h: "Operate",
-  items: [{ l: "Run a node", p: R.OPERATE_NODE }],
+  // p3·16 — the Operate column's SECOND item, and the first thing added to
+  // this section since the restructure. Order matters here beyond reading
+  // order: a section header navigates to `cols[0].items[0].p`, so "Run a
+  // node" staying first is what keeps clicking "Operate" going where it
+  // always has.
+  //
+  // A REAL ROUTE, not a `/future#superstress` fragment. The five ecosystem
+  // rows in futureCol above are `${R.FUTURE}#${m.id}` and #184 measured that
+  // /future renders no panel any of them can scroll to — every one of those
+  // anchors is hollow. This entry is a leaf with its own page, so it is the
+  // one ecosystem destination in this file that resolves to content.
+  items: [
+    { l: "Run a node", p: R.OPERATE_NODE },
+    { l: "Superstress hub", p: R.OPERATE_SUPERSTRESS, note: "Umbrel community app store" },
+  ],
 };
 
 // ── About ──────────────────────────────────────────────────────────────

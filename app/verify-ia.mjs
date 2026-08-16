@@ -102,7 +102,7 @@ function stripStrings(src) {
 // ============================================================================
 // §1 · routes.mjs canonical list
 // ============================================================================
-R.group('§1 · routes.mjs exports exactly 13 ROUTES in specified order');
+R.group('§1 · routes.mjs exports exactly 14 ROUTES in specified order');
 
 try {
   const routesModule = await import(join(__dirname, 'scripts', 'routes.mjs'));
@@ -111,17 +111,26 @@ try {
   if (!Array.isArray(routes)) {
     R.ok(false, 'ROUTES is not an array');
   } else {
-    // 13 ROUTES and 12 REDIRECTS are different numbers; a blanket rename of one
+    // 14 ROUTES and 12 REDIRECTS are different numbers; a blanket rename of one
     // caught the other and left this message reading "expected 12" while the
     // assertion correctly tested 13. Harmless to the result, corrosive to trust
     // in the output — a gate whose text disagrees with its own condition is the
     // reason people stop reading gate logs.
-    R.ok(routes.length === 13, `ROUTES length: ${routes.length} (expected 13)`);
+    //
+    // p3·16 · 13 -> 14. THIS SECTION IS WHY THE PROMPT'S REGISTRATION SWEEP WAS
+    // INCOMPLETE, and it is worth naming: that sweep listed §7 (routes<->ia,
+    // both directions) as verify-ia's stake in a new route, which is true and
+    // is not the assertion a new route hits FIRST. §1 pins the COUNT and the
+    // ORDER as literals, so `/operate/superstress` reddened two assertions here
+    // before §7 was ever reached. A count literal one hop from the thing that
+    // changed is exactly the p2·10 CHUNK_COUNT lesson in a different file.
+    R.ok(routes.length === 14, `ROUTES length: ${routes.length} (expected 14)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
       '/live/network', '/learn', '/learn/sim', '/monero', '/future',
-      '/future/outlook', '/operate/node', '/about/peers', '/about/sources',
+      '/future/outlook', '/operate/node', '/operate/superstress',
+      '/about/peers', '/about/sources',
     ];
 
     const ordered = routes.length === expected.length &&

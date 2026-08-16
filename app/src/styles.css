@@ -847,6 +847,44 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   DISCLOSURE  (design/Disclosure.tsx — the shared expand/collapse row)
+   ══════════════════════════════════════════════════════════════════════
+   Same class-not-inline discipline as .lg-* above: the trigger is a grid and
+   the track list lives HERE, because the mobile layer's blanket rule matches
+   the literal "grid-template-columns" inside a style ATTRIBUTE and would
+   collapse an inline one to 1fr.
+
+   `[hidden]` is spelled out for the reason index.html's #boot-fallback
+   carries the identical line: an author `display` declaration out-specifies
+   the UA sheet's [hidden] rule, so without this the panel would be
+   permanently open the moment anyone gave .disc-panel a display value. */
+.disc { border: 1px solid var(--rule); border-radius: 3px; background: var(--surface-ground); }
+.disc-row {
+  width: 100%; appearance: none; border: 0; cursor: pointer; background: transparent;
+  color: inherit; text-align: left; font-family: var(--f-mono);
+  display: grid; grid-template-columns: 1fr auto 18px; align-items: center; gap: 12px;
+  padding: 13px 16px; min-height: 48px;
+}
+.disc-row[aria-expanded="true"] { background: rgba(255,122,26,0.05); }
+.disc-row:focus-visible { outline: 1px solid var(--tk-accent); outline-offset: -2px; }
+.disc-label { display: flex; flex-direction: column; gap: 3px; color: var(--ink-100); font-size: var(--fs-body); }
+.disc-summary { color: var(--ink-60); font-size: var(--fs-label); letter-spacing: 0.02em; }
+.disc-meta { color: var(--ink-40); font-size: var(--fs-label); letter-spacing: 0.1em; text-transform: uppercase; }
+.disc-caret { color: var(--ink-40); justify-self: end; }
+.disc-panel[hidden] { display: none; }
+.disc-panel { padding: 4px 16px 16px; border-top: 1px dashed var(--ink-10); }
+
+@media (max-width: 768px) {
+  /* At 390 the label needs the whole row, so the meta chip is dropped — and
+     that is only legitimate because the chip is a SUMMARY of something the
+     panel states in full. The hub's rows put prerequisites in the chip and
+     also in the panel's own "needs" line, so nothing is lost at this width;
+     a consumer that puts a fact ONLY in `meta` would be losing it here. */
+  .disc-row { grid-template-columns: 1fr 18px; }
+  .disc-meta { display: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    DATA TABLE → CARDS  (Markets venues, and anything else that must fit 390)
    ══════════════════════════════════════════════════════════════════════
    Same trick as .lg-*: the column track list is passed in as --mk-cols, NOT as

@@ -153,6 +153,14 @@ function staticClosure(fileName) {
  * their new paths, plus two new entries — `/live/markets/thesis` and
  * `/future/outlook` — for the two pages split out of the old `/monero/:tab`
  * set. `/monero` and `/future` are otherwise unmoved.
+ *
+ * p3·16 adds `/operate/superstress`, the 14th route and the first minted since
+ * that restructure. Both directions of the mapping assertion below already
+ * covered it before it existed: a route in ROUTES with no key here reds §5,
+ * and a key here naming a route ROUTES has dropped reds the line after. The
+ * entry was added because the gate demanded it, not because a checklist
+ * remembered it — which is the anti-drift property this docblock claims,
+ * exercised rather than asserted.
  */
 const PAGE_MODULE = {
   '/': null,
@@ -166,6 +174,7 @@ const PAGE_MODULE = {
   '/future': 'src/pages/FuturePage.tsx',
   '/future/outlook': 'src/pages/future/OutlookPage.tsx',
   '/operate/node': 'src/pages/NodePage.tsx',
+  '/operate/superstress': 'src/pages/SuperstressPage.tsx',
   '/about/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
 };
@@ -588,7 +597,15 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_134_000,  // p3·15: built 1,130,194 on the FINAL tree, margin 3,806.
+  totalJsRaw: 1_150_000,  // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
+                          // p3·15: built 1,130,194, margin 3,806.
+  // p3·16 RAISE, 1,134,000 -> 1,150,000. It moves WITH lazyJsRaw, as the
+  // backstop it is: 1,130,218 + 16,040 = 1,146,258, to the byte. This budget's
+  // stated construction ("the sum of the two real budgets") has been broken
+  // since #174 and is not restored here either — 280,000 + 886,000 = 1,166,000
+  // — so a build can sit inside both real budgets and still red on this one.
+  // Recorded again rather than quietly repaired, because repairing it means
+  // deciding what the backstop is FOR, and that is its own change.
                           // +3,563 = lazy +3,516 plus eager +47, residual ZERO —
                           // see the reconciliation beside lazyJsRaw. Raised WITH
                           // lazyJsRaw for the reason the note below already gives:
@@ -678,6 +695,33 @@ const BUDGETS = {
   //   eager module without a murmur. Named here and in the leaf's own header;
   //   an assertion that the leaf's bytes land in no eager chunk is the strong
   //   form and is not built.
+  // p3·16: 263,385 built, ceiling UNCHANGED at 280,000 (94%). The 14th route
+  // moved this by +404 B and every one was chased, because a new route's eager
+  // cost is small, real, and the one place a "lazy" page can leak into first
+  // paint. Measured against a build of e5eae16, entry chunk only:
+  //
+  //   mapDeps table          +68   38 -> 40 rows, the two new chunks. Vite's
+  //                                hashes are fixed-length, so the ~30 OTHER
+  //                                specifiers that changed are ROTATIONS and
+  //                                contribute zero net bytes (p3·13 measured
+  //                                the same thing and it holds here).
+  //   ",OPERATE_SUPERSTRESS:" +23   the R key
+  //   "Umbrel community app store" +28  the ia.ts leaf's `note`
+  //   "Superstress hub"      +17   the ia.ts leaf's label
+  //   "superstress"          +13   App.tsx's markChunkResolved key
+  //   "./SuperstressPage-….js" +31 the new dynamic-import specifier
+  //                        ─────
+  //                         +180 named; the remaining ~224 is the minified
+  //                              React.lazy declaration, the <Route> element
+  //                              and the ia item object. NOT claimed as
+  //                              residual-zero — it is attributed to a shape,
+  //                              not to a byte count, and saying so is the
+  //                              difference between a measurement and a story.
+  //
+  // THE NEGATIVE CONTROL IS THE HALF THAT MATTERS, and it is clean: `P2Pool`,
+  // `disc-panel` and `SUPERBRAIN` — strings only the hub and its primitive
+  // declare — grep to ZERO in the eager entry. The page's 14 KB of prose is
+  // provably not in first paint.
   eagerJsRaw: 280_000,
   // lazyJsRaw — the population totalJsRaw's docstring was really describing:
   // "we shipped 200 kB of lazy code nobody has opened yet".
@@ -994,7 +1038,42 @@ const BUDGETS = {
   // loud; a helper function would be silent. Writing the real assertion — "no
   // eager chunk contains a string only this leaf declares" — is a small,
   // separate change and is deliberately NOT taken here.
-  lazyJsRaw: 871_000,   // p3·15: built 867,213 on the FINAL tree, margin 3,787.
+  lazyJsRaw: 886_000,   // p3·16: built 882,873 on the FINAL tree, margin 3,127.
+                        // p3·15: built 867,213, margin 3,787.
+  //
+  // p3·16 RAISE, 871,000 -> 886,000. A whole new ROUTE, which is the case this
+  // budget's own docstring describes: "code behind a dynamic import; growth
+  // here is paid only by visitors who open the route that owns it, so ask
+  // WHICH chunk before asking whether to raise this." Asked, and answered by
+  // a file-by-file diff of dist/assets against a build of e5eae16, paired by
+  // stem MULTIPLICITY (the `index` stem holds two chunks and they move by
+  // different amounts, one lazy and one eager — a basename-keyed diff files
+  // the lazy delta under the eager budget):
+  //
+  //   repoPulse         +17,300   MINTED. And the NAME IS MISLEADING, which is
+  //                               worth a sentence: this chunk is mostly
+  //                               pages/future/data.ts, not the 110-line
+  //                               repoPulse leaf. Vite names a chunk after one
+  //                               of its modules; the name is a label, not a
+  //                               contents list. data.ts reached a THIRD
+  //                               importer group when the hub imported it, and
+  //                               a leaf shared ACROSS GROUPS is what Rollup
+  //                               mints (p3·13's timeline-vs-timeCursor rule,
+  //                               confirmed a fourth time).
+  //   EcoPopup          -16,529   The other side of the same move: that data
+  //                               used to be inlined here. Net for the pair is
+  //                               +771, which is the spine's own growth plus
+  //                               chunk overhead — NOT 17,300 of new code.
+  //   SuperstressPage   +14,553   The page itself.
+  //   index[1]             +404   the EAGER entry — see eagerJsRaw.
+  //   FuturePage           +275   ProtoPopup's leading-"/" Link branch.
+  //   TrustedPeersPage      +37   the EcoPopup import-graph shift.
+  //                   ─────────
+  //                      +16,040 raw across 6 chunk slots; the other 63 slots
+  //                              of 68 stems are BYTE-IDENTICAL.
+  //
+  // RECONCILES EXACTLY: 16,040 total − 404 eager = 15,636 lazy, and
+  // 867,237 + 15,636 = 882,873, which is the built figure above. Residual ZERO.
                         // +3,516 raw over p3·14b's 863,697. THE WHOLE RAW DELTA
                         // RECONCILES TO THE BYTE and is worth stating that way,
                         // because this release's two raw budgets and its one route
@@ -1189,6 +1268,28 @@ const ROUTE_BUDGET_GZ = {
   '/future':                107_000, //  96,895
   '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
   '/operate/node':           92_000, //  83,305
+  // p3·16: NEW ROW — the 14th route. Built 101,893 on the FINAL tree, margin
+  //  3,107. Set from measurement, never guessed: a first budget chosen by eye
+  //  is a ceiling nobody can later argue with, because there is no recorded
+  //  number underneath it.
+  //  Its closure is 5 chunks — entry + vendor + the SuperstressPage chunk +
+  //  the shared future-data chunk + Skeleton. It is NOT the cheapest route in
+  //  the table and it is not meant to be: the hub is prose, and prose is the
+  //  one thing on this site that compresses well and renders instantly.
+  //  WHAT THIS ROW BOUGHT ELSEWHERE, recorded because it is the interesting
+  //  half: the hub's per-app essay was FIRST written into pages/future/data.ts
+  //  beside the five apps' shared one-liners. That module is imported by
+  //  FuturePage, TrustedPeersPage and the hub — three chunk groups — so Rollup
+  //  mints it a chunk and all three routes download every byte of it. Measured
+  //  in that shape, /future read 106,401 against its 107,000 ceiling: 599 B of
+  //  margin, on a route this PR barely touches, for prose it never renders.
+  //  Moving the essay into SuperstressPage.tsx (an exhaustive
+  //  Record<SuperbrainAppId, …>, so a sixth app is a compile error rather than
+  //  a missing row) bought back 1,167 B gzip on /future AND 1,167 B on
+  //  /about/peers for +79 B of total JS. Rollup chunks per MODULE, not per
+  //  export — canvasColor.ts and repoPulse.tsx already record this, and it is
+  //  now the third release in which the fix was to move a file, not a ceiling.
+  '/operate/superstress':   105_000, // 101,893
   // p3·15: 100,100 measured, margin 2,900. The comment previously read 91,082
   // and was stale by 6,437 — the table-wide staleness the /live/mempool note
   // above already records; only this row is re-baselined here, because
@@ -1301,7 +1402,37 @@ const ROUTE_BUDGET_GZ = {
 // sitting exactly on the ceiling — the state p2·10 recorded as "the upward half
 // is spent again". [60, 68] leaves ONE rung, which is stated here rather than
 // left to be rediscovered: the next shared leaf reds this line.
-const CHUNK_COUNT = 64;
+// ── p3·16 · 64 -> 66. IT REDDED AT 69, AND TWO CHUNKS ARRIVED, NOT ONE. ───
+// The first is `SuperstressPage`, and a net-new lazy ROUTE minting a chunk is
+// this splitting strategy working exactly as designed — the same call the
+// four notes above make for a net-new VIEW.
+//
+// The second was PREDICTED and the prediction named the wrong module. The brief
+// expected `repoPulse.tsx`/`useCachedFeed.ts` to split, on the grounds that the
+// hub would become a third importer group for them. Measured: `useCachedFeed`
+// already HAD its own chunk at e5eae16 (nothing can mint what exists), and the
+// module that actually crossed is `pages/future/data.ts` — which the hub imports
+// for the install steps, the store's own prose and the FCMP++ fork version, all
+// of which #184's single-source rule says it must not retype. The chunk it lands
+// in is NAMED `repoPulse`; that is a label Vite takes from one member module,
+// not a contents list, and EcoPopup shrinking by 16,529 in the same build is
+// where the bytes actually came from.
+//
+// A CONTROL was run rather than assumed, because "the hub's RepoPulseReadout
+// import costs a chunk" was the obvious story and it is FALSE: a build with that
+// one import removed still measures 69. The pulse costs 266 B raw and no chunk
+// at all. It stays — it is the page's only live element, on a site whose rule is
+// that a number is real or it is an em-dash.
+//
+//   widening ±4 -> ±5   would LOSE sensitivity. Not done, for the reason the
+//                       paragraphs above already give, four releases running.
+//   moving 64 -> 66     keeps ±4 exactly. Sensitivity is IDENTICAL.
+//
+// 66, not 65: [61, 69] would put reality exactly on the ceiling — the state
+// p2·10 named "the upward half is spent again" and p3·13 deliberately declined.
+// [62, 70] leaves ONE rung, stated here rather than left to be rediscovered:
+// the next shared leaf, or the next route, reds this line.
+const CHUNK_COUNT = 66;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

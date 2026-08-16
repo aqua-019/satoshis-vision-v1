@@ -51,6 +51,7 @@ const FuturePage         = React.lazy(() => import("@/pages/FuturePage").then((m
 const OutlookPage        = React.lazy(() => import("@/pages/future/OutlookPage").then((m) => { markChunkResolved("outlook"); return { default: m.OutlookPage }; }));
 const TrustedPeersPage   = React.lazy(() => import("@/pages/TrustedPeersPage").then((m) => { markChunkResolved("peers"); return { default: m.TrustedPeersPage }; }));
 const NodePage           = React.lazy(() => import("@/pages/NodePage").then((m) => { markChunkResolved("node"); return { default: m.NodePage }; }));
+const SuperstressPage    = React.lazy(() => import("@/pages/SuperstressPage").then((m) => { markChunkResolved("superstress"); return { default: m.SuperstressPage }; }));
 const SourcesPage        = React.lazy(() => import("@/pages/SourcesPage").then((m) => { markChunkResolved("sources"); return { default: m.SourcesPage }; }));
 const NotFoundPage       = React.lazy(() => import("@/pages/NotFoundPage").then((m) => { markChunkResolved("notfound"); return { default: m.NotFoundPage }; }));
 const SimulatePage       = React.lazy(() => import("@/pages/SimulatePage").then((m) => { markChunkResolved("simulate"); return m; }));
@@ -205,6 +206,7 @@ export function App({ useFeed }: AppProps = {}) {
 
           {/* ── Operate ──────────────────────────────────────────── */}
           <Route path={R.OPERATE_NODE}                     element={<NodePage />} />
+          <Route path={R.OPERATE_SUPERSTRESS}              element={<SuperstressPage />} />
 
           {/* ── About ────────────────────────────────────────────── */}
           <Route path={R.ABOUT_PEERS}                      element={<TrustedPeersPage />} />
