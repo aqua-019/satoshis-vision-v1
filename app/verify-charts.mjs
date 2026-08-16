@@ -89,12 +89,28 @@ const FIX = {
     height: H0 - i, hash: hex('e'), tx_count: 3 + i, block_weight: 9000 + i * 800,
     reward: 0.6e12, difficulty: 7.7e11, timestamp: nowSec - 60 - i * 120, pool_name: 'Unknown',
   })),
+  difficulty: {
+    points: Array.from({ length: 14 }, (_, i) => ({
+      /* Deterministic wobble, NOT Math.random(): a fixture that differs run to
+         run makes the gate's SUBJECT differ run to run, so a boundary-adjacent
+         assertion would flake and the flake would look like a defect. The two
+         peak fixtures below are already deterministic; this one was the odd
+         one out. */
+      height: H0 - i, timestamp: nowSec - 60 - i * 120, difficulty: 7.7e11 + ((i * 37) % 10) * 1e9
+    })),
+    ok: true,
+    range: "1d",
+    window_seconds: 86400,
+    target_seconds: 120,
+    tip: H0,
+  },
   price: { monero: { usd: 321.45, usd_24h_change: 1.23 }, bitcoin: { usd: 97_000, usd_24h_change: -0.4 } },
 };
 
 function fulfil(route) {
   const url = route.request().url();
   const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+  if (url.includes('/api/xmr/network/difficulty')) return json(FIX.difficulty);
   if (url.includes('/api/xmr/network')) return json(FIX.network);
   if (url.includes('/api/xmr/mempool')) return json(FIX.mempool);
   if (url.includes('/api/xmr/blocks')) return json(FIX.blocks);
@@ -276,18 +292,23 @@ for (const path of ['/live/markets', '/live/network', '/']) {
   const edgePeakFix = { ...FIX, blocks: Array.from({ length: 14 }, (_, i) => ({
     ...FIX.blocks[i],
     difficulty: i === 13 ? 7.83e11 : 7.4e11 + i * 1.0e9,
-  })) };
+  })), difficulty: { ...FIX.difficulty, points: Array.from({ length: 14 }, (_, i) => ({
+    height: H0 - i, timestamp: nowSec - 60 - i * 120, difficulty: i === 13 ? 7.83e11 : 7.4e11 + i * 1.0e9
+  })) } };
 
   // Interior-peak control: max stays well inside, should render fine before fix.
   const interiorPeakFix = { ...FIX, blocks: Array.from({ length: 14 }, (_, i) => ({
     ...FIX.blocks[i],
     difficulty: i === 6 ? 7.83e11 : 7.4e11 - i * 2.0e9,
-  })) };
+  })), difficulty: { ...FIX.difficulty, points: Array.from({ length: 14 }, (_, i) => ({
+    height: H0 - i, timestamp: nowSec - 60 - i * 120, difficulty: i === 6 ? 7.83e11 : 7.4e11 - i * 2.0e9
+  })) } };
 
   // Mock edge-peak fixture
   const edgePeakFulfil = (route) => {
     const url = route.request().url();
     const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+    if (url.includes('/api/xmr/network/difficulty')) return json(edgePeakFix.difficulty);
     if (url.includes('/api/xmr/network')) return json(edgePeakFix.network);
     if (url.includes('/api/xmr/mempool')) return json(edgePeakFix.mempool);
     if (url.includes('/api/xmr/blocks')) return json(edgePeakFix.blocks);
@@ -356,6 +377,7 @@ for (const path of ['/live/markets', '/live/network', '/']) {
   const interiorFulfil = (route) => {
     const url = route.request().url();
     const json = (d) => route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(d) });
+    if (url.includes('/api/xmr/network/difficulty')) return json(interiorPeakFix.difficulty);
     if (url.includes('/api/xmr/network')) return json(interiorPeakFix.network);
     if (url.includes('/api/xmr/mempool')) return json(interiorPeakFix.mempool);
     if (url.includes('/api/xmr/blocks')) return json(interiorPeakFix.blocks);

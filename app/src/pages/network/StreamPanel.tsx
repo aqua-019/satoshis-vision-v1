@@ -58,15 +58,24 @@ const KEYS_BLOCKS = ["blocks"] as const satisfies readonly FeedKey[];
 /**
  * The seed's own path, declared so `PanelBoundary` can name it in a failure.
  *
- * NOTE FOR THE GATE OWNER, and it is a coverage gap rather than a violation:
- * `verify-resilience.mjs` §8 matches `also=` with `/\balso=\{?"(\/api\/[a-z0-9-]+)"/`,
- * which accepts ONE path segment after `/api/`. This path has three, so the
- * regex does not match it AT ALL — the literal is neither validated nor
- * failed, it is invisible to the check. Writing `/api/xmr` instead would be
- * matched and would pass, and would also be a less true statement about where
- * this panel's data comes from, so it is not what is written here. The honest
- * fix is on the gate side (widen to `[a-z0-9/-]+` and resolve `api/<first
- * segment>.js`), which this PR does not own.
+ * THIS LITERAL IS GATED, and the route by which it became gated is worth
+ * recording. `verify-resilience.mjs` §8 used to match `also=` with
+ * `/\balso=\{?"(\/api\/[a-z0-9-]+)"/` — a character class excluding `/`, with
+ * the closing quote required immediately after. A SUB-PATH therefore never
+ * matched at all: not counted, not resolved, not checked, under a message
+ * reading "every literal also=… has a real handler behind it". Writing
+ * `/api/xmr` here would have been matched and would have passed, and would
+ * also have been a less true statement about where this panel's data comes
+ * from — so the true path was written and the gap reported rather than the
+ * claim trimmed to fit the instrument.
+ *
+ * §8 was widened in this same release by the gate owner and now captures
+ * broadly (`[^"]*`) and judges explicitly, including the production-reachability
+ * half a handler check alone would miss: Vercel serves `api/<seg>.js` at
+ * `/api/<seg>` and nothing beneath it, so a sub-path is only real where
+ * `vercel.json` rewrites `/api/<seg>/:path*`. Exactly one segment is rewritten
+ * today — `xmr`, whose `?_p=` `api/xmr.js` parses — which is what makes this
+ * three-segment path resolvable rather than a 404 that resolves on paper.
  */
 const SEED_PATH = "/api/xmr/network/difficulty";
 
