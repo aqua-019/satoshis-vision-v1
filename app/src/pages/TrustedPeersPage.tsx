@@ -9,6 +9,12 @@
  *
  * The stressnet entry has no `url` (it has no external site), so it keeps
  * modal-on-click.
+ *
+ * Any EcoEntry that carries a `repo` (currently only Superbrain) also gets a
+ * live GitHub pulse readout on its card, via future/repoPulse.tsx's
+ * RepoPulseReadout — the same markup DevLabPulseCard renders on /future, in
+ * its own leaf module rather than in future/cards.tsx (see that file's
+ * header for why a shared component that big cannot live in the fat module).
  */
 
 import * as React from "react";
@@ -18,6 +24,13 @@ import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Pill } from "@/design/primitives";
 import { ECOSYSTEM } from "./future/data";
 import { EcoPopup } from "./future/EcoPopup";
+// Imported from the LEAF, not from "./future/cards" — cards.tsx also
+// re-exports this name (so ProtoPopup's existing import keeps working), but
+// importing it from here means TrustedPeersPage's chunk never pulls in
+// ProtocolCard/MoneroNewsCard. See repoPulse.tsx's header: routing this
+// import through cards.tsx once already put /about/peers at 101,152 B gzip
+// against a 100,000 B ceiling.
+import { RepoPulseReadout } from "./future/repoPulse";
 import { R } from "../../scripts/routes.mjs";
 
 export function TrustedPeersPage() {
@@ -73,6 +86,18 @@ export function TrustedPeersPage() {
                   <h3 className="serif" style={{ margin: 0, fontSize: "clamp(28px, 2.2vw, 38px)", fontWeight: 400, color: e.c, textShadow: `0 0 16px ${e.c}55` }}>{e.name}</h3>
                   <div className="serif" style={{ fontSize: 15, color: "var(--ink-80)", fontStyle: "italic" }}>{e.head}</div>
                   <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7, flex: 1 }}>{e.blurb}</p>
+                  {/* Live repo pulse — only the entries that carry a `repo`
+                      get one (today: Superbrain). Not rendered on /future:
+                      neither FuturePage nor EcoPopup imports this component,
+                      so the page's pinned data-pulse="live" count (9) is
+                      unaffected — see TrustedPeersPage's own header note if
+                      that assumption is ever revisited. */}
+                  {e.repo ? (
+                    <div data-peer-pulse={e.repo}>
+                      <div className="kicker" style={{ marginBottom: 4 }}>Live repo pulse · {e.repo}</div>
+                      <RepoPulseReadout repo={e.repo} />
+                    </div>
+                  ) : null}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--rule)", paddingTop: 13 }}>
                     <button
                       type="button"

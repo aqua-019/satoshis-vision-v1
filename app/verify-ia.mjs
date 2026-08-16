@@ -552,6 +552,159 @@ try {
 }
 
 // ============================================================================
+// §7c · ia.ts future protocol & ecosystem ids ↔ data.ts (UNION, both directions)
+// ============================================================================
+/* WHY THIS SECTION EXISTS, AND WHAT IT GUARDS.
+ *
+ * §7 checks IA leaves against ROUTES after stripping query and hash. Every
+ * future leaf is `/future#<id>`, so all of them strip to the single route
+ * `/future`. The protocol cards (fcmp, seraphis, jamtis, carrot, cuprate) and
+ * the ecosystem panels (stressnet, xmrhub, kycrip, xmrclub, soon superbrain)
+ * are indistinguishable by path shape. §7 is structurally blind to membership
+ * in the same way §7b was — a renamed id could hide as a drop plus an add, or
+ * be absent entirely, and the gate would never notice.
+ *
+ * ia.ts hand-copies both lists from pages/future/data.ts (lines 118 and 125)
+ * in two SEPARATE arrays — FUTURE_PROTOCOL_META and ECOSYSTEM_META — so the
+ * two can be maintained independently. Both are spread into the same future IA
+ * column (ia.ts:204-205), making the runtime view: a union of 9 ids (or 10
+ * with superbrain), all sharing one path shape.
+ *
+ * The honest comparison subject is therefore the UNION — every id declared in
+ * data.ts must appear in ia.ts, and every id in ia.ts must be declared in
+ * data.ts. That covers both renames (drop + add) and absences. A name collision
+ * between the two arrays (one id in both FUTURE_PROTOCOLS and ECOSYSTEM) would
+ * be absorbed by the union check and stay green while the app rendered two
+ * different panels for the same anchor — so a disjointness assertion closes that
+ * gap.
+ *
+ * ── NOT-MATCHED (cases this section cannot see) ──────────────────────────
+ * (1) **Reordering within data.ts arrays** — both FUTURE_PROTOCOLS and ECOSYSTEM
+ *     are membership checks, so order is not asserted. A reordered id stays green.
+ * (4) **A data.ts id that never renders a panel** — this section verifies that
+ *     every id in data.ts appears in ia.ts, not that clicking it produces
+ *     anything other than an anchor scroll. Wireframe completeness is measured;
+ *     panel rendering is not.
+ */
+R.group('§7c · ia.ts future & ecosystem ids ↔ pages/future/data.ts (UNION, both directions)');
+
+try {
+  const dataSrc = stripComments(
+    readFileSync(join(__dirname, 'src', 'pages', 'future', 'data.ts'), 'utf8'),
+  );
+
+  // Helper: extract the source text of an export const ARRAY, from [ to matching ].
+  // Looks for 'export const NAME' pattern and captures everything to the closing ];
+  function extractArrayBody(src, constName) {
+    // Match: export const NAME: ... = [ ... ];
+    // Use a regex to find and extract the array content between [ and ]
+    const pattern = new RegExp(
+      `export\\s+const\\s+${constName}\\s*:[^=]*=\\s*\\[([\\s\\S]*?)\\];`,
+      'i'
+    );
+    const match = src.match(pattern);
+    return match ? match[1] : '';
+  }
+
+  // Extract both array bodies
+  const futureSrc = extractArrayBody(dataSrc, 'FUTURE_PROTOCOLS');
+  const ecosysSrc = extractArrayBody(dataSrc, 'ECOSYSTEM');
+
+  // Parse ids from each array using the standard regex
+  const futureIds = [...futureSrc.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
+  const ecosysIds = [...ecosysSrc.matchAll(/\{\s*id:\s*"([a-z]+)"/g)].map((m) => m[1]);
+
+  /* NON-VACUITY FLOOR — first, load-bearing. Every comparison below depends on
+   * having non-empty arrays. At length 0, set-difference checks are vacuously
+   * true and the section would report success for an empty source file. */
+  R.ok(futureSrc.length > 0,
+    futureSrc.length > 0
+      ? 'located FUTURE_PROTOCOLS array in source'
+      : 'could not locate "export const FUTURE_PROTOCOLS" — file structure changed or moved');
+  R.ok(futureIds.length > 0,
+    futureIds.length > 0
+      ? `FUTURE_PROTOCOLS parses ${futureIds.length} ids: ${futureIds.join(', ')}`
+      : 'parsed NO ids from FUTURE_PROTOCOLS — instrument is pointed at the wrong file or the literals changed shape');
+
+  R.ok(ecosysSrc.length > 0,
+    ecosysSrc.length > 0
+      ? 'located ECOSYSTEM array in source'
+      : 'could not locate "export const ECOSYSTEM" — file structure changed or moved');
+  R.ok(ecosysIds.length > 0,
+    ecosysIds.length > 0
+      ? `ECOSYSTEM parses ${ecosysIds.length} ids: ${ecosysIds.join(', ')}`
+      : 'parsed NO ids from ECOSYSTEM — instrument is pointed at the wrong file or the literals changed shape');
+
+  // Check disjointness: no id should appear in both arrays
+  const intersection = futureIds.filter((id) => ecosysIds.includes(id));
+  R.ok(intersection.length === 0,
+    intersection.length === 0
+      ? 'FUTURE_PROTOCOLS and ECOSYSTEM are disjoint (no id in both)'
+      : `${intersection.length} id(s) appear in BOTH arrays (each should appear in exactly one): ${intersection.join(', ')}`);
+
+  // Import ia.ts runtime
+  const iaModule = await import(join(__dirname, 'src', 'nav', 'ia.ts'));
+  const IA = Array.isArray(iaModule.IA) ? iaModule.IA : [];
+
+  // Find the column that carries /future# links (shape-based, not index-based)
+  const futureCols = IA.flatMap((s) => s.cols || [])
+    .filter((c) => (c.items || []).some((i) => i.p && i.p.includes('/future#')));
+
+  R.ok(futureCols.length === 1,
+    futureCols.length === 1
+      ? `exactly one IA column carries /future# links (header: "${futureCols[0].h}")`
+      : `expected exactly 1 IA column with /future# links, found ${futureCols.length}`);
+
+  if (futureCols.length === 1 && futureIds.length > 0 && ecosysIds.length > 0) {
+    const col = futureCols[0];
+
+    // Extract ids from ia.ts IA leaves: /future#<id> → id
+    const iaIds = (col.items || [])
+      .map((i) => (i.p.match(/#([a-z]+)$/) || [])[1])
+      .filter(Boolean);
+
+    // Combine both data.ts arrays (the runtime union)
+    const allDataIds = [...futureIds, ...ecosysIds];
+
+    // → direction: every id in data.ts appears in ia.ts
+    const missingFromIa = allDataIds.filter((id) => !iaIds.includes(id));
+    R.ok(missingFromIa.length === 0,
+      missingFromIa.length === 0
+        ? `all ${futureIds.length} FUTURE + ${ecosysIds.length} ECOSYSTEM ids appear in IA column`
+        : `${missingFromIa.length} id(s) missing from IA column: ${missingFromIa.join(', ')}`);
+
+    // ← direction: every id in ia.ts appears in data.ts (the #174 defect)
+    const unknownInIa = iaIds.filter((id) => !allDataIds.includes(id));
+    R.ok(unknownInIa.length === 0,
+      unknownInIa.length === 0
+        ? `all ${iaIds.length} IA links name an id in data.ts`
+        : `${unknownInIa.length} IA id(s) not in data.ts: ${unknownInIa.join(', ')} — this is the #174 defect`);
+
+    // Exactly once: a duplicated link would satisfy both set checks above
+    const dupes = iaIds.filter((id) => iaIds.filter((x) => x === id).length !== 1);
+    R.ok(dupes.length === 0,
+      dupes.length === 0
+        ? 'each data.ts id appears exactly once in the IA column (no duplicate links)'
+        : `not-exactly-once in IA: ${dupes.join(', ')}`);
+
+    // Assert all labels in the future IA column are non-empty (the `l` field the
+    // palette reads when rendering the column items). Checks runtime IA, not the
+    // source-side META arrays.
+    const futureColItems = col.items || [];
+    const emptyLabels = futureColItems
+      .filter((item) => !item.l || typeof item.l !== 'string' || item.l.trim() === '')
+      .map((item) => `"${item.l}" (path: ${item.p})`);
+
+    R.ok(emptyLabels.length === 0,
+      emptyLabels.length === 0
+        ? `all ${futureColItems.length} IA column items have non-empty labels`
+        : `${emptyLabels.length} item(s) with empty/missing labels: ${emptyLabels.join(', ')}`);
+  }
+} catch (e) {
+  R.ok(false, `§7c could not run — ${e.message}`);
+}
+
+// ============================================================================
 // §8 · Hash-based client navigation in MoneroPage.tsx
 // ============================================================================
 R.group('§8 · the 2 fragment redirects are real, and derived from HASH_REDIRECTS');

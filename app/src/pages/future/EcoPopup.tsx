@@ -71,6 +71,45 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
             {e.body.map((par, i) => (
               <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>{par}</p>
             ))}
+            {e.blocks?.length ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {e.blocks.map((blk, bi) => {
+                  // A single-line unordered block reads as a command, not a
+                  // list — render it as one bordered mono line instead of a
+                  // one-item bullet.
+                  const asCommand = !blk.ordered && blk.lines.length === 1;
+                  const ListTag: "ol" | "ul" = blk.ordered ? "ol" : "ul";
+                  return (
+                    <div key={bi}>
+                      <div className="kicker" style={{ marginBottom: 8 }}>{blk.label}</div>
+                      {asCommand ? (
+                        <div
+                          className="mono"
+                          style={{
+                            fontSize: "var(--fs-mono)",
+                            color: "var(--ink-80)",
+                            background: "var(--bg-2)",
+                            border: "1px solid var(--rule)",
+                            padding: "8px 12px",
+                          }}
+                        >
+                          {blk.lines[0]}
+                        </div>
+                      ) : (
+                        <ListTag
+                          className="mono"
+                          style={{ margin: 0, paddingLeft: 20, fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--ink-80)" }}
+                        >
+                          {blk.lines.map((line, li) => (
+                            <li key={li} style={{ marginBottom: li === blk.lines.length - 1 ? 0 : 6 }}>{line}</li>
+                          ))}
+                        </ListTag>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : null}
             {simId ? (
               <button
                 type="button"

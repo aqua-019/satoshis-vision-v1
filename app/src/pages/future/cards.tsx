@@ -9,6 +9,19 @@
  *                     age and issue age are SEPARATE readouts: a repo nobody
  *                     pushes to can still have live issue discussion, and
  *                     one combined badge reported that as a dead repo.
+ * RepoPulseReadout  — the live readout markup, so DevLabPulseCard and (via
+ *                     TrustedPeersPage) any partner card whose EcoEntry
+ *                     carries a `repo` (today: Superbrain) render the same
+ *                     star/issue/push/issue-age signal without duplicating
+ *                     it. Defined in ./repoPulse.tsx, NOT here — see that
+ *                     file's header for why: the first time a second surface
+ *                     imported it out of this module, Rollup chunked this
+ *                     WHOLE file (ProtocolCard, MoneroNewsCard, and their own
+ *                     imports included) into that surface's closure. Imported
+ *                     and re-exported below so every existing
+ *                     `import { RepoPulseReadout } from "./cards"` (and
+ *                     `{ FeedEmpty }`, ProtoPopup's) keeps resolving —
+ *                     TrustedPeersPage now imports the leaf directly instead.
  * MoneroNewsCard    — getmonero.org announcements + MRL research-lab issue
  *                     traffic, both 24h-cached and stamped with their age.
  *
@@ -25,9 +38,10 @@ import { Card } from "@/design/primitives";
 import {
   useRepoPulse, useMrlIssues, useMoneroBlog, repoPulseEndpoint,
   agoStr, isStale, FEED_PROXY,
-  type FeedState,
 } from "@/data/useCachedFeed";
 import type { FutureProtocol } from "./data";
+import { RepoPulseReadout, FeedEmpty } from "./repoPulse";
+export { RepoPulseReadout, FeedEmpty };
 
 /** "updated 4h ago" for a cache timestamp, or "" before anything is cached. */
 function stamp(at: number | null): string {
@@ -124,14 +138,6 @@ export interface DevLabPulseCardProps {
 
 export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
   const { pulse, state } = useRepoPulse(repo);
-  // Two INDEPENDENT staleness reads. Before v6.1.1 one badge derived from
-  // pushed_at spoke for the whole repo, so monero-project/research-lab —
-  // which nobody pushes to, but whose issues carry the actual MRL
-  // discussion — rendered as "repo quiet · 485d ago". That told visitors
-  // Monero research had stopped, which is false. Push age and issue age are
-  // different facts and now read as different lines.
-  const pushStale = pulse ? isStale(pulse.pushed) : false;
-  const issueStale = pulse ? isStale(pulse.issueAt) : false;
 
   return (
     <div
@@ -151,41 +157,7 @@ export function DevLabPulseCard({ repo, label, href }: DevLabPulseCardProps) {
           <a className="mono dim2" href={href} target="_blank" rel="noopener noreferrer" style={{ fontSize: "var(--fs-mono)" }}>{repo} ↗</a>
         )}
       </div>
-      {pulse ? (
-        // flexWrap so four readouts still fit at 390px, where .col-2 is 1-up.
-        <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", display: "flex", gap: 12, alignItems: "baseline", flexWrap: "wrap" }}>
-          <span>★ {pulse.stars.toLocaleString()}</span>
-          {/* GitHub's open_issues_count counts open PRs as issues. Saying
-              "issues N" without that caveat overstates the number. */}
-          <span>open issues {pulse.issues} <span className="dim2">(incl. PRs)</span></span>
-          {/* data-readout makes each signal individually addressable by the
-              DOM gate, instead of a whitespace-fragile innerText regex. */}
-          <span data-readout="push" style={{ color: pushStale ? "var(--y-50)" : "var(--g-50)" }}>
-            last push · {agoStr(pulse.pushed)}{pushStale ? " · quiet" : ""}
-          </span>
-          {/* A repo with no issue activity reports "—" in dim, never green:
-              absence of data is not a healthy reading. */}
-          <span data-readout="issue" style={{ color: pulse.issueAt ? (issueStale ? "var(--y-50)" : "var(--g-50)") : "var(--ink-40)" }}>
-            last issue activity · {agoStr(pulse.issueAt)}{pulse.issueAt && issueStale ? " · quiet" : ""}
-          </span>
-        </div>
-      ) : (
-        <FeedEmpty state={state} endpoint={repoPulseEndpoint(repo)} what="this repo's GitHub pulse" />
-      )}
-    </div>
-  );
-}
-
-/* ── empty states — visible, specific, never fabricated ─────────── */
-
-export function FeedEmpty({ state, endpoint, what }: { state: FeedState; endpoint: string; what: string }) {
-  if (state === "load" || state === "cached") {
-    return <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>fetching…</div>;
-  }
-  return (
-    <div className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)", border: "1px dashed var(--ink-20)", padding: "10px 12px" }}>
-      <code>{endpoint}</code> returned no data — {what} is fetched server-side and failed
-      upstream. Nothing cached yet; this retries on your next visit.
+      <RepoPulseReadout repo={repo} />
     </div>
   );
 }

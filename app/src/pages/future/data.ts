@@ -48,6 +48,14 @@ export interface EcoSlot {
   h?: number;
 }
 
+export interface EcoBlock {
+  label: string;
+  /** true → <ol>, false/absent → <ul>. Ordered means the steps must be
+   *  followed in sequence. */
+  ordered?: boolean;
+  lines: readonly string[];
+}
+
 export interface EcoEntry {
   id: string;
   name: string;
@@ -58,8 +66,18 @@ export interface EcoEntry {
   // empty grid
   c: string;
   url?: string; // the partner's own site
+  /** owner/name in GitHub's EXACT casing — api.github.com paths are
+   *  case-sensitive even where github.com redirects, and this string is
+   *  matched against api/feeds.js's GH_ALLOWED. See DevLabPulse.repo above,
+   *  which carries the identical contract. */
+  repo?: string;
   blurb: string;
   body: readonly string[];
+  /** Structured blocks (install steps, command lines) that body[]'s plain
+   *  <p> rendering (EcoPopup.tsx:71-73 renders each body string as one
+   *  paragraph) cannot carry — a multi-step install sequence folded into
+   *  body[] would collapse to a single run-on line with no step structure. */
+  blocks?: readonly EcoBlock[];
   simLink?: string;
   simLabel?: string;
   slots: readonly EcoSlot[];
@@ -335,6 +353,62 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     ],
     slots: [{ label: "panel embed · xmr.club feed", h: 150 }],
     links: [["xmr.club", "https://xmr.club/"]],
+  },
+  {
+    id: "superbrain", name: "Monero Superbrain", head: "run the whole stack yourself.",
+    kind: "Collaborator · sovereignty tooling", status: "PARTNER",
+    // Distinct hue: stressnet #4ade80, xmrhub #ff7a1a, kycrip #ff4d6d,
+    // xmrclub #b87aff — this is the fifth panel and fourth PARTNER, so it
+    // gets its own colour rather than reusing one that already carries
+    // meaning elsewhere on the page.
+    c: "#22d3ee",
+    url: "https://github.com/brainchainz/Monero-Superbrain",
+    repo: "brainchainz/Monero-Superbrain",
+    blurb: "An Umbrel community app store packaging five Monero apps for self-hosting — sovereignty tooling you run on your own hardware, not a site you visit.",
+    body: [
+      "An Umbrel community app store is a third-party catalogue pointed at from your own Umbrel node — not a hosted service, not a login, a directory of apps that install onto hardware you already own. Everything in it runs on your box, reads what your box can see, and stays up exactly as long as you keep it running.",
+      "The official Monero app is the one prerequisite every app here shares. MoneroSpace and SuperAtomic ask for more: both additionally need Bitcoin and Electrs installed first, since each reads chain state that neither the Monero node nor the store itself provides.",
+      "SuperAtomic's swap engine is a GPLv3 fork of eigenwallet/core, and the complete corresponding source is published at github.com/brainchainz/eigenwallet-core. That is real licence compliance, not a footnote, and it is worth naming in public.",
+    ],
+    blocks: [
+      {
+        label: "The five apps",
+        lines: [
+          "Superbrain — P2Pool + XMRig decentralised mining, accepting external miners over LAN or Tailscale.",
+          "SuperPay — self-hosted point-of-sale on a view-only wallet; spend keys never leave the device.",
+          "MoneroSpace — self-hosted block explorer and mempool visualiser; reads public chain data from your node.",
+          "Superstress — a full FCMP++ stressnet node routed through Tor, with a wallet lab.",
+          "SuperAtomic — XMR/BTC atomic-swap backend to the Eigen network.",
+        ],
+      },
+      {
+        label: "Install · Umbrel community app store",
+        ordered: true,
+        lines: [
+          "Open your Umbrel dashboard",
+          "App Store → Community App Stores",
+          "Add → paste: https://github.com/brainchainz/Monero-Superbrain",
+          "Install from the Brainchainz store",
+        ],
+      },
+      {
+        label: "Point external miners at Superbrain",
+        lines: ["xmrig -o umbrel.local:8888 -u \"Rig Name\" -p x"],
+      },
+    ],
+    slots: [
+      { label: "screenshot · umbrel community store listing", h: 130 },
+      { label: "screenshot · superbrain mining dashboard", h: 130 },
+    ],
+    // Link[0]'s label doubles as the card footer's short "visit X" text
+    // (TrustedPeersPage.tsx derives `primary` from links[0]) — kept short
+    // like its siblings' domain-style labels (xmrhub.org, kyc.rip, xmr.club)
+    // rather than the full repo path, so the footer row doesn't wrap.
+    links: [
+      ["Superbrain", "https://github.com/brainchainz/Monero-Superbrain"],
+      ["eigenwallet-core source (GPLv3)", "https://github.com/brainchainz/eigenwallet-core"],
+      ["Umbrel app store listing", null],
+    ],
   },
 ];
 

@@ -283,7 +283,25 @@ jobs:
       # find it under this name, and WITHDREW A CORRECT CONCLUSION about the
       # `&&` chain as a result. That is worse than the usual direction of this
       # failure, because a retraction looks like rigour.
-      - name: 'E2E gates (29) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +19'
+      # RECOUNTED, never incremented — and it was already stale before this
+      # change: the title read "(29) … +19" while the chain held 30 members,
+      # because p3·14b appended verify-stream without folding it in. p3·15
+      # appends verify-peers, so the honest figures are 31 and +21. Measured,
+      # not derived from the previous title:
+      #   node -e "console.log(require('./app/package.json')
+      #     .scripts['verify:e2e'].split('&&').length)"
+      #
+      # KNOWN AND NOT FIXED HERE: the comment block at the top of this file
+      # says "the vitals-last ordering inside verify:e2e" carries over
+      # unchanged. It no longer holds — verify-stream sits AFTER verify-vitals
+      # and is now the chain's tail. That inverts v6.1.9's reasoning, which put
+      # vitals last precisely because it is the most contention-sensitive gate
+      # in the suite and has zero dependents, so its (frequently environmental)
+      # red should mask nothing. Today a vitals red masks verify-stream.
+      # Restoring the invariant is a one-line move, but reordering an && chain
+      # changes what masks what for every member, so it belongs in its own
+      # change rather than riding along in a partner-card PR.
+      - name: 'E2E gates (31) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +21'
         run: npm run verify:e2e
 
       # ── v2·3b: four gates that existed, asserted real things, and ran in
