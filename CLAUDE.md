@@ -670,6 +670,20 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `verify-legibility:124` records "floor raised 10.5 → 11. Nothing below 11 ships". The four counts
   are new evidence on this file's standing 11-vs-12 STANDARDS CONFLICT and they say the hub is
   ordinary rather than an outlier.
+  **AND `pgrep -f` MATCHED THE WAITER ITSELF — p3·15's EXACT DEFECT, committed by the author of
+  the sentence that records it, in the same session.** Two `until ! pgrep -f "node verify-"; do
+  sleep; done` loops never terminated, because each one's OWN bash command line contains the
+  literal `node verify-`, so the pattern always matches at least one process and the negation is
+  unsatisfiable. Verified rather than assumed, by reading `/proc/<pid>/cmdline` for both and
+  grepping it for the pattern the loop uses — both matched; `pgrep -af "^node verify-"` (anchored)
+  found no real gate at all. p3·15's instance was `pgrep -f "vite build"`; the pattern differs and
+  the shape does not, which is what makes it a family rather than a bug.
+  **The cost was hidden by redundancy, which is the part worth keeping**: the chain's completion
+  was learned from the npm task's own exit and from a Monitor, so the deadlock cost nothing and
+  announced nothing — two waiters simply never fired, and a run that depended on ONE of them would
+  have hung with no signal. Remedies, both already in this file: kill BY PID, and never build a
+  liveness test whose pattern can match the thing doing the testing. An anchored `pgrep -af
+  "^node verify-"`, or `pgrep -f … | grep -v $$`, is the cheap fix.
   **THE STALE-`dist` TRAP BIT TWICE, from a door this file had not recorded**: the break-test
   harness restores SOURCE and leaves the MUTATED BUILD on disk, so the very next verification run
   measures a tree that no longer exists. Once it reported 7 phantom failures on a clean tree, once
