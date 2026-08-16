@@ -88,19 +88,19 @@ touched. No new gate FILE unless a browser assertion is genuinely needed.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run build` exits 0
-- [ ] `node verify-releases.mjs` exits 0, and its assertion count is REPORTED (not incremented from docs)
-- [ ] `npm run verify:static` exits 0
-- [ ] The release identity is DECIDED, with the reasoning written IN THE CODE (not only in the PR body)
-- [ ] `SITE_VERSION` and the release list both derive from that one decided identity
-- [ ] A static assertion compares `SITE_VERSION` against an authoritative source that MOVES ON ITS OWN, so it detects STALENESS and not merely disagreement; proven with a two-polarity transcript (deliberate mismatch red, then committed-blob restore)
-- [ ] The zero-auto-entries state renders in the house honest-empty vocabulary — the page never implies an automatic feed is producing entries when it has produced none
-- [ ] The era seam between PR-keyed and version-keyed entries renders as a labelled discontinuity, never an unexplained jump
-- [ ] Curated prose survives byte-for-byte (existing gate assertions stay green)
-- [ ] The CURATED prose is no longer in the served eager entry chunk — proven by a grep returning 0 where it returned 1
-- [ ] Every budget re-measured on the FINAL tree; any raise is red-then-green with the delta attributed and the comment re-derived AFTER the last src commit
-- [ ] Census RECOUNTED (never incremented), both places CLAUDE.md states it
-- [ ] Renders captured and LOOKED AT: topbar label ×2 routes, release section fed + empty, the seam, 390px, reduced motion
+- [x] `npm run build` exits 0
+- [x] `node verify-releases.mjs` exits 0 — **38 assertions** (was 15), counted from its own output
+- [x] `npm run verify:static` exits 0 (22 members)
+- [x] Identity DECIDED and argued in `src/data/siteVersion.ts`'s header, options (a)–(d) with the measurement that killed (a)
+- [x] Both surfaces derive from it: label from `SITE_ERA`/`SITE_PR`, list from `/api/feeds?src=pulls`
+- [x] Staleness gate vs `handoffs/LOG.md`; break tests M1 (stale → red) and M2 (99999 → red), restores verified against the committed blob
+- [x] `verify-releases-dom` §2 (6 assertions); break test M7 restores the pre-fix header and reds it
+- [x] `verify-releases-dom` §4, including the ABSENCE half; break test M8
+- [x] All 15 pre-existing `verify-releases` assertions still green, unmodified except the SITE_VERSION shape check
+- [x] All five strings 1 → **0** in the served entry; `eagerJsRaw` −1,025 B
+- [x] `/about/sources` 95,000 → 98,000, red-then-green, residual ZERO both halves, comment written after the last src commit
+- [x] 83/79/22/33/68, script CONTROLLED against bda0491 first; both places corrected
+- [x] 6 states captured and viewed; two defects found by looking (seam colour, and the desktop scroll container)
 - [ ] Branch pushed · draft PR opened via GitHub MCP · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
@@ -114,12 +114,65 @@ cd app && node verify-bundle.mjs
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+**status**: done
+
+**pr**: (filled at exit)
+
+**commits**: handoff · identity+gate · DOM gate · wiring/budgets/docs
+
+**deps added**: none. `package-lock.json` untouched.
+
+**the decision, and what measurement overturned**
+
+Release identity is **PR-keyed** (option (a) in spirit), but NOT by the mechanism the
+brief proposed, and the correction is the durable finding:
+
+- §0.3(a) said merges carry "a descriptive branch/PR title". Measured with
+  `git log -1 --format=%B` over the last four merges: the single line
+  `Merge pull request #NNN from aqua-019/<branch>` **is the entire message — no body** —
+  and the branch is a random slug. A merge parser yields
+  `#185 — claude/prompt-attached-8fdjhd`.
+- The titles exist on the **pulls** endpoint: number + title + `merged_at` + `html_url`
+  in ONE request, cheaper than the commits path's up-to-three pages.
+- `merged` is unreliable on that LIST endpoint (reads `false` on #178–#185, all merged);
+  `merged_at != null` is the reliable test, pinned by fixture and by break test M6.
+- (b) resume `vX.Y.Z` stamps: rejected — nothing structural produces them, which is why
+  they stopped. (c) declare dormant: adopted as the FLOOR (the honest-empty state), not
+  as the answer, because this surface can work.
+
+**the defect, stated more precisely than the brief did**
+
+Not merely "the page implies a feed is producing entries". The header ternary had THREE
+branches for a FOUR-state feed, and an empty array is truthy, so the live state rendered
+**`github commits · 0 releases` directly above five curated rows** — a self-contradiction
+in one screenful, with every offline assertion green. Proven executably, then reproduced
+in a browser by break test M7.
+
+**the gate's shape (the §0.4 requirement, and why the obvious form fails)**
+
+An equality gate between two hand-maintained constants detects DISAGREEMENT, not
+STALENESS. Pinning `SITE_VERSION` to `package.json` would have been green for all
+twenty-two releases this rotted through. The authority must MOVE ON ITS OWN →
+`handoffs/LOG.md`; and must be a committed FILE, not git history → `ci.yml` checks out at
+depth 1. Invariant `logMax <= SITE_PR <= logMax + 1`: may lead by one, never lag.
+
+**deviations from spec**
+
+1. `api/feeds.js` gained a `src=pulls` source. Sanctioned by the subject line
+   ("only if your chosen source needs it"); `src=commits` is KEPT, dormant by design and
+   still unit-gated.
+2. A new gate FILE was added (`verify-releases-dom.mjs`), which §0.9 permits when a
+   browser assertion is genuinely needed. It is: the defect is a rendered relationship
+   between a header and a list, which has no offline form. Wired **mid-chain at
+   `verify:e2e` position 16**, never the tail.
+3. §0.5's leaf: `SITE_VERSION` moved to `data/siteVersion.ts`, but `releases.ts`
+   deliberately re-exports NOTHING from it — an extensionless re-export builds under Vite
+   and breaks the gate under Node's loader. No consumer needed it.
+
+**notes for ARCHITECTURE.md patch**: a "Release identity" row was added to CLAUDE.md's
+Architecture Notes table; census corrected in BOTH places it is stated.
+
+**open questions**: none blocking. Named and deliberately not fixed: the vitals-last
+`verify:e2e` inversion (#184 F4), and the ten hollow `/future#<id>` palette anchors.
 
 ## 8 · LOOP FEEDBACK

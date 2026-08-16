@@ -311,7 +311,7 @@ jobs:
       # zero dependents. Beside verify-peers is also where it belongs by
       # subject: the two share a data source and assert complementary halves
       # of it.
-      - name: 'E2E gates (32) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · +22'
+      - name: 'E2E gates (33) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · +22'
         run: npm run verify:e2e
 
       # ── v2·3b: four gates that existed, asserted real things, and ran in

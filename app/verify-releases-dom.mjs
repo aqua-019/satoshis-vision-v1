@@ -258,4 +258,16 @@ R.info(`engine: ${engine}`);
 }
 
 await browser.close();
-R.finish();
+/* `makeReporter().finish()` RETURNS an exit code, it does not call
+   process.exit — so a bare `R.finish();` prints "❌ FAILURES" and then exits 0.
+   In an `&&` chain that is a gate which cannot fail a build: every assertion
+   above could go red and `verify:e2e` would carry on to the next member and
+   report success.
+
+   The first version of this file did exactly that. It was caught by the break
+   test asserting on the EXIT CODE rather than on the presence of a ❌, and a
+   sweep then showed this was the only bare `R.finish();` in the suite — all
+   50+ other reporter-based gates already do `process.exit(R.finish())`.
+   Reviewing the assertions would never have found it; every one of them was
+   correct and correctly red. */
+process.exit(R.finish());
