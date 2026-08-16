@@ -697,11 +697,33 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **FOUND: this file's own CI figure read 65 at `:54` while its Status section read 66** — the
   two-figures-disagreeing defect it records against itself twice already, recurring because a
   recount updated one place and not the other. Both corrected.
-  `verify-superstress.mjs` is **60 assertions in ten sections**, wired **MID-CHAIN at `verify:e2e`
+  `verify-superstress.mjs` is **61 assertions in ten sections** (measured standalone AND in the
+  chain, which agree; an earlier draft of this note said 60 and was stale by one after the
+  embargo fix swapped one assertion for two — the stale-self-count defect this file records,
+  caught before shipping by reading the chain's own summary line), wired **MID-CHAIN at `verify:e2e`
   position 15, beside `verify-peers`** — never at the tail, because the tail already carries the
   inverted vitals-last invariant (#184 F4) and appending there deepens a known defect. It installs
   NO cold-boot bypass, and that was VERIFIED by running `verify-coldboot-live` §0's own five
   `REACHES_HOME` patterns against it rather than by reasoning about them.
+  **SIX BREAK TESTS, each restore proven against the COMMITTED BLOB and swept for markers**:
+  M1 panel never hides → 2 reds · M2 the house conditional-mount shape → 5 reds INCLUDING
+  "0 of 5 panels in the prerendered html", which is the measurement the deviation rests on ·
+  M3 seven-way → 6 reds in six sections · M4 the partner block reverted to literals plus one
+  edited `fn` → 1 red naming the diverged sentence · M5 a sixth app → fires on THREE levels
+  (a `TS2741` compile error from the `Record<SuperbrainAppId, …>`, the count literal, and the
+  runtime exhaustiveness check) · M6 an animation forced onto the row → `zero running
+  animations under reduced motion (active: 5)`. **M6 exists because §9 was the one section with
+  no mutation** — its green was real and unpaired, which is not the same as verified, and saying
+  so before adding it is the honest order.
+  **TWO DEFECTS FOUND BY LOOKING AT THE RENDER, neither visible to any gate.** (1) The page said
+  **"5 APPS" twice within 60px** — the crumbs `status` and the header pill carried the same
+  string, and the crumbs LED PULSES, implying a live reading for a constant. TrustedPeersPage
+  carries both slots legitimately because its two say different things; duplicating one string
+  is not that pattern, and NodePage — this section's other leaf — passes no status at all.
+  Nothing compares two labels for saying the same thing. (2) The render probe's own selector for
+  the /future stressnet band used the EcoEntry's `head` text, which is rendered INSIDE the modal
+  and not on the band that opens it — a selector for text that only exists after the click
+  cannot perform the click, and it timed out and killed the probe after 8 of 10 shots.
   **NOT FIXED, and named**: the vitals-last inversion (#184 F4) is untouched — reordering an `&&`
   chain changes what masks what for every member. The ten `/future#<id>` palette anchors are still
   hollow; this page adds no eleventh and its gate asserts it adds none. `scripts/routes.mjs`'s

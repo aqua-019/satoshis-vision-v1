@@ -122,3 +122,49 @@
   palette rows point at `/future#<id>` and no such fragment has an anchor target — §7c's own
   stated blind spot, occupied. verify:static and verify:e2e (31/31) both NPM_EXIT=0 at a build
   whose sha equals HEAD. PR https://github.com/aqua-019/satoshis-vision-v1/pull/184
+- XMRIRISH-20260816-38 · done · p3·16 "THE SUPERSTRESS HUB" — `/operate/superstress`, the
+  FOURTEENTH route and the first minted since the v6.1.6 restructure: the Umbrel community app
+  store explained, five apps behind a new shared `Disclosure` primitive, the install walkthrough,
+  a stressnet deep dive for a reader who has never heard the word, and a betanet slot reserved at
+  its final height that names the missing telemetry endpoint instead of faking one.
+  **THE REGISTRATION SWEEP IS TEN SURFACES AND THE BRIEF ENUMERATED SIX.** The four it missed are
+  all hand-copied lists nothing derives — `index.html`'s `#boot-fallback` nav, `verify-nojs`'s
+  13-path literal, `verify-ia` §1's COUNT-AND-ORDER pair (which reds before §7, the section the
+  brief actually named), and `verify-pageshell`'s tier table. A TENTH was found by the compiler:
+  `scripts/routes.d.mts`. The reusable instruction is a command, not a longer checklist —
+  `grep -rn '/operate/node'` finds every copy, because the sibling route's literal lives exactly
+  where a new route must.
+  **THE CHUNK PREDICTION NAMED THE WRONG MODULE AND A CONTROL DISPROVED THE OBVIOUS STORY.** 69
+  chunks, but `useCachedFeed` already had one and the hub's `RepoPulseReadout` import costs NONE
+  — a build without it still measures 69. What crossed a third chunk group is
+  `pages/future/data.ts`; the chunk merely gets NAMED `repoPulse`. `CHUNK_COUNT` 64 → 66 (not the
+  briefed 65: at 69, [61,69] sits reality on the ceiling, which p3·13 declined), ±4 unchanged.
+  **A 599 B MARGIN ON A ROUTE THIS PR BARELY TOUCHED**, fixed by moving a file rather than a
+  ceiling: the hub's per-app essays left `data.ts` for an exhaustive `Record<SuperbrainAppId, …>`
+  in the page, buying back 1,167 B gzip on `/future` AND on `/about/peers` for +79 B total.
+  **THE DISCLOSURE PRIMITIVE DEVIATES FROM THE HOUSE MODEL AND THE DEVIATION IS MEASURED**: under
+  the conditional-mount shape ZERO panels reach the prerendered document, so a JS-off reader gets
+  five buttons that cannot open; rendered-always plus a `.nojs-reveal` noscript rule, a
+  `javaScriptEnabled:false` context measures 5 panels visible carrying 3,316 chars.
+  **FIVE GATE DEFECTS, ALL MINE, ALL FOUND BY BREAK TESTS RATHER THAN REVIEW — and TWO were
+  assertions that COULD NOT FAIL**: a case-sensitive regex against `text-transform:uppercase`
+  (vacuous for all five apps; fixed with a paired positive control), and a check comparing the
+  source to itself through the DOM (now reads the OTHER surface). Plus a `stripComments` that
+  blanked the `//` inside an install step's URL, a missing-element locator that hung 30 s and
+  masked four later sections, and — the p3·15 trap one release later — the gate tripping the
+  lineage embargo BY QUOTING IT.
+  **The stale-`dist` trap bit TWICE** from a door not previously recorded: the break harness
+  restores SOURCE and leaves the MUTATED BUILD, so the next run measures a tree that no longer
+  exists. Both results were void and discarded.
+  Budgets red-then-green on the FINAL tree, delta paired by stem multiplicity and reconciling to
+  RESIDUAL ZERO: `lazyJsRaw` 886,000 (882,873) · `totalJsRaw` 1,150,000 (1,146,258) · new
+  `/operate/superstress` 105,000 (101,893). `eagerJsRaw` ceiling untouched; its +404 B chased,
+  +180 attributed to five named literals and two mapDeps rows, the remainder attributed to a
+  SHAPE and NOT claimed as residual-zero. Negative control clean. `cssGz` NOT raised (not
+  crossed) and its margin is now 300 B, said out loud.
+  Census RECOUNTED with the counting script CONTROLLED against `e5eae16` first (it reproduces
+  that commit's 66/22/31 exactly): **82 files / 78 gates · CI 67 · static 22 · e2e 32 · routes
+  14 · verify-lib ROUTES 48**. Two pre-existing internal disagreements corrected — CLAUDE.md's
+  own CI figure read 65 while its Status section read 66, and `verify-lib`'s docblock said
+  "stays 43" against a measured 47.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/185
