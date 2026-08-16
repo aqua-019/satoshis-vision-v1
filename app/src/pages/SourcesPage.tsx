@@ -357,7 +357,15 @@ export function SourcesPage() {
                 <div
                   data-release-seam=""
                   className="mono dim2"
-                  style={{ fontSize: "var(--fs-label)", lineHeight: 1.6, padding: "14px 0 10px", borderTop: "1px solid var(--rule)", color: "var(--y-50)" }}
+                  /* NOT var(--y-50). That is the warning colour `FeedEmpty`
+                     uses, and it is right there — an endpoint returned nothing
+                     — but this divider is neither data nor a warning, it is
+                     editorial annotation like the lede above it. Rendered in
+                     the warning colour it was the LOUDEST text in the panel,
+                     competing with the `.acc` version ids, which on this site
+                     mean crypto data and nothing else. Found by looking at the
+                     render; no gate sees colour hierarchy. */
+                  style={{ fontSize: "var(--fs-label)", lineHeight: 1.6, padding: "14px 0 10px", borderTop: "1px solid var(--rule)" }}
                 >
                   Above: keyed by pull request. Below: keyed by version, ending at v5.0.20. The
                   releases between — the rest of v5.0.x through v6.1.x, and the pull requests that
