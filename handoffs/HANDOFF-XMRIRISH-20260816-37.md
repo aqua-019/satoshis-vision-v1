@@ -13,13 +13,23 @@ owner: claude-code
 ## 1 · GOAL
 
 `github.com/brainchainz/Monero-Superbrain` becomes the **fourth ecosystem partner** on
-`/about/peers` and the fifth ecosystem panel on `/future`: an Umbrel community app store
+`/about/peers`: an Umbrel community app store
 carrying five Monero apps, framed as sovereignty tooling (software you run on your own
 box) rather than as another site you visit. Its card carries a **live** repo pulse — no
 star or commit count is ever typed into JSX. Shipped alongside it, and the more durable
 half: the **`ECOSYSTEM_META` ↔ `ECOSYSTEM` drift gap is closed** by a both-directions
 verify-ia section, so the next entry added without its palette row is a red rather than a
 silently-invisible panel.
+
+**CORRECTION to this GOAL, measured after it was written.** It originally read "and the
+fifth ecosystem panel on `/future`", carried over from the brief's §0.4 ("FuturePage
+renders the same array, so the panel appears there too"). That is FALSE, and not only for
+this entry: `FuturePage` uses `ECOSYSTEM` solely to look up a modal, and its only
+`setEco` call is `"stressnet"`. Measured in the prerendered HTML — XMRHUB, kyc.rip,
+xmr.club and Monero Superbrain each return 0 on `/future` and 1 on `/about/peers`. No
+partner panel renders on `/future` for ANY of the four. The entry ships to `/about/peers`
+only; the `/future#superbrain` palette row follows the three existing partners'
+convention, and that convention's own defect is recorded in §7 open questions.
 
 ## 2 · CONTEXT
 
@@ -70,22 +80,28 @@ any change to the three existing partner entries or the `stressnet` card.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run build` exits 0 (typecheck runs inside it — `tsc -b && vite build`)
-- [ ] `node verify-bundle.mjs` exits 0 with every raised ceiling red-then-green on the
-      FINAL tree, built + margin ≤ 4,000
-- [ ] `npm run verify:static` exits 0
-- [ ] `npm run verify:e2e` exits 0 (all 30 members, `verify-future` and `verify-ia` among them)
-- [ ] `verify-ia`'s new section shows a **two-polarity** transcript: a scratch state with
-      the new `ECOSYSTEM_META` row deleted goes RED naming the missing id, and a scratch
-      state with a phantom META id goes RED in the reverse direction
-- [ ] `/about/peers` renders FOUR partner cards; the Superbrain card's href is exactly
-      `https://github.com/brainchainz/Monero-Superbrain`
-- [ ] The install block renders complete and in order (4 steps)
-- [ ] No digit-literal in the pulse JSX — machine-checked
-- [ ] `grep -rn "mempool\.space" app/src` returns empty (bracketed)
-- [ ] Renders captured and LOOKED AT: /about/peers (pulse live + pulse absent), the
-      EcoPopup brief open, /future with the fifth panel, ⌘K finding it, 390px, reduced motion
-- [ ] Branch pushed · draft PR opened · `mergeable_state` reported
+- [x] `npm run build` exits 0 (typecheck runs inside it — `tsc -b && vite build`)
+- [x] `node verify-bundle.mjs` exits 0 with every raised ceiling red-then-green on the
+      FINAL tree, built + margin ≤ 4,000 — 27 passed · 0 failed; margins 3,787 / 3,806 / 2,900
+- [x] `npm run verify:static` exits 0 — `NPM_EXIT=0`
+- [x] `npm run verify:e2e` exits 0 — **31** members, `NPM_EXIT=0`, 0 failures, on a build
+      whose `build-sha == HEAD`. (This box said "30" when written; `verify-peers` made it 31.)
+- [x] `verify-ia`'s new section shows a **two-polarity** transcript — THREE rounds, re-run
+      by the lead: missing id, phantom id, and the non-vacuity floor (40 → 34 passed, the
+      guarded block declining rather than passing vacuously)
+- [x] `/about/peers` renders FOUR partner cards; the Superbrain card's href is exactly
+      `https://github.com/brainchainz/Monero-Superbrain` (lowercase spelling asserted ABSENT)
+- [x] The install block renders complete and in order (4 steps, in an `<ol>`)
+- [x] No digit-literal in the pulse JSX — machine-checked, with a located-subject
+      precondition so the check cannot go green by grepping the wrong file
+- [x] The banned-domain sweep returns empty tree-wide — 0 hits across all 472 in-corpus
+      files, re-run after the CLAUDE.md note landed. (This box originally quoted the banned
+      literal in escaped form; reworded, because the escape is the only thing that kept it
+      from tripping the gate it was checking.)
+- [x] Renders captured and LOOKED AT — 7 states, 0 shutter refusals. **The `/future` state
+      was corrected**: see the GOAL note, no partner panel renders there for any of the four.
+- [x] Branch pushed · draft PR opened · `mergeable_state` reported — #184, `clean`, 3/3 checks
+      green, 0 review comments
 
 ## 6 · VERIFY COMMANDS
 
