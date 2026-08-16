@@ -306,9 +306,58 @@ try {
   const mismatched = APP_FNS.filter((fn) => !summaries.includes(fn));
   R.ok(mismatched.length === 0,
     mismatched.length === 0
-      ? 'every row summary is BYTE-IDENTICAL to the `fn` the partner block derives from'
+      ? 'every row summary is byte-identical to the `fn` parsed from data.ts source'
       : `${mismatched.length} summary/source mismatch(es): ${mismatched.join(' | ')}`,
-    'this is the assertion that makes the single-source claim real — the partner block on /about/peers renders `${name} — ${fn}` from the same array, so a divergence here is a divergence there');
+    'this catches a hardcoded summary on the hub — but NOT a divergence between the two surfaces; see the cross-surface check below');
+
+  /* THE CROSS-SURFACE CHECK, and the reason it exists is a break test that
+     failed to go red.
+     The assertion above compares the hub's DOM to data.ts's SOURCE. Both
+     sides derive from the same array, so changing an `fn` moves them
+     together and the check stays green — it is comparing the source to
+     itself through the DOM. It proves the hub does not hardcode a summary,
+     which is worth proving, and it is NOT the single-source claim.
+     The single-source claim is about TWO SURFACES, so it has to read the
+     other one: /about/peers renders `${name} — ${fn}` from the same array
+     inside the Superbrain brief. Comparing the hub's rendered summaries to
+     THAT rendered list is the only version of this assertion that could ever
+     have caught the drift it exists to prevent. */
+  const peers = await browser.newPage();
+  await peers.route('**/api/feeds*', (r) => r.fulfill({ status: 500, body: '{}' }));
+  await peers.goto(BASE + '/about/peers', { waitUntil: 'networkidle' });
+  /* The Superbrain card is found BY NAME, not by index. `text=our brief`
+     matches FIVE elements on that page (the button and an ancestor), so a
+     bare `nth=3` targets whichever of those happens to land third — an
+     index chosen by assumption, which is how verify-ia §7b/§7c both ended up
+     locating their columns by SHAPE instead. Deriving the index from the
+     rendered card headings survives a reordering of ECOSYSTEM. */
+  const cardNames = await peers.evaluate(() =>
+    [...document.querySelectorAll('.v6-stagger h3')].map((h) => h.textContent.trim()));
+  const sbIdx = cardNames.findIndex((n) => /Superbrain/i.test(n));
+  R.ok(sbIdx >= 0, `located the Superbrain card on /about/peers (index ${sbIdx} of ${cardNames.length})`,
+    `cards rendered: ${cardNames.join(', ')}`);
+  await peers.locator('button', { hasText: 'our brief' }).nth(sbIdx).click();
+  await peers.waitForSelector('.v6-modal-body');
+  const partnerLines = await peers.evaluate(() => {
+    /* textContent, NOT innerText: the block label is a `.kicker` and carries
+       text-transform:uppercase, so innerText would return "THE FIVE APPS"
+       and a label match would silently fail. Same trap as §5's. */
+    const label = [...document.querySelectorAll('.kicker')]
+      .find((e) => /five apps/i.test(e.textContent));
+    const list = label && label.parentElement.querySelector('ul, ol');
+    return list ? [...list.querySelectorAll('li')].map((li) => li.textContent.trim()) : [];
+  });
+  R.ok(partnerLines.length === APP_FNS.length,
+    `the partner brief on /about/peers renders ${APP_FNS.length} app lines (found ${partnerLines.length})`,
+    'a zero here makes the comparison below vacuous — it is the floor, not the finding');
+  if (partnerLines.length > 0) {
+    const drift = summaries.filter((sum) => !partnerLines.some((line) => line.endsWith(sum)));
+    R.ok(drift.length === 0,
+      drift.length === 0
+        ? `all ${summaries.length} hub summaries appear VERBATIM in the partner brief — the two surfaces cannot disagree`
+        : `${drift.length} sentence(s) the hub says and the partner brief does not: ${drift.join(' | ')}`);
+  }
+  await peers.close();
 
   /* ══ §4 · the install walkthrough ════════════════════════════════════ */
   R.group('§4 · install walkthrough — ordered, complete, and an <ol>');
@@ -349,19 +398,42 @@ try {
   /* ══ §5 · MoneroSpace, by function only ══════════════════════════════ */
   R.group('§5 · MoneroSpace is described by FUNCTION ONLY');
 
+  /* THE MATCH IS CASE-INSENSITIVE, AND THAT IS A FIX, NOT A LOOSENING.
+     `.kicker` carries `text-transform: uppercase`, and innerText returns the
+     RENDERED text — so the heading reads "WHY IT MATTERS" and a
+     case-SENSITIVE /Why it matters/ matched nothing on ANY app. The absence
+     check therefore passed for monerospace for a reason unrelated to
+     monerospace, and a break test that gave it a `why` produced ZERO reds.
+     Same family as the σ→Σ finding p3·14 recorded: CSS text-transform
+     changes what a gate reads, not merely how it looks. */
   await page.click('[data-disclosure="monerospace"] button');
-  const ms = await page.evaluate(() => {
-    const d = document.querySelector('[data-disclosure="monerospace"]');
+  const readPanel = (id) => page.evaluate((appId) => {
+    const d = document.querySelector(`[data-disclosure="${appId}"]`);
     const b = d.querySelector('button[aria-controls]');
     const p = document.getElementById(b.getAttribute('aria-controls'));
-    return { text: p.innerText, hasCaveat: !!p.querySelector('[data-app-caveat]'), hasWhy: /Why it matters/.test(p.innerText) };
-  });
+    return { text: p.innerText, hasCaveat: !!p.querySelector('[data-app-caveat]'), hasWhy: /why it matters/i.test(p.innerText) };
+  }, id);
+
+  const ms = await readPanel('monerospace');
   R.ok(ms.hasCaveat, 'its panel carries the open-question caveat');
   R.ok(/open question/i.test(ms.text) && /maintainer/i.test(ms.text),
     'the caveat names it as an open question with the maintainer');
+
+  /* THE PAIRED POSITIVE CONTROL, and it is the half that gives the absence
+     below any content at all. Without it, "monerospace has no Why" cannot be
+     told apart from "the selector is broken and NOBODY has one" — which is
+     exactly the state this section shipped in until a break test found it. */
+  const controlId = APP_IDS.find((id) => id !== 'monerospace');
+  await page.click(`[data-disclosure="${controlId}"] button`);
+  const control = await readPanel(controlId);
+  R.ok(control.hasWhy,
+    `positive control: ${controlId}'s panel DOES carry a "Why it matters" argument`,
+    'if this is red the absence assertion below proves nothing, whatever it reports');
+  R.ok(!control.hasCaveat,
+    `positive control: ${controlId} carries NO caveat (only monerospace does)`);
   R.ok(!ms.hasWhy,
-    'its panel asserts NO "Why it matters" argument',
-    'every other app has one; this is the restraint the embargo requires, and it is the assertion that fails the day somebody "fills in the gap"');
+    'monerospace asserts NO "Why it matters" argument',
+    'every other app has one — see the control above; this is the restraint the embargo requires, and it is the assertion that fails the day somebody fills in the gap');
 
   /* The tree-wide sweep belongs to verify-future §15 and is not duplicated
      here — but this page is new copy inside that sweep, so the narrow claim
