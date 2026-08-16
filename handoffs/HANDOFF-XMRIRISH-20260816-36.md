@@ -177,13 +177,53 @@ cd api  && node verify-<the gate that owns xmr.js>.mjs
 
 ## 7 · REPORT — filled on exit
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+**status:** delivered, draft PR open. Stopped at "PR opened, `mergeable_state` reported"
+per the brief; the operator merges by hand.
+
+**pr:** https://github.com/aqua-019/satoshis-vision-v1/pull/183
+
+**commits:** `38cdc66` §1 one honest range table + `api/verify-history.mjs` (81 assertions,
+committed negative control) · `bef26f0` `also=` matcher saw only one path segment ·
+`69e503d` §2/§3 components · `c8de288` + `9167de6` budget raises, re-measured on the final
+tree · `31acc5e` identifier resolution + deterministic fixture · `ce3e3ef` three
+re-judgment findings closed (R1/R2/R3) · `0199974` one copy of the seed path, and a
+docblock that had stopped being true · `5bf493d` the mock that mapped history onto
+`get_info` · `39e7d5e` memoised stream return · `ecc4da3` the caption that read as a
+zero-width instant · `a6b74be` swallowed timeout separated slow from broken · `a956052`
+`verify-stream.mjs` + the Tor bound that named the wrong five · `7857887` derive the
+allowance from the list it allows · plus CLAUDE.md and handoff records.
+
+**deps added:** none.
+
+**deviations from spec:**
+- §1's range table stops at `1d` (720 blocks) rather than reaching for a week. Paging is
+  refused in-file with the reason: every range downsamples to ~200 points, so a deeper
+  window buys span at the cost of resolution for the same pixels.
+- The mockup's 30-day ±1σ envelope remains undrawable and is not drawn. The ceiling moved
+  from 3.3 h to 24 h, not to 30 days.
+- The DONE-CRITERIA box on re-renders was measured FALSE and was REWORDED rather than
+  signed; the box on pre-fix reds was UNSATISFIABLE and was reworded to what the committed
+  negative control actually proves.
+- No security sweep, no independent CI pass, and no second reviewer on the gate edits —
+  flat-mode absences, recorded as absences rather than as passes.
+
+**notes for ARCHITECTURE.md patch:** the `/live/network` streaming path is page-local by
+design — `usePolling("chain", …)` from a lazy route, with `PanelBoundary`'s `also=` and
+`NodeProvenance`'s computed `phase` for a surface outside the `FeedKey` union. The reason
+is measured and belongs in any future summary: `xmrirish-feed.ts` is EAGER, so a new
+`FeedKey` would move eager bytes. `diffBuffer.ts` imports nothing at all, which is what
+makes "a socket is a data-source swap" provable rather than asserted.
+
+**open questions:**
+- Live-node behaviour is unverifiable in-sandbox (no egress to Monero nodes). The range
+  table, the span clamp and the degraded cache TTL are proven offline against a committed
+  negative control; confirm on a deploy preview that `?range=1d` returns points where
+  `?range=30d` used to return `[]`.
+- `verify-effects`' ledger is scoped to `src/data/`, so the streaming hook's effect sits
+  outside it — second release running that a data-fetching hook escaped it by living in a
+  page directory. A scope decision someone should take deliberately.
+- No human has seen the rendered result in a browser; the seven captures were read from
+  screenshots.
 
 ## 8 · LOOP FEEDBACK
 
