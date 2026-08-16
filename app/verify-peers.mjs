@@ -27,7 +27,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { launch, coldBootOffBrowser } from './verify-lib.mjs';
+import { launch } from './verify-lib.mjs';
 import { makeReporter } from './verify-reporter.mjs';
 
 const BASE = 'http://localhost:4173';
@@ -83,9 +83,23 @@ if (readoutExists) {
 const { browser, engine } = await launch();
 console.log(`  engine: ${engine}`);
 
-// Install cold-boot bypass on ALL pages created by this browser.
-// This prevents the splash from blocking measurement on first navigation.
-await coldBootOffBrowser(browser);
+/* NO COLD-BOOT BYPASS HERE, DELIBERATELY — do not "restore" it.
+ *
+ * The splash is HOME-ONLY. Measured in a genuinely cold context with no
+ * bypass installed anywhere: `/` has [data-coldboot]=1, `/about/peers` has
+ * 0 and renders all four partner cards. This gate never visits `/`, so it
+ * has nothing to bypass.
+ *
+ * Installing it anyway is not harmless. verify-coldboot-live's §0 audits
+ * the set of gates that install the bypass against the set its patterns
+ * detect as REACHING `/`, and uses the first as a proxy for the second to
+ * prove the detector has not gone stale. A gate that installs a bypass it
+ * does not need is a false positive in that proxy, and it reds §0 with
+ * "DETECTOR STALE" — which it did, exactly, when this line was here.
+ *
+ * The early-render flakiness this was added to fix was React hydration,
+ * not the splash; `waitUntil: 'networkidle'` is what actually addressed it.
+ */
 
 try {
   /* ── COLD LOAD: 4 partner cards render ──────────────────────────────── */
