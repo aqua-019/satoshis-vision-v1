@@ -313,18 +313,35 @@ try {
   /* ══ §4 · the install walkthrough ════════════════════════════════════ */
   R.group('§4 · install walkthrough — ordered, complete, and an <ol>');
 
-  const ol = page.locator('ol[data-install-steps]');
-  R.ok(await ol.count() === 1, `exactly one install list (found ${await ol.count()})`);
-  const tag = await ol.evaluate((e) => e.tagName);
-  R.ok(tag === 'OL', `the install list is an <ol>, not a <ul> (got <${tag.toLowerCase()}>)`,
-    'these steps must be followed in sequence; an unordered list says they need not be');
-  const steps = await ol.locator('li').allTextContents();
-  R.ok(steps.length === INSTALL_STEPS.length,
-    `all ${INSTALL_STEPS.length} steps render (found ${steps.length})`);
-  const inOrder = INSTALL_STEPS.every((s, i) => (steps[i] || '').trim() === s.trim());
-  R.ok(inOrder, inOrder
-    ? 'the steps render in the source\'s own order'
-    : `order mismatch — source: ${JSON.stringify(INSTALL_STEPS)} | dom: ${JSON.stringify(steps.map((s) => s.trim()))}`);
+  /* SELECTED BY DATA ATTRIBUTE, NOT BY TAG, and then the tag is ASSERTED.
+     The first version located `ol[data-install-steps]`, which conflates two
+     different questions — "is there an install list?" and "is it ordered?" —
+     into one selector. Measured under a break test that swapped the <ol> for
+     a <ul>: the locator matched nothing, `await ol.evaluate(...)` sat for
+     Playwright's full 30s timeout and then threw, and the throw took the
+     whole gate down at §4 — so §5, §6, §7 and §8's mutations in the same
+     round were never reported at all. An early crash masks every later
+     section, which is the masking-cost argument this repo makes about gate
+     ORDER, arriving inside a single file. Guarded so a missing list is one
+     clean red and the rest of the gate still runs. */
+  const ol = page.locator('[data-install-steps]');
+  const olCount = await ol.count();
+  R.ok(olCount === 1, `exactly one install list (found ${olCount})`);
+  if (olCount === 1) {
+    const tag = await ol.evaluate((e) => e.tagName);
+    R.ok(tag === 'OL', `the install list is an <ol>, not a <ul> (got <${tag.toLowerCase()}>)`,
+      'these steps must be followed in sequence; an unordered list says they need not be');
+    const steps = await ol.locator('li').allTextContents();
+    R.ok(steps.length === INSTALL_STEPS.length,
+      `all ${INSTALL_STEPS.length} steps render (found ${steps.length})`);
+    const inOrder = INSTALL_STEPS.every((s, i) => (steps[i] || '').trim() === s.trim());
+    R.ok(inOrder, inOrder
+      ? 'the steps render in the source\'s own order'
+      : `order mismatch — source: ${JSON.stringify(INSTALL_STEPS)} | dom: ${JSON.stringify(steps.map((s) => s.trim()))}`);
+  } else {
+    R.ok(false, 'the install list could not be located, so its tag, length and order go unchecked',
+      'declared as three UNMADE assertions rather than skipped quietly — a section that cannot run is not a section that passed');
+  }
 
   const body = await page.evaluate(() => document.getElementById('root').innerText);
   R.ok(/xmrig -o /.test(body), 'the external-miner command renders verbatim');
@@ -357,12 +374,13 @@ try {
   R.group('§6 · the betanet slot is a reserved box that says what is missing');
 
   const slot = page.locator('[data-empty-slot*="beta-chain mempool"]');
-  R.ok(await slot.count() === 1, `the betanet slot renders (found ${await slot.count()})`);
-  const slotBox = await slot.boundingBox();
+  const slotCount = await slot.count();
+  R.ok(slotCount === 1, `the betanet slot renders (found ${slotCount})`);
+  const slotBox = slotCount === 1 ? await slot.boundingBox() : null;
   R.ok(slotBox && slotBox.height >= 200,
     `its height is RESERVED, not collapsed (${slotBox ? Math.round(slotBox.height) : 0}px)`,
     'a zero-height placeholder costs a layout shift the day it is filled — reserving it now is the CLS discipline applied forward');
-  const slotText = await slot.innerText();
+  const slotText = slotCount === 1 ? await slot.innerText() : '';
   R.ok(/telemetry endpoint/i.test(slotText),
     'the slot names the missing thing: a telemetry endpoint');
   R.ok(/open question/i.test(slotText),
