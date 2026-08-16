@@ -63,6 +63,38 @@ const FIXTURES = {
     fee_histogram: Array.from({ length: 8 }, (_, i) => ({ tx_count: 4 + i, bytes: 6000 })),
   },
   fees: { tiers: [20000, 80000, 320000, 4000000] },
+  /**
+   * The D0828 seed: `/api/xmr/network/difficulty`.
+   *
+   * WHY THIS EXISTS AS ITS OWN KEY. The router below used to decide with
+   * `sub.startsWith('network') ? 'network'`, and `network/difficulty`
+   * starts with `network` — so the seed was answered with the `get_info`
+   * -shaped body above. `useDifficultyStream`'s `parse()` needs a `points[]`
+   * and ALL FOUR of window_seconds / target_seconds / tip / range for its
+   * meta; that body has none of them, so the seed contributed exactly
+   * nothing and the panel rendered chain-tier headers only. Measured before
+   * this fixture existed: the endpoint WAS requested, and the panel still
+   * read `Difficulty · streaming · 40 points` with no window label — 40
+   * being the `blocks` fixture's own length. Every assertion about this
+   * panel therefore had a subject (a stream with no seed) narrower than its
+   * claim, on the one endpoint this PR added.
+   *
+   * Shape is taken from `buildHistoryEnvelope` in api/xmr.js, not invented:
+   * window_seconds === blocks × target_seconds is the server's own identity
+   * (720 × 120 = 86400), so a fixture that drifts from the handler fails
+   * `api/verify-history.mjs`'s D4 rather than passing quietly here.
+   */
+  'network/difficulty': {
+    ok: true, requested: '1d', range: '1d', blocks: 720, returned: 200,
+    step: 1, tip: H, target_seconds: 120, window_seconds: 720 * 120,
+    points: Array.from({ length: 200 }, (_, i) => ({
+      height: H - 199 + i,
+      timestamp: NOW - (199 - i) * 120,
+      /* Varies, so the band has a real spread to compute rather than a
+         degenerate zero-width one that would pass any band assertion. */
+      difficulty: 400e9 + (i % 17) * 1e9,
+    })),
+  },
 };
 
 /**
@@ -96,10 +128,15 @@ async function mock(ctx, dead = []) {
   await ctx.route('**/api/xmr/**', (route) => {
     const u = new URL(route.request().url());
     const sub = (u.searchParams.get('_p') || u.pathname.replace(/^\/api\/xmr\/?/, '')).split('?')[0];
+    /* ORDER IS LOAD-BEARING: `network/difficulty` starts with `network`, so
+       the history sub-paths must be matched BEFORE the bare `network` arm or
+       they fall into it and are answered with a get_info body. That is the
+       exact defect this ordering fixes; see the fixture's own note. */
     const key = sub.startsWith('blocks') ? 'blocks'
       : sub.startsWith('mempool') ? 'mempool'
       : sub.startsWith('fees') ? 'fees'
       : sub.startsWith('tip') ? 'tip'
+      : sub.startsWith('network/difficulty') ? 'network/difficulty'
       : sub.startsWith('network') ? 'network' : null;
     if (!key) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
     if (key === 'tip') {
@@ -179,6 +216,46 @@ R.group('A · killing ONE endpoint degrades exactly the panels it feeds');
   const healthy = await panelsByKey(page);
   R.ok(healthy.length >= 10, `A: /network exposes its panels by endpoint (${healthy.length} tagged)`);
   R.ok(healthy.every((p) => !p.stale), 'A: with every endpoint answering, no panel claims staleness');
+
+  /* The SEED IS ACTUALLY CONSUMED — the guard the `network/difficulty`
+     fixture above needs to be worth having. A fixture nobody asserts is
+     consumed is a fixture that can silently stop being consumed, which is
+     precisely how this endpoint went unexercised while every assertion about
+     its panel stayed green. Two independent readings, because either alone
+     is satisfiable without a seed:
+       · the WINDOW LABEL comes from `meta`, and `parse()` builds meta only
+         from ALL FOUR of window_seconds/target_seconds/tip/range — a shape
+         only the envelope has;
+       · the POINT COUNT must EXCEED the `blocks` fixture's own length, or
+         the panel is rendering chain-tier headers and nothing else. That is
+         the reading that was 40-of-40 before this fixture existed. */
+  /* Bounded SYNCHRONISATION, not a sleep and not the judgement: the seed is
+     one async fetch that lands after the height does, so reading immediately
+     measures a stream that has not been seeded YET and reports a race as a
+     defect (it did, on this assertion's first draft — 40 points, because the
+     evaluate ran between the request and its render). On genuine failure the
+     wait simply expires and the assertions below red with the real value. */
+  await page.waitForFunction(
+    (n) => {
+      const h = document.querySelector('[data-stream-renders]');
+      return h ? Number(h.getAttribute('data-stream-points')) > n : false;
+    },
+    FIXTURES.blocks.length, { timeout: 10000 },
+  ).catch(() => {});
+
+  const seed = await page.evaluate(() => {
+    const host = document.querySelector('[data-stream-renders]');
+    const panel = [...document.querySelectorAll('[data-panel-key]')]
+      .find((el) => (el.querySelector('.panel-h .l')?.textContent || '').includes('Difficulty · streaming'));
+    return {
+      points: host ? Number(host.getAttribute('data-stream-points')) : null,
+      title: (panel?.querySelector('.panel-h .l')?.textContent || '').trim(),
+    };
+  });
+  R.ok(/·\s*\d+\s*[hm]\b/.test(seed.title),
+    `A: the streaming panel carries a SERVER-DERIVED window label — the seed envelope's meta reached it ("${seed.title}")`);
+  R.ok(typeof seed.points === 'number' && seed.points > FIXTURES.blocks.length,
+    `A: the stream holds more points (${seed.points}) than the blocks fixture alone could supply (${FIXTURES.blocks.length}) — the seed is genuinely merged, not merely fetched`);
 
   // Now kill BLOCKS only. /network, /mempool, /fees and /tip keep answering.
   await ctx.unroute('**/api/xmr/**');
