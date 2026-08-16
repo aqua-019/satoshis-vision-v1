@@ -113,6 +113,9 @@ const KEYS_BLOCKS = ["blocks"] as const;
 const KEYS_MEMPOOL = ["mempool"] as const;
 const KEYS_MEMPOOL_FEES = ["mempool", "fees"] as const;
 const KEYS_NETWORK_FEES = ["network", "fees"] as const;
+/** The small-multiples grid spans all three chart endpoints; NodeProvenance
+ *  folds them worst-of. */
+const KEYS_SMALL_MULTIPLES = ["blocks", "network", "mempool"] as const;
 
 /** Shared by the recent-blocks table's real grid and its `SkeletonRows`
  *  placeholder, so the placeholder's columns line up with the real table's
@@ -664,7 +667,7 @@ export function NetworkPage() {
 
       {/* D0837 — every series on this page at one glance, each on its own
           scale, all sharing one band grammar. */}
-      <SmallMultiples specs={tiles} phase={stream.phase} />
+      <SmallMultiples specs={tiles} keys={KEYS_SMALL_MULTIPLES} status={data.status} />
 
       {/* D0993 — height vs the network, velocity, census. One column today. */}
       <SyncShell columns={syncColumns} />

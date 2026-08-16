@@ -39,7 +39,7 @@
 import * as React from "react";
 import { PanelFrame } from "@/design/primitives";
 import { NodeProvenance } from "@/design/provenance";
-import type { FeedPhase } from "@/data/feed-status";
+import type { FeedKey, FeedStatusMap } from "@/data/feed-status";
 import { classify, type Band } from "./bands";
 import { HealthChip } from "./BandPanels";
 import { SeriesTile } from "./SeriesTile";
@@ -98,7 +98,7 @@ export function SmallMultiples({
     <PanelFrame
       title={`Small multiples · ${specs.length} series, each on its own scale`}
       stale={anyStale}
-      right={<NodeProvenance source="node" phase={phase} detail="one band grammar" />}
+      right={<NodeProvenance source="node" keys={keys} status={status} detail="one band grammar" />}
     >
       <div
         data-small-multiples={specs.length}
