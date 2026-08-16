@@ -640,6 +640,34 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   **`verify-effects`' ledger is scoped to `src/data/` ONLY**, so `useDifficultyStream`'s
   effect sits outside it — second release running that a data-fetching hook has escaped that
   ledger by living in a page directory. Recorded as a scope decision, not a defect.
+  **THE DOMINANT DEFECT FAMILY OF THIS RELEASE IS PREFIX / SUBSTRING / NAME MATCHING, and it
+  is worth its own line because it appeared FIVE times in one PR** — every instance in an
+  INSTRUMENT rather than in the app, and every one green until something new was added:
+  `verify-failure`'s router (`sub.startsWith('network')` swallowing `network/difficulty`, so
+  the seed was answered with a `get_info` body and its path had never been exercised);
+  `verify-tiers-dom:87` (`url.includes('/api/xmr/network')` counting the seed as a chain-tier
+  `/network` pull, and reporting a tip-gating regression that did not exist — clean
+  `7589c50` reads `1 network vs 2 tip`, the branch read 2, and the difference was one request
+  to a different endpoint); `verify-resilience` §8's `also=` regex (one path segment, so the
+  only multi-segment `also=` was never counted); a `**/api/coingecko*` Playwright glob (`*`
+  does not cross the `/` inside a query string, so a live tier read as dead); and `pgrep -f`
+  matching another agent's run. CLAUDE.md already recorded a sixth — `grep verify-perf`
+  matching `verify-perf-classic`, which cost real time twice. **A prefix test over a
+  namespace that grows sub-paths is a trap the moment somebody adds one**, and this release
+  added one. The cheap discriminator, when a red might be the instrument rather than the
+  code, is to REPRODUCE IT AGAINST THE CLEAN BASE in its own worktree — three of this
+  release's reds dissolved that way.
+  **AND "served == disk" IS A WEAKER CHECK THAN IT LOOKS.** It proves the BUILD matches; only
+  a `cwd` readlink on the listening PID proves the SERVER is yours. The two are independent,
+  and the hash loses all discriminating power exactly when the trees are similar — a
+  docs-and-gates-only commit leaves `app/src` byte-identical, so two unrelated worktrees emit
+  the same chunk hash and the check agrees on the wrong server. `lsof -iTCP:<port>
+  -sTCP:LISTEN -P -n` then `readlink /proc/<pid>/cwd` is the assertion with content.
+  **`node --check` PROVES SYNTAX, NOT THAT A FILE RUNS.** It passed on a gate carrying a
+  `ReferenceError` — a deleted constant still interpolated in the assertion's own message —
+  which crashed at the moment it tried to report success. The chain reported `NPM_EXIT=1`
+  with ZERO failure markers and eleven green summaries, because a crash prints no marker and
+  a grep for one returns empty. One execution is the only check that counts.
   **Renders were captured and looked at** (7 states, a shutter that refuses to fire unless the
   claimed state is measurably on screen): 390 px measures **0 px horizontal overflow and 0
   sub-12px HTML text nodes**, reduced motion **0 running animations**, and the degraded face
