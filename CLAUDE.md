@@ -28,7 +28,11 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **77** `verify-*.mjs` files (`app/` ×70, `app/scripts/` ×1, `api/` ×6) — **73 gates**
+- Verification: **79** `verify-*.mjs` files (`app/` ×71, `app/scripts/` ×1, `api/` ×7) — **75 gates**
+  (p3·14b: recounted twice independently. This line read 77/73 and was stale by ONE before that
+  release even began — p3·14 added `verify-bands.mjs` and updated its own session note to 78/74
+  without folding it in here, so the two figures in this file disagreed with each other. p3·14b
+  then added `api/verify-history.mjs`. Recount, never increment, and recount BOTH places.)
   plus `verify-lib.mjs`, `verify-reporter.mjs` and `verify-fixtures.mjs`, three shared modules,
   and `scripts/verify-all.mjs`, an orchestrator. (This entry read "66 (app/ ×61, api/ ×5)" until
   v6.1.7 counted at full depth: an `app/verify-*.mjs` glob cannot see `app/scripts/verify-all.mjs`,
@@ -41,8 +45,11 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **62 distinct files** on
-  PRs to `main` **and, since p3·12d, on every push to `main`** — the workflow had never
+  are offline source assertions. `.github/workflows/ci.yml` runs **64 distinct files** on
+  PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
+  `verify-bands` into `verify:static` (now **22** members) and p3·14b added
+  `api/verify-history.mjs` as its own named step. Measured as 30 step `run:` lines
+  (31 matches − the `defaults: run:` mapping key), 70 invocations − 6 duplicates. — the workflow had never
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
   accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
@@ -538,6 +545,105 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-16**: p3·14b "NETWORK COMPLETION" (api/ + app/ + .github/) — the streaming line,
+  the small multiples and the node-sync shell, on an API surface that stops lying first.
+  **THE HEADLINE IS THAT THREE OF THE FOUR DOCUMENTED RANGE KEYS HAD NEVER RETURNED ONE
+  DATA POINT ON ANY NODE THIS SITE USES**, and the recorded 9.92× `?range=all` split was
+  never the main defect. `monerod` rejects any `get_block_headers_range` whose SPAN exceeds
+  `RESTRICTED_BLOCK_HEADER_RANGE = 1000` on a restricted node — every node in the cascade —
+  and `api/xmr.js:471` clamped at **5000**, not 1000. So `30d` (2160), `1y` (26280→5000) and
+  `all` (5000) each drew `"Too many block headers requested."`, `rpc()` returned `null`
+  (`:68`/`:74`), and both handlers turned that into `[]` at `res?.headers || []`. Only `7d`
+  worked, serving 16.8 h. Nothing in `app/` consumed either endpoint, which is why nobody saw
+  it. **The constant is in `src/rpc/core_rpc_server.cpp`, NOT
+  `core_rpc_server_commands_defs.h`** — the first citation named the wrong file and two
+  fetches against it returned "not found", which is not evidence until its scope is
+  verified; the third, against the enforcement site, reproduced both the `#define` and the
+  check. The check is on the SPAN, so the clamp is span+1 = 1001 headers.
+  **Corrections to this file's own p3·14 entry**: its "every label implies a 20-minute
+  block" holds for `7d`/`30d` (10×) and NOT for `1y`, which is clamped before it reaches the
+  node and overstates by **52.6×**. And `'all'` on hashrate duplicates `'1y'` exactly — the
+  asymmetry is a redundant key, not a missing one, and both sides of it error out.
+  Now ONE table, `{'1h':30,'6h':180,'12h':360,'1d':720}`, every entry asserted per-entry by
+  iteration against `RESTRICTED_HEADER_SPAN` so a future key cannot recreate the defect.
+  Paging for deeper windows is refused in-file: every range downsamples to ~200 points, so a
+  7-day seed buys 7× the span at 7× coarser resolution for the same pixels.
+  **Three more defects in the same twenty lines**: the downsampler anchored its stride at
+  index 0, so the newest header survived only when `(len-1) % step === 0` — at 504/step 2 the
+  TIP was dropped, which is fatal for a line that appends at that edge (now anchored at the
+  newest); an errored `[]` was cached at the full 300 s TTL; and `hashrate_ghs` divided by a
+  hard-coded 120 and quantised to 2 dp, coarser than the per-block movement a live series
+  exists to show. **RPC cost is flat** — 2 calls at every range — so relabelling adds nothing.
+  **THE GATE'S RED POLARITY IS A COMMITTED FILE, NOT A MUTATION.**
+  `api/_fixtures/xmr-history-prefix.mjs` reproduces the pre-fix handlers verbatim (verified
+  against `7589c50`: both count tables, the 5000 clamp, the index-0 sampler, the `/120`
+  rounding), so all 81 assertions run both polarities on every run with nothing to remember
+  to revert. **A DONE-CRITERIA box demanding "assertions that go RED against the pre-fix
+  handler" was UNSATISFIABLE**: run against the real pre-fix module the gate throws
+  `TypeError` rather than reddening, because that module exported neither symbol — and a `❌`
+  grep over a crash returns empty, which reads exactly like "no failures".
+  **THE DEEPEST LESSON IS ABOUT CONCURRENCY, AND IT IS NEW.** Two agents reported
+  contradictory results about `verify-failure` §B and BOTH WERE RIGHT — one measured
+  `31acc5e`, the other a later commit that had fixed it. This file's "a true fact about the
+  WRONG SUBJECT" family arriving through a door it had not used before: not a stale build,
+  not a stray listener, but two correct measurements of two different trees. **A red is a
+  REPORT until the lead has reproduced it; the dispatch happens after the reproduction.**
+  That rule was learned by breaking it twice — a builder was twice sent at working code,
+  once for a freshness bug already fixed and once for a "seed never merges" defect that
+  never existed (measured at HEAD: `data-stream-points=200`, title
+  `"Difficulty · streaming · 24 h · 200 points"`, render showing `SEEDED HISTORY + CHAIN
+  TIER`). The likely mechanism of the false red is worth its own line:
+  `waitForFunction(…, {timeout}).catch(() => {})` — **a swallowed timeout makes a SLOW
+  subject and a BROKEN one the same event**, and under three concurrent builds the slow one
+  fires.
+  **`verify-resilience` §8's `also=` matcher could not see a sub-path** —
+  `/api/<one-segment>` only, with the closing quote required immediately — so the one
+  multi-segment `also=` in the tree was never counted and never checked, under a summary line
+  that reads as coverage. Widened, then found still vacuous because the call site passed an
+  IDENTIFIER; now resolves same-file consts and imports, and **fails rather than skips** on
+  one it cannot read. That polarity caught its own author within minutes: an aliased
+  `import { HISTORY_PATH as SEED_PATH }` went UNRESOLVABLE and red. 42 → 52.
+  **TWO DEFECTS FOUND ONLY BY LOOKING.** (1) `StreamPanel` sliced the ISO string to HH:MM, so
+  a whole-day window read **`03:06 → 03:06 UTC`** — a zero-width instant at the SHIPPED `1d`
+  default, while the degraded ~78 min fallback read perfectly. The default state was the
+  broken one, which is why every gate missed it: the assertion surface never rendered the
+  default. Fixed generally (any Nd key) with a duration suffix; `charts.tsx`'s `fmtDate` is
+  deliberately untouched. Same lesson as p3·12b — a tick must be LOCATABLE, not merely true.
+  (2) The render count grew with wall-clock: `useDifficultyStream` returned a fresh object
+  literal, and `NetworkPage` re-renders on EVERY tier's commit including the 3 s fast tier
+  the stream does not read. Measured 2.29 renders per fast tick; after a memoised return plus
+  a `React.memo` comparator, **0 of 21 fast ticks caused a render and 1.00 render per chain
+  full pull.** The DONE-CRITERIA box said "appends without a React re-render" and was
+  measured FALSE; it was reworded to the true narrow claim rather than signed.
+  **`verify-bands` was at 48 and CORRECT, not stale** — no new band shape exists, `SeriesTile`
+  constructs none, all four banded series go through the existing `sigmaBand`. But nothing
+  pinned the words "from the node's own block headers", so banding a session buffer would have
+  asserted a provenance the data lacks with all 48 green. 48 → 52, as a NEGATIVE list (no
+  session buffer is banded) plus a vacuity guard.
+  Budgets, RE-MEASURED on the final tree and the re-measure caught a SILENT drift — the
+  mid-flight raise read 862,429 and three later commits added 1,268 B, cutting the margin to
+  1,303 without crossing: `lazyJsRaw` 852,000 → **867,000** (built 863,697) · `totalJsRaw`
+  1,115,000 → **1,130,000** (built 1,126,631) · `/live/network` 113,000 → **117,000** (built
+  114,402). `cssGz` **byte-identical** at 17,762 and `eagerJsRaw` unmoved at 262,934 — the
+  whole eager cost is **+59 B**, the block timestamp `map.ts:259` computed and then discarded,
+  restored so the seed and the appends share ONE time base instead of the seed's real header
+  timestamps and a `Date.now()`-derived reconstruction. **67 chunks both sides — nothing
+  minted**; the new modules resolve into NetworkPage's existing group. Attribution is keyed on
+  the chunk STEM, not the filename: **this build stamps content, so nearly every hash changes
+  between two commits and a filename-keyed diff reports 67 additions and 67 deletions rather
+  than a delta.**
+  Census RECOUNTED twice independently: **79 files / 75 gates** (3 shared modules + 1
+  orchestrator), CI distinct **64**, `verify:static` **22**, `verify:e2e` 29. CLAUDE.md's
+  importer counts were stale — measured **31/11/1**, not 29/8/1.
+  **`verify-effects`' ledger is scoped to `src/data/` ONLY**, so `useDifficultyStream`'s
+  effect sits outside it — second release running that a data-fetching hook has escaped that
+  ledger by living in a page directory. Recorded as a scope decision, not a defect.
+  **Renders were captured and looked at** (7 states, a shutter that refuses to fire unless the
+  claimed state is measurably on screen): 390 px measures **0 px horizontal overflow and 0
+  sub-12px HTML text nodes**, reduced motion **0 running animations**, and the degraded face
+  reads `CHAIN TIER ONLY — SEED UNAVAILABLE` with no band and "a SHORTER window, not a stale
+  one". **No human has seen the rendered result in a browser** — read from screenshots.
 
 - **2026-08-15**: p3·14 "NETWORK: THRESHOLD BANDS" (app/) — `/live/network` gets D0832 bands,
   a block cadence strip and both simulator cross-links. **Three of the brief's premises did not
