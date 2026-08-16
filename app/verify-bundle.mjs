@@ -588,7 +588,13 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_130_000,  // p3·14b: built 1,126,631 on the FINAL tree, margin 3,369.
+  totalJsRaw: 1_134_000,  // p3·15: built 1,130,194 on the FINAL tree, margin 3,806.
+                          // +3,563 = lazy +3,516 plus eager +47, residual ZERO —
+                          // see the reconciliation beside lazyJsRaw. Raised WITH
+                          // lazyJsRaw for the reason the note below already gives:
+                          // this backstop stopped equalling eagerJsRaw + lazyJsRaw
+                          // at p2·7 and has been set from measurement ever since.
+                          // p3·14b: built 1,126,631 on the FINAL tree, margin 3,369.
                           // Re-measured with lazyJsRaw for the same reason; the
                           // mid-flight figure was 1,125,363. Crosses with
                           // lazyJsRaw as always. The +13,180 splits +13,121 lazy
@@ -988,7 +994,33 @@ const BUDGETS = {
   // loud; a helper function would be silent. Writing the real assertion — "no
   // eager chunk contains a string only this leaf declares" — is a small,
   // separate change and is deliberately NOT taken here.
-  lazyJsRaw: 867_000,   // p3·14b: built 863,697 on the FINAL tree, margin 3,303.
+  lazyJsRaw: 871_000,   // p3·15: built 867,213 on the FINAL tree, margin 3,787.
+                        // +3,516 raw over p3·14b's 863,697. THE WHOLE RAW DELTA
+                        // RECONCILES TO THE BYTE and is worth stating that way,
+                        // because this release's two raw budgets and its one route
+                        // budget move for THREE different reasons:
+                        //   lazy  +3,516  (the Superbrain entry's data + copy, the
+                        //                  blocks renderer in EcoPopup, and
+                        //                  repoPulse.tsx — all lazy)
+                        //   eager    +47  (nav/ia.ts's ECOSYSTEM_META row; see below)
+                        //   -----------
+                        //   total +3,563  == the measured totalJsRaw delta exactly,
+                        //                    residual ZERO.
+                        // The +47 EAGER byte is the one worth naming, because a
+                        // leaf reaching the eager entry is the failure mode the
+                        // canvasColor rule exists to prevent, and this is NOT that.
+                        // Measured, not assumed: the string "Monero Superbrain"
+                        // appears exactly once in the entry chunk, from ia.ts's
+                        // ECOSYSTEM_META (ia.ts is eager — NavTop imports it), and
+                        // that row minifies to 44 B + 1 separator. Every string only
+                        // repoPulse.tsx declares ("last issue activity", "returned no
+                        // data") greps to ZERO in the entry chunk. A first hypothesis
+                        // that the delta was Vite's __vite__mapDeps table gaining a
+                        // preload string was DISPROVED rather than assumed: Vite's
+                        // hashes are fixed-length, so rotation contributes no net
+                        // bytes. p3·13 measured a real mapDeps move (+30/−7) because
+                        // that release minted a chunk; this one mints none.
+                        // p3·14b: built 863,697 on the FINAL tree, margin 3,303.
                         // RE-MEASURED, and the re-measure earned its keep for the
                         // fifth time in this file's history: the first raise here read
                         // 865,000 against a built 862,429 (margin 2,571), taken
@@ -1157,7 +1189,29 @@ const ROUTE_BUDGET_GZ = {
   '/future':                107_000, //  96,895
   '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
   '/operate/node':           92_000, //  83,305
-  '/about/peers':           100_000, //  91,082
+  // p3·15: 100,100 measured, margin 2,900. The comment previously read 91,082
+  // and was stale by 6,437 — the table-wide staleness the /live/mempool note
+  // above already records; only this row is re-baselined here, because
+  // re-measuring the whole table is still its own change.
+  //
+  // +2,581 gzip over p3·14b's 97,519, and the interesting part is what it is
+  // NOT. The naive landing put this route at 101,152: importing
+  // RepoPulseReadout from cards.tsx made Rollup — which chunks per MODULE, not
+  // per export — drag ProtocolCard, MoneroNewsCard and their own deps into the
+  // peers closure, so the route paid for two components it never renders.
+  // Re-homing the readout into pages/future/repoPulse.tsx bought back 1,052 B.
+  // What remains is the feature's own weight: the entry's prose, the blocks
+  // renderer, and useCachedFeed's chunk (2,512 B raw / 1,023 B gzip) entering
+  // this route's closure for the first time.
+  //
+  // MEASURED, and NOT what the split's name suggests: the leaf did not get its
+  // own chunk. Chunk count held at 67. repoPulse.tsx was inlined into the
+  // pre-existing EcoPopup chunk, whose importers were already exactly
+  // FuturePage and TrustedPeersPage — so the saving came ENTIRELY from
+  // ProtocolCard/MoneroNewsCard leaving, not from the readout moving somewhere
+  // new. "It did not mint a chunk" and "it landed where I expected" are
+  // different facts; this is the first.
+  '/about/peers':           103_000, // 100,100
   '/about/sources':          95_000, //  86,581
 };
 
