@@ -54,12 +54,21 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **68 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **69 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
-  into `verify:e2e`, then p3·15's `verify-peers`, p3·16's `verify-superstress` and p3·17's
-  `verify-releases-dom` at position 16 (**33** members).
+  into `verify:e2e`, then p3·15's `verify-peers`, p3·16's `verify-superstress`, p3·17's
+  `verify-releases-dom` at position 16 and p3·18's `verify-legality` at position 17
+  (**34** members).
+  **p3·18 ADDED NO FILE — it wired an ORPHAN**, so `83` / `79` / `22` above are UNCHANGED
+  while `verify:e2e` and the CI figure both move by one. That asymmetry is the whole reason
+  this file says RECOUNT rather than increment: a release that adds a gate moves five
+  figures, a release that wires one moves two, and only a measurement knows which.
+  **AND THE TWO FIGURES DISAGREED AGAIN, for the THIRD recorded time**: this line read
+  **33** while the `verify:e2e` figure ~12 lines below read **32**, stale since p3·17.
+  Both corrected to 34 here, both measured by the controlled script rather than
+  incremented from either.
   **THIS NUMBER READ 65 WHILE THE STATUS SECTION BELOW READ 66, AND BOTH PREDATE p3·16** —
   the same two-figures-disagreeing defect this file records against itself twice already,
   recurring because a recount updated one place and not the other. Measured 66 at `e5eae16`
@@ -71,7 +80,7 @@ chain and market data.
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
   accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
-  (**22** gates, no browser), `verify:e2e` (**32** gates, against `scripts/serve-dist.mjs`) and
+  (**22** gates, no browser), `verify:e2e` (**34** gates, against `scripts/serve-dist.mjs`) and
   **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
   `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
   step each with `if: always()`, never an `&&`
@@ -397,10 +406,10 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **68 of the 79** gates on every PR to `main` and on every push to `main`
+- CI runs **69 of the 79** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
-  (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
-  are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
+  (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
+  are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
   three numbers had drifted independently, and the 11 contradicted the Orphaned-gates entry
   below, which said 7 and listed exactly the 7 a measurement finds.
 
@@ -524,15 +533,22 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   rendered floor on any CSS selector; it checks inline TSX `fontSize` (sub-14) and SVG
   `fontSize` attributes (sub-11) only. Deciding the floor, and writing a gate that reads
   computed font-size on a named selector set, belong together in their own change.
-- **Orphaned gates**: **7** `verify-*.mjs` are wired to neither npm nor CI — v2·3b wired
+- **Orphaned gates**: **6** `verify-*.mjs` are wired to neither npm nor CI — v2·3b wired
   four (`verify-pageshell` to npm only; `verify-fit`, `verify-mobile`, `verify-perf` to npm
-  AND CI), taking 11 → 7 — an orphan is a gate wired to NEITHER, so npm alone clears it.
+  AND CI), taking 11 → 7, and p3·18 wired `verify-legality` into `verify:e2e`, taking
+  7 → 6 — an orphan is a gate wired to NEITHER, so npm alone clears it.
+  **p3·18's is the cheapest wiring in the series and worth the precedent**: run the orphan
+  FIRST against an untouched served build, before touching a line of it. `verify-legality`
+  came back **26 passed · 0 failed, exit 0** — v2·3b's four were red and needed fixing;
+  this one had simply never been asked. The protocol ("never wire a red gate") does not
+  imply the gate is broken, and assuming it was would have invited a rewrite of 230 correct
+  lines.
   (This said 13 until v6.1.5 measured it, and `:184` in this same file already said 11;
   v6.1.2 wired in `verify-contrast.mjs`, `verify-ground.mjs` and, via a new `verify:shots`
   npm script, `verify-shots.mjs`.) `verify-shots.mjs` is npm-wired only, deliberately not
   CI: a `--baseline` diff needs a shot tree built from another commit, which CI has no way
-  to produce, so it stays a by-hand comparison tool. The remaining 7 are
-  `verify-chart-legibility` · `verify-desktop` · `verify-gradients` · `verify-legality` ·
+  to produce, so it stays a by-hand comparison tool. The remaining 6 are
+  `verify-chart-legibility` · `verify-desktop` · `verify-gradients` ·
   `verify-responsive` · `verify-sims` · `verify-v508`. Several expect live upstreams and
   one (`verify-v508`) declares itself HISTORICAL in its own header; auditing and wiring
   them is its own task.

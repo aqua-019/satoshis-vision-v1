@@ -25,7 +25,8 @@ import type { MoneroTabProps } from "./tabs";
 
 import { LEGALITY_MATRIX, ACTIVITIES } from "./legality/data";
 import type { ActivityStatus } from "./legality/data";
-import { STATUS_META, summarize, applyFilters } from "./legality/status";
+import { STATUS_META, summarize, applyFilters, reviewRange } from "./legality/status";
+import { StatusMark } from "./legality/StatusChip";
 import { JurisdictionRow } from "./legality/JurisdictionRow";
 import { LegalityControls } from "./legality/LegalityControls";
 
@@ -56,6 +57,9 @@ export function LegalityTab(_props: MoneroTabProps) {
 
   // LEGALITY_MATRIX is a module constant, so this runs exactly once.
   const summary = React.useMemo(() => summarize(LEGALITY_MATRIX), []);
+  // Over the FULL matrix, not the filtered rows — same reasoning as `summary`:
+  // this describes the page's data currency, which filtering does not change.
+  const range = React.useMemo(() => reviewRange(LEGALITY_MATRIX), []);
   const rows = React.useMemo(() => applyFilters(LEGALITY_MATRIX, query, active), [query, active]);
 
   const toggleActive = React.useCallback((s: ActivityStatus) => {
@@ -94,6 +98,24 @@ export function LegalityTab(_props: MoneroTabProps) {
           <div className="mono dim" style={{ fontSize: "var(--fs-body)", marginTop: 4 }}>
             {summary.total} jurisdictions · open any row for the detail
           </div>
+          {/* Data currency, stated rather than implied. DERIVED from the rows'
+              own dates (reviewRange), so it cannot drift from what the rows say.
+              The second sentence is the whole point: without it a date range
+              reads as "checked between these dates", which is a claim nobody
+              here has earned. */}
+          {range && (
+            <div
+              className="mono dim"
+              data-lg-review-range={`${range.oldest}|${range.newest}`}
+              style={{ fontSize: "var(--fs-label)", marginTop: 6, lineHeight: 1.5, letterSpacing: "0.04em" }}
+            >
+              {range.oldest === range.newest
+                ? `Notes last updated ${range.oldest}.`
+                : `Notes last updated ${range.oldest} – ${range.newest}.`}{" "}
+              That is when each claim was last written — not a re-verification
+              against current law. Open a row for its sources.
+            </div>
+          )}
         </div>
 
         {/* Column header — a class, not an inline grid, so it stays in lockstep with
@@ -140,7 +162,10 @@ export function LegalityTab(_props: MoneroTabProps) {
             const meta = STATUS_META[s.status];
             return (
               <div key={s.status} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                <span style={{ width: 6, height: 6, borderRadius: 3, background: meta.c, boxShadow: `0 0 5px ${meta.c}`, marginTop: 6, flexShrink: 0 }} />
+                {/* Through StatusMark, never a local dot: the legend is where a reader
+                    LEARNS the shape vocabulary, so a second definition here would be
+                    the one place a drift is guaranteed to mislead. */}
+                <span style={{ marginTop: 4, display: "inline-flex" }}><StatusMark status={s.status} /></span>
                 <div>
                   <div style={{ color: meta.c, letterSpacing: "0.1em", textTransform: "uppercase", fontSize: "var(--fs-label)" }}>{meta.label}</div>
                   <div className="dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.5, marginTop: 2 }}>{s.d}</div>

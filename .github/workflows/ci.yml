@@ -311,7 +311,18 @@ jobs:
       # zero dependents. Beside verify-peers is also where it belongs by
       # subject: the two share a data source and assert complementary halves
       # of it.
-      - name: 'E2E gates (33) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · +22'
+      # p3·18 wires verify-legality at position 17, immediately after
+      # verify-releases-dom — MID-CHAIN, for the same two reasons p3·16 placed
+      # verify-superstress at 15. The tail is still carrying the inverted
+      # vitals-last invariant (see the paragraph above), so appending there
+      # deepens a known defect; and a gate whose subject is one route has no
+      # claim on the position reserved for the gate with zero dependents.
+      #
+      # This gate was an ORPHAN from v6.0.10 until now — wired to neither npm
+      # nor CI. It was run FIRST against an untouched build before any change
+      # was made to it, per v2·3b's rule that you never wire a red gate: it
+      # reported 26 passed · 0 failed, exit 0. Nothing needed fixing. Orphans 7 → 6.
+      - name: 'E2E gates (34) — memviews · charts · orb · coldboot · govern · cls · vitals · degraded · Tor · single-origin · releases-dom · legality · +22'
         run: npm run verify:e2e
 
       # ── v2·3b: four gates that existed, asserted real things, and ran in
