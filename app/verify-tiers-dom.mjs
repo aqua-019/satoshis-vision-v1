@@ -84,6 +84,21 @@ const FIX = {
 /** Classify a request URL into the tier bucket it belongs to. */
 function bucket(url) {
   if (url.includes('/api/xmr/tip')) return 'tip';
+  /* BEFORE the bare `network` arm, and the order is the whole point.
+     `/api/xmr/network/difficulty` CONTAINS `/api/xmr/network`, so a
+     substring test classified p3·14b's D0828 seed as a chain-tier
+     /network pull. §B then read "2 network vs 2 tip" and reported that
+     a still tip was re-pulling /network on every tick — a tip-gating
+     regression that does not exist. Measured: the clean tree at 7589c50
+     reads "1 network vs 2 tip", the branch reads 2, and the difference is
+     one seed request to a DIFFERENT endpoint.
+     Third instance of this exact shape in this repo: `verify-failure`'s
+     router had `sub.startsWith('network')` for the same reason, and
+     CLAUDE.md records `grep verify-perf` matching `verify-perf-classic`.
+     A prefix test over a namespace that grows sub-paths is a trap the
+     moment someone adds one. */
+  if (url.includes('/api/xmr/network/difficulty')) return 'history';
+  if (url.includes('/api/xmr/network/hashrate')) return 'history';
   if (url.includes('/api/xmr/network')) return 'network';
   if (url.includes('/api/xmr/blocks')) return 'blocks';
   if (url.includes('/api/xmr/fees')) return 'fees';

@@ -24,7 +24,7 @@
         have been per-endpoint. */
 
 import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { makeReporter } from './verify-reporter.mjs';
 
 const R = makeReporter('verify-resilience');
@@ -296,11 +296,276 @@ R.group('7 · the swap overlays, it does not replace');
   }
 }
 
-/* ── 8 · `also=` cannot invent an endpoint ─────────────────────────────────── */
+/* ── 8 · `also=` cannot invent an endpoint ───────────────────────────────────
+   WIDENED in p3·14b, because the matcher could not see the thing it claimed
+   to cover. It was:
+
+       /\balso=\{?"(\/api\/[a-z0-9-]+)"/g
+
+   `[a-z0-9-]` excludes `/`, and the closing quote is required immediately
+   after — so a SUB-PATH never matched AT ALL. Not counted, not resolved, not
+   checked, under a message reading "every literal also=… has a real handler
+   behind it (4 found)". A true statement about a subject narrower than its
+   claim: this repo's standing family, sitting inside a gate.
+
+   Measured before the widening, injecting one file into src/:
+     also="/api/nonexistent"        → ❌ red,   5 found   (correct)
+     also="/api/nonexistent/thing"  → ✅ GREEN, 4 found   (invisible)
+     also="/api/xmr/network/…"      → ✅ green, 4 found   (never counted)
+   The count staying at 4 with a fifth literal physically present is the tell.
+
+   Two changes, and the second is the one with teeth.
+
+   (a) CAPTURE BROADLY, JUDGE EXPLICITLY. The path group is `[^"]*`, so ANY
+       literal beginning `/api/` is captured and then judged on its shape. An
+       unmatched literal is invisible; a captured-but-malformed one is a
+       reportable failure. Re-narrowing the character class would only move
+       the blind spot (to a query string, to an uppercase segment) rather
+       than remove it. The `also="session"` ProvSource form shares the prop
+       name and must still NOT be captured — fixtured below, both ways.
+
+   (b) A SUB-PATH NEEDS A REWRITE, NOT JUST A HANDLER. Vercel serves
+       `api/<seg>.js` at `/api/<seg>` and nothing beneath it, and there is no
+       catch-all in api/ (verified: no `[...slug]` file exists, and
+       vercel.json's SPA catch-all explicitly excludes `/api/`). So
+       `also="/api/markets/history"` resolves to a real api/markets.js under a
+       first-segment rule and still 404s in production. It is reachable only
+       where vercel.json rewrites `/api/<seg>/:path*` — today exactly one
+       segment, `xmr`, whose `?_p=` api/xmr.js:704-709 parses. Checking the
+       handler alone would be the same narrower-subject defect one level down.
+
+   The fixture table below is the falsifiability pair, and it runs on every CI
+   run rather than living in a transcript. It uses REAL segment names against
+   the REAL api/ and vercel.json — no fakes — so it cannot drift from the tree
+   it is describing. Its own non-vacuity is asserted: the table must exercise
+   both polarities and `judge` must actually return both. */
 R.group('8 · PanelBoundary\'s `also` escape hatch stays honest');
 {
   const SRC = new URL('./src/', import.meta.url).pathname;
   const API = new URL('../api/', import.meta.url).pathname;
+  const VERCEL = new URL('../vercel.json', import.meta.url).pathname;
+
+  /** First segments vercel.json rewrites into a function with `:path*`. */
+  const rewritten = new Set(
+    (JSON.parse(readFileSync(VERCEL, 'utf8')).rewrites || [])
+      .map((r) => /^\/api\/([a-z0-9-]+)\/:path\*$/.exec(String(r.source || '')))
+      .filter(Boolean)
+      .map((m) => m[1]),
+  );
+  R.info(`vercel.json rewrites these /api/<seg>/:path* segments: ${[...rewritten].join(', ') || '(none)'}`);
+
+  const ALSO_SRC = '\\balso=\\{?"(\\/api\\/[^"]*)"';
+  const captures = (text) => [...text.matchAll(new RegExp(ALSO_SRC, 'g'))].map((m) => m[1]);
+
+  /** null when the literal is honest, else the reason it is not. */
+  const judge = (raw) => {
+    const path = raw.split(/[?#]/)[0];
+    if (path.includes('${')) return 'the PATH itself is built from a template expression — not statically checkable';
+    if (!path.startsWith('/api/')) return `"${path}" is not an /api/ path`;
+    const segs = path.slice('/api/'.length).split('/').filter(Boolean);
+    if (segs.length === 0) return 'no segment after /api/';
+    const seg = segs[0];
+    if (!/^[a-z0-9-]+$/.test(seg)) return `first segment "${seg}" is not a plain lowercase segment`;
+    if (!existsSync(join(API, `${seg}.js`))) return `no api/${seg}.js`;
+    if (segs.length > 1 && !rewritten.has(seg)) {
+      return `sub-path, but vercel.json has no "/api/${seg}/:path*" rewrite — this 404s in production`;
+    }
+    return null;
+  };
+
+  /* -- the IDENTIFIER half ------------------------------------------------
+     The literal matcher above closed one blind spot and opened the next one
+     along: `also={SEED_PATH}` is not a literal, so widening `[a-z0-9-]` to
+     `[^"]*` bought nothing at the one call site it was widened for. The
+     first widening was measured on a tree where §2 had not landed yet, and
+     "0 sub-paths" read as "none exist" rather than "none visible" — the
+     empty-result rule, applied to my own fix.
+
+     So identifiers are resolved rather than skipped, and an identifier that
+     CANNOT be resolved is a FAILURE, never a silent pass. That polarity is
+     the whole point: a skip here reproduces the original defect exactly.
+
+     The scan is scoped to `<PanelBoundary>` opening tags, because `also` is
+     an overloaded prop name — NodeProvenance takes an `also` that is a
+     ProvSource (`also="session"`, and five prop-drilled `also={also}`
+     forwards in the mempool views). Judging those as paths would fail five
+     correct call sites. Scoping by element is the distinction that holds;
+     filtering by "does it look like a path" would not, because the
+     unresolvable case is exactly where you cannot tell. */
+
+  /** Attribute span of every `<Name …>` opening tag. Brace- and quote-aware,
+   *  so an arrow function in a prop (`onRetry={() => …}`) cannot end the tag
+   *  early at its own `>`. */
+  const openingTags = (text, name) => {
+    const spans = [];
+    const re = new RegExp(`<${name}\\b`, 'g');
+    let m;
+    while ((m = re.exec(text)) !== null) {
+      let i = m.index + m[0].length;
+      let depth = 0;
+      let quote = null;
+      for (; i < text.length; i++) {
+        const c = text[i];
+        if (quote) { if (c === quote && text[i - 1] !== '\\') quote = null; continue; }
+        if (c === '"' || c === "'" || c === '`') { quote = c; continue; }
+        if (c === '{') depth++;
+        else if (c === '}') depth--;
+        else if (c === '>' && depth === 0) break;
+      }
+      spans.push(text.slice(m.index, i));
+    }
+    return spans;
+  };
+
+  /** `const NAME = "…"` / `'…'` / `` `…` `` in one file's text, or null. */
+  const constString = (text, ident) => {
+    const m = new RegExp(
+      `(?:export\\s+)?const\\s+${ident}\\b[^=\\n]*=\\s*(?:"([^"]*)"|'([^']*)'|\`([^\`]*)\`)`,
+    ).exec(text);
+    if (!m) return null;
+    return m[1] ?? m[2] ?? m[3] ?? null;
+  };
+
+  /** `@/x` → src/x, `./x` / `../x` → relative. Bare specifiers are not ours. */
+  const resolveModule = (spec, fromFile) => {
+    let base;
+    if (spec.startsWith('@/')) base = join(SRC, spec.slice(2));
+    else if (spec.startsWith('.')) base = join(dirname(fromFile), spec);
+    else return null;
+    for (const c of [base, `${base}.ts`, `${base}.tsx`, join(base, 'index.ts'), join(base, 'index.tsx')]) {
+      if (existsSync(c) && statSync(c).isFile()) return c;
+    }
+    return null;
+  };
+
+  /** Same-file const first, then a named import — the shape §1's dedupe of
+   *  the two copies of this very endpoint path will produce, designed for
+   *  now rather than retrofitted after it lands. */
+  const resolveIdent = (ident, text, file) => {
+    const local = constString(text, ident);
+    if (local != null) return { value: local, where: 'same file' };
+    const imp = /import\s*\{([^}]*)\}\s*from\s*["']([^"']+)["']/g;
+    let m;
+    while ((m = imp.exec(text)) !== null) {
+      const names = m[1].split(',').map((s) => s.trim().split(/\s+as\s+/).pop().trim());
+      if (!names.includes(ident)) continue;
+      const mod = resolveModule(m[2], file);
+      if (!mod) return null;
+      const v = constString(readFileSync(mod, 'utf8'), ident);
+      if (v != null) return { value: v, where: mod.slice(SRC.length) };
+    }
+    return null;
+  };
+
+  const identSites = (text) =>
+    openingTags(text, 'PanelBoundary')
+      .flatMap((tag) => [...tag.matchAll(/\balso=\{\s*([A-Za-z_$][\w$]*)\s*\}/g)].map((m) => m[1]));
+
+  /* -- 8a · the matcher sees sub-paths and still ignores `also="session"` -- */
+  const CAP = [
+    ['also="/api/markets"', ['/api/markets'], 'single segment, the pre-existing shape'],
+    ['also="/api/xmr/network/difficulty"', ['/api/xmr/network/difficulty'], 'THE HISTORICAL BLIND SPOT'],
+    ['also={"/api/xmr/tip"}', ['/api/xmr/tip'], 'brace form'],
+    ['also="/api/xmr?range=7d"', ['/api/xmr?range=7d'], 'query string is captured, not skipped'],
+    ['also="session"', [], 'the ProvSource form must NOT be captured'],
+  ];
+  const capBad = CAP
+    .map(([text, want, why]) => {
+      const got = captures(text);
+      return JSON.stringify(got) === JSON.stringify(want) ? null : `${why}: ${text} → ${JSON.stringify(got)}, want ${JSON.stringify(want)}`;
+    })
+    .filter(Boolean);
+  R.ok(capBad.length === 0, `8a matcher fixtures: ${CAP.length} capture cases, sub-paths included, "session" excluded`, capBad.join(' | '));
+  R.ok(CAP.some(([, w]) => w.length > 0) && CAP.some(([, w]) => w.length === 0),
+    '8a exercises both polarities — a capture table of only-matches would pass a matcher that matches everything');
+
+  /* -- 8b · the resolver, against the real api/ and the real vercel.json -- */
+  const JUDGE = [
+    ['/api/markets', true, 'single segment with a real handler'],
+    ['/api/xmr/network/difficulty', true, 'sub-path under the one rewritten segment'],
+    ['/api/xmr?range=7d', true, 'query is stripped before resolution'],
+    ['/api/nonexistent', false, 'no handler — the case the old matcher DID catch'],
+    ['/api/nonexistent/thing', false, 'no handler, sub-path — the case it did NOT'],
+    ['/api/markets/history', false, 'real handler, but no rewrite: 404 in production'],
+    ['/api/', false, 'no segment at all'],
+    ['/api/XMR/tip', false, 'not a plain lowercase segment'],
+  ];
+  const judgeBad = JUDGE
+    .map(([p, wantOk, why]) => {
+      const r = judge(p);
+      return (r === null) === wantOk ? null : `${why}: ${p} → ${r === null ? 'accepted' : `rejected (${r})`}, want ${wantOk ? 'accepted' : 'rejected'}`;
+    })
+    .filter(Boolean);
+  R.ok(judgeBad.length === 0, `8b resolver fixtures: ${JUDGE.length} cases over the real api/ + vercel.json`, judgeBad.join(' | '));
+  R.ok(JUDGE.some(([p]) => judge(p) === null) && JUDGE.some(([p]) => judge(p) !== null),
+    '8b exercises both polarities — judge() returns an accept AND a reject on this table');
+
+  /* -- 8c · identifier scoping and resolution -- */
+  const TAGS = [
+    ['<PanelBoundary keys={K} also={SEED_PATH} reserve={1}>', ['SEED_PATH'], 'PanelBoundary identifier IS collected'],
+    ['<PanelBoundary keys={K} onRetry={() => r()} also={P} reserve={1}>', ['P'], 'an arrow function\'s own `>` does not end the tag early'],
+    ['<PanelBoundary keys={K} also="/api/markets" reserve={1}>', [], 'a literal is left to the literal scan, never double-counted'],
+    ['<NodeProvenance source="node" also={also} keys={k} />', [], 'NodeProvenance\'s ProvSource `also` is NOT a path and must not be collected'],
+    ['<NodeProvenance source="node" also="session" />', [], 'nor the "session" literal form'],
+  ];
+  const tagBad = TAGS
+    .map(([text, want, why]) => {
+      const got = identSites(text);
+      return JSON.stringify(got) === JSON.stringify(want) ? null : `${why}: → ${JSON.stringify(got)}, want ${JSON.stringify(want)}`;
+    })
+    .filter(Boolean);
+  R.ok(tagBad.length === 0, `8c tag-scoping fixtures: ${TAGS.length} cases — PanelBoundary only, brace-aware`, tagBad.join(' | '));
+  R.ok(TAGS.some(([, w]) => w.length > 0) && TAGS.some(([, w]) => w.length === 0),
+    '8c exercises both polarities — collected AND not-collected are both represented');
+
+  const IDENT = [
+    ['const P = "/api/markets";', 'P', '/api/markets', 'plain same-file const'],
+    ['const P: string = `/api/xmr/network/difficulty?range=${W}`;', 'P', '/api/xmr/network/difficulty?range=${W}',
+      'template with an interpolated QUERY — the path half stays static'],
+    ['const Q = "/api/markets";', 'P', null, 'an identifier that is not declared resolves to null, which the scan FAILS on'],
+  ];
+  const identBad = IDENT
+    .map(([text, ident, want, why]) => {
+      const got = resolveIdent(ident, text, join(SRC, 'x.tsx'));
+      const val = got === null ? null : got.value;
+      return val === want ? null : `${why}: → ${JSON.stringify(val)}, want ${JSON.stringify(want)}`;
+    })
+    .filter(Boolean);
+  R.ok(identBad.length === 0, `8c resolver fixtures: ${IDENT.length} same-file cases including an unresolvable one`, identBad.join(' | '));
+
+  /* The import half of resolveIdent has NO real call site yet — today's one
+     identifier is same-file. It is built now because §1's dedupe of the two
+     copies of this endpoint path (StreamPanel's SEED_PATH and
+     useDifficultyStream's ENDPOINT) will produce exactly one shared export,
+     and retrofitting a resolver after the drift it exists to catch is the
+     wrong order. Module resolution is therefore fixtured on its own against
+     real files; the import→const composition is exercised the moment that
+     dedupe lands, and until then an import this cannot follow FAILS rather
+     than passing, so the untested half cannot certify anything. */
+  const MOD = [
+    ['@/design/PanelBoundary', true, 'the @/ alias resolves to a real src file'],
+    ['./verify-nothing-like-this', false, 'a relative specifier with no file resolves to null'],
+    ['react', false, 'a bare package specifier is not ours to follow'],
+  ];
+  const modBad = MOD
+    .map(([spec, wantHit, why]) => {
+      const got = resolveModule(spec, join(SRC, 'pages', 'x.tsx'));
+      return (got !== null) === wantHit ? null : `${why}: ${spec} → ${got}`;
+    })
+    .filter(Boolean);
+  R.ok(modBad.length === 0, `8c module-resolution fixtures: ${MOD.length} cases (@/ alias, missing relative, bare package)`, modBad.join(' | '));
+  R.ok(judge('/api/xmr/network/difficulty?range=${W}') === null,
+    '8c a template whose only interpolation is in the QUERY still resolves — the path half is static');
+  /* `/api/xmr/${sub}` and NOT `/api/${seg}/tip`, deliberately. The second is
+     rejected by the lowercase-segment check whether or not the template guard
+     exists, so an assertion built on it passes for a reason unrelated to its
+     own claim — measured: removing the guard left it GREEN. This one is
+     rejected ONLY by the guard: `xmr` is a real, rewritten first segment, so
+     every other clause accepts it. */
+  R.ok(judge('/api/xmr/${sub}') !== null,
+    '8c a template interpolated in a LATER path segment is rejected, not guessed — every other clause would accept this one');
+
+  /* -- 8d · the real tree -- */
   const files = [];
   (function walk(d) {
     for (const n of readdirSync(d)) {
@@ -312,14 +577,37 @@ R.group('8 · PanelBoundary\'s `also` escape hatch stays honest');
 
   const bad = [];
   let found = 0;
+  let subPaths = 0;
+  let viaIdent = 0;
+  const countSub = (p) => {
+    if (p.split(/[?#]/)[0].slice('/api/'.length).split('/').filter(Boolean).length > 1) subPaths++;
+  };
   for (const f of files) {
-    for (const m of strip(readFileSync(f, 'utf8')).matchAll(/\balso=\{?"(\/api\/[a-z0-9-]+)"/g)) {
+    const text = strip(readFileSync(f, 'utf8'));
+    for (const p of captures(text)) {
       found++;
-      const file = m[1].replace('/api/', '') + '.js';
-      if (!existsSync(join(API, file))) bad.push(`${m[1]} (no api/${file})`);
+      countSub(p);
+      const why = judge(p);
+      if (why) bad.push(`${p} in ${f.slice(SRC.length)} (${why})`);
+    }
+    /* An UNRESOLVABLE identifier is a failure, never a skip. Skipping it is
+       precisely the defect this section was widened twice to remove. */
+    for (const ident of identSites(text)) {
+      found++;
+      viaIdent++;
+      const r = resolveIdent(ident, text, f);
+      if (r === null) {
+        bad.push(`also={${ident}} in ${f.slice(SRC.length)} (UNRESOLVABLE — declare it as a same-file or imported \`const ${ident} = "/api/…"\`, or inline the literal; an also= this gate cannot read is an also= it is not checking)`);
+        continue;
+      }
+      countSub(r.value);
+      const why = judge(r.value);
+      if (why) bad.push(`also={${ident}} → "${r.value}" (from ${r.where}) in ${f.slice(SRC.length)} (${why})`);
     }
   }
-  R.ok(bad.length === 0, `every literal also="/api/…" has a real handler behind it (${found} found)`, bad.join(', '));
+  R.ok(bad.length === 0,
+    `every also="/api/…" resolves to a reachable handler (${found} found — ${found - viaIdent} literal, ${viaIdent} via identifier — of which ${subPaths} sub-path${subPaths === 1 ? '' : 's'})`,
+    bad.join(' | '));
 }
 
 process.exit(R.finish());

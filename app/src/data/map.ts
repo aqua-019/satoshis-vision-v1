@@ -247,7 +247,13 @@ export function mapMempool(mp: XmrMempool, prev: MoneroLive): Partial<MoneroLive
 
 /** A single relay/REST block → MoneroLive Block. */
 function toBlock(b: XmrBlock, tipHeight: number): Block {
-  const ts = num(b.timestamp, nowSec());
+  /* `tsReal` is the header's own time or nothing; `ts` keeps the pre-existing
+     wall-clock fallback that `age` has always used. Two names because they are
+     two different claims: `age` may degrade to "assume it just arrived", a
+     chart coordinate may not. See Block.timestamp in types.ts. */
+  const raw = Number(b.timestamp);
+  const tsReal = Number.isFinite(raw) && raw > 0 ? raw : null;
+  const ts = tsReal ?? nowSec();
   return {
     height: b.height,
     hash: b.hash,
@@ -257,6 +263,7 @@ function toBlock(b: XmrBlock, tipHeight: number): Block {
     difficulty: num(b.difficulty, 0),
     pool: b.pool_name || "Unknown",
     age: Math.max(0, nowSec() - ts),
+    timestamp: tsReal,
     conf: Math.max(1, tipHeight - b.height + 1),
   };
 }

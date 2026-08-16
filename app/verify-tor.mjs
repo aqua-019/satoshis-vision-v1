@@ -22,8 +22,51 @@ import { dirname, join } from 'node:path';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const base = 'http://localhost:4173';
 
-/** One snapshot() round issues exactly these five requests. */
+/** Scaling factor for the RATE assertions below (§1 total, §3, §4). */
 const ROUND_SIZE = 5;
+
+/**
+ * §1's OWN ceiling, and it is not `ROUND_SIZE` — the old code used that and its
+ * docblock said "one snapshot() round issues exactly these five requests",
+ * which was already false of this route before p3·14b touched it.
+ *
+ * MEASURED, at the peak, on `/live/network`:
+ *
+ *   /api/xmr/mempool                          feed · fast tier
+ *   /api/xmr/fees                             feed · fast tier
+ *   /api/xmr/tip                              feed · chain tier
+ *   /api/coingecko?path=simple/price…         feed · market tier
+ *   /api/nodes                                PAGE-LOCAL one-shot (node population)
+ *   /api/xmr/network/difficulty?range=1d      PAGE-LOCAL one-shot (D0828 seed)
+ *
+ * So the five it counted were never the five it named: `/api/nodes` is a
+ * page-local one-shot rather than part of a snapshot round, and `network` +
+ * `blocks` never appear at all because the chain tier gates them behind an
+ * unchanged tip. The constant matched reality by coincidence, and p3·14b's
+ * seed broke the coincidence rather than the invariant.
+ *
+ * Split so the bound says what it bounds. The INTENT is unchanged and is the
+ * only thing that ever mattered: concurrency must not climb without limit.
+ */
+const FEED_CONCURRENT = 4;
+
+/**
+ * The one-shots are the whole reason the ceiling may exceed the feed's own
+ * concurrency, so they are ASSERTED to be one-shots. Without this, the +2
+ * allowance would happily absorb a request that had started repeating every
+ * tick — an allowance that hides the thing it was granted for.
+ */
+const ONE_SHOT_PATHS = ['/api/nodes', '/api/xmr/network/difficulty'];
+
+/**
+ * DERIVED, never a second literal. A `PAGE_ONESHOTS = 2` beside a two-entry
+ * list is two expressions of one fact and they are free to drift: add a third
+ * path and the ceiling would not follow it; raise the number without adding a
+ * path and the allowance grows with nothing guarding it. This repo has fixed
+ * that exact shape more than once (`routes.mjs`'s `R`, the four route lists),
+ * and the fix is always to make the count a function of the thing it counts.
+ */
+const CONCURRENCY_CEILING = FEED_CONCURRENT + ONE_SHOT_PATHS.length;
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
@@ -104,26 +147,79 @@ console.log('engine:', engine);
   let inFlight = 0;
   let peak = 0;
   let total = 0;
+  const oneShotHits = new Map(ONE_SHOT_PATHS.map((k) => [k, 0]));
+  let tipHits = 0;
+  let peakSet = [];
+  const live = new Set();
   p.on('request', (r) => {
     if (!r.url().includes('/api/')) return;
     inFlight++; total++;
-    if (inFlight > peak) peak = inFlight;
+    live.add(r.url());
+    if (inFlight > peak) { peak = inFlight; peakSet = [...live]; }
+    for (const k of ONE_SHOT_PATHS) if (r.url().includes(k)) oneShotHits.set(k, oneShotHits.get(k) + 1);
+    if (r.url().includes('/api/xmr/tip')) tipHits++;
   });
-  const settle = (r) => { if (r.url().includes('/api/')) inFlight--; };
+  const settle = (r) => { if (r.url().includes('/api/')) { inFlight--; live.delete(r.url()); } };
   p.on('response', settle);
   p.on('requestfailed', settle);
 
   // Every API call takes 4s — a pessimistic but entirely realistic Tor circuit.
   await p.route('**/api/**', async (route) => {
     await sleep(4000);
+    /* The D0828 seed gets a VALID envelope; everything else keeps `{}`.
+       Without this the seed never succeeds, `needSeed` stays true, and the
+       chain tier correctly RETRIES it — so a guard asserting "fired once"
+       would be measuring retry-on-failure, not repetition, and could never
+       observe the thing it claims to watch. That is a subject narrower than
+       its claim, inside the guard written to close the previous instance of
+       exactly that family. Fulfil it once, and the count below means what it
+       says. Degraded behaviour is not lost: §3 still asserts the global
+       backoff, and `/api/nodes` still exercises the no-retry path. */
+    if (route.request().url().includes('/api/xmr/network/difficulty')) {
+      const H = 3_500_000, NOW = Math.floor(Date.now() / 1000);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        ok: true, requested: '1d', range: '1d', blocks: 720, returned: 30, step: 24,
+        tip: H, target_seconds: 120, window_seconds: 720 * 120,
+        points: Array.from({ length: 30 }, (_, i) => ({
+          height: H - 29 + i, timestamp: NOW - (29 - i) * 2880, difficulty: 400e9 + i * 1e9,
+        })),
+      }) });
+    }
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
   await p.goto(base + '/live/network', { waitUntil: 'load' });
   await p.waitForTimeout(20000);
 
-  ok(peak <= ROUND_SIZE,
-     `1: concurrency never exceeds one round (peak ${peak}, one round = ${ROUND_SIZE})`);
+  ok(peak <= CONCURRENCY_CEILING,
+     `1: concurrency stays bounded (peak ${peak} ≤ ${CONCURRENCY_CEILING} = ${FEED_CONCURRENT} feed + ${ONE_SHOT_PATHS.length} page one-shot)`
+     + `\n     at peak: ${peakSet.map((u) => u.replace(base, '')).join(', ')}`);
+  /* THE ASSERTION BELOW IS `n === 1`, AND THIS COMMENT USED TO ARGUE AGAINST IT
+     while the code did it anyway — caught in re-judgment. Read the code, but
+     here is why it is `=== 1` and not something looser:
+
+     The first draft asserted `n === 1` against a §1 that answered EVERY
+     `/api/**` with `{}`. The D0828 seed therefore never received points,
+     `needSeed` stayed true, and the chain tier correctly RE-SEEDED — so the
+     assertion was measuring retry-on-failure while claiming to measure
+     repetition, and a one-shot was structurally incapable of being one.
+
+     The fix was to the FIXTURE, not the threshold: §1 now fulfils the seed once
+     with a valid envelope (see the route handler above), so it succeeds, does
+     not re-seed, and `=== 1` is exactly right. An intermediate draft bounded `n`
+     by `tipHits` instead; that was WORSE — the seed's poller and the feed's are
+     two independently phased chain-tier timers, so in a 20 s window one can tick
+     twice while the other ticks once. It read 1≤1 locally and 2≤1 in the chain.
+     An assertion whose outcome depends on phase is not an assertion.
+
+     `tipHits` survives only as the vacuity control: it proves the chain tier
+     ticked at all, so a `n === 1` that passed because NOTHING happened is
+     distinguishable from one that passed because the seed behaved. */
+  ok(tipHits > 0, `1: the chain tier ticked ${tipHits}×, so a repeating one-shot had chances to repeat`);
+  for (const [path, n] of oneShotHits) {
+    ok(n === 1,
+       `1: ${path} fired ONCE across ${tipHits} chain tick(s) (${n}) — a page one-shot that began repeating would hide inside the ceiling it was granted`);
+  }
   // 20s at a 4s floor is at most ~5 rounds. The old code fired every 2.5s
   // regardless, so it would be well past this.
   ok(total <= ROUND_SIZE * 7,

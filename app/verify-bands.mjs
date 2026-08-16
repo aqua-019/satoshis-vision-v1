@@ -206,4 +206,61 @@ r.ok(worstZone(['healthy', 'healthy', 'warn']) === 'warn', 'one warn among many 
 r.ok(worstZone(['critical', 'healthy']) === 'critical', 'one critical dominates');
 r.ok(worstZone(['warn', 'critical', 'warn']) === 'critical', 'critical beats a warn majority — severity, not counting');
 
+/* ── 8 · the ±1σ sentence's PROVENANCE CLAUSE, defended at the call sites ──
+   D0837 added six small-multiple tiles. Ruling on the "any new band shape
+   extends this gate" criterion: there is NO new shape — `SeriesTile` renders
+   a `Band` and constructs none, and all four banded series go through the
+   `sigmaBand` above. The criterion is met by ARGUMENT, and this section is
+   what stops the argument from decaying into a claim.
+
+   The thing at risk is one CLAUSE. `sigmaBand`'s sentence ends "measured from
+   the node's own block headers", which is true of all four of today's banded
+   series — block difficulty, header-timestamp intervals, block weights, and
+   the stream (whose seed the server builds from `get_block_headers_range`).
+   It would become FALSE the moment a session buffer were banded: `hashSeries`
+   and `mempoolSeries` accumulate in the tab and are not headers. Both session
+   tiles correctly pass `band: null` today, with a reason.
+
+   §3 was believed to pin this clause and does NOT — it asserts only that the
+   sentence is >40 chars, names its sample count, and does not claim a month.
+   So a session series could be banded, the sentence would assert a source it
+   does not have, and all 48 assertions here would stay green. That is this
+   repo's standing failure mode — a pinned assertion protecting a sentence
+   that has quietly become false — so the clause and its call sites are pinned
+   together, because either alone is satisfiable while the other rots. */
+
+r.group('8 · the ±1σ provenance clause is true of every series that bands');
+
+{
+  const PAGE = './src/pages/NetworkPage.tsx';
+  const src = readFileSync(new URL(PAGE, import.meta.url), 'utf8');
+  const strip = (s) => s
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  const code = strip(src);
+
+  const sb = sigmaBand(Array.from({ length: 100 }, (_, i) => 400 + (i % 7)), bandWindowLabel(100));
+  r.ok(/node's own block headers/.test(sb.source),
+    'the ±1σ sentence still claims the node\'s own block headers as its source');
+
+  /* The session buffers, by the identifiers the page builds them under. A
+     NEGATIVE list rather than a positive one: banding something header-derived
+     is fine and unbounded, banding one of these two is the specific lie. */
+  const SESSION_SERIES = ['hashSeries', 'mempoolSeries'];
+  const banded = [...code.matchAll(/sigmaBand\(\s*([A-Za-z_$][\w$]*)/g)].map((m) => m[1]);
+  r.ok(banded.length > 0,
+    `the page has sigmaBand call sites to check (${banded.length}: ${banded.join(', ')}) — a zero here would pass this section vacuously`);
+  const lying = banded.filter((v) => SESSION_SERIES.includes(v));
+  r.ok(lying.length === 0,
+    `no SESSION buffer is banded — ${SESSION_SERIES.join(' / ')} are accumulated in the tab, not read from headers, so the sentence above would be false of them`,
+    lying.join(', '));
+
+  /* A tile that drops its band must say why, or "no band" becomes
+     indistinguishable from "nobody thought about it". */
+  const nullBands = (code.match(/band:\s*null/g) || []).length;
+  const reasons = (code.match(/noBandReason:/g) || []).length;
+  r.ok(nullBands > 0 && reasons === nullBands,
+    `every band-less tile carries a noBandReason (${nullBands} null, ${reasons} reasons)`);
+}
+
 r.finish();

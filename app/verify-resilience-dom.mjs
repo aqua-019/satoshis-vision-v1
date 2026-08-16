@@ -69,6 +69,19 @@ const FIX = {
     weight: 1500 + i * 30, fee: 30000000 + i * 1000, receive_time: Math.floor(Date.now() / 1000) - i * 8,
   })) }),
   fees: () => ({ fee: 20000, fees: [20000, 80000, 320000, 4000000], quantization_mask: 10000 }),
+  /* The §1 history envelope. Shape taken from api/xmr.js's buildHistoryEnvelope,
+     not invented — window_seconds === blocks × target_seconds is the server's
+     own identity (720 × 120 = 86,400), so a fixture that drifts from the
+     handler fails api/verify-history.mjs's D4 rather than passing quietly. */
+  'network/difficulty': () => ({
+    ok: true, requested: '1d', range: '1d', blocks: 720, returned: 30, step: 24,
+    tip: TIP, target_seconds: 120, window_seconds: 720 * 120,
+    points: Array.from({ length: 30 }, (_, i) => ({
+      height: TIP - 29 + i,
+      timestamp: Math.floor(Date.now() / 1000) - (29 - i) * 2880,
+      difficulty: 400e9 + (i % 7) * 1e9,
+    })),
+  }),
 };
 
 /** Serve the chain endpoints. Keys in `dead` return 500 while siblings answer —
@@ -85,7 +98,17 @@ async function mock(ctx, { dead = [], slowMs = 0 } = {}) {
     if (slowMs) await new Promise((r) => setTimeout(r, slowMs));
     const u = new URL(route.request().url());
     const p = u.searchParams.get('_p') || u.pathname.replace(/^.*\/api\/xmr\/?/, '');
-    const key = ['blocks', 'mempool', 'fees', 'tip', 'network'].find((k) => p.includes(k));
+    /* `network/difficulty` BEFORE the bare `network`, and the order is the
+       whole point: `p.includes('network')` matches the history sub-path too,
+       so the D0828 seed was answered with the get_info-shaped `network`
+       fixture, never received points, and correctly rendered its
+       "has not returned history" copy — in the HEALTHY render as well as the
+       failed one. §G then read that as failure copy leaking into the healthy
+       state. The panel was right; the mock was serving the wrong body.
+       This is the same substring shape as `verify-failure`'s router and
+       `verify-tiers-dom`'s classifier, both fixed earlier in this PR. */
+    const key = ['blocks', 'mempool', 'fees', 'tip', 'network/difficulty', 'network']
+      .find((k) => p.includes(k));
     if (!key) return route.fulfill({ status: 404, contentType: 'application/json', body: '{}' });
     if (dead.includes(key)) {
       return route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"upstream"}' });

@@ -35,6 +35,11 @@ import { usePendingDelay } from "@/design/usePendingDelay";
 import { NodePopulationPanel } from "./network/NodePopulationPanel";
 import { BLOCK_TARGET_S, backlogBand, bandWindowLabel, cadenceBand, meanOf, sigmaBand, worstZone } from "./network/bands";
 import { BandNote, CADENCE_H, CadenceStrip, HealthChip, SimLink, zoneOf } from "./network/BandPanels";
+import { useDifficultyStream } from "./network/useDifficultyStream";
+import { StreamPanel, streamView } from "./network/StreamPanel";
+import { SmallMultiples, type TileSpec } from "./network/SmallMultiples";
+import { SyncShell, type SyncColumn } from "./network/SyncShell";
+import { heightAgreementPct, useNodePopulation } from "@/data/useNodePopulation";
 import { R } from "../../scripts/routes.mjs";
 
 /* Chart formatters are hoisted to module scope so their identity is stable
@@ -108,6 +113,9 @@ const KEYS_BLOCKS = ["blocks"] as const;
 const KEYS_MEMPOOL = ["mempool"] as const;
 const KEYS_MEMPOOL_FEES = ["mempool", "fees"] as const;
 const KEYS_NETWORK_FEES = ["network", "fees"] as const;
+/** The small-multiples grid spans all three chart endpoints; NodeProvenance
+ *  folds them worst-of. */
+const KEYS_SMALL_MULTIPLES = ["blocks", "network", "mempool"] as const;
 
 /** Shared by the recent-blocks table's real grid and its `SkeletonRows`
  *  placeholder, so the placeholder's columns line up with the real table's
@@ -370,6 +378,124 @@ export function NetworkPage() {
      the tallest state is the loading one. */
   const POOL_ATTR_H = 61;
 
+  /* ── D0828 streaming difficulty ────────────────────────────────────
+     Seeded once from /api/xmr/network/difficulty, appended from the chain
+     tier's block headers at zero extra request cost. `streamView` is computed
+     HERE, once, and handed to both consumers — the panel and its small-
+     multiples tile — so the two cannot derive the same window two ways. */
+  const stream = useDifficultyStream(data.blocks);
+  const streamV = streamView(stream);
+
+  /* Public-node census, for the sync shell's NETWORK column. The hook is a
+     module-level store, so this second subscriber shares NodePopulationPanel's
+     fetch rather than issuing its own. */
+  const pop = useNodePopulation();
+  const popOk = pop.data && pop.data.status !== "unavailable" ? pop.data : null;
+  const agreement = popOk ? heightAgreementPct(popOk.height) : null;
+
+  /* BLOCK PRODUCTION VELOCITY, from real header timestamps only.
+     (lastHeight − firstHeight) over the wall-clock span those two headers
+     themselves report. Never Date.now()-derived: `Block.timestamp` exists
+     precisely so this is a measurement rather than a reconstruction. Null
+     under two points or a non-positive span — a rate over zero elapsed time
+     is a division, not a reading. */
+  const velocityPerH = (() => {
+    const p = stream.points;
+    if (p.length < 2) return null;
+    const dh = p[p.length - 1].height - p[0].height;
+    const dt = p[p.length - 1].t - p[0].t;
+    if (!(dt > 0) || !(dh > 0)) return null;
+    return (dh / dt) * 3600;
+  })();
+
+  /* ── D0837 small multiples ─────────────────────────────────────────
+     Each tile scales to its OWN extent; the SHARED thing is the band grammar.
+     See SmallMultiples.tsx's header for why they do not share a y-axis. */
+  const idx = (n: number): number[] => Array.from({ length: n }, (_, i) => i);
+  const tiles: TileSpec[] = [
+    {
+      id: "difficulty-stream",
+      title: "Difficulty · streamed",
+      unit: "difficulty",
+      xs: streamV.xs, ys: streamV.ys, band: streamV.band,
+      /* The BLOCKS endpoint, not the seed — same content/freshness split
+         StreamPanel's header explains. A dead seed shortens this tile's
+         window; it does not make the tile last-good. */
+      color: "var(--p-50)", stale: isStale(data.status.blocks),
+      format: fmtGigaSuffix,
+    },
+    {
+      id: "difficulty-headers",
+      title: `Difficulty · last ${diffAll.length} headers`,
+      unit: "difficulty",
+      xs: idx(diffAll.length), ys: diffAll.slice().reverse(), band: diffBand,
+      color: "var(--p-50)", stale: isStale(data.status.blocks),
+      format: fmtGigaSuffix,
+    },
+    {
+      id: "cadence",
+      title: "Block cadence",
+      unit: "seconds per block",
+      xs: idx(cadenceIntervals.length), ys: cadenceIntervals,
+      band: sigmaBand(cadenceIntervals, bandWindowLabel(cadenceIntervals.length)),
+      color: "var(--c-50)", stale: isStale(data.status.blocks),
+      format: (v) => `${Math.round(v)}s`,
+    },
+    {
+      id: "hashrate-session",
+      title: "Hashrate · session",
+      unit: "GH/s (derived)",
+      xs: idx(hashSeries.length), ys: hashSeries,
+      /* NO BAND, and not for want of samples. This is a SESSION buffer, and
+         the hashrate panel above already states there is no envelope to band
+         it against; sigmaBand's sentence would also claim these came from
+         block headers, which they did not. */
+      band: null,
+      noBandReason: "a session buffer with no history on a cold load, and hashrate is difficulty in other units — banding it would band difficulty twice.",
+      color: "var(--tk-accent)", stale: isStale(data.status.network),
+      format: fmtGigaSuffix,
+    },
+    {
+      id: "mempool-session",
+      title: "Mempool · session",
+      unit: "transactions",
+      xs: idx(mempoolSeries.length), ys: mempoolSeries,
+      band: null,
+      noBandReason: "a session buffer accumulated in this tab, not block headers — the backlog band on the mempool panel above is the node-sourced threshold.",
+      color: "var(--c-50)", stale: isStale(data.status.mempool),
+      format: (v) => `${Math.round(v)} tx`,
+    },
+    {
+      id: "fullness",
+      title: `Block fullness · last ${fullness.length}`,
+      unit: "fraction of cap",
+      xs: idx(fullness.length), ys: fullness,
+      band: sigmaBand(fullness, bandWindowLabel(fullness.length)),
+      color: "var(--tk-accent)", stale: isStale(data.status.blocks),
+      format: fmtPct,
+    },
+  ];
+
+  /* ── D0993 node-sync shell ─────────────────────────────────────────
+     ONE array entry today. The "your node" column is a second object in this
+     array, not a redesign of SyncShell — see that file's header. */
+  const syncColumns: SyncColumn[] = [
+    {
+      id: "network",
+      label: "The network",
+      source: "network",
+      phase: pop.status,
+      detail: "public node census",
+      rows: [
+        { k: "Chain tip", v: ready ? data.height.toLocaleString() : "—", note: "node this site reads" },
+        { k: "Nodes agreeing on tip", v: agreement != null ? `${agreement}%` : "—", note: "within 2 blocks" },
+        { k: "Reachable nodes", v: popOk ? popOk.counts.reachable.toLocaleString() : "—" },
+        { k: "Block production", v: velocityPerH != null ? `${velocityPerH.toFixed(1)} blocks/h` : "—", note: "from header timestamps" },
+        { k: "Census sampled", v: popOk?.sampledAt ? popOk.sampledAt.slice(11, 19) + " UTC" : "—" },
+      ],
+    },
+  ];
+
   return (
     <PageShell width="standard" rail bg={{ intensity: "calm" }}>
       <Crumbs path={R.LIVE_NETWORK} status={`Block target 2:00 · fork ${data.majorVersion ? "v" + data.majorVersion : "—"}`} />
@@ -507,6 +633,12 @@ export function NetworkPage() {
         </DataPanel>
       </section>
 
+      {/* D0828 — the streaming difficulty line. Full width: it carries a real
+          time axis (block-header timestamps, not indices) over a window the
+          server labels, so it needs the horizontal room the two-up panels
+          above cannot give it. */}
+      <StreamPanel stream={stream} view={streamV} status={data.status} />
+
       {/* Block cadence strip (D0828/D0832) — the chain's heartbeat, and the
           one panel whose reading is a RUN rather than a number. Full width:
           the run is only legible with enough horizontal room for ~100 ticks. */}
@@ -538,6 +670,13 @@ export function NetworkPage() {
           </BandNote>
         ) : null}
       </DataPanel>
+
+      {/* D0837 — every series on this page at one glance, each on its own
+          scale, all sharing one band grammar. */}
+      <SmallMultiples specs={tiles} keys={KEYS_SMALL_MULTIPLES} status={data.status} />
+
+      {/* D0993 — height vs the network, velocity, census. One column today. */}
+      <SyncShell columns={syncColumns} />
 
       {/* Block intervals + fee histogram — top-align so each panel hugs its chart. */}
       <section className="col-2" style={{ gap: 12, alignItems: "start" }}>
