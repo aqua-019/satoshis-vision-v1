@@ -142,8 +142,17 @@ OUT (non-goals):
       asserted, with the failing pre-fix transcript quoted
 - [ ] Every range label's implied window equals the window the handler serves at the
       120 s target, asserted in the gate
-- [ ] The streaming buffer appends without a React re-render — asserted by a page gate
-      that counts renders, red under a mutation that re-renders per tick
+- [ ] **REWORDED — the original was measured FALSE and I would not sign it.** It read
+      "the streaming buffer appends without a React re-render". Measured: renders grew
+      33 → 219 over 26 s, ~2 per fast-tier tick. The panel legitimately re-renders when
+      a block arrives; what it must not do is re-render on commits it has no interest in.
+      The true claim, and the one the gate must assert:
+      **the streaming panel's render count tracks the chain tier's own full pulls
+      (network + blocks) ONE-TO-ONE, and is provably insensitive to the 3 s fast tier
+      and the 60 s market tier, which it does not read.**
+      Measured over 24 s / 21 fast ticks / 3 chain full-pulls, reproduced 3× each:
+      before — 48 renders, 2.29 per fast tick; after — 3 renders, **0 of 21 fast ticks
+      caused a render, 1.00 render per chain full pull.** Gate assertion still owed.
 - [ ] The small-multiples grid asserts ONE shared axis treatment and the stated scale
       rule, red under a mutation that gives one tile its own scale
 - [ ] `verify-cls` still green for `/live/network` at its 0.005 ceiling

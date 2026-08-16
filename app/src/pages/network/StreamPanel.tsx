@@ -88,6 +88,34 @@ function fmtWindow(seconds: number): string {
 }
 
 /**
+ * The chart's own "HH:MM → HH:MM UTC" caption, plus the SPAN — GENERAL, not a
+ * 24h special case, because the defect it fixes recurs at any window that is
+ * a whole multiple of a day.
+ *
+ * `.slice(11, 16)` (HH:MM only) is exact and correct for the ranges §1 serves
+ * TODAY (1h/6h/12h/1d) with one exception: whenever `to - from` is a whole
+ * number of days, `from` and `to` land on the SAME clock minute and the
+ * caption reads e.g. "03:06 → 03:06 UTC" — which a reader parses as a
+ * zero-width instant, not the panel's actual 24h claim. Measured on the
+ * shipped default (1d): exactly that string. A future `2d` (or any Nd) key
+ * hits the identical case, so this is fixed generally rather than for `1d`
+ * alone — the same lesson CLAUDE.md records for the markets date axis
+ * (p3·12b, "a tick must be locatable, not merely true").
+ *
+ * A duration suffix rather than a date prefix: it is far shorter (this panel
+ * lives at 390px), it directly answers the question the collapsed string
+ * raises ("is this an instant or a range?"), and the window IS this panel's
+ * whole claim — its title already states it in exactly this unit
+ * (`fmtWindow`). It also degrades correctly when there is no server envelope:
+ * `to - from` is still the real held span even with `meta` null, so the
+ * suffix never depends on a field that might be absent.
+ */
+function fmtCaptionRange(from: number, to: number): string {
+  const hhmm = (t: number) => new Date(t * 1000).toISOString().slice(11, 16);
+  return `${hhmm(from)} → ${hhmm(to)} UTC · ${fmtWindow(Math.max(0, to - from))}`;
+}
+
+/**
  * The projected window, computed ONCE and consumed twice — by this panel and
  * by the small-multiples tile for the same series.
  *
@@ -290,7 +318,7 @@ function StreamPanelImpl({ stream, view, status }: StreamPanelProps) {
                   `Difficulty over the last ${windowLabel ?? "available window"}: ` +
                   `${ys.length} block headers, oldest to newest, left to right.`
                 }
-                caption={`${new Date(from * 1000).toISOString().slice(11, 16)} → ${new Date(to * 1000).toISOString().slice(11, 16)} UTC`}
+                caption={fmtCaptionRange(from, to)}
               />
             ) : (
               <div
