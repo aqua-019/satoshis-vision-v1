@@ -28,7 +28,9 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **80** `verify-*.mjs` files (`app/` ×72, `app/scripts/` ×1, `api/` ×7) — **76 gates**
+- Verification: **81** `verify-*.mjs` files (`app/` ×73, `app/scripts/` ×1, `api/` ×7) — **77 gates**
+  (p3·15 added `verify-peers.mjs`; recounted, not incremented, and the CI figures below were
+  recounted with it — `verify:static` and `verify:e2e` had BOTH drifted since p3·14b wrote them.)
   (p3·14b: recounted twice independently. This line read 77/73 and was stale by ONE before that
   release even began — p3·14 added `verify-bands.mjs` and updated its own session note to 78/74
   without folding it in here, so the two figures in this file disagreed with each other. p3·14b
@@ -54,7 +56,7 @@ chain and market data.
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
   accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
-  (**21** gates, no browser), `verify:e2e` (29 gates, against `scripts/serve-dist.mjs`) and
+  (**22** gates, no browser), `verify:e2e` (**31** gates, against `scripts/serve-dist.mjs`) and
   **five individually-named browser gates** — `verify:fit`, `verify:mobile`,
   `verify:perf-runtime` (v2·3b) plus `verify:tracking` and `verify:memstats` (#174), one
   step each with `if: always()`, never an `&&`
@@ -371,7 +373,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **62 of the 73** gates on every PR to `main` and on every push to `main`
+- CI runs **66 of the 77** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
   are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -546,6 +548,101 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-16**: p3·15 "SUPERBRAIN AS 4TH TRUSTED PEER" (app/ + .github/) — one `EcoEntry`,
+  one palette row, and the gate that stops the next omission. A small, data-shaped PR whose
+  whole discipline was in two traps, and **both traps turned out to be wider than the brief
+  said**.
+  **THE LINEAGE EMBARGO'S CORPUS IS THE WHOLE REPO, NOT `app/src` — and this entry is inside
+  it.** `verify-future.mjs:99`'s `LINEAGE_RX` is walked from the REPO ROOT over
+  `.ts/.tsx/.js/.mjs/.css/.json/.md/.html`, skipping only `node_modules/.git/dist/.vercel`
+  and exempting only `verify-future.mjs` itself — so handoffs, gate files and **CLAUDE.md**
+  are all in-corpus, and its fifth alternate is a BARE SUBSTRING on a well-known clearnet
+  Bitcoin explorer's domain. Measured the hard way: the first draft of this session's own
+  handoff spelled that string **in order to prohibit it** and turned §15 red at `found 1`
+  before any browser launched. That is the `verify-orb` §4 self-referential-grep family,
+  committed and caught inside one hour by the author of the sentence. Describe MoneroSpace
+  by FUNCTION only, here as much as in the app.
+  **`ECOSYSTEM_META` WAS THE NAMED TRAP; THE REAL ONE IS THAT THERE ARE TWO SUCH LISTS AND
+  THE RUNTIME CANNOT TELL THEM APART.** `ia.ts:204-205` spreads `FUTURE_PROTOCOL_META` **and**
+  `ECOSYSTEM_META` into ONE column, both as `${R.FUTURE}#${m.id}`, so a `/future#` leaf carries
+  no evidence of which hand-copied list it came from. Both were ungated. New **§7c** therefore
+  compares the UNION against `pages/future/data.ts` source text — §7b's idiom exactly (runtime
+  module on the ia side, source text on the data side, non-vacuity floor first, column found by
+  SHAPE not index, both directions because a rename is an add plus a drop) — plus a
+  DISJOINTNESS check, since an id in both arrays would be absorbed by the union while the app
+  drew two panels for one anchor. `verify-ia` **30 → 40**. Three polarity rounds, run by the
+  lead after a worker reported `DONE` with transcripts "captured" and none pasted:
+  **R1** delete the `superbrain` row → `❌ 1 id(s) missing from IA column: superbrain`, 39/1 —
+  the #174 defect reproduced; **R2** phantom id → `❌ 1 IA id(s) not in data.ts: ghostpanel`;
+  **R3** slice locator pointed at a non-existent const → the floor fires with TWO named reds and
+  the guarded block declines its 4 downstream assertions (40 → **34** passed) instead of passing
+  them vacuously. That drop IS the floor's value, stated as a number.
+  **THE BUDGET STORY IS A CHUNKING LESSON, AND ITS HEADLINE IS THE OPPOSITE OF ITS NAME.**
+  Importing `RepoPulseReadout` from `cards.tsx` put `/about/peers` at **101,152 B gzip** against
+  100,000: **Rollup chunks per MODULE, not per export**, so one import dragged `ProtocolCard`,
+  `MoneroNewsCard` and their deps into a route that renders neither. Re-homed into
+  `pages/future/repoPulse.tsx` — `design/canvasColor.ts`'s precedent verbatim — buying back
+  **1,052 B**. **But the leaf did NOT get its own chunk**: count held at **67**, and
+  `repoPulse.tsx` was INLINED into the pre-existing `EcoPopup` chunk whose importers were
+  already exactly FuturePage and TrustedPeersPage. So the saving came ENTIRELY from the two fat
+  components leaving, not from the readout landing anywhere new — *"it did not mint a chunk"* and
+  *"it landed where I expected"* are different facts and only the first is true.
+  **§0.7's premise was stale in the same direction**: `useCachedFeed.ts` ALREADY had its own
+  chunk (2,512 B raw / 1,023 B gzip), being already shared across the future and sources groups
+  — so no importer of it could mint anything. Five of its apparent importers only NAME it in
+  comments (p3·12's "a grep that counts mentions is not a grep that counts imports", intact).
+  Raises, red-then-green on one build: `lazyJsRaw` 867,000 → **871,000** (867,213, margin 3,787)
+  · `totalJsRaw` 1,130,000 → **1,134,000** (1,130,194, margin 3,806) · `/about/peers` 100,000 →
+  **103,000** (100,100, margin 2,900; its comment was stale by 6,437 and is re-baselined, the
+  other eleven deliberately left). **THE RAW DELTA RECONCILES TO THE BYTE**: lazy +3,516 plus
+  eager +47 = **+3,563 = the measured total, residual ZERO**. `cssGz` byte-identical at 17,762.
+  **The +47 eager was chased rather than waved at**, because a leaf reaching the eager entry is
+  precisely what the canvasColor rule exists to prevent: it is `nav/ia.ts`'s new `ECOSYSTEM_META`
+  row (eager via NavTop), `"Monero Superbrain"` appearing once in the entry chunk, 44 B minified
+  plus a separator; every string only `repoPulse.tsx` declares greps to ZERO there. **My own
+  first hypothesis — Vite's `__vite__mapDeps` table gaining a preload string, p3·13's mechanism —
+  was DISPROVED, not adopted**: Vite's hashes are fixed-length, so rotation contributes no net
+  bytes; p3·13 saw a real move because it MINTED a chunk and this mints none.
+  **`/about/peers` HAD NO DEDICATED GATE** — `verify-future` §8 iterates a HARDCODED three-key
+  partner object, so a fourth partner added no assertion and failed nothing there. New
+  **`verify-peers.mjs`**: four PARTNER cards with the count DERIVED by parsing `data.ts`; the
+  exact-case repo URL with the lowercase spelling asserted ABSENT (api.github.com 400s on it);
+  the install block complete, ordered and in an `<ol>`; the five apps; no typed number in the
+  pulse JSX; honest degradation with localStorage cleared between runs so a warm 24h cache
+  cannot make the degraded run pass vacuously; 390px; reduced motion.
+  **THE PULSE IS CONFINED TO THE PEERS CARD BY CONSTRUCTION, and `verify-future` is the pin**:
+  it hard-waits for EXACTLY 9 `[data-pulse="live"]` on `/future`, so a tenth would hang it —
+  the readout is therefore in `TrustedPeersPage` only, never `EcoPopup`, never `FuturePage`.
+  Its green after the readout was moved TWICE is the only real proof `DevLabPulseCard`'s DOM
+  survived the extraction.
+  Census RECOUNTED, never incremented: **81 files / 77 gates** (3 shared modules + 1
+  orchestrator), `verify:static` **22** unchanged, `verify:e2e` **30 → 31**, CI distinct
+  **65 → 66**. `ci.yml`'s e2e step title read **"(29) … +19"** against a THIRTY-member chain —
+  stale since p3·14b appended `verify-stream` — now 31 and +21.
+  **FOUND AND DELIBERATELY NOT FIXED: the vitals-last invariant is already broken.** `ci.yml`'s
+  header still says "the vitals-last ordering inside `verify:e2e`" carries over unchanged, but
+  `verify-stream` sits AFTER `verify-vitals` and is now the tail — inverting v6.1.9's reasoning,
+  which put vitals last precisely because it is the most contention-sensitive gate with zero
+  dependents, so its frequently-environmental red should mask nothing. Today it masks
+  `verify-stream`. Reordering an `&&` chain changes what masks what for every member.
+  **ALSO NOT FIXED, pre-existing**: NO `/future#<id>` fragment has an anchor target anywhere in
+  the app — all ten palette entries land on `/future` without scrolling to their panel. Named as
+  §7c's own stated blind spot rather than silently tolerated.
+  **THREE INSTRUMENT DEFECTS, ALL THE LEAD'S OWN, all in the measuring apparatus rather than the
+  code.** (1) **`pgrep -f "vite build"` MATCHED THE WAITER ITSELF** — the wait loop's own command
+  line contains the pattern, so `! pgrep …` could never be true and two background waits
+  deadlocked until killed by PID. The prefix/substring/name-matching family this file logged five
+  times in one release, committed while writing about it. (2) **Backticks inside a shell-quoted
+  `git commit -m` were COMMAND-SUBSTITUTED**: bash printed `import: command not found`, the commit
+  SUCCEEDED, and the stored message silently lost the line. Nothing failed loudly; only reading
+  the message back caught it. Commit messages go in a FILE via `-F`. (3) A stray scratch probe
+  (`app/.diag-peers.mjs`) was found untracked and deleted — p3·13's `git add -A` hazard, caught by
+  sweeping rather than by luck.
+  **A worker trimmed editorial copy to buy bytes across several rounds.** Recorded because the
+  output was fine and the process was not: content must not be shaped by a budget it did not
+  cause. The split paid for it and the full wording was restored.
+  **No human has seen the rendered result in a browser** — read from screenshots.
 
 - **2026-08-16**: p3·14b "NETWORK COMPLETION" (api/ + app/ + .github/) — the streaming line,
   the small multiples and the node-sync shell, on an API surface that stops lying first.
