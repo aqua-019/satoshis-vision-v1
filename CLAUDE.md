@@ -28,7 +28,7 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **79** `verify-*.mjs` files (`app/` ×71, `app/scripts/` ×1, `api/` ×7) — **75 gates**
+- Verification: **80** `verify-*.mjs` files (`app/` ×72, `app/scripts/` ×1, `api/` ×7) — **76 gates**
   (p3·14b: recounted twice independently. This line read 77/73 and was stale by ONE before that
   release even began — p3·14 added `verify-bands.mjs` and updated its own session note to 78/74
   without folding it in here, so the two figures in this file disagreed with each other. p3·14b
@@ -45,11 +45,12 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **64 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **65 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
-  `api/verify-history.mjs` as its own named step. Measured as 30 step `run:` lines
-  (31 matches − the `defaults: run:` mapping key), 70 invocations − 6 duplicates. — the workflow had never
+  `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
+  into `verify:e2e` (**30** members). Measured as 30 step `run:` lines (31 matches − the
+  `defaults: run:` mapping key), 71 invocations − 6 duplicates. — the workflow had never
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
   accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
@@ -633,8 +634,8 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   the chunk STEM, not the filename: **this build stamps content, so nearly every hash changes
   between two commits and a filename-keyed diff reports 67 additions and 67 deletions rather
   than a delta.**
-  Census RECOUNTED twice independently: **79 files / 75 gates** (3 shared modules + 1
-  orchestrator), CI distinct **64**, `verify:static` **22**, `verify:e2e` 29. CLAUDE.md's
+  Census RECOUNTED twice independently: **80 files / 76 gates** (3 shared modules + 1
+  orchestrator), CI distinct **65**, `verify:static` **22**, `verify:e2e` **30**. CLAUDE.md's
   importer counts were stale — measured **31/11/1**, not 29/8/1.
   **`verify-effects`' ledger is scoped to `src/data/` ONLY**, so `useDifficultyStream`'s
   effect sits outside it — second release running that a data-fetching hook has escaped that
