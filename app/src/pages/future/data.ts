@@ -364,11 +364,11 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     c: "#22d3ee",
     url: "https://github.com/brainchainz/Monero-Superbrain",
     repo: "brainchainz/Monero-Superbrain",
-    blurb: "An Umbrel community app store packaging five Monero apps for self-hosting — sovereignty tooling, not a site you visit.",
+    blurb: "An Umbrel community app store packaging five Monero apps for self-hosting — sovereignty tooling you run on your own hardware, not a site you visit.",
     body: [
-      "An Umbrel community app store is a third-party catalogue your own Umbrel node points at — not a hosted service, not a login. Everything in it runs on hardware you already own and answers to nobody else's uptime.",
-      "The official Monero app is the one prerequisite every app here shares. MoneroSpace and SuperAtomic also need Bitcoin and Electrs installed first, to read chain state neither one alone provides.",
-      "SuperAtomic's swap engine is a GPLv3 fork of eigenwallet/core, with the complete corresponding source published at github.com/brainchainz/eigenwallet-core — real licence compliance, worth naming in public.",
+      "An Umbrel community app store is a third-party catalogue pointed at from your own Umbrel node — not a hosted service, not a login, a directory of apps that install onto hardware you already own. Everything in it runs on your box, reads what your box can see, and stays up exactly as long as you keep it running.",
+      "The official Monero app is the one prerequisite every app here shares. MoneroSpace and SuperAtomic ask for more: both additionally need Bitcoin and Electrs installed first, since each reads chain state that neither the Monero node nor the store itself provides.",
+      "SuperAtomic's swap engine is a GPLv3 fork of eigenwallet/core, and the complete corresponding source is published at github.com/brainchainz/eigenwallet-core. That is real licence compliance, not a footnote, and it is worth naming in public.",
     ],
     blocks: [
       {
@@ -392,12 +392,12 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
         ],
       },
       {
-        label: "Point external miners",
+        label: "Point external miners at Superbrain",
         lines: ["xmrig -o umbrel.local:8888 -u \"Rig Name\" -p x"],
       },
     ],
     slots: [
-      { label: "screenshot · umbrel store listing", h: 130 },
+      { label: "screenshot · umbrel community store listing", h: 130 },
       { label: "screenshot · superbrain mining dashboard", h: 130 },
     ],
     // Link[0]'s label doubles as the card footer's short "visit X" text
@@ -407,7 +407,7 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     links: [
       ["Superbrain", "https://github.com/brainchainz/Monero-Superbrain"],
       ["eigenwallet-core source (GPLv3)", "https://github.com/brainchainz/eigenwallet-core"],
-      ["Umbrel app store", null],
+      ["Umbrel app store listing", null],
     ],
   },
 ];
