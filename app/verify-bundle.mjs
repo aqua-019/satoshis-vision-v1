@@ -597,7 +597,16 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_150_000,  // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
+  // p3·18 RAISE, 1,150,000 -> 1,155,000. Built 1,151,568, margin 3,432. It moves
+  // WITH lazyJsRaw, as the backstop it is, and the arithmetic is trivial this time
+  // because ONE chunk moved: 1,147,466 + 4,102 = 1,151,568, to the byte.
+  // The stated construction ("the sum of the two real budgets") remains broken —
+  // 280,000 + 893,000 = 1,173,000 against this line's 1,155,000 — so a build can
+  // still sit inside both real budgets and red on this one. Recorded again rather
+  // than quietly repaired, for the reason the note below already gives: repairing
+  // it means deciding what the backstop is FOR, and that is its own change.
+  totalJsRaw: 1_155_000,  // p3·18: built 1,151,568 on the FINAL tree, margin 3,432.
+                          // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
                           // p3·15: built 1,130,194, margin 3,806.
   // p3·16 RAISE, 1,134,000 -> 1,150,000. It moves WITH lazyJsRaw, as the
   // backstop it is: 1,130,218 + 16,040 = 1,146,258, to the byte. This budget's
@@ -1038,7 +1047,41 @@ const BUDGETS = {
   // loud; a helper function would be silent. Writing the real assertion — "no
   // eager chunk contains a string only this leaf declares" — is a small,
   // separate change and is deliberately NOT taken here.
-  lazyJsRaw: 886_000,   // p3·16: built 882,873 on the FINAL tree, margin 3,127.
+  // ── p3·18 RAISE, 886,000 -> 893,000. Built 889,208 on the FINAL tree, margin 3,792.
+  //
+  // THE CLEANEST ATTRIBUTION IN THE SERIES: exactly ONE chunk changed size.
+  // `MoneroPage` 66,829 -> 70,931, **+4,102**, and that single number IS both
+  // deltas — lazyJsRaw 885,106 -> 889,208 and totalJsRaw 1,147,466 -> 1,151,568
+  // are the same +4,102. Eager delta **0**, residual **ZERO**. Measured against a
+  // 1d64871 build in an ISOLATED git worktree with its own dist/, not by stashing
+  // in place (p2·10's rule: a clean `git status` is not a clean SUBJECT while
+  // dist/ still holds the other tree's output).
+  //
+  // ── "BYTE-IDENTICAL" HAS BEEN THE WRONG WORD IN THIS FILE'S NOTES, and p3·18
+  //    measured it. ────────────────────────────────────────────────────────────
+  // Previous raises here say things like "62 of 67 byte-identical". Keyed on
+  // sha256 rather than on size, the truth at this raise is:
+  //     size-identical                              68
+  //       of which TRULY byte-identical              8
+  //       same size, content ROTATED (hash cascade) 60
+  //     size-CHANGED                                 1   (MoneroPage)
+  // A chunk's emitted text embeds the HASHES of the chunks it imports, and Vite's
+  // hashes are fixed-length — so one module's content change rotates its hash,
+  // which rewrites every importer's text at IDENTICAL length, which rotates their
+  // hashes in turn. One edit rotated 60 of 68 chunks. The `index` entry is the
+  // sharp case: 99,445 B on BOTH sides with **55 differing runs**, all
+  // fixed-length hash rotations inside `__vite__mapDeps`.
+  //
+  // Consequence worth holding, because it is the only thing this changes: the
+  // budget attribution is UNAFFECTED (budgets count bytes per file, and sizes are
+  // exact), but `eagerJsRaw` can be byte-count-identical while `eagerJsGz` moves —
+  // here 262,360 B raw on both sides against 87,904 -> 87,914 gzip, **+10 B from
+  // compressibility alone**. That +10 is not a regression and nothing was added to
+  // the eager graph; the negative control is clean and was run rather than
+  // reasoned about: `BitLicense`, `FinCEN` and `Bappebti` each grep to **0** in the
+  // served entry chunk, so no legality prose reached first paint.
+  lazyJsRaw: 893_000,   // p3·18: built 889,208 on the FINAL tree, margin 3,792.
+                        // p3·16: built 882,873 on the FINAL tree, margin 3,127.
                         // p3·15: built 867,213, margin 3,787.
   //
   // p3·16 RAISE, 871,000 -> 886,000. A whole new ROUTE, which is the case this

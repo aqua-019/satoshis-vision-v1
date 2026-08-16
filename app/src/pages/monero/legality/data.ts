@@ -17,6 +17,28 @@ export type ActivityStatus = "legal" | "restricted" | "illegal" | "unclear";
  *
  * Shape borrowed verbatim from `pages/future/data.ts:26`'s `EcoLink`, which already
  * carries label-plus-honest-null through this codebase.
+ *
+ * ── WHY THESE ARE ROOTS AND NOT DEEP LINKS ────────────────────────────────────
+ * There is no network here. Measured, not assumed: the agent gateway answers
+ * **403 to CONNECT** for `www.dfs.ny.gov:443`, `eur-lex.europa.eu:443` and
+ * `www.fincen.gov:443`, so no URL in this file has been confirmed to resolve. A
+ * deep path is therefore a guess, and a 404 on a legal-claims page spends the
+ * reader's trust and returns nothing. Every href is either a regulator's ROOT or a
+ * canonical permanent identifier (the EUR-Lex ELI URI; gesetze-im-internet, the
+ * German federal law portal). LINK VALIDITY IS OPERATOR-CHECKABLE and is listed as
+ * such in the PR body rather than silently assumed.
+ *
+ * The set survived an adversarial pass whose default was refusal. Its non-KEEP
+ * verdicts split into two kinds, and only ONE was a URL defect:
+ *   — `VARA` → null. That authority was established in 2022, so "stable for years"
+ *     cannot be satisfied and its current domain could not be confirmed offline.
+ *     ACCEPTED — the only href that changed as a result.
+ *   — Zug, CVM, AUSTRAC, ADGM: challenged on the accuracy of the CLAIM each link
+ *     supports, not on the link. One reviewer said so in as many words — "this is
+ *     NOT a bad URL. It is a bad CITATION." Keeping the link is the faithful move,
+ *     because the note NAMES that body; whether the note is still true is a
+ *     different question, and one with no egress to answer it. Those four rows are
+ *     reported as possibly-aged, UNVERIFIED, and were NOT edited on a guess.
  */
 export type LegalSource = readonly [label: string, href: string | null];
 
@@ -133,7 +155,7 @@ export const LEGALITY_MATRIX: MatrixRow[] = [
   { c: "🇦🇪", n: "UAE / Dubai",         hold: "legal",      cex: "restricted", p2p: "legal",      mine: "legal",      pay: "legal",
     note: "Dubai's VARA permits regulated venues to delist privacy assets (most have). Free zones (ADGM, DIFC) have relaxed individual rules. P2P and self-custody fully legal.",
     reviewed: "2026-06-05",
-    sources: [["VARA", "https://www.vara.ae/"], ["ADGM", "https://www.adgm.com/"]] },
+    sources: [["VARA", null], ["ADGM", "https://www.adgm.com/"]] },
   { c: "🇧🇷", n: "Brazil",              hold: "legal",      cex: "legal",      p2p: "legal",      mine: "legal",      pay: "legal",
     note: "CVM treats Monero like any crypto. Bitso (regional CEX) lists XMR. Mining taxed as business activity. Merchant acceptance is common in fintech and remittance corridors.",
     reviewed: "2026-06-05",
