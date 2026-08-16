@@ -227,5 +227,28 @@ export function useDifficultyStream(blocks: readonly Block[]): DiffStream {
         : points.length ? "stale"
           : "error";
 
-  return { points, meta, phase, seededAt, rejected };
+  /**
+   * MEMOISED, not a fresh literal — this is caller 3 of the "render count
+   * tracks commits, not wall-clock" claim, and until this existed it was
+   * false. `useDifficultyStream` is invoked on EVERY render of whatever calls
+   * it (an ordinary hook call, not gated on anything), and `NetworkPage`
+   * re-renders on every tier's every commit, INCLUDING the 3s fast tier
+   * (mempool + fees), which this stream does not read. Returning `{ points,
+   * meta, phase, seededAt, rejected }` as a fresh object literal each time
+   * gave every consumer a NEW reference on every fast-tier tick even when
+   * none of these five fields moved — which is exactly what made a
+   * `React.memo` boundary downstream (`StreamPanel`) unable to bail out.
+   *
+   * `points` is already its own stable reference (memoised above, keyed on
+   * `[buf, version]`), so on a fast-only tick this whole object comes out
+   * `===` to the last one: same points ref, same meta/phase/seededAt/rejected
+   * primitives. That stability is what a caller-side `React.memo` comparator
+   * can key on. Measured before this existed: `data-stream-renders` grew on
+   * ~every fast-tier tick, 2 renders per tick, none of them touching
+   * `status.blocks` or appending a point.
+   */
+  return React.useMemo<DiffStream>(
+    () => ({ points, meta, phase, seededAt, rejected }),
+    [points, meta, phase, seededAt, rejected],
+  );
 }

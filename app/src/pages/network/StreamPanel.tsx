@@ -41,7 +41,7 @@ import { PanelFrame } from "@/design/primitives";
 import { NodeProvenance } from "@/design/provenance";
 import { PanelBoundary } from "@/design/PanelBoundary";
 import { Swap, SkeletonBox } from "@/design/Skeleton";
-import { isStale, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
+import { isStale, type FeedKey, type FeedStatus, type FeedStatusMap } from "@/data/feed-status";
 import { sigmaBand, MIN_SIGMA_SAMPLES, type Band } from "./bands";
 import { BandNote, SimLink } from "./BandPanels";
 import { SeriesTile, MAX_NODES } from "./SeriesTile";
@@ -156,11 +156,88 @@ export function streamView(stream: DiffStream, nowS: number = Math.floor(Date.no
  * A live chart over a short window is a true rendering. Marking it stale would
  * have been the lie, and the gate found it before a reader did.
  */
-export function StreamPanel({ stream, view, status }: {
+
+/** Field equality, never reference — `deriveAll` (feed-status.ts) rebuilds
+ *  every key's `FeedStatus` as a fresh object literal whenever ANY key's
+ *  observation changes, so `status.blocks` gets a new reference on a fast-tier
+ *  tick even though nothing about `blocks` moved. This is the predicate that
+ *  makes that distinguishable from an endpoint that genuinely re-answered. */
+function blocksStatusEqual(a: FeedStatus, b: FeedStatus): boolean {
+  return a === b || (a.phase === b.phase && a.at === b.at && a.fails === b.fails && a.reason === b.reason);
+}
+
+/** Field equality for a `Band` — derived purely from `ys` and `windowLabel`
+ *  (see bands.ts's `sigmaBand`), so this is redundant with the `xs`/`ys`
+ *  check below by construction, and kept anyway: a future change to the band
+ *  arithmetic that adds a hidden dependency should not silently reopen a
+ *  stale-band bug behind a memo boundary that was never asked to watch it. */
+function bandEqual(a: Band | null, b: Band | null): boolean {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return a.lo === b.lo && a.hi === b.hi && a.warnLo === b.warnLo && a.warnHi === b.warnHi && a.source === b.source;
+}
+
+/**
+ * `view` is rebuilt by the CALLER (`NetworkPage`) every one of ITS renders,
+ * from `streamView(stream)` with a live `Date.now()`-derived `nowS` — so
+ * `view.to` differs by a few seconds on nearly every call, REGARDLESS of
+ * whether anything the reader can perceive changed. Comparing `view` by
+ * reference (or by naive deep-equality including `from`/`to`) would defeat
+ * the whole point of memoising `stream` upstream.
+ *
+ * This intentionally does NOT compare `from`/`to`. That is not a shortcut —
+ * it is what "the axis STEPS, on real commits" (this file's own header)
+ * actually requires: the window's right edge is allowed to be a few seconds
+ * behind wall-clock between real content changes, because at every window
+ * this endpoint serves that drift is 0.008–2.9 px/poll (below perception; see
+ * the table above). `xs`/`ys`/`windowLabel` are the reader-visible content;
+ * `from`/`to` are presentation metadata derived from wall-clock and are
+ * allowed to lag until the content itself changes.
+ */
+function viewContentEqual(a: StreamView, b: StreamView): boolean {
+  if (a === b) return true;
+  if (a.windowLabel !== b.windowLabel) return false;
+  if (a.xs.length !== b.xs.length || a.ys.length !== b.ys.length) return false;
+  for (let i = 0; i < a.xs.length; i++) {
+    if (a.xs[i] !== b.xs[i] || a.ys[i] !== b.ys[i]) return false;
+  }
+  return bandEqual(a.band, b.band);
+}
+
+export interface StreamPanelProps {
   stream: DiffStream;
   view: StreamView;
   status: FeedStatusMap;
-}) {
+}
+
+/**
+ * Skip the re-render unless something this panel actually shows has changed.
+ *
+ * `stream` is reference-compared, which is sound because `useDifficultyStream`
+ * now memoises its return — a fast-only tick hands back the SAME `DiffStream`
+ * object, so this is a cheap `Object.is` rather than a deep walk. `status` is
+ * the whole per-endpoint map (five keys this panel never reads), so it is
+ * narrowed to `status.blocks` and compared by field — the only key `KEYS_BLOCKS`
+ * ever selects (see `NodeProvenance`'s own `status[k]` reads). `view` is
+ * compared by content, deliberately excluding wall-clock-only drift (see
+ * `viewContentEqual`'s own comment).
+ *
+ * Net effect, measured (see the handoff report): renders that used to fire on
+ * every fast-tier tick (2 per tick, ~zero of them touching this panel's data)
+ * now fire only when `status.blocks` or the stream's own content changes —
+ * i.e. on the chain tier's own full pulls, which is what "tracks block
+ * arrivals, not wall-clock" means for an endpoint that also gets a periodic
+ * no-new-block refresh (`floorDue` in xmrirish-feed.ts).
+ */
+function streamPanelPropsEqual(prev: StreamPanelProps, next: StreamPanelProps): boolean {
+  return (
+    prev.stream === next.stream &&
+    blocksStatusEqual(prev.status.blocks, next.status.blocks) &&
+    viewContentEqual(prev.view, next.view)
+  );
+}
+
+function StreamPanelImpl({ stream, view, status }: StreamPanelProps) {
   const { meta, phase, seededAt, rejected } = stream;
   const { xs, ys, from, to, windowLabel, band } = view;
 
@@ -253,3 +330,13 @@ export function StreamPanel({ stream, view, status }: {
     </PanelFrame>
   );
 }
+
+/**
+ * The public export. Memoised with `streamPanelPropsEqual` rather than the
+ * default shallow-props comparison, because a shallow comparison would never
+ * bail: `NetworkPage` (not memoised itself, and re-rendering on every tier's
+ * every commit) hands this component a freshly-computed `view` object and a
+ * freshly-deriveAll'd `status` map on every one of ITS renders regardless of
+ * whether anything this panel reads actually changed.
+ */
+export const StreamPanel = React.memo(StreamPanelImpl, streamPanelPropsEqual);

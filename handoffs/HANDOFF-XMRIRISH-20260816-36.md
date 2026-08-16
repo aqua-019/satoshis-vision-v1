@@ -177,3 +177,40 @@ notes for ARCHITECTURE.md patch:
 open questions:
 
 ## 8 · LOOP FEEDBACK
+
+### CORRECTION — `5bf493d`'s commit message is WRONG and this is the record
+
+That commit says "the seed is fetched and never merged" and calls it §2's headline
+feature not working. **It is not established, and direct measurement contradicts it.**
+
+Measured by the lead against the same HEAD build `verify-failure` ran on, with a route
+mock replicating the gate's own router (`network/difficulty` matched before the bare
+`network` arm), reading the exact attribute the gate reads:
+
+```
+t=1500ms   data-stream-points=200  renders=5   title="Difficulty · streaming · 24 h · 200 points"
+t=4000ms   data-stream-points=200  renders=7   title="Difficulty · streaming · 24 h · 200 points"
+t=8000ms   data-stream-points=200  renders=9   title="Difficulty · streaming · 24 h · 200 points"
+t=12000ms  data-stream-points=200  renders=11  title="Difficulty · streaming · 24 h · 200 points"
+```
+
+200 points from a 40-entry blocks fixture plus a 200-point seed, and a SERVER-DERIVED
+`24 h` window label. A rendered capture of the same build shows the panel header
+`DIFFICULTY · STREAMING · 24 H · 200 POINTS` and the provenance strip
+`SEEDED HISTORY + CHAIN TIER`. **The seed merges and the envelope meta reaches the panel.**
+
+`verify-failure`'s two new assertions still red reproducibly, reporting 40 points. So two
+honest measurements disagree, and the open question is **which one has the wrong subject**
+— routed to the gate's owner. The prime suspect is the gate's own
+`waitForFunction(… > 40, {timeout: 10000}).catch(() => {})`: **a swallowed timeout makes a
+SLOW seed and a BROKEN seed indistinguishable at that call site.**
+
+**The process failure is the lead's and it happened twice.** A subagent's red was relayed
+as a settled defect and dispatched as a fix instruction, without the lead measuring it
+first — once for the freshness defect (which a later commit had already fixed) and once
+here. Both times the measurement said otherwise, and both times a builder was sent at
+code that worked. The rule this leaves: **a red is a report until the lead has reproduced
+it; the dispatch happens after the reproduction, not before.**
+
+The commit message is left standing rather than rewritten, because the repo's history is
+a record and a correction that erases what it corrects is worth less than one that does not.
