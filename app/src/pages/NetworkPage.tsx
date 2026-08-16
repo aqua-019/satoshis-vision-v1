@@ -415,7 +415,10 @@ export function NetworkPage() {
       title: "Difficulty · streamed",
       unit: "difficulty",
       xs: streamV.xs, ys: streamV.ys, band: streamV.band,
-      color: "var(--p-50)", stale: stream.phase === "stale",
+      /* The BLOCKS endpoint, not the seed — same content/freshness split
+         StreamPanel's header explains. A dead seed shortens this tile's
+         window; it does not make the tile last-good. */
+      color: "var(--p-50)", stale: isStale(data.status.blocks),
       format: fmtGigaSuffix,
     },
     {
@@ -625,7 +628,7 @@ export function NetworkPage() {
           time axis (block-header timestamps, not indices) over a window the
           server labels, so it needs the horizontal room the two-up panels
           above cannot give it. */}
-      <StreamPanel stream={stream} view={streamV} />
+      <StreamPanel stream={stream} view={streamV} status={data.status} />
 
       {/* Block cadence strip (D0828/D0832) — the chain's heartbeat, and the
           one panel whose reading is a RUN rather than a number. Full width:

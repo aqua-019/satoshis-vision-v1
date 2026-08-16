@@ -69,9 +69,25 @@ export interface TileSpec {
   format: (v: number) => string;
 }
 
+/**
+ * `keys` + `status` rather than a hand-passed phase: these tiles read three
+ * different endpoints, and `NodeProvenance`'s worst-of fold over the keys is
+ * the one implementation of "a panel is only as fresh as its least fresh
+ * input". Passing a phase computed here would be a second one.
+ *
+ * This panel deliberately carries NO `dataKey`. It is a cross-cutting overview
+ * spanning blocks, network and mempool, so it belongs to neither the blocks-fed
+ * nor the mempool-fed set that `verify-failure` §B partitions — claiming
+ * membership of both would make it degrade in both scenarios and break the
+ * independence that check exists to prove.
+ */
 export function SmallMultiples({
-  specs, phase,
-}: { specs: readonly TileSpec[]; phase: FeedPhase }) {
+  specs, keys, status,
+}: {
+  specs: readonly TileSpec[];
+  keys: readonly [FeedKey, ...FeedKey[]];
+  status: FeedStatusMap;
+}) {
   /* One watermark per PANEL, not per tile: verify-failure's selector is
      panel-scoped and four STALE words inside one panel would be noise. The
      first STALE tile carries it, so the flag cannot disagree with the panel. */

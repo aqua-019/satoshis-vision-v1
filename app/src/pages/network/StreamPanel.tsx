@@ -41,7 +41,7 @@ import { PanelFrame } from "@/design/primitives";
 import { NodeProvenance } from "@/design/provenance";
 import { PanelBoundary } from "@/design/PanelBoundary";
 import { Swap, SkeletonBox } from "@/design/Skeleton";
-import type { FeedKey } from "@/data/feed-status";
+import { isStale, type FeedKey, type FeedStatusMap } from "@/data/feed-status";
 import { sigmaBand, MIN_SIGMA_SAMPLES, type Band } from "./bands";
 import { BandNote, SimLink } from "./BandPanels";
 import { SeriesTile, MAX_NODES } from "./SeriesTile";
@@ -130,7 +130,37 @@ export function streamView(stream: DiffStream, nowS: number = Math.floor(Date.no
   return { xs, ys, from, to, windowLabel, band };
 }
 
-export function StreamPanel({ stream, view }: { stream: DiffStream; view: StreamView }) {
+/**
+ * TWO SOURCES, TWO CLAIMS, AND THEY MUST NOT BE CONFLATED — a defect
+ * `verify-failure` §B caught in this panel's first draft.
+ *
+ * The first version set the panel's `stale` from the STREAM's phase, which is
+ * driven by the SEED request. Under the static gate server `/api/xmr/...` is
+ * not served at all, so the seed 404s while the mocked `blocks` endpoint feeds
+ * appends perfectly — and the panel rendered `data-panel-key="blocks"` with
+ * `data-stale="true"` while the blocks endpoint was healthy. §B's assertion
+ * ("killing mempool leaves the blocks-fed panels live") went red, correctly:
+ * the panel was naming one endpoint and reporting another's health.
+ *
+ * The split, and it is a content/freshness split rather than a fudge:
+ *
+ *   FRESHNESS (the header chip, the watermark, the badge) comes from the
+ *   endpoint this panel NAMES — `blocks`. That is what makes the line advance;
+ *   if it stops, the chart is last-good and must say so.
+ *
+ *   CONTENT (how much window there is, whether a band can be drawn) comes from
+ *   the seed. A dead seed does not make the chart stale — the appends are
+ *   live and the line is genuinely current — it makes the WINDOW SHORTER and
+ *   removes the band, which the copy below says in those words.
+ *
+ * A live chart over a short window is a true rendering. Marking it stale would
+ * have been the lie, and the gate found it before a reader did.
+ */
+export function StreamPanel({ stream, view, status }: {
+  stream: DiffStream;
+  view: StreamView;
+  status: FeedStatusMap;
+}) {
   const { meta, phase, seededAt, rejected } = stream;
   const { xs, ys, from, to, windowLabel, band } = view;
 
@@ -141,7 +171,8 @@ export function StreamPanel({ stream, view }: { stream: DiffStream; view: Stream
   const renders = React.useRef(0);
   renders.current += 1;
 
-  const stale = phase === "stale";
+  /* FRESHNESS: the endpoint this panel names, never the seed. */
+  const stale = isStale(status.blocks);
   const hasContent = ys.length > 0;
   const ready = hasContent || phase === "error";
 
@@ -151,7 +182,14 @@ export function StreamPanel({ stream, view }: { stream: DiffStream; view: Stream
       dataKey={KEYS_BLOCKS.join(" ")}
       stale={stale}
       updatedAt={seededAt}
-      right={<NodeProvenance source="node" phase={phase} detail="header history + chain tier" />}
+      /* keys+status, not a hand-passed phase: freshness is the named
+         endpoint's, derived, and `verify-provenance` bans the literal form. */
+      right={
+        <NodeProvenance
+          source="node" keys={KEYS_BLOCKS} status={status}
+          detail={phase === "live" ? "seeded history + chain tier" : "chain tier only — seed unavailable"}
+        />
+      }
     >
       <div data-stream-renders={renders.current} data-stream-points={ys.length}>
         <PanelBoundary
@@ -201,7 +239,9 @@ export function StreamPanel({ stream, view }: { stream: DiffStream; view: Stream
         <p className="mono dim" style={{ fontSize: "var(--fs-mono)", margin: "6px 0 0", lineHeight: 1.5, color: "var(--ink-40)" }}>
           {ys.length && ys.length < MIN_SIGMA_SAMPLES
             ? `No band yet — a ±1σ envelope needs ${MIN_SIGMA_SAMPLES} samples and this window holds ${ys.length}.`
-            : "No band — the endpoint has not returned a window envelope, and a band labelled from a client-side constant would be a claim this page cannot keep."}
+            : phase === "live"
+              ? "No band — the endpoint answered without a window envelope, and a band labelled from a client-side constant would be a claim this page cannot keep."
+              : `No band — ${SEED_PATH} has not returned history, so this line is the chain tier's own block headers only: a SHORTER window, not a stale one. The line above is current.`}
         </p>
       )}
 

@@ -114,6 +114,16 @@ console.log('\n-- D1: one shared helper serves both handlers (same point count, 
   for (const key of Object.keys(xmr.HISTORY_RANGES)) {
     const hr = await xmr.handleHashrate(key, rpcImpl);
     const df = await xmr.handleDifficulty(key, rpcImpl);
+    /* R2 — THE GUARD THAT MAKES THIS SECTION'S SUBJECT ITS CLAIM. Every
+       assertion below is an EQUALITY, and `0 === 0` satisfies all of them: a
+       fixture node returning no headers leaves this entire section green under
+       a heading that reads "same point count", having compared nothing. It is
+       true that D7's `points.length > 0` sanity checks would red in that world
+       — but that is a different section, and a gate whose vacuity is caught
+       only by coupling to another section is one refactor away from certifying
+       nothing. Assert it here, where the claim is made. */
+    ok(hr.returned > 0,
+      `range='${key}': the fixture returned ${hr.returned} points — the equalities below cannot pass on 0 === 0`);
     ok(hr.returned === df.returned,
       `range='${key}': handleHashrate.returned (${hr.returned}) === handleDifficulty.returned (${df.returned})`);
     ok(hr.tip === df.tip, `range='${key}': both handlers agree on tip height (${hr.tip})`);
@@ -121,6 +131,8 @@ console.log('\n-- D1: one shared helper serves both handlers (same point count, 
   }
   const hrUnknown = await xmr.handleHashrate('totally-unknown-key', rpcImpl);
   const dfUnknown = await xmr.handleDifficulty('totally-unknown-key', rpcImpl);
+  ok(hrUnknown.returned > 0, /* R2, same reason as above */
+    `unknown range key: the fixture returned ${hrUnknown.returned} points, so the agreement below is not 0 === 0`);
   ok(hrUnknown.returned === dfUnknown.returned && hrUnknown.range === dfUnknown.range,
     `unknown range key: both handlers still agree (range='${hrUnknown.range}', ${hrUnknown.returned} points)`);
 }
@@ -331,6 +343,69 @@ console.log('\n-- D7: hashrate_ghs is full precision and uses the NODE\'S OWN ta
     `pre-fix negative control: old hashrate_ghs (${p0.hashrate_ghs}) hardcodes /120 regardless of the node's real target -- diverges from the D7-correct value (${trueGhsAtRealTarget123}) whenever target_seconds !== 120`);
   ok(Math.round(p0.hashrate_ghs * 100) === p0.hashrate_ghs * 100,
     'pre-fix negative control: old hashrate_ghs is quantised to 2 decimal places (Math.round(x*100)/100)');
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   R1 — THE NEGATIVE CONTROL'S OWN FIDELITY IS GATED, NOT ASSERTED IN PROSE
+
+   Every red polarity in this file depends on _fixtures/xmr-history-prefix.mjs
+   still reproducing the PRE-FIX handlers. That fixture's header asks the
+   reader not to fix the bugs it contains — but prose is not a gate, and this
+   repo's whole doctrine is that the difference matters. One well-meaning
+   tidy-up silently degrades every negative control above, and they all keep
+   printing green, because a control that no longer contains the defect agrees
+   with the fixed code about everything.
+
+   So pin the DEFECTS the control exists to carry, rather than pinning its
+   output values: value-pinning would also red on a harmless refactor, which
+   trains people to update the numbers.
+   ═══════════════════════════════════════════════════════════════════════ */
+console.log('\n-- R1: the negative control still contains the defects it exists to reproduce --');
+{
+  ok(prefix.OLD_HASHRATE_COUNTS && prefix.OLD_DIFFICULTY_COUNTS,
+    'fixture exports both pre-fix range tables by name, so their asymmetry is inspectable');
+  ok('all' in prefix.OLD_HASHRATE_COUNTS && !('all' in prefix.OLD_DIFFICULTY_COUNTS),
+    "fixture retains THE asymmetry: 'all' exists on the hashrate table and not on the difficulty one");
+  for (const [k, v] of Object.entries({ '7d': 504, '30d': 2160, '1y': 26280 })) {
+    ok(prefix.OLD_HASHRATE_COUNTS[k] === v,
+      `fixture retains the pre-fix count OLD_HASHRATE_COUNTS['${k}'] === ${v}`);
+  }
+  /* The three keys that error on a real restricted node must STILL exceed the
+     span here, or the control stops reproducing the shipped defect. */
+  for (const k of ['30d', '1y', 'all']) {
+    const clamped = Math.min(prefix.OLD_HASHRATE_COUNTS[k], 5000);
+    ok(clamped - 1 > xmr.RESTRICTED_HEADER_SPAN,
+      `fixture retains the defect for '${k}': clamped to ${clamped}, span ${clamped - 1} still EXCEEDS ${xmr.RESTRICTED_HEADER_SPAN} — a real restricted node answers "Too many block headers requested."`);
+  }
+  /* The old sampler's tip-dropping bug, asserted on a length that is NOT a
+     multiple of the stride — on a length that divides evenly the old and new
+     samplers agree, and the assertion would pass for a reason unrelated to
+     its claim. */
+  const notAMultiple = Array.from({ length: 504 }, (_, i) => ({ height: 1000 + i }));
+  const oldSampled = prefix.oldSample(notAMultiple);
+  ok(oldSampled[oldSampled.length - 1].height !== notAMultiple[notAMultiple.length - 1].height,
+    `fixture retains the tip-dropping sampler: 504 headers at stride 2 ends on #${oldSampled[oldSampled.length - 1].height}, not the tip #${notAMultiple[notAMultiple.length - 1].height}`);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   R3 — the rpcImpl injection seam is TEST-ONLY, asserted rather than trusted
+   ═══════════════════════════════════════════════════════════════════════ */
+console.log('\n-- R3: no production call site passes rpcImpl --');
+{
+  const src = readFileSync(new URL('./xmr.js', import.meta.url), 'utf8');
+  /* The request dispatcher must call both handlers with exactly ONE argument.
+     A second argument there would mean a request could choose the rpc
+     implementation, which is a very different thing from a default parameter
+     a test overrides. */
+  for (const fn of ['handleHashrate', 'handleDifficulty']) {
+    const calls = [...src.matchAll(new RegExp(`await\\s+${fn}\\(([^)]*)\\)`, 'g'))]
+      .map(m => m[1].trim())
+      .filter(a => !a.startsWith('range, rpcImpl') === true || true);
+    const dispatchCalls = calls.filter(a => !a.includes('rpcImpl'));
+    ok(calls.length > 0, `${fn} is called somewhere in api/xmr.js (${calls.length} call site(s)) — this check is not vacuous`);
+    ok(dispatchCalls.length === calls.length,
+      `every ${fn} call site in api/xmr.js passes NO rpcImpl (${calls.map(a => `${fn}(${a})`).join(' · ')})`);
+  }
 }
 
 /* ── summary ──────────────────────────────────────────────────────────── */
