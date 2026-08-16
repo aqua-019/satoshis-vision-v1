@@ -588,7 +588,9 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_128_000,  // p3·14b: built 1,125,363, margin 2,637. Crosses with
+  totalJsRaw: 1_130_000,  // p3·14b: built 1,126,631 on the FINAL tree, margin 3,369.
+                          // Re-measured with lazyJsRaw for the same reason; the
+                          // mid-flight figure was 1,125,363. Crosses with
                           // lazyJsRaw as always. The +13,180 splits +13,121 lazy
                           // and +59 EAGER, and the eager 59 B is the whole of a
                           // decision taken deliberately: map.ts computed a
@@ -986,7 +988,15 @@ const BUDGETS = {
   // loud; a helper function would be silent. Writing the real assertion — "no
   // eager chunk contains a string only this leaf declares" — is a small,
   // separate change and is deliberately NOT taken here.
-  lazyJsRaw: 865_000,   // p3·14b: built 862,429, margin 2,571. Delta +13,121, and
+  lazyJsRaw: 867_000,   // p3·14b: built 863,697 on the FINAL tree, margin 3,303.
+                        // RE-MEASURED, and the re-measure earned its keep for the
+                        // fifth time in this file's history: the first raise here read
+                        // 865,000 against a built 862,429 (margin 2,571), taken
+                        // mid-flight. Three later commits — the render memo, its
+                        // React.memo comparator and the caption duration — added 1,268 B
+                        // and cut that margin to 1,303 without crossing, i.e. silently.
+                        // Only figures from the tree that ships may stand in this file.
+                        // Delta from the clean tree is +14,389, and
                         // ALL of it is ONE chunk: NetworkPage +13,135 (the
                         // streaming line, the small-multiples grid, the sync
                         // shell and the difficulty buffer), less 14 B of
@@ -1091,7 +1101,10 @@ const ROUTE_BUDGET_GZ = {
                                      //  digits, which is the argument for pasting a measured
                                      //  table rather than retyping one.
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
-  '/live/network':          117_000, // p3·14b: built 113,880, margin 3,120. +4,011 gzip, the
+  '/live/network':          117_000, // p3·14b: built 114,402 on the FINAL tree, margin 2,598.
+                                     //  (The mid-flight reading was 113,880; ceiling unchanged,
+                                     //  the margin absorbed it — recorded so the next PR sizes
+                                     //  against the real number.) +4,533 gzip, the
                                      //  streaming line + small multiples + sync shell. This is
                                      //  the ONLY route row that moved: the other twelve are
                                      //  within 20 B of the clean tree, which is what a delta
