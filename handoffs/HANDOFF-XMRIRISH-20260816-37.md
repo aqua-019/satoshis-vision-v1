@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260816-37
 branch: claude/prompt-attached-deygct
-status: in_progress        # open -> in_progress -> done | blocked
+status: done               # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — task arrived as a prompt, p3·15)
 owner: claude-code
 ---
@@ -99,7 +99,9 @@ cd app && npm run verify:e2e
 ## 7 · REPORT — claude code fills this on exit, completely
 
 status: done
-pr: <filled at exit>
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/184 — draft, `mergeable_state: clean`,
+  all three checks green ("typecheck + build + offline gates" success · "hardening gates"
+  success, 23m50s · Vercel preview Ready). Zero review comments. The operator merges by hand.
 commits: 42ccaba docs(handoff) · 69f5e52 feat(peers) · eaf1362 test(ia) · 3133fbd style
   (tighten) · 1403292 perf(peers) leaf split · 90aed06 test(peers) verify-peers ·
   ffe1c99 style (restore) · 420b5f3 ci recount · 3c333c8 chore(bundle) raises ·
