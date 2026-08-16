@@ -117,9 +117,56 @@ npm run verify:e2e
 
 ## 7 · REPORT  — filled on exit
 
-status:
-pr:
-commits:
+status: done
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/187
+commits: 4935214 · c101ad6 · (+ gate-hardening and docs commits — see the branch)
+
+**What shipped.** All 21 jurisdictions carry `sources` (24 linked + 3 honest nulls) and a
+git-derived `reviewed` date, rendered per row plus a page-level range line. `StatusMark`
+adds a shape channel (disc/ring/diamond/square) single-sourced between matrix and legend.
+`verify-legality` went **26 → 68** assertions and is wired into `verify:e2e` at position 17.
+
+**§0 confirmations, measured.** §0.1 no `gridTemplateColumns` literal survives in the
+legality files. §0.2 the matrix is five-axis and NY reads `hold:legal · cex:restricted ·
+p2p/mine/pay:legal`. §0.3 `JurisdictionRow`'s accordion left alone. §0.4 `grep http
+data.ts` → nothing before this PR. §0.6 the orphan ran GREEN untouched (26 passed · 0
+failed, exit 0) — it needed wiring, not fixing. §0.9 every budget figure matched.
+
+**The base was NOT executable as delivered.** The clone arrived shallow with its graft
+boundary on the split commit, so §0.5's `git log --follow` returned a plausible 3-commit
+history that stopped without erroring. `git fetch --unshallow` (443 → 878) made the
+derivation real. Two independent instruments then agreed: 20 rows at `7b49980`
+(2026-06-05), New York at `2cfdfeb` (2026-07-31).
+
+**Budgets.** `lazyJsRaw` 886,000 → 893,000 (889,208) · `totalJsRaw` 1,150,000 → 1,155,000
+(1,151,568). One chunk moved: `MoneroPage` +4,102 = both deltas, eager 0, residual ZERO.
+`cssGz` byte-identical at 17,900 — zero new stylesheet rules. `CHUNK_COUNT` 69, unchanged.
+
+**Census**, controlled against `bda0491` first: 83 / 79 / 22 / **34** / **69**. Orphans 7 → 6.
+
+**Operator-checkable, listed as an absence:** no citation URL was confirmed to RESOLVE.
+The gateway answers 403 to CONNECT. See the PR body's citation table.
+
+## 8 · LOOP FEEDBACK
+
+- The prompt's §0.5 assumed `git log --follow` would reach the pre-split note history. In a
+  **shallow** clone it does not, and the graft boundary sat exactly on the split commit — the
+  one place where the amputation is invisible (`--follow` returns a plausible 3-commit history
+  that simply stops). `git rev-parse --is-shallow-repository` before any archaeology.
+- The prompt gave `verify-legality.mjs` as 231 lines; it is 230.
+- `git log main` misleads in this clone: the LOCAL `main` ref is 21 PRs stale at `088a6e8`.
+  `origin/main` is the authority.
+- Three of my own break tests REFUSED to go red, and each refusal was worth more than a pass:
+  one exposed a vacuous §A control whose comment was actively false, one exposed that §E's
+  320px assertions are near-unfalsifiable because `.main * { min-width: 0 !important }` beats
+  inline styles and `.art`/`body` are `overflow-x: clip`, and one was simply too weak a
+  mutation. Budget a break test's REFUSAL as a finding, not a retry.
+- My break harness re-created the stale-`dist` trap CLAUDE.md records twice, via a
+  `needs_build=False` shortcut for a gate-only mutation. Always rebuild.
+- `INFERRED`: the prompt did not say whether `sources`/`reviewed` should be optional. Made
+  both REQUIRED so a 22nd row is a compile error; verified — exactly 21 `TS2739`s.
+- `INFERRED`: the prompt left the "review overdue" tint as a decide-out-loud. Declined, on
+  measured arithmetic (any horizon fires on ~all or ~none at these ages) rather than taste.
 
 ## 8 · LOOP FEEDBACK
 

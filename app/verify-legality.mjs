@@ -59,12 +59,28 @@ const ROUTE = '/monero/legality';
    TRUE, so each parse is asserted non-empty BEFORE anything is compared to it
    — verify-ia §7b/§7c and verify-superstress §0 open the same way. */
 
-/** Strip // and block comments WITHOUT touching string literals.
- *  Load-bearing here, not defensive: data.ts's own docblock for `sources`
- *  contains the literal `[["…", null]]` and the words `sources` and `reviewed`,
- *  written in order to DOCUMENT them. A naive stripper (or none) reads that
- *  documentation as data. This is verify-superstress's string-aware version
- *  verbatim, whose header records the measured defect that produced it. */
+/** Strip // and block comments WITHOUT touching string literals. This is
+ *  verify-superstress's string-aware version verbatim, whose header records the
+ *  measured defect that produced it (a naive stripper blanked the `//` inside a
+ *  URL and the gate reported a mismatch against a page that was right).
+ *
+ *  ── AN EARLIER VERSION OF THIS COMMENT CLAIMED MORE THAN WAS TRUE, and a break
+ *     test is what caught it. ────────────────────────────────────────────────
+ *  It said the stripper was "load-bearing here, not defensive", because data.ts's
+ *  docblock for `sources` contains the literal `[["…", null]]`. Measured: removing
+ *  the `stripComments` call entirely leaves this gate at 63 passed · 0 failed. The
+ *  docblocks cannot reach the parse at all — `parseMatrix` ANCHORS at
+ *  `LEGALITY_MATRIX` and slices from there, so everything above it, including every
+ *  type docblock, is structurally out of range. The claim was asserted from a
+ *  plausible mechanism instead of measured, which is the family CLAUDE.md says has
+ *  cost more near-misses here than the code has.
+ *
+ *  What the stripper actually protects is a comment INSIDE the array — a
+ *  commented-out row would otherwise parse as a live one. That hazard is real and
+ *  currently unrealised, so it cannot be proven by the production data. It is
+ *  proven below by a FALSIFIABILITY PAIR over a fixture instead: the same input,
+ *  stripped and unstripped, must disagree. A control that cannot fail is not a
+ *  control, and the previous one could not. */
 function stripComments(src) {
   let out = '', i = 0;
   while (i < src.length) {
@@ -150,11 +166,41 @@ const noReviewed = [...SRC_ROWS].filter(([, v]) => !v.reviewed).map(([k]) => k);
 R.ok(SRC_ROWS.size > 0 && noReviewed.length === 0,
   'every parsed row carries a reviewed date',
   noReviewed.join(', '));
-// The stripper's own positive control. data.ts's docblock documents `sources`
-// with a literal `[["…", null]]`; if that documentation were being parsed as
-// data, a country named "…" (or an empty name) would appear in the map.
-R.ok(![...SRC_ROWS.keys()].some((k) => k.includes('…') || k.trim() === ''),
-  'the comment stripper kept data.ts\'s own docblock OUT of the parsed data');
+// ── the instrument's OWN falsifiability pair ─────────────────────────────────
+// Offline, over a fixture, because the hazard the stripper guards against is not
+// present in the production data and so cannot be demonstrated from it. Both
+// polarities run on every invocation: there is nothing to remember to revert, and
+// neither half can pass for a reason unrelated to its claim.
+{
+  const FIXTURE = `export const LEGALITY_MATRIX: MatrixRow[] = [
+  { c: "A", n: "Realland", hold: "legal", cex: "legal", p2p: "legal", mine: "legal", pay: "legal",
+    note: "A live row. See https://example.org/a//b for the // hazard.",
+    reviewed: "2026-01-01",
+    sources: [["Real", "https://example.org/"]] },
+  // { c: "B", n: "Commentland", hold: "legal", cex: "legal", p2p: "legal", mine: "legal", pay: "legal",
+  //   note: "A commented-out row.",
+  //   reviewed: "2026-01-02",
+  //   sources: [["Ghost", null]] },
+];`;
+  const stripped = parseMatrix(stripComments(FIXTURE));
+  const raw = parseMatrix(FIXTURE);
+  R.ok(stripped.size === 1 && stripped.has('Realland') && !stripped.has('Commentland'),
+    `stripped: a commented-out row is NOT parsed (${[...stripped.keys()].join(', ') || 'none'})`);
+  // The half that makes the half above non-vacuous: unstripped, the ghost DOES
+  // appear. If this ever stops being true the pair has lost its subject and the
+  // assertion above is passing for some other reason.
+  R.ok(raw.has('Commentland'),
+    `unstripped: the same input DOES yield the ghost row — the pair disagrees, so the stripper is doing work (${[...raw.keys()].join(', ')})`);
+  // And the defect that produced the string-aware version: a `//` inside a string
+  // literal must survive, or a note carrying a URL is truncated mid-parse.
+  R.ok((stripped.get('Realland')?.sources?.[0]?.[1] ?? '') === 'https://example.org/',
+    'a `//` inside a string literal survives the stripper — an href is not truncated');
+  // The pair above proves the FUNCTION works; it says nothing about whether the
+  // call site uses it. This closes that gap directly, and it is what reds if
+  // someone drops the `stripComments(...)` wrapper from `dataSrc`.
+  R.ok(!dataSrc.includes('/**') && readFileSync(join(__dirname, 'src', 'pages', 'monero', 'legality', 'data.ts'), 'utf8').includes('/**'),
+    'the source THIS GATE parses has actually been stripped (the raw file has docblocks; dataSrc has none)');
+}
 
 // ── 390px · one card per country, zero taps to an answer ─────────────────────
 {
@@ -603,6 +649,39 @@ R.ok(![...SRC_ROWS.keys()].some((k) => k.includes('…') || k.trim() === ''),
   R.ok(after.docW - after.winW <= 2,
     `no horizontal scroll at 320px with a panel OPEN (doc ${after.docW} vs win ${after.winW})`);
   R.ok(after.overflowing === 0, 'no source chip is clipped at the right edge at 320px');
+
+  /* ── NAME THE ERROR THE THREE ASSERTIONS ABOVE CANNOT SEE ─────────────────
+     They are nearly UNFALSIFIABLE at this width, and that was measured rather
+     than suspected. At <=768px `styles.css:2798` applies
+     `.main *, .proto-body * { min-width: 0 !important }` to every descendant,
+     and `!important` in an author sheet beats an inline declaration — so a chip
+     given `style={{minWidth:900}}` renders at its natural 74px. On top of that
+     `.art` and `body` are `overflow-x: clip`, so `documentElement.scrollWidth`
+     CANNOT exceed the viewport whatever a child does.
+     A break test proved it: a chip forced to 900px at a 320px viewport left all
+     three green, with the mutation confirmed present in the built chunk. The
+     class they are blind to is therefore "content CLIPPED rather than fitted",
+     which is exactly the shape CLAUDE.md's tolerance rule describes — the
+     detectable-error bound, not a safety margin.
+     They are kept because they would still catch the removal of that clip. What
+     follows is the assertion with content: a chip's own box must not clip its own
+     text. `.v6-res` sets no `white-space`, so a long label WRAPS; the failure this
+     detects is a future `nowrap` (or a fixed width) making a citation unreadable
+     at the narrowest supported viewport, which no document-level check can see. */
+  const clip = await page.evaluate(() => {
+    const chips = [...document.querySelectorAll('.lg-panel [data-lg-source]')];
+    return {
+      n: chips.length,
+      clipped: chips.filter((c) => c.scrollWidth > c.clientWidth + 1)
+        .map((c) => `${c.textContent.trim().slice(0, 28)} (${c.scrollWidth} > ${c.clientWidth})`),
+      widest: Math.max(...chips.map((c) => c.scrollWidth)),
+      panelW: Math.round(document.querySelector('.lg-panel').clientWidth),
+    };
+  });
+  R.ok(clip.n > 0, `${clip.n} chip(s) measured for self-clipping — the floor for the check below`);
+  R.ok(clip.clipped.length === 0,
+    `no citation chip clips its own label at 320px (widest content ${clip.widest}px in a ${clip.panelW}px panel)`,
+    clip.clipped.join(', '));
 
   await page.context().close();
 }

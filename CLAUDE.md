@@ -591,6 +591,114 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-16**: p3·18 "THE LEGAL EVIDENCE LAYER" (app/ + .github/) — 21 legal claims that named
+  statutes and linked none, dated nothing, and were gated by a file wired to nothing. No new gate
+  file: this release WIRED AN ORPHAN, and most of what it is worth reading for is instrument repair.
+  **THE PROMPT'S DERIVATION WAS NOT EXECUTABLE AS DELIVERED, AND THE REASON IS A CLONE ARTEFACT
+  THAT LOOKS EXACTLY LIKE DATA.** §0.5 asks for each row's date "recovered from git history
+  (`git log --follow` on data.ts and its pre-split home)". The clone arrives **SHALLOW** — 443
+  commits — and its graft boundary sits ON `2cfdfeb`, the very commit that split `data.ts` out of
+  `LegalityTab.tsx`. So `--follow` returns a plausible THREE-COMMIT history that simply stops, with
+  no error and no marker; `git log -S'BitLicense'` returns exactly one commit and reads like an
+  answer. `git fetch --unshallow` takes it to **878** and the notes reach back to 2026-06-05.
+  **`git rev-parse --is-shallow-repository` before any archaeology** — the amputation is invisible
+  precisely where it is most misleading, because a boundary on a MOVE commit makes the move look
+  like the creation.
+  **THE DATES ARE 2026-06-05 ×20 AND 2026-07-31 ×1, derived twice by instruments sharing no code.**
+  A worker did an exhaustive blob census — only **8 distinct note-bearing blobs exist in the entire
+  history** — then a per-country DAG walk comparing each commit's note against EVERY PARENT, which
+  is what makes it correct across merges. Independently, a simpler date-ordered walk agreed exactly.
+  The worker also caught two traps its own first pass hit: a **timezone sort bug** (it sorted
+  FORMATTED dates, where `2026-06-05 17:26 -0400` sorts before `2026-06-05 20:08 +0000` but is 78
+  minutes LATER, mis-reporting first appearance) and a **parallel lineage** — merge `68718cb` holds
+  a 20-row `LegalityTab.tsx` and no `data.ts` FIVE MINUTES AFTER `2cfdfeb` created it, because they
+  are sibling branches; a naive walk-the-series-forward reads that as the split being reverted.
+  My own simpler instrument was not rigorous there, it was LUCKY: the notes are byte-identical
+  everywhere, so a wrong ordering could not change a LAST-change answer.
+  **"REVIEWED" IS A CLAIM THE DATE CANNOT SUPPORT, so the UI does not make it.** Git proves when the
+  text was WRITTEN — a lower bound on staleness, not evidence anyone re-checked the law. The row
+  says "Note last updated", the page says "that is when each claim was last written — not a
+  re-verification against current law", and the gate asserts BOTH: no row matches
+  /verified|re-verified|checked against/i, AND all 21 say "last updated" as the paired positive
+  control. **No row got today's date**, because no operator re-verified anything here.
+  **NO "REVIEW OVERDUE" TINT, refused on arithmetic rather than taste.** Ages at ship are 72 days
+  (×20) and 16 (×1), so ANY horizon fires on ~everything or nothing: 90d tints ZERO rows — an
+  unexercised feature, green because nothing reaches it — 60d tints 20 of 21, 30d tints all 21.
+  A tint is also a HUE-ONLY channel, which is what `StatusMark` exists to avoid.
+  **FIVE INSTRUMENT DEFECTS, ALL MINE, and three were found by break tests REFUSING TO GO RED.**
+  (1) **§A's stripper control was VACUOUS and its comment was false.** It called `stripComments`
+  "load-bearing here, not defensive", citing data.ts's own `[["…", null]]` docblock. Measured:
+  deleting the call left the gate at **63 passed · 0 failed**. `parseMatrix` ANCHORS at
+  `LEGALITY_MATRIX` and slices from there, so every type docblock is structurally out of range
+  either way. Asserted from a plausible mechanism instead of measured — the standing family, in a
+  comment written *about* that family. Replaced with an offline FALSIFIABILITY PAIR over a fixture
+  (stripped vs unstripped must DISAGREE) plus a direct check that the call site actually strips;
+  the latter is what now reds.
+  (2) **§E's 320px assertions are near-UNFALSIFIABLE, and the layout is why.** A chip forced to
+  900px at a 320px viewport left all three green **with the mutation confirmed present in the built
+  chunk**. `styles.css:2798` applies `.main *, .proto-body * { min-width: 0 !important }` at ≤768px
+  — and `!important` in an author sheet BEATS AN INLINE DECLARATION, so the chip rendered at its
+  natural 74px — while `.art` and `body` are `overflow-x: clip`, so `documentElement.scrollWidth`
+  cannot exceed the viewport whatever a child does. The class those assertions cannot see is
+  "content CLIPPED rather than fitted". Kept (they would catch the clip's removal) and PAIRED with
+  one that has content: no chip may clip its own label (`scrollWidth > clientWidth`), break-tested
+  with `nowrap`.
+  (3) **MY BREAK HARNESS RE-CREATED THE STALE-`dist` TRAP IT WAS WRITTEN TO AVOID.** A
+  `needs_build=False` flag skipped the rebuild for a gate-only mutation — but the PREVIOUS
+  mutation's build was still on disk, so M9 measured M8's tree and reported **M8's red as its own**.
+  Superficially it "went red", which is exactly what makes it dangerous. VOID, not suspect; re-run
+  after a clean rebuild it exposed defect (1). **Always rebuild, even for a gate-only mutation.**
+  (4) A mutation that was **too weak, not a gate that was blind** — `minWidth` on the chip ROW with
+  one narrow chip inside it moves nothing. p3·12b's lesson from the other side.
+  (5) A probe with a bare `/* */` in JSX attribute position, and `NODE_PATH` (which ESM ignores).
+  **"BYTE-IDENTICAL" HAS BEEN THE WRONG WORD IN THIS FILE FOR SEVERAL RELEASES.** Every budget note
+  here says things like "62 of 67 byte-identical". Keyed on sha256 rather than size: **68
+  size-identical, of which only EIGHT are truly byte-identical; 60 have the same size with ROTATED
+  content**, and 1 changed size. A chunk's emitted text embeds the FIXED-LENGTH hashes of the chunks
+  it imports, so one module's change rotates its hash, rewrites every importer at identical length,
+  and cascades — the entry is 99,445 B on BOTH sides with **55 differing runs** inside
+  `__vite__mapDeps`. Budgets are unaffected (they count bytes per file), but this is why
+  `eagerJsRaw` can be byte-count-identical at 262,360 while `eagerJsGz` moves **+10 from
+  compressibility alone**. Say SIZE-identical unless you hashed it.
+  **THE CITATIONS SURVIVED AN ADVERSARIAL PASS WHOSE DEFAULT WAS REFUSAL, and its verdicts split
+  into two kinds only one of which is a URL defect.** ACCEPTED: `VARA` → unlinked (established 2022,
+  so "stable for years" fails and the domain could not be confirmed offline). CORRECTED: Zug, CVM,
+  AUSTRAC and ADGM were challenged on the accuracy of the CLAIM each link supports — one reviewer
+  wrote "this is NOT a bad URL. It is a bad CITATION." Keeping the link is faithful, because the
+  note NAMES that body; whether the note is still TRUE is a different question with no egress to
+  answer it, so those four ship as reported possibly-aged rows rather than silent edits.
+  **No egress, measured not assumed**: the gateway answers **403 to CONNECT** for `dfs.ny.gov`,
+  `eur-lex.europa.eu`, `fincen.gov`. Link validity is operator-checkable and listed as such.
+  **ZERO NEW STYLESHEET RULES — `cssGz` is BYTE-IDENTICAL at 17,900**, which matters at a 300 B
+  margin. `.chip-row` and `.v6-res` are reused verbatim (the fourth consumer of a class already
+  spanning /future, /operate/superstress and /about/peers), including EcoPopup's dashed
+  honest-unlinked treatment. An independent CSS survey reached the identical recommendation.
+  Budgets, red-then-green on the FINAL tree: `lazyJsRaw` 886,000 → **893,000** (889,208, margin
+  3,792) · `totalJsRaw` 1,150,000 → **1,155,000** (1,151,568, margin 3,432). **The cleanest
+  attribution in the series: exactly ONE chunk changed size** — `MoneroPage` 66,829 → 70,931,
+  **+4,102**, and that single number IS both deltas. Eager delta **0**, residual **ZERO**, measured
+  against a `1d64871` build in an ISOLATED worktree. `/monero` 112,757 of 115,000. `CHUNK_COUNT`
+  unchanged at 69 — no module minted. Negative control run rather than reasoned: `BitLicense`,
+  `FinCEN`, `Bappebti`, `NYDFS`, `resbank` all grep to **0** in the served entry.
+  **REQUIRED FIELDS, PROVEN BY THE COMPILER**: adding `reviewed` and `sources` produced exactly
+  **21 `TS2739` errors**, one per row, so a 22nd jurisdiction cannot ship undated or uncited.
+  Census RECOUNTED with the script CONTROLLED against `bda0491` first, where it reproduces that
+  commit's 82 / 78 / 22 / 32 / 67 exactly: **83 files / 79 gates** UNCHANGED (an orphan was wired,
+  not a gate added) · `verify:static` **22** · `verify:e2e` **33 → 34** (position 17, beside
+  verify-releases-dom, never the tail — the vitals-last inversion is untouched) · CI distinct
+  **68 → 69**. Orphans **7 → 6**. **FOUND: this file's two e2e figures disagreed AGAIN** — 33 at
+  `:62` against 32 twelve lines below, stale since p3·17. Third recorded instance; both corrected.
+  `verify-legality` **26 → 68** assertions. Eleven break tests; every restore verified against the
+  COMMITTED BLOB with a bracketed marker sweep.
+  **The wiring precedent is the cheap half and worth keeping**: run the orphan FIRST, untouched,
+  against a served build. It came back **26 passed · 0 failed, exit 0** — v2·3b's four orphans were
+  red and needed fixing; this one had simply never been asked, and assuming otherwise would have
+  invited a rewrite of 230 correct lines.
+  **NOT FIXED, and named**: the vitals-last `verify:e2e` inversion (#184 F4); the 11-vs-12 px floor
+  conflict (chips render 11.5px, the date 11px, both above the repo's real 11px floor and below the
+  v6 prompt's 12); the ten hollow `/future#<id>` anchors. **A human has not seen this in a
+  browser** — read from screenshots, including a greyscale one that is the actual proof of §D.
+
 - **2026-08-16**: p3·17 "SOURCES RELEASE NOTES" (app/ + api/ + .github/) — the site advertised
   TWO different wrong versions one page apart, and the feed that would have fixed one died in
   July. Small surgical PR; the discipline is in what the measurement overturned.

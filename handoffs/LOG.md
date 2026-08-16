@@ -207,3 +207,35 @@
   `verify:e2e` **exit 0** across all 33 members; all 7 api gates green; verify-bundle 28 passed.
   **No human has seen the rendered result in a browser.**
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/186
+
+- XMRIRISH-20260816-40 · done · p3·18 "THE LEGAL EVIDENCE LAYER" — 21 legal claims that named
+  statutes and linked none, dated nothing, and were gated by an ORPHAN. No gate file added: this
+  release WIRED one (`verify-legality`, orphaned since v6.0.10), so census files/gates hold at
+  **83 / 79** while `verify:e2e` **33 → 34** (position 17, never the tail) and CI distinct
+  **68 → 69**; orphans **7 → 6**. Run FIRST untouched against a served build, it was already
+  green — 26 passed · 0 failed — so it needed wiring, not fixing. **The prompt's date derivation
+  was not executable as delivered**: the clone arrived SHALLOW with its graft boundary ON the
+  commit that split `data.ts` out, so `git log --follow` returned a plausible 3-commit history
+  that stopped silently; `git fetch --unshallow` (443 → 878) made it real, and two instruments
+  sharing no code then agreed — 20 rows at `7b49980` (2026-06-05), New York at `2cfdfeb`
+  (2026-07-31). The UI says "note last updated", never "verified", because git proves when text
+  was WRITTEN and not that anyone re-checked the law; no row got today's date. `sources` and
+  `reviewed` are REQUIRED — proven by exactly **21 `TS2739`** errors. Citations survived an
+  adversarial pass whose default was refusal: **VARA → unlinked** (est. 2022, domain
+  unconfirmable offline) was the only URL defect; Zug/CVM/AUSTRAC/ADGM were challenged on the
+  CLAIM rather than the link and ship as reported possibly-aged rows, since there is no egress —
+  the gateway answers **403 to CONNECT**. **Three break tests REFUSED to go red and each refusal
+  was the finding**: §A's stripper control was VACUOUS and its comment false (`parseMatrix`
+  anchors at `LEGALITY_MATRIX`, so docblocks are out of range either way); §E's 320px assertions
+  are near-UNFALSIFIABLE because `.main * { min-width: 0 !important }` beats inline styles and
+  `.art`/`body` are `overflow-x: clip` — a 900px chip at 320px left all three green with the
+  mutation confirmed in the built chunk; and my own harness re-created the stale-`dist` trap via
+  a `needs_build=False` shortcut, so one mutation reported another's red. `verify-legality`
+  **26 → 68**. Budgets red-then-green on the FINAL tree: `lazyJsRaw` 886,000 → **893,000**,
+  `totalJsRaw` 1,150,000 → **1,155,000**, **exactly ONE chunk moved** (`MoneroPage` +4,102 = both
+  deltas), eager **0**, residual **ZERO**; `cssGz` BYTE-IDENTICAL at 17,900 (zero new stylesheet
+  rules — `.chip-row`/`.v6-res` reused). Also corrected a word this repo has used loosely for
+  releases: only **8 of 68** chunks are truly byte-identical, 60 are size-identical with rotated
+  content. Census recounted with the script CONTROLLED against `bda0491`.
+  **No human has seen the rendered result in a browser.**
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/187
