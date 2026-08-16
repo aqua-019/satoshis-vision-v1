@@ -588,7 +588,19 @@ const BUDGETS = {
   // consequence rather than an accumulating error: both literals are being set
   // from measurement with similar margins, so the gap tracks the fixed
   // eagerJsRaw headroom and nothing else. Still not this PR's decision to make.
-  totalJsRaw: 1_115_000,  // p3·14: built 1,111,757, margin 3,243. Crosses with
+  totalJsRaw: 1_128_000,  // p3·14b: built 1,125,363, margin 2,637. Crosses with
+                          // lazyJsRaw as always. The +13,180 splits +13,121 lazy
+                          // and +59 EAGER, and the eager 59 B is the whole of a
+                          // decision taken deliberately: map.ts computed a
+                          // block's `age` from a timestamp and then discarded
+                          // it, so a streaming series appending from
+                          // data.blocks would have rebuilt time as
+                          // Date.now() − age·1000 and drifted against the
+                          // seed's real block-header timestamps. Keeping the
+                          // timestamp the server already sends costs 59 B in an
+                          // eager chunk and removes a second time base from one
+                          // axis. eagerJsRaw 262,934 ≤ 280,000, untouched.
+                          // p3·14: built 1,111,757, margin 3,243. Crosses with
                           // lazyJsRaw, as it has every release since #174; the
                           // +6,872 reconciles to the byte against lazyJsRaw's
                           // per-chunk table above.
@@ -974,7 +986,24 @@ const BUDGETS = {
   // loud; a helper function would be silent. Writing the real assertion — "no
   // eager chunk contains a string only this leaf declares" — is a small,
   // separate change and is deliberately NOT taken here.
-  lazyJsRaw: 852_000,   // p3·14: built 848,882, margin 3,118. Delta +6,872, and the
+  lazyJsRaw: 865_000,   // p3·14b: built 862,429, margin 2,571. Delta +13,121, and
+                        // ALL of it is ONE chunk: NetworkPage +13,135 (the
+                        // streaming line, the small-multiples grid, the sync
+                        // shell and the difficulty buffer), less 14 B of
+                        // mapDeps index drift spread over six untouched chunks
+                        // (FuturePage/bridge/constellation/terminal −5 each,
+                        // mempool +5, MoneroPage +1). 59 of 67 chunks are
+                        // BYTE-IDENTICAL and NO NEW CHUNK WAS MINTED — the new
+                        // modules resolve into NetworkPage's existing chunk
+                        // group, so CHUNK_COUNT stays 67 and its ±4 band is
+                        // untouched. Attribution is keyed on the chunk STEM,
+                        // not the filename: this build stamps content, so
+                        // nearly every hash changes between two commits and a
+                        // filename-keyed diff reports 67 additions and 67
+                        // deletions. The `index` stem still holds two chunks
+                        // and is split by asking dist/index.html which one it
+                        // names, or the eager +59 would land in this budget.
+                        // p3·14: built 848,882, margin 3,118. Delta +6,872, and the
                         // whole of it is two lazy chunks — NetworkPage +6,120
                         // (the band module, the strip, and the page's own
                         // wiring) and charts +752 (AreaSeries' opt-in `band`
@@ -1062,7 +1091,13 @@ const ROUTE_BUDGET_GZ = {
                                      //  digits, which is the argument for pasting a measured
                                      //  table rather than retyping one.
   '/live/markets/thesis':    96_000, //  87,434 — new: split out of the old /monero/markets tab
-  '/live/network':          113_000, // p3·14: built 109,732, margin 3,268. The D0832 bands,
+  '/live/network':          117_000, // p3·14b: built 113,880, margin 3,120. +4,011 gzip, the
+                                     //  streaming line + small multiples + sync shell. This is
+                                     //  the ONLY route row that moved: the other twelve are
+                                     //  within 20 B of the clean tree, which is what a delta
+                                     //  confined to one lazy chunk should look like and is the
+                                     //  check that it really was confined.
+                                     // p3·14: built 109,732, margin 3,268. The D0832 bands,
                                      //  the cadence strip and their source notes land here.
                                      //  NOTE the previous comment on this row was STALE by
                                      //  1,344 B: it read 106,035 while the clean tree measured
