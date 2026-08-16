@@ -148,6 +148,7 @@ console.log('engine:', engine);
   let peak = 0;
   let total = 0;
   const oneShotHits = new Map(ONE_SHOT_PATHS.map((k) => [k, 0]));
+  let tipHits = 0;
   let peakSet = [];
   const live = new Set();
   p.on('request', (r) => {
@@ -156,6 +157,7 @@ console.log('engine:', engine);
     live.add(r.url());
     if (inFlight > peak) { peak = inFlight; peakSet = [...live]; }
     for (const k of ONE_SHOT_PATHS) if (r.url().includes(k)) oneShotHits.set(k, oneShotHits.get(k) + 1);
+    if (r.url().includes('/api/xmr/tip')) tipHits++;
   });
   const settle = (r) => { if (r.url().includes('/api/')) { inFlight--; live.delete(r.url()); } };
   p.on('response', settle);
@@ -164,6 +166,25 @@ console.log('engine:', engine);
   // Every API call takes 4s — a pessimistic but entirely realistic Tor circuit.
   await p.route('**/api/**', async (route) => {
     await sleep(4000);
+    /* The D0828 seed gets a VALID envelope; everything else keeps `{}`.
+       Without this the seed never succeeds, `needSeed` stays true, and the
+       chain tier correctly RETRIES it — so a guard asserting "fired once"
+       would be measuring retry-on-failure, not repetition, and could never
+       observe the thing it claims to watch. That is a subject narrower than
+       its claim, inside the guard written to close the previous instance of
+       exactly that family. Fulfil it once, and the count below means what it
+       says. Degraded behaviour is not lost: §3 still asserts the global
+       backoff, and `/api/nodes` still exercises the no-retry path. */
+    if (route.request().url().includes('/api/xmr/network/difficulty')) {
+      const H = 3_500_000, NOW = Math.floor(Date.now() / 1000);
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+        ok: true, requested: '1d', range: '1d', blocks: 720, returned: 30, step: 24,
+        tip: H, target_seconds: 120, window_seconds: 720 * 120,
+        points: Array.from({ length: 30 }, (_, i) => ({
+          height: H - 29 + i, timestamp: NOW - (29 - i) * 2880, difficulty: 400e9 + i * 1e9,
+        })),
+      }) });
+    }
     await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
   });
 
@@ -173,9 +194,23 @@ console.log('engine:', engine);
   ok(peak <= CONCURRENCY_CEILING,
      `1: concurrency stays bounded (peak ${peak} ≤ ${CONCURRENCY_CEILING} = ${FEED_CONCURRENT} feed + ${ONE_SHOT_PATHS.length} page one-shot)`
      + `\n     at peak: ${peakSet.map((u) => u.replace(base, '')).join(', ')}`);
-  /* The allowance above is only honest while the one-shots stay one-shots. */
+  /* The allowance above is only honest while the one-shots stay bounded by the
+     tier they ride, and "bounded" is NOT "exactly once" — the first draft of
+     this asserted `n === 1` and was wrong about the code rather than about the
+     principle. Every endpoint here answers `{}` after 4s, so the D0828 seed
+     never receives points and correctly RE-SEEDS on the next chain tick; it
+     fired twice in 20s and the assertion called that a defect. Retrying a
+     dataless response at the tier's own cadence is the discipline the feed
+     itself uses, and forbidding it would have pushed a real behaviour change
+     to satisfy a sentence.
+     The property with content is that a page-local one-shot never polls FASTER
+     than the tier it rides. `/api/xmr/tip` is that tier's own heartbeat, so it
+     is the honest yardstick: a seed that had become a 3s fast-tier poll would
+     fire ~6 times against the tip's ~2 and red immediately. */
+  ok(tipHits > 0, `1: the chain tier ticked ${tipHits}×, so a repeating one-shot had chances to repeat`);
   for (const [path, n] of oneShotHits) {
-    ok(n === 1, `1: ${path} fired ONCE in 20s (${n}) — a page one-shot that began repeating would hide inside the ceiling it was granted`);
+    ok(n === 1,
+       `1: ${path} fired ONCE across ${tipHits} chain tick(s) (${n}) — a page one-shot that began repeating would hide inside the ceiling it was granted`);
   }
   // 20s at a 4s floor is at most ~5 rounds. The old code fired every 2.5s
   // regardless, so it would be well past this.
