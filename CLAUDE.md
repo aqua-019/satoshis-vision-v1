@@ -539,6 +539,98 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-15**: p3·14 "NETWORK: THRESHOLD BANDS" (app/) — `/live/network` gets D0832 bands,
+  a block cadence strip and both simulator cross-links. **Three of the brief's premises did not
+  survive measurement, and two of them are about the SPEC rather than the code.**
+  **THE MOCKUP ASKS FOR A BAND THIS CHAIN CANNOT HONESTLY DRAW, TWICE OVER.**
+  `markets-network-mockup.html:239` says the hashrate band is "the trailing **30-day** ±1σ
+  envelope". (a) Nothing in `app/` fetches a 30-day series — scope stated: `app/src`,
+  `app/*.mjs`, `app/scripts`, zero hits for `network/difficulty` or `network/hashrate`, which
+  exist in `api/xmr.js` (:786-789) and are **unconsumed server surface**. What the client holds
+  is `/api/xmr/blocks?limit=100` (`map.ts:26 BLOCKS_CAP = 100`) — **100 headers ≈ 3.3 hours**.
+  (b) **`api/xmr.js`'s own range labels are wrong by 10×**: `counts = {'7d':504, '30d':2160,
+  '1y':26280}` capped at 5000, which at the 120 s target is **16.8 h / 3.0 days / 6.9 days**.
+  Every label implies a **20-minute** block (168/504 = 720/2160 = 8760/26280 = 0.333 h). So the
+  parameter named `30d` returns three days, and adopting the API's own range name as a band
+  label would ship the mislabel the band rule exists to prevent. **AND THE TWO HANDLERS' TABLES
+  DIFFER BY ONE KEY, silently**: `handleHashrate` (:470) carries `'all': 5000`, `handleDifficulty`
+  (:490) does NOT — so `?range=all` misses the lookup there, falls through to `|| 504`, and
+  returns **16.8 hours of difficulty against 6.9 days of hashrate**, a 9.92× split on one
+  parameter name. Two endpoints that read as a matched pair are not one, and a first pass over
+  this (mine, in the handoff) published a single four-row table as if they were. **NOT FIXED HERE** — relabelling
+  to `{'1d':720,'3d':2160,'7d':5040}` is truthful at 120 s and adds no RPC load, but nothing
+  consumes it, so it is a separate change and is recorded rather than smuggled in.
+  **THE MOCKUP'S CADENCE BAND IS A CORRECT BAND FOR THE WRONG QUANTITY**, and this is the
+  release's real finding. "Healthy 96–150s · warn 150–200 · critical >200" is sound for the MEAN
+  of ~100 intervals and badly wrong per-block, because arrivals are **Poisson** — exponential
+  inter-arrivals are memoryless, not clustered about their mean. Applied per-tick on a **healthy**
+  chain: P(>200s) = e^(−200/120) = **0.1889**, P(>150) = **0.2865**, P(<96) = **0.5507**, so only
+  **16.3%** of blocks land inside "healthy" and a fifth are painted critical. Meanwhile 96–144 is
+  *exactly* 120 ± 2σ for the mean of 100, σ = τ/√n = 12 s. **So the strip draws NO per-tick band**
+  and the band goes on the aggregate, where it is closed-form from the consensus target rather
+  than from "observed variance". `verify-bands.mjs` pins all four probabilities so nobody
+  re-derives the per-tick band from the mockup a second time.
+  **AND §5's DUAL-AXIS IS STRUCTURALLY UNBUILDABLE: hashrate IS difficulty ÷ 120 here.**
+  `api/xmr.js:438` and `:482` both compute `hashrate_ghs = difficulty / 120 / 1e9`, and
+  `map.ts:166` computes `hashrate = difficulty / target`. There is no independent hashrate
+  measurement anywhere in this stack — no node can observe one. Plotting the two "together to
+  show the lag" would draw a feedback loop with **exactly zero lag by construction**, which is a
+  fabricated insight on a live surface. The panel says so in one sentence instead, and the
+  Thermostat link moves to DIFFICULTY, framed as the retarget controller's output against the
+  cadence strip below as the process it controls — genuinely independent measurements.
+  **`/live/network`'s BUDGET ROW WAS STALE BY 1,344 B**: the comment read 106,035 while the clean
+  tree measured **107,379** against 108,000 — **621 B of slack**, not the ~2,000 the row implied.
+  Raises, red-then-green on the FINAL tree: `lazyJsRaw` 845,000 → **852,000** (built 848,882) ·
+  `totalJsRaw` 1,108,000 → **1,115,000** (built 1,111,757) · `/live/network` 108,000 →
+  **113,000** (built 109,732). Delta **+6,872**, attributed whole and paired by multiplicity
+  within each stem: **NetworkPage +6,120 · charts +752**, 64 of 67 stems byte-identical, **67
+  chunks both sides so nothing was minted**, and the **eager entry is byte-identical** —
+  `eagerJsRaw` did not move at all.
+  **TWO DEFECTS FOUND BY LOOKING, ONE OF THEM IMAGINARY, and a gate caught both.** (1) The cadence
+  strip is the SEVENTH charted panel and drew no STALE watermark — `verify-failure` went red at
+  "7 charted" because it treats any `<svg>` in a panel body as a chart and requires the watermark
+  to agree with `data-stale`. It dimmed on a dead endpoint while claiming nothing.
+  (2) **A DEFECT I REPORTED THAT DOES NOT EXIST — the standing family, committed by the author of
+  this entry, in the same release that quotes the rule.** I read a low-contrast screenshot crop of
+  the banded difficulty chart, saw the y-tick `420.00G` beside the marker `420.93G`, recorded that
+  they "overlapped, both unreadable", and turned markers off to fix it. Measured afterwards
+  (`getBoundingClientRect` over every `<text>` in that SVG, all pairs compared): a **4.8 px
+  horizontal GAP and no overlap anywhere in the chart.** Asserted from a picture instead of a
+  measurement. **`verify-charts` caught it in CI, and HOW it caught it is the reusable part**: its
+  edge-peak section drives that very chart and asserts (a) marker labels RENDER, (b) the
+  interior-peak control still renders, (c) a label is PRESENT to check for overlap. All three went
+  red — while **the overlap assertion itself stayed GREEN, because zero labels overlap nothing.**
+  Those three companions exist to stop exactly that vacuity, and without them the run would have
+  reported the collision check passing on a chart that had no labels left. An edge-nudge mechanism
+  already existed with that gate protecting it, and it handles the band-widened domain correctly.
+  Reverted. 4.8 px is genuinely tight and both labels begin "420.", so they are confusable at a
+  glance — that is a CLEARANCE observation about the existing nudge, not an overlap, and not a
+  thing to fix by disabling a gated feature. (3) **PanelFrame's header is uppercased, and CSS
+  `text-transform` maps σ → Σ** — not a styling wobble but a different operator, summation rather
+  than standard deviation. The chip says "outside 3 SD"; the source note is body copy and keeps σ.
+  **`fullPage` IS A NO-OP ON THIS LAYOUT above 768px** — `.art` is `height:100vh; overflow:hidden`
+  and `main.main` is the scroller, so the first desktop captures silently returned only the first
+  screen and could have been read as "the cadence strip does not render". Tall viewport instead.
+  **NOT TAKEN, and said out loud**: §1's streaming line, §3's small multiples, §6's node-sync
+  shell, and cursor adoption (§0.6). The last is a REASONED refusal rather than a shortfall:
+  `AreaSeries` already takes `t[]` and `sync`, so it is a prop flip — but `Block` carries `age`
+  in seconds, not a timestamp, so the axis would be `Date.now()`-derived and drift between
+  renders, and the three network charts have three unrelated domains (14 blocks · 100 intervals ·
+  a session buffer with no chain-time axis at all). Two of three would always draw nothing, which
+  `containsT` handles correctly and which is not "one instrument".
+  Gates: **78 files / 74 gates**, RECOUNTED — `verify-bands.mjs` is the one added (78 = 74 + 3
+  shared modules + the orchestrator). `verify:static` 21 → **22**; CI distinct files 62 → **63**,
+  since verify:static is a CI step (`ci.yml:238`). Four break tests, each restore proven against
+  the COMMITTED BLOB: **M1** population σ → 1 red · **M2** cadence at 1σ → 3 · **M3b** an emptied
+  source sentence → 3 · **M4** the sample floor removed → 1. **M3's first attempt was too weak**
+  (it removed 22 chars from a 192-char sentence, so the >40-char check legitimately still passed)
+  and an earlier anchor missed entirely — the mutator's own `assert n == 1` caught that one, and
+  the green run printed after it is an UNMUTATED tree, not a failed detection.
+  Bound gates green on the final tree: verify-failure **16** · verify-nodes-dom **22** ·
+  verify-cls **20** (CLS held at the 0.005 ceiling — the strip reserves `CADENCE_H`) ·
+  verify-tiers-dom all · verify-bands **48** · verify-bundle **27**.
+  **No human has seen the rendered result in a browser** — the renders were read from screenshots.
+
 - **2026-08-15**: p3·13 "MARKETS: SYNCED TIME CURSOR + THE ANNOTATION LAYER" (app/) —
   the four time-axis charts on `/live/markets` become one instrument, and the timeline
   the site already owned becomes something the price chart can point at.
