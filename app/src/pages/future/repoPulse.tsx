@@ -45,7 +45,14 @@ export function FeedEmpty({ state, endpoint, what }: { state: FeedState; endpoin
     return <div className="mono dim2" style={{ fontSize: "var(--fs-mono)" }}>fetching…</div>;
   }
   return (
-    <div className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)", border: "1px dashed var(--ink-20)", padding: "10px 12px" }}>
+    /* overflowWrap:"anywhere" is load-bearing, not tidiness. `endpoint` is a
+       query-string URL with no spaces, so it is ONE unbreakable token: in
+       /future's wide col-2 panel it fits and nothing shows, but in the ~290px
+       /about/peers partner card it ran straight out of this dashed box and was
+       clipped at the card edge. Found by looking at the degraded render — no
+       gate sees it, because the box does not overflow the PAGE (the card clips
+       it), so a scrollWidth check reads zero while the text is unreadable. */
+    <div className="mono" style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)", border: "1px dashed var(--ink-20)", padding: "10px 12px", overflowWrap: "anywhere" }}>
       <code>{endpoint}</code> returned no data — {what} is fetched server-side and failed
       upstream. Nothing cached yet; this retries on your next visit.
     </div>
