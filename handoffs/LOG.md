@@ -83,3 +83,42 @@
   until the lead reproduces it, learned by breaking it twice. Gates 75 → 76 (`verify-stream`,
   wired not orphaned); `verify-tor` §1 was found to name five requests that were never the five
   it counted. PR https://github.com/aqua-019/satoshis-vision-v1/pull/183
+
+- XMRIRISH-20260816-37 · done — p3·15 Superbrain as 4th trusted peer. **Both named traps were
+  WIDER than the brief said.** (1) The lineage embargo's corpus is the WHOLE REPO, not
+  `app/src`: `verify-future.mjs`'s walk starts at the repo root, includes `.md`, and exempts
+  only itself — so handoffs, gate files and CLAUDE.md are all in-corpus. The first draft of
+  this session's own handoff turned §15 red by spelling the banned explorer domain **in order
+  to prohibit it** — the `verify-orb` §4 self-referential-grep family, committed and caught
+  within the hour. (2) `ECOSYSTEM_META` was the named trap, but `ia.ts:204-205` spreads
+  `FUTURE_PROTOCOL_META` into the SAME column with the SAME `/future#<id>` shape, so the
+  runtime cannot tell the two hand-copied lists apart and NEITHER was gated. New §7c compares
+  the UNION plus a disjointness check; `verify-ia` 30 → 40. Three polarity rounds re-run by the
+  lead after a worker returned `DONE` with transcripts "captured" and none pasted — the sharpest
+  is the non-vacuity floor, where the guarded block DECLINES its 4 downstream assertions
+  (40 → 34 passed) rather than passing them vacuously.
+  **THE BUDGET STORY'S HEADLINE IS THE OPPOSITE OF ITS NAME.** Importing the readout from
+  `cards.tsx` put `/about/peers` at 101,152 B gzip against 100,000 — Rollup chunks per MODULE,
+  not per export, so one import dragged `ProtocolCard`/`MoneroNewsCard` into a route that
+  renders neither. Re-homing into a leaf (`canvasColor.ts`'s precedent) bought back 1,052 B —
+  **but the leaf minted NOTHING**: chunk count held at 67 and it was inlined into the existing
+  EcoPopup chunk, so the saving came ENTIRELY from the fat components leaving. Three ceilings
+  raised red-then-green, and the raw delta reconciles to the byte: lazy +3,516 + eager +47 =
+  +3,563 = the measured total, residual ZERO. The +47 was chased to `ia.ts`'s new META row, and
+  my `__vite__mapDeps` hypothesis was DISPROVED (Vite hashes are fixed-length), not adopted.
+  `/about/peers` gained its first dedicated gate — `verify-future` §8 iterates a HARDCODED
+  three-key partner object, so a fourth partner failed nothing there. **TWO DEFECTS FOUND BY
+  LOOKING**: `FeedEmpty`'s endpoint is one unbreakable token that overflowed the ~290px card and
+  was clipped mid-token — unreadable in the one state whose job is to explain a failure, and
+  invisible to every gate because the card clips it so `scrollWidth` reads zero; and my own
+  shutter fired mid-stagger, producing three cards under a header reading "4 PARTNERS" (DOM
+  predicate true, picture false). **THE INSTRUMENT DEFECTS WERE ALL MINE**: `pgrep -f "vite
+  build"` matched the WAITER ITSELF, then `pkill -f "until ! pgrep"` matched its own command
+  line and killed itself; and backticks in a shell-quoted `git commit -m` were
+  command-substituted — the commit SUCCEEDED while silently losing a line, so nothing failed
+  loudly. Census recounted, never incremented: 81 files / 77 gates, verify:e2e 30 → 31, CI
+  distinct 65 → 66; `ci.yml`'s step title said "(29)" against a thirty-member chain.
+  Recorded and NOT fixed: `/future` renders no partner panel for ANY of the four, yet all four
+  palette rows point at `/future#<id>` and no such fragment has an anchor target — §7c's own
+  stated blind spot, occupied. verify:static and verify:e2e (31/31) both NPM_EXIT=0 at a build
+  whose sha equals HEAD. PR https://github.com/aqua-019/satoshis-vision-v1/pull/184
