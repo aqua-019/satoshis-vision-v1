@@ -148,8 +148,28 @@ const CACHE_CONTROL = {
   'mining/pools/live':   's-maxage=300, stale-while-revalidate=600',
 };
 
-/** Cache-Control for a resolved sub-path, or null to keep the default no-store. */
-function cacheControlFor(sub) {
+/* D6 (S1-CONTRACT.md): a degraded (ok:false) history response must never
+   inherit the long 300s TTL above — the same failure mode api/markets.js's
+   DEGRADED_S_MAXAGE guards against, where one transient upstream error got
+   cached as "no data" for the full window (see that file's header comment).
+   Short enough that an outage self-heals in well under a minute; long enough
+   that a burst of concurrent visitors during the outage still collapses to
+   ~1 origin request rather than stampeding it. Successful history responses
+   deliberately KEEP the long TTL — see the "history is immutable" note at
+   handleHashrate/handleDifficulty — so this constant exists only for the
+   failure path. */
+const DEGRADED_HISTORY_S_MAXAGE = 30;
+
+/** Cache-Control for a resolved sub-path, or null to keep the default no-store.
+ *  `data` is the response body about to be sent. A per-PATH table alone
+ *  (CACHE_CONTROL above) cannot express "this specific response is
+ *  degraded" — only the payload itself carries that (D6) — so the two
+ *  history routes get a per-RESPONSE override ahead of the table lookup
+ *  whenever their own envelope reports ok:false. */
+function cacheControlFor(sub, data) {
+  if ((sub === 'network/hashrate' || sub === 'network/difficulty') && data && data.ok === false) {
+    return `s-maxage=${DEGRADED_HISTORY_S_MAXAGE}, stale-while-revalidate=${DEGRADED_HISTORY_S_MAXAGE}`;
+  }
   if (Object.prototype.hasOwnProperty.call(CACHE_CONTROL, sub)) return CACHE_CONTROL[sub];
   if (sub.startsWith('tx/')) return 's-maxage=5, stale-while-revalidate=15';
   return null;
@@ -463,39 +483,136 @@ async function handleNetwork() {
   };
 }
 
-async function handleHashrate(range) {
-  const info = await rpc('get_info');
-  if (!info) return [];
-  const now = info.height;
-  const counts = { '7d': 504, '30d': 2160, '1y': 26280, 'all': 5000 };
-  const count = Math.min(counts[range] || 504, 5000);
-  const start = Math.max(0, now - count);
-  const res = await rpc('get_block_headers_range', { start_height: start, end_height: now - 1 });
-  const headers = res?.headers || [];
-  // Sample every Nth block to keep response small
-  const step = Math.max(1, Math.floor(headers.length / 200));
-  return headers
-    .filter((_,i) => i % step === 0)
-    .map(h => ({
-      height: h.height,
-      timestamp: h.timestamp,
-      hashrate_ghs: Math.round(h.difficulty / 120 / 1e9 * 100) / 100,
-    }));
+/* ── Network history (hashrate / difficulty) ──────────────────────────────
+
+   D1-D7 below are the decisions in S1-CONTRACT.md (p3·14b). Both
+   /network/hashrate and /network/difficulty used to carry their own
+   copy-pasted range table and downsampler; the drift between those two
+   copies is exactly what let a table entry silently exceed monerod's
+   restricted-RPC span cap and return `[]` for three of the four documented
+   range keys on every public node this site uses (measured and quoted in
+   S1-CONTRACT.md). One table, one sampler, one envelope builder now serve
+   both endpoints — each handler keeps only its own point mapping
+   (difficulty vs hashrate_ghs) at its own call site. */
+
+/* D2: monerod's restricted RPC rejects get_block_headers_range with "Too
+   many block headers requested." once (end_height - start_height) exceeds
+   this — RESTRICTED_BLOCK_HEADER_RANGE in monerod's
+   src/rpc/core_rpc_server_commands_defs.h. Every node in this site's
+   cascade is a public restricted node, so this is a hard protocol ceiling,
+   not a tuning knob. */
+const RESTRICTED_HEADER_SPAN = 1000;
+
+/* D2: block counts, one RPC round trip each. `blocks × target_seconds` is
+   the window a range key denotes (see buildHistoryEnvelope below) — every
+   entry here satisfies `blocks - 1 <= RESTRICTED_HEADER_SPAN` (asserted
+   per-entry by api/verify-history.mjs so a future key can't silently
+   reintroduce the defect) and is also clamped defensively at runtime in
+   resolveHistoryRange. Paging for deeper windows (a 7-day seed needs 6
+   calls) is deliberately not done: every range downsamples to ~200 points
+   regardless, so more blocks per range buys coarser resolution for the same
+   pixel budget, not more information. */
+const HISTORY_RANGES = { '1h': 30, '6h': 180, '12h': 360, '1d': 720 };
+const HISTORY_DEFAULT = '1d';
+
+/* D3: resolve a requested range key against HISTORY_RANGES. Pure — no
+   network, never throws. api/ and app/ cannot share a module (CommonJS vs
+   the Vite graph), so their two range tables can drift; an unknown/missing
+   key degrades to HISTORY_DEFAULT rather than 400ing, so drift blanks
+   nothing. The envelope's `requested` vs `range` fields (D4) let the client
+   see that a substitution happened instead of hiding it. */
+function resolveHistoryRange(requestedRange) {
+  const requested = requestedRange == null ? null : String(requestedRange);
+  const range = Object.prototype.hasOwnProperty.call(HISTORY_RANGES, requested) ? requested : HISTORY_DEFAULT;
+  const blocks = Math.min(HISTORY_RANGES[range], RESTRICTED_HEADER_SPAN + 1);
+  return { requested, range, blocks };
 }
 
-async function handleDifficulty(range) {
-  const info = await rpc('get_info');
-  if (!info) return [];
+/* D5: downsample ascending-by-height headers to ~200 points, anchoring the
+   stride at the NEWEST header so the tip always survives sampling. The old
+   `i % step === 0` filter anchored at index 0 instead, so the newest header
+   survived only when `(len-1) % step === 0` — at 504 headers / step 2 that
+   silently drops the tip, opening a gap between a streaming line's seed and
+   its live tail. `(len-1-i) % step === 0` always keeps i = len-1, whatever
+   step is. Pure — no network. */
+function sampleHeaders(headers) {
+  const len = headers.length;
+  if (!len) return { points: [], step: 1, tip: null };
+  const step = Math.max(1, Math.floor(len / 200));
+  const points = headers.filter((_, i) => (len - 1 - i) % step === 0);
+  return { points, step, tip: points[points.length - 1].height };
+}
+
+/* Shared network fetch (D1): resolves the range, pulls get_info once for
+   the tip height and the node's own block target, then one
+   get_block_headers_range call for the span. `rpcImpl` defaults to the
+   module's real rpc() and exists only so tests can inject a fixture without
+   touching the network — every production call site below relies on the
+   default and never passes it. */
+async function historyHeaders(requestedRange, rpcImpl = rpc) {
+  const { requested, range, blocks } = resolveHistoryRange(requestedRange);
+  const info = await rpcImpl('get_info');
+  /* target_seconds is NODE-REPORTED, never a literal (D7) — `info.target`
+     is the same field handleNetwork and the `tip` handler above already
+     read. A node that doesn't report it yields null, never a fabricated
+     120. */
+  const target_seconds = typeof info?.target === 'number' && info.target > 0 ? info.target : null;
+  if (!info?.height) {
+    return { ok: false, requested, range, blocks, points: [], step: null, tip: null, target_seconds };
+  }
   const now = info.height;
-  const counts = { '7d': 504, '30d': 2160, '1y': 26280 };
-  const count = Math.min(counts[range] || 504, 5000);
-  const start = Math.max(0, now - count);
-  const res = await rpc('get_block_headers_range', { start_height: start, end_height: now - 1 });
-  const headers = res?.headers || [];
-  const step = Math.max(1, Math.floor(headers.length / 200));
-  return headers
-    .filter((_,i) => i % step === 0)
-    .map(h => ({ height: h.height, timestamp: h.timestamp, difficulty: h.difficulty }));
+  const start = Math.max(0, now - blocks);
+  const res = await rpcImpl('get_block_headers_range', { start_height: start, end_height: now - 1 });
+  const headers = (res?.headers || []).slice().sort((a, b) => a.height - b.height);
+  if (!headers.length) {
+    return { ok: false, requested, range, blocks, points: [], step: null, tip: null, target_seconds };
+  }
+  const { points, step, tip } = sampleHeaders(headers);
+  return { ok: true, requested, range, blocks, points, step, tip, target_seconds };
+}
+
+/* D4: envelope shape shared by both endpoints. `mapPoint` is the one thing
+   that differs per endpoint (difficulty vs hashrate_ghs — kept at each
+   handler's own call site, not here). window_seconds is
+   `blocks × target_seconds` (null when the node didn't report a target) —
+   the ONLY legitimate source of a band's window label, so a client never
+   has to re-derive it from a range key and risk drifting from this table. */
+function buildHistoryEnvelope(h, mapPoint) {
+  return {
+    ok: h.ok,
+    requested: h.requested,
+    range: h.range,
+    blocks: h.blocks,
+    returned: h.points.length,
+    step: h.step,
+    tip: h.tip,
+    target_seconds: h.target_seconds,
+    window_seconds: h.target_seconds != null ? h.blocks * h.target_seconds : null,
+    points: h.points.map(mapPoint),
+  };
+}
+
+async function handleHashrate(range, rpcImpl = rpc) {
+  const h = await historyHeaders(range, rpcImpl);
+  /* D7: full precision, never rounded, never divided by a hard-coded 120.
+     Difficulty moves in integer units and one unit is
+     1/target_seconds/1e9 GH/s, so any fixed decimal quantises a signal a
+     streaming line exists to show. Null (never a guess) when the node
+     didn't report its own target. */
+  return buildHistoryEnvelope(h, p => ({
+    height: p.height,
+    timestamp: p.timestamp,
+    hashrate_ghs: h.target_seconds != null ? p.difficulty / h.target_seconds / 1e9 : null,
+  }));
+}
+
+async function handleDifficulty(range, rpcImpl = rpc) {
+  const h = await historyHeaders(range, rpcImpl);
+  return buildHistoryEnvelope(h, p => ({
+    height: p.height,
+    timestamp: p.timestamp,
+    difficulty: p.difficulty,
+  }));
 }
 
 async function handlePools() {
@@ -784,10 +901,10 @@ module.exports = async function handler(req, res) {
       if (!data) { res.status(503).json({ error: 'Node unavailable' }); return; }
 
     } else if (sub === 'network/hashrate') {
-      data = await handleHashrate(qs.range || '7d');
+      data = await handleHashrate(qs.range);
 
     } else if (sub === 'network/difficulty') {
-      data = await handleDifficulty(qs.range || '7d');
+      data = await handleDifficulty(qs.range);
 
     } else if (sub === 'mining/pools') {
       data = await handlePools();
@@ -931,7 +1048,7 @@ module.exports = async function handler(req, res) {
       res.status(404).json({ error: `Unknown endpoint: /api/xmr/${sub}` }); return;
     }
 
-    const cc = cacheControlFor(sub);
+    const cc = cacheControlFor(sub, data);
     if (cc) res.setHeader('Cache-Control', cc);
 
     res.status(200).json(data);
@@ -944,3 +1061,18 @@ module.exports = async function handler(req, res) {
 
 module.exports.parseTransaction = parseTransaction;
 module.exports.txSizeFromEntry = txSizeFromEntry;
+
+/* Exported for api/verify-history.mjs (S1-CONTRACT.md D1-D7). Pure helpers
+   plus the two RPC-calling handlers, which accept an injectable rpcImpl so
+   the offline gate can exercise them end-to-end without network egress. */
+module.exports.historyHeaders = historyHeaders;
+module.exports.resolveHistoryRange = resolveHistoryRange;
+module.exports.sampleHeaders = sampleHeaders;
+module.exports.buildHistoryEnvelope = buildHistoryEnvelope;
+module.exports.handleHashrate = handleHashrate;
+module.exports.handleDifficulty = handleDifficulty;
+module.exports.cacheControlFor = cacheControlFor;
+module.exports.HISTORY_RANGES = HISTORY_RANGES;
+module.exports.HISTORY_DEFAULT = HISTORY_DEFAULT;
+module.exports.RESTRICTED_HEADER_SPAN = RESTRICTED_HEADER_SPAN;
+module.exports.DEGRADED_HISTORY_S_MAXAGE = DEGRADED_HISTORY_S_MAXAGE;

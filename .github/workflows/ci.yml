@@ -181,6 +181,19 @@ jobs:
         if: always()
         run: node ../api/verify-nodes.mjs
 
+      # Offline. The two block-header history handlers, which until p3·14b
+      # shared nothing but a copy-paste and had no gate at all. Its negative
+      # polarity is a COMMITTED FIXTURE (api/_fixtures/xmr-history-prefix.mjs)
+      # reproducing the pre-fix handlers verbatim, so every assertion is run
+      # against a state that passes it AND one that fails it on every run —
+      # there is no mutation anyone has to remember to revert. The load-bearing
+      # one iterates the range table and asserts each entry's span against
+      # monerod's RESTRICTED_BLOCK_HEADER_RANGE, so a future key cannot
+      # silently reintroduce a window no public node will serve.
+      - name: "Gate: block-header history windows"
+        if: always()
+        run: node ../api/verify-history.mjs
+
       - name: "Gate: market stale-cache"
         if: always()
         run: node verify-stale.mjs
