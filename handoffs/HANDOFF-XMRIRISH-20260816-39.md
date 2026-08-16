@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260816-39
 branch: claude/prompt-attached-lmhrgq
-status: in_progress        # open -> in_progress -> done | blocked
+status: done              # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — task arrived as prompt p3·17)
 owner: claude-code
 ---
@@ -101,7 +101,7 @@ touched. No new gate FILE unless a browser assertion is genuinely needed.
 - [x] `/about/sources` 95,000 → 98,000, red-then-green, residual ZERO both halves, comment written after the last src commit
 - [x] 83/79/22/33/68, script CONTROLLED against bda0491 first; both places corrected
 - [x] 6 states captured and viewed; two defects found by looking (seam colour, and the desktop scroll container)
-- [ ] Branch pushed · draft PR opened via GitHub MCP · `mergeable_state` reported
+- [x] Branch pushed · draft PR #186 opened via GitHub MCP · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 
@@ -116,7 +116,7 @@ cd app && node verify-bundle.mjs
 
 **status**: done
 
-**pr**: (filled at exit)
+**pr**: https://github.com/aqua-019/satoshis-vision-v1/pull/186 (draft)
 
 **commits**: handoff · identity+gate · DOM gate · wiring/budgets/docs
 
