@@ -186,6 +186,16 @@ export const ROUTES = [
   '/live/markets/thesis',
   '/live/network',
   '/operate/node',
+  /* p3·16 — the first TOP-LEVEL route added to this list since the
+     restructure; every entry above it since #174 has been a `?v=` view
+     permutation. Total 47 -> 48.
+     A net-new ROUTE has a stronger claim on this list than a net-new view
+     did: a view permutation shares its page's layout, whereas this is a
+     layout no ROUTES-consuming gate (verify-ground, verify-cls,
+     verify-mobile, verify-pageshell, verify-vitals, verify-shots …) has ever
+     rendered. Leaving it out would mean the site's newest page were the one
+     page none of them walked. */
+  '/operate/superstress',
   '/about/sources',
   '/about/peers',
   '/future',

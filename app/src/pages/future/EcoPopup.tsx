@@ -13,7 +13,7 @@
  */
 
 import * as React from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { V6Modal } from "./V6Modal";
 import { SIM_IDS, type EcoEntry } from "./data";
@@ -152,7 +152,22 @@ export function EcoPopup({ e, open, onClose }: EcoPopupProps) {
           <div className="kicker" style={{ marginBottom: 10 }}>Links</div>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             {e.links.map(([label, href]) =>
-              href ? (
+              /* p3·16 — a leading "/" means an in-app route, and it routes
+                 through react-router rather than a new tab. The convention is
+                 not invented here: data.ts's DevLabPulse.href already declares
+                 it ("Leading '/' → in-app <Link>; anything else → external
+                 anchor"), and this is the second consumer. Without the split
+                 the hub cross-link would have shipped as
+                 target="_blank" — a full page reload, a new tab the reader
+                 did not ask for, and a "↗" glyph promising a site that is
+                 this one. Closing the dialog is part of the navigation: a
+                 modal left open over the route it just sent you to is the
+                 same defect one layer up. */
+              href && href.startsWith("/") ? (
+                <Link key={label} className="v6-res" to={href} onClick={onClose}>
+                  <span className="led" style={{ background: e.c, boxShadow: `0 0 6px ${e.c}` }} />{label} →
+                </Link>
+              ) : href ? (
                 <a key={label} className="v6-res" href={href} target="_blank" rel="noopener noreferrer">
                   <span className="led" style={{ background: e.c, boxShadow: `0 0 6px ${e.c}` }} />{label} ↗
                 </a>

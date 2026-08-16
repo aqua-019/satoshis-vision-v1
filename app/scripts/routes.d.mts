@@ -26,6 +26,7 @@ export interface RouteMap {
   FUTURE: string;
   FUTURE_OUTLOOK: string;
   OPERATE_NODE: string;
+  OPERATE_SUPERSTRESS: string;
   ABOUT_PEERS: string;
   ABOUT_SOURCES: string;
 }

@@ -149,11 +149,16 @@ export const FUTURE_PROTOCOLS: readonly FutureProtocol[] = [
     ],
     metrics: [["Anonymity set", "150M+"], ["Today", "ring-16"], ["Multiplier", "≈10M×"], ["Proof size", "~3-4 KB"], ["Verify", "~35 ms"], ["Addresses", "unchanged"]],
     repo: "kayabaNerve/fcmp-plus-plus",
+    // p3·16 adds the hub. This card's `status` already reads "BETA · stressnet
+    // live", which is a claim about a chain the reader has no way to reach from
+    // here — the hub is the page that says what that chain is and how to join
+    // it, so it belongs in the resources list rather than only in the nav.
     resources: [
       ["Reference implementation", "https://github.com/kayabaNerve/fcmp-plus-plus", "github"],
       ["MRL tracking issue", "https://github.com/monero-project/research-lab/issues/100", "research-lab"],
       ["getmonero.org · FCMP dev update", "https://www.getmonero.org/2024/04/27/fcmps.html", "blog"],
       ["monero-project/monero", "https://github.com/monero-project/monero", "github"],
+      ["The stressnet, and how to run a node on it", R.OPERATE_SUPERSTRESS, "site"],
     ],
   },
   {
@@ -288,6 +293,127 @@ export function roadmapStatus(stop: RoadmapStop): string {
 }
 
 /* ── ecosystem panels (xmrhub / kyc.rip / xmr.club / stressnet) ─── */
+/**
+ * The five apps the Umbrel community app store publishes, as STRUCTURE.
+ *
+ * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
+ * Two surfaces now describe these apps: the Superbrain partner brief on
+ * /about/peers (rendered by EcoPopup from the `blocks[]` below) and the
+ * Superstress hub on /operate/superstress, which gives each app a row of its
+ * own with real detail behind it. The one-line function is the line BOTH
+ * carry, so it is written here exactly once and the partner entry's "The five
+ * apps" block is DERIVED from it (`SUPERBRAIN_APPS.map(...)`, below). Retyping
+ * five app descriptions in a second file is how the two would drift, and the
+ * drift would be invisible — both would read plausibly, and only a reader who
+ * happened to visit both would ever see the disagreement.
+ *
+ * ── `what` AND `why` ARE ALLOWED TO BE EMPTY, AND ONE OF THEM IS ─────────
+ * `what` explains the app to someone meeting it for the first time and `why`
+ * states the sovereignty argument for running it. Both are OPTIONAL because
+ * MoneroSpace does not get either: its provenance is an open question with
+ * its maintainer, so this repo describes it by FUNCTION ONLY — `fn` and
+ * `caveat`, nothing else. That restraint is not stylistic; verify-future.mjs
+ * §15 sweeps the whole tree for a lineage claim and fails the build on one.
+ * Do not "fill in" MoneroSpace's `what` without an answer from the maintainer.
+ *
+ * `prereqs` is the app's OWN extra requirements. Every app in the store also
+ * needs the official Monero app — that is the shared prerequisite named in
+ * the entry's `body` and rendered once on the hub, not repeated five times.
+ */
+export interface SuperbrainApp {
+  id: string;
+  name: string;
+  /** The one-line function. THE single source — the EcoEntry block below
+   *  derives its lines from this, and the hub renders it as a row summary. */
+  fn: string;
+  /** Longer explanation, in paragraphs. Empty where none may be asserted. */
+  what: readonly string[];
+  /** Why running it yourself changes anything. Null where none is asserted. */
+  why: string | null;
+  /** An honest note that must travel with the app wherever it is described. */
+  caveat?: string;
+  /** Extra Umbrel apps this one needs, BEYOND the store-wide Monero app. */
+  prereqs: readonly string[];
+  href: string;
+  /** Honestly-empty screenshot slot label — reserved, never a generated image. */
+  shot: string;
+}
+
+const SUPERBRAIN_REPO = "https://github.com/brainchainz/Monero-Superbrain";
+
+export const SUPERBRAIN_APPS: readonly SuperbrainApp[] = [
+  {
+    id: "superbrain",
+    name: "Superbrain",
+    fn: "P2Pool + XMRig decentralised mining, accepting external miners over LAN or Tailscale.",
+    what: [
+      "P2Pool is a peer-to-peer mining pool: instead of a company running a server that collects everyone's work and pays out from its own wallet, the participants run the pool between them and the chain itself pays each miner directly. There is no operator to trust, no account, and no minimum payout held on your behalf.",
+      "XMRig is the miner that does the actual hashing. Pairing the two on one box gives you a pool and a miner you own, and the app opens a port so other machines on your LAN — or across a Tailscale network — can point their own miners at it.",
+    ],
+    why: "Pool centralisation is the standing critique of proof-of-work: a handful of operators end up choosing which transactions get mined. A pool you host, mining to a wallet you hold, removes you from that count entirely.",
+    prereqs: [],
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · superbrain mining dashboard",
+  },
+  {
+    id: "superpay",
+    name: "SuperPay",
+    fn: "self-hosted point-of-sale on a view-only wallet; spend keys never leave the device.",
+    what: [
+      "A view-only wallet holds the key that lets it RECOGNISE incoming payments and not the key that lets it move them. That is what makes a till safe to put on a counter: it can tell you a payment arrived and for how much, and it cannot spend a thing.",
+      "Running it yourself means the payment goes from the customer to your wallet with no processor in between — nobody to freeze it, take a percentage, or file a report about it.",
+    ],
+    why: "Every hosted payment processor is a party that can be compelled to hand over a record of who paid you and when. A till that only ever holds a view key produces no such record for anyone else to keep.",
+    prereqs: [],
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · superpay till view",
+  },
+  {
+    id: "monerospace",
+    name: "MoneroSpace",
+    // FUNCTION ONLY. See this array's header and verify-future.mjs §15 — the
+    // provenance question is open and nothing beyond the function may be said.
+    fn: "self-hosted block explorer and mempool visualiser; reads public chain data from your node.",
+    what: [],
+    why: null,
+    caveat:
+      "Where its interface design comes from is an open question we have put to its maintainer. Until that is answered this site names the project, links the repo, and claims nothing further either way.",
+    prereqs: ["Bitcoin", "Electrs"],
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · monerospace on the beta chain",
+  },
+  {
+    id: "superstress",
+    name: "Superstress",
+    fn: "a full FCMP++ stressnet node routed through Tor, with a wallet lab.",
+    what: [
+      "This is the app the rest of this page is about: a node that joins the FCMP++ beta chain rather than mainnet, so the proof system due at the next hard fork can be run under load before anyone's real money depends on it.",
+      "The wallet lab is the other half — somewhere to build, send and inspect transactions against that chain, which is how a wallet author finds out their assumptions broke before their users do.",
+    ],
+    why: "A beta chain is only as useful as the number of independent nodes on it. One node on somebody else's hardware measures one machine; a node on yours adds a data point nobody had, and Tor routing means adding it does not also publish where you are.",
+    prereqs: [],
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · superstress node dashboard",
+  },
+  {
+    id: "superatomic",
+    name: "SuperAtomic",
+    fn: "XMR/BTC atomic-swap backend to the Eigen network.",
+    what: [
+      "An atomic swap trades XMR for BTC directly between two people, with the protocol itself guaranteeing that either both halves happen or neither does. There is no exchange holding both sides mid-trade, which means there is no moment at which somebody else has your coins.",
+      "Its swap engine is a GPLv3 fork of eigenwallet/core, and the complete corresponding source is published at github.com/brainchainz/eigenwallet-core — real licence compliance, worth naming in public.",
+    ],
+    why: "The identity check happens at the exchange, not on the chain. A swap with no exchange in the middle is the one acquisition path that never creates a file linking your name to an amount.",
+    prereqs: ["Bitcoin", "Electrs"],
+    href: "https://github.com/brainchainz/eigenwallet-core",
+    shot: "screenshot · superatomic swap view",
+  },
+];
+
+/** The prerequisite EVERY app in the store shares — stated once, here, and
+ *  rendered once on the hub rather than repeated on five rows. */
+export const SUPERBRAIN_SHARED_PREREQ = "Monero";
+
 export const ECOSYSTEM: readonly EcoEntry[] = [
   {
     id: "stressnet", name: "Umbrel Superstress Net", head: "the FCMP++ beta chain, live.",
@@ -313,7 +439,12 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
       { label: "screenshot · MoneroSpace on the beta chain", h: 130 },
       { label: "telemetry endpoint · to be wired", h: 64 },
     ],
-    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["Umbrel node writeup", null], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
+    // p3·16 replaces the null "Umbrel node writeup" placeholder with the hub
+    // that IS the Umbrel node writeup — the placeholder was a promise of a
+    // page, and the page now exists on this site. "Beta-chain explorer" stays
+    // null because nothing has been supplied for it; an honest placeholder is
+    // only dishonest once the thing it stands for arrives.
+    links: [["MoneroSpace · brainchainz/Monero-Superbrain", "https://github.com/brainchainz/Monero-Superbrain"], ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS], ["Beta-chain explorer", null], ["MRL stressnet thread", "https://github.com/monero-project/research-lab/issues"]],
   },
   {
     id: "xmrhub", name: "XMRHUB", head: "the ecosystem, in one directory.",
@@ -373,13 +504,13 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     blocks: [
       {
         label: "The five apps",
-        lines: [
-          "Superbrain — P2Pool + XMRig decentralised mining, accepting external miners over LAN or Tailscale.",
-          "SuperPay — self-hosted point-of-sale on a view-only wallet; spend keys never leave the device.",
-          "MoneroSpace — self-hosted block explorer and mempool visualiser; reads public chain data from your node.",
-          "Superstress — a full FCMP++ stressnet node routed through Tor, with a wallet lab.",
-          "SuperAtomic — XMR/BTC atomic-swap backend to the Eigen network.",
-        ],
+        // DERIVED from SUPERBRAIN_APPS above, not retyped. These five lines
+        // and the Superstress hub's five row summaries are the same sentences,
+        // and they used to be the same sentences in two files — which is a
+        // drift that reads plausibly on both surfaces and is visible only to
+        // someone who happens to open both. verify-peers §4 still asserts all
+        // five NAMES render here, so the derivation cannot silently empty.
+        lines: SUPERBRAIN_APPS.map((a) => `${a.name} — ${a.fn}`),
       },
       {
         label: "Install · Umbrel community app store",
@@ -404,10 +535,16 @@ export const ECOSYSTEM: readonly EcoEntry[] = [
     // (TrustedPeersPage.tsx derives `primary` from links[0]) — kept short
     // like its siblings' domain-style labels (xmrhub.org, kyc.rip, xmr.club)
     // rather than the full repo path, so the footer row doesn't wrap.
+    // p3·16 appends the hub LAST, deliberately. TrustedPeersPage derives the
+    // card footer's "visit X ↗" text from the first link that HAS an href
+    // (`links.find(([, href]) => href)`), so anything inserted ahead of
+    // "Superbrain" would silently rewrite that footer and, being longer, wrap
+    // it — the exact failure the note above this array exists to prevent.
     links: [
       ["Superbrain", "https://github.com/brainchainz/Monero-Superbrain"],
       ["eigenwallet-core source (GPLv3)", "https://github.com/brainchainz/eigenwallet-core"],
       ["Umbrel app store listing", null],
+      ["The Superstress hub · on this site", R.OPERATE_SUPERSTRESS],
     ],
   },
 ];

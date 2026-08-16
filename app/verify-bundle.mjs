@@ -166,6 +166,7 @@ const PAGE_MODULE = {
   '/future': 'src/pages/FuturePage.tsx',
   '/future/outlook': 'src/pages/future/OutlookPage.tsx',
   '/operate/node': 'src/pages/NodePage.tsx',
+  '/operate/superstress': 'src/pages/SuperstressPage.tsx',
   '/about/peers': 'src/pages/TrustedPeersPage.tsx',
   '/about/sources': 'src/pages/SourcesPage.tsx',
 };

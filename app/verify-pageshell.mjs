@@ -82,6 +82,12 @@ const ROUTES = [
   { path: '/about/peers',        label: '/about/peers',               tier: 'standard' },
   { path: '/learn/sim',          label: '/learn/sim',            tier: 'fluid' },
   { path: '/operate/node',       label: '/operate/node',                tier: 'standard' },
+  // p3·16 — the 14th route. Added here even though this gate is npm-wired
+  // ONLY (held back by a PRE-EXISTING /future layout red, see CLAUDE.md), so
+  // that whenever the /future fix lands and the step is wired, the newest
+  // page is already inside the width sweep rather than being the one route
+  // the sweep was never taught about.
+  { path: '/operate/superstress', label: '/operate/superstress',        tier: 'standard' },
   { path: '/about/sources',      label: '/about/sources',             tier: 'standard' },
   { path: '/__nope__',           label: '/__nope__',            tier: 'standard' },
 ];
