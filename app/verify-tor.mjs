@@ -194,19 +194,27 @@ console.log('engine:', engine);
   ok(peak <= CONCURRENCY_CEILING,
      `1: concurrency stays bounded (peak ${peak} ≤ ${CONCURRENCY_CEILING} = ${FEED_CONCURRENT} feed + ${ONE_SHOT_PATHS.length} page one-shot)`
      + `\n     at peak: ${peakSet.map((u) => u.replace(base, '')).join(', ')}`);
-  /* The allowance above is only honest while the one-shots stay bounded by the
-     tier they ride, and "bounded" is NOT "exactly once" — the first draft of
-     this asserted `n === 1` and was wrong about the code rather than about the
-     principle. Every endpoint here answers `{}` after 4s, so the D0828 seed
-     never receives points and correctly RE-SEEDS on the next chain tick; it
-     fired twice in 20s and the assertion called that a defect. Retrying a
-     dataless response at the tier's own cadence is the discipline the feed
-     itself uses, and forbidding it would have pushed a real behaviour change
-     to satisfy a sentence.
-     The property with content is that a page-local one-shot never polls FASTER
-     than the tier it rides. `/api/xmr/tip` is that tier's own heartbeat, so it
-     is the honest yardstick: a seed that had become a 3s fast-tier poll would
-     fire ~6 times against the tip's ~2 and red immediately. */
+  /* THE ASSERTION BELOW IS `n === 1`, AND THIS COMMENT USED TO ARGUE AGAINST IT
+     while the code did it anyway — caught in re-judgment. Read the code, but
+     here is why it is `=== 1` and not something looser:
+
+     The first draft asserted `n === 1` against a §1 that answered EVERY
+     `/api/**` with `{}`. The D0828 seed therefore never received points,
+     `needSeed` stayed true, and the chain tier correctly RE-SEEDED — so the
+     assertion was measuring retry-on-failure while claiming to measure
+     repetition, and a one-shot was structurally incapable of being one.
+
+     The fix was to the FIXTURE, not the threshold: §1 now fulfils the seed once
+     with a valid envelope (see the route handler above), so it succeeds, does
+     not re-seed, and `=== 1` is exactly right. An intermediate draft bounded `n`
+     by `tipHits` instead; that was WORSE — the seed's poller and the feed's are
+     two independently phased chain-tier timers, so in a 20 s window one can tick
+     twice while the other ticks once. It read 1≤1 locally and 2≤1 in the chain.
+     An assertion whose outcome depends on phase is not an assertion.
+
+     `tipHits` survives only as the vacuity control: it proves the chain tier
+     ticked at all, so a `n === 1` that passed because NOTHING happened is
+     distinguishable from one that passed because the seed behaved. */
   ok(tipHits > 0, `1: the chain tier ticked ${tipHits}×, so a repeating one-shot had chances to repeat`);
   for (const [path, n] of oneShotHits) {
     ok(n === 1,
