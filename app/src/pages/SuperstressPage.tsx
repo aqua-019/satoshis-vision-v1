@@ -201,7 +201,17 @@ export function SuperstressPage() {
 
   return (
     <PageShell width="standard" bg={{ intensity: "calm" }}>
-      <Crumbs path={R.OPERATE_SUPERSTRESS} status={SUPERBRAIN_APPS.length + " apps"} />
+      {/* NO `status` on the crumbs, and that is a fix rather than an omission.
+          It first read `${SUPERBRAIN_APPS.length} apps` — the SAME words as
+          the header pill three lines below, so the page said "5 APPS" twice
+          within 60px, once behind a pulsing LED that implies a live reading
+          for a number that is a constant. TrustedPeersPage carries both
+          slots legitimately because its two say different things
+          ("collaborators" / "partners"); duplicating one string is not that
+          pattern. NodePage — this section's other leaf — passes no status at
+          all, which is the precedent followed here. Found by looking at the
+          render; no gate compares two labels for saying the same thing. */}
+      <Crumbs path={R.OPERATE_SUPERSTRESS} />
       <PageHeader
         kicker="Umbrel community app store · sovereignty tooling"
         title='Run the <em style="color:var(--g-50);text-shadow:var(--glow-g);font-style:normal">whole stack</em> yourself.'
