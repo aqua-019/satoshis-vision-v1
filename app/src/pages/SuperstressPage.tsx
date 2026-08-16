@@ -52,6 +52,7 @@ import {
   FUTURE_PROTOCOLS,
   SUPERBRAIN_APPS,
   SUPERBRAIN_SHARED_PREREQ,
+  type SuperbrainAppId,
 } from "./future/data";
 // The LEAF, never "./future/cards" — cards.tsx re-exports this name, and
 // importing it through the fat module would drag ProtocolCard and
@@ -71,6 +72,86 @@ const FCMP = FUTURE_PROTOCOLS.find((p) => p.id === "fcmp");
 
 const INSTALL = STORE?.blocks?.find((b) => b.ordered);
 const MINER_CMD = STORE?.blocks?.find((b) => !b.ordered && b.lines.length === 1)?.lines[0];
+
+const SUPERBRAIN_REPO = "https://github.com/brainchainz/Monero-Superbrain";
+
+interface AppDetail {
+  /** Longer explanation, in paragraphs. EMPTY where none may be asserted. */
+  what: readonly string[];
+  /** Why running it yourself changes anything. NULL where none is asserted. */
+  why: string | null;
+  /** An honest note that travels with the app wherever it is described. */
+  caveat?: string;
+  href: string;
+  /** Honestly-empty screenshot slot label — reserved, never a generated image. */
+  shot: string;
+}
+
+/**
+ * The hub's per-app essay. Lives HERE rather than in data.ts because
+ * FuturePage and TrustedPeersPage both import that module and neither renders
+ * a word of this — see the SUPERBRAIN_APPS header for the byte count that
+ * decision is worth.
+ *
+ * `Record<SuperbrainAppId, …>` is the whole exhaustiveness mechanism: the id
+ * union comes from the spine's `as const`, so a sixth app added there is a
+ * COMPILE ERROR here rather than a row that silently renders empty. Nothing
+ * else pins these two lists together, exactly as the two
+ * `Record<ProvSource, …>` maps in design/provenance.tsx are the only thing
+ * pinning the provenance vocabulary.
+ *
+ * MoneroSpace is the one entry with an empty `what` and a null `why`, and
+ * that is deliberate and load-bearing: its provenance is an open question
+ * with its maintainer, so this site describes it by FUNCTION ONLY. Filling
+ * these in without an answer is exactly what verify-future.mjs §15 fails the
+ * build over.
+ */
+const APP_DETAIL: Record<SuperbrainAppId, AppDetail> = {
+  superbrain: {
+    what: [
+      "P2Pool is a peer-to-peer mining pool: instead of a company running a server that collects everyone's work and pays out from its own wallet, the participants run the pool between them and the chain itself pays each miner directly. There is no operator to trust, no account, and no minimum payout held on your behalf.",
+      "XMRig is the miner that does the actual hashing. Pairing the two on one box gives you a pool and a miner you own, and the app opens a port so other machines on your LAN — or across a Tailscale network — can point their own miners at it.",
+    ],
+    why: "Pool centralisation is the standing critique of proof-of-work: a handful of operators end up choosing which transactions get mined. A pool you host, mining to a wallet you hold, removes you from that count entirely.",
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · superbrain mining dashboard",
+  },
+  superpay: {
+    what: [
+      "A view-only wallet holds the key that lets it RECOGNISE incoming payments and not the key that lets it move them. That is what makes a till safe to put on a counter: it can tell you a payment arrived and for how much, and it cannot spend a thing.",
+      "Running it yourself means the payment goes from the customer to your wallet with no processor in between — nobody to freeze it, take a percentage, or file a report about it.",
+    ],
+    why: "Every hosted payment processor is a party that can be compelled to hand over a record of who paid you and when. A till that only ever holds a view key produces no such record for anyone else to keep.",
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · superpay till view",
+  },
+  monerospace: {
+    what: [],
+    why: null,
+    caveat:
+      "Where its interface design comes from is an open question we have put to its maintainer. Until that is answered this site names the project, links the repo, and claims nothing further either way.",
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · monerospace on the beta chain",
+  },
+  superstress: {
+    what: [
+      "This is the app the rest of this page is about: a node that joins the FCMP++ beta chain rather than mainnet, so the proof system due at the next hard fork can be run under load before anyone's real money depends on it.",
+      "The wallet lab is the other half — somewhere to build, send and inspect transactions against that chain, which is how a wallet author finds out their assumptions broke before their users do.",
+    ],
+    why: "A beta chain is only as useful as the number of independent nodes on it. One node on somebody else's hardware measures one machine; a node on yours adds a data point nobody had, and Tor routing means adding it does not also publish where you are.",
+    href: SUPERBRAIN_REPO,
+    shot: "screenshot · superstress node dashboard",
+  },
+  superatomic: {
+    what: [
+      "An atomic swap trades XMR for BTC directly between two people, with the protocol itself guaranteeing that either both halves happen or neither does. There is no exchange holding both sides mid-trade, which means there is no moment at which somebody else has your coins.",
+      "Its swap engine is a GPLv3 fork of eigenwallet/core, and the complete corresponding source is published at github.com/brainchainz/eigenwallet-core — real licence compliance, worth naming in public.",
+    ],
+    why: "The identity check happens at the exchange, not on the chain. A swap with no exchange in the middle is the one acquisition path that never creates a file linking your name to an amount.",
+    href: "https://github.com/brainchainz/eigenwallet-core",
+    shot: "screenshot · superatomic swap view",
+  },
+};
 
 /** A reserved, labelled box that states what is missing. Never a generated
  *  image, never a shimmer that reads as "loading". */
@@ -148,6 +229,7 @@ export function SuperstressPage() {
       <section style={{ display: "flex", flexDirection: "column", gap: 8 }} data-superstress-apps={SUPERBRAIN_APPS.length}>
         <div className="kicker">The apps · open any row</div>
         {SUPERBRAIN_APPS.map((a) => {
+          const d = APP_DETAIL[a.id];
           // Stated in FULL here, because the trigger row's `meta` chip is
           // dropped at 390px — see the .disc-meta media rule in styles.css.
           const needs = [SUPERBRAIN_SHARED_PREREQ, ...a.prereqs];
@@ -162,12 +244,12 @@ export function SuperstressPage() {
               onToggle={() => toggle(a.id)}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 10 }}>
-                {a.what.map((par, i) => (
+                {d.what.map((par, i) => (
                   <p key={i} className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.75, color: "var(--ink-80)" }}>
                     {par}
                   </p>
                 ))}
-                {a.caveat ? (
+                {d.caveat ? (
                   <p
                     data-app-caveat={a.id}
                     className="mono"
@@ -176,22 +258,22 @@ export function SuperstressPage() {
                       border: "1px dashed var(--ink-20)", padding: "10px 12px",
                     }}
                   >
-                    {a.caveat}
+                    {d.caveat}
                   </p>
                 ) : null}
-                {a.why ? (
+                {d.why ? (
                   <p className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.75, color: "var(--ink-100)" }}>
                     <span className="kicker" style={{ display: "block", marginBottom: 4 }}>Why it matters</span>
-                    {a.why}
+                    {d.why}
                   </p>
                 ) : null}
                 <div className="mono" style={{ fontSize: "var(--fs-mono)", color: "var(--ink-60)" }} data-app-needs={a.id}>
                   needs · {needs.join(" · ")}
                 </div>
-                <EmptySlot label={a.shot} h={110} />
+                <EmptySlot label={d.shot} h={110} />
                 <a
                   className="mono"
-                  href={a.href}
+                  href={d.href}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`${a.name} source (opens in a new tab)`}

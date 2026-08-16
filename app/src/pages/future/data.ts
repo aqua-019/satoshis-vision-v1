@@ -294,31 +294,40 @@ export function roadmapStatus(stop: RoadmapStop): string {
 
 /* ── ecosystem panels (xmrhub / kyc.rip / xmr.club / stressnet) ─── */
 /**
- * The five apps the Umbrel community app store publishes, as STRUCTURE.
+ * The five apps the Umbrel community app store publishes — the SHARED SPINE.
  *
  * ── WHY THIS EXISTS ──────────────────────────────────────────────────────
- * Two surfaces now describe these apps: the Superbrain partner brief on
+ * Two surfaces describe these apps: the Superbrain partner brief on
  * /about/peers (rendered by EcoPopup from the `blocks[]` below) and the
  * Superstress hub on /operate/superstress, which gives each app a row of its
- * own with real detail behind it. The one-line function is the line BOTH
- * carry, so it is written here exactly once and the partner entry's "The five
- * apps" block is DERIVED from it (`SUPERBRAIN_APPS.map(...)`, below). Retyping
- * five app descriptions in a second file is how the two would drift, and the
- * drift would be invisible — both would read plausibly, and only a reader who
- * happened to visit both would ever see the disagreement.
+ * own. The one-line function is the line BOTH carry, so it is written here
+ * exactly once and the partner entry's "The five apps" block is DERIVED from
+ * it (`SUPERBRAIN_APPS.map(...)`, below). Retyping five app descriptions in a
+ * second file is how the two would drift, and the drift would be invisible —
+ * both would read plausibly, and only a reader who happened to open both
+ * would ever see the disagreement.
  *
- * ── `what` AND `why` ARE ALLOWED TO BE EMPTY, AND ONE OF THEM IS ─────────
- * `what` explains the app to someone meeting it for the first time and `why`
- * states the sovereignty argument for running it. Both are OPTIONAL because
- * MoneroSpace does not get either: its provenance is an open question with
- * its maintainer, so this repo describes it by FUNCTION ONLY — `fn` and
- * `caveat`, nothing else. That restraint is not stylistic; verify-future.mjs
- * §15 sweeps the whole tree for a lineage claim and fails the build on one.
- * Do not "fill in" MoneroSpace's `what` without an answer from the maintainer.
+ * ── AND WHY THE HUB'S PROSE IS **NOT** HERE ──────────────────────────────
+ * This carries the SHARED fields only. The hub's per-app essay — what the app
+ * is, why running it yourself changes anything, its screenshot slot — lives
+ * in SuperstressPage.tsx, keyed by these ids through an exhaustive
+ * `Record<SuperbrainAppId, …>` so a new app is a COMPILE ERROR there rather
+ * than a silently missing row.
  *
- * `prereqs` is the app's OWN extra requirements. Every app in the store also
- * needs the official Monero app — that is the shared prerequisite named in
- * the entry's `body` and rendered once on the hub, not repeated five times.
+ * That split is MEASURED, not tidiness. This module is imported by
+ * FuturePage, TrustedPeersPage and now the hub — three chunk groups, so
+ * Rollup mints it its own chunk and every one of those routes downloads all
+ * of it. With the essays in here, `/future` measured 106,401 B gzip against a
+ * 107,000 ceiling: 599 B of margin on a route this PR barely touches, for
+ * prose it never renders. It is the same call `repoPulse.tsx` and
+ * `canvasColor.ts` already record — Rollup chunks per MODULE, not per export,
+ * so the only way to stop a route paying for something is to put it in a
+ * different file. Keep this array to fields BOTH surfaces use.
+ *
+ * `prereqs` is the app's OWN extra requirements and is shared: the partner
+ * entry's `body` names them in prose and the hub renders them as data. Every
+ * app in the store also needs the official Monero app — that is the
+ * store-wide prerequisite below, stated once rather than on five rows.
  */
 export interface SuperbrainApp {
   id: string;
@@ -326,89 +335,55 @@ export interface SuperbrainApp {
   /** The one-line function. THE single source — the EcoEntry block below
    *  derives its lines from this, and the hub renders it as a row summary. */
   fn: string;
-  /** Longer explanation, in paragraphs. Empty where none may be asserted. */
-  what: readonly string[];
-  /** Why running it yourself changes anything. Null where none is asserted. */
-  why: string | null;
-  /** An honest note that must travel with the app wherever it is described. */
-  caveat?: string;
   /** Extra Umbrel apps this one needs, BEYOND the store-wide Monero app. */
   prereqs: readonly string[];
-  href: string;
-  /** Honestly-empty screenshot slot label — reserved, never a generated image. */
-  shot: string;
 }
 
-const SUPERBRAIN_REPO = "https://github.com/brainchainz/Monero-Superbrain";
-
-export const SUPERBRAIN_APPS: readonly SuperbrainApp[] = [
+/* `as const satisfies` rather than a plain annotation: `satisfies` keeps the
+   shape checked while `as const` preserves the id LITERALS, which is what
+   makes SuperbrainAppId a five-member union instead of `string`. Without it
+   the hub's detail map degrades to Record<string, …> and a missing app stops
+   being a compile error — the same mechanism, and the same reasoning, as the
+   two Record<ProvSource, …> maps in design/provenance.tsx. */
+export const SUPERBRAIN_APPS = [
   {
     id: "superbrain",
     name: "Superbrain",
     fn: "P2Pool + XMRig decentralised mining, accepting external miners over LAN or Tailscale.",
-    what: [
-      "P2Pool is a peer-to-peer mining pool: instead of a company running a server that collects everyone's work and pays out from its own wallet, the participants run the pool between them and the chain itself pays each miner directly. There is no operator to trust, no account, and no minimum payout held on your behalf.",
-      "XMRig is the miner that does the actual hashing. Pairing the two on one box gives you a pool and a miner you own, and the app opens a port so other machines on your LAN — or across a Tailscale network — can point their own miners at it.",
-    ],
-    why: "Pool centralisation is the standing critique of proof-of-work: a handful of operators end up choosing which transactions get mined. A pool you host, mining to a wallet you hold, removes you from that count entirely.",
     prereqs: [],
-    href: SUPERBRAIN_REPO,
-    shot: "screenshot · superbrain mining dashboard",
   },
   {
     id: "superpay",
     name: "SuperPay",
     fn: "self-hosted point-of-sale on a view-only wallet; spend keys never leave the device.",
-    what: [
-      "A view-only wallet holds the key that lets it RECOGNISE incoming payments and not the key that lets it move them. That is what makes a till safe to put on a counter: it can tell you a payment arrived and for how much, and it cannot spend a thing.",
-      "Running it yourself means the payment goes from the customer to your wallet with no processor in between — nobody to freeze it, take a percentage, or file a report about it.",
-    ],
-    why: "Every hosted payment processor is a party that can be compelled to hand over a record of who paid you and when. A till that only ever holds a view key produces no such record for anyone else to keep.",
     prereqs: [],
-    href: SUPERBRAIN_REPO,
-    shot: "screenshot · superpay till view",
   },
   {
     id: "monerospace",
     name: "MoneroSpace",
-    // FUNCTION ONLY. See this array's header and verify-future.mjs §15 — the
-    // provenance question is open and nothing beyond the function may be said.
+    // FUNCTION ONLY, here and on the hub. The provenance question is open with
+    // its maintainer; verify-future.mjs §15 sweeps the whole tree for a lineage
+    // claim and fails the build on one. Do not enrich this line.
     fn: "self-hosted block explorer and mempool visualiser; reads public chain data from your node.",
-    what: [],
-    why: null,
-    caveat:
-      "Where its interface design comes from is an open question we have put to its maintainer. Until that is answered this site names the project, links the repo, and claims nothing further either way.",
     prereqs: ["Bitcoin", "Electrs"],
-    href: SUPERBRAIN_REPO,
-    shot: "screenshot · monerospace on the beta chain",
   },
   {
     id: "superstress",
     name: "Superstress",
     fn: "a full FCMP++ stressnet node routed through Tor, with a wallet lab.",
-    what: [
-      "This is the app the rest of this page is about: a node that joins the FCMP++ beta chain rather than mainnet, so the proof system due at the next hard fork can be run under load before anyone's real money depends on it.",
-      "The wallet lab is the other half — somewhere to build, send and inspect transactions against that chain, which is how a wallet author finds out their assumptions broke before their users do.",
-    ],
-    why: "A beta chain is only as useful as the number of independent nodes on it. One node on somebody else's hardware measures one machine; a node on yours adds a data point nobody had, and Tor routing means adding it does not also publish where you are.",
     prereqs: [],
-    href: SUPERBRAIN_REPO,
-    shot: "screenshot · superstress node dashboard",
   },
   {
     id: "superatomic",
     name: "SuperAtomic",
     fn: "XMR/BTC atomic-swap backend to the Eigen network.",
-    what: [
-      "An atomic swap trades XMR for BTC directly between two people, with the protocol itself guaranteeing that either both halves happen or neither does. There is no exchange holding both sides mid-trade, which means there is no moment at which somebody else has your coins.",
-      "Its swap engine is a GPLv3 fork of eigenwallet/core, and the complete corresponding source is published at github.com/brainchainz/eigenwallet-core — real licence compliance, worth naming in public.",
-    ],
-    why: "The identity check happens at the exchange, not on the chain. A swap with no exchange in the middle is the one acquisition path that never creates a file linking your name to an amount.",
     prereqs: ["Bitcoin", "Electrs"],
-    href: "https://github.com/brainchainz/eigenwallet-core",
-    shot: "screenshot · superatomic swap view",
   },
-];
+] as const satisfies readonly SuperbrainApp[];
+
+/** The five ids as a union — see the `as const satisfies` note above. */
+export type SuperbrainAppId = (typeof SUPERBRAIN_APPS)[number]["id"];
+
 
 /** The prerequisite EVERY app in the store shares — stated once, here, and
  *  rendered once on the hub rather than repeated on five rows. */
