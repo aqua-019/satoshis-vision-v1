@@ -54,6 +54,28 @@ export interface Block {
   pool: string;
   /** age in seconds */
   age: number;
+  /**
+   * The block header's OWN UNIX timestamp, in seconds, as the node reported
+   * it — or `null` when the node reported none.
+   *
+   * ── WHY THIS EXISTS SEPARATELY FROM `age` ─────────────────────────────
+   * `age` is derived as `nowSec() - timestamp` and FALLS BACK to `nowSec()`
+   * when the wire carried no timestamp, which makes a missing timestamp
+   * indistinguishable from a brand-new block (age 0). That is tolerable for a
+   * relative "3m 20s ago" readout and is NOT tolerable as a chart coordinate:
+   * reconstructing `t = Date.now() - age*1000` gives an x-position that drifts
+   * between renders and that mixes a wall-clock-derived instant onto the same
+   * axis as real block-header timestamps from `/api/xmr/network/difficulty`.
+   * Two time bases on one line is exactly what p3·14 refused cursor adoption
+   * over.
+   *
+   * The value is on the wire already (`api/xmr.js` sends `timestamp` on every
+   * block; `map.ts` had it in hand and threw it away), so this is recovering a
+   * real number rather than adding a request. `null` rather than a fallback so
+   * "the node did not say" stays sayable — a consumer plotting this must drop
+   * the point, not invent its position.
+   */
+  timestamp: number | null;
   /** confirmations since this block */
   conf: number;
 }
