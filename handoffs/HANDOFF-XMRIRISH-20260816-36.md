@@ -48,6 +48,43 @@ beside "the network" without redesign.
   `app/src/data/{usePolling,xmrirish-feed,map}.ts`, `app/verify-*.mjs`,
   `api/verify-*.mjs`, `app/verify-bundle.mjs` (budget literals), CLAUDE.md.
 
+### §0 RE-VERIFIED — one premise overturned, two defects added
+
+Full measured contract: `scratchpad/S1-CONTRACT.md`. Headlines:
+
+- **The recorded 9.92× `?range=all` split is real arithmetic and NOT the main
+  defect.** `RESTRICTED_BLOCK_HEADER_RANGE = 1000` (monerod
+  `src/rpc/core_rpc_server_commands_defs.h`) rejects any span over 1000 headers on
+  a restricted node — which is every node in this site's cascade. `api/xmr.js:471`
+  clamps to 5000, not 1000. So `30d` (2160), `1y` (26280→5000) and `all` (5000) all
+  exceed it: monerod answers `"Too many block headers requested."`, `rpc()` returns
+  `null` (`:68`/`:74`), and both handlers convert that to `[]` at `res?.headers || []`.
+  **Three of the four documented range keys have never returned one data point on any
+  node this site uses.** Only `7d` (504 → span 503) works, and it serves 16.8 h.
+- **CLAUDE.md's own 10× figure is right for `7d`/`30d` and wrong for `1y`**: `1y` is
+  clamped to 5000 before it reaches the node, so its label overstates by 52.6×, not 10×.
+- **The downsampler drops the newest headers.** `filter((_,i) => i % step === 0)` keeps
+  the last index only when `(len-1) % step === 0`; at 504/step 2 the tip is dropped. The
+  series' right edge is not the tip — fatal for a line that appends at that edge.
+- **A degraded payload is cached at the full TTL.** Both endpoints carry
+  `s-maxage=300`; an RPC failure returns `[]` under that same header, so one transient
+  error is served as "no history" for five minutes.
+- **RPC cost is flat** — 2 calls at every range — so relabelling adds zero upstream load.
+- **`map.ts:259` discards the block timestamp** the server already sends
+  (`api/xmr.js:298`), keeping only `age` in seconds. Appending from `data.blocks` would
+  therefore reconstruct time via `Date.now()` and drift against the seed's real
+  block-header timestamps — two time bases on one axis.
+- **`xmrirish-feed.ts` is eager** — measured: `dist/index.html` names
+  `assets/index-DbWNS2XT.js`, which contains all three feed endpoint literals. So the
+  new fetch is page-local via `usePolling`, not a new `FeedKey`.
+- **Budget baseline at 7589c50** (isolated worktree, `verify-bundle` 27 passed):
+  eagerJsRaw 262,875/280,000 · eagerJsGz 88,200/96,000 · cssGz 17,762/18,200 (438 B) ·
+  lazyJsRaw 849,308/852,000 (2,692 B) · totalJsRaw 1,112,183/1,115,000 (2,817 B) ·
+  `/live/network` 109,869/113,000 (3,131 B) · 67 chunks against 64±4 = [60,68].
+- **`verify-resilience.mjs:316`'s `also=` regex captures `/api/<one-segment>` only**, so
+  a sub-path `also=` is never matched and never checked, under a message that reads as
+  coverage.
+
 ## 3 · SCOPE
 
 IN:
