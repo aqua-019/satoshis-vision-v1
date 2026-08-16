@@ -49,8 +49,6 @@ const ROUND_SIZE = 5;
  * only thing that ever mattered: concurrency must not climb without limit.
  */
 const FEED_CONCURRENT = 4;
-const PAGE_ONESHOTS = 2;
-const CONCURRENCY_CEILING = FEED_CONCURRENT + PAGE_ONESHOTS;
 
 /**
  * The one-shots are the whole reason the ceiling may exceed the feed's own
@@ -59,6 +57,16 @@ const CONCURRENCY_CEILING = FEED_CONCURRENT + PAGE_ONESHOTS;
  * tick — an allowance that hides the thing it was granted for.
  */
 const ONE_SHOT_PATHS = ['/api/nodes', '/api/xmr/network/difficulty'];
+
+/**
+ * DERIVED, never a second literal. A `PAGE_ONESHOTS = 2` beside a two-entry
+ * list is two expressions of one fact and they are free to drift: add a third
+ * path and the ceiling would not follow it; raise the number without adding a
+ * path and the allowance grows with nothing guarding it. This repo has fixed
+ * that exact shape more than once (`routes.mjs`'s `R`, the four route lists),
+ * and the fix is always to make the count a function of the thing it counts.
+ */
+const CONCURRENCY_CEILING = FEED_CONCURRENT + ONE_SHOT_PATHS.length;
 
 function findChrome() {
   const root = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
