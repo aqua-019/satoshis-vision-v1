@@ -168,3 +168,42 @@
   own CI figure read 65 while its Status section read 66, and `verify-lib`'s docblock said
   "stays 43" against a measured 47.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/185
+
+- XMRIRISH-20260816-39 · done — p3·17 sources release notes. **The brief's preferred option was
+  not buildable and one command showed it**: §0.3(a) said merges carry "a descriptive branch/PR
+  title", but `git log -1 --format=%B` over the last four merges shows that ONE LINE is the entire
+  message — no body — and the branch half is a random slug, so a merge parser yields
+  `#185 — claude/prompt-attached-8fdjhd`. The PR TITLE is not in the git object at all. It is one
+  API call away on the **pulls** endpoint (number + title + `merged_at` + `html_url`, ONE request,
+  cheaper than the commits path's up-to-three pages), so identity is PR-keyed and the feed is LIVE
+  again rather than the honest tombstone (c) allowed as a floor. **`merged` is a liar on that
+  endpoint** — measured, it reads `false` on #178–#185, all merged — so `mapPulls` keys on
+  `merged_at`; keyed on `merged` it returns [] against a HEALTHY upstream, an honest-looking empty
+  from a wrong predicate. **The defect was sharper than the brief said**: the header ternary had
+  THREE branches for a FOUR-state feed and an empty array is truthy, so the live state rendered
+  `github commits · 0 releases` **directly above five curated rows** — claiming nothing and
+  displaying five things, with every offline assertion green. **The gate's shape is the point: an
+  equality gate between two hand-maintained constants detects DISAGREEMENT, not STALENESS, and
+  staleness is the defect** — pinning SITE_VERSION to package.json would have been green for all
+  twenty-two releases this rotted through, so the authority is `handoffs/LOG.md` (it MOVES on its
+  own) and must be a committed FILE (ci.yml checks out at depth 1). Invariant
+  `logMax <= SITE_PR <= logMax+1`: may lead by one, never lag; both bounds break-tested.
+  **My own gate could not fail a build** — a bare `R.finish();` (the only one in the suite) printed
+  `❌ FAILURES` and exited 0, caught by the break harness asserting on the EXIT CODE rather than on
+  a ❌ marker; every assertion in it was correct and correctly red. **The eager split is a rare
+  NEGATIVE delta**: the five curated notes each greped 1 → **0** in the served entry,
+  `eagerJsRaw` **−1,025 B**, thirteen routes ~470 B gzip cheaper including `/`; `/about/sources`
+  went UP because the cost moved to the one route that renders the prose, raised 95,000 →
+  **98,000** (built 95,027) with the delta paired by stem multiplicity against an isolated-worktree
+  baseline and **residual ZERO both halves**. That row's comment was **stale by 7,990 B before this
+  PR began**. NOT raised because not crossed and said out loud: `lazyJsRaw` margin **894 B**;
+  `cssGz` byte-identical (no stylesheet rule added at all). Two defects found by LOOKING: the era
+  seam drawn in the warning colour was the loudest text in the panel, and the probe's first shots
+  were of the page top because `main.main` is the desktop scroller. Census RECOUNTED with the
+  script CONTROLLED against `bda0491` (reproduces its 82/78/22/32/67 exactly): **83 files / 79
+  gates · static 22 · e2e 33 · CI 68**; `verify-releases` 15 → **38**, `verify-feeds` +20, new
+  `verify-releases-dom` **33**, wired mid-chain at position 16, never the tail. Nine break tests,
+  restores verified against the committed blob, rebuilt between restore and re-measure. Full
+  `verify:e2e` **exit 0** across all 33 members; all 7 api gates green; verify-bundle 28 passed.
+  **No human has seen the rendered result in a browser.**
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/186

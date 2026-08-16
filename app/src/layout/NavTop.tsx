@@ -46,7 +46,10 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useMoneroLive } from "@/data/DataContext";
 import { DesignPanel } from "@/design/DesignPanel";
 import { useReducedMotion } from "@/design/useReducedMotion";
-import { SITE_VERSION } from "@/data/releases";
+// p3·17: from the LEAF, never from "@/data/releases". NavTop is eager, and
+// releases.ts carries the five curated release notes — importing it here put
+// ~600 B of editorial prose into the entry chunk on all fourteen routes.
+import { SITE_VERSION } from "@/data/siteVersion";
 import { assertNever, CHAIN_MARKET_CHROME_KEYS, hasData } from "@/data/feed-status";
 import { CHROME_LABEL, chromeDetail, useChromeState } from "@/design/useOnline";
 import { IA, sectionForPath, type IaSection } from "@/nav/ia";

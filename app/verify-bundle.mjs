@@ -1313,7 +1313,49 @@ const ROUTE_BUDGET_GZ = {
   // new. "It did not mint a chunk" and "it landed where I expected" are
   // different facts; this is the first.
   '/about/peers':           103_000, // 100,100
-  '/about/sources':          95_000, //  86,581
+  // p3·17 RAISE, 95,000 -> 98,000. Built 95,027 on the FINAL tree (margin
+  // 2,973), red first at `❌ /about/sources first load 95027 B gzip ≤ 95000`.
+  //
+  // THIS ROW'S OWN COMMENT WAS STALE BY 7,990 B BEFORE THIS PR TOUCHED
+  // ANYTHING. It read `86,581` against a measured 94,571 at bda0491 — a margin
+  // of 429, the TIGHTEST row in this table, while the comment implied 8,419.
+  // Same defect p3·14 recorded against /live/network, in a different row: the
+  // ceiling is checked every build and the figure beside it is checked by
+  // nobody. Re-baselined here.
+  //
+  // WHY IT GREW WHEN THE POINT OF THE PR WAS TO SHRINK THINGS. The five curated
+  // release notes used to ship in the EAGER entry, because NavTop imported
+  // SITE_VERSION from the module that holds them — so all fourteen routes paid
+  // for prose only this one renders. p3·17 split the version identity into
+  // data/siteVersion.ts, and the prose moved out of the entry and into
+  // SourcesPage's own chunk. So this route's number went UP precisely because
+  // the cost moved to the route that actually renders it; the other thirteen
+  // each got ~470 B gzip cheaper, and `/` — the LCP route — with them.
+  //
+  // Attribution, paired by stem MULTIPLICITY against a bda0491 build in an
+  // isolated worktree (its own dist/, its own port), RESIDUAL ZERO both halves:
+  //     SourcesPage    +2,281 raw  (+929 gzip)   prose in, plus the seam,
+  //                                              the empty-state and eraSeamIndex
+  //     index[1]       -1,025 raw  (-462 gzip)   the entry: prose OUT
+  //     useCachedFeed      -4 raw                src=commits -> src=pulls
+  //     ------------------------------------------------------------------
+  //     lazy   882,849 -> 885,106  = +2,277 = SourcesPage + useCachedFeed ✓
+  //     eager  263,385 -> 262,360  = -1,025 = index[1]                    ✓
+  //     total                        +1,252
+  // 22 chunk slots byte-identical; the remaining ±1..5 gzip wobbles are 8-char
+  // content-hash substitutions, which are length-preserving in RAW and still
+  // move a byte or two under gzip.
+  //
+  // NOT RAISED, because not crossed — and said out loud rather than left to be
+  // rediscovered, which is this file's own convention: `lazyJsRaw` is at
+  // 885,106 of 886,000, a margin of **894 B**. That is where the next lazy
+  // addition of any size reds. `cssGz` is byte-identical at 17,900 of 18,200
+  // (margin 300) because this PR added no stylesheet rule at all — the seam and
+  // the empty-state notice reuse existing classes and inline styles for exactly
+  // that reason. `CHUNK_COUNT` is unchanged at 69: the new leaf minted NO
+  // chunk, it inlined into the entry group, because NavTop is eager and a
+  // module the entry imports lands in the entry.
+  '/about/sources':          98_000, //  95,027
 };
 
 /* 35 -> 53 in v6.1.5 PR B: splitting the 21 simulators into per-module chunks

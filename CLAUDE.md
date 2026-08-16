@@ -28,7 +28,10 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **82** `verify-*.mjs` files (`app/` ×74, `app/scripts/` ×1, `api/` ×7) — **78 gates**
+- Verification: **83** `verify-*.mjs` files (`app/` ×75, `app/scripts/` ×1, `api/` ×7) — **79 gates**
+  (p3·17 added `verify-releases-dom.mjs`; recounted, never incremented, with the counting script
+  CONTROLLED against `bda0491` first, where it reproduces that commit's recorded
+  82 / 78 / 22 / 32 / 67 EXACTLY — which is what makes 83 / 79 / 22 / 33 / 68 here trustworthy.)
   (p3·16 added `verify-superstress.mjs`; recounted, never incremented. The CI figures below were
   recounted with it AND the counting script was CONTROLLED against `e5eae16` first, where it
   reproduces that commit's recorded 66 / 22 / 31 exactly — an uncontrolled recount is how p2·7b
@@ -51,12 +54,12 @@ chain and market data.
   v6.1.4 split
   `makeReporter` out of the former so an offline `api/` gate could use
   `fixture()` without a browser-automation library in its module graph). Most drive headless Chromium via Playwright; the rest
-  are offline source assertions. `.github/workflows/ci.yml` runs **67 distinct files** on
+  are offline source assertions. `.github/workflows/ci.yml` runs **68 distinct files** on
   PRs to `main` **and, since p3·12d, on every push to `main`** — 62 until p3·14 wired
   `verify-bands` into `verify:static` (now **22** members) and p3·14b added
   `api/verify-history.mjs` as its own named step, then p3·14b's `verify-stream.mjs`
-  into `verify:e2e`, then p3·15's `verify-peers` and p3·16's `verify-superstress`
-  (**32** members).
+  into `verify:e2e`, then p3·15's `verify-peers`, p3·16's `verify-superstress` and p3·17's
+  `verify-releases-dom` at position 16 (**33** members).
   **THIS NUMBER READ 65 WHILE THE STATUS SECTION BELOW READ 66, AND BOTH PREDATE p3·16** —
   the same two-figures-disagreeing defect this file records against itself twice already,
   recurring because a recount updated one place and not the other. Measured 66 at `e5eae16`
@@ -394,7 +397,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **67 of the 78** gates on every PR to `main` and on every push to `main`
+- CI runs **68 of the 79** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **7**
   are wired to nothing. This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -563,6 +566,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 | Visual system | `styles.css` declares `@layer reset, base, theme, components, utilities;` once — layer order, not the `styles.css` → `styles-ambient.css` → `styles-theme.css` → `styles-motion.css` → `styles-legibility.css` import order in `main.tsx`, decides the cascade (v6.1.2; the fifth sheet landed in v6.1.3) |
 | Device tiering | `app/src/design/deviceTier.ts` (`high\|mid\|low`, stamped pre-paint) |
 | Expand/collapse rows | `app/src/design/Disclosure.tsx` — a LEAF, never re-exported through `design/primitives.tsx` (which is EAGER, so anything added there is paid for on first paint by all 14 routes). Shape is `pages/monero/legality/JurisdictionRow.tsx`: controlled `open`/`onToggle`, two `useId()`s, `[aria-expanded]` as the style hook. **One deliberate deviation** — the panel is rendered ALWAYS and toggled with `hidden`, where the model mounts it conditionally. Measured, not preferred: with the conditional shape ZERO panels appear in the prerendered document, so a JS-off reader gets buttons that cannot open; rendered always, `index.html`'s `<noscript>` block reveals them (same mechanism as `.nav-noscript`) and 3,316 chars of detail are readable with scripting off. `aria-controls` also resolves in BOTH states rather than half of them. No height animation at any motion preference, so the reduced-motion path and the default path are one path |
+| Release identity | `app/src/data/siteVersion.ts` — `SITE_ERA` + `SITE_PR`, with `SITE_VERSION` DERIVED from them so the label and the number cannot disagree. A true LEAF (imports nothing): `NavTop` is eager, so anything added here is paid for by all 14 routes at first paint. Release PROSE lives in `data/releases.ts`, which must stay lazy — its only value importer is `SourcesPage`, and `verify-releases.mjs` §7 asserts that both ways. The staleness check is `logMax <= SITE_PR <= logMax + 1` against `handoffs/LOG.md`: the authority must MOVE ON ITS OWN (an equality gate between two hand-maintained constants detects disagreement, not staleness) and must be a committed FILE (CI checks out at depth 1) |
 | Educational simulators | `app/src/protocols/**` — the only place `Math.random()` is allowed |
 
 **If a feature needs a third party**, it goes through a function in `api/`, never the browser:
@@ -570,6 +574,107 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-16**: p3·17 "SOURCES RELEASE NOTES" (app/ + api/ + .github/) — the site advertised
+  TWO different wrong versions one page apart, and the feed that would have fixed one died in
+  July. Small surgical PR; the discipline is in what the measurement overturned.
+  **THE PROMPT'S PREFERRED OPTION WAS NOT BUILDABLE, AND ONE COMMAND SHOWED IT.** The brief
+  proposed parsing merge commits: "every merge since #164 is `Merge pull request #NNN` with a
+  descriptive branch/PR title". Measured with `git log -1 --format=%B` over the last four merges:
+  **that one line IS the entire message — there is no body**, and the branch half is a random
+  slug (`claude/prompt-attached-8fdjhd`). A merge parser yields
+  `#185 — claude/prompt-attached-8fdjhd`: noise rendered as a release note. **The PR TITLE is not
+  in the git object at all.** It is one API call away — the pulls LIST endpoint returns number +
+  title + `merged_at` + `html_url` in ONE request (strictly cheaper than the commits path's
+  up-to-three pages), and the titles are real prose. So identity is PR-keyed and the feed is live
+  again, rather than the honest tombstone option (c) that the brief allowed as a floor.
+  **`merged` IS A LIAR ON THAT ENDPOINT AND THE FIXTURE PINS IT.** Measured against this repo:
+  the pulls LIST endpoint reports `"merged": false` on #178–#185, every one of which is merged
+  and carries a real `merged_at`. A `mapPulls` keyed on `merged` returns **[] against a perfectly
+  healthy upstream** — an honest-LOOKING empty produced by a wrong predicate, which is worse than
+  a loud failure because nothing distinguishes it from "nothing has shipped". The break test M6
+  reproduces exactly that: 2 kept → 1.
+  **THE DEFECT WAS SHARPER THAN THE BRIEF SAID, AND IT WAS A SELF-CONTRADICTION ON SCREEN.** The
+  header ternary had THREE branches for a FOUR-state feed. `releases` is `ReleaseNote[] | null`
+  and **an empty array is truthy**, so with the upstream answering successfully and returning
+  nothing — every day since July — `releaseState` was `live`, the second branch fired, and the
+  page rendered **`github commits · 0 releases` directly above five curated rows**. It claimed
+  nothing and displayed five things, in one screenful, with every offline assertion green. Proven
+  executably before a line was edited, then reproduced in a browser by break test M7.
+  **THE GATE'S SHAPE IS THE POINT, AND PLAIN EQUALITY WOULD HAVE BEEN USELESS.**
+  **AN EQUALITY GATE BETWEEN TWO HAND-MAINTAINED CONSTANTS DETECTS DISAGREEMENT, NOT STALENESS —
+  AND STALENESS IS THE DEFECT.** Pinning `SITE_VERSION` to `package.json`'s `version` (the obvious
+  move) would have been GREEN for all twenty-two releases this rotted through: both sides simply
+  sit still together. The authority has to MOVE ON ITS OWN, so it is `handoffs/LOG.md`, which
+  gains a line per task carrying its PR URL. **It also has to be a committed FILE, not git
+  history: `ci.yml` uses `actions/checkout@v4` with no `fetch-depth`, which defaults to depth 1**,
+  so a `git log`-derived authority is unreadable in CI. Invariant: `logMax <= SITE_PR <= logMax+1`
+  — the label may LEAD by one (you bump it in the commit that opens the PR, before its own LOG
+  line exists) but may never LAG. Plain equality would be red for most of every PR's life, and
+  this file already records where that leads. The `+1` closes the other loophole: without it
+  `SITE_PR = 99999` satisfies "never behind" forever. Both bounds break-tested (M1, M2).
+  **MY OWN GATE COULD NOT FAIL A BUILD, AND ONLY THE EXIT CODE SAID SO.** The first
+  `verify-releases-dom.mjs` ended with a bare `R.finish();`. `makeReporter().finish()` RETURNS an
+  exit code and does not call `process.exit`, so the gate printed `❌ verify-releases-dom:
+  FAILURES — 29 passed · 4 failed` **and exited 0** — in an `&&` chain, a gate that cannot fail
+  the build. A sweep found it was the **only bare `R.finish();` in the suite**; all 50+ other
+  reporter-based gates already do `process.exit(R.finish())`. Caught because the break harness
+  asserted on the EXIT CODE rather than on the presence of a ❌ marker. Reviewing the assertions
+  would never have found it — every one was correct and correctly red. The file-level twin of
+  "break-testing a FILE proves the file can go red and says nothing about any assertion in it".
+  **THE EAGER SPLIT IS A RARE NEGATIVE DELTA, AND THE ROUTE THAT GREW IS THE POINT.** `NavTop`
+  imported `SITE_VERSION` from the module holding the five curated notes, so ~600 B of editorial
+  prose shipped in the entry chunk on all fourteen routes — each string greping to exactly **1**
+  in the served entry at `bda0491`, and to **0** after. Fourth application of the leaf lesson
+  (canvasColor → repoPulse → data.ts → here). `eagerJsRaw` **263,385 → 262,360 (−1,025)**, and
+  thirteen routes got ~470 B gzip cheaper including `/`, the LCP route. `/about/sources` went UP,
+  to 95,027 against a 95,000 ceiling — **because the cost moved to the one route that actually
+  renders the prose**. Raised 95,000 → **98,000** (margin 2,973), red-then-green on the FINAL
+  tree, attribution paired by stem MULTIPLICITY against a `bda0491` build in an ISOLATED WORKTREE:
+  SourcesPage +2,281 · index[1] −1,025 · useCachedFeed −4, so lazy +2,277 and eager −1,025,
+  **residual ZERO on both halves**. `CHUNK_COUNT` unchanged at 69 — the leaf minted NO chunk, it
+  inlined into the entry group, because NavTop is eager and a module the entry imports lands in
+  the entry. **That row's own comment was STALE BY 7,990 B before this PR began** (it read 86,581
+  against a measured 94,571, implying 8,419 of slack where there were **429** — the tightest row
+  in the table); same defect p3·14 recorded against `/live/network`, re-baselined here.
+  **NOT RAISED because not crossed, said out loud: `lazyJsRaw` margin is 894 B.** `cssGz` is
+  byte-identical at 17,900/18,200 (margin 300) because this PR added **no stylesheet rule at all**
+  — the seam and the empty-state notice reuse existing classes and inline styles for that reason.
+  **A POSITIVE CONTROL THAT READ 0, AND THE INSTRUMENT WAS WRONG, NOT THE CODE.** Grepping the
+  entry chunk for the new label `v6 · #186` returned **0**, which reads exactly like "the label
+  did not ship". It is DERIVED (`${SITE_ERA} · #${SITE_PR}`) and esbuild keeps the template
+  literal, so `v6"` and `#${` sit apart in the bundle and the concatenation exists only at
+  runtime. The decisive instrument is the PRERENDERED HTML, where it appears once. A grep for a
+  computed string is not a grep for a rendered one.
+  **TWO DEFECTS FOUND BY LOOKING, one of them mine and invisible to all 33 new assertions.**
+  (1) The era seam was drawn in `var(--y-50)` — the warning colour `FeedEmpty` uses, which is
+  right THERE and wrong here: the seam is neither data nor a warning but editorial annotation, and
+  in that colour it was the **loudest text in the panel**, competing with the `.acc` version ids
+  that on this site mean crypto data and nothing else. (2) The probe's first screenshots were of
+  the page TOP: `window.scrollTo` is a no-op on desktop because `.art` is `height:100vh;
+  overflow:hidden` and `main.main` is the scroller — this file's own recorded trap, walked into
+  again. The shutter now refuses to fire unless the section is measurably on screen.
+  Gates: **83 files / 79 gates**, RECOUNTED with the script **CONTROLLED against `bda0491`
+  first**, where it reproduces that commit's 82 / 78 / 22 / 32 / 67 exactly. `verify:static`
+  **22** unchanged · `verify:e2e` **32 → 33** (`verify-releases-dom` at **position 16**, beside
+  the other page gates — never the tail, because the tail carries the vitals-last inversion) ·
+  CI distinct **67 → 68**. `ci.yml`'s e2e step title updated 32 → 33; it is a hand-copied literal
+  nothing derives and it has shipped stale before. `verify-releases` **15 → 38** assertions,
+  `verify-feeds` **+20**, `verify-releases-dom` **33**.
+  Nine break tests, each restore verified against the COMMITTED BLOB with a bracketed marker
+  sweep: **M1** stale SITE_PR → 1 red · **M2** SITE_PR 99999 → 1 red · **M3** LOG authority
+  unreadable → the non-vacuity floor fires with 3 reds (**and "not BEHIND" stays GREEN, because
+  `186 >= -Infinity`** — which is exactly why the floor is asserted FIRST) · **M4** NavTop
+  re-imports the prose module → 3 reds · **M5** eraSeamIndex never returns −1 → 5 reds · **M6**
+  `mapPulls` keyed on `merged` → 5 reds · **M7** the pre-fix header restored → 4 reds including
+  `github commits · 0 releases` · **M8** the seam drawn unconditionally → the ABSENCE assertion
+  reds · **M9** the empty notice removed → 3 reds. Rebuilt between restore and re-measure every
+  time — the break harness restores SOURCE and leaves the MUTATED BUILD on disk.
+  **NOT FIXED, and named**: the vitals-last `verify:e2e` inversion (#184 F4) is untouched —
+  reordering an `&&` chain changes what masks what for every member. `src=commits` is KEPT and
+  dormant by design, still unit-gated, and lights up again if `vX.Y.Z` stamps ever return. The ten
+  `/future#<id>` palette anchors are still hollow. **No human has seen the rendered result in a
+  browser** — read from screenshots.
 
 - **2026-08-16**: p3·16 "THE SUPERSTRESS HUB" (app/ + .github/) — `/operate/superstress`, the
   **FOURTEENTH** route and the first minted since the v6.1.6 restructure. The page is a hub for
