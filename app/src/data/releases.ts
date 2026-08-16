@@ -1,26 +1,55 @@
 /**
- * data/releases.ts — single source of truth for the site's version identity
- * and its release-notes list.
+ * data/releases.ts — the release-notes list on the Sources page.
  *
- * Two things live here on purpose:
+ * `CURATED` + `mergeReleases`. `CURATED` is the five hand-written entries that
+ * used to be a hardcoded `RELEASES` array on SourcesPage.tsx (moved here
+ * verbatim, including their typographic quotes/dashes) and now serve two
+ * roles: an editorial override on top of the live feed (curated prose reads
+ * better than a raw upstream subject), and the offline fallback when GitHub is
+ * unreachable ("last-good, never synthesis" — see README.md and
+ * useCachedFeed.ts's header comment).
  *
- *  1. `SITE_VERSION` — the build's own version label (NavTop). This is
- *     deliberately STATIC, never feed-derived: the chrome's version badge is
- *     build identity. Deriving it from a live GitHub feed would let a stale
- *     deployment advertise a version whose code isn't actually in the bundle
- *     the visitor is running.
+ * ── THIS MODULE MUST STAY LAZY ──────────────────────────────────────────
+ * Its only importer is `pages/SourcesPage.tsx`, which is `React.lazy`. Keep it
+ * that way. `SITE_VERSION` used to live here, and because `NavTop` (eager)
+ * imports it, all five curated notes shipped in the entry chunk on every
+ * route — measured at `bda0491` as five prose strings each greping to exactly
+ * 1 in the served `dist/assets/index-*.js`. p3·17 moved the version identity
+ * to `data/siteVersion.ts`; importing this module from anything eager puts the
+ * prose straight back into first paint.
  *
- *  2. `CURATED` + `mergeReleases` — the release-notes list on the Sources
- *     page. `CURATED` is the five hand-written entries that used to be a
- *     hardcoded `RELEASES` array on SourcesPage.tsx (moved here verbatim,
- *     including their typographic quotes/dashes) and now serve two roles:
- *     an editorial override on top of the live `commits` feed (curated prose
- *     reads better than a raw commit subject), and the offline fallback when
- *     GitHub is unreachable ("last-good, never synthesis" — see README.md
- *     and useCachedFeed.ts's header comment).
+ * This module deliberately RE-EXPORTS NOTHING from that leaf. A re-export
+ * would be free at runtime (this module is lazy, the leaf is already in the
+ * entry) but it creates a real import edge, and `verify-releases.mjs` loads
+ * these sources through Node's type-stripping loader, where an extensionless
+ * `./siteVersion` specifier does not resolve — Vite's resolver is more
+ * forgiving than Node's, so an edge that builds fine can still break the gate.
+ * Nothing needed the re-export: the only two consumers of the version identity
+ * are `NavTop` (the leaf) and this gate (both modules, explicitly).
  */
 
-export const SITE_VERSION = "v6.0.5";
+/** True for a PR-keyed release id (`#186`), false for a version-keyed one
+ *  (`v5.0.20`).
+ *
+ *  Lives HERE and not in the `siteVersion.ts` leaf on purpose: that leaf is
+ *  reachable from the eager entry via NavTop, so everything added to it is paid
+ *  for by all fourteen routes at first paint. Only this module and its gate
+ *  need the predicate, and both are lazy/offline.
+ *
+ *  ONE definition on the client, shared by the merge and the render's era seam,
+ *  so "which era is this entry from?" cannot be answered two slightly different
+ *  ways. The SERVER builds the same shape independently in `api/feeds.js`
+ *  (`mapPulls`) — a separate runtime that cannot import this, so the two are
+ *  held together by `verify-releases.mjs` asserting the shape rather than by a
+ *  shared symbol. */
+export function isPrKeyed(v: string): boolean {
+  return /^#\d+$/.test(v);
+}
+
+/** The release id for a pull request number. */
+export function prReleaseId(n: number): string {
+  return `#${n}`;
+}
 
 export interface ReleaseNote {
   v: string;
@@ -66,6 +95,20 @@ export const CURATED: ReadonlyArray<{ v: string; note: string }> = [
  *      this feed existed.
  *   5. Never semver-sorted, anywhere in this function.
  *   6. Output never repeats a `v` (the render keys rows by version).
+ *
+ * ── TWO ERAS, ONE LIST (p3·17) ──────────────────────────────────────────
+ * `auto` is now PR-keyed (`#186`) and `CURATED` is version-keyed (`v5.0.20`).
+ * All six rules above are unchanged and still hold, because none of them reads
+ * the SHAPE of `v` — they only compare it. Rule 2 (curated prose overrides a
+ * shared version) simply never fires across the two eras, since a `#`-id and a
+ * `v`-id can never collide; the existing assertions that pin rule 2 stay green
+ * by exercising it within one era.
+ *
+ * What the eras DO require is that the boundary be visible. `mergeReleases`
+ * dedupes but does not detect gaps, and the jump from `#186` to `v5.0.20`
+ * skips the unversioned #146–#185 era AND the whole v6.0.x–v6.1.9 era. See
+ * `eraSeamIndex` below — the render draws a labelled discontinuity there
+ * rather than letting a reader infer that `v5.0.20` shipped just before `#186`.
  */
 export function mergeReleases(
   auto: ReleaseNote[] | null,
@@ -91,4 +134,29 @@ export function mergeReleases(
   }
 
   return merged;
+}
+
+/**
+ * Index of the first version-keyed entry that follows at least one PR-keyed
+ * entry — i.e. where the era changes — or `-1` when the list is all one era.
+ *
+ * Returning `-1` for a single-era list is the whole point: with the automatic
+ * feed dead the list is curated-only, and drawing a "versioned releases below"
+ * divider above the FIRST row would announce a discontinuity that is not there.
+ * A seam marker that renders unconditionally is decoration; this one is a
+ * claim, so it may only appear when both eras are actually present.
+ *
+ * Scans for the transition rather than assuming the list is sorted era-first:
+ * `mergeReleases` walks `auto` in server order and appends curated-only
+ * entries after, so era-first is TRUE today — but it is a property of the
+ * caller, not of this function, and a lookup that quietly depends on it would
+ * be wrong the day a curated note lands inside the fetched window.
+ */
+export function eraSeamIndex(list: ReadonlyArray<{ v: string }>): number {
+  let sawPr = false;
+  for (let i = 0; i < list.length; i++) {
+    if (isPrKeyed(list[i].v)) { sawPr = true; continue; }
+    if (sawPr) return i;
+  }
+  return -1;
 }

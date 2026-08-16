@@ -242,11 +242,20 @@ export function useMoneroBlog(n = 5): { posts: BlogPost[] | null; at: number | n
 
 export function useReleaseNotes(n = 12): { releases: ReleaseNote[] | null; at: number | null; state: FeedState } {
   // `n` changes the payload's length, so — same rule as useMrlIssues/
-  // useMoneroBlog — it's folded into the id. A fixed "commits.releases" id
+  // useMoneroBlog — it's folded into the id. A fixed "pulls.releases" id
   // would let a caller that switches `n` hit a cache entry sized for a
   // different `n` and silently render the wrong item count for up to 24h.
-  const { data, at, state } = useCachedFeed<ReleaseNote[]>(`commits.releases.${n}`, () =>
-    getJSON<FeedItemsResponse<ReleaseNote>>(`${FEED_PROXY}?src=commits&n=${n}`).then((r) =>
+  //
+  // p3·17: src=commits -> src=pulls, and the cache id moves WITH it. The id
+  // is part of the schema, not decoration: a returning visitor holds up to 24h
+  // of `commits.releases.12` entries whose payload is `[]` — the dead feed's
+  // last word — and reusing that id would serve the empty commits answer in
+  // place of the live pulls one for a day. A new id orphans the stale entry
+  // instead (`useCachedFeed`'s TTL sweeps it), which is the same reasoning
+  // p3·12 applied when it pruned the three dead `mh:v1:` kinds rather than
+  // bumping the whole schema.
+  const { data, at, state } = useCachedFeed<ReleaseNote[]>(`pulls.releases.${n}`, () =>
+    getJSON<FeedItemsResponse<ReleaseNote>>(`${FEED_PROXY}?src=pulls&n=${n}`).then((r) =>
       Array.isArray(r?.items) ? r.items : null,
     ),
   );

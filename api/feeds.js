@@ -40,6 +40,21 @@
 //       notes" are parsed from versioned commit subjects ("vX.Y.Z — note")
 //       in this repo's own commit history. No caller-supplied repo param —
 //       SELF_REPO is a fixed module constant, so GH_ALLOWED does not apply.
+//     → DORMANT since July 2026, and kept deliberately. Measured at bda0491:
+//       zero of the last 60 commit subjects parse, so this path returns [].
+//       It is not dead code — it is the path that lights up again if the repo
+//       ever resumes `vX.Y.Z — subject` stamps, its transform is still unit-
+//       gated in verify-feeds.mjs, and deleting it would throw away a working
+//       parser for a convention that may return. The SITE consumes src=pulls.
+//   GET /api/feeds?src=pulls&n=12
+//     → { source, fetchedAt, repo, items: [{ v, note, date, url }] }
+//     → p3·17: PR-KEYED release notes — `v` is "#186", `note` is the pull
+//       request TITLE. This is what the project actually ships; see
+//       app/src/data/siteVersion.ts for why merge-commit parsing was rejected
+//       (the merge commits carry no body, and the branch half is a random
+//       slug). ONE upstream request, versus up to MAX_PAGES for src=commits.
+//       No caller-supplied repo param — SELF_REPO again, so GH_ALLOWED does
+//       not apply here either.
 
 const FEEDS = {
   getmonero: "https://www.getmonero.org/feed.xml",
@@ -232,6 +247,74 @@ function mapCommits(json, cap) {
   }
 
   return items;
+}
+
+/* Pure transform: GitHub pulls-list API JSON → release-note items[].
+   Sibling of mapCommits, not a replacement — see the src=pulls block in the
+   header for why the commit path could not be made to work.
+
+   Never sorts. Upstream is asked for sort=updated&direction=desc and the
+   merged-at order is the truthful "what shipped when" sequence; re-sorting
+   would invent an ordering the caller didn't ask for (mapCommits' own rule).
+
+   THE MERGED TEST IS `merged_at`, NOT `merged`. Measured against this repo's
+   own API on 2026-08-16: the pulls LIST endpoint returns `"merged": false` on
+   PRs #178-#185, every one of which is demonstrably merged and carries a real
+   `merged_at`. `merged` is only populated reliably on the single-PR endpoint.
+   Keying on `merged` would have returned an EMPTY list against a healthy
+   upstream — an honest-looking empty state produced by a wrong predicate,
+   which is worse than a loud failure because nothing distinguishes it from
+   "nothing has shipped".
+
+   An unmerged or still-open PR is not a release and must never appear: a
+   closed-without-merging PR shipped nothing. Capped by number of KEPT items,
+   the same contract as mapCommits. */
+function mapPulls(json, cap) {
+  const arr = Array.isArray(json) ? json : [];
+  const limit = Number.isInteger(cap) && cap > 0 ? cap : RELEASES_CAP;
+  const items = [];
+  const seen = new Set();
+
+  for (const p of arr) {
+    if (items.length >= limit) break;
+
+    const mergedAt = typeof p?.merged_at === "string" ? p.merged_at : "";
+    if (!mergedAt) continue; // open, or closed without merging — shipped nothing
+
+    const n = Number(p?.number);
+    if (!Number.isInteger(n) || n <= 0) continue;
+
+    const v = "#" + n;
+    if (seen.has(v)) continue; // defensive — GitHub does not repeat numbers
+    seen.add(v);
+
+    const title = decodeEntities(String(p?.title || "")).trim();
+    if (!title) continue; // a titleless release note is not a release note
+
+    items.push({
+      v,
+      note: title,
+      date: mergedAt.slice(0, 10),
+      url: typeof p?.html_url === "string" ? p.html_url : "",
+    });
+  }
+
+  return items;
+}
+
+/* Self-repo merged pull requests → release-note items. ONE upstream call:
+   per_page=100 against a cap of at most 20 means page 1 always satisfies it,
+   so unlike getSelfCommits there is no pagination loop to bound. Sorted by
+   `updated` rather than `created` so a recently-merged PR cannot be pushed off
+   page 1 by 100 newer open ones. */
+async function getSelfPulls(cap) {
+  const limit = Number.isInteger(cap) && cap > 0 ? cap : RELEASES_CAP;
+  const r = await fetch(
+    `https://api.github.com/repos/${SELF_REPO}/pulls?state=closed&sort=updated&direction=desc&per_page=100`,
+    { headers: GH_HEADERS, signal: AbortSignal.timeout(8000) }
+  );
+  if (!r.ok) throw new Error("github pulls HTTP " + r.status);
+  return mapPulls(await r.json(), limit);
 }
 
 async function getMoneroBlog(n) {
@@ -435,6 +518,23 @@ module.exports = async (req, res) => {
       }));
     }
 
+    if (src === "pulls") {
+      // Same envelope as src=commits — repo-stamped, not the generic items
+      // envelope — so the two release sources are interchangeable to the
+      // client and swapping between them needs no client-side reshaping.
+      const rawN = parseInt(req.query?.n, 10);
+      const cap = Number.isFinite(rawN) ? Math.min(Math.max(rawN, 1), 20) : RELEASES_CAP;
+      const items = await getSelfPulls(cap);
+      res.setHeader("Cache-Control", `s-maxage=${DAY}, stale-while-revalidate=${DAY}`);
+      res.statusCode = 200;
+      return res.end(JSON.stringify({
+        source: src,
+        fetchedAt: new Date().toISOString(),
+        repo: SELF_REPO,
+        items,
+      }));
+    }
+
     let items;
     if (src === "getmonero") {
       items = await getMoneroBlog(n);
@@ -450,7 +550,7 @@ module.exports = async (req, res) => {
       items = await getXPosts(handle, n);
     } else {
       res.statusCode = 400;
-      return res.end(JSON.stringify({ error: "unknown src", allowed: ["getmonero", "mrl", "ghrepo", "x", "commits"] }));
+      return res.end(JSON.stringify({ error: "unknown src", allowed: ["getmonero", "mrl", "ghrepo", "x", "commits", "pulls"] }));
     }
 
     // Cache at the edge for 24h; serve stale for another 24h while
@@ -478,3 +578,4 @@ module.exports.canonicalRepo = canonicalRepo;
 module.exports.SELF_REPO = SELF_REPO;
 module.exports.parseCommitVersion = parseCommitVersion;
 module.exports.mapCommits = mapCommits;
+module.exports.mapPulls = mapPulls;

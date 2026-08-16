@@ -16,7 +16,7 @@ import { Card, Crumbs, Provenance, NodeProvenance } from "@/design/primitives";
 import type { ProvSource } from "@/design/primitives";
 import { Swap, SkeletonRows } from "@/design/Skeleton";
 import { useReleaseNotes } from "@/data/useCachedFeed";
-import { mergeReleases } from "@/data/releases";
+import { mergeReleases, eraSeamIndex } from "@/data/releases";
 import { useApiStatus } from "@/data/useApiStatus";
 import { useMoneroLive } from "@/data/DataContext";
 import { FEED_KEYS, FEED_ENDPOINT } from "@/data/feed-status";
@@ -58,6 +58,14 @@ export function SourcesPage() {
   const { hash } = useLocation();
   const { releases, state: releaseState } = useReleaseNotes(12);
   const mergedReleases = mergeReleases(releases);
+  /* "The feed answered and produced nothing" — distinct from "unreachable"
+     (releaseState === "fail") and from "still loading" (releases === null).
+     Computed once here so the header label and the body cannot disagree. */
+  const autoEmpty = releases !== null && releases.length === 0;
+  /* -1 when the list is single-era, which is exactly the state above: the
+     divider is a claim about a discontinuity, so it must not render when
+     there is only one era present. */
+  const seamAt = eraSeamIndex(mergedReleases);
 
   // D0891 · configuration (from /api/status) vs. observation (from the live
   // feed this browser has actually been polling). Two different hooks, two
@@ -285,23 +293,78 @@ export function SourcesPage() {
           // ("curated list · github unreachable") needs 215px, and at 390px it only
           // gets 136 — so the nowrap pushed the page 34px wide. It buys nothing
           // above 768px, where the label fits on one line anyway.
+          // p3·17: this ternary had THREE branches for a FOUR-state feed, and
+          // the state the site was ACTUALLY IN fell through the wrong one.
+          // MEASURED, not reasoned: `releases` is `ReleaseNote[] | null`, and
+          // an EMPTY ARRAY IS TRUTHY — so when the upstream answered
+          // successfully with zero parseable entries (every day since July),
+          // `releaseState` was "live", the second branch fired, and the header
+          // read "github commits · 0 releases" DIRECTLY ABOVE the five curated
+          // rows `mergeReleases` rule 4 had just returned. The page
+          // contradicted itself in one screenful: it claimed nothing and
+          // displayed five things.
+          //
+          // The missing state is "the feed is alive and produced nothing",
+          // which is not "unreachable" and is not "loading". It gets its own
+          // branch, and `autoEmpty` is computed once and reused by the body
+          // below so the label and the list cannot disagree again.
           right={
             <span className="mono dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.02em" }}>
               {releaseState === "fail"
-                ? "curated list · github unreachable"
-                : releases
-                  ? `github commits · ${releases.length} releases`
-                  : "fetching github commits…"}
+                ? "curated archive · github unreachable"
+                : releases === null
+                  ? "fetching github pulls…"
+                  : autoEmpty
+                    ? "curated archive · no merged pull requests returned"
+                    : `github pulls · ${releases.length} releases`}
             </span>
           }
         >
           <p className="mono dim2" style={{ margin: "0 0 4px", fontSize: "var(--fs-label)", lineHeight: 1.6 }}>
             Ordered by ship date, not version number — a point release such as v5.1.0 can land
-            between v5.0.9 and v5.0.8, which is expected, not a bug.
+            between v5.0.9 and v5.0.8, which is expected, not a bug. Recent entries are keyed by
+            pull request; older ones by version, from the era when this site still stamped them.
           </p>
+
+          {/* The honest-empty state, per the house vocabulary (`FeedEmpty` in
+              pages/future/repoPulse.tsx). Written inline rather than imported,
+              and the reason is measured: repoPulse.tsx sits in a chunk whose
+              importers are exactly FuturePage and TrustedPeersPage, so importing
+              it here adds a third importer group to a route with 429 B of gzip
+              margin — the tightest row in verify-bundle's table. Rollup chunks
+              per MODULE, so the import would drag RepoPulseReadout in too. The
+              shared thing here is a six-line dashed box and a sentence pattern,
+              not a fact that can drift; the endpoint and the wording differ. */}
+          {autoEmpty ? (
+            <div
+              className="mono"
+              data-release-feed="empty"
+              style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)", border: "1px dashed var(--ink-20)", padding: "10px 12px", margin: "10px 0 4px", overflowWrap: "anywhere" }}
+            >
+              <code>/api/feeds?src=pulls</code> answered, and returned no merged pull requests —
+              so nothing below is automatic. What follows is the curated archive, written by hand.
+            </div>
+          ) : null}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            {mergedReleases.map((r) => (
-              <div key={r.v} style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "12px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}>
+            {mergedReleases.map((r, i) => (
+              <React.Fragment key={r.v}>
+              {/* The era seam (§0.6). `mergeReleases` dedupes but does not
+                  detect gaps, and the jump from a pull-request id to v5.0.20
+                  skips two whole eras — so without this the list reads as if
+                  v5.0.20 shipped immediately before the newest PR. Rendered
+                  only when BOTH eras are present; see eraSeamIndex. */}
+              {i === seamAt ? (
+                <div
+                  data-release-seam=""
+                  className="mono dim2"
+                  style={{ fontSize: "var(--fs-label)", lineHeight: 1.6, padding: "14px 0 10px", borderTop: "1px solid var(--rule)", color: "var(--y-50)" }}
+                >
+                  Above: keyed by pull request. Below: keyed by version, ending at v5.0.20. The
+                  releases between — the rest of v5.0.x through v6.1.x, and the pull requests that
+                  shipped with no version stamp at all — are not listed here.
+                </div>
+              ) : null}
+              <div style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "12px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                   {r.url ? (
                     <a
@@ -323,6 +386,7 @@ export function SourcesPage() {
                   {r.also ? <span className="mono dim2"> · +{r.also} more commits</span> : null}
                 </span>
               </div>
+              </React.Fragment>
             ))}
           </div>
         </Section>

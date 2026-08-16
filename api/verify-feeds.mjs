@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const require = createRequire(import.meta.url);
-const { parseAtom, parseRepoParam, mapRepo, mapIssues, latestIssueAt, GH_ALLOWED, canonicalRepo, SELF_REPO, parseCommitVersion, mapCommits } = require('./feeds.js');
+const { parseAtom, parseRepoParam, mapRepo, mapIssues, latestIssueAt, GH_ALLOWED, canonicalRepo, SELF_REPO, parseCommitVersion, mapCommits, mapPulls } = require('./feeds.js');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -306,6 +306,73 @@ ok(!/GH_ALLOWED/.test(
   readFileSync(new URL('./feeds.js', import.meta.url), 'utf8')
     .split('if (src === "commits")')[1].split('if (src ===')[0]),
   'the src=commits branch never consults GH_ALLOWED');
+
+/* ── mapPulls (p3·17) ──────────────────────────────────────────────────
+   The fixture mirrors a REAL response measured against this repo on
+   2026-08-16, and its most important property is deliberately hostile:
+   `merged` reads FALSE on rows that carry a real `merged_at`. That is not an
+   invented edge case — the pulls LIST endpoint really does that, on every one
+   of #178-#185. A mapPulls keyed on `merged` would return [] against a
+   perfectly healthy upstream, which is why the shape is pinned here. */
+const pullsFixture = [
+  // merged, and `merged` is the upstream's own misleading false
+  { number: 185, title: 'p3·16 — the Superstress hub: /operate/superstress, the 14th route',
+    merged: false, merged_at: '2026-08-16T18:19:56Z', state: 'closed',
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/185' },
+  // merged, and the title carries an HTML entity exactly as upstream sends it
+  { number: 180, title: 'p3·12d — vitals calibration: main&#39;s missing baseline',
+    merged: false, merged_at: '2026-08-15T11:52:59Z', state: 'closed',
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/180' },
+  // closed WITHOUT merging — shipped nothing, must never appear
+  { number: 179, title: 'abandoned experiment', merged: false, merged_at: null,
+    state: 'closed', html_url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/179' },
+  // still open — not a release
+  { number: 178, title: 'work in progress', merged: false, merged_at: null,
+    state: 'open', html_url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/178' },
+  // titleless — a release note with no note is not a release note
+  { number: 177, title: '', merged: false, merged_at: '2026-08-14T10:00:00Z',
+    state: 'closed', html_url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/177' },
+  // defensive: GitHub does not repeat numbers, but the render keys by `v`
+  { number: 185, title: 'a duplicate that must be dropped', merged: true,
+    merged_at: '2026-08-16T18:19:56Z', state: 'closed',
+    html_url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/185' },
+];
+
+const mappedPulls = mapPulls(pullsFixture);
+ok(mappedPulls.length === 2,
+  `mapPulls keeps only merged, titled, unique PRs (got ${mappedPulls.length}, expected 2)`);
+ok(mappedPulls[0]?.v === '#185', 'mapPulls keys a release by "#" + PR number');
+ok(mappedPulls[0]?.note === 'p3·16 — the Superstress hub: /operate/superstress, the 14th route',
+  'mapPulls uses the PR TITLE as the note');
+ok(mappedPulls[0]?.date === '2026-08-16', 'mapPulls derives date as YYYY-MM-DD from merged_at');
+ok(mappedPulls[0]?.url === 'https://github.com/aqua-019/satoshis-vision-v1/pull/185',
+  'mapPulls maps html_url -> url');
+/* The assertion that would have caught a `merged`-keyed implementation: both
+   kept rows carry merged === false upstream. If the predicate ever moves to
+   `merged`, this reds at length 0 instead of silently serving an empty list. */
+ok(pullsFixture.filter((p) => p.merged === true && p.merged_at).length === 1
+   && mappedPulls.length === 2,
+  'mapPulls keys on merged_at, NOT on the unreliable `merged` flag (2 kept, only 1 has merged:true)');
+ok(!mappedPulls.some((r) => r.v === '#179' || r.v === '#178'),
+  'a closed-unmerged PR and an open PR are both excluded — neither shipped anything');
+ok(!mappedPulls.some((r) => r.v === '#177'), 'a titleless PR is excluded');
+ok(new Set(mappedPulls.map((r) => r.v)).size === mappedPulls.length,
+  'mapPulls never repeats a `v` (the render keys rows by it)');
+ok(mappedPulls[1]?.note === "p3·12d — vitals calibration: main's missing baseline",
+  'mapPulls decodes HTML entities in a title (&#39; -> ’apostrophe’), as upstream really sends them');
+ok(mapPulls(pullsFixture, 1).length === 1, 'mapPulls honours an explicit cap');
+ok(mapPulls(null).length === 0 && mapPulls(undefined).length === 0 && mapPulls({}).length === 0,
+  'mapPulls returns [] for a non-array payload rather than throwing');
+/* Order is upstream's. Re-sorting would invent an ordering the caller did not
+   ask for — mapCommits' own rule, restated here because it is easy to "fix". */
+ok(mappedPulls.map((r) => r.v).join(',') === '#185,#180',
+  'mapPulls preserves upstream order and never sorts');
+/* Same structural invariant the src=commits branch carries: no caller-supplied
+   repo reaches this path, so the allowlist cannot widen what it serves. */
+ok(!/GH_ALLOWED/.test(
+  readFileSync(new URL('./feeds.js', import.meta.url), 'utf8')
+    .split('if (src === "pulls")')[1].split('let items;')[0]),
+  'the src=pulls branch never consults GH_ALLOWED');
 
 if (failed > 0) {
   console.log(`\n${failed} check(s) FAILED`);

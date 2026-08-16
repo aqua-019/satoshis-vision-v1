@@ -5,9 +5,13 @@
 //
 // Run: node verify-releases.mjs   (Node >=22.18 strips the type annotations)
 
-import * as r from './src/data/releases.ts';
+import { readFileSync, readdirSync } from 'fs';
 
-const { SITE_VERSION, CURATED, mergeReleases } = r;
+import * as r from './src/data/releases.ts';
+import * as ver from './src/data/siteVersion.ts';
+
+const { CURATED, mergeReleases, isPrKeyed, prReleaseId, eraSeamIndex } = r;
+const { SITE_VERSION, SITE_ERA, SITE_PR } = ver;
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
@@ -69,8 +73,162 @@ ok(deepEq(mergeReleases([]), CURATED), 'mergeReleases([]) deep-equals CURATED');
   ok(merged.length === 1 && merged[0].note === 'first', 'first occurrence wins on a duplicate v in auto');
 }
 
-// 6) SITE_VERSION shape.
-ok(/^v\d+\.\d+\.\d+$/.test(SITE_VERSION), `SITE_VERSION "${SITE_VERSION}" matches vX.Y.Z`);
+// 6) SITE_VERSION shape — PR-KEYED since p3·17.
+//
+//    This assertion used to read /^v\d+\.\d+\.\d+$/ and it passed, every day,
+//    for the twenty-two releases the label was WRONG. That is the whole lesson
+//    of this section: a shape check proves the label is well-formed and says
+//    nothing at all about whether it is TRUE. Section 8 is the one with content.
+ok(/^v\d+ · #\d+$/.test(SITE_VERSION), `SITE_VERSION "${SITE_VERSION}" matches "vN · #NNN"`);
+ok(SITE_VERSION === `${SITE_ERA} · #${SITE_PR}`,
+  'SITE_VERSION is DERIVED from SITE_ERA/SITE_PR, so the label and the number cannot disagree');
+ok(Number.isInteger(SITE_PR) && SITE_PR > 0, `SITE_PR is a positive integer (got ${SITE_PR})`);
+
+// 6b) the era predicate and the id builder agree with each other and with the
+//     two shapes actually in the list. One definition, three consumers (the
+//     server transform, the render's seam, this gate).
+ok(isPrKeyed(prReleaseId(SITE_PR)), 'prReleaseId output is recognised by isPrKeyed');
+ok(isPrKeyed('#185') && !isPrKeyed('v5.0.20') && !isPrKeyed('#') && !isPrKeyed('185'),
+  'isPrKeyed accepts "#185" and rejects "v5.0.20", "#" and a bare number');
+ok(CURATED.every((c) => !isPrKeyed(c.v)),
+  'every CURATED entry is version-keyed — the two eras are disjoint, so rule 2 can never mis-fire across them');
+
+// 6c) eraSeamIndex — the divider is a CLAIM about a discontinuity, so it must
+//     not render when there is only one era present.
+ok(eraSeamIndex([]) === -1, 'eraSeamIndex([]) is -1');
+ok(eraSeamIndex(CURATED) === -1, 'eraSeamIndex over a curated-only list is -1 — no seam is drawn when the feed is empty');
+ok(eraSeamIndex([{ v: '#186' }, { v: '#185' }]) === -1, 'eraSeamIndex over a PR-only list is -1');
+ok(eraSeamIndex([{ v: '#186' }, { v: 'v5.0.20' }, { v: 'v5.0.19' }]) === 1,
+  'eraSeamIndex returns the index of the FIRST version-keyed entry after a PR-keyed one');
+ok(eraSeamIndex(mergeReleases([{ v: '#186', note: 'x', date: '2026-08-16' }])) === 1,
+  'a real merged list seams immediately after the auto entries');
+
+// ── 7) the split that keeps the curated prose out of first paint ────────
+//
+// `SITE_VERSION` moved to `data/siteVersion.ts` because `NavTop` is EAGER:
+// importing it from `data/releases.ts` put all five curated notes into the
+// entry chunk on every route (measured at bda0491 — each prose string grepped
+// to exactly 1 in the served `dist/assets/index-*.js`).
+//
+// Nothing else in this repo enforces that kind of invariant — CLAUDE.md records
+// the same rule for `design/canvasColor.ts` with the note that it "has no gate".
+// This is that gate, for this leaf. It is a SOURCE assertion rather than a
+// bundle one on purpose: verify-bundle measures bytes and would only notice
+// once a ceiling was crossed, and the tightest margin in that table is 429 B.
+{
+  const SRC = new URL('./src/', import.meta.url);
+  const files = [];
+  (function walk(dir) {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const u = new URL(e.name + (e.isDirectory() ? '/' : ''), dir);
+      if (e.isDirectory()) walk(u);
+      else if (/\.tsx?$/.test(e.name)) files.push(u);
+    }
+  })(SRC);
+  ok(files.length > 100, `source scan found ${files.length} .ts/.tsx files (non-vacuity floor)`);
+
+  // Strip block and line comments before matching — this file's own siblings
+  // NAME `@/data/releases` in prose explaining why they must not import it, and
+  // a comment-blind grep would count those as importers. (CLAUDE.md records
+  // this exact failure: "a grep that counts mentions is not a grep that counts
+  // imports".)
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  // Two objects, same source. `.test()` on a /g regex ADVANCES lastIndex, so
+  // sharing one instance between matchAll() and test() makes the second call's
+  // answer depend on the first's — a stateful predicate masquerading as a pure
+  // one. Cheap to avoid, invisible when it bites.
+  const RELEASES_SRC = String.raw`import\s+(type\s+)?[^;]*?from\s+["'](?:@\/data\/releases|\.\/releases|\.\.\/data\/releases)["']`;
+  const RELEASES_FROM = new RegExp(RELEASES_SRC, 'g');
+  const RELEASES_ONCE = new RegExp(RELEASES_SRC);
+
+  const valueImporters = [];
+  const typeImporters = [];
+  for (const f of files) {
+    const src = strip(readFileSync(f, 'utf8'));
+    for (const m of src.matchAll(RELEASES_FROM)) {
+      const rel = f.pathname.split('/src/')[1];
+      (m[1] ? typeImporters : valueImporters).push(rel);
+    }
+  }
+
+  // A `import type` is erased at build time and creates no runtime edge, so it
+  // cannot drag the prose anywhere — useCachedFeed.ts legitimately does this
+  // for `ReleaseNote`. Counting it as an importer would fail a correct tree.
+  ok(typeImporters.includes('data/useCachedFeed.ts'),
+    'useCachedFeed.ts imports ReleaseNote as a TYPE — erased at build, no runtime edge (control: the scan can see type imports)');
+  ok(valueImporters.length === 1 && valueImporters[0] === 'pages/SourcesPage.tsx',
+    `data/releases.ts has exactly ONE value importer and it is the lazy SourcesPage (got: ${valueImporters.join(', ') || 'none'})`);
+
+  const navTop = strip(readFileSync(new URL('./src/layout/NavTop.tsx', import.meta.url), 'utf8'));
+  ok(/from\s+["']@\/data\/siteVersion["']/.test(navTop),
+    'NavTop imports SITE_VERSION from the leaf @/data/siteVersion');
+  ok(!RELEASES_ONCE.test(navTop),
+    'NavTop does NOT import from @/data/releases — this is what keeps the curated prose out of the entry chunk');
+
+  // THE LEAF PROPERTY. siteVersion.ts is reachable from the eager entry, so the
+  // invariant that actually protects first paint is that it imports NOTHING —
+  // a module with no edges can never drag anything in behind it, whatever is
+  // added to it later. Asserted structurally rather than by byte count.
+  const leaf = strip(readFileSync(new URL('./src/data/siteVersion.ts', import.meta.url), 'utf8'));
+  ok(!/\bimport\s/.test(leaf) && !/\bfrom\s+["']/.test(leaf),
+    'data/siteVersion.ts is a true LEAF — it imports nothing, so nothing rides into the entry chunk behind it');
+  ok(!/CURATED|mergeReleases/.test(leaf),
+    'the version leaf carries no release PROSE — that is what moved out of first paint');
+  // And the other direction: releases.ts must not re-export the leaf, because
+  // Node's loader (which runs this gate) does not resolve the extensionless
+  // specifier that Vite accepts.
+  const relSrc = strip(readFileSync(new URL('./src/data/releases.ts', import.meta.url), 'utf8'));
+  ok(!/from\s+["']\.\/siteVersion["']/.test(relSrc),
+    'releases.ts does not import ./siteVersion extensionless — that edge builds under Vite but breaks this gate under Node');
+}
+
+// ── 8) THE STALENESS GATE ───────────────────────────────────────────────
+//
+// The defect this section exists for: the topbar said v6.0.5 through PRs
+// #164-#185 and nothing noticed, because nothing compared it to anything that
+// MOVES.
+//
+// AN EQUALITY GATE BETWEEN TWO HAND-MAINTAINED CONSTANTS DETECTS DISAGREEMENT,
+// NOT STALENESS. Pinning SITE_VERSION to package.json's `version` would have
+// been green for all twenty-two of those releases — both sides simply sit
+// still together. So the authority has to move on its own, and `handoffs/LOG.md`
+// does: one line per completed task, each carrying its PR URL.
+//
+// It also has to be a committed FILE, not git history: ci.yml uses
+// actions/checkout@v4 with no fetch-depth, which defaults to depth 1, so a
+// `git log`-derived authority is unreadable in CI.
+{
+  const log = readFileSync(new URL('../handoffs/LOG.md', import.meta.url), 'utf8');
+  // Scoped to THIS repo's PR URLs. An unscoped /pull\/(\d+)/ would also match a
+  // link to any other repository's pull request, and the max of that set is not
+  // this site's release number.
+  const prs = [...log.matchAll(/github\.com\/aqua-019\/satoshis-vision-v1\/pull\/(\d+)/g)]
+    .map((m) => Number(m[1]));
+
+  // NON-VACUITY FLOOR, FIRST. Without it a wrong path or a changed URL shape
+  // yields an empty set, Math.max() returns -Infinity, and the comparison below
+  // becomes an assertion about nothing. This must fail LOUDLY, not skip.
+  ok(prs.length >= 20,
+    `handoffs/LOG.md yields ${prs.length} PR references (floor 20) — the authority is readable`);
+
+  const logMax = Math.max(...prs);
+  ok(Number.isFinite(logMax), `newest PR recorded in handoffs/LOG.md is #${logMax}`);
+
+  // THE INVARIANT: the label may LEAD by one, never LAG.
+  //
+  // Lead-by-one is deliberate. You bump SITE_PR in the commit that opens the
+  // PR, before that PR's own LOG line exists (it is written at write-back), so
+  // plain equality would be red for most of every PR's life — and this repo has
+  // already recorded where that leads: "a red a re-run clears is a red people
+  // learn to click through".
+  //
+  // The upper bound is what closes the loophole in the other direction. Without
+  // it, "never behind" is satisfied forever by SITE_PR = 99999.
+  ok(SITE_PR >= logMax,
+    `SITE_PR #${SITE_PR} is not BEHIND the newest LOG entry #${logMax} — the staleness check`);
+  ok(SITE_PR <= logMax + 1,
+    `SITE_PR #${SITE_PR} is at most one ahead of #${logMax} — the label names the PR being shipped, not an arbitrary future one`);
+}
 
 // 7) CURATED shape — the moved-verbatim five rows.
 ok(CURATED.length === 5, `CURATED.length === 5 (got ${CURATED.length})`);
