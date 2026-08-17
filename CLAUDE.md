@@ -651,15 +651,15 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   this PR touched anything, so the comment was corrected rather than the colour.
   **BUDGETS: 4 CHUNKS MOVED OF 69, RESIDUAL ZERO, EAGER DELTA EXACTLY 0.** Attribution keyed
   on chunk STEM and paired by multiplicity against an ISOLATED `c6b518e` worktree:
-  `SuperstressPage` **+6,617** · `repoPulse` +165 (the chunk `data.ts` actually lands in —
+  `SuperstressPage` **+6,659** · `repoPulse` +165 (the chunk `data.ts` actually lands in —
   p3·16's "a chunk name is a label Vite takes from one member module, not a contents list") ·
-  `stressnet` +40 · `FuturePage` +31 = **+6,853**, and that single number IS both budget
+  `stressnet` +40 · `FuturePage` +31 = **+6,895**, and that single number IS both budget
   deltas, which is what proves eager did not move. `lazyJsRaw` 893,000 → **900,000**
-  (896,061, margin 3,939) · `totalJsRaw` 1,155,000 → **1,162,000** (1,158,421, margin 3,579).
+  (896,103, margin 3,897) · `totalJsRaw` 1,155,000 → **1,162,000** (1,158,463, margin 3,537).
   **`cssGz` BYTE-IDENTICAL at 17,900** — zero new stylesheet rules, at a 300 B margin, which
   is why the whole guide reuses `.kicker`/`.mono`/`.dim`/`Card`/`Pill` and inline styles.
-  `CHUNK_COUNT` **69, unchanged — nothing minted**. `/operate/superstress` 101,427 → 103,493
-  of 105,000 (margin 1,507) and `/future` 104,783 → 104,841 of 107,000 both HELD, so neither
+  `CHUNK_COUNT` **69, unchanged — nothing minted**. `/operate/superstress` 101,427 → 103,506
+  of 105,000 (margin 1,494) and `/future` 104,783 → 104,836 of 107,000 both HELD, so neither
   route ceiling was raised. All seven baseline figures the brief quoted were CONFIRMED exactly.
   **`verify-sims` IS RED AND IT IS PRE-EXISTING — reproduced against the clean base rather
   than assumed.** It dies at `:151` on `waitForURL(/\/simulate/)`, a **stale route literal**:
@@ -686,6 +686,19 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   plus a `children.length < 6` guard returns the root first, so the probe printed the page's
   inline CSS and read as "the copy did not render". Fixed by taking the DEEPEST match. Wider
   subject than the claim, in the instrument built to check exactly that.
+  (d) **`pkill -f 'node verify-'` KILLED MY OWN SHELL** — the command line doing the matching
+  contains the pattern, so the kill matched the killer. p3·15's and p3·16's recorded trap, in
+  its third form, committed in the same session that reads it. Kill by PID.
+  (e) **EVERY SELF-COUNT IN THIS NOTE WAS STALE WHEN IT WAS WRITTEN, AND BOTH WERE CAUGHT BY
+  RE-MEASURING RATHER THAN RE-READING.** §6 was recorded as "5 → 31" in three places; the two
+  gate fixes had added three assertions, so it is **34** — counted at source and cross-checked
+  against the runtime tally. The chunk table said `SuperstressPage +6,617` / total `+6,853`;
+  the final `<p>` wrap moved it to **+6,659 / +6,895**, and five figures across
+  `verify-bundle`'s own raise comment, this file and LOG.md were describing a tree that no
+  longer existed. **The dangerous property is that the GATE STAYED GREEN THROUGHOUT** — the
+  ceiling had margin, so nothing failed while the prose lied. A budget comment is not gated by
+  the budget it annotates, which is precisely why the rule is RE-DERIVE AFTER THE LAST SRC
+  COMMIT rather than "check the gate is green".
   **DEFECTS FOUND BY LOOKING, which no gate saw**: the eco popup's new sentence closed with a
   bare `/operate/superstress`, rendered by `EcoPopup` as **inert text** one scroll above the
   same destination its `links` array already carries as a real anchor. Points at the link now.
@@ -700,7 +713,7 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   gate file and rewrites one section in place. The counting script was **CONTROLLED against
   TWO historical commits before being trusted**: `bda0491` reproduces 82/78/22/32/67 exactly
   and `e5eae16` reproduces 81/77/22/31/66 exactly. `verify-superstress` **61 → 90 assertions**,
-  §6 alone **5 → 31**. Twelve break tests, every restore proven against the COMMITTED BLOB with
+  §6 alone **5 → 34**. Twelve break tests, every restore proven against the COMMITTED BLOB with
   a bracketed marker sweep, rebuilt between restore and re-measure every time.
   **NOT FIXED, and named**: the vitals-last `verify:e2e` inversion (#184 F4) — this PR adds no
   e2e member, so it is not deepened; the ten hollow `/future#<id>` anchors (§7 asserts this

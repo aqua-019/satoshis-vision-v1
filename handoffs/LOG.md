@@ -262,12 +262,12 @@
   scoped to `[data-answered]`; and §6i compared a source-parsed quote to the render, so a tidied
   paraphrase moved BOTH SIDES and passed — p3·16's recorded defect, re-committed, now checked by
   the marks an unedited chat message carries. `verify-superstress` **61 → 90**, §6 alone
-  **5 → 31**; twelve break tests, restores proven against the COMMITTED BLOB. **`verify-sims` is
+  **5 → 34**; twelve break tests, restores proven against the COMMITTED BLOB. **`verify-sims` is
   red and PRE-EXISTING** — reproduced identically on a clean `c6b518e` worktree (stale
   `/simulate` literal at `:151`), which also clears the band edit, since reaching `:151` proves
   the card click succeeded on both trees. Budgets red-then-green on the FINAL tree: `lazyJsRaw`
   893,000 → **900,000**, `totalJsRaw` 1,155,000 → **1,162,000**, **4 chunks moved of 69**
-  (SuperstressPage +6,617 · repoPulse +165 · stressnet +40 · FuturePage +31 = +6,853 = both
+  (SuperstressPage +6,659 · repoPulse +165 · stressnet +40 · FuturePage +31 = +6,895 = both
   deltas), eager **0**, residual **ZERO**; `cssGz` BYTE-IDENTICAL at 17,900, `CHUNK_COUNT` 69
   unchanged, both route ceilings HELD. Census recounted and **UNCHANGED** (83/79/22/34/69) with
   the script CONTROLLED against **two** commits; also corrected CLAUDE.md's own

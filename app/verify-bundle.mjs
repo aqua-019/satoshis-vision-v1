@@ -607,8 +607,9 @@ const BUDGETS = {
   // it means deciding what the backstop is FOR, and that is its own change.
   // p3·19 RAISE, 1,155,000 -> 1,162,000. Built 1,158,463, margin 3,537. It moves
   // WITH lazyJsRaw, as the backstop it is, and the arithmetic is exact because
-  // eager did not move: 1,151,568 + 6,853 = 1,158,421 from the four chunks, plus
-  // the 42 B the final `<p>` wrap added = 1,158,463, to the byte.
+  // eager did not move at all: 1,151,568 + 6,895 = 1,158,463, to the byte. The
+  // same +6,895 is lazyJsRaw's whole delta, which is what "eager delta 0" means
+  // when you can check it rather than assert it.
   // The stated construction ("the sum of the two real budgets") remains broken —
   // 280,000 + 900,000 = 1,180,000 against this line's 1,162,000, an 18,000 B
   // window, THE SAME WIDTH FOR THE FOURTH CONSECUTIVE RAISE. That invariance is
@@ -1094,12 +1095,13 @@ const BUDGETS = {
   // p3·19 RAISE, 893,000 -> 900,000. Built 896,103 on the FINAL tree, margin 3,897.
   // THE CLEANEST ATTRIBUTION SINCE p3·18, and it reconciles to the byte. Four
   // chunk slots moved of 69; the other 65 are size-identical:
-  //     SuperstressPage  14,529 -> 21,146   +6,617   (the guide itself)
+  //     SuperstressPage  14,529 -> 21,188   +6,659   (the guide itself)
   //     repoPulse        17,300 -> 17,465     +165   (see below — NOT the pulse)
   //     stressnet         9,243 ->  9,283      +40   (the simulator's corrected copy)
   //     FuturePage       19,656 -> 19,687      +31   (the band's corrected copy)
   //                                          ------
-  //                                          +6,853  = the WHOLE lazy delta, residual ZERO
+  //                                          +6,895  = the WHOLE lazy delta, residual ZERO
+  // 889,208 + 6,895 = 896,103, and 1,151,568 + 6,895 = 1,158,463. Both to the byte.
   //
   // `repoPulse` IS A LABEL, NOT A CONTENTS LIST — p3·16 recorded this and it is
   // worth re-reading here, because the obvious story is wrong twice over. That
@@ -1108,16 +1110,20 @@ const BUDGETS = {
   // its member modules, so a delta filed under "repoPulse" says nothing about the
   // repo pulse.
   //
-  // THE +42 THAT ALMOST SHIPPED WRONG. A mid-flight measurement read 896,061 and
-  // this comment was drafted from it. One later src commit — wrapping the
-  // maintainer quote in a `<p>` so it inherits the site's own 74ch reading
-  // measure — moved it to 896,103. Inside the margin either way, and still a
-  // figure describing a tree that no longer existed. That is the seven-instance
-  // re-measure family, caught for the third release running by re-deriving AFTER
-  // the last src commit rather than reusing the number already written down.
+  // THE +42 THAT ALMOST SHIPPED WRONG, AND IT ALMOST SHIPPED TWICE. A mid-flight
+  // measurement read 896,061 and this comment was drafted from it, with the table
+  // above reading `SuperstressPage +6,617` and a total of `+6,853`. One later src
+  // commit — wrapping the maintainer quote in a `<p>` so it inherits the site's
+  // own 74ch reading measure — moved it to 896,103. The ceiling was inside its
+  // margin either way, which is exactly what makes this the dangerous shape: the
+  // GATE would have stayed green while every attributed figure in this comment
+  // described a tree that no longer existed. Caught only by re-running the
+  // attribution script against the FINAL dist rather than reusing the table
+  // already written down; the whole 42 B lands in SuperstressPage. That is the
+  // re-measure family, and this is the fourth consecutive release it has caught.
   //
   // `eagerJsRaw` DID NOT MOVE AT ALL — 262,360 on both sides, delta exactly 0,
-  // which is what makes the single figure +6,853 serve as BOTH this budget's
+  // which is what makes the single figure +6,895 serve as BOTH this budget's
   // delta and totalJsRaw's. `SITE_PR` 187 -> 188 is length-preserving, so even
   // the eager entry's one edited literal costs nothing. `cssGz` is BYTE-IDENTICAL
   // at 17,900 against a 300 B margin: the guide adds ZERO stylesheet rules and
