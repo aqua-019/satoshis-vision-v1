@@ -374,8 +374,30 @@ export function NavTop() {
               query at 720px hides `.navitem`/`#pill`/`.dd` and shows the
               tab bar, but names none of THIS class, so the trigger stays
               reachable at every width without a rule of its own. */}
-          <button type="button" className="nav-kbd" onClick={() => palette.setOpen(true)} aria-label="Open command palette (⌘K)">
-            ⌘K
+          {/* p4·02 — ONE button, TWO presentations. `⌘K` is a keyboard
+              shortcut printed on a device with no ⌘ key: below D1207's 720px
+              threshold the chip shows the word it means instead. The handler,
+              the palette and the accessible name are identical either way —
+              this is presentation, not a second control, so there is nothing
+              for the two paths to disagree about.
+
+              The swap is a CONTAINER query (styles.css, beside `.nav-kbd`'s
+              own rules) and not a media query, because unlike `.main` this
+              element really is inside `.nav-shell` — D1207's mechanism works
+              here, and using it keeps one threshold expressed one way.
+
+              Both spans are `aria-hidden` and the name comes from
+              `aria-label`, so a screen reader hears the same device-neutral
+              sentence at every width and never reads out a shortcut its user
+              may have no way to press. */}
+          <button
+            type="button"
+            className="nav-kbd"
+            onClick={() => palette.setOpen(true)}
+            aria-label="Search and jump to a page"
+          >
+            <span className="nav-kbd__key" aria-hidden="true">⌘K</span>
+            <span className="nav-kbd__touch" aria-hidden="true">Search</span>
           </button>
           <span id="pill" ref={pillRef} />
         </nav>

@@ -511,7 +511,7 @@ export function AbyOverview({ data, tracking, focusBlock, onClearFocus, onPickTx
             brightness — not a boundary you can draw. Depth is log age, newest at
             the surface{field.maxAgeSec > 0 ? `, the floor at ${fmtAge(field.maxAgeSec)}` : ""}.
             Horizontal position carries nothing.
-            {trackedPt ? " While a transaction is tracked the rest of the pool dims — it is still there, and still clickable." : ""}
+            {trackedPt ? " While a transaction is tracked the rest of the pool dims — it is still there, and still selectable." : ""}
           </p>
         </AbyPanel>
       </Cell>

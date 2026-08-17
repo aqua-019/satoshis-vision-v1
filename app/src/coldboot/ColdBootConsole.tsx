@@ -790,7 +790,7 @@ export function ColdBootConsole({ onEnter, orbSlot, onOrbRectChange }: ColdBootC
                 <span style={{ color: "var(--ink-40)" }}>▮ hidden by RingCT ▮</span>
               </>
             ) : (
-              <span style={{ color: "var(--ink-40)" }}>Hover a ring member or a matrix row.</span>
+              <span style={{ color: "var(--ink-40)" }}>Select a ring member or a matrix row.</span>
             )}
             <em style={{ fontStyle: "normal", color: "var(--ink-40)", display: "block", marginTop: 2 }}>
               Verification confirms this output could have signed. So could the other {RING_COUNT - 1}.

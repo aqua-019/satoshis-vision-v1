@@ -554,9 +554,9 @@ export function MarketsPage() {
           </Swap>
         </PanelBoundary>
         <p className="mono dim cc-help" style={{ marginTop: 8, fontSize: "var(--fs-label)" }}>
-          Drag the strip to pan · drag an edge to resize · double-click to reset.
+          Drag the strip to pan · drag an edge to resize · double-tap or double-click to reset.
           Range buttons move the window; they do not refetch.
-          Hover any chart to read the same moment on all four; click to pin it.
+          Move along any chart to read the same moment on all four; select to pin it.
         </p>
       </PanelFrame>
 

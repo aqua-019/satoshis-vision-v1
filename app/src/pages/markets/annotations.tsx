@@ -320,7 +320,7 @@ function AnnTip({ group, hostW, x }: { group: FlagGroup; hostW: number; x: numbe
             {" · "}{TL_CAT[group.members[0].ev.c].label}
           </span>
           <span className="mk-ann-tip-body">{group.members[0].ev.b}</span>
-          <em>Click → timeline entry</em>
+          <em>Open → timeline entry</em>
         </>
       )}
     </span>

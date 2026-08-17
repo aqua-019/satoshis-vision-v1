@@ -649,6 +649,16 @@ html[data-boot="dead"] .nav-noscript { display: flex; }
   transition: color var(--d-2) var(--e-standard), border-color var(--d-2) var(--e-standard);
 }
 .nav-kbd:hover { color: var(--ui-accent-text); border-color: var(--line); }
+/* p4·02 — the chip's two presentations. Desktop prints the shortcut; at
+   D1207's threshold, where the tab bar takes over and there is no ⌘ key to
+   press, it prints the word instead and grows to a real touch target. Same
+   button, same handler, same accessible name. */
+.nav-kbd__touch { display: none; }
+@container navshell (max-width: 720px) {
+  .nav-kbd__key { display: none; }
+  .nav-kbd__touch { display: inline; }
+  .nav-kbd { padding: 9px 12px; letter-spacing: 0.08em; }
+}
 
 .ticker-strip { display: flex; gap: 18px; align-items: center; font-family: var(--f-mono); font-size: 11px; }
 .ticker-strip .tk { display: flex; gap: 6px; align-items: baseline; }
