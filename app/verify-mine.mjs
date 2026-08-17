@@ -102,8 +102,14 @@ R.ok(PLATFORMS.length === 4,
    is compiled, and there is no `hwloc` package (404), which is why the build
    passes -DWITH_HWLOC=OFF while `libuv`, `openssl` and `build-essential` all
    resolve (200). */
+const MONEROD =
+  './monerod --zmq-pub tcp://127.0.0.1:18083 --out-peers 32 --in-peers 64 ' +
+  '--add-priority-node=p2pmd.xmrvsbeast.com:18080 --add-priority-node=nodes.hashvault.pro:18080 ' +
+  '--enforce-dns-checkpointing --enable-dns-blocklist';
+
 const UPSTREAM = [
   'sudo sysctl vm.nr_hugepages=3072',
+  MONEROD,
   './p2pool --host 127.0.0.1 --wallet YOUR_WALLET_ADDRESS --mini',
   './xmrig -o 127.0.0.1:3333',
   "grep -E 'WARNING|ERROR' p2pool.log",
@@ -114,7 +120,32 @@ const UPSTREAM = [
   'pkg install git build-essential cmake libuv libzmq libcurl openssl',
   'cmake .. -DWITH_HWLOC=OFF && make -j$(nproc)',
 ];
-R.ok(UPSTREAM.length === 10, `upstream transcription holds ${UPSTREAM.length} command lines`);
+UPSTREAM.push(
+  '.\\Monero\\monerod.exe --zmq-pub tcp://127.0.0.1:18083 --out-peers 32 --in-peers 64 ' +
+  '--add-priority-node=p2pmd.xmrvsbeast.com:18080 --add-priority-node=nodes.hashvault.pro:18080 ' +
+  '--enforce-dns-checkpointing --enable-dns-blocklist');
+R.ok(UPSTREAM.length === 12, `upstream transcription holds ${UPSTREAM.length} verbatim command lines`);
+
+/* NOT VERBATIM, AND DECLARED ONE BY ONE WITH ITS REASON.
+   This list exists because the page's first draft claimed every command was a
+   quote while three were not, and only READING caught it — no assertion could,
+   because the gate at that point only checked that the quotes it knew about
+   were PRESENT. Absence of a check is not a check.
+   Each entry names why it is not a quote. §3 asserts the rendered set is
+   covered by UPSTREAM ∪ these, so a FOURTH non-quoted command cannot appear
+   without someone declaring it here and on the page. */
+const DERIVED = [
+  ['cd p2pool && mkdir build && cd build && cmake .. && make -j$(sysctl -n hw.logicalcpu)',
+   "P2Pool's macOS build steps, JOINED — upstream lists these as consecutive lines; " +
+   'they are concatenated so one copy does the whole build. Every segment is upstream\'s.'],
+  ['git clone https://github.com/xmrig/xmrig && mkdir xmrig/build && cd xmrig/build',
+   'XMRig publishes its build guide at xmrig.com/docs, which this page cannot quote and ' +
+   'this gate cannot reach. These are the standard CMake steps, and the page says so.'],
+  ['./xmrig -o 192.168.1.10:3333',
+   "XMRig's own invocation with the HOST changed: a phone points at a P2Pool on the LAN, " +
+   'not at localhost. The page marks this line as the adapted one where it appears.'],
+];
+R.ok(DERIVED.length === 3, `${DERIVED.length} commands are declared NOT verbatim, each with a reason`);
 
 const { browser } = await launch();
 
@@ -185,19 +216,22 @@ try {
   /* ══ §3 · every command matches its upstream quote ════════════════════ */
   R.group('§3 · every rendered command matches the recorded upstream line');
 
-  // Open every row so all commands are rendered and readable.
-  const allCmdText = await page.evaluate(async () => {
-    for (const b of document.querySelectorAll('[data-disclosure] button')) {
-      if (b.getAttribute('aria-expanded') !== 'true') b.click();
-    }
-    await new Promise((r) => setTimeout(r, 300));
-    return [...document.querySelectorAll('.disc-panel code.mono')].map((c) => c.innerText.trim());
-  });
+  /* textContent, NOT innerText, and this is the difference between a real check
+     and a vacuous one. The accordion is SINGLE-SELECT, so three of the four
+     panels carry `hidden` at any moment — and `innerText` returns '' for a
+     hidden element. Reading it here would have compared the UPSTREAM list
+     against ONE platform's commands and silently ignored the other three,
+     while reporting the same green. `textContent` sees every panel, which is
+     also the honest subject: the question is what the PAGE contains, not what
+     happens to be expanded. */
+  const allCmdText = await page.evaluate(() =>
+    [...document.querySelectorAll('.disc-panel code.mono')].map((c) => c.textContent.trim()));
   R.ok(allCmdText.length >= 15,
     `the opened walkthroughs render ${allCmdText.length} command lines`);
 
   // The rendered text is prefixed with the shell prompt "$ " by <Cmd>.
   const rendered = allCmdText.map((t) => t.replace(/^\$\s*/, ''));
+  const body0 = await page.evaluate(() => document.querySelector('.page-shell').textContent);
   const missing = UPSTREAM.filter((u) => !rendered.some((r) => r === u));
   R.ok(missing.length === 0,
     `all ${UPSTREAM.length} recorded upstream command lines render VERBATIM`,
@@ -217,10 +251,31 @@ try {
   R.ok(rendered.length === CMDS.length,
     `source cmd() count and rendered command count agree (${CMDS.length} / ${rendered.length})`);
 
+  /* THE PAGE'S OWN CLAIM, HELD TO ITS WORD. It says every command is quoted
+     upstream "with ONE exception, marked where it appears". Found by READING
+     rather than by any assertion: an earlier draft made the claim unqualified
+     while carrying a macOS monerod line I had composed by dropping two flags,
+     and an Android line with an adapted host. The macOS line is now the
+     verbatim upstream invocation; the Android one is declared in ADAPTED.
+     This asserts the exception count has not grown past what the page admits. */
+  const derivedCmds = DERIVED.map(([c]) => c);
+  const unquoted = rendered.filter((c) => !UPSTREAM.includes(c));
+  const undeclared = unquoted.filter((c) => !derivedCmds.includes(c));
+  R.ok(undeclared.length === 0,
+    `every rendered command is a verbatim quote or one of the ${DERIVED.length} declared derivations`,
+    undeclared.length ? `UNDECLARED: ${undeclared.join(' · ')}` : '');
+  R.ok(unquoted.length === DERIVED.length,
+    `the non-quoted set is exactly the declared one (${unquoted.length} of ${DERIVED.length})`);
+  R.ok(/not (a )?quote|standard CMake|adapted|exception/i.test(body0),
+    'and the PAGE says it carries non-quoted lines rather than claiming a clean sweep');
+
   /* ══ §4 · the honesty invariants ══════════════════════════════════════ */
   R.group('§4 · what this page must never print, and what it must');
 
-  const body = await page.evaluate(() => document.querySelector('.page-shell').innerText);
+  /* textContent again — see §3. Three walkthroughs are `hidden` at any moment
+     and innerText cannot see them, so an innerText body would have let a
+     forbidden claim hide in a collapsed panel and still reported green. */
+  const body = await page.evaluate(() => document.querySelector('.page-shell').textContent);
   R.ok(body.length > 4000, `read the rendered page body (${body.length} chars)`);
 
   /* NO EARNINGS FIGURE. `$` alone is unusable as a probe — every command row
@@ -253,14 +308,35 @@ try {
      red — which is the drift worth catching, since that number depends on core
      count, cache, memory bandwidth and whether huge pages were granted. */
   const hs = await page.evaluate(() => {
-    const all = (document.querySelector('.page-shell').innerText.match(/H\/s/g) || []).length;
+    const all = (document.querySelector('.page-shell').textContent.match(/H\/s/g) || []).length;
     const el = document.querySelector('[data-live-hashrate]');
-    const inside = el ? (el.innerText.match(/H\/s/g) || []).length : 0;
+    const inside = el ? (el.textContent.match(/H\/s/g) || []).length : 0;
     return { all, inside };
   });
   R.ok(hs.all === hs.inside,
     `every "H/s" on the page sits inside the live NODE readout (${hs.inside} of ${hs.all})`,
     'a device-hashrate claim would land outside it');
+
+  /* AND THE ABOVE IS 0-of-0 IN THIS FEED STATE, WHICH IS NOT COVERAGE.
+     Found by reading this gate's own first green run: serve-dist answers
+     /api/** with 501, so the readout is an em-dash and the page contains NO
+     "H/s" at all — the positional assertion is then trivially true and proves
+     only that nothing ELSE carries one. It still catches the defect it exists
+     for (a prose hashrate reds it), but "0 of 0" must not be read as "the
+     readout was checked". So the unit is pinned at SOURCE instead, where the
+     live branch is visible whatever the feed is doing: exactly one "GH/s"
+     template exists in the page, and it is inside the marked span. */
+  const gh = [...SRC.matchAll(/GH\/s/g)].length;
+  R.ok(gh === 1, `the page declares exactly one hashrate unit in source (${gh})`);
+  // Sliced between the marker and its closing tag rather than matched with a
+  // character class: the JSX in between contains `}` (from `${…}`), which any
+  // `[^}]*` would stop at — a regex that fails against correct code.
+  const flat = SRC.replace(/\s+/g, ' ');
+  const openAt = flat.indexOf('data-live-hashrate');
+  const closeAt = flat.indexOf('</span>', openAt);
+  const inSpan = openAt >= 0 && closeAt > openAt ? flat.slice(openAt, closeAt) : '';
+  R.ok(inSpan.includes('GH/s'),
+    'and that unit is inside the [data-live-hashrate] span, not loose in prose');
 
   /* NO POOL RANKING, plus the POSITIVE control that says why. Without the
      second assertion, "no share figure" cannot be told apart from "the page

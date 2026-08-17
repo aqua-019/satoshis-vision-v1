@@ -577,8 +577,12 @@ export function MinePage() {
         <div className="kicker">Four walkthroughs · pick your platform</div>
         <p className="mono dim" style={{ margin: "8px 0 14px", fontSize: "var(--fs-body)", lineHeight: 1.6, maxWidth: "72ch" }}>
           Each block is complete on its own — install, configure, point at P2Pool and your node, then
-          check it is really hashing. Every command is quoted from P2Pool's or XMRig's own
-          documentation rather than composed here. Substitute your own wallet address wherever{" "}
+          check it is really hashing. Almost every command below is quoted verbatim from the README
+          named beside it. Three are not, and each says so where it appears: P2Pool's macOS build
+          steps are joined into one line so a single copy does the whole build, XMRig's build guide
+          lives somewhere this page cannot quote from so those are the standard CMake steps, and the
+          Android miner points at your LAN instead of localhost. Nothing here was invented.
+          Substitute your own wallet address wherever{" "}
           <code className="hash">YOUR_WALLET_ADDRESS</code> appears; it is a primary address, the one
           starting with 4.
         </p>
@@ -675,11 +679,11 @@ export function MinePage() {
               </p>
               <div className="kicker">1 · dependencies</div>
               {cmd("m1", "brew update && brew install git cmake libuv zmq libpgm curl")}
-              <div className="kicker">2 · build p2pool</div>
+              <div className="kicker">2 · build p2pool — upstream's steps, joined into one line</div>
               {cmd("m2", "git clone --recursive https://github.com/SChernykh/p2pool")}
               {cmd("m3", "cd p2pool && mkdir build && cd build && cmake .. && make -j$(sysctl -n hw.logicalcpu)")}
               <div className="kicker">3 · start your node</div>
-              {cmd("m4", "./monerod --zmq-pub tcp://127.0.0.1:18083 --out-peers 32 --in-peers 64 --enforce-dns-checkpointing --enable-dns-blocklist")}
+              {cmd("m4", "./monerod --zmq-pub tcp://127.0.0.1:18083 --out-peers 32 --in-peers 64 --add-priority-node=p2pmd.xmrvsbeast.com:18080 --add-priority-node=nodes.hashvault.pro:18080 --enforce-dns-checkpointing --enable-dns-blocklist")}
               <div className="kicker">4 · p2pool, then the miner</div>
               {cmd("m5", "./p2pool --host 127.0.0.1 --wallet YOUR_WALLET_ADDRESS --mini")}
               {cmd("m6", "./xmrig -o 127.0.0.1:3333")}
@@ -720,12 +724,20 @@ export function MinePage() {
               </p>
               <div className="kicker">1 · toolchain and libraries</div>
               {cmd("a1", "pkg install git build-essential cmake libuv libzmq libcurl openssl")}
-              <div className="kicker">2 · build the miner</div>
+              <div className="kicker">2 · build the miner — the standard CMake steps, not a quote</div>
               {cmd("a2", "git clone https://github.com/xmrig/xmrig && mkdir xmrig/build && cd xmrig/build")}
               {cmd("a3", "cmake .. -DWITH_HWLOC=OFF && make -j$(nproc)")}
-              <div className="kicker">3 · point it at a P2Pool you already run</div>
+              <p className="mono dim2" style={{ margin: 0, fontSize: "var(--fs-label)", lineHeight: 1.6 }}>
+                XMRig documents its build at xmrig.com/docs, which this page does not quote from. These
+                are the ordinary CMake steps plus the one flag Termux forces, so check them against
+                that guide rather than trusting this page for them.
+              </p>
+              <div className="kicker">3 · point it at a P2Pool you already run — the one adapted line</div>
               {cmd("a4", "./xmrig -o 192.168.1.10:3333")}
               <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
+                This is upstream's own miner invocation with the HOST changed: XMRig's documented
+                line points at <code className="hash">127.0.0.1</code>, which is right when P2Pool
+                runs on the same box and wrong here, because it does not.
                 Replace that address with your own P2Pool host on your LAN. Running the full stack on
                 the phone is possible — P2Pool's README carries a Termux build for the daemon too —
                 but a phone is a poor place for a synced node, and pointing it at a machine you
