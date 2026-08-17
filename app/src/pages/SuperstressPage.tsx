@@ -23,14 +23,29 @@
  *     dive below explains what a stressnet IS — protocol-level, generic, true
  *     of any such chain — and says plainly that the specifics are not
  *     published. The one dated fact it cites is the fork version, and that is
- *     READ from FUTURE_PROTOCOLS rather than retyped.
+ *     READ from FUTURE_PROTOCOLS rather than retyped. Superstress's OWN
+ *     daemon's ports are inside this embargo too — see the port note below.
  *
- * ── THE BETANET SLOT IS A RESERVED BOX THAT NAMES ITS OWN ABSENCE ────────
- * It is not a placeholder dressed up as a feature. There is no public
- * telemetry endpoint for the beta chain, and whether one exists at all is an
- * open question — so the slot says that, in the same words the automation
- * registry already uses. Its height is reserved so the day it is filled costs
- * no layout shift.
+ * ── THE BETANET QUESTION WAS ASKED AND ANSWERED (p3·19) ──────────────────
+ * §5 used to reserve a 220px box for a public telemetry endpoint and say that
+ * whether one existed at all was an open question. It is not open any more.
+ * The maintainer answered: Superstress is self-hosted and runs its own
+ * monerod, so no public endpoint exists and none is planned. The reservation
+ * is gone because the thing it was holding space for is not coming — and §5
+ * now ARGUES that self-hosted-only is the better answer rather than
+ * apologising for a gap. There is no path from this page to a reader's node
+ * and there never will be: CSP is `connect-src 'self'`, and a box on
+ * somebody's LAN, Tailnet or onion is not this site's to reach or to proxy.
+ * That is said ON THE PAGE, not only here, so nobody re-opens it in v7.
+ *
+ * ── EVERY PORT NUMBER ON THIS PAGE IS ATTRIBUTED, OR IT IS ABSENT ────────
+ * The maintainer's reachability quote names three ports. They belong to the
+ * MONERO NODE ADDON — the mainnet prerequisite in §3 — and NOT to Superstress's
+ * own daemon, which brings its own and whose ports nobody has published. The
+ * failure mode being guarded is a reader copying a config that cannot connect,
+ * so the numbers are quoted inside `[data-ports]` with the attribution beside
+ * them and are never restated loose anywhere else. verify-superstress §6
+ * asserts that every occurrence on the rendered page sits inside that block.
  *
  * The one genuinely LIVE element is the repo pulse, which is real data from
  * /api/feeds and degrades to a named absence rather than to a number.
@@ -152,6 +167,86 @@ const APP_DETAIL: Record<SuperbrainAppId, AppDetail> = {
     shot: "screenshot · superatomic swap view",
   },
 };
+
+/**
+ * The prerequisite, made concrete. "Monero" in the install order is ONE
+ * specific Umbrel app, and a reader who installs a different one — or who
+ * assumes it joins the beta chain — has installed the wrong thing.
+ *
+ * These were READ from the upstream app repo when this page was written and
+ * are recorded here rather than re-derived, because nothing in this browser
+ * can confirm them: CSP is `connect-src 'self'`, so the page reaches no
+ * third party. Anything that could NOT be confirmed is absent rather than
+ * guessed — which is why there is no row here for the beta chain's own
+ * daemon, its version, or its ports. That absence is the embargo, not an
+ * oversight.
+ *
+ * I2P IS DELIBERATELY LISTED AS A NEGATIVE. Upstream leaves the i2pd daemon
+ * commented out, so a reader planning an I2P-only deployment would get all
+ * the way to a node that cannot reach anything. A transport this app does
+ * not have is worth more words than one it does.
+ */
+const PREREQ: readonly (readonly [string, string])[] = [
+  ["app", "Monero Node v0.18.5.1, by deverickapollo — listed in Umbrel's official store"],
+  ["source", "github.com/deverickapollo/umbrel-monero"],
+  ["daemon", "ghcr.io/sethforprivacy/simple-monerod:v0.18.5.1"],
+  ["network", "mainnet — this is the shared prerequisite, NOT the beta chain"],
+  ["its own UI", "port 9976 on your node"],
+  ["transports", "Tor is bundled. I2P is NOT — upstream leaves the i2pd daemon commented out, so do not plan around it."],
+  ["ports", "configuration, not constants — they are published as APP_MONERO_P2P_PORT and APP_MONERO_RPC_PORT, so read your own app's config rather than copying a number."],
+];
+
+/**
+ * The maintainer's own words, kept verbatim — including the missing
+ * apostrophe in the third — with editorial insertions in [brackets] and
+ * nothing else changed.
+ *
+ * Quoted rather than paraphrased on purpose. A paraphrase of a chat message
+ * is a claim this site would be making on somebody else's behalf, and the
+ * whole reason these three sentences are load-bearing is that they are the
+ * only published answers about a chain whose specification is not published.
+ * Where his words stop, this page stops.
+ */
+const MAINTAINER = {
+  reach:
+    "superstress is self-hosted, the monero node add[on] exposes 18081 p2p 18083 zmq-pub (for p2pool) 18089 (restricted) and is reachable from lan/tor/tailscale",
+  ownNode: "superstress has its own monerod",
+  chain: "Its the FCMP++ stressnet/testnet",
+} as const;
+
+/**
+ * Somebody else's words, marked as theirs.
+ *
+ * THE QUOTATION IS A `<p>` INSIDE THE `<blockquote>`, and that is load-bearing
+ * rather than tidy markup. `styles-legibility.css:51` sets the site's reading
+ * measure as `.main p, .panel p, … { max-width: 74ch }` — the L1 layer that
+ * exists so no palette rule can override a readability one. A bare
+ * `<blockquote>` is not a `<p>`, so the first version of this component escaped
+ * that rule entirely and rendered the reachability quote as a SINGLE 1254px
+ * line at 1440 — roughly 150 characters, about twice the measure every other
+ * paragraph on the page obeys, and wider than the attribution paragraph
+ * correcting it. Wrapping the text restores the measure by INHERITING the
+ * existing declaration: no new stylesheet rule (cssGz has a 300 B margin) and
+ * no second copy of the number 74. Found by measuring computed `max-width`,
+ * which read `638.948px` on a sibling paragraph and `none` here.
+ */
+function Quote({ children }: { children: React.ReactNode }) {
+  return (
+    <blockquote
+      data-maintainer-quote
+      className="mono"
+      style={{
+        margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--ink-100)",
+        borderLeft: "2px solid var(--g-50)", padding: "4px 0 4px 14px",
+      }}
+    >
+      <p style={{ margin: 0 }}>“{children}”</p>
+      <span style={{ display: "block", marginTop: 6, fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
+        — the Superstress maintainer, asked directly
+      </span>
+    </blockquote>
+  );
+}
 
 /** A reserved, labelled box that states what is missing. Never a generated
  *  image, never a shimmer that reads as "loading". */
@@ -325,6 +420,41 @@ export function SuperstressPage() {
           </div>
           <div>3 · the app itself</div>
         </div>
+
+        {/* ── what step 1 actually is ─────────────────────────────────── */}
+        <div>
+          <div className="kicker" style={{ marginBottom: 6 }}>What “{SUPERBRAIN_SHARED_PREREQ}” means in step 1</div>
+          <p className="mono dim" style={{ margin: "0 0 4px", fontSize: "var(--fs-body)", lineHeight: 1.7 }}>
+            One specific app, and it is a <em style={{ fontStyle: "normal", color: "var(--ink-100)" }}>mainnet</em> node.
+            Installing it does not put you on the beta chain — Superstress brings its own daemon for
+            that. Getting this step wrong is the one mistake that costs you an afternoon.
+          </p>
+          <div
+            data-prereq-identity={PREREQ.length}
+            className="mono"
+            style={{ fontSize: "var(--fs-mono)", color: "var(--ink-80)", lineHeight: 1.7 }}
+          >
+            {PREREQ.map(([k, v]) => (
+              <div
+                key={k}
+                style={{
+                  display: "flex", gap: 12, flexWrap: "wrap",
+                  borderTop: "1px dashed var(--ink-10)", paddingTop: 7, marginTop: 7,
+                }}
+              >
+                <span
+                  style={{
+                    flex: "0 0 auto", minWidth: 84, color: "var(--ink-40)",
+                    fontSize: "var(--fs-label)", letterSpacing: "0.12em", textTransform: "uppercase",
+                  }}
+                >
+                  {k}
+                </span>
+                <span style={{ flex: "1 1 16rem" }}>{v}</span>
+              </div>
+            ))}
+          </div>
+        </div>
         {MINER_CMD ? (
           <div>
             <div className="kicker" style={{ marginBottom: 8 }}>Point external miners at Superbrain</div>
@@ -340,6 +470,41 @@ export function SuperstressPage() {
             </code>
           </div>
         ) : null}
+
+        {/* ── reachability, in the maintainer's own words ──────────────── */}
+        {/* EVERY PORT NUMBER ON THIS PAGE LIVES INSIDE `[data-ports]`, with
+            its attribution in the same box. The quote says "18081 p2p", and
+            mainnet convention says 18080 — so a reader who trusts the number
+            without the paragraph beside it has a node that will not connect.
+            Splitting the two across a scroll is the failure; keeping them in
+            one container is what verify-superstress §6 asserts. */}
+        <div data-ports>
+          <div className="kicker" style={{ marginBottom: 8 }}>Reaching it once it runs</div>
+          <Quote>{MAINTAINER.reach}</Quote>
+          <p
+            data-port-attribution
+            className="mono"
+            style={{
+              margin: "10px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)",
+              border: "1px dashed var(--ink-20)", padding: "10px 12px",
+            }}
+          >
+            Those are the <strong>Monero node addon&rsquo;s</strong> ports — the mainnet
+            prerequisite above — and not Superstress&rsquo;s own. Superstress runs its own
+            monerod, and its ports are not documented anywhere this site can cite. Read yours
+            off your own app&rsquo;s configuration rather than copying them: upstream publishes
+            them as variables rather than fixed numbers, and mainnet convention puts
+            peer-to-peer traffic on 18080 with 18081 the unrestricted RPC — so treat the line
+            above as one operator describing his own box, not as a config to paste.
+          </p>
+        </div>
+        <p className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>
+          The three routes he names are the three you would expect from hardware you own: the LAN
+          for a machine in the same building, Tailscale for one that is not, and Tor for reaching
+          it without either end publishing where it is. None of the three is a service, and all
+          three terminate on your box — which is also the reason this page cannot show you what
+          they return. See below.
+        </p>
       </Card>
 
       {/* ── 4 · the deep dive ─────────────────────────────────────────── */}
@@ -416,24 +581,80 @@ export function SuperstressPage() {
         </div>
       </Card>
 
-      {/* ── 5 · the betanet slot ──────────────────────────────────────── */}
-      <Card style={{ padding: 22, display: "flex", flexDirection: "column", gap: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-          <div className="kicker" style={{ color: "var(--y-50)" }}>Beta-chain mempool · reserved</div>
-          <Pill tone="warn">not wired</Pill>
+      {/* ── 5 · asked and answered ────────────────────────────────────── */}
+      {/* This section used to be a 220px reserved box waiting for a public
+          telemetry endpoint. The question behind it has been answered, so the
+          box is gone and the answer is here instead — including the part that
+          says no such panel will ever exist on this site, which is the whole
+          reason to write it down rather than quietly delete a placeholder. */}
+      <Card style={{ padding: 22 }}>
+        <div data-betanet-answer style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div className="kicker" style={{ color: "var(--g-50)" }}>The betanet panel · asked and answered</div>
+            <Pill tone="live">self-hosted by design</Pill>
+          </div>
+
+          <h2 className="serif" style={{ margin: 0, fontSize: "var(--fs-h2)", fontWeight: 400, color: "var(--ink-100)" }}>
+            What you have at the end.
+          </h2>
+          <p className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>
+            An Umbrel node running the mainnet Monero app, and beside it a Superstress node with
+            its own daemon on the FCMP++ beta chain — reachable from your LAN, over Tailscale, or
+            through Tor, because it is yours. MoneroSpace points at that chain from the same app
+            store. What you get is not a dashboard someone else operates: it is a participant on a
+            small network that is worth more the more independent participants it has.
+          </p>
+
+          <div className="kicker" style={{ marginTop: 2 }}>We asked. This is what came back.</div>
+          <Quote>{MAINTAINER.ownNode}</Quote>
+          <Quote>{MAINTAINER.chain}</Quote>
+
+          <p data-answered className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-100)" }}>
+            So the question this section used to hold space for has an answer, and the answer is
+            no. There is no public endpoint for the beta chain, none is planned, and the chain is
+            self-hosted by design rather than by delay. Nothing is being waited for here.
+          </p>
+          <p className="mono" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.78, color: "var(--ink-80)" }}>
+            That is the better answer, not a smaller one. A public endpoint would have been one
+            machine everybody reads — a party to trust and a single point of failure, on a chain
+            whose entire purpose is to be attacked. Self-hosted-only means every participant reads
+            their own node and no one operator can misreport the network to everyone at once. It
+            is the argument this site makes about mainnet, applied to the chain that tests it.
+          </p>
+
+          <p
+            data-no-live-panel
+            className="mono"
+            style={{
+              margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)",
+              border: "1px dashed var(--ink-20)", padding: "12px 14px",
+            }}
+          >
+            Why this page will never show you a live beta-chain panel: its content-security policy
+            is <code>connect-src &lsquo;self&rsquo;</code>, so the browser is not permitted to
+            contact any origin but this one — which is what keeps the site safe to read over Tor,
+            and is not a setting we would relax for a chart. And your node sits on your LAN, your
+            Tailnet, or an onion address; none of those are ours to reach, and proxying them
+            through this site would put us between you and your own machine. There is no path from
+            here to your beta chain, by design rather than by omission.
+          </p>
+
+          {/* The rule is written down BEFORE there is anything to apply it to,
+              so a later change inherits it instead of re-deciding it. #184's
+              hollow-anchor family: a convention nobody recorded is a
+              convention the next PR invents from scratch. */}
+          <p data-betanet-rule className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7 }}>
+            And if beta-chain data ever does land on this site, it inherits a rule set down here
+            before there was anything to apply it to: it ships behind a persistent{" "}
+            <span className="mono" style={{ color: "var(--y-50)" }}>BETANET · NOT MAINNET · TEST FUNDS ONLY</span>{" "}
+            banner, in an accent used nowhere else, carrying its own provenance badge — never
+            sharing a colour, a badge or a panel with mainnet numbers.
+          </p>
+
+          <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7 }}>
+            {CHAIN?.blurb}
+          </p>
         </div>
-        {/* The box is RESERVED at its final height so the day it is filled
-            costs no layout shift — the CLS discipline applied forward rather
-            than retrofitted. The words are the automation registry's own:
-            "repo pulse live · telemetry endpoint still pending". */}
-        <EmptySlot
-          label="beta-chain mempool · to be wired"
-          note="Awaiting a public telemetry endpoint for the beta chain — whether one exists is an open question with the maintainer. This box is reserved rather than filled: a mempool drawn from mainnet data and labelled as the beta chain would be a fabricated reading, and this site does not ship one."
-          h={220}
-        />
-        <p className="mono dim" style={{ margin: 0, fontSize: "var(--fs-body)", lineHeight: 1.7 }}>
-          {CHAIN?.blurb}
-        </p>
       </Card>
     </PageShell>
   );

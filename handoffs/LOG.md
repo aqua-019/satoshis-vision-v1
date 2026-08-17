@@ -239,3 +239,39 @@
   content. Census recounted with the script CONTROLLED against `bda0491`.
   **No human has seen the rendered result in a browser.**
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/187
+- XMRIRISH-20260817-41 · done · p3·19 "THE BETANET GUIDE" — the maintainer answered, so the
+  placeholder that was waiting for him becomes the answer. `/operate/superstress` §5 stops
+  reserving a 220px box for a public telemetry endpoint and states the resolved position: the
+  chain is self-hosted, runs its own daemon, no endpoint exists and none is planned — and
+  self-hosted-only is the BETTER answer, not a smaller one. §3 gains the prerequisite's verified
+  identity (which Umbrel app, which daemon image, **mainnet**, Tor bundled and **I2P
+  deliberately NOT**) plus the reachability model in the maintainer's own words. **THE BRIEF'S
+  MIRROR LIST WAS INCOMPLETE and the miss was rendered copy on a THIRD route**:
+  `protocols/stressnet.tsx:229` said *"no telemetry endpoint exists yet"* on
+  `/learn/sim?p=stressnet` — which the hub CROSS-LINKS TO — so this site's own link led to copy
+  contradicting the page it came from. An enumeration is a hypothesis; the sweep that found it
+  costs one command. Also: the brief's `535-536` is **536-537**, `EcoPopup` is not in
+  `cards.tsx`, and the "one object serves both surfaces" premise is imprecise in the direction
+  that matters — the hub renders **`blurb` only**, so `body`/`slots` edits touch `/future` ALONE
+  and a `data.ts`-only fix would have left the hub lying. **EVERY PORT NUMBER IS A CONTAINER
+  INVARIANT**: the quote's three ports are the mainnet **addon's**, not Superstress's own, and
+  not even convention (18080 vs his 18081), so they live inside `[data-ports]` with the
+  attribution in the same box and §6g asserts `count(page) === count(inside)` per port.
+  **TWO GATE DEFECTS, BOTH FOUND BY BREAK TESTS REFUSING TO GO RED**: §6c's permanence check read
+  the WHOLE section, so `never` two paragraphs below satisfied a claim about the answer itself —
+  scoped to `[data-answered]`; and §6i compared a source-parsed quote to the render, so a tidied
+  paraphrase moved BOTH SIDES and passed — p3·16's recorded defect, re-committed, now checked by
+  the marks an unedited chat message carries. `verify-superstress` **61 → 90**, §6 alone
+  **5 → 34**; twelve break tests, restores proven against the COMMITTED BLOB. **`verify-sims` is
+  red and PRE-EXISTING** — reproduced identically on a clean `c6b518e` worktree (stale
+  `/simulate` literal at `:151`), which also clears the band edit, since reaching `:151` proves
+  the card click succeeded on both trees. Budgets red-then-green on the FINAL tree: `lazyJsRaw`
+  893,000 → **900,000**, `totalJsRaw` 1,155,000 → **1,162,000**, **4 chunks moved of 69**
+  (SuperstressPage +6,659 · repoPulse +165 · stressnet +40 · FuturePage +31 = +6,895 = both
+  deltas), eager **0**, residual **ZERO**; `cssGz` BYTE-IDENTICAL at 17,900, `CHUNK_COUNT` 69
+  unchanged, both route ceilings HELD. Census recounted and **UNCHANGED** (83/79/22/34/69) with
+  the script CONTROLLED against **two** commits; also corrected CLAUDE.md's own
+  "71 invocations − 6 duplicates", which was arithmetically impossible (71−6=65, matching
+  neither 67 nor 69 — measured 73 and 75).
+  **No human has seen the rendered result in a browser.**
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/188

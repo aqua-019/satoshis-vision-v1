@@ -76,7 +76,15 @@ chain and market data.
   strips YAML comments, expands every `npm run <script>` TRANSITIVELY against package.json,
   and allows the `node ../api/verify-*.mjs` prefix. Recount BOTH places, and control the
   instrument first. Measured as 30 step `run:` lines (31 matches − the
-  `defaults: run:` mapping key), 71 invocations − 6 duplicates. — the workflow had never
+  `defaults: run:` mapping key), **75** invocations − 6 duplicates.
+  **THAT INVOCATION FIGURE READ 71 AND WAS ARITHMETICALLY IMPOSSIBLE — p3·19 found it by
+  recounting rather than by reading.** 71 − 6 = 65, which equals NEITHER distinct figure
+  the same paragraph asserts (67 at `bda0491`, 69 here); the sentence disagreed with itself
+  and had done for at least two releases. Measured with the controlled script: **73** at
+  `bda0491` (73 − 6 = 67 ✓) and **75** here (75 − 6 = 69 ✓). The duplicates figure was
+  right all along, and the subtraction was never checked against the answer beside it —
+  which is the same two-figures-disagreeing defect this file records against itself three
+  times, arriving inside a SINGLE sentence rather than across two sections. — the workflow had never
   judged `main` itself, so every "main" figure was a PR-head proxy and the wall-clock gates
   had no same-runner baseline to difference against; read the `on:` block for the cost
   accepted. In two jobs: **12** individually-named offline gates, then `verify:static`
@@ -590,6 +598,130 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-17**: p3·19 "THE BETANET GUIDE" (app/) — the maintainer answered, so the
+  placeholder that was waiting for him becomes the answer. Nineteenth and last of the series.
+  **THE BRIEF'S MIRROR LIST WAS INCOMPLETE, AND THE MISS WAS RENDERED COPY ON A THIRD ROUTE.**
+  §0.8 enumerated six hits across `data.ts`, `FuturePage.tsx` and `SuperstressPage.tsx` and
+  called that the full set. A wider sweep found **`protocols/stressnet.tsx:229`**, which
+  renders *"no telemetry endpoint exists yet"* on **`/learn/sim?p=stressnet`** — a route the
+  hub CROSS-LINKS TO from its own §4, so a reader following this site's own link met copy
+  contradicting the page they came from. Plus its `:11-13` docblock, which is the stated
+  reason that file never reads its `data` prop. The lesson is not "briefs are wrong": it is
+  that **an enumeration is a hypothesis and a sweep is a measurement**, and the sweep costs
+  one command. Two smaller corrections in the same pass: the brief's `535-536` range is
+  **536-537** (the parenthetical it would have orphaned sits on 537), and `EcoPopup` lives in
+  `EcoPopup.tsx`, not `cards.tsx`.
+  **AND THE "ONE OBJECT SERVES BOTH SURFACES" PREMISE IS IMPRECISE IN THE DIRECTION THAT
+  MATTERS.** `CHAIN` is the same object, but the hub reads **`blurb` ONLY** — `body[]` and
+  `slots[]` render on `/future` ALONE. So editing them does not touch `/operate/superstress`,
+  whose false copy was its own hardcoded `EmptySlot`. A fix aimed only at `data.ts` would
+  have left the hub lying and reported success. (`TrustedPeersPage` cannot reach the stressnet
+  modal at all — it filters to `status === "PARTNER"` and stressnet is `"LIVE · BETA"`.)
+  **TWO GATE DEFECTS, BOTH MINE, BOTH FOUND BY BREAK TESTS REFUSING TO GO RED** — which is
+  the third release running that the refusals taught more than the reds.
+  (1) **§6c's permanence check read the WHOLE section.** Softening the answer itself to
+  *"there is no public endpoint right now"* left all three assertions GREEN, because `/never/`
+  matched the why-no-live-panel two paragraphs below and `/by design/` matched its closing
+  clause. A true fact about the wrong subject, committed in a gate whose own header quotes
+  that family. Scoped to `[data-answered]`; the mutation now reds twice.
+  (2) **§6i compared the source to itself through the DOM — p3·16's recorded defect (2),
+  re-committed by someone who had just read it.** It parsed the quote from `MAINTAINER.reach`
+  and compared it to the render, so a mutation that tidied the constant into fluent prose
+  moved BOTH SIDES and passed. Nothing offline can know the maintainer's real words. What
+  CAN be checked is that the constant keeps the marks of an unedited chat message — the
+  bracketed editorial insertion, the lowercase open, no terminal stop — which is exactly what
+  a paraphrase destroys. **The verbatim assertion's label was also downgraded to what it
+  actually proves** ("reaches the screen unmangled"), because the confident label was half the
+  defect.
+  **THE PORT ATTRIBUTION IS A CONTAINER INVARIANT, NOT A SENTENCE.** The maintainer's quote
+  names three ports; they are the mainnet **Monero node addon's**, not Superstress's own
+  daemon's, and they are not even mainnet convention (which puts P2P on 18080, where he says
+  18081). The failure mode is concrete — a reader copies a config that cannot connect — so
+  the numbers live inside `[data-ports]` with the attribution in the same box, and §6g asserts
+  `count(page) === count(inside)` per port. A number that drifts out of that block is a number
+  a reader can meet without the paragraph that makes it safe. Paired with a positive control,
+  because deleting every port would otherwise pass the sweep.
+  **THE `tone` DECISION, TAKEN OUT LOUD: the binary stays and a third value was DECLINED.**
+  The stressnet row is half live, half permanently-not-applicable, and amber is right for the
+  ROW because the row is not wired end-to-end and never will be — green would claim it is. A
+  third tone would put a verbal distinction in a **HUE**, the channel `StatusMark` exists to
+  avoid, so `mode` carries it as prose instead. The type comment said amber meant "needs
+  something that doesn't exist **yet**"; that "yet" was **already false for the X row** before
+  this PR touched anything, so the comment was corrected rather than the colour.
+  **BUDGETS: 4 CHUNKS MOVED OF 69, RESIDUAL ZERO, EAGER DELTA EXACTLY 0.** Attribution keyed
+  on chunk STEM and paired by multiplicity against an ISOLATED `c6b518e` worktree:
+  `SuperstressPage` **+6,659** · `repoPulse` +165 (the chunk `data.ts` actually lands in —
+  p3·16's "a chunk name is a label Vite takes from one member module, not a contents list") ·
+  `stressnet` +40 · `FuturePage` +31 = **+6,895**, and that single number IS both budget
+  deltas, which is what proves eager did not move. `lazyJsRaw` 893,000 → **900,000**
+  (896,103, margin 3,897) · `totalJsRaw` 1,155,000 → **1,162,000** (1,158,463, margin 3,537).
+  **`cssGz` BYTE-IDENTICAL at 17,900** — zero new stylesheet rules, at a 300 B margin, which
+  is why the whole guide reuses `.kicker`/`.mono`/`.dim`/`Card`/`Pill` and inline styles.
+  `CHUNK_COUNT` **69, unchanged — nothing minted**. `/operate/superstress` 101,427 → 103,506
+  of 105,000 (margin 1,494) and `/future` 104,783 → 104,836 of 107,000 both HELD, so neither
+  route ceiling was raised. All seven baseline figures the brief quoted were CONFIRMED exactly.
+  **`verify-sims` IS RED AND IT IS PRE-EXISTING — reproduced against the clean base rather
+  than assumed.** It dies at `:151` on `waitForURL(/\/simulate/)`, a **stale route literal**:
+  `/simulate` became `/learn/sim` in v6.1.6 and is now only a redirect source. Built and
+  served `c6b518e` in its own worktree on its own port: **identical failure, same line**. It
+  also clears this PR's band edit, because reaching `:151` means the `getByText('Umbrel
+  Superstress Net')` click at `:149` succeeded on both trees — so `FuturePage`'s
+  keep-it-contiguous comment is HONOURED. That comment was also **corrected**: it claimed
+  verify-sims enforces the phrase, and verify-sims is an ORPHAN wired to neither npm nor CI,
+  so nothing enforces it today. A comment that claims enforcement which does not run is worse
+  than no comment.
+  **THREE INSTRUMENT DEFECTS, ALL MINE, AND ONE IS A NEW MECHANISM.**
+  (a) **A RECON AGENT MEASURED A TREE THAT WAS MOVING UNDER IT.** Dispatched concurrently with
+  my own edits, it read my in-flight `SuperstressPage.tsx` as pre-existing and opened its
+  report with "⚠️ FIRST — the premise needs correcting: the page ALREADY ships this guide". Every
+  fact it stated was true of the tree it read; none was true of the tree it was asked about.
+  A new door into the harness-lies-to-itself family — not a stale build, not a stray listener,
+  but a subject being edited DURING the measurement. **Do not run a recon sweep over files you
+  are concurrently editing**; point it at a worktree pinned to the base, or dispatch it first.
+  (b) **`git add -A` SWEPT MY BREAK HARNESS INTO A COMMIT** — p3·13's recorded hazard, exactly.
+  Caught by sweeping **`git ls-tree`** (the COMMITTED tree) rather than the working tree; a
+  clean `git status` says nothing about what is already committed. Removed in the next commit.
+  (c) **My render probe's "find the block" selector matched `<html>`** — `querySelectorAll('*')`
+  plus a `children.length < 6` guard returns the root first, so the probe printed the page's
+  inline CSS and read as "the copy did not render". Fixed by taking the DEEPEST match. Wider
+  subject than the claim, in the instrument built to check exactly that.
+  (d) **`pkill -f 'node verify-'` KILLED MY OWN SHELL** — the command line doing the matching
+  contains the pattern, so the kill matched the killer. p3·15's and p3·16's recorded trap, in
+  its third form, committed in the same session that reads it. Kill by PID.
+  (e) **EVERY SELF-COUNT IN THIS NOTE WAS STALE WHEN IT WAS WRITTEN, AND BOTH WERE CAUGHT BY
+  RE-MEASURING RATHER THAN RE-READING.** §6 was recorded as "5 → 31" in three places; the two
+  gate fixes had added three assertions, so it is **34** — counted at source and cross-checked
+  against the runtime tally. The chunk table said `SuperstressPage +6,617` / total `+6,853`;
+  the final `<p>` wrap moved it to **+6,659 / +6,895**, and five figures across
+  `verify-bundle`'s own raise comment, this file and LOG.md were describing a tree that no
+  longer existed. **The dangerous property is that the GATE STAYED GREEN THROUGHOUT** — the
+  ceiling had margin, so nothing failed while the prose lied. A budget comment is not gated by
+  the budget it annotates, which is precisely why the rule is RE-DERIVE AFTER THE LAST SRC
+  COMMIT rather than "check the gate is green".
+  **DEFECTS FOUND BY LOOKING, which no gate saw**: the eco popup's new sentence closed with a
+  bare `/operate/superstress`, rendered by `EcoPopup` as **inert text** one scroll above the
+  same destination its `links` array already carries as a real anchor. Points at the link now.
+  **MEASURED, NOT REASONED, on two things that looked like defects and were not**: every
+  paragraph on the hub is **639px inside a 1300px card — all four cards, including the three
+  pre-existing ones**, so the dead space right of the answer is the page's own measure and not
+  this section; and the two 10.5px `.pill` nodes are pre-existing (`styles-legibility.css:78`),
+  with **2 Pills on both sides of the diff** — one warn Pill was replaced by one live Pill, so
+  this PR adds no sub-11px text.
+  **Census RECOUNTED and UNCHANGED — 83 files / 79 gates / CI distinct 69 / `verify:static` 22
+  / `verify:e2e` 34 / orphans 6** — which is the CORRECT outcome for a release that adds no
+  gate file and rewrites one section in place. The counting script was **CONTROLLED against
+  TWO historical commits before being trusted**: `bda0491` reproduces 82/78/22/32/67 exactly
+  and `e5eae16` reproduces 81/77/22/31/66 exactly. `verify-superstress` **61 → 90 assertions**,
+  §6 alone **5 → 34**. Twelve break tests, every restore proven against the COMMITTED BLOB with
+  a bracketed marker sweep, rebuilt between restore and re-measure every time.
+  **NOT FIXED, and named**: the vitals-last `verify:e2e` inversion (#184 F4) — this PR adds no
+  e2e member, so it is not deepened; the ten hollow `/future#<id>` anchors (§7 asserts this
+  page adds no eleventh); the 11-vs-12 px floor conflict; `verify-sims`' 12 stale literals and
+  its orphan status, deliberately out of scope. The chain-parameter embargo **still HOLDS** —
+  only the ENDPOINT question is answered; genesis, nettype and Superstress's own ports remain
+  undocumented, and §6's blind-spot list says so.
+  **No human has seen the rendered result in a browser** — read from screenshots.
 
 - **2026-08-16**: p3·18 "THE LEGAL EVIDENCE LAYER" (app/ + .github/) — 21 legal claims that named
   statutes and linked none, dated nothing, and were gated by a file wired to nothing. No new gate
