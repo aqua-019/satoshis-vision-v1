@@ -166,12 +166,25 @@ function Src({ href, children }: { href: string; children: React.ReactNode }) {
 /* ── Cmd — the copy-button command row (see the header for why it is here) ── */
 
 function Cmd({ id, cmd, copied, setCopied }: { id: string; cmd: string; copied: string | null; setCopied: (v: string | null) => void }) {
+  /* THE CONFIRMATION WAITS FOR THE WRITE, and NodePage's copy of this does not
+     — a deliberate divergence, found by reading rather than by any gate.
+     `navigator.clipboard.writeText` returns a PROMISE, so a try/catch around it
+     catches only the synchronous throw (no `navigator.clipboard` at all). A
+     REJECTION — permission denied, a non-secure context, a hardened browser —
+     lands after the handler has returned, by which time "✓ COPIED" is already
+     on screen and nothing was copied. On a site whose whole subject is not
+     claiming things it cannot show, a button that reports a success it did not
+     achieve is the same defect class as a fabricated reading, at UI scale.
+     Awaiting the promise makes the label report the outcome instead. */
   const copy = () => {
     try {
-      navigator.clipboard.writeText(cmd);
-      setCopied(id);
-      setTimeout(() => setCopied(null), 1500);
-    } catch { /* clipboard blocked */ }
+      Promise.resolve(navigator.clipboard.writeText(cmd))
+        .then(() => {
+          setCopied(id);
+          setTimeout(() => setCopied(null), 1500);
+        })
+        .catch(() => { /* denied — say nothing rather than claim success */ });
+    } catch { /* no clipboard API at all */ }
   };
   return (
     <div className="panel" style={{ padding: "10px 12px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
@@ -197,9 +210,14 @@ const ROWS = 4;
 /** Peers are all the SAME radius. That is the whole argument: no peer is
  *  bigger, and none is in the middle. */
 const PEER_R = 5;
-/** Link cutoff, in viewBox units. Tuned to leave every peer connected to a
- *  handful of neighbours and no peer connected to everything. */
-const LINK_D2 = 168 * 168;
+/** Link cutoff, in viewBox units. MEASURED across candidate values rather than
+ *  eyeballed, because the two failure modes sit either side of it: too small
+ *  and a peer is isolated (which draws the opposite of the argument), too large
+ *  and it is a hairball in which no individual peer is legible. At 132 the
+ *  field is 103 links over 44 peers — mean degree 4.7, MINIMUM 2, maximum 8, so
+ *  every peer has neighbours and none is a hub. At 168 the mean was 7.1 and the
+ *  max 12; at 120 the minimum fell to 1. */
+const LINK_D2 = 132 * 132;
 const PULSES = 6;
 /** Seconds for a pulse to traverse its whole path. */
 const PULSE_PERIOD = 6.4;
@@ -333,7 +351,17 @@ function DecentralField() {
             {field.paths.map((path, i) => {
               const u = ((t / PULSE_PERIOD) + path.off) % 1;
               const at = atFraction(path, u);
-              return <circle key={i} cx={at.x} cy={at.y} r={PEER_R + 3} data-mine-pulse="" />;
+              // `data-mine-pulse-u` is the phase, published so a gate can
+              // assert the STILL frame without inferring it from pixels. It is
+              // the whole "loses no information" claim in one number: under
+              // reduce t is 0, so u collapses to the SEEDED offset, and six
+              // distinct spread offsets are what keeps "a solution can start
+              // anywhere" legible with nothing moving. Zero it and the gate
+              // reds.
+              return (
+                <circle key={i} cx={at.x} cy={at.y} r={PEER_R + 3}
+                        data-mine-pulse="" data-mine-pulse-u={u.toFixed(3)} />
+              );
             })}
           </g>
         </svg>
@@ -383,9 +411,14 @@ export function MinePage() {
         <Stat k="Proof of work" v="RandomX" sub="CPU-optimized, since 2019" />
         <Stat k="Miner memory" v="2080 MiB" sub="fast mode · 256 MiB light" />
         <Stat k="Architecture" v="64-bit" sub="P2Pool: no 32-bit / ARMv7" />
+        {/* The ONE live number on this page, and the ONLY place a hashrate may
+            appear at all — verify-mine §4 asserts that every "H/s" on the
+            rendered page sits inside this element, which is what stops a
+            device-hashrate claim ("a phone does N H/s") drifting into the
+            prose later. Real or an em-dash; never synthesised. */}
         <Stat
           k="Network hashrate"
-          v={netReady ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"}
+          v={<span data-live-hashrate>{netReady ? `${(data.hashrate / 1e9).toFixed(2)} GH/s` : "—"}</span>}
           sub={<NodeProvenance source="node" keys={["network"]} status={data.status} bare />}
         />
       </section>
@@ -509,11 +542,13 @@ export function MinePage() {
           <Card style={{ padding: 16 }}>
             <div className="kicker">Why no pool market-share figure appears here</div>
             <p className="mono dim" style={{ margin: "8px 0 0", fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
-              Because it cannot be measured from here. Monero coinbase transactions do not tag the
-              pool that mined them, and this site queries no third-party pool API. The{" "}
+              Because it cannot be measured from the chain. A Monero coinbase transaction does not
+              identify the pool that mined it, so any published pool ranking is somebody's survey of
+              self-reported figures, not an on-chain fact — and this page has no way to check one.
+              The{" "}
               <Link className="acc" to={`${R.LEARN_SIM}?p=skyline`}>Skyline simulator</Link> models
               pool concentration with figures it labels illustrative, for exactly that reason. A
-              number on this page would be decoration wearing a data badge.
+              number here would be decoration wearing a data badge.
             </p>
           </Card>
         </div>
@@ -543,8 +578,8 @@ export function MinePage() {
         <p className="mono dim" style={{ margin: "8px 0 14px", fontSize: "var(--fs-body)", lineHeight: 1.6, maxWidth: "72ch" }}>
           Each block is complete on its own — install, configure, point at P2Pool and your node, then
           check it is really hashing. Every command is quoted from P2Pool's or XMRig's own
-          documentation rather than composed here. Substitute your own wallet address wherever
-          <code className="hash"> YOUR_WALLET_ADDRESS</code> appears; it is a primary address, the one
+          documentation rather than composed here. Substitute your own wallet address wherever{" "}
+          <code className="hash">YOUR_WALLET_ADDRESS</code> appears; it is a primary address, the one
           starting with 4.
         </p>
 
