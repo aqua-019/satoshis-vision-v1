@@ -102,7 +102,7 @@ function stripStrings(src) {
 // ============================================================================
 // §1 · routes.mjs canonical list
 // ============================================================================
-R.group('§1 · routes.mjs exports exactly 14 ROUTES in specified order');
+R.group('§1 · routes.mjs exports exactly 15 ROUTES in specified order');
 
 try {
   const routesModule = await import(join(__dirname, 'scripts', 'routes.mjs'));
@@ -117,6 +117,11 @@ try {
     // in the output — a gate whose text disagrees with its own condition is the
     // reason people stop reading gate logs.
     //
+    // p4·04 · 14 -> 15. THREE literals move together in this section, not two:
+    // the group title above, the count here, and the order array below. The
+    // title is prose and cannot red, which is exactly why it is the one that
+    // rots — it is listed here so the next sweep counts three.
+    //
     // p3·16 · 13 -> 14. THIS SECTION IS WHY THE PROMPT'S REGISTRATION SWEEP WAS
     // INCOMPLETE, and it is worth naming: that sweep listed §7 (routes<->ia,
     // both directions) as verify-ia's stake in a new route, which is true and
@@ -124,12 +129,12 @@ try {
     // ORDER as literals, so `/operate/superstress` reddened two assertions here
     // before §7 was ever reached. A count literal one hop from the thing that
     // changed is exactly the p2·10 CHUNK_COUNT lesson in a different file.
-    R.ok(routes.length === 14, `ROUTES length: ${routes.length} (expected 14)`);
+    R.ok(routes.length === 15, `ROUTES length: ${routes.length} (expected 15)`);
 
     const expected = [
       '/', '/live/mempool', '/live/markets', '/live/markets/thesis',
       '/live/network', '/learn', '/learn/sim', '/monero', '/future',
-      '/future/outlook', '/operate/node', '/operate/superstress',
+      '/future/outlook', '/operate/node', '/operate/mine', '/operate/superstress',
       '/about/peers', '/about/sources',
     ];
 

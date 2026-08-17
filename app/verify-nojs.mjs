@@ -140,6 +140,7 @@ const routes = await p.evaluate(() =>
 // no import (see verify-lib.mjs's ROUTES for the same constraint reasoned
 // out in full).
 //
+// p4·04 · 14 -> 15 (/operate/mine).
 // p3·16 · 13 -> 14. Note what this list does and does NOT catch. It asserts
 // each named path IS a real anchor in the prerendered nav, so a route that
 // exists but never reaches NavTop's JS-off list reds here. It cannot catch the
@@ -150,7 +151,8 @@ const routes = await p.evaluate(() =>
 // the same shape as the `/` gap v6.1.8 recorded a few lines above.
 for (const r of ['/', '/live/mempool', '/live/markets', '/live/markets/thesis', '/live/network',
                   '/monero', '/learn', '/learn/sim', '/future', '/future/outlook',
-                  '/operate/node', '/operate/superstress', '/about/peers', '/about/sources']) {
+                  '/operate/node', '/operate/mine', '/operate/superstress',
+                  '/about/peers', '/about/sources']) {
   ok(routes.includes(r), `no-JS: ${r} is a real anchor in the prerendered nav`);
 }
 

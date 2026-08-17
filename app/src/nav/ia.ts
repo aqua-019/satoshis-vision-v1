@@ -221,8 +221,13 @@ const operateCol: IaCol = {
   // /future renders no panel any of them can scroll to — every one of those
   // anchors is hollow. This entry is a leaf with its own page, so it is the
   // one ecosystem destination in this file that resolves to content.
+  // p4·04 — the THIRD item, inserted between the other two rather than
+  // appended. "Run a node" still leads, so the section header keeps
+  // navigating where it always has; and mining sits directly under its own
+  // prerequisite, which is the order the two pages describe each other in.
   items: [
     { l: "Run a node", p: R.OPERATE_NODE },
+    { l: "Mine Monero", p: R.OPERATE_MINE, note: "RandomX · CPU · four platforms" },
     { l: "Superstress hub", p: R.OPERATE_SUPERSTRESS, note: "Umbrel community app store" },
   ],
 };

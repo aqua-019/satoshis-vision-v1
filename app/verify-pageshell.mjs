@@ -1,7 +1,20 @@
 /**
  * verify-pageshell.mjs — the responsive gate for the PageShell migration (v6.0.4).
  *
- * Runs the full 15-route × 6-width matrix against `vite preview`
+ * Runs a 17-entry × 6-width matrix against `vite preview`
+ *
+ * MEASURE THAT FIGURE, DO NOT READ IT OFF THIS SENTENCE — it said "15-route"
+ * against a 16-entry table for the whole p3·16 → p4·03 series, and the word
+ * "route" was the reason nobody caught it: this table is NOT the canonical
+ * route set. It deliberately omits two real routes (/live/markets/thesis,
+ * /future/outlook) and deliberately adds four non-canonical paths (a 64-hex
+ * tx deep link, /learn/timeline, /monero/bottomline, /__nope__), so it can
+ * never equal ROUTES.length and comparing it to that number is a category
+ * error. It is a curated WIDTH-SWEEP surface. Count the rows:
+ *   node -e "const s=require('fs').readFileSync('verify-pageshell.mjs','utf8');
+ *            console.log(s.match(/const ROUTES = \[([\s\S]*?)\n\];/)[1]
+ *              .split('\n').filter(l=>/\{\s*path:/.test(l)).length)"
+ *
  * (http://localhost:4173) and asserts the four facts the migration is supposed
  * to buy:
  *
@@ -102,6 +115,10 @@ const ROUTES = [
   // page is already inside the width sweep rather than being the one route
   // the sweep was never taught about.
   { path: '/operate/superstress', label: '/operate/superstress',        tier: 'standard' },
+  // p4·04 — the 15th route, added on p3·16's stated precedent above: this
+  // gate is still npm-wired only, and a route absent from the table is one
+  // the sweep is never taught about on the day the /future red is fixed.
+  { path: '/operate/mine',       label: '/operate/mine',               tier: 'standard' },
   { path: '/about/sources',      label: '/about/sources',             tier: 'standard' },
   { path: '/__nope__',           label: '/__nope__',            tier: 'standard' },
 ];

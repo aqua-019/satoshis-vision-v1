@@ -101,6 +101,15 @@ const ROUTE_TABLE: RouteObject[] = [
   { path: R.FUTURE, handle: "future" },
   { path: R.FUTURE_OUTLOOK, handle: "outlook" },
   { path: R.OPERATE_NODE, handle: "node" },
+  { path: R.OPERATE_MINE, handle: "mine" },
+  // p4·04 — BACKFILL, not a new registration. `/operate/superstress` shipped
+  // in p3·16 with no row here, so `matchRoutes` fell through to the `*` row
+  // below and `chunkKeyFor("/operate/superstress")` answered "notfound" —
+  // while App.tsx registers that page's chunk under the key "superstress".
+  // The hub's transition was therefore gated on whether the 404 page's chunk
+  // had loaded: a true answer to the wrong question, which is exactly what
+  // this table's own header warns a mismatched handle does.
+  { path: R.OPERATE_SUPERSTRESS, handle: "superstress" },
   { path: R.ABOUT_PEERS, handle: "peers" },
   { path: R.ABOUT_SOURCES, handle: "sources" },
   { path: "*", handle: "notfound" },
@@ -119,7 +128,7 @@ const ROUTE_ORDER = [
   R.MONERO,
   R.LEARN, R.LEARN_SIM,
   R.FUTURE, R.FUTURE_OUTLOOK,
-  R.OPERATE_NODE,
+  R.OPERATE_NODE, R.OPERATE_MINE, R.OPERATE_SUPERSTRESS,
   R.ABOUT_PEERS, R.ABOUT_SOURCES,
 ];
 

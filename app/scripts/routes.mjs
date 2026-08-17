@@ -49,6 +49,17 @@ export const R = {
   // once served content and moved. This URL has never existed, so there is
   // no shared link to keep working and nothing to 301 from — inventing one
   // would advertise a path that never had a page.
+  // p4·04 — the FIFTEENTH route, and the Operate section's third leaf. It is
+  // declared BETWEEN the node page and the hub deliberately: running a node is
+  // this page's stated prerequisite, and the hub is the packaged version of
+  // what this page teaches by hand. R's declared order is therefore the
+  // dependency order, and ROUTES — plus every list derived from it — inherits
+  // it for free.
+  //
+  // NO REDIRECT SOURCE, for the reason OPERATE_SUPERSTRESS records below:
+  // REDIRECTS protects URLs that once served content and moved, and this one
+  // has never existed.
+  OPERATE_MINE: "/operate/mine",
   OPERATE_SUPERSTRESS: "/operate/superstress",
   ABOUT_PEERS: "/about/peers",
   ABOUT_SOURCES: "/about/sources",
