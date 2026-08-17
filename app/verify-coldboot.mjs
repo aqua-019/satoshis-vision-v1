@@ -838,29 +838,46 @@ await browser.close();
  * into "the chain was sound at both ends", which is the difference between a
  * claim about a moment and a claim about a run.
  *
- * ── WHAT THIS BRACKETS, HONESTLY — corrected in v6.1.9 ───────────────────
+ * ── WHAT THIS BRACKETS, HONESTLY — corrected in v6.1.9, RE-DERIVED in p4·01 ──
  * This docblock used to open "This file is LAST in verify:e2e". That was true
  * when it was written and is FALSE now: v6.1.9 moved `verify-vitals` to the end
  * (it had been sitting at #27 with this file and `verify-orb` as its only
  * downstream, so an environmental wall-clock red made the suite's own
- * subject-under-test unreachable). The tail is now #27 this file · #28
- * verify-orb · #29 verify-vitals.
+ * subject-under-test unreachable).
  *
- * So the bracket covers #1 -> #27, not the whole chain. TWO gates run after it
- * and are outside it. That is accepted rather than papered over, for reasons
+ * EVERY POSITION LITERAL BELOW WAS STALE UNTIL p4·01, and this is the paragraph
+ * that instructed the re-read (see its last lines). It read "#27 this file ·
+ * #28 verify-orb · #29 verify-vitals", "TWO gates run after it" and "27 of 29".
+ * The chain has since grown by five members — p3·14b's verify-stream, p3·15's
+ * verify-peers, p3·16's verify-superstress, p3·17's verify-releases-dom and
+ * p3·18's verify-legality — so those four numbers had been describing a
+ * nine-releases-ago chain. Measured from `package.json` rather than derived
+ * from the previous text: the tail is now #31 this file · #32 verify-orb ·
+ * #33 verify-stream · #34 verify-vitals, of 34.
+ *
+ * So the bracket covers #1 -> #31, not the whole chain. THREE gates run after
+ * it and are outside it. That is accepted rather than papered over, for reasons
  * that are specific rather than general:
  *
  *   · The failure mode this guards is a rebuild DURING the run. Nothing in the
- *     two gates after this one builds; the hazard is a human or a second shell,
- *     and 27 of 29 gates' worth of exposure is where essentially all of it is.
+ *     three gates after this one builds — checked, not assumed: the only
+ *     `npm run build` in verify-stream.mjs and verify-vitals.mjs is the usage
+ *     line in each file's own header comment, and verify-orb.mjs has none. The
+ *     hazard is a human or a second shell, and 31 of 34 gates' worth of
+ *     exposure is where essentially all of it is.
  *   · `verify-orb` cannot pass vacuously against a broken server — every one of
  *     its §5/§6/§7 assertions reads the live DOM behind explicit preconditions,
- *     so a dead server reds it rather than skipping it quietly. A STALE-but-200
- *     dist is the residual risk, and it is two gates wide.
- *   · It was NOT moved into `verify-vitals` despite that gate now being last,
- *     because vitals exits 0 under `PERF_ASSERT=0` and `MEASURE_ONLY` — a wire
- *     check living there would be silently non-binding in two documented modes,
- *     which is worse than a bracket that is honestly two gates short.
+ *     so a dead server reds it rather than skipping it quietly. `verify-stream`
+ *     is the third member of that window since p3·14b and behaves the same way:
+ *     it drives the served build through 18 assertions and starts no server of
+ *     its own. A STALE-but-200 dist is the residual risk, and it is now THREE
+ *     gates wide rather than two.
+ *   · It was NOT moved into `verify-vitals` despite that gate being last again
+ *     (p4·01 restored the vitals-last tail; between #183 and p4·01 the last
+ *     member was verify-stream), because vitals exits 0 under `PERF_ASSERT=0`
+ *     and `MEASURE_ONLY` — a wire check living there would be silently
+ *     non-binding in two documented modes, which is worse than a bracket that
+ *     is honestly three gates short.
  *
  * If the chain is reordered again, re-read this: the placement argument is the
  * thing that goes stale, and a docblock claiming a property the code no longer
@@ -868,7 +885,7 @@ await browser.close();
  *
  * Same subject as §0b — the entry chunk resolved from dist/index.html, whose
  * bytes are a pure function of the source, never index.html itself. */
-R.group('── Z · the served dist still matches, 27 gates in (see the note above) ──');
+R.group('── Z · the served dist still matches, 31 gates in (see the note above) ──');
 {
   const distIndex = new URL('./dist/index.html', import.meta.url);
   if (!existsSync(distIndex)) {
