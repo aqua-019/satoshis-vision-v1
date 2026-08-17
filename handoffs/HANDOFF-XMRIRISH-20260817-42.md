@@ -81,7 +81,7 @@ restructuring of CLAUDE.md beyond the one targeted correction.
 - [x] `verify-bundle` green with all-zero JS deltas stated
 - [x] Census RECOUNTED (not incremented) with the counting script CONTROLLED
       against a historical commit first
-- [ ] Branch pushed · draft PR opened · `mergeable_state` reported
+- [x] Branch pushed · draft PR opened · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 ```
