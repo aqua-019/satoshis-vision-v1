@@ -605,7 +605,18 @@ const BUDGETS = {
   // still sit inside both real budgets and red on this one. Recorded again rather
   // than quietly repaired, for the reason the note below already gives: repairing
   // it means deciding what the backstop is FOR, and that is its own change.
-  totalJsRaw: 1_155_000,  // p3·18: built 1,151,568 on the FINAL tree, margin 3,432.
+  // p3·19 RAISE, 1,155,000 -> 1,162,000. Built 1,158,463, margin 3,537. It moves
+  // WITH lazyJsRaw, as the backstop it is, and the arithmetic is exact because
+  // eager did not move: 1,151,568 + 6,853 = 1,158,421 from the four chunks, plus
+  // the 42 B the final `<p>` wrap added = 1,158,463, to the byte.
+  // The stated construction ("the sum of the two real budgets") remains broken —
+  // 280,000 + 900,000 = 1,180,000 against this line's 1,162,000, an 18,000 B
+  // window, THE SAME WIDTH FOR THE FOURTH CONSECUTIVE RAISE. That invariance is
+  // still the argument that it is a mechanical consequence of setting both
+  // literals from measurement with similar margins, and not an accumulating
+  // error. Recorded again rather than quietly repaired: repairing it means
+  // deciding what the backstop is FOR, which is its own change.
+  totalJsRaw: 1_162_000,  // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
                           // p3·15: built 1,130,194, margin 3,806.
   // p3·16 RAISE, 1,134,000 -> 1,150,000. It moves WITH lazyJsRaw, as the
@@ -1080,7 +1091,45 @@ const BUDGETS = {
   // the eager graph; the negative control is clean and was run rather than
   // reasoned about: `BitLicense`, `FinCEN` and `Bappebti` each grep to **0** in the
   // served entry chunk, so no legality prose reached first paint.
-  lazyJsRaw: 893_000,   // p3·18: built 889,208 on the FINAL tree, margin 3,792.
+  // p3·19 RAISE, 893,000 -> 900,000. Built 896,103 on the FINAL tree, margin 3,897.
+  // THE CLEANEST ATTRIBUTION SINCE p3·18, and it reconciles to the byte. Four
+  // chunk slots moved of 69; the other 65 are size-identical:
+  //     SuperstressPage  14,529 -> 21,146   +6,617   (the guide itself)
+  //     repoPulse        17,300 -> 17,465     +165   (see below — NOT the pulse)
+  //     stressnet         9,243 ->  9,283      +40   (the simulator's corrected copy)
+  //     FuturePage       19,656 -> 19,687      +31   (the band's corrected copy)
+  //                                          ------
+  //                                          +6,853  = the WHOLE lazy delta, residual ZERO
+  //
+  // `repoPulse` IS A LABEL, NOT A CONTENTS LIST — p3·16 recorded this and it is
+  // worth re-reading here, because the obvious story is wrong twice over. That
+  // chunk is where `pages/future/data.ts` lands, and data.ts is what this PR
+  // edited; `repoPulse.tsx` itself is untouched. Vite names a chunk after ONE of
+  // its member modules, so a delta filed under "repoPulse" says nothing about the
+  // repo pulse.
+  //
+  // THE +42 THAT ALMOST SHIPPED WRONG. A mid-flight measurement read 896,061 and
+  // this comment was drafted from it. One later src commit — wrapping the
+  // maintainer quote in a `<p>` so it inherits the site's own 74ch reading
+  // measure — moved it to 896,103. Inside the margin either way, and still a
+  // figure describing a tree that no longer existed. That is the seven-instance
+  // re-measure family, caught for the third release running by re-deriving AFTER
+  // the last src commit rather than reusing the number already written down.
+  //
+  // `eagerJsRaw` DID NOT MOVE AT ALL — 262,360 on both sides, delta exactly 0,
+  // which is what makes the single figure +6,853 serve as BOTH this budget's
+  // delta and totalJsRaw's. `SITE_PR` 187 -> 188 is length-preserving, so even
+  // the eager entry's one edited literal costs nothing. `cssGz` is BYTE-IDENTICAL
+  // at 17,900 against a 300 B margin: the guide adds ZERO stylesheet rules and
+  // reuses .kicker/.mono/.dim/Card/Pill plus inline styles, and the one place it
+  // wanted a rule (the quote's measure) was solved by inheriting an existing
+  // selector instead of writing a new one. `CHUNK_COUNT` holds at 69 — nothing
+  // minted. Both route ceilings HELD and were NOT raised: /operate/superstress
+  // 103,506 of 105,000 (margin 1,494) and /future 104,836 of 107,000 (2,164).
+  // Baseline built in an ISOLATED `c6b518e` worktree; attribution keyed on chunk
+  // STEM and paired by MULTIPLICITY, because this build stamps content and a
+  // filename-keyed diff reports 69 additions and 69 deletions rather than a delta.
+  lazyJsRaw: 900_000,   // p3·19: built 896,103 on the FINAL tree, margin 3,897.
                         // p3·16: built 882,873 on the FINAL tree, margin 3,127.
                         // p3·15: built 867,213, margin 3,787.
   //

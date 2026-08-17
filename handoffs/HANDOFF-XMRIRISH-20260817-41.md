@@ -129,12 +129,87 @@ npm run verify:e2e
 
 ## 7 · REPORT  — filled on exit, completely
 
-status:
-pr:
-commits:
-deps added:
-deviations from spec:
-notes for ARCHITECTURE.md patch:
-open questions:
+**status:** done
+
+**pr:** https://github.com/aqua-019/satoshis-vision-v1/pull/188 (draft)
+
+**commits:** `8926c94` the page + every mirror · `384509b` §6 rewritten to gate the answered
+state · `dd69866` two §6 defects found by break tests refusing to go red · `b908d35` the inert
+route path in the eco popup, and the scratch probe `git add -A` swept in · plus the budget
+raise, the SITE_PR bump and the records.
+
+**deps added:** none.
+
+### §0 confirmations, measured
+
+| premise | verdict |
+|---|---|
+| base `c6b518e`, branch at it | CONFIRMED — `HEAD` == `origin/main` == branch |
+| clone SHALLOW | CONFIRMED (443) → `--unshallow` → **882** |
+| `18083` appears nowhere in tree | CONFIRMED |
+| existing `18081/18089` hits are "NodePage + verify-nodehealth" | **CORRECTED — 7 files, not 2** (adds `verify-fixtures`, `verify-orb`, `api/_nodes.js`, `api/_fixtures/`, `relay/`). All mainnet/cascade contexts, so the characterisation holds. |
+| the 7 baseline budget figures | **all CONFIRMED exactly** |
+| census 83/79/69/22/34 | **all CONFIRMED**, instrument controlled against `bda0491` AND `e5eae16` |
+| CSP `connect-src 'self'` at vercel.json:17 | CONFIRMED |
+| §0.8 mirror list is complete | **REFUTED — see below** |
+
+### The mirror sweep — the brief's list was incomplete
+
+| hit | new copy |
+|---|---|
+| `data.ts:415` telemetry slot | **deleted** (2 screenshot slots stay — still honest) |
+| `data.ts:405` "Screenshots, endpoints … as they're provided" | "endpoints" dropped; new `body[2]` states the answer |
+| `data.ts:549` `mode` "still pending" | "repo pulse live · no public endpoint, by design — the chain is self-hosted"; `tone` decided out loud |
+| `data.ts:536-537` ("Genuinely still pending") | **brief said 535-536; it is 536-537** — stressnet clause removed, other two kept |
+| `FuturePage.tsx:151` "landing soon" | "The chain is self-hosted — every node on it is somebody's own box." |
+| `SuperstressPage.tsx:419-437` §5 | replaced by the answer |
+| `SuperstressPage.tsx:28-33` docblock | rewritten + a new port-attribution invariant |
+| **`protocols/stressnet.tsx:229`** — MISSED BY BRIEF | rendered copy on `/learn/sim?p=stressnet`, a route the hub cross-links to. Fixed; re-probed `pendingClaim: false`. |
+| **`protocols/stressnet.tsx:11-13`** — MISSED BY BRIEF | the stated reason that file never reads `data`; now says permanent, not pending |
+
+### Port attribution — every number in the diff
+
+7 occurrences added: `18081` ×3, `18080` ×2, `18083` ×1, `18089` ×1. **Two are source comments
+(render nowhere); the other five all render inside `[data-ports]`**, which holds the quote and
+its attribution in one box. §6g proves it at runtime per port
+(`count(page) === count(inside)`), paired with a control that ports render at all.
+
+**deviations from spec:** three, each decided out loud.
+1. **`protocols/stressnet.tsx` was edited** though the brief's subject list omits it — §0.8's
+   instruction ("every pending-endpoint phrase dies in the same PR") governs, and its list was
+   a hypothesis. Its `/future` link was **kept** rather than retargeted at the hub: the prompt
+   header says *correctness, not enhancement*, and that link is not false.
+2. **No third `tone` value.** Amber is right for a row that is not wired end-to-end and never
+   will be; a third state would put a verbal distinction in a hue. The type comment's "yet" was
+   already false for the X row and was corrected instead.
+3. **No new section.** §3 absorbed the prerequisite identity and reachability; §5 became the
+   coda + answer. The measured structure carried it.
+
+**notes for ARCHITECTURE.md patch:** none — no new route, no new module, no new chunk
+(`CHUNK_COUNT` 69 unchanged), no new stylesheet rule (`cssGz` byte-identical), provenance
+still five members. CLAUDE.md's census stands UNCHANGED; its "71 invocations" figure was
+arithmetically impossible and is corrected to 75.
+
+**open questions:**
+- The chain-parameter embargo still holds — genesis, nettype and Superstress's own daemon
+  ports remain undocumented. Only the ENDPOINT question closed.
+- `verify-sims` is red on `origin/main` (stale `/simulate` literal at `:151`, reproduced on a
+  clean `c6b518e` worktree). Out of scope here; wiring it would fix 12 stale literals.
+- **No human has seen the rendered result in a browser** — read from screenshots.
 
 ## 8 · LOOP FEEDBACK
+
+- **An enumeration in a brief is a hypothesis, not a measurement.** §0.8 listed six mirrors and
+  said "the full set, measured". A wider sweep found a seventh and eighth on a third route the
+  brief never considered — rendered copy that contradicted the page linking to it. The sweep
+  cost one grep. Future briefs should say "believed complete; verify" rather than "measured".
+- **`INFERRED` from the recon dispatch**: the brief named `cards.tsx` for `EcoPopup` (it is
+  `EcoPopup.tsx`), gave `535-536` for a `536-537` range, and said the stressnet object "serves
+  both surfaces" when the hub reads `blurb` only. None was load-bearing alone; together they
+  would have produced a fix that left the hub lying.
+- **Do not dispatch a recon sweep over files you are concurrently editing.** One probe read
+  in-flight edits as pre-existing and opened its report by "correcting" the premise. Every fact
+  true; every fact about the wrong tree. Pin such a probe to a base worktree.
+- The two gate defects here were both found by mutations REFUSING to go red, not by review.
+  That is the third release running. Break tests that only confirm expected reds are the
+  cheap half.

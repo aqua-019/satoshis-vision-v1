@@ -214,7 +214,22 @@ const MAINTAINER = {
   chain: "Its the FCMP++ stressnet/testnet",
 } as const;
 
-/** Somebody else's words, marked as theirs. */
+/**
+ * Somebody else's words, marked as theirs.
+ *
+ * THE QUOTATION IS A `<p>` INSIDE THE `<blockquote>`, and that is load-bearing
+ * rather than tidy markup. `styles-legibility.css:51` sets the site's reading
+ * measure as `.main p, .panel p, … { max-width: 74ch }` — the L1 layer that
+ * exists so no palette rule can override a readability one. A bare
+ * `<blockquote>` is not a `<p>`, so the first version of this component escaped
+ * that rule entirely and rendered the reachability quote as a SINGLE 1254px
+ * line at 1440 — roughly 150 characters, about twice the measure every other
+ * paragraph on the page obeys, and wider than the attribution paragraph
+ * correcting it. Wrapping the text restores the measure by INHERITING the
+ * existing declaration: no new stylesheet rule (cssGz has a 300 B margin) and
+ * no second copy of the number 74. Found by measuring computed `max-width`,
+ * which read `638.948px` on a sibling paragraph and `none` here.
+ */
 function Quote({ children }: { children: React.ReactNode }) {
   return (
     <blockquote
@@ -225,7 +240,7 @@ function Quote({ children }: { children: React.ReactNode }) {
         borderLeft: "2px solid var(--g-50)", padding: "4px 0 4px 14px",
       }}
     >
-      “{children}”
+      <p style={{ margin: 0 }}>“{children}”</p>
       <span style={{ display: "block", marginTop: 6, fontSize: "var(--fs-mono)", color: "var(--ink-40)" }}>
         — the Superstress maintainer, asked directly
       </span>
