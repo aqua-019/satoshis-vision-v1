@@ -115,8 +115,8 @@ p4·01 fixed.
 - [x] script controlled against THREE commits (e5eae16, bda0491, 543a8d8), all reproduced
       exactly; measured 84 / 80 / 22 / 34 / 70 / 6
 - [x] 5 captured and looked at. The fixed-height void was found BY LOOKING and fixed
-- [~] Branch pushed (`47ff9f3`). **PR NOT OPENED — BLOCKED**: API writes are not
-      authorized for this session (see REPORT). `mergeable_state` therefore not reported.
+- [x] Branch pushed · draft PR opened by the operator (#191) · this session could not open
+      it — API writes are not authorized for this org (see REPORT for the three attempts)
 
 ## 6 · VERIFY COMMANDS
 
@@ -134,7 +134,8 @@ npm run verify:e2e
 ## 7 · REPORT
 
 status: done
-pr: NOT OPENED — BLOCKED. Branch `claude/prompt-attached-devzvd` @ `47ff9f3` is pushed.
+pr: https://github.com/aqua-019/satoshis-vision-v1/pull/191 — opened BY THE OPERATOR after this session hit an authorization wall.
+  Branch `claude/prompt-attached-devzvd`.
   Three distinct attempts, same authorization wall:
     1. GitHub MCP `create_pull_request` -> `Authentication Failed: Bad credentials`
     2. same, retried                    -> `Authentication Failed: Bad credentials`

@@ -437,11 +437,13 @@
   the gate measured the previous build.
   Suite on the shipping tree: static 0 reds · **e2e exit 0, 0 reds across all 34** · bundle
   28/0 · mobile 47/1/0 · all 7 moved api gates exit 0.
-  **PR NOT OPENED FROM THIS SESSION — BLOCKED, and the branch is pushed.** Three distinct
-  attempts: the GitHub MCP twice (`Authentication Failed: Bad credentials`) and the REST API
-  with the session's `GITHUB_TOKEN` (`HTTP 403 — GitHub access is not enabled for this session.
-  An org admin must connect the Claude GitHub App for this organization`). `git push` works
-  because it goes through the git proxy; API WRITES are not authorized. Branch
-  `claude/prompt-attached-devzvd` @ `47ff9f3`. Open at:
-  https://github.com/aqua-019/satoshis-vision-v1/compare/main...claude/prompt-attached-devzvd
+  **THE PR WAS OPENED BY THE OPERATOR, NOT FROM THIS SESSION.** Three distinct attempts failed
+  on the same authorization wall: the GitHub MCP twice (`Authentication Failed: Bad
+  credentials`) and the REST API with the session's own `GITHUB_TOKEN` — which authenticates
+  (`api.github.com/user` -> 200) but returns `HTTP 403 — GitHub access is not enabled for this
+  session. An org admin must connect the Claude GitHub App for this organization` on a write.
+  `git push` succeeds because it goes through the git proxy; API WRITES are a separate grant,
+  and no retry clears it. Worth knowing for the next cloud session: the branch will always
+  push, and the PR may still have to be opened by hand.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/191
 
