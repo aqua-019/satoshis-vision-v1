@@ -334,6 +334,27 @@ R.group('── 0 · derived sweep audit: every /-reaching gate installs the byp
     /\b(?:R|RT|Routes)\.HOME\b/,
     // the 43-entry test surface, whose first element is '/'
     /import\s*\{[^}]*\bROUTES\b[^}]*\}\s*from\s*['"]\.\/verify-lib\.mjs['"]/,
+    /* the CANONICAL 14-route list, whose first element is R.HOME === '/'.
+     * ADDED p4·02, and this assertion is what found the hole: the rewritten
+     * verify-mobile ITERATES `ROUTES` from scripts/routes.mjs instead of
+     * holding a '/' literal, so it installed the bypass while the detector
+     * could not see it reach Home — and the audit reported "16 wired" over a
+     * set that was really 17. The two ROUTES modules are DIFFERENT lists with
+     * the same export name (14 canonical paths here; 43 tab/query permutations
+     * there), so each needs its own pattern.
+     *
+     * THE IMPORT ALONE IS NOT ENOUGH, AND MATCHING ON IT IS A FALSE POSITIVE —
+     * measured, not predicted. The first version of this pattern keyed on the
+     * import and immediately accused `verify-superstress.mjs`, which imports
+     * ROUTES purely as a MEMBERSHIP TEST (`ROUTES.includes(path)` at :695) and
+     * never navigates to ROUTES[0]. That gate's own header at :20 already
+     * worried about this shape from the other side. So the pattern requires an
+     * ITERATION FORM that can actually drive a `goto` — `of ROUTES`, or a
+     * map/forEach over it. `.includes()` and `.some()` are predicates asked
+     * ABOUT a path, not loops that visit one, which is exactly the distinction
+     * between a gate that renders Home and a gate that merely knows Home
+     * exists. */
+    /(?:\bof\s+ROUTES\b|\bROUTES\s*\.\s*(?:map|forEach)\s*\()[\s\S]*/,
   ];
 
   /* The ONE gate whose subject at `/` is the splash itself.
