@@ -286,37 +286,64 @@ jobs:
       # RECOUNTED, never incremented — and it was already stale before p3·15:
       # the title read "(29) … +19" while the chain held 30 members, because
       # p3·14b appended verify-stream without folding it in. p3·15 appended
-      # verify-peers (31 / +21); p3·16 inserts verify-superstress, so the
-      # honest figures are 32 and +22. Measured, not derived from the previous
-      # title:
+      # verify-peers (31 / +21); p3·16 inserts verify-superstress (32 / +22);
+      # p3·17 adds verify-releases-dom (33) and p3·18 wires verify-legality
+      # (34 / +22 — the "+N" holds at 22 because both new gates are NAMED in the
+      # title, so the unnamed remainder does not move). p4·01 adds no member and
+      # renames none: it MOVES verify-vitals from 33 to 34, so both figures are
+      # unchanged and the current title "(34) … +22" is correct. Measured, not
+      # derived from the previous title:
       #   node -e "console.log(require('./app/package.json')
       #     .scripts['verify:e2e'].split('&&').length)"
+      # THE THREE FIGURES ABOVE THIS PARAGRAPH ARE DATED, NOT CURRENT, and are
+      # deliberately left as written: ":97" and ":226" narrate what a 4 KB
+      # overage silenced ON #170, and ":277" narrates what the old step name
+      # covered WHEN THE MISLABEL WAS FOUND. Each was true when measured. They
+      # read as present-tense claims about a 21/29 chain that is now 22/34, so
+      # check the figure's date before quoting it — rewriting them would
+      # falsify a measurement rather than refresh one.
       #
-      # KNOWN AND NOT FIXED HERE: the comment block at the top of this file
-      # says "the vitals-last ordering inside verify:e2e" carries over
-      # unchanged. It no longer holds — verify-stream sits AFTER verify-vitals
-      # and is now the chain's tail. That inverts v6.1.9's reasoning, which put
-      # vitals last precisely because it is the most contention-sensitive gate
-      # in the suite and has zero dependents, so its (frequently environmental)
-      # red should mask nothing. Today a vitals red masks verify-stream.
-      # Restoring the invariant is a one-line move, but reordering an && chain
-      # changes what masks what for every member, so it belongs in its own
-      # change rather than riding along in a partner-card PR.
+      # CLOSED 2026-08-17 (p4·01). This paragraph read "KNOWN AND NOT FIXED
+      # HERE" from p3·14b until now: verify-stream sat AFTER verify-vitals and
+      # was the chain's tail, inverting v6.1.9's reasoning — vitals goes last
+      # precisely because it is the most contention-sensitive gate in the suite
+      # AND has zero dependents, so its frequently-environmental red should mask
+      # nothing. For five releases a vitals red masked verify-stream instead.
+      # The tail is now `… verify-orb && verify-stream && verify-vitals`, so
+      # vitals is position 34 of 34 and masks nothing again.
+      #
+      # The move is one line and its risk is not: reordering an && chain changes
+      # what masks what for EVERY member, and running verify-stream immediately
+      # before a wall-clock gate hands vitals whatever machine state stream
+      # leaves behind. Checked rather than assumed — verify-stream starts no
+      # server of its own (it drives the shared serve-dist like every other e2e
+      # member) and verify-vitals reads no artifact any earlier gate produces,
+      # so the two are independent in both directions. verify-vitals was then
+      # run TWICE on the reordered chain and its per-route medians recorded in
+      # the PR body, so the claim rests on a measurement rather than on this
+      # paragraph.
       #
       # p3·16 places verify-superstress at position 15, immediately after
-      # verify-peers — MID-CHAIN, deliberately, and not at the tail. The tail
-      # is already carrying an inverted invariant (see the paragraph above);
-      # appending there would deepen a known defect, and a gate whose subject
-      # is one route has no claim on the position reserved for the gate with
-      # zero dependents. Beside verify-peers is also where it belongs by
+      # verify-peers — MID-CHAIN, deliberately, and not at the tail. (Its first
+      # reason was the same expired one recorded in the p3·18 paragraph below:
+      # the tail was then carrying the inverted invariant, so appending there
+      # deepened a known defect. p4·01 CLOSED that inversion. Corrected here in
+      # the same pass, because leaving it would have left this block asserting
+      # the inversion is live six lines above the paragraph that records it as
+      # closed — one comment block contradicting itself.) The SECOND reason
+      # stands unchanged and is sufficient: a gate whose subject is one route
+      # has no claim on the position reserved for the gate with zero dependents. Beside verify-peers is also where it belongs by
       # subject: the two share a data source and assert complementary halves
       # of it.
       # p3·18 wires verify-legality at position 17, immediately after
       # verify-releases-dom — MID-CHAIN, for the same two reasons p3·16 placed
-      # verify-superstress at 15. The tail is still carrying the inverted
-      # vitals-last invariant (see the paragraph above), so appending there
-      # deepens a known defect; and a gate whose subject is one route has no
-      # claim on the position reserved for the gate with zero dependents.
+      # verify-superstress at 15. (Its first reason was that the tail was then
+      # carrying the inverted vitals-last invariant, so appending there deepened
+      # a known defect. p4·01 CLOSED that inversion — see above — so only the
+      # SECOND reason still stands, and it is sufficient on its own: a gate
+      # whose subject is one route has no claim on the position reserved for the
+      # gate with zero dependents. Both placements remain correct; one of the
+      # two arguments for them has simply expired.)
       #
       # This gate was an ORPHAN from v6.0.10 until now — wired to neither npm
       # nor CI. It was run FIRST against an untouched build before any change

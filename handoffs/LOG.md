@@ -275,3 +275,71 @@
   neither 67 nor 69 — measured 73 and 75).
   **No human has seen the rendered result in a browser.**
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/188
+- XMRIRISH-20260817-42 · done · p4·01 "THE HYGIENE CLOSE" — seven named ledger items retired
+  before Phase 4's mobile work. **TWO OF THE SEVEN WERE WRONG AS WRITTEN, and measuring before
+  fixing changed both fixes.** ITEM 4: the ledger said `verify-legality` §B claimed "scheme and
+  shape" while an `http://` deep-path href stayed green — ran that exact mutation at `81fafca`
+  and it **REDS** (`every linked source is https (23 links)`, 67·1). The scheme was always
+  asserted; what sails through is SHAPE — `https://…/some/deep/guessed/path?utm_source=xmrirish`
+  measured **68·0, fully green** — so §B now asserts no citation href carries a query string or
+  fragment. The guessed-PATH half is left unasserted and that is MEASURED: `gesetze-im-internet.de/estg/`
+  is one segment and canonical while the EU's ELI URI `/eli/reg/2023/1114/oj` is five and equally
+  canonical, so no depth rule separates canonical from guess. 68 → **69**. ITEM 7: the ledger said
+  CLAUDE.md lists FIVE provenance sources where FOUR exist — measured **FIVE exist and CLAUDE.md
+  is right**, corroborated by five independent surfaces, so **CLAUDE.md was not edited**. The item
+  was true on 2026-08-01 (`HANDOFF-…-05.md:46`) and `b78dfe2` closed it on 2026-08-03, fourteen
+  days before it was handed to me as open. Its one live residue: **`SourcesPage.tsx:6` named four
+  "— the exact badge vocabulary" while the same file renders FIVE `<SourceRow>`s**, `network`
+  appended last, the retrofit's own signature — in the file whose entire job is to be the
+  provenance legend. **THE TWO CRASH FIXES SHARE ONE SHAPE**: a red EXIT with no named red and no
+  summary, over which `grep '❌'` returns EMPTY — indistinguishable from "no failures". Both
+  proven BEFORE/AFTER against the gate as committed at `81fafca`, never HEAD. `verify-releases`
+  (#186) imported its leaves at top level: BEFORE `EXIT=1, 0 named reds`, bare stack trace; AFTER
+  **2 named reds** naming the leaf and `ERR_MODULE_NOT_FOUND`, fatal not skipped. 38 → **45**.
+  `verify-markets-dom` (#181 F1) dereferenced `boxes[-1]`: BEFORE `TypeError … at :790:28`, 0
+  named reds; AFTER **3 named reds**, tally printed — bailed with a LABELLED `break` so the ~150
+  healthy-tree assertions do not move one byte. ITEM 5: `verify-peers` §6b **could not fail** —
+  `/^[\s\d.,]+$/` demands the whole string be digits, so the LIVE readout satisfied it as well as
+  the degraded one, and one disjunct could never fire (`FeedEmpty` renders no word "error"). It
+  reported ✅ not a skip: passing vacuously, not abstaining. Now asserts the shipped copy, the
+  absence of the mock's 42/7 that §6a proved rendered moments earlier, and the absence of
+  `[data-readout]`. Break test **7 reds**. 25 → **32**. ITEM 1: the shell said `v5.0` for ~25 PRs
+  and `prerender.mjs` copies the `<head>` verbatim, so **all fourteen** routes shipped it.
+  DE-VERSIONED rather than DERIVED (`SITE_PR` moves every release); the gate reads the SOURCE, not
+  `dist/`, because `ci.yml:86-88` already records that `verify:static` runs BEFORE its Build step
+  — the brief's parenthetical would have walked into a documented hazard and passed locally off a
+  stale build. ITEM 3: the tail is `… verify-orb && verify-stream && verify-vitals`, vitals **34
+  of 34**, closing an inversion open since #183; risk checked, not assumed. That reorder obliged
+  `verify-coldboot.mjs`'s docblock — which ENDS with an instruction to re-read it on any reorder —
+  and every position literal in it was already wrong (#27/#28/#29, "TWO gates after", "27 of 29",
+  a runtime header printing "27 gates in"); measured **#31·#32·#33·#34 of 34, THREE after**.
+  Correcting one ci.yml paragraph also created a contradiction six lines from another; both now
+  agree, and three DATED figures are deliberately left and annotated rather than falsified.
+  **BUDGETS: every figure BYTE-IDENTICAL to `81fafca`** — eager 262,360 · lazy 896,103 · total
+  1,158,463 · cssGz 17,900 · CHUNK_COUNT 69, no ceiling raised; measured against an ISOLATED
+  worktree build, not inferred from a rounded column. `eagerJsGz` alone moves **+5 B (87,902 →
+  87,907)**, and **my first attribution of it was WRONG and was disproved by measurement**: I said
+  `SITE_PR` 188→189, but flipping those digits in the built chunk and re-gzipping moves the total
+  by EXACTLY 0. Classified across both builds: **8 byte-identical stems, 60 size-identical with
+  ROTATED content, ZERO changed size** — the +5 is compressibility from a `__vite__mapDeps` hash
+  cascade. Census RECOUNTED and **UNCHANGED — 83/79/22/34/69, orphans 6** —
+  correct for a release that adds no gate FILE and MOVES one member; the script was CONTROLLED
+  against **two** historical commits first. **EIGHT SELF-INFLICTED DEFECTS** (the eighth being the wrong budget attribution above), the first two being
+  recorded traps committed by someone who had just read them: a break-test restore that reverted
+  to HEAD and wiped the uncommitted fix (p3·12d); a BEFORE transcript taken with `git show HEAD:`
+  AFTER committing the fix, so BEFORE and AFTER were byte-identical, caught by reading the
+  transcript rather than trusting its heading; a probe whose comment-stripper mangled the glob
+  `'**/api/**'` and measured 14 where the answer is 13 (p3·16's stripper defect, in my own
+  instrument); an `index.html` comment that hardcoded `v6 · #188` — a rotting version number
+  shipped in fourteen files inside the fix for a rotting version number; a doubled `*/`;
+  a `&&  … &` that backgrounded the build so the readiness probe hit an unbound port; and a
+  rebuild taken BEFORE the commit, which `verify-coldboot-live` §0a caught as `STALE DIST:
+  serving a build of 5acbbfa while HEAD is bae6dfb`. **NOT FIXED, named with numbers**:
+  `verify-coldboot-live.mjs:7,13` ("Eleven gates", "27 entries, index 27") measures 13 callers /
+  34 members / coldboot at 31 — the load-bearing property VERIFIED intact (control at position 1,
+  all twelve others after); `verify-resilience-dom.mjs:8` ("Ten of the twenty-two … cls") is stale
+  in count AND membership since `verify-cls` now calls `ctx.route()` — left because the number
+  needs an instrument better than the one that produced my own defect above. `verify-peers` §7 is
+  deliberately untouched with a dated comment: p4·02 replaces its exemptions wholesale.
+  **No human has seen the rendered result in a browser.**
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/189

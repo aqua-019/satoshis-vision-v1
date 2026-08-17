@@ -745,7 +745,12 @@ console.log('\nverify-markets-dom — canvas hero');
    therefore paired with "the group chart IS showing its own readout at this
    very moment", which is the proof that a timestamp was published at all. */
 console.log('\nverify-markets-dom — synced cursor');
-{
+/* LABELLED so the locator guard below can bail this section CLEANLY (p4·01,
+   closing #181 F1). A labelled `break` is used rather than wrapping the body in
+   an `if`, deliberately: re-indenting would rewrite ~150 lines of assertions
+   that are not the subject of this fix, and the point of the fix is that what
+   this section asserts on a HEALTHY tree does not move by one byte. */
+syncedCursor: {
   const c = await b.newPage({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });
   await c.route('**/api/**', fulfil);
   await c.addInitScript(() => { try { sessionStorage.setItem('xmrirish.coldboot', '1'); } catch {} });
@@ -785,9 +790,32 @@ console.log('\nverify-markets-dom — synced cursor');
      fold, and a mouse.move to an off-viewport point silently hits nothing —
      which is how the first version of this section measured an empty page and
      reported a pass. `elementFromPoint` is the guard. */
+  /* THE LOCATOR GUARD (p4·01, closing #181 F1). This read:
+         const boxes = await c.$$('.mk-syncbox');
+         const peers = boxes[boxes.length - 1];
+         const psvg  = await peers.$('svg');
+     On a tree where the syncboxes do not render, `boxes` is empty, `boxes[-1]`
+     is `undefined`, and `.$` throws a TypeError BEFORE the first assertion in
+     this section — so the gate died with a red EXIT CODE, no named failure and
+     no summary line. A `grep '❌'` over that run returns EMPTY, which reads
+     exactly like "no failures". The subject was a missing FEATURE and the
+     report was a crash, which names nothing and points nowhere.
+     Both dereferences are guarded, and each has its OWN named red, because
+     "no syncbox at all" and "a syncbox with no chart in it" are different
+     defects and a reader needs them told apart. This is a FAILURE, never a
+     skip: the feature these 150 lines exist to test is absent. */
   const boxes = await c.$$('.mk-syncbox');
-  const peers = boxes[boxes.length - 1];
-  const psvg = await peers.$('svg');
+  const peers = boxes.length ? boxes[boxes.length - 1] : null;
+  is(!!peers,
+    `the peers syncbox exists — .mk-syncbox matched ${boxes.length} element(s); the synced-cursor section needs at least one`);
+  const psvg = peers ? await peers.$('svg') : null;
+  is(!!psvg,
+    'the peers syncbox carries an <svg> to hover — without it every assertion below would be unreachable');
+  if (!psvg) {
+    console.log('   ↳ synced-cursor section SKIPPED: its subject is not on the page. The two reds above are the finding; the assertions below were never made.');
+    await c.close();
+    break syncedCursor;
+  }
   await psvg.scrollIntoViewIfNeeded();
   await c.waitForTimeout(200);
   let box = await psvg.boundingBox();

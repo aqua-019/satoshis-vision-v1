@@ -44,9 +44,21 @@
     <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="xmr.irish v5.0 — Monero, in public, in private." />
+    <meta name="description" content="xmr.irish — Monero, in public, in private." />
     <meta name="referrer" content="no-referrer" />
-    <title>xmr.irish · v5.0</title>
+    <!-- DE-VERSIONED DELIBERATELY (p4·01). This carried a `v5.0` stamp — as did
+         the meta description above — for roughly twenty-five PRs after the era
+         became v6, so the browser tab contradicted the topbar's own gated
+         version label. `prerender.mjs` rewrites only the <html> tag and the
+         root element, so this ONE string is inherited verbatim by all fourteen
+         routes: one stale claim, fourteen copies.
+         DE-VERSIONED rather than DERIVED, and no version number is named even
+         here, on purpose: the release identity moves every PR, so any copy of
+         it living outside `data/siteVersion.ts` — a tab label, a bookmark, or a
+         comment like this one — is a thing that rots. `verify-releases.mjs` §8
+         asserts the absence, with positive controls so a deleted title cannot
+         satisfy it. The full reasoning is in that gate's §8 header. -->
+    <title>xmr.irish — Monero, in public, in private.</title>
     <script>
       // Pre-paint theme stamp — avoids a flash of the wrong palette on a
       // hard reload. design/VisualContext.tsx's <VisualProvider> makes this

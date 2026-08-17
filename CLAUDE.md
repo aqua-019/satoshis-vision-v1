@@ -599,6 +599,163 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-17**: p4·01 "THE HYGIENE CLOSE" (app/ + .github/) — seven named ledger items
+  retired before Phase 4's mobile work. Docs and gate-side throughout; the only `src/` touches
+  are `index.html`, a comment-only docblock, and `SITE_PR`. **TWO OF THE SEVEN ITEMS WERE WRONG
+  AS WRITTEN, AND MEASURING BEFORE FIXING CHANGED BOTH FIXES** — which is the release's whole
+  lesson, arriving twice in one PR.
+  **ITEM 4's PREMISE WAS FALSE AND ITS CONCLUSION WAS TRUE.** The ledger said `verify-legality`
+  §B claimed "scheme and shape" while an `http://` deep-path href stayed GREEN. Ran that exact
+  mutation at `81fafca`: it **REDS** — `❌ every linked source is https (23 links)`, 67 passed ·
+  1 failed. The scheme was and is asserted hard. What actually sails through is the SHAPE half:
+  `https://www.fincen.gov/some/deep/guessed/path?utm_source=xmrirish` measured **68 passed · 0
+  failed, fully green**. So §B now also asserts no citation href carries a QUERY STRING or
+  FRAGMENT — `data.ts`'s own header commits every href to "a regulator's ROOT or a canonical
+  permanent identifier", neither of which carries tracking parameters, and a `?utm_*` would name
+  this site to a regulator's analytics (the same privacy claim the `rel="noopener noreferrer"`
+  assertion beside it already makes). **The guessed-PATH half is left unasserted and that is
+  MEASURED, not conceded**: `gesetze-im-internet.de/estg/` is ONE segment and canonical while the
+  EU's ELI URI `/eli/reg/2023/1114/oj` is FIVE and equally canonical, so no depth rule separates
+  a canonical path from a guess. Path shape stays an editorial judgement. 68 → **69**.
+  **ITEM 7's PREMISE WAS FALSE IN THE OTHER DIRECTION, AND THE ITEM HAD BEEN CLOSED FOR FOURTEEN
+  DAYS.** It said CLAUDE.md lists FIVE provenance sources while FOUR exist. Measured: **FIVE
+  exist and CLAUDE.md is right** — the union at `provenance.tsx:60`, corroborated by FIVE
+  independent surfaces (`PROV_LABEL` and `PROV_GLOSS`, both `Record<ProvSource, …>` and both
+  compile errors until filled; five `.prov--*` classes at `styles.css:2115-2119`; five rendered
+  `<SourceRow>`s; and an `Orb.tsx` comment presupposing exactly five). **CLAUDE.md was NOT
+  edited.** The item was true once: `HANDOFF-XMRIRISH-20260801-05.md:46` recorded it on
+  2026-08-01 and `b78dfe2` (2026-08-03) added NETWORK as the fifth. What `b78dfe2` MISSED is one
+  line, and that is the whole live residue: **`SourcesPage.tsx:6` named four — "NODE / COINGECKO
+  / SESSION / MODEL — the exact badge vocabulary" — while the same file renders FIVE
+  `<SourceRow>`s ~150 lines below**, with `network` appended after `model` rather than in the
+  union's order, which is the retrofit's own signature. A file whose entire job is to BE the
+  provenance legend disagreed with itself, and the member it dropped was NETWORK — exactly the
+  one the vocabulary exists to keep apart from NODE.
+  **THE TWO CRASH FIXES SHARE ONE SHAPE: a red EXIT with NO named red and NO summary, over which
+  a `grep '❌'` returns EMPTY — which reads exactly like "no failures found".** Both were proven
+  BEFORE/AFTER against the gate as committed at `81fafca`, never against HEAD.
+  · **#186 · `verify-releases`** imported its two leaves at top level, so a resolvable-but-broken
+  leaf killed it at MODULE LOAD. BEFORE: `EXIT=1, 0 named reds, no summary line`, raw output a
+  bare Node stack trace. AFTER: **2 named reds** naming the leaf and `ERR_MODULE_NOT_FOUND`. It
+  is FATAL rather than a skip — every assertion below reads those exports, so continuing would
+  print green while asserting nothing. 38 → **45**.
+  · **#181 F1 · `verify-markets-dom`** did `boxes[boxes.length - 1]` on a possibly-empty `$$`
+  result. BEFORE: `TypeError: Cannot read properties of undefined (reading '$') at …:790:28`, 0
+  named reds. AFTER: **3 named reds** including `.mk-syncbox matched 0 element(s)`, tally printed.
+  Bailed with a **LABELLED `break`** rather than by wrapping the body in an `if`: re-indenting
+  ~150 unrelated assertions would have destroyed the one property the fix is FOR — that what the
+  section asserts on a healthy tree does not move by one byte.
+  **ITEM 5 · `verify-peers` §6b COULD NOT FAIL, and the reason is a regex reading the wrong
+  quantity.** `/^[\s\d.,]+$/` demands the WHOLE string be digits, dots, commas and spaces, so any
+  text containing a letter made `hasFabricatedNumber` false and `!hasFabricatedNumber` true on its
+  own — the LIVE readout satisfied it exactly as well as the degraded one. One fallback disjunct
+  could never fire at all: `FeedEmpty` renders no word "error" anywhere. Measured at `81fafca` it
+  reported **✅, not a skip** — passing vacuously, not abstaining. It now asserts the copy
+  `FeedEmpty` ships, the ABSENCE of the mock's 42/7 that §6a proved rendered moments earlier on
+  the same selector, and the absence of the live branch's `[data-readout]` spans — a structural
+  check that catches a fabrication even if every numeral differs. Break test: **7 reds**. 25 → **32**.
+  **ITEM 1 · THE SHELL SAID v5.0 FOR ~25 PRs, AND THE FIX IS A DECISION, NOT A BUMP.**
+  `prerender.mjs` rewrites only the `<html>` tag and the root element, so ONE string was inherited
+  verbatim by **all fourteen** prerendered routes — measured, all 14 `dist/**/index.html` carried
+  it identically. **DE-VERSIONED rather than DERIVED**: `SITE_PR` moves every release, so a
+  derived title would churn fourteen files, every bookmark and every link preview once per PR to
+  carry a number no reader is served by. **THE GATE READS THE SOURCE, NOT `dist/`, AND THE BRIEF'S
+  PARENTHETICAL WOULD HAVE WALKED INTO A DOCUMENTED HAZARD**: `ci.yml:86-88` already records that
+  `verify:static` runs BEFORE its job's Build step, "so a dist-reading gate placed there would
+  fail on every single run" — and it would have passed LOCALLY off a stale build. FOUR positive
+  controls run first, so a deleted or reshaped title cannot satisfy "carries no version claim",
+  and a fifth assertion pins the premise structurally: prerender emits no `<title>`.
+  **ITEM 3 · THE TAIL, AND THE FOUR LITERALS THE MOVE OBLIGED.** `verify-stream` had sat AFTER
+  `verify-vitals` since #183, so for five releases the suite's most frequently-environmental red
+  masked it. Tail is now `… verify-orb && verify-stream && verify-vitals`; vitals is **34 of 34**.
+  Risk checked rather than assumed: verify-stream starts no server and verify-vitals reads no
+  artifact an earlier gate produces — the only `npm run build` in either file is its own header's
+  usage line. **`verify-coldboot.mjs`'s docblock ENDS WITH AN INSTRUCTION TO RE-READ IT ON ANY
+  REORDER, and every position literal in it was already wrong**: "#27 this file · #28 verify-orb ·
+  #29 verify-vitals", "TWO gates run after it", "27 of 29", and a runtime header printing "27
+  gates in". The chain had grown by five members since. Measured: **#31 · #32 · #33 · #34 of 34,
+  THREE gates after it**. The bracket's REASONING survived; only its numbers were wrong.
+  **AND CORRECTING ONE ci.yml PARAGRAPH CREATED A CONTRADICTION SIX LINES FROM THE OTHER** — the
+  p3·16 paragraph still asserted the inversion was live above the p3·18 one recording it closed.
+  Both now agree. The recount ledger, which stopped at p3·16's "32 and +22", is carried to 34.
+  **THREE ci.yml FIGURES ARE DELIBERATELY LEFT AND ANNOTATED**: `:97` and `:226` narrate what a
+  4 KB overage silenced ON #170; `:277` narrates what the old step name covered WHEN THE MISLABEL
+  WAS FOUND. Each was true when measured, and rewriting a dated measurement falsifies it rather
+  than refreshing it — but they read as present-tense claims about a 21/29 chain that is now
+  22/34, so a note now says to check a figure's date before quoting it.
+  **BUDGETS: EVERY FIGURE BYTE-IDENTICAL TO `81fafca` EXCEPT ONE, AND THAT ONE IS +5 B.**
+  Measured by building `81fafca` in an ISOLATED worktree with its own `dist/`, not inferred
+  from the gate's rounded KB column. `eagerJsRaw` **262,360 → 262,360** · `lazyJsRaw`
+  **896,103 → 896,103** · `totalJsRaw` **1,158,463 → 1,158,463** · `cssGz` **17,900 → 17,900**
+  · `CHUNK_COUNT` **69 → 69** — every one a ZERO delta, no ceiling raised or approached.
+  `eagerJsGz` alone moves **87,902 → 87,907 (+5 B)**.
+  **AND MY FIRST ATTRIBUTION OF THOSE BYTES WAS WRONG, disproved by the measurement it was
+  supposed to summarise.** I wrote that the move was `SITE_PR` 188 → 189 — three digits changing
+  value at identical length. Testable in one line, so it was tested: flipping `Lo=189,` back to
+  `Lo=188,` in the built entry chunk and re-gzipping moves the total by **EXACTLY 0**. The digits
+  are not the cause. Measured instead, by classifying all 68 chunk stems across the two builds:
+  **8 truly byte-identical, 60 SIZE-identical with ROTATED content, and ZERO that changed size.**
+  The entry's 57 differing runs sit inside Vite's `__vite__mapDeps` table, where fixed-length
+  content hashes rotate. So the +5 is COMPRESSIBILITY ALONE, from a hash cascade — p3·18's
+  recorded phenomenon reproduced stem-for-stem, and a reminder that "a plausible mechanism" and
+  "a measurement" remain different things even inside the paragraph reporting a measurement.
+  **THE ONE RED IN THE WHOLE 34-GATE CHAIN IS `verify-vitals`, AND IT IS THE RUNNER — PAIRED,
+  NOT ASSUMED.** In-chain at position 34 it read `❌ / · median blocking 407ms ≤ 400ms`, SEVEN
+  ms over, while every other gate was green. This PR changes no runtime code, but "implausible"
+  is not "measured", so `81fafca` was built in an ISOLATED worktree, served on its own port with
+  both holders confirmed by `lsof` + `/proc/<pid>/cwd`, and the gate run against BOTH trees on
+  this machine minutes apart. Standalone, `/` blocking reads **353 ms on this tree against 356
+  on the base** — three ms BETTER, and both comfortably under. Across four runs of two trees the
+  figure reads **353 · 356 · 390 · 407**: a plateau straddling a 400 ms ceiling INDEPENDENTLY of
+  the tree, which is p3·12b's recorded finding about this exact route. The in-chain 407 is
+  chain-position contention — the same run DECLINED `/live/markets` at an 88.2% spread, so the
+  machine is measurably moving. Two standalone runs post-reorder, **17 passed · 2 skipped · 0
+  failed, exit 0, twice**. **AND THE REORDER'S VALUE WAS DEMONSTRATED BY THE RUN THAT EXERCISED
+  IT**: vitals now sits at 34 of 34, so that environmental red masked nothing. Before this PR the
+  identical red would have masked `verify-stream`.
+  Census RECOUNTED and **UNCHANGED — 83 files / 79 gates / static 22 / e2e 34 / CI distinct 69 /
+  orphans 6** — the correct outcome for a release that adds no gate FILE and MOVES one member.
+  The counting script was **CONTROLLED against TWO historical commits before being trusted**:
+  `e5eae16` reproduces 81/77/22/31/66 exactly and `bda0491` reproduces 82/78/22/32/67 exactly,
+  including p3·19's corrected invocation arithmetic (72−6=66 and 73−6=67).
+  **EIGHT THINGS I GOT WRONG, and the first two are recorded traps committed by someone who had
+  just read them; the eighth is the budget attribution above, asserted from a plausible mechanism
+  and disproved by a one-line test — the standing family, arriving inside the very paragraph
+  reporting a measurement.**
+  (1) **My break harness restored `index.html` to HEAD — which still held the STALE title,
+  wiping my uncommitted fix.** p3·12d's rule verbatim: commit before EVERY break-test round, so
+  `git checkout` has a real target. (2) **My BEFORE transcript for #186 used
+  `git show HEAD:verify-releases.mjs` AFTER committing the fix, so BEFORE and AFTER were
+  byte-identical** — a label claiming a state its content never carried. Caught by READING the
+  transcript rather than trusting the heading; the real baseline is `81fafca`. (3) **My
+  zero-`.route()` probe measured 14 where the answer is 13**, because its block-comment stripper
+  mangled the glob `'**/api/**'` — a string that contains both `/*` and `*/`. p3·16's stripper
+  defect, in my own instrument, and it is why `verify-resilience-dom`'s stale header is REPORTED
+  below rather than fixed. (4) **My first `index.html` comment hardcoded `v6 · #188`** — shipping
+  a rotting version number, in all fourteen prerendered files, inside the fix for a rotting
+  version number. Removed; the shell now names no version at all. (5) A doubled `*/` from an
+  Edit whose `old_string` stopped one line short. (6) `npm run build && nohup … &` backgrounded
+  the BUILD too, so the readiness check ran against a port nothing had bound yet — bare `curl`
+  returned `000`/exit 7, which is this file's own measured note that the proxy fabricates nothing.
+  (7) **I rebuilt BEFORE committing, so `verify-coldboot-live` §0a fired: "STALE DIST: serving a
+  build of 5acbbfa while HEAD is bae6dfb".** The dist CONTENT matched; the SHA stamp is precisely
+  what distinguishes "happens to match" from "built from this tree", and the guard was right.
+  **NOT FIXED, and named with numbers.** `verify-coldboot-live.mjs:7,13` says "Eleven gates" and
+  "27 entries, verify-coldboot at index 27"; measured **13 call-shaped callers in a 34-member
+  chain with verify-coldboot at 31** — and the LOAD-BEARING property still holds, verified: the
+  control is at position 1 and all twelve other callers run after it. `verify-resilience-dom.mjs:8`
+  says "Ten of the twenty-two gates … nojs, contrast, roles, ground, motion, nav, discrete,
+  govern, reduce, cls"; `verify-cls` now calls `ctx.route()` (`:306`, `:315`) so it no longer
+  belongs, and the true set is larger and includes gates the sentence does not name. Both are
+  pre-existing, in files this PR does not touch, and the second needs an instrument I trust more
+  than the one that produced defect (3) above — so the number is not written down here.
+  Also still open and untouched: the 11-vs-12 px floor conflict, the ten hollow `/future#<id>`
+  anchors, and `verify-sims`' orphan status and stale literals.
+  **`verify-peers` §7 is deliberately untouched** and now carries a dated comment saying why: its
+  mono/pill exemptions are load-bearing for the current 11px floor, and p4·02 replaces them
+  wholesale — narrowing them here would red the tree for the defect p4·02 exists to fix.
+  **No human has seen the rendered result in a browser.**
+
 - **2026-08-17**: p3·19 "THE BETANET GUIDE" (app/) — the maintainer answered, so the
   placeholder that was waiting for him becomes the answer. Nineteenth and last of the series.
   **THE BRIEF'S MIRROR LIST WAS INCOMPLETE, AND THE MISS WAS RENDERED COPY ON A THIRD ROUTE.**
