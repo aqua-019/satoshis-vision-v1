@@ -97,7 +97,7 @@ p4·01 fixed.
 - [x] `npm run typecheck` exits 0
 - [x] `npm run build` exits 0
 - [x] `npm run verify:static` exits 0 — clean, 0 reds
-- [ ] `npm run verify:e2e` exits 0 (environmental reds paired against the base and named)
+- [x] `npm run verify:e2e` exits 0 — 0 reds across all 34 members, including verify-vitals
 - [x] `node verify-bundle.mjs` 28 passed · 0 failed. lazyJsRaw 900,000 → 904,000 (built
       900,457) and totalJsRaw 1,162,000 → 1,167,000 (built 1,163,009), both red-then-green
       on the FINAL tree; CHUNK_COUNT re-centred 66 → 67. Figures re-derived after the LAST
@@ -115,7 +115,8 @@ p4·01 fixed.
 - [x] script controlled against THREE commits (e5eae16, bda0491, 543a8d8), all reproduced
       exactly; measured 84 / 80 / 22 / 34 / 70 / 6
 - [x] 5 captured and looked at. The fixed-height void was found BY LOOKING and fixed
-- [ ] Branch pushed · draft PR opened · `mergeable_state` reported
+- [~] Branch pushed (`47ff9f3`). **PR NOT OPENED — BLOCKED**: API writes are not
+      authorized for this session (see REPORT). `mergeable_state` therefore not reported.
 
 ## 6 · VERIFY COMMANDS
 
@@ -133,7 +134,18 @@ npm run verify:e2e
 ## 7 · REPORT
 
 status: done
-pr: (opened as a draft at write-back — see LOG.md)
+pr: NOT OPENED — BLOCKED. Branch `claude/prompt-attached-devzvd` @ `47ff9f3` is pushed.
+  Three distinct attempts, same authorization wall:
+    1. GitHub MCP `create_pull_request` -> `Authentication Failed: Bad credentials`
+    2. same, retried                    -> `Authentication Failed: Bad credentials`
+    3. REST API with the session's GITHUB_TOKEN (api.github.com/user answers 200, so the
+       token authenticates) -> `HTTP 403 — GitHub access is not enabled for this session.
+       An org admin must connect the Claude GitHub App for this organization.`
+  `git push` succeeds because it goes through the git proxy; API WRITES are a separate grant.
+  This is an org/session permission, not a repo or branch problem, and no retry will clear it.
+  Open in one click:
+    https://github.com/aqua-019/satoshis-vision-v1/compare/main...claude/prompt-attached-devzvd
+  The prepared draft PR body is in the session transcript and was written to /tmp/pr-body.md.
 commits: 5 — the gate move · the pipe · the ledger UI · the polledAt discriminator ·
   the maxHeight correction with its budget raises
 deps added: NONE. The store is plain `fetch` against the Upstash REST API rather than

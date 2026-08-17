@@ -399,3 +399,49 @@
   `ChartTip` tspans at 10.5px that only a hover reveals, named as the gate's blind spot.
   **No human has seen the rendered result in a browser.**
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/190
+
+- XMRIRISH-20260817-44 · done · p4·03 "THE RELEASE LEDGER" — every merged PR with its BODY as
+  the head-to-toe summary, every commit beneath it as the work log, in a bounded scroll region
+  on `/about/sources`, served by a NEW store-backed path that can prove which revision of
+  itself answered. **THE FEATURE IS THE SMALL HALF.** Production serves an `/api/feeds` that
+  no commit in this repo can produce — it honours `n`, does not know `src` AT ALL, and answers
+  every source as `getmonero` with a SECOND-OLD `fetchedAt`, so it executes fresh rather than
+  serving a stale cache. Nothing client-side could SEE it because nothing checked that the
+  answer matched the question. So the ledger ships at a NEW route on NEW files
+  (`api/releases.js` + `api/cron/releases.js`); `feeds.js` is UNTOUCHED as the tombstone. Every
+  envelope carries a hand-bumped `rev` and the requested `source` **on every branch including
+  the failures**, and the client treats a mismatch as its own named state and **DISCARDS the
+  payload** rather than annotating it — a warning over untrusted rows makes them look vetted.
+  **RIDER: the seven `api/verify-*.mjs` were deploying as PUBLICLY INVOCABLE FUNCTIONS** — 13
+  lambdas where 6 are intended, and `/api/verify-nodehealth` would probe remote Monero nodes on
+  anyone's GET. Moved to `api/_tests/`; measured **13 → 8**. The two gates using
+  `join(API_DIR, …)` across ~30 sites were fixed with ONE LINE each.
+  **TWO PREMISE CORRECTIONS.** (1) Tier 2 could NOT be built on `mapCommits` — it is a
+  VERSION-STAMP FILTER, and ZERO of the last 80 commit subjects parse, so reusing it ships an
+  empty tier that looks broken; `mapAllCommits` instead. (2) `cssGz` needed nothing — byte
+  identical at 18,150, the scroll region's four declarations are inline.
+  **AND ONE CLAIM I HAD TO WITHDRAW MID-FLIGHT.** I shipped a FIXED scroll height defended as
+  "a CLS decision" — a box growing when the ledger lands "would shift every element below it".
+  Measured: **CLS 0.00000 EITHER WAY**, because the section is the last content on the page and
+  only the fixed-position footer follows it. The fixed height cost ~374px of dead space in two
+  of four states. `maxHeight` ships; §10 now measures CLS DIRECTLY instead of the proxy.
+  Budgets: attribution reconciles to the byte, residual ZERO — SourcesPage +3,598 ·
+  **Disclosure 0 → 791, a MINTED chunk** · useCachedFeed +541 · index[1] eager +38 ·
+  SuperstressPage **−611** = +4,357. `lazyJsRaw` → 904,000 (built 900,457) · `totalJsRaw` →
+  1,167,000 (built 1,163,009) · `CHUNK_COUNT` re-centred 66 → 67. `/about/sources` HELD at
+  96,471 of 98,000 — PR BODIES ARE FETCHED, NOT BUNDLED.
+  Census recounted with the script CONTROLLED against three commits first (all reproduced
+  exactly): **84 / 80 / 22 / 34 / 70 / 6**. New `verify-releases-pipe.mjs` 79 assertions;
+  `verify-releases-dom` 33 → 74. Six break tests, every restore proven against the committed
+  blob. **One was VOID and looked like a pass**: M1's build FAILED, the harness carried on, and
+  the gate measured the previous build.
+  Suite on the shipping tree: static 0 reds · **e2e exit 0, 0 reds across all 34** · bundle
+  28/0 · mobile 47/1/0 · all 7 moved api gates exit 0.
+  **PR NOT OPENED FROM THIS SESSION — BLOCKED, and the branch is pushed.** Three distinct
+  attempts: the GitHub MCP twice (`Authentication Failed: Bad credentials`) and the REST API
+  with the session's `GITHUB_TOKEN` (`HTTP 403 — GitHub access is not enabled for this session.
+  An org admin must connect the Claude GitHub App for this organization`). `git push` works
+  because it goes through the git proxy; API WRITES are not authorized. Branch
+  `claude/prompt-attached-devzvd` @ `47ff9f3`. Open at:
+  https://github.com/aqua-019/satoshis-vision-v1/compare/main...claude/prompt-attached-devzvd
+
