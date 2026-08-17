@@ -1,6 +1,6 @@
 /* verify-nodehealth.mjs — offline unit test for the api/_nodes.js cascade health
    memory (v6.0.6).
-   Run: node api/verify-nodehealth.mjs
+   Run: node api/_tests/verify-nodehealth.mjs
 
    The sandbox has no network egress to Monero nodes, so this exercises the pure
    ordering/cooldown logic directly with injected timestamps — never Date.now().
@@ -15,7 +15,7 @@
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const nodes = require('./_nodes.js');
+const nodes = require('../_nodes.js');
 const {
   nodesFor, markNodeDown, markNodeUp, isNodeCold,
   _resetHealth, COOLDOWN_BASE_MS, COOLDOWN_MAX_MS,

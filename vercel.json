@@ -23,7 +23,8 @@
       { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
     ]}
   ],
-  "functions": { "api/xmr.js": { "maxDuration": 30 }, "api/feeds.js": { "maxDuration": 15 }, "api/markets.js": { "maxDuration": 30 } },
+  "functions": { "api/xmr.js": { "maxDuration": 30 }, "api/feeds.js": { "maxDuration": 15 }, "api/markets.js": { "maxDuration": 30 }, "api/releases.js": { "maxDuration": 10 }, "api/cron/releases.js": { "maxDuration": 60 } },
+  "crons": [ { "path": "/api/cron/releases", "schedule": "*/10 * * * *" } ],
   "redirects": [
     { "source": "/mempool", "destination": "/live/mempool", "statusCode": 301 },
     { "source": "/network", "destination": "/live/network", "statusCode": 301 },

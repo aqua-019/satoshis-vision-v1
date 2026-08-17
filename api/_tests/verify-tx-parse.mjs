@@ -1,12 +1,12 @@
 /* verify-tx-parse.mjs — offline unit test for api/xmr.js tx parsing.
-   Run: node api/verify-tx-parse.mjs
+   Run: node api/_tests/verify-tx-parse.mjs
    The sandbox has no network egress to Monero nodes, so we verify the pure
    parseTransaction / txSizeFromEntry helpers against committed fixtures that
    mirror a monerod get_transactions(decode_as_json:true) tx entry. */
 
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
-const { parseTransaction, txSizeFromEntry } = require('./xmr.js');
+const { parseTransaction, txSizeFromEntry } = require('../xmr.js');
 
 let failed = 0;
 function check(label, cond) {

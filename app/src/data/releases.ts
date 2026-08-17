@@ -63,6 +63,22 @@ export interface ReleaseNote {
   also?: number;
   /** True when `note` came from CURATED rather than the live feed. */
   curated?: boolean;
+  /** p4·03: the pull request's BODY — the head-to-toe summary the ledger
+   *  renders behind a disclosure. Optional because the curated v5 archive has
+   *  none (those entries predate the convention and were written as one-liners)
+   *  and because a PR can legitimately ship with an empty body.
+   *
+   *  Declared HERE rather than only on `LedgerPull` so it survives
+   *  `mergeReleases`, which spreads its inputs: without these two fields on
+   *  the interface the body would be carried at RUNTIME and invisible to the
+   *  TYPE, and the render would need a cast to read a value that is really
+   *  there. A cast would have worked and would have made the next reader
+   *  wonder whether it was safe. */
+  body?: string;
+  /** Server-reported fact, never a client formatting choice: the body exceeded
+   *  `bodyCap` and was cut. The marker shown to the reader is the render's
+   *  business; whether there IS one is the server's. */
+  bodyTruncated?: boolean;
 }
 
 /** Moved character-for-character from the old SourcesPage.tsx RELEASES

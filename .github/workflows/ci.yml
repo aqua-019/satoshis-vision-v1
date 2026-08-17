@@ -144,15 +144,30 @@ jobs:
 
       - name: "Gate: node cascade health"
         if: always()
-        run: node ../api/verify-nodehealth.mjs
+        run: node ../api/_tests/verify-nodehealth.mjs
 
       - name: "Gate: proxy tx parsing"
         if: always()
-        run: node ../api/verify-tx-parse.mjs
+        run: node ../api/_tests/verify-tx-parse.mjs
 
       - name: "Gate: feeds proxy"
         if: always()
-        run: node ../api/verify-feeds.mjs
+        run: node ../api/_tests/verify-feeds.mjs
+
+      # Offline unit gate for the release-ledger pipe (api/_releases-core.js,
+      # api/releases.js, api/cron/releases.js). Every upstream and store call is
+      # stubbed by replacing globalThis.fetch, and an unstubbed URL THROWS, so
+      # "offline" is enforced rather than asserted. The load-bearing half is not
+      # data shaping: it is that `rev` and `source` survive on EVERY branch
+      # including the failures, because the defect this pipe exists to answer —
+      # a production deployment executing code no commit can produce — was
+      # invisible for weeks precisely because nothing checked that the answer
+      # matched the question. A twin of verify-feeds rather than a section
+      # inside it: its subject is three modules that deliberately do NOT import
+      # feeds.js, and section 7 asserts the resulting duplication cannot drift.
+      - name: "Gate: release ledger pipe"
+        if: always()
+        run: node ../api/_tests/verify-releases-pipe.mjs
 
       # Exercises selectMembers/parseDays/cacheSeconds/classifyQuality against
       # the committed api/_fixtures/cg-markets-*.json rows. This is what keeps
@@ -161,7 +176,7 @@ jobs:
       # cutoff are all asserted here, offline.
       - name: "Gate: markets aggregator"
         if: always()
-        run: node ../api/verify-markets.mjs
+        run: node ../api/_tests/verify-markets.mjs
 
       # Offline: the handler makes zero network calls by design, and the gate
       # proves it with a fetch counter. Its six node-reachability lines are
@@ -170,7 +185,7 @@ jobs:
       # read as coverage.
       - name: "Gate: status endpoint"
         if: always()
-        run: node ../api/verify-status.mjs
+        run: node ../api/_tests/verify-status.mjs
 
       # Offline, fixture-backed gate for the monero.fail health aggregator.
       # Upstream state transitions (live/degraded/timeout/malformed) are
@@ -179,7 +194,7 @@ jobs:
       # passed — check it on a deploy preview.
       - name: "Gate: monero.fail node population"
         if: always()
-        run: node ../api/verify-nodes.mjs
+        run: node ../api/_tests/verify-nodes.mjs
 
       # Offline. The two block-header history handlers, which until p3·14b
       # shared nothing but a copy-paste and had no gate at all. Its negative
@@ -192,7 +207,7 @@ jobs:
       # silently reintroduce a window no public node will serve.
       - name: "Gate: block-header history windows"
         if: always()
-        run: node ../api/verify-history.mjs
+        run: node ../api/_tests/verify-history.mjs
 
       - name: "Gate: market stale-cache"
         if: always()

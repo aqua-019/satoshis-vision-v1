@@ -1,6 +1,6 @@
 /* verify-status.mjs — offline gate for api/status.js (the node-cascade
    configuration/capability meta endpoint, v1).
-   Run: node api/verify-status.mjs   (from app/: node ../api/verify-status.mjs)
+   Run: node api/_tests/verify-status.mjs   (from app/: node ../api/_tests/verify-status.mjs)
 
    The sandbox has no outbound HTTP to Monero nodes, so every "is this node
    reachable" question below is a FIXTURE, not a probe — see the
@@ -27,11 +27,11 @@ const require = createRequire(import.meta.url);
 import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { makeReporter } from '../app/verify-reporter.mjs';
-import { STATUS_FIXTURE } from '../app/verify-fixtures.mjs';
+import { makeReporter } from '../../app/verify-reporter.mjs';
+import { STATUS_FIXTURE } from '../../app/verify-fixtures.mjs';
 
 const R = makeReporter('verify-status');
-const API_DIR = dirname(fileURLToPath(import.meta.url));
+const API_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /* ── env sandbox — mirrors the restoreEnv idiom in verify-nodehealth.mjs ── */
 const ENV0 = {
@@ -78,9 +78,9 @@ function makeReq(method) {
    file is CommonJS, not merely documented as such. ── */
 let statusMod;
 try {
-  statusMod = require('./status.js');
+  statusMod = require('../status.js');
   R.ok(typeof statusMod === 'function',
-    'require(\'./status.js\') returns a function (mechanically proves CommonJS — an ESM file would throw ERR_REQUIRE_ESM here)');
+    'require(\'../status.js\') returns a function (mechanically proves CommonJS — an ESM file would throw ERR_REQUIRE_ESM here)');
 } catch (err) {
   R.ok(false, 'require(\'./status.js\') succeeded', err.message);
   process.exit(R.finish());
@@ -283,7 +283,7 @@ try {
 
 /* ── fixtures — one per reachability question this sandbox cannot answer ── */
 {
-  const { REFERENCE_MAINNET } = require('./_nodes.js');
+  const { REFERENCE_MAINNET } = require('../_nodes.js');
   for (const url of REFERENCE_MAINNET) {
     let host;
     try { host = new URL(url).host; } catch { host = url; }

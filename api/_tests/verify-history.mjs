@@ -1,7 +1,7 @@
 /* verify-history.mjs — offline unit test for the shared /network/hashrate
    and /network/difficulty history handlers in api/xmr.js
    (S1-CONTRACT.md, p3·14b, decisions D1-D7).
-   Run: node api/verify-history.mjs
+   Run: node api/_tests/verify-history.mjs
 
    The sandbox has no network egress to Monero nodes, so this exercises the
    pure range/sampler/envelope helpers directly, and the two RPC-calling
@@ -28,8 +28,8 @@
 import { createRequire } from 'module';
 import { readFileSync } from 'fs';
 const require = createRequire(import.meta.url);
-const xmr = require('./xmr.js');
-import * as prefix from './_fixtures/xmr-history-prefix.mjs';
+const xmr = require('../xmr.js');
+import * as prefix from '../_fixtures/xmr-history-prefix.mjs';
 
 let failed = 0;
 let total = 0;
@@ -149,7 +149,7 @@ console.log('\n-- D1: one shared helper serves both handlers (same point count, 
 // future edit can't quietly reintroduce two copy-pasted tables while still
 // passing the behavioural check above by coincidence.
 {
-  const src = readFileSync(new URL('./xmr.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../xmr.js', import.meta.url), 'utf8');
   const hashrateStart = src.indexOf('async function handleHashrate');
   const difficultyStart = src.indexOf('async function handleDifficulty');
   const poolsStart = src.indexOf('async function handlePools');
@@ -401,7 +401,7 @@ console.log('\n-- R1: the negative control still contains the defects it exists 
    ═══════════════════════════════════════════════════════════════════════ */
 console.log('\n-- R3: no production call site passes rpcImpl --');
 {
-  const src = readFileSync(new URL('./xmr.js', import.meta.url), 'utf8');
+  const src = readFileSync(new URL('../xmr.js', import.meta.url), 'utf8');
   /* The request dispatcher must call both handlers with exactly ONE argument.
      A second argument there would mean a request could choose the rpc
      implementation, which is a very different thing from a default parameter
