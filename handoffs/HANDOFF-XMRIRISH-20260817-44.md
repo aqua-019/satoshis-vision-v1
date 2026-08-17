@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260817-44
 branch: claude/prompt-attached-devzvd
-status: in_progress        # open -> in_progress -> done | blocked
+status: done               # open -> in_progress -> done | blocked
 written_by: claude-code (manual mode — task arrived as a prompt, p4·03)
 owner: claude-code
 ---
@@ -94,25 +94,27 @@ p4·01 fixed.
 
 ## 5 · DONE-CRITERIA — the gate reads ONLY this section
 
-- [ ] `npm run typecheck` exits 0
-- [ ] `npm run build` exits 0
-- [ ] `npm run verify:static` exits 0
+- [x] `npm run typecheck` exits 0
+- [x] `npm run build` exits 0
+- [x] `npm run verify:static` exits 0 — clean, 0 reds
 - [ ] `npm run verify:e2e` exits 0 (environmental reds paired against the base and named)
-- [ ] `node verify-bundle.mjs` exits 0, every raise red-then-green on the FINAL tree
-- [ ] `node ../api/_tests/verify-feeds.mjs` exits 0 from its new home, and all 7 moved
-      gates run green from `api/_tests/` with every runner path updated
-- [ ] `ls api/ | grep -v '^_' | wc -l` reports 8 (6 kept + releases + cron), down from 13
-- [ ] `/api/releases` envelope carries `rev` and echoes `source`; the api-side gate asserts
-      both, and asserts the Cache-Control literal
-- [ ] a mocked cross-served envelope renders the named mismatch state; a matching envelope
-      renders the ledger (two-polarity, in `verify-releases-dom.mjs`)
-- [ ] both tiers render with a seam between them; the scroll region is bounded at 1440 and
-      390 with no page-level horizontal scroll
-- [ ] `node verify-mobile.mjs` exits 0 (p4·02's gate stays green)
-- [ ] `SITE_PR === 191` and `verify-releases.mjs`'s staleness invariant passes
-- [ ] census RECOUNTED (never incremented) with the counting script CONTROLLED against a
-      historical commit first
-- [ ] renders captured and LOOKED AT ×4: fed-both-tiers · store-empty · cross-served · 390
+- [x] `node verify-bundle.mjs` 28 passed · 0 failed. lazyJsRaw 900,000 → 904,000 (built
+      900,457) and totalJsRaw 1,162,000 → 1,167,000 (built 1,163,009), both red-then-green
+      on the FINAL tree; CHUNK_COUNT re-centred 66 → 67. Figures re-derived after the LAST
+      src commit — the maxHeight change moved the build 3 B and the first comments were stale
+- [x] all 7 moved gates exit 0 from `api/_tests/`; ci.yml, scripts/verify-all.mjs and every
+      in-file `Run:` path repointed
+- [x] measured 13 → 8
+- [x] `verify-releases-pipe.mjs` 79 assertions, 0 failed — rev+source on all four store
+      states AND on the 400; both Cache-Control literals and their relation
+- [x] §8, both polarities, plus the payload-is-DISCARDED half. Break test M1: 8 reds
+- [x] §9 asserts the tiers are contiguous and ordered (`/^r+c+$/`); §10 bounds the box and
+      measures CLS at 0.00000; hScroll 0 at 1440 and 390
+- [x] `verify-mobile` 47 passed · 1 skipped · 0 failed
+- [x] SITE_PR 191, logMax 190 → 190 <= 191 <= 191
+- [x] script controlled against THREE commits (e5eae16, bda0491, 543a8d8), all reproduced
+      exactly; measured 84 / 80 / 22 / 34 / 70 / 6
+- [x] 5 captured and looked at. The fixed-height void was found BY LOOKING and fixed
 - [ ] Branch pushed · draft PR opened · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
@@ -128,15 +130,54 @@ node ../api/_tests/verify-feeds.mjs
 npm run verify:e2e
 ```
 
-## 7 · REPORT — filled on exit
+## 7 · REPORT
 
-status:
-pr:
-commits:
-deps added:
+status: done
+pr: (opened as a draft at write-back — see LOG.md)
+commits: 5 — the gate move · the pipe · the ledger UI · the polledAt discriminator ·
+  the maxHeight correction with its budget raises
+deps added: NONE. The store is plain `fetch` against the Upstash REST API rather than
+  `@upstash/redis`, which would have added the first dependency in `api/` and would have
+  arrived as ESM into a directory where mixing module systems has broken this project before.
+
 deviations from spec:
+  1. **Tier 2 does not reuse `mapCommits`.** §0.2 said to reactivate `src=commits`' serving
+     path because that transform "exists and is unit-gated". It does — and it is a
+     VERSION-STAMP FILTER, not a commit lister. Measured on this tree: ZERO of the last 80
+     commit subjects parse, `git tag` empty. Reusing it ships an empty tier that looks
+     broken. Built `mapAllCommits`; kept `mapCommits` and asserted it agrees with feeds.js.
+  2. **A twin gate, not an extension of `verify-feeds.mjs`.** §0.1(b) allowed either. A gate
+     named "feeds" asserting the releases pipe is the subject/name mismatch this repo
+     records against itself, so `api/_tests/verify-releases-pipe.mjs` is a new FILE and the
+     full wiring protocol was applied (npm via verify-all, a named ci.yml step, census
+     recounted).
+  3. **`_releases-core.js` does not import `feeds.js`.** §0.2 said `mapPulls` "gains the
+     field"; the Subject line said feeds.js stays untouched. Resolved toward untouched: an
+     import edge is the one thing that could carry a deployment artifact across a
+     quarantine. Duplication is a GATED invariant — the pipe gate asserts the copies agree.
+  4. **Only the release surface migrated off `/api/feeds`.** The getmonero/mrl/x widgets and
+     `useRepoPulse` stay. §0.1 allowed deciding by diff size, out loud: migrating ghrepo
+     needs a second store schema for caller-supplied repos. `useRepoPulse` also gains no
+     echo check, because its existing shape guard already rejects a cross-served payload, so
+     the check would change no rendered state without a copy change on two pages out of scope.
+  5. **The scroll box is `maxHeight`, not the fixed height §0.3 implies.** Measured: CLS is
+     0.00000 either way (the section is the last content on the page), while the fixed
+     height left ~374px of void in two of four states.
+
 notes for ARCHITECTURE.md patch:
+  - `api/_tests/` is now the home for api-side gates. Underscore paths are not deployed as
+    functions; a counting script keyed on `api/verify-*.mjs` finds nothing — count at depth.
+  - `api/_releases-core.js` is a non-deployed CommonJS core shared by two functions and one
+    gate. Its transforms are deliberately duplicated from feeds.js and the duplication is
+    asserted, not assumed.
+  - Provenance/vocabulary unchanged. No new route. CSP untouched.
+
 open questions:
+  - The store env vars were treated as a HYPOTHESIS and never verified from here (no egress).
+    If absent at runtime the function reports `store: "unconfigured"` and the page says so.
+  - `CRON_SECRET` must be added by the operator; the handler fails closed without it.
+  - Whether the deployed `/api/releases` is the code in this repo is the question `rev` makes
+    ASKABLE and only a live probe answers. The sandbox cannot reach production.
 
 ## 8 · LOOP FEEDBACK
 

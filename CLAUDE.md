@@ -733,9 +733,9 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   byte-identical and that `mapPulls` agrees on every shared field. The quarantine is of the
   deployment artifact, not the source text — but an import edge is exactly the thing that
   could carry an artifact across, and refusing it costs ~60 lines.
-  **BUDGETS: ATTRIBUTION RECONCILES TO THE BYTE, RESIDUAL ZERO.** `SourcesPage` +3,595 ·
+  **BUDGETS: ATTRIBUTION RECONCILES TO THE BYTE, RESIDUAL ZERO.** `SourcesPage` +3,598 ·
   **`Disclosure` 0 → 791, a MINTED chunk** · `useCachedFeed` +541 · `index[1]` (EAGER) **+38**
-  · `SuperstressPage` **−611** = **+4,354**, which IS lazy +4,316 plus eager +38. 65 of 70
+  · `SuperstressPage` **−611** = **+4,357**, which IS lazy +4,319 plus eager +38. 65 of 70
   slots size-identical. **The 70th chunk is the leaf lesson's FIFTH application and it is why
   SuperstressPage got SMALLER**: `Disclosure` had two importers in ONE chunk group and was
   inlined there; SourcesPage is a third importer in a DIFFERENT group, so the leaf was hoisted
@@ -744,11 +744,11 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   CHASED, not waved at**: it is the `assets/Disclosure-*.js` preload string entering
   `__vite__mapDeps`, grepped and found — p3·13's mechanism reproduced. Negative control clean:
   six ledger-only strings grep to **ZERO** in the eager entry and to 1 in the lazy chunk.
-  Raised red-then-green on the FINAL tree: `lazyJsRaw` 900,000 → **904,000** (built 900,454,
-  margin 3,546) · `totalJsRaw` 1,162,000 → **1,167,000** (built 1,163,006, margin 3,994) ·
+  Raised red-then-green on the FINAL tree: `lazyJsRaw` 900,000 → **904,000** (built 900,457,
+  margin 3,543) · `totalJsRaw` 1,162,000 → **1,167,000** (built 1,163,009, margin 3,991) ·
   `CHUNK_COUNT` **RE-CENTRED 66 → 67, not widened** (measured 70; the old band put reality
   exactly ON the ceiling, the state p2·10 named and p3·13 declined). **NOT raised, said out
-  loud: `/about/sources` HELD at 96,461 of 98,000** — PR BODIES ARE FETCHED, NOT BUNDLED,
+  loud: `/about/sources` HELD at 96,471 of 98,000** — PR BODIES ARE FETCHED, NOT BUNDLED,
   which is the design property that keeps a page carrying the whole project history off the
   first-load budget. `cssGz` **BYTE-IDENTICAL at 18,150**: the scroll region's four
   declarations are inline, used exactly once, against a ~450 B margin.

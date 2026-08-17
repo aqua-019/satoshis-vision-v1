@@ -645,7 +645,7 @@ const BUDGETS = {
   // literals from measurement with similar margins, and not an accumulating
   // error. Recorded again rather than quietly repaired: repairing it means
   // deciding what the backstop is FOR, which is its own change.
-  totalJsRaw: 1_167_000,  // p4·03: built 1,163,006 on the FINAL tree, margin 3,994.
+  totalJsRaw: 1_167_000,  // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
                           // p3·15: built 1,130,194, margin 3,806.
@@ -1164,7 +1164,7 @@ const BUDGETS = {
   // Baseline built in an ISOLATED `c6b518e` worktree; attribution keyed on chunk
   // STEM and paired by MULTIPLICITY, because this build stamps content and a
   // filename-keyed diff reports 69 additions and 69 deletions rather than a delta.
-  lazyJsRaw: 904_000,   // p4·03: built 900,454 on the FINAL tree, margin 3,546.
+  lazyJsRaw: 904_000,   // p4·03: built 900,457 on the FINAL tree, margin 3,543.
                         // p3·19: built 896,103 on the FINAL tree, margin 3,897.
                         // p3·16: built 882,873 on the FINAL tree, margin 3,127.
                         // p3·15: built 867,213, margin 3,787.
@@ -1173,13 +1173,13 @@ const BUDGETS = {
   // behind a disclosure, plus the commit work log. Attribution is keyed on
   // chunk STEM and paired by MULTIPLICITY against a 543a8d8 build, and it
   // RECONCILES TO THE BYTE with residual ZERO:
-  //     SourcesPage      14,330 ->  17,925   +3,595   (the ledger UI)
+  //     SourcesPage      14,330 ->  17,928   +3,598   (the ledger UI)
   //     Disclosure            0 ->     791     +791   (a MINTED chunk — see below)
   //     useCachedFeed     2,508 ->   3,049     +541   (useReleaseLedger)
   //     index[1] (EAGER) 99,599 ->  99,637      +38
   //     SuperstressPage  21,188 ->  20,577     -611   (Disclosure left it)
   //     ─────────────────────────────────────────────
-  //     total                              +4,354 = lazy +4,316 and eager +38
+  //     total                              +4,357 = lazy +4,319 and eager +38
   // 65 of 70 chunk slots are size-identical.
   //
   // THE 70th CHUNK IS THE LEAF LESSON'S FIFTH APPLICATION, and it is the whole
@@ -1201,8 +1201,8 @@ const BUDGETS = {
   // `work log` and `holds no ledger` ALL grep to ZERO in the eager entry, and
   // the first two grep to 1 in the lazy SourcesPage chunk.
   //
-  // NOT RAISED, said out loud: `/about/sources` HELD at 96,461 of 98,000
-  // (margin 1,539) — the ledger UI is small and PR BODIES ARE FETCHED, NOT
+  // NOT RAISED, said out loud: `/about/sources` HELD at 96,471 of 98,000
+  // (margin 1,529) — the ledger UI is small and PR BODIES ARE FETCHED, NOT
   // BUNDLED, which is the design property that keeps a page carrying the whole
   // project history off the first-load budget. `cssGz` is BYTE-IDENTICAL at
   // 18,150: the scroll region's four declarations are inline, because they are
