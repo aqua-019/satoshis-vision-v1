@@ -394,4 +394,4 @@
   tracking was tried and the box shrinks WITH the word); the thesis SVG; the 320px `.keep-cols`;
   `ChartTip` tspans at 10.5px that only a hover reveals, named as the gate's blind spot.
   **No human has seen the rendered result in a browser.**
-  PR https://github.com/aqua-019/satoshis-vision-v1/pull/PENDING
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/190
