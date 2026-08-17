@@ -91,28 +91,28 @@ deepened (this PR adds **no** e2e member — §6 is an in-file rewrite).
 
 ## 5 · DONE-CRITERIA  — the gate reads ONLY this section
 
-- [ ] `npx tsc --noEmit` (app/) exits 0
-- [ ] `npm run build` (app/) exits 0
-- [ ] Diff sweep: every `18081|18083|18089` occurrence in `git diff` carries an
+- [x] `npx tsc --noEmit` (app/) exits 0
+- [x] `npm run build` (app/) exits 0
+- [x] Diff sweep: every `18081|18083|18089` occurrence in `git diff` carries an
       attribution naming the **Monero node addon** — zero unattributed, zero ascribed to
       Superstress's own daemon
-- [ ] Bracketed absence-grep over the RENDERED `/operate/superstress` and `/future` DOM:
+- [x] Bracketed absence-grep over the RENDERED `/operate/superstress` and `/future` DOM:
       `telemetry endpoint`, `landing soon`, `awaiting`, `open question with the maintainer`,
       `not wired`, `to be wired` → **0 hits** on betanet-endpoint copy
-- [ ] `node verify-superstress.mjs` exits 0 with §6 rewritten; **two-polarity transcript
+- [x] `node verify-superstress.mjs` exits 0 with §6 rewritten; **two-polarity transcript
       per new/modified assertion** (a state that passes, a state that fails, actuals for
       both)
-- [ ] `node verify-future.mjs` exits 0 (§15 lineage embargo green; §8 partner object green)
-- [ ] `npm run verify:static` exits 0
-- [ ] `npm run verify:e2e` exits 0
-- [ ] `node verify-bundle.mjs` exits 0; every ceiling raise is red-then-green **on the
+- [x] `node verify-future.mjs` exits 0 (§15 lineage embargo green; §8 partner object green)
+- [x] `npm run verify:static` exits 0
+- [x] `npm run verify:e2e` exits 0
+- [x] `node verify-bundle.mjs` exits 0; every ceiling raise is red-then-green **on the
       FINAL tree** and its comment re-derived AFTER the last src commit
-- [ ] Census RECOUNTED (never incremented) with the counting script CONTROLLED against a
+- [x] Census RECOUNTED (never incremented) with the counting script CONTROLLED against a
       prior commit first; expected UNCHANGED at 83 / 79 / CI 69 / static 22 / e2e 34
-- [ ] `SITE_PR` = 188 in the PR-opening commit; `verify-releases.mjs` staleness gate green
-- [ ] Renders captured and LOOKED AT: hub top-to-bottom (§5 region especially), Future
+- [x] `SITE_PR` = 188 in the PR-opening commit; `verify-releases.mjs` staleness gate green
+- [x] Renders captured and LOOKED AT: hub top-to-bottom (§5 region especially), Future
       band, eco popup, 390px, greyscale spot, reduced motion
-- [ ] Branch pushed · draft PR opened via GitHub MCP · `mergeable_state` reported
+- [x] Branch pushed · draft PR opened via GitHub MCP · `mergeable_state` reported
 
 ## 6 · VERIFY COMMANDS
 
