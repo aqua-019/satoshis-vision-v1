@@ -390,8 +390,12 @@
   entry identified from `dist/index.html`'s own script src, not by basename), CHUNK_COUNT 69.
   Copy: six device verbs neutralised, five KEPT with reasons. The `⌘K` chip prints "Search"
   below 720 via a CONTAINER query, because `.nav-kbd` really is inside `.nav-shell`.
+  **CI CAUGHT ONE THIS MACHINE COULD NOT**: `verify-mobile` §2 red at 390 on CI
+  (`right=401 > 390`, /live/network) where local read 0 — the same `.keep-cols` misuse §8 had
+  bounded at 320. Fixed at source (`.sync-rows { min-width: 0 }`), bound 13 → 0. My stated
+  cause (font fallback) was TESTED AND DISPROVED — blocking the woff2 moves it ONE pixel.
   **NOT FIXED, named**: twelve remaining mid-word wraps (flex-squeeze, scale-invariant —
-  tracking was tried and the box shrinks WITH the word); the thesis SVG; the 320px `.keep-cols`;
+  tracking was tried and the box shrinks WITH the word); the thesis SVG;
   `ChartTip` tspans at 10.5px that only a hover reveals, named as the gate's blind spot.
   **No human has seen the rendered result in a browser.**
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/190

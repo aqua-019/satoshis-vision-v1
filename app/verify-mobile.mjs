@@ -475,15 +475,18 @@ await pctx.close();
  * anyway; the third is not, so it overflows into `body`'s `overflow-x: clip`
  * and a 320px reader simply loses the right edge of the row.
  *
- * NOT FIXED HERE. The remedy is to satisfy the class's own precondition (wrap
- * that panel body in `.table-scroll`) or to stop claiming it, and either is a
- * composition decision about a live panel that would need /live/network's own
- * DOM gates re-run — the same per-panel work §0.9 defers. The BOUND is what
- * stops it drifting: a fourteenth element, or a SECOND route, fails here. */
+ * FIXED, after CI found the same defect at 390 where this machine measured 0.
+ * The grid now carries `.sync-rows`, which releases the max-content minimum
+ * (styles.css, beside the `.kpi-grid .keep-cols` precedent that does the same
+ * thing one level in). Post-fix this reads 0 at 320, 360 and 390, with and
+ * without the self-hosted fonts. The bound below is therefore 0 rather than 13
+ * — kept as a BOUND rather than folded into the flat assertion above so the
+ * route stays named: this is where that defect lived, and a regression should
+ * say so by name. */
 R.group(`§8 · ${NARROW.width}×${NARROW.height} — the narrowest phone`);
 {
   const KNOWN_320_ROUTE = '/live/network';
-  const KNOWN_320_MAX = 13;
+  const KNOWN_320_MAX = 0;   // was 13; p4·02 fixed the .keep-cols cause, see below
   const { ctx, page: np } = await phone(NARROW);
   let floor320 = 0, tab320 = [], wide320 = [];
   for (const route of ROUTES) {

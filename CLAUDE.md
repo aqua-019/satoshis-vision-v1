@@ -575,17 +575,25 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   and `protocols/metaphors.tsx:37,202`. The original grep's scope was `src/mempool/` and
   `src/views/`, and the result was generalised to "anywhere". Same scope-of-grep family this
   file records three times already.
-- **`/live/network` loses its right edge at 320px, through `.keep-cols` used outside its own
-  precondition.** THIRTEEN elements sit past the viewport at 320 — but only ONE overflows
-  and the other twelve are its descendants: a `div.mono.keep-cols` 325px wide in a 320px
-  viewport. `styles.css:2801` gives `.table-scroll > *, .keep-cols { min-width: max-content
-  !important }` so wide tables keep their columns AND THE USER SWIPES, and `styles.css:2861`
+- **`/live/network`'s `.keep-cols` overflow — FIXED in p4·02, and CI is what found it.**
+  `styles.css:2811` gives `.table-scroll > *, .keep-cols { min-width: max-content
+  !important }` so wide tables keep their columns AND THE USER SWIPES, and `styles.css:2871`
   states the precondition in its own words — these "live in `.table-scroll`, not a grid".
-  Measured on that route: five elements compute `min-width: max-content` and **three of them,
-  all `.keep-cols`, have no scrolling ancestor at all**; two are narrow enough to fit anyway.
-  Measured identical (13) on the base commit, so no type change caused it. `verify-mobile`
-  §8 BOUNDS it. The fix is to satisfy the precondition or stop claiming it, and it is a
-  per-panel composition decision.
+  `network/SyncShell.tsx`'s label/value grid carried `.keep-cols` (it needs to, or the
+  mobile collapse rule stacks it) inside a `.panel-b` with **no scroller to swipe in**, so
+  the max-content minimum simply made the panel wider than the phone.
+  **THE MEASUREMENT GAP IS THE DURABLE PART**: pre-fix this machine read 13 elements past
+  the edge at 320, 12 at 360, and **0 at 390** — while the CI runner read `right=401 > 390`
+  on the SAME TREE and failed. A content-sized box has no single width to test against, so
+  a local pass says nothing about another machine. **I blamed font fallback and then tested
+  it: blocking the self-hosted woff2 moves the element 380 → 381px, ONE pixel, not twenty.**
+  The real difference between the two machines is not identified, and it does not need to
+  be — `.sync-rows { min-width: 0 !important }` (beside the `.kpi-grid .keep-cols`
+  precedent that does the same thing one level in) makes the grid able to shrink to its
+  container, so it is STRUCTURALLY incapable of exceeding the viewport whatever its
+  content, fonts or feed state. Post-fix: 0 at 320, 360 and 390, with and without the
+  self-hosted fonts. `verify-mobile` §8 keeps it as a NAMED bound at 0 rather than folding
+  it into the flat assertion, so a regression reports the route by name.
 - **Twelve non-URL mid-word wraps remain at 390, and NO typographic change can reach them.**
   p4·02 fixed the mechanism — `overflow-wrap: anywhere` → `break-word` below 720px, which
   differ ONLY in min-content sizing, and that is exactly what let flex rows shatter labels
@@ -776,9 +784,16 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   `.nav-shell` (unlike `.main`), so D1207's own mechanism works there. Desktop is byte-identical
   in presentation: 32.1×26 showing `⌘K`; touch is 75×36 showing `Search`, with 0 topbar clip
   and 0 overflow at 320.
+  **CI CAUGHT A DEFECT THIS MACHINE COULD NOT, AND THAT IS THE RELEASE'S LAST LESSON.**
+  `verify-mobile` §2 went red on CI at 390 (`right=401 > 390` on /live/network) where this
+  machine measured 0 — the same `.keep-cols` misuse §8 had BOUNDED at 320. A content-sized
+  box has no single width to test against. Fixed at source (`.sync-rows`), which dissolved
+  the 320 bound from 13 to 0. **My stated mechanism for the cross-machine gap — font
+  fallback — was TESTED AND DISPROVED**: blocking the woff2 moves it one pixel, not twenty.
+  The fix is width-independent by construction, so the unexplained gap stops mattering.
   **NOT FIXED, and named with numbers**: the twelve remaining mid-word wraps (flex-squeeze,
   scale-invariant — tracking was tried and the box shrinks with the word); the thesis chart's
-  2.58px SVG labels; `/live/network`'s 320px `.keep-cols` overflow; chart TOOLTIP `tspan`s at
+  2.58px SVG labels; chart TOOLTIP `tspan`s at
   10.5px that only a hover reveals, which this gate never triggers and which is named as its
   blind spot. **No human has seen the rendered result in a browser** — read from screenshots.
 - **2026-08-17**: p4·01 "THE HYGIENE CLOSE" (app/ + .github/) — seven named ledger items

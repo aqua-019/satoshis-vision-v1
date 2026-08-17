@@ -2870,6 +2870,29 @@ button.proto-btn[disabled], a.proto-btn[disabled] { opacity: 0.4; cursor: defaul
      their cell (name already ellipsis-truncates). Real wide tables keep their
      .keep-cols max-content + swipe because they live in .table-scroll, not a grid. */
   .kpi-grid .keep-cols { min-width: 0 !important; }
+  /* p4·02 — the same escape hatch, for the same reason, one level out.
+     SyncShell's label/value grid (network/SyncShell.tsx) carries `.keep-cols`
+     to survive the collapse rule above, but it lives in a `.panel-b`, NOT in a
+     `.table-scroll` — so `min-width: max-content` had nothing to swipe inside
+     and simply made the panel wider than the phone. It is a `1fr auto` grid
+     whose value column is already `white-space: nowrap`, so releasing the
+     minimum costs nothing: the value stays intact and the label reflows.
+     FOUND BY CI, NOT LOCALLY, AND THE GAP IS THE POINT. Measured pre-fix on
+     this machine: 13 elements past the edge at 320, 12 at 360, and **0 at
+     390**. The CI runner measured `right=401 > 390` on the same tree — ~20px
+     wider at the same viewport, so it failed where this machine passed.
+     I ASSERTED A MECHANISM FOR THAT GAP AND THEN TESTED IT, AND IT WAS WRONG:
+     the first version of this comment blamed font fallback. Blocking the
+     self-hosted woff2 and re-measuring moves the element from 380px to 381px —
+     ONE pixel, not twenty — so font metrics are not the cause. What actually
+     differs between the two machines is not identified here, and saying so is
+     the honest end of it.
+     It also does not matter, which is the argument for this fix over a wider
+     tolerance: with `min-width: 0` the grid can always shrink to its container,
+     so the element is structurally incapable of exceeding the viewport whatever
+     its content, its fonts or its feed state. A content-sized box has no single
+     width to test against; this stops it being content-sized. */
+  .sync-rows { min-width: 0 !important; }
   .col-2, .col-3 { grid-template-columns: 1fr !important; gap: 12px; }       /* genuine content stacks */
   /* override the inline overflow:hidden on BottomLineTab's table so it swipes
      inside its own box (a scroll container also contributes 0 to page width) */

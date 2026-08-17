@@ -99,7 +99,13 @@ export function SyncShell({ columns }: { columns: readonly SyncColumn[] }) {
             </div>
 
             <div
-              className="mono keep-cols"
+              /* `sync-rows` is a STYLING HOOK, not decoration — see styles.css's
+                 mobile block. `keep-cols` is needed here so the mobile collapse
+                 rule does not stack this label/value pair into one column, but
+                 it drags in `min-width: max-content !important`, and this grid
+                 has no `.table-scroll` to swipe inside. That made it as wide as
+                 its longest row and pushed it past a 390px viewport. */
+              className="mono keep-cols sync-rows"
               style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "9px 10px", fontSize: "var(--fs-mono)", alignItems: "baseline" }}
             >
               {c.rows.map((r, i) => (
