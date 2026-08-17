@@ -85,10 +85,16 @@ const COMMITS = [
 
 /* The envelope api/releases.js emits. `rev` and `source` are the two echoes the
    client validates; §8 drives the mismatch by changing `source` alone. */
-function ledgerBody({ items, commits = COMMITS, source = 'ledger', store = 'live', polledAt = '2026-08-17T00:00:00Z' }) {
+/* polledAt is deliberately SEVEN DAYS older than fetchedAt. The two fields
+   answer different questions — when the DATA was gathered vs when the RESPONSE
+   was built — and a render sourced from the wrong one is only detectable if
+   they differ measurably. §12 asserts the rendered age tracks the older. */
+const POLLED_AT = '2026-08-10T00:00:00Z';
+const FETCHED_AT = '2026-08-17T00:00:00Z';
+function ledgerBody({ items, commits = COMMITS, source = 'ledger', store = 'live', polledAt = POLLED_AT }) {
   return JSON.stringify({
     rev: 1, source, repo: 'aqua-019/satoshis-vision-v1',
-    fetchedAt: '2026-08-17T00:05:00Z', polledAt,
+    fetchedAt: FETCHED_AT, polledAt,
     store, bodyCap: 2000,
     counts: { pulls: items.length, commits: commits.length },
     pulls: items, commits,
@@ -530,13 +536,21 @@ R.info(`engine: ${engine}`);
   R.ok(s.polled !== null, '§12 · the section states when the ledger was last polled');
   R.ok(s.polled !== null && /Checked/.test(s.polled) && /rev 1/.test(s.polled),
     `§12 · and echoes the envelope revision, so a stale deployment is one glance away (got "${s.polled}")`);
-  /* A `fetchedAt` here would always read "seconds ago" — reassuring on exactly
-     the deployment whose DATA is two weeks old. The rendered age must track
-     polledAt, which the cron stamps. The fixture's polledAt is 2026-08-17 and
-     its fetchedAt is five minutes later, so a render sourced from the wrong
-     field would read differently. */
-  R.ok(s.polled !== null && !/^Checked 0m ago/.test(s.polled),
-    `§12 · the age tracks polledAt (the DATA), not fetchedAt (the RESPONSE) — got "${s.polled}"`);
+  /* A `fetchedAt` here would read "seconds ago" on exactly the deployment whose
+     DATA is two weeks old — which is the production failure restated as a
+     freshness label. The two fixture stamps are 7 days apart, so the rendered
+     age DISCRIMINATES: sourced from polledAt it is at least 7 days, sourced
+     from fetchedAt it is at least 7 days LESS. Both expectations are computed
+     here from the fixture and the real clock, so this is a comparison between
+     two independent derivations rather than the render checked against itself. */
+  const day = 86_400_000;
+  const fromPolled = Math.floor((Date.now() - Date.parse(POLLED_AT)) / day);
+  const fromFetched = Math.floor((Date.now() - Date.parse(FETCHED_AT)) / day);
+  const shown = Number((/(\d+)d ago/.exec(s.polled || '') || [])[1] ?? NaN);
+  R.ok(shown === fromPolled,
+    `§12 · the age tracks polledAt (the DATA): shown ${shown}d, expected ${fromPolled}d`);
+  R.ok(fromPolled !== fromFetched && shown !== fromFetched,
+    `§12 · and NOT fetchedAt (the RESPONSE), which would read ${fromFetched}d — the two are 7 days apart so the reading discriminates`);
   await ctx.close();
 }
 
