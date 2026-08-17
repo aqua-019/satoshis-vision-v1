@@ -7,15 +7,41 @@
 
 import { readFileSync, readdirSync } from 'fs';
 
-import * as r from './src/data/releases.ts';
-import * as ver from './src/data/siteVersion.ts';
-
-const { CURATED, mergeReleases, isPrKeyed, prReleaseId, eraSeamIndex } = r;
-const { SITE_VERSION, SITE_ERA, SITE_PR } = ver;
-
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };
 const deepEq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+// ── THE SUBJECT, LOADED GUARDED (p4·01, closing #186) ───────────────────────
+// These two were TOP-LEVEL `import` statements. A resolvable-but-broken edit to
+// either leaf then killed this gate AT MODULE LOAD — node threw before the
+// first assertion ran, so the run exited red having printed ZERO named failures
+// and no summary line at all. That is the worst shape a red can take here:
+// a `grep '❌'` over a crash returns EMPTY, which reads exactly like "no
+// failures found". (Same family as p3·14b's `node --check` finding — a crash
+// prints no marker, and a sweep for a marker cannot see one.)
+//
+// A dynamic import inside try/catch converts that into ONE NAMED red that says
+// which leaf failed and why. It is deliberately FATAL rather than a skip: every
+// assertion below reads these exports, so continuing would assert nothing while
+// printing green — and a skip is neither a pass nor a failure, which are
+// precisely the two states a reader needs told apart here.
+const loadLeaf = async (spec) => {
+  try {
+    return await import(spec);
+  } catch (err) {
+    ok(false, `${spec} FAILED TO LOAD — ${err?.code ?? 'Error'}: ${String(err?.message ?? err).split('\n')[0]}`);
+    return null;
+  }
+};
+const r = await loadLeaf('./src/data/releases.ts');
+const ver = await loadLeaf('./src/data/siteVersion.ts');
+if (!r || !ver) {
+  console.log('\n❌ verify-releases FAILED — the subject under test could not be loaded, so NONE of the assertions below were made. This is a load failure, not a green run.');
+  process.exit(1);
+}
+
+const { CURATED, mergeReleases, isPrKeyed, prReleaseId, eraSeamIndex } = r;
+const { SITE_VERSION, SITE_ERA, SITE_PR } = ver;
 
 // 1) auto null/empty ⇒ CURATED verbatim (the GitHub-unreachable fallback —
 //    the page must render exactly what it rendered before this feed existed).
@@ -234,6 +260,59 @@ ok(eraSeamIndex(mergeReleases([{ v: '#186', note: 'x', date: '2026-08-16' }])) =
 ok(CURATED.length === 5, `CURATED.length === 5 (got ${CURATED.length})`);
 ok(CURATED.every((c) => typeof c.v === 'string' && c.v.length > 0 && typeof c.note === 'string' && c.note.length > 0),
   'every CURATED entry has a non-empty v and note');
+
+// 8) THE SHELL CARRIES NO VERSION CLAIM (p4·01).
+//
+// `app/index.html` shipped `<title>xmr.irish · v5.0</title>` and a matching
+// meta description for ~25 PRs after the era became v6, so the browser tab
+// contradicted the gated `v6 · #188` in the topbar on every route. It had no
+// gate at all — which is why it rotted for twenty-five releases while five
+// other version surfaces were being pinned.
+//
+// WHY THIS READS THE SOURCE AND NOT `dist/index.html`. `ci.yml` records the
+// reason in its own comment at :86-88: in the `verify` job, `npm run
+// verify:static` — where this gate runs — executes BEFORE that job's Build
+// step, "so a dist-reading gate placed there would fail on every single run".
+// A dist assertion here would also pass LOCALLY off a stale build and fail only
+// in CI, which is the stale-`dist` trap this repo has recorded three times.
+// The source is the authority in any case: measured at `81fafca`, all fourteen
+// prerendered `dist/**/index.html` carried the shell's title BYTE-IDENTICALLY.
+{
+  const shell = readFileSync(new URL('./index.html', import.meta.url), 'utf8');
+  const title = shell.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? null;
+  const desc = shell.match(/<meta\s+name="description"\s+content="([^"]*)"/)?.[1] ?? null;
+
+  // POSITIVE CONTROLS FIRST. Without these, "carries no version" is satisfied
+  // by a DELETED title, an empty one, or a changed tag shape the regex stops
+  // matching — an absence that holds for a reason unrelated to the claim is the
+  // single most-recorded gate defect in this repo.
+  ok(title !== null && title.trim().length > 0,
+    `app/index.html declares a non-empty <title> — ${JSON.stringify(title)}`);
+  ok(desc !== null && desc.trim().length > 0,
+    'app/index.html declares a non-empty meta description');
+  ok(!!title && title.includes('xmr.irish'), 'the <title> still names the site');
+  ok(!!desc && desc.includes('xmr.irish'), 'the meta description still names the site');
+
+  // THE ASSERTION. Both spellings are checked because this repo's own identity
+  // uses both: `SITE_ERA` is "v6" and `SITE_VERSION` is "v6 · #188".
+  const VERSION_RX = /\bv\d+(?:\.\d+)*\b|#\d+/i;
+  for (const [what, s] of [['<title>', title], ['meta description', desc]]) {
+    const hit = s?.match(VERSION_RX)?.[0] ?? null;
+    ok(!hit, `the ${what} carries NO version claim`
+      + (hit ? ` — found ${JSON.stringify(hit)} in ${JSON.stringify(s)}` : ''));
+  }
+
+  // The source is authoritative ONLY because prerender copies the shell's
+  // <head> through untouched — it replaces the <html> tag and the root element
+  // and nothing else. Pin that premise structurally rather than in prose: if a
+  // future change starts emitting a per-route title, this reds and says so,
+  // instead of the assertions above silently becoming insufficient.
+  // BLIND SPOT, stated: this catches a title EMITTED by prerender. It could not
+  // see one injected by a Vite plugin from vite.config.ts.
+  const pre = readFileSync(new URL('./scripts/prerender.mjs', import.meta.url), 'utf8');
+  ok(!/<title/i.test(pre),
+    'scripts/prerender.mjs emits no <title> — the shell is the single authority for all 14 routes');
+}
 
 console.log(fail ? '\n❌ verify-releases FAILED' : '\n✅ verify-releases: all assertions passed');
 process.exit(fail ? 1 : 0);

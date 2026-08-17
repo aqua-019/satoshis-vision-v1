@@ -44,9 +44,26 @@
     <link rel="preload" href="/fonts/geist-400.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/jetbrains-mono-400.woff2" as="font" type="font/woff2" crossorigin />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="description" content="xmr.irish v5.0 — Monero, in public, in private." />
+    <meta name="description" content="xmr.irish — Monero, in public, in private." />
     <meta name="referrer" content="no-referrer" />
-    <title>xmr.irish · v5.0</title>
+    <!-- DE-VERSIONED DELIBERATELY (p4·01). This said `xmr.irish · v5.0`, and the
+         meta description above matched it, for roughly twenty-five PRs after
+         the era became v6 — so the browser tab, every bookmark and every link
+         preview contradicted the gated `v6 · #188` in the topbar. Nothing in
+         `src/` manages `document.title`, and `scripts/prerender.mjs` rewrites
+         only the <html> tag and the root element, so this ONE string is
+         inherited VERBATIM by all fourteen prerendered routes: measured at
+         `81fafca`, all fourteen `dist/**/index.html` carried the identical
+         stale title.
+         DE-VERSIONED rather than DERIVED. A derived title would have to re-enter
+         this static shell through a build-time injection, and `SITE_PR` moves
+         every single release — so a tab label, fourteen prerendered files and
+         every saved bookmark would churn once per PR to carry a number no
+         reader is served by. A version in a title that nothing enforces is a
+         liability, not information; the smallest honest fix is to stop making
+         the claim. `verify-releases.mjs` §8 asserts the absence, with positive
+         controls so a deleted title cannot satisfy it. -->
+    <title>xmr.irish — Monero, in public, in private.</title>
     <script>
       // Pre-paint theme stamp — avoids a flash of the wrong palette on a
       // hard reload. design/VisualContext.tsx's <VisualProvider> makes this
