@@ -645,7 +645,8 @@ const BUDGETS = {
   // literals from measurement with similar margins, and not an accumulating
   // error. Recorded again rather than quietly repaired: repairing it means
   // deciding what the backstop is FOR, which is its own change.
-  totalJsRaw: 1_162_000,  // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
+  totalJsRaw: 1_167_000,  // p4·03: built 1,163,006 on the FINAL tree, margin 3,994.
+                          // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
                           // p3·15: built 1,130,194, margin 3,806.
   // p3·16 RAISE, 1,134,000 -> 1,150,000. It moves WITH lazyJsRaw, as the
@@ -1163,9 +1164,49 @@ const BUDGETS = {
   // Baseline built in an ISOLATED `c6b518e` worktree; attribution keyed on chunk
   // STEM and paired by MULTIPLICITY, because this build stamps content and a
   // filename-keyed diff reports 69 additions and 69 deletions rather than a delta.
-  lazyJsRaw: 900_000,   // p3·19: built 896,103 on the FINAL tree, margin 3,897.
+  lazyJsRaw: 904_000,   // p4·03: built 900,454 on the FINAL tree, margin 3,546.
+                        // p3·19: built 896,103 on the FINAL tree, margin 3,897.
                         // p3·16: built 882,873 on the FINAL tree, margin 3,127.
                         // p3·15: built 867,213, margin 3,787.
+  //
+  // p4·03 RAISE, 900,000 -> 904,000. The release ledger: PR bodies rendered
+  // behind a disclosure, plus the commit work log. Attribution is keyed on
+  // chunk STEM and paired by MULTIPLICITY against a 543a8d8 build, and it
+  // RECONCILES TO THE BYTE with residual ZERO:
+  //     SourcesPage      14,330 ->  17,925   +3,595   (the ledger UI)
+  //     Disclosure            0 ->     791     +791   (a MINTED chunk — see below)
+  //     useCachedFeed     2,508 ->   3,049     +541   (useReleaseLedger)
+  //     index[1] (EAGER) 99,599 ->  99,637      +38
+  //     SuperstressPage  21,188 ->  20,577     -611   (Disclosure left it)
+  //     ─────────────────────────────────────────────
+  //     total                              +4,354 = lazy +4,316 and eager +38
+  // 65 of 70 chunk slots are size-identical.
+  //
+  // THE 70th CHUNK IS THE LEAF LESSON'S FIFTH APPLICATION, and it is the whole
+  // reason SuperstressPage got SMALLER. `design/Disclosure.tsx` had exactly two
+  // importers, both in one chunk group, so Rollup INLINED it there. SourcesPage
+  // is a third importer in a different group, so the leaf was hoisted into a
+  // chunk of its own and subtracted from the page that used to carry it. The
+  // standing rule is not "a shared leaf costs a chunk" but "a leaf shared
+  // ACROSS GROUPS costs a chunk" — canvasColor.ts, repoPulse.tsx,
+  // pages/future/data.ts, timeCursor.ts, and now this. Only a build tells you
+  // which you wrote.
+  //
+  // THE EAGER +38 IS THE mapDeps TABLE, MEASURED NOT ASSUMED. `Disclosure` is
+  // lazy and stays lazy; what reached the entry chunk is the preload STRING
+  // `assets/Disclosure-CHf4dfpL.js` that Vite's `__vite__mapDeps` gained for the
+  // newly-minted chunk — grepped and found in the entry, p3·13's mechanism
+  // reproduced. The negative control is the half that matters and it is clean:
+  // `data-release-scroll`, `bodyTruncated`, `cross-served`, `api/releases`,
+  // `work log` and `holds no ledger` ALL grep to ZERO in the eager entry, and
+  // the first two grep to 1 in the lazy SourcesPage chunk.
+  //
+  // NOT RAISED, said out loud: `/about/sources` HELD at 96,461 of 98,000
+  // (margin 1,539) — the ledger UI is small and PR BODIES ARE FETCHED, NOT
+  // BUNDLED, which is the design property that keeps a page carrying the whole
+  // project history off the first-load budget. `cssGz` is BYTE-IDENTICAL at
+  // 18,150: the scroll region's four declarations are inline, because they are
+  // used exactly once and this budget has ~450 B of margin.
   //
   // p3·16 RAISE, 871,000 -> 886,000. A whole new ROUTE, which is the case this
   // budget's own docstring describes: "code behind a dynamic import; growth
@@ -1600,7 +1641,15 @@ const ROUTE_BUDGET_GZ = {
 // p2·10 named "the upward half is spent again" and p3·13 deliberately declined.
 // [62, 70] leaves ONE rung, stated here rather than left to be rediscovered:
 // the next shared leaf, or the next route, reds this line.
-const CHUNK_COUNT = 66;
+/* p4·03: RE-CENTRED 66 -> 67, not widened. The build measures 70, and the old
+   band [62, 70] put reality exactly ON the ceiling — the state p2·10 named "the
+   upward half is spent again" and p3·13 deliberately declined, re-centring for
+   the same reason. Widening the ±4 would lose sensitivity in both directions;
+   moving the centre keeps it and buys one rung, so the next minted chunk reds
+   this and gets read rather than absorbed. The 70th is `Disclosure`, hoisted out
+   of SuperstressPage's group when SourcesPage became its third importer — see
+   the attribution table beside lazyJsRaw. */
+const CHUNK_COUNT = 67;
 const CHUNK_BAND = 4;
 
 const kb = (n) => (n / 1024).toFixed(2).padStart(8);

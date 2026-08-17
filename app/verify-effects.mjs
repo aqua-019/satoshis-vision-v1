@@ -39,11 +39,21 @@ const LEDGER = {
   'src/data/usePolling.ts': [1,
     'the tier timer + visibilitychange listener — external, and it owns its own ' +
     'cleanup and abort budget.'],
-  'src/data/useCachedFeed.ts': [1,
-    'the 24h-cached /api/feeds fetch. Fetching in an effect is the pattern D1625 ' +
-    'warns about, but there is no data-router here (react-router is used through ' +
-    'the JSX <Routes> API, so loaders are unavailable at any version) and no query ' +
-    'library in the dependency set.'],
+  'src/data/useCachedFeed.ts': [2,
+    'the 24h-cached /api/feeds fetch, and p4·03\'s /api/releases ledger fetch. ' +
+    'Fetching in an effect is the pattern D1625 warns about, but there is no ' +
+    'data-router here (react-router is used through the JSX <Routes> API, so ' +
+    'loaders are unavailable at any version) and no query library in the ' +
+    'dependency set. Was 1 until p4·03, and the SECOND effect is deliberate ' +
+    'rather than a copy: useReleaseLedger cannot be built on useCachedFeed, ' +
+    'because that hook caches whatever its fetcher returns non-null and ' +
+    'collapses everything else to "fail" — so a CROSS-SERVED envelope would ' +
+    'either be persisted for 24h or become indistinguishable from a network ' +
+    'failure, and telling those apart is the entire reason the ledger pipe ' +
+    'exists. It also runs with NO TTL gate, because the store is re-polled ' +
+    'every ~10 minutes and a 24h client cache would hide data the server ' +
+    'already has. The storage primitives are shared; only the state machine ' +
+    'is separate.'],
   'src/data/useMarketHistory.ts': [3,
     'the BASE fetch, the aggregator fetch, and the 45s retry timer. Same caveat ' +
     'as useCachedFeed. Was 2 until p3·12 split the single fetch effect in two, ' +

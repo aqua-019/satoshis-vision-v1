@@ -411,12 +411,25 @@ export function SourcesPage() {
 
           {/* ── THE SCROLL REGION ──────────────────────────────────────────
               Everything historical scrolls; the header, the feed-state label and
-              the polled-at line stay pinned above it. The height is FIXED rather
-              than a max-height, and that is a CLS decision, not a styling one:
-              the ledger arrives after first paint, so a box that grows from 0 to
-              its content height would shift every element below it — on the one
-              page whose whole subject is trustworthiness. Fixed from first paint
-              means the reserved space is identical before and after the fetch.
+              the polled-at line stay pinned above it.
+
+              `maxHeight`, NOT a fixed `height`, AND THE FIRST VERSION OF THIS
+              COMMENT ARGUED THE OPPOSITE ON A MECHANISM NOBODY HAD MEASURED. It
+              said a fixed height was "a CLS decision, not a styling one" — that
+              a box growing from zero when the ledger lands "would shift every
+              element below it". Measured at 390×844 with the response held open
+              and released: CLS is **0.00000 either way**. The reason is
+              structural and one query answers it — `#release-notes` is the LAST
+              content on this page, and the only thing after it in document
+              order is the fixed-position footer bar, which cannot be shifted by
+              anything. There was no shift to prevent.
+
+              What the fixed height DID cost was visible: in the store-empty and
+              cross-served states the curated archive is five rows, so the box
+              held 263px of content in a 637px frame — ~374px of dead space under
+              a list, which reads as broken. Under `maxHeight` that void is 0px
+              and the fed state is byte-identical, because the content overflows
+              the cap anyway. Strictly better on one axis and equal on the other.
 
               `min(58vh, 640px)`: 58vh keeps roughly two fifths of the viewport
               for the sections above and below at 1440, and at 390×844 it is
@@ -434,7 +447,7 @@ export function SourcesPage() {
           <div
             data-release-scroll
             style={{
-              height: "min(58vh, 640px)",
+              maxHeight: "min(58vh, 640px)",
               overflowY: "auto",
               overscrollBehavior: "contain",
               borderTop: "1px solid var(--rule)",

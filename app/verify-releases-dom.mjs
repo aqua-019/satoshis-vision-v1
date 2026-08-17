@@ -429,11 +429,19 @@ R.info(`engine: ${engine}`);
   await ctx.close();
 }
 {
-  /* CLS: the reserved height must be IDENTICAL before and after the payload
-     lands, because this section is the last thing on a page about
-     trustworthiness and a late reflow shifts everything under it. Measured by
-     holding the response open, reading the box, then releasing it. */
-  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1200 }, deviceScaleFactor: 1 });
+  /* CLS, MEASURED DIRECTLY rather than through a proxy.
+     The first version of this block asserted "the box does not resize when the
+     ledger lands", which is a proxy for CLS and was chosen because a fixed
+     height had been adopted on an UNMEASURED claim that a growing box "would
+     shift every element below it". Measured, CLS is 0.00000 whether the box is
+     fixed or capped — `#release-notes` is the last content on the page and the
+     only thing after it is the fixed-position footer, which cannot shift. So
+     the proxy was pinning a property that bought nothing while costing ~374px
+     of dead space in the two degraded states.
+     This asserts the thing actually cared about: the ledger arriving causes no
+     layout shift. It is strictly stronger than the proxy — it would catch a
+     shift from ANY cause, not just this box resizing. */
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1 });
   await ctx.route('**/api/status*', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATUS_FIXTURE) }));
   let release;
@@ -446,6 +454,12 @@ R.info(`engine: ${engine}`);
     await ctx.route(glob, (r) => r.abort());
   }
   const page = await ctx.newPage();
+  await page.addInitScript(() => {
+    window.__cls = 0;
+    new PerformanceObserver((l) => {
+      for (const e of l.getEntries()) if (!e.hadRecentInput) window.__cls += e.value;
+    }).observe({ type: 'layout-shift', buffered: true });
+  });
   await page.goto(`${BASE}/about/sources`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('[data-release-scroll]', { timeout: 20000 });
   const before = await page.evaluate(() => document.querySelector('[data-release-scroll]').getBoundingClientRect().height);
@@ -455,10 +469,30 @@ R.info(`engine: ${engine}`);
     const label = sec?.querySelector('.kicker')?.parentElement?.querySelector('span.mono')?.textContent ?? '';
     return sec && !/fetching/i.test(label);
   }, { timeout: 20000 });
+  await page.waitForTimeout(900);
+  const cls = await page.evaluate(() => window.__cls);
   const after = await page.evaluate(() => document.querySelector('[data-release-scroll]').getBoundingClientRect().height);
-  R.ok(before > 0, `§10 · the scroll box reserves its height BEFORE the ledger arrives (${before}px)`);
-  R.ok(Math.abs(after - before) < 1,
-    `§10 · and does not resize when it lands (${before}px -> ${after}px) — no reflow of the sections below`);
+  R.ok(before > 0, `§10 · the region has a box before the ledger arrives (${before}px) — the curated archive renders immediately`);
+  /* 0.005 is this repo's own CLS ceiling (verify-cls). Asserting against the
+     house number rather than a fresh one invented here. */
+  R.ok(cls <= 0.005, `§10 · the ledger landing causes no layout shift (CLS ${cls.toFixed(5)} <= 0.005)`);
+  /* NOT asserted: "the box grows when the ledger lands". It was, and it went red
+     against correct code — at 390 the curated archive ALREADY exceeds the 58vh
+     cap before the fetch resolves, so the box sits at the cap on both sides and
+     `after > before` is false for the right reason. The property that assertion
+     was reaching for is "a cap, not a fixed frame", and the EMPTY-state check in
+     the next block states it directly: a short list gets a short box. */
+  R.ok(after >= before, `§10 · the box never shrinks as content arrives (${before}px -> ${after}px)`);
+  await ctx.close();
+}
+{
+  /* The property the cap buys that a fixed height did not: in the degraded
+     states the box shrinks to its content instead of leaving dead space under a
+     five-row list. Measured at 637px holding 263px before this changed. */
+  const { ctx, page } = await load(browser, { items: [], commits: [], store: 'empty' });
+  const s = await readSection(page);
+  R.ok(s.scroll !== null && s.scroll.scrollH - s.scroll.clientH === 0,
+    `§10 · the EMPTY state leaves no void — box ${s.scroll?.clientH}px, content ${s.scroll?.scrollH}px`);
   await ctx.close();
 }
 

@@ -28,7 +28,17 @@ chain and market data.
 - `relay/` — an unrun Node/TypeScript websocket relay. Not deployed.
 - Vercel config: `vercel.json` — `outputDirectory: app/dist`, and a
   `/((?!api/).*)` → `/index.html` SPA catch-all. **Nothing at the repo root is served.**
-- Verification: **83** `verify-*.mjs` files (`app/` ×75, `app/scripts/` ×1, `api/` ×7) — **79 gates**
+- Verification: **84** `verify-*.mjs` files (`app/` ×75, `app/scripts/` ×1, `api/_tests/` ×8) — **80 gates**
+  (p4·03 added `verify-releases-pipe.mjs` AND **moved all seven `api/` gates into `api/_tests/`** —
+  they had been deploying as publicly invocable serverless functions, 13 lambdas where 6 were
+  intended. `api/_*` is not built into functions; `_nodes.js`/`_fixtures/` are the precedent.
+  **A COUNTING SCRIPT KEYED ON `api/verify-*.mjs` NOW FINDS NOTHING** — count at any depth.
+  Recounted, never incremented, with the script CONTROLLED against THREE commits first:
+  `e5eae16` reproduces 81/77/22/31/66, `bda0491` reproduces 82/78/22/32/67, and `543a8d8`
+  reproduces 83/79/22/34/69/6 — all EXACTLY, including p3·19's corrected invocation
+  arithmetic. Measured here: **84 / 80 / 22 / 34 / 70 / 6**, i.e. 76 invocations − 6 duplicates.
+  `verify:e2e` is UNCHANGED at 34: the new gate is a named CI step beside the other offline
+  api gates, not an e2e member, so this release moves three figures and not five.)
   (p3·17 added `verify-releases-dom.mjs`; recounted, never incremented, with the counting script
   CONTROLLED against `bda0491` first, where it reproduces that commit's recorded
   82 / 78 / 22 / 32 / 67 EXACTLY — which is what makes 83 / 79 / 22 / 33 / 68 here trustworthy.)
@@ -414,7 +424,7 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
 - Live data throughout: tiered polling (3s / 15s / 60s) against `/api/xmr` and `/api/markets`,
   degrading to last-good + "STALE · reconnecting" rather than to synthesis.
 - `sitemap.xml` and `robots.txt` generated into `dist/` at build from `app/scripts/routes.mjs`.
-- CI runs **69 of the 79** gates on every PR to `main` and on every push to `main`
+- CI runs **70 of the 80** gates on every PR to `main` and on every push to `main`
   (p3·12d added the push trigger); **4** more are npm-wired by hand
   (`verify-memperf` · `verify-pageshell` · `verify-perf-classic` · `verify-shots`) and **6**
   are wired to nothing (p3·18 wired `verify-legality`, an orphan since v6.0.10). This line read "57 of the 71 … 3 … 11" until p2·7b measured it; the
@@ -665,6 +675,153 @@ CSP is `connect-src 'self'` and the site is used over Tor. Cache at the edge via
 matched to the client's polling tier, and never cache a degraded payload at the full TTL.
 
 ## Session Notes
+
+- **2026-08-17**: p4·03 "THE RELEASE LEDGER" (api/ + app/ + .github/) — every merged PR with
+  its BODY as the summary, every commit beneath it, and a feeds envelope that can prove its
+  own vintage. **THE FEATURE IS THE SMALL HALF. The large half is that a serving path could
+  not be asked which code it was running, and seven test files were public lambdas.**
+  **THE PROMPT'S TIER-2 INSTRUCTION WOULD HAVE SHIPPED AN EMPTY SECTION, and one command
+  showed it.** §0.2 says to reactivate `src=commits`' serving path because `getSelfCommits` +
+  `mapCommits` "exist and are unit-gated". They do — and **`mapCommits` is not a commit
+  lister, it is a VERSION-STAMP FILTER**. Measured on this tree: **ZERO of the last 80 commit
+  subjects parse** under `VERSION_RX`, and `git tag` is EMPTY. That is precisely why the path
+  was marked dormant. Reusing it would have rendered a heading over an empty list — a section
+  that looks broken while being technically correct. Tier 2 is a new `mapAllCommits`; the
+  filter is KEPT, unchanged, because the parity assertion needs it and the convention may
+  return. The lesson is the standing one in a new place: **an enumeration in a brief is a
+  hypothesis, and `git log | grep -c` is a measurement.**
+  **`api/verify-*.mjs` WERE DEPLOYING AS PUBLICLY INVOCABLE SERVERLESS FUNCTIONS** — 13
+  lambdas where 6 are intended, and `/api/verify-nodehealth` would probe remote Monero nodes
+  on anyone's GET. Moved to `api/_tests/`; `api/_*` is not built into functions, the
+  `_nodes.js`/`_fixtures/` precedent. Measured drop **13 → 8** (6 kept + releases + cron).
+  **THE ELEGANT HALF: `verify-nodes` and `verify-status` use `join(API_DIR, …)` across ~30
+  call sites, and BOTH were fixed with ONE LINE each** — `API_DIR` becomes
+  `join(dirname(...), '..')` — rather than by editing thirty. **AND A COUNTING SCRIPT KEYED ON
+  `api/verify-*.mjs` NOW FINDS NOTHING**: count at any depth, which this file already learned
+  once when a shallow `app/` glob could not see `app/scripts/verify-all.mjs`.
+  **THE ENVELOPE ECHO, AND WHY `rev` IS HAND-BUMPED RATHER THAN DERIVED.** Production serves
+  an `/api/feeds` that honours `n`, does not know `src` AT ALL, and answers every source as
+  `getmonero` — behaviour older than feeds.js's own first commit, surviving a cache-unticked
+  redeploy of the correct commit. A derived identity (a git sha, a build stamp) would have
+  been prettier and would have proved NOTHING here, because **the haunted deployment reports a
+  perfectly fresh `fetchedAt`**. What was missing is a value an OPERATOR controls and
+  recognises. `rev` and `source` are carried on EVERY branch **including the failures** — an
+  error envelope that drops them is exactly as undiagnosable as the state that caused this,
+  and that is the half a reviewer skips. Break test B1 (drop `rev`): **5 reds across all four
+  store states**.
+  **THE CLIENT DISCARDS A CROSS-SERVED PAYLOAD RATHER THAN ANNOTATING IT**, and the argument
+  is worth keeping: a page that warned about the mismatch and then rendered the rows anyway
+  would be WORSE than one that said nothing, because the warning makes the data look vetted.
+  Break test M1 (echo check defeated) is the sharpest artifact in the release — the page
+  renders **"3 pull requests · 2 commits" over 8 rows of untrusted data**, which is the
+  production defect reproduced in a browser.
+  **M1's FIRST RUN WAS VOID AND LOOKED LIKE A PASS.** The mutation did not compile
+  (`return true || …` broke the type predicate's narrowing), my harness printed
+  `BUILD FAILED`, **carried on anyway**, and the gate ran against the PREVIOUS build and
+  reported **72 passed · 0 failed**. The stale-`dist` trap this file records twice, arriving
+  through a door it had not: not a forgotten rebuild but a FAILED one, with the old artifact
+  still on disk. A break test whose build failed is VOID, not a pass — the harness aborts now.
+  **THE STORE IS THE CACHE AND THE REQUEST PATH MAKES NO UPSTREAM CALL.** One poll costs
+  **≤ 4** GitHub calls (asserted, not just claimed — the gate counts them), so `*/10` is
+  **≤ 24/hr against the 60/hr** unauthenticated ceiling. A PARTIAL upstream failure carries
+  the surviving tier forward from the store rather than writing `[]`; a TOTAL failure writes
+  NOTHING, so last-good keeps serving. The plan question was settled by MEASUREMENT rather
+  than assumption: sub-daily crons need a paid plan, and the project lives under a Vercel
+  **team**, which is itself a paid-plan feature.
+  **`_releases-core.js` DELIBERATELY DOES NOT IMPORT `feeds.js`**, and the duplication is a
+  GATED INVARIANT rather than a fork: the pipe gate asserts the two `mapCommits` are
+  byte-identical and that `mapPulls` agrees on every shared field. The quarantine is of the
+  deployment artifact, not the source text — but an import edge is exactly the thing that
+  could carry an artifact across, and refusing it costs ~60 lines.
+  **BUDGETS: ATTRIBUTION RECONCILES TO THE BYTE, RESIDUAL ZERO.** `SourcesPage` +3,595 ·
+  **`Disclosure` 0 → 791, a MINTED chunk** · `useCachedFeed` +541 · `index[1]` (EAGER) **+38**
+  · `SuperstressPage` **−611** = **+4,354**, which IS lazy +4,316 plus eager +38. 65 of 70
+  slots size-identical. **The 70th chunk is the leaf lesson's FIFTH application and it is why
+  SuperstressPage got SMALLER**: `Disclosure` had two importers in ONE chunk group and was
+  inlined there; SourcesPage is a third importer in a DIFFERENT group, so the leaf was hoisted
+  out and subtracted from the page that used to carry it. The rule stays "a leaf shared ACROSS
+  GROUPS costs a chunk", and only a build tells you which you wrote. **The eager +38 was
+  CHASED, not waved at**: it is the `assets/Disclosure-*.js` preload string entering
+  `__vite__mapDeps`, grepped and found — p3·13's mechanism reproduced. Negative control clean:
+  six ledger-only strings grep to **ZERO** in the eager entry and to 1 in the lazy chunk.
+  Raised red-then-green on the FINAL tree: `lazyJsRaw` 900,000 → **904,000** (built 900,454,
+  margin 3,546) · `totalJsRaw` 1,162,000 → **1,167,000** (built 1,163,006, margin 3,994) ·
+  `CHUNK_COUNT` **RE-CENTRED 66 → 67, not widened** (measured 70; the old band put reality
+  exactly ON the ceiling, the state p2·10 named and p3·13 declined). **NOT raised, said out
+  loud: `/about/sources` HELD at 96,461 of 98,000** — PR BODIES ARE FETCHED, NOT BUNDLED,
+  which is the design property that keeps a page carrying the whole project history off the
+  first-load budget. `cssGz` **BYTE-IDENTICAL at 18,150**: the scroll region's four
+  declarations are inline, used exactly once, against a ~450 B margin.
+  **THE SCROLL BOX IS A `maxHeight`, AND MY FIRST VERSION WAS A FIXED `height` DEFENDED BY A
+  MECHANISM I NEVER MEASURED — the standing family, in this release's own layout decision.**
+  The comment I shipped first said a fixed height was "a CLS decision, not a styling one",
+  because a box growing from zero when the ledger lands "would shift every element below it".
+  Measured at 390×844 with the response HELD OPEN and then released: **CLS is 0.00000 either
+  way.** One DOM query explains it — `#release-notes` is the LAST content on the page, and the
+  only thing after it in document order is the fixed-position footer bar, which cannot be
+  shifted by anything. **There was no shift to prevent.** What the fixed height DID cost was
+  visible the moment I looked at a render: in the store-empty and cross-served states the
+  curated archive is five rows, so the box held **263px of content in a 637px frame — ~374px
+  of dead space under a list**, which reads as broken. Under `maxHeight` that void is **0px**
+  and the fed state is unchanged, because the content overflows the cap anyway. Strictly
+  better on one axis, equal on the other, and only a measurement separates them.
+  **THE GATE GOT BETTER FOR THE SAME REASON.** §10 had asserted "the box does not resize when
+  the ledger lands" — a PROXY for CLS, chosen to pin the unmeasured claim. It now measures CLS
+  DIRECTLY through a `PerformanceObserver`, against this repo's own 0.005 ceiling rather than
+  a number invented here, which is strictly stronger: it catches a shift from ANY cause, not
+  just this box resizing. **A follow-up assertion then went red against correct code** — "the
+  box DOES grow to fit" is false at 390, where the curated archive already exceeds the 58vh
+  cap before the fetch resolves, so the box sits at the cap on both sides. The property it was
+  reaching for is stated directly instead: a short list gets a short box.
+  **THE PAGE STATES `polledAt`, NOT `fetchedAt`** — `fetchedAt` is always seconds old, which is
+  reassuring on exactly the deployment whose DATA is two weeks stale. **My first version of
+  that assertion could not tell them apart**: the two fixture stamps were five minutes apart,
+  so "the age tracks polledAt" passed either way. Seven days apart, with both expectations
+  computed from the fixture and the real clock, it discriminates — and M4 reds it.
+  **SIX MORE THINGS I GOT WRONG** (the `maxHeight` reversal above is the seventh and the
+  largest). (1) **A recon worker returned a FABRICATED budget table** —
+  `/` at 45,800 gzip and a 12-row table labelled "14 routes", where `verify-bundle` measures
+  87,936 across 14 rows including `/live/markets/thesis`. Caught only because the instrument
+  had already been run by the lead; the brief said VERBATIM and the worker paraphrased into
+  invention. **A worker's numbers are a REPORT until the lead has reproduced them.**
+  (2) **My own SPA-rewrite probe reported a defect that does not exist** — an UNANCHORED JS
+  regex said `/((?!api/).*)` swallows `/api/cron/releases`. Vercel anchors route sources; the
+  tell was that the same probe also claimed `/api/feeds` was swallowed, which production
+  disproves. The instrument, not the config. (3) **`EXIT=0` after a pipe is `tail`'s status,
+  not the gate's** — I read a gate printing `FAILURES` as exit 0. `PIPESTATUS`, or redirect to
+  a file. (4) **A vacuous assertion in my own gate**: `R.ok(a === b ? true : true, …)` is
+  `R.ok(true)` however the comparison lands — in the section whose entire job is catching
+  drift. Replaced with a 5-probe comparison plus a check that 2 of 5 actually parse, so
+  agreement is not agreement-on-nothing. (5) **A gate assertion that was red against correct
+  code**: it claimed "every fixture row says merged:false" — false of the one row that says
+  `merged: true`. The ASSERTION was wrong, not the transform; rewritten CONSTRUCTIVELY to run
+  the wrong predicate and show it recovers strictly fewer rows.
+  **A CLICK-AND-READ RACE IN THE DOM GATE, worth its own line because it produced TWO reds
+  with ONE cause.** `page.evaluate(() => { btn.click(); return read(); })` measures the
+  PREVIOUS render — `Disclosure` is React-state-controlled and does not change in the same
+  synchronous tick. The first red said "opening one reveals its panel" against a component
+  that works; the second said the wrong panel was open, because the earlier click had landed
+  by then. Click through Playwright and `waitForFunction` the commit.
+  Census RECOUNTED, never incremented, with the script **CONTROLLED against THREE commits
+  first** — `e5eae16` reproduces 81/77/22/31/66, `bda0491` 82/78/22/32/67 and `543a8d8`
+  83/79/22/34/69/6, all EXACTLY, including p3·19's corrected invocation arithmetic. Measured:
+  **84 files / 80 gates / static 22 / e2e 34 / CI 70 / orphans 6** (76 − 6 duplicates).
+  `verify:e2e` UNCHANGED at 34 — the new gate is a NAMED CI step beside the other offline api
+  gates, so this release moves three figures and not five, and the p4·01 tail ordering is
+  untouched. New `api/_tests/verify-releases-pipe.mjs` **79 assertions**, a TWIN rather than a
+  section of verify-feeds because its subject is three modules that deliberately do not import
+  `feeds.js`. `verify-releases-dom` **33 → 74**. `verify-effects`' ledger for
+  `useCachedFeed.ts` **1 → 2**, with the reason recorded there: `useReleaseLedger` cannot be
+  built on `useCachedFeed`, which caches whatever its fetcher returns non-null and collapses
+  everything else to "fail" — so a cross-served envelope would either be PERSISTED for 24h or
+  become indistinguishable from a network failure.
+  **NOT FIXED, and named**: the `getmonero`/`mrl`/`x` widgets stay on `/api/feeds` (migrating
+  them needs a second store schema for caller-supplied repos); `useRepoPulse` gains no echo
+  check, because its existing shape guard already rejects a cross-served payload so the check
+  would change no rendered state without a message change on two pages this PR does not own;
+  `/api/releases` is NOT added to `api/status.js`'s `ENDPOINTS` inventory, which is prompt 05's
+  fenced surface. **No human has seen the rendered result in a browser** — read from
+  screenshots.
 
 - **2026-08-17**: p4·02 "THE MOBILE FOUNDATION" (app/) — the touch type floor, the gate with
   no exemptions, and the standing 11-vs-12px conflict finally decided. **FOUR OF THE BRIEF'S
