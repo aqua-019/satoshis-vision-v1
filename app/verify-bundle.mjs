@@ -647,14 +647,14 @@ const BUDGETS = {
   // error. Recorded again rather than quietly repaired: repairing it means
   // deciding what the backstop is FOR, which is its own change.
   // p4·04 RAISE, 1,167,000 -> 1,195,000. Moves WITH lazyJsRaw as always, and
-  // the arithmetic closes exactly: lazy +29,061 plus eager +499 = +29,560,
-  // which IS this budget's whole delta (1,163,009 -> 1,192,569). Residual
+  // the arithmetic closes exactly: lazy +28,945 plus eager +499 = +29,444,
+  // which IS this budget's whole delta (1,163,009 -> 1,192,453). Residual
   // ZERO on both halves.
   // The stated construction ("the sum of the two real budgets") remains
   // broken — 280,000 + 933,000 = 1,213,000 against this line's 1,196,000, a
   // 17,000 B window against p4·03's 18,000. Still recorded rather than
   // quietly repaired: repairing it means deciding what the backstop is FOR.
-  totalJsRaw: 1_196_000,  // p4·04: built 1,192,569 on the FINAL tree, margin 3,431.
+  totalJsRaw: 1_196_000,  // p4·04: built 1,192,453 on the FINAL tree, margin 3,547.
                           // p4·03: built 1,163,009 on the FINAL tree, margin 3,991.
                           // p3·19: built 1,158,463 on the FINAL tree, margin 3,537.
                           // p3·16: built 1,146,258 on the FINAL tree, margin 3,742.
@@ -1178,12 +1178,12 @@ const BUDGETS = {
   // budget has ever recorded: ONE term. `/operate/mine` is a new lazy route,
   // so Rollup mints `MinePage-*.js` and nothing else moves —
   //
-  //     MinePage   (new route chunk)   +29,061
+  //     MinePage   (new route chunk)   +28,945
   //     ---------------------------------------
-  //                                    +29,061
+  //                                    +28,945
   //
-  // and `ls -la dist/assets/MinePage-*.js` reads 29,061 B, which is the WHOLE
-  // lazy delta to the byte (900,457 -> 929,518). Aggregate equality alone
+  // and `ls -la dist/assets/MinePage-*.js` reads 28,945 B, which is the WHOLE
+  // lazy delta to the byte (900,457 -> 929,402). Aggregate equality alone
   // could still hide two offsetting moves, so it was PAIRED per stem against
   // an ISOLATED `git worktree` build of fdb105e with its own dist/ and its own
   // node_modules — see the release note for the per-stem table.
@@ -1194,12 +1194,14 @@ const BUDGETS = {
   // importer group and split it into a chunk of its own — a second mint on
   // top of this route's, against a CHUNK_COUNT already on its band ceiling.
   // MinePage.tsx's header records why linking beat deriving.
-  lazyJsRaw: 933_000,   // p4·04: built 929,518 on the FINAL tree, margin 3,482.
-                        //   RE-DERIVED after the last src commit, not carried:
-                        //   the first measurement read 928,203 and three later
-                        //   copy edits moved it +1,315 while every ceiling
-                        //   stayed green. A budget comment is not gated by the
-                        //   budget it annotates — p3·19's recorded near-miss.
+  lazyJsRaw: 933_000,   // p4·04: built 929,402 on the FINAL tree, margin 3,598.
+                        //   RE-DERIVED TWICE, and both times it had moved: the
+                        //   first measurement read 928,203, later copy edits took
+                        //   it to 929,518, and two render fixes landed it at
+                        //   929,402 — every ceiling GREEN throughout, so nothing
+                        //   would have reported the prose going stale. A budget
+                        //   comment is not gated by the budget it annotates;
+                        //   that is p3·19's recorded near-miss, twice in one PR.
                         // p4·03: built 900,457 on the FINAL tree, margin 3,543.
                         // p3·19: built 896,103 on the FINAL tree, margin 3,897.
                         // p3·16: built 882,873 on the FINAL tree, margin 3,127.
@@ -1471,8 +1473,8 @@ const ROUTE_BUDGET_GZ = {
   '/future':                107_000, //  96,895
   '/future/outlook':         92_000, //  83,652 — new: split out of the old /monero/outlook tab
   '/operate/node':           92_000, //  83,305
-  // p4·04: NEW ROW — the 15th route. Built 97,974 on the FINAL tree, margin
-  //  3,026. Set from measurement, never by eye, for the reason the row below
+  // p4·04: NEW ROW — the 15th route. Built 97,918 on the FINAL tree, margin
+  //  3,082. Set from measurement, never by eye, for the reason the row below
   //  states: a first budget chosen by eye is a ceiling nobody can later argue
   //  with, because there is no recorded number underneath it.
   //  Its closure is FOUR chunks — entry + vendor + MinePage + Disclosure —
