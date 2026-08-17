@@ -22,11 +22,25 @@ export const SEVERITY: Record<ActivityStatus, number> = {
   illegal: 3,
 };
 
-export const STATUS_META: Record<ActivityStatus, { c: string; label: string }> = {
-  legal:      { c: "var(--g-50)",   label: "Legal" },
-  unclear:    { c: "var(--ink-60)", label: "Unclear" },
-  restricted: { c: "var(--y-50)",   label: "Restricted" },
-  illegal:    { c: "var(--r-50)",   label: "Illegal" },
+/**
+ * The non-hue channel. Colour alone never carries a status here: every chip also
+ * renders the status WORD, and the marker beside it differs by SHAPE. Two readers
+ * need this — anyone who cannot separate the green/amber/red trio, and anyone
+ * reading a greyscale or high-contrast render, where `--g-50` and `--y-50`
+ * collapse to neighbouring greys.
+ *
+ * Kept here as a TOKEN rather than a style object so this module stays framework-
+ * free (see the file header); `StatusMark` in StatusChip.tsx owns the one mapping
+ * from token to geometry, so the legend and the matrix cannot teach different
+ * vocabularies.
+ */
+export type StatusShape = "disc" | "ring" | "diamond" | "square";
+
+export const STATUS_META: Record<ActivityStatus, { c: string; label: string; shape: StatusShape }> = {
+  legal:      { c: "var(--g-50)",   label: "Legal",      shape: "disc" },
+  unclear:    { c: "var(--ink-60)", label: "Unclear",    shape: "ring" },
+  restricted: { c: "var(--y-50)",   label: "Restricted", shape: "diamond" },
+  illegal:    { c: "var(--r-50)",   label: "Illegal",    shape: "square" },
 };
 
 // ── Headline ─────────────────────────────────────────────────────────────────
@@ -96,6 +110,35 @@ export function summarize(rows: readonly MatrixRow[]): Summary {
   }
 
   return { total: rows.length, counts, activityLegal };
+}
+
+// ── Review dates ──────────────────────────────────────────────────────────────
+
+export interface ReviewRange {
+  oldest: string;
+  newest: string;
+  count: number;
+}
+
+/**
+ * Oldest/newest over the rows' own `reviewed` dates, so the page-level line is
+ * DERIVED and cannot drift from the rows it summarises — the same discipline
+ * `summarize()` applies to the status counts.
+ *
+ * String comparison is exact here, not a shortcut: `reviewed` is ISO `YYYY-MM-DD`
+ * (asserted by the gate), and ISO dates are lexicographically ordered iff they are
+ * chronologically ordered. No `Date` is constructed, so no timezone can shift a
+ * date across a day boundary between the row and the summary.
+ */
+export function reviewRange(rows: readonly MatrixRow[]): ReviewRange | null {
+  if (rows.length === 0) return null;
+  let oldest = rows[0].reviewed;
+  let newest = rows[0].reviewed;
+  for (const r of rows) {
+    if (r.reviewed < oldest) oldest = r.reviewed;
+    if (r.reviewed > newest) newest = r.reviewed;
+  }
+  return { oldest, newest, count: rows.length };
 }
 
 // ── Search + filter ───────────────────────────────────────────────────────────
