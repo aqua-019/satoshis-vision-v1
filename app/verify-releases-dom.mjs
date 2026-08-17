@@ -24,6 +24,10 @@
 //   §5 the topbar label — the other half of the two-stale-versions defect
 //   §6 390px            — no h-scroll, no HTML text under the repo's 11px floor
 //   §7 reduced motion   — the section renders, zero running animations
+//   §8 cross-served     — p4·03: the endpoint answered as a DIFFERENT source
+//   §9 the two tiers    — the PR spine and the commit log, divided not merged
+//   §10 the scroll box  — bounded, and reserved from first paint (CLS)
+//   §11 PR bodies       — the disclosure, and the truncation marker
 //
 // COLD BOOT: this gate installs NO bypass, and that is verified rather than
 // assumed — `verify-coldboot-live.mjs` §0 decides which gates must install one
@@ -35,8 +39,12 @@
 // BLIND SPOTS, stated rather than left to be discovered:
 //   — The LIVE upstream. api.github.com is unreachable from the sandbox and
 //     from CI, so every feed payload here is a fixture. That `mapPulls` maps a
-//     REAL pulls response correctly is api/verify-feeds.mjs's job, against a
-//     fixture measured from the real endpoint.
+//     REAL pulls response correctly is api/_tests/verify-releases-pipe.mjs's
+//     job, against a fixture shaped from the real endpoint.
+//   — The STORE. Upstash is equally unreachable; that the serving function
+//     discriminates its four store states is the pipe gate's job, offline.
+//   — Whether the deployed function is the one in this repo. That is the
+//     defect `rev` exists to make ASKABLE, and only a live probe answers it.
 //   — Colour hierarchy. The seam's colour was a real defect found by looking at
 //     a render; no assertion here would have caught it.
 //
@@ -55,25 +63,66 @@ const R = makeReporter('verify-releases-dom');
    five, or "header counts the auto entries" and "header counts the rendered
    rows" would agree by coincidence and §1 would prove neither. */
 const PULLS = [
-  { v: '#186', note: 'p3·17 — sources release notes', date: '2026-08-16', url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/186' },
-  { v: '#185', note: 'p3·16 — the Superstress hub', date: '2026-08-16', url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/185' },
-  { v: '#184', note: 'p3·15 — Superbrain as 4th trusted peer', date: '2026-08-16', url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/184' },
+  { v: '#186', note: 'p3·17 — sources release notes', date: '2026-08-16', url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/186',
+    body: 'THE BODY OF ONE EIGHT SIX.\nA second line, so pre-wrap is exercised.', bodyTruncated: false },
+  { v: '#185', note: 'p3·16 — the Superstress hub', date: '2026-08-16', url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/185',
+    body: 'THE BODY OF ONE EIGHT FIVE, cut short by the server.', bodyTruncated: true },
+  /* Deliberately BODYLESS. A PR can ship with an empty description, and the
+     render must give it a flat row rather than a disclosure that opens onto
+     nothing — §11 asserts exactly that, and without this row the assertion
+     would have no negative case to stand on. */
+  { v: '#184', note: 'p3·15 — Superbrain as 4th trusted peer', date: '2026-08-16', url: 'https://github.com/aqua-019/satoshis-vision-v1/pull/184',
+    body: '', bodyTruncated: false },
 ];
+
+/* The work-log tier. Two entries is enough to prove the list renders and is
+   COUNTED separately from the spine; the transform that produces it (merge
+   commits dropped by parent count) is unit-gated offline. */
+const COMMITS = [
+  { sha: 'aaaaaaaaaaaaaaaa', short: 'aaaaaaa', note: 'feat(ledger): the first work-log line', date: '2026-08-17', url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/aaaaaaa' },
+  { sha: 'bbbbbbbbbbbbbbbb', short: 'bbbbbbb', note: 'fix(ledger): the second work-log line', date: '2026-08-17', url: 'https://github.com/aqua-019/satoshis-vision-v1/commit/bbbbbbb' },
+];
+
+/* The envelope api/releases.js emits. `rev` and `source` are the two echoes the
+   client validates; §8 drives the mismatch by changing `source` alone. */
+function ledgerBody({ items, commits = COMMITS, source = 'ledger', store = 'live', polledAt = '2026-08-17T00:00:00Z' }) {
+  return JSON.stringify({
+    rev: 1, source, repo: 'aqua-019/satoshis-vision-v1',
+    fetchedAt: '2026-08-17T00:05:00Z', polledAt,
+    store, bodyCap: 2000,
+    counts: { pulls: items.length, commits: commits.length },
+    pulls: items, commits,
+  });
+}
 
 /* `scripts/serve-dist.mjs` answers an unrouted /api/* with 501 + JSON, so a
    gate that loads /sources without the status fixture is testing an error
    response and calling it a page (verify-fixtures.mjs's own header). */
-async function mount(ctx, { items, failFeeds }) {
+async function mount(ctx, { items, commits, failFeeds, crossServed, store }) {
   await ctx.route('**/api/status*', (r) =>
     r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATUS_FIXTURE) }));
-  await ctx.route('**/api/feeds*', (r) =>
+  /* p4·03: the release surface moved off /api/feeds onto its own function at
+     its own route. The old path is left mocked-and-aborted below rather than
+     unmocked, so if anything on this page silently reaches for it again the
+     request fails loudly instead of hitting serve-dist's 501. */
+  await ctx.route('**/api/releases*', (r) =>
     failFeeds
       ? r.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"upstream"}' })
       : r.fulfill({
           status: 200, contentType: 'application/json',
-          body: JSON.stringify({ source: 'pulls', fetchedAt: '2026-08-16T00:00:00Z', repo: 'aqua-019/satoshis-vision-v1', items }),
+          body: ledgerBody({
+            items,
+            commits: commits ?? COMMITS,
+            /* THE CROSS-SERVED POLARITY. Everything else about this response is
+               well-formed — 200, valid JSON, a full payload. ONLY `source`
+               differs, which is precisely the production failure: a deployment
+               answering a question nobody asked, indistinguishable from an
+               empty feed unless the client checks the echo. */
+            source: crossServed ? 'getmonero' : 'ledger',
+            store: store ?? 'live',
+          }),
         }));
-  for (const glob of ['**/api/xmr**', '**/api/nodes*', '**/api/coingecko*', '**/api/markets*']) {
+  for (const glob of ['**/api/xmr**', '**/api/nodes*', '**/api/coingecko*', '**/api/markets*', '**/api/feeds*']) {
     await ctx.route(glob, (r) => r.abort());
   }
 }
@@ -84,9 +133,15 @@ async function readSection(page) {
   return page.evaluate(() => {
     const sec = document.querySelector('#release-notes');
     if (!sec) return null;
-    const rows = [...sec.querySelectorAll('div[style*="92px 1fr"]')];
+    /* Stable hooks, not a style-substring match. A release entry renders as a
+       Disclosure when it has a body and as a flat grid row when it does not, so
+       one selector has to cover both shapes — and the old
+       `div[style*="92px 1fr"]` would now ALSO sweep up every commit row, which
+       would silently inflate the spine count this gate's §1 depends on. */
+    const rows = [...sec.querySelectorAll('[data-disclosure], [data-release-row]')];
     const seam = sec.querySelector('[data-release-seam]');
-    const kids = [...sec.querySelectorAll('[data-release-seam], div[style*="92px 1fr"]')];
+    const kids = [...sec.querySelectorAll('[data-release-seam], [data-disclosure], [data-release-row]')];
+    const scroller = sec.querySelector('[data-release-scroll]');
     const small = [];
     for (const el of sec.querySelectorAll('*')) {
       if (!el.children.length && el.textContent.trim()) {
@@ -99,6 +154,21 @@ async function readSection(page) {
       ids: rows.map((r) => r.querySelector('.acc')?.textContent?.trim() ?? ''),
       rowCount: rows.length,
       emptyBox: sec.querySelector('[data-release-feed="empty"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+      mismatchBox: sec.querySelector('[data-release-feed="mismatch"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+      polled: sec.querySelector('[data-ledger-polled]')?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+      commitCount: sec.querySelectorAll('[data-release-commit]').length,
+      tierDivider: sec.querySelector('[data-release-tier="commits"]')?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+      disclosures: [...sec.querySelectorAll('[data-disclosure]')].map((d) => d.getAttribute('data-disclosure')),
+      openBodies: [...sec.querySelectorAll('[data-release-body]')]
+        .filter((b) => b.closest('.disc-panel') && !b.closest('.disc-panel').hasAttribute('hidden'))
+        .map((b) => b.getAttribute('data-release-body')),
+      truncMarks: [...sec.querySelectorAll('[data-release-truncated]')].map((t) => t.getAttribute('data-release-truncated')),
+      scroll: scroller ? {
+        clientH: scroller.clientHeight,
+        scrollH: scroller.scrollHeight,
+        overflowY: getComputedStyle(scroller).overflowY,
+        overscroll: getComputedStyle(scroller).overscrollBehaviorY,
+      } : null,
       seamText: seam ? seam.textContent.replace(/\s+/g, ' ').trim() : null,
       seamIndex: seam ? kids.indexOf(seam) : -1,
       sub11: small,
@@ -107,9 +177,9 @@ async function readSection(page) {
   });
 }
 
-async function load(browser, { items, failFeeds, width = 1440, height = 1200, reducedMotion = 'no-preference' }) {
+async function load(browser, { items, commits, failFeeds, crossServed, store, width = 1440, height = 1200, reducedMotion = 'no-preference' }) {
   const ctx = await browser.newContext({ viewport: { width, height }, reducedMotion, deviceScaleFactor: 1 });
-  await mount(ctx, { items, failFeeds });
+  await mount(ctx, { items, commits, failFeeds, crossServed, store });
   const page = await ctx.newPage();
   await page.goto(`${BASE}/about/sources`, { waitUntil: 'domcontentloaded' });
   await page.waitForSelector('#release-notes', { timeout: 20000 });
@@ -136,8 +206,8 @@ R.info(`engine: ${engine}`);
     `§1 · both eras render — ${PULLS.length} PR-keyed + 5 curated = ${PULLS.length + 5} rows (got ${s.rowCount})`);
   R.ok(s.ids.slice(0, 3).join(',') === '#186,#185,#184',
     `§1 · PR-keyed ids render newest-first and keep upstream order (got ${s.ids.slice(0, 3).join(',')})`);
-  R.ok(s.status === `github pulls · ${PULLS.length} releases`,
-    `§1 · the header counts the AUTO entries, and says which feed they came from (got "${s.status}")`);
+  R.ok(s.status === `${PULLS.length} pull requests · ${COMMITS.length} commits`,
+    `§1 · the header counts BOTH tiers from the feed, not the rendered rows (got "${s.status}")`);
   // The header must count the auto entries (3), not the rendered rows (8). If
   // those two numbers were equal the assertion above would pass either way.
   R.ok(!s.status.includes(String(s.rowCount)),
@@ -148,21 +218,25 @@ R.info(`engine: ${engine}`);
 
 /* ── §2 · empty feed — THE DEFECT THIS GATE EXISTS FOR ────────────────── */
 {
-  const { ctx, page } = await load(browser, { items: [] });
+  const { ctx, page } = await load(browser, { items: [], commits: [], store: 'empty' });
   const s = await readSection(page);
   R.ok(s.rowCount === 5, `§2 · the curated archive still renders (got ${s.rowCount} rows)`);
   // The regression, stated as the thing that must never be true again: a header
   // claiming a count while rows are on screen.
   R.ok(!/\b0 releases\b/.test(s.status),
     `§2 · the header does NOT claim "0 releases" — got "${s.status}"`);
-  R.ok(!/^github /.test(s.status),
+  R.ok(!/pull requests ·/.test(s.status),
     '§2 · the header does not attribute the rendered rows to the automatic feed, which produced none of them');
   R.ok(/curated archive/.test(s.status),
     `§2 · the header names what is actually on screen: the curated archive (got "${s.status}")`);
-  R.ok(s.emptyBox !== null && /returned no merged pull requests/.test(s.emptyBox),
+  R.ok(s.emptyBox !== null && /the store holds no ledger yet/.test(s.emptyBox),
     '§2 · the honest-empty notice renders, in the house vocabulary');
-  R.ok(s.emptyBox !== null && /\/api\/feeds\?src=pulls/.test(s.emptyBox),
+  R.ok(s.emptyBox !== null && /\/api\/releases\?src=ledger/.test(s.emptyBox),
     '§2 · the notice names the endpoint that answered, per FeedEmpty\'s idiom');
+  R.ok(s.mismatchBox === null,
+    '§2 · an EMPTY store is not reported as a cross-served one — the two notices are different claims');
+  R.ok(s.commitCount === 0 && s.tierDivider === null,
+    '§2 · no commit tier and no divider when the ledger carried no commits — an empty heading announces a section that is not there');
   await ctx.close();
 }
 
@@ -171,13 +245,15 @@ R.info(`engine: ${engine}`);
   const { ctx, page } = await load(browser, { items: [], failFeeds: true });
   const s = await readSection(page);
   R.ok(s.rowCount === 5, `§3 · last-good curated archive renders on a dead upstream (got ${s.rowCount})`);
-  R.ok(/github unreachable/.test(s.status),
-    `§3 · an unreachable upstream says so (got "${s.status}")`);
+  R.ok(/\/api\/releases unreachable/.test(s.status),
+    `§3 · an unreachable upstream says so, and NAMES the endpoint (got "${s.status}")`);
   // The pair that makes §2 and §3 non-vacuous: two distinct upstream conditions
   // must produce two distinct labels. A single "something went wrong" string
   // would pass both /curated archive/ checks and tell a reader nothing.
-  R.ok(!/no merged pull requests/.test(s.status),
+  R.ok(!/holds no ledger/.test(s.status),
     '§3 · "unreachable" is not reported as "answered with nothing" — the two states read differently');
+  R.ok(s.mismatchBox === null,
+    '§3 · nor as cross-served — all three failure modes read differently');
   R.ok(s.emptyBox === null,
     '§3 · the answered-empty notice does NOT render when the endpoint never answered');
   await ctx.close();
@@ -254,6 +330,213 @@ R.info(`engine: ${engine}`);
     `§7 · reduced motion suppresses ANIMATION, not CONTENT — all ${PULLS.length + 5} rows render (got ${s.rowCount})`);
   R.ok(s.seamText !== null, '§7 · the seam renders under reduced motion');
   R.ok(running === 0, `§7 · zero running animations under reduced motion (got ${running})`);
+  await ctx.close();
+}
+
+/* ── §8 · CROSS-SERVED — the state this whole PR exists for ───────────── */
+{
+  /* The envelope is 200, well-formed, and FULL. Only `source` is wrong. That
+     is the exact production failure: /api/feeds answered every src as
+     `getmonero`, with a fresh `fetchedAt`, and the page rendered a silent
+     empty list for roughly two weeks because "answered with nothing I can use"
+     and "is not running this code" were the same event to the client. */
+  const { ctx, page } = await load(browser, { items: PULLS, crossServed: true });
+  const s = await readSection(page);
+  R.ok(s.mismatchBox !== null,
+    '§8 · a cross-served envelope renders its OWN named notice, not a silent empty');
+  R.ok(s.mismatchBox !== null && /different source/.test(s.mismatchBox),
+    `§8 · the notice says what happened (got "${s.mismatchBox}")`);
+  R.ok(s.mismatchBox !== null && /deployment issue/.test(s.mismatchBox),
+    '§8 · and names the cause as a deployment issue, not an empty history');
+  R.ok(s.mismatchBox !== null && /\/api\/releases\?src=ledger/.test(s.mismatchBox),
+    '§8 · and names the endpoint, per FeedEmpty\'s idiom');
+  R.ok(/cross-served/.test(s.status),
+    `§8 · the header agrees with the body — both report the mismatch (got "${s.status}")`);
+  R.ok(s.emptyBox === null,
+    '§8 · the answered-empty notice does NOT also render — one state, one notice');
+
+  /* THE PAYLOAD MUST BE REFUSED, NOT MERELY ANNOTATED. A page that warned
+     about the mismatch and then rendered the untrusted rows anyway would be
+     worse than one that said nothing, because the warning would make the data
+     look vetted. The cross-served pulls (#186/#185/#184) must NOT appear. */
+  R.ok(!s.ids.includes('#186'),
+    `§8 · the cross-served payload is DISCARDED, not displayed with a warning over it (ids: ${s.ids.join(',') || 'none'})`);
+  R.ok(s.rowCount === 5,
+    `§8 · what renders is the curated archive — the honest fallback (got ${s.rowCount} rows)`);
+  R.ok(s.commitCount === 0,
+    '§8 · and no commit tier is built from an envelope we do not trust');
+  await ctx.close();
+}
+{
+  /* THE POSITIVE CONTROL for §8. Without it, every assertion above is
+     satisfied just as well by a page that shows the mismatch notice
+     unconditionally — the notice would be decoration and the echo check
+     unfalsifiable. Same payload, correct `source`. */
+  const { ctx, page } = await load(browser, { items: PULLS });
+  const s = await readSection(page);
+  R.ok(s.mismatchBox === null,
+    '§8 · a MATCHING envelope draws no mismatch notice — the check is falsifiable');
+  R.ok(s.ids.includes('#186'),
+    '§8 · and the very payload rejected above renders when the source echo agrees');
+  await ctx.close();
+}
+
+/* ── §9 · the two tiers ───────────────────────────────────────────────── */
+{
+  const { ctx, page } = await load(browser, { items: PULLS });
+  const s = await readSection(page);
+  R.ok(s.commitCount === COMMITS.length,
+    `§9 · every commit in the ledger renders (${s.commitCount} of ${COMMITS.length})`);
+  R.ok(s.tierDivider !== null,
+    '§9 · a divider separates the work log from the release spine');
+  R.ok(s.tierDivider !== null && /work log/.test(s.tierDivider) && /what shipped/.test(s.tierDivider),
+    '§9 · the divider says what each tier IS — two lists answering two questions');
+  /* NEVER INTERLEAVED. Every spine row must precede every commit row in
+     document order; a single merged list would fail this even while both
+     counts were right. */
+  const order = await page.evaluate(() => {
+    const sec = document.querySelector('#release-notes');
+    const all = [...sec.querySelectorAll('[data-disclosure], [data-release-row], [data-release-commit]')];
+    return all.map((el) => (el.hasAttribute('data-release-commit') ? 'c' : 'r')).join('');
+  });
+  R.ok(/^r+c+$/.test(order),
+    `§9 · the tiers are contiguous and ordered spine-then-log, never interleaved (${order})`);
+  await ctx.close();
+}
+
+/* ── §10 · the scroll region ──────────────────────────────────────────── */
+{
+  const { ctx, page } = await load(browser, { items: PULLS });
+  const s = await readSection(page);
+  R.ok(s.scroll !== null, '§10 · the history renders inside a bounded scroll region');
+  R.ok(s.scroll !== null && s.scroll.overflowY === 'auto',
+    `§10 · it scrolls its own content (overflow-y: ${s.scroll?.overflowY})`);
+  R.ok(s.scroll !== null && s.scroll.overscroll === 'contain',
+    `§10 · overscroll is contained, so reaching the end does not scroll the page (${s.scroll?.overscroll})`);
+  R.ok(s.scroll !== null && s.scroll.clientH > 0 && s.scroll.clientH <= 640,
+    `§10 · the box is bounded and capped (${s.scroll?.clientH}px <= 640)`);
+  /* The box must be SHORTER than its content, or "it scrolls" is a claim
+     about a box that never needed to. */
+  R.ok(s.scroll !== null && s.scroll.scrollH > s.scroll.clientH,
+    `§10 · the content genuinely overflows it (${s.scroll?.scrollH} > ${s.scroll?.clientH}) — the bound is doing work`);
+  R.ok(s.hScroll <= 0, `§10 · and the page itself gains no horizontal scroll (${s.hScroll}px)`);
+  await ctx.close();
+}
+{
+  /* CLS: the reserved height must be IDENTICAL before and after the payload
+     lands, because this section is the last thing on a page about
+     trustworthiness and a late reflow shifts everything under it. Measured by
+     holding the response open, reading the box, then releasing it. */
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 1200 }, deviceScaleFactor: 1 });
+  await ctx.route('**/api/status*', (r) =>
+    r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(STATUS_FIXTURE) }));
+  let release;
+  const held = new Promise((res) => { release = res; });
+  await ctx.route('**/api/releases*', async (r) => {
+    await held;
+    await r.fulfill({ status: 200, contentType: 'application/json', body: ledgerBody({ items: PULLS }) });
+  });
+  for (const glob of ['**/api/xmr**', '**/api/nodes*', '**/api/coingecko*', '**/api/markets*', '**/api/feeds*']) {
+    await ctx.route(glob, (r) => r.abort());
+  }
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/about/sources`, { waitUntil: 'domcontentloaded' });
+  await page.waitForSelector('[data-release-scroll]', { timeout: 20000 });
+  const before = await page.evaluate(() => document.querySelector('[data-release-scroll]').getBoundingClientRect().height);
+  release();
+  await page.waitForFunction(() => {
+    const sec = document.querySelector('#release-notes');
+    const label = sec?.querySelector('.kicker')?.parentElement?.querySelector('span.mono')?.textContent ?? '';
+    return sec && !/fetching/i.test(label);
+  }, { timeout: 20000 });
+  const after = await page.evaluate(() => document.querySelector('[data-release-scroll]').getBoundingClientRect().height);
+  R.ok(before > 0, `§10 · the scroll box reserves its height BEFORE the ledger arrives (${before}px)`);
+  R.ok(Math.abs(after - before) < 1,
+    `§10 · and does not resize when it lands (${before}px -> ${after}px) — no reflow of the sections below`);
+  await ctx.close();
+}
+
+/* ── §11 · PR bodies ──────────────────────────────────────────────────── */
+{
+  const { ctx, page } = await load(browser, { items: PULLS });
+  const s = await readSection(page);
+  /* Two of the three fixture PRs carry a body; #184 is deliberately bodyless.
+     A disclosure that opens onto nothing is a control that lies about having
+     content behind it. */
+  R.ok(s.disclosures.length === 2 && !s.disclosures.includes('#184'),
+    `§11 · only entries WITH a body get a disclosure (${s.disclosures.join(',')}) — #184 is bodyless and renders flat`);
+  R.ok(s.openBodies.length === 0, '§11 · every body starts collapsed');
+
+  /* CLICK THROUGH PLAYWRIGHT AND WAIT FOR THE COMMIT, never click-and-read in
+     one page.evaluate. `Disclosure` is controlled by React state, so the DOM
+     does not change in the same synchronous tick as the click — an
+     evaluate that clicks and then reads measures the PREVIOUS render. The
+     first version of this section did exactly that and reported "opening one
+     reveals its panel" as red against a component that works, while the
+     NEXT section's read showed the first panel open (the earlier click having
+     landed by then). Two reds, one cause, and the cause was the instrument. */
+  await page.click('[data-disclosure="#186"] button.disc-row');
+  await page.waitForFunction(
+    () => !document.querySelector('[data-disclosure="#186"] .disc-panel').hasAttribute('hidden'),
+    { timeout: 5000 });
+  const first = await page.evaluate(() => {
+    const btn = document.querySelector('[data-disclosure="#186"] button.disc-row');
+    const panel = document.querySelector('[data-disclosure="#186"] .disc-panel');
+    return {
+      expanded: btn.getAttribute('aria-expanded'),
+      hidden: panel.hasAttribute('hidden'),
+      text: panel.textContent.replace(/\s+/g, ' ').trim(),
+      controls: btn.getAttribute('aria-controls'),
+      resolves: !!document.getElementById(btn.getAttribute('aria-controls')),
+    };
+  });
+  R.ok(first.expanded === 'true' && first.hidden === false, '§11 · opening one reveals its panel');
+  R.ok(/THE BODY OF ONE EIGHT SIX/.test(first.text),
+    '§11 · the PR BODY is the summary — rendered verbatim from the feed, never client-generated');
+  R.ok(first.resolves, '§11 · aria-controls resolves to a real element');
+
+  /* SINGLE-OPEN, and it is asserted by OPENING THE OTHER rather than by
+     reading state: the contract is that a second open closes the first. */
+  await page.click('[data-disclosure="#185"] button.disc-row');
+  await page.waitForFunction(
+    () => !document.querySelector('[data-disclosure="#185"] .disc-panel').hasAttribute('hidden'),
+    { timeout: 5000 });
+  const second = await page.evaluate(() => {
+    return [...document.querySelectorAll('[data-disclosure]')].map((d) => ({
+      id: d.getAttribute('data-disclosure'),
+      open: !d.querySelector('.disc-panel').hasAttribute('hidden'),
+    }));
+  });
+  R.ok(second.filter((d) => d.open).length === 1 && second.find((d) => d.id === '#185').open,
+    `§11 · opening a second entry closes the first (${second.map((d) => d.id + ':' + d.open).join(' ')})`);
+
+  /* The truncation marker is a SERVER fact echoed to the reader. #185 is
+     flagged truncated, #186 is not — so the marker's presence discriminates. */
+  R.ok(s.truncMarks.length === 1 && s.truncMarks[0] === '#185',
+    `§11 · only the truncated body carries the marker (${s.truncMarks.join(',') || 'none'})`);
+  const trunc = await page.evaluate(() =>
+    document.querySelector('[data-release-truncated="#185"]').textContent.replace(/\s+/g, ' ').trim());
+  R.ok(/truncated at 2000 characters/.test(trunc),
+    `§11 · and it states the cap the server advertised, not a vague hedge (got "${trunc}")`);
+  R.ok(/read the rest on GitHub/.test(trunc),
+    '§11 · and points at the full text rather than stopping at the apology');
+  await ctx.close();
+}
+
+/* ── §12 · polledAt — the freshness claim is about the DATA ────────────── */
+{
+  const { ctx, page } = await load(browser, { items: PULLS });
+  const s = await readSection(page);
+  R.ok(s.polled !== null, '§12 · the section states when the ledger was last polled');
+  R.ok(s.polled !== null && /Checked/.test(s.polled) && /rev 1/.test(s.polled),
+    `§12 · and echoes the envelope revision, so a stale deployment is one glance away (got "${s.polled}")`);
+  /* A `fetchedAt` here would always read "seconds ago" — reassuring on exactly
+     the deployment whose DATA is two weeks old. The rendered age must track
+     polledAt, which the cron stamps. The fixture's polledAt is 2026-08-17 and
+     its fetchedAt is five minutes later, so a render sourced from the wrong
+     field would read differently. */
+  R.ok(s.polled !== null && !/^Checked 0m ago/.test(s.polled),
+    `§12 · the age tracks polledAt (the DATA), not fetchedAt (the RESPONSE) — got "${s.polled}"`);
   await ctx.close();
 }
 

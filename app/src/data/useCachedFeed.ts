@@ -240,6 +240,121 @@ export function useMoneroBlog(n = 5): { posts: BlogPost[] | null; at: number | n
   return { posts: data, at, state };
 }
 
+/* ── the release ledger (/api/releases) ─────────────────────────────── */
+
+/** One merged pull request: the release spine's entry, with its body as the
+ *  head-to-toe summary. `bodyTruncated` is a fact reported by the server, not
+ *  a formatting choice made here — see api/_releases-core.js `normalizeBody`. */
+export interface LedgerPull {
+  v: string; note: string; date: string; url: string;
+  body: string; bodyTruncated: boolean;
+}
+
+/** One commit: the work log beneath the spine. */
+export interface LedgerCommit {
+  sha: string; short: string; note: string; date: string; url: string;
+}
+
+/** What the store had, and how it was doing. `store` is four-valued for the
+ *  same reason the server keeps it four-valued: "the cron has not run",
+ *  "there are no credentials" and "the store answered badly" are three
+ *  different operator actions. */
+export interface Ledger {
+  rev: number;
+  source: string;
+  repo: string;
+  fetchedAt: string;
+  polledAt: string | null;
+  store: "live" | "empty" | "unconfigured" | "error";
+  bodyCap: number;
+  pulls: LedgerPull[];
+  commits: LedgerCommit[];
+  note?: string;
+}
+
+/**
+ * FIVE states, and the fifth is the point of this whole hook.
+ *
+ * `mismatch` means the endpoint answered with a `source` that is not the one
+ * we asked for — i.e. something other than the code in this repo served the
+ * request. That happened in production on `/api/feeds` for roughly two weeks:
+ * every `src` came back as `getmonero`, and the page rendered a silent empty
+ * list, because "the feed returned nothing I could use" and "the deployment is
+ * not running this code" were the same event to the client. They are not the
+ * same event to an operator, so they are no longer the same state here.
+ */
+export type LedgerState = "load" | "cached" | "live" | "fail" | "mismatch";
+
+export const LEDGER_ENDPOINT = "/api/releases?src=ledger";
+const LEDGER_CACHE_ID = "ledger.v1";
+
+/** True when the envelope is one THIS code asked for. Both halves matter:
+ *  a missing `rev` means the responder predates the echo (or is not this
+ *  function at all), and a wrong `source` means it answered someone else's
+ *  question. */
+export function isOurLedger(r: unknown): r is Ledger {
+  const o = r as Partial<Ledger> | null;
+  return !!o && typeof o === "object"
+    && typeof o.rev === "number"
+    && o.source === "ledger"
+    && Array.isArray(o.pulls)
+    && Array.isArray(o.commits);
+}
+
+/**
+ * The ledger, with last-good fallback.
+ *
+ * DELIBERATELY NOT BUILT ON `useCachedFeed`, and the reason is the `mismatch`
+ * state. That hook caches whatever its fetcher returns non-null and collapses
+ * everything else to "fail" — so a cross-served envelope would either be
+ * PERSISTED for 24h (if returned) or become indistinguishable from a network
+ * failure (if nulled). Neither is acceptable for the one signal this pipe
+ * exists to surface. The storage primitives are reused rather than reimplemented.
+ *
+ * NO TTL GATE ON THE FETCH. `useCachedFeed`'s 24h TTL is right for a blog feed
+ * and wrong here: the server re-polls every ~10 minutes, so a day-old client
+ * cache would hide fresh data the store already has. Instead the cached copy is
+ * shown IMMEDIATELY at any age (so the section is never blank on a repeat
+ * visit) and a fetch always runs behind it. That costs nothing upstream —
+ * `/api/releases` reads a store and is edge-cached, and makes no GitHub call at
+ * all — which is precisely what the store-backed design bought.
+ */
+export function useReleaseLedger(): { ledger: Ledger | null; at: number | null; state: LedgerState } {
+  const [result, setResult] = React.useState<{ ledger: Ledger | null; at: number | null; state: LedgerState }>(() => {
+    // Any age — this is last-good, not a freshness decision.
+    const hit = readCache<Ledger>(safeStore(), feedCacheKey(LEDGER_CACHE_ID), Date.now(), Infinity);
+    return hit ? { ledger: hit.data, at: hit.at, state: "cached" } : { ledger: null, at: null, state: "load" };
+  });
+
+  React.useEffect(() => {
+    let alive = true;
+
+    const keepLastGood = (state: LedgerState) => {
+      if (!alive) return;
+      const fallback = readCache<Ledger>(safeStore(), feedCacheKey(LEDGER_CACHE_ID), Date.now(), Infinity);
+      setResult(fallback ? { ledger: fallback.data, at: fallback.at, state } : { ledger: null, at: null, state });
+    };
+
+    getJSON<unknown>(LEDGER_ENDPOINT).then((raw) => {
+      if (!alive) return;
+      if (raw == null) { keepLastGood("fail"); return; }
+      if (!isOurLedger(raw)) {
+        /* Not cached, on purpose: persisting a cross-served envelope would
+           carry a deployment fault forward into a visitor's next session. */
+        keepLastGood("mismatch");
+        return;
+      }
+      const now = Date.now();
+      writeFeedCache(LEDGER_CACHE_ID, raw, now);
+      setResult({ ledger: raw, at: now, state: "live" });
+    }, () => keepLastGood("fail"));
+
+    return () => { alive = false; };
+  }, []);
+
+  return result;
+}
+
 export function useReleaseNotes(n = 12): { releases: ReleaseNote[] | null; at: number | null; state: FeedState } {
   // `n` changes the payload's length, so — same rule as useMrlIssues/
   // useMoneroBlog — it's folded into the id. A fixed "pulls.releases" id

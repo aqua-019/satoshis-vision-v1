@@ -30,8 +30,9 @@ import { PageHeader } from "@/layout/AppShell";
 import { Card, Crumbs, Provenance, NodeProvenance } from "@/design/primitives";
 import type { ProvSource } from "@/design/primitives";
 import { Swap, SkeletonRows } from "@/design/Skeleton";
-import { useReleaseNotes } from "@/data/useCachedFeed";
+import { useReleaseLedger, agoStr, LEDGER_ENDPOINT } from "@/data/useCachedFeed";
 import { mergeReleases, eraSeamIndex } from "@/data/releases";
+import { Disclosure } from "@/design/Disclosure";
 import { useApiStatus } from "@/data/useApiStatus";
 import { useMoneroLive } from "@/data/DataContext";
 import { FEED_KEYS, FEED_ENDPOINT } from "@/data/feed-status";
@@ -71,12 +72,19 @@ function SourceRow({ source, gloss, children }: { source: ProvSource; gloss: str
 
 export function SourcesPage() {
   const { hash } = useLocation();
-  const { releases, state: releaseState } = useReleaseNotes(12);
+  const { ledger, state: releaseState } = useReleaseLedger();
+  const [openPr, setOpenPr] = React.useState<string | null>(null);
+  const releases = ledger ? ledger.pulls : null;
+  const commits = ledger ? ledger.commits : [];
   const mergedReleases = mergeReleases(releases);
   /* "The feed answered and produced nothing" — distinct from "unreachable"
-     (releaseState === "fail") and from "still loading" (releases === null).
-     Computed once here so the header label and the body cannot disagree. */
+     (releaseState === "fail"), from "still loading" (releases === null), and
+     now from "something other than this code answered" (releaseState ===
+     "mismatch"). Computed once here so the header label and the body cannot
+     disagree — the p3·17 defect where the header claimed nothing while five
+     rows rendered beneath it. */
   const autoEmpty = releases !== null && releases.length === 0;
+  const crossServed = releaseState === "mismatch";
   /* -1 when the list is single-era, which is exactly the state above: the
      divider is a claim about a discontinuity, so it must not render when
      there is only one era present. */
@@ -325,13 +333,15 @@ export function SourcesPage() {
           // below so the label and the list cannot disagree again.
           right={
             <span className="mono dim2" style={{ fontSize: "var(--fs-label)", letterSpacing: "0.02em" }}>
-              {releaseState === "fail"
-                ? "curated archive · github unreachable"
-                : releases === null
-                  ? "fetching github pulls…"
-                  : autoEmpty
-                    ? "curated archive · no merged pull requests returned"
-                    : `github pulls · ${releases.length} releases`}
+              {crossServed
+                ? "cross-served · deployment issue"
+                : releaseState === "fail"
+                  ? "curated archive · /api/releases unreachable"
+                  : releases === null
+                    ? "fetching the ledger…"
+                    : autoEmpty
+                      ? "curated archive · the store holds no ledger"
+                      : `${releases.length} pull requests · ${commits.length} commits`}
             </span>
           }
         >
@@ -339,27 +349,98 @@ export function SourcesPage() {
             Ordered by ship date, not version number — a point release such as v5.1.0 can land
             between v5.0.9 and v5.0.8, which is expected, not a bug. Recent entries are keyed by
             pull request; older ones by version, from the era when this site still stamped them.
+            Open a pull request to read its full description.
           </p>
+
+          {/* WHEN THE LEDGER WAS LAST POLLED — not when this page was loaded.
+              The distinction is the whole reason the store exists: `polledAt`
+              is stamped by the cron that actually talked to GitHub, so it is a
+              claim about the DATA's age. A `fetchedAt` here would be a claim
+              about the RESPONSE's age, which is always seconds old and
+              therefore always reassuring, including on a deployment whose data
+              is two weeks stale. That is not a hypothetical — it is exactly
+              what production's /api/feeds reported while serving code no commit
+              in this repo can produce. */}
+          {ledger && ledger.polledAt ? (
+            <p className="mono dim2" data-ledger-polled style={{ margin: "0 0 10px", fontSize: "var(--fs-label)", lineHeight: 1.6 }}>
+              Checked {agoStr(ledger.polledAt)} · polled every 10 minutes · rev {ledger.rev}
+            </p>
+          ) : null}
+
+          {/* CROSS-SERVED. The endpoint answered, but not with OUR source — so
+              something other than this code served the request. Rendered as its
+              own state, in the house dead-feed vocabulary, because the whole
+              cost of the defect this pipe answers was that a client could not
+              tell this apart from an empty list. It is deliberately NOT the
+              same box as `autoEmpty` below: that one says "there is no data",
+              this one says "there is no data I can trust", and the operator
+              actions differ (wait for the cron vs. redeploy). */}
+          {crossServed ? (
+            <div
+              className="mono"
+              data-release-feed="mismatch"
+              style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)", border: "1px dashed var(--ink-20)", padding: "10px 12px", margin: "10px 0 4px", overflowWrap: "anywhere" }}
+            >
+              <code>{LEDGER_ENDPOINT}</code> answered as a different source — a deployment issue,
+              not an empty history. What follows is the last good copy this browser holds, or the
+              curated archive if it holds none.
+            </div>
+          ) : null}
 
           {/* The honest-empty state, per the house vocabulary (`FeedEmpty` in
               pages/future/repoPulse.tsx). Written inline rather than imported,
               and the reason is measured: repoPulse.tsx sits in a chunk whose
               importers are exactly FuturePage and TrustedPeersPage, so importing
-              it here adds a third importer group to a route with 429 B of gzip
-              margin — the tightest row in verify-bundle's table. Rollup chunks
-              per MODULE, so the import would drag RepoPulseReadout in too. The
-              shared thing here is a six-line dashed box and a sentence pattern,
-              not a fact that can drift; the endpoint and the wording differ. */}
-          {autoEmpty ? (
+              it here adds a third importer group to a route with ~2.9 KB of gzip
+              margin. Rollup chunks per MODULE, so the import would drag
+              RepoPulseReadout in too. The shared thing here is a six-line dashed
+              box and a sentence pattern, not a fact that can drift; the endpoint
+              and the wording differ. */}
+          {autoEmpty && !crossServed ? (
             <div
               className="mono"
               data-release-feed="empty"
               style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, color: "var(--y-50)", border: "1px dashed var(--ink-20)", padding: "10px 12px", margin: "10px 0 4px", overflowWrap: "anywhere" }}
             >
-              <code>/api/feeds?src=pulls</code> answered, and returned no merged pull requests —
-              so nothing below is automatic. What follows is the curated archive, written by hand.
+              <code>{LEDGER_ENDPOINT}</code> answered, and the store holds no ledger yet
+              {ledger?.store === "unconfigured" ? " — this deployment has no store credentials" : null}
+              {ledger?.store === "error" ? " — the store did not answer usefully" : null}
+              . So nothing below is automatic. What follows is the curated archive, written by hand.
             </div>
           ) : null}
+
+          {/* ── THE SCROLL REGION ──────────────────────────────────────────
+              Everything historical scrolls; the header, the feed-state label and
+              the polled-at line stay pinned above it. The height is FIXED rather
+              than a max-height, and that is a CLS decision, not a styling one:
+              the ledger arrives after first paint, so a box that grows from 0 to
+              its content height would shift every element below it — on the one
+              page whose whole subject is trustworthiness. Fixed from first paint
+              means the reserved space is identical before and after the fetch.
+
+              `min(58vh, 640px)`: 58vh keeps roughly two fifths of the viewport
+              for the sections above and below at 1440, and at 390×844 it is
+              ~490px — enough for four or five entries, which is what makes it
+              read as a scrollable list rather than a peephole. The 640px cap
+              stops a tall desktop window from turning the panel into most of
+              the page.
+
+              `overscrollBehavior: "contain"` so a trackpad flick that reaches
+              the end of the list does not then scroll the page out from under
+              the reader — the same pattern styles.css already uses for its
+              other bounded scrollers. Inline rather than a new class on
+              purpose: cssGz has ~450 B of margin at this base and these four
+              declarations are used exactly once. */}
+          <div
+            data-release-scroll
+            style={{
+              height: "min(58vh, 640px)",
+              overflowY: "auto",
+              overscrollBehavior: "contain",
+              borderTop: "1px solid var(--rule)",
+              marginTop: 10,
+            }}
+          >
           <div style={{ display: "flex", flexDirection: "column" }}>
             {mergedReleases.map((r, i) => (
               <React.Fragment key={r.v}>
@@ -387,30 +468,129 @@ export function SourcesPage() {
                   shipped with no version stamp at all — are not listed here.
                 </div>
               ) : null}
-              <div style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "12px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}>
-                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                  {r.url ? (
-                    <a
-                      href={r.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mono acc"
-                      style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em", color: "inherit", textDecoration: "none" }}
-                    >
-                      {r.v}
-                    </a>
-                  ) : (
-                    <span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{r.v}</span>
-                  )}
-                  {r.date ? <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{r.date}</span> : null}
+              {/* AN ENTRY IS EXPANDABLE IFF IT HAS A BODY — driven by the data,
+                  not by which era it belongs to. Most pull requests carry a
+                  description and open; the curated v5 archive carries none and
+                  renders flat, as do the occasional PRs that shipped with an
+                  empty body. A disclosure that opens onto nothing is a control
+                  that lies about having content behind it. */}
+              {r.body ? (
+                <Disclosure
+                  id={r.v}
+                  open={openPr === r.v}
+                  onToggle={() => setOpenPr((cur) => (cur === r.v ? null : r.v))}
+                  label={<span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{r.v}</span>}
+                  summary={<span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>{r.note}</span>}
+                  meta={r.date ? <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{r.date}</span> : null}
+                >
+                  {/* THE BODY IS RENDERED AS TEXT, NOT AS MARKDOWN. No parser,
+                      no dangerouslySetInnerHTML: the content is authored on
+                      GitHub and arrives over the wire, so treating it as markup
+                      would put a third party's text into this page's DOM on a
+                      site whose entire CSP posture is that the browser trusts
+                      nothing external. `pre-wrap` keeps the author's paragraphs
+                      and lists legible without interpreting them. */}
+                  <div
+                    className="mono dim"
+                    data-release-body={r.v}
+                    style={{ fontSize: "var(--fs-body)", lineHeight: 1.7, whiteSpace: "pre-wrap", overflowWrap: "anywhere", padding: "2px 0 10px" }}
+                  >
+                    {r.body}
+                  </div>
+                  {/* The cap is the SERVER's fact, echoed as `bodyCap`. Saying
+                      "truncated" without saying where would be a hedge; saying
+                      the number makes it checkable. */}
+                  {r.bodyTruncated ? (
+                    <div className="mono dim2" data-release-truncated={r.v} style={{ fontSize: "var(--fs-label)", lineHeight: 1.6, paddingBottom: 10 }}>
+                      · truncated at {ledger?.bodyCap ?? 2000} characters —{" "}
+                      {r.url ? <a href={r.url} target="_blank" rel="noopener noreferrer" className="mono acc" style={{ color: "inherit" }}>read the rest on GitHub</a> : "read the rest on GitHub"}
+                    </div>
+                  ) : null}
+                </Disclosure>
+              ) : (
+                <div data-release-row={r.v} style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "12px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {r.url ? (
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mono acc"
+                        style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em", color: "inherit", textDecoration: "none" }}
+                      >
+                        {r.v}
+                      </a>
+                    ) : (
+                      <span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{r.v}</span>
+                    )}
+                    {r.date ? <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{r.date}</span> : null}
+                  </div>
+                  <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
+                    {r.note}
+                    {r.also ? <span className="mono dim2"> · +{r.also} more commits</span> : null}
+                  </span>
                 </div>
-                <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6 }}>
-                  {r.note}
-                  {r.also ? <span className="mono dim2"> · +{r.also} more commits</span> : null}
-                </span>
-              </div>
+              )}
               </React.Fragment>
             ))}
+          </div>
+
+          {/* ── TIER 2 · THE COMMIT WORK LOG ───────────────────────────────
+              A SECOND LIST, never interleaved into the first. The spine above
+              is the version history — what shipped, in the project's own words.
+              This is the work log — every commit, including the ones that only
+              moved a comment. They answer different questions and a reader
+              merging them would get neither, so the divider is the same weight
+              as the era seam above it.
+
+              It renders only when the ledger actually carried commits. An
+              empty <h3> over an empty list would announce a section that is
+              not there — and this tier would have been permanently empty if it
+              had been built on `mapCommits`, which is a version-stamp filter
+              that matches nothing in this repo since v6.1.9. See
+              api/_releases-core.js. */}
+          {commits.length > 0 ? (
+            <>
+              <div
+                data-release-tier="commits"
+                className="mono dim2"
+                style={{ fontSize: "var(--fs-label)", lineHeight: 1.6, padding: "16px 0 10px", borderTop: "1px solid var(--rule)", marginTop: 4 }}
+              >
+                Below: the commit work log — every commit on the default branch, newest first,
+                merge commits omitted because the pull requests above already name them. This is
+                the work; the list above is what shipped.
+              </div>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {commits.map((c) => (
+                  <div
+                    key={c.sha}
+                    data-release-commit={c.short}
+                    style={{ display: "grid", gridTemplateColumns: "92px 1fr", gap: 16, padding: "8px 0", borderTop: "1px solid var(--rule)", alignItems: "baseline" }}
+                  >
+                    <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                      {c.url ? (
+                        <a
+                          href={c.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mono acc"
+                          style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em", color: "inherit", textDecoration: "none" }}
+                        >
+                          {c.short}
+                        </a>
+                      ) : (
+                        <span className="mono acc" style={{ fontSize: "var(--fs-mono)", letterSpacing: "0.04em" }}>{c.short}</span>
+                      )}
+                      {c.date ? <span className="mono dim2" style={{ fontSize: "var(--fs-label)" }}>{c.date}</span> : null}
+                    </div>
+                    <span className="mono dim" style={{ fontSize: "var(--fs-body)", lineHeight: 1.6, overflowWrap: "anywhere" }}>
+                      {c.note}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : null}
           </div>
         </Section>
       </section>
