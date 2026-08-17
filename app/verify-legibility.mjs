@@ -127,13 +127,57 @@ const SCALE = [
   ["--fs-label", "clamp(11px, 0.74vw, 12px)"],
 ];
 
+/* THE SUBJECT OF "EXACTLY ONCE" IS THE BASE SCALE, NOT THE FILE — p4·02.
+ *
+ * This loop used to match against `legSrc` RAW, and that was wrong twice over.
+ * Both showed up the moment p4·02 added a ≤720px override for `--fs-label`:
+ *
+ *   1. IT COUNTED PROSE. The regex ran over the unstripped source, so a comment
+ *      that QUOTES a token — `\`--fs-label: clamp(11px, 0.74vw, 12px)\` encodes
+ *      it` — was counted as a declaration. The file already had a
+ *      length-preserving `stripCssComments` for exactly this reason and this
+ *      loop simply did not use it. That is the "a gate matching its own
+ *      documentation" family the repo records against `verify-memshell` and
+ *      against a CI-comment sweep that read 64.
+ *   2. IT FORBADE RESPONSIVE OVERRIDES. A media-query redefinition is a
+ *      DELIBERATE second declaration, not drift — and this file already knows
+ *      that: `--fs-chart-tick`/`--fs-chart-label` are kept OUT of SCALE
+ *      entirely, with a comment saying it is because the ≤768px block
+ *      overrides them, so "the SCALE check (exactly-once) cannot own these
+ *      two". Dropping `--fs-label` out of SCALE the same way would have been
+ *      the cheap fix and it LOSES the value assertion.
+ *
+ * So the subject is narrowed instead of the check being weakened: comments are
+ * stripped, `@media` bodies are BLANKED (spaces, so line numbers still
+ * resolve), and what must be declared exactly once is the BASE scale. The
+ * override is then asserted separately, by value, below.
+ */
+const blankMediaBodies = (src) => {
+  let out = src.split(""), i = 0;
+  while (i < out.length) {
+    const at = src.indexOf("@media", i);
+    if (at === -1) break;
+    let j = src.indexOf("{", at);
+    if (j === -1) break;
+    let depth = 0;
+    for (; j < src.length; j++) {
+      if (src[j] === "{") depth++;
+      else if (src[j] === "}") { depth--; if (depth === 0) { j++; break; } }
+    }
+    for (let k = at; k < j && k < out.length; k++) if (out[k] !== "\n") out[k] = " ";
+    i = j;
+  }
+  return out.join("");
+};
+const baseSrc = legSrc ? blankMediaBodies(stripCssComments(legSrc)) : legSrc;
+
 for (const [name, expected] of SCALE) {
   if (!legSrc) {
     assert(`${legPath} defines ${name} exactly once as ${expected}`, false, `${legPath} not found`);
     continue;
   }
   const re = new RegExp(escapeRegExp(name) + "\\s*:\\s*([^;]+);", "g");
-  const matches = [...legSrc.matchAll(re)];
+  const matches = [...baseSrc.matchAll(re)];
   const count = matches.length;
   const value = count === 1 ? matches[0][1].trim() : null;
   assert(
@@ -144,6 +188,27 @@ for (const [name, expected] of SCALE) {
       : count > 1
         ? `declared ${count} times (must be exactly once) at lines ${matches.map((m) => lineOf(legSrc, m.index)).join(", ")}`
         : `found "${value}" at ${legPath}:${lineOf(legSrc, matches[0].index)}`
+  );
+}
+
+/* p4·02 — THE TOUCH OVERRIDE, asserted by value rather than merely permitted.
+ * Blanking @media bodies above means the base check can no longer see this
+ * declaration at all, so without this it could be deleted, or set to 9px, and
+ * every assertion in the loop above would stay green. `verify-mobile.mjs` would
+ * catch the RENDERED consequence, but only with a browser and a served build;
+ * this is the offline half, and it is the one that runs in `verify:static`.
+ *
+ * The value matters as much as the presence: `--fs-label` is what 318 inline
+ * `style={{ fontSize }}` sites in the app resolve through, so this one
+ * declaration is the mechanism by which the touch floor reaches markup that no
+ * stylesheet rule can otherwise beat. */
+if (legSrc) {
+  const stripped = stripCssComments(legSrc);
+  const m = stripped.match(/@media[^{]*max-width:\s*720px[^{]*\{[\s\S]*?--fs-label\s*:\s*([^;]+);/);
+  assert(
+    `${legPath} raises --fs-label to 12px inside @media (max-width: 720px) — the touch floor's one token`,
+    !!m && m[1].trim() === "12px",
+    m ? `found "${m[1].trim()}"` : "no --fs-label override found inside a max-width:720px block"
   );
 }
 

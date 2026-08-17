@@ -366,6 +366,21 @@ R.group('§5 · served document title');
  * /live/markets/thesis, whose chart carries a viewBox scale of 0.304 — so its
  * authored 8.5–10px labels reach the reader at 2.58–3.04px.
  *
+ * TWO KNIFE-EDGES A FUTURE READER WILL OTHERWISE TRIP ON, both measured:
+ *   · `/learn/sim` renders its ticks at **11.99935px** — authored 20.37735849
+ *     × a screen-CTM scale of 0.5888569. It is DESIGNED to land on 12 and misses
+ *     by 0.00065px for a sub-pixel layout reason, which is why `EPS` exists and
+ *     why this section does not red on it. Note the scale must come from the
+ *     CTM and not from the viewBox width: `preserveAspectRatio` defaults to
+ *     `meet`, HEIGHT is the binding constraint on that SVG, and a
+ *     width-derived guess gives 0.5888889 → exactly 12.000000, flipping the
+ *     verdict. Guessing the scale is how this assertion would silently pass.
+ *   · `ChartTip` (design/chart-kit.tsx:203) renders `tspan`s at **10.5px** in
+ *     rendered space on /live/network — and this gate never sees them, because
+ *     they exist only under a pointer. STATED BLIND SPOT: §1 and §6 walk the
+ *     STATIC document. Text revealed only by hover, tap or focus is outside
+ *     both, and a tap can reveal it on a phone.
+ *
  * NOT FIXED HERE, and the reason is arithmetic rather than appetite: the repo's
  * own remedy for this is `useChartMetrics`'s FIXED mode, whose DEFAULT_MAX_K is
  * 1.7, and lifting 0.304 to a 12px floor needs 4.4×. It is the viewBox
