@@ -532,12 +532,25 @@ try {
   const answerText = await answer.count() ? await answer.innerText() : '';
   R.ok(/asked and answered/i.test(answerText),
     'it says the question was ASKED AND ANSWERED, rather than silently dropping it');
-  R.ok(/no public endpoint/i.test(answerText),
+
+  /* SCOPED TO `[data-answered]`, THE PARAGRAPH THAT CARRIES THE ANSWER — not
+     to the whole section, and that is a FIX found by a break test refusing to
+     go red. Read against the section, "the answer is permanent" was satisfied
+     by the word "never" in the why-no-live-panel note and "by design" in its
+     last clause — two paragraphs away, both about a different claim. The
+     mutation that softened the answer itself to "there is no public endpoint
+     right now" left all three of these GREEN. A true fact about the wrong
+     subject, in a gate written the same day this file's header quotes that
+     family. Scope first, then assert. */
+  const answeredEl = page.locator('[data-answered]');
+  R.ok(await answeredEl.count() === 1, 'the answer paragraph renders exactly once');
+  const answered = await answeredEl.count() ? await answeredEl.innerText() : '';
+  R.ok(/no public endpoint/i.test(answered),
     'it states the answer: there is no public endpoint');
-  R.ok(/none is planned|by design|never/i.test(answerText),
-    'and that the answer is PERMANENT, not a current state',
-    '"no endpoint yet" invites the next PR to re-open the question; "none is planned" closes it');
-  R.ok(/self-hosted/i.test(answerText),
+  R.ok(/none is planned|by design|never/i.test(answered),
+    'and THAT PARAGRAPH says the answer is PERMANENT, not a current state',
+    '"no endpoint right now" invites the next PR to re-open the question; "none is planned" closes it');
+  R.ok(/self-hosted/i.test(answered),
     'and names the reason: the chain is self-hosted');
 
   /* ── §6d · the why-no-live-panel is an ARGUMENT, and both of its two real
@@ -637,10 +650,28 @@ try {
      and these three sentences are the only published answers about a chain
      whose specification is not published. */
   R.ok(hubText.includes(REACH_QUOTE),
-    'the reachability answer renders VERBATIM, exactly as the maintainer wrote it');
+    'the quote reaches the screen unmangled — the render alters nothing');
   R.ok(await page.locator('[data-maintainer-quote]').count() >= 2,
     `his words are marked as his (${await page.locator('[data-maintainer-quote]').count()} attributed quotes)`,
     'an unmarked quote reads as this site asserting the claim itself');
+
+  /* THE ASSERTION ABOVE IS WEAKER THAN IT LOOKS, AND SAYING SO IS THE POINT.
+     It parses the quote from source and compares it to the render, so BOTH
+     SIDES MOVE TOGETHER: a mutation that tidied the constant into fluent prose
+     — capitalised, repunctuated, "add[on]" expanded — left it GREEN. That is
+     p3·16's recorded defect (2), "an assertion comparing the source to itself
+     through the DOM", committed here by someone who had just read it. Nothing
+     offline can know the maintainer's true words; what CAN be checked is that
+     the constant still carries the marks of an unedited chat message, which is
+     the property a paraphrase destroys and the convention this page declares
+     for itself. Both of these red under that mutation. */
+  R.ok(/\[[a-z]+\]/.test(REACH_QUOTE),
+    'the quote keeps its bracketed editorial insertion — the ONLY permitted edit, marked as one',
+    'a quote with no [brackets] has either been silently corrected or never needed correcting; this one needed it');
+  const chatShaped = [REACH_QUOTE].some((q) => /^[a-z]/.test(q.trim()) && !/\.$/.test(q.trim()));
+  R.ok(chatShaped,
+    'and reads as a chat message, not as edited prose (lowercase open, no terminal full stop)',
+    'a tidied paraphrase gains a capital and a full stop; those are the cheapest detectable signs that somebody rewrote a quotation');
 
   /* ══ §7 · every cross-link resolves ══════════════════════════════════ */
   R.group('§7 · every in-app link on this page resolves to a route that exists');
