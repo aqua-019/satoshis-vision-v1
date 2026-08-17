@@ -447,3 +447,60 @@
   push, and the PR may still have to be opened by hand.
   PR https://github.com/aqua-019/satoshis-vision-v1/pull/191
 
+- XMRIRISH-20260817-45 · done — p4·04 "HOW TO MINE": `/operate/mine`, the FIFTEENTH route, in the
+  OPERATE section beside "Run a node". The RandomX CPU thesis, the solo/P2Pool/hosted
+  decentralization gradient, four self-contained platform walkthroughs (Windows · Linux · macOS ·
+  Android/Termux) and a seeded decentralization field.
+  **THE REGISTRATION SWEEP IS TWELVE SURFACES, NOT TEN, AND BOTH EXTRAS WERE ALREADY STALE BY ONE.**
+  `src/design/RootBoundary.tsx` and `src/design/useViewTransitionNavigate.ts` each carried a 13-entry
+  list against 14 routes: p3·16 minted `/operate/superstress` and reached neither. Both DERIVE THEIR
+  PATHS from `R` and NEITHER DERIVES ITS MEMBERSHIP, which is why they read as safe — CLAUDE.md's own
+  "four route lists, one truth — RESOLVED" entry names both among the resolved. No gate covers
+  either (a sweep returns three PROSE mentions, zero assertions). The `useViewTransitionNavigate`
+  miss is consequential: with no `ROUTE_TABLE` row, `chunkKeyFor("/operate/superstress")` answered
+  **"notfound"** while App.tsx registers `"superstress"`, so the hub's view transition was gated on
+  the 404 page's chunk. Registered the new route in both AND backfilled the hub. **The method that
+  found them**: grep the SIBLING route's literal, then census every importer of `routes.mjs` by HOW
+  MANY `R.*` keys it names — a file naming ≥8 carries a route LIST (it also correctly exonerates
+  `ia.ts`, 13/14, missing HOME by design).
+  **THE PAGE'S OWN CLAIM WAS STRONGER THAN ITS CONTENT AND ONLY READING CAUGHT IT.** It said every
+  command was quoted upstream while THREE of eighteen were not. No assertion could catch it: the
+  gate checked that the quotes it KNEW about were PRESENT, and absence of a check is not a check.
+  Now UPSTREAM (12 verbatim) ∪ DERIVED (3, each with its reason in-file), with the rendered set
+  asserted covered by the union and the PAGE asserted to admit it.
+  **Every technical claim is sourced**, from the P2Pool/XMRig/RandomX READMEs read at
+  `raw.githubusercontent.com` (github.com, xmrig.com, p2pool.io, getmonero.org and both Play policy
+  pages are all unreachable here). Two Termux facts MEASURED, not assumed: no `xmrig` package (404)
+  and **no `hwloc` package (404)**, while libuv/openssl/build-essential resolve — which is why the
+  Android block compiles and why `-DWITH_HWLOC=OFF` is a fact. **The prompt's Android premise did
+  not survive**: it says to cite Play's miner ban, which nothing here can reach, so the page cites
+  Termux's own README instead and frames the sideload hazard as this site's argument.
+  **NO earnings, NO device hashrate, NO pool share.** The P2Pool address-publicity caveat
+  ("wallet addresses are public on P2Pool") is a callout, not a footnote, and XMRig's default 1%
+  donation is disclosed.
+  **A CLAIM THIS SITE ALREADY MAKES IS IMPRECISE**: `pool-data.ts` and `metaphors.tsx` say "this site
+  queries no third-party pool API", but `api/xmr.js:915-919` DOES fetch p2pool.io and
+  moneroocean.stream under `mining/pools/live` — unconsumed server surface, nothing in `app/src`
+  reads it. True of the browser, imprecise about the deployment. The new page stopped repeating it;
+  the two pre-existing sites are NAMED, not edited.
+  **`Cmd`'s copy button confirmed a success it had not achieved** — `clipboard.writeText` returns a
+  PROMISE, so the try/catch caught only the synchronous throw and "✓ COPIED" appeared before a
+  rejection landed. This page's copy awaits the write; NodePage carries it still, named not fixed.
+  Budgets, paired per stem against an ISOLATED worktree build of `fdb105e`: **68 of 70 stems
+  size-identical**; MinePage 0 → 28,945 (the whole lazy delta to the byte) and the eager entry +499,
+  of which **+30 is exactly the new preload-table row**. The `index` stem's two chunks were split by
+  ENTRY IDENTITY from `dist/index.html`'s own `<script src>`, never by basename. `cssGz`
+  **BYTE-IDENTICAL at 18,150** — zero new stylesheet rules. `CHUNK_COUNT` re-centred 67 → 68 **while
+  GREEN**: 71 sat exactly on the old ceiling. ONE chunk minted, not two — deriving the Superbrain
+  miner line would have split `future/data.ts` out, so the page LINKS instead, which is also the
+  harder form of "don't fork it".
+  New `verify-mine.mjs`, wired mid-chain at `verify:e2e` **16 of 35** (never the tail — vitals).
+  **The gate's own first green run exposed a 0-of-0 vacuity in it** and it was closed.
+  Census RECOUNTED with the script CONTROLLED against three commits (all reproduced exactly), and
+  **its first run was wrong in a way only the controls could show** — a regex anchored on `^`/`/`
+  where the npm chains say `node verify-hero.mjs`. Measured: **85 / 81 / 22 / 35 / 71 / 6**.
+  Suite on the shipping tree: static exit 0 · **e2e exit 0, 0 reds across all 35** with
+  `verify-mine` reporting 64 passed IN-CHAIN at position 16 · mobile 49/1/0 · bundle 29/0.
+  Nine break tests, every one red where intended, restores proven against the committed blob.
+  **No human has seen the rendered result in a browser** — read from screenshots.
+  PR https://github.com/aqua-019/satoshis-vision-v1/pull/192
