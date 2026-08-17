@@ -1,5 +1,5 @@
 /* verify-markets.mjs — offline unit test for api/markets.js.
-   Run: node api/verify-markets.mjs
+   Run: node api/_tests/verify-markets.mjs
    This sandbox cannot reach api.coingecko.com, so we verify the pure
    isPegged / isDerivative / selectMembers / parseDays / cacheSeconds /
    downsample / pool helpers against committed fixtures that mirror
@@ -23,7 +23,7 @@ import {
   backoffDelays,
   cgHeaders,
   DEGRADED_S_MAXAGE,
-} from './markets.js';
+} from '../markets.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -37,8 +37,8 @@ function ok(cond, msg) {
   }
 }
 
-const privacyFixture = JSON.parse(readFileSync(join(__dirname, '_fixtures', 'cg-markets-privacy.json'), 'utf8'));
-const majorsFixture = JSON.parse(readFileSync(join(__dirname, '_fixtures', 'cg-markets-majors.json'), 'utf8'));
+const privacyFixture = JSON.parse(readFileSync(join(__dirname, '..', '_fixtures', 'cg-markets-privacy.json'), 'utf8'));
+const majorsFixture = JSON.parse(readFileSync(join(__dirname, '..', '_fixtures', 'cg-markets-majors.json'), 'utf8'));
 const privacyRows = privacyFixture.rows;
 const majorsRows = majorsFixture.rows;
 

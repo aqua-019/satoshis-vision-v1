@@ -1,5 +1,5 @@
 /* verify-nodes.mjs — offline gate for api/nodes.js (monero.fail health aggregator)
-   Run: node api/verify-nodes.mjs   (from app/: node ../api/verify-nodes.mjs)
+   Run: node api/_tests/verify-nodes.mjs   (from app/: node ../api/_tests/verify-nodes.mjs)
 
    The sandbox has no outbound HTTP to monero.fail, so every "is this upstream
    reachable" question is a FIXTURE, not a probe. parseHealth and cluster logic
@@ -17,8 +17,8 @@ const require = createRequire(import.meta.url);
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { makeReporter } from '../app/verify-reporter.mjs';
-import { EXPECTED } from './_fixtures/monerofail-health-spec.mjs';
+import { makeReporter } from '../../app/verify-reporter.mjs';
+import { EXPECTED } from '../_fixtures/monerofail-health-spec.mjs';
 
 /* Filled by group 10 from what the handler ACTUALLY emitted across its four
    failure states; consumed by group 12b. Deliberately not a literal. */
@@ -46,7 +46,7 @@ globalThis.fetch = async (...args) => {
   UNSTUBBED_FETCH_CALLS++;
   throw new Error(`verify-nodes: unstubbed fetch to ${String(args[0]).slice(0, 60)} — this gate must be offline; stub globalThis.fetch in the enclosing block`);
 };
-const API_DIR = dirname(fileURLToPath(import.meta.url));
+const API_DIR = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 /* ── env sandbox ── */
 const ENV0 = {
@@ -88,9 +88,9 @@ function makeReq(method) {
 /* ── 1) CommonJS proof ── */
 let nodesMod;
 try {
-  nodesMod = require('./nodes.js');
+  nodesMod = require('../nodes.js');
   R.ok(typeof nodesMod === 'function',
-    'require(\'./nodes.js\') returns a function (CommonJS proof)');
+    'require(\'../nodes.js\') returns a function (CommonJS proof)');
 } catch (err) {
   R.ok(false, 'require(\'./nodes.js\') succeeded', err.message);
   process.exit(R.finish());
@@ -750,9 +750,19 @@ try {
      nothing verified". And this PR just DELETED a key from that block, so the
      count moving is now the normal-looking thing; the next move to zero would
      read as more of the same. A bare non-empty guard is not enough either —
-     it cannot tell "legitimately smaller" from "found nothing". */
-  R.ok(Object.keys(functions).length === 3,
-    `vercel.json functions declares exactly 3 entries (found ${Object.keys(functions).length}: ${Object.keys(functions).join(', ') || 'none'})`);
+     it cannot tell "legitimately smaller" from "found nothing".
+
+     p4·03: 3 -> 5. The ledger pipe adds `api/releases.js` (serves the store)
+     and `api/cron/releases.js` (polls GitHub into it). The count moved UP this
+     time, which is the first time it has, and the assertion did its job in the
+     intended direction: it went red the moment vercel.json gained keys this
+     literal had not been told about. Both new keys are real files on disk and
+     the loop below proves it — which matters more than usual here, because
+     `api/cron/releases.js` is the project's first function in a SUBDIRECTORY
+     of api/, and a `functions` key naming a path Vercel does not resolve is a
+     hard BUILD error rather than a gate failure. */
+  R.ok(Object.keys(functions).length === 5,
+    `vercel.json functions declares exactly 5 entries (found ${Object.keys(functions).length}: ${Object.keys(functions).join(', ') || 'none'})`);
   for (const key of Object.keys(functions)) {
     R.ok(existsSync(join(API_DIR, '..', key)),
       `vercel.json functions key "${key}" exists on disk (no stale keys)`);

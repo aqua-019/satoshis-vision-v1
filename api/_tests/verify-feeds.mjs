@@ -1,5 +1,5 @@
 /* verify-feeds.mjs — offline unit test for api/feeds.js.
-   Run: node api/verify-feeds.mjs
+   Run: node api/_tests/verify-feeds.mjs
    The sandbox proxy returns CONNECT 403 for getmonero.org and
    api.github.com, so we verify the pure parseAtom / parseRepoParam /
    mapRepo / mapIssues helpers against a committed Atom fixture and inline
@@ -14,7 +14,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const require = createRequire(import.meta.url);
-const { parseAtom, parseRepoParam, mapRepo, mapIssues, latestIssueAt, GH_ALLOWED, canonicalRepo, SELF_REPO, parseCommitVersion, mapCommits, mapPulls } = require('./feeds.js');
+const { parseAtom, parseRepoParam, mapRepo, mapIssues, latestIssueAt, GH_ALLOWED, canonicalRepo, SELF_REPO, parseCommitVersion, mapCommits, mapPulls } = require('../feeds.js');
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,7 +30,7 @@ function ok(cond, msg) {
 
 /* ── parseAtom ─────────────────────────────────────────────────────── */
 
-const fixture = readFileSync(join(__dirname, '_fixtures', 'getmonero-feed.xml'), 'utf8');
+const fixture = readFileSync(join(__dirname, '..', '_fixtures', 'getmonero-feed.xml'), 'utf8');
 
 const items = parseAtom(fixture, 5);
 
@@ -303,7 +303,7 @@ ok(canonicalRepo(SELF_REPO) === SELF_REPO, 'src=ghrepo can resolve this site\'s 
    SELF_REPO directly and never consults the allowlist, so allowlisting the
    repo cannot widen what src=commits will serve. */
 ok(!/GH_ALLOWED/.test(
-  readFileSync(new URL('./feeds.js', import.meta.url), 'utf8')
+  readFileSync(new URL('../feeds.js', import.meta.url), 'utf8')
     .split('if (src === "commits")')[1].split('if (src ===')[0]),
   'the src=commits branch never consults GH_ALLOWED');
 
@@ -370,7 +370,7 @@ ok(mappedPulls.map((r) => r.v).join(',') === '#185,#180',
 /* Same structural invariant the src=commits branch carries: no caller-supplied
    repo reaches this path, so the allowlist cannot widen what it serves. */
 ok(!/GH_ALLOWED/.test(
-  readFileSync(new URL('./feeds.js', import.meta.url), 'utf8')
+  readFileSync(new URL('../feeds.js', import.meta.url), 'utf8')
     .split('if (src === "pulls")')[1].split('let items;')[0]),
   'the src=pulls branch never consults GH_ALLOWED');
 
