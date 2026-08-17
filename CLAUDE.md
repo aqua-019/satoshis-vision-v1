@@ -683,19 +683,45 @@ matched to the client's polling tier, and never cache a degraded payload at the 
   WAS FOUND. Each was true when measured, and rewriting a dated measurement falsifies it rather
   than refreshing it — but they read as present-tense claims about a 21/29 chain that is now
   22/34, so a note now says to check a figure's date before quoting it.
-  **BUDGETS: EVERY FIGURE BYTE-IDENTICAL TO `81fafca` EXCEPT ONE, AND THAT ONE IS +7 B.**
-  `eagerJsRaw` **262,360** · `lazyJsRaw` **896,103** · `totalJsRaw` **1,158,463** · `cssGz`
-  **17,900** · `CHUNK_COUNT` **69** — all unchanged, no ceiling raised, none approached.
-  `eagerJsGz` alone moves **85.84 → 85.85 KB (+7 B)**, and the attribution is exact: `SITE_PR`
-  188 → 189 is three digits changing VALUE at identical LENGTH, so raw cannot see it and gzip
-  can. p3·18's recorded phenomenon, reproduced deliberately rather than met by surprise.
+  **BUDGETS: EVERY FIGURE BYTE-IDENTICAL TO `81fafca` EXCEPT ONE, AND THAT ONE IS +5 B.**
+  Measured by building `81fafca` in an ISOLATED worktree with its own `dist/`, not inferred
+  from the gate's rounded KB column. `eagerJsRaw` **262,360 → 262,360** · `lazyJsRaw`
+  **896,103 → 896,103** · `totalJsRaw` **1,158,463 → 1,158,463** · `cssGz` **17,900 → 17,900**
+  · `CHUNK_COUNT` **69 → 69** — every one a ZERO delta, no ceiling raised or approached.
+  `eagerJsGz` alone moves **87,902 → 87,907 (+5 B)**.
+  **AND MY FIRST ATTRIBUTION OF THOSE BYTES WAS WRONG, disproved by the measurement it was
+  supposed to summarise.** I wrote that the move was `SITE_PR` 188 → 189 — three digits changing
+  value at identical length. Testable in one line, so it was tested: flipping `Lo=189,` back to
+  `Lo=188,` in the built entry chunk and re-gzipping moves the total by **EXACTLY 0**. The digits
+  are not the cause. Measured instead, by classifying all 68 chunk stems across the two builds:
+  **8 truly byte-identical, 60 SIZE-identical with ROTATED content, and ZERO that changed size.**
+  The entry's 57 differing runs sit inside Vite's `__vite__mapDeps` table, where fixed-length
+  content hashes rotate. So the +5 is COMPRESSIBILITY ALONE, from a hash cascade — p3·18's
+  recorded phenomenon reproduced stem-for-stem, and a reminder that "a plausible mechanism" and
+  "a measurement" remain different things even inside the paragraph reporting a measurement.
+  **THE ONE RED IN THE WHOLE 34-GATE CHAIN IS `verify-vitals`, AND IT IS THE RUNNER — PAIRED,
+  NOT ASSUMED.** In-chain at position 34 it read `❌ / · median blocking 407ms ≤ 400ms`, SEVEN
+  ms over, while every other gate was green. This PR changes no runtime code, but "implausible"
+  is not "measured", so `81fafca` was built in an ISOLATED worktree, served on its own port with
+  both holders confirmed by `lsof` + `/proc/<pid>/cwd`, and the gate run against BOTH trees on
+  this machine minutes apart. Standalone, `/` blocking reads **353 ms on this tree against 356
+  on the base** — three ms BETTER, and both comfortably under. Across four runs of two trees the
+  figure reads **353 · 356 · 390 · 407**: a plateau straddling a 400 ms ceiling INDEPENDENTLY of
+  the tree, which is p3·12b's recorded finding about this exact route. The in-chain 407 is
+  chain-position contention — the same run DECLINED `/live/markets` at an 88.2% spread, so the
+  machine is measurably moving. Two standalone runs post-reorder, **17 passed · 2 skipped · 0
+  failed, exit 0, twice**. **AND THE REORDER'S VALUE WAS DEMONSTRATED BY THE RUN THAT EXERCISED
+  IT**: vitals now sits at 34 of 34, so that environmental red masked nothing. Before this PR the
+  identical red would have masked `verify-stream`.
   Census RECOUNTED and **UNCHANGED — 83 files / 79 gates / static 22 / e2e 34 / CI distinct 69 /
   orphans 6** — the correct outcome for a release that adds no gate FILE and MOVES one member.
   The counting script was **CONTROLLED against TWO historical commits before being trusted**:
   `e5eae16` reproduces 81/77/22/31/66 exactly and `bda0491` reproduces 82/78/22/32/67 exactly,
   including p3·19's corrected invocation arithmetic (72−6=66 and 73−6=67).
-  **SEVEN THINGS I GOT WRONG, and the first two are recorded traps committed by someone who had
-  just read them.**
+  **EIGHT THINGS I GOT WRONG, and the first two are recorded traps committed by someone who had
+  just read them; the eighth is the budget attribution above, asserted from a plausible mechanism
+  and disproved by a one-line test — the standing family, arriving inside the very paragraph
+  reporting a measurement.**
   (1) **My break harness restored `index.html` to HEAD — which still held the STALE title,
   wiping my uncommitted fix.** p3·12d's rule verbatim: commit before EVERY break-test round, so
   `git checkout` has a real target. (2) **My BEFORE transcript for #186 used

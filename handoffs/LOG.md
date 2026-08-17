@@ -316,11 +316,15 @@
   Correcting one ci.yml paragraph also created a contradiction six lines from another; both now
   agree, and three DATED figures are deliberately left and annotated rather than falsified.
   **BUDGETS: every figure BYTE-IDENTICAL to `81fafca`** — eager 262,360 · lazy 896,103 · total
-  1,158,463 · cssGz 17,900 · CHUNK_COUNT 69, no ceiling raised. `eagerJsGz` alone moves **+7 B**,
-  attributed exactly: `SITE_PR` 188→189 is three digits changing value at identical length, so raw
-  cannot see it and gzip can. Census RECOUNTED and **UNCHANGED — 83/79/22/34/69, orphans 6** —
+  1,158,463 · cssGz 17,900 · CHUNK_COUNT 69, no ceiling raised; measured against an ISOLATED
+  worktree build, not inferred from a rounded column. `eagerJsGz` alone moves **+5 B (87,902 →
+  87,907)**, and **my first attribution of it was WRONG and was disproved by measurement**: I said
+  `SITE_PR` 188→189, but flipping those digits in the built chunk and re-gzipping moves the total
+  by EXACTLY 0. Classified across both builds: **8 byte-identical stems, 60 size-identical with
+  ROTATED content, ZERO changed size** — the +5 is compressibility from a `__vite__mapDeps` hash
+  cascade. Census RECOUNTED and **UNCHANGED — 83/79/22/34/69, orphans 6** —
   correct for a release that adds no gate FILE and MOVES one member; the script was CONTROLLED
-  against **two** historical commits first. **SEVEN SELF-INFLICTED DEFECTS**, the first two being
+  against **two** historical commits first. **EIGHT SELF-INFLICTED DEFECTS** (the eighth being the wrong budget attribution above), the first two being
   recorded traps committed by someone who had just read them: a break-test restore that reverted
   to HEAD and wiped the uncommitted fix (p3·12d); a BEFORE transcript taken with `git show HEAD:`
   AFTER committing the fix, so BEFORE and AFTER were byte-identical, caught by reading the
