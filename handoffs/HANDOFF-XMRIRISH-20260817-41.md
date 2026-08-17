@@ -3,7 +3,7 @@ handoff: v1
 project: XMR.IRISH
 task_id: XMRIRISH-20260817-41
 branch: claude/prompt-attached-scgolz
-status: in_progress        # open -> in_progress -> done | blocked
+status: done                # open -> in_progress -> done | blocked
 written_by: claude-code    # manual mode — task arrived as an attached prompt
 owner: claude-code
 ---
