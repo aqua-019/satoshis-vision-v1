@@ -7,7 +7,7 @@
 //   §3  the single-source claim: the partner block and the hub say ONE thing
 //   §4  the install walkthrough — ordered, complete, in an <ol>
 //   §5  MoneroSpace is described by FUNCTION ONLY
-//   §6  the betanet slot names its own absence
+//   §6  the betanet question is ANSWERED, and every port is attributed
 //   §7  every cross-link resolves to something that exists
 //   §8  390px — no h-scroll, no sub-12px HTML text
 //   §9  reduced motion — zero running animations
@@ -25,8 +25,15 @@
 // BLIND SPOTS (stated, not hidden):
 //   — Whether the Umbrel apps actually install or work. Nothing here can know.
 //   — The GitHub URLs' reachability (egress to github.com is blocked here).
-//   — Whether the beta chain exists as described. That is the embargoed
-//     question this page's own copy says is unanswered.
+//   — Whether the beta chain exists as described, and whether the ports the
+//     maintainer quotes are the ones his addon actually opens. Nothing here
+//     can reach either. §6 asserts the ATTRIBUTION is present and correct in
+//     shape — whose ports these are said to be — never that the numbers work.
+//   — This chain's own parameters remain embargoed and unciteable. What
+//     CHANGED in p3·19 is narrower than it looks: the ENDPOINT question is
+//     answered (self-hosted, none exists, none planned); the chain's genesis,
+//     nettype and its own daemon's ports are still undocumented, and §6 is
+//     careful not to imply otherwise.
 //   — Prose QUALITY. This gate checks that the honest sentences are present
 //     and the dishonest ones are absent; it cannot check that the explanation
 //     is any good.
