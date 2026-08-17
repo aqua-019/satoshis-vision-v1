@@ -36,6 +36,7 @@
 
 import { chromium, webkit } from 'playwright';
 import { existsSync, readdirSync } from 'node:fs';
+import { coldBootOffBrowser } from './verify-lib.mjs';
 
 const base = 'http://localhost:4173';
 const TXID = 'a1b2c3d4'.repeat(8); // 64 hex chars — MempoolTxPage renders "not found" chrome, which is what we measure
@@ -61,6 +62,19 @@ try {
   b = await webkit.launch();
 }
 console.log('engine:', engine);
+
+/* COLD-BOOT BYPASS — added p4·02, and it closes a REAL hole rather than a
+ * theoretical one. ROUTES[0] here is `{ path: '/' }`, where ColdBoot mounts a
+ * `position:fixed; inset:0` splash over an opaque floor, so without this the
+ * `/` row of every table below measures THE SPLASH and reports a confident
+ * page-shell number about the wrong page state.
+ *
+ * `verify-coldboot-live`'s audit did not see this gate for years because its
+ * "a route ARRAY containing '/'" pattern matches BARE STRING elements, and
+ * this file's ROUTES holds OBJECTS (`{ path, label, tier }`). p4·02 widened
+ * that audit to notice `for (… of ROUTES)`, and this was the first thing it
+ * found. */
+await coldBootOffBrowser(b);
 
 let fail = false;
 const ok = (cond, msg) => { console.log((cond ? '✅ ' : '❌ ') + msg); if (!cond) fail = true; };

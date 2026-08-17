@@ -96,7 +96,7 @@ export function FuturePage() {
       <PageHeader
         kicker="Roadmap · five incoming upgrades · one live beta chain"
         title='The protocol is <em style="color:var(--p-50);text-shadow:var(--glow-soft-p);font-style:normal">still being forged</em>.'
-        sub="Click any protocol for the deep dive — status, math, simulators, and the canonical community sources it stays synced against."
+        sub="Open any protocol for the deep dive — status, math, simulators, and the canonical community sources it stays synced against."
         right={<><Pill tone="acc" dot>{FUTURE_PROTOCOLS.length} protocols</Pill><Pill>1 live beta</Pill></>}
       />
 

@@ -533,14 +533,81 @@ than retyping paths. One hand-maintained list remains BY DESIGN: `verify-lib.mjs
   `grep verify-perf package.json` matched and the orphan read as wired — a substring trap
   that cost real time twice, including to the brief that set out to catalogue it.
   `verify-perf.mjs` is now `verify:perf-runtime`.
-- **19 sub-12px `font-size` declarations in `styles-legibility.css`** (L63-66, 71, 73-75,
-  77-78, 81, 84, 93-95, 98-100, 102). This is a STANDARDS CONFLICT, not a defect:
-  `verify-legibility.mjs:124` records "v6.0.10: floor raised 10.5 -> 11. Nothing below 11
-  ships" and `--fs-label` is `clamp(11px, 0.74vw, 12px)`, so the repo deliberately runs an
-  11px floor — while the v6 prompt series asserts 12px. `verify-legibility.mjs` asserts NO
-  rendered floor on any CSS selector; it checks inline TSX `fontSize` (sub-14) and SVG
-  `fontSize` attributes (sub-11) only. Deciding the floor, and writing a gate that reads
-  computed font-size on a named selector set, belong together in their own change.
+- **THE 11-vs-12px STANDARDS CONFLICT — ADJUDICATED in p4·02, BY VIEWPORT.** It stood for
+  ~25 releases because NEITHER AUTHORITY NAMED A VIEWPORT: CLAUDE.md said "no text under
+  12px anywhere", `verify-legibility.mjs:124` recorded "floor raised 10.5 -> 11. Nothing
+  below 11 ships", and `--fs-label` encoded the 11 as `clamp(11px, 0.74vw, 12px)`. Both
+  were right about different devices. The resolution splits rather than picks:
+  **≤720px (D1207's tab-bar threshold) is a 12px HARD MINIMUM with no class exemptions;
+  >720px keeps the recorded 11px floor, untouched.** So "the tab bar is visible" and "the
+  12px floor applies" are now the same condition, which is one checkable rule instead of
+  two arguing ones. The block is `THE TOUCH TYPE FLOOR` at the foot of
+  `styles-legibility.css`; `verify-mobile.mjs` §1 is the gate.
+  **The count in this entry's old title (19 declarations) was the wrong subject** — it
+  counted `font-size:` longhands in ONE sheet. A browser-side census of every rule that
+  RESOLVES under 12px at 390 finds **81 across the four sheets, of which 20 declare their
+  size through the `font:` SHORTHAND** — invisible to any probe reading
+  `style.getPropertyValue('font-size')`, which is exactly how the first run of that census
+  reported 61.
+  **What actually shipped is one token plus ~60 selectors, and the token does most of the
+  work**: of 1,031 sub-12px elements measured at 390 across the fourteen routes, 344 take
+  their size from an inline `style={{ fontSize }}` that no author rule can beat without
+  `!important` — but **318 of those specify `var(--fs-label)` rather than a literal**,
+  because `verify-legibility` has banned sub-14px inline literals since v6.0.2. Redefining
+  the token inside the media query reaches all 318 through the inline declarations
+  themselves. **ZERO `!important` was needed anywhere in the block.**
+  Still open, deliberately: `verify-legibility.mjs` still asserts no rendered floor on any
+  CSS selector — it checks inline TSX `fontSize` and SVG `fontSize` attributes only. The
+  RENDERED floor is now `verify-mobile`'s, and only below 720px.
+- **SVG text renders at 2.58–3.04px on `/live/markets/thesis`, and the authored numbers do
+  not say so.** Its chart carries a viewBox scale of **0.304**, so `fontSize="9"` reaches
+  the reader at 2.74px. `getComputedStyle().fontSize` reports USER UNITS, so an
+  authored-space floor is a claim in the wrong space — `verify-mobile` §6 measures SVG
+  through each node's own `getScreenCTM()` instead, and **BOUNDS** the known offender (22
+  nodes, one route) rather than exempting it: a new offender or a second route fails the
+  build. NOT FIXED because the arithmetic forbids the cheap fix — the repo's own remedy is
+  `useChartMetrics`'s FIXED mode, whose `DEFAULT_MAX_K` is **1.7**, and lifting 0.304 to a
+  12px floor needs **4.4×**. It is the viewBox-downscale problem this file already assigns
+  to its own change. (`/learn/sim` is the counter-example and the proof the machinery works:
+  authored 20.377 × 0.5889 = **11.99935px**, i.e. designed to land exactly on 12.)
+  **CORRECTION to this file's own claim that `useChartMetrics`'s `k`/`u` is INERT because
+  "no caller anywhere passes `vbWidth`":** three callers do — `protocols/stealth.tsx:34`
+  and `protocols/metaphors.tsx:37,202`. The original grep's scope was `src/mempool/` and
+  `src/views/`, and the result was generalised to "anywhere". Same scope-of-grep family this
+  file records three times already.
+- **`/live/network`'s `.keep-cols` overflow — FIXED in p4·02, and CI is what found it.**
+  `styles.css:2811` gives `.table-scroll > *, .keep-cols { min-width: max-content
+  !important }` so wide tables keep their columns AND THE USER SWIPES, and `styles.css:2871`
+  states the precondition in its own words — these "live in `.table-scroll`, not a grid".
+  `network/SyncShell.tsx`'s label/value grid carried `.keep-cols` (it needs to, or the
+  mobile collapse rule stacks it) inside a `.panel-b` with **no scroller to swipe in**, so
+  the max-content minimum simply made the panel wider than the phone.
+  **THE MEASUREMENT GAP IS THE DURABLE PART**: pre-fix this machine read 13 elements past
+  the edge at 320, 12 at 360, and **0 at 390** — while the CI runner read `right=401 > 390`
+  on the SAME TREE and failed. A content-sized box has no single width to test against, so
+  a local pass says nothing about another machine. **I blamed font fallback and then tested
+  it: blocking the self-hosted woff2 moves the element 380 → 381px, ONE pixel, not twenty.**
+  The real difference between the two machines is not identified, and it does not need to
+  be — `.sync-rows { min-width: 0 !important }` (beside the `.kpi-grid .keep-cols`
+  precedent that does the same thing one level in) makes the grid able to shrink to its
+  container, so it is STRUCTURALLY incapable of exceeding the viewport whatever its
+  content, fonts or feed state. Post-fix: 0 at 320, 360 and 390, with and without the
+  self-hosted fonts. `verify-mobile` §8 keeps it as a NAMED bound at 0 rather than folding
+  it into the flat assertion, so a regression reports the route by name.
+- **Twelve non-URL mid-word wraps remain at 390, and NO typographic change can reach them.**
+  p4·02 fixed the mechanism — `overflow-wrap: anywhere` → `break-word` below 720px, which
+  differ ONLY in min-content sizing, and that is exactly what let flex rows shatter labels
+  that would otherwise fit (26 → 24 breaks, 4 clips unchanged, 0px overflow; the recorded
+  `CONFIRMA / TIONS` instance is among the two fixed). **The brief's proposed fix,
+  `overflow-wrap: normal` on the label family, was MEASURED AND IS WORSE THAN THE DEFECT:
+  18 breaks but clips 4 → 11** — it converts eight complete-but-ugly labels into seven
+  TRUNCATED ones, and a clip destroys information where a mid-word break only bruises it.
+  What remains is every label whose widest word exceeds the box its flex row gives it
+  (`THE NETWORK` 63.8px in 55px). Two of the twelve became mid-word at 12px that were not at
+  11px. **Tightening the tracking was tried and does not work, for a reason worth keeping:
+  the box shrinks WITH the word** — ls 0.16em → 0.06em took `NETWORK` 63.8 → 55.5px and its
+  box 55 → 49px, because the row hands the label a FRACTION of itself rather than a fixed
+  width. The squeeze is scale-invariant, so this is per-panel flex composition, not type.
 - **Orphaned gates**: **6** `verify-*.mjs` are wired to neither npm nor CI — v2·3b wired
   four (`verify-pageshell` to npm only; `verify-fit`, `verify-mobile`, `verify-perf` to npm
   AND CI), taking 11 → 7, and p3·18 wired `verify-legality` into `verify:e2e`, taking
@@ -599,6 +666,136 @@ matched to the client's polling tier, and never cache a degraded payload at the 
 
 ## Session Notes
 
+- **2026-08-17**: p4·02 "THE MOBILE FOUNDATION" (app/) — the touch type floor, the gate with
+  no exemptions, and the standing 11-vs-12px conflict finally decided. **FOUR OF THE BRIEF'S
+  PREMISES DID NOT SURVIVE MEASUREMENT, and one of its proposed FIXES is measurably worse
+  than the defect it targets** — which is the release's lesson, arriving four times.
+  **(1) `verify-mobile.mjs` IS NOT NEW.** The brief specifies it as a NEW file and derives a
+  census move from that — 83→84 files · 79→80 gates · e2e 34→35 · CI 69→70. The file existed
+  (148 lines) and was ALREADY wired to npm AND to `ci.yml`, as an individually-named step
+  rather than a `verify:e2e` member. Rewriting it in place moves **ZERO of the six figures**.
+  Census RECOUNTED anyway with a script CONTROLLED against `e5eae16` (81/77/22/31/66) and
+  `bda0491` (82/78/22/32/67) first — both reproduced exactly — and every figure is
+  **UNCHANGED: 83 files / 79 gates / static 22 / e2e 34 / CI 69 / orphans 6.** No ci.yml
+  title needed editing, because no count moved.
+  **(2) `cssGz` DID NOT CROSS.** The brief says it "CROSSES by design" and directs a raise to
+  built + ≤4,000. Measured with `node:zlib` level 9 — the compressor the gate actually judges
+  with — against an ISOLATED worktree build of the base: **17,900 → 18,143 against an 18,200
+  ceiling. A pass, with 57 B to spare.** Raised anyway, to **18,600 and not to 22,000**,
+  because that budget's own comment says it deliberately runs ~2.5% where the JS ceilings run
+  ~10%: 0.3% is not strictness, it is a budget that has stopped working, and the brief's
+  number would have silently repealed the paragraph it sits under. 18,143 × 1.025 = 18,597 →
+  **18,600, margin 457** — the same ~2.5% p3·13 recorded at 447.
+  **(3) THE BRIEF'S WRAP FIX IS WORSE THAN THE DEFECT, and only a measurement separates
+  them.** It directs `overflow-wrap: normal` on letter-spaced kickers. Measured across the
+  fourteen routes at 390: as shipped **26 mid-word breaks · 4 clips**; the brief's fix **18
+  breaks · 11 clips**. It converts eight complete-but-ugly labels into seven TRUNCATED ones,
+  and a clip destroys information where a mid-word break only bruises it. What ships instead
+  is `anywhere` → **`break-word`**, which yields **24 · 4 · 0px overflow** — strictly better
+  on every axis. The two differ ONLY in min-content sizing, and that is precisely the
+  mechanism: under `anywhere` a flex item's min-content collapses to its widest CHARACTER, so
+  the row hands a label a few pixels and the word shatters. The brief's own named instance
+  (`CONFIRMA / TIONS`) is one of the two this fixes.
+  **(4) THE 320px CHECK IS NOT FREE**, which the brief allowed for. 13 elements sit past the
+  right edge on `/live/network` — and **13 on the BASE COMMIT too**, so no type change caused
+  it. Bounded rather than asserted or dropped.
+  **THE FLOOR: 1,031 → 0, AND THE FIX IS ONE TOKEN.** Measured at 390×844 before a line was
+  written: **1,031 visible HTML elements under 12px from 57 distinct origins.** 344 take
+  their size from an inline `style={{ fontSize }}`, which no author rule beats without
+  `!important` — but **318 of those specify `var(--fs-label)`, not a literal**, because
+  `verify-legibility` has banned sub-14px inline literals since v6.0.2. So
+  `:root { --fs-label: 12px }` inside the media query reaches all 318 through the inline
+  declarations themselves. **ZERO `!important` in the whole block.** Verified in BOTH feed
+  states: 0 on all fourteen routes degraded, and 0 again with `/api/**` mocked live, where
+  the pages render substantially more (mempool 589 elements vs 341).
+  **THE ADJUDICATION, and why it took ~25 releases:** both authorities were right about
+  different devices and **NEITHER NAMED A VIEWPORT**. Split rather than picked — ≤720px is
+  12px hard, >720px keeps the recorded 11px — so "the tab bar is visible" and "the 12px floor
+  applies" became the same condition. 720 is D1207's threshold and is a PLAIN `@media`, not
+  `@container navshell`, for the structural reason `styles.css`'s D0212 block already records:
+  `.main` descends from neither navshell instance.
+  **MY OWN INSTRUMENT WAS BLIND TO A WHOLE DECLARATION SYNTAX.** The first census of "every
+  rule resolving under 12px" reported **61**. It read
+  `rule.style.getPropertyValue('font-size')`, which returns EMPTY for a `font:` SHORTHAND —
+  and `.prov` (the provenance marker, the smallest text on the site at 9.5px) is declared
+  exactly that way. The real figure is **81, of which 20 are shorthands.** A true count of the
+  wrong subject, in the instrument built to find the subject.
+  **THE GATE: 8 sections, 47 assertions, and it closes two vacuities rather than inheriting
+  them.** (a) The old file was RIGHT to refuse `documentElement.scrollWidth` at 390 —
+  `html/body` carry `overflow-x: clip` below 769px so it cannot move — and emitted a reasoned
+  skip. Overflow is now measured with BOUNDING RECTS, which a clip does not defeat; both
+  metrics carry positive controls and the skip is kept, honest, for the day the clip goes.
+  (b) SVG is measured through each node's own `getScreenCTM()`, in RENDERED space.
+  §1 carries a planted-9px positive control, because every one of its fourteen assertions is
+  an ABSENCE, and a per-route non-vacuity floor, because a blank page returns zero findings.
+  **TWO DEFECTS ARE BOUNDED, NOT EXEMPTED** — a new offender or a second route fails the
+  build: `/live/markets/thesis`'s 22 SVG labels at 2.58–3.04px behind a 0.304 viewBox scale
+  (unfixable cheaply — `DEFAULT_MAX_K` is 1.7 and this needs 4.4×), and `/live/network`'s 320px
+  `.keep-cols` overflow. Both measured identical on the base commit.
+  **THE EXEMPTION LISTS ARE GONE, AND ONE OF THEM COULD BARELY FIRE.** `verify-peers` §7 walked
+  `.v6-peer-grid` skipping any class containing `v6-status`/`kicker`/`pill`/`dim2`/**`mono`** —
+  and `mono` is that page's body font — at a floor read through `parseInt('11.5px') === 11`.
+  Three independent reasons it could not do its job, and it was GREEN on a page carrying 37
+  sub-12px elements. Both sections are KEPT rather than deleted, for a measured reason:
+  `verify-mobile` runs against `serve-dist`, where **`/api/**` answers 501**, so it only ever
+  sees the DEGRADED face; peers mocks a LIVE pulse, a state the site-wide gate cannot reach.
+  Same floor, no exemptions, different feed state. peers 32 → **33**, superstress **90**.
+  **BUDGETS: +179 B raw JS across 6 chunk slots of 68, and the entry identity was confirmed
+  rather than assumed.** eager entry **+154** (the touch chip's two spans; NavTop is eager),
+  lazy **+25** across five chunks carrying the copy edits. The `index` stem holds TWO chunks
+  and p2·9 recorded that they can move in opposite directions and different budgets, so the
+  eager one was identified by reading `dist/index.html`'s own `<script src>` — 99,445 →
+  99,599 — not by basename. `CHUNK_COUNT` **69, unchanged**. All 14 route ceilings held.
+  **SIX BREAK TESTS, EVERY ONE RED WHERE INTENDED**: M1 the token back to 11px → **15 reds**
+  naming per-route counts · M2 tab bar hidden → 1 · M3 a forced 500px element → 3, including
+  §8's 320 route-set bound, which is how that bound proved live · M4 a version claim in the
+  shell title → 1 · M5 the tab-bar clearance removed → 1 · M6 a 23rd sub-12px SVG label →
+  `23 ≤ 22`. Every restore verified against the COMMITTED BLOB with a bracketed marker sweep,
+  rebuilt between restore and re-measure.
+  **THE FIRST RUN OF ALL SIX WAS VOID AND LOOKED LIKE SIX PASSES.** The `serve-dist` process
+  had died between the gate's green run and the harness; every mutation produced
+  `EXIT=1` with `ERR_CONNECTION_REFUSED`, no named red and no summary — **and a
+  `grep '❌'` over a crash returns EMPTY, which reads exactly like "no failures found"**, the
+  shape p4·01 recorded twice. Caught by reading the transcript rather than the exit codes.
+  The harness now asserts a 200 from the server BEFORE every run and aborts loudly otherwise.
+  Bare `curl` to the dead port returned `000`/exit 7 — this file's own measured note that the
+  proxy fabricates nothing, confirmed again.
+  **FIVE MORE THINGS I GOT WRONG.** (1) The `font:`-shorthand blindness above. (2) A broken
+  draft fragment shipped into the gate's own positive control — an `arguments.callee` stub
+  left beside the working implementation; `node --check` passed it, because syntax is not
+  execution. (3) `page.evaluate` takes ONE argument and I passed two, so the gate died on its
+  second route the first time it ran. (4) **Every measurement I took was of the DEGRADED feed
+  state and I did not know it** — a recon worker found `/api/**` answers 501 on `serve-dist`;
+  the live-state re-measure (0 on all fourteen) is the only thing that makes the floor claim
+  non-vacuous, and I would not have run it. (5) I dispatched recon BEFORE editing, per
+  p3·19's rule — and still had two workers read a tree that moved under them mid-run; both
+  detected it themselves by discriminator (`grep '--fs-label: 12px' dist/`) rather than by
+  timestamp, and both said so unprompted, which is the rule working from the other end.
+  **A worker's own instrument defect worth keeping**: its comment-stripper treated a template
+  literal's closing backtick as an opening one and swallowed the rest of the file, and its
+  first classification used `awk` `\b`, which is BACKSPACE in awk, not a word boundary.
+  **COPY: six device verbs made neutral, five KEPT with reasons** — `click-to-install` is a
+  product modality naming the macOS GUI bundle against sibling CLI/Docker paths, not an
+  instruction; "press <named button>" is already device-neutral; and pulse's "holds a cursor"
+  is a DOMAIN NOUN (`design/timeCursor.ts`, which traffics in timestamps), so renaming it
+  would break the vocabulary the markets and mempool surfaces share.
+  **The `⌘K` chip prints "Search" below 720** — one button, one handler, one device-neutral
+  accessible name, swapped by a CONTAINER query because `.nav-kbd` really does live inside
+  `.nav-shell` (unlike `.main`), so D1207's own mechanism works there. Desktop is byte-identical
+  in presentation: 32.1×26 showing `⌘K`; touch is 75×36 showing `Search`, with 0 topbar clip
+  and 0 overflow at 320.
+  **CI CAUGHT A DEFECT THIS MACHINE COULD NOT, AND THAT IS THE RELEASE'S LAST LESSON.**
+  `verify-mobile` §2 went red on CI at 390 (`right=401 > 390` on /live/network) where this
+  machine measured 0 — the same `.keep-cols` misuse §8 had BOUNDED at 320. A content-sized
+  box has no single width to test against. Fixed at source (`.sync-rows`), which dissolved
+  the 320 bound from 13 to 0. **My stated mechanism for the cross-machine gap — font
+  fallback — was TESTED AND DISPROVED**: blocking the woff2 moves it one pixel, not twenty.
+  The fix is width-independent by construction, so the unexplained gap stops mattering.
+  **NOT FIXED, and named with numbers**: the twelve remaining mid-word wraps (flex-squeeze,
+  scale-invariant — tracking was tried and the box shrinks with the word); the thesis chart's
+  2.58px SVG labels; chart TOOLTIP `tspan`s at
+  10.5px that only a hover reveals, which this gate never triggers and which is named as its
+  blind spot. **No human has seen the rendered result in a browser** — read from screenshots.
 - **2026-08-17**: p4·01 "THE HYGIENE CLOSE" (app/ + .github/) — seven named ledger items
   retired before Phase 4's mobile work. Docs and gate-side throughout; the only `src/` touches
   are `index.html`, a comment-only docblock, and `SITE_PR`. **TWO OF THE SEVEN ITEMS WERE WRONG

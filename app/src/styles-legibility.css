@@ -190,4 +190,176 @@ button.proto-btn, a.proto-btn { font-size: 11.5px; }
      the legal page's summary line below it. */
   .main header h1 { font-size: 25px !important; line-height: 1.15; }
 }
+
+/* ══ THE TOUCH TYPE FLOOR — p4·02 ═══════════════════════════════════════
+   BELOW 720px, NOTHING RENDERS UNDER 12px. No class exemptions, no
+   per-page carve-outs. `verify-mobile.mjs` walks all fourteen canonical
+   routes and fails the build on one.
+
+   ── THIS ADJUDICATES A STANDING CONFLICT, AND BOTH SIDES WERE RIGHT ──
+   CLAUDE.md has said "no text under 12px anywhere" since the v6 prompt
+   series. This sheet has run a deliberate 11px floor since v6.0.10
+   ("floor raised 10.5 -> 11. Nothing below 11 ships"), and
+   `--fs-label: clamp(11px, 0.74vw, 12px)` encodes it. Both authorities
+   were quoted at each other for ~25 releases and neither moved, because
+   the disagreement was never really about the number: NEITHER ONE NAMED A
+   VIEWPORT. 11px at arm's length on a 27" desktop display and 11px at
+   30cm on a 390px phone are not the same claim, and the gates that
+   "checked" it (verify-peers §7, verify-superstress §8) resolved the
+   tension by EXEMPTING the classes that failed — which is how a page
+   carrying 51 sub-12px elements passed a sub-12px check.
+
+   Resolved by SPLITTING ON VIEWPORT rather than by picking a winner:
+     · ≤720px  — 12px hard minimum, gated, no exemptions. This block.
+     · >720px  — the recorded 11px floor stands, untouched. Raising it is
+                 an aesthetic decision about the desktop composition and
+                 it is not this change's to take.
+
+   ── WHY 720, WHICH IS NOT THIS SHEET'S OTHER BREAKPOINT ──────────────
+   720px is D1207's threshold: the width at which the dropdown nav gives
+   way to BottomTabBar. Tying the floor to it makes one checkable rule —
+   THE TAB BAR IS VISIBLE IF AND ONLY IF THE 12px FLOOR APPLIES — so
+   "is this device in touch mode?" has a single answer that the layout,
+   the nav and the type all read. The block above is 768 because it
+   inherited styles.css's phone band; that number is not a claim about
+   touch and was not reused here.
+
+   It is a PLAIN @media and not `@container navshell (max-width: 720px)`,
+   which is how D1207 expresses that threshold everywhere else. A
+   container query only styles descendants of the container, and almost
+   nothing here descends from either navshell instance. styles.css's
+   D0212 block already carves out exactly one plain @media at 720 for the
+   same structural reason; this is the second, and the reason is the same.
+
+   ── WHY THE FIRST DECLARATION IS A TOKEN, AND WHY THAT IS THE WHOLE FIX
+   Measured at 390×844 across the fourteen routes before any of this was
+   written: 1,031 visible HTML elements rendered under 12px, from 57
+   distinct origins. 344 of them get their size from an INLINE
+   `style={{ fontSize }}` in TSX — and an author rule cannot beat an
+   inline declaration without `!important`.
+
+   It does not need to. Of those 344, **318 specify
+   `var(--fs-label)`** — not a hard literal — because verify-legibility
+   has banned sub-14px inline literals since v6.0.2, so every small inline
+   size in this app is already routed through the token. Redefining the
+   token inside this media query therefore reaches all 318 through the
+   inline declarations themselves, plus the ~29 stylesheet rules that also
+   read it. ZERO `!important` is used in this block, and none is needed.
+
+   ── WHY EVERYTHING COLLAPSES TO ONE VALUE ────────────────────────────
+   The overrides below do not preserve the 9 / 9.5 / 10 / 10.5 / 11 /
+   11.5 ladder proportionally, because that ladder is not legible
+   hierarchy on a phone — it is six values inside a 2.5px band, at a size
+   where the differences read as inconsistency rather than rank. The
+   hierarchy these classes actually carry is CASE, LETTER-SPACING, WEIGHT
+   and COLOUR, and this block changes none of them.
+
+   ── SELECTOR LIST: DERIVED, NOT GUESSED ──────────────────────────────
+   Every rule below answers a rule that a browser-side probe found
+   resolving under 12px at a 390px viewport — 81 of them, of which **20
+   declare their size through the `font:` SHORTHAND**. That matters: a
+   probe reading `style.getPropertyValue('font-size')` returns EMPTY for a
+   shorthand and silently under-reports by a quarter (the first run of
+   this measurement said 61). The plain `font-size` longhands below beat
+   those shorthands by source order at equal specificity, which is the
+   property this sheet's own header already relies on.
+   ════════════════════════════════════════════════════════════════════ */
+@media (max-width: 720px) {
+  /* THE TOKEN. Covers every `var(--fs-label)` consumer — ~29 stylesheet
+     rules and 318 inline TSX sites — in one declaration. */
+  :root { --fs-label: 12px; }
+
+  /* chrome — topbar, crumbs, footer telemetry */
+  .crumbs,
+  .footer-tele,
+  .ticker-strip,
+  .ticker-strip .tk em,
+  .nav-kbd { font-size: 12px; }
+
+  /* panels, rails, stat blocks */
+  .rail,
+  .rail h6,
+  .kv,
+  .kv .k,
+  .panel-h,
+  .panel-updated,
+  .stat .lbl,
+  .stat .sub,
+  .pill,
+  .peerlist .row,
+  .peerlist .row span:nth-child(3),
+  .mblock .hh,
+  .mblock .sz,
+  .degraded-banner { font-size: 12px; }
+
+  /* protocol / simulator surfaces */
+  .proto-head .kicker,
+  .proto-panel,
+  .proto-panel h6,
+  .proto-panel .body,
+  .proto-badge,
+  .proto-ctrl-row .k,
+  .proto-step p,
+  .proto-step::before,
+  button.proto-btn,
+  a.proto-btn { font-size: 12px; }
+
+  /* provenance and data legends — the honesty channel, and the smallest
+     text on the site before this block (9.5px). If any text on a phone
+     has to be readable it is the label saying where a number came from. */
+  .prov,
+  .data-legend,
+  .data-legend__gloss,
+  .soon-badge,
+  .v6-status,
+  .v6-res,
+  .open-cue { font-size: 12px; }
+
+  /* mempool + markets chrome */
+  .mp-zoom__btn,
+  .mp-switcher__trigger,
+  .mem-tbl__c,
+  .mk-lbl { font-size: 12px; }
+
+  /* ── THE MID-WORD WRAP, FIXED AT ITS MECHANISM ────────────────────
+     styles.css:2897 sets `.main, .main * { overflow-wrap: anywhere }`
+     below 768px as a belt-and-braces guard so no single long token —
+     a 64-char txid, a repo URL — can force the page wider than the
+     viewport. It works, and it is also why `CONFIRMATIONS` rendered as
+     `CONFIRMA / TIONS` on /live/mempool at 390.
+
+     `anywhere` and `break-word` break lines identically; they differ
+     ONLY in MIN-CONTENT SIZING. Under `anywhere` a flex item's
+     min-content width collapses to its widest CHARACTER, so the flex
+     algorithm hands a label a few pixels and the word then shatters to
+     fit. Under `break-word` min-content is the widest WORD, so a label
+     that CAN fit is never broken — while a token that genuinely cannot
+     fit still breaks rather than overflowing. The guard is kept; only
+     its effect on intrinsic sizing is given back.
+
+     MEASURED across the fourteen routes at 390, not reasoned:
+       as shipped          26 mid-word breaks · 4 clips · 0px overflow
+       break-word (this)   24 mid-word breaks · 4 clips · 0px overflow
+     — including the `CONFIRMATIONS` instance, which this fixes.
+
+     THE ALTERNATIVE THE BRIEF PROPOSED — `overflow-wrap: normal` on the
+     letter-spaced label family — WAS MEASURED AND IS WORSE THAN THE
+     DEFECT: 18 mid-word breaks but clips 4 → 11. It converts eight
+     ugly-but-complete labels into seven TRUNCATED ones, and a clip
+     destroys information where a mid-word break only bruises it.
+
+     WHAT THIS DOES NOT FIX, and why it is not a type problem: twelve
+     non-URL breaks remain, every one a label whose widest word is
+     genuinely wider than the box its flex row gives it (`THE NETWORK`
+     63.8px in 55px). Two of those became mid-word at 12px that were not
+     at 11px, so they are this change's. They cannot be fixed here:
+     tightening the tracking was tried and the box shrinks WITH the word
+     (ls 0.16em → 0.06em took `NETWORK` 63.8 → 55.5px and its box 55 →
+     49px), because the row hands the label a FRACTION of itself rather
+     than a fixed width. The squeeze is scale-invariant, so no
+     typographic change reaches it — it is per-panel flex composition,
+     which is p4·03's subject. Recorded with numbers rather than
+     half-fixed. */
+  .main, .main * { overflow-wrap: break-word; }
+}
 }

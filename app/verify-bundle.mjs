@@ -290,7 +290,35 @@ const BUDGETS = {
   // disagree with it by ~100 B on a chunk this size, and p3·12 put a phantom
   // 50 B of "unattributed" bytes in its own report by measuring with one and
   // being judged by another.
-  cssGz: 18_200,
+  // RAISED 18,200 -> 18,600 in p4·02, AND IT DID NOT CROSS — which is why the
+  // number is 18,600 and not the "built + 4,000" the brief proposed.
+  // Measured with node:zlib level 9 (the compressor THIS FILE judges with)
+  // against a build of the base commit `5cf71f0` in an ISOLATED worktree with
+  // its own dist: 17,900 -> 18,143, delta +243 B gzip / +853 B raw, ONE css
+  // asset on both sides. Against the old 18,200 that is a PASS with 57 B to
+  // spare — 0.3%.
+  //
+  // 0.3% is the problem, not the 243. The comment below is explicit that this
+  // budget deliberately runs ~2.5% where the JS ceilings run ~10%, because a
+  // 10% headroom here "would be 1,700 B — roughly three more components' worth
+  // of rules absorbed silently, on the ONE stylesheet that blocks first paint".
+  // A 57 B margin is not that budget being strict, it is that budget having
+  // stopped working: the next one-line CSS change reds it on arrival regardless
+  // of merit, and a ceiling that reds for everything teaches people to raise
+  // ceilings reflexively — which is the failure this file exists to prevent.
+  // So this raise RESTORES the designed headroom rather than absorbing an
+  // overage: 18,143 × 1.025 = 18,597 -> 18,600, margin 457, which is the same
+  // ~2.5% p3·13 recorded at 447. Taking the brief's +4,000 would have made it
+  // 22% and silently repealed the paragraph below.
+  //
+  // THE +243 IS ONE BLOCK AND ITS SHAPE IS WORTH KNOWING. p4·02's ≤720px type
+  // floor is ~60 selectors plus one custom-property redefinition — and the
+  // property is doing most of the work: 318 of the 344 inline sub-12px sites
+  // in the app specify `var(--fs-label)` rather than a literal, so
+  // `:root { --fs-label: 12px }` inside the media query reaches all of them for
+  // the cost of one declaration. Comments are free here (Vite minifies the
+  // production sheet), so the long argument in styles-legibility.css costs 0 B.
+  cssGz: 18_600,
   // Every JS chunk, counted once. The drift detector for "we shipped 200 kB of
   // lazy code nobody has opened yet". Successor to PERF-BASELINE.md:75's
   // 673.8 kB.

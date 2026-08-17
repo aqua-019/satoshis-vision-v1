@@ -731,46 +731,45 @@ try {
   const hScroll = await phone.evaluate(() => document.body.scrollWidth - window.innerWidth);
   R.ok(hScroll <= 0, `no horizontal scroll at 390px (scrollWidth − innerWidth: ${hScroll})`);
 
-  /* THE FLOOR HERE IS 11px, NOT 12, AND THAT IS THE REPO'S NUMBER RATHER THAN
-     A CONCESSION THIS PAGE NEEDED.
-     verify-legibility.mjs:124 records "v6.0.10: floor raised 10.5 -> 11.
-     Nothing below 11 ships", and `--fs-label` is clamp(11px, 0.74vw, 12px) —
-     so 11px IS the design system, and a 12px assertion here would hold one
-     page to a standard no other page in the app meets.
-     MEASURED, at 390px inside `.page-shell`, before choosing the number:
-       /operate/superstress  35 nodes under 12px   (this page)
-       /about/sources        40
-       /about/peers          15
-       /operate/node         15
-     A 12px floor reds all four. CLAUDE.md carries the 11-vs-12 standards
-     conflict as a standing item and says deciding it "belongs in its own
-     change"; the four counts above are the new evidence, and they say this
-     page is ordinary rather than an outlier. The exclusions below are the
-     chips the system runs deliberately smaller still — `pill` at 10.5 and
-     `prov-tag`/`prov-fresh` at 9.5 — same principle as verify-peers §7.
-     NOT-MATCHED: this cannot see a chip that is small AND illegible; it
-     checks a floor, not contrast. */
-  /* SCOPED TO `.page-shell` for the same reason as the link sweep above: the
-     first version read `#root *` and returned 35 findings, every one of them
-     site chrome this PR does not own (NavTop's .nav-kbd, the topbar ticker's
-     .tk spans). Whether the chrome runs an 11px floor is a real question and
-     it is verify-legibility's, under a STANDARDS CONFLICT this repo already
-     records; it is not evidence about this page. */
+  /* THE FLOOR HERE WAS 11px WITH FOUR CLASS EXEMPTIONS, AND p4·02 RETIRED BOTH.
+     The note that stood here was HONEST and its reasoning was right AT THE
+     TIME: 11px was the repo's real number (verify-legibility.mjs:124, "floor
+     raised 10.5 -> 11"), `--fs-label` was clamp(11px, 0.74vw, 12px), and a
+     12px assertion on this one page would have held it to a standard no other
+     page met. It even measured the four counts that proved the point —
+     superstress 35, /about/sources 40, /about/peers 15, /operate/node 15 —
+     and recorded that a 12px floor reds all four.
+
+     p4·02 acted on exactly that evidence instead of carrying it: the standing
+     11-vs-12 conflict was adjudicated by VIEWPORT (12px below 720px, 11px
+     above), `styles-legibility.css` now enforces it, and all four of those
+     counts are 0. So the floor here is 12 with NO exemptions, and it is no
+     longer a special standard for one page — `verify-mobile.mjs` holds every
+     route to it.
+
+     STILL SCOPED TO `.page-shell`, and the original reason survives the
+     change: `#root` would sweep NavTop and the footer, which are site chrome
+     this page does not own and which verify-mobile now covers site-wide.
+     Scope is about SUBJECT here; it is not an exemption.
+     NOT-MATCHED, unchanged: a floor is not contrast. */
   const small = await phone.evaluate(() => {
-    const EX = ['pill', 'v6-status', 'prov-tag', 'prov-fresh'];
     const out = [];
     for (const el of document.querySelectorAll('.page-shell *')) {
-      if (!el.childNodes.length) continue;
+      if (el.namespaceURI === 'http://www.w3.org/2000/svg') continue;
+      if (el.classList && el.classList.contains('sr-only')) continue;
       const own = [...el.childNodes].filter((n) => n.nodeType === 3 && n.textContent.trim()).length;
       if (!own) continue;
-      if (EX.some((c) => el.classList.contains(c))) continue;
-      const fs = parseFloat(getComputedStyle(el).fontSize);
-      if (fs < 11) out.push(`${el.tagName}.${el.className} ${fs}px "${el.textContent.trim().slice(0, 24)}"`);
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      const fs = parseFloat(cs.fontSize);
+      if (fs < 11.99) out.push(`${el.tagName}.${el.className} ${fs}px "${el.textContent.trim().slice(0, 24)}"`);
     }
     return out;
   });
   R.ok(small.length === 0,
-    `no HTML text below the repo's own 11px floor at 390px (found ${small.length})`,
+    `no HTML text below 12px at 390px (found ${small.length}) — no class exemptions`,
     small.slice(0, 5).join(' | '));
 
   /* NON-VACUITY for the check above: a `.page-shell` that never rendered

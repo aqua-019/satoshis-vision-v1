@@ -388,8 +388,8 @@ export function MarketsThesisTab(_props: MoneroTabProps) {
       <Card style={{ padding: 22 }}>
         <div className="kicker">Cycle highs · marked</div>
         <p className="mono dim" style={{ margin: "10px 0 0", fontSize: "var(--fs-mono)", lineHeight: 1.65 }}>
-          Four cycles, four higher lows. Each point is a stated historical peak — hover for the
-          cycle, date, price and drawdown.
+          Four cycles, four higher lows. Each point is a stated historical peak — select one for
+          the cycle, date, price and drawdown.
         </p>
         <div style={{ marginTop: 14 }}>
           <CycleHighsChart />

@@ -288,15 +288,13 @@ try {
       `§6b · the live readout's [data-readout] spans are absent (${liveMarkers}) — the degraded branch rendered, not a numberless copy of the live one`);
   }
 
-  /* §7 · DELIBERATELY UNTOUCHED BY p4·01 (2026-08-17). This section's
-     mono/pill class exemptions are load-bearing for the CURRENT stylesheet:
-     the repo runs an 11px floor (verify-legibility.mjs:124 — "floor raised
-     10.5 -> 11. Nothing below 11 ships") while the v6 prompt series asserts 12,
-     and this gate's exemptions are what hold that standing conflict at bay on
-     this route. p4·02 replaces them wholesale with a site-wide mobile floor
-     gate. Narrowing them HERE would turn the tree red for exactly the defect
-     p4·02 exists to fix — a hygiene pass that reds the build to register a
-     complaint is not hygiene. Left alone on purpose, not by oversight. */
+  /* §7 · p4·01 left this section's exemptions alone and said why: the repo
+     ran an 11px floor while the prompt series asserted 12, and narrowing the
+     exemptions THEN would have redded the tree for a defect nothing had yet
+     fixed. p4·02 fixed it — `styles-legibility.css` now carries a 12px floor
+     below 720px — so the exemptions have been REMOVED here, as that note
+     promised. The site-wide replacement is `verify-mobile.mjs`; what stays
+     below is the half it cannot reach. See the block above the walker. */
   // §7: Mobile (390px) — no h-scroll, no sub-12px text
   const viewport = { width: 390, height: 844, deviceScaleFactor: 2 };
   await page.setViewportSize(viewport);
@@ -324,44 +322,54 @@ try {
   R.ok(hScroll <= 0,
     `§7 · No horizontal scroll at 390px (scrollWidth - clientWidth: ${hScroll})`);
 
-  // Check text legibility — look for computed font-size < 12px in the peers
-  // grid BODY TEXT, excluding intentional 10-11px design elements (status badges,
-  // kickers, button labels, which are per --fs-label: clamp(11px, 0.74vw, 12px)).
+  /* §7's TYPE FLOOR — THE EXEMPTION LIST IS GONE (p4·02).
+   *
+   * What stood here walked `.v6-peer-grid` and skipped any element whose class
+   * contained `v6-status`, `kicker`, `pill`, `dim2` OR `mono`, against a floor
+   * of 12 read through `parseInt`. Three things were wrong with that at once,
+   * and together they made the assertion nearly unable to fire:
+   *   · `mono` is the body font of this entire page, so the exemption covered
+   *     most of the text it claimed to be checking;
+   *   · `parseInt('11.5px')` is 11, so the check silently ran at a floor of
+   *     11.5-rounds-down rather than 12;
+   *   · it was scoped to the grid, so the chrome above it was never asked.
+   * Measured at 390 the day this was replaced: the page carried 37 elements
+   * under 12px and this assertion was GREEN.
+   *
+   * THE SITE-WIDE FLOOR NOW LIVES IN `verify-mobile.mjs`, which walks all
+   * fourteen routes with no class exemptions at all. This section is KEPT
+   * rather than deleted, and the reason is a real one rather than politeness:
+   * verify-mobile runs against `serve-dist`, where `/api/**` answers 501, so
+   * it only ever sees the DEGRADED face of every page. THIS gate mocks a LIVE
+   * `src=ghrepo` pulse, so it renders the live readout — a state the
+   * site-wide gate structurally cannot reach. Same floor, no exemptions,
+   * different feed state. */
   const subPixelText = await page.evaluate(() => {
     const bad = [];
-    const contentArea = document.querySelector('.v6-peer-grid');
-    if (!contentArea) return bad;
-
-    const walker = document.createTreeWalker(
-      contentArea,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
-    );
-    let node;
-    while (node = walker.nextNode()) {
-      if (node.textContent.trim().length === 0) continue;
-      const parent = node.parentElement;
-      if (!parent) continue;
-      // Skip known-good intentional small elements
-      const cls = parent.className;
-      if (cls.includes('v6-status') || cls.includes('kicker') ||
-          cls.includes('pill') || cls.includes('dim2') || cls.includes('mono')) {
-        continue; // These are intentionally small per design system
-      }
-      const fs = parseInt(window.getComputedStyle(parent).fontSize);
-      if (fs < 12 && fs > 0) {
-        bad.push({
-          text: node.textContent.slice(0, 40),
-          fontSize: fs,
-        });
-      }
+    for (const el of document.querySelectorAll('#root *')) {
+      if (el.namespaceURI === 'http://www.w3.org/2000/svg') continue;
+      if (el.classList && el.classList.contains('sr-only')) continue;
+      if (![...el.childNodes].some((n) => n.nodeType === 3 && n.textContent.trim())) continue;
+      const cs = getComputedStyle(el);
+      if (cs.display === 'none' || cs.visibility === 'hidden') continue;
+      const r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      const fs = parseFloat(cs.fontSize);          // parseFloat: 11.5 is not 11
+      if (fs < 11.99) bad.push(`${fs}px ${el.tagName.toLowerCase()}.${(typeof el.className === 'string' ? el.className : '').trim()} "${el.textContent.trim().slice(0, 30)}"`);
     }
     return bad;
   });
 
   R.ok(subPixelText.length === 0,
-    `§7 · No unintended HTML text under 12px in peers grid at 390px (found: ${subPixelText.length})`);
+    `§7 · no visible HTML text under 12px at 390px with the pulse LIVE (found: ${subPixelText.length}) — no class exemptions`,
+    subPixelText.slice(0, 5).join('\n     '));
+
+  /* Non-vacuity: a page that failed to render returns zero findings, which is
+   * indistinguishable from a clean pass. This is the guard §7 never had. */
+  const rootNodes = await page.evaluate(() => document.querySelectorAll('#root *').length);
+  R.ok(rootNodes > 80,
+    `§7 · the 390px sweep had a rendered page to measure (${rootNodes} elements under #root)`,
+    'a low count means the floor result above was measured against a blank page');
 
   // §8: Reduced motion — cards render, zero animations
   const reducedMotionPage = await browser.newPage();
